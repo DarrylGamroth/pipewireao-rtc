@@ -11,6 +11,13 @@ The repository is currently architecture-first. The documents describe a
 proposed system and its delivery gates; they are not evidence that the runtime
 has been implemented or qualified.
 
+The delivery model is incremental. Keep the `development` capability profile
+small: one configured source, Calculon graph, sink, basic lifecycle, and
+inspection. Camera sessions, physical correction, recording, Julia execution,
+remote access, progressive scheduling, and target-host qualification are
+independent capability tracks. Do not make an unselected track a prerequisite
+for running or testing the development graph.
+
 Before making architectural or implementation changes, read
 `docs/README.md`, then the documents that own the affected contracts. Start
 with `docs/architecture.md` for work that crosses subsystem boundaries and
@@ -46,9 +53,11 @@ repository's unrelated worktree changes.
 - Julia remains a scientist-facing graph and algorithm environment; Julia code
   must run outside the PipeWire daemon unless a separately qualified AOT
   component has an explicit real-time contract.
-- Implement the hierarchical instrument lifecycle with Statig's blocking,
-  serialized dispatcher. Keep Statig types private and keep lifecycle I/O in
-  asynchronous typed effects and correlated completion events.
+- Implement the operational hierarchical instrument lifecycle with Statig's
+  blocking, serialized dispatcher. Keep Statig types private and keep lifecycle
+  I/O in asynchronous typed effects and correlated completion events. The
+  development runner may expose the compatible lifecycle subset before the
+  protected operational machinery exists.
 - Keep lifecycle, filesystem, database, GUI, logging, and network work outside
   the correction data path.
 - Scientists declare ordinary typed Calculon algorithms, ports, properties,
@@ -56,8 +65,9 @@ repository's unrelated worktree changes.
   pointer handling, errno translation, publication machinery, or worker
   scheduling code.
 - FGN and its host-owned fixed workers remain transparent execution
-  mechanisms. Deployment selects worker count, row-block size, affinity,
-  scheduling, and idle policy.
+  mechanisms. A deployment that selects progressive or fixed-worker execution
+  selects worker count, row-block size, affinity, scheduling, and idle policy;
+  the development profile may use maintained defaults.
 - Do not scaffold a runtime or silently settle an open decision unless the
   task explicitly begins the corresponding roadmap phase.
 
@@ -75,8 +85,8 @@ repository's unrelated worktree changes.
 - Use canonical adaptive-optics terms consistently, especially requested,
   demanded, submitted, accepted, applied, and measured deformable-mirror
   command stages.
-- Record implementation phases in dependency order and give every completion
-  gate concrete evidence.
+- Record delivery increments and tracks in dependency order and give every
+  capability gate concrete evidence.
 
 ## Change and validation discipline
 
@@ -85,8 +95,21 @@ repository's unrelated worktree changes.
 - Keep each commit focused and exclude unrelated files. Do not rewrite
   published history unless explicitly requested.
 - For documentation changes, check local links, trailing whitespace, final
-  newlines, unique requirement definitions, and Markdown rendering. Validate
-  Mermaid diagrams when a renderer is available.
+  newlines, unique requirement definitions, and Markdown rendering. Mermaid
+  CLI is available through the local Podman image
+  `ghcr.io/mermaid-js/mermaid-cli/mermaid-cli:latest`; do not infer that a
+  renderer is unavailable only because `mmdc` is absent from the host. Render
+  every changed Mermaid diagram, preferably by mounting the repository
+  read-only and writing generated output to a temporary directory. Mermaid
+  CLI accepts a Markdown document as input and validates every Mermaid block
+  in it. For example:
+
+  ```sh
+  podman run --rm -v "$PWD:/work:ro,Z" \
+    ghcr.io/mermaid-js/mermaid-cli/mermaid-cli:latest \
+    -i /work/docs/architecture.md -o /tmp/architecture.md \
+    -a /tmp/architecture
+  ```
 - Once a Rust workspace exists, run formatting, focused tests, workspace tests,
   and Clippy in proportion to the change. Add narrower checks for lifecycle,
   deployment, recorder, replay, and fault behavior as those subsystems appear.
