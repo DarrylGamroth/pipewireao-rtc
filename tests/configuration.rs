@@ -45,12 +45,12 @@ fn endpoint_and_scope_admission_is_an_explicit_negative_matrix() {
             "claim",
         ),
         (
-            "pipewireao.simulated-complete-frame",
+            "api.fits.source",
             "pipewireao.physical-camera",
             "source.factory",
         ),
         (
-            "pipewireao.simulated-complete-frame",
+            "api.fits.source",
             "pipewireao.unlisted-source",
             "source.factory",
         ),
@@ -92,18 +92,18 @@ fn invalid_fields_report_scientific_names() {
             "source.node.name",
         ),
         (
-            "${CALCULON_FGN_BUNDLE}",
+            "${PIPEWIREAO_FITS_PLUGIN}",
             "/usr/lib/unreviewed-source.so",
             "source.plugin.path",
         ),
         (
-            "module = libpipewire-module-ndarray-filter-chain",
+            "module = libpipewire-module-spa-node-factory",
             "module = private-module",
             "source.module",
         ),
         (
-            "module = libpipewire-module-spa-node-factory",
-            "module = private-module",
+            "module = libpipewire-module-spa-node-factory\n        node.name = pipewireao-rtc-sink",
+            "module = private-module\n        node.name = pipewireao-rtc-sink",
             "sink.module",
         ),
         (
@@ -111,40 +111,36 @@ fn invalid_fields_report_scientific_names() {
             "/usr/lib/unreviewed-discard.so",
             "sink.plugin.path",
         ),
-        (
-            "algorithm.label = docrime-excitation-f32",
-            "algorithm.label = camera-driver",
-            "source.algorithm.label",
-        ),
-        (
-            "name = excitation",
-            "name = image",
-            "source.ports.image.name",
-        ),
+        ("name = output", "name = image", "source.ports.image.name"),
         (
             "direction = output",
             "direction = input",
-            "source.ports.excitation.direction",
+            "source.ports.output.direction",
         ),
         (
             "element-type = F32_LE",
             "element-type = U16_LE",
-            "source.ports.excitation.element-type",
+            "source.ports.output.element-type",
         ),
         (
             "shape = [ 2 ]",
             "shape = [ 3 ]",
-            "source.ports.excitation.shape",
+            "source.ports.output.shape",
         ),
         (
             "schema = org.calculon.ao.docrime-excitation/1",
             "schema = wrong.image/1",
-            "source.ports.excitation.schema",
+            "source.args.api.fits.schema",
         ),
         (
-            "amplitudes = [ 1.0 2.0 ]",
-            "amplitudes = [ 1.0 ]",
-            "source.algorithm.config",
+            "element-type = F32_LE\n                shape = [ 2 ]\n                schema = org.calculon.ao.docrime-excitation/1",
+            "element-type = F32_LE\n                shape = [ 2 ]\n                schema = wrong.image/1",
+            "source.ports.output.schema",
+        ),
+        (
+            "api.fits.rate = 1000/1",
+            "api.fits.rate = 0/1",
+            "source.args.api.fits.rate",
         ),
         ("graph.gain = 0.5", "graph.unknown = 0.5", "properties"),
         ("graph.pole = 0.75", "graph.pole = nan", "graph.pole"),
@@ -170,6 +166,145 @@ fn invalid_fields_report_scientific_names() {
             .expect_err("mutated field must fail validation");
         assert_eq!(error.field(), field, "mutation {before:?} -> {after:?}");
     }
+}
+
+#[test]
+fn fits_factory_arguments_report_each_invalid_field() {
+    let cases = [
+        (
+            "${PIPEWIREAO_RTC_FITS_PATH}",
+            "/tmp/unreviewed.fits",
+            "source.args.api.fits.path",
+        ),
+        (
+            "api.fits.hdu = 1",
+            "api.fits.hdu = 2",
+            "source.args.api.fits.hdu",
+        ),
+        (
+            "api.fits.sample-rank = 1",
+            "api.fits.sample-rank = 2",
+            "source.args.api.fits.sample-rank",
+        ),
+        (
+            "api.fits.io-mode = file",
+            "api.fits.io-mode = stream",
+            "source.args.api.fits.io-mode",
+        ),
+        (
+            "api.fits.prefault = false",
+            "api.fits.prefault = true",
+            "source.args.api.fits.prefault",
+        ),
+        (
+            "api.fits.loop = true",
+            "api.fits.loop = false",
+            "source.args.api.fits.loop",
+        ),
+        (
+            "api.fits.readiness = timerfd",
+            "api.fits.readiness = poll",
+            "source.args.api.fits.readiness",
+        ),
+        (
+            "api.fits.output-mode = frame",
+            "api.fits.output-mode = row-block",
+            "source.args.api.fits.output-mode",
+        ),
+    ];
+
+    for (before, after, field) in cases {
+        let error = DevelopmentConfig::parse(&replace_once(before, after))
+            .expect_err("invalid FITS argument must be rejected");
+        assert_eq!(error.field(), field, "argument {before}");
+    }
+
+    let unknown = replace_once(
+        "api.fits.hdu = 1",
+        "api.fits.hdu = 1\n            api.fits.unknown = value",
+    );
+    let error = DevelopmentConfig::parse(&unknown).expect_err("unknown FITS argument");
+    assert_eq!(error.field(), "source.args.api.fits.unknown");
+}
+
+#[test]
+fn graph_construction_values_report_each_invalid_field() {
+    let cases = [
+        ("extent = 2", "extent = 3", "graph.algorithm.config.extent"),
+        (
+            "initial_state = 0.0",
+            "initial_state = 1.0",
+            "graph.algorithm.config.initial_state",
+        ),
+        (
+            "input_schema = org.calculon.ao.docrime-excitation/1",
+            "input_schema = wrong.input/1",
+            "graph.algorithm.config.input_schema",
+        ),
+        (
+            "output_schema = org.calculon.ao.controller-command/1",
+            "output_schema = wrong.output/1",
+            "graph.algorithm.config.output_schema",
+        ),
+        (
+            "rate = [ 1000 1 ]",
+            "rate = [ 100 1 ]",
+            "graph.algorithm.config.rate",
+        ),
+    ];
+
+    for (before, after, field) in cases {
+        let error = DevelopmentConfig::parse(&replace_once(before, after))
+            .expect_err("invalid graph construction value must be rejected");
+        assert_eq!(error.field(), field, "construction value {before}");
+    }
+
+    let unknown = replace_once("extent = 2", "extent = 2\n            invented = 1");
+    let error = DevelopmentConfig::parse(&unknown).expect_err("unknown construction value");
+    assert_eq!(error.field(), "graph.algorithm.config.invented");
+
+    let missing = replace_once("            extent = 2\n", "");
+    let error = DevelopmentConfig::parse(&missing).expect_err("missing construction value");
+    assert_eq!(error.field(), "graph.algorithm.config.extent");
+}
+
+#[test]
+fn simulated_and_recorded_sources_are_both_explicitly_admitted() {
+    let source_start = VALID.find("    source = {").unwrap();
+    let source_end = VALID.find("\n\n    graph = {").unwrap();
+    let simulated_source = r#"    source = {
+        factory = pipewireao.simulated-complete-frame
+        module = libpipewire-module-ndarray-filter-chain
+        node.name = pipewireao-rtc-source
+        plugin.path = "${CALCULON_FGN_BUNDLE}"
+        algorithm.label = docrime-excitation-f32
+        algorithm.config = {
+            amplitudes = [ 1.0 2.0 ]
+            seed = 0
+        }
+        ports = [
+            {
+                name = excitation
+                direction = output
+                element-type = F32_LE
+                shape = [ 2 ]
+                schema = org.calculon.ao.docrime-excitation/1
+            }
+        ]
+    }"#;
+    let mut simulated = format!(
+        "{}{}{}",
+        &VALID[..source_start],
+        simulated_source,
+        &VALID[source_end..]
+    );
+    simulated = simulated.replacen(
+        "pipewireao-rtc-source:output",
+        "pipewireao-rtc-source:excitation",
+        1,
+    );
+    DevelopmentConfig::parse(&simulated).expect("simulated source allowlist entry");
+    DevelopmentConfig::parse(VALID).expect("recorded FITS source allowlist entry");
 }
 
 #[test]
@@ -204,8 +339,8 @@ fn pipewire_relaxed_spa_json_comments_and_optional_separators_are_accepted() {
             1,
         )
         .replacen(
-            "pipewireao-rtc-source:excitation",
-            "pipewireao-rtc-sourcé:excitation",
+            "pipewireao-rtc-source:output",
+            "pipewireao-rtc-sourcé:output",
             1,
         );
     DevelopmentConfig::parse(&with_unicode_name).expect("quoted UTF-8 is accepted");

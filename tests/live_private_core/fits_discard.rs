@@ -10,7 +10,6 @@ use std::rc::Rc;
 use std::time::Duration;
 
 pub const SOURCE_NAME: &str = "pipewireao-rtc-fits-source";
-pub const FACTORY_SOURCE_NAME: &str = "fits_source";
 pub const SINK_NAME: &str = "pipewireao-rtc-fits-discard";
 
 const UNRELATED_NAME: &str = "pipewireao-rtc-unrelated";
@@ -178,22 +177,6 @@ impl CoreClient {
         panic!("node {name:?} did not become inspectable; visible nodes {visible:?}");
     }
 
-    fn wait_for_source(&self) -> u32 {
-        for _ in 0..100 {
-            self.roundtrip("FITS source discovery");
-            if let Some(id) = self
-                .node_id(SOURCE_NAME)
-                .or_else(|| self.node_id(FACTORY_SOURCE_NAME))
-            {
-                return id;
-            }
-            std::thread::sleep(Duration::from_millis(5));
-        }
-        panic!(
-            "FITS source was visible as neither requested name {SOURCE_NAME:?} nor factory name {FACTORY_SOURCE_NAME:?}"
-        );
-    }
-
     fn port_id(&self, node_id: u32, direction: &str) -> Option<u32> {
         let node_id = node_id.to_string();
         let matches = self
@@ -359,7 +342,7 @@ pub fn run(remote_name: &str, image_path: &Path) {
         .register();
 
     let sink_id = client.wait_for_node(SINK_NAME);
-    let source_id = client.wait_for_source();
+    let source_id = client.wait_for_node(SOURCE_NAME);
     let sink_port = client.wait_for_port(sink_id, "in");
     let source_port = client.wait_for_port(source_id, "out");
     assert_eq!(client.port_id(sink_id, "out"), None);
@@ -501,6 +484,26 @@ fn write_test_image(path: &Path) {
     }
     image.resize(5_760, 0);
     std::fs::write(path, image).expect("write complete-frame FITS fixture");
+}
+
+pub fn write_vector_sequence(path: &Path) {
+    let mut vector = Vec::new();
+    for (keyword, value) in [
+        ("SIMPLE", "T"),
+        ("BITPIX", "-32"),
+        ("NAXIS", "2"),
+        ("NAXIS1", "2"),
+        ("NAXIS2", "4"),
+    ] {
+        push_card(&mut vector, &format!("{keyword:<8}= {value:>20}"));
+    }
+    push_card(&mut vector, "END");
+    vector.resize(2_880, b' ');
+    for value in [1.0_f32, -1.0, 0.5, 2.0, -0.25, 0.75, 3.0, -2.0] {
+        vector.extend_from_slice(&value.to_be_bytes());
+    }
+    vector.resize(5_760, 0);
+    std::fs::write(path, vector).expect("write FITS vector sequence");
 }
 
 fn push_card(header: &mut Vec<u8>, content: &str) {

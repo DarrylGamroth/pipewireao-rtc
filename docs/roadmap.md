@@ -164,15 +164,15 @@ or correction-critical suitability.
 
 | Requirement | Primary increment | Implementation | Evidence | Required evidence |
 | --- | --- | --- | --- | --- |
-| RTC-DEV-001 | 1 | partial | partial | Endpoint allowlist and negative physical/correction fixtures pass; the live development fixture reaches `READY` and `RUNNING` without physical authority |
-| RTC-DEV-002 | 1 | partial | partial | The minimal fixture and field-by-field diagnostics pass; both live links negotiate before `READY`, but explicit live enumeration of every declared format field remains missing |
-| RTC-DEV-003 | 1 | partial | partial | Failure-injected cleanup and the live exact topology pass; both links are admitted, owned objects are removed, and the unrelated node survives |
-| RTC-DEV-004 | 1 | partial | partial | Transition, retry, invalid-command, required-object failure, repeated-cycle, and complete live lifecycle tests pass; the live graph also stops and restarts within one load |
+| RTC-DEV-001 | 1 | implemented | validated | The explicit allowlists and negative physical, actuating, correction, progressive, and promoted-claim cases pass before realization; the FITS live fixture reaches `READY` and `RUNNING` without physical authority |
+| RTC-DEV-002 | 1 | implemented | validated | The minimal FITS → graph → discard fixture and field-by-field diagnostics pass; the live adapter validates directions, F32_LE, shape `[2]`, row-major layout, 1000/1 rate, scientific schemas, the discard wildcard, and both links before `RUNNING` |
+| RTC-DEV-003 | 1 | implemented | partial | Deterministic creation-point cleanup and the live exact topology pass; both links are admitted, owned objects are removed, and the unrelated node survives, but live lower-level failure injection after every creation point remains missing |
+| RTC-DEV-004 | 1 | partial | partial | Transition, retry, invalid-command, required-object failure, repeated-cycle, and complete live lifecycle tests pass; explicit live stop and restart work within one load, but the FITS source exposes no public normal-completion signal for automatic return to `READY` |
 | RTC-DEV-005 | 2 | planned | missing | Requested/active property and parameter update tests |
-| RTC-DEV-006 | 1d and 2 | partial | missing | The runner has no GUI dependency and rejects an undeclared observation; no suitable bounded non-gating sample boundary is available for attach, detach, and stall evidence |
+| RTC-DEV-006 | 1d and 2 | partial | partial | The private-core runner reaches and remains in its lifecycle without a GUI and rejects an undeclared observation; no suitable bounded non-gating sample boundary is available for attach, detach, and stall evidence |
 | RTC-DEV-007 | 2 | planned | missing | Deterministic REVOLT output and state oracle |
 | RTC-DEV-008 | 3 | planned | missing | Package-local declaration examples and ordinary-array tests |
-| RTC-DEV-009 | 1 | partial | partial | Statig hierarchy, serialized dispatch, typed effects, effect failure, stale-completion, and full private-core lifecycle tests pass |
+| RTC-DEV-009 | 1 | implemented | validated | Statig hierarchy, serialized dispatch, typed effects, effect failure, stale-completion rejection, and the full private-core lifecycle pass through the same dispatcher |
 | RTC-DEV-010 | 1c and 1d | planned | missing | Exact serial and independent multi-graph sessions, session-wide lifecycle and failure injection, standard configuration delegation, and absence of a runner scheduler |
 
 Implementation and evidence state remain separate when this table is updated.
@@ -184,7 +184,7 @@ for both maintained fixtures.
 The current implementation baseline is PipeWireAO
 `abe269d63c0aa553c5cb96da245a8a5de715ec42`, the public PipeWireAO Rust
 binding `75f407498f24a884f97ef3dc4fa3675a61e641fd`, PipeWireAO SPA plugins
-`059dbc63d15f2089a054722ca6b5162e1a18b832`, and Calculon
+`cc95b806b67439ca9526f49b5e141e2c0c37ed6e`, and Calculon
 `3d49237b3c9f4423f120b52bd2761cd5a90f5e94`. These revisions identify the
 interfaces inspected for this increment; they do not promote sibling worktree
 changes to evidence.
@@ -193,7 +193,11 @@ The executable, standard PipeWire relaxed SPA-JSON decoder, Statig lifecycle,
 fake graph adapter, and live private-core adapter are present. A narrow C shim
 exposes the public `spa_json_*` cursor API missing from the Rust binding; the
 runner decodes directly into its development configuration and does not parse
-FGN graph internals. The configuration rejection matrix is in
+FGN graph internals. For this single-graph fixture it still validates a fixed
+algorithm declaration and renders the standard `filter.graph` module
+argument. The RTC-DEV-010 serial slice must instead accept maintained
+`filter.graph` bodies and delegate them unchanged; no multi-graph or graph-
+authoring claim is made here. The configuration rejection matrix is in
 `tests/configuration.rs`; lifecycle and effect-completion coverage is in
 `tests/lifecycle.rs`; deterministic object and link failure injection is in
 `tests/graph_adapter.rs`; and the maintained private-core target is in
@@ -205,28 +209,30 @@ The live test is intentionally ignored by the generic Cargo suite because it
 requires the maintained sibling PipeWireAO and Calculon build artifacts. Its
 explicit invocation now passes the complete `Load` → `READY` → `Start` →
 `RUNNING` → `Stop` → `READY` → `Start` → `RUNNING` → `Stop` → `READY` →
-`Unload` → `OFFLINE` lifecycle. It confirms the three configured nodes, both
-admitted links, a discard-buffer increase after each start, complete
-owned-object cleanup, and preservation of an unrelated node. The test observes
-delivery to the sink, not the numerical contents of the output frame.
+`Unload` → `OFFLINE` lifecycle for the configured FITS → `fgn-native` leaky
+integrator → discard path. Before admitting links, it enumerates the public
+port formats and checks their directions, element types, shapes, layouts,
+rates, scientific schemas, and the discard sink's format wildcard. It then
+confirms the three configured nodes, both admitted links, a discard-buffer
+increase after each start, complete owned-object cleanup, and preservation of
+an unrelated node. The test observes delivery to the sink, not the numerical
+contents of the output frame.
 
-The discard scheduling handshake and lower-level factory regression are in
-PipeWireAO SPA plugins commit
-`a913feda4f564109844b635007b16b6bf7137435`, one commit ahead of that
-repository's current `main`. The RTC live result uses its build-tree artifact
-through `PIPEWIREAO_SPA_PLUGINS_BUILD`, but the RTC repository creates,
-observes, and cleans up its own FITS → discard topology. The result is valid
-local evidence but depends on an unmerged plugin revision. The next RTCW slice
-replaces the simulated source in the runner fixture with the admitted FITS
-source before adding graph chaining.
+The discard scheduling handshake, stable FITS node and output-port identities,
+and fixed-string negotiation repair are in local PipeWireAO SPA plugins `main`
+at `cc95b806b67439ca9526f49b5e141e2c0c37ed6e`. Factory tests cover two
+distinctly named FITS instances plus direct and `SPA_CHOICE_None`-negotiated
+schema/profile strings. The RTC live result uses those build-tree artifacts
+through `PIPEWIREAO_SPA_PLUGINS_BUILD`; the RTC repository creates, observes,
+and cleans up both its transport preflight and its FITS → graph → discard
+runner topology. This plugin revision is locally committed but not pushed.
 
-The FITS source currently ignores the requested public `node.name` and exposes
-the fixed name `fits_source` from `spa/plugins/fits/source.c`. The RTC transport
-fixture accepts that observed fallback so it can test frame delivery, but this
-is not exact configured-identity evidence for RTC-DEV-003 or multi-source
-evidence for RTC-DEV-010. The narrow lower-level fix is for the FITS factory to
-adopt the supplied `node.name` during initialization and cover two distinctly
-named instances in its factory tests.
+The FITS source can stop producing when a non-looping file ends, but its public
+node surface does not yet publish a normal finite-source completion event or
+state change. Consequently the runner has validated explicit stop and restart,
+but RTC-DEV-004 remains partial for automatic `RUNNING` → `READY` on normal
+source completion. The narrow lower-level contract needed is an observable
+public EOS/completion indication from the required source.
 
 The runner pins PipeWireAO-rs revision
 `75f407498f24a884f97ef3dc4fa3675a61e641fd`. That revision accepts negotiated

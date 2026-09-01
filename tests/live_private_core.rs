@@ -34,6 +34,8 @@ fn private_core_transport_then_runner_fixtures_run_and_clean_up() {
         PathBuf::from,
     );
     let temporary = tempfile::tempdir().expect("private fixture directory");
+    let runner_fits = temporary.path().join("excitation.fits");
+    fits_discard::write_vector_sequence(&runner_fits);
     let runtime = temporary.path().join("runtime");
     let config_directory = temporary.path().join("config");
     std::fs::create_dir_all(&runtime).unwrap();
@@ -60,6 +62,7 @@ fn private_core_transport_then_runner_fixtures_run_and_clean_up() {
         &pipewire_build,
         &calculon,
         &plugin_build,
+        &runner_fits,
     );
     for (name, value) in &environment {
         std::env::set_var(name, value);
@@ -106,7 +109,6 @@ fn private_core_transport_then_runner_fixtures_run_and_clean_up() {
     let transport_cleanup = dump(&pipewire_build, &environment, &core_name);
     assert!(transport_cleanup.contains("pipewireao-rtc-unrelated"));
     assert!(!transport_cleanup.contains(fits_discard::SOURCE_NAME));
-    assert!(!transport_cleanup.contains(fits_discard::FACTORY_SOURCE_NAME));
     assert!(!transport_cleanup.contains(fits_discard::SINK_NAME));
 
     let adapter = LiveGraphAdapter::connect(&core_name).expect("connect runner adapter");
@@ -191,6 +193,7 @@ fn fixture_environment(
     pipewire_build: &Path,
     calculon: &Path,
     plugin_build: &Path,
+    runner_fits: &Path,
 ) -> BTreeMap<&'static str, PathBuf> {
     let plugin_search_path = std::env::join_paths([
         pipewire_build.join("spa/plugins"),
@@ -219,6 +222,11 @@ fn fixture_environment(
             "PIPEWIREAO_DISCARD_PLUGIN",
             plugin_build.join("spa/plugins/discard/libspa-pipewireao-discard.so"),
         ),
+        (
+            "PIPEWIREAO_FITS_PLUGIN",
+            plugin_build.join("spa/plugins/fits/libspa-fits.so"),
+        ),
+        ("PIPEWIREAO_RTC_FITS_PATH", runner_fits.to_owned()),
     ])
 }
 

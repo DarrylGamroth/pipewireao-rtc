@@ -1,10 +1,13 @@
 use crate::{
-    ConfigurationInput, DevelopmentConfig, EffectExecutor, LifecycleEffect, ObjectRole,
-    PortDirection, ScientificDiagnostic,
+    ConfigurationInput, DevelopmentConfig, EffectExecutor, EndpointFactory, LifecycleEffect,
+    ObjectRole, PortDirection, PortSpec, ScientificDiagnostic,
 };
 use pipewire as pw;
 use pw::properties::PropertiesBox;
 use pw::registry::GlobalObject;
+use pw::spa::param::format::{ElementType, NdArrayFormat, NdArrayLayout};
+use pw::spa::pod::{Object as PodObject, Value};
+use pw::spa::utils::{Fraction, SpaTypes};
 use pw::types::ObjectType;
 use std::cell::{Cell, RefCell};
 use std::collections::BTreeMap;
@@ -13,6 +16,7 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 const SPA_NODE_FACTORY: &str = "spa-node-factory";
+const FITS_LIBRARY_FILE: &str = "libspa-fits.so";
 const DISCARD_LIBRARY: &str = "pipewireao/libspa-pipewireao-discard";
 const DISCARD_LIBRARY_FILE: &str = "libspa-pipewireao-discard.so";
 // Public IDs from pipewireao-plugins/discard.h. Keep these at the narrow
@@ -20,6 +24,7 @@ const DISCARD_LIBRARY_FILE: &str = "libspa-pipewireao-discard.so";
 const DISCARD_BUFFERS_PROPERTY: u32 = 0x0100_0000;
 const DISCARD_PROCESS_CALLS_PROPERTY: u32 = DISCARD_BUFFERS_PROPERTY + 4;
 const DISCARD_METRIC_SEQUENCE: i32 = 0x4453;
+const FORMAT_ENUM_SEQUENCE: i32 = 0x4654;
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct LiveGraphStatus {
@@ -157,8 +162,8 @@ impl LiveGraphAdapter {
         self.clear_errors();
 
         let calculon = resolve_artifact(
-            "source.plugin.path",
-            &config.source.plugin_path,
+            "graph.plugin.path",
+            &config.graph.plugin_path,
             "CALCULON_FGN_BUNDLE",
         )?;
         let sink_plugin = resolve_artifact(
@@ -172,13 +177,35 @@ impl LiveGraphAdapter {
             config.sink.node_name.clone(),
         ];
 
-        let source_arguments = render_source_args(config, &calculon, &self.remote_name);
-        if let Err(error) = self.load_owned_module(
-            ObjectRole::Source,
-            &config.source.module,
-            &source_arguments,
-            &config.source.node_name,
-        ) {
+        let source_result = match config.source.factory {
+            EndpointFactory::SimulatedCompleteFrameSource => {
+                let source_plugin = resolve_artifact(
+                    "source.plugin.path",
+                    &config.source.plugin_path,
+                    "CALCULON_FGN_BUNDLE",
+                )?;
+                let source_arguments =
+                    render_source_args(config, &source_plugin, &self.remote_name);
+                self.load_owned_module(
+                    ObjectRole::Source,
+                    &config.source.module,
+                    &source_arguments,
+                    &config.source.node_name,
+                )
+            }
+            EndpointFactory::FitsCompleteFrameSource => {
+                let source_plugin = resolve_artifact(
+                    "source.plugin.path",
+                    &config.source.plugin_path,
+                    "PIPEWIREAO_FITS_PLUGIN",
+                )?;
+                self.create_owned_spa_source(config, &source_plugin)
+            }
+            EndpointFactory::FormatAgnosticDiscardSink => {
+                unreachable!("validated source cannot use a sink factory")
+            }
+        };
+        if let Err(error) = source_result {
             let _ = self.cleanup();
             return Err(error);
         }
@@ -238,7 +265,7 @@ impl LiveGraphAdapter {
         let discarded_before_start = self.discard_buffer_count()?;
         self.status.discarded_buffers = discarded_before_start;
 
-        // Downstream-first commands prevent the finite source from outrunning its sink.
+        // Downstream-first commands prevent the source from outrunning its sink.
         for node_name in self.owned_node_names.iter().rev() {
             let global = self.node_global(node_name)?;
             let node = self
@@ -418,6 +445,67 @@ impl LiveGraphAdapter {
         self.wait_for_owned_node(ObjectRole::Sink, &config.sink.node_name)
     }
 
+    fn create_owned_spa_source(
+        &mut self,
+        config: &DevelopmentConfig,
+        plugin: &Path,
+    ) -> Result<(), ScientificDiagnostic> {
+        if plugin.file_name().and_then(|name| name.to_str()) != Some(FITS_LIBRARY_FILE) {
+            return Err(ScientificDiagnostic::new(
+                "source.plugin.path",
+                format!(
+                    "expected maintained FITS plugin {FITS_LIBRARY_FILE:?}, got {}",
+                    plugin.display()
+                ),
+            ));
+        }
+        let image = resolve_file_reference(
+            "source.args.api.fits.path",
+            config
+                .source
+                .arguments
+                .get("api.fits.path")
+                .expect("FITS path argument was validated"),
+            "PIPEWIREAO_RTC_FITS_PATH",
+        )?;
+        let image = image.to_str().ok_or_else(|| {
+            ScientificDiagnostic::new(
+                "source.args.api.fits.path",
+                "resolved FITS path is not valid UTF-8",
+            )
+        })?;
+        let mut properties = PropertiesBox::new();
+        properties.insert("factory.name", config.source.factory.configured_name());
+        properties.insert("node.name", config.source.node_name.as_str());
+        properties.insert(
+            "node.description",
+            "PipeWireAO RTC recorded complete-frame source",
+        );
+        properties.insert("node.virtual", "true");
+        properties.insert("object.linger", "false");
+        for (name, configured) in &config.source.arguments {
+            if name == "api.fits.path" {
+                properties.insert(name.as_str(), image);
+            } else {
+                properties.insert(name.as_str(), configured.as_str());
+            }
+        }
+        let node = self
+            .core
+            .create_object::<pw::node::Node>(SPA_NODE_FACTORY, &properties)
+            .map_err(|error| {
+                ScientificDiagnostic::new(
+                    "source.factory",
+                    format!(
+                        "PipeWire spa-node-factory rejected {:?}: {error}",
+                        config.source.factory.configured_name()
+                    ),
+                )
+            })?;
+        self.spa_nodes.push(node);
+        self.wait_for_owned_node(ObjectRole::Source, &config.source.node_name)
+    }
+
     fn wait_for_owned_node(
         &self,
         role: ObjectRole,
@@ -559,23 +647,95 @@ impl LiveGraphAdapter {
 
     fn validate_live_ports(&self, config: &DevelopmentConfig) -> Result<(), ScientificDiagnostic> {
         let expected = [
-            (&config.source.node_name, &config.source.ports),
-            (&config.graph.node_name, &config.graph.ports),
-            (&config.sink.node_name, &config.sink.ports),
+            (
+                ObjectRole::Source,
+                &config.source.node_name,
+                &config.source.ports,
+            ),
+            (
+                ObjectRole::Graph,
+                &config.graph.node_name,
+                &config.graph.ports,
+            ),
+            (ObjectRole::Sink, &config.sink.node_name, &config.sink.ports),
         ];
-        for (node_name, ports) in expected {
+        for (role, node_name, ports) in expected {
             let node = self.node_global(node_name)?;
             for port in ports {
-                self.port_global(node.id, &port.name, port.direction)
+                let port_global = self
+                    .port_global(node.id, &port.name, port.direction)
                     .map_err(|error| {
                         ScientificDiagnostic::new(
                             format!("node {node_name} port {}", port.name),
                             error.message().to_owned(),
                         )
                     })?;
+                let format = self.enumerate_port_format(role, &port.name, &port_global)?;
+                if role == ObjectRole::Sink {
+                    validate_discard_wildcard(&format, role, &port.name)?;
+                } else {
+                    validate_ndarray_port(&format, role, port)?;
+                }
             }
         }
         Ok(())
+    }
+
+    fn enumerate_port_format(
+        &self,
+        role: ObjectRole,
+        port_name: &str,
+        global: &GlobalObject<PropertiesBox>,
+    ) -> Result<PodObject, ScientificDiagnostic> {
+        let field = format!("{}.ports.{port_name}.format", role.name());
+        let port = self
+            .registry
+            .bind::<pw::port::Port, _>(global)
+            .map_err(|error| ScientificDiagnostic::new(&field, error.to_string()))?;
+        let formats = Rc::new(RefCell::new(Vec::new()));
+        let observed = Rc::clone(&formats);
+        let _listener = port
+            .add_listener_local()
+            .param(move |_sequence, param_type, _index, _next, param| {
+                if param_type != pw::spa::param::ParamType::EnumFormat {
+                    return;
+                }
+                let decoded = param
+                    .ok_or_else(|| "PipeWire returned an empty EnumFormat parameter".to_owned())
+                    .and_then(|pod| {
+                        pw::spa::pod::deserialize::PodDeserializer::deserialize_from::<Value>(
+                            pod.as_bytes(),
+                        )
+                        .map_err(|error| format!("cannot decode EnumFormat: {error:?}"))
+                    })
+                    .and_then(|(_, value)| match value {
+                        Value::Object(object) => Ok(object),
+                        other => Err(format!("EnumFormat is not an object: {other:?}")),
+                    });
+                observed.borrow_mut().push(decoded);
+            })
+            .register();
+        port.enum_params(
+            FORMAT_ENUM_SEQUENCE,
+            Some(pw::spa::param::ParamType::EnumFormat),
+            0,
+            u32::MAX,
+        );
+        self.roundtrip(&field)?;
+        let mut formats = formats.borrow_mut();
+        if formats.len() != 1 {
+            return Err(ScientificDiagnostic::new(
+                field,
+                format!(
+                    "expected exactly one configured EnumFormat, observed {}",
+                    formats.len()
+                ),
+            ));
+        }
+        formats
+            .pop()
+            .expect("one format was observed")
+            .map_err(|message| ScientificDiagnostic::new(field, message))
     }
 
     fn create_link(
@@ -811,6 +971,142 @@ fn is_node_named(global: &GlobalObject<PropertiesBox>, node_name: &str) -> bool 
             == Some(node_name)
 }
 
+fn validate_ndarray_port(
+    object: &PodObject,
+    role: ObjectRole,
+    port: &PortSpec,
+) -> Result<(), ScientificDiagnostic> {
+    validate_format_object(object, role, &port.name)?;
+    let observed =
+        NdArrayFormat::<Vec<u32>>::from_properties(&object.properties).map_err(|error| {
+            ScientificDiagnostic::new(
+                format!("{}.ports.{}.format", role.name(), port.name),
+                format!("invalid ndarray EnumFormat: {error}"),
+            )
+        })?;
+    if observed.element_type() != ElementType::F32Le {
+        return Err(ScientificDiagnostic::new(
+            format!("{}.ports.{}.element-type", role.name(), port.name),
+            format!("expected F32_LE, observed {:?}", observed.element_type()),
+        ));
+    }
+    if observed.shape() != port.shape {
+        return Err(ScientificDiagnostic::new(
+            format!("{}.ports.{}.shape", role.name(), port.name),
+            format!("expected {:?}, observed {:?}", port.shape, observed.shape()),
+        ));
+    }
+    if observed.layout() != NdArrayLayout::RowMajor {
+        return Err(ScientificDiagnostic::new(
+            format!("{}.ports.{}.layout", role.name(), port.name),
+            format!("expected row-major, observed {:?}", observed.layout()),
+        ));
+    }
+    let expected_rate = Fraction {
+        num: 1000,
+        denom: 1,
+    };
+    if observed.rate() != Some(expected_rate) {
+        return Err(ScientificDiagnostic::new(
+            format!("{}.ports.{}.rate", role.name(), port.name),
+            format!(
+                "expected 1000/1 complete frames per second, observed {:?}",
+                observed.rate()
+            ),
+        ));
+    }
+    let schema = one_string_property(
+        object,
+        pw::spa::sys::SPA_FORMAT_NDARRAY_schema,
+        role,
+        &port.name,
+        "schema",
+    )?;
+    if schema != port.schema {
+        return Err(ScientificDiagnostic::new(
+            format!("{}.ports.{}.schema", role.name(), port.name),
+            format!("expected {:?}, observed {schema:?}", port.schema),
+        ));
+    }
+    if object
+        .properties
+        .iter()
+        .any(|property| property.key == pw::spa::sys::SPA_FORMAT_NDARRAY_profile)
+    {
+        return Err(ScientificDiagnostic::new(
+            format!("{}.ports.{}.profile", role.name(), port.name),
+            "the increment-1 format must not declare an unconfigured ndarray profile",
+        ));
+    }
+    Ok(())
+}
+
+fn validate_discard_wildcard(
+    object: &PodObject,
+    role: ObjectRole,
+    port_name: &str,
+) -> Result<(), ScientificDiagnostic> {
+    validate_format_object(object, role, port_name)?;
+    if object.properties.is_empty() {
+        Ok(())
+    } else {
+        Err(ScientificDiagnostic::new(
+            format!("{}.ports.{port_name}.format", role.name()),
+            "the discard sink must advertise an unconstrained format object",
+        ))
+    }
+}
+
+fn validate_format_object(
+    object: &PodObject,
+    role: ObjectRole,
+    port_name: &str,
+) -> Result<(), ScientificDiagnostic> {
+    if object.type_ == SpaTypes::ObjectParamFormat.as_raw()
+        && object.id == pw::spa::param::ParamType::EnumFormat.as_raw()
+    {
+        Ok(())
+    } else {
+        Err(ScientificDiagnostic::new(
+            format!("{}.ports.{port_name}.format", role.name()),
+            format!(
+                "expected a SPA EnumFormat object, observed type {} id {}",
+                object.type_, object.id
+            ),
+        ))
+    }
+}
+
+fn one_string_property(
+    object: &PodObject,
+    key: u32,
+    role: ObjectRole,
+    port_name: &str,
+    property_name: &str,
+) -> Result<String, ScientificDiagnostic> {
+    let field = format!("{}.ports.{port_name}.{property_name}", role.name());
+    let mut matching = object
+        .properties
+        .iter()
+        .filter(|property| property.key == key);
+    let property = matching
+        .next()
+        .ok_or_else(|| ScientificDiagnostic::new(&field, "required property is missing"))?;
+    if matching.next().is_some() {
+        return Err(ScientificDiagnostic::new(
+            field,
+            "property is declared more than once",
+        ));
+    }
+    match &property.value {
+        Value::String(value) => Ok(value.clone()),
+        other => Err(ScientificDiagnostic::new(
+            field,
+            format!("expected a fixed string, observed {other:?}"),
+        )),
+    }
+}
+
 impl EffectExecutor for LiveGraphAdapter {
     fn execute(&mut self, effect: &LifecycleEffect) -> Result<(), ScientificDiagnostic> {
         match effect {
@@ -887,6 +1183,39 @@ fn resolve_artifact(
         ));
     }
     Ok(canonical)
+}
+
+fn resolve_file_reference(
+    field: &str,
+    configured: &str,
+    environment_name: &str,
+) -> Result<PathBuf, ScientificDiagnostic> {
+    let expected = format!("${{{environment_name}}}");
+    if configured != expected {
+        return Err(ScientificDiagnostic::new(
+            field,
+            format!("expected runtime file reference {expected:?}"),
+        ));
+    }
+    let path = std::env::var_os(environment_name).ok_or_else(|| {
+        ScientificDiagnostic::new(
+            field,
+            format!("environment variable {environment_name} is not set"),
+        )
+    })?;
+    let path = PathBuf::from(path);
+    if !path.is_file() {
+        return Err(ScientificDiagnostic::new(
+            field,
+            format!("runtime input {} is not a regular file", path.display()),
+        ));
+    }
+    path.canonicalize().map_err(|error| {
+        ScientificDiagnostic::new(
+            field,
+            format!("cannot resolve runtime input {}: {error}", path.display()),
+        )
+    })
 }
 
 fn render_source_args(config: &DevelopmentConfig, plugin: &Path, remote: &str) -> String {

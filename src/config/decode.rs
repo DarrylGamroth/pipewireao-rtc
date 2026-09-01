@@ -1,7 +1,7 @@
 use super::{
     AlgorithmSpec, DevelopmentConfig, EndpointFactory, GraphFactory, LinkSpec, ObjectRole,
-    ObjectSpec, PortDirection, PortSpec, ScientificDiagnostic, GRAPH_FACTORY, SINK_FACTORY,
-    SOURCE_FACTORY,
+    ObjectSpec, PortDirection, PortSpec, ScientificDiagnostic, FITS_SOURCE_FACTORY, GRAPH_FACTORY,
+    SIMULATED_SOURCE_FACTORY, SINK_FACTORY,
 };
 use crate::ffi::spa_json::{Cursor, SyntaxError, Token};
 use std::collections::BTreeMap;
@@ -66,6 +66,7 @@ struct DecodedObject {
     module: String,
     node_name: String,
     plugin_path: String,
+    arguments: BTreeMap<String, String>,
     algorithm: Option<AlgorithmSpec>,
     ports: Vec<PortSpec>,
 }
@@ -77,6 +78,7 @@ impl DecodedObject {
             module: self.module,
             node_name: self.node_name,
             plugin_path: self.plugin_path,
+            arguments: self.arguments,
             algorithm: self.algorithm,
             ports: self.ports,
         }
@@ -89,7 +91,10 @@ fn endpoint(
 ) -> Result<ObjectSpec<EndpointFactory>, ScientificDiagnostic> {
     let object = object_spec(token, role)?;
     let factory = match (role, object.factory.as_str()) {
-        (ObjectRole::Source, SOURCE_FACTORY) => EndpointFactory::SimulatedCompleteFrameSource,
+        (ObjectRole::Source, SIMULATED_SOURCE_FACTORY) => {
+            EndpointFactory::SimulatedCompleteFrameSource
+        }
+        (ObjectRole::Source, FITS_SOURCE_FACTORY) => EndpointFactory::FitsCompleteFrameSource,
         (ObjectRole::Sink, SINK_FACTORY) => EndpointFactory::FormatAgnosticDiscardSink,
         (ObjectRole::Source, name) => {
             return Err(ScientificDiagnostic::new(
@@ -129,6 +134,7 @@ fn object_spec(token: Token<'_>, role: ObjectRole) -> Result<DecodedObject, Scie
     let mut module = None;
     let mut node_name = None;
     let mut plugin_path = None;
+    let mut arguments = None;
     let mut algorithm_label = None;
     let mut algorithm_config = None;
     let mut ports = None;
@@ -139,6 +145,7 @@ fn object_spec(token: Token<'_>, role: ObjectRole) -> Result<DecodedObject, Scie
             "module" => assign(&mut module, value, &format!("{field}.module"))?,
             "node.name" => assign(&mut node_name, value, &format!("{field}.node.name"))?,
             "plugin.path" => assign(&mut plugin_path, value, &format!("{field}.plugin.path"))?,
+            "args" => assign(&mut arguments, value, &format!("{field}.args"))?,
             "algorithm.label" => assign(
                 &mut algorithm_label,
                 value,
@@ -190,6 +197,10 @@ fn object_spec(token: Token<'_>, role: ObjectRole) -> Result<DecodedObject, Scie
         plugin_path: scalar(
             required(plugin_path, &format!("{field}.plugin.path"))?,
             &format!("{field}.plugin.path"),
+        )?,
+        arguments: arguments.map_or_else(
+            || Ok(BTreeMap::new()),
+            |token| string_map(token, &format!("{field}.args")),
         )?,
         algorithm,
         ports: port_array(
