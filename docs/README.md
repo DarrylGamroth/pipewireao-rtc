@@ -8,8 +8,8 @@ load, inspect, and test it.
 
 | Document | Authority |
 | --- | --- |
-| [Development architecture](architecture.md) | Scope, component boundary, configuration choice, scientist boundary, exclusions, and RTC-ARCH-011 |
-| [Development operating contract](operations.md) | RTC-DEV-001 through RTC-DEV-008, minimum lifecycle, updates, observation, diagnostics, and equivalence |
+| [Development architecture](architecture.md) | Scope, component boundary, configuration choice, scientist boundary, exclusions, RTC-ARCH-011, and the RTC-ARCH-012 Statig decision |
+| [Development operating contract](operations.md) | RTC-DEV-001 through RTC-DEV-009, Statig lifecycle, updates, observation, diagnostics, and equivalence |
 | [Development roadmap](roadmap.md) | Dependency-ordered implementation, completion evidence, performance characterization, and deferred capability triggers |
 
 These three files are the complete RTC-level implementation baseline. An

@@ -87,15 +87,19 @@ The runner MUST serialize the following stable states and transitions:
 ```mermaid
 stateDiagram-v2
     [*] --> OFFLINE
+    state MANAGED {
+        CONFIGURING --> READY: graph valid
+        CONFIGURING --> FAULT: load failed
+        READY --> RUNNING: start
+        RUNNING --> READY: stop or normal source end
+        READY --> CONFIGURING: reload
+        RUNNING --> FAULT: required object failed
+        READY --> FAULT: required object failed
+        FAULT --> CONFIGURING: retry
+        CONFIGURING --> OFFLINE: unload completed
+        RUNNING --> OFFLINE: unload completed
+    }
     OFFLINE --> CONFIGURING: load
-    CONFIGURING --> READY: graph valid
-    CONFIGURING --> FAULT: load failed
-    READY --> RUNNING: start
-    RUNNING --> READY: stop or normal source end
-    READY --> CONFIGURING: reload
-    RUNNING --> FAULT: required object failed
-    READY --> FAULT: required object failed
-    FAULT --> CONFIGURING: retry
     READY --> OFFLINE: unload
     FAULT --> OFFLINE: unload
 ```
@@ -109,11 +113,39 @@ stateDiagram-v2
 | `FAULT` | A requested transition or required object failed; the diagnostic is retained and no physical action is possible. |
 
 Startup and stopping MAY be reported as transition progress but are not
-additional stable states. `CORRECTING` MUST NOT exist in this profile.
+additional stable states. An unload request MUST be accepted from every
+`MANAGED` leaf; after the applicable cancel, stop, and cleanup effects complete,
+it MUST reach `OFFLINE`, or `FAULT` if cleanup fails. `CORRECTING` MUST NOT
+exist in this profile.
 
 Verification intent (informative): exercise every transition, retry after
 each injected creation and streaming failure, repeat load/start/stop/unload,
 and verify that invalid commands leave the state and owned objects coherent.
+
+### RTC-DEV-009 — Statig hierarchical lifecycle execution
+
+The runner MUST implement RTC-DEV-004 with Statig's blocking state-machine API
+and one serialized event dispatcher. `CONFIGURING`, `READY`, `RUNNING`, and
+`FAULT` MUST be descendants of a `MANAGED` superstate. The superstate MUST own
+the common unload behavior required by RTC-DEV-004. The lifecycle interface
+and effect-executor boundary MUST use RTC domain states, events, effects, and
+results; they MUST NOT expose Statig types.
+
+A state handler MUST NOT perform potentially blocking PipeWire,
+configuration, or filesystem work. It MUST emit a typed effect, and the runner
+MUST return the effect's success or failure to the same serialized dispatcher
+as a typed completion event. Every effect and completion MUST carry a runner-
+allocated token that is not reused during the runner process lifetime. The
+development runner MAY permit only one lifecycle effect in flight, but it MUST
+reject a completion whose token, effect kind, or originating transition does
+not match the current pending effect instead of applying it to a later state.
+
+Verification intent (informative): inspect the Statig hierarchy and lifecycle
+boundary; exercise superstate handling, deterministic event order, one in-
+flight effect, successful and failed completions, and a delayed completion
+delivered after a retry or unload; verify that blocking test effects run
+outside state handlers and that stale completions cannot change the current
+state.
 
 ### RTC-DEV-005 — Standard property and parameter paths
 
@@ -233,6 +265,6 @@ message presented to a scientist.
 ## Development gate
 
 The active operating contract is complete when RTC-DEV-001 through
-RTC-DEV-008 are implemented and their verification intent is covered for the
+RTC-DEV-009 are implemented and their verification intent is covered for the
 small fixture and REVOLT Classic. Passing this gate permits only the claim
 stated in the architecture: a usable, non-actuating development graph.

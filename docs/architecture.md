@@ -31,7 +31,7 @@ The active implementation contains only:
 - one simulated or recorded complete-frame source;
 - one `fgn-native` Calculon execution composite;
 - one simulated, discard, or otherwise non-actuating sink;
-- one small Rust runner with basic lifecycle and diagnostics;
+- one small Rust runner with a Statig hierarchical lifecycle and diagnostics;
 - initial scalar properties and ndarray parameters;
 - ordinary read-only PipeWire inspection; and
 - numerical and state-equivalence tests against the maintained Calculon or
@@ -132,6 +132,16 @@ Rust is the default language for the runner because it is a small stateful
 PipeWire client and configuration tool. This choice is not part of the
 scientist-facing ABI. C remains at existing SPA and PipeWireAO ABI boundaries;
 scientific algorithms remain in their Calculon implementation language.
+
+This is decision **RTC-ARCH-012**: implement the runner lifecycle with
+Statig's blocking state-machine API and a single serialized dispatcher from
+the first increment. The public lifecycle remains the domain model in
+RTC-DEV-004; Statig types stay private. State handlers produce typed effects,
+potentially blocking configuration and PipeWire work executes outside the
+handlers, and results return as typed completion events. This establishes the
+same lifecycle mechanism that later operational work can extend without
+selecting any archived physical-device, correction-authority, supervision, or
+recovery behavior.
 
 The runner, PipeWire daemon, and optional observer are separate ordinary
 processes. The baseline does not prescribe systemd units, affinity, scheduler

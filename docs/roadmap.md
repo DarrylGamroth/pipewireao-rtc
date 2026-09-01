@@ -50,7 +50,7 @@ flowchart LR
 - use standard PipeWire relaxed SPA-JSON rather than inventing another
   configuration language;
 - identify the exact current PipeWireAO and Calculon revisions; and
-- map RTC-DEV-001 through RTC-DEV-008 to implementation and tests as work
+- map RTC-DEV-001 through RTC-DEV-009 to implementation and tests as work
   begins.
 
 Exit evidence: the active index has no dependency on archived requirements,
@@ -60,6 +60,8 @@ first executable without loading the archive.
 ### 1. Build the three-object runner fixture
 
 - create the small Rust `pipewireao-rtc` executable;
+- use Statig's blocking state-machine API, a `MANAGED` superstate, one
+  serialized dispatcher, and typed effects from the first implementation;
 - load one source, one minimal `fgn-native` graph, and one discard sink from a
   standard configuration;
 - implement `OFFLINE`, `CONFIGURING`, `READY`, `RUNNING`, and `FAULT`;
@@ -131,6 +133,7 @@ or correction-critical suitability.
 | RTC-DEV-006 | 1 and 2 | planned | missing | Observer attach, detach, stall, and result-equivalence tests |
 | RTC-DEV-007 | 2 | planned | missing | Deterministic REVOLT output and state oracle |
 | RTC-DEV-008 | 3 | planned | missing | Package-local declaration examples and ordinary-array tests |
+| RTC-DEV-009 | 1 | planned | missing | Statig hierarchy, serialized dispatch, typed-effect, and stale-completion tests |
 
 Implementation and evidence state remain separate when this table is updated.
 A merged implementation is not validated until its complete evidence passes
@@ -140,7 +143,7 @@ for both maintained fixtures.
 
 The milestone is complete only when:
 
-- RTC-DEV-001 through RTC-DEV-008 are implemented for the maintained fixtures;
+- RTC-DEV-001 through RTC-DEV-009 are implemented for the maintained fixtures;
 - one command loads the REVOLT Classic development configuration;
 - output and state equivalence pass for nominal frames and updates;
 - repeated lifecycle and failure tests leave no owned objects behind;

@@ -46,6 +46,11 @@ worktree changes.
 ## Implementation constraints
 
 - Rust is the default language for the small headless runner.
+- Implement the lifecycle with Statig's blocking state-machine API and one
+  serialized dispatcher from the first increment. Keep Statig types private.
+  State handlers emit typed effects; potentially blocking PipeWire,
+  configuration, and filesystem work executes outside the handlers and returns
+  as typed completion events.
 - Use the existing standard PipeWire relaxed SPA-JSON configuration and
   maintained generator. Do not add TOML, YAML, a database, or an operational
   bundle format to the development runner without an approved scope change.

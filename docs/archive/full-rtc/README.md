@@ -44,6 +44,7 @@ The active baseline is defined by the top-level [document index](../../README.md
 | Former minimum development configuration | Distilled into RTC-DEV-002 and the active minimum configuration model |
 | Former scientist-authoring acceptance criteria | Distilled into RTC-DEV-008 |
 | Former REVOLT immediate slice | Distilled into RTC-DEV-005, RTC-DEV-007, and the active roadmap |
+| Former Statig lifecycle implementation choice | The mechanism is promoted by RTC-ARCH-012 and RTC-DEV-009; archived operational states and authority behavior remain inactive |
 | All physical, operational, recording, Julia, remote, progressive, and qualification clauses | Inactive with no current replacement |
 
 ## Promotion rule
