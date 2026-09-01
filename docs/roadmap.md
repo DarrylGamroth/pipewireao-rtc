@@ -125,19 +125,53 @@ or correction-critical suitability.
 
 | Requirement | Primary increment | Implementation | Evidence | Required evidence |
 | --- | --- | --- | --- | --- |
-| RTC-DEV-001 | 1 | planned | missing | Endpoint allowlist and negative physical/correction fixtures |
-| RTC-DEV-002 | 1 | planned | missing | Valid and field-by-field invalid configuration fixtures |
-| RTC-DEV-003 | 1 | planned | missing | Exact-topology and failure-cleanup integration tests |
-| RTC-DEV-004 | 1 | planned | missing | Transition, retry, invalid-command, and required-object failure tests |
+| RTC-DEV-001 | 1 | partial | partial | Endpoint allowlist and negative physical/correction fixtures pass; live admission reaches the lower link-negotiation blocker |
+| RTC-DEV-002 | 1 | partial | partial | The minimal fixture and field-by-field diagnostics pass in-process; live element, shape, schema, and format confirmation is blocked before `READY` |
+| RTC-DEV-003 | 1 | partial | partial | Exact topology and cleanup pass with failure injection; the private-core fixture creates three inspectable nodes but cannot realize both links |
+| RTC-DEV-004 | 1 | partial | partial | Transition, retry, invalid-command, required-object failure, and repeated-cycle tests pass; a complete live cycle is blocked before `READY` |
 | RTC-DEV-005 | 2 | planned | missing | Requested/active property and parameter update tests |
-| RTC-DEV-006 | 1 and 2 | planned | missing | Observer attach, detach, stall, and result-equivalence tests |
+| RTC-DEV-006 | 1 and 2 | partial | missing | The runner has no GUI dependency and rejects an undeclared observation; no suitable bounded non-gating sample boundary is available for attach, detach, and stall evidence |
 | RTC-DEV-007 | 2 | planned | missing | Deterministic REVOLT output and state oracle |
 | RTC-DEV-008 | 3 | planned | missing | Package-local declaration examples and ordinary-array tests |
-| RTC-DEV-009 | 1 | planned | missing | Statig hierarchy, serialized dispatch, typed-effect, and stale-completion tests |
+| RTC-DEV-009 | 1 | partial | partial | Statig hierarchy, serialized dispatch, typed effects, effect failure, and stale-completion tests pass; the full private-core lifecycle does not pass |
 
 Implementation and evidence state remain separate when this table is updated.
 A merged implementation is not validated until its complete evidence passes
 for both maintained fixtures.
+
+### Increment 1 implementation note
+
+The current implementation baseline is PipeWireAO
+`52bd8f5fb5c2727f6ecef4c80c889e7ba0e58f7e`, the public PipeWireAO Rust
+binding `14552339336209a936043d6c95f3a96bf9ac6241`, and Calculon
+`3d49237b3c9f4423f120b52bd2761cd5a90f5e94`. These revisions identify the
+interfaces inspected for this increment; they do not promote sibling worktree
+changes to evidence.
+
+The executable, strict relaxed SPA-JSON fixture, Statig lifecycle, fake graph
+adapter, and live private-core adapter are present. The configuration rejection
+matrix is in `tests/configuration.rs`; lifecycle and effect-completion coverage
+is in `tests/lifecycle.rs`; deterministic object and link failure injection is
+in `tests/graph_adapter.rs`; and the maintained private-core target is in
+`tests/live_private_core.rs`.
+
+The live test is intentionally ignored because the public PipeWire link factory
+cannot complete the graph. Three configured nodes are created and visible, and
+their adjacent ports enumerate matching ndarray media type, `F32_LE` element
+type, shape `[2]`, row-major layout, and declared schemas. Creating the
+graph-to-sink link reports `-EINVAL` and `Format negotiation failed`; the local
+ndarray module reports `invalid ndarray filter parameter` while applying the
+negotiated format. This blocks `READY`, frame processing, a complete live
+lifecycle, live cleanup evidence after a successful run, and optional-observer
+evidence. It is a lower PipeWireAO format-negotiation contract defect, not an
+RTC configuration substitution opportunity.
+
+The Rust binding also omits `pw_context_load_module` and
+`pw_impl_module_destroy`. The runner contains a narrow ownership shim for those
+two public C operations. The published binding revision still references three
+retired acquisition-wire definitions; a compile-only compatibility header and
+unreachable false-returning symbols keep that revision buildable until the
+existing sibling fix is published.
 
 ## Development completion gate
 

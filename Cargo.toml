@@ -1,0 +1,34 @@
+[package]
+name = "pipewireao-rtc"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.78"
+license = "MIT"
+description = "Headless non-actuating PipeWireAO development runner"
+
+[dependencies]
+statig = "=0.4.1"
+pipewire = { package = "pipewire-ao", git = "https://github.com/DarrylGamroth/PipeWireAO-rs.git", rev = "14552339336209a936043d6c95f3a96bf9ac6241", optional = true }
+
+[build-dependencies]
+cc = "1.2"
+pkg-config = "0.3"
+
+[dev-dependencies]
+tempfile = "3.20"
+
+[features]
+default = []
+live = ["dep:pipewire"]
+
+[[bin]]
+name = "pipewireao-rtc"
+path = "src/main.rs"
+required-features = ["live"]
+
+[lints.rust]
+unsafe_code = "deny"
+
+[lints.clippy]
+all = "warn"
+pedantic = "warn"
