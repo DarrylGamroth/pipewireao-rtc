@@ -73,10 +73,13 @@ first executable without loading the archive.
 
 Deliver these slices in order:
 
-1. **FITS → discard transport fixture.** In a private PipeWireAO core, link one
-   finite complete-frame FITS source directly to the maintained
-   format-agnostic discard SPA sink. Observe at least one complete buffer and
-   clean up both nodes and the link while preserving an unrelated object.
+1. **RTC-owned FITS → discard transport fixture.** In the RTC repository's
+   private PipeWireAO core, link one finite complete-frame FITS source directly
+   to the maintained format-agnostic discard SPA sink through public PipeWire
+   factory interfaces. Observe at least one complete buffer and clean up both
+   nodes and the link while preserving an unrelated object. This is a transport
+   integration preflight, not RTC-DEV-002 or RTC-DEV-004 runner evidence; the
+   sibling plugin test remains only factory-level regression coverage.
 2. **FITS → one graph → discard.** Use the small Rust runner, one session
    lifecycle, one minimal `fgn-native` graph, and exact declared links. This is
    the minimum RTC-DEV-002 fixture.
@@ -88,7 +91,7 @@ Deliver these slices in order:
    the active topology with ordinary tools and, where a bounded non-gating
    boundary exists, attach and stall an optional GUI observer.
 
-Across those slices:
+For the runner slices beginning with FITS → one graph → discard:
 
 - create the small Rust `pipewireao-rtc` executable;
 - use Statig's blocking state-machine API, a `MANAGED` superstate, one
@@ -100,11 +103,14 @@ Across those slices:
 - expose the objects to standard PipeWire inspection; and
 - clean up only owned objects on every failure point.
 
-Exit evidence: every ordered fixture starts, runs, stops, restarts, retries,
-and unloads repeatedly; each complete path delivers a buffer to its discard
-sink; malformed configurations fail with scientific diagnostics; exact owned
-objects are removed; unrelated PipeWire objects survive; and a read-only
-observer is optional.
+Exit evidence: the RTC-owned transport preflight delivers one complete 4 by 3
+U16 image-sized buffer and removes its source, link, and sink without touching
+the unrelated object. It does not inspect pixel values. Every subsequent
+runner fixture starts, runs, stops, restarts, retries, and unloads repeatedly;
+each complete path delivers a buffer to its discard sink; malformed
+configurations fail with scientific diagnostics; exact owned objects are
+removed; unrelated PipeWire objects survive; and a read-only observer is
+optional.
 
 ### 2. Add REVOLT Classic
 
@@ -191,7 +197,9 @@ FGN graph internals. The configuration rejection matrix is in
 `tests/configuration.rs`; lifecycle and effect-completion coverage is in
 `tests/lifecycle.rs`; deterministic object and link failure injection is in
 `tests/graph_adapter.rs`; and the maintained private-core target is in
-`tests/live_private_core.rs`.
+`tests/live_private_core.rs`. Its RTC-owned FITS transport implementation is in
+`tests/live_private_core/fits_discard.rs`; it does not invoke or count the
+sibling repository's integration test.
 
 The live test is intentionally ignored by the generic Cargo suite because it
 requires the maintained sibling PipeWireAO and Calculon build artifacts. Its
@@ -202,13 +210,23 @@ admitted links, a discard-buffer increase after each start, complete
 owned-object cleanup, and preservation of an unrelated node. The test observes
 delivery to the sink, not the numerical contents of the output frame.
 
-The live discard scheduling handshake and the lower-level private-core FITS →
-discard fixture are in PipeWireAO SPA plugins commit
+The discard scheduling handshake and lower-level factory regression are in
+PipeWireAO SPA plugins commit
 `a913feda4f564109844b635007b16b6bf7137435`, one commit ahead of that
 repository's current `main`. The RTC live result uses its build-tree artifact
-through `PIPEWIREAO_SPA_PLUGINS_BUILD`; it is valid local evidence but is not a
-merged dependency. The next RTCW slice replaces the simulated source in the
-runner fixture with the admitted FITS source before adding graph chaining.
+through `PIPEWIREAO_SPA_PLUGINS_BUILD`, but the RTC repository creates,
+observes, and cleans up its own FITS → discard topology. The result is valid
+local evidence but depends on an unmerged plugin revision. The next RTCW slice
+replaces the simulated source in the runner fixture with the admitted FITS
+source before adding graph chaining.
+
+The FITS source currently ignores the requested public `node.name` and exposes
+the fixed name `fits_source` from `spa/plugins/fits/source.c`. The RTC transport
+fixture accepts that observed fallback so it can test frame delivery, but this
+is not exact configured-identity evidence for RTC-DEV-003 or multi-source
+evidence for RTC-DEV-010. The narrow lower-level fix is for the FITS factory to
+adopt the supplied `node.name` during initialization and cover two distinctly
+named instances in its factory tests.
 
 The runner pins PipeWireAO-rs revision
 `75f407498f24a884f97ef3dc4fa3675a61e641fd`. That revision accepts negotiated

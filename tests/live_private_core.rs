@@ -1,5 +1,8 @@
 #![cfg(feature = "live")]
 
+#[path = "live_private_core/fits_discard.rs"]
+mod fits_discard;
+
 use pipewireao_rtc::{
     ConfigurationInput, LifecycleEvent, LifecycleState, LiveGraphAdapter, Runner,
 };
@@ -21,7 +24,7 @@ impl Drop for ChildGuard {
 #[test]
 #[ignore = "requires the maintained PipeWireAO and Calculon sibling build artifacts"]
 #[allow(clippy::too_many_lines)]
-fn private_core_three_object_fixture_runs_and_cleans_up() {
+fn private_core_transport_then_runner_fixtures_run_and_clean_up() {
     let repository = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let workspace = repository.parent().expect("workspace parent");
     let pipewire_build = workspace.join("pipewire/build");
@@ -98,6 +101,13 @@ fn private_core_three_object_fixture_runs_and_cleans_up() {
         &core_name,
         "pipewireao-rtc-unrelated",
     );
+
+    fits_discard::run(&core_name, &temporary.path().join("image.fits"));
+    let transport_cleanup = dump(&pipewire_build, &environment, &core_name);
+    assert!(transport_cleanup.contains("pipewireao-rtc-unrelated"));
+    assert!(!transport_cleanup.contains(fits_discard::SOURCE_NAME));
+    assert!(!transport_cleanup.contains(fits_discard::FACTORY_SOURCE_NAME));
+    assert!(!transport_cleanup.contains(fits_discard::SINK_NAME));
 
     let adapter = LiveGraphAdapter::connect(&core_name).expect("connect runner adapter");
     let mut runner = Runner::new(adapter);
