@@ -19,7 +19,7 @@ impl Drop for ChildGuard {
 }
 
 #[test]
-#[ignore = "blocked by PipeWireAO ndarray set_param EINVAL during link negotiation"]
+#[ignore = "requires the maintained PipeWireAO and Calculon sibling build artifacts"]
 #[allow(clippy::too_many_lines)]
 fn private_core_three_object_fixture_runs_and_cleans_up() {
     let repository = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -105,9 +105,12 @@ fn private_core_three_object_fixture_runs_and_cleans_up() {
     assert_eq!(runner.executor().status().owned_nodes, 3);
     assert_eq!(runner.executor().status().owned_links, 2);
 
+    let state = runner.dispatch(LifecycleEvent::Start).unwrap();
     assert_eq!(
-        runner.dispatch(LifecycleEvent::Start).unwrap(),
-        LifecycleState::Running
+        state,
+        LifecycleState::Running,
+        "live start diagnostic: {:?}",
+        runner.diagnostic()
     );
     assert!(runner.executor().status().running);
     let active_dump = dump(&pipewire_build, &environment, &core_name);
@@ -127,9 +130,12 @@ fn private_core_three_object_fixture_runs_and_cleans_up() {
         runner.dispatch(LifecycleEvent::Stop).unwrap(),
         LifecycleState::Ready
     );
+    let state = runner.dispatch(LifecycleEvent::Unload).unwrap();
     assert_eq!(
-        runner.dispatch(LifecycleEvent::Unload).unwrap(),
-        LifecycleState::Offline
+        state,
+        LifecycleState::Offline,
+        "live unload diagnostic: {:?}",
+        runner.diagnostic()
     );
     assert_eq!(runner.executor().status().owned_nodes, 0);
     assert_eq!(runner.executor().status().owned_links, 0);

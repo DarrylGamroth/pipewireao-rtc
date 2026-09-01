@@ -12,11 +12,28 @@ context.spa-libs = {
 context.modules = [
     { name = libpipewire-module-scheduler-v1 }
     { name = libpipewire-module-protocol-native }
+    { name = libpipewire-module-spa-node-factory }
     { name = libpipewire-module-client-node }
     { name = libpipewire-module-metadata }
     { name = libpipewire-module-access }
     {
         name = libpipewire-module-link-factory
         args = { allow.link.passive = true }
+    }
+]
+
+# The fixture has no hardware clock. Give its complete-frame graph the same
+# fallback driver that a normal PipeWire daemon provides so activated nodes can
+# enter RUNNING without making any scientific node the scheduling authority.
+context.objects = [
+    {
+        factory = spa-node-factory
+        args = {
+            factory.name = support.node.driver
+            node.name = PipeWireAO-RTC-Dummy-Driver
+            node.group = pipewireao-rtc-dummy
+            node.sync-group = sync.pipewireao-rtc-dummy
+            priority.driver = 200000
+        }
     }
 ]

@@ -125,15 +125,15 @@ or correction-critical suitability.
 
 | Requirement | Primary increment | Implementation | Evidence | Required evidence |
 | --- | --- | --- | --- | --- |
-| RTC-DEV-001 | 1 | partial | partial | Endpoint allowlist and negative physical/correction fixtures pass; live admission reaches the lower link-negotiation blocker |
-| RTC-DEV-002 | 1 | partial | partial | The minimal fixture and field-by-field diagnostics pass in-process; live element, shape, schema, and format confirmation is blocked before `READY` |
-| RTC-DEV-003 | 1 | partial | partial | Exact topology and cleanup pass with failure injection; the private-core fixture creates three inspectable nodes but cannot realize both links |
-| RTC-DEV-004 | 1 | partial | partial | Transition, retry, invalid-command, required-object failure, and repeated-cycle tests pass; a complete live cycle is blocked before `READY` |
+| RTC-DEV-001 | 1 | partial | partial | Endpoint allowlist and negative physical/correction fixtures pass; the live development fixture reaches `READY` and `RUNNING` without physical authority |
+| RTC-DEV-002 | 1 | partial | partial | The minimal fixture and field-by-field diagnostics pass; both live links negotiate before `READY`, but explicit live enumeration of every declared format field remains missing |
+| RTC-DEV-003 | 1 | partial | partial | Failure-injected cleanup and the live exact topology pass; both links are admitted, owned objects are removed, and the unrelated node survives |
+| RTC-DEV-004 | 1 | partial | partial | Transition, retry, invalid-command, required-object failure, repeated-cycle, and complete live lifecycle tests pass |
 | RTC-DEV-005 | 2 | planned | missing | Requested/active property and parameter update tests |
 | RTC-DEV-006 | 1 and 2 | partial | missing | The runner has no GUI dependency and rejects an undeclared observation; no suitable bounded non-gating sample boundary is available for attach, detach, and stall evidence |
 | RTC-DEV-007 | 2 | planned | missing | Deterministic REVOLT output and state oracle |
 | RTC-DEV-008 | 3 | planned | missing | Package-local declaration examples and ordinary-array tests |
-| RTC-DEV-009 | 1 | partial | partial | Statig hierarchy, serialized dispatch, typed effects, effect failure, and stale-completion tests pass; the full private-core lifecycle does not pass |
+| RTC-DEV-009 | 1 | partial | partial | Statig hierarchy, serialized dispatch, typed effects, effect failure, stale-completion, and full private-core lifecycle tests pass |
 
 Implementation and evidence state remain separate when this table is updated.
 A merged implementation is not validated until its complete evidence passes
@@ -158,23 +158,22 @@ FGN graph internals. The configuration rejection matrix is in
 `tests/graph_adapter.rs`; and the maintained private-core target is in
 `tests/live_private_core.rs`.
 
-The live test is intentionally ignored because the public PipeWire link factory
-cannot complete the graph. Three configured nodes are created and visible, and
-their adjacent ports enumerate matching ndarray media type, `F32_LE` element
-type, shape `[2]`, row-major layout, and declared schemas. Creating the
-graph-to-sink link reports `-EINVAL` and `Format negotiation failed`; the local
-ndarray module reports `invalid ndarray filter parameter` while applying the
-negotiated format. This blocks `READY`, frame processing, a complete live
-lifecycle, live cleanup evidence after a successful run, and optional-observer
-evidence. It is a lower PipeWireAO format-negotiation contract defect, not an
-RTC configuration substitution opportunity.
+The live test is intentionally ignored by the generic Cargo suite because it
+requires the maintained sibling PipeWireAO and Calculon build artifacts. Its
+explicit invocation now passes the complete `Load` → `READY` → `Start` →
+`RUNNING` → `Stop` → `READY` → `Unload` → `OFFLINE` lifecycle. It confirms the
+three configured nodes, both admitted links, complete owned-object cleanup,
+and preservation of an unrelated node. The sibling PipeWireAO fix accepts
+fixed negotiated strings represented as
+`SPA_CHOICE_None`; it remains working-tree evidence until committed and
+published from that repository.
 
-The Rust binding also omits `pw_context_load_module` and
-`pw_impl_module_destroy`. The runner contains a narrow ownership shim for those
-two public C operations. The published binding revision still references three
-retired acquisition-wire definitions; a compile-only compatibility header and
-unreachable false-returning symbols keep that revision buildable until the
-existing sibling fix is published.
+The runner pins PipeWireAO-rs revision
+`75f407498f24a884f97ef3dc4fa3675a61e641fd`. That revision accepts negotiated
+fixed ndarray values represented as `SPA_CHOICE_None`, removes the retired
+acquisition-wire definitions, and exposes a self-destruction-aware owner for
+locally loaded modules. The live adapter uses that owner directly; it no longer
+carries module-lifetime or retired-symbol compatibility shims.
 
 ## Development completion gate
 

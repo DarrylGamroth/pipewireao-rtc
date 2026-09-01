@@ -1,4 +1,3 @@
-use crate::ffi::{self, OwnedModule};
 use crate::{
     ConfigurationInput, DevelopmentConfig, EffectExecutor, LifecycleEffect, ObjectRole,
     PortDirection, ScientificDiagnostic,
@@ -21,16 +20,29 @@ pub struct LiveGraphStatus {
 }
 
 struct LiveNode {
-    proxy: pw::node::Node,
     _listener: pw::node::NodeListener,
+    proxy: pw::node::Node,
     state: Rc<RefCell<String>>,
+}
+
+struct LiveLink {
+    listener: pw::link::LinkListener,
+    proxy: pw::link::Link,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+enum LinkAdmissionState {
+    Unknown,
+    Pending(String),
+    Ready,
+    Failed(String),
 }
 
 /// Adapter for one private or explicitly named `PipeWireAO` core.
 pub struct LiveGraphAdapter {
     remote_name: String,
-    modules: Vec<OwnedModule>,
-    links: Vec<pw::link::Link>,
+    modules: Vec<pw::local_module::LocalModule>,
+    links: Vec<LiveLink>,
     active_nodes: Vec<LiveNode>,
     owned_node_names: Vec<String>,
     status: LiveGraphStatus,
@@ -236,27 +248,29 @@ impl LiveGraphAdapter {
                 pw::spa::node::command::NodeCommandId::START,
             ));
             self.active_nodes.push(LiveNode {
-                proxy: node,
                 _listener: listener,
+                proxy: node,
                 state,
             });
         }
-        self.roundtrip("start source -> graph -> sink")?;
-        self.roundtrip("first complete-frame processing barrier")?;
-
-        let states = self
-            .active_nodes
-            .iter()
-            .map(|node| node.state.borrow().clone())
-            .collect::<Vec<_>>();
-        if states.iter().any(|state| state != "Running") {
-            return Err(ScientificDiagnostic::new(
-                "topology",
-                format!("required nodes did not all enter RUNNING; observed states {states:?}"),
-            ));
+        let mut states = Vec::new();
+        for _ in 0..100 {
+            self.roundtrip("start source -> graph -> sink")?;
+            states = self
+                .active_nodes
+                .iter()
+                .map(|node| node.state.borrow().clone())
+                .collect::<Vec<_>>();
+            if states.iter().all(|state| state == "Running") {
+                self.status.running = true;
+                return Ok(());
+            }
+            std::thread::sleep(std::time::Duration::from_millis(5));
         }
-        self.status.running = true;
-        Ok(())
+        Err(ScientificDiagnostic::new(
+            "topology",
+            format!("required nodes did not all enter RUNNING; observed states {states:?}"),
+        ))
     }
 
     fn stop(&mut self) -> Result<(), ScientificDiagnostic> {
@@ -279,14 +293,12 @@ impl LiveGraphAdapter {
         let mut first_error = self.stop().err();
         self.clear_errors();
         for link in self.links.drain(..) {
-            if let Err(error) = self.core.destroy_object(link) {
-                first_error.get_or_insert_with(|| {
-                    ScientificDiagnostic::new(
-                        "links",
-                        format!("cannot destroy runner-owned link: {error}"),
-                    )
-                });
-            }
+            drop(link.listener);
+            // These links deliberately do not set object.linger. Destroying
+            // their client proxies therefore removes the server resources;
+            // additionally asking Core::destroy_object would race that
+            // automatic removal and report an unknown resource.
+            drop(link.proxy);
         }
         if let Err(error) = self.roundtrip("runner-owned link cleanup") {
             first_error.get_or_insert(error);
@@ -332,12 +344,11 @@ impl LiveGraphAdapter {
             )
         })?;
         let owned =
-            ffi::load_module(self.context.as_raw_ptr(), &module, &arguments).ok_or_else(|| {
-                ScientificDiagnostic::new(
-                    role.name(),
-                    format!("PipeWireAO rejected module {module_name:?} during graph realization"),
-                )
-            })?;
+            pw::local_module::LocalModule::load(&self.context, &module, Some(&arguments), None)
+                .map_err(|error| {
+                    let message = format!("PipeWireAO rejected module {module_name:?}: {error}");
+                    ScientificDiagnostic::new(role.name(), message)
+                })?;
         self.modules.push(owned);
         for _ in 0..100 {
             self.roundtrip(&format!("{} node creation", role.name()))?;
@@ -422,8 +433,47 @@ impl LiveGraphAdapter {
                     format!("link factory rejected creation: {error}"),
                 )
             })?;
-        self.links.push(link);
-        self.roundtrip(&format!("links[{index}] {output} -> {input}"))
+        let state = Rc::new(RefCell::new(LinkAdmissionState::Unknown));
+        let observed = Rc::clone(&state);
+        let listener = link
+            .add_listener_local()
+            .info(move |info| {
+                *observed.borrow_mut() = match info.state() {
+                    pw::link::LinkState::Error(error) => {
+                        LinkAdmissionState::Failed(error.to_owned())
+                    }
+                    pw::link::LinkState::Unlinked => {
+                        LinkAdmissionState::Failed("link became unlinked".to_owned())
+                    }
+                    pw::link::LinkState::Paused | pw::link::LinkState::Active => {
+                        LinkAdmissionState::Ready
+                    }
+                    pending => LinkAdmissionState::Pending(format!("{pending:?}")),
+                };
+            })
+            .register();
+        self.links.push(LiveLink {
+            listener,
+            proxy: link,
+        });
+
+        let label = format!("links[{index}] {output} -> {input}");
+        for _ in 0..100 {
+            self.roundtrip(&label)?;
+            match state.borrow().clone() {
+                LinkAdmissionState::Ready => return Ok(()),
+                LinkAdmissionState::Failed(error) => {
+                    return Err(ScientificDiagnostic::new(label, error));
+                }
+                LinkAdmissionState::Unknown | LinkAdmissionState::Pending(_) => {}
+            }
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+        let final_state = state.borrow().clone();
+        Err(ScientificDiagnostic::new(
+            label,
+            format!("link did not become usable before the admission deadline; final state {final_state:?}"),
+        ))
     }
 
     fn node_global(

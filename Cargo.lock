@@ -205,7 +205,7 @@ dependencies = [
 [[package]]
 name = "libspa-ao"
 version = "0.10.1"
-source = "git+https://github.com/DarrylGamroth/PipeWireAO-rs.git?rev=14552339336209a936043d6c95f3a96bf9ac6241#14552339336209a936043d6c95f3a96bf9ac6241"
+source = "git+https://github.com/DarrylGamroth/PipeWireAO-rs.git?rev=75f407498f24a884f97ef3dc4fa3675a61e641fd#75f407498f24a884f97ef3dc4fa3675a61e641fd"
 dependencies = [
  "bitflags",
  "cc",
@@ -220,7 +220,7 @@ dependencies = [
 [[package]]
 name = "libspa-ao-sys"
 version = "0.10.1"
-source = "git+https://github.com/DarrylGamroth/PipeWireAO-rs.git?rev=14552339336209a936043d6c95f3a96bf9ac6241#14552339336209a936043d6c95f3a96bf9ac6241"
+source = "git+https://github.com/DarrylGamroth/PipeWireAO-rs.git?rev=75f407498f24a884f97ef3dc4fa3675a61e641fd#75f407498f24a884f97ef3dc4fa3675a61e641fd"
 dependencies = [
  "bindgen",
  "cc",
@@ -273,7 +273,7 @@ checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 [[package]]
 name = "pipewire-ao"
 version = "0.10.1"
-source = "git+https://github.com/DarrylGamroth/PipeWireAO-rs.git?rev=14552339336209a936043d6c95f3a96bf9ac6241#14552339336209a936043d6c95f3a96bf9ac6241"
+source = "git+https://github.com/DarrylGamroth/PipeWireAO-rs.git?rev=75f407498f24a884f97ef3dc4fa3675a61e641fd#75f407498f24a884f97ef3dc4fa3675a61e641fd"
 dependencies = [
  "bitflags",
  "libc",
@@ -286,7 +286,7 @@ dependencies = [
 [[package]]
 name = "pipewire-ao-sys"
 version = "0.10.1"
-source = "git+https://github.com/DarrylGamroth/PipeWireAO-rs.git?rev=14552339336209a936043d6c95f3a96bf9ac6241#14552339336209a936043d6c95f3a96bf9ac6241"
+source = "git+https://github.com/DarrylGamroth/PipeWireAO-rs.git?rev=75f407498f24a884f97ef3dc4fa3675a61e641fd#75f407498f24a884f97ef3dc4fa3675a61e641fd"
 dependencies = [
  "bindgen",
  "libspa-ao-sys",

@@ -1,6 +1,5 @@
 fn main() {
     println!("cargo:rerun-if-changed=src/ffi/spa_json.c");
-    println!("cargo:rerun-if-changed=src/ffi/module.c");
 
     let spa = pkg_config::Config::new()
         .atleast_version("0.2")
@@ -27,13 +26,4 @@ fn main() {
     for link_path in &library.link_paths {
         println!("cargo:rustc-link-arg=-Wl,-rpath,{}", link_path.display());
     }
-    let mut build = cc::Build::new();
-    build
-        .file("src/ffi/module.c")
-        .warnings(true)
-        .extra_warnings(true);
-    for include in library.include_paths {
-        build.include(include);
-    }
-    build.compile("pipewireao_rtc_module_shim");
 }
