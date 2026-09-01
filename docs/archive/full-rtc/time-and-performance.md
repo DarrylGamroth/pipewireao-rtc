@@ -1,6 +1,13 @@
 # PipeWireAO RTC time, causality, and performance
 
-Status: proposed normative companion contract
+Status: archived, inactive design snapshot
+
+> Correction-critical timing and qualification are outside the active
+> development baseline. This file preserves design work only; its requirement
+> identities remain reserved and are not selected. See the
+> [archive index](README.md).
+
+Historical status: proposed normative companion contract
 
 Approval blockers for capabilities that select the affected semantics:
 

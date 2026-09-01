@@ -1,30 +1,34 @@
 # PipeWireAO RTC document set
 
-These documents define the proposed headless RTC product and its delivery
-path. They are split by authority so an implementation task can load only the
-contract it needs.
+The maintained baseline is intentionally small. It defines one non-actuating,
+complete-frame Calculon/PipeWireAO development graph and the runner needed to
+load, inspect, and test it.
 
-The first implementation is intentionally smaller than the complete document
-set. Start with the `development` capability profile in
-[System architecture](architecture.md#capability-profiles-and-incremental-composition),
-the minimal operating model in
-[Operational architecture](operations.md#capability-profile-applicability),
-and the [immediate delivery slice](roadmap.md#immediate-recommended-slice).
-Camera sessions, recording, Julia execution, remote access, row-block tuning,
-and target-host qualification are independently selectable capabilities. Their
-contracts apply when those capabilities are selected; they are not all
-prerequisites for running a Calculon graph.
+## Active documents
 
-| Document | Owns |
-|---|---|
-| [System architecture](architecture.md) | Product boundary, cumulative capability profiles, component ownership, control and data planes, and selected architecture decisions |
-| [Operational architecture](operations.md) | Capability applicability, RTC-authoritative control, replacement admission, authority epochs, run identity and closure, lifecycle, configuration, artifacts, Calculon execution profiles and candidate activation, graph deployment, telemetry, recording, native and WebAssembly GUI behavior, remote access, supervision, and WirePlumber policy |
-| [Camera-session contract](camera-sessions.md) | Proposed normative per-camera deployment unit, source-profile identity, source-configuration and format generation, control reconciliation, acquisition scheduling, isolation-first exported SPA host, qualified daemon-side loading, transforms, recovery, and placement qualification |
-| [Time, causality, and performance](time-and-performance.md) | Clock domains, causal ordering, frame boundaries, deadlines, replay timing, execution-profile admission, and performance evidence |
-| [Scientific data and command contracts](scientific-data-and-command-contracts.md) | Scientific quantity compatibility, schemas, normalization, deformable-mirror command stages, and the correction-authority grant |
-| [Audit and reconstruction](audit-and-reconstruction.md) | Protected-operation progression, execution-composite provenance, terminal disposition, durability isolation, reconstruction, and safe replay |
-| [Assessment and delivery roadmap](roadmap.md) | Current capability assessment, small independently testable delivery increments, profile-specific evidence gates, risks, and open decisions |
+| Document | Authority |
+| --- | --- |
+| [Development architecture](architecture.md) | Scope, component boundary, configuration choice, scientist boundary, exclusions, and RTC-ARCH-011 |
+| [Development operating contract](operations.md) | RTC-DEV-001 through RTC-DEV-008, minimum lifecycle, updates, observation, diagnostics, and equivalence |
+| [Development roadmap](roadmap.md) | Dependency-ordered implementation, completion evidence, performance characterization, and deferred capability triggers |
 
-Low-level ndarray, FGN, metadata, polling, row-block, and progressive-processing
+These three files are the complete RTC-level implementation baseline. An
+implementation task should not load the archive unless it is explicitly
+promoting a deferred capability.
+
+## Inactive design archive
+
+The [archived full-RTC design](archive/full-rtc/README.md) preserves prior work
+on physical cameras and deformable mirrors, protected authority, recording and
+reconstruction, Julia execution, remote clients, progressive scheduling, and
+target-host qualification. It is non-normative and not a delivery commitment.
+Its historical identifiers remain reserved and are not selected.
+
+## Lower-level authorities
+
+Generic ndarray, FGN, metadata, polling, row-block, and progressive-processing
 contracts remain authoritative in the
 [PipeWireAO repository](https://github.com/DarrylGamroth/PipeWireAO/tree/master/doc/dox/internals).
+Portable scientific algorithms and declarations remain authoritative in
+Calculon. This repository states only the RTC runner behavior that connects
+those pieces.

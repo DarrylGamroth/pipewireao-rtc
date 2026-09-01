@@ -1,6 +1,13 @@
 # PipeWireAO RTC scientific data and command contracts
 
-Status: proposed normative companion contract
+Status: archived, inactive design snapshot
+
+> Physical command and full scientific-provenance policy are outside the
+> active development baseline. This file preserves design work only; its
+> requirement identities remain reserved and are not selected. See the
+> [archive index](README.md).
+
+Historical status: proposed normative companion contract
 
 Approval blockers for physical correction or an explicit simulated conformance
 profile:

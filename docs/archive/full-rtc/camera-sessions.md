@@ -1,6 +1,12 @@
 # PipeWireAO RTC camera-session contract
 
-Status: proposed normative companion contract; not yet an approved
+Status: archived, inactive design snapshot
+
+> Physical camera sessions are outside the active development baseline. This
+> file preserves design work only; its requirement identities remain reserved
+> and are not selected. See the [archive index](README.md).
+
+Historical status: proposed normative companion contract; not yet an approved
 implementation baseline
 
 Baseline: none; approval and implementation/evidence traceability belong to the

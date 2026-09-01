@@ -1,6 +1,12 @@
 # PipeWireAO RTC audit and reconstruction contract
 
-Status: proposed normative companion contract
+Status: archived, inactive design snapshot
+
+> This proposed contract is not part of the active development baseline. Its
+> requirement identities remain reserved, but none is selected. See the
+> [archive index](README.md).
+
+Historical status: proposed normative companion contract
 
 Review date: 2026-08-31
 

@@ -1,108 +1,97 @@
 # Repository agent instructions
 
-## Purpose and scope
+## Purpose and active scope
 
-This repository owns the headless PipeWireAO real-time controller (RTC)
-product. Its responsibilities include instrument lifecycle, desired and
-observed state, graph deployment, configuration and artifact admission,
-operator control, telemetry, recording, audit, and run reconstruction.
+This repository currently owns a small headless PipeWireAO development runner.
+The active product loads one simulated or recorded complete-frame source, one
+`fgn-native` Calculon graph, and one non-actuating sink from a standard
+PipeWire configuration. It provides basic lifecycle, scientific diagnostics,
+ordinary inspection, and equivalence testing.
 
-The repository is currently architecture-first. The documents describe a
-proposed system and its delivery gates; they are not evidence that the runtime
-has been implemented or qualified.
+Runtime implementation has not started in this repository. Documentation is
+not implementation or qualification evidence.
 
-The delivery model is incremental. Keep the `development` capability profile
-small: one configured source, Calculon graph, sink, basic lifecycle, and
-inspection. Camera sessions, physical correction, recording, Julia execution,
-remote access, progressive scheduling, and target-host qualification are
-independent capability tracks. Do not make an unselected track a prerequisite
-for running or testing the development graph.
+Physical devices, correction authority, durable recording, Julia execution,
+remote access, progressive scheduling, operational supervision, and target-
+host qualification are not active scope. Their former proposals are preserved
+under `docs/archive/full-rtc/` as inactive design input. Do not load, cite, or
+implement that archive unless the user explicitly asks to promote one deferred
+capability. Never reactivate the archive wholesale.
 
-Before making architectural or implementation changes, read
-`docs/README.md`, then the documents that own the affected contracts. Start
-with `docs/architecture.md` for work that crosses subsystem boundaries and
-`docs/roadmap.md` for implementation order and acceptance evidence.
+Before making changes, read `docs/README.md` and the relevant active document:
+
+- `docs/architecture.md` for scope and component boundaries;
+- `docs/operations.md` for RTC-DEV requirements and lifecycle; and
+- `docs/roadmap.md` for implementation order and completion evidence.
 
 ## Authority boundaries
 
 - PipeWireAO owns generic SPA/PipeWire ndarray transport, the FGN ABI and
-  graph host, acquisition metadata, polling scheduling, row-block transport,
+  graph host, properties, parameters, metadata, polling, row-block transport,
   and progressive execution.
-- Calculon owns transport-neutral scientific algorithms and their portable
+- Calculon owns transport-neutral scientific algorithms and portable
   declarations.
+- This repository owns only development configuration, exact graph
+  realization, basic runner lifecycle, diagnostics, and system-level tests.
 - Device-plugin repositories own camera, deformable-mirror, file-source, and
-  other hardware adapters.
-- `pipewireao-gui` is an ordinary inspection, control, and visualization
-  client. It does not own RTC state or correction authority.
-- WirePlumber supplies reusable session-policy mechanisms. It is not the RTC
-  domain authority.
+  other adapters.
+- `pipewireao-gui` and command-line tools are ordinary optional observers.
 
 Use public, versioned interfaces across these boundaries. Do not depend on
 PipeWire daemon-private pointers, object layouts, or undocumented callback
-behavior. Do not copy a low-level contract into this repository: link to its
-authoritative document and state only its RTC-level consequences. Changes in a
-sibling repository require explicit task scope and must preserve that
-repository's unrelated worktree changes.
+behavior. Link to low-level contracts instead of copying them. Changes in a
+sibling repository require explicit task scope and must preserve unrelated
+worktree changes.
 
 ## Implementation constraints
 
-- Rust is the default language for the headless RTC application, command-line
-  client, domain state, deployment transactions, and recorder services.
-- Use C only for a qualified ABI-facing or strict-path mechanism that cannot be
-  expressed adequately through the Rust bindings.
-- Julia remains a scientist-facing graph and algorithm environment; Julia code
-  must run outside the PipeWire daemon unless a separately qualified AOT
-  component has an explicit real-time contract.
-- Implement the operational hierarchical instrument lifecycle with Statig's
-  blocking, serialized dispatcher. Keep Statig types private and keep lifecycle
-  I/O in asynchronous typed effects and correlated completion events. The
-  development runner may expose the compatible lifecycle subset before the
-  protected operational machinery exists.
-- Keep lifecycle, filesystem, database, GUI, logging, and network work outside
-  the correction data path.
+- Rust is the default language for the small headless runner.
+- Use the existing standard PipeWire relaxed SPA-JSON configuration and
+  maintained generator. Do not add TOML, YAML, a database, or an operational
+  bundle format to the development runner without an approved scope change.
+- Keep the runner outside frame processing. FGN and PipeWireAO own scheduling,
+  buffers, property publication, parameter adoption, and worker mechanisms.
 - Scientists declare ordinary typed Calculon algorithms, ports, properties,
-  parameters, shapes, and schemas. They must not write SPA callbacks, raw
-  pointer handling, errno translation, publication machinery, or worker
-  scheduling code.
-- FGN and its host-owned fixed workers remain transparent execution
-  mechanisms. A deployment that selects progressive or fixed-worker execution
-  selects worker count, row-block size, affinity, scheduling, and idle policy;
-  the development profile may use maintained defaults.
-- Do not scaffold a runtime or silently settle an open decision unless the
-  task explicitly begins the corresponding roadmap phase.
+  parameters, shapes, and schemas. They must not write SPA callbacks, raw-
+  pointer handling, errno translation, publication machinery, worker code, or
+  central adapter-registry entries.
+- Keep the scientific implementation directly testable with ordinary arrays
+  and usable by a non-PipeWire graph executor.
+- The active baseline is complete-frame and non-actuating. Do not scaffold
+  physical authority, recording, Julia services, row-block scheduling,
+  service-manager policy, or qualification infrastructure in anticipation of
+  later work.
+- Add implementation only in the dependency order in `docs/roadmap.md` unless
+  the user explicitly changes that order.
 
 ## Documentation rules
 
-- Preserve the document ownership split in `docs/README.md`. Do not merge the
-  focused contracts back into one large architecture file.
-- Preserve stable `RTC-*` requirement and `RTC-ARCH-*` decision identifiers.
-  Change their meaning only through an explicit contract revision.
-- Distinguish observed current capability, proposed design, qualification
-  evidence, and future scope. Passing a component test does not promote a
-  system-level claim.
+- `docs/README.md` is the maintained authority map.
+- The active set contains only `docs/architecture.md`, `docs/operations.md`,
+  and `docs/roadmap.md`.
+- Preserve active `RTC-ARCH-*` and `RTC-DEV-*` identities. Do not reuse an
+  archived identity or change its historical meaning.
+- A deferred capability needs a new active architecture decision and a small
+  reviewed contract before implementation. Archived wording is design input,
+  not current authority.
+- Distinguish observed capability, planned behavior, test evidence, benchmark
+  observations, and qualification claims.
 - Keep Mermaid diagrams compatible with VS Code's built-in renderer. Diagrams
   explain relationships; prose and tables remain authoritative.
-- Use canonical adaptive-optics terms consistently, especially requested,
-  demanded, submitted, accepted, applied, and measured deformable-mirror
-  command stages.
-- Record delivery increments and tracks in dependency order and give every
-  capability gate concrete evidence.
 
 ## Change and validation discipline
 
 - Inspect the complete worktree before editing. Existing changes belong to the
   user unless the task clearly includes them.
-- Keep each commit focused and exclude unrelated files. Do not rewrite
-  published history unless explicitly requested.
+- Keep commits focused and exclude unrelated files. Do not rewrite published
+  history unless explicitly requested.
 - For documentation changes, check local links, trailing whitespace, final
-  newlines, unique requirement definitions, and Markdown rendering. Mermaid
-  CLI is available through the local Podman image
-  `ghcr.io/mermaid-js/mermaid-cli/mermaid-cli:latest`; do not infer that a
-  renderer is unavailable only because `mmdc` is absent from the host. Render
-  every changed Mermaid diagram, preferably by mounting the repository
-  read-only and writing generated output to a temporary directory. Mermaid
-  CLI accepts a Markdown document as input and validates every Mermaid block
-  in it. For example:
+  newlines, unique active and archived requirement definitions, and Markdown
+  rendering.
+- Mermaid CLI is available through the local Podman image
+  `ghcr.io/mermaid-js/mermaid-cli/mermaid-cli:latest`. Render every changed
+  Mermaid document, preferably by mounting the repository read-only and
+  writing output to a temporary directory. For example:
 
   ```sh
   podman run --rm -v "$PWD:/work:ro,Z" \
@@ -110,9 +99,9 @@ repository's unrelated worktree changes.
     -i /work/docs/architecture.md -o /tmp/architecture.md \
     -a /tmp/architecture
   ```
-- Once a Rust workspace exists, run formatting, focused tests, workspace tests,
-  and Clippy in proportion to the change. Add narrower checks for lifecycle,
-  deployment, recorder, replay, and fault behavior as those subsystems appear.
-- Performance or real-time claims require the evidence defined in
-  `docs/time-and-performance.md`; a functional test or microbenchmark alone is
-  insufficient.
+
+- Once a Rust workspace exists, run formatting, focused tests, workspace
+  tests, and Clippy in proportion to the change.
+- The development performance comparison is characterization only. Do not
+  infer a deadline, tail-latency, physical-loop, safety, or real-time claim
+  from a functional test or microbenchmark.
