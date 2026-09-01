@@ -1,12 +1,12 @@
 # PipeWireAO development RTC architecture
 
-Status: active development baseline; implementation planned
+Status: active development baseline; implementation underway
 
-Review date: 2026-08-31
+Review date: 2026-09-01
 
 ## Decision
 
-The first `pipewireao-rtc` product is a small headless runner for one
+The first executable `pipewireao-rtc` product is a small headless runner for one
 non-actuating Calculon/PipeWireAO graph. It loads one standard PipeWire
 configuration, realizes a source → graph → sink topology, applies initial
 properties and ndarray parameters, exposes a small lifecycle, and leaves the
@@ -24,9 +24,26 @@ PipeWireAO: a scientific processing graph that is easier to construct than a
 large observatory RTC, but more typed and composable than hand-written shared
 memory processes.
 
+The next active direction treats that runner as a small RTC workstation, or
+RTCW.
+
+This is decision **RTC-ARCH-013**: extend the development session to contain
+multiple existing `fgn-native` filter-graph instances and explicit ordinary
+PipeWire links between them. Graph authoring remains in the maintained
+PipeWireAO `filter.graph` configuration. The runner MUST NOT parse filter-graph
+internals, invent a second session graph language, or schedule frame processing
+itself.
+
+One session-level Statig lifecycle initially owns every required endpoint,
+filter-graph instance, and link. Configuration is successful only when the
+whole declared session is ready; start, stop, retry, and unload apply to the
+session as a unit. PipeWire remains responsible for scheduling and can execute
+independent graph components concurrently. Per-graph lifecycle control is not
+part of this decision and requires a later concrete use case and contract.
+
 ## Active scope
 
-The active implementation contains only:
+The active implementation begins with:
 
 - one simulated or recorded complete-frame source;
 - one `fgn-native` Calculon execution composite;
@@ -37,8 +54,17 @@ The active implementation contains only:
 - numerical and state-equivalence tests against the maintained Calculon or
   fused reference.
 
-The first maintained fixture is REVOLT Classic with its 277-actuator command
-vector and explicit SHWFS subaperture origins.
+After that fixture, the active RTCW composition increment adds only:
+
+- a serial chain of two declared `fgn-native` filter-graph instances;
+- two independent declared source → graph → sink paths in one session;
+- exact PipeWire links from the same standard configuration; and
+- optional scientific inspection through standard PipeWire introspection and
+  suitable bounded non-gating observation surfaces.
+
+The first maintained fixture is the minimal complete-frame source → graph →
+discard path. REVOLT Classic, with its 277-actuator command vector and explicit
+SHWFS subaperture origins, follows after the RTCW composition fixtures.
 
 The following are not part of the active baseline:
 
@@ -64,50 +90,59 @@ changing scientist-authored algorithms.
 
 ```mermaid
 flowchart LR
-    Config["One PipeWireAO configuration"]
-    Runner["pipewireao-rtc<br/>small Rust runner"]
-    Source["Simulated or recorded<br/>complete-frame source"]
-    Graph["Calculon fgn-native<br/>execution composite"]
-    Sink["Non-actuating sink"]
+    Config["Standard PipeWireAO configuration"]
+    Runner["pipewireao-rtc<br/>one session lifecycle"]
+    Source["Admitted complete-frame source"]
+    GraphA["fgn-native graph A"]
+    GraphB["fgn-native graph B"]
+    Sink["Admitted non-actuating sink"]
+    Parallel["Independent declared<br/>source to graph to sink path"]
     Observer["Optional PipeWire tools<br/>or read-only GUI"]
 
     Config --> Runner
     Runner -.->|create, connect, configure| Source
-    Runner -.->|create, connect, configure| Graph
+    Runner -.->|create, connect, configure| GraphA
+    Runner -.->|create, connect, configure| GraphB
     Runner -.->|create, connect, configure| Sink
-    Source -->|typed ndarray| Graph
-    Graph -->|typed ndarray| Sink
-    Graph -.->|declared observation| Observer
+    Runner -.->|create, connect, configure| Parallel
+    Source -->|typed ndarray| GraphA
+    GraphA -->|typed ndarray| GraphB
+    GraphB -->|typed ndarray| Sink
+    GraphA -.->|introspection or declared observation| Observer
 ```
 
 | Component | Active responsibility |
 | --- | --- |
-| `pipewireao-rtc` | Validate the development configuration, realize its exact topology, apply initial values, report lifecycle, and clean up the objects it owns. |
+| `pipewireao-rtc` | Validate the development configuration, realize its exact session topology, apply initial values, report one session lifecycle, and clean up the objects it owns. |
 | PipeWireAO | Own ndarray transport, format negotiation, scheduling, FGN hosting, property and parameter publication, and standard PipeWire introspection. |
 | Calculon | Own ordinary typed scientific algorithms and declarations of ports, shapes, schemas, scalar properties, ndarray parameters, and construction values. |
 | Source | Produce complete frames for simulation or deterministic replay. |
 | Sink | Consume graph output without addressing or controlling physical hardware. |
-| Observer | Inspect standard PipeWire objects. It is optional and never owns runner lifecycle or graph progress. |
+| Observer | Inspect standard PipeWire objects and, where a suitable boundary exists, scientific samples. It is optional and never owns runner lifecycle or graph progress. |
 
-The runner is the control plane for this small graph. It does not process
-frame data and it does not replace PipeWire scheduling. PipeWireAO and FGN
-remain the data plane.
+The runner is the control plane for this small session. It does not process
+frame data, create execution threads for graph operations, or replace
+PipeWire scheduling. PipeWireAO and FGN remain the data plane.
 
 ## Configuration boundary
 
 The active configuration is standard PipeWire relaxed SPA-JSON, compatible
 with existing PipeWireAO tools and the current graph generator. The initial
-implementation does not introduce TOML, YAML, a deployment database, or a
-multi-file operational bundle.
+implementation does not introduce TOML, YAML, a deployment database, a
+runner-private topology schema, or a multi-file operational bundle.
 
-The configuration identifies the source, canonical FGN graph, sink, initial
-properties, ndarray parameter files, and optional observation ports. Paths and
-launch-time selections are resolved before streaming. Construction and
-topology changes are handled by stopping and reloading the development graph.
+The minimum configuration identifies one source, one canonical FGN graph, one
+sink, initial properties, ndarray parameter files, and optional observation
+ports. The RTCW extension uses the same standard configuration to identify
+additional source, graph, sink, and link objects. Each `filter.graph` body is
+passed to the maintained PipeWireAO module; it is not decoded or regenerated
+by an RTC-specific filter-graph parser. Paths and launch-time selections are
+resolved before streaming. Construction and topology changes are handled by
+stopping and reloading the development session.
 
-The graph remains one canonical model. A script, generator, or future GUI may
-construct that model, but none introduces another graph executor or private
-transport.
+Each graph remains one canonical PipeWireAO model. A script, maintained
+generator, or future GUI may construct the standard configuration, but none
+introduces another graph executor or private transport.
 
 ## Scientist boundary
 

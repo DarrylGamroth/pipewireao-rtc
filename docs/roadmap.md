@@ -2,14 +2,22 @@
 
 Status: active implementation plan
 
-Review date: 2026-08-31
+Review date: 2026-09-01
 
 ## Goal
 
-Deliver the smallest useful RTC application: one command constructs and runs
-a REVOLT Classic Calculon graph through PipeWireAO, scientists can add ordinary
-typed algorithms without transport boilerplate, and the graph is demonstrably
-equivalent to the maintained direct or fused implementation.
+Deliver the smallest useful RTC workstation: one command constructs a declared
+non-actuating PipeWireAO session, one lifecycle runs its existing `fgn-native`
+filter graphs, scientists can add ordinary typed algorithms without transport
+boilerplate, and the maintained scientific graph is demonstrably equivalent
+to the direct or fused implementation.
+
+The first executable remains deliberately small. Delivery proceeds from FITS
+→ discard, through one minimal filter graph, to serial and independent
+multi-graph composition. Graph authoring remains in standard PipeWireAO
+`filter.graph` configuration files. PipeWire and FGN, not the RTC runner,
+schedule graph execution. A GUI is a valuable optional observer and editor of
+that standard configuration, never a runtime prerequisite.
 
 The active work ends at the non-actuating development gate. The larger former
 roadmap is retained only in the [inactive design archive](archive/full-rtc/README.md).
@@ -34,13 +42,17 @@ implementation task revalidates the exact revisions and interfaces it uses.
 ```mermaid
 flowchart LR
     Contract["0. Freeze the small contract"]
-    Fixture["1. Three-object runner fixture"]
+    Transport["1a. FITS to discard"]
+    Fixture["1b. One filter graph"]
+    Chain["1c. Serial graph chain"]
+    Parallel["1d. Independent paths"]
     Revolt["2. REVOLT Classic equivalence"]
     Authoring["3. Scientist authoring proof"]
     Profile["4. Development performance profile"]
     Gate["Development gate"]
 
-    Contract --> Fixture --> Revolt --> Authoring --> Profile --> Gate
+    Contract --> Transport --> Fixture --> Chain --> Parallel
+    Parallel --> Revolt --> Authoring --> Profile --> Gate
 ```
 
 ### 0. Freeze the small contract
@@ -50,28 +62,49 @@ flowchart LR
 - use standard PipeWire relaxed SPA-JSON rather than inventing another
   configuration language;
 - identify the exact current PipeWireAO and Calculon revisions; and
-- map RTC-DEV-001 through RTC-DEV-009 to implementation and tests as work
+- map RTC-DEV-001 through RTC-DEV-010 to implementation and tests as work
   begins.
 
 Exit evidence: the active index has no dependency on archived requirements,
 all links and diagrams validate, and the implementation team can describe the
 first executable without loading the archive.
 
-### 1. Build the three-object runner fixture
+### 1. Build the RTCW foundation
+
+Deliver these slices in order:
+
+1. **FITS → discard transport fixture.** In a private PipeWireAO core, link one
+   finite complete-frame FITS source directly to the maintained
+   format-agnostic discard SPA sink. Observe at least one complete buffer and
+   clean up both nodes and the link while preserving an unrelated object.
+2. **FITS → one graph → discard.** Use the small Rust runner, one session
+   lifecycle, one minimal `fgn-native` graph, and exact declared links. This is
+   the minimum RTC-DEV-002 fixture.
+3. **FITS → graph A → graph B → discard.** Reuse existing `filter.graph`
+   configurations, delegate their parsing to PipeWireAO, and add only the
+   session-level composition needed by RTC-DEV-010.
+4. **Two independent source → graph → discard paths.** Realize and control
+   both paths as one session while leaving their execution to PipeWire. Inspect
+   the active topology with ordinary tools and, where a bounded non-gating
+   boundary exists, attach and stall an optional GUI observer.
+
+Across those slices:
 
 - create the small Rust `pipewireao-rtc` executable;
 - use Statig's blocking state-machine API, a `MANAGED` superstate, one
   serialized dispatcher, and typed effects from the first implementation;
-- load one source, one minimal `fgn-native` graph, and one discard sink from a
-  standard configuration;
+- load admitted sources, existing `fgn-native` filter graphs, and maintained
+  discard sinks from standard configuration;
 - implement `OFFLINE`, `CONFIGURING`, `READY`, `RUNNING`, and `FAULT`;
 - validate topology and initial values before streaming;
 - expose the objects to standard PipeWire inspection; and
 - clean up only owned objects on every failure point.
 
-Exit evidence: one valid configuration starts, runs, stops, retries, and
-unloads repeatedly; malformed configurations fail with scientific diagnostics;
-unrelated PipeWire objects survive; a read-only observer is optional.
+Exit evidence: every ordered fixture starts, runs, stops, restarts, retries,
+and unloads repeatedly; each complete path delivers a buffer to its discard
+sink; malformed configurations fail with scientific diagnostics; exact owned
+objects are removed; unrelated PipeWire objects survive; and a read-only
+observer is optional.
 
 ### 2. Add REVOLT Classic
 
@@ -128,12 +161,13 @@ or correction-critical suitability.
 | RTC-DEV-001 | 1 | partial | partial | Endpoint allowlist and negative physical/correction fixtures pass; the live development fixture reaches `READY` and `RUNNING` without physical authority |
 | RTC-DEV-002 | 1 | partial | partial | The minimal fixture and field-by-field diagnostics pass; both live links negotiate before `READY`, but explicit live enumeration of every declared format field remains missing |
 | RTC-DEV-003 | 1 | partial | partial | Failure-injected cleanup and the live exact topology pass; both links are admitted, owned objects are removed, and the unrelated node survives |
-| RTC-DEV-004 | 1 | partial | partial | Transition, retry, invalid-command, required-object failure, repeated-cycle, and complete live lifecycle tests pass |
+| RTC-DEV-004 | 1 | partial | partial | Transition, retry, invalid-command, required-object failure, repeated-cycle, and complete live lifecycle tests pass; the live graph also stops and restarts within one load |
 | RTC-DEV-005 | 2 | planned | missing | Requested/active property and parameter update tests |
-| RTC-DEV-006 | 1 and 2 | partial | missing | The runner has no GUI dependency and rejects an undeclared observation; no suitable bounded non-gating sample boundary is available for attach, detach, and stall evidence |
+| RTC-DEV-006 | 1d and 2 | partial | missing | The runner has no GUI dependency and rejects an undeclared observation; no suitable bounded non-gating sample boundary is available for attach, detach, and stall evidence |
 | RTC-DEV-007 | 2 | planned | missing | Deterministic REVOLT output and state oracle |
 | RTC-DEV-008 | 3 | planned | missing | Package-local declaration examples and ordinary-array tests |
 | RTC-DEV-009 | 1 | partial | partial | Statig hierarchy, serialized dispatch, typed effects, effect failure, stale-completion, and full private-core lifecycle tests pass |
+| RTC-DEV-010 | 1c and 1d | planned | missing | Exact serial and independent multi-graph sessions, session-wide lifecycle and failure injection, standard configuration delegation, and absence of a runner scheduler |
 
 Implementation and evidence state remain separate when this table is updated.
 A merged implementation is not validated until its complete evidence passes
@@ -142,8 +176,9 @@ for both maintained fixtures.
 ### Increment 1 implementation note
 
 The current implementation baseline is PipeWireAO
-`52bd8f5fb5c2727f6ecef4c80c889e7ba0e58f7e`, the public PipeWireAO Rust
-binding `14552339336209a936043d6c95f3a96bf9ac6241`, and Calculon
+`abe269d63c0aa553c5cb96da245a8a5de715ec42`, the public PipeWireAO Rust
+binding `75f407498f24a884f97ef3dc4fa3675a61e641fd`, PipeWireAO SPA plugins
+`059dbc63d15f2089a054722ca6b5162e1a18b832`, and Calculon
 `3d49237b3c9f4423f120b52bd2761cd5a90f5e94`. These revisions identify the
 interfaces inspected for this increment; they do not promote sibling worktree
 changes to evidence.
@@ -161,12 +196,19 @@ FGN graph internals. The configuration rejection matrix is in
 The live test is intentionally ignored by the generic Cargo suite because it
 requires the maintained sibling PipeWireAO and Calculon build artifacts. Its
 explicit invocation now passes the complete `Load` → `READY` → `Start` →
-`RUNNING` → `Stop` → `READY` → `Unload` → `OFFLINE` lifecycle. It confirms the
-three configured nodes, both admitted links, complete owned-object cleanup,
-and preservation of an unrelated node. The sibling PipeWireAO fix accepts
-fixed negotiated strings represented as
-`SPA_CHOICE_None`; it remains working-tree evidence until committed and
-published from that repository.
+`RUNNING` → `Stop` → `READY` → `Start` → `RUNNING` → `Stop` → `READY` →
+`Unload` → `OFFLINE` lifecycle. It confirms the three configured nodes, both
+admitted links, a discard-buffer increase after each start, complete
+owned-object cleanup, and preservation of an unrelated node. The test observes
+delivery to the sink, not the numerical contents of the output frame.
+
+The live discard scheduling handshake and the lower-level private-core FITS →
+discard fixture are in PipeWireAO SPA plugins commit
+`a913feda4f564109844b635007b16b6bf7137435`, one commit ahead of that
+repository's current `main`. The RTC live result uses its build-tree artifact
+through `PIPEWIREAO_SPA_PLUGINS_BUILD`; it is valid local evidence but is not a
+merged dependency. The next RTCW slice replaces the simulated source in the
+runner fixture with the admitted FITS source before adding graph chaining.
 
 The runner pins PipeWireAO-rs revision
 `75f407498f24a884f97ef3dc4fa3675a61e641fd`. That revision accepts negotiated
@@ -175,11 +217,17 @@ acquisition-wire definitions, and exposes a self-destruction-aware owner for
 locally loaded modules. The live adapter uses that owner directly; it no longer
 carries module-lifetime or retired-symbol compatibility shims.
 
+The binding does not expose the public
+`pipewireao-plugins/discard.h` property identifiers. The live adapter therefore
+keeps the two metric IDs it reads at its narrow discard boundary. A later
+PipeWireAO plugin binding can remove those constants; this gap does not require
+another module or unsafe shim.
+
 ## Development completion gate
 
 The milestone is complete only when:
 
-- RTC-DEV-001 through RTC-DEV-009 are implemented for the maintained fixtures;
+- RTC-DEV-001 through RTC-DEV-010 are implemented for the maintained fixtures;
 - one command loads the REVOLT Classic development configuration;
 - output and state equivalence pass for nominal frames and updates;
 - repeated lifecycle and failure tests leave no owned objects behind;

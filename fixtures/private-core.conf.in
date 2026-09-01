@@ -7,6 +7,7 @@ context.properties = {
 
 context.spa-libs = {
     support.* = support/libspa-support
+    api.pipewireao.discard = discard/libspa-pipewireao-discard
 }
 
 context.modules = [

@@ -55,17 +55,17 @@ fn endpoint_and_scope_admission_is_an_explicit_negative_matrix() {
             "source.factory",
         ),
         (
-            "pipewireao.discard-complete-frame",
+            "api.pipewireao.discard",
             "pipewireao.physical-deformable-mirror",
             "sink.factory",
         ),
         (
-            "pipewireao.discard-complete-frame",
+            "api.pipewireao.discard",
             "pipewireao.actuating-sink",
             "sink.factory",
         ),
         (
-            "pipewireao.discard-complete-frame",
+            "api.pipewireao.discard",
             "pipewireao.unlisted-sink",
             "sink.factory",
         ),
@@ -100,6 +100,16 @@ fn invalid_fields_report_scientific_names() {
             "module = libpipewire-module-ndarray-filter-chain",
             "module = private-module",
             "source.module",
+        ),
+        (
+            "module = libpipewire-module-spa-node-factory",
+            "module = private-module",
+            "sink.module",
+        ),
+        (
+            "${PIPEWIREAO_DISCARD_PLUGIN}",
+            "/usr/lib/unreviewed-discard.so",
+            "sink.plugin.path",
         ),
         (
             "algorithm.label = docrime-excitation-f32",
@@ -160,6 +170,17 @@ fn invalid_fields_report_scientific_names() {
             .expect_err("mutated field must fail validation");
         assert_eq!(error.field(), field, "mutation {before:?} -> {after:?}");
     }
+}
+
+#[test]
+fn discard_sink_rejects_a_fake_algorithm_layer() {
+    let mutated = VALID.replacen(
+        "        plugin.path = \"${PIPEWIREAO_DISCARD_PLUGIN}\"",
+        "        plugin.path = \"${PIPEWIREAO_DISCARD_PLUGIN}\"\n        algorithm.label = scale-f32\n        algorithm.config = {}",
+        1,
+    );
+    let error = DevelopmentConfig::parse(&mutated).expect_err("discard sink has no algorithm");
+    assert_eq!(error.field(), "sink.algorithm.label");
 }
 
 #[test]

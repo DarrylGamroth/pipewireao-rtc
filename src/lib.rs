@@ -8,8 +8,8 @@ mod live;
 mod runner;
 
 pub use config::{
-    DevelopmentConfig, EndpointFactory, GraphFactory, LinkSpec, ObjectRole, ObjectSpec,
-    PortDirection, PortSpec, ScientificDiagnostic,
+    AlgorithmSpec, DevelopmentConfig, EndpointFactory, GraphFactory, LinkSpec, ObjectRole,
+    ObjectSpec, PortDirection, PortSpec, ScientificDiagnostic,
 };
 pub use lifecycle::{
     ConfigurationInput, DispatchError, DispatchOutcome, EffectKind, EffectOrigin, EffectToken,

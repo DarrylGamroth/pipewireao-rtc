@@ -1,6 +1,7 @@
 use super::{
-    DevelopmentConfig, EndpointFactory, GraphFactory, LinkSpec, ObjectRole, ObjectSpec,
-    PortDirection, PortSpec, ScientificDiagnostic, GRAPH_FACTORY, SINK_FACTORY, SOURCE_FACTORY,
+    AlgorithmSpec, DevelopmentConfig, EndpointFactory, GraphFactory, LinkSpec, ObjectRole,
+    ObjectSpec, PortDirection, PortSpec, ScientificDiagnostic, GRAPH_FACTORY, SINK_FACTORY,
+    SOURCE_FACTORY,
 };
 use crate::ffi::spa_json::{Cursor, SyntaxError, Token};
 use std::collections::BTreeMap;
@@ -65,8 +66,7 @@ struct DecodedObject {
     module: String,
     node_name: String,
     plugin_path: String,
-    algorithm_label: String,
-    algorithm_config: BTreeMap<String, String>,
+    algorithm: Option<AlgorithmSpec>,
     ports: Vec<PortSpec>,
 }
 
@@ -77,8 +77,7 @@ impl DecodedObject {
             module: self.module,
             node_name: self.node_name,
             plugin_path: self.plugin_path,
-            algorithm_label: self.algorithm_label,
-            algorithm_config: self.algorithm_config,
+            algorithm: self.algorithm,
             ports: self.ports,
         }
     }
@@ -91,7 +90,7 @@ fn endpoint(
     let object = object_spec(token, role)?;
     let factory = match (role, object.factory.as_str()) {
         (ObjectRole::Source, SOURCE_FACTORY) => EndpointFactory::SimulatedCompleteFrameSource,
-        (ObjectRole::Sink, SINK_FACTORY) => EndpointFactory::DiscardCompleteFrameSink,
+        (ObjectRole::Sink, SINK_FACTORY) => EndpointFactory::FormatAgnosticDiscardSink,
         (ObjectRole::Source, name) => {
             return Err(ScientificDiagnostic::new(
                 "source.factory",
@@ -155,6 +154,26 @@ fn object_spec(token: Token<'_>, role: ObjectRole) -> Result<DecodedObject, Scie
         }
     }
 
+    let algorithm = match (algorithm_label, algorithm_config) {
+        (Some(label), Some(config)) => Some(AlgorithmSpec {
+            label: scalar(label, &format!("{field}.algorithm.label"))?,
+            config: string_map(config, &format!("{field}.algorithm.config"))?,
+        }),
+        (None, None) => None,
+        (Some(_), None) => {
+            return Err(ScientificDiagnostic::new(
+                format!("{field}.algorithm.config"),
+                "required when algorithm.label is present",
+            ));
+        }
+        (None, Some(_)) => {
+            return Err(ScientificDiagnostic::new(
+                format!("{field}.algorithm.label"),
+                "required when algorithm.config is present",
+            ));
+        }
+    };
+
     Ok(DecodedObject {
         factory: scalar(
             required(factory, &format!("{field}.factory"))?,
@@ -172,14 +191,7 @@ fn object_spec(token: Token<'_>, role: ObjectRole) -> Result<DecodedObject, Scie
             required(plugin_path, &format!("{field}.plugin.path"))?,
             &format!("{field}.plugin.path"),
         )?,
-        algorithm_label: scalar(
-            required(algorithm_label, &format!("{field}.algorithm.label"))?,
-            &format!("{field}.algorithm.label"),
-        )?,
-        algorithm_config: string_map(
-            required(algorithm_config, &format!("{field}.algorithm.config"))?,
-            &format!("{field}.algorithm.config"),
-        )?,
+        algorithm,
         ports: port_array(
             required(ports, &format!("{field}.ports"))?,
             &format!("{field}.ports"),

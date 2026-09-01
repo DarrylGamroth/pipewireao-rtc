@@ -5,9 +5,10 @@ use std::path::Path;
 mod decode;
 
 const SOURCE_FACTORY: &str = "pipewireao.simulated-complete-frame";
-const SINK_FACTORY: &str = "pipewireao.discard-complete-frame";
+const SINK_FACTORY: &str = "api.pipewireao.discard";
 const GRAPH_FACTORY: &str = "pipewireao.calculon-fgn-native";
-const MODULE_NAME: &str = "libpipewire-module-ndarray-filter-chain";
+const FILTER_CHAIN_MODULE: &str = "libpipewire-module-ndarray-filter-chain";
+const SPA_NODE_FACTORY_MODULE: &str = "libpipewire-module-spa-node-factory";
 
 /// A diagnostic expressed in the configured scientific vocabulary.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -65,7 +66,7 @@ impl ObjectRole {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum EndpointFactory {
     SimulatedCompleteFrameSource,
-    DiscardCompleteFrameSink,
+    FormatAgnosticDiscardSink,
 }
 
 impl EndpointFactory {
@@ -73,7 +74,7 @@ impl EndpointFactory {
     pub const fn configured_name(self) -> &'static str {
         match self {
             Self::SimulatedCompleteFrameSource => SOURCE_FACTORY,
-            Self::DiscardCompleteFrameSink => SINK_FACTORY,
+            Self::FormatAgnosticDiscardSink => SINK_FACTORY,
         }
     }
 }
@@ -119,13 +120,18 @@ pub struct PortSpec {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AlgorithmSpec {
+    pub label: String,
+    pub config: BTreeMap<String, String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ObjectSpec<F> {
     pub factory: F,
     pub module: String,
     pub node_name: String,
     pub plugin_path: String,
-    pub algorithm_label: String,
-    pub algorithm_config: BTreeMap<String, String>,
+    pub algorithm: Option<AlgorithmSpec>,
     pub ports: Vec<PortSpec>,
 }
 
@@ -198,7 +204,7 @@ impl DevelopmentConfig {
             ObjectRole::Sink,
             &self.sink.node_name,
             &self.sink.plugin_path,
-            "${PIPEWIREAO_NDARRAY_EXAMPLE}",
+            "${PIPEWIREAO_DISCARD_PLUGIN}",
         )?;
         let names = [
             self.source.node_name.as_str(),
@@ -229,15 +235,20 @@ impl DevelopmentConfig {
 
         require_algorithm(
             ObjectRole::Source,
-            &self.source.algorithm_label,
+            self.source.algorithm.as_ref(),
             "docrime-excitation-f32",
         )?;
         require_algorithm(
             ObjectRole::Graph,
-            &self.graph.algorithm_label,
+            self.graph.algorithm.as_ref(),
             "leaky-integrator-f32",
         )?;
-        require_algorithm(ObjectRole::Sink, &self.sink.algorithm_label, "scale-f32")?;
+        if self.sink.algorithm.is_some() {
+            return Err(ScientificDiagnostic::new(
+                "sink.algorithm.label",
+                "the discard SPA sink does not run a scientific algorithm",
+            ));
+        }
 
         validate_port_contracts(self)?;
         validate_algorithm_config(self)?;
@@ -264,12 +275,16 @@ impl DevelopmentConfig {
 }
 
 fn validate_module(role: ObjectRole, module: &str) -> Result<(), ScientificDiagnostic> {
-    if module == MODULE_NAME {
+    let expected = match role {
+        ObjectRole::Source | ObjectRole::Graph => FILTER_CHAIN_MODULE,
+        ObjectRole::Sink => SPA_NODE_FACTORY_MODULE,
+    };
+    if module == expected {
         Ok(())
     } else {
         Err(ScientificDiagnostic::new(
             format!("{}.module", role.name()),
-            format!("expected public PipeWireAO module {MODULE_NAME:?}, got {module:?}"),
+            format!("expected public PipeWireAO module {expected:?}, got {module:?}"),
         ))
     }
 }
@@ -337,15 +352,18 @@ fn validate_ports(
 
 fn require_algorithm(
     role: ObjectRole,
-    actual: &str,
+    actual: Option<&AlgorithmSpec>,
     expected: &str,
 ) -> Result<(), ScientificDiagnostic> {
-    if actual == expected {
+    if actual.is_some_and(|algorithm| algorithm.label == expected) {
         Ok(())
     } else {
         Err(ScientificDiagnostic::new(
             format!("{}.algorithm.label", role.name()),
-            format!("expected scientific algorithm {expected:?}, got {actual:?}"),
+            format!(
+                "expected scientific algorithm {expected:?}, got {:?}",
+                actual.map(|algorithm| algorithm.label.as_str())
+            ),
         ))
     }
 }
@@ -395,27 +413,29 @@ fn validate_port_contracts(config: &DevelopmentConfig) -> Result<(), ScientificD
 }
 
 fn validate_algorithm_config(config: &DevelopmentConfig) -> Result<(), ScientificDiagnostic> {
+    let source = config
+        .source
+        .algorithm
+        .as_ref()
+        .expect("source algorithm was validated");
+    let graph = config
+        .graph
+        .algorithm
+        .as_ref()
+        .expect("graph algorithm was validated");
     expect_map_values(
-        &config.source.algorithm_config,
+        &source.config,
         "source.algorithm.config",
         &[("amplitudes", "[ 1.0 2.0 ]"), ("seed", "0")],
     )?;
     expect_map_values(
-        &config.graph.algorithm_config,
+        &graph.config,
         "graph.algorithm.config",
         &[
             ("extent", "2"),
             ("initial_state", "0.0"),
             ("input_schema", "org.calculon.ao.docrime-excitation/1"),
             ("output_schema", "org.calculon.ao.controller-command/1"),
-        ],
-    )?;
-    expect_map_values(
-        &config.sink.algorithm_config,
-        "sink.algorithm.config",
-        &[
-            ("shape", "[ 2 ]"),
-            ("schema", "org.calculon.ao.controller-command/1"),
         ],
     )
 }

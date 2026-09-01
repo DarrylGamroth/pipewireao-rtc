@@ -26,6 +26,10 @@ fn private_core_three_object_fixture_runs_and_cleans_up() {
     let workspace = repository.parent().expect("workspace parent");
     let pipewire_build = workspace.join("pipewire/build");
     let calculon = workspace.join("calculon-algorithms");
+    let plugin_build = std::env::var_os("PIPEWIREAO_SPA_PLUGINS_BUILD").map_or_else(
+        || workspace.join("pipewireao-spa-plugins/build"),
+        PathBuf::from,
+    );
     let temporary = tempfile::tempdir().expect("private fixture directory");
     let runtime = temporary.path().join("runtime");
     let config_directory = temporary.path().join("config");
@@ -47,7 +51,13 @@ fn private_core_three_object_fixture_runs_and_cleans_up() {
     )
     .unwrap();
 
-    let environment = fixture_environment(&runtime, &config_directory, &pipewire_build, &calculon);
+    let environment = fixture_environment(
+        &runtime,
+        &config_directory,
+        &pipewire_build,
+        &calculon,
+        &plugin_build,
+    );
     for (name, value) in &environment {
         std::env::set_var(name, value);
     }
@@ -113,6 +123,7 @@ fn private_core_three_object_fixture_runs_and_cleans_up() {
         runner.diagnostic()
     );
     assert!(runner.executor().status().running);
+    assert!(runner.executor().status().discarded_buffers > 0);
     let active_dump = dump(&pipewire_build, &environment, &core_name);
     for node in [
         "pipewireao-rtc-source",
@@ -126,6 +137,16 @@ fn private_core_three_object_fixture_runs_and_cleans_up() {
         );
     }
 
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Stop).unwrap(),
+        LifecycleState::Ready
+    );
+    let before_restart = runner.executor().status().discarded_buffers;
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Start).unwrap(),
+        LifecycleState::Running
+    );
+    assert!(runner.executor().status().discarded_buffers > before_restart);
     assert_eq!(
         runner.dispatch(LifecycleEvent::Stop).unwrap(),
         LifecycleState::Ready
@@ -159,7 +180,13 @@ fn fixture_environment(
     config_directory: &Path,
     pipewire_build: &Path,
     calculon: &Path,
+    plugin_build: &Path,
 ) -> BTreeMap<&'static str, PathBuf> {
+    let plugin_search_path = std::env::join_paths([
+        pipewire_build.join("spa/plugins"),
+        plugin_build.join("spa/plugins"),
+    ])
+    .expect("private SPA plugin search path");
     BTreeMap::from([
         ("PIPEWIRE_RUNTIME_DIR", runtime.to_owned()),
         ("PIPEWIREAO_RUNTIME_DIR", runtime.to_owned()),
@@ -168,7 +195,7 @@ fn fixture_environment(
         ("PIPEWIREAO_MODULE_DIR", pipewire_build.join("src/modules")),
         (
             "PIPEWIREAO_SPA_PLUGIN_DIR",
-            pipewire_build.join("spa/plugins"),
+            PathBuf::from(plugin_search_path),
         ),
         (
             "CALCULON_FGN_BUNDLE",
@@ -177,6 +204,10 @@ fn fixture_environment(
         (
             "PIPEWIREAO_NDARRAY_EXAMPLE",
             pipewire_build.join("spa/plugins/filter-graph/libspa-filter-graph-ndarray-example.so"),
+        ),
+        (
+            "PIPEWIREAO_DISCARD_PLUGIN",
+            plugin_build.join("spa/plugins/discard/libspa-pipewireao-discard.so"),
         ),
     ])
 }

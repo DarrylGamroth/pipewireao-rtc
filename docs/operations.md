@@ -1,10 +1,10 @@
 # PipeWireAO development operating contract
 
-Status: active normative development contract; implementation planned
+Status: active normative development contract; implementation underway
 
 Applicable profile: `development`
 
-Review date: 2026-08-31
+Review date: 2026-09-01
 
 ## Authority
 
@@ -20,8 +20,13 @@ RFC 8174). Lowercase forms are ordinary prose.
 ## Terms
 
 A **development configuration** is one resolved standard PipeWire relaxed
-SPA-JSON configuration containing the source, FGN graph, sink, initial values,
-and declared observation ports needed for one run.
+SPA-JSON configuration containing the admitted endpoints, FGN graph instances,
+explicit links, initial values, and declared observation ports needed for one
+session. The minimum increment contains one source, one graph, and one sink.
+
+An **RTC session** is the set of required objects owned by one runner lifecycle.
+It contains the minimum three-object graph or the multi-composite topology
+defined by RTC-DEV-010.
 
 A **required object** is the configured source, execution composite, sink, or
 link whose availability is necessary for the graph to reach `READY` or remain
@@ -147,6 +152,41 @@ delivered after a retry or unload; verify that blocking test effects run
 outside state handlers and that stale completions cannot change the current
 state.
 
+### RTC-DEV-010 — RTCW multi-composite sessions
+
+The runner MUST accept a development configuration that declares one or more
+`fgn-native` filter-graph instances, admitted complete-frame sources,
+non-actuating sinks, and exact ordinary PipeWire links between those objects.
+RTC-DEV-002 remains the required minimum fixture; for a multi-composite
+configuration this requirement supersedes only RTC-DEV-002's exact-one graph
+and endpoint cardinality. Every endpoint remains subject to RTC-DEV-001, and
+every declared object and link remains subject to RTC-DEV-002 and RTC-DEV-003
+validation and cleanup.
+
+Graph authoring MUST remain in the maintained PipeWireAO `filter.graph`
+configuration. The runner MUST delegate parsing and realization of each
+`filter.graph` body to the maintained PipeWireAO module and MUST NOT implement
+a second filter-graph parser or runner-private graph language. It MUST realize
+only the declared inter-composite PipeWire links.
+
+One session-level RTC-DEV-004 lifecycle MUST initially own all required
+objects. The session MUST reach `READY` only after every required graph
+instance and link is realized. Start, stop, retry, required-object failure, and
+unload MUST apply coherently to the session as a unit. The runner MUST NOT
+provide independent per-graph lifecycle control in this increment.
+
+The runner MUST leave frame scheduling and any concurrent execution of
+independent graphs to PipeWire and FGN. It MUST NOT add a runner task scheduler,
+worker pool, or graph-operation threads. Concurrency observed in a development
+fixture is functional evidence only and MUST NOT be reported as a deadline or
+real-time claim.
+
+Verification intent (informative): run a FITS source → graph A → graph B →
+discard chain and two independent source → graph → discard paths; inspect the
+exact objects and links; inject failure after every creation point; stop and
+restart the complete session; unload it without removing an unrelated object;
+and verify that no runner-local filter-graph parser or scheduler is present.
+
 ### RTC-DEV-005 — Standard property and parameter paths
 
 The runner MUST use the existing FGN and PipeWireAO interfaces for updates. It
@@ -215,7 +255,7 @@ central plugin list; and inspect scientific diagnostics for invalid use.
 
 ## Minimum configuration model
 
-The first configuration contains only these semantic fields:
+The minimum configuration contains only these semantic fields:
 
 | Field | Meaning |
 | --- | --- |
@@ -231,6 +271,11 @@ This table defines the model, not new syntax. The implementation should reuse
 the existing generated PipeWire configuration and keep the initial invocation
 to one command. It should add a schema only when the existing configuration
 cannot represent a required field.
+
+The RTCW extension pluralizes the existing source, graph, sink, and link
+objects in the same standard configuration. It does not add a second graph
+model. A future GUI may edit or generate that configuration, but the GUI is
+not part of lifecycle admission and is not required for `READY` or `RUNNING`.
 
 ## Update classes
 
@@ -265,6 +310,6 @@ message presented to a scientist.
 ## Development gate
 
 The active operating contract is complete when RTC-DEV-001 through
-RTC-DEV-009 are implemented and their verification intent is covered for the
-small fixture and REVOLT Classic. Passing this gate permits only the claim
-stated in the architecture: a usable, non-actuating development graph.
+RTC-DEV-010 are implemented and their verification intent is covered for the
+small fixtures and REVOLT Classic. Passing this gate permits only the claim
+stated in the architecture: a usable, non-actuating development RTCW.

@@ -3,12 +3,13 @@
 ## Purpose and active scope
 
 This repository currently owns a small headless PipeWireAO development runner.
-The active product loads one simulated or recorded complete-frame source, one
-`fgn-native` Calculon graph, and one non-actuating sink from a standard
-PipeWire configuration. It provides basic lifecycle, scientific diagnostics,
-ordinary inspection, and equivalence testing.
+The first executable loads one simulated or recorded complete-frame source,
+one `fgn-native` Calculon graph, and one non-actuating sink from a standard
+PipeWire configuration. The active RTCW extension composes multiple existing
+filter-graph instances and exact PipeWire links under the same session
+lifecycle. It does not add another graph-authoring format or scheduler.
 
-Runtime implementation has not started in this repository. Documentation is
+Runtime implementation is underway and remains incomplete. Documentation is
 not implementation or qualification evidence.
 
 Physical devices, correction authority, durable recording, Julia execution,

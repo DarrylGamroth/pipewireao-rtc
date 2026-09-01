@@ -1,15 +1,17 @@
 # PipeWireAO RTC document set
 
-The maintained baseline is intentionally small. It defines one non-actuating,
-complete-frame Calculon/PipeWireAO development graph and the runner needed to
-load, inspect, and test it.
+The maintained baseline starts with one non-actuating, complete-frame
+Calculon/PipeWireAO development graph, then extends the same runner into a
+small RTC workstation (RTCW) that can compose multiple ordinary PipeWireAO
+filter-graph instances. The runner loads, links, inspects, and tests the
+declared session without introducing another graph-authoring format.
 
 ## Active documents
 
 | Document | Authority |
 | --- | --- |
-| [Development architecture](architecture.md) | Scope, component boundary, configuration choice, scientist boundary, exclusions, RTC-ARCH-011, and the RTC-ARCH-012 Statig decision |
-| [Development operating contract](operations.md) | RTC-DEV-001 through RTC-DEV-009, Statig lifecycle, updates, observation, diagnostics, and equivalence |
+| [Development architecture](architecture.md) | Scope, component boundary, configuration choice, scientist boundary, exclusions, the initial runner decisions, and the RTC-ARCH-013 RTCW composition decision |
+| [Development operating contract](operations.md) | RTC-DEV-001 through RTC-DEV-010, Statig lifecycle, multi-composite sessions, updates, observation, diagnostics, and equivalence |
 | [Development roadmap](roadmap.md) | Dependency-ordered implementation, completion evidence, performance characterization, and deferred capability triggers |
 
 These three files are the complete RTC-level implementation baseline. An
