@@ -1,8 +1,13 @@
 #![allow(unsafe_code)]
 
+pub(crate) mod spa_json;
+
+#[cfg(feature = "live")]
 use std::ffi::{c_char, c_void};
+#[cfg(feature = "live")]
 use std::ptr::NonNull;
 
+#[cfg(feature = "live")]
 unsafe extern "C" {
     fn pipewireao_rtc_context_load_module(
         context: *mut c_void,
@@ -12,6 +17,7 @@ unsafe extern "C" {
     fn pipewireao_rtc_module_destroy(module: *mut c_void);
 }
 
+#[cfg(feature = "live")]
 pub(crate) fn load_module(
     context: *mut pipewire::sys::pw_context,
     name: &std::ffi::CStr,
@@ -25,8 +31,10 @@ pub(crate) fn load_module(
     NonNull::new(raw).map(OwnedModule)
 }
 
+#[cfg(feature = "live")]
 pub(crate) struct OwnedModule(NonNull<c_void>);
 
+#[cfg(feature = "live")]
 impl Drop for OwnedModule {
     fn drop(&mut self) {
         // SAFETY: OwnedModule is constructed only from a successful

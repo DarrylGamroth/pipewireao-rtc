@@ -83,7 +83,12 @@ fn invalid_fields_report_scientific_names() {
     let cases = [
         (
             "node.name = pipewireao-rtc-source",
-            "node.name = ''",
+            "node.name = \"\"",
+            "source.node.name",
+        ),
+        (
+            "node.name = pipewireao-rtc-source",
+            "node.name = \"pipewireao-rtc-source\\u0000hidden\"",
             "source.node.name",
         ),
         (
@@ -158,18 +163,23 @@ fn invalid_fields_report_scientific_names() {
 }
 
 #[test]
-fn relaxed_spa_json_comments_and_optional_separators_are_accepted() {
-    let with_block_comment = VALID.replacen(
+fn pipewire_relaxed_spa_json_comments_and_optional_separators_are_accepted() {
+    let with_hash_comment = VALID.replacen(
         "profile = development",
-        "/* standard SPA block comment */ profile: development,",
+        "# Standard SPA line comment\n    profile: development,",
         1,
     );
-    DevelopmentConfig::parse(&with_block_comment).expect("relaxed SPA-JSON syntax");
+    DevelopmentConfig::parse(&with_hash_comment).expect("relaxed SPA-JSON syntax");
+
+    let opening = VALID.find('{').expect("fixture root object");
+    let closing = VALID.rfind('}').expect("fixture root object");
+    let without_root_braces = format!("{}{}", &VALID[..opening], &VALID[opening + 1..closing]);
+    DevelopmentConfig::parse(&without_root_braces).expect("relaxed root object");
 
     let with_unicode_name = VALID
         .replacen(
             "node.name = pipewireao-rtc-source",
-            "node.name = \"pipewireao-rtc-sourcé\"",
+            "node.name = \"pipewireao-rtc-sourc\\u00e9\"",
             1,
         )
         .replacen(
@@ -178,4 +188,35 @@ fn relaxed_spa_json_comments_and_optional_separators_are_accepted() {
             1,
         );
     DevelopmentConfig::parse(&with_unicode_name).expect("quoted UTF-8 is accepted");
+}
+
+#[test]
+fn runner_does_not_extend_or_reinterpret_pipewire_spa_json_syntax() {
+    let block_comment = VALID.replacen(
+        "profile = development",
+        "/* not a SPA comment */ profile = development",
+        1,
+    );
+    let error = DevelopmentConfig::parse(&block_comment)
+        .expect_err("C block comments are not SPA-JSON comments");
+    assert_eq!(error.field(), "configuration./*");
+
+    let duplicate = VALID.replacen(
+        "profile = development",
+        "profile = development\n    profile = development",
+        1,
+    );
+    let error = DevelopmentConfig::parse(&duplicate).expect_err("duplicate field");
+    assert_eq!(error.field(), "profile");
+    assert!(error.message().contains("duplicated"));
+
+    let trailing = format!("{VALID}\nunexpected");
+    let error = DevelopmentConfig::parse(&trailing).expect_err("trailing token");
+    assert_eq!(error.field(), "configuration");
+    assert!(error.message().contains("invalid relaxed SPA-JSON"));
+
+    let invalid_array = replace_once("shape = [ 2 ]", "shape = [ 2 = 3 ]");
+    let error = DevelopmentConfig::parse(&invalid_array).expect_err("invalid array separator");
+    assert_eq!(error.field(), "configuration");
+    assert!(error.message().contains("Invalid array separator"));
 }

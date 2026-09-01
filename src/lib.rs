@@ -1,7 +1,6 @@
 //! Non-actuating `PipeWireAO` development runner.
 
 mod config;
-#[cfg(feature = "live")]
 mod ffi;
 mod lifecycle;
 #[cfg(feature = "live")]

@@ -148,11 +148,14 @@ binding `14552339336209a936043d6c95f3a96bf9ac6241`, and Calculon
 interfaces inspected for this increment; they do not promote sibling worktree
 changes to evidence.
 
-The executable, strict relaxed SPA-JSON fixture, Statig lifecycle, fake graph
-adapter, and live private-core adapter are present. The configuration rejection
-matrix is in `tests/configuration.rs`; lifecycle and effect-completion coverage
-is in `tests/lifecycle.rs`; deterministic object and link failure injection is
-in `tests/graph_adapter.rs`; and the maintained private-core target is in
+The executable, standard PipeWire relaxed SPA-JSON decoder, Statig lifecycle,
+fake graph adapter, and live private-core adapter are present. A narrow C shim
+exposes the public `spa_json_*` cursor API missing from the Rust binding; the
+runner decodes directly into its development configuration and does not parse
+FGN graph internals. The configuration rejection matrix is in
+`tests/configuration.rs`; lifecycle and effect-completion coverage is in
+`tests/lifecycle.rs`; deterministic object and link failure injection is in
+`tests/graph_adapter.rs`; and the maintained private-core target is in
 `tests/live_private_core.rs`.
 
 The live test is intentionally ignored because the public PipeWire link factory

@@ -1,5 +1,21 @@
 fn main() {
+    println!("cargo:rerun-if-changed=src/ffi/spa_json.c");
     println!("cargo:rerun-if-changed=src/ffi/module.c");
+
+    let spa = pkg_config::Config::new()
+        .atleast_version("0.2")
+        .probe("libspa-0.2")
+        .expect("configuration parsing requires the public SPA headers");
+    let mut spa_json = cc::Build::new();
+    spa_json
+        .file("src/ffi/spa_json.c")
+        .warnings(true)
+        .extra_warnings(true);
+    for include in &spa.include_paths {
+        spa_json.include(include);
+    }
+    spa_json.compile("pipewireao_rtc_spa_json_shim");
+
     if std::env::var_os("CARGO_FEATURE_LIVE").is_none() {
         return;
     }
