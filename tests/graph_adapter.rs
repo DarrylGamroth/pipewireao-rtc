@@ -1,8 +1,8 @@
 use pipewireao_rtc::{
-    ConfigurationInput, DevelopmentConfig, EffectExecutor, LifecycleEffect, LifecycleEvent,
-    LifecycleState, Runner, ScientificDiagnostic,
+    ConfigurationInput, DevelopmentConfig, EffectExecutor, LifecycleEffect, LifecycleEffectSuccess,
+    LifecycleEvent, LifecycleState, Runner, ScientificDiagnostic,
 };
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 const MINIMAL: &str = include_str!("../fixtures/minimal-development.conf");
 const SERIAL: &str = include_str!("../fixtures/serial-development.conf");
@@ -15,6 +15,7 @@ struct FakeGraphAdapter {
     unrelated: BTreeSet<&'static str>,
     fail_after: Option<usize>,
     running: bool,
+    execution_groups: BTreeMap<String, bool>,
     observer_attached: bool,
 }
 
@@ -25,6 +26,7 @@ impl FakeGraphAdapter {
             unrelated: BTreeSet::from(["unrelated-fixture-node"]),
             fail_after,
             running: false,
+            execution_groups: BTreeMap::new(),
             observer_attached: false,
         }
     }
@@ -54,21 +56,36 @@ impl FakeGraphAdapter {
         })();
         if result.is_err() {
             self.cleanup();
+        } else {
+            self.execution_groups = config
+                .execution_group_names()
+                .into_iter()
+                .map(|name| (name, false))
+                .collect();
         }
         result
     }
 
     fn cleanup(&mut self) {
         self.running = false;
+        self.execution_groups.clear();
         self.owned.clear();
     }
 }
 
 impl EffectExecutor for FakeGraphAdapter {
-    fn execute(&mut self, effect: &LifecycleEffect) -> Result<(), ScientificDiagnostic> {
+    fn execute(
+        &mut self,
+        effect: &LifecycleEffect,
+    ) -> Result<LifecycleEffectSuccess, ScientificDiagnostic> {
         match effect {
             LifecycleEffect::Realize { config, .. } => match config {
-                ConfigurationInput::Resolved(config) => self.realize(config),
+                ConfigurationInput::Resolved(config) => {
+                    self.realize(config)?;
+                    Ok(LifecycleEffectSuccess::Realized {
+                        execution_groups: config.execution_group_names(),
+                    })
+                }
                 ConfigurationInput::File(_) => Err(ScientificDiagnostic::new(
                     "configuration",
                     "fake adapter accepts only resolved test configurations",
@@ -82,15 +99,41 @@ impl EffectExecutor for FakeGraphAdapter {
                     ));
                 }
                 self.running = true;
-                Ok(())
+                for running in self.execution_groups.values_mut() {
+                    *running = true;
+                }
+                Ok(LifecycleEffectSuccess::Completed)
             }
             LifecycleEffect::Stop { .. } => {
                 self.running = false;
-                Ok(())
+                for running in self.execution_groups.values_mut() {
+                    *running = false;
+                }
+                Ok(LifecycleEffectSuccess::Completed)
+            }
+            LifecycleEffect::StartExecutionGroup { name, .. } => {
+                let running = self.execution_groups.get_mut(name).ok_or_else(|| {
+                    ScientificDiagnostic::new(
+                        format!("execution-group {name}"),
+                        "group is not realized",
+                    )
+                })?;
+                *running = true;
+                Ok(LifecycleEffectSuccess::Completed)
+            }
+            LifecycleEffect::StopExecutionGroup { name, .. } => {
+                let running = self.execution_groups.get_mut(name).ok_or_else(|| {
+                    ScientificDiagnostic::new(
+                        format!("execution-group {name}"),
+                        "group is not realized",
+                    )
+                })?;
+                *running = false;
+                Ok(LifecycleEffectSuccess::Completed)
             }
             LifecycleEffect::Cleanup { .. } => {
                 self.cleanup();
-                Ok(())
+                Ok(LifecycleEffectSuccess::Completed)
             }
         }
     }
@@ -146,6 +189,47 @@ fn fork_uses_two_ordinary_declared_links_from_one_source_output() {
         .collect::<Vec<_>>();
     assert_eq!(source_links.len(), 2);
     assert_ne!(source_links[0], source_links[1]);
+}
+
+#[test]
+fn selective_group_control_preserves_session_objects_and_other_groups() {
+    for (document, first, second) in [
+        (FORK, "branch-a", "branch-b"),
+        (INDEPENDENT, "path-a", "path-b"),
+    ] {
+        let config = config(document);
+        let expected_owned = config.object_count() + config.links.len();
+        let mut runner = Runner::new(FakeGraphAdapter::new(None));
+        runner
+            .dispatch(LifecycleEvent::Load(config.into()))
+            .unwrap();
+        runner.dispatch(LifecycleEvent::Start).unwrap();
+
+        assert_eq!(
+            runner
+                .dispatch(LifecycleEvent::StopExecutionGroup(first.to_owned()))
+                .unwrap(),
+            LifecycleState::Running
+        );
+        assert!(!runner.executor().execution_groups[first]);
+        assert!(runner.executor().execution_groups[second]);
+        assert_eq!(runner.executor().owned.len(), expected_owned);
+
+        runner
+            .dispatch(LifecycleEvent::StartExecutionGroup(first.to_owned()))
+            .unwrap();
+        assert!(runner.executor().execution_groups[first]);
+        assert!(runner.executor().execution_groups[second]);
+
+        runner.dispatch(LifecycleEvent::Stop).unwrap();
+        assert!(runner
+            .executor()
+            .execution_groups
+            .values()
+            .all(|running| !running));
+        runner.dispatch(LifecycleEvent::Unload).unwrap();
+        assert!(runner.executor().owned.is_empty());
+    }
 }
 
 #[test]

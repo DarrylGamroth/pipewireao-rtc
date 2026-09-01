@@ -1,7 +1,7 @@
 use pipewireao_rtc::{
-    DevelopmentConfig, EffectExecutor, EffectKind, EffectOrigin, LifecycleDispatcher,
-    LifecycleEffect, LifecycleEffectResult, LifecycleEvent, LifecycleState, Runner,
-    ScientificDiagnostic,
+    DevelopmentConfig, EffectExecutor, EffectKind, EffectOrigin, EffectTarget, ExecutionGroupState,
+    LifecycleDispatcher, LifecycleEffect, LifecycleEffectResult, LifecycleEffectSuccess,
+    LifecycleEvent, LifecycleState, Runner, ScientificDiagnostic,
 };
 
 const VALID: &str = include_str!("../fixtures/minimal-development.conf");
@@ -30,6 +30,10 @@ fn load_ready(dispatcher: &mut LifecycleDispatcher) {
     assert_eq!(outcome.state, LifecycleState::Configuring);
     complete(dispatcher, &outcome.effect.expect("realize effect"), Ok(()));
     assert_eq!(dispatcher.state(), LifecycleState::Ready);
+    assert_eq!(
+        dispatcher.execution_group_states().get("main"),
+        Some(&ExecutionGroupState::Stopped)
+    );
 }
 
 fn start_running(dispatcher: &mut LifecycleDispatcher) {
@@ -38,6 +42,10 @@ fn start_running(dispatcher: &mut LifecycleDispatcher) {
         .expect("start accepted");
     complete(dispatcher, &outcome.effect.expect("start effect"), Ok(()));
     assert_eq!(dispatcher.state(), LifecycleState::Running);
+    assert_eq!(
+        dispatcher.execution_group_states().get("main"),
+        Some(&ExecutionGroupState::Running)
+    );
 }
 
 #[test]
@@ -45,6 +53,29 @@ fn every_legal_transition_succeeds() {
     let mut dispatcher = LifecycleDispatcher::new();
     load_ready(&mut dispatcher);
     start_running(&mut dispatcher);
+
+    let group_stop = dispatcher
+        .dispatch(LifecycleEvent::StopExecutionGroup("main".to_owned()))
+        .expect("execution-group stop");
+    assert_eq!(
+        group_stop.effect.as_ref().map(LifecycleEffect::kind),
+        Some(EffectKind::StopExecutionGroup)
+    );
+    assert_eq!(
+        complete(&mut dispatcher, &group_stop.effect.unwrap(), Ok(())),
+        LifecycleState::Running
+    );
+    assert_eq!(
+        dispatcher.execution_group_states()["main"],
+        ExecutionGroupState::Stopped
+    );
+    let group_start = dispatcher
+        .dispatch(LifecycleEvent::StartExecutionGroup("main".to_owned()))
+        .expect("execution-group start");
+    assert_eq!(
+        complete(&mut dispatcher, &group_start.effect.unwrap(), Ok(())),
+        LifecycleState::Running
+    );
 
     let stop = dispatcher.dispatch(LifecycleEvent::Stop).expect("stop");
     assert_eq!(
@@ -264,6 +295,168 @@ fn stale_duplicate_wrong_kind_and_wrong_origin_completions_are_rejected() {
 }
 
 #[test]
+fn group_completion_identity_and_invalid_requests_are_rejected_without_corruption() {
+    let mut dispatcher = LifecycleDispatcher::new();
+    assert!(dispatcher
+        .dispatch(LifecycleEvent::StartExecutionGroup("main".to_owned()))
+        .is_err());
+    load_ready(&mut dispatcher);
+    assert!(dispatcher
+        .dispatch(LifecycleEvent::StartExecutionGroup("main".to_owned()))
+        .is_err());
+    start_running(&mut dispatcher);
+    assert!(dispatcher
+        .dispatch(LifecycleEvent::StopExecutionGroup("unknown".to_owned()))
+        .is_err());
+    assert_eq!(dispatcher.state(), LifecycleState::Running);
+
+    let stop = dispatcher
+        .dispatch(LifecycleEvent::StopExecutionGroup("main".to_owned()))
+        .unwrap()
+        .effect
+        .unwrap();
+    assert_eq!(stop.origin(), EffectOrigin::RunningExecutionGroupStop);
+    assert_eq!(
+        stop.target(),
+        EffectTarget::ExecutionGroup("main".to_owned())
+    );
+    assert!(dispatcher
+        .dispatch(LifecycleEvent::StopExecutionGroup("main".to_owned()))
+        .is_err());
+
+    let mut wrong_group = LifecycleEffectResult::from_effect(&stop, Ok(()));
+    wrong_group.target = EffectTarget::ExecutionGroup("other".to_owned());
+    assert!(dispatcher
+        .dispatch(LifecycleEvent::EffectCompleted(wrong_group))
+        .is_err());
+    assert_eq!(dispatcher.pending_effect(), Some(&stop));
+    complete(&mut dispatcher, &stop, Ok(()));
+    assert_eq!(dispatcher.state(), LifecycleState::Running);
+    assert_eq!(
+        dispatcher.execution_group_states()["main"],
+        ExecutionGroupState::Stopped
+    );
+    assert!(dispatcher
+        .dispatch(LifecycleEvent::StopExecutionGroup("main".to_owned()))
+        .is_err());
+}
+
+#[test]
+fn group_failures_fault_and_retry_restores_stopped_groups() {
+    for start_failure in [false, true] {
+        let mut dispatcher = LifecycleDispatcher::new();
+        load_ready(&mut dispatcher);
+        start_running(&mut dispatcher);
+        let stop = dispatcher
+            .dispatch(LifecycleEvent::StopExecutionGroup("main".to_owned()))
+            .unwrap()
+            .effect
+            .unwrap();
+        if start_failure {
+            complete(&mut dispatcher, &stop, Ok(()));
+            let start = dispatcher
+                .dispatch(LifecycleEvent::StartExecutionGroup("main".to_owned()))
+                .unwrap()
+                .effect
+                .unwrap();
+            assert_eq!(
+                complete(
+                    &mut dispatcher,
+                    &start,
+                    Err(ScientificDiagnostic::new(
+                        "execution-group main",
+                        "start failed"
+                    )),
+                ),
+                LifecycleState::Fault
+            );
+        } else {
+            assert_eq!(
+                complete(
+                    &mut dispatcher,
+                    &stop,
+                    Err(ScientificDiagnostic::new(
+                        "execution-group main",
+                        "stop failed"
+                    )),
+                ),
+                LifecycleState::Fault
+            );
+        }
+        let retry = dispatcher.dispatch(LifecycleEvent::Retry).unwrap();
+        complete(&mut dispatcher, &retry.effect.unwrap(), Ok(()));
+        assert_eq!(dispatcher.state(), LifecycleState::Ready);
+        assert_eq!(
+            dispatcher.execution_group_states()["main"],
+            ExecutionGroupState::Stopped
+        );
+    }
+}
+
+#[test]
+fn session_stop_or_unload_supersedes_pending_group_work() {
+    for unload in [false, true] {
+        let mut dispatcher = LifecycleDispatcher::new();
+        load_ready(&mut dispatcher);
+        start_running(&mut dispatcher);
+        let group = dispatcher
+            .dispatch(LifecycleEvent::StopExecutionGroup("main".to_owned()))
+            .unwrap()
+            .effect
+            .unwrap();
+        let superseding = dispatcher
+            .dispatch(if unload {
+                LifecycleEvent::Unload
+            } else {
+                LifecycleEvent::Stop
+            })
+            .unwrap()
+            .effect
+            .unwrap();
+        assert!(dispatcher
+            .dispatch(LifecycleEvent::EffectCompleted(
+                LifecycleEffectResult::from_effect(&group, Ok(())),
+            ))
+            .is_err());
+        assert_eq!(
+            complete(&mut dispatcher, &superseding, Ok(())),
+            if unload {
+                LifecycleState::Offline
+            } else {
+                LifecycleState::Ready
+            }
+        );
+    }
+}
+
+#[test]
+fn required_object_failure_supersedes_pending_group_work() {
+    let mut dispatcher = LifecycleDispatcher::new();
+    load_ready(&mut dispatcher);
+    start_running(&mut dispatcher);
+    let group = dispatcher
+        .dispatch(LifecycleEvent::StopExecutionGroup("main".to_owned()))
+        .unwrap()
+        .effect
+        .unwrap();
+
+    let outcome = dispatcher
+        .dispatch(LifecycleEvent::RequiredObjectFailed(
+            ScientificDiagnostic::new("graph minimal", "required object disappeared"),
+        ))
+        .expect("required-object failure supersedes group work");
+    assert_eq!(outcome.state, LifecycleState::Fault);
+    assert!(outcome.effect.is_none());
+    assert!(dispatcher.pending_effect().is_none());
+    assert!(dispatcher
+        .dispatch(LifecycleEvent::EffectCompleted(
+            LifecycleEffectResult::from_effect(&group, Ok(())),
+        ))
+        .is_err());
+    assert_eq!(dispatcher.state(), LifecycleState::Fault);
+}
+
+#[test]
 fn unload_invalidates_pending_transition_and_rejects_its_late_completion() {
     let mut dispatcher = LifecycleDispatcher::new();
     let realize = dispatcher
@@ -295,9 +488,12 @@ struct RecordingExecutor {
 }
 
 impl EffectExecutor for RecordingExecutor {
-    fn execute(&mut self, effect: &LifecycleEffect) -> Result<(), ScientificDiagnostic> {
+    fn execute(
+        &mut self,
+        effect: &LifecycleEffect,
+    ) -> Result<LifecycleEffectSuccess, ScientificDiagnostic> {
         self.effects.push((effect.kind(), effect.token().value()));
-        Ok(())
+        Ok(LifecycleEffectSuccess::Completed)
     }
 }
 
@@ -316,6 +512,18 @@ fn blocking_effects_execute_after_handlers_return_and_repeated_cycles_are_clean(
             LifecycleState::Running
         );
         assert_eq!(
+            runner
+                .dispatch(LifecycleEvent::StopExecutionGroup("main".to_owned()))
+                .unwrap(),
+            LifecycleState::Running
+        );
+        assert_eq!(
+            runner
+                .dispatch(LifecycleEvent::StartExecutionGroup("main".to_owned()))
+                .unwrap(),
+            LifecycleState::Running
+        );
+        assert_eq!(
             runner.dispatch(LifecycleEvent::Stop).unwrap(),
             LifecycleState::Ready
         );
@@ -324,7 +532,7 @@ fn blocking_effects_execute_after_handlers_return_and_repeated_cycles_are_clean(
             LifecycleState::Offline
         );
     }
-    assert_eq!(runner.executor().effects.len(), 12);
+    assert_eq!(runner.executor().effects.len(), 18);
     assert!(runner
         .executor()
         .effects

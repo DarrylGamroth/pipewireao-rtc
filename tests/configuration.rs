@@ -16,19 +16,94 @@ fn replace_once(document: &str, before: &str, after: &str) -> String {
 #[test]
 fn maintained_session_topologies_are_resolved() {
     let cases = [
-        (MINIMAL, 3, 2),
-        (SERIAL, 4, 3),
-        (FORK, 5, 4),
-        (INDEPENDENT, 6, 4),
+        (MINIMAL, 3, 2, 1),
+        (SERIAL, 4, 3, 1),
+        (FORK, 5, 4, 2),
+        (INDEPENDENT, 6, 4, 2),
     ];
-    for (document, objects, links) in cases {
+    for (document, objects, links, execution_groups) in cases {
         let config = DevelopmentConfig::parse(document).expect("maintained topology");
         assert_eq!(config.object_count(), objects);
         assert_eq!(config.links.len(), links);
+        assert_eq!(config.execution_groups.len(), execution_groups);
         assert_eq!(config.topological_node_names().len(), objects);
         assert!(config.properties.is_empty());
         assert!(config.parameters.is_empty());
         assert!(config.observations.is_empty());
+    }
+}
+
+#[test]
+fn execution_group_membership_and_boundary_links_are_validated() {
+    let cases = [
+        (
+            replace_once(
+                FORK,
+                "nodes = [ pipewireao-rtc-fork-graph-a pipewireao-rtc-fork-sink-a ]",
+                "nodes = [ missing-node pipewireao-rtc-fork-sink-a ]",
+            ),
+            "execution-groups[0].nodes[0]",
+        ),
+        (
+            replace_once(FORK, "name = branch-b", "name = branch-a"),
+            "execution-groups[1].name",
+        ),
+        (
+            replace_once(
+                FORK,
+                "nodes = [ pipewireao-rtc-fork-graph-a pipewireao-rtc-fork-sink-a ]",
+                "nodes = []",
+            ),
+            "execution-groups[0].nodes",
+        ),
+        (
+            replace_once(
+                FORK,
+                "nodes = [ pipewireao-rtc-fork-graph-b pipewireao-rtc-fork-sink-b ]",
+                "nodes = [ pipewireao-rtc-fork-graph-a pipewireao-rtc-fork-graph-b pipewireao-rtc-fork-sink-b ]",
+            ),
+            "execution-groups[1].nodes[0]",
+        ),
+        (
+            replace_once(
+                FORK,
+                "nodes = [ pipewireao-rtc-fork-graph-a pipewireao-rtc-fork-sink-a ]",
+                "nodes = [ pipewireao-rtc-fork-sink-a ]",
+            ),
+            "execution-groups[0].nodes",
+        ),
+        (
+            replace_once(
+                FORK,
+                "nodes = [ pipewireao-rtc-fork-graph-a pipewireao-rtc-fork-sink-a ]",
+                "nodes = [ pipewireao-rtc-fork-graph-a ]",
+            ),
+            "sink pipewireao-rtc-fork-sink-a.execution-group",
+        ),
+        (
+            SERIAL.replace(
+                "execution-groups = [\n        {\n            name = chain\n            nodes = [\n                pipewireao-rtc-serial-source\n                pipewireao-rtc-serial-graph-a\n                pipewireao-rtc-serial-graph-b\n                pipewireao-rtc-serial-sink\n            ]\n        }\n    ]",
+                "execution-groups = [\n        { name = upstream nodes = [ pipewireao-rtc-serial-source pipewireao-rtc-serial-graph-a ] }\n        { name = downstream nodes = [ pipewireao-rtc-serial-graph-b pipewireao-rtc-serial-sink ] }\n    ]",
+            ),
+            "links[1].execution-group",
+        ),
+        (
+            replace_once(
+                FORK,
+                "pipewireao-rtc-fork-graph-a:input\" passive = true",
+                "pipewireao-rtc-fork-graph-a:input\" passive = false",
+            ),
+            "links[0].passive",
+        ),
+        (
+            replace_once(MINIMAL, "passive = false", "passive = true"),
+            "links[0].passive",
+        ),
+    ];
+
+    for (document, field) in cases {
+        let error = DevelopmentConfig::parse(&document).expect_err("invalid execution group");
+        assert_eq!(error.field(), field, "configuration mutation:\n{document}");
     }
 }
 

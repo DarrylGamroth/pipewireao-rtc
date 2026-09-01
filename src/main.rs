@@ -31,17 +31,93 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     require_state(&mut runner, LifecycleEvent::Start, LifecycleState::Running)?;
     println!("RUNNING {:?}", runner.executor().status());
-    if arguments.hold {
-        println!("Press Enter to stop and unload.");
-        let mut input = String::new();
-        std::io::stdin().read_line(&mut input)?;
-    }
+    let control_result = if arguments.hold {
+        control_session(&mut runner)
+    } else {
+        Ok(())
+    };
 
-    require_state(&mut runner, LifecycleEvent::Stop, LifecycleState::Ready)?;
-    println!("READY {:?}", runner.executor().status());
-    require_state(&mut runner, LifecycleEvent::Unload, LifecycleState::Offline)?;
-    println!("OFFLINE {:?}", runner.executor().status());
+    let stop_result = if runner.state() == LifecycleState::Running {
+        let result = require_state(&mut runner, LifecycleEvent::Stop, LifecycleState::Ready);
+        if result.is_ok() {
+            println!("READY {:?}", runner.executor().status());
+        }
+        result
+    } else {
+        Ok(())
+    };
+    let unload_result = if runner.state() == LifecycleState::Offline {
+        Ok(())
+    } else {
+        let result = require_state(&mut runner, LifecycleEvent::Unload, LifecycleState::Offline);
+        if result.is_ok() {
+            println!("OFFLINE {:?}", runner.executor().status());
+        }
+        result
+    };
+
+    unload_result?;
+    stop_result?;
+    control_result?;
     Ok(())
+}
+
+fn control_session(runner: &mut Runner<LiveGraphAdapter>) -> Result<(), ScientificDiagnostic> {
+    println!("Commands: groups, status, stop GROUP, start GROUP, quit");
+    loop {
+        print!("pipewireao-rtc> ");
+        std::io::Write::flush(&mut std::io::stdout()).map_err(|error| {
+            ScientificDiagnostic::new("command", format!("cannot flush prompt: {error}"))
+        })?;
+        let mut input = String::new();
+        let bytes = std::io::stdin().read_line(&mut input).map_err(|error| {
+            ScientificDiagnostic::new("command", format!("cannot read control command: {error}"))
+        })?;
+        if bytes == 0 {
+            return Ok(());
+        }
+        let fields = input.split_whitespace().collect::<Vec<_>>();
+        match fields.as_slice() {
+            [] => {}
+            ["quit" | "exit"] => return Ok(()),
+            ["groups"] => println!("{:?}", runner.execution_group_states()),
+            ["status"] => {
+                let counters = runner.executor_mut().observe_discarded_buffers()?;
+                println!("{:?} discarded={counters:?}", runner.executor().status());
+            }
+            ["stop", name] => dispatch_group(
+                runner,
+                LifecycleEvent::StopExecutionGroup((*name).to_owned()),
+            )?,
+            ["start", name] => dispatch_group(
+                runner,
+                LifecycleEvent::StartExecutionGroup((*name).to_owned()),
+            )?,
+            _ => eprintln!("expected groups, status, stop GROUP, start GROUP, or quit"),
+        }
+    }
+}
+
+fn dispatch_group(
+    runner: &mut Runner<LiveGraphAdapter>,
+    event: LifecycleEvent,
+) -> Result<(), ScientificDiagnostic> {
+    match runner.dispatch(event) {
+        Ok(LifecycleState::Running) => {
+            println!("RUNNING {:?}", runner.executor().status());
+            Ok(())
+        }
+        Ok(state) => Err(runner.diagnostic().cloned().unwrap_or_else(|| {
+            ScientificDiagnostic::new(
+                "execution-group control",
+                format!("expected Running, reached {state:?}"),
+            )
+        })),
+        Err(error) => {
+            eprintln!("execution-group control rejected: {error}");
+            Ok(())
+        }
+    }
 }
 
 fn require_state(

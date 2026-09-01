@@ -28,6 +28,11 @@ An **RTC session** is the set of required objects owned by one runner lifecycle.
 It contains the minimum three-object graph or the multi-composite topology
 defined by RTC-DEV-010.
 
+An **execution group** is a uniquely named, non-empty set of declared session
+nodes that starts and stops as one processing unit while the session remains
+realized. It does not own configuration, links, cleanup, or a separate Statig
+lifecycle.
+
 A **required object** is the configured source, execution composite, sink, or
 link whose availability is necessary for the graph to reach `READY` or remain
 `RUNNING`.
@@ -114,7 +119,7 @@ stateDiagram-v2
 | `OFFLINE` | The runner owns no active development graph. |
 | `CONFIGURING` | The configuration is being resolved, objects are being created, and initial values are being applied. |
 | `READY` | The exact required topology exists and can start, but it is not processing frames. |
-| `RUNNING` | The source, graph, and sink are processing in open loop. |
+| `RUNNING` | Session execution is admitted. All execution groups start in the running condition, after which individual groups may be stopped and restarted under RTC-DEV-011. |
 | `FAULT` | A requested transition or required object failed; the diagnostic is retained and no physical action is possible. |
 
 Startup and stopping MAY be reported as transition progress but are not
@@ -172,8 +177,9 @@ only the declared inter-composite PipeWire links.
 One session-level RTC-DEV-004 lifecycle MUST initially own all required
 objects. The session MUST reach `READY` only after every required graph
 instance and link is realized. Start, stop, retry, required-object failure, and
-unload MUST apply coherently to the session as a unit. The runner MUST NOT
-provide independent per-graph lifecycle control in this increment.
+unload MUST apply coherently to the session as a unit. Selective run control
+under RTC-DEV-011 and RTC-DEV-012 does not transfer that ownership or create an
+independent per-graph lifecycle.
 
 The runner MUST leave frame scheduling and any concurrent execution of
 independent graphs to PipeWire and FGN. It MUST NOT add a runner task scheduler,
@@ -188,6 +194,66 @@ paths; inspect the exact objects and links; inject failure after every creation
 point; stop and restart the complete session; unload it without removing an
 unrelated object; and verify that no runner-local filter-graph parser or
 scheduler is present.
+
+### RTC-DEV-011 — Selective execution groups
+
+The development configuration MUST declare one or more uniquely named,
+non-empty execution groups using session node names. Every `fgn-native` graph
+instance and every sink MUST belong to exactly one execution group. Every
+execution group MUST contain at least one `fgn-native` graph. A source MAY
+belong to at most one group; a source intentionally shared by groups MUST
+remain session-managed outside every group. The runner MUST reject an unknown
+member, duplicate membership, an empty group, a group without a graph, an
+unassigned graph or sink, or a direct link between two different groups with a
+field-specific diagnostic.
+
+Every link from a session-managed upstream node into an execution group MUST
+declare standard PipeWire passive-link behavior. The live adapter MUST verify
+that the public link surface retains that property. It MUST reject the session
+instead of claiming selective control when the property is absent or ignored.
+A link that does not cross that boundary MUST declare non-passive behavior in
+this development profile. The runner MUST otherwise realize the exact declared
+links and MUST NOT add a private gate, queue, scheduler, or frame-processing
+callback.
+
+Session start MUST start every session-managed node and every execution group.
+While the session remains `RUNNING`, the runner MUST accept a stop or start
+request for one named group. A successful group stop MUST leave its nodes and
+links realized and inspectable, stop new buffers from reaching its declared
+sinks, preserve algorithm state, and leave every other running group able to
+progress. A successful group start MUST resume that preserved group and
+produce a later buffer at each of its declared sinks. Session stop, unload,
+reload, retry, and required-object failure remain session-wide. Reset, bypass,
+and group-local fault recovery are not selected by this requirement.
+
+Verification intent (informative): configure the serial chain as one group and
+reject a split A → B chain; stop and restart either independent path while the
+other sink counter advances; stop and restart either fork branch while the
+shared source and other branch continue; observe group state, preserved
+objects, unchanged links, resumed sink delivery, and session-wide cleanup.
+
+### RTC-DEV-012 — Serialized execution-group control
+
+Execution-group requests MUST enter the same single serialized dispatcher used
+by RTC-DEV-004 and RTC-DEV-009. A Statig handler MUST only validate the stable
+session state and emit a typed group effect. Potentially blocking PipeWire and
+metric work MUST execute outside the handler and return through the dispatcher
+as a typed completion containing the runner-allocated token, operation kind,
+originating transition, and execution-group identity.
+
+The dispatcher MUST allow at most one session or group effect in flight. It
+MUST reject an invalid state or group request without changing group or
+session state. It MUST reject a stale, duplicate, wrong-kind,
+wrong-transition, or wrong-group completion. A failed group start or stop MUST
+retain a scientific diagnostic and move the required session to `FAULT`.
+Session stop, unload, or required-object failure MUST supersede a pending group
+operation, and its late completion MUST NOT change subsequent state.
+
+Verification intent (informative): inspect that the private Statig machine and
+one dispatcher remain the only control-state writer; exercise group start and
+stop success and failure, duplicate requests, unknown groups, every completion
+mismatch, session stop and unload during a pending group effect, late
+completion rejection, and repeated group and session cycles.
 
 ### RTC-DEV-005 — Standard property and parameter paths
 
@@ -265,6 +331,7 @@ The minimum configuration contains only these semantic fields:
 | source | Simulated or recorded complete-frame source plus its node arguments |
 | graph | Canonical `fgn-native` graph configuration |
 | sink | Simulated, discard, or other non-actuating sink |
+| execution groups | Named sets of session nodes with selective start and stop control |
 | properties | Initial scalar values keyed by declared scientific names |
 | parameters | Paths or prepared references for declared ndarray parameter ports |
 | observations | Optional graph outputs made visible for ordinary PipeWire clients |
@@ -312,6 +379,6 @@ message presented to a scientist.
 ## Development gate
 
 The active operating contract is complete when RTC-DEV-001 through
-RTC-DEV-010 are implemented and their verification intent is covered for the
+RTC-DEV-012 are implemented and their verification intent is covered for the
 small fixtures and REVOLT Classic. Passing this gate permits only the claim
 stated in the architecture: a usable, non-actuating development RTCW.

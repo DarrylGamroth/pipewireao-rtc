@@ -7,7 +7,8 @@ The first executable loads one simulated or recorded complete-frame source,
 one `fgn-native` Calculon graph, and one non-actuating sink from a standard
 PipeWire configuration. The active RTCW extension composes multiple existing
 filter-graph instances and exact PipeWire links under the same session
-lifecycle. It does not add another graph-authoring format or scheduler.
+lifecycle. Named execution groups add selective start and stop control without
+adding another graph-authoring format, scheduler, or ownership lifecycle.
 
 Runtime implementation is underway and remains incomplete. Documentation is
 not implementation or qualification evidence.

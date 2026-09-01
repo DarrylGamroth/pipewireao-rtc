@@ -141,6 +141,14 @@ pub struct ObjectSpec<F> {
 pub struct LinkSpec {
     pub output: String,
     pub input: String,
+    pub passive: bool,
+}
+
+/// Named session nodes that start and stop as one processing unit.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ExecutionGroupSpec {
+    pub name: String,
+    pub nodes: Vec<String>,
 }
 
 /// Resolved, development-only session loaded from relaxed SPA-JSON.
@@ -149,6 +157,7 @@ pub struct DevelopmentConfig {
     pub sources: Vec<ObjectSpec<EndpointFactory>>,
     pub graphs: Vec<ObjectSpec<GraphFactory>>,
     pub sinks: Vec<ObjectSpec<EndpointFactory>>,
+    pub execution_groups: Vec<ExecutionGroupSpec>,
     pub properties: BTreeMap<String, String>,
     pub parameters: BTreeMap<String, String>,
     pub observations: Vec<String>,
@@ -244,6 +253,7 @@ impl DevelopmentConfig {
                 "no bounded non-gating observation port exists for this fixture",
             ));
         }
+        validate_execution_groups(self)?;
         validate_links(self)
     }
 
@@ -260,6 +270,55 @@ impl DevelopmentConfig {
             .chain(self.graphs.iter().map(|object| object.node_name.as_str()))
             .chain(self.sinks.iter().map(|object| object.node_name.as_str()))
             .collect()
+    }
+
+    #[must_use]
+    pub fn execution_group(&self, name: &str) -> Option<&ExecutionGroupSpec> {
+        self.execution_groups
+            .iter()
+            .find(|group| group.name == name)
+    }
+
+    #[must_use]
+    pub fn execution_group_names(&self) -> Vec<String> {
+        self.execution_groups
+            .iter()
+            .map(|group| group.name.clone())
+            .collect()
+    }
+
+    #[must_use]
+    pub fn execution_group_for_node(&self, node_name: &str) -> Option<&str> {
+        self.execution_groups.iter().find_map(|group| {
+            group
+                .nodes
+                .iter()
+                .any(|member| member == node_name)
+                .then_some(group.name.as_str())
+        })
+    }
+
+    #[must_use]
+    pub fn execution_group_node_names(&self, name: &str) -> Option<Vec<String>> {
+        let group = self.execution_group(name)?;
+        Some(
+            self.topological_node_names()
+                .into_iter()
+                .filter(|node| group.nodes.contains(node))
+                .collect(),
+        )
+    }
+
+    #[must_use]
+    pub fn execution_group_sink_names(&self, name: &str) -> Option<Vec<String>> {
+        let group = self.execution_group(name)?;
+        Some(
+            self.sinks
+                .iter()
+                .filter(|sink| group.nodes.contains(&sink.node_name))
+                .map(|sink| sink.node_name.clone())
+                .collect(),
+        )
     }
 
     /// Returns nodes in upstream-to-downstream order. Validation guarantees an
@@ -327,6 +386,90 @@ impl DevelopmentConfig {
         });
         links
     }
+}
+
+fn validate_execution_groups(config: &DevelopmentConfig) -> Result<(), ScientificDiagnostic> {
+    if config.execution_groups.is_empty() {
+        return Err(ScientificDiagnostic::new(
+            "execution-groups",
+            "at least one execution group is required",
+        ));
+    }
+
+    let node_names = config.node_names().into_iter().collect::<BTreeSet<_>>();
+    let graph_names = config
+        .graphs
+        .iter()
+        .map(|graph| graph.node_name.as_str())
+        .collect::<BTreeSet<_>>();
+    let mut names = BTreeSet::new();
+    let mut membership = BTreeMap::<&str, &str>::new();
+
+    for (group_index, group) in config.execution_groups.iter().enumerate() {
+        let field = format!("execution-groups[{group_index}]");
+        if group.name.is_empty() || group.name.contains('\0') {
+            return Err(ScientificDiagnostic::new(
+                format!("{field}.name"),
+                "execution-group name must be non-empty and contain no NUL",
+            ));
+        }
+        if !names.insert(group.name.as_str()) {
+            return Err(ScientificDiagnostic::new(
+                format!("{field}.name"),
+                format!("execution-group name {:?} is duplicated", group.name),
+            ));
+        }
+        if group.nodes.is_empty() {
+            return Err(ScientificDiagnostic::new(
+                format!("{field}.nodes"),
+                "execution group must contain at least one session node",
+            ));
+        }
+
+        let mut contains_graph = false;
+        for (member_index, member) in group.nodes.iter().enumerate() {
+            let member_field = format!("{field}.nodes[{member_index}]");
+            if !node_names.contains(member.as_str()) {
+                return Err(ScientificDiagnostic::new(
+                    member_field,
+                    format!("session node {member:?} is not declared"),
+                ));
+            }
+            if let Some(previous) = membership.insert(member, &group.name) {
+                return Err(ScientificDiagnostic::new(
+                    member_field,
+                    format!(
+                        "session node {member:?} already belongs to execution group {previous:?}"
+                    ),
+                ));
+            }
+            contains_graph |= graph_names.contains(member.as_str());
+        }
+        if !contains_graph {
+            return Err(ScientificDiagnostic::new(
+                format!("{field}.nodes"),
+                "execution group must contain at least one fgn-native graph",
+            ));
+        }
+    }
+
+    for graph in &config.graphs {
+        if !membership.contains_key(graph.node_name.as_str()) {
+            return Err(ScientificDiagnostic::new(
+                format!("graph {}.execution-group", graph.node_name),
+                "every fgn-native graph must belong to exactly one execution group",
+            ));
+        }
+    }
+    for sink in &config.sinks {
+        if !membership.contains_key(sink.node_name.as_str()) {
+            return Err(ScientificDiagnostic::new(
+                format!("sink {}.execution-group", sink.node_name),
+                "every non-actuating sink must belong to exactly one execution group",
+            ));
+        }
+    }
+    Ok(())
 }
 
 fn validate_source(
@@ -688,6 +831,26 @@ fn validate_links(config: &DevelopmentConfig) -> Result<(), ScientificDiagnostic
             return Err(ScientificDiagnostic::new(
                 field,
                 "links must be source -> graph, graph -> graph, or graph -> sink",
+            ));
+        }
+        let output_group = config.execution_group_for_node(output_node);
+        let input_group = config.execution_group_for_node(input_node);
+        if let (Some(output_group), Some(input_group)) = (output_group, input_group) {
+            if output_group != input_group {
+                return Err(ScientificDiagnostic::new(
+                    format!("{field}.execution-group"),
+                    format!(
+                        "direct link from execution group {output_group:?} to {input_group:?} is not selectively controllable"
+                    ),
+                ));
+            }
+        }
+        let enters_group_from_session_node = output_group.is_none() && input_group.is_some();
+        if link.passive != enters_group_from_session_node {
+            let expected = enters_group_from_session_node;
+            return Err(ScientificDiagnostic::new(
+                format!("{field}.passive"),
+                format!("link.passive must be {expected} for this execution-group boundary"),
             ));
         }
         if output.port.element_type != input.port.element_type {

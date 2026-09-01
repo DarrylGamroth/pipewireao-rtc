@@ -47,13 +47,14 @@ flowchart LR
     Chain["1c. Serial graph chain"]
     Fork["1d. Forked graph paths"]
     Parallel["1e. Independent paths"]
+    Control["1f. Selective run control"]
     Revolt["2. REVOLT Classic equivalence"]
     Authoring["3. Scientist authoring proof"]
     Profile["4. Development performance profile"]
     Gate["Development gate"]
 
-    Contract --> Transport --> Fixture --> Chain --> Fork --> Parallel
-    Parallel --> Revolt --> Authoring --> Profile --> Gate
+    Contract --> Transport --> Fixture --> Chain --> Fork --> Parallel --> Control
+    Control --> Revolt --> Authoring --> Profile --> Gate
 ```
 
 ### 0. Freeze the small contract
@@ -63,7 +64,7 @@ flowchart LR
 - use standard PipeWire relaxed SPA-JSON rather than inventing another
   configuration language;
 - identify the exact current PipeWireAO and Calculon revisions; and
-- map RTC-DEV-001 through RTC-DEV-010 to implementation and tests as work
+- map RTC-DEV-001 through RTC-DEV-012 to implementation and tests as work
   begins.
 
 Exit evidence: the active index has no dependency on archived requirements,
@@ -94,6 +95,11 @@ Deliver these slices in order:
    both paths as one session while leaving their execution to PipeWire. Inspect
    the active topology with ordinary tools and, where a bounded non-gating
    boundary exists, attach and stall an optional GUI observer.
+6. **Selective execution-group control.** Declare one whole-chain group for
+   the serial fixture, one group per independent path, and one group per fork
+   branch while leaving the shared source session-managed. Route group stop and
+   start through the existing dispatcher, preserve realized objects and
+   algorithm state, and prove an unaffected group continues processing.
 
 For the runner slices beginning with FITS → one graph → discard:
 
@@ -115,6 +121,12 @@ each complete path delivers a buffer to its discard sink; malformed
 configurations fail with scientific diagnostics; exact owned objects are
 removed; unrelated PipeWire objects survive; and a read-only observer is
 optional.
+
+Selective-control exit evidence additionally requires rejection of unsafe
+cross-group serial links, token-validated group effects through the one
+dispatcher, preserved topology and state across group stop/start, live fork
+and independent isolation, failure-to-`FAULT`, and session-wide cancellation
+and cleanup while group work is pending.
 
 ### 2. Add REVOLT Classic
 
@@ -178,6 +190,8 @@ or correction-critical suitability.
 | RTC-DEV-008 | 3 | planned | missing | Package-local declaration examples and ordinary-array tests |
 | RTC-DEV-009 | 1 | implemented | validated | Statig hierarchy, serialized dispatch, typed effects, effect failure, stale-completion rejection, and the full private-core lifecycle pass through the same dispatcher |
 | RTC-DEV-010 | 1c through 1e | implemented | partial | The exact serial, forked, and independent sessions each pass the private-core lifecycle and deliver to every sink; standard graph files are delegated unchanged and PipeWire owns branch execution; deterministic creation-point failure coverage uses the fake adapter, so live lower-level failure injection after every point remains missing |
+| RTC-DEV-011 | 1f | implemented | partial | Valid and invalid execution-group configurations pass; the live serial, fork, and independent fixtures preserve exact objects and links, quiesce the selected sinks, leave unaffected sinks progressing, and resume delivery. PipeWireAO pause/start retains the same FGN instance and does not call its separate reset operation, but accepted numerical output is not observed to prove state continuity |
+| RTC-DEV-012 | 1f | implemented | validated | Group start and stop use the one dispatcher and typed token, kind, origin, and group-target completions; mismatch, invalid request, effect failure to `FAULT`, stop/unload/required-failure supersession, late completion, retry, and repeated-cycle tests pass |
 
 Implementation and evidence state remain separate when this table is updated.
 A merged implementation is not validated until its complete evidence passes
@@ -206,13 +220,17 @@ changes to evidence.
 The executable, standard PipeWire relaxed SPA-JSON decoder, Statig lifecycle,
 fake graph adapter, and live private-core adapter are present. A narrow C shim
 exposes the public `spa_json_*` cursor API missing from the Rust binding. The
-runner decodes only its session objects, typed boundary ports, and exact
-ordinary PipeWire links. Each graph entry references a complete standard
-PipeWire module-argument file; the executor reads that file and passes it
-unchanged to `libpipewire-module-ndarray-filter-chain`. The runner has no
+runner decodes only its session objects, execution-group membership, typed
+boundary ports, and exact ordinary PipeWire links. Each graph entry references
+a complete standard PipeWire module-argument file; the executor reads that
+file and passes it unchanged to `libpipewire-module-ndarray-filter-chain`. The
+runner has no
 `filter.graph` parser, algorithm model, renderer, scheduler, worker pool, or
-per-graph lifecycle. The configuration rejection matrix is in
-`tests/configuration.rs`; lifecycle and effect-completion coverage is in
+per-graph ownership lifecycle. Selective stop/start uses standard node commands
+on declared whole-node groups. A passive PipeWire link isolates each fork
+branch from its session-managed shared source; the live adapter verifies that
+property through public link introspection. The configuration rejection matrix
+is in `tests/configuration.rs`; lifecycle and effect-completion coverage is in
 `tests/lifecycle.rs`; deterministic object and link failure injection is in
 `tests/graph_adapter.rs`; and the maintained private-core target is in
 `tests/live_private_core.rs`. Its RTC-owned FITS transport implementation is in
@@ -224,13 +242,20 @@ requires the maintained sibling PipeWireAO and Calculon build artifacts. Its
 explicit invocation now passes the complete `Load` → `READY` → `Start` →
 `RUNNING` → `Stop` → `READY` → `Start` → `RUNNING` → `Stop` → `READY` →
 `Unload` → `OFFLINE` lifecycle for the minimal, serial, forked, and independent
-sessions. Before admitting links, it enumerates the public port formats and
+sessions. While each session remains `RUNNING`, it also stops and restarts each
+declared execution group, confirms that selected sink delivery quiesces without
+removing nodes or links, and confirms that every unaffected group continues to
+deliver. Before admitting links, it enumerates the public port formats and
 checks their directions, element types, shapes, layouts, rates, scientific
 schemas, and every discard sink's format wildcard. It then confirms every
 configured node and link through ordinary inspection, a discard-buffer
 increase at every sink after each start, complete owned-object cleanup, and
 preservation of an unrelated node. The test observes delivery to each sink,
-not the numerical contents of output frames.
+not the numerical contents of output frames. PipeWireAO's ndarray filter-chain
+module maps pause and start to deactivation and activation of the same FGN
+graph instance; its separate graph-reset operation is not invoked. Numerical
+state-continuity evidence therefore remains partial until an admitted
+non-gating output observation can compare accepted values across the pause.
 
 The discard scheduling handshake, stable FITS node and output-port identities,
 and fixed-string negotiation repair are in local PipeWireAO SPA plugins `main`
@@ -265,7 +290,7 @@ another module or unsafe shim.
 
 The milestone is complete only when:
 
-- RTC-DEV-001 through RTC-DEV-010 are implemented for the maintained fixtures;
+- RTC-DEV-001 through RTC-DEV-012 are implemented for the maintained fixtures;
 - one command loads the REVOLT Classic development configuration;
 - output and state equivalence pass for nominal frames and updates;
 - repeated lifecycle and failure tests leave no owned objects behind;

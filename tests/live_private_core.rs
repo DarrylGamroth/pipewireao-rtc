@@ -4,7 +4,8 @@
 mod fits_discard;
 
 use pipewireao_rtc::{
-    ConfigurationInput, LifecycleEvent, LifecycleState, LiveGraphAdapter, Runner,
+    ConfigurationInput, ExecutionGroupState, LifecycleEvent, LifecycleState, LiveGraphAdapter,
+    Runner,
 };
 use std::collections::BTreeMap;
 use std::io::Write;
@@ -34,6 +35,7 @@ struct SessionCase<'a> {
     nodes: &'a [&'a str],
     links: usize,
     sinks: &'a [&'a str],
+    groups: &'a [(&'a str, &'a str)],
 }
 
 #[test]
@@ -219,6 +221,7 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
             ],
             links: 2,
             sinks: &["pipewireao-rtc-sink"],
+            groups: &[("main", "pipewireao-rtc-sink")],
         },
         SessionCase {
             fixture: "serial-development.conf",
@@ -230,6 +233,7 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
             ],
             links: 3,
             sinks: &["pipewireao-rtc-serial-sink"],
+            groups: &[("chain", "pipewireao-rtc-serial-sink")],
         },
         SessionCase {
             fixture: "fork-development.conf",
@@ -242,6 +246,10 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
             ],
             links: 4,
             sinks: &["pipewireao-rtc-fork-sink-a", "pipewireao-rtc-fork-sink-b"],
+            groups: &[
+                ("branch-a", "pipewireao-rtc-fork-sink-a"),
+                ("branch-b", "pipewireao-rtc-fork-sink-b"),
+            ],
         },
         SessionCase {
             fixture: "independent-development.conf",
@@ -257,6 +265,10 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
             sinks: &[
                 "pipewireao-rtc-independent-sink-a",
                 "pipewireao-rtc-independent-sink-b",
+            ],
+            groups: &[
+                ("path-a", "pipewireao-rtc-independent-sink-a"),
+                ("path-b", "pipewireao-rtc-independent-sink-b"),
             ],
         },
     ];
@@ -332,6 +344,8 @@ fn run_session_case(
         );
     }
 
+    exercise_execution_groups(&mut runner, pipewire_build, environment, core_name, case);
+
     assert_eq!(
         runner.dispatch(LifecycleEvent::Stop).unwrap(),
         LifecycleState::Ready,
@@ -368,6 +382,92 @@ fn run_session_case(
     assert!(unloaded_dump.contains("pipewireao-rtc-unrelated"));
     for node in case.nodes {
         assert!(!unloaded_dump.contains(node), "owned node survived: {node}");
+    }
+}
+
+fn exercise_execution_groups(
+    runner: &mut Runner<LiveGraphAdapter>,
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+    case: &SessionCase<'_>,
+) {
+    for &(group, sink) in case.groups {
+        let before_stop = runner
+            .executor_mut()
+            .observe_discarded_buffers()
+            .expect("observe counters before execution-group stop");
+        assert_eq!(
+            runner
+                .dispatch(LifecycleEvent::StopExecutionGroup(group.to_owned()))
+                .unwrap(),
+            LifecycleState::Running,
+            "{} {group} stop diagnostic: {:?}",
+            case.fixture,
+            runner.diagnostic()
+        );
+        let stopped = runner.executor().status();
+        assert_eq!(
+            runner.execution_group_states()[group],
+            ExecutionGroupState::Stopped
+        );
+        assert_eq!(stopped.owned_nodes, case.nodes.len());
+        assert_eq!(stopped.owned_links, case.links);
+        for &(other, _) in case.groups {
+            if other != group {
+                assert_eq!(
+                    runner.execution_group_states()[other],
+                    ExecutionGroupState::Running
+                );
+            }
+        }
+        let stopped_dump = dump(pipewire_build, environment, core_name);
+        for node in case.nodes {
+            assert!(stopped_dump.contains(node));
+        }
+
+        let at_stop = runner
+            .executor_mut()
+            .observe_discarded_buffers()
+            .expect("observe stopped execution group");
+        std::thread::sleep(Duration::from_millis(20));
+        let after_wait = runner
+            .executor_mut()
+            .observe_discarded_buffers()
+            .expect("observe branch isolation");
+        assert_eq!(
+            after_wait[sink], at_stop[sink],
+            "{} {group} continued processing after stop",
+            case.fixture
+        );
+        for &(other, other_sink) in case.groups {
+            if other != group {
+                assert!(
+                    after_wait[other_sink] > at_stop[other_sink],
+                    "{} stopping {group} stalled {other}: before={at_stop:?} after={after_wait:?}",
+                    case.fixture
+                );
+            }
+        }
+
+        assert_eq!(
+            runner
+                .dispatch(LifecycleEvent::StartExecutionGroup(group.to_owned()))
+                .unwrap(),
+            LifecycleState::Running,
+            "{} {group} restart diagnostic: {:?}",
+            case.fixture,
+            runner.diagnostic()
+        );
+        let restarted_group = runner
+            .executor_mut()
+            .observe_discarded_buffers()
+            .expect("observe restarted execution group");
+        assert!(restarted_group[sink] > before_stop[sink]);
+        assert_eq!(
+            runner.execution_group_states()[group],
+            ExecutionGroupState::Running
+        );
     }
 }
 

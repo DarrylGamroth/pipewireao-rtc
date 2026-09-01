@@ -1,6 +1,7 @@
 use crate::{
     ConfigurationInput, DevelopmentConfig, EffectExecutor, EndpointFactory, GraphFactory,
-    LifecycleEffect, ObjectRole, ObjectSpec, PortDirection, PortSpec, ScientificDiagnostic,
+    LifecycleEffect, LifecycleEffectSuccess, ObjectRole, ObjectSpec, PortDirection, PortSpec,
+    ScientificDiagnostic,
 };
 use pipewire as pw;
 use pw::properties::PropertiesBox;
@@ -36,6 +37,7 @@ pub struct LiveGraphStatus {
 }
 
 struct LiveNode {
+    name: String,
     _listener: pw::node::NodeListener,
     proxy: pw::node::Node,
     state: Rc<RefCell<String>>,
@@ -63,6 +65,8 @@ pub struct LiveGraphAdapter {
     owned_node_names: Vec<String>,
     start_order: Vec<String>,
     sink_names: Vec<String>,
+    execution_group_nodes: BTreeMap<String, Vec<String>>,
+    execution_group_sinks: BTreeMap<String, Vec<String>>,
     expected_objects: usize,
     expected_links: usize,
     status: LiveGraphStatus,
@@ -139,6 +143,8 @@ impl LiveGraphAdapter {
             owned_node_names: Vec::new(),
             start_order: Vec::new(),
             sink_names: Vec::new(),
+            execution_group_nodes: BTreeMap::new(),
+            execution_group_sinks: BTreeMap::new(),
             expected_objects: 0,
             expected_links: 0,
             status: LiveGraphStatus::default(),
@@ -163,6 +169,20 @@ impl LiveGraphAdapter {
         status
     }
 
+    /// Reads the maintained discard metrics for every realized sink.
+    ///
+    /// # Errors
+    ///
+    /// Returns a scientific diagnostic when a sink metric is unavailable.
+    pub fn observe_discarded_buffers(
+        &mut self,
+    ) -> Result<BTreeMap<String, u64>, ScientificDiagnostic> {
+        let observed = self.discard_buffer_counts()?;
+        self.status.discarded_buffers = observed.values().sum();
+        self.status.discarded_by_sink.clone_from(&observed);
+        Ok(observed)
+    }
+
     fn realize(&mut self, config: &DevelopmentConfig) -> Result<(), ScientificDiagnostic> {
         config.validate()?;
         self.cleanup()?;
@@ -174,6 +194,30 @@ impl LiveGraphAdapter {
             .sinks
             .iter()
             .map(|sink| sink.node_name.clone())
+            .collect();
+        self.execution_group_nodes = config
+            .execution_groups
+            .iter()
+            .map(|group| {
+                (
+                    group.name.clone(),
+                    config
+                        .execution_group_node_names(&group.name)
+                        .expect("validated execution group"),
+                )
+            })
+            .collect();
+        self.execution_group_sinks = config
+            .execution_groups
+            .iter()
+            .map(|group| {
+                (
+                    group.name.clone(),
+                    config
+                        .execution_group_sink_names(&group.name)
+                        .expect("validated execution group"),
+                )
+            })
             .collect();
         self.expected_objects = config.object_count();
         self.expected_links = config.links.len();
@@ -207,7 +251,7 @@ impl LiveGraphAdapter {
         // Admit links downstream-first so no source can publish into a
         // partially realized processing path.
         for (index, link) in config.links_downstream_first() {
-            if let Err(error) = self.create_link(index, &link.output, &link.input) {
+            if let Err(error) = self.create_link(index, &link.output, &link.input, link.passive) {
                 let _ = self.cleanup();
                 return Err(error);
             }
@@ -249,56 +293,8 @@ impl LiveGraphAdapter {
         self.status.discarded_buffers = discarded_before_start.values().sum();
         self.status.discarded_by_sink = discarded_before_start.clone();
 
-        // Downstream-first commands prevent the source from outrunning its sink.
-        for node_name in self.start_order.iter().rev() {
-            let global = self.node_global(node_name)?;
-            let node = self
-                .registry
-                .bind::<pw::node::Node, _>(&global)
-                .map_err(|error| {
-                    ScientificDiagnostic::new(
-                        format!("node {node_name}"),
-                        format!("cannot bind required node: {error}"),
-                    )
-                })?;
-            let state = Rc::new(RefCell::new(String::from("unknown")));
-            let observed = Rc::clone(&state);
-            let listener = node
-                .add_listener_local()
-                .info(move |info| {
-                    *observed.borrow_mut() = format!("{:?}", info.state());
-                })
-                .register();
-            node.send_command(&pw::spa::node::command::NodeCommand::new(
-                pw::spa::node::command::NodeCommandId::START,
-            ));
-            self.active_nodes.push(LiveNode {
-                _listener: listener,
-                proxy: node,
-                state,
-            });
-        }
-        let mut states = Vec::new();
-        let mut all_running = false;
-        for _ in 0..100 {
-            self.roundtrip("start source -> graph -> sink")?;
-            states = self
-                .active_nodes
-                .iter()
-                .map(|node| node.state.borrow().clone())
-                .collect::<Vec<_>>();
-            if states.iter().all(|state| state == "Running") {
-                all_running = true;
-                break;
-            }
-            std::thread::sleep(std::time::Duration::from_millis(5));
-        }
-        if !all_running {
-            return Err(ScientificDiagnostic::new(
-                "topology",
-                format!("required nodes did not all enter RUNNING; observed states {states:?}"),
-            ));
-        }
+        let start_order = self.start_order.clone();
+        self.start_nodes(&start_order, "start complete-frame session")?;
         self.status.discarded_by_sink = self.wait_for_discarded_buffers(&discarded_before_start)?;
         self.status.discarded_buffers = self.status.discarded_by_sink.values().sum();
         self.status.running = true;
@@ -321,6 +317,139 @@ impl LiveGraphAdapter {
         self.active_nodes.clear();
         self.status.running = false;
         Ok(())
+    }
+
+    fn start_execution_group(&mut self, name: &str) -> Result<(), ScientificDiagnostic> {
+        let nodes = self
+            .execution_group_nodes
+            .get(name)
+            .cloned()
+            .ok_or_else(|| {
+                ScientificDiagnostic::new(
+                    format!("execution-group {name}"),
+                    "group is not realized",
+                )
+            })?;
+        let sinks = self
+            .execution_group_sinks
+            .get(name)
+            .expect("realized group sinks")
+            .clone();
+        let before = self.discard_buffer_counts_for(&sinks)?;
+        self.start_nodes(&nodes, &format!("start execution group {name}"))?;
+        let observed = self.wait_for_discarded_buffers(&before)?;
+        self.status.discarded_by_sink.extend(observed);
+        self.status.discarded_buffers = self.status.discarded_by_sink.values().sum();
+        Ok(())
+    }
+
+    fn stop_execution_group(&mut self, name: &str) -> Result<(), ScientificDiagnostic> {
+        let nodes = self
+            .execution_group_nodes
+            .get(name)
+            .cloned()
+            .ok_or_else(|| {
+                ScientificDiagnostic::new(
+                    format!("execution-group {name}"),
+                    "group is not realized",
+                )
+            })?;
+        for node in self
+            .active_nodes
+            .iter()
+            .filter(|node| nodes.contains(&node.name))
+        {
+            node.proxy
+                .send_command(&pw::spa::node::command::NodeCommand::new(
+                    pw::spa::node::command::NodeCommandId::PAUSE,
+                ));
+        }
+        self.roundtrip(&format!("stop execution group {name}"))?;
+        let sinks = self
+            .execution_group_sinks
+            .get(name)
+            .expect("realized group sinks");
+        let observed = self.wait_for_discard_quiescence_for(sinks)?;
+        self.status.discarded_by_sink.extend(observed);
+        self.status.discarded_buffers = self.status.discarded_by_sink.values().sum();
+        Ok(())
+    }
+
+    fn start_nodes(
+        &mut self,
+        node_names: &[String],
+        label: &str,
+    ) -> Result<(), ScientificDiagnostic> {
+        // Downstream-first commands prevent a source from outrunning its sink.
+        for node_name in node_names.iter().rev() {
+            if let Some(node) = self
+                .active_nodes
+                .iter()
+                .find(|node| node.name == *node_name)
+            {
+                node.proxy
+                    .send_command(&pw::spa::node::command::NodeCommand::new(
+                        pw::spa::node::command::NodeCommandId::START,
+                    ));
+                continue;
+            }
+            let global = self.node_global(node_name)?;
+            let node = self
+                .registry
+                .bind::<pw::node::Node, _>(&global)
+                .map_err(|error| {
+                    ScientificDiagnostic::new(
+                        format!("node {node_name}"),
+                        format!("cannot bind required node: {error}"),
+                    )
+                })?;
+            let state = Rc::new(RefCell::new(String::from("unknown")));
+            let observed = Rc::clone(&state);
+            let listener = node
+                .add_listener_local()
+                .info(move |info| {
+                    *observed.borrow_mut() = format!("{:?}", info.state());
+                })
+                .register();
+            node.send_command(&pw::spa::node::command::NodeCommand::new(
+                pw::spa::node::command::NodeCommandId::START,
+            ));
+            self.active_nodes.push(LiveNode {
+                name: node_name.clone(),
+                _listener: listener,
+                proxy: node,
+                state,
+            });
+        }
+
+        self.wait_for_nodes_running(node_names, label)
+    }
+
+    fn wait_for_nodes_running(
+        &mut self,
+        node_names: &[String],
+        label: &str,
+    ) -> Result<(), ScientificDiagnostic> {
+        let mut states = Vec::new();
+        for _ in 0..100 {
+            self.roundtrip(label)?;
+            states = self
+                .active_nodes
+                .iter()
+                .filter(|node| node_names.contains(&node.name))
+                .map(|node| (node.name.clone(), node.state.borrow().clone()))
+                .collect::<Vec<_>>();
+            if states.len() == node_names.len()
+                && states.iter().all(|(_, state)| state == "Running")
+            {
+                return Ok(());
+            }
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+        Err(ScientificDiagnostic::new(
+            "topology",
+            format!("required nodes did not all enter Running; observed states {states:?}"),
+        ))
     }
 
     fn cleanup(&mut self) -> Result<(), ScientificDiagnostic> {
@@ -355,6 +484,8 @@ impl LiveGraphAdapter {
         self.owned_node_names.clear();
         self.start_order.clear();
         self.sink_names.clear();
+        self.execution_group_nodes.clear();
+        self.execution_group_sinks.clear();
         self.expected_objects = 0;
         self.expected_links = 0;
         match first_error {
@@ -610,7 +741,14 @@ impl LiveGraphAdapter {
     }
 
     fn discard_buffer_counts(&self) -> Result<BTreeMap<String, u64>, ScientificDiagnostic> {
-        self.sink_names
+        self.discard_buffer_counts_for(&self.sink_names)
+    }
+
+    fn discard_buffer_counts_for(
+        &self,
+        sink_names: &[String],
+    ) -> Result<BTreeMap<String, u64>, ScientificDiagnostic> {
+        sink_names
             .iter()
             .map(|sink_name| {
                 self.discard_metric(sink_name, DISCARD_BUFFERS_PROPERTY, "discard.buffers")
@@ -733,11 +871,18 @@ impl LiveGraphAdapter {
     }
 
     fn wait_for_discard_quiescence(&self) -> Result<BTreeMap<String, u64>, ScientificDiagnostic> {
-        let mut previous = self.discard_buffer_counts()?;
+        self.wait_for_discard_quiescence_for(&self.sink_names)
+    }
+
+    fn wait_for_discard_quiescence_for(
+        &self,
+        sink_names: &[String],
+    ) -> Result<BTreeMap<String, u64>, ScientificDiagnostic> {
+        let mut previous = self.discard_buffer_counts_for(sink_names)?;
         let mut stable_samples = 0;
         for _ in 0..100 {
             std::thread::sleep(std::time::Duration::from_millis(5));
-            let observed = self.discard_buffer_counts()?;
+            let observed = self.discard_buffer_counts_for(sink_names)?;
             if observed == previous {
                 stable_samples += 1;
                 if stable_samples == 3 {
@@ -855,6 +1000,7 @@ impl LiveGraphAdapter {
         index: usize,
         output: &str,
         input: &str,
+        passive: bool,
     ) -> Result<(), ScientificDiagnostic> {
         let (output_node_name, output_port_name) = split_endpoint(output)?;
         let (input_node_name, input_port_name) = split_endpoint(input)?;
@@ -867,7 +1013,7 @@ impl LiveGraphAdapter {
             .port_global(input_node_id, input_port_name, PortDirection::Input)?
             .id;
         let factory = self.link_factory()?;
-        let properties = [
+        let mut properties = [
             ("link.output.node", output_node_id.to_string()),
             ("link.output.port", output_port_id.to_string()),
             ("link.input.node", input_node_id.to_string()),
@@ -875,6 +1021,9 @@ impl LiveGraphAdapter {
         ]
         .into_iter()
         .collect::<PropertiesBox>();
+        if passive {
+            properties.insert("link.passive", "true");
+        }
 
         self.clear_errors();
         let link = self
@@ -888,9 +1037,17 @@ impl LiveGraphAdapter {
             })?;
         let state = Rc::new(RefCell::new(LinkAdmissionState::Unknown));
         let observed = Rc::clone(&state);
+        let observed_passive = Rc::new(RefCell::new(None));
+        let callback_passive = Rc::clone(&observed_passive);
         let listener = link
             .add_listener_local()
             .info(move |info| {
+                if let Some(value) = info
+                    .props()
+                    .and_then(|properties| properties.get("link.passive"))
+                {
+                    *callback_passive.borrow_mut() = Some(value.to_owned());
+                }
                 *observed.borrow_mut() = match info.state() {
                     pw::link::LinkState::Error(error) => {
                         LinkAdmissionState::Failed(error.to_owned())
@@ -914,7 +1071,19 @@ impl LiveGraphAdapter {
         for _ in 0..100 {
             self.roundtrip(&label)?;
             match state.borrow().clone() {
-                LinkAdmissionState::Ready => return Ok(()),
+                LinkAdmissionState::Ready => {
+                    let retained_passive = observed_passive.borrow().as_deref() == Some("true");
+                    if retained_passive != passive {
+                        return Err(ScientificDiagnostic::new(
+                            format!("links[{index}].passive"),
+                            format!(
+                                "configured link.passive={passive}, but the public PipeWire link reports {:?}",
+                                observed_passive.borrow().as_deref()
+                            ),
+                        ));
+                    }
+                    return Ok(());
+                }
                 LinkAdmissionState::Failed(error) => {
                     return Err(ScientificDiagnostic::new(label, error));
                 }
@@ -1220,18 +1389,41 @@ fn one_string_property(
 }
 
 impl EffectExecutor for LiveGraphAdapter {
-    fn execute(&mut self, effect: &LifecycleEffect) -> Result<(), ScientificDiagnostic> {
+    fn execute(
+        &mut self,
+        effect: &LifecycleEffect,
+    ) -> Result<LifecycleEffectSuccess, ScientificDiagnostic> {
         match effect {
             LifecycleEffect::Realize { config, .. } => {
                 let resolved = match config {
                     ConfigurationInput::Resolved(config) => (**config).clone(),
                     ConfigurationInput::File(path) => DevelopmentConfig::load(path)?,
                 };
-                self.realize(&resolved)
+                self.realize(&resolved)?;
+                Ok(LifecycleEffectSuccess::Realized {
+                    execution_groups: resolved.execution_group_names(),
+                })
             }
-            LifecycleEffect::Start { .. } => self.start(),
-            LifecycleEffect::Stop { .. } => self.stop(),
-            LifecycleEffect::Cleanup { .. } => self.cleanup(),
+            LifecycleEffect::Start { .. } => {
+                self.start()?;
+                Ok(LifecycleEffectSuccess::Completed)
+            }
+            LifecycleEffect::Stop { .. } => {
+                self.stop()?;
+                Ok(LifecycleEffectSuccess::Completed)
+            }
+            LifecycleEffect::StartExecutionGroup { name, .. } => {
+                self.start_execution_group(name)?;
+                Ok(LifecycleEffectSuccess::Completed)
+            }
+            LifecycleEffect::StopExecutionGroup { name, .. } => {
+                self.stop_execution_group(name)?;
+                Ok(LifecycleEffectSuccess::Completed)
+            }
+            LifecycleEffect::Cleanup { .. } => {
+                self.cleanup()?;
+                Ok(LifecycleEffectSuccess::Completed)
+            }
         }
     }
 }

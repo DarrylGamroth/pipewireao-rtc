@@ -10,8 +10,8 @@ declared session without introducing another graph-authoring format.
 
 | Document | Authority |
 | --- | --- |
-| [Development architecture](architecture.md) | Scope, component boundary, configuration choice, scientist boundary, exclusions, the initial runner decisions, and the RTC-ARCH-013 RTCW composition decision |
-| [Development operating contract](operations.md) | RTC-DEV-001 through RTC-DEV-010, Statig lifecycle, multi-composite sessions, updates, observation, diagnostics, and equivalence |
+| [Development architecture](architecture.md) | Scope, component boundary, configuration choice, scientist boundary, exclusions, RTCW composition, and the RTC-ARCH-014 selective run-control decision |
+| [Development operating contract](operations.md) | RTC-DEV-001 through RTC-DEV-012, Statig lifecycle, multi-composite sessions, selective run control, updates, observation, diagnostics, and equivalence |
 | [Development roadmap](roadmap.md) | Dependency-ordered implementation, completion evidence, performance characterization, and deferred capability triggers |
 
 These three files are the complete RTC-level implementation baseline. An

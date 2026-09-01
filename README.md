@@ -5,7 +5,9 @@ on PipeWireAO. It loads one or more simulated or recorded sources, existing
 native ndarray filter graphs, non-actuating sinks, and exact ordinary PipeWire
 links from a standard PipeWire configuration. Serial graphs, one-source
 fan-out, and independent paths share one session lifecycle without adding
-another graph-authoring format or scheduler.
+another graph-authoring format or scheduler. Named execution groups can pause
+and resume a whole chain or one independent branch while the session remains
+loaded.
 
 The repository contains the first executable runner increment plus the active
 development architecture and delivery contract. The maintained live fixture
@@ -31,12 +33,24 @@ cargo run --features live -- \
   --remote private-core-name --hold
 ```
 
-The command loads to `READY`, starts to `RUNNING`, and, after Enter, stops to
-`READY` and unloads to `OFFLINE`. The referenced graph file is the complete
-standard argument object for `libpipewire-module-ndarray-filter-chain`; the
-runner passes it unchanged. The maintained integration test materializes the
-fixture graph files, then creates its own unique runtime directory and core
-name:
+The command loads to `READY`, starts to `RUNNING`, and opens this small control
+prompt:
+
+```text
+groups
+status
+stop GROUP
+start GROUP
+quit
+```
+
+`quit` (or end of input) stops the session to `READY` and unloads it to
+`OFFLINE`. Group stop/start preserves the configured objects and links; it does
+not reset, reload, or unload the graph. The referenced graph file is the
+complete standard argument object for
+`libpipewire-module-ndarray-filter-chain`; the runner passes it unchanged. The
+maintained integration test materializes the fixture graph files, then creates
+its own unique runtime directory and core name:
 
 ```sh
 PIPEWIREAO_SPA_PLUGINS_BUILD=/absolute/plugin/build \

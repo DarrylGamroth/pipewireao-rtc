@@ -1,6 +1,6 @@
 use super::{
-    DevelopmentConfig, EndpointFactory, GraphFactory, LinkSpec, ObjectRole, ObjectSpec,
-    PortDirection, PortSpec, ScientificDiagnostic, FITS_SOURCE_FACTORY, GRAPH_FACTORY,
+    DevelopmentConfig, EndpointFactory, ExecutionGroupSpec, GraphFactory, LinkSpec, ObjectRole,
+    ObjectSpec, PortDirection, PortSpec, ScientificDiagnostic, FITS_SOURCE_FACTORY, GRAPH_FACTORY,
     SIMULATED_SOURCE_FACTORY, SINK_FACTORY,
 };
 use crate::ffi::spa_json::{Cursor, SyntaxError, Token};
@@ -15,6 +15,7 @@ pub(super) fn development_config(text: &str) -> Result<DevelopmentConfig, Scient
     let mut sources = None;
     let mut graphs = None;
     let mut sinks = None;
+    let mut execution_groups = None;
     let mut properties = None;
     let mut parameters = None;
     let mut observations = None;
@@ -29,6 +30,7 @@ pub(super) fn development_config(text: &str) -> Result<DevelopmentConfig, Scient
             "sources" => assign(&mut sources, value, "sources")?,
             "graphs" => assign(&mut graphs, value, "graphs")?,
             "sinks" => assign(&mut sinks, value, "sinks")?,
+            "execution-groups" => assign(&mut execution_groups, value, "execution-groups")?,
             "properties" => assign(&mut properties, value, "properties")?,
             "parameters" => assign(&mut parameters, value, "parameters")?,
             "observations" => assign(&mut observations, value, "observations")?,
@@ -54,6 +56,7 @@ pub(super) fn development_config(text: &str) -> Result<DevelopmentConfig, Scient
         sources: endpoint_array(required(sources, "sources")?, ObjectRole::Source, "sources")?,
         graphs: graph_array(required(graphs, "graphs")?)?,
         sinks: endpoint_array(required(sinks, "sinks")?, ObjectRole::Sink, "sinks")?,
+        execution_groups: execution_group_array(required(execution_groups, "execution-groups")?)?,
         properties: string_map(required(properties, "properties")?, "properties")?,
         parameters: string_map(required(parameters, "parameters")?, "parameters")?,
         observations: string_array(required(observations, "observations")?, "observations")?,
@@ -272,10 +275,12 @@ fn link_array(token: Token<'_>) -> Result<Vec<LinkSpec>, ScientificDiagnostic> {
         let mut object = Object::token(token, &field)?;
         let mut output = None;
         let mut input = None;
+        let mut passive = None;
         while let Some((name, value)) = object.next()? {
             match name.as_str() {
                 "output" => assign(&mut output, value, &format!("{field}.output"))?,
                 "input" => assign(&mut input, value, &format!("{field}.input"))?,
+                "passive" => assign(&mut passive, value, &format!("{field}.passive"))?,
                 _ => return unknown_field(&field, &name),
             }
         }
@@ -288,9 +293,44 @@ fn link_array(token: Token<'_>) -> Result<Vec<LinkSpec>, ScientificDiagnostic> {
                 required(input, &format!("{field}.input"))?,
                 &format!("{field}.input"),
             )?,
+            passive: boolean(
+                required(passive, &format!("{field}.passive"))?,
+                &format!("{field}.passive"),
+            )?,
         });
     }
     Ok(links)
+}
+
+fn execution_group_array(
+    token: Token<'_>,
+) -> Result<Vec<ExecutionGroupSpec>, ScientificDiagnostic> {
+    let mut array = Array::token(token, "execution-groups")?;
+    let mut groups = Vec::new();
+    while let Some(token) = array.next()? {
+        let field = format!("execution-groups[{}]", groups.len());
+        let mut object = Object::token(token, &field)?;
+        let mut name = None;
+        let mut nodes = None;
+        while let Some((key, value)) = object.next()? {
+            match key.as_str() {
+                "name" => assign(&mut name, value, &format!("{field}.name"))?,
+                "nodes" => assign(&mut nodes, value, &format!("{field}.nodes"))?,
+                _ => return unknown_field(&field, &key),
+            }
+        }
+        groups.push(ExecutionGroupSpec {
+            name: scalar(
+                required(name, &format!("{field}.name"))?,
+                &format!("{field}.name"),
+            )?,
+            nodes: string_array(
+                required(nodes, &format!("{field}.nodes"))?,
+                &format!("{field}.nodes"),
+            )?,
+        });
+    }
+    Ok(groups)
 }
 
 fn string_map(
@@ -364,6 +404,17 @@ fn expect_literal(
             field,
             format!("expected {expected:?}, got {actual:?}"),
         ))
+    }
+}
+
+fn boolean(token: Token<'_>, field: &str) -> Result<bool, ScientificDiagnostic> {
+    match scalar(token, field)?.as_str() {
+        "true" => Ok(true),
+        "false" => Ok(false),
+        value => Err(ScientificDiagnostic::new(
+            field,
+            format!("expected true or false, got {value:?}"),
+        )),
     }
 }
 

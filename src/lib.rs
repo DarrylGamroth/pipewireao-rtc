@@ -8,12 +8,13 @@ mod live;
 mod runner;
 
 pub use config::{
-    DevelopmentConfig, EndpointFactory, GraphFactory, LinkSpec, ObjectRole, ObjectSpec,
-    PortDirection, PortSpec, ScientificDiagnostic,
+    DevelopmentConfig, EndpointFactory, ExecutionGroupSpec, GraphFactory, LinkSpec, ObjectRole,
+    ObjectSpec, PortDirection, PortSpec, ScientificDiagnostic,
 };
 pub use lifecycle::{
-    ConfigurationInput, DispatchError, DispatchOutcome, EffectKind, EffectOrigin, EffectToken,
-    LifecycleDispatcher, LifecycleEffect, LifecycleEffectResult, LifecycleEvent, LifecycleState,
+    ConfigurationInput, DispatchError, DispatchOutcome, EffectKind, EffectOrigin, EffectTarget,
+    EffectToken, ExecutionGroupState, LifecycleDispatcher, LifecycleEffect, LifecycleEffectResult,
+    LifecycleEffectSuccess, LifecycleEvent, LifecycleState,
 };
 #[cfg(feature = "live")]
 pub use live::{LiveGraphAdapter, LiveGraphStatus};

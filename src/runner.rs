@@ -1,7 +1,8 @@
 use crate::{
     DispatchError, DispatchOutcome, LifecycleDispatcher, LifecycleEffect, LifecycleEffectResult,
-    LifecycleEvent, LifecycleState, ScientificDiagnostic,
+    LifecycleEffectSuccess, LifecycleEvent, LifecycleState, ScientificDiagnostic,
 };
+use std::collections::BTreeMap;
 
 /// Executes blocking graph work after the Statig handler has returned.
 pub trait EffectExecutor {
@@ -11,7 +12,10 @@ pub trait EffectExecutor {
     ///
     /// Returns a scientific diagnostic that is sent back as a typed lifecycle
     /// completion event.
-    fn execute(&mut self, effect: &LifecycleEffect) -> Result<(), ScientificDiagnostic>;
+    fn execute(
+        &mut self,
+        effect: &LifecycleEffect,
+    ) -> Result<LifecycleEffectSuccess, ScientificDiagnostic>;
 }
 
 /// One lifecycle owner combining the serialized dispatcher with one graph adapter.
@@ -48,6 +52,11 @@ impl<E: EffectExecutor> Runner<E> {
         self.dispatcher.diagnostic()
     }
 
+    #[must_use]
+    pub fn execution_group_states(&self) -> &BTreeMap<String, crate::ExecutionGroupState> {
+        self.dispatcher.execution_group_states()
+    }
+
     /// Dispatches an event and synchronously executes any emitted effect.
     ///
     /// # Errors
@@ -57,7 +66,7 @@ impl<E: EffectExecutor> Runner<E> {
         let DispatchOutcome { effect, .. } = self.dispatcher.dispatch(event)?;
         if let Some(effect) = effect {
             let result = self.executor.execute(&effect);
-            let completion = LifecycleEffectResult::from_effect(&effect, result);
+            let completion = LifecycleEffectResult::from_output(&effect, result);
             self.dispatcher
                 .dispatch(LifecycleEvent::EffectCompleted(completion))?;
         }
