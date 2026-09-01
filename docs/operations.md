@@ -182,10 +182,12 @@ fixture is functional evidence only and MUST NOT be reported as a deadline or
 real-time claim.
 
 Verification intent (informative): run a FITS source → graph A → graph B →
-discard chain and two independent source → graph → discard paths; inspect the
-exact objects and links; inject failure after every creation point; stop and
-restart the complete session; unload it without removing an unrelated object;
-and verify that no runner-local filter-graph parser or scheduler is present.
+discard chain, one FITS source forked to graph A and graph B with a separate
+discard sink for each branch, and two independent source → graph → discard
+paths; inspect the exact objects and links; inject failure after every creation
+point; stop and restart the complete session; unload it without removing an
+unrelated object; and verify that no runner-local filter-graph parser or
+scheduler is present.
 
 ### RTC-DEV-005 — Standard property and parameter paths
 

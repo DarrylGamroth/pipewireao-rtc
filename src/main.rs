@@ -88,7 +88,7 @@ fn parse_arguments() -> Result<Arguments, ScientificDiagnostic> {
             "--help" | "-h" => {
                 println!(
                     "Usage: pipewireao-rtc --config PATH [--remote CORE] [--hold]\n\
-                     Loads, starts, stops, and unloads one non-actuating complete-frame graph."
+                     Loads, starts, stops, and unloads one non-actuating complete-frame session."
                 );
                 std::process::exit(0);
             }

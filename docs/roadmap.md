@@ -13,7 +13,7 @@ boilerplate, and the maintained scientific graph is demonstrably equivalent
 to the direct or fused implementation.
 
 The first executable remains deliberately small. Delivery proceeds from FITS
-→ discard, through one minimal filter graph, to serial and independent
+→ discard, through one minimal filter graph, to serial, forked, and independent
 multi-graph composition. Graph authoring remains in standard PipeWireAO
 `filter.graph` configuration files. PipeWire and FGN, not the RTC runner,
 schedule graph execution. A GUI is a valuable optional observer and editor of
@@ -45,13 +45,14 @@ flowchart LR
     Transport["1a. FITS to discard"]
     Fixture["1b. One filter graph"]
     Chain["1c. Serial graph chain"]
-    Parallel["1d. Independent paths"]
+    Fork["1d. Forked graph paths"]
+    Parallel["1e. Independent paths"]
     Revolt["2. REVOLT Classic equivalence"]
     Authoring["3. Scientist authoring proof"]
     Profile["4. Development performance profile"]
     Gate["Development gate"]
 
-    Contract --> Transport --> Fixture --> Chain --> Parallel
+    Contract --> Transport --> Fixture --> Chain --> Fork --> Parallel
     Parallel --> Revolt --> Authoring --> Profile --> Gate
 ```
 
@@ -86,7 +87,10 @@ Deliver these slices in order:
 3. **FITS → graph A → graph B → discard.** Reuse existing `filter.graph`
    configurations, delegate their parsing to PipeWireAO, and add only the
    session-level composition needed by RTC-DEV-010.
-4. **Two independent source → graph → discard paths.** Realize and control
+4. **One FITS source forked to two graph → discard paths.** Create two ordinary
+   PipeWire links from the declared source output, leave buffer transport and
+   branch scheduling to PipeWire, and control both branches as one session.
+5. **Two independent source → graph → discard paths.** Realize and control
    both paths as one session while leaving their execution to PipeWire. Inspect
    the active topology with ordinary tools and, where a bounded non-gating
    boundary exists, attach and stall an optional GUI observer.
@@ -169,15 +173,25 @@ or correction-critical suitability.
 | RTC-DEV-003 | 1 | implemented | partial | Deterministic creation-point cleanup and the live exact topology pass; both links are admitted, owned objects are removed, and the unrelated node survives, but live lower-level failure injection after every creation point remains missing |
 | RTC-DEV-004 | 1 | partial | partial | Transition, retry, invalid-command, required-object failure, repeated-cycle, and complete live lifecycle tests pass; explicit live stop and restart work within one load, but the FITS source exposes no public normal-completion signal for automatic return to `READY` |
 | RTC-DEV-005 | 2 | planned | missing | Requested/active property and parameter update tests |
-| RTC-DEV-006 | 1d and 2 | partial | partial | The private-core runner reaches and remains in its lifecycle without a GUI and rejects an undeclared observation; no suitable bounded non-gating sample boundary is available for attach, detach, and stall evidence |
+| RTC-DEV-006 | 1 and 2 | partial | partial | The private-core runner reaches and remains in its lifecycle without a GUI and rejects an undeclared observation; no suitable bounded non-gating sample boundary is available for attach, detach, and stall evidence |
 | RTC-DEV-007 | 2 | planned | missing | Deterministic REVOLT output and state oracle |
 | RTC-DEV-008 | 3 | planned | missing | Package-local declaration examples and ordinary-array tests |
 | RTC-DEV-009 | 1 | implemented | validated | Statig hierarchy, serialized dispatch, typed effects, effect failure, stale-completion rejection, and the full private-core lifecycle pass through the same dispatcher |
-| RTC-DEV-010 | 1c and 1d | planned | missing | Exact serial and independent multi-graph sessions, session-wide lifecycle and failure injection, standard configuration delegation, and absence of a runner scheduler |
+| RTC-DEV-010 | 1c through 1e | implemented | partial | The exact serial, forked, and independent sessions each pass the private-core lifecycle and deliver to every sink; standard graph files are delegated unchanged and PipeWire owns branch execution; deterministic creation-point failure coverage uses the fake adapter, so live lower-level failure injection after every point remains missing |
 
 Implementation and evidence state remain separate when this table is updated.
 A merged implementation is not validated until its complete evidence passes
-for both maintained fixtures.
+for all maintained fixtures.
+
+RTC-DEV-010 is tracked across its independently observable surfaces:
+
+| Surface | Implementation | Evidence | Acceptance boundary |
+| --- | --- | --- | --- |
+| Plural session configuration and opaque `filter.graph` delegation | implemented | validated | One or more admitted sources, graphs, sinks, and exact links load without an RTC filter-graph parser |
+| Serial graph chain | implemented | validated | FITS → graph A → graph B → discard processes a frame and completes the session lifecycle |
+| Forked graph paths | implemented | validated | One FITS output feeds graph A and graph B, each branch processes a frame into its own discard sink |
+| Independent graph paths | implemented | validated | Two FITS sources feed separate graph and discard paths in one session |
+| Whole-session failure and cleanup | implemented | partial | Fake creation-point failures, live stop and restart, retry, unload, and unrelated-object preservation pass; live failure injection after every lower-level creation point is missing |
 
 ### Increment 1 implementation note
 
@@ -191,13 +205,13 @@ changes to evidence.
 
 The executable, standard PipeWire relaxed SPA-JSON decoder, Statig lifecycle,
 fake graph adapter, and live private-core adapter are present. A narrow C shim
-exposes the public `spa_json_*` cursor API missing from the Rust binding; the
-runner decodes directly into its development configuration and does not parse
-FGN graph internals. For this single-graph fixture it still validates a fixed
-algorithm declaration and renders the standard `filter.graph` module
-argument. The RTC-DEV-010 serial slice must instead accept maintained
-`filter.graph` bodies and delegate them unchanged; no multi-graph or graph-
-authoring claim is made here. The configuration rejection matrix is in
+exposes the public `spa_json_*` cursor API missing from the Rust binding. The
+runner decodes only its session objects, typed boundary ports, and exact
+ordinary PipeWire links. Each graph entry references a complete standard
+PipeWire module-argument file; the executor reads that file and passes it
+unchanged to `libpipewire-module-ndarray-filter-chain`. The runner has no
+`filter.graph` parser, algorithm model, renderer, scheduler, worker pool, or
+per-graph lifecycle. The configuration rejection matrix is in
 `tests/configuration.rs`; lifecycle and effect-completion coverage is in
 `tests/lifecycle.rs`; deterministic object and link failure injection is in
 `tests/graph_adapter.rs`; and the maintained private-core target is in
@@ -209,14 +223,14 @@ The live test is intentionally ignored by the generic Cargo suite because it
 requires the maintained sibling PipeWireAO and Calculon build artifacts. Its
 explicit invocation now passes the complete `Load` → `READY` → `Start` →
 `RUNNING` → `Stop` → `READY` → `Start` → `RUNNING` → `Stop` → `READY` →
-`Unload` → `OFFLINE` lifecycle for the configured FITS → `fgn-native` leaky
-integrator → discard path. Before admitting links, it enumerates the public
-port formats and checks their directions, element types, shapes, layouts,
-rates, scientific schemas, and the discard sink's format wildcard. It then
-confirms the three configured nodes, both admitted links, a discard-buffer
-increase after each start, complete owned-object cleanup, and preservation of
-an unrelated node. The test observes delivery to the sink, not the numerical
-contents of the output frame.
+`Unload` → `OFFLINE` lifecycle for the minimal, serial, forked, and independent
+sessions. Before admitting links, it enumerates the public port formats and
+checks their directions, element types, shapes, layouts, rates, scientific
+schemas, and every discard sink's format wildcard. It then confirms every
+configured node and link through ordinary inspection, a discard-buffer
+increase at every sink after each start, complete owned-object cleanup, and
+preservation of an unrelated node. The test observes delivery to each sink,
+not the numerical contents of output frames.
 
 The discard scheduling handshake, stable FITS node and output-port identities,
 and fixed-string negotiation repair are in local PipeWireAO SPA plugins `main`

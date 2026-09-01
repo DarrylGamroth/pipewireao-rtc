@@ -57,6 +57,8 @@ The active implementation begins with:
 After that fixture, the active RTCW composition increment adds only:
 
 - a serial chain of two declared `fgn-native` filter-graph instances;
+- one declared source forked to two filter-graph instances, each with its own
+  non-actuating sink;
 - two independent declared source → graph → sink paths in one session;
 - exact PipeWire links from the same standard configuration; and
 - optional scientific inspection through standard PipeWire introspection and

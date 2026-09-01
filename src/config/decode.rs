@@ -1,6 +1,6 @@
 use super::{
-    AlgorithmSpec, DevelopmentConfig, EndpointFactory, GraphFactory, LinkSpec, ObjectRole,
-    ObjectSpec, PortDirection, PortSpec, ScientificDiagnostic, FITS_SOURCE_FACTORY, GRAPH_FACTORY,
+    DevelopmentConfig, EndpointFactory, GraphFactory, LinkSpec, ObjectRole, ObjectSpec,
+    PortDirection, PortSpec, ScientificDiagnostic, FITS_SOURCE_FACTORY, GRAPH_FACTORY,
     SIMULATED_SOURCE_FACTORY, SINK_FACTORY,
 };
 use crate::ffi::spa_json::{Cursor, SyntaxError, Token};
@@ -12,9 +12,9 @@ pub(super) fn development_config(text: &str) -> Result<DevelopmentConfig, Scient
     let mut execution = None;
     let mut authority = None;
     let mut claim = None;
-    let mut source = None;
-    let mut graph = None;
-    let mut sink = None;
+    let mut sources = None;
+    let mut graphs = None;
+    let mut sinks = None;
     let mut properties = None;
     let mut parameters = None;
     let mut observations = None;
@@ -26,9 +26,9 @@ pub(super) fn development_config(text: &str) -> Result<DevelopmentConfig, Scient
             "execution" => assign(&mut execution, value, "execution")?,
             "authority" => assign(&mut authority, value, "authority")?,
             "claim" => assign(&mut claim, value, "claim")?,
-            "source" => assign(&mut source, value, "source")?,
-            "graph" => assign(&mut graph, value, "graph")?,
-            "sink" => assign(&mut sink, value, "sink")?,
+            "sources" => assign(&mut sources, value, "sources")?,
+            "graphs" => assign(&mut graphs, value, "graphs")?,
+            "sinks" => assign(&mut sinks, value, "sinks")?,
             "properties" => assign(&mut properties, value, "properties")?,
             "parameters" => assign(&mut parameters, value, "parameters")?,
             "observations" => assign(&mut observations, value, "observations")?,
@@ -51,9 +51,9 @@ pub(super) fn development_config(text: &str) -> Result<DevelopmentConfig, Scient
     )?;
 
     Ok(DevelopmentConfig {
-        source: endpoint(required(source, "source")?, ObjectRole::Source)?,
-        graph: graph_object(required(graph, "graph")?)?,
-        sink: endpoint(required(sink, "sink")?, ObjectRole::Sink)?,
+        sources: endpoint_array(required(sources, "sources")?, ObjectRole::Source, "sources")?,
+        graphs: graph_array(required(graphs, "graphs")?)?,
+        sinks: endpoint_array(required(sinks, "sinks")?, ObjectRole::Sink, "sinks")?,
         properties: string_map(required(properties, "properties")?, "properties")?,
         parameters: string_map(required(parameters, "parameters")?, "parameters")?,
         observations: string_array(required(observations, "observations")?, "observations")?,
@@ -65,9 +65,9 @@ struct DecodedObject {
     factory: String,
     module: String,
     node_name: String,
-    plugin_path: String,
+    plugin_path: Option<String>,
+    configuration_path: Option<String>,
     arguments: BTreeMap<String, String>,
-    algorithm: Option<AlgorithmSpec>,
     ports: Vec<PortSpec>,
 }
 
@@ -78,8 +78,8 @@ impl DecodedObject {
             module: self.module,
             node_name: self.node_name,
             plugin_path: self.plugin_path,
+            configuration_path: self.configuration_path,
             arguments: self.arguments,
-            algorithm: self.algorithm,
             ports: self.ports,
         }
     }
@@ -88,8 +88,9 @@ impl DecodedObject {
 fn endpoint(
     token: Token<'_>,
     role: ObjectRole,
+    field: &str,
 ) -> Result<ObjectSpec<EndpointFactory>, ScientificDiagnostic> {
-    let object = object_spec(token, role)?;
+    let object = object_spec(token, field)?;
     let factory = match (role, object.factory.as_str()) {
         (ObjectRole::Source, SIMULATED_SOURCE_FACTORY) => {
             EndpointFactory::SimulatedCompleteFrameSource
@@ -98,13 +99,13 @@ fn endpoint(
         (ObjectRole::Sink, SINK_FACTORY) => EndpointFactory::FormatAgnosticDiscardSink,
         (ObjectRole::Source, name) => {
             return Err(ScientificDiagnostic::new(
-                "source.factory",
+                format!("{field}.factory"),
                 format!("factory {name:?} is not in the development-safe source allowlist"),
             ));
         }
         (ObjectRole::Sink, name) => {
             return Err(ScientificDiagnostic::new(
-                "sink.factory",
+                format!("{field}.factory"),
                 format!("factory {name:?} is not in the non-actuating sink allowlist"),
             ));
         }
@@ -113,11 +114,14 @@ fn endpoint(
     Ok(object.with_factory(factory))
 }
 
-fn graph_object(token: Token<'_>) -> Result<ObjectSpec<GraphFactory>, ScientificDiagnostic> {
-    let object = object_spec(token, ObjectRole::Graph)?;
+fn graph_object(
+    token: Token<'_>,
+    field: &str,
+) -> Result<ObjectSpec<GraphFactory>, ScientificDiagnostic> {
+    let object = object_spec(token, field)?;
     if object.factory != GRAPH_FACTORY {
         return Err(ScientificDiagnostic::new(
-            "graph.factory",
+            format!("{field}.factory"),
             format!(
                 "expected the fgn-native factory {GRAPH_FACTORY:?}, got {:?}",
                 object.factory
@@ -127,16 +131,38 @@ fn graph_object(token: Token<'_>) -> Result<ObjectSpec<GraphFactory>, Scientific
     Ok(object.with_factory(GraphFactory::CalculonFgnNative))
 }
 
-fn object_spec(token: Token<'_>, role: ObjectRole) -> Result<DecodedObject, ScientificDiagnostic> {
-    let field = role.name();
+fn endpoint_array(
+    token: Token<'_>,
+    role: ObjectRole,
+    field: &str,
+) -> Result<Vec<ObjectSpec<EndpointFactory>>, ScientificDiagnostic> {
+    let mut array = Array::token(token, field)?;
+    let mut objects = Vec::new();
+    while let Some(token) = array.next()? {
+        let item_field = format!("{field}[{}]", objects.len());
+        objects.push(endpoint(token, role, &item_field)?);
+    }
+    Ok(objects)
+}
+
+fn graph_array(token: Token<'_>) -> Result<Vec<ObjectSpec<GraphFactory>>, ScientificDiagnostic> {
+    let mut array = Array::token(token, "graphs")?;
+    let mut objects = Vec::new();
+    while let Some(token) = array.next()? {
+        let field = format!("graphs[{}]", objects.len());
+        objects.push(graph_object(token, &field)?);
+    }
+    Ok(objects)
+}
+
+fn object_spec(token: Token<'_>, field: &str) -> Result<DecodedObject, ScientificDiagnostic> {
     let mut object = Object::token(token, field)?;
     let mut factory = None;
     let mut module = None;
     let mut node_name = None;
     let mut plugin_path = None;
+    let mut configuration_path = None;
     let mut arguments = None;
-    let mut algorithm_label = None;
-    let mut algorithm_config = None;
     let mut ports = None;
 
     while let Some((name, value)) = object.next()? {
@@ -145,41 +171,16 @@ fn object_spec(token: Token<'_>, role: ObjectRole) -> Result<DecodedObject, Scie
             "module" => assign(&mut module, value, &format!("{field}.module"))?,
             "node.name" => assign(&mut node_name, value, &format!("{field}.node.name"))?,
             "plugin.path" => assign(&mut plugin_path, value, &format!("{field}.plugin.path"))?,
+            "config.path" => assign(
+                &mut configuration_path,
+                value,
+                &format!("{field}.config.path"),
+            )?,
             "args" => assign(&mut arguments, value, &format!("{field}.args"))?,
-            "algorithm.label" => assign(
-                &mut algorithm_label,
-                value,
-                &format!("{field}.algorithm.label"),
-            )?,
-            "algorithm.config" => assign(
-                &mut algorithm_config,
-                value,
-                &format!("{field}.algorithm.config"),
-            )?,
             "ports" => assign(&mut ports, value, &format!("{field}.ports"))?,
             _ => return unknown_field(field, &name),
         }
     }
-
-    let algorithm = match (algorithm_label, algorithm_config) {
-        (Some(label), Some(config)) => Some(AlgorithmSpec {
-            label: scalar(label, &format!("{field}.algorithm.label"))?,
-            config: string_map(config, &format!("{field}.algorithm.config"))?,
-        }),
-        (None, None) => None,
-        (Some(_), None) => {
-            return Err(ScientificDiagnostic::new(
-                format!("{field}.algorithm.config"),
-                "required when algorithm.label is present",
-            ));
-        }
-        (None, Some(_)) => {
-            return Err(ScientificDiagnostic::new(
-                format!("{field}.algorithm.label"),
-                "required when algorithm.config is present",
-            ));
-        }
-    };
 
     Ok(DecodedObject {
         factory: scalar(
@@ -194,15 +195,16 @@ fn object_spec(token: Token<'_>, role: ObjectRole) -> Result<DecodedObject, Scie
             required(node_name, &format!("{field}.node.name"))?,
             &format!("{field}.node.name"),
         )?,
-        plugin_path: scalar(
-            required(plugin_path, &format!("{field}.plugin.path"))?,
-            &format!("{field}.plugin.path"),
-        )?,
+        plugin_path: plugin_path
+            .map(|token| scalar(token, &format!("{field}.plugin.path")))
+            .transpose()?,
+        configuration_path: configuration_path
+            .map(|token| scalar(token, &format!("{field}.config.path")))
+            .transpose()?,
         arguments: arguments.map_or_else(
             || Ok(BTreeMap::new()),
             |token| string_map(token, &format!("{field}.args")),
         )?,
-        algorithm,
         ports: port_array(
             required(ports, &format!("{field}.ports"))?,
             &format!("{field}.ports"),

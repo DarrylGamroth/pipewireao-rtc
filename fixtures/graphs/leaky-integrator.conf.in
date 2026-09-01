@@ -1,0 +1,25 @@
+{
+    remote.name = "@REMOTE_NAME@"
+    node.name = "@NODE_NAME@"
+    object.linger = false
+    filter.graph = {
+        nodes = [
+            {
+                type = ndarray
+                name = graph
+                plugin = "@CALCULON_FGN_BUNDLE@"
+                label = leaky-integrator-f32
+                config = {
+                    extent = 2
+                    initial_state = 0.0
+                    input_schema = "@INPUT_SCHEMA@"
+                    output_schema = "@OUTPUT_SCHEMA@"
+                    rate = [ 1000 1 ]
+                }
+                props = { gain = 0.5 pole = 0.75 }
+            }
+        ]
+        inputs = [ "graph:input" ]
+        outputs = [ "graph:output" ]
+    }
+}

@@ -12,6 +12,14 @@ use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant, SystemTime};
 
+const EXCITATION_SCHEMA: &str = "org.calculon.ao.docrime-excitation/1";
+const INTERMEDIATE_SCHEMA: &str = "org.pipewireao.rtc.intermediate/1";
+const COMMAND_SCHEMA: &str = "org.calculon.ao.controller-command/1";
+const EXCITATION_A_SCHEMA: &str = "org.calculon.ao.docrime-excitation-a/1";
+const EXCITATION_B_SCHEMA: &str = "org.calculon.ao.docrime-excitation-b/1";
+const COMMAND_A_SCHEMA: &str = "org.calculon.ao.controller-command-a/1";
+const COMMAND_B_SCHEMA: &str = "org.calculon.ao.controller-command-b/1";
+
 struct ChildGuard(Child);
 
 impl Drop for ChildGuard {
@@ -21,10 +29,17 @@ impl Drop for ChildGuard {
     }
 }
 
+struct SessionCase<'a> {
+    fixture: &'a str,
+    nodes: &'a [&'a str],
+    links: usize,
+    sinks: &'a [&'a str],
+}
+
 #[test]
 #[ignore = "requires the maintained PipeWireAO and Calculon sibling build artifacts"]
 #[allow(clippy::too_many_lines)]
-fn private_core_transport_then_runner_fixtures_run_and_clean_up() {
+fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
     let repository = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let workspace = repository.parent().expect("workspace parent");
     let pipewire_build = workspace.join("pipewire/build");
@@ -34,12 +49,16 @@ fn private_core_transport_then_runner_fixtures_run_and_clean_up() {
         PathBuf::from,
     );
     let temporary = tempfile::tempdir().expect("private fixture directory");
-    let runner_fits = temporary.path().join("excitation.fits");
-    fits_discard::write_vector_sequence(&runner_fits);
+    let fits_a = temporary.path().join("excitation-a.fits");
+    let fits_b = temporary.path().join("excitation-b.fits");
+    fits_discard::write_vector_sequence(&fits_a);
+    fits_discard::write_vector_sequence(&fits_b);
     let runtime = temporary.path().join("runtime");
     let config_directory = temporary.path().join("config");
+    let graph_directory = temporary.path().join("graphs");
     std::fs::create_dir_all(&runtime).unwrap();
     std::fs::create_dir_all(&config_directory).unwrap();
+    std::fs::create_dir_all(&graph_directory).unwrap();
     let unique = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap()
@@ -56,14 +75,91 @@ fn private_core_transport_then_runner_fixtures_run_and_clean_up() {
     )
     .unwrap();
 
-    let environment = fixture_environment(
+    let calculon_bundle = calculon.join("target/release/libcalculon_fgn_bundle.so");
+    let graph_files = [
+        (
+            "PIPEWIREAO_RTC_GRAPH_MINIMAL",
+            "minimal.conf",
+            "pipewireao-rtc-graph",
+            EXCITATION_SCHEMA,
+            COMMAND_SCHEMA,
+        ),
+        (
+            "PIPEWIREAO_RTC_GRAPH_SERIAL_A",
+            "serial-a.conf",
+            "pipewireao-rtc-serial-graph-a",
+            EXCITATION_SCHEMA,
+            INTERMEDIATE_SCHEMA,
+        ),
+        (
+            "PIPEWIREAO_RTC_GRAPH_SERIAL_B",
+            "serial-b.conf",
+            "pipewireao-rtc-serial-graph-b",
+            INTERMEDIATE_SCHEMA,
+            COMMAND_SCHEMA,
+        ),
+        (
+            "PIPEWIREAO_RTC_GRAPH_FORK_A",
+            "fork-a.conf",
+            "pipewireao-rtc-fork-graph-a",
+            EXCITATION_SCHEMA,
+            COMMAND_A_SCHEMA,
+        ),
+        (
+            "PIPEWIREAO_RTC_GRAPH_FORK_B",
+            "fork-b.conf",
+            "pipewireao-rtc-fork-graph-b",
+            EXCITATION_SCHEMA,
+            COMMAND_B_SCHEMA,
+        ),
+        (
+            "PIPEWIREAO_RTC_GRAPH_INDEPENDENT_A",
+            "independent-a.conf",
+            "pipewireao-rtc-independent-graph-a",
+            EXCITATION_A_SCHEMA,
+            COMMAND_A_SCHEMA,
+        ),
+        (
+            "PIPEWIREAO_RTC_GRAPH_INDEPENDENT_B",
+            "independent-b.conf",
+            "pipewireao-rtc-independent-graph-b",
+            EXCITATION_B_SCHEMA,
+            COMMAND_B_SCHEMA,
+        ),
+    ];
+    let mut generated_graphs = BTreeMap::new();
+    for (variable, file_name, node_name, input_schema, output_schema) in graph_files {
+        let path = graph_directory.join(file_name);
+        write_graph_configuration(
+            &path,
+            &calculon_bundle,
+            &core_name,
+            node_name,
+            input_schema,
+            output_schema,
+        );
+        generated_graphs.insert(variable.to_owned(), path);
+    }
+
+    let mut environment = fixture_environment(
         &runtime,
         &config_directory,
         &pipewire_build,
-        &calculon,
+        &calculon_bundle,
         &plugin_build,
-        &runner_fits,
     );
+    for (name, path) in generated_graphs {
+        environment.insert(name, path);
+    }
+    for name in [
+        "PIPEWIREAO_RTC_FITS_PATH",
+        "PIPEWIREAO_RTC_FITS_PATH_SERIAL",
+        "PIPEWIREAO_RTC_FITS_PATH_FORK",
+        "PIPEWIREAO_RTC_FITS_PATH_INDEPENDENT_A",
+    ] {
+        environment.insert(name.to_owned(), fits_a.clone());
+    }
+    environment.insert("PIPEWIREAO_RTC_FITS_PATH_INDEPENDENT_B".to_owned(), fits_b);
     for (name, value) in &environment {
         std::env::set_var(name, value);
     }
@@ -105,44 +201,131 @@ fn private_core_transport_then_runner_fixtures_run_and_clean_up() {
         "pipewireao-rtc-unrelated",
     );
 
+    // The transport fixture deliberately precedes graph hosting. It proves the
+    // maintained FITS source and discard SPA factories directly first.
     fits_discard::run(&core_name, &temporary.path().join("image.fits"));
     let transport_cleanup = dump(&pipewire_build, &environment, &core_name);
     assert!(transport_cleanup.contains("pipewireao-rtc-unrelated"));
     assert!(!transport_cleanup.contains(fits_discard::SOURCE_NAME));
     assert!(!transport_cleanup.contains(fits_discard::SINK_NAME));
 
-    let adapter = LiveGraphAdapter::connect(&core_name).expect("connect runner adapter");
+    let cases = [
+        SessionCase {
+            fixture: "minimal-development.conf",
+            nodes: &[
+                "pipewireao-rtc-source",
+                "pipewireao-rtc-graph",
+                "pipewireao-rtc-sink",
+            ],
+            links: 2,
+            sinks: &["pipewireao-rtc-sink"],
+        },
+        SessionCase {
+            fixture: "serial-development.conf",
+            nodes: &[
+                "pipewireao-rtc-serial-source",
+                "pipewireao-rtc-serial-graph-a",
+                "pipewireao-rtc-serial-graph-b",
+                "pipewireao-rtc-serial-sink",
+            ],
+            links: 3,
+            sinks: &["pipewireao-rtc-serial-sink"],
+        },
+        SessionCase {
+            fixture: "fork-development.conf",
+            nodes: &[
+                "pipewireao-rtc-fork-source",
+                "pipewireao-rtc-fork-graph-a",
+                "pipewireao-rtc-fork-graph-b",
+                "pipewireao-rtc-fork-sink-a",
+                "pipewireao-rtc-fork-sink-b",
+            ],
+            links: 4,
+            sinks: &["pipewireao-rtc-fork-sink-a", "pipewireao-rtc-fork-sink-b"],
+        },
+        SessionCase {
+            fixture: "independent-development.conf",
+            nodes: &[
+                "pipewireao-rtc-independent-source-a",
+                "pipewireao-rtc-independent-source-b",
+                "pipewireao-rtc-independent-graph-a",
+                "pipewireao-rtc-independent-graph-b",
+                "pipewireao-rtc-independent-sink-a",
+                "pipewireao-rtc-independent-sink-b",
+            ],
+            links: 4,
+            sinks: &[
+                "pipewireao-rtc-independent-sink-a",
+                "pipewireao-rtc-independent-sink-b",
+            ],
+        },
+    ];
+    for case in cases {
+        run_session_case(
+            &repository,
+            &pipewire_build,
+            &environment,
+            &core_name,
+            &case,
+        );
+    }
+
+    drop(unrelated);
+    drop(core);
+}
+
+fn run_session_case(
+    repository: &Path,
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+    case: &SessionCase<'_>,
+) {
+    let adapter = LiveGraphAdapter::connect(core_name).expect("connect runner adapter");
     let mut runner = Runner::new(adapter);
     let state = runner
         .dispatch(LifecycleEvent::Load(ConfigurationInput::File(
-            repository.join("fixtures/minimal-development.conf"),
+            repository.join("fixtures").join(case.fixture),
         )))
         .expect("serialized load dispatch");
     assert_eq!(
         state,
         LifecycleState::Ready,
-        "live realization diagnostic: {:?}",
+        "{} realization diagnostic: {:?}",
+        case.fixture,
         runner.diagnostic()
     );
-    assert_eq!(runner.executor().status().owned_nodes, 3);
-    assert_eq!(runner.executor().status().owned_links, 2);
+    assert_eq!(runner.executor().status().owned_nodes, case.nodes.len());
+    assert_eq!(runner.executor().status().owned_links, case.links);
 
     let state = runner.dispatch(LifecycleEvent::Start).unwrap();
     assert_eq!(
         state,
         LifecycleState::Running,
-        "live start diagnostic: {:?}",
+        "{} start diagnostic: {:?}",
+        case.fixture,
         runner.diagnostic()
     );
-    assert!(runner.executor().status().running);
-    assert!(runner.executor().status().discarded_buffers > 0);
-    let active_dump = dump(&pipewire_build, &environment, &core_name);
-    for node in [
-        "pipewireao-rtc-source",
-        "pipewireao-rtc-graph",
-        "pipewireao-rtc-sink",
-        "pipewireao-rtc-unrelated",
-    ] {
+    let running = runner.executor().status();
+    assert!(running.running);
+    for sink in case.sinks {
+        assert!(
+            running
+                .discarded_by_sink
+                .get(*sink)
+                .is_some_and(|count| *count > 0),
+            "{} did not receive a complete frame: {:?}",
+            case.fixture,
+            running.discarded_by_sink
+        );
+    }
+    let active_dump = dump(pipewire_build, environment, core_name);
+    for node in case
+        .nodes
+        .iter()
+        .copied()
+        .chain(std::iter::once("pipewireao-rtc-unrelated"))
+    {
         assert!(
             active_dump.contains(node),
             "missing inspectable node {node}"
@@ -151,88 +334,110 @@ fn private_core_transport_then_runner_fixtures_run_and_clean_up() {
 
     assert_eq!(
         runner.dispatch(LifecycleEvent::Stop).unwrap(),
-        LifecycleState::Ready
+        LifecycleState::Ready,
+        "{} stop diagnostic: {:?}",
+        case.fixture,
+        runner.diagnostic()
     );
-    let before_restart = runner.executor().status().discarded_buffers;
+    let before_restart = runner.executor().status().discarded_by_sink;
     assert_eq!(
         runner.dispatch(LifecycleEvent::Start).unwrap(),
         LifecycleState::Running
     );
-    assert!(runner.executor().status().discarded_buffers > before_restart);
+    let restarted = runner.executor().status().discarded_by_sink;
+    for &sink in case.sinks {
+        assert!(restarted[sink] > before_restart[sink]);
+    }
     assert_eq!(
         runner.dispatch(LifecycleEvent::Stop).unwrap(),
-        LifecycleState::Ready
+        LifecycleState::Ready,
+        "{} second stop diagnostic: {:?}",
+        case.fixture,
+        runner.diagnostic()
     );
-    let state = runner.dispatch(LifecycleEvent::Unload).unwrap();
     assert_eq!(
-        state,
+        runner.dispatch(LifecycleEvent::Unload).unwrap(),
         LifecycleState::Offline,
-        "live unload diagnostic: {:?}",
+        "{} unload diagnostic: {:?}",
+        case.fixture,
         runner.diagnostic()
     );
     assert_eq!(runner.executor().status().owned_nodes, 0);
     assert_eq!(runner.executor().status().owned_links, 0);
-    let unloaded_dump = dump(&pipewire_build, &environment, &core_name);
+    let unloaded_dump = dump(pipewire_build, environment, core_name);
     assert!(unloaded_dump.contains("pipewireao-rtc-unrelated"));
-    for node in [
-        "pipewireao-rtc-source",
-        "pipewireao-rtc-graph",
-        "pipewireao-rtc-sink",
-    ] {
+    for node in case.nodes {
         assert!(!unloaded_dump.contains(node), "owned node survived: {node}");
     }
+}
 
-    drop(runner);
-    drop(unrelated);
-    drop(core);
+fn write_graph_configuration(
+    path: &Path,
+    calculon_bundle: &Path,
+    remote_name: &str,
+    node_name: &str,
+    input_schema: &str,
+    output_schema: &str,
+) {
+    let graph = include_str!("../fixtures/graphs/leaky-integrator.conf.in")
+        .replace(
+            "@CALCULON_FGN_BUNDLE@",
+            &calculon_bundle.display().to_string(),
+        )
+        .replace("@REMOTE_NAME@", remote_name)
+        .replace("@NODE_NAME@", node_name)
+        .replace("@INPUT_SCHEMA@", input_schema)
+        .replace("@OUTPUT_SCHEMA@", output_schema);
+    std::fs::write(path, graph).expect("materialize standard filter.graph configuration");
 }
 
 fn fixture_environment(
     runtime: &Path,
     config_directory: &Path,
     pipewire_build: &Path,
-    calculon: &Path,
+    calculon_bundle: &Path,
     plugin_build: &Path,
-    runner_fits: &Path,
-) -> BTreeMap<&'static str, PathBuf> {
+) -> BTreeMap<String, PathBuf> {
     let plugin_search_path = std::env::join_paths([
         pipewire_build.join("spa/plugins"),
         plugin_build.join("spa/plugins"),
     ])
     .expect("private SPA plugin search path");
     BTreeMap::from([
-        ("PIPEWIRE_RUNTIME_DIR", runtime.to_owned()),
-        ("PIPEWIREAO_RUNTIME_DIR", runtime.to_owned()),
-        ("XDG_RUNTIME_DIR", runtime.to_owned()),
-        ("PIPEWIREAO_CONFIG_DIR", config_directory.to_owned()),
-        ("PIPEWIREAO_MODULE_DIR", pipewire_build.join("src/modules")),
+        ("PIPEWIRE_RUNTIME_DIR".to_owned(), runtime.to_owned()),
+        ("PIPEWIREAO_RUNTIME_DIR".to_owned(), runtime.to_owned()),
+        ("XDG_RUNTIME_DIR".to_owned(), runtime.to_owned()),
         (
-            "PIPEWIREAO_SPA_PLUGIN_DIR",
+            "PIPEWIREAO_CONFIG_DIR".to_owned(),
+            config_directory.to_owned(),
+        ),
+        (
+            "PIPEWIREAO_MODULE_DIR".to_owned(),
+            pipewire_build.join("src/modules"),
+        ),
+        (
+            "PIPEWIREAO_SPA_PLUGIN_DIR".to_owned(),
             PathBuf::from(plugin_search_path),
         ),
+        ("CALCULON_FGN_BUNDLE".to_owned(), calculon_bundle.to_owned()),
         (
-            "CALCULON_FGN_BUNDLE",
-            calculon.join("target/release/libcalculon_fgn_bundle.so"),
-        ),
-        (
-            "PIPEWIREAO_NDARRAY_EXAMPLE",
+            "PIPEWIREAO_NDARRAY_EXAMPLE".to_owned(),
             pipewire_build.join("spa/plugins/filter-graph/libspa-filter-graph-ndarray-example.so"),
         ),
         (
-            "PIPEWIREAO_DISCARD_PLUGIN",
+            "PIPEWIREAO_DISCARD_PLUGIN".to_owned(),
             plugin_build.join("spa/plugins/discard/libspa-pipewireao-discard.so"),
         ),
         (
-            "PIPEWIREAO_FITS_PLUGIN",
+            "PIPEWIREAO_FITS_PLUGIN".to_owned(),
             plugin_build.join("spa/plugins/fits/libspa-fits.so"),
         ),
-        ("PIPEWIREAO_RTC_FITS_PATH", runner_fits.to_owned()),
     ])
 }
 
 fn command_with_environment(
     executable: impl AsRef<std::ffi::OsStr>,
-    environment: &BTreeMap<&str, PathBuf>,
+    environment: &BTreeMap<String, PathBuf>,
 ) -> Command {
     let mut command = Command::new(executable);
     command.envs(environment);
@@ -253,7 +458,7 @@ fn wait_for_core(core: &mut Child, socket: &Path) {
 
 fn wait_for_dump(
     pipewire_build: &Path,
-    environment: &BTreeMap<&str, PathBuf>,
+    environment: &BTreeMap<String, PathBuf>,
     core_name: &str,
     needle: &str,
 ) {
@@ -267,7 +472,7 @@ fn wait_for_dump(
     panic!("private core never exposed {needle}");
 }
 
-fn dump(pipewire_build: &Path, environment: &BTreeMap<&str, PathBuf>, core_name: &str) -> String {
+fn dump(pipewire_build: &Path, environment: &BTreeMap<String, PathBuf>, core_name: &str) -> String {
     let output = command_with_environment(pipewire_build.join("src/tools/pwao-cli"), environment)
         .args(["-r", core_name, "list-objects"])
         .output()

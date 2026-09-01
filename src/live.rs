@@ -1,6 +1,6 @@
 use crate::{
-    ConfigurationInput, DevelopmentConfig, EffectExecutor, EndpointFactory, LifecycleEffect,
-    ObjectRole, PortDirection, PortSpec, ScientificDiagnostic,
+    ConfigurationInput, DevelopmentConfig, EffectExecutor, EndpointFactory, GraphFactory,
+    LifecycleEffect, ObjectRole, ObjectSpec, PortDirection, PortSpec, ScientificDiagnostic,
 };
 use pipewire as pw;
 use pw::properties::PropertiesBox;
@@ -32,6 +32,7 @@ pub struct LiveGraphStatus {
     pub owned_links: usize,
     pub running: bool,
     pub discarded_buffers: u64,
+    pub discarded_by_sink: BTreeMap<String, u64>,
 }
 
 struct LiveNode {
@@ -55,12 +56,15 @@ enum LinkAdmissionState {
 
 /// Adapter for one private or explicitly named `PipeWireAO` core.
 pub struct LiveGraphAdapter {
-    remote_name: String,
     modules: Vec<pw::local_module::LocalModule>,
     spa_nodes: Vec<pw::node::Node>,
     links: Vec<LiveLink>,
     active_nodes: Vec<LiveNode>,
     owned_node_names: Vec<String>,
+    start_order: Vec<String>,
+    sink_names: Vec<String>,
+    expected_objects: usize,
+    expected_links: usize,
     status: LiveGraphStatus,
     globals: Rc<RefCell<BTreeMap<u32, GlobalObject<PropertiesBox>>>>,
     errors: Rc<RefCell<Vec<String>>>,
@@ -128,12 +132,15 @@ impl LiveGraphAdapter {
             .register();
 
         let adapter = Self {
-            remote_name,
             modules: Vec::new(),
             spa_nodes: Vec::new(),
             links: Vec::new(),
             active_nodes: Vec::new(),
             owned_node_names: Vec::new(),
+            start_order: Vec::new(),
+            sink_names: Vec::new(),
+            expected_objects: 0,
+            expected_links: 0,
             status: LiveGraphStatus::default(),
             globals,
             errors,
@@ -161,67 +168,36 @@ impl LiveGraphAdapter {
         self.cleanup()?;
         self.clear_errors();
 
-        let calculon = resolve_artifact(
-            "graph.plugin.path",
-            &config.graph.plugin_path,
-            "CALCULON_FGN_BUNDLE",
-        )?;
-        let sink_plugin = resolve_artifact(
-            "sink.plugin.path",
-            &config.sink.plugin_path,
-            "PIPEWIREAO_DISCARD_PLUGIN",
-        )?;
-        self.owned_node_names = vec![
-            config.source.node_name.clone(),
-            config.graph.node_name.clone(),
-            config.sink.node_name.clone(),
-        ];
+        self.owned_node_names = config.node_names().into_iter().map(str::to_owned).collect();
+        self.start_order = config.topological_node_names();
+        self.sink_names = config
+            .sinks
+            .iter()
+            .map(|sink| sink.node_name.clone())
+            .collect();
+        self.expected_objects = config.object_count();
+        self.expected_links = config.links.len();
 
-        let source_result = match config.source.factory {
-            EndpointFactory::SimulatedCompleteFrameSource => {
-                let source_plugin = resolve_artifact(
-                    "source.plugin.path",
-                    &config.source.plugin_path,
-                    "CALCULON_FGN_BUNDLE",
-                )?;
-                let source_arguments =
-                    render_source_args(config, &source_plugin, &self.remote_name);
-                self.load_owned_module(
-                    ObjectRole::Source,
-                    &config.source.module,
-                    &source_arguments,
-                    &config.source.node_name,
-                )
+        for (index, source) in config.sources.iter().enumerate() {
+            let field = format!("sources[{index}]");
+            if let Err(error) = self.create_source(source, &field) {
+                let _ = self.cleanup();
+                return Err(error);
             }
-            EndpointFactory::FitsCompleteFrameSource => {
-                let source_plugin = resolve_artifact(
-                    "source.plugin.path",
-                    &config.source.plugin_path,
-                    "PIPEWIREAO_FITS_PLUGIN",
-                )?;
-                self.create_owned_spa_source(config, &source_plugin)
-            }
-            EndpointFactory::FormatAgnosticDiscardSink => {
-                unreachable!("validated source cannot use a sink factory")
-            }
-        };
-        if let Err(error) = source_result {
-            let _ = self.cleanup();
-            return Err(error);
         }
-        let graph_arguments = render_graph_args(config, &calculon, &self.remote_name);
-        if let Err(error) = self.load_owned_module(
-            ObjectRole::Graph,
-            &config.graph.module,
-            &graph_arguments,
-            &config.graph.node_name,
-        ) {
-            let _ = self.cleanup();
-            return Err(error);
+        for (index, graph) in config.graphs.iter().enumerate() {
+            let field = format!("graphs[{index}]");
+            if let Err(error) = self.create_graph(graph, &field) {
+                let _ = self.cleanup();
+                return Err(error);
+            }
         }
-        if let Err(error) = self.create_owned_spa_sink(config, &sink_plugin) {
-            let _ = self.cleanup();
-            return Err(error);
+        for (index, sink) in config.sinks.iter().enumerate() {
+            let field = format!("sinks[{index}]");
+            if let Err(error) = self.create_sink(sink, &field) {
+                let _ = self.cleanup();
+                return Err(error);
+            }
         }
 
         if let Err(error) = self.validate_live_ports(config) {
@@ -230,7 +206,7 @@ impl LiveGraphAdapter {
         }
         // Admit links downstream-first so no source can publish into a
         // partially realized processing path.
-        for (index, link) in config.links.iter().enumerate().rev() {
+        for (index, link) in config.links_downstream_first() {
             if let Err(error) = self.create_link(index, &link.output, &link.input) {
                 let _ = self.cleanup();
                 return Err(error);
@@ -239,12 +215,17 @@ impl LiveGraphAdapter {
 
         self.status.owned_nodes = self.count_owned_nodes();
         self.status.owned_links = self.links.len();
-        if self.status.owned_nodes != 3 || self.status.owned_links != 2 {
+        if self.status.owned_nodes != self.expected_objects
+            || self.status.owned_links != self.expected_links
+        {
             let diagnostic = ScientificDiagnostic::new(
                 "topology",
                 format!(
-                    "expected exactly three owned nodes and two owned links, observed {} node(s) and {} link(s)",
-                    self.status.owned_nodes, self.status.owned_links
+                    "expected exactly {} declared nodes and {} declared links, observed {} node(s) and {} link(s)",
+                    self.expected_objects,
+                    self.expected_links,
+                    self.status.owned_nodes,
+                    self.status.owned_links
                 ),
             );
             let _ = self.cleanup();
@@ -254,19 +235,22 @@ impl LiveGraphAdapter {
     }
 
     fn start(&mut self) -> Result<(), ScientificDiagnostic> {
-        if self.count_owned_nodes() != 3 || self.links.len() != 2 {
+        if self.count_owned_nodes() != self.expected_objects
+            || self.links.len() != self.expected_links
+        {
             return Err(ScientificDiagnostic::new(
                 "topology",
-                "source, graph, sink, and both declared links must exist before start",
+                "every declared source, graph, sink, and link must exist before start",
             ));
         }
         self.clear_errors();
         self.active_nodes.clear();
-        let discarded_before_start = self.discard_buffer_count()?;
-        self.status.discarded_buffers = discarded_before_start;
+        let discarded_before_start = self.discard_buffer_counts()?;
+        self.status.discarded_buffers = discarded_before_start.values().sum();
+        self.status.discarded_by_sink = discarded_before_start.clone();
 
         // Downstream-first commands prevent the source from outrunning its sink.
-        for node_name in self.owned_node_names.iter().rev() {
+        for node_name in self.start_order.iter().rev() {
             let global = self.node_global(node_name)?;
             let node = self
                 .registry
@@ -315,7 +299,8 @@ impl LiveGraphAdapter {
                 format!("required nodes did not all enter RUNNING; observed states {states:?}"),
             ));
         }
-        self.status.discarded_buffers = self.wait_for_discarded_buffer(discarded_before_start)?;
+        self.status.discarded_by_sink = self.wait_for_discarded_buffers(&discarded_before_start)?;
+        self.status.discarded_buffers = self.status.discarded_by_sink.values().sum();
         self.status.running = true;
         Ok(())
     }
@@ -329,7 +314,9 @@ impl LiveGraphAdapter {
                 ));
         }
         if !self.active_nodes.is_empty() {
-            self.roundtrip("stop source -> graph -> sink")?;
+            self.roundtrip("stop complete-frame session")?;
+            self.status.discarded_by_sink = self.wait_for_discard_quiescence()?;
+            self.status.discarded_buffers = self.status.discarded_by_sink.values().sum();
         }
         self.active_nodes.clear();
         self.status.running = false;
@@ -366,6 +353,10 @@ impl LiveGraphAdapter {
             });
         }
         self.owned_node_names.clear();
+        self.start_order.clear();
+        self.sink_names.clear();
+        self.expected_objects = 0;
+        self.expected_links = 0;
         match first_error {
             Some(error) => Err(error),
             None => Ok(()),
@@ -401,14 +392,88 @@ impl LiveGraphAdapter {
         self.wait_for_owned_node(role, node_name)
     }
 
+    fn create_source(
+        &mut self,
+        source: &ObjectSpec<EndpointFactory>,
+        field: &str,
+    ) -> Result<(), ScientificDiagnostic> {
+        match source.factory {
+            EndpointFactory::SimulatedCompleteFrameSource => {
+                let arguments = read_module_arguments(
+                    &format!("{field}.config.path"),
+                    source
+                        .configuration_path
+                        .as_deref()
+                        .expect("simulated source configuration was validated"),
+                )?;
+                self.load_owned_module(
+                    ObjectRole::Source,
+                    &source.module,
+                    &arguments,
+                    &source.node_name,
+                )
+            }
+            EndpointFactory::FitsCompleteFrameSource => {
+                let plugin = resolve_artifact(
+                    &format!("{field}.plugin.path"),
+                    source
+                        .plugin_path
+                        .as_deref()
+                        .expect("FITS plugin path was validated"),
+                    "PIPEWIREAO_FITS_PLUGIN",
+                )?;
+                self.create_owned_spa_source(source, field, &plugin)
+            }
+            EndpointFactory::FormatAgnosticDiscardSink => {
+                unreachable!("validated source cannot use a sink factory")
+            }
+        }
+    }
+
+    fn create_graph(
+        &mut self,
+        graph: &ObjectSpec<GraphFactory>,
+        field: &str,
+    ) -> Result<(), ScientificDiagnostic> {
+        let arguments = read_module_arguments(
+            &format!("{field}.config.path"),
+            graph
+                .configuration_path
+                .as_deref()
+                .expect("graph configuration was validated"),
+        )?;
+        self.load_owned_module(
+            ObjectRole::Graph,
+            &graph.module,
+            &arguments,
+            &graph.node_name,
+        )
+    }
+
+    fn create_sink(
+        &mut self,
+        sink: &ObjectSpec<EndpointFactory>,
+        field: &str,
+    ) -> Result<(), ScientificDiagnostic> {
+        let plugin = resolve_artifact(
+            &format!("{field}.plugin.path"),
+            sink.plugin_path
+                .as_deref()
+                .expect("discard plugin path was validated"),
+            "PIPEWIREAO_DISCARD_PLUGIN",
+        )?;
+        self.create_owned_spa_sink(sink, field, &plugin)
+    }
+
     fn create_owned_spa_sink(
         &mut self,
-        config: &DevelopmentConfig,
+        sink: &ObjectSpec<EndpointFactory>,
+        field: &str,
         plugin: &Path,
     ) -> Result<(), ScientificDiagnostic> {
         if plugin.file_name().and_then(|name| name.to_str()) != Some(DISCARD_LIBRARY_FILE) {
             return Err(ScientificDiagnostic::new(
-                "sink.plugin.path",
+                format!("{field}.plugin.path"),
                 format!(
                     "expected maintained discard plugin {DISCARD_LIBRARY_FILE:?}, got {}",
                     plugin.display()
@@ -416,9 +481,9 @@ impl LiveGraphAdapter {
             ));
         }
         let properties = [
-            ("factory.name", config.sink.factory.configured_name()),
+            ("factory.name", sink.factory.configured_name()),
             ("library.name", DISCARD_LIBRARY),
-            ("node.name", config.sink.node_name.as_str()),
+            ("node.name", sink.node_name.as_str()),
             (
                 "node.description",
                 "PipeWireAO RTC non-actuating discard sink",
@@ -434,25 +499,26 @@ impl LiveGraphAdapter {
             .create_object::<pw::node::Node>(SPA_NODE_FACTORY, &properties)
             .map_err(|error| {
                 ScientificDiagnostic::new(
-                    "sink.factory",
+                    format!("{field}.factory"),
                     format!(
                         "PipeWire spa-node-factory rejected {:?}: {error}",
-                        config.sink.factory.configured_name()
+                        sink.factory.configured_name()
                     ),
                 )
             })?;
         self.spa_nodes.push(node);
-        self.wait_for_owned_node(ObjectRole::Sink, &config.sink.node_name)
+        self.wait_for_owned_node(ObjectRole::Sink, &sink.node_name)
     }
 
     fn create_owned_spa_source(
         &mut self,
-        config: &DevelopmentConfig,
+        source: &ObjectSpec<EndpointFactory>,
+        field: &str,
         plugin: &Path,
     ) -> Result<(), ScientificDiagnostic> {
         if plugin.file_name().and_then(|name| name.to_str()) != Some(FITS_LIBRARY_FILE) {
             return Err(ScientificDiagnostic::new(
-                "source.plugin.path",
+                format!("{field}.plugin.path"),
                 format!(
                     "expected maintained FITS plugin {FITS_LIBRARY_FILE:?}, got {}",
                     plugin.display()
@@ -460,30 +526,28 @@ impl LiveGraphAdapter {
             ));
         }
         let image = resolve_file_reference(
-            "source.args.api.fits.path",
-            config
-                .source
+            &format!("{field}.args.api.fits.path"),
+            source
                 .arguments
                 .get("api.fits.path")
                 .expect("FITS path argument was validated"),
-            "PIPEWIREAO_RTC_FITS_PATH",
         )?;
         let image = image.to_str().ok_or_else(|| {
             ScientificDiagnostic::new(
-                "source.args.api.fits.path",
+                format!("{field}.args.api.fits.path"),
                 "resolved FITS path is not valid UTF-8",
             )
         })?;
         let mut properties = PropertiesBox::new();
-        properties.insert("factory.name", config.source.factory.configured_name());
-        properties.insert("node.name", config.source.node_name.as_str());
+        properties.insert("factory.name", source.factory.configured_name());
+        properties.insert("node.name", source.node_name.as_str());
         properties.insert(
             "node.description",
             "PipeWireAO RTC recorded complete-frame source",
         );
         properties.insert("node.virtual", "true");
         properties.insert("object.linger", "false");
-        for (name, configured) in &config.source.arguments {
+        for (name, configured) in &source.arguments {
             if name == "api.fits.path" {
                 properties.insert(name.as_str(), image);
             } else {
@@ -495,15 +559,15 @@ impl LiveGraphAdapter {
             .create_object::<pw::node::Node>(SPA_NODE_FACTORY, &properties)
             .map_err(|error| {
                 ScientificDiagnostic::new(
-                    "source.factory",
+                    format!("{field}.factory"),
                     format!(
                         "PipeWire spa-node-factory rejected {:?}: {error}",
-                        config.source.factory.configured_name()
+                        source.factory.configured_name()
                     ),
                 )
             })?;
         self.spa_nodes.push(node);
-        self.wait_for_owned_node(ObjectRole::Source, &config.source.node_name)
+        self.wait_for_owned_node(ObjectRole::Source, &source.node_name)
     }
 
     fn wait_for_owned_node(
@@ -545,28 +609,31 @@ impl LiveGraphAdapter {
         ))
     }
 
-    fn discard_buffer_count(&self) -> Result<u64, ScientificDiagnostic> {
-        self.discard_metric(DISCARD_BUFFERS_PROPERTY, "discard.buffers")
+    fn discard_buffer_counts(&self) -> Result<BTreeMap<String, u64>, ScientificDiagnostic> {
+        self.sink_names
+            .iter()
+            .map(|sink_name| {
+                self.discard_metric(sink_name, DISCARD_BUFFERS_PROPERTY, "discard.buffers")
+                    .map(|value| (sink_name.clone(), value))
+            })
+            .collect()
     }
 
     fn discard_metric(
         &self,
+        sink_name: &str,
         property_id: u32,
         metric_name: &str,
     ) -> Result<u64, ScientificDiagnostic> {
         let metric_name = metric_name.to_owned();
         let callback_metric_name = metric_name.clone();
-        let global = self.node_global(
-            self.owned_node_names
-                .last()
-                .ok_or_else(|| ScientificDiagnostic::new("sink", "sink is not realized"))?,
-        )?;
+        let global = self.node_global(sink_name)?;
         let node = self
             .registry
             .bind::<pw::node::Node, _>(&global)
             .map_err(|error| {
                 ScientificDiagnostic::new(
-                    format!("sink.{metric_name}"),
+                    format!("sink {sink_name}.{metric_name}"),
                     format!("cannot bind discard sink metrics: {error}"),
                 )
             })?;
@@ -612,53 +679,98 @@ impl LiveGraphAdapter {
             0,
             1,
         );
-        self.roundtrip(&format!("sink.{metric_name}"))?;
+        self.roundtrip(&format!("sink {sink_name}.{metric_name}"))?;
         let result = result.borrow_mut().take().ok_or_else(|| {
             ScientificDiagnostic::new(
-                format!("sink.{metric_name}"),
+                format!("sink {sink_name}.{metric_name}"),
                 format!(
                     "discard sink did not return its metrics parameter; parameter events {:?}",
                     events.borrow()
                 ),
             )
         })?;
-        result.map_err(|message| ScientificDiagnostic::new(format!("sink.{metric_name}"), message))
+        result.map_err(|message| {
+            ScientificDiagnostic::new(format!("sink {sink_name}.{metric_name}"), message)
+        })
     }
 
-    fn wait_for_discarded_buffer(&self, previous: u64) -> Result<u64, ScientificDiagnostic> {
-        let mut observed = previous;
+    fn wait_for_discarded_buffers(
+        &self,
+        previous: &BTreeMap<String, u64>,
+    ) -> Result<BTreeMap<String, u64>, ScientificDiagnostic> {
+        let mut observed = previous.clone();
         for _ in 0..100 {
-            observed = self.discard_buffer_count()?;
-            if observed > previous {
+            observed = self.discard_buffer_counts()?;
+            if previous
+                .iter()
+                .all(|(sink, before)| observed.get(sink).is_some_and(|after| after > before))
+            {
                 return Ok(observed);
             }
             std::thread::sleep(std::time::Duration::from_millis(5));
         }
-        let process_calls = self
-            .discard_metric(DISCARD_PROCESS_CALLS_PROPERTY, "discard.process-calls")
-            .unwrap_or(0);
+        let stalled = previous
+            .iter()
+            .filter(|(sink, before)| observed.get(*sink).map_or(true, |after| after <= *before))
+            .map(|(sink, before)| {
+                let process_calls = self
+                    .discard_metric(
+                        sink,
+                        DISCARD_PROCESS_CALLS_PROPERTY,
+                        "discard.process-calls",
+                    )
+                    .unwrap_or(0);
+                format!("{sink} remained at {before} after {process_calls} process calls")
+            })
+            .collect::<Vec<_>>();
         Err(ScientificDiagnostic::new(
-            "sink.discard.buffers",
+            "sinks.discard.buffers",
             format!(
-                "no complete buffer reached the discard sink after start; counter remained {observed} after {process_calls} process calls"
+                "no complete buffer reached every discard sink after start: {}",
+                stalled.join("; ")
             ),
         ))
     }
 
+    fn wait_for_discard_quiescence(&self) -> Result<BTreeMap<String, u64>, ScientificDiagnostic> {
+        let mut previous = self.discard_buffer_counts()?;
+        let mut stable_samples = 0;
+        for _ in 0..100 {
+            std::thread::sleep(std::time::Duration::from_millis(5));
+            let observed = self.discard_buffer_counts()?;
+            if observed == previous {
+                stable_samples += 1;
+                if stable_samples == 3 {
+                    return Ok(observed);
+                }
+            } else {
+                stable_samples = 0;
+                previous = observed;
+            }
+        }
+        Err(ScientificDiagnostic::new(
+            "stop",
+            format!("discard counters did not quiesce after PAUSE; last counts {previous:?}"),
+        ))
+    }
+
     fn validate_live_ports(&self, config: &DevelopmentConfig) -> Result<(), ScientificDiagnostic> {
-        let expected = [
-            (
-                ObjectRole::Source,
-                &config.source.node_name,
-                &config.source.ports,
-            ),
-            (
-                ObjectRole::Graph,
-                &config.graph.node_name,
-                &config.graph.ports,
-            ),
-            (ObjectRole::Sink, &config.sink.node_name, &config.sink.ports),
-        ];
+        let expected = config
+            .sources
+            .iter()
+            .map(|object| (ObjectRole::Source, &object.node_name, &object.ports))
+            .chain(
+                config
+                    .graphs
+                    .iter()
+                    .map(|object| (ObjectRole::Graph, &object.node_name, &object.ports)),
+            )
+            .chain(
+                config
+                    .sinks
+                    .iter()
+                    .map(|object| (ObjectRole::Sink, &object.node_name, &object.ports)),
+            );
         for (role, node_name, ports) in expected {
             let node = self.node_global(node_name)?;
             for port in ports {
@@ -1185,18 +1297,13 @@ fn resolve_artifact(
     Ok(canonical)
 }
 
-fn resolve_file_reference(
-    field: &str,
-    configured: &str,
-    environment_name: &str,
-) -> Result<PathBuf, ScientificDiagnostic> {
-    let expected = format!("${{{environment_name}}}");
-    if configured != expected {
-        return Err(ScientificDiagnostic::new(
-            field,
-            format!("expected runtime file reference {expected:?}"),
-        ));
-    }
+fn resolve_file_reference(field: &str, configured: &str) -> Result<PathBuf, ScientificDiagnostic> {
+    let environment_name = configured
+        .strip_prefix("${")
+        .and_then(|value| value.strip_suffix('}'))
+        .ok_or_else(|| {
+            ScientificDiagnostic::new(field, "expected an explicit environment file reference")
+        })?;
     let path = std::env::var_os(environment_name).ok_or_else(|| {
         ScientificDiagnostic::new(
             field,
@@ -1218,58 +1325,15 @@ fn resolve_file_reference(
     })
 }
 
-fn render_source_args(config: &DevelopmentConfig, plugin: &Path, remote: &str) -> String {
-    let algorithm = config
-        .source
-        .algorithm
-        .as_ref()
-        .expect("source algorithm was validated");
-    format!(
-        "{{ remote.name = {} node.name = {} filter.graph = {{ nodes = [ {{ type = ndarray name = source plugin = {} label = {} config = {} }} ] inputs = [ ] outputs = [ \"source:excitation\" ] }} }}",
-        quote_spa(remote),
-        quote_spa(&config.source.node_name),
-        quote_spa(&plugin.display().to_string()),
-        quote_spa(&algorithm.label),
-        render_map(&algorithm.config),
-    )
-}
-
-fn render_graph_args(config: &DevelopmentConfig, plugin: &Path, remote: &str) -> String {
-    let algorithm = config
-        .graph
-        .algorithm
-        .as_ref()
-        .expect("graph algorithm was validated");
-    let properties = config
-        .properties
-        .iter()
-        .map(|(name, value)| {
-            (
-                name.strip_prefix("graph.").unwrap_or(name).to_owned(),
-                value.clone(),
-            )
-        })
-        .collect::<BTreeMap<_, _>>();
-    format!(
-        "{{ remote.name = {} node.name = {} filter.graph = {{ nodes = [ {{ type = ndarray name = graph plugin = {} label = {} config = {} props = {} }} ] inputs = [ \"graph:input\" ] outputs = [ \"graph:output\" ] }} }}",
-        quote_spa(remote),
-        quote_spa(&config.graph.node_name),
-        quote_spa(&plugin.display().to_string()),
-        quote_spa(&algorithm.label),
-        render_map(&algorithm.config),
-        render_map(&properties),
-    )
-}
-
-fn render_map(values: &BTreeMap<String, String>) -> String {
-    let fields = values
-        .iter()
-        .map(|(name, value)| format!("{name} = {value}"))
-        .collect::<Vec<_>>()
-        .join(" ");
-    format!("{{ {fields} }}")
-}
-
-fn quote_spa(value: &str) -> String {
-    format!("\"{}\"", value.replace('\\', "\\\\").replace('"', "\\\""))
+fn read_module_arguments(field: &str, configured: &str) -> Result<String, ScientificDiagnostic> {
+    let path = resolve_file_reference(field, configured)?;
+    std::fs::read_to_string(&path).map_err(|error| {
+        ScientificDiagnostic::new(
+            field,
+            format!(
+                "cannot read delegated PipeWire module arguments {} as UTF-8: {error}",
+                path.display()
+            ),
+        )
+    })
 }
