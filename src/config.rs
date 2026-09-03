@@ -71,6 +71,19 @@ pub enum EndpointFactory {
     FormatAgnosticDiscardSink,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ObjectRealization<F> {
+    Factory(F),
+    External,
+}
+
+impl<F> ObjectRealization<F> {
+    #[must_use]
+    pub const fn is_external(&self) -> bool {
+        matches!(self, Self::External)
+    }
+}
+
 impl EndpointFactory {
     #[must_use]
     pub const fn configured_name(self) -> &'static str {
@@ -128,8 +141,8 @@ pub struct PortSpec {
 /// module-argument file. The RTC never parses or regenerates its `filter.graph`.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ObjectSpec<F> {
-    pub factory: F,
-    pub module: String,
+    pub realization: ObjectRealization<F>,
+    pub module: Option<String>,
     pub node_name: String,
     pub plugin_path: Option<String>,
     pub configuration_path: Option<String>,
@@ -263,6 +276,61 @@ impl DevelopmentConfig {
     }
 
     #[must_use]
+    pub fn owned_object_count(&self) -> usize {
+        self.graphs.len()
+            + self
+                .sources
+                .iter()
+                .filter(|object| !object.realization.is_external())
+                .count()
+            + self
+                .sinks
+                .iter()
+                .filter(|object| !object.realization.is_external())
+                .count()
+    }
+
+    #[must_use]
+    pub fn owned_node_names(&self) -> Vec<&str> {
+        self.sources
+            .iter()
+            .filter(|object| !object.realization.is_external())
+            .map(|object| object.node_name.as_str())
+            .chain(self.graphs.iter().map(|object| object.node_name.as_str()))
+            .chain(
+                self.sinks
+                    .iter()
+                    .filter(|object| !object.realization.is_external())
+                    .map(|object| object.node_name.as_str()),
+            )
+            .collect()
+    }
+
+    #[must_use]
+    pub fn externally_owned_node_names(&self) -> Vec<&str> {
+        self.sources
+            .iter()
+            .filter(|object| object.realization.is_external())
+            .map(|object| object.node_name.as_str())
+            .chain(
+                self.sinks
+                    .iter()
+                    .filter(|object| object.realization.is_external())
+                    .map(|object| object.node_name.as_str()),
+            )
+            .collect()
+    }
+
+    #[must_use]
+    pub fn owned_topological_node_names(&self) -> Vec<String> {
+        let owned = self.owned_node_names().into_iter().collect::<BTreeSet<_>>();
+        self.topological_node_names()
+            .into_iter()
+            .filter(|name| owned.contains(name.as_str()))
+            .collect()
+    }
+
+    #[must_use]
     pub fn node_names(&self) -> Vec<&str> {
         self.sources
             .iter()
@@ -315,6 +383,7 @@ impl DevelopmentConfig {
         Some(
             self.sinks
                 .iter()
+                .filter(|sink| !sink.realization.is_external())
                 .filter(|sink| group.nodes.contains(&sink.node_name))
                 .map(|sink| sink.node_name.clone())
                 .collect(),
@@ -402,6 +471,10 @@ fn validate_execution_groups(config: &DevelopmentConfig) -> Result<(), Scientifi
         .iter()
         .map(|graph| graph.node_name.as_str())
         .collect::<BTreeSet<_>>();
+    let external_names = config
+        .externally_owned_node_names()
+        .into_iter()
+        .collect::<BTreeSet<_>>();
     let mut names = BTreeSet::new();
     let mut membership = BTreeMap::<&str, &str>::new();
 
@@ -435,6 +508,12 @@ fn validate_execution_groups(config: &DevelopmentConfig) -> Result<(), Scientifi
                     format!("session node {member:?} is not declared"),
                 ));
             }
+            if external_names.contains(member.as_str()) {
+                return Err(ScientificDiagnostic::new(
+                    member_field,
+                    "external HIL endpoint lifecycle remains application-owned",
+                ));
+            }
             if let Some(previous) = membership.insert(member, &group.name) {
                 return Err(ScientificDiagnostic::new(
                     member_field,
@@ -462,6 +541,9 @@ fn validate_execution_groups(config: &DevelopmentConfig) -> Result<(), Scientifi
         }
     }
     for sink in &config.sinks {
+        if sink.realization.is_external() {
+            continue;
+        }
         if !membership.contains_key(sink.node_name.as_str()) {
             return Err(ScientificDiagnostic::new(
                 format!("sink {}.execution-group", sink.node_name),
@@ -477,9 +559,10 @@ fn validate_source(
     field: &str,
 ) -> Result<(), ScientificDiagnostic> {
     validate_ports(field, &source.ports, &[PortDirection::Output])?;
-    match source.factory {
-        EndpointFactory::FitsCompleteFrameSource => {
-            validate_module(field, &source.module, SPA_NODE_FACTORY_MODULE)?;
+    match source.realization {
+        ObjectRealization::Factory(EndpointFactory::FitsCompleteFrameSource) => {
+            validate_exact_shape(&source.ports[0], field, &[2])?;
+            validate_required_module(field, source.module.as_deref(), SPA_NODE_FACTORY_MODULE)?;
             validate_exact_reference(
                 &format!("{field}.plugin.path"),
                 source.plugin_path.as_deref(),
@@ -488,8 +571,9 @@ fn validate_source(
             reject_configuration_path(field, source.configuration_path.as_deref())?;
             validate_fits_arguments(source, field)
         }
-        EndpointFactory::SimulatedCompleteFrameSource => {
-            validate_module(field, &source.module, FILTER_CHAIN_MODULE)?;
+        ObjectRealization::Factory(EndpointFactory::SimulatedCompleteFrameSource) => {
+            validate_exact_shape(&source.ports[0], field, &[2])?;
+            validate_required_module(field, source.module.as_deref(), FILTER_CHAIN_MODULE)?;
             reject_plugin_path(field, source.plugin_path.as_deref())?;
             validate_configuration_reference(
                 &format!("{field}.config.path"),
@@ -505,7 +589,10 @@ fn validate_source(
                 ))
             }
         }
-        EndpointFactory::FormatAgnosticDiscardSink => unreachable!("source allowlist"),
+        ObjectRealization::Factory(EndpointFactory::FormatAgnosticDiscardSink) => {
+            unreachable!("source allowlist")
+        }
+        ObjectRealization::External => validate_external_endpoint(source, field),
     }
 }
 
@@ -513,7 +600,13 @@ fn validate_graph(
     graph: &ObjectSpec<GraphFactory>,
     field: &str,
 ) -> Result<(), ScientificDiagnostic> {
-    validate_module(field, &graph.module, FILTER_CHAIN_MODULE)?;
+    if graph.realization != ObjectRealization::Factory(GraphFactory::CalculonFgnNative) {
+        return Err(ScientificDiagnostic::new(
+            format!("{field}.factory"),
+            "graph must use the fgn-native factory",
+        ));
+    }
+    validate_required_module(field, graph.module.as_deref(), FILTER_CHAIN_MODULE)?;
     validate_ports(
         field,
         &graph.ports,
@@ -539,20 +632,64 @@ fn validate_sink(
     sink: &ObjectSpec<EndpointFactory>,
     field: &str,
 ) -> Result<(), ScientificDiagnostic> {
-    validate_module(field, &sink.module, SPA_NODE_FACTORY_MODULE)?;
     validate_ports(field, &sink.ports, &[PortDirection::Input])?;
-    validate_exact_reference(
-        &format!("{field}.plugin.path"),
-        sink.plugin_path.as_deref(),
-        "${PIPEWIREAO_DISCARD_PLUGIN}",
-    )?;
-    reject_configuration_path(field, sink.configuration_path.as_deref())?;
-    if sink.arguments.is_empty() {
+    match sink.realization {
+        ObjectRealization::Factory(EndpointFactory::FormatAgnosticDiscardSink) => {
+            validate_exact_shape(&sink.ports[0], field, &[2])?;
+            validate_required_module(field, sink.module.as_deref(), SPA_NODE_FACTORY_MODULE)?;
+            validate_exact_reference(
+                &format!("{field}.plugin.path"),
+                sink.plugin_path.as_deref(),
+                "${PIPEWIREAO_DISCARD_PLUGIN}",
+            )?;
+            reject_configuration_path(field, sink.configuration_path.as_deref())?;
+            if sink.arguments.is_empty() {
+                Ok(())
+            } else {
+                Err(ScientificDiagnostic::new(
+                    format!("{field}.args"),
+                    "the format-agnostic discard sink takes no fixture arguments",
+                ))
+            }
+        }
+        ObjectRealization::External => validate_external_endpoint(sink, field),
+        ObjectRealization::Factory(_) => unreachable!("sink allowlist"),
+    }
+}
+
+fn validate_external_endpoint<F>(
+    endpoint: &ObjectSpec<F>,
+    field: &str,
+) -> Result<(), ScientificDiagnostic> {
+    if endpoint.module.is_some() {
+        return Err(ScientificDiagnostic::new(
+            format!("{field}.module"),
+            "external HIL endpoint must not declare a runner-loaded module",
+        ));
+    }
+    reject_plugin_path(field, endpoint.plugin_path.as_deref())?;
+    reject_configuration_path(field, endpoint.configuration_path.as_deref())?;
+    if endpoint.arguments.is_empty() {
         Ok(())
     } else {
         Err(ScientificDiagnostic::new(
             format!("{field}.args"),
-            "the format-agnostic discard sink takes no fixture arguments",
+            "external HIL endpoint takes no runner-rendered arguments",
+        ))
+    }
+}
+
+fn validate_exact_shape(
+    port: &PortSpec,
+    field: &str,
+    expected_shape: &[u32],
+) -> Result<(), ScientificDiagnostic> {
+    if port.shape == expected_shape {
+        Ok(())
+    } else {
+        Err(ScientificDiagnostic::new(
+            format!("{field}.ports.{}.shape", port.name),
+            format!("expected {expected_shape:?}, got {:?}", port.shape),
         ))
     }
 }
@@ -577,8 +714,12 @@ fn validate_node_name(
     Ok(())
 }
 
-fn validate_module(field: &str, actual: &str, expected: &str) -> Result<(), ScientificDiagnostic> {
-    if actual == expected {
+fn validate_required_module(
+    field: &str,
+    actual: Option<&str>,
+    expected: &str,
+) -> Result<(), ScientificDiagnostic> {
+    if actual == Some(expected) {
         Ok(())
     } else {
         Err(ScientificDiagnostic::new(
@@ -624,10 +765,10 @@ fn validate_ports(
                 format!("expected F32_LE, got {:?}", port.element_type),
             ));
         }
-        if port.shape != [2] {
+        if port.shape.is_empty() || port.shape.contains(&0) {
             return Err(ScientificDiagnostic::new(
                 format!("{port_field}.shape"),
-                format!("expected [2], got {:?}", port.shape),
+                "complete ndarray shape must have positive dimensions",
             ));
         }
         if port.schema.is_empty() {

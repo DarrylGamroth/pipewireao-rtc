@@ -282,8 +282,106 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
         );
     }
 
+    run_external_endpoint_case(
+        &repository,
+        &workspace
+            .parent()
+            .expect("repository group")
+            .join("AdaptiveOpticsSimPipeWireHIL.jl"),
+        &pipewire_build,
+        &environment,
+        &core_name,
+        temporary.path(),
+    );
+
     drop(unrelated);
     drop(core);
+}
+
+fn run_external_endpoint_case(
+    repository: &Path,
+    hil_package: &Path,
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+    temporary: &Path,
+) {
+    assert!(hil_package.join("Project.toml").is_file());
+    let stop_file = temporary.join("stop-external-hil");
+    let provider_log = temporary.join("external-hil.log");
+    let log = std::fs::File::create(&provider_log).expect("external HIL log");
+    let provider = command_with_environment("julia", environment)
+        .args([
+            "--startup-file=no",
+            "--threads=2",
+            &format!("--project={}", hil_package.display()),
+        ])
+        .arg(repository.join("tests/live_private_core/external_hil_provider.jl"))
+        .args([core_name, stop_file.to_str().expect("UTF-8 stop path")])
+        .stdout(Stdio::from(log.try_clone().unwrap()))
+        .stderr(Stdio::from(log))
+        .spawn()
+        .expect("start external HIL provider");
+    let mut provider = ChildGuard(provider);
+    wait_for_text(&mut provider.0, &provider_log, "EXTERNAL_HIL_READY");
+    wait_for_dump(
+        pipewire_build,
+        environment,
+        core_name,
+        "pipewireao-rtc-external-source",
+    );
+    wait_for_dump(
+        pipewire_build,
+        environment,
+        core_name,
+        "pipewireao-rtc-external-sink",
+    );
+
+    let adapter = LiveGraphAdapter::connect(core_name).expect("connect external-node session");
+    let mut runner = Runner::new(adapter);
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Load(ConfigurationInput::File(
+                repository.join("fixtures/external-development.conf"),
+            )))
+            .unwrap(),
+        LifecycleState::Ready,
+        "external load diagnostic: {:?}",
+        runner.diagnostic(),
+    );
+    assert_eq!(runner.executor().status().owned_nodes, 1);
+    assert_eq!(runner.executor().status().owned_links, 2);
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Start).unwrap(),
+        LifecycleState::Running,
+        "external start diagnostic: {:?}",
+        runner.diagnostic(),
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Stop).unwrap(),
+        LifecycleState::Ready,
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Unload).unwrap(),
+        LifecycleState::Offline,
+    );
+    let after = dump(pipewire_build, environment, core_name);
+    assert!(after.contains("pipewireao-rtc-external-source"));
+    assert!(after.contains("pipewireao-rtc-external-sink"));
+    assert!(after.contains("pipewireao-rtc-unrelated"));
+    assert!(!after.contains("pipewireao-rtc-graph"));
+
+    std::fs::write(&stop_file, "stop\n").unwrap();
+    for _ in 0..200 {
+        if provider.0.try_wait().unwrap().is_some() {
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    panic!(
+        "external HIL provider did not stop; log: {}",
+        std::fs::read_to_string(provider_log).unwrap()
+    );
 }
 
 fn run_session_case(
@@ -554,6 +652,29 @@ fn wait_for_core(core: &mut Child, socket: &Path) {
         std::thread::sleep(Duration::from_millis(20));
     }
     panic!("private core socket {} was not created", socket.display());
+}
+
+fn wait_for_text(process: &mut Child, log: &Path, needle: &str) {
+    let deadline = Instant::now() + Duration::from_secs(30);
+    while Instant::now() < deadline {
+        if let Some(status) = process.try_wait().unwrap() {
+            panic!(
+                "external process exited with {status}; log: {}",
+                std::fs::read_to_string(log).unwrap_or_default()
+            );
+        }
+        if std::fs::read_to_string(log)
+            .unwrap_or_default()
+            .contains(needle)
+        {
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    panic!(
+        "external process never reported {needle}; log: {}",
+        std::fs::read_to_string(log).unwrap_or_default()
+    );
 }
 
 fn wait_for_dump(

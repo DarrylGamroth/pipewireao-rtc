@@ -19,6 +19,10 @@ multi-graph composition. Graph authoring remains in standard PipeWireAO
 schedule graph execution. A GUI is a valuable optional observer and editor of
 that standard configuration, never a runtime prerequisite.
 
+The next slice connects a transport-neutral AdaptiveOpticsSim reference plant
+through a separate PipeWire adapter package. The RTC remains a Rust control
+plane and never loads or executes Julia graph code.
+
 The active work ends at the non-actuating development gate. The larger former
 roadmap is retained only in the [inactive design archive](archive/full-rtc/README.md).
 
@@ -48,13 +52,14 @@ flowchart LR
     Fork["1d. Forked graph paths"]
     Parallel["1e. Independent paths"]
     Control["1f. Selective run control"]
-    Revolt["2. REVOLT Classic equivalence"]
-    Authoring["3. Scientist authoring proof"]
-    Profile["4. Development performance profile"]
+    AOSHIL["2. AdaptiveOpticsSim HIL"]
+    Revolt["3. REVOLT Classic equivalence"]
+    Authoring["4. Scientist authoring proof"]
+    Profile["5. Development performance profile"]
     Gate["Development gate"]
 
     Contract --> Transport --> Fixture --> Chain --> Fork --> Parallel --> Control
-    Control --> Revolt --> Authoring --> Profile --> Gate
+    Control --> AOSHIL --> Revolt --> Authoring --> Profile --> Gate
 ```
 
 ### 0. Freeze the small contract
@@ -64,7 +69,7 @@ flowchart LR
 - use standard PipeWire relaxed SPA-JSON rather than inventing another
   configuration language;
 - identify the exact current PipeWireAO and Calculon revisions; and
-- map RTC-DEV-001 through RTC-DEV-012 to implementation and tests as work
+- map RTC-DEV-001 through RTC-DEV-015 to implementation and tests as work
   begins.
 
 Exit evidence: the active index has no dependency on archived requirements,
@@ -128,7 +133,39 @@ dispatcher, preserved topology and state across group stop/start, live fork
 and independent isolation, failure-to-`FAULT`, and session-wide cancellation
 and cleanup while group work is pending.
 
-### 2. Add REVOLT Classic
+### 2. Add the AdaptiveOpticsSim HIL reference
+
+- keep AdaptiveOpticsSim free of PipeWireAO dependencies, extensions, buffers,
+  and callbacks;
+- maintain `AdaptiveOpticsSimPipeWireHIL.jl` as the narrow package that owns both
+  dependencies and exposes a prepared AOS HIL boundary as one WFS-frame source
+  plus one non-actuating correction-command sink;
+- extend the RTC configuration with an explicit external ownership declaration
+  and exact port contracts, without making the RTC interpret the external
+  application's package, language, process, or private properties;
+- attach the runner-owned Calculon graph and links to the already-running HIL
+  endpoint pair on the private core;
+- preserve same-sequence command exchange and apply command `n` to simulated
+  frame `n + 1` with at most one exchange in flight; and
+- compare transported outputs and plant diagnostics with the maintained direct
+  reference for flat and deterministic atmospheric cases.
+
+Exit evidence: the external endpoint rejection matrix passes; both adapter
+nodes are visible before load and survive failed load, retry, stop, restart, and
+unload; every runner-owned graph and link is removed; the unrelated fixture
+object survives; multiple complete frames close through Calculon with exact
+sequence causality; direct and transported results satisfy declared tolerances;
+and the fixture runs without a GUI. This remains non-actuating functional
+evidence, not a deadline, physical-device, or safety claim.
+
+The next external-node composition slice applies the same boundary to the
+existing `JuliaFilterGraph.jl` deployment application: launch its prepared
+graph node separately, discover its ordinary PipeWire ports, and link it into
+the declared session without adding a Julia-specific runner factory or parser.
+That slice must define lifecycle and selective-control ownership before the RTC
+claims that an externally owned processing node can be stopped independently.
+
+### 3. Add REVOLT Classic
 
 - load the maintained 277-actuator complete-frame REVOLT Classic graph;
 - use explicit subaperture origins;
@@ -143,7 +180,7 @@ and cleanup while group work is pending.
 Exit evidence: deterministic start, stop, source end, reset, property update,
 and parameter update scenarios satisfy RTC-DEV-007 at declared tolerances.
 
-### 3. Prove scientist authoring
+### 4. Prove scientist authoring
 
 - remove any remaining requirement to edit a central adapter registry;
 - demonstrate package-local declarations for representative stateless,
@@ -157,7 +194,7 @@ Exit evidence: a scientist unfamiliar with SPA can add, test, compose, run,
 and inspect a representative algorithm by touching only its scientific package
 and graph configuration.
 
-### 4. Characterize development performance
+### 5. Characterize development performance
 
 Performance characterization answers whether the abstraction is practical;
 it does not create a real-time qualification claim.
@@ -184,14 +221,17 @@ or correction-critical suitability.
 | RTC-DEV-002 | 1 | implemented | validated | The minimal FITS → graph → discard fixture and field-by-field diagnostics pass; the live adapter validates directions, F32_LE, shape `[2]`, row-major layout, 1000/1 rate, scientific schemas, the discard wildcard, and both links before `RUNNING` |
 | RTC-DEV-003 | 1 | implemented | partial | Deterministic creation-point cleanup and the live exact topology pass; both links are admitted, owned objects are removed, and the unrelated node survives, but live lower-level failure injection after every creation point remains missing |
 | RTC-DEV-004 | 1 | partial | partial | Transition, retry, invalid-command, required-object failure, repeated-cycle, and complete live lifecycle tests pass; explicit live stop and restart work within one load, but the FITS source exposes no public normal-completion signal for automatic return to `READY` |
-| RTC-DEV-005 | 2 | planned | missing | Requested/active property and parameter update tests |
+| RTC-DEV-005 | 3 | planned | missing | Requested/active property and parameter update tests |
 | RTC-DEV-006 | 1 and 2 | partial | partial | The private-core runner reaches and remains in its lifecycle without a GUI and rejects an undeclared observation; no suitable bounded non-gating sample boundary is available for attach, detach, and stall evidence |
-| RTC-DEV-007 | 2 | planned | missing | Deterministic REVOLT output and state oracle |
-| RTC-DEV-008 | 3 | planned | missing | Package-local declaration examples and ordinary-array tests |
+| RTC-DEV-007 | 2 and 3 | planned | missing | Deterministic AdaptiveOpticsSim and REVOLT output and state oracles |
+| RTC-DEV-008 | 4 | planned | missing | Package-local declaration examples and ordinary-array tests |
 | RTC-DEV-009 | 1 | implemented | validated | Statig hierarchy, serialized dispatch, typed effects, effect failure, stale-completion rejection, and the full private-core lifecycle pass through the same dispatcher |
 | RTC-DEV-010 | 1c through 1e | implemented | partial | The exact serial, forked, and independent sessions each pass the private-core lifecycle and deliver to every sink; standard graph files are delegated unchanged and PipeWire owns branch execution; deterministic creation-point failure coverage uses the fake adapter, so live lower-level failure injection after every point remains missing |
 | RTC-DEV-011 | 1f | implemented | partial | Valid and invalid execution-group configurations pass; the live serial, fork, and independent fixtures preserve exact objects and links, quiesce the selected sinks, leave unaffected sinks progressing, and resume delivery. PipeWireAO pause/start retains the same FGN instance and does not call its separate reset operation, but accepted numerical output is not observed to prove state continuity |
 | RTC-DEV-012 | 1f | implemented | validated | Group start and stop use the one dispatcher and typed token, kind, origin, and group-target completions; mismatch, invalid request, effect failure to `FAULT`, stop/unload/required-failure supersession, late completion, retry, and repeated-cycle tests pass |
+| RTC-DEV-013 | 2 | partial | partial | Generic external source/sink ownership and exact configuration validation pass without implementation-specific admission; live RTC port validation, required-object failure, runner-owned cleanup, and survival of both application nodes plus an unrelated object remain missing |
+| RTC-DEV-014 | 2 | partial | partial | The separate integration package implements bounded complete-frame exchange and acquisition-to-model-time conversion; unit tests pass and both ordinary nodes publish, remain inspectable, and clean up on a private core. Same-sequence connected exchange, fault injection, and command-`n` to frame-`n+1` evidence are missing |
+| RTC-DEV-015 | 2 | planned | missing | Private-core flat and atmospheric closed-loop lifecycle, restart continuity, direct equivalence, and plant-diagnostic evidence without a GUI |
 
 Implementation and evidence state remain separate when this table is updated.
 A merged implementation is not validated until its complete evidence passes
@@ -209,7 +249,7 @@ RTC-DEV-010 is tracked across its independently observable surfaces:
 
 ### Increment 1 implementation note
 
-The current implementation baseline is PipeWireAO
+The recorded increment-1 validation baseline is PipeWireAO
 `abe269d63c0aa553c5cb96da245a8a5de715ec42`, the public PipeWireAO Rust
 binding `75f407498f24a884f97ef3dc4fa3675a61e641fd`, PipeWireAO SPA plugins
 `cc95b806b67439ca9526f49b5e141e2c0c37ed6e`, and Calculon
@@ -238,8 +278,9 @@ is in `tests/configuration.rs`; lifecycle and effect-completion coverage is in
 sibling repository's integration test.
 
 The live test is intentionally ignored by the generic Cargo suite because it
-requires the maintained sibling PipeWireAO and Calculon build artifacts. Its
-explicit invocation now passes the complete `Load` → `READY` → `Start` →
+requires the maintained sibling PipeWireAO and Calculon build artifacts. At
+the recorded increment-1 revisions, its explicit invocation passes the
+complete `Load` → `READY` → `Start` →
 `RUNNING` → `Stop` → `READY` → `Start` → `RUNNING` → `Stop` → `READY` →
 `Unload` → `OFFLINE` lifecycle for the minimal, serial, forked, and independent
 sessions. While each session remains `RUNNING`, it also stops and restarts each
@@ -286,11 +327,24 @@ keeps the two metric IDs it reads at its narrow discard boundary. A later
 PipeWireAO plugin binding can remove those constants; this gap does not require
 another module or unsafe shim.
 
+The external-node RTC fixture currently cannot construct its intervening
+Calculon graph against PipeWireAO `229acb2ba41ef767729da216f4b427e18efdb673`.
+That host exports `SPA_FGN_PLUGIN_ABI_VERSION` 7 and a `spa_fgn_format` ending
+at `schema`; Calculon `3d49237b3c9f4423f120b52bd2761cd5a90f5e94`
+still exports ABI version 8 and a trailing `profile` pointer. The public host
+correctly rejects `spa_fgn_plugin_get_interface` compatibility during graph
+construction with `ENOTSUP`. RTC-DEV-013 through RTC-DEV-015 therefore retain
+partial or missing live evidence until Calculon adopts the current public FGN
+ABI; the RTC must not add a compatibility layout or silently reinterpret the
+scientific schema.
+
 ## Development completion gate
 
 The milestone is complete only when:
 
-- RTC-DEV-001 through RTC-DEV-012 are implemented for the maintained fixtures;
+- RTC-DEV-001 through RTC-DEV-015 are implemented for the maintained fixtures;
+- the AdaptiveOpticsSim closed-loop reference passes its direct numerical
+  comparison;
 - one command loads the REVOLT Classic development configuration;
 - output and state equivalence pass for nominal frames and updates;
 - repeated lifecycle and failure tests leave no owned objects behind;
