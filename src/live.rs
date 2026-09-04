@@ -1,7 +1,8 @@
 use crate::{
-    ConfigurationInput, DevelopmentConfig, EffectExecutor, EndpointFactory, GraphFactory,
-    LifecycleEffect, LifecycleEffectSuccess, ObjectRealization, ObjectRole, ObjectSpec,
-    PortDirection, PortSpec, ScientificDiagnostic,
+    run_control::{self, RunControlStatus, RunState},
+    ConfigurationInput, DevelopmentConfig, EffectExecutor, EffectToken, EndpointFactory,
+    GraphFactory, LifecycleEffect, LifecycleEffectSuccess, ObjectRealization, ObjectRole,
+    ObjectSpec, PortDirection, PortSpec, ScientificDiagnostic,
 };
 use pipewire as pw;
 use pw::properties::PropertiesBox;
@@ -36,12 +37,134 @@ pub struct LiveGraphStatus {
     pub discarded_by_sink: BTreeMap<String, u64>,
 }
 
-struct LiveNode {
+struct ControlledGraph {
     name: String,
     global_id: u32,
     _listener: pw::node::NodeListener,
     proxy: pw::node::Node,
-    state: Rc<RefCell<String>>,
+    status_events: Rc<RefCell<Vec<Result<RunControlStatus, String>>>>,
+}
+
+fn graph_reached_requested_state(
+    graph: &ControlledGraph,
+    wire_token: i64,
+    requested_state: RunState,
+) -> Result<bool, ScientificDiagnostic> {
+    let events = graph.status_events.borrow();
+    statuses_reach_requested_state(&graph.name, &events, wire_token, requested_state)
+}
+
+fn statuses_reach_requested_state(
+    graph_name: &str,
+    events: &[Result<RunControlStatus, String>],
+    wire_token: i64,
+    requested_state: RunState,
+) -> Result<bool, ScientificDiagnostic> {
+    let mut matching_status = None;
+    for event in events {
+        let status = event.as_ref().map_err(|error| {
+            ScientificDiagnostic::new(format!("graph {graph_name}.run-control"), error.clone())
+        })?;
+        if status.completed_token < wire_token {
+            continue;
+        }
+        if status.completed_token > wire_token {
+            return Err(ScientificDiagnostic::new(
+                format!("graph {graph_name}.run-control.completed-token"),
+                format!(
+                    "expected lifecycle token {wire_token}, observed {}",
+                    status.completed_token
+                ),
+            ));
+        }
+        if matching_status.is_some_and(|previous| previous != *status) {
+            return Err(ScientificDiagnostic::new(
+                format!("graph {graph_name}.run-control.completed-token"),
+                format!("conflicting completion statuses for lifecycle token {wire_token}"),
+            ));
+        }
+        matching_status = Some(*status);
+        if status.result != 0 {
+            return Err(ScientificDiagnostic::new(
+                format!("graph {graph_name}.run-control.result"),
+                format!(
+                    "owner rejected lifecycle token {wire_token} with {}",
+                    status.result
+                ),
+            ));
+        }
+        if status.actual_state != requested_state {
+            return Err(ScientificDiagnostic::new(
+                format!("graph {graph_name}.run-control.actual-state"),
+                format!(
+                    "lifecycle token {wire_token} requested {requested_state:?}, observed {:?}",
+                    status.actual_state
+                ),
+            ));
+        }
+    }
+    Ok(matching_status.is_some())
+}
+
+#[cfg(test)]
+mod run_control_status_tests {
+    use super::*;
+
+    fn status(token: i64, result: i32, state: RunState) -> RunControlStatus {
+        RunControlStatus {
+            completed_token: token,
+            result,
+            actual_state: state,
+        }
+    }
+
+    #[test]
+    fn older_and_identical_current_state_snapshots_are_idempotent() {
+        let events = [
+            Ok(status(40, 0, RunState::Stopped)),
+            Ok(status(41, 0, RunState::Running)),
+            Ok(status(41, 0, RunState::Running)),
+        ];
+        assert!(statuses_reach_requested_state("graph", &events, 41, RunState::Running).unwrap());
+    }
+
+    #[test]
+    fn future_conflicting_failed_and_wrong_state_snapshots_are_rejected() {
+        let future = [Ok(status(42, 0, RunState::Running))];
+        assert_eq!(
+            statuses_reach_requested_state("graph", &future, 41, RunState::Running)
+                .unwrap_err()
+                .field(),
+            "graph graph.run-control.completed-token"
+        );
+
+        let conflicting = [
+            Ok(status(41, 0, RunState::Running)),
+            Ok(status(41, 0, RunState::Stopped)),
+        ];
+        assert!(
+            statuses_reach_requested_state("graph", &conflicting, 41, RunState::Running)
+                .unwrap_err()
+                .message()
+                .contains("conflicting")
+        );
+
+        let failed = [Ok(status(41, -5, RunState::Stopped))];
+        assert_eq!(
+            statuses_reach_requested_state("graph", &failed, 41, RunState::Running)
+                .unwrap_err()
+                .field(),
+            "graph graph.run-control.result"
+        );
+
+        let wrong_state = [Ok(status(41, 0, RunState::Stopped))];
+        assert_eq!(
+            statuses_reach_requested_state("graph", &wrong_state, 41, RunState::Running)
+                .unwrap_err()
+                .field(),
+            "graph graph.run-control.actual-state"
+        );
+    }
 }
 
 struct LiveLink {
@@ -76,11 +199,11 @@ pub struct LiveGraphAdapter {
     modules: Vec<pw::local_module::LocalModule>,
     spa_nodes: Vec<pw::node::Node>,
     links: Vec<LiveLink>,
-    active_nodes: Vec<LiveNode>,
+    controlled_graphs: Vec<ControlledGraph>,
     owned_node_names: Vec<String>,
     required_node_names: Vec<String>,
     required_external_objects: Vec<RequiredExternalObject>,
-    start_order: Vec<String>,
+    graph_order: Vec<String>,
     sink_names: Vec<String>,
     execution_group_nodes: BTreeMap<String, Vec<String>>,
     execution_group_sinks: BTreeMap<String, Vec<String>>,
@@ -156,11 +279,11 @@ impl LiveGraphAdapter {
             modules: Vec::new(),
             spa_nodes: Vec::new(),
             links: Vec::new(),
-            active_nodes: Vec::new(),
+            controlled_graphs: Vec::new(),
             owned_node_names: Vec::new(),
             required_node_names: Vec::new(),
             required_external_objects: Vec::new(),
-            start_order: Vec::new(),
+            graph_order: Vec::new(),
             sink_names: Vec::new(),
             execution_group_nodes: BTreeMap::new(),
             execution_group_sinks: BTreeMap::new(),
@@ -202,9 +325,13 @@ impl LiveGraphAdapter {
         Ok(observed)
     }
 
-    fn realize(&mut self, config: &DevelopmentConfig) -> Result<(), ScientificDiagnostic> {
+    fn realize(
+        &mut self,
+        config: &DevelopmentConfig,
+        token: EffectToken,
+    ) -> Result<(), ScientificDiagnostic> {
         config.validate()?;
-        self.cleanup()?;
+        self.cleanup(Some(token))?;
         self.clear_errors();
 
         self.owned_node_names = config
@@ -213,7 +340,7 @@ impl LiveGraphAdapter {
             .map(str::to_owned)
             .collect();
         self.required_node_names = config.node_names().into_iter().map(str::to_owned).collect();
-        self.start_order = config.session_controlled_topological_node_names();
+        self.graph_order = config.session_controlled_graph_names();
         self.sink_names = config
             .sinks
             .iter()
@@ -227,7 +354,7 @@ impl LiveGraphAdapter {
                 (
                     group.name.clone(),
                     config
-                        .execution_group_node_names(&group.name)
+                        .execution_group_graph_names(&group.name)
                         .expect("validated execution group"),
                 )
             })
@@ -250,27 +377,32 @@ impl LiveGraphAdapter {
         for (index, source) in config.sources.iter().enumerate() {
             let field = format!("sources[{index}]");
             if let Err(error) = self.create_source(source, &field) {
-                let _ = self.cleanup();
+                let _ = self.cleanup(Some(token));
                 return Err(error);
             }
         }
         for (index, graph) in config.graphs.iter().enumerate() {
             let field = format!("graphs[{index}]");
             if let Err(error) = self.create_graph(graph, &field) {
-                let _ = self.cleanup();
+                let _ = self.cleanup(Some(token));
                 return Err(error);
             }
         }
         for (index, sink) in config.sinks.iter().enumerate() {
             let field = format!("sinks[{index}]");
             if let Err(error) = self.create_sink(sink, &field) {
-                let _ = self.cleanup();
+                let _ = self.cleanup(Some(token));
                 return Err(error);
             }
         }
 
         if let Err(error) = self.admit_ports_and_links(config) {
-            let _ = self.cleanup();
+            let _ = self.cleanup(Some(token));
+            return Err(error);
+        }
+
+        if let Err(error) = self.bind_controlled_graphs() {
+            let _ = self.cleanup(Some(token));
             return Err(error);
         }
 
@@ -292,7 +424,7 @@ impl LiveGraphAdapter {
                     self.status.owned_links
                 ),
             );
-            let _ = self.cleanup();
+            let _ = self.cleanup(Some(token));
             return Err(diagnostic);
         }
         Ok(())
@@ -312,7 +444,7 @@ impl LiveGraphAdapter {
         Ok(())
     }
 
-    fn start(&mut self) -> Result<(), ScientificDiagnostic> {
+    fn start(&mut self, token: EffectToken) -> Result<(), ScientificDiagnostic> {
         if self.count_owned_nodes() != self.expected_objects
             || self.count_required_nodes() != self.required_node_names.len()
             || self.links.len() != self.expected_links
@@ -323,13 +455,18 @@ impl LiveGraphAdapter {
             ));
         }
         self.clear_errors();
-        self.active_nodes.clear();
         let discarded_before_start = self.discard_buffer_counts()?;
         self.status.discarded_buffers = discarded_before_start.values().sum();
         self.status.discarded_by_sink = discarded_before_start.clone();
 
-        let start_order = self.start_order.clone();
-        self.start_nodes(&start_order, "start complete-frame session")?;
+        let mut start_order = self.graph_order.clone();
+        start_order.reverse();
+        self.request_graphs(
+            &start_order,
+            token,
+            RunState::Running,
+            "start complete-frame session",
+        )?;
         self.wait_for_links_active("start complete-frame session")?;
         self.status.discarded_by_sink = self.wait_for_discarded_buffers(&discarded_before_start)?;
         self.status.discarded_buffers = self.status.discarded_by_sink.values().sum();
@@ -337,35 +474,28 @@ impl LiveGraphAdapter {
         Ok(())
     }
 
-    fn stop(&mut self) -> Result<(), ScientificDiagnostic> {
+    fn stop(&mut self, token: EffectToken) -> Result<(), ScientificDiagnostic> {
         self.clear_errors();
-        let mut commanded = false;
-        {
-            let globals = self.globals.borrow();
-            for node in &self.active_nodes {
-                if globals
-                    .get(&node.global_id)
-                    .is_some_and(|global| is_node_named(global, &node.name))
-                {
-                    node.proxy
-                        .send_command(&pw::spa::node::command::NodeCommand::new(
-                            pw::spa::node::command::NodeCommandId::PAUSE,
-                        ));
-                    commanded = true;
-                }
-            }
-        }
-        if commanded {
-            self.roundtrip("stop complete-frame session")?;
+        let graph_order = self.graph_order.clone();
+        if !graph_order.is_empty() {
+            self.request_graphs(
+                &graph_order,
+                token,
+                RunState::Stopped,
+                "stop complete-frame session",
+            )?;
             self.status.discarded_by_sink = self.wait_for_discard_quiescence()?;
             self.status.discarded_buffers = self.status.discarded_by_sink.values().sum();
         }
-        self.active_nodes.clear();
         self.status.running = false;
         Ok(())
     }
 
-    fn start_execution_group(&mut self, name: &str) -> Result<(), ScientificDiagnostic> {
+    fn start_execution_group(
+        &mut self,
+        name: &str,
+        token: EffectToken,
+    ) -> Result<(), ScientificDiagnostic> {
         let nodes = self
             .execution_group_nodes
             .get(name)
@@ -382,14 +512,25 @@ impl LiveGraphAdapter {
             .expect("realized group sinks")
             .clone();
         let before = self.discard_buffer_counts_for(&sinks)?;
-        self.start_nodes(&nodes, &format!("start execution group {name}"))?;
+        let mut start_order = nodes;
+        start_order.reverse();
+        self.request_graphs(
+            &start_order,
+            token,
+            RunState::Running,
+            &format!("start execution group {name}"),
+        )?;
         let observed = self.wait_for_discarded_buffers(&before)?;
         self.status.discarded_by_sink.extend(observed);
         self.status.discarded_buffers = self.status.discarded_by_sink.values().sum();
         Ok(())
     }
 
-    fn stop_execution_group(&mut self, name: &str) -> Result<(), ScientificDiagnostic> {
+    fn stop_execution_group(
+        &mut self,
+        name: &str,
+        token: EffectToken,
+    ) -> Result<(), ScientificDiagnostic> {
         let nodes = self
             .execution_group_nodes
             .get(name)
@@ -400,17 +541,12 @@ impl LiveGraphAdapter {
                     "group is not realized",
                 )
             })?;
-        for node in self
-            .active_nodes
-            .iter()
-            .filter(|node| nodes.contains(&node.name))
-        {
-            node.proxy
-                .send_command(&pw::spa::node::command::NodeCommand::new(
-                    pw::spa::node::command::NodeCommandId::PAUSE,
-                ));
-        }
-        self.roundtrip(&format!("stop execution group {name}"))?;
+        self.request_graphs(
+            &nodes,
+            token,
+            RunState::Stopped,
+            &format!("stop execution group {name}"),
+        )?;
         let sinks = self
             .execution_group_sinks
             .get(name)
@@ -421,81 +557,152 @@ impl LiveGraphAdapter {
         Ok(())
     }
 
-    fn start_nodes(
-        &mut self,
-        node_names: &[String],
-        label: &str,
-    ) -> Result<(), ScientificDiagnostic> {
-        // Downstream-first commands prevent a source from outrunning its sink.
-        for node_name in node_names.iter().rev() {
-            if let Some(node) = self
-                .active_nodes
-                .iter()
-                .find(|node| node.name == *node_name)
-            {
-                node.proxy
-                    .send_command(&pw::spa::node::command::NodeCommand::new(
-                        pw::spa::node::command::NodeCommandId::START,
-                    ));
-                continue;
-            }
+    fn bind_controlled_graphs(&mut self) -> Result<(), ScientificDiagnostic> {
+        self.controlled_graphs.clear();
+        for node_name in &self.graph_order {
             let global = self.node_global(node_name)?;
             let node = self
                 .registry
                 .bind::<pw::node::Node, _>(&global)
                 .map_err(|error| {
                     ScientificDiagnostic::new(
-                        format!("node {node_name}"),
-                        format!("cannot bind required node: {error}"),
+                        format!("graph {node_name}.run-control"),
+                        format!("cannot bind processing graph: {error}"),
                     )
                 })?;
-            let state = Rc::new(RefCell::new(String::from("unknown")));
-            let observed = Rc::clone(&state);
+            let status_events = Rc::new(RefCell::new(Vec::new()));
+            let observed = Rc::clone(&status_events);
             let listener = node
                 .add_listener_local()
-                .info(move |info| {
-                    *observed.borrow_mut() = format!("{:?}", info.state());
+                .param(move |_sequence, param_type, _index, _next, param| {
+                    if param_type != pw::spa::param::ParamType::Props {
+                        return;
+                    }
+                    let Some(pod) = param else {
+                        observed
+                            .borrow_mut()
+                            .push(Err("owner published an empty Props parameter".to_owned()));
+                        return;
+                    };
+                    match run_control::parse_status(pod) {
+                        Ok(Some(status)) => observed.borrow_mut().push(Ok(status)),
+                        Ok(None) => {}
+                        Err(error) => observed.borrow_mut().push(Err(error)),
+                    }
                 })
                 .register();
-            node.send_command(&pw::spa::node::command::NodeCommand::new(
-                pw::spa::node::command::NodeCommandId::START,
-            ));
-            self.active_nodes.push(LiveNode {
+            node.subscribe_params(&[pw::spa::param::ParamType::Props]);
+            self.controlled_graphs.push(ControlledGraph {
                 name: node_name.clone(),
                 global_id: global.id,
                 _listener: listener,
                 proxy: node,
-                state,
+                status_events,
             });
         }
-
-        self.wait_for_nodes_running(node_names, label)
+        self.roundtrip("processing graph run-control discovery")?;
+        for graph in &self.controlled_graphs {
+            let events = graph.status_events.borrow();
+            if events.len() != 1 {
+                return Err(ScientificDiagnostic::new(
+                    format!("graph {}.run-control", graph.name),
+                    format!(
+                        "expected one initial owner status, observed {} events",
+                        events.len()
+                    ),
+                ));
+            }
+            let status = events[0].as_ref().map_err(|error| {
+                ScientificDiagnostic::new(
+                    format!("graph {}.run-control", graph.name),
+                    error.clone(),
+                )
+            })?;
+            if status.result != 0 || status.actual_state != RunState::Stopped {
+                return Err(ScientificDiagnostic::new(
+                    format!("graph {}.run-control", graph.name),
+                    format!("owner is not ready and stopped: {status:?}"),
+                ));
+            }
+        }
+        Ok(())
     }
 
-    fn wait_for_nodes_running(
+    fn request_graphs(
         &mut self,
-        node_names: &[String],
+        graph_names: &[String],
+        token: EffectToken,
+        requested_state: RunState,
         label: &str,
     ) -> Result<(), ScientificDiagnostic> {
-        let mut states = Vec::new();
+        let wire_token = i64::try_from(token.value()).map_err(|_| {
+            ScientificDiagnostic::new(
+                "lifecycle effect token",
+                format!("token {} does not fit the run-control Long", token.value()),
+            )
+        })?;
+        self.roundtrip(label)?;
+        for graph_name in graph_names {
+            let graph = self
+                .controlled_graphs
+                .iter()
+                .find(|graph| graph.name == *graph_name)
+                .ok_or_else(|| {
+                    ScientificDiagnostic::new(
+                        format!("graph {graph_name}.run-control"),
+                        "processing graph is not bound to its owner contract",
+                    )
+                })?;
+            if !self
+                .globals
+                .borrow()
+                .get(&graph.global_id)
+                .is_some_and(|global| is_node_named(global, graph_name))
+            {
+                return Err(ScientificDiagnostic::new(
+                    format!("graph {graph_name}.run-control"),
+                    "required processing graph disappeared before the request",
+                ));
+            }
+            graph.status_events.borrow_mut().clear();
+            let bytes =
+                run_control::build_request(wire_token, requested_state).map_err(|error| {
+                    ScientificDiagnostic::new(format!("graph {graph_name}.run-control"), error)
+                })?;
+            let pod = pw::spa::pod::Pod::from_bytes(&bytes).ok_or_else(|| {
+                ScientificDiagnostic::new(
+                    format!("graph {graph_name}.run-control"),
+                    "serialized request is not a complete SPA POD",
+                )
+            })?;
+            graph
+                .proxy
+                .set_param(pw::spa::param::ParamType::Props, 0, pod);
+        }
         for _ in 0..100 {
             self.roundtrip(label)?;
-            states = self
-                .active_nodes
+            let mut completed = 0;
+            for graph in self
+                .controlled_graphs
                 .iter()
-                .filter(|node| node_names.contains(&node.name))
-                .map(|node| (node.name.clone(), node.state.borrow().clone()))
-                .collect::<Vec<_>>();
-            if states.len() == node_names.len()
-                && states.iter().all(|(_, state)| state == "Running")
+                .filter(|graph| graph_names.contains(&graph.name))
             {
+                completed += usize::from(graph_reached_requested_state(
+                    graph,
+                    wire_token,
+                    requested_state,
+                )?);
+            }
+            if completed == graph_names.len() {
                 return Ok(());
             }
             std::thread::sleep(std::time::Duration::from_millis(5));
         }
         Err(ScientificDiagnostic::new(
-            "topology",
-            format!("required nodes did not all enter Running; observed states {states:?}"),
+            "run-control",
+            format!(
+                "timed out waiting for lifecycle token {wire_token} to reach {requested_state:?} on {graph_names:?}"
+            ),
         ))
     }
 
@@ -522,8 +729,36 @@ impl LiveGraphAdapter {
         ))
     }
 
-    fn cleanup(&mut self) -> Result<(), ScientificDiagnostic> {
-        let mut first_error = self.stop().err();
+    fn cleanup(&mut self, token: Option<EffectToken>) -> Result<(), ScientificDiagnostic> {
+        let present_graphs = self
+            .graph_order
+            .iter()
+            .filter(|name| {
+                self.controlled_graphs.iter().any(|graph| {
+                    graph.name == **name
+                        && self
+                            .globals
+                            .borrow()
+                            .get(&graph.global_id)
+                            .is_some_and(|global| is_node_named(global, name))
+                })
+            })
+            .cloned()
+            .collect::<Vec<_>>();
+        let mut first_error = token.and_then(|token| {
+            (!present_graphs.is_empty())
+                .then(|| {
+                    self.request_graphs(
+                        &present_graphs,
+                        token,
+                        RunState::Stopped,
+                        "stop processing graphs before cleanup",
+                    )
+                    .err()
+                })
+                .flatten()
+        });
+        self.status.running = false;
         self.clear_errors();
         for link in self.links.drain(..) {
             drop(link.listener);
@@ -537,6 +772,10 @@ impl LiveGraphAdapter {
             first_error.get_or_insert(error);
         }
 
+        self.controlled_graphs.clear();
+        if let Err(error) = self.roundtrip("processing graph control release") {
+            first_error.get_or_insert(error);
+        }
         self.spa_nodes.clear();
         self.modules.clear();
         if let Err(error) = self.wait_for_owned_nodes_removed() {
@@ -546,7 +785,7 @@ impl LiveGraphAdapter {
         self.owned_node_names.clear();
         self.required_node_names.clear();
         self.required_external_objects.clear();
-        self.start_order.clear();
+        self.graph_order.clear();
         self.sink_names.clear();
         self.execution_group_nodes.clear();
         self.execution_group_sinks.clear();
@@ -1676,34 +1915,34 @@ impl EffectExecutor for LiveGraphAdapter {
         effect: &LifecycleEffect,
     ) -> Result<LifecycleEffectSuccess, ScientificDiagnostic> {
         match effect {
-            LifecycleEffect::Realize { config, .. } => {
+            LifecycleEffect::Realize { token, config, .. } => {
                 let resolved = match config {
                     ConfigurationInput::Resolved(config) => (**config).clone(),
                     ConfigurationInput::File(path) => DevelopmentConfig::load(path)?,
                 };
-                self.realize(&resolved)?;
+                self.realize(&resolved, *token)?;
                 Ok(LifecycleEffectSuccess::Realized {
                     execution_groups: resolved.execution_group_names(),
                 })
             }
-            LifecycleEffect::Start { .. } => {
-                self.start()?;
+            LifecycleEffect::Start { token, .. } => {
+                self.start(*token)?;
                 Ok(LifecycleEffectSuccess::Completed)
             }
-            LifecycleEffect::Stop { .. } => {
-                self.stop()?;
+            LifecycleEffect::Stop { token, .. } => {
+                self.stop(*token)?;
                 Ok(LifecycleEffectSuccess::Completed)
             }
-            LifecycleEffect::StartExecutionGroup { name, .. } => {
-                self.start_execution_group(name)?;
+            LifecycleEffect::StartExecutionGroup { token, name, .. } => {
+                self.start_execution_group(name, *token)?;
                 Ok(LifecycleEffectSuccess::Completed)
             }
-            LifecycleEffect::StopExecutionGroup { name, .. } => {
-                self.stop_execution_group(name)?;
+            LifecycleEffect::StopExecutionGroup { token, name, .. } => {
+                self.stop_execution_group(name, *token)?;
                 Ok(LifecycleEffectSuccess::Completed)
             }
-            LifecycleEffect::Cleanup { .. } => {
-                self.cleanup()?;
+            LifecycleEffect::Cleanup { token, .. } => {
+                self.cleanup(Some(*token))?;
                 Ok(LifecycleEffectSuccess::Completed)
             }
         }
@@ -1716,7 +1955,7 @@ impl EffectExecutor for LiveGraphAdapter {
 
 impl Drop for LiveGraphAdapter {
     fn drop(&mut self) {
-        let _ = self.cleanup();
+        let _ = self.cleanup(None);
     }
 }
 

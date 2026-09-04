@@ -88,12 +88,20 @@ parameters, and links; it does not select behavior by implementation language
 or package identity.
 
 Object ownership and run-control authority are separate. An external
-application creates and destroys its processing node. The RTC MAY send public
-PipeWire start and pause commands only when the configuration explicitly grants
-session run control; unload removes RTC-owned links but leaves the external node
-alive. This uses the existing serialized lifecycle and execution-group effects.
-It does not add a Julia process manager, a second graph parser, or a second
+application creates and destroys its processing node. The RTC MAY request
+owner-mediated run control only when the configuration explicitly grants that
+authority; unload removes RTC-owned links but leaves the external node alive.
+This uses the existing serialized lifecycle and execution-group effects. It
+does not add a Julia process manager, a second graph parser, or a second
 lifecycle.
+
+This is decision **RTC-ARCH-018**: use an owner-mediated, versioned PipeWireAO
+run-control contract for processing nodes. The RTC sends a tokened requested
+state through the node's public `SPA_PARAM_Props` surface. The graph host calls
+the owner-local `pw_filter_set_active()` operation and publishes the same token,
+the result, and observed actual state. The RTC never calls a daemon-private
+activation function and does not treat delivery of a request as completion.
+Runner-owned and externally owned graph hosts implement the same contract.
 
 This is decision **RTC-ARCH-017**: integrate the REVOLT Classic simulated plant
 through the same external HIL boundary. `REVOLTClassicSim.jl` remains
@@ -242,10 +250,11 @@ creates to the node but does not own or destroy the node. It does not require
 implementation-identifying properties.
 
 An external processing declaration additionally states whether session run
-control is granted. When granted, the runner uses only public PipeWire node
-commands and observes the resulting node state. When not granted, the external
-application retains run control and the node cannot belong to an RTC-controlled
-execution group. Ownership never transfers in either case.
+control is granted. When granted, the runner uses the versioned owner-mediated
+PipeWireAO run-control parameter and waits for its token-matched completion.
+When not granted, the external application retains run control and the node
+cannot belong to an RTC-controlled execution group. Ownership never transfers
+in either case.
 
 This same boundary applies when `JuliaFilterGraph.jl` and its
 `FilterGraphPipeWire` adapter publish a prepared Julia graph as one PipeWire

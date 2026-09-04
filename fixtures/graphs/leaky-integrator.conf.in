@@ -2,6 +2,7 @@
     remote.name = "@REMOTE_NAME@"
     node.name = "@NODE_NAME@"
     object.linger = false
+    pipewireao.run-control = true
     filter.graph = {
         nodes = [
             {

@@ -380,6 +380,31 @@ impl DevelopmentConfig {
     }
 
     #[must_use]
+    pub fn session_controlled_graph_names(&self) -> Vec<String> {
+        let controlled = self
+            .graphs
+            .iter()
+            .filter(|graph| graph.realization.is_session_controlled())
+            .map(|graph| graph.node_name.as_str())
+            .collect::<BTreeSet<_>>();
+        self.topological_node_names()
+            .into_iter()
+            .filter(|name| controlled.contains(name.as_str()))
+            .collect()
+    }
+
+    #[must_use]
+    pub fn execution_group_graph_names(&self, name: &str) -> Option<Vec<String>> {
+        let group = self.execution_group(name)?;
+        Some(
+            self.session_controlled_graph_names()
+                .into_iter()
+                .filter(|graph| group.nodes.contains(graph))
+                .collect(),
+        )
+    }
+
+    #[must_use]
     pub fn node_names(&self) -> Vec<&str> {
         self.sources
             .iter()

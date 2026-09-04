@@ -130,6 +130,10 @@ fn external_processing_graph_requires_explicit_ownership_and_run_control() {
             "pipewireao-rtc-sink"
         ]
     );
+    assert_eq!(
+        config.session_controlled_graph_names(),
+        ["pipewireao-rtc-external-graph"]
+    );
 
     for (before, after, field) in [
         (
@@ -174,6 +178,7 @@ fn external_processing_graph_requires_explicit_ownership_and_run_control() {
         config.session_controlled_topological_node_names(),
         ["pipewireao-rtc-source", "pipewireao-rtc-sink"]
     );
+    assert!(config.session_controlled_graph_names().is_empty());
     assert!(config.execution_groups.is_empty());
 
     let grouped_application_control = replace_once(

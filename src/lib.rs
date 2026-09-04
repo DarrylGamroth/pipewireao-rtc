@@ -5,6 +5,8 @@ mod ffi;
 mod lifecycle;
 #[cfg(feature = "live")]
 mod live;
+#[cfg(feature = "live")]
+mod run_control;
 mod runner;
 
 pub use config::{

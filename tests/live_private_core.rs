@@ -55,6 +55,10 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
     let workspace = repository.parent().expect("workspace parent");
     let pipewire_build = std::env::var_os("PIPEWIREAO_RTC_PIPEWIRE_BUILD")
         .map_or_else(|| workspace.join("pipewire/build"), PathBuf::from);
+    let pipewireao_julia = std::env::var_os("PIPEWIREAO_RTC_PIPEWIREAO_JULIA")
+        .map_or_else(|| workspace.join("PipeWireAO.jl"), PathBuf::from);
+    let julia_filter_graph = std::env::var_os("PIPEWIREAO_RTC_JULIA_FILTER_GRAPH")
+        .map_or_else(|| workspace.join("JuliaFilterGraph.jl"), PathBuf::from);
     let plugin_build = std::env::var_os("PIPEWIREAO_SPA_PLUGINS_BUILD").map_or_else(
         || workspace.join("pipewireao-spa-plugins/build"),
         PathBuf::from,
@@ -313,6 +317,15 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
         &core_name,
         &external_fgn_graph,
     );
+    run_external_julia_processing_graph_case(
+        &repository,
+        &pipewire_build,
+        &environment,
+        &core_name,
+        temporary.path(),
+        &pipewireao_julia,
+        &julia_filter_graph,
+    );
 
     let hil_package = std::env::var_os("PIPEWIREAO_RTC_AOS_HIL_PACKAGE").map_or_else(
         || {
@@ -420,6 +433,8 @@ fn run_external_processing_graph_case(
     assert_eq!(
         runner.dispatch(LifecycleEvent::Stop).unwrap(),
         LifecycleState::Ready,
+        "external graph second stop diagnostic: {:?}",
+        runner.diagnostic(),
     );
     assert_eq!(
         runner.dispatch(LifecycleEvent::Unload).unwrap(),
@@ -536,7 +551,116 @@ fn launch_external_fgn(
     ChildGuard(provider)
 }
 
+fn run_external_julia_processing_graph_case(
+    repository: &Path,
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+    temporary: &Path,
+    pipewireao_julia: &Path,
+    julia_filter_graph: &Path,
+) {
+    let stop_file = temporary.join("stop-julia-graph");
+    let provider_log = temporary.join("julia-graph.log");
+    let log = std::fs::File::create(&provider_log).expect("Julia graph log");
+    let mut command = command_with_environment("julia", environment);
+    command.env(
+        "JULIA_LOAD_PATH",
+        format!(
+            "{}:{}:@stdlib",
+            pipewireao_julia.display(),
+            julia_filter_graph
+                .join("julia/FilterGraphPipeWire")
+                .display()
+        ),
+    );
+    let provider = command
+        .args(["--startup-file=no", "--threads=2"])
+        .arg(repository.join("tests/live_private_core/julia_graph_provider.jl"))
+        .args([
+            core_name,
+            repository
+                .join("fixtures/graphs/julia-leaky-integrator.conf")
+                .to_str()
+                .expect("UTF-8 Julia graph configuration"),
+            stop_file.to_str().expect("UTF-8 Julia stop path"),
+        ])
+        .stdout(Stdio::from(log.try_clone().unwrap()))
+        .stderr(Stdio::from(log))
+        .spawn()
+        .expect("start external Julia graph owner");
+    let mut provider = ChildGuard(provider);
+    wait_for_text(&mut provider.0, &provider_log, "JULIA_GRAPH_READY");
+    wait_for_dump(
+        pipewire_build,
+        environment,
+        core_name,
+        "pipewireao-rtc-external-graph",
+    );
+
+    let adapter = LiveGraphAdapter::connect(core_name).expect("connect Julia graph session");
+    let mut runner = Runner::new(adapter);
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Load(ConfigurationInput::File(
+                repository.join("fixtures/external-graph-development.conf"),
+            )))
+            .unwrap(),
+        LifecycleState::Ready,
+        "Julia graph load diagnostic: {:?}",
+        runner.diagnostic(),
+    );
+    assert_eq!(runner.executor().status().owned_nodes, 2);
+    assert_eq!(runner.executor().status().owned_links, 2);
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Start).unwrap(),
+        LifecycleState::Running,
+        "Julia graph start diagnostic: {:?}",
+        runner.diagnostic(),
+    );
+    let first_count = runner.executor().status().discarded_buffers;
+    assert!(first_count > 0);
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Stop).unwrap(),
+        LifecycleState::Ready,
+        "Julia graph stop diagnostic: {:?}",
+        runner.diagnostic(),
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Start).unwrap(),
+        LifecycleState::Running,
+        "Julia graph restart diagnostic: {:?}",
+        runner.diagnostic(),
+    );
+    assert!(runner.executor().status().discarded_buffers > first_count);
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Stop).unwrap(),
+        LifecycleState::Ready,
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Unload).unwrap(),
+        LifecycleState::Offline,
+    );
+    let after_unload = dump(pipewire_build, environment, core_name);
+    assert!(after_unload.contains("pipewireao-rtc-external-graph"));
+    assert!(after_unload.contains("pipewireao-rtc-unrelated"));
+    assert!(!after_unload.contains("pipewireao-rtc-source"));
+    assert!(!after_unload.contains("pipewireao-rtc-sink"));
+
+    stop_provider(&mut provider, &stop_file, &provider_log, "Julia graph");
+    wait_for_dump_absent(
+        pipewire_build,
+        environment,
+        core_name,
+        "pipewireao-rtc-external-graph",
+    );
+}
+
 #[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_lines,
+    reason = "the live SCAO fixture keeps its ordered lifecycle and numerical assertions together"
+)]
 fn run_aos_hil_reference_case(
     repository: &Path,
     hil_package: &Path,
@@ -623,6 +747,8 @@ fn run_aos_hil_reference_case(
     assert_eq!(
         runner.dispatch(LifecycleEvent::Stop).unwrap(),
         LifecycleState::Ready,
+        "AOS HIL stop diagnostic: {:?}",
+        runner.diagnostic(),
     );
     assert_eq!(
         runner.dispatch(LifecycleEvent::Start).unwrap(),

@@ -46,7 +46,8 @@ exactly in the development configuration.
 An **external processing node** is a required execution composite created and
 destroyed by another application. Its object ownership remains external even
 when the development configuration explicitly grants the RTC session authority
-to start and pause it through public PipeWire node commands.
+to submit tokened run-control requests. The owning application applies an
+accepted request through its owner-local PipeWire activation operation.
 
 An **observer** is an ordinary PipeWire client or configured observation
 branch that reads published state or samples without owning lifecycle or
@@ -209,9 +210,9 @@ scheduler is present.
 ### RTC-DEV-011 — Selective execution groups
 
 The development configuration MUST declare one or more uniquely named,
-non-empty execution groups using session node names. Every `fgn-native` graph
+non-empty execution groups using session node names. Every processing graph
 instance and every sink MUST belong to exactly one execution group. Every
-execution group MUST contain at least one `fgn-native` graph. A source MAY
+execution group MUST contain at least one processing graph. A source MAY
 belong to at most one group; a source intentionally shared by groups MUST
 remain session-managed outside every group. The runner MUST reject an unknown
 member, duplicate membership, an empty group, a group without a graph, an
@@ -348,21 +349,46 @@ implementation-specific property. The initial maintained external processing
 application SHALL be a prepared `JuliaFilterGraph.jl` graph published through
 `FilterGraphPipeWire`.
 
-When session run control is granted, the runner MUST use public PipeWire start
-and pause commands through the existing serialized lifecycle and execution-
-group effects. Stop and restart MUST preserve the external graph object and its
-algorithm state. Required-node loss, replacement, incompatible mutation, or
-command failure MUST reach `FAULT`. Unload MUST remove only RTC-owned links and
-MUST leave the external processing node and unrelated objects intact. Without
-an explicit run-control grant, the runner MUST NOT mutate the node and MUST NOT
-place it in an RTC-controlled execution group.
+When session run control is granted, the runner MUST submit a Version 1
+PipeWireAO run-control request through the processing node's public
+`SPA_PARAM_Props` parameter. The request MUST contain a positive
+runner-allocated token that is not reused during the runner process lifetime
+and exactly one requested state, `stopped` or `running`. The node owner MUST
+validate the complete request outside its frame-processing callback, MUST call
+its owner-local `pw_filter_set_active()` operation, and MUST publish a status
+on the same public parameter containing the protocol version, completed token,
+result, and observed actual state. The runner MUST enter or remain in the
+requested lifecycle or execution-group state only after every targeted graph
+reports a successful token-matched completion and the matching actual state.
+
+The owner MUST reject a malformed, unsupported-version, zero-token, stale, or
+conflicting request without changing activation state. Because
+`SPA_PARAM_Props` represents current state, an owner MAY republish an identical
+status for its most recently completed token when another Props value changes.
+The runner MUST treat such an identical snapshot as idempotent and MUST NOT
+dispatch a second lifecycle completion. It MUST reject a future-token,
+conflicting same-token, wrong-node, wrong-state, or otherwise mismatched status,
+and MUST ignore an older current-state snapshot. The serialized lifecycle
+dispatcher continues to reject stale or duplicate typed completion events.
+
+The runner MUST treat owner rejection, activation failure, completion timeout,
+required-node loss, replacement, or incompatible mutation as a required-object
+failure that reaches `FAULT` through the existing serialized dispatcher. At
+most one session or execution-group effect remains in flight. Stop and restart
+MUST preserve every graph object, link, and algorithm state; reset is a separate
+operation. Unload MUST remove only RTC-owned objects and links and MUST leave
+external processing nodes and unrelated objects intact. Without an explicit
+run-control grant, the runner MUST NOT send a run-control request and MUST NOT
+place the node in an RTC-controlled execution group.
 
 Verification intent (informative): launch an external
 `FilterGraphPipeWire.PipeWireNode` before RTC load, substitute it for the
 matching `fgn-native` role under identical scientific contracts, and compare
 accepted outputs and state across start, stop, restart, failure, retry, and
-unload. Prove that one declared execution group can be controlled without
-reconstructing or destroying the external node.
+unload. Exercise malformed requests and every request/status mismatch. Prove
+that runner-owned FGN and external Julia graph hosts expose the same Version 1
+contract and that one declared execution group can be controlled without
+reconstructing or destroying its graph nodes.
 
 ### RTC-DEV-017 — REVOLT Classic simulated-plant fixture
 

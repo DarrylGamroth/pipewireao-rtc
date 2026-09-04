@@ -14,8 +14,8 @@ const EXTERNAL_GRAPH: &str = include_str!("../fixtures/external-graph-developmen
 struct FakeGraphAdapter {
     owned: Vec<String>,
     external: BTreeSet<String>,
-    session_controlled: Vec<String>,
-    commands: Vec<String>,
+    controlled_graphs: Vec<String>,
+    requests: Vec<String>,
     unrelated: BTreeSet<&'static str>,
     fail_after: Option<usize>,
     running: bool,
@@ -28,8 +28,8 @@ impl FakeGraphAdapter {
         Self {
             owned: Vec::new(),
             external: BTreeSet::new(),
-            session_controlled: Vec::new(),
-            commands: Vec::new(),
+            controlled_graphs: Vec::new(),
+            requests: Vec::new(),
             unrelated: BTreeSet::from(["unrelated-fixture-node"]),
             fail_after,
             running: false,
@@ -58,7 +58,7 @@ impl FakeGraphAdapter {
                 .into_iter()
                 .map(str::to_owned),
         );
-        self.session_controlled = config.session_controlled_topological_node_names();
+        self.controlled_graphs = config.session_controlled_graph_names();
         let result = (|| {
             for node in config.owned_node_names() {
                 self.create(format!("node:{node}"))?;
@@ -83,7 +83,7 @@ impl FakeGraphAdapter {
     fn cleanup(&mut self) {
         self.running = false;
         self.execution_groups.clear();
-        self.session_controlled.clear();
+        self.controlled_graphs.clear();
         self.owned.clear();
     }
 }
@@ -114,10 +114,10 @@ impl EffectExecutor for FakeGraphAdapter {
                     ));
                 }
                 self.running = true;
-                self.commands.extend(
-                    self.session_controlled
+                self.requests.extend(
+                    self.controlled_graphs
                         .iter()
-                        .map(|name| format!("start:{name}")),
+                        .map(|name| format!("running:{name}")),
                 );
                 for running in self.execution_groups.values_mut() {
                     *running = true;
@@ -126,10 +126,10 @@ impl EffectExecutor for FakeGraphAdapter {
             }
             LifecycleEffect::Stop { .. } => {
                 self.running = false;
-                self.commands.extend(
-                    self.session_controlled
+                self.requests.extend(
+                    self.controlled_graphs
                         .iter()
-                        .map(|name| format!("pause:{name}")),
+                        .map(|name| format!("stopped:{name}")),
                 );
                 for running in self.execution_groups.values_mut() {
                     *running = false;
@@ -186,12 +186,12 @@ fn external_graph_is_controlled_only_by_explicit_session_grant_and_is_never_dest
     runner.dispatch(LifecycleEvent::Stop).unwrap();
     assert!(runner
         .executor()
-        .commands
-        .contains(&format!("start:{external_name}")));
+        .requests
+        .contains(&format!("running:{external_name}")));
     assert!(runner
         .executor()
-        .commands
-        .contains(&format!("pause:{external_name}")));
+        .requests
+        .contains(&format!("stopped:{external_name}")));
 
     runner.dispatch(LifecycleEvent::Unload).unwrap();
     assert!(runner.executor().owned.is_empty());
@@ -211,7 +211,7 @@ fn external_graph_is_controlled_only_by_explicit_session_grant_and_is_never_dest
     runner.dispatch(LifecycleEvent::Stop).unwrap();
     assert!(runner
         .executor()
-        .commands
+        .requests
         .iter()
         .all(|command| !command.ends_with(external_name)));
     runner.dispatch(LifecycleEvent::Unload).unwrap();

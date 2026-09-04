@@ -121,6 +121,7 @@ function write_fgn_graph(path, plugin, remote, reference_slopes, reconstructor)
         remote.name = "$remote"
         node.name = "pipewireao-rtc-aos-controller"
         object.linger = false
+        pipewireao.run-control = true
         filter.graph = {
             nodes = [
                 {
