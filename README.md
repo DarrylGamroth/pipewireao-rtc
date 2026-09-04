@@ -68,6 +68,9 @@ The maintained integration test materializes the fixture graph files, then
 creates its own unique runtime directory and core name:
 
 ```sh
+julia --startup-file=no --project=/absolute/JuliaFilterGraph.jl/deployment \
+  -e 'using Pkg; Pkg.instantiate()'
+
 PIPEWIREAO_SPA_PLUGINS_BUILD=/absolute/plugin/build \
 PIPEWIREAO_RTC_PIPEWIRE_BUILD=/absolute/pipewire/build \
 PIPEWIREAO_RTC_FGN_BUNDLE=/absolute/libcalculon_fgn_bundle.so \
