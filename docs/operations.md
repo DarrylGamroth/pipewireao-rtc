@@ -4,15 +4,15 @@ Status: active normative development contract; implementation underway
 
 Applicable profile: `development`
 
-Review date: 2026-09-01
+Review date: 2026-09-03
 
 ## Authority
 
 This document defines the behavior of the first `pipewireao-rtc` runner. The
 [architecture](architecture.md) owns its boundary and exclusions. The
 [roadmap](roadmap.md) owns implementation order and acceptance evidence.
-PipeWireAO and Calculon remain authoritative for their data-plane and
-scientific interfaces.
+PipeWireAO remains authoritative for the data plane, while each scientific
+Algorithm package remains authoritative for its implementation and declaration.
 
 Uppercase requirement terms use the meanings defined by BCP 14 (RFC 2119 and
 RFC 8174). Lowercase forms are ordinary prose.
@@ -24,9 +24,10 @@ SPA-JSON configuration containing the admitted endpoints, FGN graph instances,
 explicit links, initial values, and declared observation ports needed for one
 session. The minimum increment contains one source, one graph, and one sink.
 
-An **RTC session** is the set of required objects owned by one runner lifecycle.
-It contains the minimum three-object graph or the multi-composite topology
-defined by RTC-DEV-010.
+An **RTC session** is the set of required objects admitted by one runner
+lifecycle. It contains runner-owned objects and MAY contain explicitly declared
+external HIL endpoints. Ownership does not transfer merely because an object is
+required by the session.
 
 An **execution group** is a uniquely named, non-empty set of declared session
 nodes that starts and stops as one processing unit while the session remains
@@ -36,6 +37,16 @@ lifecycle.
 A **required object** is the configured source, execution composite, sink, or
 link whose availability is necessary for the graph to reach `READY` or remain
 `RUNNING`.
+
+An **external HIL endpoint** is a required PipeWire node owned by an admitted
+simulation application rather than by the runner. Its source or sink role,
+node name, ports, formats, shapes, and schemas are declared
+exactly in the development configuration.
+
+An **external processing node** is a required execution composite created and
+destroyed by another application. Its object ownership remains external even
+when the development configuration explicitly grants the RTC session authority
+to start and pause it through public PipeWire node commands.
 
 An **observer** is an ordinary PipeWire client or configured observation
 branch that reads published state or samples without owning lifecycle or
@@ -62,7 +73,7 @@ creating links.
 ### RTC-DEV-002 — Minimal configuration and validation
 
 The runner MUST resolve exactly one complete-frame source, one `fgn-native`
-Calculon execution composite, and one non-actuating sink from the development
+execution composite, and one non-actuating sink from the development
 configuration. It MUST validate declared ports, directions, element types,
 shapes, schemas, scalar properties, ndarray parameters, and links before
 entering `RUNNING`. A rejection MUST identify the scientific object and the
@@ -255,6 +266,128 @@ stop success and failure, duplicate requests, unknown groups, every completion
 mismatch, session stop and unload during a pending group effect, late
 completion rejection, and repeated group and session cycles.
 
+### RTC-DEV-013 — External PipeWire endpoint composition
+
+The runner MUST admit an already-running external source or sink without
+depending on its implementation package, language, process, or private
+properties. It MUST require declared external ownership and validate the exact
+node and port names, direction, `F32_LE` element type, complete shape, and
+scientific schema before creating a link. A node name or descriptive label
+alone MUST NOT establish a compatible port contract.
+
+The external WFS source and simulated correction-command sink MUST already be
+inspectable on the selected private PipeWire core before the session reaches
+`READY`. The runner MUST NOT create, destroy, or claim ownership of either node.
+It MUST own and remove only its FGN graphs and declared links. Unload,
+failed configuration, and retry MUST leave the adapter nodes intact. Loss or
+incompatible mutation of either required endpoint while `READY` or `RUNNING`
+MUST move the session to `FAULT` through the existing serialized dispatcher.
+
+This admission is valid only as part of a maintained development composition
+whose launcher supplies known non-actuating applications on an isolated
+private core. It MUST NOT be presented as generic physical-device admission.
+The runner's factory allowlists continue to apply to every node it creates.
+
+Verification intent (informative): reject invalid ownership, a runner factory
+on an external declaration, missing or duplicate nodes, and every port-format
+mismatch; then realize and unload a private-core session while both external
+nodes survive and an unrelated object remains untouched. Inspect the runner
+to confirm that no AdaptiveOpticsSim or adapter-specific identifier controls
+admission.
+
+### RTC-DEV-014 — Complete-frame simulated closed-loop causality
+
+The maintained `AdaptiveOpticsSimPipeWireHIL.jl` application MUST publish
+exactly one complete WFS frame for sequence `n` and accept exactly one finite
+complete correction command carrying sequence `n`. AdaptiveOpticsSim MUST
+apply the accepted command to simulated frame `n + 1`; zero, stale, duplicate,
+future, missing, wrong-shape, wrong-schema, and non-finite commands MUST be
+rejected without advancing the plant. The development fixture MAY allow only
+one frame and command in flight.
+
+AdaptiveOpticsSim MUST remain transport-neutral. All PipeWire streams, buffers,
+metadata, waiting, and lifecycle mapping MUST reside in the separate integration
+package. Simulation and scientific processing MUST run outside PipeWire process
+callbacks; those callbacks MAY only validate and copy one prepared complete
+buffer, update bounded exchange state, and return or queue the buffer.
+
+Verification intent (informative): compare the same deterministic
+AdaptiveOpticsSim frame and command sequence through direct lockstep exchange
+and the PipeWire adapter, inject every sequence and format fault, and verify
+that command `n` first affects frame `n + 1`.
+
+### RTC-DEV-015 — AdaptiveOpticsSim closed-loop reference fixture
+
+The repository MUST maintain one private-core, non-actuating SCAO reference
+fixture with an AdaptiveOpticsSim WFS source, at least one runner-owned
+`fgn-native` graph, and an AdaptiveOpticsSim correction-command sink.
+The fixture MUST reach `READY`, start, exchange multiple complete frames and
+commands, stop to `READY`, restart without reconstructing the graph, unload to
+`OFFLINE`, remove every runner-owned graph and link, and preserve the two
+external adapter nodes plus an unrelated object.
+
+The fixture MUST compare the transported commands and externally meaningful
+plant diagnostics with a maintained direct or fused reference at declared
+tolerances. It MUST run with no GUI. Any GUI or command-line inspection is
+optional and does not satisfy the numerical oracle. Functional passage makes
+no deadline, real-time, physical-device, or safety claim.
+
+Verification intent (informative): run flat and deterministic atmospheric
+inputs, record the first differing sequence and scientific field, demonstrate
+stop/restart state continuity, and show a declared closed-loop diagnostic
+improves over the matching open-loop reference without claiming qualification.
+
+### RTC-DEV-016 — Implementation-independent processing node
+
+The development configuration MUST allow one scientific processing role to be
+realized either by a runner-owned `fgn-native` graph or by an externally owned
+PipeWire node. The external declaration MUST identify the exact node, ports,
+directions, element types, shapes, schemas, ownership, and run-control grant.
+Admission MUST NOT depend on a Julia package name, process identity, or another
+implementation-specific property. The initial maintained external processing
+application SHALL be a prepared `JuliaFilterGraph.jl` graph published through
+`FilterGraphPipeWire`.
+
+When session run control is granted, the runner MUST use public PipeWire start
+and pause commands through the existing serialized lifecycle and execution-
+group effects. Stop and restart MUST preserve the external graph object and its
+algorithm state. Required-node loss, replacement, incompatible mutation, or
+command failure MUST reach `FAULT`. Unload MUST remove only RTC-owned links and
+MUST leave the external processing node and unrelated objects intact. Without
+an explicit run-control grant, the runner MUST NOT mutate the node and MUST NOT
+place it in an RTC-controlled execution group.
+
+Verification intent (informative): launch an external
+`FilterGraphPipeWire.PipeWireNode` before RTC load, substitute it for the
+matching `fgn-native` role under identical scientific contracts, and compare
+accepted outputs and state across start, stop, restart, failure, retry, and
+unload. Prove that one declared execution group can be controlled without
+reconstructing or destroying the external node.
+
+### RTC-DEV-017 — REVOLT Classic simulated-plant fixture
+
+The maintained REVOLT Classic fixture MUST use `REVOLTClassicSim.jl` as a
+transport-neutral simulated plant. A separate
+`REVOLTClassicSimPipeWireHIL.jl` package MUST expose the prepared 352-by-352
+Shack–Hartmann frame and 277-element HSDM277 command boundary as external
+PipeWire nodes using exact versioned schemas and the RTC-DEV-014 sequence
+contract. `REVOLTClassicSim.jl` MUST NOT depend on PipeWireAO, and the RTC
+runner MUST NOT load Julia or interpret simulation internals.
+
+The fixture MUST admit and link the external plant to the maintained REVOLT
+Classic RTC component. It MUST cover a runner-owned `fgn-native` realization
+and an equivalent external `JuliaFilterGraph.jl` realization without changing
+the plant adapter or scientific port contracts. Each realization MUST complete
+the session lifecycle, preserve external and unrelated nodes on unload, and
+compare every transported command plus declared plant diagnostics against the
+maintained direct or fused reference at declared tolerances.
+
+Verification intent (informative): use deterministic seeded atmosphere and
+calibration inputs, report the first differing sequence and scientific field,
+prove command `n` first affects simulated frame `n + 1`, and compare both RTC
+component implementations without making physical-device, deadline, safety, or
+qualification claims.
+
 ### RTC-DEV-005 — Standard property and parameter paths
 
 The runner MUST use the existing FGN and PipeWireAO interfaces for updates. It
@@ -272,7 +405,7 @@ resolved before instance creation.
 Verification intent (informative): apply scalar, multi-property, parameter,
 and rejected updates; inspect the host's requested and active observations;
 then prove that a structural change requires reload and that repeated updates
-match direct Calculon behavior.
+match direct Algorithm behavior.
 
 ### RTC-DEV-006 — Optional observation
 
@@ -293,7 +426,7 @@ reattaches; compare graph results and lifecycle transitions.
 
 For every maintained development fixture, the test harness MUST feed the same
 inputs, initial state, properties, and ndarray parameters to the FGN graph and
-the maintained direct Calculon or fused reference. It MUST compare every
+the maintained direct or fused Algorithm reference. It MUST compare every
 accepted output and externally meaningful state using declared tolerances.
 Source end, reset, property update, and parameter update MUST be included.
 
@@ -304,8 +437,8 @@ an unexplained difference.
 
 ### RTC-DEV-008 — Scientist-level algorithm authoring
 
-A scientist adding a supported algorithm MUST provide only an ordinary typed
-Calculon implementation, its local declaration, array-level tests, and the
+A scientist adding a supported Algorithm MUST provide only its ordinary typed
+implementation, local declaration, array-level tests, and the
 scientific ports, shapes, schemas, scalar properties, ndarray parameters, and
 construction values that the algorithm genuinely needs. The integration MUST
 NOT require hand-written SPA callbacks, raw-pointer handling, errno or unwind
@@ -379,6 +512,7 @@ message presented to a scientist.
 ## Development gate
 
 The active operating contract is complete when RTC-DEV-001 through
-RTC-DEV-012 are implemented and their verification intent is covered for the
-small fixtures and REVOLT Classic. Passing this gate permits only the claim
-stated in the architecture: a usable, non-actuating development RTCW.
+RTC-DEV-017 are implemented and their verification intent is covered for the
+small fixtures, the AdaptiveOpticsSim reference fixture, and REVOLT Classic.
+Passing this gate permits only the claim stated in the architecture: a usable,
+non-actuating development RTCW.

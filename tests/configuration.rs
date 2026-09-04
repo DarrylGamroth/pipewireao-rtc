@@ -4,6 +4,9 @@ const MINIMAL: &str = include_str!("../fixtures/minimal-development.conf");
 const SERIAL: &str = include_str!("../fixtures/serial-development.conf");
 const FORK: &str = include_str!("../fixtures/fork-development.conf");
 const INDEPENDENT: &str = include_str!("../fixtures/independent-development.conf");
+const EXTERNAL: &str = include_str!("../fixtures/external-development.conf");
+const AOS_HIL: &str = include_str!("../fixtures/aos-hil-development.conf");
+const AOS_HIL_ATMOSPHERE: &str = include_str!("../fixtures/aos-hil-atmosphere-development.conf");
 
 fn replace_once(document: &str, before: &str, after: &str) -> String {
     assert!(
@@ -31,6 +34,82 @@ fn maintained_session_topologies_are_resolved() {
         assert!(config.parameters.is_empty());
         assert!(config.observations.is_empty());
     }
+
+    let external = DevelopmentConfig::parse(EXTERNAL).expect("external topology");
+    assert_eq!(external.object_count(), 3);
+    assert_eq!(external.owned_object_count(), 1);
+    assert_eq!(external.links.len(), 2);
+
+    let atmosphere =
+        DevelopmentConfig::parse(AOS_HIL_ATMOSPHERE).expect("atmospheric HIL topology");
+    assert_eq!(atmosphere.object_count(), 3);
+    assert_eq!(atmosphere.owned_object_count(), 1);
+    assert_eq!(atmosphere.links.len(), 2);
+}
+
+#[test]
+fn external_endpoints_are_selected_by_pipewire_contract_not_implementation() {
+    let config = DevelopmentConfig::parse(AOS_HIL).expect("AOS HIL configuration");
+    assert_eq!(config.object_count(), 3);
+    assert_eq!(config.owned_object_count(), 1);
+    assert_eq!(
+        config.externally_owned_node_names(),
+        ["pipewireao-aos-hil-wfs", "pipewireao-aos-hil-command"]
+    );
+    assert_eq!(config.owned_node_names(), ["pipewireao-rtc-aos-controller"]);
+    assert_eq!(config.execution_groups[0].nodes.len(), 1);
+
+    let cases = [
+        (
+            "ownership = external",
+            "ownership = mystery",
+            "sources[0].ownership",
+        ),
+        (
+            "ownership = external",
+            "ownership = external\n            factory = pipewireao.simulated-complete-frame",
+            "sources[0].factory",
+        ),
+        (
+            "node.name = pipewireao-aos-hil-wfs",
+            "module = should-not-load\n            node.name = pipewireao-aos-hil-wfs",
+            "sources[0].module",
+        ),
+        (
+            "shape = [ 64 64 ]",
+            "shape = [ 64 0 ]",
+            "sources[0].ports.output_1.shape",
+        ),
+        (
+            "org.adaptiveopticssim.hil-reference.shack-hartmann-frame.f32/1",
+            "\"\"",
+            "sources[0].ports.output_1.schema",
+        ),
+        (
+            "name = input_1 direction = input element-type = F32_LE shape = [ 25 ]",
+            "name = command direction = input element-type = F32_LE shape = [ 25 ]",
+            "links[1].input",
+        ),
+        (
+            "nodes = [ pipewireao-rtc-aos-controller ]",
+            "nodes = [ pipewireao-aos-hil-wfs pipewireao-rtc-aos-controller ]",
+            "execution-groups[0].nodes[0]",
+        ),
+    ];
+    for (before, after, field) in cases {
+        let error = DevelopmentConfig::parse(&replace_once(AOS_HIL, before, after))
+            .expect_err("invalid external HIL endpoint");
+        assert_eq!(error.field(), field, "configuration mutation: {after}");
+    }
+
+    let implementation_specific = replace_once(
+        AOS_HIL,
+        "ownership = external",
+        "ownership = external\n            adapter = adaptive-optics-sim-pipewire-hil/1",
+    );
+    let error = DevelopmentConfig::parse(&implementation_specific)
+        .expect_err("implementation identity is not part of the RTC contract");
+    assert_eq!(error.field(), "sources[0].adapter");
 }
 
 #[test]
@@ -129,7 +208,7 @@ fn graph_bodies_are_delegated_as_opaque_pipewire_module_files() {
         ),
         (
             "graphs[0].plugin.path",
-            "plugin.path = \"${CALCULON_FGN_BUNDLE}\"\n            ",
+            "plugin.path = \"${PIPEWIREAO_RTC_FGN_BUNDLE}\"\n            ",
         ),
     ] {
         let mutated = replace_once(
@@ -191,6 +270,11 @@ fn endpoint_and_scope_admission_is_an_explicit_negative_matrix() {
             "factory = api.pipewireao.discard",
             "factory = pipewireao.unlisted-sink",
             "sinks[0].factory",
+        ),
+        (
+            "factory = pipewireao.fgn-native",
+            "factory = pipewireao.calculon-fgn-native",
+            "graphs[0].factory",
         ),
     ];
     for (before, after, field) in cases {

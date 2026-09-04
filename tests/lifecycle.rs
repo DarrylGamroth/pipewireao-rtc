@@ -539,3 +539,60 @@ fn blocking_effects_execute_after_handlers_return_and_repeated_cycles_are_clean(
         .windows(2)
         .all(|pair| pair[0].1 < pair[1].1));
 }
+
+#[derive(Default)]
+struct RequiredObjectMonitor {
+    checks: usize,
+}
+
+impl EffectExecutor for RequiredObjectMonitor {
+    fn execute(
+        &mut self,
+        _effect: &LifecycleEffect,
+    ) -> Result<LifecycleEffectSuccess, ScientificDiagnostic> {
+        Ok(LifecycleEffectSuccess::Completed)
+    }
+
+    fn check_required_objects(&mut self) -> Result<(), ScientificDiagnostic> {
+        self.checks += 1;
+        Err(ScientificDiagnostic::new(
+            "source wfs.ports.frame",
+            "required external port disappeared",
+        ))
+    }
+}
+
+#[test]
+fn required_object_monitor_returns_failures_through_the_only_dispatcher() {
+    let mut offline = Runner::new(RequiredObjectMonitor::default());
+    assert_eq!(
+        offline.poll_required_objects().unwrap(),
+        LifecycleState::Offline
+    );
+    assert_eq!(offline.executor().checks, 0);
+
+    for running in [false, true] {
+        let mut runner = Runner::new(RequiredObjectMonitor::default());
+        assert_eq!(
+            runner
+                .dispatch(LifecycleEvent::Load(config().into()))
+                .unwrap(),
+            LifecycleState::Ready
+        );
+        if running {
+            assert_eq!(
+                runner.dispatch(LifecycleEvent::Start).unwrap(),
+                LifecycleState::Running
+            );
+        }
+        assert_eq!(
+            runner.poll_required_objects().unwrap(),
+            LifecycleState::Fault
+        );
+        assert_eq!(runner.executor().checks, 1);
+        assert_eq!(
+            runner.diagnostic().map(ScientificDiagnostic::field),
+            Some("source wfs.ports.frame")
+        );
+    }
+}

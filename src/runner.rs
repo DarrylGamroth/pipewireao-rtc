@@ -16,6 +16,19 @@ pub trait EffectExecutor {
         &mut self,
         effect: &LifecycleEffect,
     ) -> Result<LifecycleEffectSuccess, ScientificDiagnostic>;
+
+    /// Revalidates required objects while a realized session is idle or running.
+    ///
+    /// Potentially blocking adapter work remains outside the lifecycle handler.
+    /// Executors without externally owned objects need no monitoring work.
+    ///
+    /// # Errors
+    ///
+    /// Returns the scientific diagnostic to dispatch when a required object is
+    /// lost or no longer satisfies its admitted contract.
+    fn check_required_objects(&mut self) -> Result<(), ScientificDiagnostic> {
+        Ok(())
+    }
 }
 
 /// One lifecycle owner combining the serialized dispatcher with one graph adapter.
@@ -69,6 +82,25 @@ impl<E: EffectExecutor> Runner<E> {
             let completion = LifecycleEffectResult::from_output(&effect, result);
             self.dispatcher
                 .dispatch(LifecycleEvent::EffectCompleted(completion))?;
+        }
+        Ok(self.state())
+    }
+
+    /// Checks required objects and serializes any failure through the lifecycle.
+    ///
+    /// # Errors
+    ///
+    /// Returns a dispatcher error if the required-object failure event cannot
+    /// be accepted by the current lifecycle state.
+    pub fn poll_required_objects(&mut self) -> Result<LifecycleState, DispatchError> {
+        if !matches!(
+            self.state(),
+            LifecycleState::Ready | LifecycleState::Running
+        ) {
+            return Ok(self.state());
+        }
+        if let Err(diagnostic) = self.executor.check_required_objects() {
+            return self.dispatch(LifecycleEvent::RequiredObjectFailed(diagnostic));
         }
         Ok(self.state())
     }

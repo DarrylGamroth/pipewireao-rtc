@@ -1,7 +1,7 @@
 use super::{
-    DevelopmentConfig, EndpointFactory, ExecutionGroupSpec, GraphFactory, LinkSpec, ObjectRole,
-    ObjectSpec, PortDirection, PortSpec, ScientificDiagnostic, FITS_SOURCE_FACTORY, GRAPH_FACTORY,
-    SIMULATED_SOURCE_FACTORY, SINK_FACTORY,
+    DevelopmentConfig, EndpointFactory, ExecutionGroupSpec, GraphFactory, LinkSpec,
+    ObjectRealization, ObjectRole, ObjectSpec, PortDirection, PortSpec, ScientificDiagnostic,
+    FITS_SOURCE_FACTORY, GRAPH_FACTORY, SIMULATED_SOURCE_FACTORY, SINK_FACTORY,
 };
 use crate::ffi::spa_json::{Cursor, SyntaxError, Token};
 use std::collections::BTreeMap;
@@ -65,8 +65,9 @@ pub(super) fn development_config(text: &str) -> Result<DevelopmentConfig, Scient
 }
 
 struct DecodedObject {
-    factory: String,
-    module: String,
+    factory: Option<String>,
+    ownership: Option<String>,
+    module: Option<String>,
     node_name: String,
     plugin_path: Option<String>,
     configuration_path: Option<String>,
@@ -75,9 +76,9 @@ struct DecodedObject {
 }
 
 impl DecodedObject {
-    fn with_factory<F>(self, factory: F) -> ObjectSpec<F> {
+    fn with_realization<F>(self, realization: ObjectRealization<F>) -> ObjectSpec<F> {
         ObjectSpec {
-            factory,
+            realization,
             module: self.module,
             node_name: self.node_name,
             plugin_path: self.plugin_path,
@@ -94,27 +95,55 @@ fn endpoint(
     field: &str,
 ) -> Result<ObjectSpec<EndpointFactory>, ScientificDiagnostic> {
     let object = object_spec(token, field)?;
-    let factory = match (role, object.factory.as_str()) {
-        (ObjectRole::Source, SIMULATED_SOURCE_FACTORY) => {
-            EndpointFactory::SimulatedCompleteFrameSource
+    let realization = match object.ownership.as_deref() {
+        Some("external") => {
+            if object.factory.is_some() {
+                return Err(ScientificDiagnostic::new(
+                    format!("{field}.factory"),
+                    "external endpoint must not declare a runner-created factory",
+                ));
+            }
+            ObjectRealization::External
         }
-        (ObjectRole::Source, FITS_SOURCE_FACTORY) => EndpointFactory::FitsCompleteFrameSource,
-        (ObjectRole::Sink, SINK_FACTORY) => EndpointFactory::FormatAgnosticDiscardSink,
-        (ObjectRole::Source, name) => {
+        None | Some("runner") => {
+            let Some(name) = object.factory.as_deref() else {
+                return Err(ScientificDiagnostic::new(
+                    format!("{field}.factory"),
+                    "runner-owned endpoint must declare a factory",
+                ));
+            };
+            let factory = match (role, name) {
+                (ObjectRole::Source, SIMULATED_SOURCE_FACTORY) => {
+                    EndpointFactory::SimulatedCompleteFrameSource
+                }
+                (ObjectRole::Source, FITS_SOURCE_FACTORY) => {
+                    EndpointFactory::FitsCompleteFrameSource
+                }
+                (ObjectRole::Sink, SINK_FACTORY) => EndpointFactory::FormatAgnosticDiscardSink,
+                (ObjectRole::Source, name) => {
+                    return Err(ScientificDiagnostic::new(
+                        format!("{field}.factory"),
+                        format!("factory {name:?} is not in the development-safe source allowlist"),
+                    ));
+                }
+                (ObjectRole::Sink, name) => {
+                    return Err(ScientificDiagnostic::new(
+                        format!("{field}.factory"),
+                        format!("factory {name:?} is not in the non-actuating sink allowlist"),
+                    ));
+                }
+                (ObjectRole::Graph, _) => unreachable!("graph is decoded separately"),
+            };
+            ObjectRealization::Factory(factory)
+        }
+        Some(value) => {
             return Err(ScientificDiagnostic::new(
-                format!("{field}.factory"),
-                format!("factory {name:?} is not in the development-safe source allowlist"),
+                format!("{field}.ownership"),
+                format!("ownership must be runner or external, got {value:?}"),
             ));
         }
-        (ObjectRole::Sink, name) => {
-            return Err(ScientificDiagnostic::new(
-                format!("{field}.factory"),
-                format!("factory {name:?} is not in the non-actuating sink allowlist"),
-            ));
-        }
-        (ObjectRole::Graph, _) => unreachable!("graph is decoded separately"),
     };
-    Ok(object.with_factory(factory))
+    Ok(object.with_realization(realization))
 }
 
 fn graph_object(
@@ -122,7 +151,17 @@ fn graph_object(
     field: &str,
 ) -> Result<ObjectSpec<GraphFactory>, ScientificDiagnostic> {
     let object = object_spec(token, field)?;
-    if object.factory != GRAPH_FACTORY {
+    if object
+        .ownership
+        .as_deref()
+        .is_some_and(|value| value != "runner")
+    {
+        return Err(ScientificDiagnostic::new(
+            format!("{field}.ownership"),
+            "fgn-native graph ownership must be runner",
+        ));
+    }
+    if object.factory.as_deref() != Some(GRAPH_FACTORY) {
         return Err(ScientificDiagnostic::new(
             format!("{field}.factory"),
             format!(
@@ -131,7 +170,7 @@ fn graph_object(
             ),
         ));
     }
-    Ok(object.with_factory(GraphFactory::CalculonFgnNative))
+    Ok(object.with_realization(ObjectRealization::Factory(GraphFactory::FgnNative)))
 }
 
 fn endpoint_array(
@@ -161,6 +200,7 @@ fn graph_array(token: Token<'_>) -> Result<Vec<ObjectSpec<GraphFactory>>, Scient
 fn object_spec(token: Token<'_>, field: &str) -> Result<DecodedObject, ScientificDiagnostic> {
     let mut object = Object::token(token, field)?;
     let mut factory = None;
+    let mut ownership = None;
     let mut module = None;
     let mut node_name = None;
     let mut plugin_path = None;
@@ -171,6 +211,7 @@ fn object_spec(token: Token<'_>, field: &str) -> Result<DecodedObject, Scientifi
     while let Some((name, value)) = object.next()? {
         match name.as_str() {
             "factory" => assign(&mut factory, value, &format!("{field}.factory"))?,
+            "ownership" => assign(&mut ownership, value, &format!("{field}.ownership"))?,
             "module" => assign(&mut module, value, &format!("{field}.module"))?,
             "node.name" => assign(&mut node_name, value, &format!("{field}.node.name"))?,
             "plugin.path" => assign(&mut plugin_path, value, &format!("{field}.plugin.path"))?,
@@ -186,14 +227,15 @@ fn object_spec(token: Token<'_>, field: &str) -> Result<DecodedObject, Scientifi
     }
 
     Ok(DecodedObject {
-        factory: scalar(
-            required(factory, &format!("{field}.factory"))?,
-            &format!("{field}.factory"),
-        )?,
-        module: scalar(
-            required(module, &format!("{field}.module"))?,
-            &format!("{field}.module"),
-        )?,
+        factory: factory
+            .map(|token| scalar(token, &format!("{field}.factory")))
+            .transpose()?,
+        ownership: ownership
+            .map(|token| scalar(token, &format!("{field}.ownership")))
+            .transpose()?,
+        module: module
+            .map(|token| scalar(token, &format!("{field}.module")))
+            .transpose()?,
         node_name: scalar(
             required(node_name, &format!("{field}.node.name"))?,
             &format!("{field}.node.name"),

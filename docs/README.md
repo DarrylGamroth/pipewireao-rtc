@@ -1,7 +1,7 @@
 # PipeWireAO RTC document set
 
 The maintained baseline starts with one non-actuating, complete-frame
-Calculon/PipeWireAO development graph, then extends the same runner into a
+FGN/PipeWireAO development graph, then extends the same runner into a
 small RTC workstation (RTCW) that can compose multiple ordinary PipeWireAO
 filter-graph instances. The runner loads, links, inspects, and tests the
 declared session without introducing another graph-authoring format.
@@ -10,8 +10,8 @@ declared session without introducing another graph-authoring format.
 
 | Document | Authority |
 | --- | --- |
-| [Development architecture](architecture.md) | Scope, component boundary, configuration choice, scientist boundary, exclusions, RTCW composition, and the RTC-ARCH-014 selective run-control decision |
-| [Development operating contract](operations.md) | RTC-DEV-001 through RTC-DEV-012, Statig lifecycle, multi-composite sessions, selective run control, updates, observation, diagnostics, and equivalence |
+| [Development architecture](architecture.md) | Scope, component boundary, configuration choice, scientist boundary, exclusions, RTCW composition, selective run control, external-node substitution, and the REVOLT Classic simulated-plant boundary |
+| [Development operating contract](operations.md) | RTC-DEV-001 through RTC-DEV-017, Statig lifecycle, multi-composite sessions, selective run control, external nodes, updates, observation, diagnostics, and equivalence |
 | [Development roadmap](roadmap.md) | Dependency-ordered implementation, completion evidence, performance characterization, and deferred capability triggers |
 
 These three files are the complete RTC-level implementation baseline. An
@@ -31,6 +31,6 @@ Its historical identifiers remain reserved and are not selected.
 Generic ndarray, FGN, metadata, polling, row-block, and progressive-processing
 contracts remain authoritative in the
 [PipeWireAO repository](https://github.com/DarrylGamroth/PipeWireAO/tree/master/doc/dox/internals).
-Portable scientific algorithms and declarations remain authoritative in
-Calculon. This repository states only the RTC runner behavior that connects
-those pieces.
+Portable scientific Algorithm implementations and declarations remain
+authoritative in their owning packages. This repository states only the RTC
+runner behavior that connects those pieces.

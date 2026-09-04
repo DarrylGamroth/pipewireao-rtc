@@ -2,12 +2,12 @@
 
 Status: active development baseline; implementation underway
 
-Review date: 2026-09-01
+Review date: 2026-09-03
 
 ## Decision
 
 The first executable `pipewireao-rtc` product is a small headless runner for one
-non-actuating Calculon/PipeWireAO graph. It loads one standard PipeWire
+non-actuating FGN/PipeWireAO graph. It loads one standard PipeWire
 configuration, realizes a source → graph → sink topology, applies initial
 properties and ndarray parameters, exposes a small lifecycle, and leaves the
 result visible to ordinary PipeWire clients.
@@ -57,18 +57,65 @@ link behavior so that a stopped branch cannot make the shared node or another
 branch stop progressing. This adds control-plane granularity only: PipeWire
 and FGN continue to own scheduling, buffers, and frame processing.
 
+This is decision **RTC-ARCH-015**: compose externally implemented processing
+and HIL applications through ordinary PipeWire nodes. The RTC configuration
+identifies those nodes and their public ports; it does not identify or
+interpret the package, language, process, or internal graph that implements
+them. A launcher outside the RTC starts each external application on the
+selected private core before the RTC realizes its links.
+
+The first reference application is a transport-neutral AdaptiveOpticsSim plant
+through a separate `AdaptiveOpticsSimPipeWireHIL.jl` package. The application
+owns one complete WFS-frame source node and one non-actuating
+correction-command sink node. AdaptiveOpticsSim MUST NOT depend on or contain
+PipeWireAO code. The RTC runner owns the FGN graphs and the declared links
+to those external nodes; it does not load Julia, execute the simulation, or
+take ownership of the application nodes.
+
+The adapter keeps the feedback coupling inside its application boundary so the
+PipeWire topology remains acyclic. For sequence `n`, it publishes one complete
+simulated WFS frame, accepts exactly one complete command with the same
+sequence, and applies that command to simulated frame `n + 1`. This is a
+non-actuating HIL reference system and does not introduce physical correction
+authority.
+
+This is decision **RTC-ARCH-016**: make the RTC processing-node implementation
+substitutable at the ordinary PipeWire boundary. A declared processing role MAY
+be realized by a runner-owned `fgn-native` filter graph or by an externally
+owned `JuliaFilterGraph.jl` graph published through `FilterGraphPipeWire`. The
+session contract names identical scientific ports, shapes, schemas, properties,
+parameters, and links; it does not select behavior by implementation language
+or package identity.
+
+Object ownership and run-control authority are separate. An external
+application creates and destroys its processing node. The RTC MAY send public
+PipeWire start and pause commands only when the configuration explicitly grants
+session run control; unload removes RTC-owned links but leaves the external node
+alive. This uses the existing serialized lifecycle and execution-group effects.
+It does not add a Julia process manager, a second graph parser, or a second
+lifecycle.
+
+This is decision **RTC-ARCH-017**: integrate the REVOLT Classic simulated plant
+through the same external HIL boundary. `REVOLTClassicSim.jl` remains
+transport-neutral. A separate `REVOLTClassicSimPipeWireHIL.jl` package will map
+its prepared 352-by-352 Shack–Hartmann frame and 277-element HSDM277 command
+boundary to ordinary PipeWire nodes. The RTC may place either the maintained
+`fgn-native` controller or an equivalent `JuliaFilterGraph.jl` processing node
+between those endpoints without knowing how the plant or controller is
+implemented.
+
 ## Active scope
 
 The active implementation begins with:
 
 - one simulated or recorded complete-frame source;
-- one `fgn-native` Calculon execution composite;
+- one `fgn-native` execution composite;
 - one simulated, discard, or otherwise non-actuating sink;
 - one small Rust runner with a Statig hierarchical lifecycle and diagnostics;
 - initial scalar properties and ndarray parameters;
 - ordinary read-only PipeWire inspection; and
-- numerical and state-equivalence tests against the maintained Calculon or
-  fused reference.
+- numerical and state-equivalence tests against the maintained direct or fused
+  Algorithm reference.
 
 After that fixture, the active RTCW composition increment adds only:
 
@@ -82,9 +129,18 @@ After that fixture, the active RTCW composition increment adds only:
 - optional scientific inspection through standard PipeWire introspection and
   suitable bounded non-gating observation surfaces.
 
+The next reference-system increment adds one externally owned AdaptiveOpticsSim
+WFS source, one externally owned simulated command sink, and one or more
+processing graphs between them. The first fixture uses a runner-owned FGN
+graph; the following substitution fixture uses an externally owned
+`JuliaFilterGraph.jl` node with the same public contract. The integration
+package, not AdaptiveOpticsSim, owns PipeWire stream and acquisition-metadata
+mapping.
+
 The first maintained fixture is the minimal complete-frame source → graph →
-discard path. REVOLT Classic, with its 277-actuator command vector and explicit
-SHWFS subaperture origins, follows after the RTCW composition fixtures.
+discard path. The AdaptiveOpticsSim HIL reference follows the RTCW composition
+fixtures. REVOLT Classic, with its 277-actuator command vector and explicit
+SHWFS subaperture origins, follows that reference-system increment.
 
 The following are not part of the active baseline:
 
@@ -94,7 +150,7 @@ The following are not part of the active baseline:
   fencing;
 - durable recording, audit, run reconstruction, or scientific FITS export;
 - row-block, region-block, fixed-worker, or multi-batch scheduling;
-- Julia graph execution;
+- runner-hosted Julia graph execution or Julia process management;
 - remote control, a web gateway, or WebRTC preview;
 - WirePlumber-specific application logic or generated service-manager units;
 - CPU affinity, real-time scheduling, NUMA placement, or strict-island
@@ -118,6 +174,11 @@ flowchart LR
     Sink["Admitted non-actuating sink"]
     Parallel["Independent declared<br/>source to graph to sink path"]
     Observer["Optional PipeWire tools<br/>or read-only GUI"]
+    Plant["AdaptiveOpticsSim<br/>transport-neutral plant"]
+    Adapter["AdaptiveOpticsSimPipeWireHIL.jl<br/>external node owner"]
+    JuliaGraph["JuliaFilterGraph.jl<br/>optional external processing node"]
+    Revolt["REVOLTClassicSim.jl<br/>transport-neutral plant"]
+    RevoltAdapter["REVOLTClassicSimPipeWireHIL.jl<br/>planned external node owner"]
 
     Config --> Runner
     Runner -.->|create, connect, configure| Source
@@ -129,16 +190,27 @@ flowchart LR
     GraphA -->|typed ndarray| GraphB
     GraphB -->|typed ndarray| Sink
     GraphA -.->|introspection or declared observation| Observer
+    Plant <--> Adapter
+    Adapter -->|complete WFS frame| GraphA
+    GraphB -->|same-sequence command| Adapter
+    Adapter -.->|same declared contracts| JuliaGraph
+    Revolt <--> RevoltAdapter
+    RevoltAdapter -.->|352 by 352 frame and 277 command| JuliaGraph
 ```
 
 | Component | Active responsibility |
 | --- | --- |
 | `pipewireao-rtc` | Validate the development configuration, realize its exact session topology, serialize session and execution-group control, report observed status, and clean up the objects it owns. |
 | PipeWireAO | Own ndarray transport, format negotiation, scheduling, FGN hosting, property and parameter publication, and standard PipeWire introspection. |
-| Calculon | Own ordinary typed scientific algorithms and declarations of ports, shapes, schemas, scalar properties, ndarray parameters, and construction values. |
+| Scientific Algorithm packages | Own ordinary typed implementations and declarations of ports, shapes, schemas, scalar properties, ndarray parameters, and construction values. |
 | Source | Produce complete frames for simulation or deterministic replay. |
 | Sink | Consume graph output without addressing or controlling physical hardware. |
 | Observer | Inspect standard PipeWire objects and, where a suitable boundary exists, scientific samples. It is optional and never owns runner lifecycle or graph progress. |
+| AdaptiveOpticsSim | Own the simulated atmosphere, optics, WFS, deformable mirror, science diagnostics, model time, and frame-to-command causality without a PipeWire dependency. |
+| `AdaptiveOpticsSimPipeWireHIL.jl` | Map one prepared AdaptiveOpticsSim HIL boundary to an externally owned PipeWire source and non-actuating sink using public PipeWireAO interfaces. |
+| `JuliaFilterGraph.jl` and `FilterGraphPipeWire` | Optionally own and publish one prepared RTC processing graph as an ordinary external PipeWire node. |
+| `REVOLTClassicSim.jl` | Own the REVOLT Classic atmosphere, optics, 352-by-352 Shack–Hartmann detector model, provisional HSDM277 plant, science diagnostics, and deterministic HIL boundary without a PipeWire dependency. |
+| `REVOLTClassicSimPipeWireHIL.jl` | Planned narrow integration package that maps the prepared REVOLT Classic HIL boundary to external PipeWire nodes without moving simulation behavior into the adapter. |
 
 The runner is the control plane for this small session. It does not process
 frame data, create execution threads for graph operations, or replace
@@ -162,13 +234,46 @@ RTC-specific filter-graph parser. Paths and launch-time selections are
 resolved before streaming. Construction and topology changes are handled by
 stopping and reloading the development session.
 
+An external node is selected by declared external ownership and exact node
+name, port name, direction, element type, shape, and schema. Discovery may
+locate that already-running declared object; it MUST NOT substitute another
+node or create an undeclared critical link. The runner owns links that it
+creates to the node but does not own or destroy the node. It does not require
+implementation-identifying properties.
+
+An external processing declaration additionally states whether session run
+control is granted. When granted, the runner uses only public PipeWire node
+commands and observes the resulting node state. When not granted, the external
+application retains run control and the node cannot belong to an RTC-controlled
+execution group. Ownership never transfers in either case.
+
+This same boundary applies when `JuliaFilterGraph.jl` and its
+`FilterGraphPipeWire` adapter publish a prepared Julia graph as one PipeWire
+node. The RTCW sees public ports, formats, schemas, and links—not Julia
+algorithms or the graph host. General external processing-node lifecycle and
+selective-control evidence are planned after the external source-and-sink HIL
+slice; the current implementation must not imply that support merely from
+external endpoint discovery.
+
+The development safety boundary is the complete launched composition on an
+isolated private core. Factory allowlists still govern objects created by the
+runner. An external declaration does not prove that an arbitrary node is
+non-actuating and does not admit physical endpoints on the user's normal
+PipeWire core.
+
 Each graph remains one canonical PipeWireAO model. A script, maintained
 generator, or future GUI may construct the standard configuration, but none
 introduces another graph executor or private transport.
 
+The deprecated product name is not part of the RTC domain model. Runner-local
+configuration uses `pipewireao.fgn-native`, and implementation types use FGN
+terminology. Existing `org.calculon...` schema strings and legacy Rust artifact
+paths remain unchanged compatibility boundaries until a separate versioned
+schema and package migration defines their replacements.
+
 ## Scientist boundary
 
-A scientist supplies an ordinary typed Calculon algorithm and declaration:
+A scientist supplies an ordinary typed Algorithm and declaration:
 
 - scientific port names, element types, shapes, and schemas;
 - scalar runtime properties;
@@ -188,7 +293,7 @@ executor such as AdaptiveOpticsSim.
 Rust is the default language for the runner because it is a small stateful
 PipeWire client and configuration tool. This choice is not part of the
 scientist-facing ABI. C remains at existing SPA and PipeWireAO ABI boundaries;
-scientific algorithms remain in their Calculon implementation language.
+scientific Algorithms remain in their owning implementation language.
 
 This is decision **RTC-ARCH-012**: implement the runner lifecycle with
 Statig's blocking state-machine API and a single serialized dispatcher from
@@ -211,9 +316,9 @@ This repository does not duplicate the data-plane contracts:
 - [ndarray filter graph](https://github.com/DarrylGamroth/PipeWireAO/blob/master/doc/dox/internals/filter-graph-ndarray.md)
   owns the plugin ABI, graph validation, execution, properties, parameters,
   and FGN worker behavior;
-- the Calculon `docs/scalar-property-contract.md` contract owns portable
+- the Rust FGN implementation's scalar-property contract owns portable
   property semantics; and
-- Calculon algorithm declarations own scientific ports, schemas, shapes, and
+- Algorithm declarations own scientific ports, schemas, shapes, and
   reference behavior.
 
 Row-block and progressive-processing documents remain valid PipeWireAO design

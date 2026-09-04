@@ -4,7 +4,7 @@
 
 This repository currently owns a small headless PipeWireAO development runner.
 The first executable loads one simulated or recorded complete-frame source,
-one `fgn-native` Calculon graph, and one non-actuating sink from a standard
+one `fgn-native` graph, and one non-actuating sink from a standard
 PipeWire configuration. The active RTCW extension composes multiple existing
 filter-graph instances and exact PipeWire links under the same session
 lifecycle. Named execution groups add selective start and stop control without
@@ -31,8 +31,8 @@ Before making changes, read `docs/README.md` and the relevant active document:
 - PipeWireAO owns generic SPA/PipeWire ndarray transport, the FGN ABI and
   graph host, properties, parameters, metadata, polling, row-block transport,
   and progressive execution.
-- Calculon owns transport-neutral scientific algorithms and portable
-  declarations.
+- Scientific Algorithm packages own transport-neutral implementations and
+  portable declarations.
 - This repository owns only development configuration, exact graph
   realization, basic runner lifecycle, diagnostics, and system-level tests.
 - Device-plugin repositories own camera, deformable-mirror, file-source, and
@@ -58,7 +58,7 @@ worktree changes.
   bundle format to the development runner without an approved scope change.
 - Keep the runner outside frame processing. FGN and PipeWireAO own scheduling,
   buffers, property publication, parameter adoption, and worker mechanisms.
-- Scientists declare ordinary typed Calculon algorithms, ports, properties,
+- Scientists declare ordinary typed Algorithms, ports, properties,
   parameters, shapes, and schemas. They must not write SPA callbacks, raw-
   pointer handling, errno translation, publication machinery, worker code, or
   central adapter-registry entries.
