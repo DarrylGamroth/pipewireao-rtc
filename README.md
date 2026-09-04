@@ -51,8 +51,12 @@ quit
 not reset, reload, or unload the graph. The referenced graph file is the
 complete standard argument object for
 `libpipewire-module-ndarray-filter-chain`; the runner passes it unchanged. The
-maintained integration test materializes the fixture graph files, then creates
-its own unique runtime directory and core name:
+held command continuously revalidates the exact global identities and ndarray
+contracts of declared external endpoints. Loss, replacement, or incompatible
+format mutation moves the session to `FAULT` through the same serialized
+lifecycle dispatcher; cleanup still removes only runner-owned objects.
+The maintained integration test materializes the fixture graph files, then
+creates its own unique runtime directory and core name:
 
 ```sh
 PIPEWIREAO_SPA_PLUGINS_BUILD=/absolute/plugin/build \

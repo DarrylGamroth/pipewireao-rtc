@@ -58,6 +58,18 @@ enum LinkAdmissionState {
     Failed(String),
 }
 
+struct RequiredExternalPort {
+    global_id: u32,
+    specification: PortSpec,
+}
+
+struct RequiredExternalEndpoint {
+    role: ObjectRole,
+    node_name: String,
+    global_id: u32,
+    ports: Vec<RequiredExternalPort>,
+}
+
 /// Adapter for one private or explicitly named `PipeWireAO` core.
 pub struct LiveGraphAdapter {
     modules: Vec<pw::local_module::LocalModule>,
@@ -66,6 +78,7 @@ pub struct LiveGraphAdapter {
     active_nodes: Vec<LiveNode>,
     owned_node_names: Vec<String>,
     required_node_names: Vec<String>,
+    required_external_endpoints: Vec<RequiredExternalEndpoint>,
     start_order: Vec<String>,
     sink_names: Vec<String>,
     execution_group_nodes: BTreeMap<String, Vec<String>>,
@@ -145,6 +158,7 @@ impl LiveGraphAdapter {
             active_nodes: Vec::new(),
             owned_node_names: Vec::new(),
             required_node_names: Vec::new(),
+            required_external_endpoints: Vec::new(),
             start_order: Vec::new(),
             sink_names: Vec::new(),
             execution_group_nodes: BTreeMap::new(),
@@ -254,17 +268,9 @@ impl LiveGraphAdapter {
             }
         }
 
-        if let Err(error) = self.validate_live_ports(config) {
+        if let Err(error) = self.admit_ports_and_links(config) {
             let _ = self.cleanup();
             return Err(error);
-        }
-        // Admit links downstream-first so no source can publish into a
-        // partially realized processing path.
-        for (index, link) in config.links_downstream_first() {
-            if let Err(error) = self.create_link(index, &link.output, &link.input, link.passive) {
-                let _ = self.cleanup();
-                return Err(error);
-            }
         }
 
         self.status.owned_nodes = self.count_owned_nodes();
@@ -287,6 +293,20 @@ impl LiveGraphAdapter {
             );
             let _ = self.cleanup();
             return Err(diagnostic);
+        }
+        Ok(())
+    }
+
+    fn admit_ports_and_links(
+        &mut self,
+        config: &DevelopmentConfig,
+    ) -> Result<(), ScientificDiagnostic> {
+        self.validate_live_ports(config)?;
+        self.required_external_endpoints = self.capture_required_external_endpoints(config)?;
+        // Admit links downstream-first so no source can publish into a
+        // partially realized processing path.
+        for (index, link) in config.links_downstream_first() {
+            self.create_link(index, &link.output, &link.input, link.passive)?;
         }
         Ok(())
     }
@@ -507,20 +527,13 @@ impl LiveGraphAdapter {
 
         self.spa_nodes.clear();
         self.modules.clear();
-        if let Err(error) = self.roundtrip("runner-owned node cleanup") {
+        if let Err(error) = self.wait_for_owned_nodes_removed() {
             first_error.get_or_insert(error);
         }
         self.status = LiveGraphStatus::default();
-        if self.count_owned_nodes() != 0 {
-            first_error.get_or_insert_with(|| {
-                ScientificDiagnostic::new(
-                    "cleanup",
-                    "one or more runner-owned nodes remain visible after unload",
-                )
-            });
-        }
         self.owned_node_names.clear();
         self.required_node_names.clear();
+        self.required_external_endpoints.clear();
         self.start_order.clear();
         self.sink_names.clear();
         self.execution_group_nodes.clear();
@@ -531,6 +544,31 @@ impl LiveGraphAdapter {
             Some(error) => Err(error),
             None => Ok(()),
         }
+    }
+
+    fn wait_for_owned_nodes_removed(&self) -> Result<(), ScientificDiagnostic> {
+        for _ in 0..100 {
+            self.roundtrip("runner-owned node cleanup")?;
+            if self.count_owned_nodes() == 0 {
+                return Ok(());
+            }
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+        let remaining = self
+            .owned_node_names
+            .iter()
+            .filter(|name| {
+                self.globals
+                    .borrow()
+                    .values()
+                    .any(|global| is_node_named(global, name))
+            })
+            .cloned()
+            .collect::<Vec<_>>();
+        Err(ScientificDiagnostic::new(
+            "cleanup",
+            format!("runner-owned nodes remain visible after unload: {remaining:?}"),
+        ))
     }
 
     fn load_owned_module(
@@ -1038,6 +1076,121 @@ impl LiveGraphAdapter {
         Ok(())
     }
 
+    fn capture_required_external_endpoints(
+        &self,
+        config: &DevelopmentConfig,
+    ) -> Result<Vec<RequiredExternalEndpoint>, ScientificDiagnostic> {
+        let expected = config
+            .sources
+            .iter()
+            .filter(|object| object.realization.is_external())
+            .map(|object| (ObjectRole::Source, &object.node_name, &object.ports))
+            .chain(
+                config
+                    .sinks
+                    .iter()
+                    .filter(|object| object.realization.is_external())
+                    .map(|object| (ObjectRole::Sink, &object.node_name, &object.ports)),
+            );
+        expected
+            .map(|(role, node_name, ports)| {
+                let node = self.node_global(node_name)?;
+                let ports = ports
+                    .iter()
+                    .map(|specification| {
+                        let port = self.port_global(
+                            node.id,
+                            &specification.name,
+                            specification.direction,
+                        )?;
+                        Ok(RequiredExternalPort {
+                            global_id: port.id,
+                            specification: specification.clone(),
+                        })
+                    })
+                    .collect::<Result<Vec<_>, ScientificDiagnostic>>()?;
+                Ok(RequiredExternalEndpoint {
+                    role,
+                    node_name: node_name.clone(),
+                    global_id: node.id,
+                    ports,
+                })
+            })
+            .collect()
+    }
+
+    fn check_external_endpoint_contracts(&mut self) -> Result<(), ScientificDiagnostic> {
+        if self.required_external_endpoints.is_empty() {
+            return Ok(());
+        }
+        self.clear_errors();
+        let synchronization_error = self.roundtrip("required external endpoint monitor").err();
+        for endpoint in &self.required_external_endpoints {
+            let node = self
+                .globals
+                .borrow()
+                .get(&endpoint.global_id)
+                .map(GlobalObject::to_owned)
+                .filter(|global| is_node_named(global, &endpoint.node_name))
+                .ok_or_else(|| {
+                    ScientificDiagnostic::new(
+                        format!("{} {}.node.name", endpoint.role.name(), endpoint.node_name),
+                        format!(
+                            "required external node {} disappeared or was replaced",
+                            endpoint.global_id
+                        ),
+                    )
+                })?;
+            for required_port in &endpoint.ports {
+                let specification = &required_port.specification;
+                let port = self
+                    .globals
+                    .borrow()
+                    .get(&required_port.global_id)
+                    .map(GlobalObject::to_owned)
+                    .filter(|global| {
+                        if global.type_ != ObjectType::Port {
+                            return false;
+                        }
+                        let Some(properties) = global.props.as_ref() else {
+                            return false;
+                        };
+                        let direction = match specification.direction {
+                            PortDirection::Input => "in",
+                            PortDirection::Output => "out",
+                        };
+                        properties.get("node.id") == Some(node.id.to_string().as_str())
+                            && properties.get("port.direction") == Some(direction)
+                            && properties.get("port.name").is_some_and(|name| {
+                                name == specification.name
+                                    || name.ends_with(&format!(":{}", specification.name))
+                            })
+                    })
+                    .ok_or_else(|| {
+                        ScientificDiagnostic::new(
+                            format!(
+                                "{} {}.ports.{}",
+                                endpoint.role.name(),
+                                endpoint.node_name,
+                                specification.name
+                            ),
+                            format!(
+                                "required external port {} disappeared, was replaced, or changed identity",
+                                required_port.global_id
+                            ),
+                        )
+                    })?;
+                let format =
+                    self.enumerate_port_format(endpoint.role, &specification.name, &port)?;
+                validate_ndarray_port(&format, endpoint.role, specification)?;
+            }
+        }
+        match synchronization_error {
+            Some(error) => Err(error),
+            None => Ok(()),
+        }
+    }
+
     fn enumerate_port_format(
         &self,
         role: ObjectRole,
@@ -1529,6 +1682,10 @@ impl EffectExecutor for LiveGraphAdapter {
                 Ok(LifecycleEffectSuccess::Completed)
             }
         }
+    }
+
+    fn check_required_objects(&mut self) -> Result<(), ScientificDiagnostic> {
+        self.check_external_endpoint_contracts()
     }
 }
 

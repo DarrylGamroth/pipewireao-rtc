@@ -3,11 +3,19 @@ use pipewireao_rtc::{
     ScientificDiagnostic,
 };
 use std::path::PathBuf;
+use std::sync::mpsc::{self, RecvTimeoutError};
+use std::time::Duration;
 
 struct Arguments {
     config: PathBuf,
     remote: String,
     hold: bool,
+}
+
+enum ControlInput {
+    Line(String),
+    End,
+    Failed(String),
 }
 
 fn main() {
@@ -64,18 +72,51 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 
 fn control_session(runner: &mut Runner<LiveGraphAdapter>) -> Result<(), ScientificDiagnostic> {
     println!("Commands: groups, status, stop GROUP, start GROUP, quit");
-    loop {
-        print!("pipewireao-rtc> ");
-        std::io::Write::flush(&mut std::io::stdout()).map_err(|error| {
-            ScientificDiagnostic::new("command", format!("cannot flush prompt: {error}"))
-        })?;
+    let (sender, receiver) = mpsc::channel();
+    std::thread::spawn(move || loop {
         let mut input = String::new();
-        let bytes = std::io::stdin().read_line(&mut input).map_err(|error| {
-            ScientificDiagnostic::new("command", format!("cannot read control command: {error}"))
-        })?;
-        if bytes == 0 {
-            return Ok(());
+        match std::io::stdin().read_line(&mut input) {
+            Ok(0) => {
+                let _ = sender.send(ControlInput::End);
+                return;
+            }
+            Ok(_) => {
+                if sender.send(ControlInput::Line(input)).is_err() {
+                    return;
+                }
+            }
+            Err(error) => {
+                let _ = sender.send(ControlInput::Failed(error.to_string()));
+                return;
+            }
         }
+    });
+    print_prompt()?;
+    loop {
+        let input = match receiver.recv_timeout(Duration::from_millis(100)) {
+            Ok(ControlInput::Line(input)) => input,
+            Ok(ControlInput::End) | Err(RecvTimeoutError::Disconnected) => return Ok(()),
+            Ok(ControlInput::Failed(error)) => {
+                return Err(ScientificDiagnostic::new(
+                    "command",
+                    format!("cannot read control command: {error}"),
+                ));
+            }
+            Err(RecvTimeoutError::Timeout) => {
+                let state = runner.poll_required_objects().map_err(|error| {
+                    ScientificDiagnostic::new("lifecycle dispatcher", error.to_string())
+                })?;
+                if state == LifecycleState::Fault {
+                    return Err(runner.diagnostic().cloned().unwrap_or_else(|| {
+                        ScientificDiagnostic::new(
+                            "required object",
+                            "required-object monitoring reached FAULT",
+                        )
+                    }));
+                }
+                continue;
+            }
+        };
         let fields = input.split_whitespace().collect::<Vec<_>>();
         match fields.as_slice() {
             [] => {}
@@ -95,7 +136,15 @@ fn control_session(runner: &mut Runner<LiveGraphAdapter>) -> Result<(), Scientif
             )?,
             _ => eprintln!("expected groups, status, stop GROUP, start GROUP, or quit"),
         }
+        print_prompt()?;
     }
+}
+
+fn print_prompt() -> Result<(), ScientificDiagnostic> {
+    print!("pipewireao-rtc> ");
+    std::io::Write::flush(&mut std::io::stdout()).map_err(|error| {
+        ScientificDiagnostic::new("command", format!("cannot flush prompt: {error}"))
+    })
 }
 
 fn dispatch_group(

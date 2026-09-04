@@ -5,7 +5,7 @@ mod fits_discard;
 
 use pipewireao_rtc::{
     ConfigurationInput, ExecutionGroupState, LifecycleEvent, LifecycleState, LiveGraphAdapter,
-    Runner,
+    Runner, ScientificDiagnostic,
 };
 use std::collections::BTreeMap;
 use std::io::Write;
@@ -36,6 +36,15 @@ struct SessionCase<'a> {
     links: usize,
     sinks: &'a [&'a str],
     groups: &'a [(&'a str, &'a str)],
+}
+
+struct EndpointFaultCase<'a> {
+    label: &'a str,
+    running: bool,
+    request_name: &'a str,
+    confirmation: &'a str,
+    expected_field: &'a str,
+    surviving_endpoint: &'a str,
 }
 
 #[test]
@@ -308,6 +317,22 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
         &core_name,
         temporary.path(),
     );
+    run_external_endpoint_fault_cases(
+        &repository,
+        &hil_package,
+        &pipewire_build,
+        &environment,
+        &core_name,
+        temporary.path(),
+    );
+    run_external_endpoint_admission_failures(
+        &repository,
+        &hil_package,
+        &pipewire_build,
+        &environment,
+        &core_name,
+        temporary.path(),
+    );
 
     drop(unrelated);
     drop(core);
@@ -436,28 +461,18 @@ fn run_external_endpoint_case(
     temporary: &Path,
 ) {
     assert!(hil_package.join("Project.toml").is_file());
-    let phase_1_request = temporary.join("external-hil-phase-1");
-    let phase_2_request = temporary.join("external-hil-phase-2");
-    let stop_file = temporary.join("stop-external-hil");
-    let provider_log = temporary.join("external-hil.log");
-    let log = std::fs::File::create(&provider_log).expect("external HIL log");
-    let provider = command_with_environment("julia", environment)
-        .args([
-            "--startup-file=no",
-            "--threads=2",
-            &format!("--project={}", hil_package.display()),
-        ])
-        .arg(repository.join("tests/live_private_core/external_hil_provider.jl"))
-        .args([
-            core_name,
-            temporary.to_str().expect("UTF-8 control directory"),
-        ])
-        .stdout(Stdio::from(log.try_clone().unwrap()))
-        .stderr(Stdio::from(log))
-        .spawn()
-        .expect("start external HIL provider");
-    let mut provider = ChildGuard(provider);
-    wait_for_text(&mut provider.0, &provider_log, "EXTERNAL_HIL_READY");
+    let control = temporary.join("external-normal");
+    let (mut provider, provider_log) = launch_external_provider(
+        repository,
+        hil_package,
+        environment,
+        core_name,
+        &control,
+        "external_hil_provider.jl",
+    );
+    let phase_1_request = control.join("external-hil-phase-1");
+    let phase_2_request = control.join("external-hil-phase-2");
+    let stop_file = control.join("stop-external-hil");
     wait_for_dump(
         pipewire_build,
         environment,
@@ -528,6 +543,343 @@ fn run_external_endpoint_case(
     assert!(!after.contains("pipewireao-rtc-graph"));
 
     stop_provider(&mut provider, &stop_file, &provider_log, "external HIL");
+}
+
+fn run_external_endpoint_fault_cases(
+    repository: &Path,
+    hil_package: &Path,
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+    temporary: &Path,
+) {
+    let cases = [
+        EndpointFaultCase {
+            label: "ready-source-loss",
+            running: false,
+            request_name: "close-external-hil-source",
+            confirmation: "EXTERNAL_HIL_SOURCE_CLOSED",
+            expected_field: "source pipewireao-rtc-external-source.node.name",
+            surviving_endpoint: "pipewireao-rtc-external-sink",
+        },
+        EndpointFaultCase {
+            label: "running-sink-loss",
+            running: true,
+            request_name: "close-external-hil-sink",
+            confirmation: "EXTERNAL_HIL_SINK_CLOSED",
+            expected_field: "sink pipewireao-rtc-external-sink.node.name",
+            surviving_endpoint: "pipewireao-rtc-external-source",
+        },
+        EndpointFaultCase {
+            label: "ready-source-format",
+            running: false,
+            request_name: "mutate-external-hil-source",
+            confirmation: "EXTERNAL_HIL_SOURCE_MUTATED",
+            expected_field: "source.ports.output_1.shape",
+            surviving_endpoint: "pipewireao-rtc-external-sink",
+        },
+        EndpointFaultCase {
+            label: "running-sink-format",
+            running: true,
+            request_name: "mutate-external-hil-sink",
+            confirmation: "EXTERNAL_HIL_SINK_MUTATED",
+            expected_field: "sink.ports.input_1.shape",
+            surviving_endpoint: "pipewireao-rtc-external-source",
+        },
+    ];
+
+    for case in cases {
+        run_external_endpoint_fault_case(
+            repository,
+            hil_package,
+            pipewire_build,
+            environment,
+            core_name,
+            temporary,
+            &case,
+        );
+    }
+}
+
+fn run_external_endpoint_fault_case(
+    repository: &Path,
+    hil_package: &Path,
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+    temporary: &Path,
+    case: &EndpointFaultCase<'_>,
+) {
+    let control = temporary.join(case.label);
+    let (mut provider, provider_log) = launch_external_provider(
+        repository,
+        hil_package,
+        environment,
+        core_name,
+        &control,
+        "external_contract_provider.jl",
+    );
+    wait_for_dump(
+        pipewire_build,
+        environment,
+        core_name,
+        "pipewireao-rtc-external-source",
+    );
+    wait_for_dump(
+        pipewire_build,
+        environment,
+        core_name,
+        "pipewireao-rtc-external-sink",
+    );
+
+    let adapter = LiveGraphAdapter::connect(core_name).expect("connect endpoint-fault session");
+    let mut runner = Runner::new(adapter);
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Load(ConfigurationInput::File(
+                repository.join("fixtures/external-development.conf"),
+            )))
+            .unwrap(),
+        LifecycleState::Ready,
+        "{} load diagnostic: {:?}",
+        case.label,
+        runner.diagnostic(),
+    );
+    if case.running {
+        assert_eq!(
+            runner.dispatch(LifecycleEvent::Start).unwrap(),
+            LifecycleState::Running,
+            "{} start diagnostic: {:?}",
+            case.label,
+            runner.diagnostic(),
+        );
+    }
+
+    std::fs::write(control.join(case.request_name), "fault\n").unwrap();
+    wait_for_text(&mut provider.0, &provider_log, case.confirmation);
+    assert_eq!(
+        runner.poll_required_objects().unwrap(),
+        LifecycleState::Fault,
+        "{} did not enter FAULT",
+        case.label,
+    );
+    assert_eq!(
+        runner.diagnostic().map(ScientificDiagnostic::field),
+        Some(case.expected_field),
+        "{} diagnostic: {:?}",
+        case.label,
+        runner.diagnostic(),
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Unload).unwrap(),
+        LifecycleState::Offline,
+        "{} unload diagnostic: {:?}",
+        case.label,
+        runner.diagnostic(),
+    );
+    let after = dump(pipewire_build, environment, core_name);
+    assert!(after.contains(case.surviving_endpoint));
+    assert!(after.contains("pipewireao-rtc-unrelated"));
+    assert!(!after.contains("pipewireao-rtc-graph"));
+
+    stop_provider(
+        &mut provider,
+        &control.join("stop-external-hil"),
+        &provider_log,
+        case.label,
+    );
+}
+
+fn run_external_endpoint_admission_failures(
+    repository: &Path,
+    hil_package: &Path,
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+    temporary: &Path,
+) {
+    run_missing_endpoint_retry(
+        repository,
+        hil_package,
+        pipewire_build,
+        environment,
+        core_name,
+        &temporary.join("external-missing"),
+    );
+    run_duplicate_endpoint_retry(
+        repository,
+        hil_package,
+        pipewire_build,
+        environment,
+        core_name,
+        temporary,
+    );
+}
+
+fn run_missing_endpoint_retry(
+    repository: &Path,
+    hil_package: &Path,
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+    control: &Path,
+) {
+    let adapter = LiveGraphAdapter::connect(core_name).expect("connect missing-endpoint session");
+    let mut runner = Runner::new(adapter);
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Load(ConfigurationInput::File(
+                repository.join("fixtures/external-development.conf"),
+            )))
+            .unwrap(),
+        LifecycleState::Fault,
+    );
+    assert_eq!(
+        runner.diagnostic().map(ScientificDiagnostic::field),
+        Some("source.node.name")
+    );
+    let failed_dump = dump(pipewire_build, environment, core_name);
+    assert!(failed_dump.contains("pipewireao-rtc-unrelated"));
+    assert!(!failed_dump.contains("pipewireao-rtc-graph"));
+
+    let (mut provider, provider_log) = launch_external_provider(
+        repository,
+        hil_package,
+        environment,
+        core_name,
+        control,
+        "external_contract_provider.jl",
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Retry).unwrap(),
+        LifecycleState::Ready,
+        "missing-endpoint retry diagnostic: {:?}",
+        runner.diagnostic(),
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Unload).unwrap(),
+        LifecycleState::Offline,
+    );
+    assert_external_nodes_survive(pipewire_build, environment, core_name);
+    stop_provider(
+        &mut provider,
+        &control.join("stop-external-hil"),
+        &provider_log,
+        "missing-endpoint retry",
+    );
+}
+
+fn run_duplicate_endpoint_retry(
+    repository: &Path,
+    hil_package: &Path,
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+    temporary: &Path,
+) {
+    let primary_control = temporary.join("external-duplicate-primary");
+    let duplicate_control = temporary.join("external-duplicate-second");
+    let (mut primary, primary_log) = launch_external_provider(
+        repository,
+        hil_package,
+        environment,
+        core_name,
+        &primary_control,
+        "external_contract_provider.jl",
+    );
+    let (mut duplicate, duplicate_log) = launch_external_provider(
+        repository,
+        hil_package,
+        environment,
+        core_name,
+        &duplicate_control,
+        "external_contract_provider.jl",
+    );
+
+    let adapter = LiveGraphAdapter::connect(core_name).expect("connect duplicate-endpoint session");
+    let mut runner = Runner::new(adapter);
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Load(ConfigurationInput::File(
+                repository.join("fixtures/external-development.conf"),
+            )))
+            .unwrap(),
+        LifecycleState::Fault,
+    );
+    assert_eq!(
+        runner.diagnostic().map(ScientificDiagnostic::field),
+        Some("source.node.name")
+    );
+    stop_provider(
+        &mut duplicate,
+        &duplicate_control.join("stop-external-hil"),
+        &duplicate_log,
+        "duplicate external HIL",
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Retry).unwrap(),
+        LifecycleState::Ready,
+        "duplicate-endpoint retry diagnostic: {:?}",
+        runner.diagnostic(),
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Unload).unwrap(),
+        LifecycleState::Offline,
+    );
+    assert_external_nodes_survive(pipewire_build, environment, core_name);
+    stop_provider(
+        &mut primary,
+        &primary_control.join("stop-external-hil"),
+        &primary_log,
+        "primary external HIL",
+    );
+}
+
+fn assert_external_nodes_survive(
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+) {
+    let after = dump(pipewire_build, environment, core_name);
+    assert!(after.contains("pipewireao-rtc-external-source"));
+    assert!(after.contains("pipewireao-rtc-external-sink"));
+    assert!(after.contains("pipewireao-rtc-unrelated"));
+    assert!(!after.contains("pipewireao-rtc-graph"));
+}
+
+fn launch_external_provider(
+    repository: &Path,
+    hil_package: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+    control: &Path,
+    provider_script: &str,
+) -> (ChildGuard, PathBuf) {
+    std::fs::create_dir_all(control).unwrap();
+    let provider_log = control.join("external-hil.log");
+    let log = std::fs::File::create(&provider_log).expect("external HIL log");
+    let provider = command_with_environment("julia", environment)
+        .args([
+            "--startup-file=no",
+            "--threads=2",
+            &format!("--project={}", hil_package.display()),
+        ])
+        .arg(
+            repository
+                .join("tests/live_private_core")
+                .join(provider_script),
+        )
+        .args([
+            core_name,
+            control.to_str().expect("UTF-8 control directory"),
+        ])
+        .stdout(Stdio::from(log.try_clone().unwrap()))
+        .stderr(Stdio::from(log))
+        .spawn()
+        .expect("start external HIL provider");
+    let mut provider = ChildGuard(provider);
+    wait_for_text(&mut provider.0, &provider_log, "EXTERNAL_HIL_READY");
+    (provider, provider_log)
 }
 
 fn stop_provider(provider: &mut ChildGuard, stop_file: &Path, log: &Path, label: &str) {
