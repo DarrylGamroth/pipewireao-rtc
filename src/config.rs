@@ -71,16 +71,34 @@ pub enum EndpointFactory {
     FormatAgnosticDiscardSink,
 }
 
+/// Authority to change the run state of an externally owned node.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum RunControl {
+    Session,
+    Application,
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ObjectRealization<F> {
     Factory(F),
-    External,
+    External { run_control: RunControl },
 }
 
 impl<F> ObjectRealization<F> {
     #[must_use]
     pub const fn is_external(&self) -> bool {
-        matches!(self, Self::External)
+        matches!(self, Self::External { .. })
+    }
+
+    #[must_use]
+    pub const fn is_session_controlled(&self) -> bool {
+        matches!(
+            self,
+            Self::Factory(_)
+                | Self::External {
+                    run_control: RunControl::Session
+                }
+        )
     }
 }
 
@@ -221,7 +239,7 @@ impl DevelopmentConfig {
         if self.graphs.is_empty() {
             return Err(ScientificDiagnostic::new(
                 "graphs",
-                "at least one fgn-native graph is required",
+                "at least one processing graph is required",
             ));
         }
         if self.sinks.is_empty() {
@@ -277,7 +295,10 @@ impl DevelopmentConfig {
 
     #[must_use]
     pub fn owned_object_count(&self) -> usize {
-        self.graphs.len()
+        self.graphs
+            .iter()
+            .filter(|object| !object.realization.is_external())
+            .count()
             + self
                 .sources
                 .iter()
@@ -296,7 +317,12 @@ impl DevelopmentConfig {
             .iter()
             .filter(|object| !object.realization.is_external())
             .map(|object| object.node_name.as_str())
-            .chain(self.graphs.iter().map(|object| object.node_name.as_str()))
+            .chain(
+                self.graphs
+                    .iter()
+                    .filter(|object| !object.realization.is_external())
+                    .map(|object| object.node_name.as_str()),
+            )
             .chain(
                 self.sinks
                     .iter()
@@ -313,6 +339,12 @@ impl DevelopmentConfig {
             .filter(|object| object.realization.is_external())
             .map(|object| object.node_name.as_str())
             .chain(
+                self.graphs
+                    .iter()
+                    .filter(|object| object.realization.is_external())
+                    .map(|object| object.node_name.as_str()),
+            )
+            .chain(
                 self.sinks
                     .iter()
                     .filter(|object| object.realization.is_external())
@@ -322,11 +354,28 @@ impl DevelopmentConfig {
     }
 
     #[must_use]
-    pub fn owned_topological_node_names(&self) -> Vec<String> {
-        let owned = self.owned_node_names().into_iter().collect::<BTreeSet<_>>();
+    pub fn session_controlled_topological_node_names(&self) -> Vec<String> {
+        let controlled = self
+            .sources
+            .iter()
+            .filter(|object| object.realization.is_session_controlled())
+            .map(|object| object.node_name.as_str())
+            .chain(
+                self.graphs
+                    .iter()
+                    .filter(|object| object.realization.is_session_controlled())
+                    .map(|object| object.node_name.as_str()),
+            )
+            .chain(
+                self.sinks
+                    .iter()
+                    .filter(|object| object.realization.is_session_controlled())
+                    .map(|object| object.node_name.as_str()),
+            )
+            .collect::<BTreeSet<_>>();
         self.topological_node_names()
             .into_iter()
-            .filter(|name| owned.contains(name.as_str()))
+            .filter(|name| controlled.contains(name.as_str()))
             .collect()
     }
 
@@ -458,11 +507,8 @@ impl DevelopmentConfig {
 }
 
 fn validate_execution_groups(config: &DevelopmentConfig) -> Result<(), ScientificDiagnostic> {
-    if config.execution_groups.is_empty() {
-        return Err(ScientificDiagnostic::new(
-            "execution-groups",
-            "at least one execution group is required",
-        ));
+    if !requires_execution_groups(config)? {
+        return Ok(());
     }
 
     let node_names = config.node_names().into_iter().collect::<BTreeSet<_>>();
@@ -471,9 +517,25 @@ fn validate_execution_groups(config: &DevelopmentConfig) -> Result<(), Scientifi
         .iter()
         .map(|graph| graph.node_name.as_str())
         .collect::<BTreeSet<_>>();
-    let external_names = config
-        .externally_owned_node_names()
-        .into_iter()
+    let application_controlled_names = config
+        .sources
+        .iter()
+        .filter(|object| !object.realization.is_session_controlled())
+        .map(|object| object.node_name.as_str())
+        .chain(
+            config
+                .graphs
+                .iter()
+                .filter(|object| !object.realization.is_session_controlled())
+                .map(|object| object.node_name.as_str()),
+        )
+        .chain(
+            config
+                .sinks
+                .iter()
+                .filter(|object| !object.realization.is_session_controlled())
+                .map(|object| object.node_name.as_str()),
+        )
         .collect::<BTreeSet<_>>();
     let mut names = BTreeSet::new();
     let mut membership = BTreeMap::<&str, &str>::new();
@@ -508,10 +570,10 @@ fn validate_execution_groups(config: &DevelopmentConfig) -> Result<(), Scientifi
                     format!("session node {member:?} is not declared"),
                 ));
             }
-            if external_names.contains(member.as_str()) {
+            if application_controlled_names.contains(member.as_str()) {
                 return Err(ScientificDiagnostic::new(
                     member_field,
-                    "external HIL endpoint lifecycle remains application-owned",
+                    "application-controlled external node cannot belong to an execution group",
                 ));
             }
             if let Some(previous) = membership.insert(member, &group.name) {
@@ -527,16 +589,30 @@ fn validate_execution_groups(config: &DevelopmentConfig) -> Result<(), Scientifi
         if !contains_graph {
             return Err(ScientificDiagnostic::new(
                 format!("{field}.nodes"),
-                "execution group must contain at least one fgn-native graph",
+                "execution group must contain at least one session-controlled processing graph",
             ));
         }
     }
 
+    validate_required_group_membership(config, &membership)
+}
+
+fn validate_required_group_membership(
+    config: &DevelopmentConfig,
+    membership: &BTreeMap<&str, &str>,
+) -> Result<(), ScientificDiagnostic> {
     for graph in &config.graphs {
-        if !membership.contains_key(graph.node_name.as_str()) {
+        let membership = membership.get(graph.node_name.as_str());
+        if graph.realization.is_session_controlled() && membership.is_none() {
             return Err(ScientificDiagnostic::new(
                 format!("graph {}.execution-group", graph.node_name),
-                "every fgn-native graph must belong to exactly one execution group",
+                "every session-controlled processing graph must belong to exactly one execution group",
+            ));
+        }
+        if !graph.realization.is_session_controlled() && membership.is_some() {
+            return Err(ScientificDiagnostic::new(
+                format!("graph {}.execution-group", graph.node_name),
+                "application-controlled external graph must not belong to an execution group",
             ));
         }
     }
@@ -552,6 +628,24 @@ fn validate_execution_groups(config: &DevelopmentConfig) -> Result<(), Scientifi
         }
     }
     Ok(())
+}
+
+fn requires_execution_groups(config: &DevelopmentConfig) -> Result<bool, ScientificDiagnostic> {
+    let has_session_controlled_graph = config
+        .graphs
+        .iter()
+        .any(|graph| graph.realization.is_session_controlled());
+    match (has_session_controlled_graph, config.execution_groups.is_empty()) {
+        (true, true) => Err(ScientificDiagnostic::new(
+            "execution-groups",
+            "at least one execution group is required",
+        )),
+        (false, false) => Err(ScientificDiagnostic::new(
+            "execution-groups",
+            "application-controlled external graphs must not be placed in a controlled execution group",
+        )),
+        (required, _) => Ok(required),
+    }
 }
 
 fn validate_source(
@@ -592,7 +686,15 @@ fn validate_source(
         ObjectRealization::Factory(EndpointFactory::FormatAgnosticDiscardSink) => {
             unreachable!("source allowlist")
         }
-        ObjectRealization::External => validate_external_endpoint(source, field),
+        ObjectRealization::External {
+            run_control: RunControl::Application,
+        } => validate_external_object(source, field),
+        ObjectRealization::External {
+            run_control: RunControl::Session,
+        } => Err(ScientificDiagnostic::new(
+            format!("{field}.run-control"),
+            "external source run control remains application-owned",
+        )),
     }
 }
 
@@ -600,31 +702,30 @@ fn validate_graph(
     graph: &ObjectSpec<GraphFactory>,
     field: &str,
 ) -> Result<(), ScientificDiagnostic> {
-    if graph.realization != ObjectRealization::Factory(GraphFactory::FgnNative) {
-        return Err(ScientificDiagnostic::new(
-            format!("{field}.factory"),
-            "graph must use the fgn-native factory",
-        ));
-    }
-    validate_required_module(field, graph.module.as_deref(), FILTER_CHAIN_MODULE)?;
     validate_ports(
         field,
         &graph.ports,
         &[PortDirection::Input, PortDirection::Output],
     )?;
-    reject_plugin_path(field, graph.plugin_path.as_deref())?;
-    validate_configuration_reference(
-        &format!("{field}.config.path"),
-        graph.configuration_path.as_deref(),
-        "PIPEWIREAO_RTC_GRAPH_",
-    )?;
-    if graph.arguments.is_empty() {
-        Ok(())
-    } else {
-        Err(ScientificDiagnostic::new(
-            format!("{field}.args"),
-            "the graph uses its delegated filter.graph configuration, not RTC-rendered arguments",
-        ))
+    match graph.realization {
+        ObjectRealization::Factory(GraphFactory::FgnNative) => {
+            validate_required_module(field, graph.module.as_deref(), FILTER_CHAIN_MODULE)?;
+            reject_plugin_path(field, graph.plugin_path.as_deref())?;
+            validate_configuration_reference(
+                &format!("{field}.config.path"),
+                graph.configuration_path.as_deref(),
+                "PIPEWIREAO_RTC_GRAPH_",
+            )?;
+            if graph.arguments.is_empty() {
+                Ok(())
+            } else {
+                Err(ScientificDiagnostic::new(
+                    format!("{field}.args"),
+                    "the graph uses its delegated filter.graph configuration, not RTC-rendered arguments",
+                ))
+            }
+        }
+        ObjectRealization::External { .. } => validate_external_object(graph, field),
     }
 }
 
@@ -652,29 +753,37 @@ fn validate_sink(
                 ))
             }
         }
-        ObjectRealization::External => validate_external_endpoint(sink, field),
+        ObjectRealization::External {
+            run_control: RunControl::Application,
+        } => validate_external_object(sink, field),
+        ObjectRealization::External {
+            run_control: RunControl::Session,
+        } => Err(ScientificDiagnostic::new(
+            format!("{field}.run-control"),
+            "external sink run control remains application-owned",
+        )),
         ObjectRealization::Factory(_) => unreachable!("sink allowlist"),
     }
 }
 
-fn validate_external_endpoint<F>(
-    endpoint: &ObjectSpec<F>,
+fn validate_external_object<F>(
+    object: &ObjectSpec<F>,
     field: &str,
 ) -> Result<(), ScientificDiagnostic> {
-    if endpoint.module.is_some() {
+    if object.module.is_some() {
         return Err(ScientificDiagnostic::new(
             format!("{field}.module"),
-            "external HIL endpoint must not declare a runner-loaded module",
+            "external object must not declare a runner-loaded module",
         ));
     }
-    reject_plugin_path(field, endpoint.plugin_path.as_deref())?;
-    reject_configuration_path(field, endpoint.configuration_path.as_deref())?;
-    if endpoint.arguments.is_empty() {
+    reject_plugin_path(field, object.plugin_path.as_deref())?;
+    reject_configuration_path(field, object.configuration_path.as_deref())?;
+    if object.arguments.is_empty() {
         Ok(())
     } else {
         Err(ScientificDiagnostic::new(
             format!("{field}.args"),
-            "external HIL endpoint takes no runner-rendered arguments",
+            "external object takes no runner-rendered arguments",
         ))
     }
 }

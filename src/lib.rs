@@ -9,7 +9,8 @@ mod runner;
 
 pub use config::{
     DevelopmentConfig, EndpointFactory, ExecutionGroupSpec, GraphFactory, LinkSpec,
-    ObjectRealization, ObjectRole, ObjectSpec, PortDirection, PortSpec, ScientificDiagnostic,
+    ObjectRealization, ObjectRole, ObjectSpec, PortDirection, PortSpec, RunControl,
+    ScientificDiagnostic,
 };
 pub use lifecycle::{
     ConfigurationInput, DispatchError, DispatchOutcome, EffectKind, EffectOrigin, EffectTarget,

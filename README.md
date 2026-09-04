@@ -1,9 +1,10 @@
 # PipeWireAO RTC
 
-`pipewireao-rtc` is the small headless development runner for FGN graphs on
-PipeWireAO. It loads one or more simulated or recorded sources, existing
-native ndarray filter graphs, non-actuating sinks, and exact ordinary PipeWire
-links from a standard PipeWire configuration. Serial graphs, one-source
+`pipewireao-rtc` is the small headless development runner for processing graphs
+on PipeWireAO. It loads one or more simulated or recorded sources, existing
+native or externally owned ndarray filter graphs, non-actuating sinks, and
+exact ordinary PipeWire links from a standard PipeWire configuration. Serial
+graphs, one-source
 fan-out, and independent paths share one session lifecycle without adding
 another graph-authoring format or scheduler. Named execution groups can pause
 and resume a whole chain or one independent branch while the session remains
@@ -15,7 +16,9 @@ runs recorded FITS vectors through minimal, serial, forked, and independent
 `fgn-native` graph sessions into generic discard sinks. It also discovers an
 externally launched AdaptiveOpticsSim HIL source and sink and closes a
 deterministic Shack–Hartmann SCAO loop through an RTC-owned FGN graph. The
-runner does not load or execute Julia. Physical devices, correction authority,
+runner can also admit an externally owned processing node by its PipeWire
+contracts and an explicit run-control grant; it does not load or execute Julia.
+Physical devices, correction authority,
 recording, in-process Julia graph execution, remote operation, progressive
 scheduling, and real-time qualification are deliberately deferred.
 
@@ -52,7 +55,7 @@ not reset, reload, or unload the graph. The referenced graph file is the
 complete standard argument object for
 `libpipewire-module-ndarray-filter-chain`; the runner passes it unchanged. The
 held command continuously revalidates the exact global identities and ndarray
-contracts of declared external endpoints. Loss, replacement, or incompatible
+contracts of declared external objects. Loss, replacement, or incompatible
 format mutation moves the session to `FAULT` through the same serialized
 lifecycle dispatcher; cleanup still removes only runner-owned objects.
 The maintained integration test materializes the fixture graph files, then

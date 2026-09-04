@@ -1,7 +1,8 @@
 use super::{
     DevelopmentConfig, EndpointFactory, ExecutionGroupSpec, GraphFactory, LinkSpec,
-    ObjectRealization, ObjectRole, ObjectSpec, PortDirection, PortSpec, ScientificDiagnostic,
-    FITS_SOURCE_FACTORY, GRAPH_FACTORY, SIMULATED_SOURCE_FACTORY, SINK_FACTORY,
+    ObjectRealization, ObjectRole, ObjectSpec, PortDirection, PortSpec, RunControl,
+    ScientificDiagnostic, FITS_SOURCE_FACTORY, GRAPH_FACTORY, SIMULATED_SOURCE_FACTORY,
+    SINK_FACTORY,
 };
 use crate::ffi::spa_json::{Cursor, SyntaxError, Token};
 use std::collections::BTreeMap;
@@ -67,6 +68,7 @@ pub(super) fn development_config(text: &str) -> Result<DevelopmentConfig, Scient
 struct DecodedObject {
     factory: Option<String>,
     ownership: Option<String>,
+    run_control: Option<String>,
     module: Option<String>,
     node_name: String,
     plugin_path: Option<String>,
@@ -103,9 +105,23 @@ fn endpoint(
                     "external endpoint must not declare a runner-created factory",
                 ));
             }
-            ObjectRealization::External
+            if object.run_control.is_some() {
+                return Err(ScientificDiagnostic::new(
+                    format!("{field}.run-control"),
+                    "external source and sink run control remains application-owned",
+                ));
+            }
+            ObjectRealization::External {
+                run_control: RunControl::Application,
+            }
         }
         None | Some("runner") => {
+            if object.run_control.is_some() {
+                return Err(ScientificDiagnostic::new(
+                    format!("{field}.run-control"),
+                    "runner-owned endpoint does not take an external run-control grant",
+                ));
+            }
             let Some(name) = object.factory.as_deref() else {
                 return Err(ScientificDiagnostic::new(
                     format!("{field}.factory"),
@@ -151,26 +167,58 @@ fn graph_object(
     field: &str,
 ) -> Result<ObjectSpec<GraphFactory>, ScientificDiagnostic> {
     let object = object_spec(token, field)?;
-    if object
-        .ownership
-        .as_deref()
-        .is_some_and(|value| value != "runner")
-    {
-        return Err(ScientificDiagnostic::new(
-            format!("{field}.ownership"),
-            "fgn-native graph ownership must be runner",
-        ));
-    }
-    if object.factory.as_deref() != Some(GRAPH_FACTORY) {
-        return Err(ScientificDiagnostic::new(
-            format!("{field}.factory"),
-            format!(
-                "expected the fgn-native factory {GRAPH_FACTORY:?}, got {:?}",
-                object.factory
-            ),
-        ));
-    }
-    Ok(object.with_realization(ObjectRealization::Factory(GraphFactory::FgnNative)))
+    let realization = match object.ownership.as_deref() {
+        Some("external") => {
+            if object.factory.is_some() {
+                return Err(ScientificDiagnostic::new(
+                    format!("{field}.factory"),
+                    "external graph must not declare a runner-created factory",
+                ));
+            }
+            let run_control = match object.run_control.as_deref() {
+                Some("session") => RunControl::Session,
+                Some("application") => RunControl::Application,
+                Some(value) => {
+                    return Err(ScientificDiagnostic::new(
+                        format!("{field}.run-control"),
+                        format!("run-control must be session or application, got {value:?}"),
+                    ));
+                }
+                None => {
+                    return Err(ScientificDiagnostic::new(
+                        format!("{field}.run-control"),
+                        "external graph must declare its run-control grant",
+                    ));
+                }
+            };
+            ObjectRealization::External { run_control }
+        }
+        None | Some("runner") => {
+            if object.run_control.is_some() {
+                return Err(ScientificDiagnostic::new(
+                    format!("{field}.run-control"),
+                    "runner-owned graph does not take an external run-control grant",
+                ));
+            }
+            if object.factory.as_deref() != Some(GRAPH_FACTORY) {
+                return Err(ScientificDiagnostic::new(
+                    format!("{field}.factory"),
+                    format!(
+                        "expected the fgn-native factory {GRAPH_FACTORY:?}, got {:?}",
+                        object.factory
+                    ),
+                ));
+            }
+            ObjectRealization::Factory(GraphFactory::FgnNative)
+        }
+        Some(value) => {
+            return Err(ScientificDiagnostic::new(
+                format!("{field}.ownership"),
+                format!("ownership must be runner or external, got {value:?}"),
+            ));
+        }
+    };
+    Ok(object.with_realization(realization))
 }
 
 fn endpoint_array(
@@ -201,6 +249,7 @@ fn object_spec(token: Token<'_>, field: &str) -> Result<DecodedObject, Scientifi
     let mut object = Object::token(token, field)?;
     let mut factory = None;
     let mut ownership = None;
+    let mut run_control = None;
     let mut module = None;
     let mut node_name = None;
     let mut plugin_path = None;
@@ -212,6 +261,7 @@ fn object_spec(token: Token<'_>, field: &str) -> Result<DecodedObject, Scientifi
         match name.as_str() {
             "factory" => assign(&mut factory, value, &format!("{field}.factory"))?,
             "ownership" => assign(&mut ownership, value, &format!("{field}.ownership"))?,
+            "run-control" => assign(&mut run_control, value, &format!("{field}.run-control"))?,
             "module" => assign(&mut module, value, &format!("{field}.module"))?,
             "node.name" => assign(&mut node_name, value, &format!("{field}.node.name"))?,
             "plugin.path" => assign(&mut plugin_path, value, &format!("{field}.plugin.path"))?,
@@ -232,6 +282,9 @@ fn object_spec(token: Token<'_>, field: &str) -> Result<DecodedObject, Scientifi
             .transpose()?,
         ownership: ownership
             .map(|token| scalar(token, &format!("{field}.ownership")))
+            .transpose()?,
+        run_control: run_control
+            .map(|token| scalar(token, &format!("{field}.run-control")))
             .transpose()?,
         module: module
             .map(|token| scalar(token, &format!("{field}.module")))

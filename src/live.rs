@@ -38,6 +38,7 @@ pub struct LiveGraphStatus {
 
 struct LiveNode {
     name: String,
+    global_id: u32,
     _listener: pw::node::NodeListener,
     proxy: pw::node::Node,
     state: Rc<RefCell<String>>,
@@ -63,7 +64,7 @@ struct RequiredExternalPort {
     specification: PortSpec,
 }
 
-struct RequiredExternalEndpoint {
+struct RequiredExternalObject {
     role: ObjectRole,
     node_name: String,
     global_id: u32,
@@ -78,7 +79,7 @@ pub struct LiveGraphAdapter {
     active_nodes: Vec<LiveNode>,
     owned_node_names: Vec<String>,
     required_node_names: Vec<String>,
-    required_external_endpoints: Vec<RequiredExternalEndpoint>,
+    required_external_objects: Vec<RequiredExternalObject>,
     start_order: Vec<String>,
     sink_names: Vec<String>,
     execution_group_nodes: BTreeMap<String, Vec<String>>,
@@ -158,7 +159,7 @@ impl LiveGraphAdapter {
             active_nodes: Vec::new(),
             owned_node_names: Vec::new(),
             required_node_names: Vec::new(),
-            required_external_endpoints: Vec::new(),
+            required_external_objects: Vec::new(),
             start_order: Vec::new(),
             sink_names: Vec::new(),
             execution_group_nodes: BTreeMap::new(),
@@ -212,7 +213,7 @@ impl LiveGraphAdapter {
             .map(str::to_owned)
             .collect();
         self.required_node_names = config.node_names().into_iter().map(str::to_owned).collect();
-        self.start_order = config.owned_topological_node_names();
+        self.start_order = config.session_controlled_topological_node_names();
         self.sink_names = config
             .sinks
             .iter()
@@ -302,7 +303,7 @@ impl LiveGraphAdapter {
         config: &DevelopmentConfig,
     ) -> Result<(), ScientificDiagnostic> {
         self.validate_live_ports(config)?;
-        self.required_external_endpoints = self.capture_required_external_endpoints(config)?;
+        self.required_external_objects = self.capture_required_external_objects(config)?;
         // Admit links downstream-first so no source can publish into a
         // partially realized processing path.
         for (index, link) in config.links_downstream_first() {
@@ -338,13 +339,23 @@ impl LiveGraphAdapter {
 
     fn stop(&mut self) -> Result<(), ScientificDiagnostic> {
         self.clear_errors();
-        for node in &self.active_nodes {
-            node.proxy
-                .send_command(&pw::spa::node::command::NodeCommand::new(
-                    pw::spa::node::command::NodeCommandId::PAUSE,
-                ));
+        let mut commanded = false;
+        {
+            let globals = self.globals.borrow();
+            for node in &self.active_nodes {
+                if globals
+                    .get(&node.global_id)
+                    .is_some_and(|global| is_node_named(global, &node.name))
+                {
+                    node.proxy
+                        .send_command(&pw::spa::node::command::NodeCommand::new(
+                            pw::spa::node::command::NodeCommandId::PAUSE,
+                        ));
+                    commanded = true;
+                }
+            }
         }
-        if !self.active_nodes.is_empty() {
+        if commanded {
             self.roundtrip("stop complete-frame session")?;
             self.status.discarded_by_sink = self.wait_for_discard_quiescence()?;
             self.status.discarded_buffers = self.status.discarded_by_sink.values().sum();
@@ -451,6 +462,7 @@ impl LiveGraphAdapter {
             ));
             self.active_nodes.push(LiveNode {
                 name: node_name.clone(),
+                global_id: global.id,
                 _listener: listener,
                 proxy: node,
                 state,
@@ -533,7 +545,7 @@ impl LiveGraphAdapter {
         self.status = LiveGraphStatus::default();
         self.owned_node_names.clear();
         self.required_node_names.clear();
-        self.required_external_endpoints.clear();
+        self.required_external_objects.clear();
         self.start_order.clear();
         self.sink_names.clear();
         self.execution_group_nodes.clear();
@@ -638,8 +650,8 @@ impl LiveGraphAdapter {
             ObjectRealization::Factory(EndpointFactory::FormatAgnosticDiscardSink) => {
                 unreachable!("validated source cannot use a sink factory")
             }
-            ObjectRealization::External => {
-                self.wait_for_external_endpoint(ObjectRole::Source, &source.node_name)
+            ObjectRealization::External { .. } => {
+                self.wait_for_external_object(ObjectRole::Source, &source.node_name)
             }
         }
     }
@@ -649,19 +661,26 @@ impl LiveGraphAdapter {
         graph: &ObjectSpec<GraphFactory>,
         field: &str,
     ) -> Result<(), ScientificDiagnostic> {
-        let arguments = read_module_arguments(
-            &format!("{field}.config.path"),
-            graph
-                .configuration_path
-                .as_deref()
-                .expect("graph configuration was validated"),
-        )?;
-        self.load_owned_module(
-            ObjectRole::Graph,
-            graph.module.as_deref().expect("graph module was validated"),
-            &arguments,
-            &graph.node_name,
-        )
+        match graph.realization {
+            ObjectRealization::Factory(GraphFactory::FgnNative) => {
+                let arguments = read_module_arguments(
+                    &format!("{field}.config.path"),
+                    graph
+                        .configuration_path
+                        .as_deref()
+                        .expect("graph configuration was validated"),
+                )?;
+                self.load_owned_module(
+                    ObjectRole::Graph,
+                    graph.module.as_deref().expect("graph module was validated"),
+                    &arguments,
+                    &graph.node_name,
+                )
+            }
+            ObjectRealization::External { .. } => {
+                self.wait_for_external_object(ObjectRole::Graph, &graph.node_name)
+            }
+        }
     }
 
     fn create_sink(
@@ -680,8 +699,8 @@ impl LiveGraphAdapter {
                 )?;
                 self.create_owned_spa_sink(sink, field, &plugin)
             }
-            ObjectRealization::External => {
-                self.wait_for_external_endpoint(ObjectRole::Sink, &sink.node_name)
+            ObjectRealization::External { .. } => {
+                self.wait_for_external_object(ObjectRole::Sink, &sink.node_name)
             }
             ObjectRealization::Factory(_) => unreachable!("validated sink factory"),
         }
@@ -707,7 +726,7 @@ impl LiveGraphAdapter {
                 "factory.name",
                 match sink.realization {
                     ObjectRealization::Factory(factory) => factory.configured_name(),
-                    ObjectRealization::External => unreachable!("owned SPA sink"),
+                    ObjectRealization::External { .. } => unreachable!("owned SPA sink"),
                 },
             ),
             ("library.name", DISCARD_LIBRARY),
@@ -732,7 +751,7 @@ impl LiveGraphAdapter {
                         "PipeWire spa-node-factory rejected {:?}: {error}",
                         match sink.realization {
                             ObjectRealization::Factory(factory) => factory.configured_name(),
-                            ObjectRealization::External => unreachable!("owned SPA sink"),
+                            ObjectRealization::External { .. } => unreachable!("owned SPA sink"),
                         }
                     ),
                 )
@@ -772,7 +791,7 @@ impl LiveGraphAdapter {
         let mut properties = PropertiesBox::new();
         let factory = match source.realization {
             ObjectRealization::Factory(factory) => factory,
-            ObjectRealization::External => unreachable!("owned SPA source"),
+            ObjectRealization::External { .. } => unreachable!("owned SPA source"),
         };
         properties.insert("factory.name", factory.configured_name());
         properties.insert("node.name", source.node_name.as_str());
@@ -844,7 +863,7 @@ impl LiveGraphAdapter {
         ))
     }
 
-    fn wait_for_external_endpoint(
+    fn wait_for_external_object(
         &self,
         role: ObjectRole,
         node_name: &str,
@@ -1076,15 +1095,22 @@ impl LiveGraphAdapter {
         Ok(())
     }
 
-    fn capture_required_external_endpoints(
+    fn capture_required_external_objects(
         &self,
         config: &DevelopmentConfig,
-    ) -> Result<Vec<RequiredExternalEndpoint>, ScientificDiagnostic> {
+    ) -> Result<Vec<RequiredExternalObject>, ScientificDiagnostic> {
         let expected = config
             .sources
             .iter()
             .filter(|object| object.realization.is_external())
             .map(|object| (ObjectRole::Source, &object.node_name, &object.ports))
+            .chain(
+                config
+                    .graphs
+                    .iter()
+                    .filter(|object| object.realization.is_external())
+                    .map(|object| (ObjectRole::Graph, &object.node_name, &object.ports)),
+            )
             .chain(
                 config
                     .sinks
@@ -1109,7 +1135,7 @@ impl LiveGraphAdapter {
                         })
                     })
                     .collect::<Result<Vec<_>, ScientificDiagnostic>>()?;
-                Ok(RequiredExternalEndpoint {
+                Ok(RequiredExternalObject {
                     role,
                     node_name: node_name.clone(),
                     global_id: node.id,
@@ -1119,29 +1145,29 @@ impl LiveGraphAdapter {
             .collect()
     }
 
-    fn check_external_endpoint_contracts(&mut self) -> Result<(), ScientificDiagnostic> {
-        if self.required_external_endpoints.is_empty() {
+    fn check_external_object_contracts(&mut self) -> Result<(), ScientificDiagnostic> {
+        if self.required_external_objects.is_empty() {
             return Ok(());
         }
         self.clear_errors();
-        let synchronization_error = self.roundtrip("required external endpoint monitor").err();
-        for endpoint in &self.required_external_endpoints {
+        let synchronization_error = self.roundtrip("required external object monitor").err();
+        for object in &self.required_external_objects {
             let node = self
                 .globals
                 .borrow()
-                .get(&endpoint.global_id)
+                .get(&object.global_id)
                 .map(GlobalObject::to_owned)
-                .filter(|global| is_node_named(global, &endpoint.node_name))
+                .filter(|global| is_node_named(global, &object.node_name))
                 .ok_or_else(|| {
                     ScientificDiagnostic::new(
-                        format!("{} {}.node.name", endpoint.role.name(), endpoint.node_name),
+                        format!("{} {}.node.name", object.role.name(), object.node_name),
                         format!(
                             "required external node {} disappeared or was replaced",
-                            endpoint.global_id
+                            object.global_id
                         ),
                     )
                 })?;
-            for required_port in &endpoint.ports {
+            for required_port in &object.ports {
                 let specification = &required_port.specification;
                 let port = self
                     .globals
@@ -1170,8 +1196,8 @@ impl LiveGraphAdapter {
                         ScientificDiagnostic::new(
                             format!(
                                 "{} {}.ports.{}",
-                                endpoint.role.name(),
-                                endpoint.node_name,
+                                object.role.name(),
+                                object.node_name,
                                 specification.name
                             ),
                             format!(
@@ -1180,9 +1206,8 @@ impl LiveGraphAdapter {
                             ),
                         )
                     })?;
-                let format =
-                    self.enumerate_port_format(endpoint.role, &specification.name, &port)?;
-                validate_ndarray_port(&format, endpoint.role, specification)?;
+                let format = self.enumerate_port_format(object.role, &specification.name, &port)?;
+                validate_ndarray_port(&format, object.role, specification)?;
             }
         }
         match synchronization_error {
@@ -1685,7 +1710,7 @@ impl EffectExecutor for LiveGraphAdapter {
     }
 
     fn check_required_objects(&mut self) -> Result<(), ScientificDiagnostic> {
-        self.check_external_endpoint_contracts()
+        self.check_external_object_contracts()
     }
 }
 

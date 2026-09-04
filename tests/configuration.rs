@@ -1,4 +1,4 @@
-use pipewireao_rtc::DevelopmentConfig;
+use pipewireao_rtc::{DevelopmentConfig, ObjectRealization, RunControl};
 
 const MINIMAL: &str = include_str!("../fixtures/minimal-development.conf");
 const SERIAL: &str = include_str!("../fixtures/serial-development.conf");
@@ -7,6 +7,7 @@ const INDEPENDENT: &str = include_str!("../fixtures/independent-development.conf
 const EXTERNAL: &str = include_str!("../fixtures/external-development.conf");
 const AOS_HIL: &str = include_str!("../fixtures/aos-hil-development.conf");
 const AOS_HIL_ATMOSPHERE: &str = include_str!("../fixtures/aos-hil-atmosphere-development.conf");
+const EXTERNAL_GRAPH: &str = include_str!("../fixtures/external-graph-development.conf");
 
 fn replace_once(document: &str, before: &str, after: &str) -> String {
     assert!(
@@ -110,6 +111,100 @@ fn external_endpoints_are_selected_by_pipewire_contract_not_implementation() {
     let error = DevelopmentConfig::parse(&implementation_specific)
         .expect_err("implementation identity is not part of the RTC contract");
     assert_eq!(error.field(), "sources[0].adapter");
+}
+
+#[test]
+fn external_processing_graph_requires_explicit_ownership_and_run_control() {
+    let config = DevelopmentConfig::parse(EXTERNAL_GRAPH).expect("external processing graph");
+    assert_eq!(config.object_count(), 3);
+    assert_eq!(config.owned_object_count(), 2);
+    assert_eq!(
+        config.externally_owned_node_names(),
+        ["pipewireao-rtc-external-graph"]
+    );
+    assert_eq!(
+        config.session_controlled_topological_node_names(),
+        [
+            "pipewireao-rtc-source",
+            "pipewireao-rtc-external-graph",
+            "pipewireao-rtc-sink"
+        ]
+    );
+
+    for (before, after, field) in [
+        (
+            "run-control = session",
+            "run-control = inherited",
+            "graphs[0].run-control",
+        ),
+        (
+            "            run-control = session\n",
+            "",
+            "graphs[0].run-control",
+        ),
+        (
+            "run-control = session",
+            "run-control = session\n            factory = pipewireao.fgn-native",
+            "graphs[0].factory",
+        ),
+        (
+            "node.name = pipewireao-rtc-external-graph",
+            "implementation = JuliaFilterGraph\n            node.name = pipewireao-rtc-external-graph",
+            "graphs[0].implementation",
+        ),
+        (
+            "node.name = pipewireao-rtc-external-graph",
+            "module = should-not-load\n            node.name = pipewireao-rtc-external-graph",
+            "graphs[0].module",
+        ),
+    ] {
+        let error = DevelopmentConfig::parse(&replace_once(EXTERNAL_GRAPH, before, after))
+            .expect_err("invalid external graph declaration");
+        assert_eq!(error.field(), field, "configuration mutation: {after}");
+    }
+
+    let application_controlled = replace_once(
+        &replace_once(EXTERNAL_GRAPH, "run-control = session", "run-control = application"),
+        "execution-groups = [\n        {\n            name = main\n            nodes = [ pipewireao-rtc-source pipewireao-rtc-external-graph pipewireao-rtc-sink ]\n        }\n    ]",
+        "execution-groups = []",
+    );
+    let config = DevelopmentConfig::parse(&application_controlled)
+        .expect("application-controlled external graph");
+    assert_eq!(
+        config.session_controlled_topological_node_names(),
+        ["pipewireao-rtc-source", "pipewireao-rtc-sink"]
+    );
+    assert!(config.execution_groups.is_empty());
+
+    let grouped_application_control = replace_once(
+        EXTERNAL_GRAPH,
+        "run-control = session",
+        "run-control = application",
+    );
+    let error = DevelopmentConfig::parse(&grouped_application_control)
+        .expect_err("application-controlled graph in execution group");
+    assert_eq!(error.field(), "execution-groups");
+}
+
+#[test]
+fn typed_configuration_cannot_grant_session_control_to_external_endpoints() {
+    let mut config = DevelopmentConfig::parse(AOS_HIL).expect("AOS HIL configuration");
+    config.sources[0].realization = ObjectRealization::External {
+        run_control: RunControl::Session,
+    };
+    let error = config
+        .validate()
+        .expect_err("external source remains application-controlled");
+    assert_eq!(error.field(), "sources[0].run-control");
+
+    let mut config = DevelopmentConfig::parse(AOS_HIL).expect("AOS HIL configuration");
+    config.sinks[0].realization = ObjectRealization::External {
+        run_control: RunControl::Session,
+    };
+    let error = config
+        .validate()
+        .expect_err("external sink remains application-controlled");
+    assert_eq!(error.field(), "sinks[0].run-control");
 }
 
 #[test]

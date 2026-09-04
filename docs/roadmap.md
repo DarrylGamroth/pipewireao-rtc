@@ -181,6 +181,26 @@ command failure reach `FAULT`; retry succeeds; and unload removes only
 RTC-owned links. This proves an implementation-independent RTC component, not a
 runner-hosted Julia execution service.
 
+The runner-side portion is now partial. Standard configuration can declare an
+externally owned processing graph with explicit `session` or `application` run
+control. The live adapter admits its exact public node and port identities,
+controls a session-granted graph through ordinary PipeWire start and pause
+commands, retains it across stop and unload, detects identity loss, cleans stale
+proxies without commanding vanished objects, and retries against a replacement.
+The private-core test exercises those behaviors with an externally owned FGN
+instance so the runner path is covered independently of implementation.
+
+The maintained `FilterGraphPipeWire.PipeWireNode` substitution remains blocked
+at its exact ndarray boundary. The current Julia graph host requires and
+publishes `ColumnMajor` ports, while the matching maintained FGN role and
+rank-one FITS source publish `RowMajor`; PipeWire correctly rejects the
+mismatch before `READY`. No public `FilterGraphPipeWire` construction option
+can select a row-major external boundary. The narrowest viable lower-level
+change is a row-major boundary option for rank-one ports, whose packed memory
+order is identical, with direct binding tests. General multidimensional layout
+conversion would be a materially larger capability and is not implied by this
+increment.
+
 ### 3. Add the REVOLT Classic simulated plant
 
 - keep `REVOLTClassicSim.jl` free of PipeWireAO and wrap its prepared HIL
@@ -258,7 +278,7 @@ or correction-critical suitability.
 | RTC-DEV-013 | 2 | implemented | validated | Generic external source/sink ownership and exact configuration validation pass without implementation-specific admission. The live RTC snapshots admitted global identities, revalidates both ndarray contracts outside lifecycle handlers, and routes source or sink loss, replacement, and incompatible mutation from `READY` or `RUNNING` to `FAULT` through its sole dispatcher. The private-core matrix rejects missing and duplicate endpoints, retries after correction, removes or mutates each endpoint, removes only the RTC graph and links on unload, preserves the other external node and an unrelated object, and separately proves that both external nodes survive normal unload |
 | RTC-DEV-014 | 2 | implemented | validated | The separate integration package implements bounded complete-frame exchange, acquisition-to-model-time conversion, and an explicit command-response window. Its private-core suite rejects zero, stale, duplicate, future, missing, short, non-finite, wrong-shape, and wrong-schema commands without advancing the plant. The RTC SCAO fixture exchanges sequences 1 through 15 against a direct lockstep oracle; nonzero command 1 leaves frame 1 unchanged and first appears in frame 2. Both suites pass against integration-package commit `cfbcc0d` |
 | RTC-DEV-015 | 2 | implemented | validated | The private-core deterministic Shack–Hartmann fixture discovers external AOS nodes, generates an ordinary centroid → reconstructor → integrator FGN graph from a directly measured interaction matrix, and completes both flat and seeded four-layer-atmosphere cases. The flat case preserves the graph across stop/restart after sequence 7 and completes sequence 15 with direct DM-surface causality and residual convergence. The atmospheric case preserves the graph across stop/restart after sequence 10 and completes sequence 20; every WFS frame, atmosphere OPD, DM-surface OPD, pupil OPD, and transported command matches its direct oracle at declared tolerances, mean closed-loop Strehl exceeds 0.5 and improves by more than 3× over open loop, and mean pupil OPD RMS improves. Both cases unload to `OFFLINE`, remove runner-owned objects, preserve external and unrelated nodes, and run without a GUI |
-| RTC-DEV-016 | 2b | planned | missing | External `FilterGraphPipeWire` processing-node admission, explicit run-control grant, lifecycle and execution-group control, fault recovery, cleanup ownership, and FGN-equivalence evidence |
+| RTC-DEV-016 | 2b | partial | partial | Generic external processing-node admission, explicit session/application run control, live public start/pause, stop/restart object preservation, identity-loss fault, replacement retry, and ownership-safe unload pass with an externally owned FGN node. The required `FilterGraphPipeWire` fixture and FGN numerical/state equivalence remain blocked because its public node boundary is column-major while the matching FGN and FITS contracts are row-major |
 | RTC-DEV-017 | 3 | planned | missing | External REVOLT Classic 352-by-352 WFS and 277-element HSDM277 HIL boundary, FGN and JuliaFilterGraph controller variants, sequence causality, direct numerical oracle, lifecycle, and cleanup evidence |
 
 Implementation and evidence state remain separate when this table is updated.

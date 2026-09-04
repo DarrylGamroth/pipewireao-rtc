@@ -170,6 +170,15 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
     environment.insert("PIPEWIREAO_RTC_FITS_PATH_INDEPENDENT_B".to_owned(), fits_b);
     let aos_graph = graph_directory.join("aos-hil.conf");
     environment.insert("PIPEWIREAO_RTC_GRAPH_AOS_HIL".to_owned(), aos_graph.clone());
+    let external_fgn_graph = graph_directory.join("external-owned.conf");
+    write_graph_configuration(
+        &external_fgn_graph,
+        &fgn_bundle,
+        &core_name,
+        "pipewireao-rtc-external-graph",
+        EXCITATION_SCHEMA,
+        COMMAND_SCHEMA,
+    );
     for (name, value) in &environment {
         std::env::set_var(name, value);
     }
@@ -290,6 +299,14 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
         );
     }
 
+    run_external_processing_graph_case(
+        &repository,
+        &pipewire_build,
+        &environment,
+        &core_name,
+        &external_fgn_graph,
+    );
+
     let hil_package = std::env::var_os("PIPEWIREAO_RTC_AOS_HIL_PACKAGE").map_or_else(
         || {
             workspace
@@ -336,6 +353,180 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
 
     drop(unrelated);
     drop(core);
+}
+
+fn run_external_processing_graph_case(
+    repository: &Path,
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+    graph_configuration: &Path,
+) {
+    let provider = launch_external_fgn(pipewire_build, environment, core_name, graph_configuration);
+    wait_for_dump(
+        pipewire_build,
+        environment,
+        core_name,
+        "pipewireao-rtc-external-graph",
+    );
+
+    let adapter = LiveGraphAdapter::connect(core_name).expect("connect external graph session");
+    let mut runner = Runner::new(adapter);
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Load(ConfigurationInput::File(
+                repository.join("fixtures/external-graph-development.conf"),
+            )))
+            .unwrap(),
+        LifecycleState::Ready,
+        "external graph load diagnostic: {:?}",
+        runner.diagnostic(),
+    );
+    assert_eq!(runner.executor().status().owned_nodes, 2);
+    assert_eq!(runner.executor().status().owned_links, 2);
+    let external_before = dump(pipewire_build, environment, core_name);
+    assert!(external_before.contains("pipewireao-rtc-external-graph"));
+
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Start).unwrap(),
+        LifecycleState::Running,
+        "external graph start diagnostic: {:?}",
+        runner.diagnostic(),
+    );
+    let first_count = runner.executor().status().discarded_buffers;
+    assert!(first_count > 0);
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Stop).unwrap(),
+        LifecycleState::Ready,
+        "external graph stop diagnostic: {:?}",
+        runner.diagnostic(),
+    );
+    assert!(dump(pipewire_build, environment, core_name).contains("pipewireao-rtc-external-graph"));
+
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Start).unwrap(),
+        LifecycleState::Running,
+        "external graph restart diagnostic: {:?}",
+        runner.diagnostic(),
+    );
+    assert!(runner.executor().status().discarded_buffers > first_count);
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Stop).unwrap(),
+        LifecycleState::Ready,
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Unload).unwrap(),
+        LifecycleState::Offline,
+    );
+    let after_unload = dump(pipewire_build, environment, core_name);
+    assert!(after_unload.contains("pipewireao-rtc-external-graph"));
+    assert!(after_unload.contains("pipewireao-rtc-unrelated"));
+    assert!(!after_unload.contains("pipewireao-rtc-source"));
+    assert!(!after_unload.contains("pipewireao-rtc-sink"));
+
+    drop(provider);
+    wait_for_dump_absent(
+        pipewire_build,
+        environment,
+        core_name,
+        "pipewireao-rtc-external-graph",
+    );
+
+    run_external_processing_graph_fault_case(
+        repository,
+        pipewire_build,
+        environment,
+        core_name,
+        graph_configuration,
+    );
+}
+
+fn run_external_processing_graph_fault_case(
+    repository: &Path,
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+    graph_configuration: &Path,
+) {
+    let provider = launch_external_fgn(pipewire_build, environment, core_name, graph_configuration);
+    let adapter = LiveGraphAdapter::connect(core_name).expect("connect external graph fault case");
+    let mut runner = Runner::new(adapter);
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Load(ConfigurationInput::File(
+                repository.join("fixtures/external-graph-development.conf"),
+            )))
+            .unwrap(),
+        LifecycleState::Ready,
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Start).unwrap(),
+        LifecycleState::Running,
+    );
+    drop(provider);
+    wait_for_dump_absent(
+        pipewire_build,
+        environment,
+        core_name,
+        "pipewireao-rtc-external-graph",
+    );
+    assert_eq!(
+        runner.poll_required_objects().unwrap(),
+        LifecycleState::Fault,
+    );
+    assert_eq!(
+        runner.diagnostic().map(ScientificDiagnostic::field),
+        Some("graph pipewireao-rtc-external-graph.node.name")
+    );
+    assert_eq!(runner.executor().status().owned_nodes, 2);
+    assert_eq!(runner.executor().status().owned_links, 2);
+
+    let replacement =
+        launch_external_fgn(pipewire_build, environment, core_name, graph_configuration);
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Retry).unwrap(),
+        LifecycleState::Ready,
+        "external graph retry diagnostic: {:?}",
+        runner.diagnostic(),
+    );
+    assert_eq!(runner.executor().status().owned_nodes, 2);
+    assert_eq!(runner.executor().status().owned_links, 2);
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Unload).unwrap(),
+        LifecycleState::Offline,
+    );
+    assert!(dump(pipewire_build, environment, core_name).contains("pipewireao-rtc-external-graph"));
+    drop(replacement);
+}
+
+fn launch_external_fgn(
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+    graph_configuration: &Path,
+) -> ChildGuard {
+    let mut provider =
+        command_with_environment(pipewire_build.join("src/tools/pwao-cli"), environment)
+            .args(["-r", core_name])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .expect("start external FGN owner");
+    writeln!(
+        provider.stdin.as_mut().unwrap(),
+        "load-module libpipewire-module-ndarray-filter-chain {}",
+        std::fs::read_to_string(graph_configuration)
+            .expect("read external FGN configuration")
+            .lines()
+            .map(str::trim)
+            .filter(|line| !line.is_empty())
+            .collect::<Vec<_>>()
+            .join(" ")
+    )
+    .unwrap();
+    provider.stdin.as_mut().unwrap().flush().unwrap();
+    ChildGuard(provider)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1272,6 +1463,22 @@ fn wait_for_dump(
         std::thread::sleep(Duration::from_millis(20));
     }
     panic!("private core never exposed {needle}");
+}
+
+fn wait_for_dump_absent(
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+    needle: &str,
+) {
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while Instant::now() < deadline {
+        if !dump(pipewire_build, environment, core_name).contains(needle) {
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    panic!("PipeWire dump still contains {needle:?}");
 }
 
 fn dump(pipewire_build: &Path, environment: &BTreeMap<String, PathBuf>, core_name: &str) -> String {
