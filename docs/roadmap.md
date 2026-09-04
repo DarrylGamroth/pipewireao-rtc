@@ -181,25 +181,36 @@ command failure reach `FAULT`; retry succeeds; and unload removes only
 RTC-owned links. This proves an implementation-independent RTC component, not a
 runner-hosted Julia execution service.
 
-The runner-side portion is now partial. Standard configuration can declare an
+The runner-side admission is implemented. Standard configuration can declare an
 externally owned processing graph with explicit `session` or `application` run
 control. The live adapter admits its exact public node and port identities,
-controls a session-granted graph through ordinary PipeWire start and pause
-commands, retains it across stop and unload, detects identity loss, cleans stale
+sends ordinary PipeWire start and pause commands to a session-granted graph,
+retains it across stop and unload, detects identity loss, cleans stale
 proxies without commanding vanished objects, and retries against a replacement.
 The private-core test exercises those behaviors with an externally owned FGN
-instance so the runner path is covered independently of implementation.
+instance.
 
-The maintained `FilterGraphPipeWire.PipeWireNode` substitution remains blocked
-at its exact ndarray boundary. The current Julia graph host requires and
-publishes `ColumnMajor` ports, while the matching maintained FGN role and
-rank-one FITS source publish `RowMajor`; PipeWire correctly rejects the
-mismatch before `READY`. No public `FilterGraphPipeWire` construction option
-can select a row-major external boundary. The narrowest viable lower-level
-change is a row-major boundary option for rank-one ports, whose packed memory
-order is identical, with direct binding tests. General multidimensional layout
-conversion would be a materially larger capability and is not implied by this
-increment.
+`FilterGraphPipeWire` commit `663b9a8` adds an explicit PipeWire boundary-layout
+option for rank-one ports. Its direct adapter test shows that a graph published
+as row-major continues the leaky-integrator recurrence across deactivate and
+reactivate. Higher-rank layout reinterpretation is rejected, so the former
+layout mismatch is resolved.
+
+The live Julia substitution is blocked at the run-control boundary. The public
+`pw_node` interface exposes `send_command` but no persistent active-state or
+requested-state operation. Owner-local `pw_filter_set_active` and
+`pw_stream_set_active` cannot control another application's node, while
+`pw_impl_node_set_active` is daemon-private and therefore outside the RTC
+boundary. In the private core, `SPA_NODE_COMMAND_Pause` reaches the SPA node but
+does not clear the server's active state, so link demand returns the realized
+graph to `Running` while the RTC reports `READY`. `SPA_NODE_COMMAND_Suspend`
+tears down negotiated buffers and the tested restart fails with `EBUSY`.
+Submitting the complete topology allows the Julia node to negotiate both links,
+but it does not provide the missing persistent stop/start authority. The
+narrowest viable options are a versioned public PipeWire activation operation
+for ordinary nodes, a small implementation-independent owner control contract,
+or an explicit requirement change that permits stop to remove and later
+recreate owned links. The last option would not preserve the realized topology.
 
 ### 3. Add the REVOLT Classic simulated plant
 
@@ -266,19 +277,19 @@ or correction-critical suitability.
 | RTC-DEV-001 | 1 | implemented | validated | The explicit allowlists and negative physical, actuating, correction, progressive, and promoted-claim cases pass before realization; the FITS live fixture reaches `READY` and `RUNNING` without physical authority |
 | RTC-DEV-002 | 1 | implemented | validated | The minimal FITS → graph → discard fixture and field-by-field diagnostics pass; the live adapter validates directions, F32_LE, shape `[2]`, row-major layout, 1000/1 rate, scientific schemas, the discard wildcard, and both links before `RUNNING` |
 | RTC-DEV-003 | 1 | implemented | partial | Deterministic creation-point cleanup and the live exact topology pass; both links are admitted, owned objects are removed, and the unrelated node survives, but live lower-level failure injection after every creation point remains missing |
-| RTC-DEV-004 | 1 | partial | partial | Transition, retry, invalid-command, required-object failure, repeated-cycle, and complete live lifecycle tests pass; explicit live stop and restart work within one load, but the FITS source exposes no public normal-completion signal for automatic return to `READY` |
+| RTC-DEV-004 | 1 | partial | partial | Transition, retry, invalid-command, required-object failure, repeated-cycle, and lifecycle-dispatch tests pass. The FITS source exposes no public normal-completion signal for automatic return to `READY`, and the public ordinary-node interface cannot persistently deactivate the realized non-passive graph, so live `READY` quiescence and durable stop/restart remain incomplete |
 | RTC-DEV-005 | 3 | planned | missing | Requested/active property and parameter update tests |
 | RTC-DEV-006 | 1 and 2 | partial | partial | The private-core runner reaches and remains in its lifecycle without a GUI and rejects an undeclared observation; no suitable bounded non-gating sample boundary is available for attach, detach, and stall evidence |
 | RTC-DEV-007 | 2 and 3 | planned | missing | Deterministic AdaptiveOpticsSim and REVOLT output and state oracles |
 | RTC-DEV-008 | 4 | planned | missing | Package-local declaration examples and ordinary-array tests |
 | RTC-DEV-009 | 1 | implemented | validated | Statig hierarchy, serialized dispatch, typed effects, effect failure, stale-completion rejection, and the full private-core lifecycle pass through the same dispatcher |
 | RTC-DEV-010 | 1c through 1e | implemented | partial | The exact serial, forked, and independent sessions each pass the private-core lifecycle and deliver to every sink; standard graph files are delegated unchanged and PipeWire owns branch execution; deterministic creation-point failure coverage uses the fake adapter, so live lower-level failure injection after every point remains missing |
-| RTC-DEV-011 | 1f | implemented | partial | Valid and invalid execution-group configurations pass; the live serial, fork, and independent fixtures preserve exact objects and links, quiesce the selected sinks, leave unaffected sinks progressing, and resume delivery. PipeWireAO pause/start retains the same FGN instance and does not call its separate reset operation, but accepted numerical output is not observed to prove state continuity |
+| RTC-DEV-011 | 1f | partial | partial | Valid and invalid execution-group configurations and typed control effects pass. The live fixtures preserve exact objects and links and observe short sink-counter quiescence, but `SPA_NODE_COMMAND_Pause` does not persistently clear PipeWire's server-side active state. Durable selective stop/restart and numerical state continuity therefore remain unvalidated pending a public activation contract |
 | RTC-DEV-012 | 1f | implemented | validated | Group start and stop use the one dispatcher and typed token, kind, origin, and group-target completions; mismatch, invalid request, effect failure to `FAULT`, stop/unload/required-failure supersession, late completion, retry, and repeated-cycle tests pass |
 | RTC-DEV-013 | 2 | implemented | validated | Generic external source/sink ownership and exact configuration validation pass without implementation-specific admission. The live RTC snapshots admitted global identities, revalidates both ndarray contracts outside lifecycle handlers, and routes source or sink loss, replacement, and incompatible mutation from `READY` or `RUNNING` to `FAULT` through its sole dispatcher. The private-core matrix rejects missing and duplicate endpoints, retries after correction, removes or mutates each endpoint, removes only the RTC graph and links on unload, preserves the other external node and an unrelated object, and separately proves that both external nodes survive normal unload |
 | RTC-DEV-014 | 2 | implemented | validated | The separate integration package implements bounded complete-frame exchange, acquisition-to-model-time conversion, and an explicit command-response window. Its private-core suite rejects zero, stale, duplicate, future, missing, short, non-finite, wrong-shape, and wrong-schema commands without advancing the plant. The RTC SCAO fixture exchanges sequences 1 through 15 against a direct lockstep oracle; nonzero command 1 leaves frame 1 unchanged and first appears in frame 2. Both suites pass against integration-package commit `cfbcc0d` |
 | RTC-DEV-015 | 2 | implemented | validated | The private-core deterministic Shack–Hartmann fixture discovers external AOS nodes, generates an ordinary centroid → reconstructor → integrator FGN graph from a directly measured interaction matrix, and completes both flat and seeded four-layer-atmosphere cases. The flat case preserves the graph across stop/restart after sequence 7 and completes sequence 15 with direct DM-surface causality and residual convergence. The atmospheric case preserves the graph across stop/restart after sequence 10 and completes sequence 20; every WFS frame, atmosphere OPD, DM-surface OPD, pupil OPD, and transported command matches its direct oracle at declared tolerances, mean closed-loop Strehl exceeds 0.5 and improves by more than 3× over open loop, and mean pupil OPD RMS improves. Both cases unload to `OFFLINE`, remove runner-owned objects, preserve external and unrelated nodes, and run without a GUI |
-| RTC-DEV-016 | 2b | partial | partial | Generic external processing-node admission, explicit session/application run control, live public start/pause, stop/restart object preservation, identity-loss fault, replacement retry, and ownership-safe unload pass with an externally owned FGN node. The required `FilterGraphPipeWire` fixture and FGN numerical/state equivalence remain blocked because its public node boundary is column-major while the matching FGN and FITS contracts are row-major |
+| RTC-DEV-016 | 2b | partial | partial | Generic admission, explicit session/application grants, public start/pause commands, identity-loss fault, replacement retry, and ownership-safe unload pass with an externally owned FGN node. `FilterGraphPipeWire` now publishes the required row-major rank-one boundary, but the public PipeWire node interface has no persistent remote active-state operation. `Pause` is overridden by active graph demand and `Suspend` tears down buffers, so Julia lifecycle and transported-output equivalence are not yet valid |
 | RTC-DEV-017 | 3 | planned | missing | External REVOLT Classic 352-by-352 WFS and 277-element HSDM277 HIL boundary, FGN and JuliaFilterGraph controller variants, sequence causality, direct numerical oracle, lifecycle, and cleanup evidence |
 
 Implementation and evidence state remain separate when this table is updated.
@@ -328,24 +339,26 @@ sibling repository's integration test.
 
 The live test is intentionally ignored by the generic Cargo suite because it
 requires the maintained sibling PipeWireAO and Rust FGN build artifacts. At
-the recorded increment-1 revisions, its explicit invocation passes the
-complete `Load` → `READY` → `Start` →
-`RUNNING` → `Stop` → `READY` → `Start` → `RUNNING` → `Stop` → `READY` →
-`Unload` → `OFFLINE` lifecycle for the minimal, serial, forked, and independent
-sessions. While each session remains `RUNNING`, it also stops and restarts each
-declared execution group, confirms that selected sink delivery quiesces without
-removing nodes or links, and confirms that every unaffected group continues to
-deliver. Before admitting links, it enumerates the public port formats and
+the recorded increment-1 revisions, its explicit invocation exercises the
+requested `Load` → `READY` → `Start` → `RUNNING` → `Stop` → `READY` →
+`Start` → `RUNNING` → `Stop` → `READY` → `Unload` → `OFFLINE` event sequence
+for the minimal, serial, forked, and independent sessions. It also sends stop
+and start requests to individual execution groups, observes a short interval
+without new sink counters, and observes continued delivery in unaffected
+groups. A later direct node-state audit found that `Pause` does not clear the
+server-side active state: the realized nodes can return to `Running` while the
+RTC reports `READY`. The existing counter checks therefore do not validate
+durable stop or `READY` quiescence. Before admitting links, the test enumerates
+the public port formats and
 checks their directions, element types, shapes, layouts, rates, scientific
 schemas, and every discard sink's format wildcard. It then confirms every
 configured node and link through ordinary inspection, a discard-buffer
 increase at every sink after each start, complete owned-object cleanup, and
 preservation of an unrelated node. The test observes delivery to each sink,
-not the numerical contents of output frames. PipeWireAO's ndarray filter-chain
-module maps pause and start to deactivation and activation of the same FGN
-graph instance; its separate graph-reset operation is not invoked. Numerical
-state-continuity evidence therefore remains partial until an admitted
-non-gating output observation can compare accepted values across the pause.
+not the numerical contents of output frames. Numerical state-continuity
+evidence remains partial until durable activation control exists and an
+admitted non-gating output observation can compare accepted values across the
+stop boundary.
 
 The current PipeWireAO SPA plugin working tree provides the discard scheduling
 handshake, stable FITS node and output-port identities, and fixed-string

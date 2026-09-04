@@ -53,7 +53,8 @@ struct EndpointFaultCase<'a> {
 fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
     let repository = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let workspace = repository.parent().expect("workspace parent");
-    let pipewire_build = workspace.join("pipewire/build");
+    let pipewire_build = std::env::var_os("PIPEWIREAO_RTC_PIPEWIRE_BUILD")
+        .map_or_else(|| workspace.join("pipewire/build"), PathBuf::from);
     let plugin_build = std::env::var_os("PIPEWIREAO_SPA_PLUGINS_BUILD").map_or_else(
         || workspace.join("pipewireao-spa-plugins/build"),
         PathBuf::from,
@@ -74,6 +75,8 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
         .unwrap()
         .as_nanos();
     let core_name = format!("pipewireao-rtc-{}-{unique}", std::process::id());
+    let diagnostic_directory = temporary.path().join("diagnostics");
+    std::fs::create_dir_all(&diagnostic_directory).unwrap();
 
     let core_config =
         include_str!("../fixtures/private-core.conf.in").replace("@CORE_NAME@", &core_name);
@@ -184,11 +187,15 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
     }
     std::env::set_var("PIPEWIREAO_DEBUG", "0");
 
+    let core_log = std::fs::File::create(diagnostic_directory.join("private-core.log"))
+        .expect("create private core log");
     let core =
         command_with_environment(pipewire_build.join("src/daemon/pipewire-ao"), &environment)
             .args(["-c", "private-core.conf"])
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
+            .stdout(Stdio::from(
+                core_log.try_clone().expect("clone private core log"),
+            ))
+            .stderr(Stdio::from(core_log))
             .spawn()
             .expect("start private PipeWireAO core");
     let mut core = ChildGuard(core);
