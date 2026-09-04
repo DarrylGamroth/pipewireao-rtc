@@ -56,6 +56,8 @@ its own unique runtime directory and core name:
 
 ```sh
 PIPEWIREAO_SPA_PLUGINS_BUILD=/absolute/plugin/build \
+PIPEWIREAO_RTC_FGN_BUNDLE=/absolute/libcalculon_fgn_bundle.so \
+PIPEWIREAO_RTC_AOS_HIL_PACKAGE=/absolute/AdaptiveOpticsSimPipeWireHIL.jl \
 cargo test --features live --test live_private_core -- --ignored --nocapture
 ```
 

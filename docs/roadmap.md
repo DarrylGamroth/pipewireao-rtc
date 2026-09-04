@@ -230,7 +230,7 @@ or correction-critical suitability.
 | RTC-DEV-011 | 1f | implemented | partial | Valid and invalid execution-group configurations pass; the live serial, fork, and independent fixtures preserve exact objects and links, quiesce the selected sinks, leave unaffected sinks progressing, and resume delivery. PipeWireAO pause/start retains the same FGN instance and does not call its separate reset operation, but accepted numerical output is not observed to prove state continuity |
 | RTC-DEV-012 | 1f | implemented | validated | Group start and stop use the one dispatcher and typed token, kind, origin, and group-target completions; mismatch, invalid request, effect failure to `FAULT`, stop/unload/required-failure supersession, late completion, retry, and repeated-cycle tests pass |
 | RTC-DEV-013 | 2 | partial | partial | Generic external source/sink ownership and exact configuration validation pass without implementation-specific admission; the live RTC validates both external port contracts, creates and activates only its graph and links, removes its owned objects, and preserves both application nodes plus an unrelated object. Live required-endpoint loss and incompatible-mutation evidence remain missing |
-| RTC-DEV-014 | 2 | partial | partial | The separate integration package implements bounded complete-frame exchange and acquisition-to-model-time conversion; unit tests pass, both ordinary nodes publish and clean up on a private core, and connected fixtures complete exact sequences across graph stop/restart. The SCAO fixture exchanges sequences 1 through 15, accepts only finite same-sequence commands, and compares every simulated DM surface with a direct lockstep oracle. Its nonzero command 1 leaves frame 1 unchanged and first appears in frame 2. Connected format and sequence fault injection remains missing |
+| RTC-DEV-014 | 2 | implemented | validated | The separate integration package implements bounded complete-frame exchange, acquisition-to-model-time conversion, and an explicit command-response window. Its private-core suite rejects zero, stale, duplicate, future, missing, short, non-finite, wrong-shape, and wrong-schema commands without advancing the plant. The RTC SCAO fixture exchanges sequences 1 through 15 against a direct lockstep oracle; nonzero command 1 leaves frame 1 unchanged and first appears in frame 2. Both suites pass against integration-package commit `cfbcc0d` |
 | RTC-DEV-015 | 2 | partial | partial | The private-core deterministic Shack–Hartmann fixture discovers two external AOS nodes, generates an ordinary centroid → reconstructor → integrator FGN graph from a directly measured interaction matrix, reaches `READY` and `RUNNING`, preserves its graph across stop/restart after sequence 7, and completes sequence 15. Every transported sequence matches direct DM-surface state; both AOS and FGN residual norms fall below 1% of their initial values; the command reproduces the cancelling command within declared tolerance; unload removes runner-owned objects while preserving external and unrelated nodes without a GUI. The atmospheric case remains missing |
 
 Implementation and evidence state remain separate when this table is updated.
@@ -332,15 +332,16 @@ The public host and the current Rust FGN bundle now use
 PipeWire ndarray formats likewise use the schema as the authoritative payload
 contract and do not carry a second interpretation-profile field. This resolves
 the former ABI-layout blocker without an RTC compatibility shim. The
-deterministic flat-reference SCAO path now supplies initial connected numerical
-evidence. RTC-DEV-013 through RTC-DEV-015 remain partial pending
-required-endpoint failure, connected format and sequence fault injection,
-and the atmospheric reference. The SCAO graph uses the Rust FGN branch through
+deterministic flat-reference SCAO path and the connected fault matrix now
+satisfy RTC-DEV-014. RTC-DEV-013 remains partial pending required-endpoint
+failure evidence, and RTC-DEV-015 remains partial pending the atmospheric
+reference. The SCAO graph uses the Rust FGN branch through
 `4b67841`, including the committed `shack-hartmann-image-f32` graph-rebuild
 `image_schema` binding from `f76b06f` and the schema-authoritative ABI-v7
 adapter. The private-core test selects that exact build-tree bundle through
-`PIPEWIREAO_RTC_FGN_BUNDLE`; it does not depend on the dirty sibling main
-worktree.
+`PIPEWIREAO_RTC_FGN_BUNDLE` and selects the HIL integration package through
+`PIPEWIREAO_RTC_AOS_HIL_PACKAGE`; it does not depend on either dirty sibling
+main worktree.
 
 ## Development completion gate
 

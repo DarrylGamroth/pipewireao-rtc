@@ -281,10 +281,15 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
         );
     }
 
-    let hil_package = workspace
-        .parent()
-        .expect("repository group")
-        .join("AdaptiveOpticsSimPipeWireHIL.jl");
+    let hil_package = std::env::var_os("PIPEWIREAO_RTC_AOS_HIL_PACKAGE").map_or_else(
+        || {
+            workspace
+                .parent()
+                .expect("repository group")
+                .join("AdaptiveOpticsSimPipeWireHIL.jl")
+        },
+        PathBuf::from,
+    );
     run_aos_hil_reference_case(
         &repository,
         &hil_package,
