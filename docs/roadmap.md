@@ -257,14 +257,13 @@ graph instance; its separate graph-reset operation is not invoked. Numerical
 state-continuity evidence therefore remains partial until an admitted
 non-gating output observation can compare accepted values across the pause.
 
-The discard scheduling handshake, stable FITS node and output-port identities,
-and fixed-string negotiation repair are in local PipeWireAO SPA plugins `main`
-at `cc95b806b67439ca9526f49b5e141e2c0c37ed6e`. Factory tests cover two
-distinctly named FITS instances plus direct and `SPA_CHOICE_None`-negotiated
-schema/profile strings. The RTC live result uses those build-tree artifacts
-through `PIPEWIREAO_SPA_PLUGINS_BUILD`; the RTC repository creates, observes,
-and cleans up both its transport preflight and its FITS → graph → discard
-runner topology. This plugin revision is locally committed but not pushed.
+The current PipeWireAO SPA plugin working tree provides the discard scheduling
+handshake, stable FITS node and output-port identities, and fixed-string
+negotiation repair. Factory tests cover two distinctly named FITS instances
+plus direct and `SPA_CHOICE_None`-negotiated schema strings and configured
+source identities. The RTC live result uses those build-tree artifacts through
+`PIPEWIREAO_SPA_PLUGINS_BUILD`; the RTC repository creates, observes, and cleans
+up both its transport preflight and its FITS → graph → discard runner topology.
 
 The FITS source can stop producing when a non-looping file ends, but its public
 node surface does not yet publish a normal finite-source completion event or

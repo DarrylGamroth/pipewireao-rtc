@@ -1309,16 +1309,6 @@ fn validate_ndarray_port(
             format!("expected {:?}, observed {schema:?}", port.schema),
         ));
     }
-    if object
-        .properties
-        .iter()
-        .any(|property| property.key == pw::spa::sys::SPA_FORMAT_NDARRAY_profile)
-    {
-        return Err(ScientificDiagnostic::new(
-            format!("{}.ports.{}.profile", role.name(), port.name),
-            "the increment-1 format must not declare an unconfigured ndarray profile",
-        ));
-    }
     Ok(())
 }
 
