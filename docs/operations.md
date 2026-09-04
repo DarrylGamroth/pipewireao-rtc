@@ -4,7 +4,7 @@ Status: active normative development contract; implementation underway
 
 Applicable profile: `development`
 
-Review date: 2026-09-03
+Review date: 2026-09-04
 
 ## Authority
 
@@ -79,6 +79,11 @@ configuration. It MUST validate declared ports, directions, element types,
 shapes, schemas, scalar properties, ndarray parameters, and links before
 entering `RUNNING`. A rejection MUST identify the scientific object and the
 incompatible or missing field.
+
+The configuration MUST declare one positive complete-frame session rate.
+Every repeated data port MUST negotiate that rate. A declared sparse ndarray
+parameter port does not carry a repeated frame cadence and MUST be validated as
+a parameter rather than rejected for omitting the session rate.
 
 The runner MUST consume standard PipeWire relaxed SPA-JSON or a directly
 equivalent in-memory model emitted by the maintained PipeWireAO generator. It
@@ -487,6 +492,7 @@ The minimum configuration contains only these semantic fields:
 | Field | Meaning |
 | --- | --- |
 | profile | The literal `development` |
+| rate | Positive complete-frame session rate used by repeated data ports |
 | source | Simulated or recorded complete-frame source plus its node arguments |
 | graph | Canonical `fgn-native` graph configuration |
 | sink | Simulated, discard, or other non-actuating sink |

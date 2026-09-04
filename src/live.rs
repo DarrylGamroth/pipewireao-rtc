@@ -805,7 +805,7 @@ impl LiveGraphAdapter {
                 .proxy
                 .set_param(pw::spa::param::ParamType::Props, 0, pod);
         }
-        for _ in 0..100 {
+        for _ in 0..1_000 {
             self.roundtrip(label)?;
             let mut completed = 0;
             for graph in self
@@ -824,10 +824,16 @@ impl LiveGraphAdapter {
             }
             std::thread::sleep(std::time::Duration::from_millis(5));
         }
+        let status_events = self
+            .controlled_graphs
+            .iter()
+            .filter(|graph| graph_names.contains(&graph.name))
+            .map(|graph| (graph.name.as_str(), graph.status_events.borrow().clone()))
+            .collect::<Vec<_>>();
         Err(ScientificDiagnostic::new(
             "run-control",
             format!(
-                "timed out waiting for lifecycle token {wire_token} to reach {requested_state:?} on {graph_names:?}"
+                "timed out waiting for lifecycle token {wire_token} to reach {requested_state:?} on {graph_names:?}; status events {status_events:?}"
             ),
         ))
     }
@@ -1437,7 +1443,7 @@ impl LiveGraphAdapter {
         previous: &BTreeMap<String, u64>,
     ) -> Result<BTreeMap<String, u64>, ScientificDiagnostic> {
         let mut observed = previous.clone();
-        for _ in 0..100 {
+        for _ in 0..1_000 {
             observed = self.discard_buffer_counts()?;
             if previous
                 .iter()
@@ -2022,7 +2028,7 @@ fn validate_ndarray_port(
             format!("expected row-major, observed {:?}", observed.layout()),
         ));
     }
-    if observed.rate() != Some(expected_rate) {
+    if !port.parameter && observed.rate() != Some(expected_rate) {
         return Err(ScientificDiagnostic::new(
             format!("{}.ports.{}.rate", role.name(), port.name),
             format!(
@@ -2050,24 +2056,17 @@ fn validate_ndarray_port(
 }
 
 fn configured_frame_rate(config: &DevelopmentConfig) -> Result<Fraction, ScientificDiagnostic> {
-    let rate = config
-        .sources
-        .iter()
-        .find_map(|source| source.arguments.get("api.fits.rate"))
-        .map_or("1000/1", String::as_str);
-    let (numerator, denominator) = rate.split_once('/').ok_or_else(|| {
-        ScientificDiagnostic::new(
-            "sources.args.api.fits.rate",
-            "invalid configured frame rate",
-        )
-    })?;
+    let rate = config.rate.as_str();
+    let (numerator, denominator) = rate
+        .split_once('/')
+        .ok_or_else(|| ScientificDiagnostic::new("rate", "invalid configured frame rate"))?;
     Ok(Fraction {
-        num: numerator.parse().map_err(|_| {
-            ScientificDiagnostic::new("sources.args.api.fits.rate", "invalid rate numerator")
-        })?,
-        denom: denominator.parse().map_err(|_| {
-            ScientificDiagnostic::new("sources.args.api.fits.rate", "invalid rate denominator")
-        })?,
+        num: numerator
+            .parse()
+            .map_err(|_| ScientificDiagnostic::new("rate", "invalid rate numerator"))?,
+        denom: denominator
+            .parse()
+            .map_err(|_| ScientificDiagnostic::new("rate", "invalid rate denominator"))?,
     })
 }
 

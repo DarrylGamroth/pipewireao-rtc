@@ -1,0 +1,633 @@
+using AdaptiveOpticsSim.AlgorithmGraphs
+using AdaptiveOpticsSimPipeWireHIL: exchange_frame!
+using Base.Threads: Atomic
+using LinearAlgebra
+using PipeWireAO
+using Printf
+using REVOLTClassicSim
+using REVOLTClassicSimPipeWireHIL
+
+length(ARGS) == 4 || error(
+    "expected CORE_NAME CONTROL_DIRECTORY NATIVE_GRAPH JULIA_GRAPH",
+)
+core_name, control_directory, native_graph_path, julia_graph_path = ARGS
+native_phase_1 = joinpath(control_directory, "revolt-native-phase-1")
+native_phase_2 = joinpath(control_directory, "revolt-native-phase-2")
+switch_to_julia = joinpath(control_directory, "revolt-switch-to-julia")
+julia_phase_1 = joinpath(control_directory, "revolt-julia-phase-1")
+julia_phase_2 = joinpath(control_directory, "revolt-julia-phase-2")
+stop_file = joinpath(control_directory, "stop-revolt-hil")
+
+const SUBAPERTURE_SIZE = 22
+const CONTROLLER_GAIN = -0.2f0
+const CONTROLLER_POLE = 1.0f0
+const CONTROL_RTOL = 2.0f-2
+const COMMAND_RTOL = 5.0f-4
+const COMMAND_ATOL = 5.0f-11
+
+function subaperture_origins()
+    mask = valid_subapertures()
+    origins = Tuple{Int,Int}[]
+    for column in axes(mask, 2), row in axes(mask, 1)
+        mask[row, column] || continue
+        push!(
+            origins,
+            ((row - 1) * SUBAPERTURE_SIZE, (column - 1) * SUBAPERTURE_SIZE),
+        )
+    end
+    length(origins) == 188 || error(
+        "REVOLT Classic valid-subaperture mask selected $(length(origins)); expected 188",
+    )
+    return origins
+end
+
+const SUBAPERTURE_ORIGINS = subaperture_origins()
+
+function controller_slopes(frame)
+    slopes = Vector{Float32}(undef, 2 * length(SUBAPERTURE_ORIGINS))
+    center = Float32(SUBAPERTURE_SIZE - 1) * 0.5f0
+    for (subaperture, (row_origin, column_origin)) in
+        enumerate(SUBAPERTURE_ORIGINS)
+        x_moment = 0.0f0
+        y_moment = 0.0f0
+        flux = 0.0f0
+        for row in 0:(SUBAPERTURE_SIZE - 1),
+            column in 0:(SUBAPERTURE_SIZE - 1)
+            value = frame[row_origin + row + 1, column_origin + column + 1]
+            x_moment += value * (Float32(column) - center)
+            y_moment += value * (Float32(row) - center)
+            flux += value
+        end
+        isfinite(flux) || error(
+            "REVOLT Classic subaperture $subaperture has non-finite flux $flux",
+        )
+        if flux > 0.0f0
+            slopes[2 * subaperture - 1] = x_moment / flux
+            slopes[2 * subaperture] = y_moment / flux
+        else
+            # The four lenslets wholly behind the central obstruction are
+            # retained by the instrument's 188-entry geometric mask. The FGN
+            # declaration reports them invalid and publishes zero slopes.
+            slopes[2 * subaperture - 1] = 0.0f0
+            slopes[2 * subaperture] = 0.0f0
+        end
+    end
+    return slopes
+end
+
+function calibrate_controller()
+    calibration = prepare_calibration_system()
+    boundary = calibration.boundary
+    sequence = step_hil_frame!(boundary)
+    flat_slopes = controller_slopes(hil_frame_buffer(boundary))
+    interaction = Matrix{Float32}(
+        undef,
+        length(flat_slopes),
+        command_count(),
+    )
+    positive_slopes = similar(flat_slopes)
+    poke = 2.0f-8
+
+    for command_index in axes(interaction, 2)
+        fill!(hil_command_buffer(boundary), 0.0f0)
+        hil_command_buffer(boundary)[command_index] = poke
+        adopt_hil_command!(boundary, sequence)
+        sequence = step_hil_frame!(boundary)
+        copyto!(positive_slopes, controller_slopes(hil_frame_buffer(boundary)))
+
+        fill!(hil_command_buffer(boundary), 0.0f0)
+        hil_command_buffer(boundary)[command_index] = -poke
+        adopt_hil_command!(boundary, sequence)
+        sequence = step_hil_frame!(boundary)
+        negative_slopes = controller_slopes(hil_frame_buffer(boundary))
+        @views @. interaction[:, command_index] =
+            (positive_slopes - negative_slopes) / (2 * poke)
+    end
+
+    all(isfinite, interaction) || error(
+        "REVOLT Classic interaction matrix contains a non-finite value",
+    )
+    singular_values = svdvals(interaction)
+    retained_threshold = maximum(singular_values) * CONTROL_RTOL
+    retained_rank = count(>(retained_threshold), singular_values)
+    retained_rank >= 221 || error(
+        "REVOLT Classic interaction matrix retains $retained_rank directions; expected at least 221",
+    )
+    control_matrix = pinv(interaction; rtol=CONTROL_RTOL)
+    size(control_matrix) == (277, 376) || error(
+        "REVOLT Classic control matrix has shape $(size(control_matrix)); expected (277, 376)",
+    )
+    return flat_slopes, control_matrix, retained_rank
+end
+
+function spa_float(value::Real)
+    isfinite(value) || error("controller configuration contains a non-finite value")
+    return @sprintf("%.9g", Float64(value))
+end
+
+spa_vector(values) = "[ " * join((spa_float(value) for value in values), " ") * " ]"
+
+function parameter_values(control_matrix)
+    return [
+        control_matrix[row, column] for row in axes(control_matrix, 1) for
+        column in axes(control_matrix, 2)
+    ]
+end
+
+function graph_configuration(plugin, reference_slopes, control_matrix)
+    origins = join(
+        ("[ $(origin[1]) $(origin[2]) ]" for origin in SUBAPERTURE_ORIGINS),
+        " ",
+    )
+    native_plugin = isnothing(plugin) ? "" : "plugin = \"$plugin\""
+    native_rate = isnothing(plugin) ? "" : "rate = [ 500 1 ]"
+    return """
+    {
+        node.name = pipewireao-rtc-revolt-controller
+        remote.name = $core_name
+        object.linger = false
+        pipewireao.run-control = true
+        filter.graph = {
+            nodes = [
+                {
+                    type = ndarray
+                    name = measure
+                    $native_plugin
+                    label = shack-hartmann-image-f32
+                    config = {
+                        image_rows = 352
+                        image_columns = 352
+                        subaperture_rows = 22
+                        subaperture_columns = 22
+                        subaperture_count = 188
+                        image_schema = $REVOLT_CLASSIC_FRAME_SCHEMA
+                        initial_subaperture_origins = [ $origins ]
+                        coordinate_scale = 1.0
+                        pixel_threshold = 0.0
+                        flux_threshold = 0.0
+                        reference_slopes = $(spa_vector(reference_slopes))
+                        active = [ $(join(fill("true", 188), " ")) ]
+                        $native_rate
+                    }
+                }
+                {
+                    type = ndarray
+                    name = reconstruct
+                    $native_plugin
+                    label = shwfs-reconstructor-f32
+                    config = {
+                        actuator_count = 277
+                        subaperture_count = 188
+                        initial_reconstructor = $(spa_vector(parameter_values(control_matrix)))
+                        reconstructed_schema = org.revolt.classic.controller-residual-error.f32/1
+                        $native_rate
+                    }
+                }
+                {
+                    type = ndarray
+                    name = integrate
+                    $native_plugin
+                    label = leaky-integrator-f32
+                    config = {
+                        extent = 277
+                        initial_state = 0.0
+                        input_schema = org.revolt.classic.controller-residual-error.f32/1
+                        output_schema = $REVOLT_CLASSIC_COMMAND_SCHEMA
+                        $native_rate
+                    }
+                    props = { gain = $CONTROLLER_GAIN pole = $CONTROLLER_POLE }
+                }
+            ]
+            links = [
+                { output = "measure:slopes" input = "reconstruct:slopes" }
+                { output = "reconstruct:reconstructed" input = "integrate:input" }
+            ]
+            inputs = [ "measure:image" "reconstruct:reconstructor" ]
+            outputs = [ "integrate:output" ]
+        }
+    }
+    """
+end
+
+mutable struct ParameterProcess
+    values::Vector{Float32}
+    buffer::StreamBuffer
+    published::Atomic{Bool}
+    recycled::Atomic{Bool}
+end
+
+function (process::ParameterProcess)(stream::Stream)
+    dequeue_buffer!(process.buffer, stream) || return nothing
+    queued = false
+    try
+        data = buffer_data(process.buffer)
+        if process.published[]
+            set_chunk!(data; size=0, stride=sizeof(Float32))
+            queue_buffer!(process.buffer, stream)
+            queued = true
+            process.recycled[] = true
+            return nothing
+        end
+        byte_count = sizeof(Float32) * length(process.values)
+        capacity(data) >= byte_count || error(
+            "reconstructor buffer capacity $(capacity(data)) is smaller than $byte_count bytes",
+        )
+        unsafe_copyto!(
+            data_pointer(data),
+            Ptr{UInt8}(pointer(process.values)),
+            byte_count,
+        )
+        set_chunk!(data; size=byte_count, stride=sizeof(Float32))
+        queue_buffer!(process.buffer, stream)
+        queued = true
+        process.published[] = true
+    finally
+        queued || return_buffer!(process.buffer, stream)
+    end
+    return nothing
+end
+
+mutable struct PreparedParameterSource
+    process::ParameterProcess
+    loop::ThreadLoop
+    context::Context
+    core::CoreConnection
+    stream::Stream
+    closed::Bool
+end
+
+function prepare_parameter_source(control_matrix)
+    values = parameter_values(control_matrix)
+    process = ParameterProcess(
+        values,
+        StreamBuffer(),
+        Atomic{Bool}(false),
+        Atomic{Bool}(false),
+    )
+    loop = ThreadLoop("REVOLT Classic reconstructor parameter")
+    context = Context(loop)
+    core = CoreConnection(context; properties=Dict("remote.name" => core_name))
+    stream = Stream(
+        core,
+        "REVOLT Classic reconstructor parameter";
+        properties=Dict(
+            "node.name" => "revolt-classic-controller-reconstructor",
+            "media.type" => "Application",
+            "media.category" => "Playback",
+            "media.role" => "DSP",
+            "node.description" => "REVOLT Classic prepared reconstructor",
+        ),
+        on_process=process,
+    )
+    prepared = PreparedParameterSource(
+        process,
+        loop,
+        context,
+        core,
+        stream,
+        false,
+    )
+    try
+        format = NdArrayFormat(
+            NdArray.F32_LE,
+            size(control_matrix);
+            layout=NdArray.ROW_MAJOR,
+        )
+        connect!(
+            stream,
+            :output;
+            flags=STREAM_MAP_BUFFERS | STREAM_DONT_RECONNECT | STREAM_NO_CONVERT,
+            params=Pod[
+                ndarray_format(
+                    format;
+                    schema="org.calculon.ao.shwfs-reconstructor/1",
+                ),
+                Pod(buffers_param(size=payload_size(format), buffers=2)),
+            ],
+        )
+        start!(loop)
+        with_thread_loop_lock(loop) do _
+            set_active!(stream, true)
+        end
+        status = timedwait(
+            () -> with_thread_loop_lock(loop) do _
+                node_id(stream) != typemax(UInt32)
+            end,
+            5.0;
+            pollint=0.001,
+        )
+        status == :ok || error(
+            "REVOLT Classic reconstructor source did not become inspectable",
+        )
+        return prepared
+    catch
+        close(prepared)
+        rethrow()
+    end
+end
+
+function Base.close(prepared::PreparedParameterSource)
+    prepared.closed && return nothing
+    prepared.closed = true
+    try
+        with_thread_loop_lock(prepared.loop) do _
+            close(prepared.stream)
+            close(prepared.core)
+            close(prepared.context)
+        end
+    finally
+        stop!(prepared.loop)
+        close(prepared.loop)
+    end
+    return nothing
+end
+
+function wait_for_parameter_preparation!(prepared, frame_driver)
+    status = timedwait(
+        () -> begin
+            prepared.process.recycled[] && return true
+            trigger_process!(frame_driver)
+            return false
+        end,
+        5.0;
+        pollint=0.001,
+    )
+    status == :ok || error(
+        "REVOLT Classic reconstructor parameter was not accepted by the graph worker",
+    )
+    return nothing
+end
+
+function trigger_parameter_publication!(prepared::PreparedParameterSource, frame_driver::Stream)
+    prepared.process.published[] && return nothing
+    stream_state(prepared.stream) ==
+        PipeWireAO.LibPipeWire.PW_STREAM_STATE_STREAMING || return nothing
+    trigger_process!(frame_driver)
+    return nothing
+end
+
+function first_difference(actual, expected; rtol, atol)
+    for index in eachindex(actual, expected)
+        isapprox(actual[index], expected[index]; rtol, atol) || return index
+    end
+    return nothing
+end
+
+function require_close(field, sequence, actual, expected; rtol, atol)
+    isapprox(actual, expected; rtol, atol) && return nothing
+    index = first_difference(actual, expected; rtol, atol)
+    difference = isnothing(index) ? NaN : abs(actual[index] - expected[index])
+    detail = if isnothing(index)
+        ""
+    else
+        "[$index]: actual $(actual[index]), expected $(expected[index]), " *
+        "absolute difference $difference"
+    end
+    error(
+        "REVOLT Classic mismatch at sequence $sequence for $field$detail",
+    )
+end
+
+function prepare_phase(control_matrix)
+    plant = prepare_revolt_classic_pipewire_hil(; remote=core_name)
+    parameter_source = prepare_parameter_source(control_matrix)
+    oracle = prepare_hil_system()
+    oracle_sequence = Ref(step_hil_frame!(oracle.boundary))
+    direct_state = zeros(Float32, command_count())
+    start!(plant.pipewire)
+    return (; plant, parameter_source, oracle, oracle_sequence, direct_state)
+end
+
+function require_plant_oracle_frame!(phase, sequence)
+    plant_graph = phase.plant.graph
+    oracle_graph = phase.oracle.graph
+    require_close(
+        "shwfs_frame",
+        sequence,
+        hil_frame_buffer(phase.plant.boundary),
+        hil_frame_buffer(phase.oracle.boundary);
+        rtol=1.0f-6,
+        atol=1.0f-7,
+    )
+    for field in (:atmosphere_opd, :pdm_surface_opd, :pupil_opd)
+        require_close(
+            String(field),
+            sequence,
+            graph_output(plant_graph, Val(field)),
+            graph_output(oracle_graph, Val(field));
+            rtol=1.0f-6,
+            atol=1.0f-15,
+        )
+    end
+    return nothing
+end
+
+function exchange_range!(
+    phase,
+    sequences,
+    reference_slopes,
+    control_matrix,
+    native_commands,
+    implementation,
+)
+    for expected_sequence in sequences
+        println("REVOLT_HIL_FRAME_BEGIN implementation=$implementation sequence=$expected_sequence")
+        flush(stdout)
+        completed_sequence = exchange_frame!(phase.plant.pipewire)
+        println("REVOLT_HIL_FRAME_EXCHANGED implementation=$implementation sequence=$expected_sequence")
+        flush(stdout)
+        completed_sequence == expected_sequence || error(
+            "$implementation expected sequence $expected_sequence, received $completed_sequence",
+        )
+        phase.oracle_sequence[] == expected_sequence || error(
+            "$implementation oracle expected sequence $(phase.oracle_sequence[]), received $expected_sequence",
+        )
+
+        plant_graph = phase.plant.graph
+        require_plant_oracle_frame!(phase, expected_sequence)
+
+        slopes = controller_slopes(hil_frame_buffer(phase.plant.boundary))
+        residual_command = control_matrix * (slopes - reference_slopes)
+        @. phase.direct_state =
+            CONTROLLER_POLE * phase.direct_state + CONTROLLER_GAIN * residual_command
+        transported_command = hil_command_buffer(phase.plant.boundary)
+        require_close(
+            "hsdm277_command",
+            expected_sequence,
+            transported_command,
+            phase.direct_state;
+            rtol=COMMAND_RTOL,
+            atol=COMMAND_ATOL,
+        )
+
+        if implementation === :native
+            push!(native_commands, copy(transported_command))
+        else
+            require_close(
+                "native_julia_command_equivalence",
+                expected_sequence,
+                transported_command,
+                native_commands[Int(expected_sequence)];
+                rtol=COMMAND_RTOL,
+                atol=COMMAND_ATOL,
+            )
+        end
+
+        if expected_sequence == UInt64(1)
+            all(iszero, graph_output(plant_graph, Val(:pdm_surface_opd))) || error(
+                "$implementation command 1 affected frame 1",
+            )
+            norm(transported_command) > 0.0f0 || error(
+                "$implementation command 1 is zero and cannot prove causality",
+            )
+        elseif expected_sequence == UInt64(2)
+            norm(graph_output(plant_graph, Val(:pdm_surface_opd))) > 0.0f0 || error(
+                "$implementation command 1 did not affect frame 2",
+            )
+            println(
+                "REVOLT_HIL_CAUSALITY implementation=$implementation command_sequence=1 frame_sequence=2",
+            )
+            flush(stdout)
+        end
+
+        copyto!(
+            hil_command_buffer(phase.oracle.boundary),
+            transported_command,
+        )
+        adopt_hil_command!(phase.oracle.boundary, phase.oracle_sequence[])
+        expected_sequence < UInt64(8) &&
+            (phase.oracle_sequence[] = step_hil_frame!(phase.oracle.boundary))
+    end
+end
+
+function main()
+    reference_slopes, control_matrix, retained_rank = calibrate_controller()
+    write(
+        native_graph_path,
+        graph_configuration(
+            ENV["PIPEWIREAO_RTC_FGN_BUNDLE"],
+            reference_slopes,
+            control_matrix,
+        ),
+    )
+    write(
+        julia_graph_path,
+        graph_configuration(nothing, reference_slopes, control_matrix),
+    )
+    println("REVOLT_HIL_CALIBRATED retained_rank=$retained_rank")
+    flush(stdout)
+
+    native_commands = Vector{Vector{Float32}}()
+    phase = prepare_phase(control_matrix)
+    println("REVOLT_HIL_NATIVE_READY")
+    flush(stdout)
+    native_first_done = false
+    native_second_done = false
+    native_parameter_announced = false
+
+    try
+        while !isfile(stop_file) && !isfile(switch_to_julia)
+            trigger_parameter_publication!(
+                phase.parameter_source,
+                phase.plant.pipewire.frame_stream,
+            )
+            if !native_parameter_announced && phase.parameter_source.process.published[]
+                wait_for_parameter_preparation!(
+                    phase.parameter_source,
+                    phase.plant.pipewire.frame_stream,
+                )
+                println("REVOLT_PARAMETER_ACTIVE implementation=native")
+                flush(stdout)
+                native_parameter_announced = true
+            elseif !native_first_done && isfile(native_phase_1)
+                exchange_range!(
+                    phase,
+                    UInt64(1):UInt64(4),
+                    reference_slopes,
+                    control_matrix,
+                    native_commands,
+                    :native,
+                )
+                println("REVOLT_HIL_NATIVE_PHASE_1_DONE sequence=4")
+                flush(stdout)
+                native_first_done = true
+            elseif native_first_done && !native_second_done && isfile(native_phase_2)
+                exchange_range!(
+                    phase,
+                    UInt64(5):UInt64(8),
+                    reference_slopes,
+                    control_matrix,
+                    native_commands,
+                    :native,
+                )
+                println("REVOLT_HIL_NATIVE_DONE sequence=8")
+                flush(stdout)
+                native_second_done = true
+            end
+            sleep(0.01)
+        end
+
+        isfile(stop_file) && exit()
+        native_second_done || error(
+            "cannot switch to Julia before the native REVOLT sequence completes",
+        )
+        close(phase.parameter_source)
+        close(phase.plant.pipewire)
+        phase = prepare_phase(control_matrix)
+        println("REVOLT_HIL_JULIA_READY")
+        flush(stdout)
+        julia_first_done = false
+        julia_second_done = false
+        julia_parameter_announced = false
+
+        while !isfile(stop_file)
+            trigger_parameter_publication!(
+                phase.parameter_source,
+                phase.plant.pipewire.frame_stream,
+            )
+            if !julia_parameter_announced && phase.parameter_source.process.published[]
+                wait_for_parameter_preparation!(
+                    phase.parameter_source,
+                    phase.plant.pipewire.frame_stream,
+                )
+                println("REVOLT_PARAMETER_ACTIVE implementation=julia")
+                flush(stdout)
+                julia_parameter_announced = true
+            elseif !julia_first_done && isfile(julia_phase_1)
+                exchange_range!(
+                    phase,
+                    UInt64(1):UInt64(4),
+                    reference_slopes,
+                    control_matrix,
+                    native_commands,
+                    :julia,
+                )
+                println("REVOLT_HIL_JULIA_PHASE_1_DONE sequence=4")
+                flush(stdout)
+                julia_first_done = true
+            elseif julia_first_done && !julia_second_done && isfile(julia_phase_2)
+                exchange_range!(
+                    phase,
+                    UInt64(5):UInt64(8),
+                    reference_slopes,
+                    control_matrix,
+                    native_commands,
+                    :julia,
+                )
+                println("REVOLT_HIL_JULIA_DONE sequence=8")
+                flush(stdout)
+                julia_second_done = true
+            end
+            sleep(0.01)
+        end
+    finally
+        try
+            stop!(phase.plant.pipewire)
+        catch
+        end
+        close(phase.parameter_source)
+        close(phase.plant.pipewire)
+    end
+end
+
+main()

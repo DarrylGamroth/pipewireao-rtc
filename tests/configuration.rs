@@ -8,6 +8,8 @@ const EXTERNAL: &str = include_str!("../fixtures/external-development.conf");
 const AOS_HIL: &str = include_str!("../fixtures/aos-hil-development.conf");
 const AOS_HIL_ATMOSPHERE: &str = include_str!("../fixtures/aos-hil-atmosphere-development.conf");
 const EXTERNAL_GRAPH: &str = include_str!("../fixtures/external-graph-development.conf");
+const REVOLT_NATIVE: &str = include_str!("../fixtures/revolt-classic-native-development.conf");
+const REVOLT_JULIA: &str = include_str!("../fixtures/revolt-classic-julia-development.conf");
 
 fn replace_once(document: &str, before: &str, after: &str) -> String {
     assert!(
@@ -189,6 +191,97 @@ fn external_processing_graph_requires_explicit_ownership_and_run_control() {
     let error = DevelopmentConfig::parse(&grouped_application_control)
         .expect_err("application-controlled graph in execution group");
     assert_eq!(error.field(), "execution-groups");
+}
+
+#[test]
+fn revolt_classic_variants_share_the_exact_external_plant_contract() {
+    let native = DevelopmentConfig::parse(REVOLT_NATIVE).expect("native REVOLT topology");
+    let julia = DevelopmentConfig::parse(REVOLT_JULIA).expect("Julia REVOLT topology");
+
+    assert_eq!(native.object_count(), 4);
+    assert_eq!(native.owned_object_count(), 1);
+    assert_eq!(julia.object_count(), 4);
+    assert_eq!(julia.owned_object_count(), 0);
+    assert_eq!(native.links.len(), 3);
+    assert_eq!(julia.links.len(), 3);
+    assert_eq!(
+        native.externally_owned_node_names(),
+        [
+            "revolt-classic-sim-wfs",
+            "revolt-classic-controller-reconstructor",
+            "revolt-classic-sim-hsdm277-command"
+        ]
+    );
+    assert_eq!(
+        julia.externally_owned_node_names(),
+        [
+            "revolt-classic-sim-wfs",
+            "revolt-classic-controller-reconstructor",
+            "pipewireao-rtc-revolt-controller",
+            "revolt-classic-sim-hsdm277-command"
+        ]
+    );
+    assert_eq!(
+        julia.session_controlled_graph_names(),
+        ["pipewireao-rtc-revolt-controller"]
+    );
+
+    for config in [&native, &julia] {
+        assert_eq!(config.graphs[0].ports.len(), 3);
+        assert_eq!(config.sources[0].ports[0].shape, [352, 352]);
+        assert!(!config.sources[0].ports[0].parameter);
+        assert_eq!(
+            config.sources[0].ports[0].schema,
+            "org.revolt.classic.shwfs-frame.f32/1"
+        );
+        assert!(config.sources[1].ports[0].parameter);
+        assert!(config.graphs[0].ports[1].parameter);
+        assert_eq!(config.sinks[0].ports[0].shape, [277]);
+        assert!(!config.sinks[0].ports[0].parameter);
+        assert_eq!(
+            config.sinks[0].ports[0].schema,
+            "org.revolt.hsdm277.actuator-surface-opd-m.f32/1"
+        );
+    }
+
+    let no_graph_input = REVOLT_NATIVE
+        .replace(
+            "name = \"measure:image\" direction = input",
+            "name = \"measure:image\" direction = output",
+        )
+        .replace(
+            "name = \"reconstruct:reconstructor\" direction = input parameter = true",
+            "name = \"reconstruct:reconstructor\" direction = output",
+        );
+    let error = DevelopmentConfig::parse(&no_graph_input)
+        .expect_err("processing graph without an input port");
+    assert_eq!(error.field(), "graphs[0].ports");
+
+    let no_graph_output = replace_once(
+        REVOLT_NATIVE,
+        "name = \"integrate:output\" direction = output",
+        "name = \"integrate:output\" direction = input",
+    );
+    let error = DevelopmentConfig::parse(&no_graph_output)
+        .expect_err("processing graph without an output port");
+    assert_eq!(error.field(), "graphs[0].ports");
+
+    let parameter_output = replace_once(
+        REVOLT_NATIVE,
+        "name = \"integrate:output\" direction = output",
+        "name = \"integrate:output\" direction = output parameter = true",
+    );
+    let error =
+        DevelopmentConfig::parse(&parameter_output).expect_err("processing graph parameter output");
+    assert_eq!(error.field(), "graphs[0].ports.integrate:output.parameter");
+
+    let parameter_sink = replace_once(
+        REVOLT_NATIVE,
+        "name = input_1 direction = input element-type",
+        "name = input_1 direction = input parameter = true element-type",
+    );
+    let error = DevelopmentConfig::parse(&parameter_sink).expect_err("parameter sink port");
+    assert_eq!(error.field(), "sinks[0].ports.input_1.parameter");
 }
 
 #[test]
@@ -462,6 +555,17 @@ fn fits_factory_arguments_are_validated_field_by_field() {
 }
 
 #[test]
+fn session_rate_is_validated_and_must_match_fits_sources() {
+    let invalid = replace_once(MINIMAL, "rate = 1000/1", "rate = 0/1");
+    let error = DevelopmentConfig::parse(&invalid).expect_err("invalid session rate");
+    assert_eq!(error.field(), "rate");
+
+    let mismatched = replace_once(MINIMAL, "api.fits.rate = 1000/1", "api.fits.rate = 500/1");
+    let error = DevelopmentConfig::parse(&mismatched).expect_err("mismatched FITS rate");
+    assert_eq!(error.field(), "sources[0].args.api.fits.rate");
+}
+
+#[test]
 fn links_validate_ports_directions_shapes_schemas_and_producers() {
     let cases = [
         (
@@ -536,7 +640,7 @@ fn pipewire_relaxed_spa_json_comments_and_optional_separators_are_accepted() {
 #[test]
 fn runner_does_not_extend_or_reinterpret_pipewire_spa_json_syntax() {
     let error = DevelopmentConfig::parse(
-        "{ profile = development execution = complete-frame authority = none claim = development-characterization sources = [ @include foo ] }",
+        "{ profile = development execution = complete-frame authority = none claim = development-characterization rate = 1000/1 sources = [ @include foo ] }",
     )
     .expect_err("runner-specific include syntax must not be accepted");
     assert!(error.message().contains("relaxed SPA-JSON"));

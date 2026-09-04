@@ -148,6 +148,7 @@ impl PortDirection {
 pub struct PortSpec {
     pub name: String,
     pub direction: PortDirection,
+    pub parameter: bool,
     pub element_type: String,
     pub shape: Vec<u32>,
     pub schema: String,
@@ -185,6 +186,7 @@ pub struct ExecutionGroupSpec {
 /// Resolved, development-only session loaded from relaxed SPA-JSON.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DevelopmentConfig {
+    pub rate: String,
     pub sources: Vec<ObjectSpec<EndpointFactory>>,
     pub graphs: Vec<ObjectSpec<GraphFactory>>,
     pub sinks: Vec<ObjectSpec<EndpointFactory>>,
@@ -230,6 +232,7 @@ impl DevelopmentConfig {
     ///
     /// Returns the first field-specific scientific diagnostic.
     pub fn validate(&self) -> Result<(), ScientificDiagnostic> {
+        validate_rate("rate", &self.rate)?;
         if self.sources.is_empty() {
             return Err(ScientificDiagnostic::new(
                 "sources",
@@ -253,6 +256,17 @@ impl DevelopmentConfig {
         for (index, source) in self.sources.iter().enumerate() {
             let field = format!("sources[{index}]");
             validate_source(source, &field)?;
+            if let Some(rate) = source.arguments.get("api.fits.rate") {
+                if rate != &self.rate {
+                    return Err(ScientificDiagnostic::new(
+                        format!("{field}.args.api.fits.rate"),
+                        format!(
+                            "FITS source rate {rate:?} does not match session rate {:?}",
+                            self.rate
+                        ),
+                    ));
+                }
+            }
             validate_node_name(&source.node_name, &field, &mut node_names)?;
         }
         for (index, graph) in self.graphs.iter().enumerate() {
@@ -526,6 +540,27 @@ impl DevelopmentConfig {
     }
 }
 
+fn validate_rate(field: &str, rate: &str) -> Result<(), ScientificDiagnostic> {
+    let Some((numerator, denominator)) = rate.split_once('/') else {
+        return Err(ScientificDiagnostic::new(
+            field,
+            "complete-frame rate must use positive numerator/denominator syntax",
+        ));
+    };
+    let parsed = numerator
+        .parse::<u32>()
+        .ok()
+        .zip(denominator.parse::<u32>().ok());
+    if parsed.is_some_and(|(numerator, denominator)| numerator > 0 && denominator > 0) {
+        Ok(())
+    } else {
+        Err(ScientificDiagnostic::new(
+            field,
+            "complete-frame rate must use positive u32 numerator/denominator values",
+        ))
+    }
+}
+
 fn validate_execution_groups(config: &DevelopmentConfig) -> Result<(), ScientificDiagnostic> {
     if !requires_execution_groups(config)? {
         return Ok(());
@@ -722,11 +757,7 @@ fn validate_graph(
     graph: &ObjectSpec<GraphFactory>,
     field: &str,
 ) -> Result<(), ScientificDiagnostic> {
-    validate_ports(
-        field,
-        &graph.ports,
-        &[PortDirection::Input, PortDirection::Output],
-    )?;
+    validate_graph_ports(field, &graph.ports)?;
     match graph.realization {
         ObjectRealization::Factory(GraphFactory::FgnNative) => {
             validate_required_module(field, graph.module.as_deref(), FILTER_CHAIN_MODULE)?;
@@ -754,6 +785,7 @@ fn validate_sink(
     field: &str,
 ) -> Result<(), ScientificDiagnostic> {
     validate_ports(field, &sink.ports, &[PortDirection::Input])?;
+    reject_parameter_ports(field, &sink.ports)?;
     match sink.realization {
         ObjectRealization::Factory(EndpointFactory::FormatAgnosticDiscardSink) => {
             validate_exact_shape(&sink.ports[0], field, &[2])?;
@@ -873,19 +905,68 @@ fn validate_ports(
             ),
         ));
     }
-    let mut names = BTreeSet::new();
+    validate_port_declarations(field, ports)?;
     for (port, direction) in ports.iter().zip(directions) {
+        if port.direction != *direction {
+            return Err(ScientificDiagnostic::new(
+                format!("{field}.ports.{}.direction", port.name),
+                format!("expected {direction:?}, got {:?}", port.direction),
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_graph_ports(field: &str, ports: &[PortSpec]) -> Result<(), ScientificDiagnostic> {
+    validate_port_declarations(field, ports)?;
+    for port in ports {
+        if port.parameter && port.direction != PortDirection::Input {
+            return Err(ScientificDiagnostic::new(
+                format!("{field}.ports.{}.parameter", port.name),
+                "only graph input ports may be sparse parameters",
+            ));
+        }
+    }
+    if !ports
+        .iter()
+        .any(|port| port.direction == PortDirection::Input)
+    {
+        return Err(ScientificDiagnostic::new(
+            format!("{field}.ports"),
+            "processing graph must declare at least one scientific input port",
+        ));
+    }
+    if !ports
+        .iter()
+        .any(|port| port.direction == PortDirection::Output)
+    {
+        return Err(ScientificDiagnostic::new(
+            format!("{field}.ports"),
+            "processing graph must declare at least one scientific output port",
+        ));
+    }
+    Ok(())
+}
+
+fn reject_parameter_ports(field: &str, ports: &[PortSpec]) -> Result<(), ScientificDiagnostic> {
+    if let Some(port) = ports.iter().find(|port| port.parameter) {
+        Err(ScientificDiagnostic::new(
+            format!("{field}.ports.{}.parameter", port.name),
+            "sink data ports must not be declared as sparse parameters",
+        ))
+    } else {
+        Ok(())
+    }
+}
+
+fn validate_port_declarations(field: &str, ports: &[PortSpec]) -> Result<(), ScientificDiagnostic> {
+    let mut names = BTreeSet::new();
+    for port in ports {
         let port_field = format!("{field}.ports.{}", port.name);
         if port.name.is_empty() || !names.insert(port.name.as_str()) {
             return Err(ScientificDiagnostic::new(
                 format!("{port_field}.name"),
                 "port name must be non-empty and unique on its node",
-            ));
-        }
-        if port.direction != *direction {
-            return Err(ScientificDiagnostic::new(
-                format!("{port_field}.direction"),
-                format!("expected {direction:?}, got {:?}", port.direction),
             ));
         }
         if port.element_type != "F32_LE" {

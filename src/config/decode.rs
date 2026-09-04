@@ -13,6 +13,7 @@ pub(super) fn development_config(text: &str) -> Result<DevelopmentConfig, Scient
     let mut execution = None;
     let mut authority = None;
     let mut claim = None;
+    let mut rate = None;
     let mut sources = None;
     let mut graphs = None;
     let mut sinks = None;
@@ -28,6 +29,7 @@ pub(super) fn development_config(text: &str) -> Result<DevelopmentConfig, Scient
             "execution" => assign(&mut execution, value, "execution")?,
             "authority" => assign(&mut authority, value, "authority")?,
             "claim" => assign(&mut claim, value, "claim")?,
+            "rate" => assign(&mut rate, value, "rate")?,
             "sources" => assign(&mut sources, value, "sources")?,
             "graphs" => assign(&mut graphs, value, "graphs")?,
             "sinks" => assign(&mut sinks, value, "sinks")?,
@@ -54,6 +56,7 @@ pub(super) fn development_config(text: &str) -> Result<DevelopmentConfig, Scient
     )?;
 
     Ok(DevelopmentConfig {
+        rate: scalar(required(rate, "rate")?, "rate")?,
         sources: endpoint_array(required(sources, "sources")?, ObjectRole::Source, "sources")?,
         graphs: graph_array(required(graphs, "graphs")?)?,
         sinks: endpoint_array(required(sinks, "sinks")?, ObjectRole::Sink, "sinks")?,
@@ -324,6 +327,7 @@ fn port(token: Token<'_>, field: &str) -> Result<PortSpec, ScientificDiagnostic>
     let mut object = Object::token(token, field)?;
     let mut name = None;
     let mut direction = None;
+    let mut parameter = None;
     let mut element_type = None;
     let mut shape = None;
     let mut schema = None;
@@ -331,6 +335,7 @@ fn port(token: Token<'_>, field: &str) -> Result<PortSpec, ScientificDiagnostic>
         match key.as_str() {
             "name" => assign(&mut name, value, &format!("{field}.name"))?,
             "direction" => assign(&mut direction, value, &format!("{field}.direction"))?,
+            "parameter" => assign(&mut parameter, value, &format!("{field}.parameter"))?,
             "element-type" => assign(&mut element_type, value, &format!("{field}.element-type"))?,
             "shape" => assign(&mut shape, value, &format!("{field}.shape"))?,
             "schema" => assign(&mut schema, value, &format!("{field}.schema"))?,
@@ -347,6 +352,10 @@ fn port(token: Token<'_>, field: &str) -> Result<PortSpec, ScientificDiagnostic>
             &direction_field,
             &scalar(required(direction, &direction_field)?, &direction_field)?,
         )?,
+        parameter: parameter
+            .map(|token| boolean(token, &format!("{field}.parameter")))
+            .transpose()?
+            .unwrap_or(false),
         element_type: scalar(
             required(element_type, &format!("{field}.element-type"))?,
             &format!("{field}.element-type"),

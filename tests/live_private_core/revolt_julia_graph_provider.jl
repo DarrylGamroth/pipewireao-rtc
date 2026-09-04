@@ -3,10 +3,10 @@ using FilterGraphPipeWire
 using JuliaFilterGraph
 using PipeWireAO
 
-length(ARGS) == 4 || error("expected CORE_NAME GRAPH_CONFIGURATION STOP_FILE RATE")
-core_name, graph_configuration, stop_file, rate_text = ARGS
-rate = parse(Int, rate_text)
-rate > 0 || error("RATE must be positive")
+length(ARGS) == 3 || error(
+    "expected CORE_NAME GRAPH_CONFIGURATION STOP_FILE",
+)
+core_name, graph_configuration, stop_file = ARGS
 
 graph = JuliaFilterGraph.prepare_graph(
     graph_configuration;
@@ -14,9 +14,9 @@ graph = JuliaFilterGraph.prepare_graph(
 )
 node = FilterGraphPipeWire.PipeWireNode(
     graph;
-    name="pipewireao-rtc-external-graph",
+    name="pipewireao-rtc-revolt-controller",
     remote=core_name,
-    rate=(rate, 1),
+    rate=(500, 1),
     boundary_layout=FilterGraphAlgorithms.RowMajorLayout(),
     run_control=true,
 )
@@ -29,7 +29,7 @@ monitor = Threads.@spawn begin
            (state == PipeWireAO.NDARRAY_FILTER_STATE_PAUSED ||
             state == PipeWireAO.NDARRAY_FILTER_STATE_STREAMING)
             Base.Libc.systemsleep(0.1)
-            println("JULIA_GRAPH_READY state=$state")
+            println("REVOLT_JULIA_GRAPH_READY state=$state")
             flush(stdout)
             break
         end

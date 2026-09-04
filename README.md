@@ -19,8 +19,11 @@ deterministic Shack–Hartmann SCAO loop through an RTC-owned FGN graph. The
 runner can also admit an externally owned processing node by its PipeWire
 contracts and an explicit run-control grant. The maintained fixture substitutes
 an externally owned Julia Filter Graph for the native graph and exercises the
-same durable start, stop, restart, and unload sequence. The runner does not load
-or execute Julia itself.
+same durable start, stop, restart, and unload sequence. A REVOLT Classic fixture
+uses the same external plant nodes with either an RTC-owned native FGN
+controller or an externally owned Julia Filter Graph controller and compares
+both with a direct lockstep reference. The runner does not load or execute Julia
+itself.
 Physical devices, correction authority,
 recording, in-process Julia graph execution, remote operation, progressive
 scheduling, and real-time qualification are deliberately deferred.
@@ -69,10 +72,14 @@ PIPEWIREAO_SPA_PLUGINS_BUILD=/absolute/plugin/build \
 PIPEWIREAO_RTC_PIPEWIRE_BUILD=/absolute/pipewire/build \
 PIPEWIREAO_RTC_FGN_BUNDLE=/absolute/libcalculon_fgn_bundle.so \
 PIPEWIREAO_RTC_AOS_HIL_PACKAGE=/absolute/AdaptiveOpticsSimPipeWireHIL.jl \
+PIPEWIREAO_RTC_REVOLT_HIL_PACKAGE=/absolute/REVOLTClassicSimPipeWireHIL.jl \
 PIPEWIREAO_RTC_PIPEWIREAO_JULIA=/absolute/PipeWireAO.jl \
 PIPEWIREAO_RTC_JULIA_FILTER_GRAPH=/absolute/JuliaFilterGraph.jl \
 cargo test --features live --test live_private_core -- --ignored --nocapture
 ```
+
+Set `PIPEWIREAO_RTC_LIVE_SCOPE=revolt` on that command to run only the REVOLT
+Classic native/Julia equivalence fixture on the isolated core.
 
 ## Repository boundaries
 
