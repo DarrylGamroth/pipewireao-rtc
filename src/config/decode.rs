@@ -170,7 +170,7 @@ fn graph_object(
             ),
         ));
     }
-    Ok(object.with_realization(ObjectRealization::Factory(GraphFactory::CalculonFgnNative)))
+    Ok(object.with_realization(ObjectRealization::Factory(GraphFactory::FgnNative)))
 }
 
 fn endpoint_array(

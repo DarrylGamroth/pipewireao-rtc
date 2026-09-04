@@ -7,7 +7,7 @@
             {
                 type = ndarray
                 name = graph
-                plugin = "@CALCULON_FGN_BUNDLE@"
+                plugin = "@FGN_BUNDLE@"
                 label = leaky-integrator-f32
                 config = {
                     extent = 2

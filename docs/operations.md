@@ -11,8 +11,8 @@ Review date: 2026-09-01
 This document defines the behavior of the first `pipewireao-rtc` runner. The
 [architecture](architecture.md) owns its boundary and exclusions. The
 [roadmap](roadmap.md) owns implementation order and acceptance evidence.
-PipeWireAO and Calculon remain authoritative for their data-plane and
-scientific interfaces.
+PipeWireAO remains authoritative for the data plane, while each scientific
+Algorithm package remains authoritative for its implementation and declaration.
 
 Uppercase requirement terms use the meanings defined by BCP 14 (RFC 2119 and
 RFC 8174). Lowercase forms are ordinary prose.
@@ -68,7 +68,7 @@ creating links.
 ### RTC-DEV-002 — Minimal configuration and validation
 
 The runner MUST resolve exactly one complete-frame source, one `fgn-native`
-Calculon execution composite, and one non-actuating sink from the development
+execution composite, and one non-actuating sink from the development
 configuration. It MUST validate declared ports, directions, element types,
 shapes, schemas, scalar properties, ndarray parameters, and links before
 entering `RUNNING`. A rejection MUST identify the scientific object and the
@@ -273,7 +273,7 @@ alone MUST NOT establish a compatible port contract.
 The external WFS source and simulated correction-command sink MUST already be
 inspectable on the selected private PipeWire core before the session reaches
 `READY`. The runner MUST NOT create, destroy, or claim ownership of either node.
-It MUST own and remove only its Calculon graphs and declared links. Unload,
+It MUST own and remove only its FGN graphs and declared links. Unload,
 failed configuration, and retry MUST leave the adapter nodes intact. Loss or
 incompatible mutation of either required endpoint while `READY` or `RUNNING`
 MUST move the session to `FAULT` through the existing serialized dispatcher.
@@ -315,7 +315,7 @@ that command `n` first affects frame `n + 1`.
 
 The repository MUST maintain one private-core, non-actuating SCAO reference
 fixture with an AdaptiveOpticsSim WFS source, at least one runner-owned
-`fgn-native` Calculon graph, and an AdaptiveOpticsSim correction-command sink.
+`fgn-native` graph, and an AdaptiveOpticsSim correction-command sink.
 The fixture MUST reach `READY`, start, exchange multiple complete frames and
 commands, stop to `READY`, restart without reconstructing the graph, unload to
 `OFFLINE`, remove every runner-owned graph and link, and preserve the two
@@ -349,7 +349,7 @@ resolved before instance creation.
 Verification intent (informative): apply scalar, multi-property, parameter,
 and rejected updates; inspect the host's requested and active observations;
 then prove that a structural change requires reload and that repeated updates
-match direct Calculon behavior.
+match direct Algorithm behavior.
 
 ### RTC-DEV-006 — Optional observation
 
@@ -370,7 +370,7 @@ reattaches; compare graph results and lifecycle transitions.
 
 For every maintained development fixture, the test harness MUST feed the same
 inputs, initial state, properties, and ndarray parameters to the FGN graph and
-the maintained direct Calculon or fused reference. It MUST compare every
+the maintained direct or fused Algorithm reference. It MUST compare every
 accepted output and externally meaningful state using declared tolerances.
 Source end, reset, property update, and parameter update MUST be included.
 
@@ -381,8 +381,8 @@ an unexplained difference.
 
 ### RTC-DEV-008 — Scientist-level algorithm authoring
 
-A scientist adding a supported algorithm MUST provide only an ordinary typed
-Calculon implementation, its local declaration, array-level tests, and the
+A scientist adding a supported Algorithm MUST provide only its ordinary typed
+implementation, local declaration, array-level tests, and the
 scientific ports, shapes, schemas, scalar properties, ndarray parameters, and
 construction values that the algorithm genuinely needs. The integration MUST
 NOT require hand-written SPA callbacks, raw-pointer handling, errno or unwind

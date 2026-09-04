@@ -71,15 +71,15 @@ fn external_endpoints_are_selected_by_pipewire_contract_not_implementation() {
         (
             "shape = [ 64 64 ]",
             "shape = [ 64 0 ]",
-            "sources[0].ports.output.shape",
+            "sources[0].ports.output_1.shape",
         ),
         (
             "org.adaptiveopticssim.hil-reference.shack-hartmann-frame.f32/1",
             "\"\"",
-            "sources[0].ports.output.schema",
+            "sources[0].ports.output_1.schema",
         ),
         (
-            "name = input direction = input element-type = F32_LE shape = [ 25 ]",
+            "name = input_1 direction = input element-type = F32_LE shape = [ 25 ]",
             "name = command direction = input element-type = F32_LE shape = [ 25 ]",
             "links[1].input",
         ),
@@ -201,7 +201,7 @@ fn graph_bodies_are_delegated_as_opaque_pipewire_module_files() {
         ),
         (
             "graphs[0].plugin.path",
-            "plugin.path = \"${CALCULON_FGN_BUNDLE}\"\n            ",
+            "plugin.path = \"${PIPEWIREAO_RTC_FGN_BUNDLE}\"\n            ",
         ),
     ] {
         let mutated = replace_once(
@@ -263,6 +263,11 @@ fn endpoint_and_scope_admission_is_an_explicit_negative_matrix() {
             "factory = api.pipewireao.discard",
             "factory = pipewireao.unlisted-sink",
             "sinks[0].factory",
+        ),
+        (
+            "factory = pipewireao.fgn-native",
+            "factory = pipewireao.calculon-fgn-native",
+            "graphs[0].factory",
         ),
     ];
     for (before, after, field) in cases {

@@ -1,7 +1,7 @@
 # PipeWireAO RTC
 
-`pipewireao-rtc` is the small headless development runner for Calculon graphs
-on PipeWireAO. It loads one or more simulated or recorded sources, existing
+`pipewireao-rtc` is the small headless development runner for FGN graphs on
+PipeWireAO. It loads one or more simulated or recorded sources, existing
 native ndarray filter graphs, non-actuating sinks, and exact ordinary PipeWire
 links from a standard PipeWire configuration. Serial graphs, one-source
 fan-out, and independent paths share one session lifecycle without adding
@@ -12,10 +12,12 @@ loaded.
 The repository contains the first executable runner increment plus the active
 development architecture and delivery contract. The maintained live fixture
 runs recorded FITS vectors through minimal, serial, forked, and independent
-`fgn-native` graph sessions into generic discard sinks. Physical devices,
-correction authority, recording, Julia
-execution, remote operation, progressive scheduling, and real-time
-qualification are deliberately deferred.
+`fgn-native` graph sessions into generic discard sinks. It also discovers an
+externally launched AdaptiveOpticsSim HIL source and sink and closes a
+deterministic Shack–Hartmann SCAO loop through an RTC-owned FGN graph. The
+runner does not load or execute Julia. Physical devices, correction authority,
+recording, in-process Julia graph execution, remote operation, progressive
+scheduling, and real-time qualification are deliberately deferred.
 
 ## Run the development fixture
 
@@ -63,7 +65,7 @@ cargo test --features live --test live_private_core -- --ignored --nocapture
 |---|---|
 | `pipewireao-rtc` | Development configuration, exact graph realization, basic lifecycle, diagnostics, equivalence, and scientist-facing integration boundary |
 | [PipeWireAO](https://github.com/DarrylGamroth/PipeWireAO) | Generic SPA/PipeWire ndarray transport, FGN plugin and host ABI, acquisition metadata, polling loops, row-block transport, and progressive execution |
-| `calculon-algorithms` | Transport-neutral scientific algorithms and declarations |
+| `calculon-algorithms` | Legacy-named Rust package containing transport-neutral scientific Algorithms and declarations |
 | PipeWireAO device-plugin repositories | Camera, deformable-mirror, file-source, and other hardware adapters |
 | `pipewireao-gui` | Interactive inspection, control, and visualization client |
 

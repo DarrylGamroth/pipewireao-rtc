@@ -28,10 +28,10 @@ roadmap is retained only in the [inactive design archive](archive/full-rtc/READM
 
 ## Starting assets
 
-The sibling Calculon and PipeWireAO repositories already provide the intended
-foundation:
+The sibling Rust FGN implementation and PipeWireAO repositories already
+provide the intended foundation:
 
-- typed Calculon algorithm declarations and array-level reference behavior;
+- typed Algorithm declarations and array-level reference behavior;
 - the FGN plugin ABI and ndarray graph host;
 - bounded scalar-property and ndarray-parameter publication;
 - a generated REVOLT Classic graph with explicit SHWFS subaperture origins;
@@ -68,7 +68,7 @@ flowchart LR
   maintained document set;
 - use standard PipeWire relaxed SPA-JSON rather than inventing another
   configuration language;
-- identify the exact current PipeWireAO and Calculon revisions; and
+- identify the exact current PipeWireAO and Rust FGN implementation revisions;
 - map RTC-DEV-001 through RTC-DEV-015 to implementation and tests as work
   begins.
 
@@ -143,7 +143,7 @@ and cleanup while group work is pending.
 - extend the RTC configuration with an explicit external ownership declaration
   and exact port contracts, without making the RTC interpret the external
   application's package, language, process, or private properties;
-- attach the runner-owned Calculon graph and links to the already-running HIL
+- attach the runner-owned FGN graph and links to the already-running HIL
   endpoint pair on the private core;
 - preserve same-sequence command exchange and apply command `n` to simulated
   frame `n + 1` with at most one exchange in flight; and
@@ -153,7 +153,7 @@ and cleanup while group work is pending.
 Exit evidence: the external endpoint rejection matrix passes; both adapter
 nodes are visible before load and survive failed load, retry, stop, restart, and
 unload; every runner-owned graph and link is removed; the unrelated fixture
-object survives; multiple complete frames close through Calculon with exact
+object survives; multiple complete frames close through FGN with exact
 sequence causality; direct and transported results satisfy declared tolerances;
 and the fixture runs without a GUI. This remains non-actuating functional
 evidence, not a deadline, physical-device, or safety claim.
@@ -229,9 +229,9 @@ or correction-critical suitability.
 | RTC-DEV-010 | 1c through 1e | implemented | partial | The exact serial, forked, and independent sessions each pass the private-core lifecycle and deliver to every sink; standard graph files are delegated unchanged and PipeWire owns branch execution; deterministic creation-point failure coverage uses the fake adapter, so live lower-level failure injection after every point remains missing |
 | RTC-DEV-011 | 1f | implemented | partial | Valid and invalid execution-group configurations pass; the live serial, fork, and independent fixtures preserve exact objects and links, quiesce the selected sinks, leave unaffected sinks progressing, and resume delivery. PipeWireAO pause/start retains the same FGN instance and does not call its separate reset operation, but accepted numerical output is not observed to prove state continuity |
 | RTC-DEV-012 | 1f | implemented | validated | Group start and stop use the one dispatcher and typed token, kind, origin, and group-target completions; mismatch, invalid request, effect failure to `FAULT`, stop/unload/required-failure supersession, late completion, retry, and repeated-cycle tests pass |
-| RTC-DEV-013 | 2 | partial | partial | Generic external source/sink ownership and exact configuration validation pass without implementation-specific admission; live RTC port validation, required-object failure, runner-owned cleanup, and survival of both application nodes plus an unrelated object remain missing |
-| RTC-DEV-014 | 2 | partial | partial | The separate integration package implements bounded complete-frame exchange and acquisition-to-model-time conversion; unit tests pass and both ordinary nodes publish, remain inspectable, and clean up on a private core. Same-sequence connected exchange, fault injection, and command-`n` to frame-`n+1` evidence are missing |
-| RTC-DEV-015 | 2 | planned | missing | Private-core flat and atmospheric closed-loop lifecycle, restart continuity, direct equivalence, and plant-diagnostic evidence without a GUI |
+| RTC-DEV-013 | 2 | partial | partial | Generic external source/sink ownership and exact configuration validation pass without implementation-specific admission; the live RTC validates both external port contracts, creates and activates only its graph and links, removes its owned objects, and preserves both application nodes plus an unrelated object. Live required-endpoint loss and incompatible-mutation evidence remain missing |
+| RTC-DEV-014 | 2 | partial | partial | The separate integration package implements bounded complete-frame exchange and acquisition-to-model-time conversion; unit tests pass, both ordinary nodes publish and clean up on a private core, and connected fixtures complete exact sequences across graph stop/restart. The SCAO fixture exchanges sequences 1 through 15 and accepts only finite same-sequence commands. Injected format and sequence faults plus an explicit command-`n`/frame-`n+1` oracle remain missing |
+| RTC-DEV-015 | 2 | partial | partial | The private-core deterministic Shack–Hartmann fixture discovers two external AOS nodes, generates an ordinary centroid → reconstructor → integrator FGN graph from a directly measured interaction matrix, reaches `READY` and `RUNNING`, preserves its graph across stop/restart after sequence 7, completes sequence 15, reduces both AOS and FGN residual norms below 1% of their initial values, reproduces the cancelling command within declared tolerance, unloads cleanly, and preserves external and unrelated nodes without a GUI. The atmospheric case and explicit per-sequence state comparison remain missing |
 
 Implementation and evidence state remain separate when this table is updated.
 A merged implementation is not validated until its complete evidence passes
@@ -252,7 +252,8 @@ RTC-DEV-010 is tracked across its independently observable surfaces:
 The recorded increment-1 validation baseline is PipeWireAO
 `abe269d63c0aa553c5cb96da245a8a5de715ec42`, the public PipeWireAO Rust
 binding `75f407498f24a884f97ef3dc4fa3675a61e641fd`, PipeWireAO SPA plugins
-`cc95b806b67439ca9526f49b5e141e2c0c37ed6e`, and Calculon
+`cc95b806b67439ca9526f49b5e141e2c0c37ed6e`, and the legacy-named
+`calculon-algorithms` Rust FGN implementation at
 `3d49237b3c9f4423f120b52bd2761cd5a90f5e94`. These revisions identify the
 interfaces inspected for this increment; they do not promote sibling worktree
 changes to evidence.
@@ -278,7 +279,7 @@ is in `tests/configuration.rs`; lifecycle and effect-completion coverage is in
 sibling repository's integration test.
 
 The live test is intentionally ignored by the generic Cargo suite because it
-requires the maintained sibling PipeWireAO and Calculon build artifacts. At
+requires the maintained sibling PipeWireAO and Rust FGN build artifacts. At
 the recorded increment-1 revisions, its explicit invocation passes the
 complete `Load` → `READY` → `Start` →
 `RUNNING` → `Stop` → `READY` → `Start` → `RUNNING` → `Stop` → `READY` →
@@ -298,14 +299,13 @@ graph instance; its separate graph-reset operation is not invoked. Numerical
 state-continuity evidence therefore remains partial until an admitted
 non-gating output observation can compare accepted values across the pause.
 
-The discard scheduling handshake, stable FITS node and output-port identities,
-and fixed-string negotiation repair are in local PipeWireAO SPA plugins `main`
-at `cc95b806b67439ca9526f49b5e141e2c0c37ed6e`. Factory tests cover two
-distinctly named FITS instances plus direct and `SPA_CHOICE_None`-negotiated
-schema/profile strings. The RTC live result uses those build-tree artifacts
-through `PIPEWIREAO_SPA_PLUGINS_BUILD`; the RTC repository creates, observes,
-and cleans up both its transport preflight and its FITS → graph → discard
-runner topology. This plugin revision is locally committed but not pushed.
+The current PipeWireAO SPA plugin working tree provides the discard scheduling
+handshake, stable FITS node and output-port identities, and fixed-string
+negotiation repair. Factory tests cover two distinctly named FITS instances
+plus direct and `SPA_CHOICE_None`-negotiated schema strings and configured
+source identities. The RTC live result uses those build-tree artifacts through
+`PIPEWIREAO_SPA_PLUGINS_BUILD`; the RTC repository creates, observes, and cleans
+up both its transport preflight and its FITS → graph → discard runner topology.
 
 The FITS source can stop producing when a non-looping file ends, but its public
 node surface does not yet publish a normal finite-source completion event or
@@ -327,16 +327,20 @@ keeps the two metric IDs it reads at its narrow discard boundary. A later
 PipeWireAO plugin binding can remove those constants; this gap does not require
 another module or unsafe shim.
 
-The external-node RTC fixture currently cannot construct its intervening
-Calculon graph against PipeWireAO `229acb2ba41ef767729da216f4b427e18efdb673`.
-That host exports `SPA_FGN_PLUGIN_ABI_VERSION` 7 and a `spa_fgn_format` ending
-at `schema`; Calculon `3d49237b3c9f4423f120b52bd2761cd5a90f5e94`
-still exports ABI version 8 and a trailing `profile` pointer. The public host
-correctly rejects `spa_fgn_plugin_get_interface` compatibility during graph
-construction with `ENOTSUP`. RTC-DEV-013 through RTC-DEV-015 therefore retain
-partial or missing live evidence until Calculon adopts the current public FGN
-ABI; the RTC must not add a compatibility layout or silently reinterpret the
-scientific schema.
+The public host and the current Rust FGN bundle now use
+`SPA_FGN_PLUGIN_ABI_VERSION` 7 and a `spa_fgn_format` ending at `schema`.
+PipeWire ndarray formats likewise use the schema as the authoritative payload
+contract and do not carry a second interpretation-profile field. This resolves
+the former ABI-layout blocker without an RTC compatibility shim. The
+deterministic flat-reference SCAO path now supplies initial connected numerical
+evidence. RTC-DEV-013 through RTC-DEV-015 remain partial pending
+required-endpoint failure, connected format and sequence fault injection,
+explicit per-sequence causality comparison, and the atmospheric reference.
+The SCAO graph also depends on the current uncommitted Rust FGN working-tree
+change that gives `shack-hartmann-image-f32` a required graph-rebuild
+`image_schema` binding. That narrow public-contract fix passes its native and
+FGN tests, but the RTC evidence cannot be pinned to a Rust FGN revision until
+the owning repository commits it.
 
 ## Development completion gate
 

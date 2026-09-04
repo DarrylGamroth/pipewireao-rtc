@@ -46,13 +46,15 @@ struct LiveNode {
 struct LiveLink {
     listener: pw::link::LinkListener,
     proxy: pw::link::Link,
+    state: Rc<RefCell<LinkAdmissionState>>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 enum LinkAdmissionState {
     Unknown,
     Pending(String),
-    Ready,
+    Paused,
+    Active,
     Failed(String),
 }
 
@@ -307,6 +309,7 @@ impl LiveGraphAdapter {
 
         let start_order = self.start_order.clone();
         self.start_nodes(&start_order, "start complete-frame session")?;
+        self.wait_for_links_active("start complete-frame session")?;
         self.status.discarded_by_sink = self.wait_for_discarded_buffers(&discarded_before_start)?;
         self.status.discarded_buffers = self.status.discarded_by_sink.values().sum();
         self.status.running = true;
@@ -461,6 +464,29 @@ impl LiveGraphAdapter {
         Err(ScientificDiagnostic::new(
             "topology",
             format!("required nodes did not all enter Running; observed states {states:?}"),
+        ))
+    }
+
+    fn wait_for_links_active(&mut self, label: &str) -> Result<(), ScientificDiagnostic> {
+        let mut states = Vec::new();
+        for _ in 0..100 {
+            self.roundtrip(label)?;
+            states = self
+                .links
+                .iter()
+                .map(|link| link.state.borrow().clone())
+                .collect::<Vec<_>>();
+            if states
+                .iter()
+                .all(|state| *state == LinkAdmissionState::Active)
+            {
+                return Ok(());
+            }
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+        Err(ScientificDiagnostic::new(
+            "topology",
+            format!("required links did not all enter Active; observed states {states:?}"),
         ))
     }
 
@@ -1129,9 +1155,8 @@ impl LiveGraphAdapter {
                     pw::link::LinkState::Unlinked => {
                         LinkAdmissionState::Failed("link became unlinked".to_owned())
                     }
-                    pw::link::LinkState::Paused | pw::link::LinkState::Active => {
-                        LinkAdmissionState::Ready
-                    }
+                    pw::link::LinkState::Paused => LinkAdmissionState::Paused,
+                    pw::link::LinkState::Active => LinkAdmissionState::Active,
                     pending => LinkAdmissionState::Pending(format!("{pending:?}")),
                 };
             })
@@ -1139,13 +1164,14 @@ impl LiveGraphAdapter {
         self.links.push(LiveLink {
             listener,
             proxy: link,
+            state: Rc::clone(&state),
         });
 
         let label = format!("links[{index}] {output} -> {input}");
         for _ in 0..100 {
             self.roundtrip(&label)?;
             match state.borrow().clone() {
-                LinkAdmissionState::Ready => {
+                LinkAdmissionState::Paused | LinkAdmissionState::Active => {
                     let retained_passive = observed_passive.borrow().as_deref() == Some("true");
                     if retained_passive != passive {
                         return Err(ScientificDiagnostic::new(
@@ -1395,16 +1421,6 @@ fn validate_ndarray_port(
         return Err(ScientificDiagnostic::new(
             format!("{}.ports.{}.schema", role.name(), port.name),
             format!("expected {:?}, observed {schema:?}", port.schema),
-        ));
-    }
-    if object
-        .properties
-        .iter()
-        .any(|property| property.key == pw::spa::sys::SPA_FORMAT_NDARRAY_profile)
-    {
-        return Err(ScientificDiagnostic::new(
-            format!("{}.ports.{}.profile", role.name(), port.name),
-            "the increment-1 format must not declare an unconfigured ndarray profile",
         ));
     }
     Ok(())

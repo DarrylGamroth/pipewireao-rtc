@@ -1,7 +1,7 @@
 # PipeWireAO RTC document set
 
 The maintained baseline starts with one non-actuating, complete-frame
-Calculon/PipeWireAO development graph, then extends the same runner into a
+FGN/PipeWireAO development graph, then extends the same runner into a
 small RTC workstation (RTCW) that can compose multiple ordinary PipeWireAO
 filter-graph instances. The runner loads, links, inspects, and tests the
 declared session without introducing another graph-authoring format.
@@ -31,6 +31,6 @@ Its historical identifiers remain reserved and are not selected.
 Generic ndarray, FGN, metadata, polling, row-block, and progressive-processing
 contracts remain authoritative in the
 [PipeWireAO repository](https://github.com/DarrylGamroth/PipeWireAO/tree/master/doc/dox/internals).
-Portable scientific algorithms and declarations remain authoritative in
-Calculon. This repository states only the RTC runner behavior that connects
-those pieces.
+Portable scientific Algorithm implementations and declarations remain
+authoritative in their owning packages. This repository states only the RTC
+runner behavior that connects those pieces.

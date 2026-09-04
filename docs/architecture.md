@@ -7,7 +7,7 @@ Review date: 2026-09-01
 ## Decision
 
 The first executable `pipewireao-rtc` product is a small headless runner for one
-non-actuating Calculon/PipeWireAO graph. It loads one standard PipeWire
+non-actuating FGN/PipeWireAO graph. It loads one standard PipeWire
 configuration, realizes a source → graph → sink topology, applies initial
 properties and ndarray parameters, exposes a small lifecycle, and leaves the
 result visible to ordinary PipeWire clients.
@@ -68,7 +68,7 @@ The first reference application is a transport-neutral AdaptiveOpticsSim plant
 through a separate `AdaptiveOpticsSimPipeWireHIL.jl` package. The application
 owns one complete WFS-frame source node and one non-actuating
 correction-command sink node. AdaptiveOpticsSim MUST NOT depend on or contain
-PipeWireAO code. The RTC runner owns the Calculon graphs and the declared links
+PipeWireAO code. The RTC runner owns the FGN graphs and the declared links
 to those external nodes; it does not load Julia, execute the simulation, or
 take ownership of the application nodes.
 
@@ -84,13 +84,13 @@ authority.
 The active implementation begins with:
 
 - one simulated or recorded complete-frame source;
-- one `fgn-native` Calculon execution composite;
+- one `fgn-native` execution composite;
 - one simulated, discard, or otherwise non-actuating sink;
 - one small Rust runner with a Statig hierarchical lifecycle and diagnostics;
 - initial scalar properties and ndarray parameters;
 - ordinary read-only PipeWire inspection; and
-- numerical and state-equivalence tests against the maintained Calculon or
-  fused reference.
+- numerical and state-equivalence tests against the maintained direct or fused
+  Algorithm reference.
 
 After that fixture, the active RTCW composition increment adds only:
 
@@ -106,7 +106,7 @@ After that fixture, the active RTCW composition increment adds only:
 
 The next reference-system increment adds one externally owned AdaptiveOpticsSim
 WFS source, one externally owned simulated command sink, and one or more
-runner-owned Calculon graphs between them. The integration package, not
+runner-owned FGN graphs between them. The integration package, not
 AdaptiveOpticsSim, owns PipeWire stream and acquisition-metadata mapping.
 
 The first maintained fixture is the minimal complete-frame source → graph →
@@ -168,7 +168,7 @@ flowchart LR
 | --- | --- |
 | `pipewireao-rtc` | Validate the development configuration, realize its exact session topology, serialize session and execution-group control, report observed status, and clean up the objects it owns. |
 | PipeWireAO | Own ndarray transport, format negotiation, scheduling, FGN hosting, property and parameter publication, and standard PipeWire introspection. |
-| Calculon | Own ordinary typed scientific algorithms and declarations of ports, shapes, schemas, scalar properties, ndarray parameters, and construction values. |
+| Scientific Algorithm packages | Own ordinary typed implementations and declarations of ports, shapes, schemas, scalar properties, ndarray parameters, and construction values. |
 | Source | Produce complete frames for simulation or deterministic replay. |
 | Sink | Consume graph output without addressing or controlling physical hardware. |
 | Observer | Inspect standard PipeWire objects and, where a suitable boundary exists, scientific samples. It is optional and never owns runner lifecycle or graph progress. |
@@ -222,9 +222,15 @@ Each graph remains one canonical PipeWireAO model. A script, maintained
 generator, or future GUI may construct the standard configuration, but none
 introduces another graph executor or private transport.
 
+The deprecated product name is not part of the RTC domain model. Runner-local
+configuration uses `pipewireao.fgn-native`, and implementation types use FGN
+terminology. Existing `org.calculon...` schema strings and legacy Rust artifact
+paths remain unchanged compatibility boundaries until a separate versioned
+schema and package migration defines their replacements.
+
 ## Scientist boundary
 
-A scientist supplies an ordinary typed Calculon algorithm and declaration:
+A scientist supplies an ordinary typed Algorithm and declaration:
 
 - scientific port names, element types, shapes, and schemas;
 - scalar runtime properties;
@@ -244,7 +250,7 @@ executor such as AdaptiveOpticsSim.
 Rust is the default language for the runner because it is a small stateful
 PipeWire client and configuration tool. This choice is not part of the
 scientist-facing ABI. C remains at existing SPA and PipeWireAO ABI boundaries;
-scientific algorithms remain in their Calculon implementation language.
+scientific Algorithms remain in their owning implementation language.
 
 This is decision **RTC-ARCH-012**: implement the runner lifecycle with
 Statig's blocking state-machine API and a single serialized dispatcher from
@@ -267,9 +273,9 @@ This repository does not duplicate the data-plane contracts:
 - [ndarray filter graph](https://github.com/DarrylGamroth/PipeWireAO/blob/master/doc/dox/internals/filter-graph-ndarray.md)
   owns the plugin ABI, graph validation, execution, properties, parameters,
   and FGN worker behavior;
-- the Calculon `docs/scalar-property-contract.md` contract owns portable
+- the Rust FGN implementation's scalar-property contract owns portable
   property semantics; and
-- Calculon algorithm declarations own scientific ports, schemas, shapes, and
+- Algorithm declarations own scientific ports, schemas, shapes, and
   reference behavior.
 
 Row-block and progressive-processing documents remain valid PipeWireAO design

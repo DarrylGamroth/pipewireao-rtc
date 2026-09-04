@@ -7,7 +7,7 @@ mod decode;
 const SIMULATED_SOURCE_FACTORY: &str = "pipewireao.simulated-complete-frame";
 const FITS_SOURCE_FACTORY: &str = "api.fits.source";
 const SINK_FACTORY: &str = "api.pipewireao.discard";
-const GRAPH_FACTORY: &str = "pipewireao.calculon-fgn-native";
+const GRAPH_FACTORY: &str = "pipewireao.fgn-native";
 const FILTER_CHAIN_MODULE: &str = "libpipewire-module-ndarray-filter-chain";
 const SPA_NODE_FACTORY_MODULE: &str = "libpipewire-module-spa-node-factory";
 
@@ -97,7 +97,7 @@ impl EndpointFactory {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum GraphFactory {
-    CalculonFgnNative,
+    FgnNative,
 }
 
 impl GraphFactory {
@@ -600,7 +600,7 @@ fn validate_graph(
     graph: &ObjectSpec<GraphFactory>,
     field: &str,
 ) -> Result<(), ScientificDiagnostic> {
-    if graph.realization != ObjectRealization::Factory(GraphFactory::CalculonFgnNative) {
+    if graph.realization != ObjectRealization::Factory(GraphFactory::FgnNative) {
         return Err(ScientificDiagnostic::new(
             format!("{field}.factory"),
             "graph must use the fgn-native factory",
@@ -1058,7 +1058,7 @@ fn validate_links(config: &DevelopmentConfig) -> Result<(), ScientificDiagnostic
 }
 
 fn split_endpoint(endpoint: &str) -> Result<(&str, &str), &'static str> {
-    let Some((node, port)) = endpoint.rsplit_once(':') else {
+    let Some((node, port)) = endpoint.split_once(':') else {
         return Err("endpoint must use node.name:port.name syntax");
     };
     if node.is_empty() || port.is_empty() {
