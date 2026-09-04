@@ -182,12 +182,11 @@ command failure reach `FAULT`; retry succeeds; and unload removes only
 RTC-owned links. This proves an implementation-independent RTC component, not a
 runner-hosted Julia execution service.
 
-The runner-side admission is implemented. Standard configuration can declare an
-externally owned processing graph with explicit `session` or `application` run
-control. Identity admission, ownership-safe unload, loss detection, stale-proxy
-cleanup, and replacement retry pass with an externally owned FGN instance. The
-former start and pause command path does not satisfy the revised owner-mediated
-contract and is being replaced.
+The runner-side admission and owner-mediated control path are implemented.
+Standard configuration can declare an externally owned processing graph with
+explicit `session` or `application` run control. Identity admission,
+ownership-safe unload, loss detection, stale-proxy cleanup, replacement retry,
+and durable stop/restart pass with externally owned FGN and Julia instances.
 
 `FilterGraphPipeWire` commit `663b9a8` adds an explicit PipeWire boundary-layout
 option for rank-one ports. Its direct adapter test shows that a graph published
@@ -304,14 +303,15 @@ RTC-DEV-010 is tracked across its independently observable surfaces:
 
 ### Increment 1 implementation note
 
-The recorded increment-1 validation baseline is PipeWireAO
-`abe269d63c0aa553c5cb96da245a8a5de715ec42`, the public PipeWireAO Rust
-binding `75f407498f24a884f97ef3dc4fa3675a61e641fd`, PipeWireAO SPA plugins
-`cc95b806b67439ca9526f49b5e141e2c0c37ed6e`, and the legacy-named
+The recorded validation baseline is PipeWireAO
+`c6b7ba1b8e1b0892fc13b658379b1df271c2fe9a`, the public PipeWireAO Rust
+binding `b4240109f8427ca1fc02e392ca62c280dbeaaa2d`, PipeWireAO_jll
+`v1.7.0+10`, PipeWireAO.jl `v0.6.3`, JuliaFilterGraph
+`cb3f9f59c2533139a5218297f97d22eb851c2337`, PipeWireAO SPA plugins
+`2fea4de3a6b3e278eedd96f388a7e3017b91f189`, and the legacy-named
 `calculon-algorithms` Rust FGN implementation at
 `3d49237b3c9f4423f120b52bd2761cd5a90f5e94`. These revisions identify the
-interfaces inspected for this increment; they do not promote sibling worktree
-changes to evidence.
+interfaces and artifacts used by the maintained private-core validation.
 
 The executable, standard PipeWire relaxed SPA-JSON decoder, Statig lifecycle,
 fake graph adapter, and live private-core adapter are present. A narrow C shim
@@ -339,23 +339,20 @@ requires the maintained sibling PipeWireAO and Rust FGN build artifacts. At
 the recorded increment-1 revisions, its explicit invocation exercises the
 requested `Load` → `READY` → `Start` → `RUNNING` → `Stop` → `READY` →
 `Start` → `RUNNING` → `Stop` → `READY` → `Unload` → `OFFLINE` event sequence
-for the minimal, serial, forked, and independent sessions. It also sends stop
-and start requests to individual execution groups, observes a short interval
-without new sink counters, and observes continued delivery in unaffected
-groups. A later direct node-state audit found that `Pause` does not clear the
-server-side active state: the realized nodes can return to `Running` while the
-RTC reports `READY`. The existing counter checks therefore do not validate
-durable stop or `READY` quiescence. Before admitting links, the test enumerates
-the public port formats and
+for the minimal, serial, forked, and independent sessions. It also sends
+owner-mediated stop and start requests to individual execution groups,
+observes a short interval without new sink counters, and observes continued
+delivery in unaffected groups. Token-matched owner status confirms durable
+session and group stop before the RTC reports `READY`. Before admitting links,
+the test enumerates the public port formats and
 checks their directions, element types, shapes, layouts, rates, scientific
 schemas, and every discard sink's format wildcard. It then confirms every
 configured node and link through ordinary inspection, a discard-buffer
 increase at every sink after each start, complete owned-object cleanup, and
 preservation of an unrelated node. The test observes delivery to each sink,
 not the numerical contents of output frames. Numerical state-continuity
-evidence remains partial until durable activation control exists and an
-admitted non-gating output observation can compare accepted values across the
-stop boundary.
+evidence remains partial until an admitted non-gating output observation can
+compare accepted values across the stop boundary.
 
 The current PipeWireAO SPA plugin working tree provides the discard scheduling
 handshake, stable FITS node and output-port identities, and fixed-string
@@ -373,11 +370,12 @@ source completion. The narrow lower-level contract needed is an observable
 public EOS/completion indication from the required source.
 
 The runner pins PipeWireAO-rs revision
-`75f407498f24a884f97ef3dc4fa3675a61e641fd`. That revision accepts negotiated
+`b4240109f8427ca1fc02e392ca62c280dbeaaa2d`. That revision accepts negotiated
 fixed ndarray values represented as `SPA_CHOICE_None`, removes the retired
-acquisition-wire definitions, and exposes a self-destruction-aware owner for
-locally loaded modules. The live adapter uses that owner directly; it no longer
-carries module-lifetime or retired-symbol compatibility shims.
+acquisition-wire definitions, exposes a self-destruction-aware owner for
+locally loaded modules, and provides the typed Version 1 run-control POD API.
+The live adapter uses those public APIs directly; it carries neither a local
+run-control codec nor module-lifetime or retired-symbol compatibility shims.
 
 The binding does not expose the public
 `pipewireao-plugins/discard.h` property identifiers. The live adapter therefore

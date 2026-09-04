@@ -1,3 +1,0 @@
-[env]
-CPATH = { value = ".cargo/compat", relative = true }
-BINDGEN_EXTRA_CLANG_ARGS = "-include pipewireao_rtc_bindgen_compat.h"

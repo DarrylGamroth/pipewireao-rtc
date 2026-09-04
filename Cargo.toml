@@ -8,7 +8,7 @@ description = "Headless non-actuating PipeWireAO development runner"
 
 [dependencies]
 statig = "=0.4.1"
-pipewire = { package = "pipewire-ao", git = "https://github.com/DarrylGamroth/PipeWireAO-rs.git", rev = "75f407498f24a884f97ef3dc4fa3675a61e641fd", optional = true }
+pipewire = { package = "pipewire-ao", git = "https://github.com/DarrylGamroth/PipeWireAO-rs.git", rev = "b4240109f8427ca1fc02e392ca62c280dbeaaa2d", optional = true }
 
 [build-dependencies]
 cc = "1.2"

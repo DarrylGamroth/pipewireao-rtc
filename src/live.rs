@@ -1,5 +1,4 @@
 use crate::{
-    run_control::{self, RunControlStatus, RunState},
     ConfigurationInput, DevelopmentConfig, EffectExecutor, EffectToken, EndpointFactory,
     GraphFactory, LifecycleEffect, LifecycleEffectSuccess, ObjectRealization, ObjectRole,
     ObjectSpec, PortDirection, PortSpec, ScientificDiagnostic,
@@ -7,6 +6,7 @@ use crate::{
 use pipewire as pw;
 use pw::properties::PropertiesBox;
 use pw::registry::GlobalObject;
+use pw::run_control::{self, RunControlError, RunControlStatus, RunState};
 use pw::spa::param::format::{ElementType, NdArrayFormat, NdArrayLayout};
 use pw::spa::pod::{Object as PodObject, Value};
 use pw::spa::utils::{Fraction, SpaTypes};
@@ -585,9 +585,9 @@ impl LiveGraphAdapter {
                         return;
                     };
                     match run_control::parse_status(pod) {
-                        Ok(Some(status)) => observed.borrow_mut().push(Ok(status)),
-                        Ok(None) => {}
-                        Err(error) => observed.borrow_mut().push(Err(error)),
+                        Ok(status) => observed.borrow_mut().push(Ok(status)),
+                        Err(RunControlError::NotRunControl) => {}
+                        Err(error) => observed.borrow_mut().push(Err(error.to_string())),
                     }
                 })
                 .register();
@@ -667,7 +667,10 @@ impl LiveGraphAdapter {
             graph.status_events.borrow_mut().clear();
             let bytes =
                 run_control::build_request(wire_token, requested_state).map_err(|error| {
-                    ScientificDiagnostic::new(format!("graph {graph_name}.run-control"), error)
+                    ScientificDiagnostic::new(
+                        format!("graph {graph_name}.run-control"),
+                        error.to_string(),
+                    )
                 })?;
             let pod = pw::spa::pod::Pod::from_bytes(&bytes).ok_or_else(|| {
                 ScientificDiagnostic::new(
