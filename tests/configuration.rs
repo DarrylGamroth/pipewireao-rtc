@@ -20,12 +20,12 @@ fn replace_once(document: &str, before: &str, after: &str) -> String {
 #[test]
 fn maintained_session_topologies_are_resolved() {
     let cases = [
-        (MINIMAL, 3, 2, 1),
-        (SERIAL, 4, 3, 1),
-        (FORK, 5, 4, 2),
-        (INDEPENDENT, 6, 4, 2),
+        (MINIMAL, 3, 2, 1, 1),
+        (SERIAL, 4, 3, 1, 0),
+        (FORK, 5, 4, 2, 0),
+        (INDEPENDENT, 6, 4, 2, 0),
     ];
-    for (document, objects, links, execution_groups) in cases {
+    for (document, objects, links, execution_groups, observations) in cases {
         let config = DevelopmentConfig::parse(document).expect("maintained topology");
         assert_eq!(config.object_count(), objects);
         assert_eq!(config.links.len(), links);
@@ -33,7 +33,7 @@ fn maintained_session_topologies_are_resolved() {
         assert_eq!(config.topological_node_names().len(), objects);
         assert!(config.properties.is_empty());
         assert!(config.parameters.is_empty());
-        assert!(config.observations.is_empty());
+        assert_eq!(config.observations.len(), observations);
     }
 
     let external = DevelopmentConfig::parse(EXTERNAL).expect("external topology");
@@ -465,8 +465,8 @@ fn fits_factory_arguments_are_validated_field_by_field() {
 fn links_validate_ports_directions_shapes_schemas_and_producers() {
     let cases = [
         (
-            "pipewireao-rtc-source:output",
-            "pipewireao-rtc-source:missing",
+            "output = \"pipewireao-rtc-source:output\"",
+            "output = \"pipewireao-rtc-source:missing\"",
             "links[0].output",
         ),
         (
@@ -496,14 +496,32 @@ fn links_validate_ports_directions_shapes_schemas_and_producers() {
 }
 
 #[test]
-fn optional_observer_cannot_become_a_gating_session_link() {
-    let error = DevelopmentConfig::parse(&replace_once(
+fn optional_observation_surfaces_are_declared_source_or_graph_outputs() {
+    let config = DevelopmentConfig::parse(MINIMAL).expect("declared graph output");
+    assert_eq!(config.observations, ["pipewireao-rtc-source:output"]);
+
+    for endpoint in [
+        "graph.output",
+        "pipewireao-rtc-graph:input",
+        "pipewireao-rtc-graph:missing",
+        "pipewireao-rtc-sink:in",
+    ] {
+        let error = DevelopmentConfig::parse(&replace_once(
+            MINIMAL,
+            "observations = [ \"pipewireao-rtc-source:output\" ]",
+            &format!("observations = [ \"{endpoint}\" ]"),
+        ))
+        .expect_err("invalid observation surface");
+        assert_eq!(error.field(), "observations[0]", "endpoint {endpoint}");
+    }
+
+    let duplicate = replace_once(
         MINIMAL,
-        "observations = []",
-        "observations = [ graph.output ]",
-    ))
-    .expect_err("no non-gating observation boundary exists");
-    assert_eq!(error.field(), "observations");
+        "observations = [ \"pipewireao-rtc-source:output\" ]",
+        "observations = [ \"pipewireao-rtc-source:output\" \"pipewireao-rtc-source:output\" ]",
+    );
+    let error = DevelopmentConfig::parse(&duplicate).expect_err("duplicate observation");
+    assert_eq!(error.field(), "observations[1]");
 }
 
 #[test]

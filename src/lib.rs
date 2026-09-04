@@ -18,5 +18,5 @@ pub use lifecycle::{
     LifecycleEffectSuccess, LifecycleEvent, LifecycleState,
 };
 #[cfg(feature = "live")]
-pub use live::{LiveGraphAdapter, LiveGraphStatus};
-pub use runner::{EffectExecutor, Runner};
+pub use live::{DiscardObservation, LiveGraphAdapter, LiveGraphStatus};
+pub use runner::{EffectExecutor, RequiredObjectStatus, Runner};

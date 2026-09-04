@@ -4,6 +4,13 @@ use crate::{
 };
 use std::collections::BTreeMap;
 
+/// Result of one required-object poll outside the lifecycle state machine.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum RequiredObjectStatus {
+    Present,
+    FiniteSourceCompleted,
+}
+
 /// Executes blocking graph work after the Statig handler has returned.
 pub trait EffectExecutor {
     /// Performs one typed blocking effect outside the lifecycle handler.
@@ -26,8 +33,8 @@ pub trait EffectExecutor {
     ///
     /// Returns the scientific diagnostic to dispatch when a required object is
     /// lost or no longer satisfies its admitted contract.
-    fn check_required_objects(&mut self) -> Result<(), ScientificDiagnostic> {
-        Ok(())
+    fn check_required_objects(&mut self) -> Result<RequiredObjectStatus, ScientificDiagnostic> {
+        Ok(RequiredObjectStatus::Present)
     }
 }
 
@@ -99,8 +106,16 @@ impl<E: EffectExecutor> Runner<E> {
         ) {
             return Ok(self.state());
         }
-        if let Err(diagnostic) = self.executor.check_required_objects() {
-            return self.dispatch(LifecycleEvent::RequiredObjectFailed(diagnostic));
+        match self.executor.check_required_objects() {
+            Ok(RequiredObjectStatus::FiniteSourceCompleted)
+                if self.state() == LifecycleState::Running =>
+            {
+                return self.dispatch(LifecycleEvent::FiniteSourceCompleted);
+            }
+            Ok(RequiredObjectStatus::Present | RequiredObjectStatus::FiniteSourceCompleted) => {}
+            Err(diagnostic) => {
+                return self.dispatch(LifecycleEvent::RequiredObjectFailed(diagnostic));
+            }
         }
         Ok(self.state())
     }

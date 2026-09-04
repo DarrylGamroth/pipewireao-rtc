@@ -3,8 +3,10 @@ using FilterGraphPipeWire
 using JuliaFilterGraph
 using PipeWireAO
 
-length(ARGS) == 3 || error("expected CORE_NAME GRAPH_CONFIGURATION STOP_FILE")
-core_name, graph_configuration, stop_file = ARGS
+length(ARGS) == 4 || error("expected CORE_NAME GRAPH_CONFIGURATION STOP_FILE RATE")
+core_name, graph_configuration, stop_file, rate_text = ARGS
+rate = parse(Int, rate_text)
+rate > 0 || error("RATE must be positive")
 
 graph = JuliaFilterGraph.prepare_graph(
     graph_configuration;
@@ -14,7 +16,7 @@ node = FilterGraphPipeWire.PipeWireNode(
     graph;
     name="pipewireao-rtc-external-graph",
     remote=core_name,
-    rate=(1_000, 1),
+    rate=(rate, 1),
     boundary_layout=FilterGraphAlgorithms.RowMajorLayout(),
     run_control=true,
 )

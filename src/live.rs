@@ -1,7 +1,7 @@
 use crate::{
     ConfigurationInput, DevelopmentConfig, EffectExecutor, EffectToken, EndpointFactory,
     GraphFactory, LifecycleEffect, LifecycleEffectSuccess, ObjectRealization, ObjectRole,
-    ObjectSpec, PortDirection, PortSpec, ScientificDiagnostic,
+    ObjectSpec, PortDirection, PortSpec, RequiredObjectStatus, ScientificDiagnostic,
 };
 use pipewire as pw;
 use pw::properties::PropertiesBox;
@@ -21,11 +21,8 @@ const SPA_NODE_FACTORY: &str = "spa-node-factory";
 const FITS_LIBRARY_FILE: &str = "libspa-fits.so";
 const DISCARD_LIBRARY: &str = "pipewireao/libspa-pipewireao-discard";
 const DISCARD_LIBRARY_FILE: &str = "libspa-pipewireao-discard.so";
-// Public IDs from pipewireao-plugins/discard.h. Keep these at the narrow
-// adapter boundary until the PipeWireAO Rust bindings expose that header.
-const DISCARD_BUFFERS_PROPERTY: u32 = 0x0100_0000;
-const DISCARD_PROCESS_CALLS_PROPERTY: u32 = DISCARD_BUFFERS_PROPERTY + 4;
 const DISCARD_METRIC_SEQUENCE: i32 = 0x4453;
+const FITS_STATUS_SEQUENCE: i32 = 0x4649;
 const FORMAT_ENUM_SEQUENCE: i32 = 0x4654;
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -35,6 +32,15 @@ pub struct LiveGraphStatus {
     pub running: bool,
     pub discarded_buffers: u64,
     pub discarded_by_sink: BTreeMap<String, u64>,
+}
+
+/// Format-independent metrics reported by one development discard sink.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct DiscardObservation {
+    pub buffers: u64,
+    pub bytes: u64,
+    pub payload_digest: u64,
+    pub digest_bytes: u64,
 }
 
 struct ControlledGraph {
@@ -191,6 +197,7 @@ struct RequiredExternalObject {
     role: ObjectRole,
     node_name: String,
     global_id: u32,
+    expected_rate: Fraction,
     ports: Vec<RequiredExternalPort>,
 }
 
@@ -203,12 +210,15 @@ pub struct LiveGraphAdapter {
     owned_node_names: Vec<String>,
     required_node_names: Vec<String>,
     required_external_objects: Vec<RequiredExternalObject>,
+    finite_source_names: Vec<String>,
     graph_order: Vec<String>,
     sink_names: Vec<String>,
     execution_group_nodes: BTreeMap<String, Vec<String>>,
     execution_group_sinks: BTreeMap<String, Vec<String>>,
     expected_objects: usize,
     expected_links: usize,
+    creation_failure_after: Option<usize>,
+    created_resources: usize,
     status: LiveGraphStatus,
     globals: Rc<RefCell<BTreeMap<u32, GlobalObject<PropertiesBox>>>>,
     errors: Rc<RefCell<Vec<String>>>,
@@ -228,15 +238,42 @@ impl LiveGraphAdapter {
     /// Returns a diagnostic when the main loop, context, core, or registry
     /// cannot be created through the public interface.
     pub fn connect(remote_name: impl Into<String>) -> Result<Self, ScientificDiagnostic> {
-        pw::init();
         let remote_name = remote_name.into();
+        Self::connect_with_options(&remote_name, None)
+    }
+
+    /// Connects a live adapter that injects one failure after the selected
+    /// runner-owned node or link has actually been created.
+    ///
+    /// This constructor exists for private-core integration testing. The
+    /// failure is one-shot so the same runner can prove retry and cleanup.
+    #[doc(hidden)]
+    pub fn connect_with_creation_failure(
+        remote_name: impl Into<String>,
+        after: usize,
+    ) -> Result<Self, ScientificDiagnostic> {
+        if after == 0 {
+            return Err(ScientificDiagnostic::new(
+                "creation failure point",
+                "failure point must be positive",
+            ));
+        }
+        let remote_name = remote_name.into();
+        Self::connect_with_options(&remote_name, Some(after))
+    }
+
+    fn connect_with_options(
+        remote_name: &str,
+        creation_failure_after: Option<usize>,
+    ) -> Result<Self, ScientificDiagnostic> {
+        pw::init();
         let main_loop = pw::main_loop::MainLoopRc::new(None).map_err(|error| {
             ScientificDiagnostic::new("PipeWire main loop", format!("creation failed: {error}"))
         })?;
         let context = pw::context::ContextRc::new(&main_loop, None).map_err(|error| {
             ScientificDiagnostic::new("PipeWire context", format!("creation failed: {error}"))
         })?;
-        let connect_properties = [("remote.name", remote_name.clone())]
+        let connect_properties = [("remote.name", remote_name)]
             .into_iter()
             .collect::<PropertiesBox>();
         let core = context
@@ -283,12 +320,15 @@ impl LiveGraphAdapter {
             owned_node_names: Vec::new(),
             required_node_names: Vec::new(),
             required_external_objects: Vec::new(),
+            finite_source_names: Vec::new(),
             graph_order: Vec::new(),
             sink_names: Vec::new(),
             execution_group_nodes: BTreeMap::new(),
             execution_group_sinks: BTreeMap::new(),
             expected_objects: 0,
             expected_links: 0,
+            creation_failure_after,
+            created_resources: 0,
             status: LiveGraphStatus::default(),
             globals,
             errors,
@@ -325,6 +365,36 @@ impl LiveGraphAdapter {
         Ok(observed)
     }
 
+    /// Reads buffer counts and the ordered payload digest for every sink.
+    ///
+    /// `digest_bytes == bytes` proves that every advertised payload byte was
+    /// addressable and included in `payload_digest`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a scientific diagnostic when a sink metric is unavailable.
+    pub fn observe_discard_payloads(
+        &self,
+    ) -> Result<BTreeMap<String, DiscardObservation>, ScientificDiagnostic> {
+        self.sink_names
+            .iter()
+            .map(|sink| {
+                let counter =
+                    |metric: pw::discard::DiscardMetric| self.discard_counter(sink, metric);
+                let observation = DiscardObservation {
+                    buffers: counter(pw::discard::DiscardMetric::Buffers)?,
+                    bytes: counter(pw::discard::DiscardMetric::Bytes)?,
+                    payload_digest: u64::from_ne_bytes(
+                        self.discard_metric_long(sink, pw::discard::DiscardMetric::PayloadDigest)?
+                            .to_ne_bytes(),
+                    ),
+                    digest_bytes: counter(pw::discard::DiscardMetric::DigestBytes)?,
+                };
+                Ok((sink.clone(), observation))
+            })
+            .collect()
+    }
+
     fn realize(
         &mut self,
         config: &DevelopmentConfig,
@@ -333,52 +403,20 @@ impl LiveGraphAdapter {
         config.validate()?;
         self.cleanup(Some(token))?;
         self.clear_errors();
-
-        self.owned_node_names = config
-            .owned_node_names()
-            .into_iter()
-            .map(str::to_owned)
-            .collect();
-        self.required_node_names = config.node_names().into_iter().map(str::to_owned).collect();
-        self.graph_order = config.session_controlled_graph_names();
-        self.sink_names = config
-            .sinks
-            .iter()
-            .filter(|sink| !sink.realization.is_external())
-            .map(|sink| sink.node_name.clone())
-            .collect();
-        self.execution_group_nodes = config
-            .execution_groups
-            .iter()
-            .map(|group| {
-                (
-                    group.name.clone(),
-                    config
-                        .execution_group_graph_names(&group.name)
-                        .expect("validated execution group"),
-                )
-            })
-            .collect();
-        self.execution_group_sinks = config
-            .execution_groups
-            .iter()
-            .map(|group| {
-                (
-                    group.name.clone(),
-                    config
-                        .execution_group_sink_names(&group.name)
-                        .expect("validated execution group"),
-                )
-            })
-            .collect();
-        self.expected_objects = config.owned_object_count();
-        self.expected_links = config.links.len();
+        self.created_resources = 0;
+        self.prepare_realization(config);
 
         for (index, source) in config.sources.iter().enumerate() {
             let field = format!("sources[{index}]");
             if let Err(error) = self.create_source(source, &field) {
                 let _ = self.cleanup(Some(token));
                 return Err(error);
+            }
+            if !source.realization.is_external() {
+                if let Err(error) = self.finish_creation_point(&field) {
+                    let _ = self.cleanup(Some(token));
+                    return Err(error);
+                }
             }
         }
         for (index, graph) in config.graphs.iter().enumerate() {
@@ -387,12 +425,24 @@ impl LiveGraphAdapter {
                 let _ = self.cleanup(Some(token));
                 return Err(error);
             }
+            if !graph.realization.is_external() {
+                if let Err(error) = self.finish_creation_point(&field) {
+                    let _ = self.cleanup(Some(token));
+                    return Err(error);
+                }
+            }
         }
         for (index, sink) in config.sinks.iter().enumerate() {
             let field = format!("sinks[{index}]");
             if let Err(error) = self.create_sink(sink, &field) {
                 let _ = self.cleanup(Some(token));
                 return Err(error);
+            }
+            if !sink.realization.is_external() {
+                if let Err(error) = self.finish_creation_point(&field) {
+                    let _ = self.cleanup(Some(token));
+                    return Err(error);
+                }
             }
         }
 
@@ -430,6 +480,78 @@ impl LiveGraphAdapter {
         Ok(())
     }
 
+    fn prepare_realization(&mut self, config: &DevelopmentConfig) {
+        self.owned_node_names = config
+            .owned_node_names()
+            .into_iter()
+            .map(str::to_owned)
+            .collect();
+        self.required_node_names = config.node_names().into_iter().map(str::to_owned).collect();
+        self.finite_source_names = if config.sources.iter().all(|source| {
+            matches!(
+                source.realization,
+                ObjectRealization::Factory(EndpointFactory::FitsCompleteFrameSource)
+            ) && source.arguments.get("api.fits.loop").map(String::as_str) == Some("false")
+        }) {
+            config
+                .sources
+                .iter()
+                .map(|source| source.node_name.clone())
+                .collect()
+        } else {
+            Vec::new()
+        };
+        self.graph_order = config.session_controlled_graph_names();
+        self.sink_names = config
+            .sinks
+            .iter()
+            .filter(|sink| !sink.realization.is_external())
+            .map(|sink| sink.node_name.clone())
+            .collect();
+        self.execution_group_nodes = config
+            .execution_groups
+            .iter()
+            .map(|group| {
+                (
+                    group.name.clone(),
+                    config
+                        .execution_group_graph_names(&group.name)
+                        .expect("validated execution group"),
+                )
+            })
+            .collect();
+        self.execution_group_sinks = config
+            .execution_groups
+            .iter()
+            .map(|group| {
+                (
+                    group.name.clone(),
+                    config
+                        .execution_group_sink_names(&group.name)
+                        .expect("validated execution group"),
+                )
+            })
+            .collect();
+        self.expected_objects = config.owned_object_count();
+        self.expected_links = config.links.len();
+    }
+
+    fn finish_creation_point(&mut self, field: &str) -> Result<(), ScientificDiagnostic> {
+        self.created_resources += 1;
+        if self.creation_failure_after == Some(self.created_resources) {
+            self.creation_failure_after = None;
+            Err(ScientificDiagnostic::new(
+                field,
+                format!(
+                    "injected live failure after runner-owned creation point {}",
+                    self.created_resources
+                ),
+            ))
+        } else {
+            Ok(())
+        }
+    }
+
     fn admit_ports_and_links(
         &mut self,
         config: &DevelopmentConfig,
@@ -440,6 +562,7 @@ impl LiveGraphAdapter {
         // partially realized processing path.
         for (index, link) in config.links_downstream_first() {
             self.create_link(index, &link.output, &link.input, link.passive)?;
+            self.finish_creation_point(&format!("links[{index}]"))?;
         }
         Ok(())
     }
@@ -788,6 +911,7 @@ impl LiveGraphAdapter {
         self.owned_node_names.clear();
         self.required_node_names.clear();
         self.required_external_objects.clear();
+        self.finite_source_names.clear();
         self.graph_order.clear();
         self.sink_names.clear();
         self.execution_group_nodes.clear();
@@ -1139,6 +1263,77 @@ impl LiveGraphAdapter {
         self.discard_buffer_counts_for(&self.sink_names)
     }
 
+    fn fits_source_completed(&self, source_name: &str) -> Result<bool, ScientificDiagnostic> {
+        let global = self.node_global(source_name)?;
+        let node = self
+            .registry
+            .bind::<pw::node::Node, _>(&global)
+            .map_err(|error| {
+                ScientificDiagnostic::new(
+                    format!("source {source_name}.{}", pw::fits::COMPLETED_PROPERTY_NAME),
+                    format!("cannot bind FITS source status: {error}"),
+                )
+            })?;
+        let result = Rc::new(RefCell::new(None));
+        let observed = Rc::clone(&result);
+        let _listener = node
+            .add_listener_local()
+            .param(move |_sequence, param_type, _index, _next, param| {
+                if param_type != pw::spa::param::ParamType::Props {
+                    return;
+                }
+                let value = param
+                    .ok_or_else(|| "FITS source returned an empty Props parameter".to_owned())
+                    .and_then(|pod| {
+                        pod.as_object()
+                            .map_err(|error| format!("FITS Props is not an object: {error}"))
+                    })
+                    .and_then(|object| {
+                        object
+                            .find_prop(pw::spa::utils::Id(pw::fits::COMPLETED_PROPERTY))
+                            .ok_or_else(|| {
+                                format!("{} is missing", pw::fits::COMPLETED_PROPERTY_NAME)
+                            })
+                    })
+                    .and_then(|property| {
+                        property.value().get_bool().map_err(|error| {
+                            format!(
+                                "{} is not a Bool: {error}",
+                                pw::fits::COMPLETED_PROPERTY_NAME
+                            )
+                        })
+                    });
+                *observed.borrow_mut() = Some(value);
+            })
+            .register();
+        node.enum_params(
+            FITS_STATUS_SEQUENCE,
+            Some(pw::spa::param::ParamType::Props),
+            0,
+            1,
+        );
+        self.roundtrip(&format!(
+            "source {source_name}.{}",
+            pw::fits::COMPLETED_PROPERTY_NAME
+        ))?;
+        let completed = result
+            .borrow_mut()
+            .take()
+            .ok_or_else(|| {
+                ScientificDiagnostic::new(
+                    format!("source {source_name}.{}", pw::fits::COMPLETED_PROPERTY_NAME),
+                    "FITS source did not return its completion parameter",
+                )
+            })?
+            .map_err(|message| {
+                ScientificDiagnostic::new(
+                    format!("source {source_name}.{}", pw::fits::COMPLETED_PROPERTY_NAME),
+                    message,
+                )
+            })?;
+        Ok(completed)
+    }
+
     fn discard_buffer_counts_for(
         &self,
         sink_names: &[String],
@@ -1146,19 +1341,33 @@ impl LiveGraphAdapter {
         sink_names
             .iter()
             .map(|sink_name| {
-                self.discard_metric(sink_name, DISCARD_BUFFERS_PROPERTY, "discard.buffers")
+                self.discard_counter(sink_name, pw::discard::DiscardMetric::Buffers)
                     .map(|value| (sink_name.clone(), value))
             })
             .collect()
     }
 
-    fn discard_metric(
+    fn discard_counter(
         &self,
         sink_name: &str,
-        property_id: u32,
-        metric_name: &str,
+        metric: pw::discard::DiscardMetric,
     ) -> Result<u64, ScientificDiagnostic> {
-        let metric_name = metric_name.to_owned();
+        let value = self.discard_metric_long(sink_name, metric)?;
+        u64::try_from(value).map_err(|_| {
+            ScientificDiagnostic::new(
+                format!("sink {sink_name}.{}", metric.name()),
+                format!("discard counter is negative: {value}"),
+            )
+        })
+    }
+
+    fn discard_metric_long(
+        &self,
+        sink_name: &str,
+        metric: pw::discard::DiscardMetric,
+    ) -> Result<i64, ScientificDiagnostic> {
+        let property_id = metric.property_id();
+        let metric_name = metric.name().to_owned();
         let callback_metric_name = metric_name.clone();
         let global = self.node_global(sink_name)?;
         let node = self
@@ -1198,10 +1407,6 @@ impl LiveGraphAdapter {
                         property.value().get_long().map_err(|error| {
                             format!("{callback_metric_name} is not a Long: {error}")
                         })
-                    })
-                    .and_then(|value| {
-                        u64::try_from(value)
-                            .map_err(|_| format!("{callback_metric_name} is negative: {value}"))
                     });
                 *observed.borrow_mut() = Some(value);
             })
@@ -1247,11 +1452,7 @@ impl LiveGraphAdapter {
             .filter(|(sink, before)| observed.get(*sink).map_or(true, |after| after <= *before))
             .map(|(sink, before)| {
                 let process_calls = self
-                    .discard_metric(
-                        sink,
-                        DISCARD_PROCESS_CALLS_PROPERTY,
-                        "discard.process-calls",
-                    )
+                    .discard_counter(sink, pw::discard::DiscardMetric::ProcessCalls)
                     .unwrap_or(0);
                 format!("{sink} remained at {before} after {process_calls} process calls")
             })
@@ -1295,6 +1496,7 @@ impl LiveGraphAdapter {
     }
 
     fn validate_live_ports(&self, config: &DevelopmentConfig) -> Result<(), ScientificDiagnostic> {
+        let expected_rate = configured_frame_rate(config)?;
         let expected = config
             .sources
             .iter()
@@ -1330,7 +1532,7 @@ impl LiveGraphAdapter {
                 if is_discard_sink {
                     validate_discard_wildcard(&format, role, &port.name)?;
                 } else {
-                    validate_ndarray_port(&format, role, port)?;
+                    validate_ndarray_port(&format, role, port, expected_rate)?;
                 }
             }
         }
@@ -1341,6 +1543,7 @@ impl LiveGraphAdapter {
         &self,
         config: &DevelopmentConfig,
     ) -> Result<Vec<RequiredExternalObject>, ScientificDiagnostic> {
+        let expected_rate = configured_frame_rate(config)?;
         let expected = config
             .sources
             .iter()
@@ -1381,6 +1584,7 @@ impl LiveGraphAdapter {
                     role,
                     node_name: node_name.clone(),
                     global_id: node.id,
+                    expected_rate,
                     ports,
                 })
             })
@@ -1449,7 +1653,7 @@ impl LiveGraphAdapter {
                         )
                     })?;
                 let format = self.enumerate_port_format(object.role, &specification.name, &port)?;
-                validate_ndarray_port(&format, object.role, specification)?;
+                validate_ndarray_port(&format, object.role, specification, object.expected_rate)?;
             }
         }
         match synchronization_error {
@@ -1790,6 +1994,7 @@ fn validate_ndarray_port(
     object: &PodObject,
     role: ObjectRole,
     port: &PortSpec,
+    expected_rate: Fraction,
 ) -> Result<(), ScientificDiagnostic> {
     validate_format_object(object, role, &port.name)?;
     let observed =
@@ -1817,15 +2022,13 @@ fn validate_ndarray_port(
             format!("expected row-major, observed {:?}", observed.layout()),
         ));
     }
-    let expected_rate = Fraction {
-        num: 1000,
-        denom: 1,
-    };
     if observed.rate() != Some(expected_rate) {
         return Err(ScientificDiagnostic::new(
             format!("{}.ports.{}.rate", role.name(), port.name),
             format!(
-                "expected 1000/1 complete frames per second, observed {:?}",
+                "expected {}/{} complete frames per second, observed {:?}",
+                expected_rate.num,
+                expected_rate.denom,
                 observed.rate()
             ),
         ));
@@ -1844,6 +2047,28 @@ fn validate_ndarray_port(
         ));
     }
     Ok(())
+}
+
+fn configured_frame_rate(config: &DevelopmentConfig) -> Result<Fraction, ScientificDiagnostic> {
+    let rate = config
+        .sources
+        .iter()
+        .find_map(|source| source.arguments.get("api.fits.rate"))
+        .map_or("1000/1", String::as_str);
+    let (numerator, denominator) = rate.split_once('/').ok_or_else(|| {
+        ScientificDiagnostic::new(
+            "sources.args.api.fits.rate",
+            "invalid configured frame rate",
+        )
+    })?;
+    Ok(Fraction {
+        num: numerator.parse().map_err(|_| {
+            ScientificDiagnostic::new("sources.args.api.fits.rate", "invalid rate numerator")
+        })?,
+        denom: denominator.parse().map_err(|_| {
+            ScientificDiagnostic::new("sources.args.api.fits.rate", "invalid rate denominator")
+        })?,
+    })
 }
 
 fn validate_discard_wildcard(
@@ -1951,8 +2176,21 @@ impl EffectExecutor for LiveGraphAdapter {
         }
     }
 
-    fn check_required_objects(&mut self) -> Result<(), ScientificDiagnostic> {
-        self.check_external_object_contracts()
+    fn check_required_objects(&mut self) -> Result<RequiredObjectStatus, ScientificDiagnostic> {
+        self.check_external_object_contracts()?;
+        if !self.finite_source_names.is_empty()
+            && self
+                .finite_source_names
+                .iter()
+                .map(|name| self.fits_source_completed(name))
+                .collect::<Result<Vec<_>, _>>()?
+                .into_iter()
+                .all(|completed| completed)
+        {
+            Ok(RequiredObjectStatus::FiniteSourceCompleted)
+        } else {
+            Ok(RequiredObjectStatus::Present)
+        }
     }
 }
 

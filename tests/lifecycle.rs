@@ -1,7 +1,7 @@
 use pipewireao_rtc::{
     DevelopmentConfig, EffectExecutor, EffectKind, EffectOrigin, EffectTarget, ExecutionGroupState,
     LifecycleDispatcher, LifecycleEffect, LifecycleEffectResult, LifecycleEffectSuccess,
-    LifecycleEvent, LifecycleState, Runner, ScientificDiagnostic,
+    LifecycleEvent, LifecycleState, RequiredObjectStatus, Runner, ScientificDiagnostic,
 };
 
 const VALID: &str = include_str!("../fixtures/minimal-development.conf");
@@ -553,7 +553,7 @@ impl EffectExecutor for RequiredObjectMonitor {
         Ok(LifecycleEffectSuccess::Completed)
     }
 
-    fn check_required_objects(&mut self) -> Result<(), ScientificDiagnostic> {
+    fn check_required_objects(&mut self) -> Result<RequiredObjectStatus, ScientificDiagnostic> {
         self.checks += 1;
         Err(ScientificDiagnostic::new(
             "source wfs.ports.frame",
@@ -595,4 +595,43 @@ fn required_object_monitor_returns_failures_through_the_only_dispatcher() {
             Some("source wfs.ports.frame")
         );
     }
+}
+
+#[derive(Default)]
+struct FiniteCompletionMonitor {
+    checks: usize,
+}
+
+impl EffectExecutor for FiniteCompletionMonitor {
+    fn execute(
+        &mut self,
+        _effect: &LifecycleEffect,
+    ) -> Result<LifecycleEffectSuccess, ScientificDiagnostic> {
+        Ok(LifecycleEffectSuccess::Completed)
+    }
+
+    fn check_required_objects(&mut self) -> Result<RequiredObjectStatus, ScientificDiagnostic> {
+        self.checks += 1;
+        Ok(RequiredObjectStatus::FiniteSourceCompleted)
+    }
+}
+
+#[test]
+fn finite_source_poll_returns_to_ready_through_the_only_dispatcher() {
+    let mut runner = Runner::new(FiniteCompletionMonitor::default());
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Load(config().into()))
+            .unwrap(),
+        LifecycleState::Ready
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Start).unwrap(),
+        LifecycleState::Running
+    );
+    assert_eq!(
+        runner.poll_required_objects().unwrap(),
+        LifecycleState::Ready
+    );
+    assert_eq!(runner.executor().checks, 1);
 }

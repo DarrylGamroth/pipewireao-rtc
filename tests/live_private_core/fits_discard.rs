@@ -38,6 +38,7 @@ struct DiscardMetrics {
 enum LinkAdmission {
     Pending(String),
     Active,
+    Available(String),
     Failed(String),
 }
 
@@ -52,7 +53,7 @@ struct CoreClient {
     errors: Rc<RefCell<Vec<String>>>,
     _registry_listener: pw::registry::Listener,
     _core_listener: pw::core::Listener,
-    _registry: pw::registry::RegistryRc,
+    registry: pw::registry::RegistryRc,
     core: pw::core::CoreRc,
     _context: pw::context::ContextRc,
     main_loop: pw::main_loop::MainLoopRc,
@@ -100,7 +101,7 @@ impl CoreClient {
             errors,
             _registry_listener: registry_listener,
             _core_listener: core_listener,
-            _registry: registry,
+            registry,
             core,
             _context: context,
             main_loop,
@@ -250,6 +251,142 @@ impl CoreClient {
     }
 }
 
+pub const OBSERVATION_INPUT_NAME: &str = "pipewireao-rtc-observation-input";
+pub const OBSERVATION_OUTPUT_NAME: &str = "pipewireao-rtc-observation-output";
+
+pub fn node_properties(remote_name: &str, node_name: &str) -> BTreeMap<String, String> {
+    let client = CoreClient::connect(remote_name);
+    client.wait_for_node(node_name);
+    let globals = client.globals.borrow();
+    let global = globals
+        .values()
+        .find(|global| {
+            global.type_ == ObjectType::Node
+                && global
+                    .props
+                    .as_ref()
+                    .and_then(|properties| properties.get("node.name"))
+                    == Some(node_name)
+        })
+        .unwrap();
+    let node = client.registry.bind::<pw::node::Node, _>(global).unwrap();
+    drop(globals);
+    let result = Rc::new(RefCell::new(BTreeMap::new()));
+    let observed = Rc::clone(&result);
+    let _listener = node
+        .add_listener_local()
+        .info(move |info| {
+            if let Some(properties) = info.props() {
+                for (name, value) in properties.iter() {
+                    observed
+                        .borrow_mut()
+                        .insert(name.to_owned(), value.to_owned());
+                }
+            }
+        })
+        .register();
+    client.roundtrip("observation node properties");
+    let properties = result.borrow().clone();
+    properties
+}
+
+pub struct NamedLink {
+    _client: CoreClient,
+    _listener: pw::link::LinkListener,
+    _link: pw::link::Link,
+    admission: Rc<RefCell<LinkAdmission>>,
+}
+
+impl NamedLink {
+    pub fn connect(remote_name: &str, output_name: &str, input_name: &str) -> Self {
+        Self::connect_with_options(remote_name, output_name, input_name, false, true)
+    }
+
+    pub fn connect_passive_usable(remote_name: &str, output_name: &str, input_name: &str) -> Self {
+        Self::connect_with_options(remote_name, output_name, input_name, true, false)
+    }
+
+    fn connect_with_options(
+        remote_name: &str,
+        output_name: &str,
+        input_name: &str,
+        passive: bool,
+        allow_init: bool,
+    ) -> Self {
+        let client = CoreClient::connect(remote_name);
+        let output_node = client.wait_for_node(output_name);
+        let input_node = client.wait_for_node(input_name);
+        let output_port = client.wait_for_port(output_node, "out");
+        let input_port = client.wait_for_port(input_node, "in");
+        let properties = [
+            ("link.output.node", output_node.to_string()),
+            ("link.output.port", output_port.to_string()),
+            ("link.input.node", input_node.to_string()),
+            ("link.input.port", input_port.to_string()),
+            ("object.linger", "false".to_owned()),
+            ("link.passive", passive.to_string()),
+        ]
+        .into_iter()
+        .collect::<PropertiesBox>();
+        let link = client
+            .core
+            .create_object::<pw::link::Link>(&client.link_factory(), &properties)
+            .expect("create named observation link");
+        let admission = Rc::new(RefCell::new(LinkAdmission::Pending(
+            "no link information".to_owned(),
+        )));
+        let observed = Rc::clone(&admission);
+        let listener = link
+            .add_listener_local()
+            .info(move |info| {
+                *observed.borrow_mut() = match info.state() {
+                    pw::link::LinkState::Init => LinkAdmission::Available("Init".to_owned()),
+                    pw::link::LinkState::Paused => LinkAdmission::Available("Paused".to_owned()),
+                    pw::link::LinkState::Active => LinkAdmission::Available("Active".to_owned()),
+                    pw::link::LinkState::Error(error) => LinkAdmission::Failed(error.to_owned()),
+                    pw::link::LinkState::Unlinked => {
+                        LinkAdmission::Failed("link became unlinked".to_owned())
+                    }
+                    state => LinkAdmission::Pending(format!("{state:?}")),
+                };
+            })
+            .register();
+        for _ in 0..100 {
+            client.roundtrip("observation link admission");
+            match &*admission.borrow() {
+                LinkAdmission::Active => {
+                    return Self {
+                        _client: client,
+                        _listener: listener,
+                        _link: link,
+                        admission: Rc::clone(&admission),
+                    };
+                }
+                LinkAdmission::Available(state) if allow_init || state != "Init" => {
+                    return Self {
+                        _client: client,
+                        _listener: listener,
+                        _link: link,
+                        admission: Rc::clone(&admission),
+                    };
+                }
+                LinkAdmission::Failed(error) => panic!("observation link failed: {error}"),
+                LinkAdmission::Pending(_) | LinkAdmission::Available(_) => {
+                    std::thread::sleep(Duration::from_millis(5));
+                }
+            }
+        }
+        panic!(
+            "observation link {output_name:?} -> {input_name:?} did not become admitted: {:?}",
+            admission.borrow()
+        );
+    }
+
+    pub fn state(&self) -> String {
+        format!("{:?}", self.admission.borrow())
+    }
+}
+
 #[allow(clippy::too_many_lines)]
 pub fn run(remote_name: &str, image_path: &Path) {
     write_test_image(image_path);
@@ -389,7 +526,9 @@ pub fn run(remote_name: &str, image_path: &Path) {
         match &link_observation.borrow().admission {
             LinkAdmission::Active => break,
             LinkAdmission::Failed(error) => panic!("FITS-to-discard link failed: {error}"),
-            LinkAdmission::Pending(_) => std::thread::sleep(Duration::from_millis(5)),
+            LinkAdmission::Pending(_) | LinkAdmission::Available(_) => {
+                std::thread::sleep(Duration::from_millis(5));
+            }
         }
     }
     assert_eq!(

@@ -278,12 +278,7 @@ impl DevelopmentConfig {
                 "this complete-frame fixture declares no runtime ndarray parameters",
             ));
         }
-        if !self.observations.is_empty() {
-            return Err(ScientificDiagnostic::new(
-                "observations",
-                "no bounded non-gating observation port exists for this fixture",
-            ));
-        }
+        validate_observations(self)?;
         validate_execution_groups(self)?;
         validate_links(self)
     }
@@ -923,10 +918,8 @@ fn validate_fits_arguments(
     let expected = [
         ("api.fits.hdu", "1"),
         ("api.fits.io-mode", "file"),
-        ("api.fits.loop", "true"),
         ("api.fits.output-mode", "frame"),
         ("api.fits.prefault", "false"),
-        ("api.fits.rate", "1000/1"),
         ("api.fits.readiness", "timerfd"),
         ("api.fits.sample-rank", "1"),
         ("api.fits.schema", source_port.schema.as_str()),
@@ -934,7 +927,7 @@ fn validate_fits_arguments(
     let expected_names = expected
         .iter()
         .map(|(name, _)| *name)
-        .chain(std::iter::once("api.fits.path"))
+        .chain(["api.fits.loop", "api.fits.path", "api.fits.rate"])
         .collect::<BTreeSet<_>>();
     if let Some(name) = source
         .arguments
@@ -963,11 +956,101 @@ fn validate_fits_arguments(
             }
         }
     }
+    match source.arguments.get("api.fits.loop").map(String::as_str) {
+        Some("true" | "false") => {}
+        Some(value) => {
+            return Err(ScientificDiagnostic::new(
+                format!("{field}.args.api.fits.loop"),
+                format!("expected \"true\" or \"false\", got {value:?}"),
+            ));
+        }
+        None => {
+            return Err(ScientificDiagnostic::new(
+                format!("{field}.args.api.fits.loop"),
+                "required factory argument is missing",
+            ));
+        }
+    }
+    let rate = source.arguments.get("api.fits.rate").ok_or_else(|| {
+        ScientificDiagnostic::new(
+            format!("{field}.args.api.fits.rate"),
+            "required factory argument is missing",
+        )
+    })?;
+    let Some((numerator, denominator)) = rate.split_once('/') else {
+        return Err(ScientificDiagnostic::new(
+            format!("{field}.args.api.fits.rate"),
+            "complete-frame rate must use positive numerator/denominator syntax",
+        ));
+    };
+    let parsed_rate = numerator
+        .parse::<u32>()
+        .ok()
+        .zip(denominator.parse::<u32>().ok());
+    if !parsed_rate.is_some_and(|(numerator, denominator)| {
+        numerator > 0
+            && denominator > 0
+            && u64::from(numerator) <= 1_000_000_000_u64 * u64::from(denominator)
+    }) {
+        return Err(ScientificDiagnostic::new(
+            format!("{field}.args.api.fits.rate"),
+            "complete-frame rate must use positive u32 numerator/denominator values",
+        ));
+    }
     validate_configuration_reference(
         &format!("{field}.args.api.fits.path"),
         source.arguments.get("api.fits.path").map(String::as_str),
         "PIPEWIREAO_RTC_FITS_PATH",
     )
+}
+
+fn validate_observations(config: &DevelopmentConfig) -> Result<(), ScientificDiagnostic> {
+    let mut declared = BTreeSet::new();
+    for (index, endpoint) in config.observations.iter().enumerate() {
+        let field = format!("observations[{index}]");
+        if !declared.insert(endpoint.as_str()) {
+            return Err(ScientificDiagnostic::new(
+                field,
+                format!("observation surface {endpoint:?} is duplicated"),
+            ));
+        }
+        let (node_name, port_name) = split_endpoint(endpoint)
+            .map_err(|message| ScientificDiagnostic::new(field.clone(), message))?;
+        let object = config
+            .sources
+            .iter()
+            .map(|source| (&source.node_name, &source.ports))
+            .chain(
+                config
+                    .graphs
+                    .iter()
+                    .map(|graph| (&graph.node_name, &graph.ports)),
+            )
+            .find(|(name, _)| name.as_str() == node_name)
+            .ok_or_else(|| {
+                ScientificDiagnostic::new(
+                    field.clone(),
+                    "observation surface must name a declared source or processing-graph output",
+                )
+            })?;
+        let port = object
+            .1
+            .iter()
+            .find(|port| port.name == port_name)
+            .ok_or_else(|| {
+                ScientificDiagnostic::new(
+                    field.clone(),
+                    format!("node {node_name:?} has no scientific port {port_name:?}"),
+                )
+            })?;
+        if port.direction != PortDirection::Output {
+            return Err(ScientificDiagnostic::new(
+                field,
+                format!("observation port {endpoint:?} is not an output"),
+            ));
+        }
+    }
+    Ok(())
 }
 
 fn validate_exact_reference(

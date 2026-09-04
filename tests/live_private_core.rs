@@ -20,6 +20,29 @@ const EXCITATION_A_SCHEMA: &str = "org.calculon.ao.docrime-excitation-a/1";
 const EXCITATION_B_SCHEMA: &str = "org.calculon.ao.docrime-excitation-b/1";
 const COMMAND_A_SCHEMA: &str = "org.calculon.ao.controller-command-a/1";
 const COMMAND_B_SCHEMA: &str = "org.calculon.ao.controller-command-b/1";
+const FNV1A_OFFSET_BASIS: u64 = 14_695_981_039_346_656_037;
+
+const LEAKY_INPUTS: [[f32; 2]; 4] = [[1.0, -1.0], [0.5, 2.0], [-0.25, 0.75], [3.0, -2.0]];
+
+fn expected_leaky_digest(buffers: u64) -> u64 {
+    expected_leaky_digest_for((0..buffers).map(|index| usize::try_from(index % 4).unwrap()))
+}
+
+fn expected_leaky_digest_for(inputs: impl IntoIterator<Item = usize>) -> u64 {
+    let mut state = [0.0_f32; 2];
+    let mut digest = FNV1A_OFFSET_BASIS;
+    for index in inputs {
+        let input = LEAKY_INPUTS[index];
+        for element in 0..2 {
+            state[element] = 0.75 * state[element] + 0.5 * input[element];
+            for byte in state[element].to_le_bytes() {
+                digest ^= u64::from(byte);
+                digest = digest.wrapping_mul(1_099_511_628_211);
+            }
+        }
+    }
+    digest
+}
 
 struct ChildGuard(Child);
 
@@ -239,6 +262,21 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
     assert!(!transport_cleanup.contains(fits_discard::SOURCE_NAME));
     assert!(!transport_cleanup.contains(fits_discard::SINK_NAME));
 
+    run_finite_source_completion_case(
+        &repository,
+        &pipewire_build,
+        &environment,
+        &core_name,
+        temporary.path(),
+    );
+    run_native_numerical_group_restart_case(
+        &repository,
+        &core_name,
+        temporary.path(),
+        &environment,
+    );
+    run_live_creation_failure_matrix(&repository, &pipewire_build, &environment, &core_name);
+
     let cases = [
         SessionCase {
             fixture: "minimal-development.conf",
@@ -310,6 +348,16 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
         );
     }
 
+    run_bounded_observer_case(
+        &repository,
+        &pipewire_build,
+        &environment,
+        &core_name,
+        temporary.path(),
+        &pipewireao_julia,
+        &plugin_build,
+    );
+
     run_external_processing_graph_case(
         &repository,
         &pipewire_build,
@@ -323,6 +371,16 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
         &environment,
         &core_name,
         temporary.path(),
+        &pipewireao_julia,
+        &julia_filter_graph,
+    );
+    run_external_graph_equivalence_case(
+        &repository,
+        &pipewire_build,
+        &environment,
+        &core_name,
+        temporary.path(),
+        &external_fgn_graph,
         &pipewireao_julia,
         &julia_filter_graph,
     );
@@ -463,6 +521,239 @@ fn run_external_processing_graph_case(
     );
 }
 
+#[allow(clippy::too_many_arguments)]
+fn run_bounded_observer_case(
+    repository: &Path,
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+    temporary: &Path,
+    pipewireao_julia: &Path,
+    plugin_build: &Path,
+) {
+    let mut runner = load_running_observation_session(repository, core_name);
+    let hold_file = temporary.join("hold-observer-buffer");
+    std::fs::write(&hold_file, "hold\n").unwrap();
+    let observer_name = "pipewireao-rtc-observer-held";
+    let queue = launch_observation_queue(pipewire_build, plugin_build, environment, core_name);
+    let queue_input = fits_discard::NamedLink::connect_passive_usable(
+        core_name,
+        "pipewireao-rtc-source",
+        fits_discard::OBSERVATION_INPUT_NAME,
+    );
+    let (mut observer, observer_log) = launch_observer(
+        repository,
+        pipewire_build,
+        pipewireao_julia,
+        environment,
+        core_name,
+        observer_name,
+        &hold_file,
+        temporary,
+    );
+    let held_output = fits_discard::NamedLink::connect(
+        core_name,
+        fits_discard::OBSERVATION_OUTPUT_NAME,
+        observer_name,
+    );
+    wait_for_observer_buffer(
+        &mut observer.0,
+        &observer_log,
+        &queue_input,
+        &held_output,
+        core_name,
+    );
+    let before_stall =
+        runner.executor_mut().observe_discarded_buffers().unwrap()["pipewireao-rtc-sink"];
+    std::thread::sleep(Duration::from_millis(100));
+    let after_stall =
+        runner.executor_mut().observe_discarded_buffers().unwrap()["pipewireao-rtc-sink"];
+    assert!(
+        after_stall > before_stall,
+        "held observer buffer paced the RTC graph"
+    );
+    assert_eq!(runner.state(), LifecycleState::Running);
+
+    drop(held_output);
+    drop(observer);
+    std::fs::remove_file(&hold_file).unwrap();
+    wait_for_dump_absent(pipewire_build, environment, core_name, observer_name);
+    let before_detached =
+        runner.executor_mut().observe_discarded_buffers().unwrap()["pipewireao-rtc-sink"];
+    assert_eq!(runner.state(), LifecycleState::Running);
+
+    let observer_name = "pipewireao-rtc-observer-reattached";
+    let (mut observer, observer_log) = launch_observer(
+        repository,
+        pipewire_build,
+        pipewireao_julia,
+        environment,
+        core_name,
+        observer_name,
+        &hold_file,
+        temporary,
+    );
+    let reattached_output = fits_discard::NamedLink::connect(
+        core_name,
+        fits_discard::OBSERVATION_OUTPUT_NAME,
+        observer_name,
+    );
+    wait_for_text(&mut observer.0, &observer_log, "OBSERVER_BUFFER");
+    assert_eq!(runner.state(), LifecycleState::Running);
+    drop(reattached_output);
+    drop(observer);
+    drop(queue_input);
+    drop(queue);
+    wait_for_dump_absent(
+        pipewire_build,
+        environment,
+        core_name,
+        fits_discard::OBSERVATION_INPUT_NAME,
+    );
+    wait_for_dump_absent(
+        pipewire_build,
+        environment,
+        core_name,
+        fits_discard::OBSERVATION_OUTPUT_NAME,
+    );
+    let after_reattach =
+        runner.executor_mut().observe_discarded_buffers().unwrap()["pipewireao-rtc-sink"];
+    assert!(after_reattach > before_detached);
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Stop).unwrap(),
+        LifecycleState::Ready
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Unload).unwrap(),
+        LifecycleState::Offline
+    );
+    assert!(dump(pipewire_build, environment, core_name).contains("pipewireao-rtc-unrelated"));
+}
+
+fn load_running_observation_session(
+    repository: &Path,
+    core_name: &str,
+) -> Runner<LiveGraphAdapter> {
+    let adapter = LiveGraphAdapter::connect(core_name).expect("connect observation session");
+    let mut runner = Runner::new(adapter);
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Load(ConfigurationInput::File(
+                repository.join("fixtures/minimal-development.conf"),
+            )))
+            .unwrap(),
+        LifecycleState::Ready,
+        "observer load diagnostic: {:?}",
+        runner.diagnostic()
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Start).unwrap(),
+        LifecycleState::Running,
+        "observer session start diagnostic: {:?}",
+        runner.diagnostic()
+    );
+    runner
+}
+
+fn launch_observation_queue(
+    pipewire_build: &Path,
+    plugin_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+) -> ChildGuard {
+    let owner = command_with_environment(
+        plugin_build.join("src/modules/queue/pipewireao-queue-remote-test"),
+        environment,
+    )
+    .args([core_name, "--serve-rtc-observer"])
+    .stdout(Stdio::null())
+    .stderr(Stdio::null())
+    .spawn()
+    .expect("start bounded observation queue owner");
+    wait_for_dump(
+        pipewire_build,
+        environment,
+        core_name,
+        fits_discard::OBSERVATION_INPUT_NAME,
+    );
+    wait_for_dump(
+        pipewire_build,
+        environment,
+        core_name,
+        fits_discard::OBSERVATION_OUTPUT_NAME,
+    );
+    ChildGuard(owner)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn launch_observer(
+    repository: &Path,
+    pipewire_build: &Path,
+    pipewireao_julia: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+    node_name: &str,
+    hold_file: &Path,
+    temporary: &Path,
+) -> (ChildGuard, PathBuf) {
+    let log_path = temporary.join(format!("{node_name}.log"));
+    let log = std::fs::File::create(&log_path).expect("observer log");
+    let mut command = command_with_environment("julia", environment);
+    command.env(
+        "JULIA_LOAD_PATH",
+        format!("{}:@stdlib", pipewireao_julia.display()),
+    );
+    let process = command
+        .args(["--startup-file=no", "--threads=2"])
+        .arg(repository.join("tests/live_private_core/observer.jl"))
+        .args([
+            core_name,
+            node_name,
+            hold_file.to_str().expect("UTF-8 observer hold path"),
+        ])
+        .stdout(Stdio::from(log.try_clone().unwrap()))
+        .stderr(Stdio::from(log))
+        .spawn()
+        .expect("start bounded observer");
+    let mut process = ChildGuard(process);
+    wait_for_text(&mut process.0, &log_path, "OBSERVER_READY");
+    wait_for_dump(pipewire_build, environment, core_name, node_name);
+    (process, log_path)
+}
+
+fn wait_for_observer_buffer(
+    process: &mut Child,
+    log: &Path,
+    input: &fits_discard::NamedLink,
+    output: &fits_discard::NamedLink,
+    core_name: &str,
+) {
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while Instant::now() < deadline {
+        if std::fs::read_to_string(log)
+            .unwrap_or_default()
+            .contains("OBSERVER_BUFFER")
+        {
+            return;
+        }
+        if let Some(status) = process.try_wait().unwrap() {
+            panic!(
+                "observer exited with {status}: {}",
+                std::fs::read_to_string(log).unwrap_or_default()
+            );
+        }
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    panic!(
+        "observer received no buffer; input link {}, output link {}, log: {}; queue input: {:?}; queue output: {:?}",
+        input.state(),
+        output.state(),
+        std::fs::read_to_string(log).unwrap_or_default(),
+        fits_discard::node_properties(core_name, fits_discard::OBSERVATION_INPUT_NAME),
+        fits_discard::node_properties(core_name, fits_discard::OBSERVATION_OUTPUT_NAME),
+    );
+}
+
 fn run_external_processing_graph_fault_case(
     repository: &Path,
     pipewire_build: &Path,
@@ -560,42 +851,16 @@ fn run_external_julia_processing_graph_case(
     pipewireao_julia: &Path,
     julia_filter_graph: &Path,
 ) {
-    let stop_file = temporary.join("stop-julia-graph");
-    let provider_log = temporary.join("julia-graph.log");
-    let log = std::fs::File::create(&provider_log).expect("Julia graph log");
-    let mut command = command_with_environment("julia", environment);
-    command.env(
-        "JULIA_LOAD_PATH",
-        format!(
-            "{}:{}:@stdlib",
-            pipewireao_julia.display(),
-            julia_filter_graph
-                .join("julia/FilterGraphPipeWire")
-                .display()
-        ),
-    );
-    let provider = command
-        .args(["--startup-file=no", "--threads=2"])
-        .arg(repository.join("tests/live_private_core/julia_graph_provider.jl"))
-        .args([
-            core_name,
-            repository
-                .join("fixtures/graphs/julia-leaky-integrator.conf")
-                .to_str()
-                .expect("UTF-8 Julia graph configuration"),
-            stop_file.to_str().expect("UTF-8 Julia stop path"),
-        ])
-        .stdout(Stdio::from(log.try_clone().unwrap()))
-        .stderr(Stdio::from(log))
-        .spawn()
-        .expect("start external Julia graph owner");
-    let mut provider = ChildGuard(provider);
-    wait_for_text(&mut provider.0, &provider_log, "JULIA_GRAPH_READY");
-    wait_for_dump(
+    let (mut provider, stop_file, provider_log) = launch_external_julia(
+        repository,
         pipewire_build,
         environment,
         core_name,
-        "pipewireao-rtc-external-graph",
+        temporary,
+        pipewireao_julia,
+        julia_filter_graph,
+        "session",
+        1_000,
     );
 
     let adapter = LiveGraphAdapter::connect(core_name).expect("connect Julia graph session");
@@ -654,6 +919,289 @@ fn run_external_julia_processing_graph_case(
         core_name,
         "pipewireao-rtc-external-graph",
     );
+
+    run_external_julia_processing_graph_fault_case(
+        repository,
+        pipewire_build,
+        environment,
+        core_name,
+        temporary,
+        pipewireao_julia,
+        julia_filter_graph,
+    );
+}
+
+#[allow(clippy::too_many_arguments)]
+fn launch_external_julia(
+    repository: &Path,
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+    temporary: &Path,
+    pipewireao_julia: &Path,
+    julia_filter_graph: &Path,
+    label: &str,
+    rate: u32,
+) -> (ChildGuard, PathBuf, PathBuf) {
+    let stop_file = temporary.join(format!("stop-julia-graph-{label}"));
+    let provider_log = temporary.join(format!("julia-graph-{label}.log"));
+    let log = std::fs::File::create(&provider_log).expect("Julia graph log");
+    let mut command = command_with_environment("julia", environment);
+    command.env(
+        "JULIA_LOAD_PATH",
+        format!("{}:@:@stdlib", pipewireao_julia.display()),
+    );
+    let provider = command
+        .args([
+            "--startup-file=no",
+            "--threads=2",
+            &format!(
+                "--project={}",
+                julia_filter_graph.join("deployment").display()
+            ),
+        ])
+        .arg(repository.join("tests/live_private_core/julia_graph_provider.jl"))
+        .args([
+            core_name,
+            repository
+                .join("fixtures/graphs/julia-leaky-integrator.conf")
+                .to_str()
+                .expect("UTF-8 Julia graph configuration"),
+            stop_file.to_str().expect("UTF-8 Julia stop path"),
+            &rate.to_string(),
+        ])
+        .stdout(Stdio::from(log.try_clone().unwrap()))
+        .stderr(Stdio::from(log))
+        .spawn()
+        .expect("start external Julia graph owner");
+    let mut provider = ChildGuard(provider);
+    wait_for_text(&mut provider.0, &provider_log, "JULIA_GRAPH_READY");
+    wait_for_dump(
+        pipewire_build,
+        environment,
+        core_name,
+        "pipewireao-rtc-external-graph",
+    );
+    (provider, stop_file, provider_log)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn run_external_julia_processing_graph_fault_case(
+    repository: &Path,
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+    temporary: &Path,
+    pipewireao_julia: &Path,
+    julia_filter_graph: &Path,
+) {
+    let (provider, _, _) = launch_external_julia(
+        repository,
+        pipewire_build,
+        environment,
+        core_name,
+        temporary,
+        pipewireao_julia,
+        julia_filter_graph,
+        "fault",
+        1_000,
+    );
+    let adapter = LiveGraphAdapter::connect(core_name).expect("connect Julia graph fault case");
+    let mut runner = Runner::new(adapter);
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Load(ConfigurationInput::File(
+                repository.join("fixtures/external-graph-development.conf"),
+            )))
+            .unwrap(),
+        LifecycleState::Ready,
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Start).unwrap(),
+        LifecycleState::Running,
+    );
+    drop(provider);
+    wait_for_dump_absent(
+        pipewire_build,
+        environment,
+        core_name,
+        "pipewireao-rtc-external-graph",
+    );
+    assert_eq!(
+        runner.poll_required_objects().unwrap(),
+        LifecycleState::Fault,
+    );
+    assert_eq!(
+        runner.diagnostic().map(ScientificDiagnostic::field),
+        Some("graph pipewireao-rtc-external-graph.node.name")
+    );
+
+    let (mut replacement, stop_file, provider_log) = launch_external_julia(
+        repository,
+        pipewire_build,
+        environment,
+        core_name,
+        temporary,
+        pipewireao_julia,
+        julia_filter_graph,
+        "replacement",
+        1_000,
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Retry).unwrap(),
+        LifecycleState::Ready,
+        "Julia graph retry diagnostic: {:?}",
+        runner.diagnostic(),
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Start).unwrap(),
+        LifecycleState::Running,
+    );
+    assert!(runner.executor().status().discarded_buffers > 0);
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Stop).unwrap(),
+        LifecycleState::Ready,
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Unload).unwrap(),
+        LifecycleState::Offline,
+    );
+    assert!(dump(pipewire_build, environment, core_name).contains("pipewireao-rtc-external-graph"));
+    stop_provider(
+        &mut replacement,
+        &stop_file,
+        &provider_log,
+        "replacement Julia graph",
+    );
+    wait_for_dump_absent(
+        pipewire_build,
+        environment,
+        core_name,
+        "pipewireao-rtc-external-graph",
+    );
+}
+
+#[allow(clippy::too_many_arguments)]
+fn run_external_graph_equivalence_case(
+    repository: &Path,
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+    temporary: &Path,
+    native_graph_configuration: &Path,
+    pipewireao_julia: &Path,
+    julia_filter_graph: &Path,
+) {
+    let fixture = temporary.join("finite-external-graph-development.conf");
+    let configured =
+        std::fs::read_to_string(repository.join("fixtures/external-graph-development.conf"))
+            .expect("read external graph fixture")
+            .replacen("api.fits.loop = true", "api.fits.loop = false", 1)
+            .replacen("api.fits.rate = 1000/1", "api.fits.rate = 10/1", 1);
+    assert!(configured.contains("api.fits.loop = false"));
+    assert!(configured.contains("api.fits.rate = 10/1"));
+    std::fs::write(&fixture, configured).expect("write finite external graph fixture");
+
+    let native_graph = temporary.join("external-owned-equivalence.conf");
+    let configured_native = std::fs::read_to_string(native_graph_configuration)
+        .expect("read native external graph")
+        .replace("rate = [ 1000 1 ]", "rate = [ 10 1 ]");
+    assert!(configured_native.contains("rate = [ 10 1 ]"));
+    std::fs::write(&native_graph, configured_native).expect("write native equivalence graph");
+    let native = launch_external_fgn(pipewire_build, environment, core_name, &native_graph);
+    wait_for_dump(
+        pipewire_build,
+        environment,
+        core_name,
+        "pipewireao-rtc-external-graph",
+    );
+    let native_digest = run_finite_external_graph(core_name, &fixture, "native FGN");
+    drop(native);
+    wait_for_dump_absent(
+        pipewire_build,
+        environment,
+        core_name,
+        "pipewireao-rtc-external-graph",
+    );
+
+    let (mut julia, stop_file, provider_log) = launch_external_julia(
+        repository,
+        pipewire_build,
+        environment,
+        core_name,
+        temporary,
+        pipewireao_julia,
+        julia_filter_graph,
+        "equivalence",
+        10,
+    );
+    let julia_digest = run_finite_external_graph(core_name, &fixture, "Julia graph");
+    assert_eq!(julia_digest, native_digest);
+    assert_eq!(julia_digest, expected_leaky_digest(4));
+    stop_provider(
+        &mut julia,
+        &stop_file,
+        &provider_log,
+        "equivalence Julia graph",
+    );
+    wait_for_dump_absent(
+        pipewire_build,
+        environment,
+        core_name,
+        "pipewireao-rtc-external-graph",
+    );
+}
+
+fn run_finite_external_graph(core_name: &str, fixture: &Path, implementation: &str) -> u64 {
+    let adapter = LiveGraphAdapter::connect(core_name).expect("connect finite external graph");
+    let mut runner = Runner::new(adapter);
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Load(ConfigurationInput::File(
+                fixture.to_owned(),
+            )))
+            .unwrap(),
+        LifecycleState::Ready,
+        "{implementation} finite load diagnostic: {:?}",
+        runner.diagnostic(),
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Start).unwrap(),
+        LifecycleState::Running,
+    );
+    for _ in 0..200 {
+        let count = runner
+            .executor_mut()
+            .observe_discarded_buffers()
+            .expect("observe finite external output")["pipewireao-rtc-sink"];
+        if count == 4 {
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    for _ in 0..200 {
+        if runner.poll_required_objects().unwrap() == LifecycleState::Ready {
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    assert_eq!(
+        runner.state(),
+        LifecycleState::Ready,
+        "{implementation} finite source did not complete: {:?}",
+        runner.diagnostic(),
+    );
+    let observation = runner
+        .executor()
+        .observe_discard_payloads()
+        .expect("read external graph output evidence")["pipewireao-rtc-sink"];
+    assert_eq!(observation.buffers, 4, "{implementation} output count");
+    assert_eq!(observation.digest_bytes, observation.bytes);
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Unload).unwrap(),
+        LifecycleState::Offline,
+    );
+    observation.payload_digest
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1393,6 +1941,240 @@ fn run_session_case(
     }
 }
 
+fn assert_leaky_history(
+    runner: &Runner<LiveGraphAdapter>,
+    expected_inputs: impl IntoIterator<Item = usize>,
+) {
+    let observation = runner
+        .executor()
+        .observe_discard_payloads()
+        .expect("read minimal graph numerical evidence")["pipewireao-rtc-sink"];
+    assert_eq!(
+        observation.bytes,
+        observation.buffers * 2 * size_of::<f32>() as u64
+    );
+    assert_eq!(observation.digest_bytes, observation.bytes);
+    assert_eq!(
+        observation.payload_digest,
+        expected_leaky_digest_for(expected_inputs),
+        "native graph state did not continue across selective/session stop and restart"
+    );
+}
+
+fn run_native_numerical_group_restart_case(
+    repository: &Path,
+    core_name: &str,
+    temporary: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+) {
+    let slow_graph = temporary.join("leaky-integrator-1hz.conf");
+    let graph = std::fs::read_to_string(&environment["PIPEWIREAO_RTC_GRAPH_MINIMAL"])
+        .unwrap()
+        .replace("rate = [ 1000 1 ]", "rate = [ 1 1 ]");
+    assert!(graph.contains("rate = [ 1 1 ]"));
+    std::fs::write(&slow_graph, graph).unwrap();
+    let slow_fixture = temporary.join("minimal-1hz.conf");
+    let fixture = std::fs::read_to_string(repository.join("fixtures/minimal-development.conf"))
+        .unwrap()
+        .replace("api.fits.rate = 1000/1", "api.fits.rate = 1/1");
+    assert!(fixture.contains("api.fits.rate = 1/1"));
+    std::fs::write(&slow_fixture, fixture).unwrap();
+
+    let original_graph = std::env::var_os("PIPEWIREAO_RTC_GRAPH_MINIMAL");
+    std::env::set_var("PIPEWIREAO_RTC_GRAPH_MINIMAL", &slow_graph);
+    let adapter = LiveGraphAdapter::connect(core_name).expect("connect numerical restart case");
+    let mut runner = Runner::new(adapter);
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Load(ConfigurationInput::File(slow_fixture)))
+            .unwrap(),
+        LifecycleState::Ready,
+        "numerical restart load diagnostic: {:?}",
+        runner.diagnostic()
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Start).unwrap(),
+        LifecycleState::Running
+    );
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::StopExecutionGroup("main".to_owned()))
+            .unwrap(),
+        LifecycleState::Running
+    );
+    assert_leaky_history(&runner, [0]);
+
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::StartExecutionGroup("main".to_owned()))
+            .unwrap(),
+        LifecycleState::Running
+    );
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::StopExecutionGroup("main".to_owned()))
+            .unwrap(),
+        LifecycleState::Running
+    );
+    assert_leaky_history(&runner, [0, 0]);
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Stop).unwrap(),
+        LifecycleState::Ready
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Unload).unwrap(),
+        LifecycleState::Offline
+    );
+    match original_graph {
+        Some(path) => std::env::set_var("PIPEWIREAO_RTC_GRAPH_MINIMAL", path),
+        None => std::env::remove_var("PIPEWIREAO_RTC_GRAPH_MINIMAL"),
+    }
+}
+
+fn run_finite_source_completion_case(
+    repository: &Path,
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+    temporary: &Path,
+) {
+    let fixture = temporary.join("finite-source-development.conf");
+    let configured = std::fs::read_to_string(repository.join("fixtures/minimal-development.conf"))
+        .expect("read minimal fixture")
+        .replacen("api.fits.loop = true", "api.fits.loop = false", 1);
+    assert!(configured.contains("api.fits.loop = false"));
+    std::fs::write(&fixture, configured).expect("write finite source fixture");
+
+    let adapter = LiveGraphAdapter::connect(core_name).expect("connect finite-source adapter");
+    let mut runner = Runner::new(adapter);
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Load(ConfigurationInput::File(fixture)))
+            .expect("load finite-source fixture"),
+        LifecycleState::Ready,
+        "finite-source realization diagnostic: {:?}",
+        runner.diagnostic()
+    );
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Start)
+            .expect("start finite source"),
+        LifecycleState::Running,
+        "finite-source start diagnostic: {:?}",
+        runner.diagnostic()
+    );
+    for _ in 0..200 {
+        let state = runner
+            .poll_required_objects()
+            .expect("poll finite source completion");
+        if state == LifecycleState::Ready {
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    assert_eq!(
+        runner.state(),
+        LifecycleState::Ready,
+        "finite FITS source did not return the session to READY: {:?}; dump: {}",
+        runner.diagnostic(),
+        dump(pipewire_build, environment, core_name)
+    );
+    assert_eq!(runner.executor().status().discarded_buffers, 4);
+    let observation = runner
+        .executor()
+        .observe_discard_payloads()
+        .expect("read finite-source output evidence")["pipewireao-rtc-sink"];
+    assert_eq!(observation.buffers, 4);
+    assert_eq!(observation.bytes, 4 * 2 * size_of::<f32>() as u64);
+    assert_eq!(observation.digest_bytes, observation.bytes);
+    assert_eq!(observation.payload_digest, expected_leaky_digest(4));
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Unload)
+            .expect("unload finite source"),
+        LifecycleState::Offline
+    );
+    let unloaded = dump(pipewire_build, environment, core_name);
+    assert!(unloaded.contains("pipewireao-rtc-unrelated"));
+    for node in [
+        "pipewireao-rtc-source",
+        "pipewireao-rtc-graph",
+        "pipewireao-rtc-sink",
+    ] {
+        assert!(
+            !unloaded.contains(node),
+            "finite fixture node survived: {node}"
+        );
+    }
+}
+
+fn run_live_creation_failure_matrix(
+    repository: &Path,
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+) {
+    let fixture = repository.join("fixtures/minimal-development.conf");
+    let owned_names = [
+        "pipewireao-rtc-source",
+        "pipewireao-rtc-graph",
+        "pipewireao-rtc-sink",
+    ];
+    for point in 1..=5 {
+        let adapter = LiveGraphAdapter::connect_with_creation_failure(core_name, point)
+            .expect("connect failure-injection adapter");
+        let mut runner = Runner::new(adapter);
+        assert_eq!(
+            runner
+                .dispatch(LifecycleEvent::Load(ConfigurationInput::File(
+                    fixture.clone(),
+                )))
+                .expect("dispatch injected live failure"),
+            LifecycleState::Fault
+        );
+        let diagnostic = runner.diagnostic().expect("injected live diagnostic");
+        assert!(
+            diagnostic
+                .message()
+                .contains(&format!("creation point {point}")),
+            "unexpected failure-point {point} diagnostic: {diagnostic}"
+        );
+        assert_eq!(runner.executor().status().owned_nodes, 0);
+        assert_eq!(runner.executor().status().owned_links, 0);
+        let after_failure = dump(pipewire_build, environment, core_name);
+        assert!(after_failure.contains("pipewireao-rtc-unrelated"));
+        for name in owned_names {
+            assert!(
+                !after_failure.contains(name),
+                "creation-point {point} left {name} behind"
+            );
+        }
+
+        assert_eq!(
+            runner
+                .dispatch(LifecycleEvent::Retry)
+                .expect("retry after live creation failure"),
+            LifecycleState::Ready,
+            "creation-point {point} retry diagnostic: {:?}",
+            runner.diagnostic()
+        );
+        assert_eq!(
+            runner
+                .dispatch(LifecycleEvent::Unload)
+                .expect("unload creation-failure retry"),
+            LifecycleState::Offline
+        );
+        let after_retry = dump(pipewire_build, environment, core_name);
+        assert!(after_retry.contains("pipewireao-rtc-unrelated"));
+        for name in owned_names {
+            assert!(
+                !after_retry.contains(name),
+                "creation-point {point} retry left {name} behind"
+            );
+        }
+    }
+}
+
 fn exercise_execution_groups(
     runner: &mut Runner<LiveGraphAdapter>,
     pipewire_build: &Path,
@@ -1507,6 +2289,11 @@ fn fixture_environment(
         plugin_build.join("spa/plugins"),
     ])
     .expect("private SPA plugin search path");
+    let module_search_path = std::env::join_paths([
+        pipewire_build.join("src/modules"),
+        plugin_build.join("src/modules"),
+    ])
+    .expect("private PipeWire module search path");
     BTreeMap::from([
         ("PIPEWIRE_RUNTIME_DIR".to_owned(), runtime.to_owned()),
         ("PIPEWIREAO_RUNTIME_DIR".to_owned(), runtime.to_owned()),
@@ -1517,7 +2304,7 @@ fn fixture_environment(
         ),
         (
             "PIPEWIREAO_MODULE_DIR".to_owned(),
-            pipewire_build.join("src/modules"),
+            PathBuf::from(module_search_path),
         ),
         (
             "PIPEWIREAO_SPA_PLUGIN_DIR".to_owned(),
