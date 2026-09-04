@@ -11,6 +11,11 @@ length(ARGS) == 4 || error(
 core_name, control_directory, graph_configuration, fgn_bundle = ARGS
 phase_1_request = joinpath(control_directory, "aos-hil-phase-1")
 phase_2_request = joinpath(control_directory, "aos-hil-phase-2")
+atmosphere_request = joinpath(control_directory, "aos-hil-atmosphere")
+atmosphere_phase_1_request =
+    joinpath(control_directory, "aos-hil-atmosphere-phase-1")
+atmosphere_phase_2_request =
+    joinpath(control_directory, "aos-hil-atmosphere-phase-2")
 stop_file = joinpath(control_directory, "stop-aos-hil")
 
 include(joinpath(
@@ -304,7 +309,7 @@ try
     flush(stdout)
     phase_1_done = Ref(false)
     phase_2_done = Ref(false)
-    while !isfile(stop_file)
+    while !isfile(stop_file) && !isfile(atmosphere_request)
         if !phase_1_done[] && isfile(phase_1_request)
             exchange_range!(pipewire_hil, UInt64(1):UInt64(7))
             println("AOS_HIL_PHASE_1_DONE sequence=7")
@@ -341,5 +346,209 @@ try
         sleep(0.01)
     end
 finally
+    if isfile(stop_file)
+        close(pipewire_hil)
+    else
+        stop!(pipewire_hil)
+    end
+end
+
+isfile(stop_file) && exit()
+
+function first_difference(actual, expected; rtol, atol)
+    for index in eachindex(actual, expected)
+        isapprox(actual[index], expected[index]; rtol, atol) || return index
+    end
+    return nothing
+end
+
+function require_close(field, sequence, actual, expected; rtol, atol)
+    isapprox(actual, expected; rtol, atol) && return nothing
+    index = first_difference(actual, expected; rtol, atol)
+    difference = isnothing(index) ? 0.0 : abs(actual[index] - expected[index])
+    error(
+        "atmospheric reference mismatch at sequence $sequence for $field" *
+        (isnothing(index) ? "" : "[$index]: absolute difference $difference"),
+    )
+end
+
+function pupil_opd_rms(opd, support)
+    axes(opd) == axes(support) || error(
+        "pupil_opd and pupil_support must have identical axes",
+    )
+    sample_count = 0
+    mean_opd = 0.0
+    sum_squared_difference = 0.0
+    for index in eachindex(opd, support)
+        support[index] || continue
+        sample_count += 1
+        value = Float64(opd[index])
+        difference = value - mean_opd
+        mean_opd += difference / sample_count
+        sum_squared_difference += difference * (value - mean_opd)
+    end
+    sample_count > 0 || error("pupil_support is empty")
+    return sqrt(sum_squared_difference / sample_count)
+end
+
+function mean_from(values, first_index)
+    return sum(@view values[first_index:end]) / (length(values) - first_index + 1)
+end
+
+atmospheric_reference =
+    HILReferenceSystems.prepare_atmospheric_hil_reference_system(
+        :shack_hartmann;
+        atmosphere_step=1.0e-3,
+        rng_seed=1,
+    )
+atmospheric_oracle =
+    HILReferenceSystems.prepare_atmospheric_hil_reference_system(
+        :shack_hartmann;
+        atmosphere_step=1.0e-3,
+        rng_seed=1,
+    )
+science_diagnostics = prepare_hil_science_diagnostics()
+pupil_mask = HILReferenceSystems.pupil_support(science_diagnostics)
+atmospheric_configuration = PipeWireHILConfiguration(
+    remote=core_name,
+    frame_node_name="pipewireao-aos-hil-atmosphere-wfs",
+    command_node_name="pipewireao-aos-hil-atmosphere-command",
+    frame_schema="org.adaptiveopticssim.hil-reference.shack-hartmann-frame.f32/1",
+    command_schema="org.adaptiveopticssim.hil-reference.dm-command-surface-opd-m.f32/1",
+    rate=SPA.Fraction(1_000, 1),
+    exposure_duration_ns=1_000_000,
+)
+atmospheric_hil =
+    prepare_pipewire_hil(atmospheric_reference.boundary, atmospheric_configuration)
+atmospheric_oracle_sequence = Ref(step_hil_frame!(atmospheric_oracle.boundary))
+direct_command = zeros(Float32, HILReferenceSystems.actuator_count())
+open_loop_strehl = Float32[]
+closed_loop_strehl = Float32[]
+uncompensated_opd_rms = Float64[]
+residual_opd_rms = Float64[]
+
+function exchange_atmospheric_range!(pipewire_hil, sequences)
+    for expected_sequence in sequences
+        completed_sequence = exchange_frame!(pipewire_hil)
+        completed_sequence == expected_sequence || error(
+            "expected atmospheric sequence $expected_sequence, received $completed_sequence",
+        )
+        atmospheric_oracle_sequence[] == expected_sequence || error(
+            "atmospheric oracle expected sequence $(atmospheric_oracle_sequence[]), " *
+            "received $expected_sequence",
+        )
+
+        graph = atmospheric_reference.graph
+        oracle_graph = atmospheric_oracle.graph
+        require_close(
+            "wfs_frame",
+            expected_sequence,
+            hil_frame_buffer(atmospheric_reference.boundary),
+            hil_frame_buffer(atmospheric_oracle.boundary);
+            rtol=1.0f-6,
+            atol=1.0f-7,
+        )
+        for field in (:atmosphere_opd, :dm_surface_opd, :pupil_opd)
+            require_close(
+                String(field),
+                expected_sequence,
+                graph_output(graph, Val(field)),
+                graph_output(oracle_graph, Val(field));
+                rtol=1.0f-6,
+                atol=1.0f-15,
+            )
+        end
+
+        residual_slopes =
+            fgn_slopes(hil_frame_buffer(atmospheric_reference.boundary)) - flat_signal
+        residual_command = control_matrix * residual_slopes
+        @. direct_command = direct_command - 0.4f0 * residual_command
+        transported_command = hil_command_buffer(atmospheric_reference.boundary)
+        require_close(
+            "correction_command",
+            expected_sequence,
+            transported_command,
+            direct_command;
+            rtol=2.0f-4,
+            atol=2.0f-11,
+        )
+
+        atmosphere_opd = graph_output(graph, Val(:atmosphere_opd))
+        pupil_opd = graph_output(graph, Val(:pupil_opd))
+        update_hil_science_diagnostics!(
+            science_diagnostics,
+            atmosphere_opd,
+            pupil_opd,
+        )
+        push!(open_loop_strehl, open_loop_on_axis_strehl(science_diagnostics))
+        push!(closed_loop_strehl, closed_loop_on_axis_strehl(science_diagnostics))
+        push!(uncompensated_opd_rms, pupil_opd_rms(atmosphere_opd, pupil_mask))
+        push!(residual_opd_rms, pupil_opd_rms(pupil_opd, pupil_mask))
+
+        copyto!(
+            hil_command_buffer(atmospheric_oracle.boundary),
+            transported_command,
+        )
+        adopt_hil_command!(
+            atmospheric_oracle.boundary,
+            atmospheric_oracle_sequence[],
+        )
+        if expected_sequence < UInt64(20)
+            atmospheric_oracle_sequence[] =
+                step_hil_frame!(atmospheric_oracle.boundary)
+        end
+    end
+end
+
+try
+    start!(atmospheric_hil)
+    println("AOS_HIL_ATMOSPHERE_READY")
+    flush(stdout)
+    phase_1_done = Ref(false)
+    phase_2_done = Ref(false)
+    while !isfile(stop_file)
+        if !phase_1_done[] && isfile(atmosphere_phase_1_request)
+            exchange_atmospheric_range!(atmospheric_hil, UInt64(1):UInt64(10))
+            println("AOS_HIL_ATMOSPHERE_PHASE_1_DONE sequence=10")
+            flush(stdout)
+            phase_1_done[] = true
+        elseif phase_1_done[] && !phase_2_done[] &&
+                isfile(atmosphere_phase_2_request)
+            exchange_atmospheric_range!(atmospheric_hil, UInt64(11):UInt64(20))
+            first_steady_frame = 11
+            mean_open_loop = mean_from(open_loop_strehl, first_steady_frame)
+            mean_closed_loop = mean_from(closed_loop_strehl, first_steady_frame)
+            mean_uncompensated =
+                mean_from(uncompensated_opd_rms, first_steady_frame)
+            mean_residual = mean_from(residual_opd_rms, first_steady_frame)
+            improvement = mean_closed_loop / mean_open_loop
+            all(isfinite, direct_command) || error(
+                "atmospheric correction_command contains a non-finite value",
+            )
+            mean_closed_loop > 0.5 || error(
+                "atmospheric closed_loop_on_axis_strehl is $mean_closed_loop; expected > 0.5",
+            )
+            improvement > 3.0 || error(
+                "atmospheric Strehl improvement is $improvement; expected > 3.0",
+            )
+            mean_residual < mean_uncompensated || error(
+                "atmospheric pupil_opd_rms did not improve: " *
+                "$mean_uncompensated -> $mean_residual",
+            )
+            @printf(
+                "AOS_HIL_ATMOSPHERE_DONE sequence=20 mean_open_loop_strehl=%.9g mean_closed_loop_strehl=%.9g improvement=%.9g mean_uncompensated_opd_rms_m=%.9g mean_residual_opd_rms_m=%.9g\n",
+                mean_open_loop,
+                mean_closed_loop,
+                improvement,
+                mean_uncompensated,
+                mean_residual,
+            )
+            flush(stdout)
+            phase_2_done[] = true
+        end
+        sleep(0.01)
+    end
+finally
+    close(atmospheric_hil)
     close(pipewire_hil)
 end

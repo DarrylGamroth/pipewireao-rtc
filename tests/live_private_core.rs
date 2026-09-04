@@ -351,6 +351,9 @@ fn run_aos_hil_reference_case(
 ) {
     let phase_1_request = temporary.join("aos-hil-phase-1");
     let phase_2_request = temporary.join("aos-hil-phase-2");
+    let atmosphere_request = temporary.join("aos-hil-atmosphere");
+    let atmosphere_phase_1_request = temporary.join("aos-hil-atmosphere-phase-1");
+    let atmosphere_phase_2_request = temporary.join("aos-hil-atmosphere-phase-2");
     let stop_file = temporary.join("stop-aos-hil");
     let provider_log = temporary.join("aos-hil.log");
     let log = std::fs::File::create(&provider_log).expect("AOS HIL log");
@@ -446,6 +449,77 @@ fn run_aos_hil_reference_case(
     let after = dump(pipewire_build, environment, core_name);
     assert!(after.contains("pipewireao-aos-hil-wfs"));
     assert!(after.contains("pipewireao-aos-hil-command"));
+    assert!(after.contains("pipewireao-rtc-unrelated"));
+    assert!(!after.contains("pipewireao-rtc-aos-controller"));
+
+    std::fs::write(&atmosphere_request, "run\n").unwrap();
+    wait_for_text(&mut provider.0, &provider_log, "AOS_HIL_ATMOSPHERE_READY");
+    wait_for_dump(
+        pipewire_build,
+        environment,
+        core_name,
+        "pipewireao-aos-hil-atmosphere-wfs",
+    );
+    wait_for_dump(
+        pipewire_build,
+        environment,
+        core_name,
+        "pipewireao-aos-hil-atmosphere-command",
+    );
+
+    let adapter = LiveGraphAdapter::connect(core_name).expect("connect atmospheric HIL session");
+    let mut runner = Runner::new(adapter);
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Load(ConfigurationInput::File(
+                repository.join("fixtures/aos-hil-atmosphere-development.conf"),
+            )))
+            .unwrap(),
+        LifecycleState::Ready,
+        "atmospheric HIL load diagnostic: {:?}",
+        runner.diagnostic(),
+    );
+    assert_eq!(runner.executor().status().owned_nodes, 1);
+    assert_eq!(runner.executor().status().owned_links, 2);
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Start).unwrap(),
+        LifecycleState::Running,
+        "atmospheric HIL start diagnostic: {:?}",
+        runner.diagnostic(),
+    );
+    std::fs::write(&atmosphere_phase_1_request, "run\n").unwrap();
+    wait_for_text(
+        &mut provider.0,
+        &provider_log,
+        "AOS_HIL_ATMOSPHERE_PHASE_1_DONE sequence=10",
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Stop).unwrap(),
+        LifecycleState::Ready,
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Start).unwrap(),
+        LifecycleState::Running,
+        "atmospheric HIL restart diagnostic: {:?}",
+        runner.diagnostic(),
+    );
+    std::fs::write(&atmosphere_phase_2_request, "run\n").unwrap();
+    wait_for_text(
+        &mut provider.0,
+        &provider_log,
+        "AOS_HIL_ATMOSPHERE_DONE sequence=20",
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Stop).unwrap(),
+        LifecycleState::Ready,
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Unload).unwrap(),
+        LifecycleState::Offline,
+    );
+    let after = dump(pipewire_build, environment, core_name);
+    assert!(after.contains("pipewireao-aos-hil-atmosphere-wfs"));
+    assert!(after.contains("pipewireao-aos-hil-atmosphere-command"));
     assert!(after.contains("pipewireao-rtc-unrelated"));
     assert!(!after.contains("pipewireao-rtc-aos-controller"));
 

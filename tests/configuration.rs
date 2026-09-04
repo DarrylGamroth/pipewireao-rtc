@@ -6,6 +6,7 @@ const FORK: &str = include_str!("../fixtures/fork-development.conf");
 const INDEPENDENT: &str = include_str!("../fixtures/independent-development.conf");
 const EXTERNAL: &str = include_str!("../fixtures/external-development.conf");
 const AOS_HIL: &str = include_str!("../fixtures/aos-hil-development.conf");
+const AOS_HIL_ATMOSPHERE: &str = include_str!("../fixtures/aos-hil-atmosphere-development.conf");
 
 fn replace_once(document: &str, before: &str, after: &str) -> String {
     assert!(
@@ -38,6 +39,12 @@ fn maintained_session_topologies_are_resolved() {
     assert_eq!(external.object_count(), 3);
     assert_eq!(external.owned_object_count(), 1);
     assert_eq!(external.links.len(), 2);
+
+    let atmosphere =
+        DevelopmentConfig::parse(AOS_HIL_ATMOSPHERE).expect("atmospheric HIL topology");
+    assert_eq!(atmosphere.object_count(), 3);
+    assert_eq!(atmosphere.owned_object_count(), 1);
+    assert_eq!(atmosphere.links.len(), 2);
 }
 
 #[test]

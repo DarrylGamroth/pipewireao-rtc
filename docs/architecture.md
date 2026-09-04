@@ -2,7 +2,7 @@
 
 Status: active development baseline; implementation underway
 
-Review date: 2026-09-01
+Review date: 2026-09-03
 
 ## Decision
 
@@ -79,6 +79,31 @@ sequence, and applies that command to simulated frame `n + 1`. This is a
 non-actuating HIL reference system and does not introduce physical correction
 authority.
 
+This is decision **RTC-ARCH-016**: make the RTC processing-node implementation
+substitutable at the ordinary PipeWire boundary. A declared processing role MAY
+be realized by a runner-owned `fgn-native` filter graph or by an externally
+owned `JuliaFilterGraph.jl` graph published through `FilterGraphPipeWire`. The
+session contract names identical scientific ports, shapes, schemas, properties,
+parameters, and links; it does not select behavior by implementation language
+or package identity.
+
+Object ownership and run-control authority are separate. An external
+application creates and destroys its processing node. The RTC MAY send public
+PipeWire start and pause commands only when the configuration explicitly grants
+session run control; unload removes RTC-owned links but leaves the external node
+alive. This uses the existing serialized lifecycle and execution-group effects.
+It does not add a Julia process manager, a second graph parser, or a second
+lifecycle.
+
+This is decision **RTC-ARCH-017**: integrate the REVOLT Classic simulated plant
+through the same external HIL boundary. `REVOLTClassicSim.jl` remains
+transport-neutral. A separate `REVOLTClassicSimPipeWireHIL.jl` package will map
+its prepared 352-by-352 Shack–Hartmann frame and 277-element HSDM277 command
+boundary to ordinary PipeWire nodes. The RTC may place either the maintained
+`fgn-native` controller or an equivalent `JuliaFilterGraph.jl` processing node
+between those endpoints without knowing how the plant or controller is
+implemented.
+
 ## Active scope
 
 The active implementation begins with:
@@ -106,8 +131,11 @@ After that fixture, the active RTCW composition increment adds only:
 
 The next reference-system increment adds one externally owned AdaptiveOpticsSim
 WFS source, one externally owned simulated command sink, and one or more
-runner-owned FGN graphs between them. The integration package, not
-AdaptiveOpticsSim, owns PipeWire stream and acquisition-metadata mapping.
+processing graphs between them. The first fixture uses a runner-owned FGN
+graph; the following substitution fixture uses an externally owned
+`JuliaFilterGraph.jl` node with the same public contract. The integration
+package, not AdaptiveOpticsSim, owns PipeWire stream and acquisition-metadata
+mapping.
 
 The first maintained fixture is the minimal complete-frame source → graph →
 discard path. The AdaptiveOpticsSim HIL reference follows the RTCW composition
@@ -122,7 +150,7 @@ The following are not part of the active baseline:
   fencing;
 - durable recording, audit, run reconstruction, or scientific FITS export;
 - row-block, region-block, fixed-worker, or multi-batch scheduling;
-- Julia graph execution;
+- runner-hosted Julia graph execution or Julia process management;
 - remote control, a web gateway, or WebRTC preview;
 - WirePlumber-specific application logic or generated service-manager units;
 - CPU affinity, real-time scheduling, NUMA placement, or strict-island
@@ -148,6 +176,9 @@ flowchart LR
     Observer["Optional PipeWire tools<br/>or read-only GUI"]
     Plant["AdaptiveOpticsSim<br/>transport-neutral plant"]
     Adapter["AdaptiveOpticsSimPipeWireHIL.jl<br/>external node owner"]
+    JuliaGraph["JuliaFilterGraph.jl<br/>optional external processing node"]
+    Revolt["REVOLTClassicSim.jl<br/>transport-neutral plant"]
+    RevoltAdapter["REVOLTClassicSimPipeWireHIL.jl<br/>planned external node owner"]
 
     Config --> Runner
     Runner -.->|create, connect, configure| Source
@@ -162,6 +193,9 @@ flowchart LR
     Plant <--> Adapter
     Adapter -->|complete WFS frame| GraphA
     GraphB -->|same-sequence command| Adapter
+    Adapter -.->|same declared contracts| JuliaGraph
+    Revolt <--> RevoltAdapter
+    RevoltAdapter -.->|352 by 352 frame and 277 command| JuliaGraph
 ```
 
 | Component | Active responsibility |
@@ -174,6 +208,9 @@ flowchart LR
 | Observer | Inspect standard PipeWire objects and, where a suitable boundary exists, scientific samples. It is optional and never owns runner lifecycle or graph progress. |
 | AdaptiveOpticsSim | Own the simulated atmosphere, optics, WFS, deformable mirror, science diagnostics, model time, and frame-to-command causality without a PipeWire dependency. |
 | `AdaptiveOpticsSimPipeWireHIL.jl` | Map one prepared AdaptiveOpticsSim HIL boundary to an externally owned PipeWire source and non-actuating sink using public PipeWireAO interfaces. |
+| `JuliaFilterGraph.jl` and `FilterGraphPipeWire` | Optionally own and publish one prepared RTC processing graph as an ordinary external PipeWire node. |
+| `REVOLTClassicSim.jl` | Own the REVOLT Classic atmosphere, optics, 352-by-352 Shack–Hartmann detector model, provisional HSDM277 plant, science diagnostics, and deterministic HIL boundary without a PipeWire dependency. |
+| `REVOLTClassicSimPipeWireHIL.jl` | Planned narrow integration package that maps the prepared REVOLT Classic HIL boundary to external PipeWire nodes without moving simulation behavior into the adapter. |
 
 The runner is the control plane for this small session. It does not process
 frame data, create execution threads for graph operations, or replace
@@ -203,6 +240,12 @@ locate that already-running declared object; it MUST NOT substitute another
 node or create an undeclared critical link. The runner owns links that it
 creates to the node but does not own or destroy the node. It does not require
 implementation-identifying properties.
+
+An external processing declaration additionally states whether session run
+control is granted. When granted, the runner uses only public PipeWire node
+commands and observes the resulting node state. When not granted, the external
+application retains run control and the node cannot belong to an RTC-controlled
+execution group. Ownership never transfers in either case.
 
 This same boundary applies when `JuliaFilterGraph.jl` and its
 `FilterGraphPipeWire` adapter publish a prepared Julia graph as one PipeWire

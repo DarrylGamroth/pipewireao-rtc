@@ -2,13 +2,13 @@
 
 Status: active implementation plan
 
-Review date: 2026-09-01
+Review date: 2026-09-03
 
 ## Goal
 
 Deliver the smallest useful RTC workstation: one command constructs a declared
-non-actuating PipeWireAO session, one lifecycle runs its existing `fgn-native`
-filter graphs, scientists can add ordinary typed algorithms without transport
+non-actuating PipeWireAO session, one lifecycle runs its declared processing
+nodes, scientists can add ordinary typed algorithms without transport
 boilerplate, and the maintained scientific graph is demonstrably equivalent
 to the direct or fused implementation.
 
@@ -20,8 +20,10 @@ schedule graph execution. A GUI is a valuable optional observer and editor of
 that standard configuration, never a runtime prerequisite.
 
 The next slice connects a transport-neutral AdaptiveOpticsSim reference plant
-through a separate PipeWire adapter package. The RTC remains a Rust control
-plane and never loads or executes Julia graph code.
+through a separate PipeWire adapter package. A following substitution slice
+allows the same RTC role to be supplied by either `fgn-native` or an external
+`JuliaFilterGraph.jl` node. The RTC remains a Rust control plane and never loads
+or executes Julia graph code.
 
 The active work ends at the non-actuating development gate. The larger former
 roadmap is retained only in the [inactive design archive](archive/full-rtc/README.md).
@@ -53,13 +55,14 @@ flowchart LR
     Parallel["1e. Independent paths"]
     Control["1f. Selective run control"]
     AOSHIL["2. AdaptiveOpticsSim HIL"]
+    ExternalGraph["2b. External processing node"]
     Revolt["3. REVOLT Classic equivalence"]
     Authoring["4. Scientist authoring proof"]
     Profile["5. Development performance profile"]
     Gate["Development gate"]
 
     Contract --> Transport --> Fixture --> Chain --> Fork --> Parallel --> Control
-    Control --> AOSHIL --> Revolt --> Authoring --> Profile --> Gate
+    Control --> AOSHIL --> ExternalGraph --> Revolt --> Authoring --> Profile --> Gate
 ```
 
 ### 0. Freeze the small contract
@@ -69,7 +72,7 @@ flowchart LR
 - use standard PipeWire relaxed SPA-JSON rather than inventing another
   configuration language;
 - identify the exact current PipeWireAO and Rust FGN implementation revisions;
-- map RTC-DEV-001 through RTC-DEV-015 to implementation and tests as work
+- map RTC-DEV-001 through RTC-DEV-017 to implementation and tests as work
   begins.
 
 Exit evidence: the active index has no dependency on archived requirements,
@@ -158,16 +161,35 @@ sequence causality; direct and transported results satisfy declared tolerances;
 and the fixture runs without a GUI. This remains non-actuating functional
 evidence, not a deadline, physical-device, or safety claim.
 
-The next external-node composition slice applies the same boundary to the
-existing `JuliaFilterGraph.jl` deployment application: launch its prepared
-graph node separately, discover its ordinary PipeWire ports, and link it into
-the declared session without adding a Julia-specific runner factory or parser.
-That slice must define lifecycle and selective-control ownership before the RTC
-claims that an externally owned processing node can be stopped independently.
+### 2b. Substitute an external processing node
 
-### 3. Add REVOLT Classic
+- launch the existing `JuliaFilterGraph.jl` deployment application separately
+  and publish its prepared graph through `FilterGraphPipeWire`;
+- declare external object ownership and an independent session run-control
+  grant in the standard configuration;
+- discover the exact public PipeWire ports and link the node into the session
+  without a Julia-specific runner factory, parser, or process manager;
+- use the existing serialized session and execution-group effects to send
+  public PipeWire start and pause commands; and
+- run the same scientific graph once through `fgn-native` and once through the
+  external Julia node with identical inputs and declared values.
 
-- load the maintained 277-actuator complete-frame REVOLT Classic graph;
+Exit evidence: both implementations satisfy the same port and schema contract;
+accepted outputs and state match at declared tolerances; stop/restart preserves
+the external node and algorithm state; loss, replacement, format mutation, and
+command failure reach `FAULT`; retry succeeds; and unload removes only
+RTC-owned links. This proves an implementation-independent RTC component, not a
+runner-hosted Julia execution service.
+
+### 3. Add the REVOLT Classic simulated plant
+
+- keep `REVOLTClassicSim.jl` free of PipeWireAO and wrap its prepared HIL
+  boundary in a separate `REVOLTClassicSimPipeWireHIL.jl` package;
+- expose its 352-by-352 complete Shack–Hartmann frame source and 277-element
+  HSDM277 non-actuating command sink with exact versioned schemas;
+- launch the plant before RTC load and discover it as ordinary external
+  PipeWire nodes;
+- load the maintained 277-actuator complete-frame REVOLT Classic RTC graph;
 - use explicit subaperture origins;
 - publish its reconstructor, references, origins, and other ndarray
   parameters through their declared parameter ports;
@@ -175,10 +197,14 @@ claims that an externally owned processing node can be stopped independently.
 - connect a deterministic simulated or FITS input and a non-actuating command
   sink; and
 - compare every accepted output and relevant state with the direct or fused
-  reference.
+  reference; and
+- repeat the controller role with the equivalent `JuliaFilterGraph.jl` node
+  without changing the plant integration or RTC scientific contracts.
 
 Exit evidence: deterministic start, stop, source end, reset, property update,
-and parameter update scenarios satisfy RTC-DEV-007 at declared tolerances.
+and parameter update scenarios satisfy RTC-DEV-007 at declared tolerances for
+both RTC component implementations; the simulated plant satisfies
+RTC-DEV-014 and RTC-DEV-017 without a GUI or physical authority.
 
 ### 4. Prove scientist authoring
 
@@ -231,7 +257,9 @@ or correction-critical suitability.
 | RTC-DEV-012 | 1f | implemented | validated | Group start and stop use the one dispatcher and typed token, kind, origin, and group-target completions; mismatch, invalid request, effect failure to `FAULT`, stop/unload/required-failure supersession, late completion, retry, and repeated-cycle tests pass |
 | RTC-DEV-013 | 2 | implemented | validated | Generic external source/sink ownership and exact configuration validation pass without implementation-specific admission. The live RTC snapshots admitted global identities, revalidates both ndarray contracts outside lifecycle handlers, and routes source or sink loss, replacement, and incompatible mutation from `READY` or `RUNNING` to `FAULT` through its sole dispatcher. The private-core matrix rejects missing and duplicate endpoints, retries after correction, removes or mutates each endpoint, removes only the RTC graph and links on unload, preserves the other external node and an unrelated object, and separately proves that both external nodes survive normal unload |
 | RTC-DEV-014 | 2 | implemented | validated | The separate integration package implements bounded complete-frame exchange, acquisition-to-model-time conversion, and an explicit command-response window. Its private-core suite rejects zero, stale, duplicate, future, missing, short, non-finite, wrong-shape, and wrong-schema commands without advancing the plant. The RTC SCAO fixture exchanges sequences 1 through 15 against a direct lockstep oracle; nonzero command 1 leaves frame 1 unchanged and first appears in frame 2. Both suites pass against integration-package commit `cfbcc0d` |
-| RTC-DEV-015 | 2 | partial | partial | The private-core deterministic Shack–Hartmann fixture discovers two external AOS nodes, generates an ordinary centroid → reconstructor → integrator FGN graph from a directly measured interaction matrix, reaches `READY` and `RUNNING`, preserves its graph across stop/restart after sequence 7, and completes sequence 15. Every transported sequence matches direct DM-surface state; both AOS and FGN residual norms fall below 1% of their initial values; the command reproduces the cancelling command within declared tolerance; unload removes runner-owned objects while preserving external and unrelated nodes without a GUI. The atmospheric case remains missing |
+| RTC-DEV-015 | 2 | implemented | validated | The private-core deterministic Shack–Hartmann fixture discovers external AOS nodes, generates an ordinary centroid → reconstructor → integrator FGN graph from a directly measured interaction matrix, and completes both flat and seeded four-layer-atmosphere cases. The flat case preserves the graph across stop/restart after sequence 7 and completes sequence 15 with direct DM-surface causality and residual convergence. The atmospheric case preserves the graph across stop/restart after sequence 10 and completes sequence 20; every WFS frame, atmosphere OPD, DM-surface OPD, pupil OPD, and transported command matches its direct oracle at declared tolerances, mean closed-loop Strehl exceeds 0.5 and improves by more than 3× over open loop, and mean pupil OPD RMS improves. Both cases unload to `OFFLINE`, remove runner-owned objects, preserve external and unrelated nodes, and run without a GUI |
+| RTC-DEV-016 | 2b | planned | missing | External `FilterGraphPipeWire` processing-node admission, explicit run-control grant, lifecycle and execution-group control, fault recovery, cleanup ownership, and FGN-equivalence evidence |
+| RTC-DEV-017 | 3 | planned | missing | External REVOLT Classic 352-by-352 WFS and 277-element HSDM277 HIL boundary, FGN and JuliaFilterGraph controller variants, sequence causality, direct numerical oracle, lifecycle, and cleanup evidence |
 
 Implementation and evidence state remain separate when this table is updated.
 A merged implementation is not validated until its complete evidence passes
@@ -335,8 +363,12 @@ the former ABI-layout blocker without an RTC compatibility shim. The
 deterministic flat-reference SCAO path and the connected fault matrix now
 satisfy RTC-DEV-014. Public-registry identity tracking and live contract
 revalidation now satisfy RTC-DEV-013 for both endpoint roles from `READY` and
-`RUNNING`. RTC-DEV-015 remains partial pending the atmospheric reference. The
-SCAO graph uses the Rust FGN branch through
+`RUNNING`. The deterministic 20-frame four-layer-atmosphere reference completes
+with a stop/restart boundary after frame 10. It compares every transported WFS
+frame, command, atmosphere OPD, DM-surface OPD, and pupil OPD with direct
+oracles and gates closed-loop Strehl and pupil OPD RMS improvement. RTC-DEV-015
+is implemented and validated for the maintained AdaptiveOpticsSim reference.
+The SCAO graph uses the Rust FGN branch through
 `4b67841`, including the committed `shack-hartmann-image-f32` graph-rebuild
 `image_schema` binding from `f76b06f` and the schema-authoritative ABI-v7
 adapter. The private-core test selects that exact build-tree bundle through
@@ -348,7 +380,7 @@ main worktree.
 
 The milestone is complete only when:
 
-- RTC-DEV-001 through RTC-DEV-015 are implemented for the maintained fixtures;
+- RTC-DEV-001 through RTC-DEV-017 are implemented for the maintained fixtures;
 - the AdaptiveOpticsSim closed-loop reference passes its direct numerical
   comparison;
 - one command loads the REVOLT Classic development configuration;
