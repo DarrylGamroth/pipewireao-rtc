@@ -234,6 +234,10 @@ configuration = PipeWireHILConfiguration(
 )
 
 pipewire_hil = prepare_pipewire_hil(prepared_reference.boundary, configuration)
+causality_reference = HILReferenceSystems.prepare_hil_reference_system(
+    :shack_hartmann,
+)
+causality_sequence = Ref(step_hil_frame!(causality_reference.boundary))
 residual_norms = Float32[]
 fgn_residual_norms = Float32[]
 
@@ -243,6 +247,45 @@ function exchange_range!(pipewire_hil, sequences)
         completed_sequence == expected_sequence || error(
             "expected SCAO sequence $expected_sequence, received $completed_sequence",
         )
+        causality_sequence[] == expected_sequence || error(
+            "causality oracle expected sequence $(causality_sequence[]), received $expected_sequence",
+        )
+        dm_surface_opd = graph_output(
+            prepared_reference.graph,
+            Val(:dm_surface_opd),
+        )
+        oracle_surface_opd = graph_output(
+            causality_reference.graph,
+            Val(:dm_surface_opd),
+        )
+        isapprox(
+            dm_surface_opd,
+            oracle_surface_opd;
+            rtol=1.0f-6,
+            atol=1.0f-15,
+        ) || error(
+            "command/frame causality mismatch at frame $expected_sequence",
+        )
+        command = hil_command_buffer(prepared_reference.boundary)
+        if expected_sequence == UInt64(1)
+            all(iszero, dm_surface_opd) || error(
+                "command 1 affected frame 1 instead of frame 2",
+            )
+            norm(command) > 0.0f0 || error(
+                "command 1 is zero and cannot prove next-frame causality",
+            )
+        elseif expected_sequence == UInt64(2)
+            norm(dm_surface_opd) > 0.0f0 || error(
+                "command 1 did not affect frame 2",
+            )
+            println("AOS_HIL_CAUSALITY_DONE command_sequence=1 frame_sequence=2")
+            flush(stdout)
+        end
+        copyto!(hil_command_buffer(causality_reference.boundary), command)
+        adopt_hil_command!(causality_reference.boundary, causality_sequence[])
+        if expected_sequence < UInt64(15)
+            causality_sequence[] = step_hil_frame!(causality_reference.boundary)
+        end
         residual_signal = graph_output(
             prepared_reference.graph,
             Val(:wfs_signal),

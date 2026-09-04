@@ -45,7 +45,6 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
     let repository = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let workspace = repository.parent().expect("workspace parent");
     let pipewire_build = workspace.join("pipewire/build");
-    let rust_fgn = workspace.join("calculon-algorithms");
     let plugin_build = std::env::var_os("PIPEWIREAO_SPA_PLUGINS_BUILD").map_or_else(
         || workspace.join("pipewireao-spa-plugins/build"),
         PathBuf::from,
@@ -77,7 +76,10 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
     )
     .unwrap();
 
-    let fgn_bundle = rust_fgn.join("target/release/libcalculon_fgn_bundle.so");
+    let fgn_bundle = std::env::var_os("PIPEWIREAO_RTC_FGN_BUNDLE").map_or_else(
+        || workspace.join("calculon-algorithms/target/release/libcalculon_fgn_bundle.so"),
+        PathBuf::from,
+    );
     let graph_files = [
         (
             "PIPEWIREAO_RTC_GRAPH_MINIMAL",
@@ -381,6 +383,11 @@ fn run_aos_hil_reference_case(
         &mut provider.0,
         &provider_log,
         "AOS_HIL_PHASE_1_DONE sequence=7",
+    );
+    wait_for_text(
+        &mut provider.0,
+        &provider_log,
+        "AOS_HIL_CAUSALITY_DONE command_sequence=1 frame_sequence=2",
     );
     assert_eq!(
         runner.dispatch(LifecycleEvent::Stop).unwrap(),
