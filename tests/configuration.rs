@@ -199,16 +199,15 @@ fn revolt_classic_variants_share_the_exact_external_plant_contract() {
     let julia = DevelopmentConfig::parse(REVOLT_JULIA).expect("Julia REVOLT topology");
 
     assert_eq!(native.object_count(), 4);
-    assert_eq!(native.owned_object_count(), 1);
+    assert_eq!(native.owned_object_count(), 2);
     assert_eq!(julia.object_count(), 4);
-    assert_eq!(julia.owned_object_count(), 0);
+    assert_eq!(julia.owned_object_count(), 1);
     assert_eq!(native.links.len(), 3);
     assert_eq!(julia.links.len(), 3);
     assert_eq!(
         native.externally_owned_node_names(),
         [
             "revolt-classic-sim-wfs",
-            "revolt-classic-controller-reconstructor",
             "revolt-classic-sim-hsdm277-command"
         ]
     );
@@ -216,7 +215,6 @@ fn revolt_classic_variants_share_the_exact_external_plant_contract() {
         julia.externally_owned_node_names(),
         [
             "revolt-classic-sim-wfs",
-            "revolt-classic-controller-reconstructor",
             "pipewireao-rtc-revolt-controller",
             "revolt-classic-sim-hsdm277-command"
         ]
@@ -227,6 +225,7 @@ fn revolt_classic_variants_share_the_exact_external_plant_contract() {
     );
 
     for config in [&native, &julia] {
+        assert_eq!(config.parameters.len(), 1);
         assert_eq!(config.graphs[0].ports.len(), 3);
         assert_eq!(config.sources[0].ports[0].shape, [352, 352]);
         assert!(!config.sources[0].ports[0].parameter);
@@ -282,6 +281,55 @@ fn revolt_classic_variants_share_the_exact_external_plant_contract() {
     );
     let error = DevelopmentConfig::parse(&parameter_sink).expect_err("parameter sink port");
     assert_eq!(error.field(), "sinks[0].ports.input_1.parameter");
+}
+
+#[test]
+fn runtime_parameter_routes_reject_missing_or_misidentified_scientific_inputs() {
+    let parameter_block = concat!(
+        "    parameters = {\n",
+        "        \"pipewireao-rtc-revolt-controller:reconstruct:reconstructor\" = ",
+        "\"${PIPEWIREAO_RTC_PARAMETER_REVOLT}\"\n",
+        "    }\n"
+    );
+    let missing_initial = replace_once(REVOLT_NATIVE, parameter_block, "    parameters = {}\n");
+    assert_eq!(
+        DevelopmentConfig::parse(&missing_initial)
+            .expect_err("runtime parameter source without an initial value")
+            .field(),
+        "parameters"
+    );
+
+    for (before, after, field) in [
+        (
+            "pipewireao-rtc-revolt-controller:reconstruct:reconstructor\" =",
+            "missing-graph:reconstruct:reconstructor\" =",
+            "parameters.missing-graph:reconstruct:reconstructor",
+        ),
+        (
+            "pipewireao-rtc-revolt-controller:reconstruct:reconstructor\" =",
+            "pipewireao-rtc-revolt-controller:measure:image\" =",
+            "parameters.pipewireao-rtc-revolt-controller:measure:image",
+        ),
+        (
+            "${PIPEWIREAO_RTC_PARAMETER_REVOLT}",
+            "${UNSCOPED_PARAMETER_REVOLT}",
+            "parameters.pipewireao-rtc-revolt-controller:reconstruct:reconstructor",
+        ),
+        (
+            "name = output_1 direction = output parameter = true element-type",
+            "name = output_1 direction = output parameter = false element-type",
+            "sources[1].ports.output_1.parameter",
+        ),
+        (
+            "name = \"reconstruct:reconstructor\" direction = input parameter = true",
+            "name = \"reconstruct:reconstructor\" direction = input parameter = false",
+            "parameters.pipewireao-rtc-revolt-controller:reconstruct:reconstructor",
+        ),
+    ] {
+        let mutation = replace_once(REVOLT_NATIVE, before, after);
+        let error = DevelopmentConfig::parse(&mutation).expect_err("invalid parameter route");
+        assert_eq!(error.field(), field, "configuration mutation: {after}");
+    }
 }
 
 #[test]

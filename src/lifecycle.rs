@@ -49,6 +49,9 @@ pub enum EffectKind {
     Stop,
     StartExecutionGroup,
     StopExecutionGroup,
+    Reset,
+    UpdateProperties,
+    UpdateParameter,
     Cleanup,
 }
 
@@ -61,6 +64,11 @@ pub enum EffectOrigin {
     RunningStop,
     RunningExecutionGroupStart,
     RunningExecutionGroupStop,
+    ReadyReset,
+    ReadyPropertyUpdate,
+    RunningPropertyUpdate,
+    ReadyParameterUpdate,
+    RunningParameterUpdate,
     FiniteSourceCompletion,
     ConfiguringUnload,
     ReadyUnload,
@@ -72,12 +80,88 @@ pub enum EffectOrigin {
 pub enum EffectTarget {
     Session,
     ExecutionGroup(String),
+    Graph(String),
+    GraphParameter { graph: String, parameter: String },
+}
+
+/// One scalar value admitted to a graph's standard `SPA_PARAM_Props` surface.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum ScalarValue {
+    Bool(bool),
+    Int(i32),
+    Long(i64),
+    Float(u32),
+    Double(u64),
+    Id(u32),
+    String(String),
+}
+
+impl ScalarValue {
+    #[must_use]
+    pub fn float(value: f32) -> Self {
+        Self::Float(value.to_bits())
+    }
+
+    #[must_use]
+    pub fn double(value: f64) -> Self {
+        Self::Double(value.to_bits())
+    }
+
+    #[must_use]
+    pub fn as_float(&self) -> Option<f32> {
+        match self {
+            Self::Float(bits) => Some(f32::from_bits(*bits)),
+            _ => None,
+        }
+    }
+
+    #[must_use]
+    pub fn as_double(&self) -> Option<f64> {
+        match self {
+            Self::Double(bits) => Some(f64::from_bits(*bits)),
+            _ => None,
+        }
+    }
+}
+
+/// One complete ndarray value for a declared graph parameter input.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct NdArrayParameterValue {
+    pub element_type: String,
+    pub shape: Vec<u32>,
+    pub schema: String,
+    pub bytes: Vec<u8>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum LifecycleEffectSuccess {
     Completed,
-    Realized { execution_groups: Vec<String> },
+    Realized {
+        execution_groups: Vec<String>,
+    },
+    PropertiesUpdated {
+        graph: String,
+        generations: BTreeMap<String, PropertyGeneration>,
+    },
+    PropertiesSubmitted {
+        graph: String,
+    },
+    ParameterSubmitted {
+        graph: String,
+        parameter: String,
+    },
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct PropertyGeneration {
+    pub requested: i64,
+    pub active: Option<i64>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ParameterGeneration {
+    pub requested: i64,
+    pub active: i64,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -105,6 +189,23 @@ pub enum LifecycleEffect {
         origin: EffectOrigin,
         name: String,
     },
+    Reset {
+        token: EffectToken,
+        origin: EffectOrigin,
+    },
+    UpdateProperties {
+        token: EffectToken,
+        origin: EffectOrigin,
+        graph: String,
+        values: BTreeMap<String, ScalarValue>,
+    },
+    UpdateParameter {
+        token: EffectToken,
+        origin: EffectOrigin,
+        graph: String,
+        parameter: String,
+        value: NdArrayParameterValue,
+    },
     Cleanup {
         token: EffectToken,
         origin: EffectOrigin,
@@ -120,6 +221,9 @@ impl LifecycleEffect {
             | Self::Stop { token, .. }
             | Self::StartExecutionGroup { token, .. }
             | Self::StopExecutionGroup { token, .. }
+            | Self::Reset { token, .. }
+            | Self::UpdateProperties { token, .. }
+            | Self::UpdateParameter { token, .. }
             | Self::Cleanup { token, .. } => *token,
         }
     }
@@ -132,6 +236,9 @@ impl LifecycleEffect {
             Self::Stop { .. } => EffectKind::Stop,
             Self::StartExecutionGroup { .. } => EffectKind::StartExecutionGroup,
             Self::StopExecutionGroup { .. } => EffectKind::StopExecutionGroup,
+            Self::Reset { .. } => EffectKind::Reset,
+            Self::UpdateProperties { .. } => EffectKind::UpdateProperties,
+            Self::UpdateParameter { .. } => EffectKind::UpdateParameter,
             Self::Cleanup { .. } => EffectKind::Cleanup,
         }
     }
@@ -144,6 +251,9 @@ impl LifecycleEffect {
             | Self::Stop { origin, .. }
             | Self::StartExecutionGroup { origin, .. }
             | Self::StopExecutionGroup { origin, .. }
+            | Self::Reset { origin, .. }
+            | Self::UpdateProperties { origin, .. }
+            | Self::UpdateParameter { origin, .. }
             | Self::Cleanup { origin, .. } => *origin,
         }
     }
@@ -154,9 +264,17 @@ impl LifecycleEffect {
             Self::StartExecutionGroup { name, .. } | Self::StopExecutionGroup { name, .. } => {
                 EffectTarget::ExecutionGroup(name.clone())
             }
+            Self::UpdateProperties { graph, .. } => EffectTarget::Graph(graph.clone()),
+            Self::UpdateParameter {
+                graph, parameter, ..
+            } => EffectTarget::GraphParameter {
+                graph: graph.clone(),
+                parameter: parameter.clone(),
+            },
             Self::Realize { .. }
             | Self::Start { .. }
             | Self::Stop { .. }
+            | Self::Reset { .. }
             | Self::Cleanup { .. } => EffectTarget::Session,
         }
     }
@@ -199,6 +317,16 @@ pub enum LifecycleEvent {
     Stop,
     StartExecutionGroup(String),
     StopExecutionGroup(String),
+    Reset,
+    UpdateProperties {
+        graph: String,
+        values: BTreeMap<String, ScalarValue>,
+    },
+    UpdateParameter {
+        graph: String,
+        parameter: String,
+        value: NdArrayParameterValue,
+    },
     Reload(ConfigurationInput),
     Retry,
     Unload,
@@ -231,6 +359,9 @@ enum MachineEvent {
     Stop(LifecycleEffect),
     StartExecutionGroup(LifecycleEffect),
     StopExecutionGroup(LifecycleEffect),
+    Reset(LifecycleEffect),
+    UpdateProperties(LifecycleEffect),
+    UpdateParameter(LifecycleEffect),
     Reload(LifecycleEffect),
     Retry(LifecycleEffect),
     Unload(LifecycleEffect),
@@ -283,7 +414,10 @@ impl LifecycleMachine {
     #[state(superstate = "managed")]
     fn ready(&mut self, event: &MachineEvent) -> Outcome<State> {
         match event {
-            MachineEvent::Start(effect) => {
+            MachineEvent::Start(effect)
+            | MachineEvent::Reset(effect)
+            | MachineEvent::UpdateProperties(effect)
+            | MachineEvent::UpdateParameter(effect) => {
                 self.emit(effect);
                 Handled
             }
@@ -306,6 +440,21 @@ impl LifecycleMachine {
                     }
                 }
             }
+            MachineEvent::EffectCompleted(result)
+                if matches!(
+                    result.kind,
+                    EffectKind::Reset | EffectKind::UpdateProperties | EffectKind::UpdateParameter
+                ) =>
+            {
+                self.accept();
+                match &result.result {
+                    Ok(_) => Handled,
+                    Err(diagnostic) => {
+                        self.diagnostic = Some(diagnostic.clone());
+                        Transition(State::fault())
+                    }
+                }
+            }
             _ => Super,
         }
     }
@@ -316,7 +465,9 @@ impl LifecycleMachine {
             MachineEvent::Stop(effect)
             | MachineEvent::FiniteSourceCompleted(effect)
             | MachineEvent::StartExecutionGroup(effect)
-            | MachineEvent::StopExecutionGroup(effect) => {
+            | MachineEvent::StopExecutionGroup(effect)
+            | MachineEvent::UpdateProperties(effect)
+            | MachineEvent::UpdateParameter(effect) => {
                 self.emit(effect);
                 Handled
             }
@@ -338,7 +489,10 @@ impl LifecycleMachine {
             MachineEvent::EffectCompleted(result)
                 if matches!(
                     result.kind,
-                    EffectKind::StartExecutionGroup | EffectKind::StopExecutionGroup
+                    EffectKind::StartExecutionGroup
+                        | EffectKind::StopExecutionGroup
+                        | EffectKind::UpdateProperties
+                        | EffectKind::UpdateParameter
                 ) =>
             {
                 self.accept();
@@ -416,6 +570,9 @@ impl MachineEvent {
             Self::Stop(_) => "stop",
             Self::StartExecutionGroup(_) => "start-execution-group",
             Self::StopExecutionGroup(_) => "stop-execution-group",
+            Self::Reset(_) => "reset",
+            Self::UpdateProperties(_) => "update-properties",
+            Self::UpdateParameter(_) => "update-parameter",
             Self::Reload(_) => "reload",
             Self::Retry(_) => "retry",
             Self::Unload(_) => "unload",
@@ -626,6 +783,7 @@ impl LifecycleDispatcher {
         })
     }
 
+    #[allow(clippy::too_many_lines)]
     fn prepare(&mut self, event: LifecycleEvent) -> Result<MachineEvent, DispatchError> {
         match event {
             LifecycleEvent::Load(config) => {
@@ -652,6 +810,76 @@ impl LifecycleDispatcher {
             }
             LifecycleEvent::StartExecutionGroup(name) => self.prepare_execution_group(name, true),
             LifecycleEvent::StopExecutionGroup(name) => self.prepare_execution_group(name, false),
+            LifecycleEvent::Reset => {
+                let token = self.allocate_token()?;
+                Ok(MachineEvent::Reset(LifecycleEffect::Reset {
+                    token,
+                    origin: EffectOrigin::ReadyReset,
+                }))
+            }
+            LifecycleEvent::UpdateProperties { graph, values } => {
+                if graph.is_empty() || values.is_empty() || values.keys().any(String::is_empty) {
+                    return Err(DispatchError(
+                        "property update requires a graph and at least one named value".to_owned(),
+                    ));
+                }
+                let origin = match self.state() {
+                    LifecycleState::Ready => EffectOrigin::ReadyPropertyUpdate,
+                    LifecycleState::Running => EffectOrigin::RunningPropertyUpdate,
+                    state => {
+                        return Err(DispatchError(format!(
+                            "event update-properties is invalid in {state:?}"
+                        )))
+                    }
+                };
+                let token = self.allocate_token()?;
+                Ok(MachineEvent::UpdateProperties(
+                    LifecycleEffect::UpdateProperties {
+                        token,
+                        origin,
+                        graph,
+                        values,
+                    },
+                ))
+            }
+            LifecycleEvent::UpdateParameter {
+                graph,
+                parameter,
+                value,
+            } => {
+                if graph.is_empty()
+                    || parameter.is_empty()
+                    || value.element_type.is_empty()
+                    || value.shape.is_empty()
+                    || value.shape.contains(&0)
+                    || value.schema.is_empty()
+                    || value.bytes.is_empty()
+                {
+                    return Err(DispatchError(
+                        "parameter update requires a graph, parameter, element type, non-zero shape, schema, and payload"
+                            .to_owned(),
+                    ));
+                }
+                let origin = match self.state() {
+                    LifecycleState::Ready => EffectOrigin::ReadyParameterUpdate,
+                    LifecycleState::Running => EffectOrigin::RunningParameterUpdate,
+                    state => {
+                        return Err(DispatchError(format!(
+                            "event update-parameter is invalid in {state:?}"
+                        )))
+                    }
+                };
+                let token = self.allocate_token()?;
+                Ok(MachineEvent::UpdateParameter(
+                    LifecycleEffect::UpdateParameter {
+                        token,
+                        origin,
+                        graph,
+                        parameter,
+                        value,
+                    },
+                ))
+            }
             LifecycleEvent::Reload(config) => {
                 let token = self.allocate_token()?;
                 Ok(MachineEvent::Reload(LifecycleEffect::Realize {
@@ -784,6 +1012,17 @@ impl LifecycleDispatcher {
                 };
                 Ok(Some(config.execution_group_names()))
             }
+            (Ok(LifecycleEffectSuccess::PropertiesUpdated { .. }), EffectKind::Realize) => Err(
+                DispatchError("realize completion returned property-update evidence".to_owned()),
+            ),
+            (Ok(LifecycleEffectSuccess::PropertiesSubmitted { .. }), EffectKind::Realize) => {
+                Err(DispatchError(
+                    "realize completion returned property-submission evidence".to_owned(),
+                ))
+            }
+            (Ok(LifecycleEffectSuccess::ParameterSubmitted { .. }), EffectKind::Realize) => Err(
+                DispatchError("realize completion returned parameter-update evidence".to_owned()),
+            ),
             (Ok(LifecycleEffectSuccess::Realized { .. }), _) => Err(DispatchError(
                 "non-realize completion returned realized execution groups".to_owned(),
             )),
@@ -819,6 +1058,9 @@ const fn event_name(event: &LifecycleEvent) -> &'static str {
         LifecycleEvent::Stop => "stop",
         LifecycleEvent::StartExecutionGroup(_) => "start-execution-group",
         LifecycleEvent::StopExecutionGroup(_) => "stop-execution-group",
+        LifecycleEvent::Reset => "reset",
+        LifecycleEvent::UpdateProperties { .. } => "update-properties",
+        LifecycleEvent::UpdateParameter { .. } => "update-parameter",
         LifecycleEvent::Reload(_) => "reload",
         LifecycleEvent::Retry => "retry",
         LifecycleEvent::Unload => "unload",

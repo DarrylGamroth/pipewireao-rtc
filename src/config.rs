@@ -6,6 +6,7 @@ mod decode;
 
 const SIMULATED_SOURCE_FACTORY: &str = "pipewireao.simulated-complete-frame";
 const FITS_SOURCE_FACTORY: &str = "api.fits.source";
+const PARAMETER_SOURCE_FACTORY: &str = "pipewireao.runtime-parameter";
 const SINK_FACTORY: &str = "api.pipewireao.discard";
 const GRAPH_FACTORY: &str = "pipewireao.fgn-native";
 const FILTER_CHAIN_MODULE: &str = "libpipewire-module-ndarray-filter-chain";
@@ -68,6 +69,7 @@ impl ObjectRole {
 pub enum EndpointFactory {
     SimulatedCompleteFrameSource,
     FitsCompleteFrameSource,
+    RuntimeParameterSource,
     FormatAgnosticDiscardSink,
 }
 
@@ -108,6 +110,7 @@ impl EndpointFactory {
         match self {
             Self::SimulatedCompleteFrameSource => SIMULATED_SOURCE_FACTORY,
             Self::FitsCompleteFrameSource => FITS_SOURCE_FACTORY,
+            Self::RuntimeParameterSource => PARAMETER_SOURCE_FACTORY,
             Self::FormatAgnosticDiscardSink => SINK_FACTORY,
         }
     }
@@ -286,12 +289,7 @@ impl DevelopmentConfig {
                 "graph properties belong in the delegated filter.graph configuration",
             ));
         }
-        if !self.parameters.is_empty() {
-            return Err(ScientificDiagnostic::new(
-                "parameters",
-                "this complete-frame fixture declares no runtime ndarray parameters",
-            ));
-        }
+        validate_parameter_routes(self)?;
         validate_observations(self)?;
         validate_execution_groups(self)?;
         validate_links(self)
@@ -738,6 +736,26 @@ fn validate_source(
                 ))
             }
         }
+        ObjectRealization::Factory(EndpointFactory::RuntimeParameterSource) => {
+            let port = &source.ports[0];
+            if !port.parameter {
+                return Err(ScientificDiagnostic::new(
+                    format!("{field}.ports.{}.parameter", port.name),
+                    "runtime parameter source output must declare parameter = true",
+                ));
+            }
+            reject_module(field, source.module.as_deref())?;
+            reject_plugin_path(field, source.plugin_path.as_deref())?;
+            reject_configuration_path(field, source.configuration_path.as_deref())?;
+            if source.arguments.is_empty() {
+                Ok(())
+            } else {
+                Err(ScientificDiagnostic::new(
+                    format!("{field}.args"),
+                    "runtime parameter source takes no factory arguments",
+                ))
+            }
+        }
         ObjectRealization::Factory(EndpointFactory::FormatAgnosticDiscardSink) => {
             unreachable!("source allowlist")
         }
@@ -751,6 +769,90 @@ fn validate_source(
             "external source run control remains application-owned",
         )),
     }
+}
+
+fn validate_parameter_routes(config: &DevelopmentConfig) -> Result<(), ScientificDiagnostic> {
+    let parameter_sources = config
+        .sources
+        .iter()
+        .filter(|source| {
+            matches!(
+                source.realization,
+                ObjectRealization::Factory(EndpointFactory::RuntimeParameterSource)
+            )
+        })
+        .collect::<Vec<_>>();
+    if parameter_sources.len() != config.parameters.len() {
+        return Err(ScientificDiagnostic::new(
+            "parameters",
+            format!(
+                "expected one initial value for each of {} runtime parameter source(s), got {}",
+                parameter_sources.len(),
+                config.parameters.len()
+            ),
+        ));
+    }
+    for (input, path) in &config.parameters {
+        let graph_port = config
+            .graphs
+            .iter()
+            .find_map(|graph| {
+                graph
+                    .ports
+                    .iter()
+                    .find(|port| format!("{}:{}", graph.node_name, port.name) == *input)
+            })
+            .ok_or_else(|| {
+                ScientificDiagnostic::new(
+                    format!("parameters.{input}"),
+                    "name does not identify a declared graph input port",
+                )
+            })?;
+        if !graph_port.parameter {
+            return Err(ScientificDiagnostic::new(
+                format!("parameters.{input}"),
+                "target graph port is not a sparse ndarray parameter",
+            ));
+        }
+        let link = config
+            .links
+            .iter()
+            .find(|link| link.input == *input)
+            .ok_or_else(|| {
+                ScientificDiagnostic::new(
+                    format!("parameters.{input}"),
+                    "target graph parameter has no declared source link",
+                )
+            })?;
+        let source = parameter_sources
+            .iter()
+            .find(|source| {
+                let port = &source.ports[0];
+                format!("{}:{}", source.node_name, port.name) == link.output
+            })
+            .ok_or_else(|| {
+                ScientificDiagnostic::new(
+                    format!("parameters.{input}"),
+                    "declared link does not originate at a runner runtime-parameter source",
+                )
+            })?;
+        let source_port = &source.ports[0];
+        if source_port.element_type != graph_port.element_type
+            || source_port.shape != graph_port.shape
+            || source_port.schema != graph_port.schema
+        {
+            return Err(ScientificDiagnostic::new(
+                format!("parameters.{input}"),
+                "runtime parameter source and graph parameter contracts differ",
+            ));
+        }
+        validate_file_reference(
+            &format!("parameters.{input}"),
+            path,
+            "PIPEWIREAO_RTC_PARAMETER_",
+        )?;
+    }
+    Ok(())
 }
 
 fn validate_graph(
@@ -1185,6 +1287,25 @@ fn validate_configuration_reference(
         ));
     }
     Ok(())
+}
+
+fn validate_file_reference(
+    field: &str,
+    actual: &str,
+    prefix: &str,
+) -> Result<(), ScientificDiagnostic> {
+    validate_configuration_reference(field, Some(actual), prefix)
+}
+
+fn reject_module(field: &str, value: Option<&str>) -> Result<(), ScientificDiagnostic> {
+    if value.is_none() {
+        Ok(())
+    } else {
+        Err(ScientificDiagnostic::new(
+            format!("{field}.module"),
+            "runtime parameter source is implemented by the runner",
+        ))
+    }
 }
 
 fn reject_plugin_path(field: &str, value: Option<&str>) -> Result<(), ScientificDiagnostic> {

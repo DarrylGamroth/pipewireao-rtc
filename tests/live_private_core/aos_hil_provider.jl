@@ -122,6 +122,7 @@ function write_fgn_graph(path, plugin, remote, reference_slopes, reconstructor)
         node.name = "pipewireao-rtc-aos-controller"
         object.linger = false
         pipewireao.run-control = true
+        pipewireao.reset-control = true
         filter.graph = {
             nodes = [
                 {

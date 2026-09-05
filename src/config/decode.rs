@@ -1,8 +1,8 @@
 use super::{
     DevelopmentConfig, EndpointFactory, ExecutionGroupSpec, GraphFactory, LinkSpec,
     ObjectRealization, ObjectRole, ObjectSpec, PortDirection, PortSpec, RunControl,
-    ScientificDiagnostic, FITS_SOURCE_FACTORY, GRAPH_FACTORY, SIMULATED_SOURCE_FACTORY,
-    SINK_FACTORY,
+    ScientificDiagnostic, FITS_SOURCE_FACTORY, GRAPH_FACTORY, PARAMETER_SOURCE_FACTORY,
+    SIMULATED_SOURCE_FACTORY, SINK_FACTORY,
 };
 use crate::ffi::spa_json::{Cursor, SyntaxError, Token};
 use std::collections::BTreeMap;
@@ -137,6 +137,9 @@ fn endpoint(
                 }
                 (ObjectRole::Source, FITS_SOURCE_FACTORY) => {
                     EndpointFactory::FitsCompleteFrameSource
+                }
+                (ObjectRole::Source, PARAMETER_SOURCE_FACTORY) => {
+                    EndpointFactory::RuntimeParameterSource
                 }
                 (ObjectRole::Sink, SINK_FACTORY) => EndpointFactory::FormatAgnosticDiscardSink,
                 (ObjectRole::Source, name) => {

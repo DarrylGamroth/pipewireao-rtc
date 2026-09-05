@@ -1,19 +1,26 @@
 use crate::{
     ConfigurationInput, DevelopmentConfig, EffectExecutor, EffectToken, EndpointFactory,
-    GraphFactory, LifecycleEffect, LifecycleEffectSuccess, ObjectRealization, ObjectRole,
-    ObjectSpec, PortDirection, PortSpec, RequiredObjectStatus, ScientificDiagnostic,
+    GraphFactory, LifecycleEffect, LifecycleEffectSuccess, NdArrayParameterValue,
+    ObjectRealization, ObjectRole, ObjectSpec, ParameterGeneration, PortDirection, PortSpec,
+    PropertyGeneration, RequiredObjectStatus, ScalarValue, ScientificDiagnostic,
 };
 use pipewire as pw;
 use pw::properties::PropertiesBox;
 use pw::registry::GlobalObject;
+use pw::reset_control::{self, ResetControlError, ResetControlStatus};
 use pw::run_control::{self, RunControlError, RunControlStatus, RunState};
 use pw::spa::param::format::{ElementType, NdArrayFormat, NdArrayLayout};
-use pw::spa::pod::{Object as PodObject, Value};
-use pw::spa::utils::{Fraction, SpaTypes};
+use pw::spa::param::Parameters;
+use pw::spa::pod::deserialize::PodDeserializer;
+use pw::spa::pod::serialize::PodSerializer;
+use pw::spa::pod::{Object as PodObject, Property as PodProperty, Value};
+use pw::spa::utils::{Fraction, Id, SpaTypes};
 use pw::types::ObjectType;
 use std::cell::{Cell, RefCell};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::ffi::CString;
+use std::io::Cursor;
+use std::mem::size_of;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
@@ -49,7 +56,11 @@ struct ControlledGraph {
     _listener: pw::node::NodeListener,
     proxy: pw::node::Node,
     status_events: Rc<RefCell<Vec<Result<RunControlStatus, String>>>>,
+    reset_events: Rc<RefCell<Vec<Result<ResetControlStatus, String>>>>,
+    property_events: GraphPropertyEvents,
 }
+
+type GraphPropertyEvents = Rc<RefCell<Vec<Result<BTreeMap<String, ScalarValue>, String>>>>;
 
 fn graph_reached_requested_state(
     graph: &ControlledGraph,
@@ -110,6 +121,45 @@ fn statuses_reach_requested_state(
         }
     }
     Ok(matching_status.is_some())
+}
+
+fn reset_reached_completion(
+    graph: &ControlledGraph,
+    wire_token: i64,
+) -> Result<bool, ScientificDiagnostic> {
+    let events = graph.reset_events.borrow();
+    let mut matched = false;
+    for event in events.iter() {
+        let status = event.as_ref().map_err(|error| {
+            ScientificDiagnostic::new(format!("graph {}.reset-control", graph.name), error.clone())
+        })?;
+        if status.completed_token < wire_token {
+            continue;
+        }
+        if status.completed_token > wire_token {
+            return Err(ScientificDiagnostic::new(
+                format!("graph {}.reset-control.completed-token", graph.name),
+                format!(
+                    "expected lifecycle token {wire_token}, observed {}",
+                    status.completed_token
+                ),
+            ));
+        }
+        if matched {
+            continue;
+        }
+        matched = true;
+        if status.result != 0 {
+            return Err(ScientificDiagnostic::new(
+                format!("graph {}.reset-control.result", graph.name),
+                format!(
+                    "owner rejected reset token {wire_token} with {}",
+                    status.result
+                ),
+            ));
+        }
+    }
+    Ok(matched)
 }
 
 #[cfg(test)]
@@ -201,10 +251,31 @@ struct RequiredExternalObject {
     ports: Vec<RequiredExternalPort>,
 }
 
+#[derive(Default)]
+struct ParameterProcessState {
+    pending: Option<Vec<u8>>,
+    failure: Option<String>,
+    stride: i32,
+}
+
+struct ParameterPublisher {
+    node_name: String,
+    port: PortSpec,
+    _listener: pw::stream::StreamListener<Rc<RefCell<ParameterProcessState>>>,
+    _stream: pw::stream::StreamRc,
+    state: Rc<RefCell<ParameterProcessState>>,
+}
+
+enum PropertyUpdateOutcome {
+    Submitted,
+    Active(BTreeMap<String, PropertyGeneration>),
+}
+
 /// Adapter for one private or explicitly named `PipeWireAO` core.
 pub struct LiveGraphAdapter {
     modules: Vec<pw::local_module::LocalModule>,
     spa_nodes: Vec<pw::node::Node>,
+    parameter_publishers: Vec<ParameterPublisher>,
     links: Vec<LiveLink>,
     controlled_graphs: Vec<ControlledGraph>,
     owned_node_names: Vec<String>,
@@ -215,6 +286,7 @@ pub struct LiveGraphAdapter {
     sink_names: Vec<String>,
     execution_group_nodes: BTreeMap<String, Vec<String>>,
     execution_group_sinks: BTreeMap<String, Vec<String>>,
+    parameter_routes: BTreeMap<(String, String), String>,
     expected_objects: usize,
     expected_links: usize,
     creation_failure_after: Option<usize>,
@@ -315,6 +387,7 @@ impl LiveGraphAdapter {
         let adapter = Self {
             modules: Vec::new(),
             spa_nodes: Vec::new(),
+            parameter_publishers: Vec::new(),
             links: Vec::new(),
             controlled_graphs: Vec::new(),
             owned_node_names: Vec::new(),
@@ -325,6 +398,7 @@ impl LiveGraphAdapter {
             sink_names: Vec::new(),
             execution_group_nodes: BTreeMap::new(),
             execution_group_sinks: BTreeMap::new(),
+            parameter_routes: BTreeMap::new(),
             expected_objects: 0,
             expected_links: 0,
             creation_failure_after,
@@ -363,6 +437,55 @@ impl LiveGraphAdapter {
         self.status.discarded_buffers = observed.values().sum();
         self.status.discarded_by_sink.clone_from(&observed);
         Ok(observed)
+    }
+
+    /// Dispatches pending PipeWire callbacks without changing lifecycle state.
+    ///
+    /// Embedders normally call [`Runner::poll_required_objects`](crate::Runner::poll_required_objects),
+    /// which also performs required-object validation. This narrower operation
+    /// exists for integration harnesses that must drive another application's
+    /// callback exchange before that application has restored its public node.
+    ///
+    /// # Errors
+    ///
+    /// Returns a diagnostic for a PipeWire core synchronization failure.
+    #[doc(hidden)]
+    pub fn progress(&self) -> Result<(), ScientificDiagnostic> {
+        self.roundtrip("PipeWire callback progress")
+    }
+
+    /// Observes the requested and active scalar-property generations exported
+    /// by a realized graph node.
+    ///
+    /// # Errors
+    ///
+    /// Returns a diagnostic when the graph or generation properties are not
+    /// available through its standard `PipeWire` Props surface.
+    pub fn observe_property_generation(
+        &self,
+        graph_name: &str,
+        node_name: &str,
+    ) -> Result<PropertyGeneration, ScientificDiagnostic> {
+        self.roundtrip(&format!("graph {graph_name} property observation"))?;
+        let graph = self.controlled_graph(graph_name)?;
+        property_generation(&latest_property_snapshot(graph)?, node_name)
+    }
+
+    /// Observes the requested and active ndarray-parameter sequences exported
+    /// by a realized graph node.
+    ///
+    /// # Errors
+    ///
+    /// Returns a diagnostic when the graph or sequence properties are not
+    /// available through its standard `PipeWire` Props surface.
+    pub fn observe_parameter_generation(
+        &self,
+        graph_name: &str,
+        node_name: &str,
+    ) -> Result<ParameterGeneration, ScientificDiagnostic> {
+        self.roundtrip(&format!("graph {graph_name} parameter observation"))?;
+        let graph = self.controlled_graph(graph_name)?;
+        parameter_generation(&latest_property_snapshot(graph)?, node_name)
     }
 
     /// Reads buffer counts and the ordered payload digest for every sink.
@@ -455,6 +578,10 @@ impl LiveGraphAdapter {
             let _ = self.cleanup(Some(token));
             return Err(error);
         }
+        if let Err(error) = self.publish_initial_parameters(config) {
+            let _ = self.cleanup(Some(token));
+            return Err(error);
+        }
 
         self.status.owned_nodes = self.count_owned_nodes();
         self.status.owned_links = self.links.len();
@@ -487,15 +614,19 @@ impl LiveGraphAdapter {
             .map(str::to_owned)
             .collect();
         self.required_node_names = config.node_names().into_iter().map(str::to_owned).collect();
-        self.finite_source_names = if config.sources.iter().all(|source| {
+        let complete_frame_sources = config.sources.iter().filter(|source| {
+            !matches!(
+                source.realization,
+                ObjectRealization::Factory(EndpointFactory::RuntimeParameterSource)
+            )
+        });
+        self.finite_source_names = if complete_frame_sources.clone().all(|source| {
             matches!(
                 source.realization,
                 ObjectRealization::Factory(EndpointFactory::FitsCompleteFrameSource)
             ) && source.arguments.get("api.fits.loop").map(String::as_str) == Some("false")
         }) {
-            config
-                .sources
-                .iter()
+            complete_frame_sources
                 .map(|source| source.node_name.clone())
                 .collect()
         } else {
@@ -532,6 +663,21 @@ impl LiveGraphAdapter {
                 )
             })
             .collect();
+        self.parameter_routes = config
+            .parameters
+            .keys()
+            .map(|input| {
+                let (graph, parameter) = split_endpoint(input).expect("validated parameter input");
+                let link = config
+                    .links
+                    .iter()
+                    .find(|link| link.input == *input)
+                    .expect("validated parameter link");
+                let (source, _) =
+                    split_endpoint(&link.output).expect("validated parameter source output");
+                ((graph.to_owned(), parameter.to_owned()), source.to_owned())
+            })
+            .collect();
         self.expected_objects = config.owned_object_count();
         self.expected_links = config.links.len();
     }
@@ -557,13 +703,13 @@ impl LiveGraphAdapter {
         config: &DevelopmentConfig,
     ) -> Result<(), ScientificDiagnostic> {
         self.validate_live_ports(config)?;
-        self.required_external_objects = self.capture_required_external_objects(config)?;
         // Admit links downstream-first so no source can publish into a
         // partially realized processing path.
         for (index, link) in config.links_downstream_first() {
             self.create_link(index, &link.output, &link.input, link.passive)?;
             self.finish_creation_point(&format!("links[{index}]"))?;
         }
+        self.required_external_objects = self.capture_required_external_objects(config)?;
         Ok(())
     }
 
@@ -591,9 +737,9 @@ impl LiveGraphAdapter {
             "start complete-frame session",
         )?;
         self.wait_for_links_active("start complete-frame session")?;
+        self.status.running = true;
         self.status.discarded_by_sink = self.wait_for_discarded_buffers(&discarded_before_start)?;
         self.status.discarded_buffers = self.status.discarded_by_sink.values().sum();
-        self.status.running = true;
         Ok(())
     }
 
@@ -680,6 +826,266 @@ impl LiveGraphAdapter {
         Ok(())
     }
 
+    fn reset(&mut self, token: EffectToken) -> Result<(), ScientificDiagnostic> {
+        let wire_token = i64::try_from(token.value()).map_err(|_| {
+            ScientificDiagnostic::new(
+                "lifecycle effect token",
+                format!(
+                    "token {} does not fit the reset-control Long",
+                    token.value()
+                ),
+            )
+        })?;
+        self.clear_errors();
+        self.roundtrip("reset processing graphs")?;
+        for graph in &self.controlled_graphs {
+            graph.reset_events.borrow_mut().clear();
+            let bytes = reset_control::build_request(wire_token).map_err(|error| {
+                ScientificDiagnostic::new(
+                    format!("graph {}.reset-control", graph.name),
+                    error.to_string(),
+                )
+            })?;
+            let pod = pw::spa::pod::Pod::from_bytes(&bytes).ok_or_else(|| {
+                ScientificDiagnostic::new(
+                    format!("graph {}.reset-control", graph.name),
+                    "serialized request is not a complete SPA POD",
+                )
+            })?;
+            graph
+                .proxy
+                .set_param(pw::spa::param::ParamType::Props, 0, pod);
+        }
+        for _ in 0..1_000 {
+            self.roundtrip("reset processing graphs")?;
+            let completed = self
+                .controlled_graphs
+                .iter()
+                .map(|graph| reset_reached_completion(graph, wire_token))
+                .collect::<Result<Vec<_>, _>>()?
+                .into_iter()
+                .filter(|completed| *completed)
+                .count();
+            if completed == self.controlled_graphs.len() {
+                return Ok(());
+            }
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+        Err(ScientificDiagnostic::new(
+            "reset-control",
+            format!("timed out waiting for reset token {wire_token}"),
+        ))
+    }
+
+    fn update_properties(
+        &mut self,
+        graph_name: &str,
+        values: &BTreeMap<String, ScalarValue>,
+    ) -> Result<PropertyUpdateOutcome, ScientificDiagnostic> {
+        let affected_nodes = values
+            .keys()
+            .filter_map(|name| name.split_once(':').map(|(node, _)| node.to_owned()))
+            .collect::<BTreeSet<_>>();
+        let running = self.status.running;
+        let graph = self
+            .controlled_graphs
+            .iter()
+            .find(|graph| graph.name == graph_name)
+            .ok_or_else(|| {
+                ScientificDiagnostic::new(
+                    format!("graph {graph_name}.properties"),
+                    "graph is not realized under RTC control",
+                )
+            })?;
+        let baseline_generations = if running {
+            let baseline = latest_property_snapshot(graph)?;
+            affected_nodes
+                .iter()
+                .map(|node| {
+                    property_generation(&baseline, node)
+                        .map(|generation| (node.clone(), generation))
+                })
+                .collect::<Result<BTreeMap<_, _>, _>>()?
+        } else {
+            BTreeMap::new()
+        };
+        let bytes = build_property_update(values).map_err(|error| {
+            ScientificDiagnostic::new(format!("graph {graph_name}.properties"), error)
+        })?;
+        let pod = pw::spa::pod::Pod::from_bytes(&bytes).ok_or_else(|| {
+            ScientificDiagnostic::new(
+                format!("graph {graph_name}.properties"),
+                "serialized property transaction is not a complete SPA POD",
+            )
+        })?;
+        self.clear_errors();
+        graph
+            .proxy
+            .set_param(pw::spa::param::ParamType::Props, 0, pod);
+        if !running {
+            self.roundtrip(&format!("graph {graph_name} property submission"))?;
+            return Ok(PropertyUpdateOutcome::Submitted);
+        }
+        for _ in 0..1_000 {
+            self.roundtrip(&format!("graph {graph_name} property transaction"))?;
+            let snapshot = latest_property_snapshot(graph)?;
+            let mut observed = BTreeMap::new();
+            let mut complete = true;
+            for node in &affected_nodes {
+                let generation = property_generation(&snapshot, node)?;
+                let baseline = baseline_generations[node];
+                if generation.requested <= baseline.requested
+                    || generation.active != Some(generation.requested)
+                {
+                    complete = false;
+                    break;
+                }
+                observed.insert(
+                    node.clone(),
+                    PropertyGeneration {
+                        requested: generation.requested,
+                        active: Some(generation.requested),
+                    },
+                );
+            }
+            if complete {
+                return Ok(PropertyUpdateOutcome::Active(observed));
+            }
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+        Err(ScientificDiagnostic::new(
+            format!("graph {graph_name}.properties"),
+            "timed out waiting for requested properties to become active",
+        ))
+    }
+
+    fn controlled_graph(&self, graph_name: &str) -> Result<&ControlledGraph, ScientificDiagnostic> {
+        self.controlled_graphs
+            .iter()
+            .find(|graph| graph.name == graph_name)
+            .ok_or_else(|| {
+                ScientificDiagnostic::new(
+                    format!("graph {graph_name}"),
+                    "graph is not realized under RTC control",
+                )
+            })
+    }
+
+    fn publish_initial_parameters(
+        &mut self,
+        config: &DevelopmentConfig,
+    ) -> Result<(), ScientificDiagnostic> {
+        for (input, configured_path) in &config.parameters {
+            let (graph_name, parameter_name) =
+                split_endpoint(input).expect("validated parameter target");
+            let graph = config
+                .graphs
+                .iter()
+                .find(|graph| graph.node_name == graph_name)
+                .expect("validated parameter graph");
+            let port = graph
+                .ports
+                .iter()
+                .find(|port| port.name == parameter_name)
+                .expect("validated parameter port");
+            let path = resolve_file_reference(&format!("parameters.{input}"), configured_path)?;
+            let bytes = std::fs::read(&path).map_err(|error| {
+                ScientificDiagnostic::new(
+                    format!("parameters.{input}"),
+                    format!("cannot read {}: {error}", path.display()),
+                )
+            })?;
+            self.update_parameter(
+                graph_name,
+                parameter_name,
+                &NdArrayParameterValue {
+                    element_type: port.element_type.clone(),
+                    shape: port.shape.clone(),
+                    schema: port.schema.clone(),
+                    bytes,
+                },
+            )?;
+        }
+        Ok(())
+    }
+
+    fn update_parameter(
+        &mut self,
+        graph_name: &str,
+        parameter_name: &str,
+        value: &NdArrayParameterValue,
+    ) -> Result<(), ScientificDiagnostic> {
+        let target = (graph_name.to_owned(), parameter_name.to_owned());
+        let source_name = self.parameter_routes.get(&target).ok_or_else(|| {
+            ScientificDiagnostic::new(
+                format!("graph {graph_name}.ports.{parameter_name}"),
+                "no runtime parameter source is declared for this graph input",
+            )
+        })?;
+        let publisher = self
+            .parameter_publishers
+            .iter()
+            .find(|publisher| publisher.node_name == *source_name)
+            .ok_or_else(|| {
+                ScientificDiagnostic::new(
+                    format!("graph {graph_name}.ports.{parameter_name}"),
+                    format!("runtime parameter source {source_name:?} is not realized"),
+                )
+            })?;
+        if value.element_type != publisher.port.element_type
+            || value.shape != publisher.port.shape
+            || value.schema != publisher.port.schema
+        {
+            return Err(ScientificDiagnostic::new(
+                format!("graph {graph_name}.ports.{parameter_name}.format"),
+                format!(
+                    "expected {} {:?} {:?}, got {} {:?} {:?}",
+                    publisher.port.element_type,
+                    publisher.port.shape,
+                    publisher.port.schema,
+                    value.element_type,
+                    value.shape,
+                    value.schema
+                ),
+            ));
+        }
+        let expected_bytes = publisher
+            .port
+            .shape
+            .iter()
+            .try_fold(size_of::<f32>(), |bytes, dimension| {
+                bytes.checked_mul(*dimension as usize)
+            })
+            .ok_or_else(|| {
+                ScientificDiagnostic::new(
+                    format!("graph {graph_name}.ports.{parameter_name}.shape"),
+                    "parameter byte count overflows addressable storage",
+                )
+            })?;
+        if value.bytes.len() != expected_bytes {
+            return Err(ScientificDiagnostic::new(
+                format!("graph {graph_name}.ports.{parameter_name}.shape"),
+                format!(
+                    "expected {expected_bytes} payload bytes, got {}",
+                    value.bytes.len()
+                ),
+            ));
+        }
+        {
+            let mut state = publisher.state.borrow_mut();
+            if state.pending.is_some() {
+                return Err(ScientificDiagnostic::new(
+                    format!("graph {graph_name}.ports.{parameter_name}"),
+                    "a parameter value is already pending",
+                ));
+            }
+            state.failure = None;
+            state.pending = Some(value.bytes.clone());
+        }
+        Ok(())
+    }
+
+    #[allow(clippy::too_many_lines)]
     fn bind_controlled_graphs(&mut self) -> Result<(), ScientificDiagnostic> {
         self.controlled_graphs.clear();
         for node_name in &self.graph_order {
@@ -695,6 +1101,10 @@ impl LiveGraphAdapter {
                 })?;
             let status_events = Rc::new(RefCell::new(Vec::new()));
             let observed = Rc::clone(&status_events);
+            let reset_events = Rc::new(RefCell::new(Vec::new()));
+            let observed_resets = Rc::clone(&reset_events);
+            let property_events = Rc::new(RefCell::new(Vec::new()));
+            let observed_properties = Rc::clone(&property_events);
             let listener = node
                 .add_listener_local()
                 .param(move |_sequence, param_type, _index, _next, param| {
@@ -709,7 +1119,19 @@ impl LiveGraphAdapter {
                     };
                     match run_control::parse_status(pod) {
                         Ok(status) => observed.borrow_mut().push(Ok(status)),
-                        Err(RunControlError::NotRunControl) => {}
+                        Err(RunControlError::NotRunControl) => {
+                            match reset_control::parse_status(pod) {
+                                Ok(status) => observed_resets.borrow_mut().push(Ok(status)),
+                                Err(ResetControlError::NotResetControl) => {
+                                    observed_properties
+                                        .borrow_mut()
+                                        .push(parse_property_snapshot(pod));
+                                }
+                                Err(error) => {
+                                    observed_resets.borrow_mut().push(Err(error.to_string()));
+                                }
+                            }
+                        }
                         Err(error) => observed.borrow_mut().push(Err(error.to_string())),
                     }
                 })
@@ -721,6 +1143,8 @@ impl LiveGraphAdapter {
                 _listener: listener,
                 proxy: node,
                 status_events,
+                reset_events,
+                property_events,
             });
         }
         self.roundtrip("processing graph run-control discovery")?;
@@ -747,6 +1171,29 @@ impl LiveGraphAdapter {
                     format!("owner is not ready and stopped: {status:?}"),
                 ));
             }
+            let reset_events = graph.reset_events.borrow();
+            if reset_events.len() != 1 {
+                return Err(ScientificDiagnostic::new(
+                    format!("graph {}.reset-control", graph.name),
+                    format!(
+                        "expected one initial owner status, observed {} events",
+                        reset_events.len()
+                    ),
+                ));
+            }
+            let reset_status = reset_events[0].as_ref().map_err(|error| {
+                ScientificDiagnostic::new(
+                    format!("graph {}.reset-control", graph.name),
+                    error.clone(),
+                )
+            })?;
+            if reset_status.completed_token != 0 || reset_status.result != 0 {
+                return Err(ScientificDiagnostic::new(
+                    format!("graph {}.reset-control", graph.name),
+                    format!("owner is not ready for reset: {reset_status:?}"),
+                ));
+            }
+            latest_property_snapshot(graph)?;
         }
         Ok(())
     }
@@ -909,6 +1356,7 @@ impl LiveGraphAdapter {
             first_error.get_or_insert(error);
         }
         self.spa_nodes.clear();
+        self.parameter_publishers.clear();
         self.modules.clear();
         if let Err(error) = self.wait_for_owned_nodes_removed() {
             first_error.get_or_insert(error);
@@ -922,6 +1370,7 @@ impl LiveGraphAdapter {
         self.sink_names.clear();
         self.execution_group_nodes.clear();
         self.execution_group_sinks.clear();
+        self.parameter_routes.clear();
         self.expected_objects = 0;
         self.expected_links = 0;
         match first_error {
@@ -1019,6 +1468,9 @@ impl LiveGraphAdapter {
                 )?;
                 self.create_owned_spa_source(source, field, &plugin)
             }
+            ObjectRealization::Factory(EndpointFactory::RuntimeParameterSource) => {
+                self.create_parameter_publisher(source, field)
+            }
             ObjectRealization::Factory(EndpointFactory::FormatAgnosticDiscardSink) => {
                 unreachable!("validated source cannot use a sink factory")
             }
@@ -1026,6 +1478,135 @@ impl LiveGraphAdapter {
                 self.wait_for_external_object(ObjectRole::Source, &source.node_name)
             }
         }
+    }
+
+    #[allow(clippy::too_many_lines)]
+    fn create_parameter_publisher(
+        &mut self,
+        source: &ObjectSpec<EndpointFactory>,
+        field: &str,
+    ) -> Result<(), ScientificDiagnostic> {
+        let port = source.ports[0].clone();
+        let stride = parameter_stride(&port).map_err(|message| {
+            ScientificDiagnostic::new(format!("{field}.ports.{}.shape", port.name), message)
+        })?;
+        let state = Rc::new(RefCell::new(ParameterProcessState {
+            stride,
+            ..ParameterProcessState::default()
+        }));
+        let properties = [
+            ("node.name", source.node_name.as_str()),
+            (
+                "node.description",
+                "PipeWireAO RTC ndarray parameter source",
+            ),
+            ("media.type", "Application"),
+            ("media.category", "Playback"),
+            ("media.role", "DSP"),
+            ("node.virtual", "true"),
+            ("object.linger", "false"),
+        ]
+        .into_iter()
+        .collect::<PropertiesBox>();
+        let stream = pw::stream::StreamRc::new(
+            self.core.clone(),
+            &format!("{} parameter output", source.node_name),
+            properties,
+        )
+        .map_err(|error| {
+            ScientificDiagnostic::new(
+                format!("{field}.factory"),
+                format!("cannot create runtime parameter stream: {error}"),
+            )
+        })?;
+        let callback_state = Rc::clone(&state);
+        let listener = stream
+            .add_local_listener_with_user_data(callback_state)
+            .state_changed(|_, state, _, current| {
+                if let pw::stream::StreamState::Error(error) = current {
+                    state.borrow_mut().failure = Some(error);
+                }
+            })
+            .process(|stream, state| {
+                let payload = state.borrow_mut().pending.take();
+                let Some(payload) = payload else {
+                    return;
+                };
+                let Some(mut buffer) = stream.dequeue_buffer() else {
+                    state.borrow_mut().pending = Some(payload);
+                    return;
+                };
+                let Some(data) = buffer.datas_mut().first_mut() else {
+                    state.borrow_mut().failure =
+                        Some("parameter buffer has no data plane".to_owned());
+                    return;
+                };
+                let Some(storage) = data.data() else {
+                    state.borrow_mut().failure = Some("parameter buffer is not mapped".to_owned());
+                    return;
+                };
+                if storage.len() < payload.len() {
+                    state.borrow_mut().failure = Some(format!(
+                        "parameter buffer capacity {} is smaller than {} bytes",
+                        storage.len(),
+                        payload.len()
+                    ));
+                    return;
+                }
+                let Ok(payload_size) = u32::try_from(payload.len()) else {
+                    state.borrow_mut().failure = Some(format!(
+                        "parameter payload {} exceeds the SPA chunk size range",
+                        payload.len()
+                    ));
+                    return;
+                };
+                storage[..payload.len()].copy_from_slice(&payload);
+                let state = state.borrow();
+                let chunk = data.chunk_mut();
+                *chunk.offset_mut() = 0;
+                *chunk.size_mut() = payload_size;
+                *chunk.stride_mut() = state.stride;
+            })
+            .register()
+            .map_err(|error| {
+                ScientificDiagnostic::new(
+                    format!("{field}.factory"),
+                    format!("cannot observe runtime parameter stream: {error}"),
+                )
+            })?;
+        let parameters = parameter_stream_parameters(&port).map_err(|message| {
+            ScientificDiagnostic::new(format!("{field}.ports.{}.format", port.name), message)
+        })?;
+        let mut pods = parameters.pods();
+        stream
+            .connect(
+                pw::spa::utils::Direction::Output,
+                None,
+                pw::stream::StreamFlags::MAP_BUFFERS
+                    | pw::stream::StreamFlags::NO_CONVERT
+                    | pw::stream::StreamFlags::DONT_RECONNECT,
+                &mut pods,
+            )
+            .map_err(|error| {
+                ScientificDiagnostic::new(
+                    format!("{field}.ports.{}.format", port.name),
+                    format!("cannot connect runtime parameter stream: {error}"),
+                )
+            })?;
+        stream.set_active(true).map_err(|error| {
+            ScientificDiagnostic::new(
+                format!("{field}.factory"),
+                format!("cannot activate runtime parameter stream: {error}"),
+            )
+        })?;
+        self.parameter_publishers.push(ParameterPublisher {
+            node_name: source.node_name.clone(),
+            port,
+            _listener: listener,
+            _stream: stream,
+            state,
+        });
+        self.wait_for_owned_node(ObjectRole::Source, &source.node_name)
     }
 
     fn create_graph(
@@ -2168,6 +2749,37 @@ impl EffectExecutor for LiveGraphAdapter {
                 self.stop_execution_group(name, *token)?;
                 Ok(LifecycleEffectSuccess::Completed)
             }
+            LifecycleEffect::Reset { token, .. } => {
+                self.reset(*token)?;
+                Ok(LifecycleEffectSuccess::Completed)
+            }
+            LifecycleEffect::UpdateProperties { graph, values, .. } => {
+                match self.update_properties(graph, values)? {
+                    PropertyUpdateOutcome::Submitted => {
+                        Ok(LifecycleEffectSuccess::PropertiesSubmitted {
+                            graph: graph.clone(),
+                        })
+                    }
+                    PropertyUpdateOutcome::Active(generations) => {
+                        Ok(LifecycleEffectSuccess::PropertiesUpdated {
+                            graph: graph.clone(),
+                            generations,
+                        })
+                    }
+                }
+            }
+            LifecycleEffect::UpdateParameter {
+                graph,
+                parameter,
+                value,
+                ..
+            } => {
+                self.update_parameter(graph, parameter, value)?;
+                Ok(LifecycleEffectSuccess::ParameterSubmitted {
+                    graph: graph.clone(),
+                    parameter: parameter.clone(),
+                })
+            }
             LifecycleEffect::Cleanup { token, .. } => {
                 self.cleanup(Some(*token))?;
                 Ok(LifecycleEffectSuccess::Completed)
@@ -2177,6 +2789,17 @@ impl EffectExecutor for LiveGraphAdapter {
 
     fn check_required_objects(&mut self) -> Result<RequiredObjectStatus, ScientificDiagnostic> {
         self.check_external_object_contracts()?;
+        for publisher in &self.parameter_publishers {
+            if let Some(error) = &publisher.state.borrow().failure {
+                return Err(ScientificDiagnostic::new(
+                    format!(
+                        "source {}.ports.{}",
+                        publisher.node_name, publisher.port.name
+                    ),
+                    error.clone(),
+                ));
+            }
+        }
         if !self.finite_source_names.is_empty()
             && self
                 .finite_source_names
@@ -2197,6 +2820,240 @@ impl Drop for LiveGraphAdapter {
     fn drop(&mut self) {
         let _ = self.cleanup(None);
     }
+}
+
+fn parse_property_snapshot(
+    pod: &pw::spa::pod::Pod,
+) -> Result<BTreeMap<String, ScalarValue>, String> {
+    let (_, value) = PodDeserializer::deserialize_from::<Value>(pod.as_bytes())
+        .map_err(|error| format!("cannot decode SPA_PARAM_Props: {error:?}"))?;
+    let Value::Object(object) = value else {
+        return Err("SPA_PARAM_Props is not an object".to_owned());
+    };
+    if object.type_ != SpaTypes::ObjectParamProps.as_raw()
+        || object.id != pw::spa::param::ParamType::Props.as_raw()
+        || object.properties.len() != 1
+        || object.properties[0].key != pw::spa::sys::SPA_PROP_params
+    {
+        return Err("scientific SPA_PARAM_Props object has an invalid envelope".to_owned());
+    }
+    let Value::Struct(fields) = object
+        .properties
+        .into_iter()
+        .next()
+        .expect("one property was checked")
+        .value
+    else {
+        return Err("scientific SPA_PARAM_Props payload is not a Struct".to_owned());
+    };
+    if fields.len() % 2 != 0 {
+        return Err("scientific SPA_PARAM_Props has an unmatched name or value".to_owned());
+    }
+    fields
+        .chunks_exact(2)
+        .map(|pair| {
+            let Value::String(name) = &pair[0] else {
+                return Err("scientific SPA_PARAM_Props name is not a String".to_owned());
+            };
+            let value = match &pair[1] {
+                Value::Bool(value) => ScalarValue::Bool(*value),
+                Value::Int(value) => ScalarValue::Int(*value),
+                Value::Long(value) => ScalarValue::Long(*value),
+                Value::Float(value) => ScalarValue::float(*value),
+                Value::Double(value) => ScalarValue::double(*value),
+                Value::Id(value) => ScalarValue::Id(value.0),
+                Value::String(value) => ScalarValue::String(value.clone()),
+                other => {
+                    return Err(format!(
+                        "scientific property {name:?} has unsupported value {other:?}"
+                    ))
+                }
+            };
+            Ok((name.clone(), value))
+        })
+        .collect()
+}
+
+fn latest_property_snapshot(
+    graph: &ControlledGraph,
+) -> Result<BTreeMap<String, ScalarValue>, ScientificDiagnostic> {
+    graph
+        .property_events
+        .borrow()
+        .last()
+        .ok_or_else(|| {
+            ScientificDiagnostic::new(
+                format!("graph {}.properties", graph.name),
+                "owner did not publish a scientific property snapshot",
+            )
+        })?
+        .clone()
+        .map_err(|error| {
+            ScientificDiagnostic::new(format!("graph {}.properties", graph.name), error.clone())
+        })
+}
+
+fn property_generation(
+    snapshot: &BTreeMap<String, ScalarValue>,
+    node: &str,
+) -> Result<PropertyGeneration, ScientificDiagnostic> {
+    let requested_name = format!("{node}:requested-generation");
+    let active_name = format!("{node}:active-generation");
+    let requested = match snapshot.get(&requested_name) {
+        Some(ScalarValue::Long(value)) => *value,
+        Some(value) => {
+            return Err(ScientificDiagnostic::new(
+                requested_name,
+                format!("expected Long, observed {value:?}"),
+            ))
+        }
+        None => {
+            return Err(ScientificDiagnostic::new(
+                requested_name,
+                "required requested-generation observation is missing",
+            ))
+        }
+    };
+    let active = match snapshot.get(&active_name) {
+        Some(ScalarValue::Long(value)) => *value,
+        Some(value) => {
+            return Err(ScientificDiagnostic::new(
+                active_name,
+                format!("expected Long, observed {value:?}"),
+            ))
+        }
+        None => {
+            return Err(ScientificDiagnostic::new(
+                active_name,
+                "required active-generation observation is missing",
+            ))
+        }
+    };
+    Ok(PropertyGeneration {
+        requested,
+        active: Some(active),
+    })
+}
+
+fn parameter_generation(
+    snapshot: &BTreeMap<String, ScalarValue>,
+    node: &str,
+) -> Result<ParameterGeneration, ScientificDiagnostic> {
+    let requested_name = format!("{node}:requested-parameter-sequence");
+    let active_name = format!("{node}:active-parameter-sequence");
+    let value = |name: &str| match snapshot.get(name) {
+        Some(ScalarValue::Long(value)) => Ok(*value),
+        Some(value) => Err(ScientificDiagnostic::new(
+            name,
+            format!("expected Long, observed {value:?}"),
+        )),
+        None => Err(ScientificDiagnostic::new(
+            name,
+            "required parameter-sequence observation is missing",
+        )),
+    };
+    Ok(ParameterGeneration {
+        requested: value(&requested_name)?,
+        active: value(&active_name)?,
+    })
+}
+
+fn build_property_update(values: &BTreeMap<String, ScalarValue>) -> Result<Vec<u8>, String> {
+    let mut fields = Vec::with_capacity(values.len() * 2);
+    for (name, value) in values {
+        if name.split_once(':').is_none() {
+            return Err(format!(
+                "scientific property {name:?} must use the qualified node:property name"
+            ));
+        }
+        fields.push(Value::String(name.clone()));
+        fields.push(match value {
+            ScalarValue::Bool(value) => Value::Bool(*value),
+            ScalarValue::Int(value) => Value::Int(*value),
+            ScalarValue::Long(value) => Value::Long(*value),
+            ScalarValue::Float(bits) => Value::Float(f32::from_bits(*bits)),
+            ScalarValue::Double(bits) => Value::Double(f64::from_bits(*bits)),
+            ScalarValue::Id(value) => Value::Id(Id(*value)),
+            ScalarValue::String(value) => Value::String(value.clone()),
+        });
+    }
+    let value = Value::Object(PodObject {
+        type_: SpaTypes::ObjectParamProps.as_raw(),
+        id: pw::spa::param::ParamType::Props.as_raw(),
+        properties: vec![PodProperty::new(
+            pw::spa::sys::SPA_PROP_params,
+            Value::Struct(fields),
+        )],
+    });
+    PodSerializer::serialize(Cursor::new(Vec::new()), &value)
+        .map(|result| result.0.into_inner())
+        .map_err(|error| format!("cannot serialize SPA_PARAM_Props: {error:?}"))
+}
+
+fn parameter_stride(port: &PortSpec) -> Result<i32, String> {
+    let columns = port
+        .shape
+        .last()
+        .copied()
+        .ok_or_else(|| "parameter shape is empty".to_owned())?;
+    let bytes = usize::try_from(columns)
+        .ok()
+        .and_then(|columns| columns.checked_mul(size_of::<f32>()))
+        .ok_or_else(|| "parameter row stride exceeds addressable storage".to_owned())?;
+    i32::try_from(bytes).map_err(|_| "parameter row stride exceeds SPA Int".to_owned())
+}
+
+fn parameter_stream_parameters(port: &PortSpec) -> Result<Parameters, String> {
+    let format = NdArrayFormat::new(
+        ElementType::F32Le,
+        port.shape.clone(),
+        NdArrayLayout::RowMajor,
+        None,
+    )
+    .map_err(|error| format!("invalid ndarray parameter format: {error}"))?;
+    let mut format_properties = format.properties();
+    format_properties.push(PodProperty::new(
+        pw::spa::sys::SPA_FORMAT_NDARRAY_schema,
+        Value::String(port.schema.clone()),
+    ));
+    let byte_count = i32::try_from(format.byte_count())
+        .map_err(|_| "parameter payload exceeds SPA Int".to_owned())?;
+    let stride = parameter_stride(port)?;
+    let memory_types =
+        (1_i32 << pw::spa::sys::SPA_DATA_MemPtr) | (1_i32 << pw::spa::sys::SPA_DATA_MemFd);
+    Ok(Parameters::new([
+        Value::Object(PodObject {
+            type_: SpaTypes::ObjectParamFormat.as_raw(),
+            id: pw::spa::param::ParamType::EnumFormat.as_raw(),
+            properties: format_properties,
+        }),
+        Value::Object(PodObject {
+            type_: SpaTypes::ObjectParamBuffers.as_raw(),
+            id: pw::spa::param::ParamType::Buffers.as_raw(),
+            properties: vec![
+                PodProperty::new(
+                    pw::spa::param::BufferProperties::Buffers.as_raw(),
+                    Value::Int(2),
+                ),
+                PodProperty::new(
+                    pw::spa::param::BufferProperties::Blocks.as_raw(),
+                    Value::Int(1),
+                ),
+                PodProperty::new(
+                    pw::spa::param::BufferProperties::Size.as_raw(),
+                    Value::Int(byte_count),
+                ),
+                PodProperty::new(
+                    pw::spa::param::BufferProperties::Stride.as_raw(),
+                    Value::Int(stride),
+                ),
+                PodProperty::new(
+                    pw::spa::param::BufferProperties::DataType.as_raw(),
+                    Value::Int(memory_types),
+                ),
+            ],
+        }),
+    ]))
 }
 
 fn split_endpoint(endpoint: &str) -> Result<(&str, &str), ScientificDiagnostic> {

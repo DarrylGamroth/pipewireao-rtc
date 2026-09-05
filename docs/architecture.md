@@ -245,6 +245,22 @@ RTC-specific filter-graph parser. Paths and launch-time selections are
 resolved before streaming. Construction and topology changes are handled by
 stopping and reloading the development session.
 
+For a configured sparse ndarray parameter, the runner realizes one ordinary
+PipeWire output stream with the local development-only
+`pipewireao.runtime-parameter` factory identity. The configuration declares
+its exact output contract, graph input, link, and initial payload reference.
+The runner owns only that source and link; it does not inspect the delegated
+`filter.graph` body to discover an internal parameter route. PipeWireAO and
+the graph host remain responsible for worker handoff and frame-boundary
+adoption.
+
+Scalar updates use the graph's standard `SPA_PARAM_Props` surface. A request
+submitted while stopped remains distinct from requested or active generation
+evidence; the runner reports submission and observes the host generations
+after processing resumes. Ndarray parameter publication follows the same
+rule through the declared Parameter Port. Processing-state reset is a
+separate owner-mediated request accepted only while stopped.
+
 An external node is selected by declared external ownership and exact node
 name, port name, direction, element type, shape, and schema. Discovery may
 locate that already-running declared object; it MUST NOT substitute another

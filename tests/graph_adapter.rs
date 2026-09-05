@@ -156,6 +156,27 @@ impl EffectExecutor for FakeGraphAdapter {
                 *running = false;
                 Ok(LifecycleEffectSuccess::Completed)
             }
+            LifecycleEffect::Reset { .. } => {
+                self.requests.push("reset".to_owned());
+                Ok(LifecycleEffectSuccess::Completed)
+            }
+            LifecycleEffect::UpdateProperties { graph, values, .. } => {
+                self.requests
+                    .push(format!("properties:{graph}:{}", values.len()));
+                Ok(LifecycleEffectSuccess::Completed)
+            }
+            LifecycleEffect::UpdateParameter {
+                graph,
+                parameter,
+                value,
+                ..
+            } => {
+                self.requests.push(format!(
+                    "parameter:{graph}:{parameter}:{}",
+                    value.bytes.len()
+                ));
+                Ok(LifecycleEffectSuccess::Completed)
+            }
             LifecycleEffect::Cleanup { .. } => {
                 self.cleanup();
                 Ok(LifecycleEffectSuccess::Completed)

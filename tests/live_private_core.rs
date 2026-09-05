@@ -5,7 +5,7 @@ mod fits_discard;
 
 use pipewireao_rtc::{
     ConfigurationInput, DiscardObservation, ExecutionGroupState, LifecycleEvent, LifecycleState,
-    LiveGraphAdapter, Runner, ScientificDiagnostic,
+    LiveGraphAdapter, NdArrayParameterValue, Runner, ScalarValue, ScientificDiagnostic,
 };
 use std::collections::BTreeMap;
 use std::io::Write;
@@ -212,9 +212,14 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
     environment.insert("PIPEWIREAO_RTC_GRAPH_AOS_HIL".to_owned(), aos_graph.clone());
     let revolt_native_graph = graph_directory.join("revolt-classic-native.conf");
     let revolt_julia_graph = graph_directory.join("revolt-classic-julia.conf");
+    let revolt_parameter = temporary.path().join("revolt-reconstructor.f32");
     environment.insert(
         "PIPEWIREAO_RTC_GRAPH_REVOLT_NATIVE".to_owned(),
         revolt_native_graph.clone(),
+    );
+    environment.insert(
+        "PIPEWIREAO_RTC_PARAMETER_REVOLT".to_owned(),
+        revolt_parameter,
     );
     let external_fgn_graph = graph_directory.join("external-owned.conf");
     write_graph_configuration(
@@ -1634,13 +1639,6 @@ fn run_revolt_classic_reference_case(
         core_name,
         "revolt-classic-sim-hsdm277-command",
     );
-    wait_for_dump(
-        pipewire_build,
-        environment,
-        core_name,
-        "revolt-classic-controller-reconstructor",
-    );
-
     let adapter = LiveGraphAdapter::connect(core_name).expect("connect native REVOLT session");
     let mut runner = Runner::new(adapter);
     assert_eq!(
@@ -1653,7 +1651,7 @@ fn run_revolt_classic_reference_case(
         "native REVOLT load diagnostic: {:?}",
         runner.diagnostic(),
     );
-    assert_eq!(runner.executor().status().owned_nodes, 1);
+    assert_eq!(runner.executor().status().owned_nodes, 2);
     assert_eq!(runner.executor().status().owned_links, 3);
     assert_eq!(
         runner.dispatch(LifecycleEvent::Start).unwrap(),
@@ -1661,20 +1659,22 @@ fn run_revolt_classic_reference_case(
         "native REVOLT start diagnostic: {:?}",
         runner.diagnostic(),
     );
-    wait_for_text(
-        &mut provider.0,
-        &hil_log,
-        "REVOLT_PARAMETER_ACTIVE implementation=native",
-    );
     std::fs::write(&native_phase_1, "run\n").unwrap();
-    wait_for_text(
+    wait_for_text_with_runner(
         &mut provider.0,
         &hil_log,
         "REVOLT_HIL_NATIVE_PHASE_1_DONE sequence=4",
+        &mut runner,
     );
     assert_eq!(
         runner.dispatch(LifecycleEvent::Stop).unwrap(),
         LifecycleState::Ready,
+    );
+    let native_generations = apply_revolt_runtime_update(
+        &mut runner,
+        &environment["PIPEWIREAO_RTC_PARAMETER_REVOLT"],
+        "reconstruct:reconstructor",
+        "reconstruct",
     );
     assert_eq!(
         runner.dispatch(LifecycleEvent::Start).unwrap(),
@@ -1683,11 +1683,13 @@ fn run_revolt_classic_reference_case(
         runner.diagnostic(),
     );
     std::fs::write(&native_phase_2, "run\n").unwrap();
-    wait_for_text(
+    wait_for_text_with_runner(
         &mut provider.0,
         &hil_log,
         "REVOLT_HIL_NATIVE_DONE sequence=8",
+        &mut runner,
     );
+    assert_revolt_runtime_update_active(&runner, "reconstruct", native_generations);
     assert_eq!(
         runner.dispatch(LifecycleEvent::Stop).unwrap(),
         LifecycleState::Ready,
@@ -1699,7 +1701,7 @@ fn run_revolt_classic_reference_case(
     let after_native = dump(pipewire_build, environment, core_name);
     assert!(after_native.contains("revolt-classic-sim-wfs"));
     assert!(after_native.contains("revolt-classic-sim-hsdm277-command"));
-    assert!(after_native.contains("revolt-classic-controller-reconstructor"));
+    assert!(!after_native.contains("revolt-classic-controller-reconstructor"));
     assert!(after_native.contains("pipewireao-rtc-unrelated"));
     assert!(!after_native.contains("pipewireao-rtc-revolt-controller"));
 
@@ -1760,7 +1762,7 @@ fn run_revolt_classic_reference_case(
         "Julia REVOLT load diagnostic: {:?}",
         runner.diagnostic(),
     );
-    assert_eq!(runner.executor().status().owned_nodes, 0);
+    assert_eq!(runner.executor().status().owned_nodes, 1);
     assert_eq!(runner.executor().status().owned_links, 3);
     assert_eq!(
         runner.dispatch(LifecycleEvent::Start).unwrap(),
@@ -1769,20 +1771,22 @@ fn run_revolt_classic_reference_case(
         runner.diagnostic(),
         std::fs::read_to_string(&julia_log).unwrap_or_else(|error| error.to_string()),
     );
-    wait_for_text(
-        &mut provider.0,
-        &hil_log,
-        "REVOLT_PARAMETER_ACTIVE implementation=julia",
-    );
     std::fs::write(&julia_phase_1, "run\n").unwrap();
-    wait_for_text(
+    wait_for_text_with_runner(
         &mut provider.0,
         &hil_log,
         "REVOLT_HIL_JULIA_PHASE_1_DONE sequence=4",
+        &mut runner,
     );
     assert_eq!(
         runner.dispatch(LifecycleEvent::Stop).unwrap(),
         LifecycleState::Ready,
+    );
+    let julia_generations = apply_revolt_runtime_update(
+        &mut runner,
+        &environment["PIPEWIREAO_RTC_PARAMETER_REVOLT"],
+        "reconstructor",
+        "reconstruct",
     );
     assert_eq!(
         runner.dispatch(LifecycleEvent::Start).unwrap(),
@@ -1791,11 +1795,13 @@ fn run_revolt_classic_reference_case(
         runner.diagnostic(),
     );
     std::fs::write(&julia_phase_2, "run\n").unwrap();
-    wait_for_text(
+    wait_for_text_with_runner(
         &mut provider.0,
         &hil_log,
         "REVOLT_HIL_JULIA_DONE sequence=8",
+        &mut runner,
     );
+    assert_revolt_runtime_update_active(&runner, "reconstruct", julia_generations);
     assert_eq!(
         runner.dispatch(LifecycleEvent::Stop).unwrap(),
         LifecycleState::Ready,
@@ -1807,7 +1813,7 @@ fn run_revolt_classic_reference_case(
     let after_julia = dump(pipewire_build, environment, core_name);
     assert!(after_julia.contains("revolt-classic-sim-wfs"));
     assert!(after_julia.contains("revolt-classic-sim-hsdm277-command"));
-    assert!(after_julia.contains("revolt-classic-controller-reconstructor"));
+    assert!(!after_julia.contains("revolt-classic-controller-reconstructor"));
     assert!(after_julia.contains("pipewireao-rtc-revolt-controller"));
     assert!(after_julia.contains("pipewireao-rtc-unrelated"));
 
@@ -1842,6 +1848,91 @@ fn run_revolt_classic_reference_case(
         core_name,
         "revolt-classic-controller-reconstructor",
     );
+}
+
+fn apply_revolt_runtime_update(
+    runner: &mut Runner<LiveGraphAdapter>,
+    parameter_path: &Path,
+    parameter_name: &str,
+    parameter_node: &str,
+) -> (
+    pipewireao_rtc::PropertyGeneration,
+    pipewireao_rtc::ParameterGeneration,
+) {
+    let graph = "pipewireao-rtc-revolt-controller";
+    let property_before = runner
+        .executor()
+        .observe_property_generation(graph, "integrate")
+        .expect("observe REVOLT property generation before update");
+    let parameter_before = runner
+        .executor()
+        .observe_parameter_generation(graph, parameter_node)
+        .expect("observe REVOLT parameter generation before update");
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Reset).unwrap(),
+        LifecycleState::Ready,
+        "REVOLT reset diagnostic: {:?}",
+        runner.diagnostic()
+    );
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::UpdateProperties {
+                graph: graph.to_owned(),
+                values: BTreeMap::from([("integrate:gain".to_owned(), ScalarValue::float(-0.1),)]),
+            })
+            .unwrap(),
+        LifecycleState::Ready,
+        "REVOLT property update diagnostic: {:?}",
+        runner.diagnostic()
+    );
+    let initial = std::fs::read(parameter_path).expect("read calibrated REVOLT reconstructor");
+    assert_eq!(initial.len() % size_of::<f32>(), 0);
+    let mut scaled = Vec::with_capacity(initial.len());
+    for value in initial.chunks_exact(size_of::<f32>()) {
+        let value = f32::from_le_bytes(value.try_into().unwrap()) * 0.5;
+        scaled.extend_from_slice(&value.to_le_bytes());
+    }
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::UpdateParameter {
+                graph: graph.to_owned(),
+                parameter: parameter_name.to_owned(),
+                value: NdArrayParameterValue {
+                    element_type: "F32_LE".to_owned(),
+                    shape: vec![277, 376],
+                    schema: "org.calculon.ao.shwfs-reconstructor/1".to_owned(),
+                    bytes: scaled,
+                },
+            })
+            .unwrap(),
+        LifecycleState::Ready,
+        "REVOLT parameter update diagnostic: {:?}",
+        runner.diagnostic()
+    );
+    (property_before, parameter_before)
+}
+
+fn assert_revolt_runtime_update_active(
+    runner: &Runner<LiveGraphAdapter>,
+    parameter_node: &str,
+    before: (
+        pipewireao_rtc::PropertyGeneration,
+        pipewireao_rtc::ParameterGeneration,
+    ),
+) {
+    let graph = "pipewireao-rtc-revolt-controller";
+    let property_after = runner
+        .executor()
+        .observe_property_generation(graph, "integrate")
+        .expect("observe active REVOLT property generation");
+    assert!(property_after.requested > before.0.requested);
+    assert_eq!(property_after.active, Some(property_after.requested));
+    let parameter_after = runner
+        .executor()
+        .observe_parameter_generation(graph, parameter_node)
+        .expect("observe active REVOLT parameter generation");
+    assert!(parameter_after.requested > before.1.requested);
+    assert_eq!(parameter_after.active, parameter_after.requested);
 }
 
 fn run_external_endpoint_case(
@@ -2288,6 +2379,7 @@ fn stop_provider(provider: &mut ChildGuard, stop_file: &Path, log: &Path, label:
     );
 }
 
+#[allow(clippy::too_many_lines)]
 fn run_session_case(
     repository: &Path,
     pipewire_build: &Path,
@@ -2355,6 +2447,27 @@ fn run_session_case(
         case.fixture,
         runner.diagnostic()
     );
+    if case.fixture == "minimal-development.conf" {
+        assert_eq!(
+            runner.dispatch(LifecycleEvent::Reset).unwrap(),
+            LifecycleState::Ready,
+            "{} reset diagnostic: {:?}",
+            case.fixture,
+            runner.diagnostic()
+        );
+        assert_eq!(
+            runner
+                .dispatch(LifecycleEvent::UpdateProperties {
+                    graph: "pipewireao-rtc-graph".to_owned(),
+                    values: BTreeMap::from([("graph:gain".to_owned(), ScalarValue::float(0.25),)]),
+                })
+                .unwrap(),
+            LifecycleState::Ready,
+            "{} property diagnostic: {:?}",
+            case.fixture,
+            runner.diagnostic()
+        );
+    }
     let before_restart = runner.executor().status().discarded_by_sink;
     assert_eq!(
         runner.dispatch(LifecycleEvent::Start).unwrap(),
@@ -2794,6 +2907,41 @@ fn wait_for_core(core: &mut Child, socket: &Path) {
 
 fn wait_for_text(process: &mut Child, log: &Path, needle: &str) {
     wait_for_text_for(process, log, needle, Duration::from_secs(300));
+}
+
+fn wait_for_text_with_runner(
+    process: &mut Child,
+    log: &Path,
+    needle: &str,
+    runner: &mut Runner<LiveGraphAdapter>,
+) {
+    let deadline = Instant::now() + Duration::from_secs(300);
+    while Instant::now() < deadline {
+        if let Some(status) = process.try_wait().unwrap() {
+            panic!(
+                "external process exited with {status}; log: {}\nprivate core log: {}",
+                std::fs::read_to_string(log).unwrap_or_default(),
+                private_core_log(log),
+            );
+        }
+        if std::fs::read_to_string(log)
+            .unwrap_or_default()
+            .contains(needle)
+        {
+            return;
+        }
+        runner
+            .executor()
+            .progress()
+            .expect("progress RTC-owned parameter stream while the HIL frame is active");
+        assert_eq!(runner.state(), LifecycleState::Running);
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    panic!(
+        "external process never reported {needle}; log: {}\nprivate core log: {}",
+        std::fs::read_to_string(log).unwrap_or_default(),
+        private_core_log(log),
+    );
 }
 
 fn wait_for_text_for(process: &mut Child, log: &Path, needle: &str, timeout: Duration) {

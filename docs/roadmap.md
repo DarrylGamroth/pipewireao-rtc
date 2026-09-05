@@ -232,13 +232,18 @@ and parameter update scenarios satisfy RTC-DEV-007 at declared tolerances for
 both RTC component implementations; the simulated plant satisfies
 RTC-DEV-014 and RTC-DEV-017 without a GUI or physical authority.
 
-The nominal REVOLT Classic slice is implemented. It discovers the external
-plant, realizes either controller implementation against identical port
-contracts, publishes the prepared reconstructor through the declared sparse
-parameter link, and compares eight commands and plant states per controller
-with direct references across a stop/restart boundary. Source-end, reset, and
-runtime property and parameter update cases remain part of RTC-DEV-005 and
-RTC-DEV-007.
+The REVOLT Classic slice now discovers the external plant, realizes either
+controller implementation against identical port contracts, and uses an
+RTC-owned ordinary PipeWire stream for the declared sparse reconstructor
+parameter link. The private-core fixture resets controller state, submits a
+new scalar gain and scaled reconstructor while stopped, distinguishes
+submission from active host generations, and compares eight commands and
+plant states per controller with direct references. The worker can adopt the
+sparse parameter on either of two adjacent graph cycles, so the fixture
+classifies that bounded one-way transition against both valid direct states
+and requires the updated state by sequence 8. Source-end equivalence,
+multi-property and rejected live updates, repeated updates, and lockstep
+native-versus-Julia comparison through the adoption window remain.
 
 ### 4. Prove scientist authoring
 
@@ -281,19 +286,19 @@ or correction-critical suitability.
 | RTC-DEV-002 | 1 | implemented | validated | The minimal FITS → graph → discard fixture and field-by-field diagnostics pass; the live adapter validates directions, F32_LE, shape `[2]`, row-major layout, 1000/1 rate, scientific schemas, the discard wildcard, and both links before `RUNNING` |
 | RTC-DEV-003 | 1 | implemented | validated | Exact topology and ordinary introspection pass. The private-core matrix injects a one-shot failure after every runner-owned node and link creation point, removes only the partial session, preserves the unrelated node, retries to `READY`, and unloads cleanly |
 | RTC-DEV-004 | 1 | implemented | validated | Transition, retry, invalid-command, required-object failure, repeated-cycle, and lifecycle-dispatch tests pass. Native and Julia graphs stop to durable live `READY` and restart without reconstructing objects or links. A non-looping FITS source publishes completion after its final buffer returns, and the sole dispatcher automatically returns `RUNNING` to `READY` |
-| RTC-DEV-005 | 3 | planned | missing | Requested/active property and parameter update tests |
+| RTC-DEV-005 | 3 | implemented | partial | Reset, typed scalar-property updates, and typed ndarray Parameter Port publication use the one lifecycle dispatcher and standard host surfaces. The private core proves submitted-versus-active behavior and generation advancement for native FGN and JuliaFilterGraph REVOLT controllers. Live multi-property, rejected, and repeated-update cases remain |
 | RTC-DEV-006 | 1 and 2 | implemented | validated | The private-core runner reaches and remains in its lifecycle without a GUI. A declared source output feeds the bounded PipeWireAO queue in copy/drop-oldest mode; a Julia observer attaches, holds a buffer, detaches, and reattaches while the required sink and lifecycle continue. An identical finite replay without the observer produces the same accepted buffer count, byte count, and payload digest |
-| RTC-DEV-007 | 2 and 3 | partial | partial | AdaptiveOpticsSim flat and atmospheric cases and both REVOLT controller implementations compare transported outputs and plant state with direct lockstep references. REVOLT source-end, reset, property-update, and parameter-update equivalence cases remain |
+| RTC-DEV-007 | 2 and 3 | partial | partial | AdaptiveOpticsSim flat and atmospheric cases and both REVOLT controller implementations compare transported outputs and plant state with direct references. The REVOLT fixture now covers reset plus property and parameter updates, including either valid worker-adoption boundary and a required one-way transition. Source-end equivalence and lockstep native-versus-Julia comparison through the nondeterministic adoption window remain |
 | RTC-DEV-008 | 4 | planned | missing | Package-local declaration examples and ordinary-array tests |
 | RTC-DEV-009 | 1 | implemented | validated | Statig hierarchy, serialized dispatch, typed effects, effect failure, stale-completion rejection, and the full private-core lifecycle pass through the same dispatcher |
 | RTC-DEV-010 | 1c through 1e | implemented | validated | The exact serial, forked, and independent sessions each pass the private-core lifecycle and deliver to every sink; standard graph files are delegated unchanged and PipeWire owns branch execution. The private core injects failure after every actual owned node and link creation point and proves cleanup plus retry |
 | RTC-DEV-011 | 1f | implemented | validated | Valid and invalid execution-group configurations and typed control effects pass. The private-core serial, fork, and independent fixtures use owner-mediated graph control, retain every object and link, stop delivery to the selected sink, allow other groups to advance, and resume later delivery. A one-Hz native fixture compares payload digests before and after selective group stop/restart and proves that graph state persists |
 | RTC-DEV-012 | 1f | implemented | validated | Group start and stop use the one dispatcher and typed token, kind, origin, and group-target completions; mismatch, invalid request, effect failure to `FAULT`, stop/unload/required-failure supersession, late completion, retry, and repeated-cycle tests pass |
-| RTC-DEV-013 | 2 | implemented | validated | Generic external source/sink ownership and exact configuration validation pass without implementation-specific admission. The live RTC snapshots admitted global identities, revalidates both ndarray contracts outside lifecycle handlers, and routes source or sink loss, replacement, and incompatible mutation from `READY` or `RUNNING` to `FAULT` through its sole dispatcher. The private-core matrix rejects missing and duplicate endpoints, retries after correction, removes or mutates each endpoint, removes only the RTC graph and links on unload, preserves the other external node and an unrelated object, and separately proves that both external nodes survive normal unload |
+| RTC-DEV-013 | 2 | implemented | partial | The generic external source/sink matrix validates exact contracts, admitted global identities, loss, replacement, incompatible mutation, retry, ownership-safe cleanup, and unrelated-object survival. The REVOLT HIL provider currently withdraws and recreates its WFS PipeWire node during `exchange_frame!`; the numerical harness can progress callbacks without polling, but normal required-object polling correctly faults on that identity loss. A stable provider node is required before the REVOLT configuration supplies complete RTC-DEV-013 evidence |
 | RTC-DEV-014 | 2 | implemented | validated | The separate integration package implements bounded complete-frame exchange, acquisition-to-model-time conversion, and an explicit command-response window. Its private-core suite rejects zero, stale, duplicate, future, missing, short, non-finite, wrong-shape, and wrong-schema commands without advancing the plant. The RTC SCAO fixture exchanges sequences 1 through 15 against a direct lockstep oracle; nonzero command 1 leaves frame 1 unchanged and first appears in frame 2. Both suites pass against integration-package commit `cfbcc0d` |
 | RTC-DEV-015 | 2 | implemented | validated | The private-core deterministic Shack–Hartmann fixture discovers external AOS nodes, generates an ordinary centroid → reconstructor → integrator FGN graph from a directly measured interaction matrix, and completes both flat and seeded four-layer-atmosphere cases. The flat case preserves the graph across stop/restart after sequence 7 and completes sequence 15 with direct DM-surface causality and residual convergence. The atmospheric case preserves the graph across stop/restart after sequence 10 and completes sequence 20; every WFS frame, atmosphere OPD, DM-surface OPD, pupil OPD, and transported command matches its direct oracle at declared tolerances, mean closed-loop Strehl exceeds 0.5 and improves by more than 3× over open loop, and mean pupil OPD RMS improves. Both cases unload to `OFFLINE`, remove runner-owned objects, preserve external and unrelated nodes, and run without a GUI |
 | RTC-DEV-016 | 2b | implemented | validated | The Version 1 public request/status POD contract, native FGN and standalone owner handling, safe Rust protocol API, `PipeWireAO.jl` flag, and `FilterGraphPipeWire` opt-in are implemented. The private core proves the same RTC configuration against externally owned FGN and Julia graphs, token-matched start/stop/restart, identity-loss fault, replacement retry for both providers, ownership-safe unload, and identical four-frame leaky-integrator payload digests at a non-overloaded 10 Hz fixture rate. Parser and RTC status tests reject malformed, future-token, conflicting, failed, and wrong-state values |
-| RTC-DEV-017 | 3 | implemented | validated | The separate REVOLT Classic adapter exposes the 352-by-352 WFS and 277-element HSDM277 HIL boundary. The private core runs the same plant first with an RTC-owned FGN controller and then an external JuliaFilterGraph controller, checks eight commands and plant diagnostics per implementation against direct lockstep oracles, proves command 1 first affects frame 2, stops and restarts each controller, unloads to `OFFLINE`, preserves external and unrelated nodes, and removes only RTC-owned nodes and links |
+| RTC-DEV-017 | 3 | implemented | partial | The separate REVOLT Classic adapter exposes the 352-by-352 WFS and 277-element HSDM277 HIL boundary. The private core runs the same plant with native FGN and JuliaFilterGraph controllers, checks eight commands and plant diagnostics per implementation against direct oracles, proves command 1 first affects frame 2, exercises reset and runtime updates, unloads to `OFFLINE`, and removes only RTC-owned nodes and links. The provider's transient WFS identity loss prevents full required-object monitoring evidence for this maintained configuration |
 
 Implementation and evidence state remain separate when this table is updated.
 A merged implementation is not validated until its complete evidence passes
@@ -312,10 +317,11 @@ RTC-DEV-010 is tracked across its independently observable surfaces:
 ### Increment 1 implementation note
 
 The recorded validation baseline is PipeWireAO
-`c6b7ba1b8e1b0892fc13b658379b1df271c2fe9a`, the public PipeWireAO Rust
-binding `6213e540fb2f6e41780ba0f04a849ed11a24508f`, PipeWireAO_jll
-`v1.7.0+10`, PipeWireAO.jl `v0.6.3`, JuliaFilterGraph
-`28437fd73aba902df05959317f6bbc1fd3bd32a5`, PipeWireAO SPA plugins
+`5558a6c44090bc37c4e1b5385047e47afc650651`, the public PipeWireAO Rust
+binding `6f42bc8d6cd35e9ef7a1df032678a1fd7bfaad41`, PipeWireAO_jll
+`v1.7.0+10`, PipeWireAO.jl
+`6d78f8a82e9d8212a822a8264f6f4d07bf717c38`, JuliaFilterGraph
+`6608097bdeab040a2cfcd8db31c6fa9d4ae0d99a`, PipeWireAO SPA plugins
 `aefdf6ace2decf04ccf3ac6968d58326fd0ae1c8`, and the legacy-named
 `calculon-algorithms` Rust FGN implementation at
 `1d07d223d5f2d0e0e966204af4add3a960f6563a`. These revisions identify the
@@ -384,13 +390,14 @@ handlers and sends a typed finite-source completion event through the sole
 lifecycle dispatcher, which stops the graph and returns `RUNNING` to `READY`.
 
 The runner pins PipeWireAO-rs revision
-`6213e540fb2f6e41780ba0f04a849ed11a24508f`. That revision accepts negotiated
+`6f42bc8d6cd35e9ef7a1df032678a1fd7bfaad41`. That revision accepts negotiated
 fixed ndarray values represented as `SPA_CHOICE_None`, removes the retired
 acquisition-wire definitions, exposes a self-destruction-aware owner for
 locally loaded modules, and provides typed FITS-completion, discard-metric, and
-Version 1 run-control identifiers. The live adapter uses those public APIs
-directly; it carries no local run-control codec, copied plugin identifiers,
-module-lifetime shim, or retired-symbol compatibility shim.
+Version 1 run-control identifiers, and the Version 1 reset-control protocol.
+The live adapter uses those public APIs directly; it carries no local control
+codec, copied plugin identifiers, module-lifetime shim, or retired-symbol
+compatibility shim.
 
 The bounded observation fixture uses the public PipeWireAO queue module in
 `copy` and `drop-oldest` mode. Its passive source-output link is outside the
@@ -423,14 +430,16 @@ adapter. The private-core test selects that exact build-tree bundle through
 
 The REVOLT Classic fixture uses the separate adapter package and leaves
 `REVOLTClassicSim.jl` transport-neutral. It measures a deterministic 277 by 376
-control matrix, publishes it on the graph's sparse parameter port, and runs the
-same Shack–Hartmann measurement, reconstruction, and leaky integration graph
-once through `fgn-native` and once through an external JuliaFilterGraph node.
-Both implementations preserve the external plant and parameter source across
-RTC unload, compare every command and relevant plant output against direct
-oracles for eight sequences, and prove command-to-next-frame causality across a
-durable stop/restart boundary. This validates RTC-DEV-017 but does not complete
-the runtime update cases required by RTC-DEV-005 and RTC-DEV-007.
+control matrix, publishes it through an RTC-owned ordinary PipeWire Parameter
+Port source, and runs the same Shack–Hartmann measurement, reconstruction, and
+leaky integration graph once through `fgn-native` and once through an external
+JuliaFilterGraph node. Both implementations compare every command and relevant
+plant output against direct oracles for eight sequences, prove
+command-to-next-frame causality, reset controller state, adopt an updated gain
+and reconstructor, and remove only runner-owned objects on unload. The generic
+external-endpoint fixture supplies stable identity monitoring evidence; the
+REVOLT provider must stop recreating its WFS node during frame exchange before
+RTC-DEV-013 and RTC-DEV-017 return to validated evidence.
 
 ## Development completion gate
 

@@ -21,6 +21,8 @@ stop_file = joinpath(control_directory, "stop-revolt-hil")
 const SUBAPERTURE_SIZE = 22
 const CONTROLLER_GAIN = -0.2f0
 const CONTROLLER_POLE = 1.0f0
+const UPDATED_CONTROLLER_GAIN = -0.1f0
+const UPDATED_RECONSTRUCTOR_SCALE = 0.5f0
 const CONTROL_RTOL = 2.0f-2
 const COMMAND_RTOL = 5.0f-4
 const COMMAND_ATOL = 5.0f-11
@@ -147,6 +149,7 @@ function graph_configuration(plugin, reference_slopes, control_matrix)
         remote.name = $core_name
         object.linger = false
         pipewireao.run-control = true
+        pipewireao.reset-control = true
         filter.graph = {
             nodes = [
                 {
@@ -209,163 +212,6 @@ function graph_configuration(plugin, reference_slopes, control_matrix)
     """
 end
 
-mutable struct ParameterProcess
-    values::Vector{Float32}
-    buffer::StreamBuffer
-    published::Atomic{Bool}
-    recycled::Atomic{Bool}
-end
-
-function (process::ParameterProcess)(stream::Stream)
-    dequeue_buffer!(process.buffer, stream) || return nothing
-    queued = false
-    try
-        data = buffer_data(process.buffer)
-        if process.published[]
-            set_chunk!(data; size=0, stride=sizeof(Float32))
-            queue_buffer!(process.buffer, stream)
-            queued = true
-            process.recycled[] = true
-            return nothing
-        end
-        byte_count = sizeof(Float32) * length(process.values)
-        capacity(data) >= byte_count || error(
-            "reconstructor buffer capacity $(capacity(data)) is smaller than $byte_count bytes",
-        )
-        unsafe_copyto!(
-            data_pointer(data),
-            Ptr{UInt8}(pointer(process.values)),
-            byte_count,
-        )
-        set_chunk!(data; size=byte_count, stride=sizeof(Float32))
-        queue_buffer!(process.buffer, stream)
-        queued = true
-        process.published[] = true
-    finally
-        queued || return_buffer!(process.buffer, stream)
-    end
-    return nothing
-end
-
-mutable struct PreparedParameterSource
-    process::ParameterProcess
-    loop::ThreadLoop
-    context::Context
-    core::CoreConnection
-    stream::Stream
-    closed::Bool
-end
-
-function prepare_parameter_source(control_matrix)
-    values = parameter_values(control_matrix)
-    process = ParameterProcess(
-        values,
-        StreamBuffer(),
-        Atomic{Bool}(false),
-        Atomic{Bool}(false),
-    )
-    loop = ThreadLoop("REVOLT Classic reconstructor parameter")
-    context = Context(loop)
-    core = CoreConnection(context; properties=Dict("remote.name" => core_name))
-    stream = Stream(
-        core,
-        "REVOLT Classic reconstructor parameter";
-        properties=Dict(
-            "node.name" => "revolt-classic-controller-reconstructor",
-            "media.type" => "Application",
-            "media.category" => "Playback",
-            "media.role" => "DSP",
-            "node.description" => "REVOLT Classic prepared reconstructor",
-        ),
-        on_process=process,
-    )
-    prepared = PreparedParameterSource(
-        process,
-        loop,
-        context,
-        core,
-        stream,
-        false,
-    )
-    try
-        format = NdArrayFormat(
-            NdArray.F32_LE,
-            size(control_matrix);
-            layout=NdArray.ROW_MAJOR,
-        )
-        connect!(
-            stream,
-            :output;
-            flags=STREAM_MAP_BUFFERS | STREAM_DONT_RECONNECT | STREAM_NO_CONVERT,
-            params=Pod[
-                ndarray_format(
-                    format;
-                    schema="org.calculon.ao.shwfs-reconstructor/1",
-                ),
-                Pod(buffers_param(size=payload_size(format), buffers=2)),
-            ],
-        )
-        start!(loop)
-        with_thread_loop_lock(loop) do _
-            set_active!(stream, true)
-        end
-        status = timedwait(
-            () -> with_thread_loop_lock(loop) do _
-                node_id(stream) != typemax(UInt32)
-            end,
-            5.0;
-            pollint=0.001,
-        )
-        status == :ok || error(
-            "REVOLT Classic reconstructor source did not become inspectable",
-        )
-        return prepared
-    catch
-        close(prepared)
-        rethrow()
-    end
-end
-
-function Base.close(prepared::PreparedParameterSource)
-    prepared.closed && return nothing
-    prepared.closed = true
-    try
-        with_thread_loop_lock(prepared.loop) do _
-            close(prepared.stream)
-            close(prepared.core)
-            close(prepared.context)
-        end
-    finally
-        stop!(prepared.loop)
-        close(prepared.loop)
-    end
-    return nothing
-end
-
-function wait_for_parameter_preparation!(prepared, frame_driver)
-    status = timedwait(
-        () -> begin
-            prepared.process.recycled[] && return true
-            trigger_process!(frame_driver)
-            return false
-        end,
-        5.0;
-        pollint=0.001,
-    )
-    status == :ok || error(
-        "REVOLT Classic reconstructor parameter was not accepted by the graph worker",
-    )
-    return nothing
-end
-
-function trigger_parameter_publication!(prepared::PreparedParameterSource, frame_driver::Stream)
-    prepared.process.published[] && return nothing
-    stream_state(prepared.stream) ==
-        PipeWireAO.LibPipeWire.PW_STREAM_STATE_STREAMING || return nothing
-    trigger_process!(frame_driver)
-    return nothing
-end
-
 function first_difference(actual, expected; rtol, atol)
     for index in eachindex(actual, expected)
         isapprox(actual[index], expected[index]; rtol, atol) || return index
@@ -388,14 +234,19 @@ function require_close(field, sequence, actual, expected; rtol, atol)
     )
 end
 
+arrays_close(actual, expected; rtol, atol) =
+    all(
+        index -> isapprox(actual[index], expected[index]; rtol, atol),
+        eachindex(actual, expected),
+    )
+
 function prepare_phase(control_matrix)
     plant = prepare_revolt_classic_pipewire_hil(; remote=core_name)
-    parameter_source = prepare_parameter_source(control_matrix)
     oracle = prepare_hil_system()
     oracle_sequence = Ref(step_hil_frame!(oracle.boundary))
     direct_state = zeros(Float32, command_count())
     start!(plant.pipewire)
-    return (; plant, parameter_source, oracle, oracle_sequence, direct_state)
+    return (; plant, oracle, oracle_sequence, direct_state)
 end
 
 function require_plant_oracle_frame!(phase, sequence)
@@ -429,7 +280,13 @@ function exchange_range!(
     control_matrix,
     native_commands,
     implementation,
+    gain=CONTROLLER_GAIN,
+    reset_state=false,
+    alternate_control_matrix=nothing,
+    parameter_adopted=Ref(false),
+    compare_implementations=true,
 )
+    reset_state && fill!(phase.direct_state, 0.0f0)
     for expected_sequence in sequences
         println("REVOLT_HIL_FRAME_BEGIN implementation=$implementation sequence=$expected_sequence")
         flush(stdout)
@@ -447,10 +304,41 @@ function exchange_range!(
         require_plant_oracle_frame!(phase, expected_sequence)
 
         slopes = controller_slopes(hil_frame_buffer(phase.plant.boundary))
-        residual_command = control_matrix * (slopes - reference_slopes)
-        @. phase.direct_state =
-            CONTROLLER_POLE * phase.direct_state + CONTROLLER_GAIN * residual_command
         transported_command = hil_command_buffer(phase.plant.boundary)
+        residual_command = control_matrix * (slopes - reference_slopes)
+        updated_state = @. CONTROLLER_POLE * phase.direct_state + gain * residual_command
+        if isnothing(alternate_control_matrix)
+            copyto!(phase.direct_state, updated_state)
+        else
+            alternate_residual = alternate_control_matrix * (slopes - reference_slopes)
+            alternate_state =
+                @. CONTROLLER_POLE * phase.direct_state + gain * alternate_residual
+            matches_updated = arrays_close(
+                transported_command,
+                updated_state;
+                rtol=COMMAND_RTOL,
+                atol=COMMAND_ATOL,
+            )
+            matches_alternate = arrays_close(
+                transported_command,
+                alternate_state;
+                rtol=COMMAND_RTOL,
+                atol=COMMAND_ATOL,
+            )
+            parameter_adopted[] && !matches_updated && error(
+                "$implementation reverted to the previous reconstructor at sequence $expected_sequence",
+            )
+            (matches_updated || matches_alternate) || require_close(
+                "hsdm277_command",
+                expected_sequence,
+                transported_command,
+                updated_state;
+                rtol=COMMAND_RTOL,
+                atol=COMMAND_ATOL,
+            )
+            parameter_adopted[] = parameter_adopted[] || matches_updated
+            copyto!(phase.direct_state, matches_updated ? updated_state : alternate_state)
+        end
         require_close(
             "hsdm277_command",
             expected_sequence,
@@ -462,7 +350,7 @@ function exchange_range!(
 
         if implementation === :native
             push!(native_commands, copy(transported_command))
-        else
+        elseif compare_implementations
             require_close(
                 "native_julia_command_equivalence",
                 expected_sequence,
@@ -502,6 +390,9 @@ end
 
 function main()
     reference_slopes, control_matrix, retained_rank = calibrate_controller()
+    open(ENV["PIPEWIREAO_RTC_PARAMETER_REVOLT"], "w") do io
+        write(io, parameter_values(control_matrix))
+    end
     write(
         native_graph_path,
         graph_configuration(
@@ -523,23 +414,10 @@ function main()
     flush(stdout)
     native_first_done = false
     native_second_done = false
-    native_parameter_announced = false
 
     try
         while !isfile(stop_file) && !isfile(switch_to_julia)
-            trigger_parameter_publication!(
-                phase.parameter_source,
-                phase.plant.pipewire.frame_stream,
-            )
-            if !native_parameter_announced && phase.parameter_source.process.published[]
-                wait_for_parameter_preparation!(
-                    phase.parameter_source,
-                    phase.plant.pipewire.frame_stream,
-                )
-                println("REVOLT_PARAMETER_ACTIVE implementation=native")
-                flush(stdout)
-                native_parameter_announced = true
-            elseif !native_first_done && isfile(native_phase_1)
+            if !native_first_done && isfile(native_phase_1)
                 exchange_range!(
                     phase,
                     UInt64(1):UInt64(4),
@@ -552,13 +430,22 @@ function main()
                 flush(stdout)
                 native_first_done = true
             elseif native_first_done && !native_second_done && isfile(native_phase_2)
+                parameter_adopted = Ref(false)
                 exchange_range!(
                     phase,
                     UInt64(5):UInt64(8),
                     reference_slopes,
-                    control_matrix,
+                    UPDATED_RECONSTRUCTOR_SCALE .* control_matrix,
                     native_commands,
                     :native,
+                    UPDATED_CONTROLLER_GAIN,
+                    true,
+                    control_matrix,
+                    parameter_adopted,
+                    false,
+                )
+                parameter_adopted[] || error(
+                    "native reconstructor parameter was not adopted by sequence 8",
                 )
                 println("REVOLT_HIL_NATIVE_DONE sequence=8")
                 flush(stdout)
@@ -571,29 +458,15 @@ function main()
         native_second_done || error(
             "cannot switch to Julia before the native REVOLT sequence completes",
         )
-        close(phase.parameter_source)
         close(phase.plant.pipewire)
         phase = prepare_phase(control_matrix)
         println("REVOLT_HIL_JULIA_READY")
         flush(stdout)
         julia_first_done = false
         julia_second_done = false
-        julia_parameter_announced = false
 
         while !isfile(stop_file)
-            trigger_parameter_publication!(
-                phase.parameter_source,
-                phase.plant.pipewire.frame_stream,
-            )
-            if !julia_parameter_announced && phase.parameter_source.process.published[]
-                wait_for_parameter_preparation!(
-                    phase.parameter_source,
-                    phase.plant.pipewire.frame_stream,
-                )
-                println("REVOLT_PARAMETER_ACTIVE implementation=julia")
-                flush(stdout)
-                julia_parameter_announced = true
-            elseif !julia_first_done && isfile(julia_phase_1)
+            if !julia_first_done && isfile(julia_phase_1)
                 exchange_range!(
                     phase,
                     UInt64(1):UInt64(4),
@@ -606,13 +479,22 @@ function main()
                 flush(stdout)
                 julia_first_done = true
             elseif julia_first_done && !julia_second_done && isfile(julia_phase_2)
+                parameter_adopted = Ref(false)
                 exchange_range!(
                     phase,
                     UInt64(5):UInt64(8),
                     reference_slopes,
-                    control_matrix,
+                    UPDATED_RECONSTRUCTOR_SCALE .* control_matrix,
                     native_commands,
                     :julia,
+                    UPDATED_CONTROLLER_GAIN,
+                    true,
+                    control_matrix,
+                    parameter_adopted,
+                    false,
+                )
+                parameter_adopted[] || error(
+                    "Julia reconstructor parameter was not adopted by sequence 8",
                 )
                 println("REVOLT_HIL_JULIA_DONE sequence=8")
                 flush(stdout)
@@ -625,7 +507,6 @@ function main()
             stop!(phase.plant.pipewire)
         catch
         end
-        close(phase.parameter_source)
         close(phase.plant.pipewire)
     end
 end

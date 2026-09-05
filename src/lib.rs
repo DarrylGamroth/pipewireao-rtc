@@ -15,7 +15,8 @@ pub use config::{
 pub use lifecycle::{
     ConfigurationInput, DispatchError, DispatchOutcome, EffectKind, EffectOrigin, EffectTarget,
     EffectToken, ExecutionGroupState, LifecycleDispatcher, LifecycleEffect, LifecycleEffectResult,
-    LifecycleEffectSuccess, LifecycleEvent, LifecycleState,
+    LifecycleEffectSuccess, LifecycleEvent, LifecycleState, NdArrayParameterValue,
+    ParameterGeneration, PropertyGeneration, ScalarValue,
 };
 #[cfg(feature = "live")]
 pub use live::{DiscardObservation, LiveGraphAdapter, LiveGraphStatus};

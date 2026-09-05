@@ -1,8 +1,10 @@
 use pipewireao_rtc::{
     DevelopmentConfig, EffectExecutor, EffectKind, EffectOrigin, EffectTarget, ExecutionGroupState,
     LifecycleDispatcher, LifecycleEffect, LifecycleEffectResult, LifecycleEffectSuccess,
-    LifecycleEvent, LifecycleState, RequiredObjectStatus, Runner, ScientificDiagnostic,
+    LifecycleEvent, LifecycleState, NdArrayParameterValue, RequiredObjectStatus, Runner,
+    ScalarValue, ScientificDiagnostic,
 };
+use std::collections::BTreeMap;
 
 const VALID: &str = include_str!("../fixtures/minimal-development.conf");
 
@@ -49,10 +51,67 @@ fn start_running(dispatcher: &mut LifecycleDispatcher) {
 }
 
 #[test]
+#[allow(clippy::too_many_lines)]
 fn every_legal_transition_succeeds() {
     let mut dispatcher = LifecycleDispatcher::new();
     load_ready(&mut dispatcher);
+
+    for event in [
+        LifecycleEvent::Reset,
+        LifecycleEvent::UpdateProperties {
+            graph: "pipewireao-rtc-graph".to_owned(),
+            values: BTreeMap::from([("integrate:gain".to_owned(), ScalarValue::float(0.5))]),
+        },
+        LifecycleEvent::UpdateParameter {
+            graph: "pipewireao-rtc-graph".to_owned(),
+            parameter: "reconstruct:reconstructor".to_owned(),
+            value: NdArrayParameterValue {
+                element_type: "F32_LE".to_owned(),
+                shape: vec![2, 2],
+                schema: "org.example.reconstructor/1".to_owned(),
+                bytes: vec![0; 16],
+            },
+        },
+    ] {
+        let effect = dispatcher
+            .dispatch(event)
+            .expect("ready control event")
+            .effect
+            .expect("typed control effect");
+        assert_eq!(
+            complete(&mut dispatcher, &effect, Ok(())),
+            LifecycleState::Ready
+        );
+    }
     start_running(&mut dispatcher);
+
+    for event in [
+        LifecycleEvent::UpdateProperties {
+            graph: "pipewireao-rtc-graph".to_owned(),
+            values: BTreeMap::from([("integrate:pole".to_owned(), ScalarValue::float(0.9))]),
+        },
+        LifecycleEvent::UpdateParameter {
+            graph: "pipewireao-rtc-graph".to_owned(),
+            parameter: "reconstruct:reconstructor".to_owned(),
+            value: NdArrayParameterValue {
+                element_type: "F32_LE".to_owned(),
+                shape: vec![2, 2],
+                schema: "org.example.reconstructor/1".to_owned(),
+                bytes: vec![0; 16],
+            },
+        },
+    ] {
+        let effect = dispatcher
+            .dispatch(event)
+            .expect("running control event")
+            .effect
+            .expect("typed control effect");
+        assert_eq!(
+            complete(&mut dispatcher, &effect, Ok(())),
+            LifecycleState::Running
+        );
+    }
+    assert!(dispatcher.dispatch(LifecycleEvent::Reset).is_err());
 
     let group_stop = dispatcher
         .dispatch(LifecycleEvent::StopExecutionGroup("main".to_owned()))
@@ -123,6 +182,37 @@ fn every_legal_transition_succeeds() {
     assert_eq!(
         complete(&mut dispatcher, &unload.effect.unwrap(), Ok(())),
         LifecycleState::Offline
+    );
+}
+
+#[test]
+fn control_effect_identity_is_validated_and_failure_faults() {
+    let mut dispatcher = LifecycleDispatcher::new();
+    load_ready(&mut dispatcher);
+    let effect = dispatcher
+        .dispatch(LifecycleEvent::UpdateProperties {
+            graph: "pipewireao-rtc-graph".to_owned(),
+            values: BTreeMap::from([("integrate:gain".to_owned(), ScalarValue::float(0.25))]),
+        })
+        .unwrap()
+        .effect
+        .unwrap();
+    let mut wrong = LifecycleEffectResult::from_effect(&effect, Ok(()));
+    wrong.target = EffectTarget::Graph("another-graph".to_owned());
+    assert!(dispatcher
+        .dispatch(LifecycleEvent::EffectCompleted(wrong))
+        .is_err());
+    assert_eq!(dispatcher.pending_effect(), Some(&effect));
+    assert_eq!(
+        complete(
+            &mut dispatcher,
+            &effect,
+            Err(ScientificDiagnostic::new(
+                "graph pipewireao-rtc-graph.integrate:gain",
+                "property was rejected"
+            ))
+        ),
+        LifecycleState::Fault
     );
 }
 

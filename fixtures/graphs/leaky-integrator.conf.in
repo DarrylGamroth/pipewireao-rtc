@@ -3,6 +3,7 @@
     node.name = "@NODE_NAME@"
     object.linger = false
     pipewireao.run-control = true
+    pipewireao.reset-control = true
     filter.graph = {
         nodes = [
             {

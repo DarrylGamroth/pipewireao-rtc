@@ -1,7 +1,8 @@
 use pipewireao_rtc::{
-    ConfigurationInput, LifecycleEvent, LifecycleState, LiveGraphAdapter, Runner,
-    ScientificDiagnostic,
+    ConfigurationInput, LifecycleEvent, LifecycleState, LiveGraphAdapter, NdArrayParameterValue,
+    Runner, ScalarValue, ScientificDiagnostic,
 };
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::mpsc::{self, RecvTimeoutError};
 use std::time::Duration;
@@ -70,8 +71,13 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+#[allow(clippy::too_many_lines)]
 fn control_session(runner: &mut Runner<LiveGraphAdapter>) -> Result<(), ScientificDiagnostic> {
-    println!("Commands: groups, status, stop GROUP, start GROUP, quit");
+    println!(
+        "Commands: groups, status, stop GROUP, start GROUP, reset, \
+         property GRAPH NODE:PROPERTY TYPE VALUE, \
+         parameter GRAPH PORT ELEMENT_TYPE DIMS SCHEMA PATH, quit"
+    );
     let (sender, receiver) = mpsc::channel();
     std::thread::spawn(move || loop {
         let mut input = String::new();
@@ -134,9 +140,146 @@ fn control_session(runner: &mut Runner<LiveGraphAdapter>) -> Result<(), Scientif
                 runner,
                 LifecycleEvent::StartExecutionGroup((*name).to_owned()),
             )?,
-            _ => eprintln!("expected groups, status, stop GROUP, start GROUP, or quit"),
+            ["reset"] => dispatch_ready_control(runner, LifecycleEvent::Reset)?,
+            ["property", graph, name, value_type, value] => dispatch_control(
+                runner,
+                LifecycleEvent::UpdateProperties {
+                    graph: (*graph).to_owned(),
+                    values: BTreeMap::from([(
+                        (*name).to_owned(),
+                        parse_scalar(value_type, value)?,
+                    )]),
+                },
+            )?,
+            ["parameter", graph, parameter, element_type, dimensions, schema, path] => {
+                let bytes = std::fs::read(path).map_err(|error| {
+                    ScientificDiagnostic::new(
+                        "command parameter payload",
+                        format!("cannot read {path:?}: {error}"),
+                    )
+                })?;
+                dispatch_control(
+                    runner,
+                    LifecycleEvent::UpdateParameter {
+                        graph: (*graph).to_owned(),
+                        parameter: (*parameter).to_owned(),
+                        value: NdArrayParameterValue {
+                            element_type: (*element_type).to_owned(),
+                            shape: parse_dimensions(dimensions)?,
+                            schema: (*schema).to_owned(),
+                            bytes,
+                        },
+                    },
+                )?;
+            }
+            _ => eprintln!(
+                "expected groups, status, stop GROUP, start GROUP, reset, \
+                 property GRAPH NODE:PROPERTY TYPE VALUE, \
+                 parameter GRAPH PORT ELEMENT_TYPE DIMS SCHEMA PATH, or quit"
+            ),
         }
         print_prompt()?;
+    }
+}
+
+fn parse_dimensions(value: &str) -> Result<Vec<u32>, ScientificDiagnostic> {
+    let dimensions = value
+        .split('x')
+        .map(|dimension| {
+            dimension.parse::<u32>().map_err(|error| {
+                ScientificDiagnostic::new(
+                    "command parameter dimensions",
+                    format!("invalid dimension {dimension:?} in {value:?}: {error}"),
+                )
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    if dimensions.is_empty() || dimensions.contains(&0) {
+        return Err(ScientificDiagnostic::new(
+            "command parameter dimensions",
+            format!("expected nonzero dimensions joined by 'x', got {value:?}"),
+        ));
+    }
+    Ok(dimensions)
+}
+
+fn parse_scalar(value_type: &str, value: &str) -> Result<ScalarValue, ScientificDiagnostic> {
+    let invalid = |message: String| ScientificDiagnostic::new("command property value", message);
+    match value_type {
+        "bool" => value
+            .parse()
+            .map(ScalarValue::Bool)
+            .map_err(|error| invalid(format!("invalid bool {value:?}: {error}"))),
+        "int" => value
+            .parse()
+            .map(ScalarValue::Int)
+            .map_err(|error| invalid(format!("invalid int {value:?}: {error}"))),
+        "long" => value
+            .parse()
+            .map(ScalarValue::Long)
+            .map_err(|error| invalid(format!("invalid long {value:?}: {error}"))),
+        "float" => value
+            .parse()
+            .map(ScalarValue::float)
+            .map_err(|error| invalid(format!("invalid float {value:?}: {error}"))),
+        "double" => value
+            .parse()
+            .map(ScalarValue::double)
+            .map_err(|error| invalid(format!("invalid double {value:?}: {error}"))),
+        "id" => value
+            .parse()
+            .map(ScalarValue::Id)
+            .map_err(|error| invalid(format!("invalid id {value:?}: {error}"))),
+        "string" => Ok(ScalarValue::String(value.to_owned())),
+        _ => Err(ScientificDiagnostic::new(
+            "command property type",
+            format!("expected bool, int, long, float, double, id, or string; got {value_type:?}"),
+        )),
+    }
+}
+
+fn dispatch_ready_control(
+    runner: &mut Runner<LiveGraphAdapter>,
+    event: LifecycleEvent,
+) -> Result<(), ScientificDiagnostic> {
+    match runner.dispatch(event) {
+        Ok(LifecycleState::Ready) => {
+            println!("READY {:?}", runner.executor().status());
+            Ok(())
+        }
+        Ok(state) => Err(runner.diagnostic().cloned().unwrap_or_else(|| {
+            ScientificDiagnostic::new(
+                "runtime control",
+                format!("expected Ready, reached {state:?}"),
+            )
+        })),
+        Err(error) => {
+            eprintln!("runtime control rejected: {error}");
+            Ok(())
+        }
+    }
+}
+
+fn dispatch_control(
+    runner: &mut Runner<LiveGraphAdapter>,
+    event: LifecycleEvent,
+) -> Result<(), ScientificDiagnostic> {
+    let before = runner.state();
+    match runner.dispatch(event) {
+        Ok(state) if state == before => {
+            println!("{state:?} {:?}", runner.executor().status());
+            Ok(())
+        }
+        Ok(state) => Err(runner.diagnostic().cloned().unwrap_or_else(|| {
+            ScientificDiagnostic::new(
+                "runtime control",
+                format!("expected {before:?}, reached {state:?}"),
+            )
+        })),
+        Err(error) => {
+            eprintln!("runtime control rejected: {error}");
+            Ok(())
+        }
     }
 }
 
@@ -231,4 +374,17 @@ fn parse_arguments() -> Result<Arguments, ScientificDiagnostic> {
         remote,
         hold,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_dimensions;
+
+    #[test]
+    fn parameter_dimensions_use_explicit_scientific_shape_order() {
+        assert_eq!(parse_dimensions("277x376").unwrap(), [277, 376]);
+        assert!(parse_dimensions("277x0").is_err());
+        assert!(parse_dimensions("277,376").is_err());
+        assert!(parse_dimensions("").is_err());
+    }
 }

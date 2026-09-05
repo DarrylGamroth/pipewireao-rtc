@@ -22,8 +22,7 @@ an externally owned Julia Filter Graph for the native graph and exercises the
 same durable start, stop, restart, and unload sequence. A REVOLT Classic fixture
 uses the same external plant nodes with either an RTC-owned native FGN
 controller or an externally owned Julia Filter Graph controller and compares
-both with a direct lockstep reference. The runner does not load or execute Julia
-itself.
+both with direct references. The runner does not load or execute Julia itself.
 Physical devices, correction authority,
 recording, in-process Julia graph execution, remote operation, progressive
 scheduling, and real-time qualification are deliberately deferred.
@@ -52,12 +51,19 @@ groups
 status
 stop GROUP
 start GROUP
+reset
+property GRAPH NODE:PROPERTY TYPE VALUE
+parameter GRAPH PORT ELEMENT_TYPE DIMS SCHEMA PATH
 quit
 ```
 
 `quit` (or end of input) stops the session to `READY` and unloads it to
 `OFFLINE`. Group stop/start preserves the configured objects and links; it does
-not reset, reload, or unload the graph. The referenced graph file is the
+not reset, reload, or unload the graph. `reset` clears graph processing state
+while stopped. `property` submits one typed scalar through the graph's standard
+Props surface. `parameter` publishes one complete ndarray value from a file on
+the exact configured Parameter Port; dimensions use forms such as `277x376`.
+The referenced graph file is the
 complete standard argument object for
 `libpipewire-module-ndarray-filter-chain`; the runner passes it unchanged. The
 held command continuously revalidates the exact global identities and ndarray
