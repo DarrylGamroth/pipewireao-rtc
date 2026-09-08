@@ -70,6 +70,39 @@ struct EndpointFaultCase<'a> {
     surviving_endpoint: &'a str,
 }
 
+#[derive(Debug)]
+struct RevoltLatencyCollection {
+    warmup: u64,
+    samples: u64,
+    csv: PathBuf,
+}
+
+impl RevoltLatencyCollection {
+    fn from_environment() -> Option<Self> {
+        let samples = match std::env::var("PIPEWIREAO_RTC_REVOLT_LATENCY_SAMPLES") {
+            Ok(value) => value
+                .parse::<u64>()
+                .expect("PIPEWIREAO_RTC_REVOLT_LATENCY_SAMPLES must be an unsigned integer"),
+            Err(std::env::VarError::NotPresent) => return None,
+            Err(error) => panic!("invalid PIPEWIREAO_RTC_REVOLT_LATENCY_SAMPLES: {error}"),
+        };
+        assert!(samples > 0, "REVOLT latency samples must be positive");
+        let warmup = std::env::var("PIPEWIREAO_RTC_REVOLT_LATENCY_WARMUP").map_or(100, |value| {
+            value
+                .parse::<u64>()
+                .expect("PIPEWIREAO_RTC_REVOLT_LATENCY_WARMUP must be an unsigned integer")
+        });
+        let csv = std::env::var_os("PIPEWIREAO_RTC_REVOLT_LATENCY_CSV")
+            .map(PathBuf::from)
+            .expect("PIPEWIREAO_RTC_REVOLT_LATENCY_CSV is required when collecting REVOLT latency");
+        Some(Self {
+            warmup,
+            samples,
+            csv,
+        })
+    }
+}
+
 #[test]
 #[ignore = "requires the maintained PipeWireAO and Rust FGN sibling build artifacts"]
 #[allow(clippy::too_many_lines)]
@@ -276,6 +309,7 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
         &core_name,
         "pipewireao-rtc-unrelated",
     );
+    let revolt_latency = RevoltLatencyCollection::from_environment();
 
     match std::env::var("PIPEWIREAO_RTC_LIVE_SCOPE").as_deref() {
         Ok("revolt") => {
@@ -290,6 +324,7 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
                 &revolt_julia_graph,
                 &pipewireao_julia,
                 &julia_filter_graph,
+                revolt_latency.as_ref(),
             );
             return;
         }
@@ -459,6 +494,7 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
         &revolt_julia_graph,
         &pipewireao_julia,
         &julia_filter_graph,
+        revolt_latency.as_ref(),
     );
     run_external_endpoint_case(
         &repository,
@@ -1594,12 +1630,15 @@ fn run_revolt_classic_reference_case(
     julia_graph: &Path,
     pipewireao_julia: &Path,
     julia_filter_graph: &Path,
+    latency: Option<&RevoltLatencyCollection>,
 ) {
     let native_phase_1 = temporary.join("revolt-native-phase-1");
     let native_phase_2 = temporary.join("revolt-native-phase-2");
+    let native_latency_phase = temporary.join("revolt-native-latency");
     let switch_to_julia = temporary.join("revolt-switch-to-julia");
     let julia_phase_1 = temporary.join("revolt-julia-phase-1");
     let julia_phase_2 = temporary.join("revolt-julia-phase-2");
+    let julia_latency_phase = temporary.join("revolt-julia-latency");
     let stop_hil = temporary.join("stop-revolt-hil");
     let hil_log = temporary.join("revolt-hil.log");
     let log = std::fs::File::create(&hil_log).expect("REVOLT HIL log");
@@ -1689,6 +1728,25 @@ fn run_revolt_classic_reference_case(
         "REVOLT_HIL_NATIVE_DONE sequence=8",
         &mut runner,
     );
+    if let Some(latency) = latency {
+        wait_for_text_with_runner(
+            &mut provider.0,
+            &hil_log,
+            &format!(
+                "REVOLT_HIL_NATIVE_LATENCY_READY warmup={} samples={}",
+                latency.warmup, latency.samples
+            ),
+            &mut runner,
+        );
+        std::fs::write(&native_latency_phase, "run\n").unwrap();
+        wait_for_text_with_runner(
+            &mut provider.0,
+            &hil_log,
+            &format!("REVOLT_HIL_NATIVE_LATENCY_DONE samples={}", latency.samples),
+            &mut runner,
+        );
+        assert_revolt_latency_csv(latency, "native");
+    }
     assert_revolt_runtime_update_active(&runner, "reconstruct", native_generations);
     assert_eq!(
         runner.dispatch(LifecycleEvent::Stop).unwrap(),
@@ -1801,6 +1859,25 @@ fn run_revolt_classic_reference_case(
         "REVOLT_HIL_JULIA_DONE sequence=8",
         &mut runner,
     );
+    if let Some(latency) = latency {
+        wait_for_text_with_runner(
+            &mut provider.0,
+            &hil_log,
+            &format!(
+                "REVOLT_HIL_JULIA_LATENCY_READY warmup={} samples={}",
+                latency.warmup, latency.samples
+            ),
+            &mut runner,
+        );
+        std::fs::write(&julia_latency_phase, "run\n").unwrap();
+        wait_for_text_with_runner(
+            &mut provider.0,
+            &hil_log,
+            &format!("REVOLT_HIL_JULIA_LATENCY_DONE samples={}", latency.samples),
+            &mut runner,
+        );
+        assert_revolt_latency_csv(latency, "julia");
+    }
     assert_revolt_runtime_update_active(&runner, "reconstruct", julia_generations);
     assert_eq!(
         runner.dispatch(LifecycleEvent::Stop).unwrap(),
@@ -1848,6 +1925,98 @@ fn run_revolt_classic_reference_case(
         core_name,
         "revolt-classic-controller-reconstructor",
     );
+}
+
+fn assert_revolt_latency_csv(latency: &RevoltLatencyCollection, implementation: &str) {
+    let contents = std::fs::read_to_string(&latency.csv).unwrap_or_else(|error| {
+        panic!(
+            "read {implementation} REVOLT latency CSV {}: {error}",
+            latency.csv.display()
+        )
+    });
+    let mut previous_sequence = None;
+    let mut warmup = 0_u64;
+    let mut measurements = 0_u64;
+    let mut expected_observation = 1_u64;
+    let expected_header =
+        "implementation,phase,observation,sequence,source_published_ns,command_received_ns,latency_ns";
+    assert_eq!(
+        contents.lines().next(),
+        Some(expected_header),
+        "unexpected REVOLT latency CSV header"
+    );
+    for line in contents.lines().skip(1) {
+        let fields: Vec<_> = line.split(',').collect();
+        assert_eq!(fields.len(), 7, "malformed REVOLT latency record: {line}");
+        if fields[0] != implementation {
+            continue;
+        }
+        let phase = fields[1];
+        let observation = fields[2]
+            .parse::<u64>()
+            .expect("REVOLT latency observation index");
+        let sequence = fields[3].parse::<u64>().expect("REVOLT latency sequence");
+        let source = fields[4]
+            .parse::<u64>()
+            .expect("REVOLT source publication timestamp");
+        let received = fields[5]
+            .parse::<u64>()
+            .expect("REVOLT command receipt timestamp");
+        let elapsed = fields[6].parse::<u64>().expect("REVOLT latency");
+        assert_eq!(
+            observation, expected_observation,
+            "non-contiguous observation index"
+        );
+        assert!(
+            previous_sequence.map_or(true, |previous| sequence > previous),
+            "non-increasing {implementation} sequence {sequence}"
+        );
+        assert!(
+            received >= source,
+            "command receipt preceded source publication for sequence {sequence}"
+        );
+        assert_eq!(
+            elapsed,
+            received - source,
+            "inconsistent latency for sequence {sequence}"
+        );
+        match phase {
+            "warmup" => warmup += 1,
+            "measurement" => measurements += 1,
+            _ => panic!("unknown REVOLT latency phase {phase:?}"),
+        }
+        previous_sequence = Some(sequence);
+        expected_observation += 1;
+    }
+    assert_eq!(warmup, latency.warmup, "{implementation} warmup records");
+    assert_eq!(
+        measurements, latency.samples,
+        "{implementation} measurement records"
+    );
+}
+
+#[test]
+fn revolt_latency_csv_requires_sequence_correlated_warmup_and_measurements() {
+    let temporary = tempfile::tempdir().expect("latency CSV directory");
+    let csv = temporary.path().join("revolt.csv");
+    std::fs::write(
+        &csv,
+        concat!(
+            "implementation,phase,observation,sequence,source_published_ns,command_received_ns,latency_ns\n",
+            "native,warmup,1,9,100,120,20\n",
+            "native,measurement,2,10,200,260,60\n",
+            "julia,warmup,1,9,100,130,30\n",
+            "julia,measurement,2,10,200,280,80\n",
+        ),
+    )
+    .expect("write latency CSV");
+    let latency = RevoltLatencyCollection {
+        warmup: 1,
+        samples: 1,
+        csv,
+    };
+    assert_revolt_latency_csv(&latency, "native");
+    assert_revolt_latency_csv(&latency, "julia");
 }
 
 fn apply_revolt_runtime_update(

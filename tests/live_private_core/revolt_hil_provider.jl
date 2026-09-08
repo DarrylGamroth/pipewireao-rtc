@@ -1,5 +1,5 @@
 using AdaptiveOpticsSim.AlgorithmGraphs
-using AdaptiveOpticsSimPipeWireHIL: exchange_frame!
+using AdaptiveOpticsSimPipeWireHIL: exchange_frame!, frame_command_timing
 using Base.Threads: Atomic
 using LinearAlgebra
 using PipeWireAO
@@ -17,6 +17,8 @@ switch_to_julia = joinpath(control_directory, "revolt-switch-to-julia")
 julia_phase_1 = joinpath(control_directory, "revolt-julia-phase-1")
 julia_phase_2 = joinpath(control_directory, "revolt-julia-phase-2")
 stop_file = joinpath(control_directory, "stop-revolt-hil")
+native_latency_phase = joinpath(control_directory, "revolt-native-latency")
+julia_latency_phase = joinpath(control_directory, "revolt-julia-latency")
 
 const SUBAPERTURE_SIZE = 22
 const CONTROLLER_GAIN = -0.2f0
@@ -26,6 +28,38 @@ const UPDATED_RECONSTRUCTOR_SCALE = 0.5f0
 const CONTROL_RTOL = 2.0f-2
 const COMMAND_RTOL = 5.0f-4
 const COMMAND_ATOL = 5.0f-11
+
+"""
+Optional completion-paced latency collection requested by the RTC private-core
+fixture. The HIL adapter owns the source Header-PTS and command-receipt
+timestamps. This provider only writes the completed, sequence-correlated
+observations after the normal controller-equivalence sequence has passed.
+"""
+function latency_request()
+    samples_text = get(ENV, "PIPEWIREAO_RTC_REVOLT_LATENCY_SAMPLES", nothing)
+    isnothing(samples_text) && return nothing
+    warmup = parse(Int, get(ENV, "PIPEWIREAO_RTC_REVOLT_LATENCY_WARMUP", "100"))
+    samples = parse(Int, samples_text)
+    warmup >= 0 || error("REVOLT latency warmup must be non-negative")
+    samples > 0 || error("REVOLT latency samples must be positive")
+    output = get(ENV, "PIPEWIREAO_RTC_REVOLT_LATENCY_CSV", nothing)
+    isnothing(output) && error(
+        "PIPEWIREAO_RTC_REVOLT_LATENCY_CSV is required when collecting REVOLT latency",
+    )
+    return (; warmup, samples, output)
+end
+
+function initialize_latency_csv!(request)
+    parent = dirname(request.output)
+    isdir(parent) || mkpath(parent)
+    open(request.output, "w") do io
+        println(
+            io,
+            "implementation,phase,observation,sequence,source_published_ns,command_received_ns,latency_ns",
+        )
+    end
+    return nothing
+end
 
 function subaperture_origins()
     mask = valid_subapertures()
@@ -388,7 +422,100 @@ function exchange_range!(
     end
 end
 
+function exchange_latency_range!(
+    phase,
+    request,
+    reference_slopes,
+    control_matrix,
+    implementation,
+)
+    total = request.warmup + request.samples
+    # The established eight-frame equivalence fixture intentionally leaves the
+    # oracle at frame eight after adopting command eight. Advance it only for
+    # the optional collection phase so the normal fixture has identical state
+    # transitions.
+    phase.oracle_sequence[] = step_hil_frame!(phase.oracle.boundary)
+    first_sequence = phase.oracle_sequence[]
+    observations = Vector{NamedTuple{
+        (:phase, :observation, :sequence, :source, :received, :latency),
+        Tuple{String,Int,UInt64,Int64,Int64,UInt64},
+    }}(undef, total)
+
+    for observation in 1:total
+        expected_sequence = first_sequence + UInt64(observation - 1)
+        completed_sequence = exchange_frame!(phase.plant.pipewire)
+        completed_sequence == expected_sequence || error(
+            "$implementation latency expected sequence $expected_sequence, received $completed_sequence",
+        )
+        timing = frame_command_timing(phase.plant.pipewire)
+        isnothing(timing) && error(
+            "$implementation latency sequence $expected_sequence has no completed timing observation",
+        )
+        timing.sequence == expected_sequence || error(
+            "$implementation latency timing sequence $(timing.sequence) does not match $expected_sequence",
+        )
+        timing.command_received_nanoseconds >= timing.source_published_nanoseconds || error(
+            "$implementation latency command receipt precedes source publication for sequence $expected_sequence",
+        )
+
+        # Keep the established numerical oracle active through the timed
+        # collection. Its work is deliberately after command receipt, outside
+        # the Header-PTS-to-receipt timing boundary, but makes each recorded
+        # command a checked controller result rather than merely a callback.
+        slopes = controller_slopes(hil_frame_buffer(phase.plant.boundary))
+        residual_command = control_matrix * (slopes - reference_slopes)
+        expected_command =
+            @. CONTROLLER_POLE * phase.direct_state + UPDATED_CONTROLLER_GAIN * residual_command
+        require_close(
+            "latency_hsdm277_command",
+            expected_sequence,
+            hil_command_buffer(phase.plant.boundary),
+            expected_command;
+            rtol=COMMAND_RTOL,
+            atol=COMMAND_ATOL,
+        )
+        copyto!(phase.direct_state, expected_command)
+        copyto!(hil_command_buffer(phase.oracle.boundary), expected_command)
+        adopt_hil_command!(phase.oracle.boundary, phase.oracle_sequence[])
+        phase.oracle_sequence[] = step_hil_frame!(phase.oracle.boundary)
+
+        phase_name = observation <= request.warmup ? "warmup" : "measurement"
+        observations[observation] = (
+            phase_name,
+            observation,
+            expected_sequence,
+            timing.source_published_nanoseconds,
+            timing.command_received_nanoseconds,
+            timing.end_to_end_latency_nanoseconds,
+        )
+    end
+
+    open(request.output, "a") do io
+        for observation in observations
+            println(
+                io,
+                implementation,
+                ',',
+                observation.phase,
+                ',',
+                observation.observation,
+                ',',
+                observation.sequence,
+                ',',
+                observation.source,
+                ',',
+                observation.received,
+                ',',
+                observation.latency,
+            )
+        end
+    end
+    return nothing
+end
+
 function main()
+    latency = latency_request()
+    !isnothing(latency) && initialize_latency_csv!(latency)
     reference_slopes, control_matrix, retained_rank = calibrate_controller()
     open(ENV["PIPEWIREAO_RTC_PARAMETER_REVOLT"], "w") do io
         write(io, parameter_values(control_matrix))
@@ -414,6 +541,7 @@ function main()
     flush(stdout)
     native_first_done = false
     native_second_done = false
+    native_latency_done = isnothing(latency)
 
     try
         while !isfile(stop_file) && !isfile(switch_to_julia)
@@ -450,12 +578,29 @@ function main()
                 println("REVOLT_HIL_NATIVE_DONE sequence=8")
                 flush(stdout)
                 native_second_done = true
+                if !isnothing(latency)
+                    println(
+                        "REVOLT_HIL_NATIVE_LATENCY_READY warmup=$(latency.warmup) samples=$(latency.samples)",
+                    )
+                    flush(stdout)
+                end
+            elseif native_second_done && !native_latency_done && isfile(native_latency_phase)
+                exchange_latency_range!(
+                    phase,
+                    latency,
+                    reference_slopes,
+                    UPDATED_RECONSTRUCTOR_SCALE .* control_matrix,
+                    :native,
+                )
+                println("REVOLT_HIL_NATIVE_LATENCY_DONE samples=$(latency.samples)")
+                flush(stdout)
+                native_latency_done = true
             end
             sleep(0.01)
         end
 
         isfile(stop_file) && exit()
-        native_second_done || error(
+        native_second_done && native_latency_done || error(
             "cannot switch to Julia before the native REVOLT sequence completes",
         )
         close(phase.plant.pipewire)
@@ -464,6 +609,7 @@ function main()
         flush(stdout)
         julia_first_done = false
         julia_second_done = false
+        julia_latency_done = isnothing(latency)
 
         while !isfile(stop_file)
             if !julia_first_done && isfile(julia_phase_1)
@@ -499,6 +645,23 @@ function main()
                 println("REVOLT_HIL_JULIA_DONE sequence=8")
                 flush(stdout)
                 julia_second_done = true
+                if !isnothing(latency)
+                    println(
+                        "REVOLT_HIL_JULIA_LATENCY_READY warmup=$(latency.warmup) samples=$(latency.samples)",
+                    )
+                    flush(stdout)
+                end
+            elseif julia_second_done && !julia_latency_done && isfile(julia_latency_phase)
+                exchange_latency_range!(
+                    phase,
+                    latency,
+                    reference_slopes,
+                    UPDATED_RECONSTRUCTOR_SCALE .* control_matrix,
+                    :julia,
+                )
+                println("REVOLT_HIL_JULIA_LATENCY_DONE samples=$(latency.samples)")
+                flush(stdout)
+                julia_latency_done = true
             end
             sleep(0.01)
         end

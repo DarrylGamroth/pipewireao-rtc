@@ -278,6 +278,16 @@ where that cost occurs, and whether it is acceptable for continued work. It
 does not claim camera-to-DM latency, fixed-arrival behavior, row-block benefit,
 or correction-critical suitability.
 
+An optional REVOLT Classic private-core harness now records raw monotonic
+source Header-PTS to same-sequence command-receipt observations for both the
+native FGN and external Julia controller after the maintained numerical
+equivalence/update sequence. It preserves raw warmup records, reports mergeable
+histograms outside the timed boundary, and retains sequence/correctness
+counters. The simulated HIL exchange is one-frame completion-paced, so this
+implementation is only graph-path characterization; it is not fixed-arrival,
+detector-readout-overlap, PTP, physical-loop, or real-time qualification. No
+measured report is checked in as evidence.
+
 ## Requirement delivery map
 
 | Requirement | Primary increment | Implementation | Evidence | Required evidence |

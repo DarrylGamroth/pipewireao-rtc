@@ -90,6 +90,18 @@ cargo test --features live --test live_private_core -- --ignored --nocapture
 Set `PIPEWIREAO_RTC_LIVE_SCOPE=revolt` on that command to run only the REVOLT
 Classic native/Julia equivalence fixture on the isolated core.
 
+## Completion-paced REVOLT graph-path latency
+
+The optional [REVOLT latency harness](benchmark/README.md) repeats that same
+ignored private-core fixture and records the HIL source Header-PTS through
+matching command-receipt interval for the native and external Julia controller
+paths. It retains raw observations, excludes warmup from its mergeable
+histograms, and checks each recorded sequence and command against the existing
+direct controller reference. This is completion-paced simulated graph-path
+characterization, not fixed-arrival, detector-readout-overlap, PTP,
+camera-to-DM, or hard-real-time qualification. Fair comparisons with HEART
+belong at this application boundary with the same workload and arrival model.
+
 ## Repository boundaries
 
 | Repository | Authority |
