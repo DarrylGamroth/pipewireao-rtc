@@ -337,6 +337,31 @@ The runner, PipeWire daemon, and optional observer are separate ordinary
 processes. The baseline does not prescribe systemd units, affinity, scheduler
 classes, or one process per graph operation.
 
+## Laboratory deployment profile
+
+This is decision **RTC-ARCH-019**: add an opt-in laboratory deployment profile
+for repeatable latency experiments. A companion launcher in this repository
+places and starts the selected PipeWireAO daemon, RTC runner, pixel source,
+processing owner, and command observer. It does not execute Graph operations
+or create a second frame scheduler. The ordinary development profile remains
+valid without this launcher.
+
+The launcher applies process envelopes before frame ingress. PipeWireAO owns
+its data-loop affinity, RT priority, idle policy, and memory locking through
+its existing configuration properties. An external Julia Graph owner pins its
+own Julia threads through its existing ThreadPinning integration. FGN owns
+the placement of any executor workers it creates. The launcher verifies the
+resulting thread map and scheduling policy; it does not infer worker roles from
+thread names or silently treat a process affinity mask as per-thread pinning.
+
+The profile must record the effective policy and the complete pixel-to-command
+delivery result. Failure to apply a required policy prevents a latency run
+from starting. A completed replay with missing or repeated commands is a
+failed run, even if its completed-command latency is low. This is a research
+comparison profile, not physical correction authority, a hard real-time
+guarantee, or an unattended service. It does not change C-state, CPU latency
+request, huge-page, or host RT-runtime settings by default.
+
 ## Authoritative lower contracts
 
 This repository does not duplicate the data-plane contracts:
