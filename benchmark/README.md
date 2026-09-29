@@ -15,7 +15,7 @@ hard-real-time measurement. A stall reduces the offered rate, so these
 histograms must not be used to claim fixed-arrival latency or deadline
 compliance.
 
-The normal eight-frame native/Julia numerical equivalence and property/parameter
+The normal ten-frame native/Julia numerical equivalence and property/parameter
 update checks run before collection. Each warmup and measurement observation is
 also sequence-correlated, has a non-negative monotonic source timestamp, a
 later command-receipt timestamp, and a controller command checked against the

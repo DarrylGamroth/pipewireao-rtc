@@ -1960,11 +1960,13 @@ fn run_revolt_classic_reference_case(
     let native_phase_1 = temporary.join("revolt-native-phase-1");
     let native_phase_2 = temporary.join("revolt-native-phase-2");
     let native_phase_2_continue = temporary.join("revolt-native-phase-2-continue");
+    let native_phase_3 = temporary.join("revolt-native-phase-3");
     let native_latency_phase = temporary.join("revolt-native-latency");
     let switch_to_julia = temporary.join("revolt-switch-to-julia");
     let julia_phase_1 = temporary.join("revolt-julia-phase-1");
     let julia_phase_2 = temporary.join("revolt-julia-phase-2");
     let julia_phase_2_continue = temporary.join("revolt-julia-phase-2-continue");
+    let julia_phase_3 = temporary.join("revolt-julia-phase-3");
     let julia_latency_phase = temporary.join("revolt-julia-latency");
     let stop_hil = temporary.join("stop-revolt-hil");
     let hil_log = temporary.join("revolt-hil.log");
@@ -2051,9 +2053,9 @@ fn run_revolt_classic_reference_case(
         "REVOLT_HIL_NATIVE_PHASE_2_FIRST_DONE sequence=5",
         &mut runner,
     );
-    // A frame boundary settles the gain transaction before the parameter
+    // A frame boundary settles the gain/pole transaction before the parameter
     // source uses the graph host's bounded control slot.
-    assert_revolt_property_update_active(&mut runner, native_generations.0);
+    assert_revolt_property_update_active(&mut runner, native_generations.0, -0.1, 0.9);
     apply_revolt_runtime_parameter_update(
         &mut runner,
         &environment["PIPEWIREAO_RTC_PARAMETER_REVOLT"],
@@ -2063,9 +2065,26 @@ fn run_revolt_classic_reference_case(
     wait_for_text_with_runner(
         &mut provider.0,
         &hil_log,
-        "REVOLT_HIL_NATIVE_DONE sequence=8",
+        "REVOLT_HIL_NATIVE_PARAMETER_DONE sequence=8",
         &mut runner,
     );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Stop).unwrap(),
+        LifecycleState::Ready,
+    );
+    let native_second_property = apply_revolt_final_property_update(&mut runner);
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Start).unwrap(),
+        LifecycleState::Running,
+    );
+    std::fs::write(&native_phase_3, "run\n").unwrap();
+    wait_for_text_with_runner(
+        &mut provider.0,
+        &hil_log,
+        "REVOLT_HIL_NATIVE_DONE sequence=10",
+        &mut runner,
+    );
+    assert_revolt_property_update_active(&mut runner, native_second_property, -0.05, 0.8);
     if let Some(latency) = latency {
         wait_for_text_with_runner(
             &mut provider.0,
@@ -2194,7 +2213,7 @@ fn run_revolt_classic_reference_case(
         "REVOLT_HIL_JULIA_PHASE_2_FIRST_DONE sequence=5",
         &mut runner,
     );
-    assert_revolt_property_update_active(&mut runner, julia_generations.0);
+    assert_revolt_property_update_active(&mut runner, julia_generations.0, -0.1, 0.9);
     apply_revolt_runtime_parameter_update(
         &mut runner,
         &environment["PIPEWIREAO_RTC_PARAMETER_REVOLT"],
@@ -2204,9 +2223,26 @@ fn run_revolt_classic_reference_case(
     wait_for_text_with_runner(
         &mut provider.0,
         &hil_log,
-        "REVOLT_HIL_JULIA_DONE sequence=8",
+        "REVOLT_HIL_JULIA_PARAMETER_DONE sequence=8",
         &mut runner,
     );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Stop).unwrap(),
+        LifecycleState::Ready,
+    );
+    let julia_second_property = apply_revolt_final_property_update(&mut runner);
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Start).unwrap(),
+        LifecycleState::Running,
+    );
+    std::fs::write(&julia_phase_3, "run\n").unwrap();
+    wait_for_text_with_runner(
+        &mut provider.0,
+        &hil_log,
+        "REVOLT_HIL_JULIA_DONE sequence=10",
+        &mut runner,
+    );
+    assert_revolt_property_update_active(&mut runner, julia_second_property, -0.05, 0.8);
     if let Some(latency) = latency {
         wait_for_text_with_runner(
             &mut provider.0,
@@ -2393,7 +2429,10 @@ fn apply_revolt_runtime_property_update(
         runner
             .dispatch(LifecycleEvent::UpdateProperties {
                 graph: graph.to_owned(),
-                values: BTreeMap::from([("integrate:gain".to_owned(), ScalarValue::float(-0.1),)]),
+                values: BTreeMap::from([
+                    ("integrate:gain".to_owned(), ScalarValue::float(-0.1)),
+                    ("integrate:pole".to_owned(), ScalarValue::float(0.9)),
+                ]),
             })
             .unwrap(),
         LifecycleState::Ready,
@@ -2401,6 +2440,31 @@ fn apply_revolt_runtime_property_update(
         runner.diagnostic()
     );
     (property_before, parameter_before)
+}
+
+fn apply_revolt_final_property_update(
+    runner: &mut Runner<LiveGraphAdapter>,
+) -> pipewireao_rtc::PropertyGeneration {
+    let graph = "pipewireao-rtc-revolt-controller";
+    let before = runner
+        .executor()
+        .observe_property_generation(graph, "integrate")
+        .expect("observe property generation before second REVOLT update");
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::UpdateProperties {
+                graph: graph.to_owned(),
+                values: BTreeMap::from([
+                    ("integrate:gain".to_owned(), ScalarValue::float(-0.05)),
+                    ("integrate:pole".to_owned(), ScalarValue::float(0.8)),
+                ]),
+            })
+            .unwrap(),
+        LifecycleState::Ready,
+        "second REVOLT property update diagnostic: {:?}",
+        runner.diagnostic(),
+    );
+    before
 }
 
 fn apply_revolt_runtime_parameter_update(
@@ -2438,6 +2502,8 @@ fn apply_revolt_runtime_parameter_update(
 fn assert_revolt_property_update_active(
     runner: &mut Runner<LiveGraphAdapter>,
     before: pipewireao_rtc::PropertyGeneration,
+    gain: f32,
+    pole: f32,
 ) {
     for _ in 0..1_000 {
         assert_eq!(
@@ -2449,6 +2515,18 @@ fn assert_revolt_property_update_active(
             .observe_property_generation("pipewireao-rtc-revolt-controller", "integrate")
             .expect("observe active REVOLT gain after the first restart frame");
         if after.requested > before.requested && after.active == Some(after.requested) {
+            let values = runner
+                .executor()
+                .observe_properties("pipewireao-rtc-revolt-controller")
+                .expect("observe active REVOLT gain and pole");
+            assert_eq!(
+                values.get("integrate:gain"),
+                Some(&ScalarValue::float(gain))
+            );
+            assert_eq!(
+                values.get("integrate:pole"),
+                Some(&ScalarValue::float(pole))
+            );
             return;
         }
         std::thread::sleep(Duration::from_millis(5));
@@ -2469,7 +2547,7 @@ fn assert_revolt_runtime_update_active(
         .executor()
         .observe_property_generation(graph, "integrate")
         .expect("observe active REVOLT property generation");
-    assert!(property_after.requested > before.0.requested);
+    assert_eq!(property_after.requested, before.0.requested + 2);
     assert_eq!(property_after.active, Some(property_after.requested));
     let parameter_after = runner
         .executor()

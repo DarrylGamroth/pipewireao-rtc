@@ -14,10 +14,12 @@ core_name, control_directory, native_graph_path, julia_graph_path = ARGS
 native_phase_1 = joinpath(control_directory, "revolt-native-phase-1")
 native_phase_2 = joinpath(control_directory, "revolt-native-phase-2")
 native_phase_2_continue = joinpath(control_directory, "revolt-native-phase-2-continue")
+native_phase_3 = joinpath(control_directory, "revolt-native-phase-3")
 switch_to_julia = joinpath(control_directory, "revolt-switch-to-julia")
 julia_phase_1 = joinpath(control_directory, "revolt-julia-phase-1")
 julia_phase_2 = joinpath(control_directory, "revolt-julia-phase-2")
 julia_phase_2_continue = joinpath(control_directory, "revolt-julia-phase-2-continue")
+julia_phase_3 = joinpath(control_directory, "revolt-julia-phase-3")
 stop_file = joinpath(control_directory, "stop-revolt-hil")
 native_latency_phase = joinpath(control_directory, "revolt-native-latency")
 julia_latency_phase = joinpath(control_directory, "revolt-julia-latency")
@@ -26,6 +28,9 @@ const SUBAPERTURE_SIZE = 22
 const CONTROLLER_GAIN = -0.2f0
 const CONTROLLER_POLE = 1.0f0
 const UPDATED_CONTROLLER_GAIN = -0.1f0
+const UPDATED_CONTROLLER_POLE = 0.9f0
+const FINAL_CONTROLLER_GAIN = -0.05f0
+const FINAL_CONTROLLER_POLE = 0.8f0
 const UPDATED_RECONSTRUCTOR_SCALE = 0.5f0
 const CONTROL_RTOL = 2.0f-2
 const COMMAND_RTOL = 5.0f-4
@@ -336,7 +341,8 @@ function exchange_range!(
     reset_state=false,
     alternate_control_matrix=nothing,
     parameter_adopted=Ref(false),
-    compare_implementations=true,
+    compare_implementations=true;
+    pole=CONTROLLER_POLE,
 )
     reset_state && fill!(phase.direct_state, 0.0f0)
     # The parameter may become active at any frame boundary in this window.
@@ -365,13 +371,13 @@ function exchange_range!(
         transported_command = hil_command_buffer(phase.plant.boundary)
         residual_command = control_matrix * (slopes - reference_slopes)
         if isnothing(alternate_control_matrix)
-            updated_state = @. CONTROLLER_POLE * phase.direct_state + gain * residual_command
+            updated_state = @. pole * phase.direct_state + gain * residual_command
             copyto!(phase.direct_state, updated_state)
         else
             alternate_residual = alternate_control_matrix * (slopes - reference_slopes)
             next_states = Tuple{Vector{Float32},Bool}[]
             for (state, adopted) in candidate_states
-                updated_state = @. CONTROLLER_POLE * state + gain * residual_command
+                updated_state = @. pole * state + gain * residual_command
                 if arrays_close(
                     transported_command,
                     updated_state;
@@ -381,7 +387,7 @@ function exchange_range!(
                     push!(next_states, (updated_state, true))
                 end
                 if !adopted
-                    alternate_state = @. CONTROLLER_POLE * state + gain * alternate_residual
+                    alternate_state = @. pole * state + gain * alternate_residual
                     if arrays_close(
                         transported_command,
                         alternate_state;
@@ -444,7 +450,7 @@ function exchange_range!(
             transported_command,
         )
         adopt_hil_command!(phase.oracle.boundary, phase.oracle_sequence[])
-        expected_sequence < UInt64(8) &&
+        expected_sequence < UInt64(10) &&
             (phase.oracle_sequence[] = step_hil_frame!(phase.oracle.boundary))
     end
     if !isnothing(alternate_control_matrix)
@@ -465,8 +471,8 @@ function exchange_latency_range!(
     implementation,
 )
     total = request.warmup + request.samples
-    # The established eight-frame equivalence fixture intentionally leaves the
-    # oracle at frame eight after adopting command eight. Advance it only for
+    # The established ten-frame equivalence fixture intentionally leaves the
+    # oracle at frame ten after adopting command ten. Advance it only for
     # the optional collection phase so the normal fixture has identical state
     # transitions.
     phase.oracle_sequence[] = step_hil_frame!(phase.oracle.boundary)
@@ -500,7 +506,7 @@ function exchange_latency_range!(
         slopes = controller_slopes(hil_frame_buffer(phase.plant.boundary))
         residual_command = control_matrix * (slopes - reference_slopes)
         expected_command =
-            @. CONTROLLER_POLE * phase.direct_state + UPDATED_CONTROLLER_GAIN * residual_command
+            @. FINAL_CONTROLLER_POLE * phase.direct_state + FINAL_CONTROLLER_GAIN * residual_command
         require_close(
             "latency_hsdm277_command",
             expected_sequence,
@@ -577,6 +583,7 @@ function main()
     native_first_done = false
     native_second_first_done = false
     native_second_done = false
+    native_third_done = false
     native_latency_done = isnothing(latency)
 
     try
@@ -602,7 +609,8 @@ function main()
                     native_commands,
                     :native,
                     UPDATED_CONTROLLER_GAIN,
-                    true,
+                    true;
+                    pole=UPDATED_CONTROLLER_POLE,
                 )
                 println("REVOLT_HIL_NATIVE_PHASE_2_FIRST_DONE sequence=5")
                 flush(stdout)
@@ -621,21 +629,40 @@ function main()
                     false,
                     control_matrix,
                     parameter_adopted,
-                    false,
+                    false;
+                    pole=UPDATED_CONTROLLER_POLE,
                 )
                 parameter_adopted[] || error(
                     "native reconstructor parameter was not adopted by sequence 8",
                 )
-                println("REVOLT_HIL_NATIVE_DONE sequence=8")
+                println("REVOLT_HIL_NATIVE_PARAMETER_DONE sequence=8")
                 flush(stdout)
                 native_second_done = true
+            elseif native_second_done && !native_third_done && isfile(native_phase_3)
+                exchange_range!(
+                    phase,
+                    UInt64(9):UInt64(10),
+                    reference_slopes,
+                    UPDATED_RECONSTRUCTOR_SCALE .* control_matrix,
+                    native_commands,
+                    :native,
+                    FINAL_CONTROLLER_GAIN,
+                    false,
+                    nothing,
+                    Ref(false),
+                    false;
+                    pole=FINAL_CONTROLLER_POLE,
+                )
+                println("REVOLT_HIL_NATIVE_DONE sequence=10")
+                flush(stdout)
+                native_third_done = true
                 if !isnothing(latency)
                     println(
                         "REVOLT_HIL_NATIVE_LATENCY_READY warmup=$(latency.warmup) samples=$(latency.samples)",
                     )
                     flush(stdout)
                 end
-            elseif native_second_done && !native_latency_done && isfile(native_latency_phase)
+            elseif native_third_done && !native_latency_done && isfile(native_latency_phase)
                 exchange_latency_range!(
                     phase,
                     latency,
@@ -651,7 +678,7 @@ function main()
         end
 
         isfile(stop_file) && exit()
-        native_second_done && native_latency_done || error(
+        native_third_done && native_latency_done || error(
             "cannot switch to Julia before the native REVOLT sequence completes",
         )
         close(phase.plant.pipewire)
@@ -661,6 +688,7 @@ function main()
         julia_first_done = false
         julia_second_first_done = false
         julia_second_done = false
+        julia_third_done = false
         julia_latency_done = isnothing(latency)
 
         while !isfile(stop_file)
@@ -685,7 +713,8 @@ function main()
                     native_commands,
                     :julia,
                     UPDATED_CONTROLLER_GAIN,
-                    true,
+                    true;
+                    pole=UPDATED_CONTROLLER_POLE,
                 )
                 println("REVOLT_HIL_JULIA_PHASE_2_FIRST_DONE sequence=5")
                 flush(stdout)
@@ -704,21 +733,40 @@ function main()
                     false,
                     control_matrix,
                     parameter_adopted,
-                    false,
+                    false;
+                    pole=UPDATED_CONTROLLER_POLE,
                 )
                 parameter_adopted[] || error(
                     "Julia reconstructor parameter was not adopted by sequence 8",
                 )
-                println("REVOLT_HIL_JULIA_DONE sequence=8")
+                println("REVOLT_HIL_JULIA_PARAMETER_DONE sequence=8")
                 flush(stdout)
                 julia_second_done = true
+            elseif julia_second_done && !julia_third_done && isfile(julia_phase_3)
+                exchange_range!(
+                    phase,
+                    UInt64(9):UInt64(10),
+                    reference_slopes,
+                    UPDATED_RECONSTRUCTOR_SCALE .* control_matrix,
+                    native_commands,
+                    :julia,
+                    FINAL_CONTROLLER_GAIN,
+                    false,
+                    nothing,
+                    Ref(false),
+                    false;
+                    pole=FINAL_CONTROLLER_POLE,
+                )
+                println("REVOLT_HIL_JULIA_DONE sequence=10")
+                flush(stdout)
+                julia_third_done = true
                 if !isnothing(latency)
                     println(
                         "REVOLT_HIL_JULIA_LATENCY_READY warmup=$(latency.warmup) samples=$(latency.samples)",
                     )
                     flush(stdout)
                 end
-            elseif julia_second_done && !julia_latency_done && isfile(julia_latency_phase)
+            elseif julia_third_done && !julia_latency_done && isfile(julia_latency_phase)
                 exchange_latency_range!(
                     phase,
                     latency,
