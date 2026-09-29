@@ -59,3 +59,38 @@ transport. The retained data cannot assign it to one mechanism or support an
 uncontended cross-RTC latency ranking. The orchestrator now records these
 phase summaries on future qualified runs and accepts
 `--jfg-graph-warmup none` for a separate cold-graph experiment.
+
+## No offline Graph warmup, gated source
+
+The [no-offline-warmup packet record](data/copper_cold_graph_phases_20260929.json)
+requalifies one 1,024-frame row-block and one complete-frame HEART/FGN/JFG
+run at 474 Hz. Both used the synchronized source gate and the stronger Ryzen
+named-thread profile. All six RTC executions delivered 2,048 WFS packets
+and 1,024 ordered Standard-DM commands, passed placement checks, and met the
+same numerical vector tolerance. The raw manifests are
+`~/.cache/rtc-copper-cold-graph-row-1024-20260929/manifest.json` and
+`~/.cache/rtc-copper-cold-graph-fullframe-1024-20260929/manifest.json`.
+`--jfg-graph-warmup none` disables the explicit offline FITS `process!`
+calls before ingress; Julia package loading and graph preparation still
+occur before the source is released.
+
+Frame 1 terminal-WFS-packet → DM intervals, in microseconds, are:
+
+| Ingress | RTC | Earlier offline warmup | No offline Graph warmup |
+| --- | --- | ---: | ---: |
+| Row blocks | HEART | 892 | 816 |
+| Row blocks | FGN | 249 | 180 |
+| Row blocks | JFG | 380 | 397 |
+| Complete frame | HEART | 1,769 | 1,680 |
+| Complete frame | FGN | 456 | 463 |
+| Complete frame | JFG | 672 | 715 |
+
+The [earlier gated-source warmup runs](COPPER_GATED_SOURCE.md) used the
+count-only placement profile. Their retained
+thread snapshots pass the later named checks offline, but the two series
+were launched separately on a host with six CPU-saturating Julia analysis
+processes. The observed JFG increases of 17 and 44 µs do not isolate
+compilation, scheduling, activation, or memory-fault cost. These replays
+establish exact delivery when explicit offline Graph warmup is disabled at
+this workload; they do not measure a fresh Julia process with an empty
+precompile cache or close RTC-DEV-019's startup/warmup interval requirement.

@@ -258,6 +258,75 @@ Private_Hugetlb:       0 kB
         with self.assertRaisesRegex(LAB_PLACEMENT.LaunchError, "has 0 fifo:83 threads"):
             LAB_PLACEMENT.verify_thread_profile(snapshot, "graph", {4, 5}, ("other", 0), parsed)
 
+    def test_thread_profile_placement_name_is_exact_when_present(self) -> None:
+        profile = {"schema_version": 1, "roles": {"graph": {
+            "cpus": "4", "leader_policy": "other", "required_policy_counts": {"fifo:83": 1},
+            "required_thread_placements": [
+                {"policy": "fifo:83", "cpus": "4", "name": "data-loop.0", "count": 1},
+            ],
+        }}}
+        snapshot = {"pid": 101, "threads": [
+            {"tid": 101, "name": "graph", "affinity": [4],
+             "scheduler": {"policy": "other", "priority": 0}},
+            {"tid": 102, "name": "wrong-loop", "affinity": [4],
+             "scheduler": {"policy": "fifo", "priority": 83}},
+        ]}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "profile.json"
+            path.write_text(json.dumps(profile))
+            parsed = LAB_PLACEMENT.read_thread_profile(path)
+        with self.assertRaisesRegex(LAB_PLACEMENT.LaunchError,
+                                    "has 0 fifo:83 threads named 'data-loop\\.0' on 4"):
+            LAB_PLACEMENT.verify_thread_profile(snapshot, "graph", {4}, ("other", 0), parsed)
+        del profile["roles"]["graph"]["required_thread_placements"][0]["name"]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "legacy-profile.json"
+            path.write_text(json.dumps(profile))
+            legacy = LAB_PLACEMENT.read_thread_profile(path)
+        LAB_PLACEMENT.verify_thread_profile(snapshot, "graph", {4}, ("other", 0), legacy)
+
+    def test_thread_profile_rejects_empty_or_duplicate_placement_name(self) -> None:
+        base = {"schema_version": 1, "roles": {"graph": {
+            "cpus": "4", "leader_policy": "other", "required_policy_counts": {},
+            "required_thread_placements": [
+                {"policy": "other", "cpus": "4", "name": "", "count": 1},
+            ],
+        }}}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "profile.json"
+            path.write_text(json.dumps(base))
+            with self.assertRaisesRegex(LAB_PLACEMENT.LaunchError, "name must be a nonempty string"):
+                LAB_PLACEMENT.read_thread_profile(path)
+            base["roles"]["graph"]["required_thread_placements"] = [
+                {"policy": "other", "cpus": "4", "name": "julia", "count": 1},
+                {"policy": "other", "cpus": "4", "name": "julia", "count": 1},
+            ]
+            path.write_text(json.dumps(base))
+            with self.assertRaisesRegex(LAB_PLACEMENT.LaunchError, "duplicate placement"):
+                LAB_PLACEMENT.read_thread_profile(path)
+            base["roles"]["graph"]["required_thread_placements"] = [
+                {"policy": "other", "cpus": "4", "name": "julia", "count": 1},
+                {"policy": "other", "cpus": "4", "count": 1},
+            ]
+            path.write_text(json.dumps(base))
+            with self.assertRaisesRegex(LAB_PLACEMENT.LaunchError, "placements overlap"):
+                LAB_PLACEMENT.read_thread_profile(path)
+            base["roles"]["graph"]["required_thread_placements"] = [
+                {"policy": "fifo:83", "cpus": "4", "name": "julia", "count": 1},
+                {"policy": "fifo:083", "cpus": "4", "count": 1},
+            ]
+            for placements in (base["roles"]["graph"]["required_thread_placements"],
+                               list(reversed(base["roles"]["graph"]["required_thread_placements"]))):
+                base["roles"]["graph"]["required_thread_placements"] = placements
+                path.write_text(json.dumps(base))
+                with self.assertRaisesRegex(LAB_PLACEMENT.LaunchError, "placements overlap"):
+                    LAB_PLACEMENT.read_thread_profile(path)
+            base["roles"]["graph"]["required_thread_placements"] = []
+            base["roles"]["graph"]["required_policy_counts"] = {"fifo:83": 1, "fifo:083": 1}
+            path.write_text(json.dumps(base))
+            with self.assertRaisesRegex(LAB_PLACEMENT.LaunchError, "duplicate policy"):
+                LAB_PLACEMENT.read_thread_profile(path)
+
     def test_verify_rejects_missing_role_profile_and_records_failure(self) -> None:
         process = self.start_dummy_process()
         try:

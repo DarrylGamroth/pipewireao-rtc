@@ -674,6 +674,27 @@ gap for this opt-in mode; cold graph first use, exact algorithm-worker pin
 identity, complete explicit process memory/loop settings, and controlled
 latency comparisons remain open. RTC-DEV-019 remains partial.
 
+The Ryzen Copper profile now checks the Linux names as well as policy and
+affinity of the HEART stage workers, FGN daemon loop, JFG island loop and
+pinned Julia threads, and observer/adapter loops. The
+[placement record](../benchmark/LAB_PLACEMENT.md) rechecks 128 historical
+thread snapshots offline and records two newly gated 16-frame HEART/FGN/JFG
+runs, one per ingress mode, that applied the stronger profile live. This
+narrows the thread-identity gap for the selected zero-worker JFG Copper
+configuration. It does not establish placement of Julia MVM shard tasks in
+other configurations, nor does it close explicit memory/loop configuration,
+cold graph first use, or controlled-latency evidence. RTC-DEV-019 remains
+partial.
+
+A subsequent no-offline-Graph-warmup comparison qualified one 1,024-frame
+row-block and one complete-frame three-way run under the source gate and
+named-thread profile. The [first-frame record](../benchmark/COPPER_FIRST_FRAME.md)
+compares their transported first commands with the earlier offline-warmup
+runs. It does not isolate Julia compilation because package loading and
+graph preparation precede release, and competing host work remained active.
+Structured startup/warmup intervals and a controlled first-use experiment
+remain open under RTC-DEV-019.
+
 ## Deferred capabilities
 
 The following topics are not active work. Their previous proposals are

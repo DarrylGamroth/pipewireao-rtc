@@ -551,3 +551,11 @@ replaces the simulator's timer, so its latency samples form a separate
 source-clock configuration from the timer-driven results above. The linked
 record includes packet phases, trigger lateness, an earlier pre-ingress FGN
 startup failure, and the remaining limits on a clean latency ranking.
+
+The [laboratory placement record](LAB_PLACEMENT.md) now verifies named
+HEART stage workers and PipeWireAO data loops on the Ryzen profile. Two
+16-frame live replays passed the stronger profile, and retained 1,024-frame
+snapshots were rechecked offline. A separate
+[first-frame comparison](COPPER_FIRST_FRAME.md) records 1,024-frame gated
+replays with JFG's explicit offline Graph warmup disabled. These checks
+remain scoped to this host and the selected zero-worker JFG Copper graph.

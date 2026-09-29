@@ -341,25 +341,37 @@ def read_thread_profile(path: Path) -> dict[str, Any]:
             placements = contract["required_thread_placements"]
             if not isinstance(policies, dict) or not isinstance(placements, list):
                 raise ValueError("policy counts must be an object and placements an array")
+            seen_policies: set[str] = set()
             for policy, count in policies.items():
                 if not isinstance(policy, str):
                     raise ValueError("policy names must be strings")
-                parse_thread_policy(policy)
+                canonical_policy = format_thread_policy(parse_thread_policy(policy))
+                if canonical_policy in seen_policies:
+                    raise ValueError(f"duplicate policy {canonical_policy}")
+                seen_policies.add(canonical_policy)
                 if type(count) is not int or count < 1:
                     raise ValueError("policy counts must be positive integers")
-            seen: set[tuple[str, str]] = set()
+            seen: set[tuple[str, str, str | None]] = set()
             for placement in placements:
-                if not isinstance(placement, dict) or set(placement) != {"policy", "cpus", "count"}:
-                    raise ValueError("each placement requires policy, cpus, and count")
+                if (not isinstance(placement, dict)
+                        or set(placement) not in ({"policy", "cpus", "count"},
+                                                  {"policy", "cpus", "count", "name"})):
+                    raise ValueError("each placement requires policy, CPUs, and count, with optional name")
                 if not isinstance(placement["policy"], str) or not isinstance(placement["cpus"], str):
                     raise ValueError("placement policy and CPUs must be strings")
-                parse_thread_policy(placement["policy"])
+                if "name" in placement and (not isinstance(placement["name"], str)
+                                             or not placement["name"]):
+                    raise ValueError("placement name must be a nonempty string")
+                canonical_policy = format_thread_policy(parse_thread_policy(placement["policy"]))
                 pinned = parse_cpu_list(placement["cpus"])
                 if not pinned <= cpus:
                     raise ValueError("placement CPUs exceed the role CPU envelope")
                 if type(placement["count"]) is not int or placement["count"] < 1:
                     raise ValueError("placement count must be a positive integer")
-                key = (placement["policy"], format_cpu_list(pinned))
+                key = (canonical_policy, format_cpu_list(pinned), placement.get("name"))
+                if ((key[2] is None and any(item[:2] == key[:2] for item in seen))
+                        or (key[2] is not None and (*key[:2], None) in seen)):
+                    raise ValueError(f"named and unnamed placements overlap for {key[:2]}")
                 if key in seen:
                     raise ValueError(f"duplicate placement {key}")
                 seen.add(key)
@@ -392,9 +404,12 @@ def verify_thread_profile(snapshot: dict[str, Any], role: str, requested_cpus: s
         policy = parse_thread_policy(placement["policy"])
         cpus = parse_cpu_list(placement["cpus"])
         observed = sum((thread["scheduler"]["policy"], thread["scheduler"]["priority"]) == policy
-                       and set(thread["affinity"]) == cpus for thread in threads)
+                       and set(thread["affinity"]) == cpus
+                       and ("name" not in placement or thread.get("name") == placement["name"])
+                       for thread in threads)
         if observed != placement["count"]:
-            raise LaunchError(f"role {role} has {observed} {placement['policy']} threads on "
+            name = f" named {placement['name']!r}" if "name" in placement else ""
+            raise LaunchError(f"role {role} has {observed} {placement['policy']} threads{name} on "
                               f"{format_cpu_list(cpus)}; profile requires exactly {placement['count']}")
 
 

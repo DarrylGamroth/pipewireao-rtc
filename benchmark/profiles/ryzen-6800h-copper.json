@@ -6,14 +6,14 @@
       "leader_policy": "other",
       "required_policy_counts": {"fifo:15": 7, "fifo:20": 1},
       "required_thread_placements": [
-        {"policy": "fifo:15", "cpus": "0", "count": 1},
-        {"policy": "fifo:15", "cpus": "2", "count": 1},
-        {"policy": "fifo:15", "cpus": "4", "count": 1},
-        {"policy": "fifo:15", "cpus": "6", "count": 1},
-        {"policy": "fifo:15", "cpus": "8", "count": 1},
-        {"policy": "fifo:15", "cpus": "10", "count": 1},
-        {"policy": "fifo:15", "cpus": "14", "count": 1},
-        {"policy": "fifo:20", "cpus": "14", "count": 1}
+        {"policy": "fifo:15", "cpus": "0", "name": "HOP0.wfs.w", "count": 1},
+        {"policy": "fifo:15", "cpus": "2", "name": "HOP0.proc.w", "count": 1},
+        {"policy": "fifo:15", "cpus": "4", "name": "HOP0.recon.w", "count": 1},
+        {"policy": "fifo:15", "cpus": "6", "name": "WCC.tfc.w", "count": 1},
+        {"policy": "fifo:15", "cpus": "8", "name": "WCC.clwc.w", "count": 1},
+        {"policy": "fifo:15", "cpus": "10", "name": "WCC.dm0.w", "count": 1},
+        {"policy": "fifo:15", "cpus": "14", "name": "MON.perf", "count": 1},
+        {"policy": "fifo:20", "cpus": "14", "name": "MON.aoLoop", "count": 1}
       ]
     },
     "pipewire-ao-daemon": {
@@ -21,20 +21,24 @@
       "leader_policy": "other",
       "required_policy_counts": {"fifo:83": 1},
       "required_thread_placements": [
-        {"policy": "fifo:83", "cpus": "0", "count": 1}
+        {"policy": "fifo:83", "cpus": "0", "name": "rtc-data-loop", "count": 1}
       ]
     },
     "fgn-command-observer": {
       "cpus": "0-15",
       "leader_policy": "other",
       "required_policy_counts": {"fifo:83": 1},
-      "required_thread_placements": []
+      "required_thread_placements": [
+        {"policy": "fifo:83", "cpus": "0-15", "name": "data-loop.0", "count": 1}
+      ]
     },
     "julia-heart-std-dm-command-adapter": {
       "cpus": "0,2,4,6,8,10,14",
       "leader_policy": "other",
       "required_policy_counts": {"fifo:83": 1},
-      "required_thread_placements": []
+      "required_thread_placements": [
+        {"policy": "fifo:83", "cpus": "0,2,4,6,8,10,14", "name": "data-loop.0", "count": 1}
+      ]
     },
     "daemon": {
       "cpus": "0,2,4,6,8,10,14",
@@ -47,22 +51,27 @@
       "leader_policy": "other",
       "required_policy_counts": {"fifo:83": 1},
       "required_thread_placements": [
-        {"policy": "other", "cpus": "0", "count": 2},
-        {"policy": "other", "cpus": "2", "count": 1},
-        {"policy": "fifo:83", "cpus": "0", "count": 1}
+        {"policy": "other", "cpus": "0", "name": "julia", "count": 1},
+        {"policy": "other", "cpus": "0", "name": "ndarray-filter-", "count": 1},
+        {"policy": "other", "cpus": "2", "name": "julia", "count": 1},
+        {"policy": "fifo:83", "cpus": "0", "name": "data-loop.0", "count": 1}
       ]
     },
     "observer": {
       "cpus": "0-15",
       "leader_policy": "other",
       "required_policy_counts": {"fifo:83": 1},
-      "required_thread_placements": []
+      "required_thread_placements": [
+        {"policy": "fifo:83", "cpus": "0-15", "name": "data-loop.0", "count": 1}
+      ]
     },
     "adapter": {
       "cpus": "0,2,4,6,8,10,14",
       "leader_policy": "other",
       "required_policy_counts": {"fifo:83": 1},
-      "required_thread_placements": []
+      "required_thread_placements": [
+        {"policy": "fifo:83", "cpus": "0,2,4,6,8,10,14", "name": "data-loop.0", "count": 1}
+      ]
     }
   }
 }

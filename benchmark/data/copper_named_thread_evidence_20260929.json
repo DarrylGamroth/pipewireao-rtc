@@ -1,0 +1,124 @@
+{
+  "manifests": [
+    {
+      "enforced_during_original_run": false,
+      "frames": 1024,
+      "mode": "row",
+      "passed_record_count": 48,
+      "path": "/home/dgamroth/.cache/rtc-copper-strict-row-3x-20260929/manifest.json",
+      "record_set_sha256": "c82992e306bef66ed611dbd9f41a4ef3243738f4df5b48e69aa838772ddcbf87",
+      "records_by_phase": {
+        "after-replay": 24,
+        "before-ingress": 24
+      },
+      "records_by_system": {
+        "fgn": 18,
+        "heart": 6,
+        "jfg": 24
+      },
+      "runs": 3,
+      "sha256": "0e8cab070425541d9cab6799b3924fdcbee49f3eb3d4c52d206453faea15d943"
+    },
+    {
+      "enforced_during_original_run": false,
+      "frames": 1024,
+      "mode": "fullframe",
+      "passed_record_count": 48,
+      "path": "/home/dgamroth/.cache/rtc-copper-strict-fullframe-3x-20260929/manifest.json",
+      "record_set_sha256": "b10b79c7bc8b1695885b6b79902db92c6a50377dd72a3eedf2207cd6ba506132",
+      "records_by_phase": {
+        "after-replay": 24,
+        "before-ingress": 24
+      },
+      "records_by_system": {
+        "fgn": 18,
+        "heart": 6,
+        "jfg": 24
+      },
+      "runs": 3,
+      "sha256": "f17389a6892bb8b8ba17ad90e045583855a570219e98ac5b759d295b7b8957ac"
+    },
+    {
+      "enforced_during_original_run": false,
+      "frames": 1024,
+      "mode": "row",
+      "passed_record_count": 16,
+      "path": "/home/dgamroth/.cache/rtc-copper-gated-v4-row-1024-20260929/manifest.json",
+      "record_set_sha256": "57932f93b491cac56afca7cc8b23b221ae366bfa2cc433b9dcf708031a53feba",
+      "records_by_phase": {
+        "after-replay": 8,
+        "before-ingress": 8
+      },
+      "records_by_system": {
+        "fgn": 6,
+        "heart": 2,
+        "jfg": 8
+      },
+      "runs": 1,
+      "sha256": "0b6d5f8642847ad40bc9e6b6b051482fa306f5363d8bf6aa249b60705ee4d188"
+    },
+    {
+      "enforced_during_original_run": false,
+      "frames": 1024,
+      "mode": "fullframe",
+      "passed_record_count": 16,
+      "path": "/home/dgamroth/.cache/rtc-copper-gated-v4-fullframe-1024-20260929/manifest.json",
+      "record_set_sha256": "5189ca40e90784585cb60e808a0ab63ac3ef6b602ee833415d408a439fe34140",
+      "records_by_phase": {
+        "after-replay": 8,
+        "before-ingress": 8
+      },
+      "records_by_system": {
+        "fgn": 6,
+        "heart": 2,
+        "jfg": 8
+      },
+      "runs": 1,
+      "sha256": "bcb58f690e4c1f3fcd725b467c0cbefe78a57c3e63bab115c04dc812aad52f0f"
+    },
+    {
+      "enforced_during_original_run": true,
+      "frames": 16,
+      "mode": "row",
+      "passed_record_count": 16,
+      "path": "/home/dgamroth/.cache/rtc-copper-named-thread-final-row-16-20260929/manifest.json",
+      "record_set_sha256": "a8ba5ca2da9d15351776681a16090b2a88d60b248dfc229672911ab81250bb92",
+      "records_by_phase": {
+        "after-replay": 8,
+        "before-ingress": 8
+      },
+      "records_by_system": {
+        "fgn": 6,
+        "heart": 2,
+        "jfg": 8
+      },
+      "runs": 1,
+      "sha256": "c4e113746c3133fb730ad544870fbd3c6c07bdf0e76212ded04a0a06cc35ccd9"
+    },
+    {
+      "enforced_during_original_run": true,
+      "frames": 16,
+      "mode": "fullframe",
+      "passed_record_count": 16,
+      "path": "/home/dgamroth/.cache/rtc-copper-named-thread-final-fullframe-16-20260929/manifest.json",
+      "record_set_sha256": "cf57a76d63d95b8b191bff1ecd37fdcf8c3ef79b71534c8af29034f513e6ddb2",
+      "records_by_phase": {
+        "after-replay": 8,
+        "before-ingress": 8
+      },
+      "records_by_system": {
+        "fgn": 6,
+        "heart": 2,
+        "jfg": 8
+      },
+      "runs": 1,
+      "sha256": "42227f5072454790d2b7ac57982062c1fff5e493bc051520f42061c859f7b4f5"
+    }
+  ],
+  "method": "Reapply verify_thread_profile to each retained verified pre-ingress and post-replay process snapshot; historical checks do not alter the original ingress gate.",
+  "profile": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-thread-identity/benchmark/profiles/ryzen-6800h-copper.json",
+  "profile_sha256": "5b2494c3c536664fbbd4ecceff023fd1805566636944c28213a7d7dcbed34b4d",
+  "schema_version": 1,
+  "scope": "RTC-DEV-019 named thread placement requalification",
+  "validator_sha256": "dd22469d005a60cd0e500f06e3ed845ae5b93c34744223e5cd68b13a3b2844e5"
+}

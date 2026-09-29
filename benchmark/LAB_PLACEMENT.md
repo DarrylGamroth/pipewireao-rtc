@@ -40,7 +40,10 @@ The default allowed policy for every thread is the launch policy. A mixed
 PipeWireAO process can declare each permitted policy, such as
 `--allowed-thread-policy other --allowed-thread-policy fifo:20`, and can require
 an exact observed count with `--required-thread-policy fifo:20=1`. The launcher
-records TIDs and observed state but does not assign names or roles to threads.
+records TIDs, Linux thread names, and observed state. A host-specific profile
+may require an exact name together with policy and affinity. The name is a
+placement check; the process implementation still defines what work the
+named thread performs.
 
 For a process that an existing runner already started, use `verify` instead of
 `run`. It takes `--role`, `--pid`, `--cpus`, `--leader-policy`, optional thread
@@ -53,17 +56,40 @@ is still alive.
 `run_copper_baseline.py --verify-placement --strict-placement-profile
 benchmark/profiles/ryzen-6800h-copper.json` passes the profile to each runner's
 existing pre-ingress and post-replay `verify` call. The verifier checks each
-role's exact process CPU envelope, leader policy, required policy counts, and
-required policy-plus-affinity counts. A missing role or a mismatch returns a
-failed report before the runner starts its pixel source. The profile path and
-SHA-256 are recorded with the run. A new machine or CPU layout needs its own
-reviewed profile; changing `--rtc-cpus` alone cannot silently relax this one.
+role's exact process CPU envelope, leader policy, policy counts, placement
+counts, and any declared exact thread names. A missing role or a mismatch
+returns a failed report before the runner starts its pixel source. The profile
+path and SHA-256 are recorded with the run. A new machine or CPU layout needs
+its own reviewed profile; changing `--rtc-cpus` alone cannot silently relax
+this one.
 
-The Ryzen profile requires a FIFO83 data loop pinned to CPU 0 in the FGN
-daemon. Earlier broad-envelope replays observed no FIFO thread in that daemon,
-so those replays do not meet this profile. The counts establish placement,
-not the identity of a thread's work. Thread names and requested pins alone
-cannot prove that the named MVM or Julia worker ran on a particular thread.
+The Ryzen profile requires a named FIFO83 `rtc-data-loop` pinned to CPU 0 in
+the FGN daemon, the named HEART stage workers on their declared cores, and
+the JFG `data-loop.0` plus its pinned Julia and control threads. Earlier
+broad-envelope replays observed no FIFO thread in the FGN daemon, so those
+replays do not meet this profile. The profile also checks the observer and
+adapter data-loop names, although their declared affinity masks remain broad.
+Thread names establish which configured threads received a placement; they
+do not by themselves trace individual algorithm calls. For this Copper
+configuration, FGN invokes its Algorithm synchronously on the graph owner
+loop, and the JFG PipeWire callback invokes `process!` directly. The selected
+JFG configuration has zero progressive CPU workers; no separate Julia MVM
+shard task is asserted by this profile.
+
+The [named-thread evidence](data/copper_named_thread_evidence_20260929.json)
+reapplies the stronger name, policy, and affinity checks to 128 retained
+pre-ingress and post-replay records from eight earlier 1,024-frame RTC runs.
+Those runs were gated by the preceding count-only profile; the offline check
+does not change their original gate. Two subsequent 16-frame three-way runs,
+one row-block and one complete-frame, used the new profile before ingress
+and after replay. Both qualified exact WFS and DM delivery and numerical
+command equivalence. Their manifests are
+`~/.cache/rtc-copper-named-thread-final-row-16-20260929/manifest.json` and
+`~/.cache/rtc-copper-named-thread-final-fullframe-16-20260929/manifest.json`.
+The evidence record includes both live runs, for 160 checked placement
+records in total. This closes the named-thread check for this host profile;
+it does not establish an uncontended latency ranking or a general profile
+for other machines.
 
 The resulting JSON includes the requested envelope, command, host, each
 pre-gate map, post-run map when the finish/release handshake is used, `VmLck`,
