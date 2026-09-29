@@ -628,10 +628,13 @@ The managed complete-frame wire path subsequently passed three independent
 1,024-frame runs each for native FGN and JuliaFilterGraph at 474 Hz, with the
 same FITS cube, strict role profile, numerical vector reference, and packet
 qualification. [Copper evidence](../benchmark/COPPER.md) retains the per-run
-p50/p99 spread and raw report paths. This closes the repeated managed
+p50/p99 spread and raw report paths. The
+[first-frame analysis](../benchmark/COPPER_FIRST_FRAME.md) now separates the
+first transported command from later packet intervals in these qualified
+captures. This closes the repeated managed
 complete-frame delivery measurement on this host; it does not establish a
 cross-implementation latency ranking because ambient load was not controlled.
-HEART/FGN/JFG progressive repetitions, first-use separation, and source
+HEART/FGN/JFG progressive repetitions, cold-graph first-use isolation, and source
 pre-ingress thread inspection remain open.
 
 An opt-in Ryzen thread profile now checks exact policy and affinity counts at

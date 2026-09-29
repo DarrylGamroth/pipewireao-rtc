@@ -448,6 +448,11 @@ work overlapping that packet interval. The p50 benefit is smaller for FGN and
 mixed for JFG. These runs do not isolate which operation executes during
 readout.
 
+[First-frame packet timing](COPPER_FIRST_FRAME.md) separates frame 1 from
+frames 2–10 and 101–1024 using these qualified captures and the later
+strict-placement single runs. It records the initial transported-frame cost
+without attributing it to JIT compilation or one graph operation.
+
 The observed scheduling policies differ. HEART has many FIFO5/10/15/20
 threads; the FGN daemon data loop is `SCHED_OTHER`; the JFG island data loop
 is FIFO83. The sampled HEART process showed 120,832 KiB of explicit huge

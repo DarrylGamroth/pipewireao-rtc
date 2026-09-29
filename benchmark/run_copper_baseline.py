@@ -9,13 +9,16 @@ their raw records, and fails closed unless every replay delivers every frame.
 from __future__ import annotations
 
 import argparse
+from decimal import Decimal, InvalidOperation
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import platform
 import resource
 import shutil
+import struct
 import subprocess
 import sys
 from typing import Any
@@ -155,6 +158,94 @@ def paths_under(directory: Path) -> list[str]:
     return [str(path) for path in sorted(directory.rglob("*")) if path.is_file() or path.is_symlink()]
 
 
+WFS_HEADER = struct.Struct("<4B8HIQII")
+DM_HEADER = struct.Struct("<4BHHQII")
+
+
+def capture_times(path: Path, count: int, *, kind: str,
+                  dm_id_base: int = 0) -> list[Decimal]:
+    """Read capture-order times after checking packet identity in each slot."""
+    require_exact(kind in ("wfs", "dm"), f"unknown packet kind: {kind}")
+    header = WFS_HEADER if kind == "wfs" else DM_HEADER
+    times: list[Decimal] = []
+    with path.open(encoding="ascii") as packets:
+        for ordinal, line in enumerate(packets):
+            fields = line.rstrip("\n").split("\t")
+            require_exact(len(fields) == 3, f"expected three TSV fields in {path}")
+            field, _, packet_hex = fields
+            try:
+                timestamp = Decimal(field)
+            except InvalidOperation as error:
+                raise RuntimeError(f"invalid packet timestamp in {path}") from error
+            require_exact(timestamp.is_finite() and timestamp >= 0,
+                          f"nonfinite or negative packet timestamp in {path}")
+            require_exact(len(packet_hex) >= 2 * header.size,
+                          f"short {kind} header at packet {ordinal + 1} in {path}")
+            try:
+                packet_header = bytes.fromhex(packet_hex[:2 * header.size])
+            except ValueError as error:
+                raise RuntimeError(f"invalid {kind} header at packet {ordinal + 1} in {path}") from error
+            decoded = header.unpack(packet_header)
+            if kind == "wfs":
+                sequence, datagrams, frame_id = decoded[10], decoded[11], decoded[-2]
+                require_exact((frame_id, sequence, datagrams) ==
+                              (ordinal // 2, ordinal % 2 + 1, 2),
+                              f"WFS packet identity/order mismatch at packet {ordinal + 1} in {path}")
+            else:
+                sequence, datagrams, frame_id = decoded[2], decoded[3], decoded[-2]
+                require_exact((frame_id, sequence, datagrams) ==
+                              (dm_id_base + ordinal, 1, 1),
+                              f"DM packet identity/order mismatch at packet {ordinal + 1} in {path}")
+            times.append(timestamp)
+    require_exact(len(times) == count, f"expected {count} packet timestamps in {path}")
+    require_exact(all(a <= b for a, b in zip(times, times[1:])),
+                  f"packet timestamps regress in {path}")
+    return times
+
+
+def latency_summary_us(values: list[Decimal]) -> dict[str, float | int]:
+    require_exact(bool(values), "empty capture latency window")
+    ordered = sorted(values)
+
+    def percentile(fraction: float) -> float:
+        position = (len(ordered) - 1) * fraction
+        low, high = math.floor(position), math.ceil(position)
+        return float(ordered[low] + (ordered[high] - ordered[low]) *
+                     Decimal(str(position - low)))
+
+    return {"count": len(values), "min": float(ordered[0]),
+            "p50": percentile(0.50), "p99": percentile(0.99),
+            "max": float(ordered[-1])}
+
+
+def capture_latency_phases(wfs_path: Path, dm_path: Path, frames: int,
+                           *, dm_id_base: int) -> dict[str, Any]:
+    """Summarize capture-order packet pairs with explicit identity checks."""
+    wfs = capture_times(wfs_path, 2 * frames, kind="wfs")
+    dm = capture_times(dm_path, frames, kind="dm", dm_id_base=dm_id_base)
+    first = [(dm[index] - wfs[2 * index]) * 1_000_000 for index in range(frames)]
+    terminal = [(dm[index] - wfs[2 * index + 1]) * 1_000_000
+                for index in range(frames)]
+    readout = [(wfs[2 * index + 1] - wfs[2 * index]) * 1_000_000
+               for index in range(frames)]
+    require_exact(all(value >= 0 for value in terminal),
+                  "DM packet preceded its terminal WFS packet")
+    intervals = {"first_wfs_packet_to_dm_us": first,
+                 "terminal_wfs_packet_to_dm_us": terminal,
+                 "first_to_terminal_wfs_us": readout}
+    return {
+        "first_frame": {name: float(values[0]) for name, values in intervals.items()},
+        "frames_2_through_10": ({name: latency_summary_us(values[1:10])
+                                for name, values in intervals.items()}
+                               if frames >= 10 else None),
+        "frames_101_onward": ({name: latency_summary_us(values[100:])
+                              for name, values in intervals.items()}
+                             if frames > 100 else None),
+        "all_frames": {name: latency_summary_us(values)
+                       for name, values in intervals.items()},
+    }
+
+
 def require_placement(paths: dict[str, dict[str, Path]],
                       profile_sha256: str | None = None) -> dict[str, dict[str, str]]:
     verified: dict[str, dict[str, str]] = {}
@@ -180,6 +271,8 @@ def main() -> None:
     parser.add_argument("--mode", choices=("row", "fullframe"), default="row",
                         help="FGN ingress mode; row is the selected baseline")
     parser.add_argument("--frames", type=int, default=1024)
+    parser.add_argument("--jfg-graph-warmup", choices=("offline", "none"), default="offline",
+                        help="recorded JFG first-use policy (default: offline)")
     parser.add_argument("--pipewire-prefix", type=Path, default=Path("/opt/pipewireao"))
     parser.add_argument("--heart-root", type=Path, default=HEART)
     parser.add_argument("--revolt-config-dir", type=Path,
@@ -290,6 +383,7 @@ def main() -> None:
         "rtc_dev_019_qualified": False,
         "mode": args.mode, "repeats": args.repeats, "frames": args.frames,
         "frame_rate_hz": 474, "readout_us": 2000, "clipping_feedback": True,
+        "jfg_graph_warmup": args.jfg_graph_warmup,
         "verify_placement": args.verify_placement,
         "strict_placement_profile": str(thread_profile) if thread_profile else None,
         "strict_placement_profile_sha256": thread_profile_sha256,
@@ -373,7 +467,8 @@ def main() -> None:
                         "--heart-plugin", str(args.pipewire_prefix / "lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so"),
                         "--wfs-simulator", str(args.wfs_simulator), "--frames", str(args.frames),
                         "--frame-rate-hz", "474", "--readout-us", "2000", "--clipping-feedback", "true",
-                        "--command-limit-um", "0.8", "--ingress-mode", jfg_mode, "--graph-warmup", "offline",
+                        "--command-limit-um", "0.8", "--ingress-mode", jfg_mode,
+                        "--graph-warmup", args.jfg_graph_warmup,
                         "--island-threads", "2", "--cpu-workers", "0",
                         "--std-wfs-port", "65310", "--std-dm-port", "65311",
                         "--output", str(jfg_report)],
@@ -445,6 +540,17 @@ def main() -> None:
                 comparisons[name] = str(target)
             record["qualification"] = {"heart": heart, "fgn": fgn, "jfg": jfg_physical,
                                         "comparisons": comparisons}
+            record["latency_phases"] = {
+                "heart": capture_latency_phases(heart_dir / "std-wfs-packets.tsv",
+                                                 heart_dir / "std-dm-packets.tsv", args.frames,
+                                                 dm_id_base=1),
+                "fgn": capture_latency_phases(fgn_dir / "wfs-packets.tsv",
+                                               fgn_dir / "dm-packets.tsv", args.frames,
+                                               dm_id_base=0),
+                "jfg": capture_latency_phases(run / "jfg-wfs-packets.tsv",
+                                               run / "jfg-dm-packets.tsv", args.frames,
+                                               dm_id_base=0),
+            }
         manifest["qualified"] = True
         manifest["latency_summaries"] = [
             {name: {key: values.get(key)
