@@ -21,11 +21,18 @@ const EXCITATION_B_SCHEMA: &str = "org.calculon.ao.docrime-excitation-b/1";
 const COMMAND_A_SCHEMA: &str = "org.calculon.ao.controller-command-a/1";
 const COMMAND_B_SCHEMA: &str = "org.calculon.ao.controller-command-b/1";
 const FNV1A_OFFSET_BASIS: u64 = 14_695_981_039_346_656_037;
+const MAX_TOPOLOGY_STARTUP_PREFIX: usize = 64;
 
 const LEAKY_INPUTS: [[f32; 2]; 4] = [[1.0, -1.0], [0.5, 2.0], [-0.25, 0.75], [3.0, -2.0]];
 
 fn expected_leaky_digest(buffers: u64) -> u64 {
-    expected_leaky_digest_for((0..buffers).map(|index| usize::try_from(index % 4).unwrap()))
+    expected_leaky_digest_from_phase(buffers, 0)
+}
+
+fn expected_leaky_digest_from_phase(buffers: u64, phase: usize) -> u64 {
+    expected_leaky_digest_for(
+        (0..buffers).map(|index| (phase + usize::try_from(index).unwrap()) % LEAKY_INPUTS.len()),
+    )
 }
 
 fn expected_leaky_digest_for(inputs: impl IntoIterator<Item = usize>) -> u64 {
@@ -59,6 +66,13 @@ struct SessionCase<'a> {
     links: usize,
     sinks: &'a [&'a str],
     groups: &'a [(&'a str, &'a str)],
+    payload_oracle: Option<PayloadOracle>,
+}
+
+#[derive(Clone, Copy)]
+enum PayloadOracle {
+    Direct,
+    Serial,
 }
 
 struct EndpointFaultCase<'a> {
@@ -416,6 +430,7 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
             links: 2,
             sinks: &["pipewireao-rtc-sink"],
             groups: &[("main", "pipewireao-rtc-sink")],
+            payload_oracle: None,
         },
         SessionCase {
             fixture: "serial-development.conf",
@@ -428,6 +443,7 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
             links: 3,
             sinks: &["pipewireao-rtc-serial-sink"],
             groups: &[("chain", "pipewireao-rtc-serial-sink")],
+            payload_oracle: Some(PayloadOracle::Serial),
         },
         SessionCase {
             fixture: "fork-development.conf",
@@ -444,6 +460,7 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
                 ("branch-a", "pipewireao-rtc-fork-sink-a"),
                 ("branch-b", "pipewireao-rtc-fork-sink-b"),
             ],
+            payload_oracle: Some(PayloadOracle::Direct),
         },
         SessionCase {
             fixture: "independent-development.conf",
@@ -464,6 +481,7 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
                 ("path-a", "pipewireao-rtc-independent-sink-a"),
                 ("path-b", "pipewireao-rtc-independent-sink-b"),
             ],
+            payload_oracle: Some(PayloadOracle::Direct),
         },
     ];
     for case in cases {
@@ -3333,6 +3351,21 @@ fn run_session_case(
         );
     }
 
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Stop).unwrap(),
+        LifecycleState::Ready,
+        "{} initial stop diagnostic: {:?}",
+        case.fixture,
+        runner.diagnostic()
+    );
+    assert_session_payloads(&runner, case);
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Start).unwrap(),
+        LifecycleState::Running,
+        "{} restart after payload observation diagnostic: {:?}",
+        case.fixture,
+        runner.diagnostic()
+    );
     exercise_execution_groups(&mut runner, pipewire_build, environment, core_name, case);
 
     assert_eq!(
@@ -3393,6 +3426,114 @@ fn run_session_case(
     for node in case.nodes {
         assert!(!unloaded_dump.contains(node), "owned node survived: {node}");
     }
+}
+
+fn assert_session_payloads(runner: &Runner<LiveGraphAdapter>, case: &SessionCase<'_>) {
+    let Some(oracle) = case.payload_oracle else {
+        return;
+    };
+    let observations = runner
+        .executor()
+        .observe_discard_payloads()
+        .expect("read topology discard payload evidence");
+    for &sink in case.sinks {
+        let observation = observations.get(sink).unwrap_or_else(|| {
+            panic!("{} did not expose payload metrics for {sink}", case.fixture)
+        });
+        assert_eq!(
+            observation.bytes,
+            observation.buffers * 2 * size_of::<f32>() as u64,
+            "{} {sink} payload size",
+            case.fixture
+        );
+        assert_eq!(
+            observation.digest_bytes, observation.bytes,
+            "{} {sink} digest coverage",
+            case.fixture
+        );
+        let startup = match oracle {
+            PayloadOracle::Direct => (0..LEAKY_INPUTS.len()).find_map(|phase| {
+                (0..=MAX_TOPOLOGY_STARTUP_PREFIX).find_map(|prefix| {
+                    (observation.payload_digest
+                        == expected_leaky_digest_after_prefix(observation.buffers, phase, prefix))
+                    .then_some(format!("phase={phase}, graph-prefix={prefix}"))
+                })
+            }),
+            PayloadOracle::Serial => (0..LEAKY_INPUTS.len()).find_map(|phase| {
+                (0..=MAX_TOPOLOGY_STARTUP_PREFIX).find_map(|upstream_prefix| {
+                    (0..=MAX_TOPOLOGY_STARTUP_PREFIX).find_map(|downstream_prefix| {
+                        (observation.payload_digest
+                            == expected_serial_leaky_digest_after_prefixes(
+                                observation.buffers,
+                                phase,
+                                upstream_prefix,
+                                downstream_prefix,
+                            ))
+                        .then_some(format!(
+                            "phase={phase}, graph-a-prefix={upstream_prefix}, graph-b-prefix={downstream_prefix}"
+                        ))
+                    })
+                })
+            }),
+        };
+        assert!(
+            startup.is_some(),
+            "{} {sink} payload does not match fixture graph arithmetic for phase 0..{} and startup prefixes 0..{MAX_TOPOLOGY_STARTUP_PREFIX}: {observation:?}",
+            case.fixture,
+            LEAKY_INPUTS.len() - 1,
+        );
+        eprintln!(
+            "{} {sink} payload oracle matched {}",
+            case.fixture,
+            startup.unwrap()
+        );
+    }
+}
+
+fn expected_leaky_digest_after_prefix(buffers: u64, phase: usize, prefix: usize) -> u64 {
+    let mut state = [0.0_f32; 2];
+    let mut digest = FNV1A_OFFSET_BASIS;
+    for index in 0..(prefix + usize::try_from(buffers).unwrap()) {
+        let input = LEAKY_INPUTS[(phase + index) % LEAKY_INPUTS.len()];
+        for element in 0..2 {
+            state[element] = 0.75 * state[element] + 0.5 * input[element];
+            if index >= prefix {
+                for byte in state[element].to_le_bytes() {
+                    digest ^= u64::from(byte);
+                    digest = digest.wrapping_mul(1_099_511_628_211);
+                }
+            }
+        }
+    }
+    digest
+}
+
+fn expected_serial_leaky_digest_after_prefixes(
+    buffers: u64,
+    phase: usize,
+    upstream_prefix: usize,
+    downstream_prefix: usize,
+) -> u64 {
+    let mut first_state = [0.0_f32; 2];
+    let mut second_state = [0.0_f32; 2];
+    let mut digest = FNV1A_OFFSET_BASIS;
+    let observed_buffers = usize::try_from(buffers).unwrap();
+    for index in 0..(upstream_prefix + downstream_prefix + observed_buffers) {
+        let input = LEAKY_INPUTS[(phase + index) % LEAKY_INPUTS.len()];
+        for element in 0..2 {
+            first_state[element] = 0.75 * first_state[element] + 0.5 * input[element];
+            if index >= upstream_prefix {
+                second_state[element] = 0.75 * second_state[element] + 0.5 * first_state[element];
+                if index >= upstream_prefix + downstream_prefix {
+                    for byte in second_state[element].to_le_bytes() {
+                        digest ^= u64::from(byte);
+                        digest = digest.wrapping_mul(1_099_511_628_211);
+                    }
+                }
+            }
+        }
+    }
+    digest
 }
 
 fn assert_leaky_history(
