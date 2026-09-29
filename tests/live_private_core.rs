@@ -312,6 +312,21 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
     let revolt_latency = RevoltLatencyCollection::from_environment();
 
     match std::env::var("PIPEWIREAO_RTC_LIVE_SCOPE").as_deref() {
+        Ok("revolt-lockstep") => {
+            run_revolt_classic_lockstep_case(
+                &repository,
+                &revolt_hil_package,
+                &pipewire_build,
+                &environment,
+                &core_name,
+                temporary.path(),
+                &revolt_native_graph,
+                &revolt_julia_graph,
+                &pipewireao_julia,
+                &julia_filter_graph,
+            );
+            return;
+        }
         Ok("revolt") => {
             run_revolt_classic_reference_case(
                 &repository,
@@ -1941,6 +1956,158 @@ fn run_aos_hil_reference_case(
     assert!(!after.contains("pipewireao-rtc-aos-controller"));
 
     stop_provider(&mut provider, &stop_file, &provider_log, "AOS HIL");
+}
+
+#[allow(clippy::too_many_arguments, clippy::too_many_lines)]
+fn run_revolt_classic_lockstep_case(
+    repository: &Path,
+    revolt_hil_package: &Path,
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+    temporary: &Path,
+    native_graph: &Path,
+    julia_graph: &Path,
+    pipewireao_julia: &Path,
+    julia_filter_graph: &Path,
+) {
+    let hil_log = temporary.join("revolt-lockstep-hil.log");
+    let log = std::fs::File::create(&hil_log).expect("REVOLT lockstep HIL log");
+    let provider = command_with_environment("julia", environment)
+        .env("PIPEWIREAO_RTC_REVOLT_LOCKSTEP", "1")
+        .args([
+            "--startup-file=no",
+            "--threads=2",
+            &format!("--project={}", revolt_hil_package.display()),
+        ])
+        .arg(repository.join("tests/live_private_core/revolt_hil_provider.jl"))
+        .args([
+            core_name,
+            temporary.to_str().expect("UTF-8 control directory"),
+            native_graph.to_str().expect("UTF-8 native graph path"),
+            julia_graph.to_str().expect("UTF-8 Julia graph path"),
+        ])
+        .stdout(Stdio::from(log.try_clone().unwrap()))
+        .stderr(Stdio::from(log))
+        .spawn()
+        .expect("start REVOLT lockstep HIL provider");
+    let mut provider = ChildGuard(provider);
+    wait_for_text_for(
+        &mut provider.0,
+        &hil_log,
+        "REVOLT_HIL_LOCKSTEP_READY",
+        Duration::from_secs(300),
+    );
+    for node in [
+        "revolt-classic-sim-wfs",
+        "revolt-classic-sim-hsdm277-command",
+        "revolt-classic-sim-hsdm277-command-julia",
+    ] {
+        wait_for_dump(pipewire_build, environment, core_name, node);
+    }
+
+    let stop_julia_graph = temporary.join("stop-revolt-lockstep-julia-graph");
+    let julia_log = temporary.join("revolt-lockstep-julia-graph.log");
+    let log = std::fs::File::create(&julia_log).expect("REVOLT lockstep Julia log");
+    let mut command = command_with_environment("julia", environment);
+    command.env(
+        "JULIA_LOAD_PATH",
+        format!("{}:@:@stdlib", pipewireao_julia.display()),
+    );
+    let julia_provider = command
+        .args([
+            "--startup-file=no",
+            "--threads=2",
+            &format!(
+                "--project={}",
+                julia_filter_graph.join("deployment").display()
+            ),
+        ])
+        .arg(repository.join("tests/live_private_core/revolt_julia_graph_provider.jl"))
+        .args([
+            core_name,
+            julia_graph.to_str().expect("UTF-8 Julia graph path"),
+            stop_julia_graph.to_str().expect("UTF-8 Julia stop file"),
+            "pipewireao-rtc-revolt-julia",
+        ])
+        .stdout(Stdio::from(log.try_clone().unwrap()))
+        .stderr(Stdio::from(log))
+        .spawn()
+        .expect("start REVOLT lockstep Julia graph");
+    let mut julia_provider = ChildGuard(julia_provider);
+    wait_for_text(
+        &mut julia_provider.0,
+        &julia_log,
+        "REVOLT_JULIA_GRAPH_READY",
+    );
+
+    let adapter = LiveGraphAdapter::connect(core_name).expect("connect REVOLT lockstep session");
+    let mut runner = Runner::new(adapter);
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Load(ConfigurationInput::File(
+                repository.join("fixtures/revolt-classic-lockstep-development.conf"),
+            )))
+            .unwrap(),
+        LifecycleState::Ready,
+        "REVOLT lockstep load diagnostic: {:?}; HIL log: {}",
+        runner.diagnostic(),
+        private_core_log(&hil_log),
+    );
+    assert_eq!(runner.executor().status().owned_nodes, 3);
+    assert_eq!(runner.executor().status().owned_links, 6);
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Start).unwrap(),
+        LifecycleState::Running,
+        "REVOLT lockstep start diagnostic: {:?}",
+        runner.diagnostic(),
+    );
+    std::fs::write(temporary.join("revolt-lockstep-run"), "run\n").unwrap();
+    wait_for_text_with_runner(
+        &mut provider.0,
+        &hil_log,
+        "REVOLT_HIL_LOCKSTEP_DONE sequence=10",
+        &mut runner,
+    );
+    let log_text = std::fs::read_to_string(&hil_log).expect("read REVOLT lockstep log");
+    assert_eq!(
+        log_text
+            .matches("REVOLT_HIL_LOCKSTEP_MATCH sequence=")
+            .count(),
+        10
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Stop).unwrap(),
+        LifecycleState::Ready,
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Unload).unwrap(),
+        LifecycleState::Offline,
+    );
+    let after = dump(pipewire_build, environment, core_name);
+    assert!(!after.contains("pipewireao-rtc-revolt-native"));
+    assert!(after.contains("pipewireao-rtc-revolt-julia"));
+    assert!(after.contains("revolt-classic-sim-wfs"));
+    stop_provider(
+        &mut julia_provider,
+        &stop_julia_graph,
+        &julia_log,
+        "REVOLT lockstep Julia graph",
+    );
+    stop_provider(
+        &mut provider,
+        &temporary.join("stop-revolt-hil"),
+        &hil_log,
+        "REVOLT lockstep HIL",
+    );
+    for node in [
+        "pipewireao-rtc-revolt-julia",
+        "revolt-classic-sim-wfs",
+        "revolt-classic-sim-hsdm277-command",
+        "revolt-classic-sim-hsdm277-command-julia",
+    ] {
+        wait_for_dump_absent(pipewire_build, environment, core_name, node);
+    }
 }
 
 #[allow(clippy::too_many_arguments, clippy::too_many_lines)]

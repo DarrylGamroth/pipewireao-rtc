@@ -39,6 +39,118 @@ const UPDATED_RECONSTRUCTOR_SCALE = 0.5f0
 const CONTROL_RTOL = 2.0f-2
 const COMMAND_RTOL = 5.0f-4
 const COMMAND_ATOL = 5.0f-11
+const LOCKSTEP_JULIA_SINK = "revolt-classic-sim-hsdm277-command-julia"
+
+# This extra test sink uses only public PipeWireAO stream and ndarray APIs.
+# Its callback copies one bounded command and publishes the received sequence;
+# the fixture thread owns numerical checks and frame progression.
+mutable struct LockstepCommandState
+    values::Vector{Float32}
+    ready::Atomic{UInt64}
+end
+
+struct LockstepCommandProcess
+    state::LockstepCommandState
+    buffer::StreamBuffer
+end
+
+function (process::LockstepCommandProcess)(stream::Stream)
+    process.state.ready[] == 0 || error("Julia command arrived while the prior command is pending")
+    dequeue_buffer!(process.buffer, stream) || return nothing
+    queued = false
+    try
+        header = buffer_header(process.buffer)
+        isnothing(header) && error("Julia command lacks a Header sequence")
+        sequence = header.sequence
+        sequence > 0 || error("Julia command has reserved sequence zero")
+        data = buffer_data(process.buffer)
+        chunk = chunk_info(data)
+        bytes = sizeof(Float32) * length(process.state.values)
+        Int(chunk.size) == bytes || error("Julia command has $(chunk.size) bytes; expected $bytes")
+        Int(chunk.offset) + bytes <= capacity(data) || error("Julia command exceeds its buffer")
+        unsafe_copyto!(
+            Ptr{UInt8}(pointer(process.state.values)),
+            data_pointer(data) + Int(chunk.offset),
+            bytes,
+        )
+        all(isfinite, process.state.values) || error("Julia command is non-finite")
+        queue_buffer!(process.buffer, stream)
+        queued = true
+        process.state.ready[] = sequence
+    finally
+        queued || return_buffer!(process.buffer, stream)
+    end
+    return nothing
+end
+
+function prepare_lockstep_command_sink()
+    state = LockstepCommandState(zeros(Float32, command_count()), Atomic{UInt64}(0))
+    loop = ThreadLoop("REVOLTClassicLockstepCommand")
+    context = Context(loop)
+    core = CoreConnection(context; properties=Dict("remote.name" => core_name))
+    stream = Stream(
+        core,
+        LOCKSTEP_JULIA_SINK;
+        properties=Dict(
+            "node.name" => LOCKSTEP_JULIA_SINK,
+            "media.type" => "Application",
+            "media.category" => "Filter",
+            "media.role" => "DSP",
+        ),
+        on_process=LockstepCommandProcess(state, StreamBuffer()),
+    )
+    format = NdArrayFormat(
+        NdArray.F32_LE,
+        (command_count(),);
+        layout=NdArray.ROW_MAJOR,
+        rate=SPA.Fraction(500, 1),
+    )
+    params = Pod[
+        ndarray_format(format; schema=REVOLT_CLASSIC_COMMAND_SCHEMA),
+        Pod(buffers_param(size=payload_size(format), buffers=2)),
+        Pod(header_metadata_param()),
+    ]
+    connect!(
+        stream,
+        :input;
+        flags=STREAM_MAP_BUFFERS | STREAM_INACTIVE | STREAM_DONT_RECONNECT,
+        params,
+    )
+    start!(loop)
+    return (; state, loop, context, core, stream)
+end
+
+function start_lockstep_command_sink!(sink)
+    with_thread_loop_lock(sink.loop) do _
+        set_active!(sink.stream, true)
+    end
+    return nothing
+end
+
+function wait_lockstep_command!(sink, sequence)
+    start = time_ns()
+    while sink.state.ready[] != sequence
+        observed = sink.state.ready[]
+        observed == 0 || error("Julia command sequence $observed; expected $sequence")
+        time_ns() - start <= 5_000_000_000 || error(
+            "Julia command sequence $sequence did not arrive before the fixture timeout",
+        )
+        sleep(0.001)
+    end
+    return nothing
+end
+
+function close_lockstep_command_sink!(sink)
+    with_thread_loop_lock(sink.loop) do _
+        set_active!(sink.stream, false)
+        close(sink.stream)
+        close(sink.core)
+        close(sink.context)
+    end
+    stop!(sink.loop)
+    close(sink.loop)
+    return nothing
+end
 
 """
 Optional completion-paced latency collection requested by the RTC private-core
@@ -582,6 +694,62 @@ function exchange_latency_range!(
     return nothing
 end
 
+function run_lockstep(reference_slopes, control_matrix)
+    phase = prepare_phase(control_matrix)
+    sink = prepare_lockstep_command_sink()
+    native_commands = Vector{Vector{Float32}}()
+    try
+        start_lockstep_command_sink!(sink)
+        println("REVOLT_HIL_LOCKSTEP_READY")
+        flush(stdout)
+        while !isfile(stop_file) && !isfile(joinpath(control_directory, "revolt-lockstep-run"))
+            sleep(0.01)
+        end
+        isfile(stop_file) && return nothing
+        for sequence in UInt64(1):UInt64(10)
+            exchange_range!(
+                phase,
+                sequence:sequence,
+                reference_slopes,
+                control_matrix,
+                native_commands,
+                :native,
+            )
+            wait_lockstep_command!(sink, sequence)
+            require_close(
+                "julia_direct_hsdm277_command",
+                sequence,
+                sink.state.values,
+                phase.direct_state;
+                rtol=COMMAND_RTOL,
+                atol=COMMAND_ATOL,
+            )
+            require_close(
+                "same_input_native_julia_command",
+                sequence,
+                sink.state.values,
+                native_commands[Int(sequence)];
+                rtol=COMMAND_RTOL,
+                atol=COMMAND_ATOL,
+            )
+            println("REVOLT_HIL_LOCKSTEP_MATCH sequence=$sequence")
+            flush(stdout)
+            # The callback cannot overwrite the command before this comparison.
+            sink.state.ready[] = 0
+        end
+        println("REVOLT_HIL_LOCKSTEP_DONE sequence=10")
+        flush(stdout)
+        while !isfile(stop_file)
+            sleep(0.01)
+        end
+    finally
+        close_lockstep_command_sink!(sink)
+        stop!(phase.plant.pipewire)
+        close(phase.plant.pipewire)
+    end
+    return nothing
+end
+
 function main()
     latency = latency_request()
     !isnothing(latency) && initialize_latency_csv!(latency)
@@ -601,8 +769,33 @@ function main()
         julia_graph_path,
         graph_configuration(nothing, reference_slopes, control_matrix),
     )
+    if get(ENV, "PIPEWIREAO_RTC_REVOLT_LOCKSTEP", "0") == "1"
+        write(
+            native_graph_path,
+            replace(
+                graph_configuration(
+                    ENV["PIPEWIREAO_RTC_FGN_BUNDLE"],
+                    reference_slopes,
+                    control_matrix,
+                ),
+                "pipewireao-rtc-revolt-controller" => "pipewireao-rtc-revolt-native",
+            ),
+        )
+        write(
+            julia_graph_path,
+            replace(
+                graph_configuration(nothing, reference_slopes, control_matrix),
+                "pipewireao-rtc-revolt-controller" => "pipewireao-rtc-revolt-julia",
+            ),
+        )
+    end
     println("REVOLT_HIL_CALIBRATED retained_rank=$retained_rank")
     flush(stdout)
+
+    if get(ENV, "PIPEWIREAO_RTC_REVOLT_LOCKSTEP", "0") == "1"
+        run_lockstep(reference_slopes, control_matrix)
+        return nothing
+    end
 
     native_commands = Vector{Vector{Float32}}()
     phase = prepare_phase(control_matrix)

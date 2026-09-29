@@ -3,10 +3,11 @@ using FilterGraphPipeWire
 using JuliaFilterGraph
 using PipeWireAO
 
-length(ARGS) == 3 || error(
-    "expected CORE_NAME GRAPH_CONFIGURATION STOP_FILE",
+length(ARGS) in (3, 4) || error(
+    "expected CORE_NAME GRAPH_CONFIGURATION STOP_FILE [NODE_NAME]",
 )
-core_name, graph_configuration, stop_file = ARGS
+core_name, graph_configuration, stop_file = ARGS[1:3]
+node_name = length(ARGS) == 4 ? ARGS[4] : "pipewireao-rtc-revolt-controller"
 
 graph = JuliaFilterGraph.prepare_graph(
     graph_configuration;
@@ -14,7 +15,7 @@ graph = JuliaFilterGraph.prepare_graph(
 )
 node = FilterGraphPipeWire.PipeWireNode(
     graph;
-    name="pipewireao-rtc-revolt-controller",
+    name=node_name,
     remote=core_name,
     rate=(500, 1),
     boundary_layout=FilterGraphAlgorithms.RowMajorLayout(),
