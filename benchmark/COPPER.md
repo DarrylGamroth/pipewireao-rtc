@@ -28,13 +28,14 @@ HEART→JFG and FGN→JFG vectors by frame identity. It accepts a maximum
 absolute difference of at most 1 × 10⁻⁶ µm for every requested frame.
 
 Before creating an output directory, the runner checks the requested CPU set
-against its available CPUs and probes that the selected simulator can start
-at the requested SCHED_FIFO priority. `--verify-placement` makes each runner
-capture live process and thread state before ingress and after replay. The
-baseline requires every declared role report to say `verified` before it
-qualifies latency. These are broad process-envelope checks: the current
-profile has no required RT-thread counts or owner-supplied proof of every
-worker pin. They do not yet satisfy the full RTC-DEV-019 placement contract.
+against its available CPUs and probes permission to start a process on the
+source CPU at the requested SCHED_FIFO priority. With
+`--verify-placement`, each runner captures live process and thread state
+before ingress and after replay. The baseline requires `verified` for every
+declared role before qualifying latency. These are broad process-envelope
+checks: the current profile has no required RT-thread counts or owner-supplied
+proof of every worker pin. They do not yet satisfy the full RTC-DEV-019
+placement contract.
 
 `manifest.json` retains each command and working directory, runner logs,
 source revisions and working-tree patches, hashes of selected scripts,
