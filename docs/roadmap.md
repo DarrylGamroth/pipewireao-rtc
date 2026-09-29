@@ -582,14 +582,14 @@ used FIFO83. The workstation also had unrelated CPU-saturating Julia tasks.
 Strict thread placement, first-use characterization, and an uncontended
 latency comparison remain in the selected increment.
 
-The Copper pixel sender still starts its timer during `wfsSimulator` startup.
-Its `-sync` mode waits for another simulator's trigger and does not provide a
-launcher-controlled ready/release gate. The strict launcher therefore cannot
-inspect every sender thread before the first packet using this source. A
-maintained source readiness and release interface is required before that
-RTC-DEV-019 pre-ingress claim can be made. HEART is to remain unchanged in
-this RTC increment, so the launcher records this as an explicit measurement
-limit and does not claim pre-ingress sender placement.
+The timer-driven Copper sender starts its clock during `wfsSimulator`
+startup, before the launcher can inspect its threads. HEART's existing
+`-wfs 1 -sync 1` mode has a ready semaphore and an external frame trigger.
+The later opt-in [source gate](../benchmark/COPPER_GATED_SOURCE.md) uses that
+interface without changing HEART. It verifies the sender and companion
+pacer before releasing the first trigger and records the resulting distinct
+source-clock configuration. The timer-driven results still have no
+pre-ingress sender placement claim.
 
 The managed Copper RTC runner now captures pre-ingress and post-replay thread
 snapshots, maps Julia's PipeWireAO JLL to the selected installation, and defaults
@@ -660,6 +660,19 @@ fixed, so these measurements do not establish an uncontended latency ranking.
 Source pre-ingress thread inspection, exact Julia owner pin identity, cold
 graph first-use isolation, and controlled placement/memory experiments remain
 open. RTC-DEV-019 remains partial.
+
+The opt-in gated-source path subsequently qualified one 1,024-frame
+row-block and one complete-frame HEART/FGN/JFG comparison. It inspected all
+live source, pacer, and wrapper threads at CPU 12 / FIFO20 before release,
+recorded 1,024 rational 474 Hz trigger targets per RTC, and retained exact
+WFS/DM delivery and command-vector parity. The
+[gated-source report](../benchmark/COPPER_GATED_SOURCE.md) separates these
+runs from the timer-driven series and retains one earlier FGN startup
+failure before pixel ingress. Six unrelated CPU-saturating Julia processes
+were still active. The source gate closes the pre-ingress sender-inspection
+gap for this opt-in mode; cold graph first use, exact algorithm-worker pin
+identity, complete explicit process memory/loop settings, and controlled
+latency comparisons remain open. RTC-DEV-019 remains partial.
 
 ## Deferred capabilities
 

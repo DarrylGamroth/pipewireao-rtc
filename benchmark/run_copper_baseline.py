@@ -72,7 +72,8 @@ def archive_source_state(root: Path, destination: Path) -> dict[str, Any]:
         if (relative.parts[0] not in {"benchmark", "benchmarks", "scripts", "src",
                                    "source", "docs", "doc", "fixtures", "config"}
                 or source.is_symlink() or not source.is_file()
-                or source.suffix not in {".py", ".jl", ".sh", ".md", ".toml", ".conf", ".json"}):
+                or source.suffix not in {".c", ".h", ".py", ".jl", ".sh",
+                                         ".md", ".toml", ".conf", ".json"}):
             continue
         record: dict[str, Any] = {"path": str(relative), "sha256": sha256(source),
                                   "bytes": source.stat().st_size}
@@ -273,6 +274,8 @@ def main() -> None:
     parser.add_argument("--frames", type=int, default=1024)
     parser.add_argument("--jfg-graph-warmup", choices=("offline", "none"), default="offline",
                         help="recorded JFG first-use policy (default: offline)")
+    parser.add_argument("--gated-source", action="store_true",
+                        help="hold HEART's unchanged -sync pixel source until its threads are verified")
     parser.add_argument("--pipewire-prefix", type=Path, default=Path("/opt/pipewireao"))
     parser.add_argument("--heart-root", type=Path, default=HEART)
     parser.add_argument("--revolt-config-dir", type=Path,
@@ -298,6 +301,8 @@ def main() -> None:
         parser.error("--frames must be in 1..1024")
     if args.repeats < 1:
         parser.error("--repeats must be positive")
+    if args.gated_source and args.strict_placement_profile is None:
+        parser.error("--gated-source requires --strict-placement-profile")
 
     output = args.output_dir.resolve()
     if output.exists():
@@ -308,6 +313,9 @@ def main() -> None:
     native_daemon = args.pipewire_prefix / "bin/pipewire-ao"
     native_module = (args.pipewire_prefix / "lib/x86_64-linux-gnu/pipewire-ao-0.3"
                      / "libpipewire-module-ndarray-filter-chain.so")
+    gate_wrapper = ROOT / "benchmark/gated_wfs_simulator.py"
+    pacer_source = ROOT / "benchmark/wfs_sync_pacer.c"
+    source_executable = gate_wrapper if args.gated_source else args.wfs_simulator
     required = (cube, native_daemon, native_module,
                 args.pipewire_prefix / "lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so",
                 args.heart_root / "source/template/bin/scaoTemplate",
@@ -320,7 +328,8 @@ def main() -> None:
                 args.fgn_root / "scripts/run_fgn_copper_fullframe_live.py",
                 args.fgn_fullframe_root / "target/release/libcalculon_fgn_bundle.so",
                 args.jfg_root / "benchmark/run_shared_copper_fits.jl", args.wfs_simulator,
-                args.heart_cpu_map, args.heart_thread_map, Path(__file__).resolve())
+                args.heart_cpu_map, args.heart_thread_map, Path(__file__).resolve(),
+                *((gate_wrapper, pacer_source) if args.gated_source else ()))
     for path in required:
         if not path.exists():
             parser.error(f"required path is absent: {path}")
@@ -375,6 +384,19 @@ def main() -> None:
         parser.error(f"source FIFO placement preflight failed: {source_probe.stderr.strip()}")
 
     output.mkdir(parents=True)
+    pacer_binary = None
+    pacer_build = None
+    if args.gated_source:
+        pacer_binary = output / "wfs-sync-pacer"
+        build_argv = ["cc", "-O2", "-std=c11", "-Wall", "-Wextra", "-Werror",
+                      "-pthread", str(pacer_source), "-o", str(pacer_binary)]
+        built = subprocess.run(build_argv,
+                               text=True, capture_output=True, check=False)
+        require_exact(built.returncode == 0, f"WFS pacer build failed: {built.stderr}")
+        pacer_build = {"argv": build_argv, "compiler_version":
+                       subprocess.check_output(["cc", "--version"], text=True).splitlines()[0],
+                       "source_sha256": sha256(pacer_source),
+                       "binary_sha256": sha256(pacer_binary)}
     rtprio_limit = resource.getrlimit(resource.RLIMIT_RTPRIO)
     memlock_limit = resource.getrlimit(resource.RLIMIT_MEMLOCK)
     manifest: dict[str, Any] = {
@@ -383,6 +405,11 @@ def main() -> None:
         "rtc_dev_019_qualified": False,
         "mode": args.mode, "repeats": args.repeats, "frames": args.frames,
         "frame_rate_hz": 474, "readout_us": 2000, "clipping_feedback": True,
+        "source_clock": "gated-posix-semaphore" if args.gated_source else "wfsSimulator-timer",
+        "source_gate_scope": ("pre-release source/pacer/wrapper thread placement and exact trigger count; "
+                              "trigger lateness is observed without an acceptance bound"
+                              if args.gated_source else None),
+        "gated_pacer_build": pacer_build,
         "jfg_graph_warmup": args.jfg_graph_warmup,
         "verify_placement": args.verify_placement,
         "strict_placement_profile": str(thread_profile) if thread_profile else None,
@@ -413,7 +440,8 @@ def main() -> None:
         "revolt_config_sha256": {str(path): sha256(path) for path in
                                  sorted(args.revolt_config_dir.iterdir()) if path.is_file()},
         "binary_sha256": {str(path): sha256(path) for path in
-                          (*required, *((verifier,) if args.verify_placement else ())) if path.is_file()},
+                          (*required, *((verifier,) if args.verify_placement else ()),
+                           *((pacer_binary,) if pacer_binary is not None else ())) if path.is_file()},
         "runs": [], "qualified": False,
     }
     manifest_path = output / "manifest.json"
@@ -441,12 +469,26 @@ def main() -> None:
             if thread_profile is not None:
                 for environment in (heart_env, fgn_env, jfg_env):
                     environment["PIPEWIREAO_RTC_THREAD_PROFILE"] = str(thread_profile)
+            if args.gated_source:
+                assert pacer_binary is not None
+                for environment, report_path in (
+                    (heart_env, heart_dir / "wfs-gate.json"),
+                    (fgn_env, fgn_dir / "wfs-gate.json"),
+                    (jfg_env, run / "jfg-wfs-gate.json"),
+                ):
+                    environment.update({
+                        "PIPEWIREAO_RTC_WFS_REAL": str(args.wfs_simulator.resolve()),
+                        "PIPEWIREAO_RTC_WFS_PACER": str(pacer_binary),
+                        "PIPEWIREAO_RTC_WFS_GATE_REPORT": str(report_path),
+                        "PIPEWIREAO_RTC_WFS_SOURCE_CPUS": args.source_core,
+                        "PIPEWIREAO_RTC_WFS_SOURCE_POLICY": f"fifo:{source_priority}",
+                    })
             commands = {
                 "heart": [str(args.jfg_root / "benchmark/heart/run_copper_aos_matched.sh"),
                           "--frames", str(args.frames), "--period", period, "--readout-us", "2000",
                           "--command-limit-um", "0.8", "--output", str(heart_dir), "--fits", str(cube),
                           "--heart-root", str(args.heart_root), "--revolt-config", str(args.revolt_config_dir),
-                          "--wfs-simulator", str(args.wfs_simulator),
+                          "--wfs-simulator", str(source_executable),
                           "--cpu-map", str(args.heart_cpu_map), "--thread-map", str(args.heart_thread_map),
                           "--source-core", args.source_core, "--source-rt-priority", args.source_rt_priority,
                           "--ingress-mode", heart_mode],
@@ -459,13 +501,13 @@ def main() -> None:
                         "--plugin", str(args.fgn_fullframe_root / "target/release/libcalculon_fgn_bundle.so"),
                         "--heart-plugin", str(args.pipewire_prefix / "lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so"),
                         "--config-dir", str(args.revolt_config_dir), "--cube", str(cube),
-                        "--wfs-simulator", str(args.wfs_simulator)],
+                        "--wfs-simulator", str(source_executable)],
                 "jfg": ["julia", "--startup-file=no", f"--project={args.jfg_root / 'benchmark'}",
                         str(args.jfg_root / "benchmark/run_shared_copper_fits.jl"), "--fits", str(cube),
                         "--native-prefix", str(args.pipewire_prefix), "--profile", "matched",
                         "--revolt-config-dir", str(args.revolt_config_dir), "--pixel-source", "heart-wfs",
                         "--heart-plugin", str(args.pipewire_prefix / "lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so"),
-                        "--wfs-simulator", str(args.wfs_simulator), "--frames", str(args.frames),
+                        "--wfs-simulator", str(source_executable), "--frames", str(args.frames),
                         "--frame-rate-hz", "474", "--readout-us", "2000", "--clipping-feedback", "true",
                         "--command-limit-um", "0.8", "--ingress-mode", jfg_mode,
                         "--graph-warmup", args.jfg_graph_warmup,
@@ -518,6 +560,21 @@ def main() -> None:
                                        for system, phases in placement_paths.items()}
             record["runner_reports"] = {"heart": str(heart_dir / "qualification.json"),
                                         "fgn": str(fgn_dir / "report.json"), "jfg": str(jfg_report)}
+            if args.gated_source:
+                gate_paths = {"heart": heart_dir / "wfs-gate.json",
+                              "fgn": fgn_dir / "wfs-gate.json",
+                              "jfg": run / "jfg-wfs-gate.json"}
+                record["source_gates"] = {}
+                for owner, gate_path in gate_paths.items():
+                    gate = json_file(gate_path)
+                    require_exact(gate.get("qualified") is True and gate.get("frames") == args.frames,
+                                  f"{owner} gated pixel source did not qualify: {gate_path}")
+                    require_exact(gate.get("trigger_schedule", {}).get("count") == args.frames,
+                                  f"{owner} trigger schedule is incomplete: {gate_path}")
+                    require_exact(set(gate.get("before_release", {})) ==
+                                  {"wrapper", "source", "pacer"},
+                                  f"{owner} has no complete pre-release thread inspection")
+                    record["source_gates"][owner] = str(gate_path)
             comparisons: dict[str, str] = {}
             compare = args.jfg_root / "benchmark/heart/compare_command_vectors.py"
             pairs = {

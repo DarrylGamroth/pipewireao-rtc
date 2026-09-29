@@ -538,3 +538,16 @@ HEART→FGN→JFG order, and the source still has no pre-ingress release gate.
 The latency spread therefore does not establish an uncontended performance
 ranking or the complete RTC-DEV-019 placement claim. Offline graph warmup was
 used; cold-graph first use remains a separate experiment.
+
+## Gated pixel-source experiment, 2026-09-29
+
+The opt-in [Copper WFS source gate](COPPER_GATED_SOURCE.md) uses HEART's
+unchanged synchronized simulator with a native companion pacer. It inspects
+every live source and pacer thread before the first trigger and records the
+offered trigger schedule. One final 1,024-frame row-block run and one
+complete-frame run qualified for HEART, FGN, and JFG with exact WFS and DM
+delivery, strict placement, and command-vector parity. The gated source
+replaces the simulator's timer, so its latency samples form a separate
+source-clock configuration from the timer-driven results above. The linked
+record includes packet phases, trigger lateness, an earlier pre-ingress FGN
+startup failure, and the remaining limits on a clean latency ranking.
