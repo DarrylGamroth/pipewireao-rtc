@@ -596,6 +596,16 @@ failure when page backing is unavailable. The three-repeat, first-use, and
 progressive qualifications remain open, so
 RTC-DEV-019 remains partial.
 
+The managed complete-frame wire path subsequently passed three independent
+1,024-frame runs each for native FGN and JuliaFilterGraph at 474 Hz, with the
+same FITS cube, strict role profile, numerical vector reference, and packet
+qualification. [Copper evidence](../benchmark/COPPER.md) retains the per-run
+p50/p99 spread and raw report paths. This closes the repeated managed
+complete-frame delivery measurement on this host; it does not establish a
+cross-implementation latency ranking because ambient load was not controlled.
+HEART/FGN/JFG progressive repetitions, first-use separation, and source
+pre-ingress thread inspection remain open.
+
 An opt-in Ryzen thread profile now checks exact policy and affinity counts at
 each runner's pre-ingress and post-replay boundary. It exposed the FGN daemon's
 missing RT loop before pixels were sent. A separate FGN laboratory setting

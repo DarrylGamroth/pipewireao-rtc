@@ -126,6 +126,29 @@ terminal p50/p99 was 152/279 µs. The raw reports are
 Ambient load was not controlled across the four runs, so these values do not
 establish a comparative ranking.
 
+Three further independent 1,024-frame managed replays per controller passed
+the strict placement, page-backing, numerical, ordered-delivery, schedule,
+and Standard-DM wire checks at 474 Hz. Runs alternated native and Julia. The
+table shows each run's percentile in sequence; times are microseconds and
+are not pooled.
+
+| Controller | First WFS packet → DM p50 | First packet p99 | Terminal packet → DM p50 | Terminal packet p99 |
+| --- | --- | --- | --- | --- |
+| Native FGN | 1,239 / 1,149 / 1,236 | 1,377 / 1,287 / 1,371 | 241 / 152 / 236 | 376 / 289 / 373 |
+| JuliaFilterGraph | 1,156 / 1,132 / 1,139 | 1,265 / 1,407 / 1,226 | 159 / 135 / 140 | 270 / 410 / 227 |
+
+Every run produced 1,024 ordered observer and Standard-DM commands with zero
+WFS drops, buffer starvations, and simulator timer overruns. Native commands
+matched the saved FGN vectors exactly; Julia's maximum difference was
+2.981 × 10⁻⁸ µm. Wire vectors differed from observer demands by at most
+1.491 × 10⁻⁸ µm. The six raw reports and summary are under
+`~/.cache/rtc-managed-copper-wire-series-20260929/`. The recorded RTC
+source revision is `24d24f4`; its sole untracked path during these runs was
+generated `benchmark/__pycache__/` bytecode, now ignored by Git. The
+cross-run spread remains substantial, and competing host load was not
+controlled or sampled throughout the runs. This is repeatability evidence for
+the managed complete-frame paths, not a defensible native-versus-Julia ranking.
+
 One 1,024-frame replay per controller passed this profile at 474 Hz on
 2026-09-29. Both produced 1,024 contiguous demanded commands with zero WFS
 drops, buffer starvations, or simulator timer overruns. The native vectors
