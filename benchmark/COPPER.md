@@ -5,12 +5,20 @@
 The RTC has maintained complete-frame fixtures for
 [`REVOLT Classic (native FGN)`](../fixtures/revolt-classic-native-development.conf),
 [`REVOLT Classic (Julia)`](../fixtures/revolt-classic-julia-development.conf),
-and [`REVOLT Copper (native FGN)`](../fixtures/revolt-copper-native-development.conf).
-The Copper fixture uses the existing HEART WFS source and demanded-command
+[`REVOLT Copper (native FGN)`](../fixtures/revolt-copper-native-development.conf),
+and [`REVOLT Copper (JuliaFilterGraph)`](../fixtures/revolt-copper-julia-development.conf).
+The Copper fixtures use the existing HEART WFS source and demanded-command
 observer from the matched comparison at 474 Hz. The graph input is a 64 × 64
 U16 detector image; the observed 277-element Float32 command is in
 micrometres. The observer is non-actuating. The Standard-DM conversion and
 wire output used by the three-way baseline are outside this RTC fixture.
+
+The managed JuliaFilterGraph island prepares the calibration matched to this
+Copper workload, publishes the graph at the selected rate, and enables RTC session run
+control. `run_copper_rtc.py --controller julia` launches it before the RTC,
+uses the same HEART WFS and observer, and checks ordered delivery and optional
+command-vector equivalence. The runner's Julia path requires the managed
+provider in the JuliaFilterGraph sibling repository.
 
 Render the Copper graph and its startup calibration parameters from the
 maintained FGN generator and the same HEART configuration used by the
@@ -30,7 +38,7 @@ It writes the module arguments, four prepared F32 calibration payloads (eight
 when `--clipping-feedback` is selected), and a
 parameter manifest under `--output-dir`. Keep that directory available for the
 whole session: the FGN host maps the calibration files during graph creation.
-The 474 Hz fixture rate, generated graph rate, and external WFS source rate
+The selected fixture rate, generated graph rate, and external WFS source rate
 must agree. The external source and observer must be running on the selected
 private PipeWire core before loading the RTC fixture. The RTC owns the FGN
 graph and its two links; it does not create those external endpoints.
@@ -46,6 +54,47 @@ python3 benchmark/run_copper_rtc.py \
   --frames 1024 \
   --reference-vectors /path/to/matched/fgn/demanded-um.f32
 ```
+
+To run the Julia graph through the same RTC lifecycle and input source:
+
+```sh
+python3 benchmark/run_copper_rtc.py \
+  --controller julia \
+  --jfg-root ../JuliaFilterGraph.jl \
+  --output-dir /path/to/new/copper-julia-rtc-replay \
+  --frames 1024 \
+  --reference-vectors /path/to/matched/fgn/demanded-um.f32
+```
+
+Both modes load a complete-frame graph and observe demanded commands before
+Standard-DM conversion. `--reference-vectors` compares every Float32 command
+with the first requested frames of the saved native replay at a maximum
+absolute difference of 1 × 10⁻⁶ µm. The output report also requires two WFS
+datagrams and one ordered command per frame, with no WFS drops or buffer
+starvation. A 16-frame replay on 2026-09-29 qualified in each mode against
+the same saved native vectors: native maximum difference 0 and Julia maximum
+difference 2.9802322387695312 × 10⁻⁸ µm. These short runs establish the RTC
+configuration and numerical boundary; they do not establish loss-free
+operation at a sustained offered load or camera-to-DM latency.
+
+`--rate-hz` selects the offered rate and updates the fixture, source, observer,
+graph, and simulator together. Its admitted range is 1–500 Hz because the
+simulator's configured detector readout is 2 ms. The report records the rate,
+WFS counters, Julia callback count when applicable, command identities,
+numerical-comparison status, and post-unload link count. A failed delivery
+check leaves `qualified` false and does not treat a saved vector prefix as a
+valid numerical comparison.
+
+The managed Julia path has not passed a sustained 1,024-frame replay on this
+loaded development host. At 474 Hz one uninstrumented replay published all
+1,024 WFS frames and invoked 1,024 Julia callbacks, but the observer received
+1,022 commands. At 100 Hz, an uninstrumented replay again invoked all 1,024
+callbacks but the observer missed one command. A traced 100 Hz replay published
+all frames, then spent about 63 ms inside the Julia callback for frame 435;
+frames 436–440 did not reach a Julia callback and the observer also missed
+frame 435. These are different observed failure boundaries. The callback
+stall's cause and the output handoff loss remain unproven, so these runs do
+not support a maximum loss-free rate or a Julia-versus-HEART latency ranking.
 
 The retained run at
 `~/.cache/rtc-copper-managed-1024-20260929/report.json` delivered 1,024

@@ -118,6 +118,7 @@ cargo test --features live --test live_private_core -- --ignored --nocapture
 | Classic, JuliaFilterGraph | [`revolt-classic-julia-development.conf`](fixtures/revolt-classic-julia-development.conf) | The same simulated plant and scientific boundary | The same private-core command; it runs after the native fixture |
 | Classic, common input | [`revolt-classic-lockstep-development.conf`](fixtures/revolt-classic-lockstep-development.conf) | One simulated WFS frame → native and Julia controllers → separate HSDM277 command sinks | The private-core command above with `PIPEWIREAO_RTC_LIVE_SCOPE=revolt-lockstep` |
 | Copper, native FGN | [`revolt-copper-native-development.conf`](fixtures/revolt-copper-native-development.conf) | HEART WFS 64 × 64 U16 detector frame → 277 demanded commands in micrometres | [`run_copper_rtc.py`](benchmark/run_copper_rtc.py), documented in [COPPER.md](benchmark/COPPER.md) |
+| Copper, JuliaFilterGraph | [`revolt-copper-julia-development.conf`](fixtures/revolt-copper-julia-development.conf) | The same HEART WFS and non-actuating observer through an external graph | [`run_copper_rtc.py --controller julia`](benchmark/run_copper_rtc.py), documented in [COPPER.md](benchmark/COPPER.md) |
 
 The Classic fixtures use the external `REVOLTClassicSimPipeWireHIL.jl` plant,
 the generated controller graph, and a published 277 × 376 reconstructor
@@ -125,6 +126,11 @@ parameter. The Copper replay prepares its calibration in the generated graph
 arguments and uses the shared FITS cube through HEART's WFS source. These are
 different optical systems and command units; their command vectors are not
 interchangeable. Both RTC configurations are complete-frame and non-actuating.
+
+The managed Copper JuliaFilterGraph provider prepares the matched Copper
+calibration, publishes at the selected rate, and enables session run control. Both
+Copper configurations replay the same FITS cube through the same HEART WFS
+source and non-actuating demanded-command observer.
 
 For the latest/hold fixture, set `PIPEWIREAO_RTC_LIVE_SCOPE=latest-hold`. The
 Julia environment selected by `PIPEWIREAO_RTC_PIPEWIREAO_JULIA` must resolve

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the full-frame Copper FGN graph under pipewireao-rtc on a private core."""
+"""Run a full-frame Copper controller under pipewireao-rtc on a private core."""
 
 from __future__ import annotations
 
@@ -57,12 +57,24 @@ def main() -> None:
                         default=RTC.parent / "JuliaFilterGraph.jl/benchmark/data/revolt-copper-aos-openloop-1024f-u16.fits")
     parser.add_argument("--rtc-bin", type=Path, default=RTC / "target/debug/pipewireao-rtc")
     parser.add_argument("--pipewire-prefix", type=Path, default=Path("/opt/pipewireao"))
+    parser.add_argument("--controller", choices=("native", "julia"), default="native",
+                        help="controller implementation to admit through the RTC")
+    parser.add_argument("--jfg-root", type=Path,
+                        default=RTC.parent / "JuliaFilterGraph.jl",
+                        help="JuliaFilterGraph worktree providing the external controller")
+    parser.add_argument("--pipewireao-julia-root", type=Path,
+                        default=RTC.parent / "PipeWireAO.jl",
+                        help="local PipeWireAO.jl package for the Julia provider")
     parser.add_argument("--frames", type=int, default=16)
+    parser.add_argument("--rate-hz", type=int, default=474,
+                        help="offered frame rate; 2 ms detector readout requires at most 500 Hz")
     parser.add_argument("--reference-vectors", type=Path,
                         help="optional demanded-um.f32 from the matched FGN full-frame replay")
     args = parser.parse_args()
     if not 1 <= args.frames <= 1024:
         parser.error("--frames must be in 1..1024")
+    if not 1 <= args.rate_hz <= 500:
+        parser.error("--rate-hz must be in 1..500 for the 2 ms readout")
     output = args.output_dir.resolve()
     if output.exists():
         parser.error(f"output directory already exists: {output}")
@@ -74,29 +86,58 @@ def main() -> None:
     )
 
     installation = pipewire_installation(None, args.pipewire_prefix)
-    bundle = require(args.fgn_bundle, "FGN Copper bundle")
     heart = require(args.heart_plugin, "HEART SPA plugin")
     cube = require(args.cube, "Copper FITS cube")
     simulator = require(args.wfs_simulator, "wfsSimulator")
     rtc_bin = require(args.rtc_bin, "pipewireao-rtc executable")
+    bundle = require(args.fgn_bundle, "FGN Copper bundle") if args.controller == "native" else None
+    jfg_root = args.jfg_root.resolve()
+    pipewireao_julia_root = args.pipewireao_julia_root.resolve()
+    island_script = jfg_root / "scripts/run_pipewire_island.jl"
+    deployment_project = jfg_root / "deployment/Project.toml"
+    if args.controller == "julia":
+        require(island_script, "JuliaFilterGraph PipeWire island script")
+        require(deployment_project, "JuliaFilterGraph deployment project")
+        require(pipewireao_julia_root / "Project.toml", "local PipeWireAO.jl project")
     output.mkdir(parents=True)
-    env = make_environment(output, heart, 474, installation)
-    observer_bin = compile_observer(output, env, 474, installation)
-    subprocess.run(
-        [sys.executable, str(RTC / "benchmark/render_revolt_copper_graph.py"),
-         "--algorithms-root", str(args.algorithms_root),
-         "--heart-config", str(args.heart_config),
-         "--fgn-bundle", str(bundle), "--clipping-feedback",
-         "--output-dir", str(output)],
-        check=True,
-    )
-    env["PIPEWIREAO_RTC_GRAPH_COPPER_NATIVE"] = str(
-        output / "revolt-copper-rtc-graph.conf"
-    )
+    env = make_environment(output, heart, args.rate_hz, installation)
+    observer_bin = compile_observer(output, env, args.rate_hz, installation)
+    if args.controller == "native":
+        subprocess.run(
+            [sys.executable, str(RTC / "benchmark/render_revolt_copper_graph.py"),
+             "--algorithms-root", str(args.algorithms_root),
+             "--heart-config", str(args.heart_config),
+             "--fgn-bundle", str(bundle), "--clipping-feedback",
+             "--rate-hz", str(args.rate_hz),
+             "--output-dir", str(output)],
+            check=True,
+        )
+        env["PIPEWIREAO_RTC_GRAPH_COPPER_NATIVE"] = str(
+            output / "revolt-copper-rtc-graph.conf"
+        )
     processes = []
-    report = {"frames": args.frames, "rate_hz": 474, "readout_us": 2000,
-              "fixture": str(RTC / "fixtures/revolt-copper-native-development.conf"),
-              "cube": str(cube), "bundle": str(bundle), "qualified": False}
+    island_quit_request = output / "julia-island.quit"
+    fixture = require(RTC / f"fixtures/revolt-copper-{args.controller}-development.conf",
+                      f"Copper {args.controller} RTC fixture")
+    if args.rate_hz != 474:
+        rate_fixture = output / fixture.name
+        original = fixture.read_text()
+        anchor = "rate = 474/1"
+        if original.count(anchor) != 1:
+            raise RuntimeError(f"unexpected rate declaration in {fixture}")
+        rate_fixture.write_text(original.replace(anchor, f"rate = {args.rate_hz}/1"))
+        fixture = rate_fixture
+    report = {"frames": args.frames, "rate_hz": args.rate_hz, "readout_us": 2000,
+              "controller": args.controller, "fixture": str(fixture),
+              "cube": str(cube), "qualified": False,
+              "numerical_comparison": "not_evaluated" if args.reference_vectors is not None
+              else "not_requested"}
+    if args.reference_vectors is not None:
+        report["reference_vectors"] = str(args.reference_vectors.resolve())
+    if bundle is not None:
+        report["bundle"] = str(bundle)
+    if args.controller == "julia":
+        report["jfg_root"] = str(jfg_root)
     try:
         daemon, daemon_log = start(
             [str(installation.daemon), "-c", "fgn-copper-live.conf"],
@@ -113,9 +154,31 @@ def main() -> None:
         )
         processes.append((observer, observer_log, "q"))
         wait_text(output / "observer.log", "CONNECT_ACCEPTED", process=observer)
+        if args.controller == "julia":
+            env.update({
+                "JULIA_LOAD_PATH": f"{pipewireao_julia_root}:@:@stdlib",
+                "JULIA_RTC_WORKLOAD": "copper-fits-full-frame-feedback",
+                "JULIA_RTC_COPPER_CONFIG_DIR": str(args.heart_config.resolve()),
+                "JULIA_RTC_FRAME_RATE": str(args.rate_hz),
+                "JULIA_RTC_INGRESS_MODE": "frame",
+                "JULIA_RTC_CPU_WORKERS": "0",
+                "JULIA_RTC_COMMAND_LIMIT_UM": "0.8",
+                "JULIA_ISLAND_QUIT_REQUEST": str(island_quit_request),
+                "JULIA_RTC_MANAGED_NODE_NAME": "calculon-revolt-copper-fullframe",
+                "JULIA_RTC_MANAGED_REMOTE": "pipewire-ao-0",
+            })
+            island, island_log = start(
+                ["julia", "--startup-file=no", "--threads=2",
+                 f"--project={jfg_root / 'deployment'}", str(island_script),
+                 "progressive-rtc-benchmark"],
+                env, output / "julia-island.log", cwd=jfg_root,
+            )
+            processes.append((island, island_log, None))
+            wait_text(output / "julia-island.log", "JULIA_ISLAND_CONNECT_ACCEPTED", 60,
+                      island)
         rtc, rtc_log = start(
             [str(rtc_bin), "--config",
-             str(RTC / "fixtures/revolt-copper-native-development.conf"),
+             str(fixture),
              "--hold"], env, output / "rtc.log", stdin=True,
         )
         processes.append((rtc, rtc_log, "quit\n"))
@@ -124,12 +187,12 @@ def main() -> None:
         (output / "input.fits").symlink_to(cube)
         replay, replay_log = start(
             [str(simulator), "-file", "input.fits", "-tPort", "6000",
-             "-period", repr(1.0 / 474), "-readout", "2000", "-lines", "32",
+             "-period", repr(1.0 / args.rate_hz), "-readout", "2000", "-lines", "32",
              "-numFrames", str(args.frames)],
             env, output / "wfs-simulator.log", cwd=output,
         )
         processes.append((replay, replay_log, None))
-        replay.wait(timeout=args.frames / 474 + 15)
+        replay.wait(timeout=args.frames / args.rate_hz + 15)
         if replay.returncode != 0:
             raise RuntimeError("wfsSimulator failed")
         overruns = re.findall(r"Timer\[0\] overrun: (\d+)",
@@ -148,8 +211,42 @@ def main() -> None:
         processes.remove((rtc, rtc_log, "quit\n"))
         if rtc.returncode != 0 or "OFFLINE" not in (output / "rtc.log").read_text():
             raise RuntimeError("RTC did not unload cleanly")
+        after_unload = command(
+            [str(installation.tool("pwao-dump")), "-r", "pipewire-ao-0", "--raw"], env,
+        )
+        (output / "pipewire-after-unload.json").write_text(after_unload)
+        nodes = {item.get("info", {}).get("props", {}).get("node.name")
+                 for item in json.loads(after_unload)
+                 if item.get("type") == "PipeWire:Interface:Node"}
+        required_external = {"rtc-heart-wfs-row-source", "julia-fits-command-observer"}
+        if args.controller == "julia":
+            required_external.add("calculon-revolt-copper-fullframe")
+        if not required_external <= nodes:
+            raise RuntimeError("RTC unload removed an external Copper endpoint: "
+                               f"{sorted(required_external - nodes)}")
+        if args.controller == "native" and "calculon-revolt-copper-fullframe" in nodes:
+            raise RuntimeError("RTC-owned native Copper graph survived unload")
+        remaining_links = [item for item in json.loads(after_unload)
+                           if item.get("type") == "PipeWire:Interface:Link"]
+        report["post_unload_links"] = len(remaining_links)
+        if remaining_links:
+            raise RuntimeError("RTC-owned Copper links survived unload")
         stop(observer, observer_log, control="q")
         processes.remove((observer, observer_log, "q"))
+        if args.controller == "julia":
+            island_quit_request.touch()
+            stop(island, island_log)
+            processes.remove((island, island_log, None))
+            if island.returncode != 0:
+                raise RuntimeError("JuliaFilterGraph island did not stop cleanly")
+            island_text = (output / "julia-island.log").read_text(errors="replace")
+            callbacks = re.findall(r"JULIA_FULL_FRAME_RESULT callbacks=(\d+)", island_text)
+            if len(callbacks) != 1:
+                raise RuntimeError("JuliaFilterGraph island did not report one callback count")
+            report["julia_callbacks"] = int(callbacks[0])
+            report["wfs_frames_without_julia_callback"] = (
+                args.frames - report["julia_callbacks"]
+            )
         with (output / "demanded.csv").open(newline="") as stream:
             sequences = [int(row["sequence"]) for row in csv.DictReader(stream)]
         counts = Counter(sequences)
@@ -175,6 +272,11 @@ def main() -> None:
                 f"observed={len(sequences)} missing={missing} "
                 f"repeated={repeated} unexpected={unexpected}"
             )
+        if args.controller == "julia" and report["julia_callbacks"] != args.frames:
+            raise RuntimeError(
+                "JuliaFilterGraph callback count does not match the requested frames: "
+                f"{report['julia_callbacks']} != {args.frames}"
+            )
         demanded = np.fromfile(output / "demanded-um.f32", dtype="<f4")
         if demanded.size != args.frames * 277:
             raise RuntimeError(f"demanded vector count is {demanded.size // 277}, expected {args.frames}")
@@ -187,10 +289,17 @@ def main() -> None:
             difference = float(np.max(np.abs(demanded - reference)))
             report["max_reference_difference_um"] = difference
             if not np.isfinite(difference) or difference > 1e-6:
+                report["numerical_comparison"] = "failed"
                 raise RuntimeError(f"RTC demanded vectors differ from FGN reference by {difference} µm")
+            report["numerical_comparison"] = "passed"
         report["qualified"] = True
         print(json.dumps(report, indent=2))
+    except Exception as error:
+        report["failure"] = str(error)
+        raise
     finally:
+        if args.controller == "julia":
+            island_quit_request.touch(exist_ok=True)
         for process, stream, control in reversed(processes):
             stop(process, stream, control=control)
         (output / "report.json").write_text(json.dumps(report, indent=2) + "\n")
