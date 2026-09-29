@@ -585,3 +585,35 @@ RTC-DEV-017 are implemented and their verification intent is covered for the
 small fixtures, the AdaptiveOpticsSim reference fixture, and REVOLT Classic.
 Passing this gate permits only the claim stated in the architecture: a usable,
 non-actuating development RTCW.
+
+## Optional laboratory deployment profile
+
+### RTC-DEV-019 — Verified process and thread placement
+
+For a declared laboratory latency run, the companion launcher MUST record the
+exact source revisions, binaries, graph configuration, input data, offered
+frame schedule, readout schedule, and requested process and thread placement.
+It MUST apply each required process CPU mask and scheduling policy before
+frame ingress. The PipeWireAO configuration MUST state the intended data-loop
+affinity, RT priority, idle policy, and `mem.mlock-all` value explicitly. An
+external Graph owner MUST state and apply its own thread placement through its
+maintained runtime interface. The launcher MUST inspect the effective CPU
+affinity and scheduler class and priority of every process thread after
+warmup and before ingress, and record them again after the run. If a required
+setting cannot be applied or verified, the launcher MUST stop before ingress
+and report the failed setting and thread or process.
+
+The run record MUST include exact input and output counts, ordered command
+identities, numerical comparison status, missing or repeated identities,
+first-WFS-packet and terminal-WFS-packet to command latency distributions, startup and
+warmup intervals, and the observed page backing and locked-memory amount of
+each processing process. A run with incomplete delivery MUST NOT contribute
+latency percentiles to a qualified comparison. The launcher MUST NOT add an
+algorithm worker pool, copy ndarray payloads for scheduling, change host power
+or RT-runtime policy, or claim an operational deadline guarantee.
+
+Verification intent (informative): use one recorded Copper FITS cube and one
+pixel source for HEART, FGN, and JFG; reject an unavailable CPU, failed RT or
+memory-lock request, and an unplaced new thread before ingress; inspect the
+effective per-thread policy; then compare at least three independently
+qualified complete-frame and progressive replays at the same offered load.

@@ -470,6 +470,49 @@ This gate unlocks continued algorithm and graph development. It does not
 unlock physical hardware, correction, production operation, or a real-time
 claim.
 
+## Selected next increment: laboratory deployment profile
+
+RTC-ARCH-019 and RTC-DEV-019 select a narrow, non-actuating profile for
+repeatable HEART, FGN, and JFG latency comparisons. It is separate from the
+maintained development gate and does not promote the archived operational RTC
+as a whole.
+
+The implementation order is:
+
+1. Capture a post-install, exact-delivery Copper baseline against the merged
+   `/opt/pipewireao` core and compatible HEART plugin. Preserve the 474 Hz,
+   2,000 µs readout fixture and record process placement and artifact build IDs.
+2. Define one role-to-process launch contract using the existing PipeWireAO
+   configuration and external-owner placement interfaces. Validate CPU sets,
+   RT and memory-lock permissions before launching the pixel source; capture
+   actual per-thread policy after warmup.
+3. Add fail-closed placement and lifecycle handling to a companion launcher.
+   Keep Graph scheduling, workers, and buffer ownership in PipeWireAO, FGN,
+   and the external Graph owner. Do not add another scientific graph format.
+4. Qualify three independent replays per implementation and ingress mode with
+   one corpus, offered schedule, numerical oracle, delivery checks, and
+   first-WFS-packet and terminal-WFS-packet latency distributions. Record first-use and
+   warm results separately. Only then vary one placement or memory policy at
+   a time to explain a measured tail or throughput gap.
+
+The first post-install JFG replay delivered 2,048 WFS packets, 2,048 Graph
+callbacks, and 1,024 ordered DM commands at 474 Hz. Terminal-packet-to-DM
+latency was 224 µs p50 and 468 µs p99. This single run establishes deployment
+function, not a latency regression or a matched three-way result. Its raw
+record is `/home/dgamroth/.cache/copper-merged-opt-jfg-474-20260928.json`.
+
+The [Copper post-install baseline](../benchmark/COPPER.md) now records three
+exact-delivery HEART, FGN, and JFG replays in each of row-block and full-frame
+ingress at that same offered load. Every run emitted 1,024 ordered commands
+and the cross-RTC command vectors agreed within 4.564 × 10⁻⁸ µm. The recorded
+process envelopes passed before/after checks. This is workload and numerical
+evidence, not completion of RTC-DEV-019: the current checks do not require
+specific RT-thread counts or prove the declared Julia and HEART worker pins.
+The FGN daemon loop was observed under SCHED_OTHER, while the JFG island loop
+used FIFO83. The workstation also had unrelated CPU-saturating Julia tasks.
+Strict thread placement, first-use characterization, and an uncontended
+latency comparison remain in the selected increment.
+
 ## Deferred capabilities
 
 The following topics are not active work. Their previous proposals are
