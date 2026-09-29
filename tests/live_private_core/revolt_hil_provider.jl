@@ -542,6 +542,17 @@ function exchange_range!(
             )
             candidate_states = next_states
             parameter_adopted[] = all(last, candidate_states)
+            observed = if all(last, candidate_states)
+                "requested"
+            elseif all(entry -> !last(entry), candidate_states)
+                "previous"
+            else
+                "ambiguous"
+            end
+            println(
+                "REVOLT_HIL_ADOPTION implementation=$implementation sequence=$expected_sequence parameter=$observed",
+            )
+            flush(stdout)
         end
         if isnothing(alternate_control_matrix)
             require_close(
@@ -836,6 +847,8 @@ function main()
                     true;
                     pole=UPDATED_CONTROLLER_POLE,
                 )
+                println("REVOLT_HIL_ADOPTION implementation=native sequence=5 parameter=previous")
+                flush(stdout)
                 println("REVOLT_HIL_NATIVE_PHASE_2_FIRST_DONE sequence=5")
                 flush(stdout)
                 native_second_first_done = true
@@ -963,6 +976,8 @@ function main()
                     true;
                     pole=UPDATED_CONTROLLER_POLE,
                 )
+                println("REVOLT_HIL_ADOPTION implementation=julia sequence=5 parameter=previous")
+                flush(stdout)
                 println("REVOLT_HIL_JULIA_PHASE_2_FIRST_DONE sequence=5")
                 flush(stdout)
                 julia_second_first_done = true

@@ -2300,9 +2300,17 @@ fn run_revolt_classic_reference_case(
         "REVOLT_HIL_NATIVE_PARAMETER_DONE sequence=8",
         &mut runner,
     );
+    assert_revolt_adoption_transition(&hil_log, "native");
     assert_eq!(
         runner.dispatch(LifecycleEvent::Stop).unwrap(),
         LifecycleState::Ready,
+    );
+    assert_revolt_wrong_shape_parameter_requires_retry(
+        &mut runner,
+        &environment["PIPEWIREAO_RTC_PARAMETER_REVOLT"],
+        "reconstruct:reconstructor",
+        2,
+        3,
     );
     let native_second_property = apply_revolt_final_property_update(&mut runner);
     assert_eq!(
@@ -2500,9 +2508,17 @@ fn run_revolt_classic_reference_case(
         "REVOLT_HIL_JULIA_PARAMETER_DONE sequence=8",
         &mut runner,
     );
+    assert_revolt_adoption_transition(&hil_log, "julia");
     assert_eq!(
         runner.dispatch(LifecycleEvent::Stop).unwrap(),
         LifecycleState::Ready,
+    );
+    assert_revolt_wrong_shape_parameter_requires_retry(
+        &mut runner,
+        &environment["PIPEWIREAO_RTC_PARAMETER_REVOLT"],
+        "reconstructor",
+        1,
+        3,
     );
     let julia_second_property = apply_revolt_final_property_update(&mut runner);
     assert_eq!(
@@ -2809,6 +2825,83 @@ fn apply_revolt_runtime_parameter_update(
         "REVOLT parameter update diagnostic: {:?}",
         runner.diagnostic()
     );
+}
+
+fn assert_revolt_adoption_transition(log: &Path, implementation: &str) {
+    let expected = vec![5, 6, 7, 8];
+    let prefix = format!("REVOLT_HIL_ADOPTION implementation={implementation} sequence=");
+    let observations = std::fs::read_to_string(log)
+        .expect("read REVOLT adoption evidence")
+        .lines()
+        .filter_map(|line| {
+            let (sequence, parameter) = line.strip_prefix(&prefix)?.split_once(" parameter=")?;
+            Some((
+                sequence.parse::<u64>().expect("adoption sequence"),
+                parameter.to_owned(),
+            ))
+        })
+        .filter(|(sequence, _)| expected.contains(sequence))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        observations.iter().map(|entry| entry.0).collect::<Vec<_>>(),
+        expected,
+        "missing {implementation} reconstructor-adoption observations"
+    );
+    assert_eq!(observations.first().unwrap().1, "previous");
+    assert_eq!(observations.last().unwrap().1, "requested");
+    let first_requested = observations
+        .iter()
+        .position(|entry| entry.1 == "requested")
+        .expect("requested reconstructor was never observed");
+    assert!(
+        observations[..first_requested]
+            .iter()
+            .all(|entry| entry.1 != "requested")
+            && observations[first_requested..]
+                .iter()
+                .all(|entry| entry.1 != "previous"),
+        "{implementation} reconstructor observations contradict a one-way adoption transition: {observations:?}"
+    );
+}
+
+fn assert_revolt_wrong_shape_parameter_requires_retry(
+    runner: &mut Runner<LiveGraphAdapter>,
+    parameter_path: &Path,
+    parameter_name: &str,
+    expected_nodes: usize,
+    expected_links: usize,
+) {
+    let graph = "pipewireao-rtc-revolt-controller";
+    let bytes = std::fs::read(parameter_path).expect("read calibrated REVOLT reconstructor");
+    let expected_field = format!("graph {graph}.ports.{parameter_name}.format");
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::UpdateParameter {
+                graph: graph.to_owned(),
+                parameter: parameter_name.to_owned(),
+                value: NdArrayParameterValue {
+                    element_type: "F32_LE".to_owned(),
+                    shape: vec![376, 277],
+                    schema: "org.calculon.ao.shwfs-reconstructor/1".to_owned(),
+                    bytes,
+                },
+            })
+            .unwrap(),
+        LifecycleState::Fault,
+        "wrong-shape REVOLT parameter update was accepted"
+    );
+    assert_eq!(
+        runner.diagnostic().map(ScientificDiagnostic::field),
+        Some(expected_field.as_str())
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Retry).unwrap(),
+        LifecycleState::Ready,
+        "wrong-shape parameter retry diagnostic: {:?}",
+        runner.diagnostic()
+    );
+    assert_eq!(runner.executor().status().owned_nodes, expected_nodes);
+    assert_eq!(runner.executor().status().owned_links, expected_links);
 }
 
 fn assert_revolt_property_update_active(
