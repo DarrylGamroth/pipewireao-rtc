@@ -91,6 +91,16 @@ records in total. This closes the named-thread check for this host profile;
 it does not establish an uncontended latency ranking or a general profile
 for other machines.
 
+With a strict profile, the Copper launcher also derives the JFG island's
+explicit PipeWireAO client-loop CPU and FIFO priority from its named
+`data-loop.0` rule. The island receives a private client configuration with
+eventfd idle and `mem.mlock-all=false`; the JFG report records its path and
+hash. Two gated 16-frame three-way replays verified the resulting CPU 0 /
+FIFO83 loop before ingress and after replay. The
+[client-loop record](data/copper_client_loop_evidence_20260929.json) retains
+the manifests and thread evidence. Other clients still use the installed
+generic client configuration.
+
 The resulting JSON includes the requested envelope, command, host, each
 pre-gate map, post-run map when the finish/release handshake is used, `VmLck`,
 and `/proc/<pid>/smaps_rollup`. It is a laboratory record, not a deadline or

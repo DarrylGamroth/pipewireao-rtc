@@ -37,6 +37,18 @@ EXPECTED_CUBE_SHA256 = "880e46b8e45c848a8c2df74e5591731ea161ac7009a02ad29e2fc79f
 VECTOR_TOLERANCE_UM = 1e-6
 
 
+def pinned_data_loop(profile: dict, role: str, name: str) -> tuple[int, int]:
+    """Return the one declared FIFO data loop for a strict laboratory role."""
+    rules = [rule for rule in profile["roles"][role]["required_thread_placements"]
+             if rule.get("name") == name and rule["count"] == 1
+             and parse_thread_policy(rule["policy"])[0] == "fifo"
+             and len(parse_cpu_list(rule["cpus"])) == 1]
+    if len(rules) != 1:
+        raise ValueError(f"strict profile requires one pinned FIFO {role} {name}")
+    return (next(iter(parse_cpu_list(rules[0]["cpus"]))),
+            parse_thread_policy(rules[0]["policy"])[1])
+
+
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as source:
@@ -343,6 +355,7 @@ def main() -> None:
     thread_profile = None
     thread_profile_sha256 = None
     fgn_loop: tuple[int, int] | None = None
+    jfg_loop: tuple[int, int] | None = None
     if args.strict_placement_profile is not None:
         if not args.verify_placement:
             parser.error("--strict-placement-profile requires --verify-placement")
@@ -355,13 +368,11 @@ def main() -> None:
                           "julia-heart-std-dm-command-adapter", "daemon", "island", "observer", "adapter"}
         if set(profile["roles"]) != required_roles:
             parser.error(f"strict thread profile must define exactly {sorted(required_roles)}")
-        loop_rules = [rule for rule in profile["roles"]["pipewire-ao-daemon"]["required_thread_placements"]
-                      if parse_thread_policy(rule["policy"])[0] == "fifo" and rule["count"] == 1
-                      and len(parse_cpu_list(rule["cpus"])) == 1]
-        if len(loop_rules) != 1:
-            parser.error("strict profile requires one pinned FIFO daemon data-loop placement")
-        fgn_loop = (next(iter(parse_cpu_list(loop_rules[0]["cpus"]))),
-                    parse_thread_policy(loop_rules[0]["policy"])[1])
+        try:
+            fgn_loop = pinned_data_loop(profile, "pipewire-ao-daemon", "rtc-data-loop")
+            jfg_loop = pinned_data_loop(profile, "island", "data-loop.0")
+        except ValueError as error:
+            parser.error(str(error))
         thread_profile_sha256 = sha256(thread_profile)
     try:
         source_cpus = parse_cpu_list(args.source_core)
@@ -469,6 +480,9 @@ def main() -> None:
             if thread_profile is not None:
                 for environment in (heart_env, fgn_env, jfg_env):
                     environment["PIPEWIREAO_RTC_THREAD_PROFILE"] = str(thread_profile)
+                assert jfg_loop is not None
+                jfg_env["JULIA_RTC_LAB_CLIENT_LOOP_CPU"] = str(jfg_loop[0])
+                jfg_env["JULIA_RTC_LAB_CLIENT_LOOP_RT_PRIORITY"] = str(jfg_loop[1])
             if args.gated_source:
                 assert pacer_binary is not None
                 for environment, report_path in (

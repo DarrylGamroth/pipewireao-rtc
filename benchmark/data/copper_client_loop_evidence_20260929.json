@@ -1,0 +1,141 @@
+{
+  "limits": [
+    "Two short functional replays do not establish a latency ranking.",
+    "Daemon, observer, adapter, and other PipeWireAO clients still use the installed generic client.conf.",
+    "The six CPU-saturating VS Code Julia analysis processes remained active."
+  ],
+  "runs": [
+    {
+      "client_config": {
+        "path": "/home/dgamroth/.cache/jfg-shared-copper-fits-h9jJQQ/island-config/client.conf",
+        "requested_cpu": 0,
+        "requested_rt_priority": 83,
+        "sha256": "bc185bbebd85df48f5f6227d50c0a1444ab1e6ec853682844b62e63e4eb38a6f"
+      },
+      "frames": 16,
+      "heart_fgn_jfg": {
+        "fgn": {
+          "captured_dm_commands": 16,
+          "captured_wfs_packets": 32,
+          "qualified": true,
+          "wfs_payload_mismatch_packets": 0
+        },
+        "heart": {
+          "captured_dm_commands": 16,
+          "captured_wfs_packets": 32,
+          "qualified": true,
+          "wfs_payload_mismatch_packets": 0
+        },
+        "jfg": {
+          "captured_dm_commands": 16,
+          "captured_wfs_packets": 32,
+          "qualified": true,
+          "wfs_payload_mismatch_packets": 0
+        }
+      },
+      "island_loop_placement": {
+        "after_replay": {
+          "record": "/home/dgamroth/.cache/rtc-copper-client-loop-row-16-r2-20260929/run-001/jfg-island-after-replay-placement.json",
+          "sha256": "b2e855bf630f7a62380efb45224e65b7f6b9b833233589a7ac7cba02fd657826",
+          "thread": {
+            "cpus": [
+              0
+            ],
+            "name": "data-loop.0",
+            "policy": "fifo",
+            "priority": 83,
+            "tid": 2723368
+          }
+        },
+        "before_ingress": {
+          "record": "/home/dgamroth/.cache/rtc-copper-client-loop-row-16-r2-20260929/run-001/jfg-island-before-ingress-placement.json",
+          "sha256": "e0ce5bc6d0a34f35dfdfdd1cf764377e160a5d04d896e94e045830107a337eca",
+          "thread": {
+            "cpus": [
+              0
+            ],
+            "name": "data-loop.0",
+            "policy": "fifo",
+            "priority": 83,
+            "tid": 2723368
+          }
+        }
+      },
+      "manifest": "/home/dgamroth/.cache/rtc-copper-client-loop-row-16-r2-20260929/manifest.json",
+      "manifest_sha256": "e9c9997d04154760cbf443f2e587c024f8060d1b6fb450d7c9a80b723c140a9c",
+      "mode": "row-block",
+      "qualified": true,
+      "rate_hz": 474,
+      "readout_us": 2000
+    },
+    {
+      "client_config": {
+        "path": "/home/dgamroth/.cache/jfg-shared-copper-fits-WJ4l5d/island-config/client.conf",
+        "requested_cpu": 0,
+        "requested_rt_priority": 83,
+        "sha256": "bc185bbebd85df48f5f6227d50c0a1444ab1e6ec853682844b62e63e4eb38a6f"
+      },
+      "frames": 16,
+      "heart_fgn_jfg": {
+        "fgn": {
+          "captured_dm_commands": 16,
+          "captured_wfs_packets": 32,
+          "qualified": true,
+          "wfs_payload_mismatch_packets": 0
+        },
+        "heart": {
+          "captured_dm_commands": 16,
+          "captured_wfs_packets": 32,
+          "qualified": true,
+          "wfs_payload_mismatch_packets": 0
+        },
+        "jfg": {
+          "captured_dm_commands": 16,
+          "captured_wfs_packets": 32,
+          "qualified": true,
+          "wfs_payload_mismatch_packets": 0
+        }
+      },
+      "island_loop_placement": {
+        "after_replay": {
+          "record": "/home/dgamroth/.cache/rtc-copper-client-loop-fullframe-16-20260929/run-001/jfg-island-after-replay-placement.json",
+          "sha256": "45ef42df805639e6fe19a5492195bf9e09867df7d1c58506bd5b5f7a59a73385",
+          "thread": {
+            "cpus": [
+              0
+            ],
+            "name": "data-loop.0",
+            "policy": "fifo",
+            "priority": 83,
+            "tid": 2724965
+          }
+        },
+        "before_ingress": {
+          "record": "/home/dgamroth/.cache/rtc-copper-client-loop-fullframe-16-20260929/run-001/jfg-island-before-ingress-placement.json",
+          "sha256": "72aa344aabef0f7e2a8f0e7d510c69d45aeee80a6d2e983d76fcb03b09d19cff",
+          "thread": {
+            "cpus": [
+              0
+            ],
+            "name": "data-loop.0",
+            "policy": "fifo",
+            "priority": 83,
+            "tid": 2724965
+          }
+        }
+      },
+      "manifest": "/home/dgamroth/.cache/rtc-copper-client-loop-fullframe-16-20260929/manifest.json",
+      "manifest_sha256": "3d8c6849eabdb42353f25cedd10f19b3f055c1672476d0f806380a9669a99972",
+      "mode": "complete-frame",
+      "qualified": true,
+      "rate_hz": 474,
+      "readout_us": 2000
+    }
+  ],
+  "schema_version": 1,
+  "scope": "Opt-in Julia island PipeWireAO client loop configuration on the Ryzen Copper laboratory profile",
+  "source_revisions": {
+    "jfg_base": "f4cbe52",
+    "rtc_base": "84cdcbf"
+  }
+}

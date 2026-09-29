@@ -27,6 +27,16 @@ REPORT_SPEC.loader.exec_module(REPORT)
 
 
 class CapturePhaseTests(unittest.TestCase):
+    def test_pinned_data_loop_requires_named_single_cpu_fifo_rule(self) -> None:
+        profile = {"roles": {"island": {"required_thread_placements": [
+            {"name": "data-loop.0", "policy": "fifo:83", "cpus": "0", "count": 1},
+        ]}}}
+        self.assertEqual(RUNNER.pinned_data_loop(profile, "island", "data-loop.0"),
+                         (0, 83))
+        profile["roles"]["island"]["required_thread_placements"][0]["cpus"] = "0,2"
+        with self.assertRaisesRegex(ValueError, "one pinned FIFO island data-loop"):
+            RUNNER.pinned_data_loop(profile, "island", "data-loop.0")
+
     @staticmethod
     def write_packets(path: Path, times: list[Decimal], *, kind: str,
                       dm_id_base: int = 0) -> None:

@@ -559,3 +559,23 @@ snapshots were rechecked offline. A separate
 [first-frame comparison](COPPER_FIRST_FRAME.md) records 1,024-frame gated
 replays with JFG's explicit offline Graph warmup disabled. These checks
 remain scoped to this host and the selected zero-worker JFG Copper graph.
+
+## Explicit Julia island client loop
+
+For the opt-in strict Ryzen profile, the launcher now takes the JFG island's
+named `data-loop.0` CPU and FIFO priority from that profile. The JFG runner
+renders a separate PipeWireAO `client.conf` for the island with CPU 0,
+FIFO83, eventfd idle, and `mem.mlock-all=false`; it records the rendered
+configuration hash. The other JFG runner processes retain their existing
+client configuration.
+
+One gated 16-frame row-block replay and one gated 16-frame complete-frame
+replay qualified across HEART, FGN, and JFG at 474 Hz and 2,000 µs readout.
+Each RTC received 32 WFS packets and emitted 16 ordered DM commands with
+zero pixel-payload mismatches and passing command-vector comparison. The
+named island loop was observed at CPU 0 / FIFO83 both before ingress and
+after replay. The [client-loop evidence](data/copper_client_loop_evidence_20260929.json)
+records the manifests, configuration hashes, and thread records. These short
+runs establish configuration and functional compatibility, not an
+uncontended latency result. Explicit client settings for the remaining
+PipeWireAO processes are still open under RTC-DEV-019.

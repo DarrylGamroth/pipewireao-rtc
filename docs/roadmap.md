@@ -695,6 +695,16 @@ graph preparation precede release, and competing host work remained active.
 Structured startup/warmup intervals and a controlled first-use experiment
 remain open under RTC-DEV-019.
 
+The strict Copper launcher now derives the JFG island client-loop CPU and
+FIFO priority from the named thread profile. The JFG runner renders and
+hashes an island-only PipeWireAO client configuration with explicit eventfd
+idle and `mem.mlock-all=false`. A gated 16-frame row-block replay and a
+gated 16-frame complete-frame replay both qualified three-way delivery,
+command comparison, and observed CPU 0 / FIFO83 island-loop placement before
+and after ingress. The [evidence](../benchmark/data/copper_client_loop_evidence_20260929.json)
+does not cover explicit client settings for every other PipeWireAO process,
+long-run latency, or uncontended repetitions. RTC-DEV-019 remains partial.
+
 ## Deferred capabilities
 
 The following topics are not active work. Their previous proposals are
