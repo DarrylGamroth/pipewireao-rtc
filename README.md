@@ -10,8 +10,8 @@ another graph-authoring format or scheduler. Named execution groups can stop
 and restart a whole chain or one independent branch while the session remains
 loaded.
 
-The repository contains the first executable runner increment plus the active
-development architecture and delivery contract. The maintained live fixture
+The repository contains the non-actuating development runner and its active
+architecture and delivery contract. The maintained live fixture
 runs recorded FITS vectors through minimal, serial, forked, and independent
 `fgn-native` graph sessions into generic discard sinks. It also discovers an
 externally launched AdaptiveOpticsSim HIL source and sink and closes a

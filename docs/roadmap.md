@@ -256,7 +256,13 @@ private-core fixture fans each of ten complete WFS frames to simultaneous
 native FGN and JuliaFilterGraph nodes. It waits for two same-sequence commands,
 checks both against the direct Classic oracle and each other, and then advances
 the plant. Its fixed initial controller configuration does not cover simultaneous
-parity through the reconstructor-adoption window.
+parity through the reconstructor-adoption window. That stricter cross-controller
+comparison is outside RTC-DEV-007: the host may adopt each live parameter at a
+different permitted frame boundary, while each implementation is checked
+against its own independent direct-reference history. The explicit external
+source-end notification satisfies the development fixture's source-end case;
+automatic discovery of external PipeWire end-of-stream remains a separate
+possible extension.
 
 ### 4. Prove scientist authoring
 
@@ -318,7 +324,7 @@ measured report is checked in as evidence.
 | RTC-DEV-004 | 1 | implemented | validated | Transition, retry, invalid-command, required-object failure, repeated-cycle, and lifecycle-dispatch tests pass. Native and Julia graphs stop to durable live `READY` and restart without reconstructing objects or links. A non-looping FITS source publishes completion after its final buffer returns, and the sole dispatcher automatically returns `RUNNING` to `READY` |
 | RTC-DEV-005 | 3 | implemented | validated | Reset, typed scalar-property updates, and typed ndarray Parameter Port publication use the one lifecycle dispatcher and standard host surfaces. The private core proves submitted-versus-active behavior for native FGN and JuliaFilterGraph REVOLT controllers. Two gain/pole transactions and a sparse reconstructor update are checked against all ten transported commands and plant states per implementation, with observed values and generations. Separate running-update cases prove two successive live gain/pole transactions and undeclared-property rejection without generation change. A minimal-to-serial structural reload preserves the lifecycle and replaces every former graph object |
 | RTC-DEV-006 | 1 and 2 | implemented | validated | The private-core runner reaches and remains in its lifecycle without a GUI. A declared source output feeds the bounded PipeWireAO queue in copy/drop-oldest mode; a Julia observer attaches, holds a buffer, detaches, and reattaches while the required sink and lifecycle continue. An identical finite replay without the observer produces the same accepted buffer count, byte count, and payload digest |
-| RTC-DEV-007 | 2 and 3 | partial | partial | AdaptiveOpticsSim flat and atmospheric cases and both REVOLT controller implementations compare transported outputs and plant state with direct references. The REVOLT fixture covers reset plus property and parameter updates. It retains independent reference states for each monotone parameter-adoption history, prunes histories against every command, and requires one identified history by sequence 8. An external-owner completion notification after command 10 returns each controller from `RUNNING` to `READY` without changing plant or command state or removing external nodes. A separate common-input Classic fixture passed ten completion-paced frames through both graphs at once and compared each same-sequence command with the direct oracle and the other graph. Automatic external source-end discovery and simultaneous parity through the parameter-adoption window remain |
+| RTC-DEV-007 | 2 and 3 | partial | partial | AdaptiveOpticsSim flat and atmospheric cases and both REVOLT controllers compare transported outputs and meaningful state with direct references. The REVOLT fixture covers reset, two gain/pole transactions, sparse-parameter adoption, and finite external-owner source completion. Independent monotone parameter-adoption histories are checked against every command and uniquely identified by sequence 8. Completion after command 10 returns each controller from `RUNNING` to `READY` without changing plant or command state or removing external nodes. A separate common-input Classic fixture checks ten completion-paced frames through both graphs against the direct oracle and each other. The full private-core suite and focused Classic replays passed on 2026-09-29. Serial, forked, and independent small-graph fixtures still need direct numerical checks for every sink |
 | RTC-DEV-008 | 4 | implemented | validated | Calculon tests package-local stateless optical-gain, stateful integrator, multi-input pseudo-open-loop, and ndarray-parameter pixel-calibration declarations with ordinary arrays, a small non-PipeWire graph executor, and scientific error types. The production bundle selects all 46 portable declarations without a central adapter registry edit. The ABI 7 C graph-host fixture covers the full label inventory, including detector-frame assembly, PDM system-flat adoption, pixel-calibration readout, PWFS readout reconstruction, and SHWFS readout reconstruction. The ordinary-array tests and ABI-aware declaration script passed on 2026-09-29 |
 | RTC-DEV-009 | 1 | implemented | validated | Statig hierarchy, serialized dispatch, typed effects, effect failure, stale-completion rejection, and the full private-core lifecycle pass through the same dispatcher |
 | RTC-DEV-010 | 1c through 1e | implemented | validated | The exact serial, forked, and independent sessions each pass the private-core lifecycle and deliver to every sink; standard graph files are delegated unchanged and PipeWire owns branch execution. The private core injects failure after every actual owned node and link creation point and proves cleanup plus retry |
@@ -498,6 +504,14 @@ The milestone is complete only when:
 This gate unlocks continued algorithm and graph development. It does not
 unlock physical hardware, correction, production operation, or a real-time
 claim.
+
+The ordinary Rust suite, the full private-core lifecycle fixture, the focused
+sequential and common-input REVOLT Classic fixtures, and Calculon's
+ordinary-array and ABI 7 FGN declaration-host checks passed on 2026-09-29.
+The development gate remains open for direct numerical checks of every
+serial, forked, and independent small-graph output and for the measured
+development performance report. RTC-DEV-018 latest/hold evidence and the
+optional RTC-DEV-019 laboratory placement profile are separate from this gate.
 
 ## Selected next increment: laboratory deployment profile
 
