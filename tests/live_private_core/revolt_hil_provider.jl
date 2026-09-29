@@ -44,8 +44,9 @@ const LOCKSTEP_JULIA_SINK = "revolt-classic-sim-hsdm277-command-julia"
 # This extra test sink uses only public PipeWireAO stream and ndarray APIs.
 # Its callback copies one bounded command and publishes the received sequence;
 # the fixture thread owns numerical checks and frame progression.
-mutable struct LockstepCommandState
+mutable struct LockstepCommandState{Bytes<:AbstractVector{UInt8}}
     values::Vector{Float32}
+    command_bytes::Bytes
     ready::Atomic{UInt64}
 end
 
@@ -68,11 +69,7 @@ function (process::LockstepCommandProcess)(stream::Stream)
         bytes = sizeof(Float32) * length(process.state.values)
         Int(chunk.size) == bytes || error("Julia command has $(chunk.size) bytes; expected $bytes")
         Int(chunk.offset) + bytes <= capacity(data) || error("Julia command exceeds its buffer")
-        unsafe_copyto!(
-            Ptr{UInt8}(pointer(process.state.values)),
-            data_pointer(data) + Int(chunk.offset),
-            bytes,
-        )
+        copyto!(process.state.command_bytes, PipeWireAO.bytes(data))
         all(isfinite, process.state.values) || error("Julia command is non-finite")
         queue_buffer!(process.buffer, stream)
         queued = true
@@ -84,7 +81,8 @@ function (process::LockstepCommandProcess)(stream::Stream)
 end
 
 function prepare_lockstep_command_sink()
-    state = LockstepCommandState(zeros(Float32, command_count()), Atomic{UInt64}(0))
+    values = zeros(Float32, command_count())
+    state = LockstepCommandState(values, reinterpret(UInt8, values), Atomic{UInt64}(0))
     loop = ThreadLoop("REVOLTClassicLockstepCommand")
     context = Context(loop)
     core = CoreConnection(context; properties=Dict("remote.name" => core_name))
