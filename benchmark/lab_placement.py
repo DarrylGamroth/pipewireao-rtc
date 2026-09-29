@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 from datetime import UTC, datetime
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -34,6 +35,7 @@ class LaunchError(RuntimeError):
 
 ThreadPolicy = tuple[str, int]
 SCHED_RESET_ON_FORK = getattr(os, "SCHED_RESET_ON_FORK", 0x40000000)
+THREAD_PROFILE_ENV = "PIPEWIREAO_RTC_THREAD_PROFILE"
 
 
 def now() -> str:
@@ -254,6 +256,90 @@ def verify_snapshot(
             )
 
 
+def read_thread_profile(path: Path) -> dict[str, Any]:
+    """Validate a host-specific thread contract before any process is released."""
+    try:
+        data = json.loads(path.read_text())
+    except (OSError, ValueError) as error:
+        raise LaunchError(f"cannot read thread profile {path}: {error}") from error
+    if (not isinstance(data, dict) or set(data) != {"schema_version", "roles"}
+            or type(data["schema_version"]) is not int or data["schema_version"] != 1):
+        raise LaunchError(f"thread profile {path} must have schema_version 1 and roles")
+    roles = data["roles"]
+    if not isinstance(roles, dict) or not roles:
+        raise LaunchError(f"thread profile {path} has no roles")
+    for role, contract in roles.items():
+        if not isinstance(role, str) or not role or not isinstance(contract, dict):
+            raise LaunchError(f"thread profile {path} has an invalid role")
+        required_keys = {"cpus", "leader_policy", "required_policy_counts", "required_thread_placements"}
+        if set(contract) != required_keys:
+            raise LaunchError(f"thread profile role {role} requires exactly {sorted(required_keys)}")
+        try:
+            if not isinstance(contract["cpus"], str) or not isinstance(contract["leader_policy"], str):
+                raise ValueError("role CPUs and leader policy must be strings")
+            cpus = parse_cpu_list(contract["cpus"])
+            parse_thread_policy(contract["leader_policy"])
+            policies = contract["required_policy_counts"]
+            placements = contract["required_thread_placements"]
+            if not isinstance(policies, dict) or not isinstance(placements, list):
+                raise ValueError("policy counts must be an object and placements an array")
+            for policy, count in policies.items():
+                if not isinstance(policy, str):
+                    raise ValueError("policy names must be strings")
+                parse_thread_policy(policy)
+                if type(count) is not int or count < 1:
+                    raise ValueError("policy counts must be positive integers")
+            seen: set[tuple[str, str]] = set()
+            for placement in placements:
+                if not isinstance(placement, dict) or set(placement) != {"policy", "cpus", "count"}:
+                    raise ValueError("each placement requires policy, cpus, and count")
+                if not isinstance(placement["policy"], str) or not isinstance(placement["cpus"], str):
+                    raise ValueError("placement policy and CPUs must be strings")
+                parse_thread_policy(placement["policy"])
+                pinned = parse_cpu_list(placement["cpus"])
+                if not pinned <= cpus:
+                    raise ValueError("placement CPUs exceed the role CPU envelope")
+                if type(placement["count"]) is not int or placement["count"] < 1:
+                    raise ValueError("placement count must be a positive integer")
+                key = (placement["policy"], format_cpu_list(pinned))
+                if key in seen:
+                    raise ValueError(f"duplicate placement {key}")
+                seen.add(key)
+        except (argparse.ArgumentTypeError, TypeError, ValueError) as error:
+            raise LaunchError(f"invalid thread profile role {role}: {error}") from error
+    return data
+
+
+def verify_thread_profile(snapshot: dict[str, Any], role: str, requested_cpus: set[int],
+                          leader_policy: ThreadPolicy, profile: dict[str, Any]) -> None:
+    contract = profile["roles"].get(role)
+    if contract is None:
+        raise LaunchError(f"thread profile has no contract for role {role}")
+    expected_cpus = parse_cpu_list(contract["cpus"])
+    if requested_cpus != expected_cpus:
+        raise LaunchError(f"role {role} requested CPUs {format_cpu_list(requested_cpus)}; "
+                          f"profile requires {format_cpu_list(expected_cpus)}")
+    expected_leader = parse_thread_policy(contract["leader_policy"])
+    if leader_policy != expected_leader:
+        raise LaunchError(f"role {role} requested leader policy {format_thread_policy(leader_policy)}; "
+                          f"profile requires {format_thread_policy(expected_leader)}")
+    threads = snapshot["threads"]
+    for policy_text, count in contract["required_policy_counts"].items():
+        policy = parse_thread_policy(policy_text)
+        observed = sum((thread["scheduler"]["policy"], thread["scheduler"]["priority"]) == policy
+                       for thread in threads)
+        if observed != count:
+            raise LaunchError(f"role {role} has {observed} {policy_text} threads; profile requires exactly {count}")
+    for placement in contract["required_thread_placements"]:
+        policy = parse_thread_policy(placement["policy"])
+        cpus = parse_cpu_list(placement["cpus"])
+        observed = sum((thread["scheduler"]["policy"], thread["scheduler"]["priority"]) == policy
+                       and set(thread["affinity"]) == cpus for thread in threads)
+        if observed != placement["count"]:
+            raise LaunchError(f"role {role} has {observed} {placement['policy']} threads on "
+                              f"{format_cpu_list(cpus)}; profile requires exactly {placement['count']}")
+
+
 def unavailable_snapshot(pid: int, reason: str) -> dict[str, Any]:
     return {"available": False, "captured_at": now(), "pid": pid, "reason": reason}
 
@@ -325,10 +411,19 @@ def verify(args: argparse.Namespace) -> int:
         "outcome": "failed",
     }
     try:
+        profile_path = os.environ.get(THREAD_PROFILE_ENV)
+        profile = None
+        if profile_path:
+            path = Path(profile_path).resolve()
+            record["requested"]["thread_profile"] = str(path)
+            profile = read_thread_profile(path)
+            record["requested"]["thread_profile_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
         snapshot = snapshot_process(args.pid)
         record["observed"] = snapshot
         verify_snapshot(snapshot, args.cpus, args.initial_thread_policy,
                         args.allowed_thread_policy_set, args.required_thread_policy_counts)
+        if profile is not None:
+            verify_thread_profile(snapshot, args.role, args.cpus, args.initial_thread_policy, profile)
         record["outcome"] = "verified"
         return 0
     except (LaunchError, OSError, ProcessLookupError) as error:

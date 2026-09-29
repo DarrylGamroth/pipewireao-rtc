@@ -97,3 +97,34 @@ revision and dirty filenames. The runner now archives working-tree patches
 and small untracked source files for future replays. Its first-use startup
 distribution and strict RTC-DEV-019 thread-placement proof remain to be
 measured.
+
+## Opt-in strict placement experiment, 2026-09-29
+
+The [Ryzen Copper thread profile](profiles/ryzen-6800h-copper.json) now adds
+required scheduler and affinity counts to each runner's live pre-ingress and
+post-replay verification. An initial 16-frame attempt failed before the FGN
+pixel source started: its daemon had zero FIFO83 threads. An opt-in FGN daemon
+configuration first acquired FIFO83 but kept a broad CPU mask; placing
+`context.data-loops` inside `context.properties` then produced one
+`rtc-data-loop` at FIFO83 on CPU 0. The FGN topology reported the WFS source
+and DM sink on that loop. The strict verifier observed the same policy and
+affinity before ingress and after replay.
+
+The retained row-block and full-frame manifests are
+`~/.cache/rtc-dev-019-strict-row-1024-20260929/manifest.json` and
+`~/.cache/rtc-dev-019-strict-fullframe-1024-20260929/manifest.json`. Each
+contains one 1,024-frame HEART, FGN, and JFG run at 474 Hz with 2,000 µs
+readout. All six runs passed their strict role-profile checks, captured 2,048
+WFS packets, and emitted 1,024 ordered DM commands. The largest HEART↔JFG
+vector difference was 4.563 × 10⁻⁸ µm; FGN↔JFG was 2.981 × 10⁻⁸ µm. The
+opt-in FGN configuration explicitly selects an eventfd loop, FIFO83, CPU 0,
+and `mem.mlock-all=false`; its observed `VmLck` was 44 KiB for row-block and
+60 KiB for full-frame ingress.
+
+These are single functional replays. They do not establish a new latency
+ranking: three unrelated CPU-saturating Julia processes remained runnable
+with masks covering the RTC cores. The profile checks policy and affinity,
+but does not prove each thread's algorithmic role. Julia owner pin identity,
+complete explicit PipeWireAO loop and memory settings for every process,
+first-use characterization, and at least three uncontended repetitions per
+mode remain open for RTC-DEV-019.

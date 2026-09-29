@@ -48,6 +48,23 @@ policy rules, and `--output`; it neither launches nor releases the process.
 This supports a runner's own pre-ingress or post-replay boundary while the PID
 is still alive.
 
+## Strict Copper thread profile
+
+`run_copper_baseline.py --verify-placement --strict-placement-profile
+benchmark/profiles/ryzen-6800h-copper.json` passes the profile to each runner's
+existing pre-ingress and post-replay `verify` call. The verifier checks each
+role's exact process CPU envelope, leader policy, required policy counts, and
+required policy-plus-affinity counts. A missing role or a mismatch returns a
+failed report before the runner starts its pixel source. The profile path and
+SHA-256 are recorded with the run. A new machine or CPU layout needs its own
+reviewed profile; changing `--rtc-cpus` alone cannot silently relax this one.
+
+The Ryzen profile requires a FIFO83 data loop pinned to CPU 0 in the FGN
+daemon. Earlier broad-envelope replays observed no FIFO thread in that daemon,
+so those replays do not meet this profile. The counts establish placement,
+not the identity of a thread's work. Thread names and requested pins alone
+cannot prove that the named MVM or Julia worker ran on a particular thread.
+
 The resulting JSON includes the requested envelope, command, host, each
 pre-gate map, post-run map when the finish/release handshake is used, `VmLck`,
 and `/proc/<pid>/smaps_rollup`. It is a laboratory record, not a deadline or

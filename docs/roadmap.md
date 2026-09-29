@@ -513,6 +513,18 @@ used FIFO83. The workstation also had unrelated CPU-saturating Julia tasks.
 Strict thread placement, first-use characterization, and an uncontended
 latency comparison remain in the selected increment.
 
+An opt-in Ryzen thread profile now checks exact policy and affinity counts at
+each runner's pre-ingress and post-replay boundary. It exposed the FGN daemon's
+missing RT loop before pixels were sent. A separate FGN laboratory setting
+now creates an eventfd data loop at FIFO83 on CPU 0. One 1,024-frame replay
+per ingress mode passed the strict profile, exact delivery, and cross-RTC
+numerical comparison; the raw records are linked from
+[the Copper benchmark](../benchmark/COPPER.md). The workstation still had
+competing CPU-saturating tasks, and the profile does not prove the identity of
+each algorithm worker. Explicit loop and memory settings for the remaining
+PipeWireAO processes, owner pin identity, first-use evidence, and three
+uncontended independent repetitions per mode remain open.
+
 ## Deferred capabilities
 
 The following topics are not active work. Their previous proposals are

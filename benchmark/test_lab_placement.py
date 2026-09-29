@@ -204,6 +204,59 @@ class LabPlacementTests(unittest.TestCase):
                 snapshot, {4}, ("other", 0), {("other", 0), ("fifo", 20)}, {("fifo", 20): 2}
             )
 
+    def test_thread_profile_requires_exact_policy_and_affinity_counts(self) -> None:
+        profile = {"schema_version": 1, "roles": {"graph": {
+            "cpus": "4-5", "leader_policy": "other",
+            "required_policy_counts": {"fifo:83": 1},
+            "required_thread_placements": [
+                {"policy": "fifo:83", "cpus": "4", "count": 1},
+                {"policy": "other", "cpus": "5", "count": 1},
+            ],
+        }}}
+        snapshot = {"pid": 101, "threads": [
+            {"tid": 101, "affinity": [5], "scheduler": {"policy": "other", "priority": 0}},
+            {"tid": 102, "affinity": [4], "scheduler": {"policy": "fifo", "priority": 83}},
+        ]}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "profile.json"
+            path.write_text(json.dumps(profile))
+            parsed = LAB_PLACEMENT.read_thread_profile(path)
+        LAB_PLACEMENT.verify_thread_profile(snapshot, "graph", {4, 5}, ("other", 0), parsed)
+        snapshot["threads"][1]["affinity"] = [4, 5]
+        with self.assertRaisesRegex(LAB_PLACEMENT.LaunchError, "profile requires exactly 1"):
+            LAB_PLACEMENT.verify_thread_profile(snapshot, "graph", {4, 5}, ("other", 0), parsed)
+        snapshot["threads"][1]["affinity"] = [4]
+        snapshot["threads"][1]["scheduler"]["priority"] = 0
+        with self.assertRaisesRegex(LAB_PLACEMENT.LaunchError, "has 0 fifo:83 threads"):
+            LAB_PLACEMENT.verify_thread_profile(snapshot, "graph", {4, 5}, ("other", 0), parsed)
+
+    def test_verify_rejects_missing_role_profile_and_records_failure(self) -> None:
+        process = self.start_dummy_process()
+        try:
+            with tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                profile = root / "profile.json"
+                profile.write_text(json.dumps({"schema_version": 1, "roles": {"other-role": {
+                    "cpus": LAB_PLACEMENT.format_cpu_list(set(os.sched_getaffinity(0))),
+                    "leader_policy": "other", "required_policy_counts": {},
+                    "required_thread_placements": [],
+                }}}))
+                output = root / "record.json"
+                completed = subprocess.run(
+                    [sys.executable, str(LAUNCHER), "verify", "--role", "dummy", "--pid", str(process.pid),
+                     "--cpus", LAB_PLACEMENT.format_cpu_list(set(os.sched_getaffinity(0))),
+                     "--leader-policy", "other", "--output", str(output)],
+                    env={**os.environ, LAB_PLACEMENT.THREAD_PROFILE_ENV: str(profile)},
+                    text=True, capture_output=True, check=False,
+                )
+                self.assertNotEqual(completed.returncode, 0)
+                record = json.loads(output.read_text())
+                self.assertEqual(record["outcome"], "failed")
+                self.assertIn("no contract for role dummy", record["error"])
+        finally:
+            process.terminate()
+            process.wait(timeout=5)
+
     def test_qualified_handshake_withholds_release_after_post_run_drift(self) -> None:
         available = sorted(os.sched_getaffinity(0))
         if len(available) < 2:

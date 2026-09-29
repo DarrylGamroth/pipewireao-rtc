@@ -20,7 +20,7 @@ import subprocess
 import sys
 from typing import Any
 
-from lab_placement import parse_cpu_list
+from lab_placement import LaunchError, parse_cpu_list, parse_thread_policy, read_thread_profile
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -155,7 +155,8 @@ def paths_under(directory: Path) -> list[str]:
     return [str(path) for path in sorted(directory.rglob("*")) if path.is_file() or path.is_symlink()]
 
 
-def require_placement(paths: dict[str, dict[str, Path]]) -> dict[str, dict[str, str]]:
+def require_placement(paths: dict[str, dict[str, Path]],
+                      profile_sha256: str | None = None) -> dict[str, dict[str, str]]:
     verified: dict[str, dict[str, str]] = {}
     for phase, roles in paths.items():
         verified[phase] = {}
@@ -163,6 +164,9 @@ def require_placement(paths: dict[str, dict[str, Path]]) -> dict[str, dict[str, 
             report = json_file(path)
             require_exact(report.get("outcome") == "verified",
                           f"{role} placement is not verified at {phase}: {path}")
+            if profile_sha256 is not None:
+                require_exact(report.get("requested", {}).get("thread_profile_sha256") == profile_sha256,
+                              f"{role} used a different thread profile at {phase}: {path}")
             verified[phase][role] = str(path)
     return verified
 
@@ -192,6 +196,8 @@ def main() -> None:
     parser.add_argument("--rtc-cpus", default="0,2,4,6,8,10,14")
     parser.add_argument("--verify-placement", action="store_true",
                         help="verify declared process envelopes before ingress and after replay")
+    parser.add_argument("--strict-placement-profile", type=Path,
+                        help="host-specific thread profile enforced by every pre-ingress verifier")
     parser.add_argument("--julia-pin-cpus", default="0,2",
                         help="CPU list for the two Julia island threads when verifying placement")
     args = parser.parse_args()
@@ -232,6 +238,29 @@ def main() -> None:
     verifier = ROOT / "benchmark/lab_placement.py"
     if args.verify_placement and not verifier.is_file():
         parser.error(f"placement verifier is absent: {verifier}")
+    thread_profile = None
+    thread_profile_sha256 = None
+    fgn_loop: tuple[int, int] | None = None
+    if args.strict_placement_profile is not None:
+        if not args.verify_placement:
+            parser.error("--strict-placement-profile requires --verify-placement")
+        thread_profile = args.strict_placement_profile.resolve()
+        try:
+            profile = read_thread_profile(thread_profile)
+        except LaunchError as error:
+            parser.error(str(error))
+        required_roles = {"heart-rtc", "pipewire-ao-daemon", "fgn-command-observer",
+                          "julia-heart-std-dm-command-adapter", "daemon", "island", "observer", "adapter"}
+        if set(profile["roles"]) != required_roles:
+            parser.error(f"strict thread profile must define exactly {sorted(required_roles)}")
+        loop_rules = [rule for rule in profile["roles"]["pipewire-ao-daemon"]["required_thread_placements"]
+                      if parse_thread_policy(rule["policy"])[0] == "fifo" and rule["count"] == 1
+                      and len(parse_cpu_list(rule["cpus"])) == 1]
+        if len(loop_rules) != 1:
+            parser.error("strict profile requires one pinned FIFO daemon data-loop placement")
+        fgn_loop = (next(iter(parse_cpu_list(loop_rules[0]["cpus"]))),
+                    parse_thread_policy(loop_rules[0]["policy"])[1])
+        thread_profile_sha256 = sha256(thread_profile)
     try:
         source_cpus = parse_cpu_list(args.source_core)
         rtc_cpus = parse_cpu_list(args.rtc_cpus)
@@ -262,6 +291,8 @@ def main() -> None:
         "mode": args.mode, "repeats": args.repeats, "frames": args.frames,
         "frame_rate_hz": 474, "readout_us": 2000, "clipping_feedback": True,
         "verify_placement": args.verify_placement,
+        "strict_placement_profile": str(thread_profile) if thread_profile else None,
+        "strict_placement_profile_sha256": thread_profile_sha256,
         "command_limit_um": 0.8, "fits": str(cube), "fits_sha256": sha256(cube),
         "host": {"uname": platform.uname()._asdict(),
                  "launcher_affinity": sorted(allowed_cpus),
@@ -305,6 +336,7 @@ def main() -> None:
                        "JULIA_RTC_ADAPTER_CPUS": args.rtc_cpus, "JULIA_RTC_SIMULATOR_CPUS": args.source_core,
                        "JULIA_RTC_SIMULATOR_RT_PRIORITY": args.source_rt_priority}
             heart_env: dict[str, str] = {}
+            fgn_env: dict[str, str] = {}
             if args.verify_placement:
                 heart_env = {"PIPEWIREAO_RTC_PLACEMENT_VERIFY": str(verifier),
                              "PIPEWIREAO_RTC_HEART_CPUS": args.rtc_cpus}
@@ -312,6 +344,9 @@ def main() -> None:
                                 "JULIA_RTC_PIN_CPUS": args.julia_pin_cpus,
                                 "JULIA_RTC_OBSERVER_CPUS": ",".join(
                                     str(cpu) for cpu in sorted(os.sched_getaffinity(0)))})
+            if thread_profile is not None:
+                for environment in (heart_env, fgn_env, jfg_env):
+                    environment["PIPEWIREAO_RTC_THREAD_PROFILE"] = str(thread_profile)
             commands = {
                 "heart": [str(args.jfg_root / "benchmark/heart/run_copper_aos_matched.sh"),
                           "--frames", str(args.frames), "--period", period, "--readout-us", "2000",
@@ -345,13 +380,16 @@ def main() -> None:
             }
             if args.verify_placement:
                 commands["fgn"].extend(("--placement-verify", str(verifier)))
+            if fgn_loop is not None:
+                commands["fgn"].extend(("--lab-loop-cpu", str(fgn_loop[0]),
+                                        "--lab-loop-rt-priority", str(fgn_loop[1])))
             record: dict[str, Any] = {"index": index, "commands": {}}
             manifest["runs"].append(record)
             for name in ("heart", "fgn", "jfg"):
                 result = command_record(commands[name],
                                         args.jfg_root if name in ("heart", "jfg") else args.fgn_root,
                                         run / f"{name}.runner.log",
-                                        jfg_env if name == "jfg" else heart_env if name == "heart" else None)
+                                        jfg_env if name == "jfg" else heart_env if name == "heart" else fgn_env)
                 record["commands"][name] = result
                 require_exact(result["returncode"] == 0, f"{name} runner failed; see {result['combined_output']}")
             heart = require_heart(heart_dir, args.frames)
@@ -381,7 +419,7 @@ def main() -> None:
                     for phase, roles in phases.items():
                         require_exact(set(roles) == expected_roles[system],
                                       f"{system} placement roles missing at {phase}")
-                record["placement"] = {system: require_placement(phases)
+                record["placement"] = {system: require_placement(phases, thread_profile_sha256)
                                        for system, phases in placement_paths.items()}
             record["runner_reports"] = {"heart": str(heart_dir / "qualification.json"),
                                         "fgn": str(fgn_dir / "report.json"), "jfg": str(jfg_report)}

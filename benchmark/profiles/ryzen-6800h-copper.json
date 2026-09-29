@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "roles": {
+    "heart-rtc": {
+      "cpus": "0,2,4,6,8,10,14",
+      "leader_policy": "other",
+      "required_policy_counts": {"fifo:15": 7, "fifo:20": 1},
+      "required_thread_placements": [
+        {"policy": "fifo:15", "cpus": "0", "count": 1},
+        {"policy": "fifo:15", "cpus": "2", "count": 1},
+        {"policy": "fifo:15", "cpus": "4", "count": 1},
+        {"policy": "fifo:15", "cpus": "6", "count": 1},
+        {"policy": "fifo:15", "cpus": "8", "count": 1},
+        {"policy": "fifo:15", "cpus": "10", "count": 1},
+        {"policy": "fifo:15", "cpus": "14", "count": 1},
+        {"policy": "fifo:20", "cpus": "14", "count": 1}
+      ]
+    },
+    "pipewire-ao-daemon": {
+      "cpus": "0,2,4,6,8,10,14",
+      "leader_policy": "other",
+      "required_policy_counts": {"fifo:83": 1},
+      "required_thread_placements": [
+        {"policy": "fifo:83", "cpus": "0", "count": 1}
+      ]
+    },
+    "fgn-command-observer": {
+      "cpus": "0-15",
+      "leader_policy": "other",
+      "required_policy_counts": {"fifo:83": 1},
+      "required_thread_placements": []
+    },
+    "julia-heart-std-dm-command-adapter": {
+      "cpus": "0,2,4,6,8,10,14",
+      "leader_policy": "other",
+      "required_policy_counts": {"fifo:83": 1},
+      "required_thread_placements": []
+    },
+    "daemon": {
+      "cpus": "0,2,4,6,8,10,14",
+      "leader_policy": "other",
+      "required_policy_counts": {},
+      "required_thread_placements": []
+    },
+    "island": {
+      "cpus": "0,2,4,6,8,10,14",
+      "leader_policy": "other",
+      "required_policy_counts": {"fifo:83": 1},
+      "required_thread_placements": [
+        {"policy": "other", "cpus": "0", "count": 2},
+        {"policy": "other", "cpus": "2", "count": 1},
+        {"policy": "fifo:83", "cpus": "0", "count": 1}
+      ]
+    },
+    "observer": {
+      "cpus": "0-15",
+      "leader_policy": "other",
+      "required_policy_counts": {"fifo:83": 1},
+      "required_thread_placements": []
+    },
+    "adapter": {
+      "cpus": "0,2,4,6,8,10,14",
+      "leader_policy": "other",
+      "required_policy_counts": {"fifo:83": 1},
+      "required_thread_placements": []
+    }
+  }
+}
