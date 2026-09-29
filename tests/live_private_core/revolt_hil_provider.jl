@@ -15,11 +15,15 @@ native_phase_1 = joinpath(control_directory, "revolt-native-phase-1")
 native_phase_2 = joinpath(control_directory, "revolt-native-phase-2")
 native_phase_2_continue = joinpath(control_directory, "revolt-native-phase-2-continue")
 native_phase_3 = joinpath(control_directory, "revolt-native-phase-3")
+native_source_end = joinpath(control_directory, "revolt-native-source-end")
+native_after_ready = joinpath(control_directory, "revolt-native-after-ready")
 switch_to_julia = joinpath(control_directory, "revolt-switch-to-julia")
 julia_phase_1 = joinpath(control_directory, "revolt-julia-phase-1")
 julia_phase_2 = joinpath(control_directory, "revolt-julia-phase-2")
 julia_phase_2_continue = joinpath(control_directory, "revolt-julia-phase-2-continue")
 julia_phase_3 = joinpath(control_directory, "revolt-julia-phase-3")
+julia_source_end = joinpath(control_directory, "revolt-julia-source-end")
+julia_after_ready = joinpath(control_directory, "revolt-julia-after-ready")
 stop_file = joinpath(control_directory, "stop-revolt-hil")
 native_latency_phase = joinpath(control_directory, "revolt-native-latency")
 julia_latency_phase = joinpath(control_directory, "revolt-julia-latency")
@@ -330,6 +334,30 @@ function require_plant_oracle_frame!(phase, sequence)
     return nothing
 end
 
+function source_end_snapshot(phase)
+    graph = phase.plant.graph
+    return (
+        plant_sequence=graph_step_sequence(graph),
+        oracle_sequence=graph_step_sequence(phase.oracle.graph),
+        frame=copy(hil_frame_buffer(phase.plant.boundary)),
+        command=copy(hil_command_buffer(phase.plant.boundary)),
+        atmosphere=copy(graph_output(graph, Val(:atmosphere_opd))),
+        pdm=copy(graph_output(graph, Val(:pdm_surface_opd))),
+        pupil=copy(graph_output(graph, Val(:pupil_opd))),
+    )
+end
+
+function require_source_end_unchanged(phase, snapshot, implementation)
+    require_stable_provider_nodes(phase, implementation, UInt64(10))
+    current = source_end_snapshot(phase)
+    isequal(current, snapshot) || error(
+        "$implementation plant or command state changed after finite source completion",
+    )
+    PipeWireAO.stream_state(phase.plant.pipewire.frame_stream)
+    PipeWireAO.stream_state(phase.plant.pipewire.command_stream)
+    return nothing
+end
+
 function exchange_range!(
     phase,
     sequences,
@@ -584,6 +612,9 @@ function main()
     native_second_first_done = false
     native_second_done = false
     native_third_done = false
+    native_end_done = false
+    native_ready_checked = false
+    native_snapshot = nothing
     native_latency_done = isnothing(latency)
 
     try
@@ -673,6 +704,26 @@ function main()
                 println("REVOLT_HIL_NATIVE_LATENCY_DONE samples=$(latency.samples)")
                 flush(stdout)
                 native_latency_done = true
+            elseif native_third_done && native_latency_done && !native_end_done &&
+                   isfile(native_source_end)
+                isnothing(latency) || error("finite source-end check requires no latency extension")
+                length(native_commands) == 10 || error("native finite source ended with $(length(native_commands)) commands")
+                graph_step_sequence(phase.plant.graph) == UInt64(10) || error("native plant advanced past final frame")
+                graph_step_sequence(phase.oracle.graph) == UInt64(10) || error("native oracle advanced past final frame")
+                require_close(
+                    "native_final_controller_state", UInt64(10),
+                    hil_command_buffer(phase.plant.boundary), phase.direct_state;
+                    rtol=COMMAND_RTOL, atol=COMMAND_ATOL,
+                )
+                println("REVOLT_HIL_NATIVE_SOURCE_END sequence=10 commands=10")
+                flush(stdout)
+                native_snapshot = source_end_snapshot(phase)
+                native_end_done = true
+            elseif native_end_done && !native_ready_checked && isfile(native_after_ready)
+                require_source_end_unchanged(phase, native_snapshot, :native)
+                println("REVOLT_HIL_NATIVE_READY_END_CHECK sequence=10")
+                flush(stdout)
+                native_ready_checked = true
             end
             sleep(0.01)
         end
@@ -689,6 +740,9 @@ function main()
         julia_second_first_done = false
         julia_second_done = false
         julia_third_done = false
+        julia_end_done = false
+        julia_ready_checked = false
+        julia_snapshot = nothing
         julia_latency_done = isnothing(latency)
 
         while !isfile(stop_file)
@@ -777,6 +831,25 @@ function main()
                 println("REVOLT_HIL_JULIA_LATENCY_DONE samples=$(latency.samples)")
                 flush(stdout)
                 julia_latency_done = true
+            elseif julia_third_done && julia_latency_done && !julia_end_done &&
+                   isfile(julia_source_end)
+                isnothing(latency) || error("finite source-end check requires no latency extension")
+                graph_step_sequence(phase.plant.graph) == UInt64(10) || error("Julia plant advanced past final frame")
+                graph_step_sequence(phase.oracle.graph) == UInt64(10) || error("Julia oracle advanced past final frame")
+                require_close(
+                    "julia_final_controller_state", UInt64(10),
+                    hil_command_buffer(phase.plant.boundary), phase.direct_state;
+                    rtol=COMMAND_RTOL, atol=COMMAND_ATOL,
+                )
+                println("REVOLT_HIL_JULIA_SOURCE_END sequence=10 commands=10")
+                flush(stdout)
+                julia_snapshot = source_end_snapshot(phase)
+                julia_end_done = true
+            elseif julia_end_done && !julia_ready_checked && isfile(julia_after_ready)
+                require_source_end_unchanged(phase, julia_snapshot, :julia)
+                println("REVOLT_HIL_JULIA_READY_END_CHECK sequence=10")
+                flush(stdout)
+                julia_ready_checked = true
             end
             sleep(0.01)
         end

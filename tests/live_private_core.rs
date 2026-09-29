@@ -1961,12 +1961,16 @@ fn run_revolt_classic_reference_case(
     let native_phase_2 = temporary.join("revolt-native-phase-2");
     let native_phase_2_continue = temporary.join("revolt-native-phase-2-continue");
     let native_phase_3 = temporary.join("revolt-native-phase-3");
+    let native_source_end = temporary.join("revolt-native-source-end");
+    let native_after_ready = temporary.join("revolt-native-after-ready");
     let native_latency_phase = temporary.join("revolt-native-latency");
     let switch_to_julia = temporary.join("revolt-switch-to-julia");
     let julia_phase_1 = temporary.join("revolt-julia-phase-1");
     let julia_phase_2 = temporary.join("revolt-julia-phase-2");
     let julia_phase_2_continue = temporary.join("revolt-julia-phase-2-continue");
     let julia_phase_3 = temporary.join("revolt-julia-phase-3");
+    let julia_source_end = temporary.join("revolt-julia-source-end");
+    let julia_after_ready = temporary.join("revolt-julia-after-ready");
     let julia_latency_phase = temporary.join("revolt-julia-latency");
     let stop_hil = temporary.join("stop-revolt-hil");
     let hil_log = temporary.join("revolt-hil.log");
@@ -2105,10 +2109,47 @@ fn run_revolt_classic_reference_case(
         assert_revolt_latency_csv(latency, "native");
     }
     assert_revolt_runtime_update_active(&runner, "reconstruct", native_generations);
-    assert_eq!(
-        runner.dispatch(LifecycleEvent::Stop).unwrap(),
-        LifecycleState::Ready,
-    );
+    if latency.is_none() {
+        std::fs::write(&native_source_end, "end\n").unwrap();
+        wait_for_text_with_runner(
+            &mut provider.0,
+            &hil_log,
+            "REVOLT_HIL_NATIVE_SOURCE_END sequence=10 commands=10",
+            &mut runner,
+        );
+        assert_eq!(
+            runner
+                .dispatch(LifecycleEvent::FiniteSourceCompleted)
+                .unwrap(),
+            LifecycleState::Ready,
+        );
+        assert!(runner.diagnostic().is_none());
+        assert_eq!(
+            runner.poll_required_objects().unwrap(),
+            LifecycleState::Ready
+        );
+        std::fs::write(&native_after_ready, "check\n").unwrap();
+        wait_for_text(
+            &mut provider.0,
+            &hil_log,
+            "REVOLT_HIL_NATIVE_READY_END_CHECK sequence=10",
+        );
+        let after_end = dump(pipewire_build, environment, core_name);
+        assert!(after_end.contains("revolt-classic-sim-wfs"));
+        assert!(after_end.contains("revolt-classic-sim-hsdm277-command"));
+        assert_eq!(
+            std::fs::read_to_string(&hil_log)
+                .unwrap()
+                .matches("REVOLT_HIL_FRAME_EXCHANGED implementation=native")
+                .count(),
+            10,
+        );
+    } else {
+        assert_eq!(
+            runner.dispatch(LifecycleEvent::Stop).unwrap(),
+            LifecycleState::Ready,
+        );
+    }
     assert_eq!(
         runner.dispatch(LifecycleEvent::Unload).unwrap(),
         LifecycleState::Offline,
@@ -2263,10 +2304,47 @@ fn run_revolt_classic_reference_case(
         assert_revolt_latency_csv(latency, "julia");
     }
     assert_revolt_runtime_update_active(&runner, "reconstruct", julia_generations);
-    assert_eq!(
-        runner.dispatch(LifecycleEvent::Stop).unwrap(),
-        LifecycleState::Ready,
-    );
+    if latency.is_none() {
+        std::fs::write(&julia_source_end, "end\n").unwrap();
+        wait_for_text_with_runner(
+            &mut provider.0,
+            &hil_log,
+            "REVOLT_HIL_JULIA_SOURCE_END sequence=10 commands=10",
+            &mut runner,
+        );
+        assert_eq!(
+            runner
+                .dispatch(LifecycleEvent::FiniteSourceCompleted)
+                .unwrap(),
+            LifecycleState::Ready,
+        );
+        assert!(runner.diagnostic().is_none());
+        assert_eq!(
+            runner.poll_required_objects().unwrap(),
+            LifecycleState::Ready
+        );
+        std::fs::write(&julia_after_ready, "check\n").unwrap();
+        wait_for_text(
+            &mut provider.0,
+            &hil_log,
+            "REVOLT_HIL_JULIA_READY_END_CHECK sequence=10",
+        );
+        let after_end = dump(pipewire_build, environment, core_name);
+        assert!(after_end.contains("revolt-classic-sim-wfs"));
+        assert!(after_end.contains("revolt-classic-sim-hsdm277-command"));
+        assert_eq!(
+            std::fs::read_to_string(&hil_log)
+                .unwrap()
+                .matches("REVOLT_HIL_FRAME_EXCHANGED implementation=julia")
+                .count(),
+            10,
+        );
+    } else {
+        assert_eq!(
+            runner.dispatch(LifecycleEvent::Stop).unwrap(),
+            LifecycleState::Ready,
+        );
+    }
     assert_eq!(
         runner.dispatch(LifecycleEvent::Unload).unwrap(),
         LifecycleState::Offline,

@@ -246,8 +246,13 @@ updated state by sequence 8. The private core separately
 proves repeated live gain/pole updates and rejection of an undeclared property
 for native and Julia graphs, including no generation change on rejection. It
 stops a minimal graph, reloads a different serial topology, restarts, and
-confirms the old objects are absent. Source-end equivalence and lockstep
-native-versus-Julia comparison through the adoption window remain.
+confirms the old objects are absent. After the tenth Classic command, the
+external owner signals finite source completion to the RTC. The fixture checks
+`RUNNING` → `READY`, unchanged plant and command state after that transition,
+and survival of the externally owned WFS and command nodes for both
+implementations. This exercises the existing lifecycle event; automatic
+discovery of external source end is not implemented. Lockstep
+native-versus-Julia comparison through the adoption window remains.
 
 ### 4. Prove scientist authoring
 
@@ -302,7 +307,7 @@ measured report is checked in as evidence.
 | RTC-DEV-004 | 1 | implemented | validated | Transition, retry, invalid-command, required-object failure, repeated-cycle, and lifecycle-dispatch tests pass. Native and Julia graphs stop to durable live `READY` and restart without reconstructing objects or links. A non-looping FITS source publishes completion after its final buffer returns, and the sole dispatcher automatically returns `RUNNING` to `READY` |
 | RTC-DEV-005 | 3 | implemented | validated | Reset, typed scalar-property updates, and typed ndarray Parameter Port publication use the one lifecycle dispatcher and standard host surfaces. The private core proves submitted-versus-active behavior for native FGN and JuliaFilterGraph REVOLT controllers. Two gain/pole transactions and a sparse reconstructor update are checked against all ten transported commands and plant states per implementation, with observed values and generations. Separate running-update cases prove two successive live gain/pole transactions and undeclared-property rejection without generation change. A minimal-to-serial structural reload preserves the lifecycle and replaces every former graph object |
 | RTC-DEV-006 | 1 and 2 | implemented | validated | The private-core runner reaches and remains in its lifecycle without a GUI. A declared source output feeds the bounded PipeWireAO queue in copy/drop-oldest mode; a Julia observer attaches, holds a buffer, detaches, and reattaches while the required sink and lifecycle continue. An identical finite replay without the observer produces the same accepted buffer count, byte count, and payload digest |
-| RTC-DEV-007 | 2 and 3 | partial | partial | AdaptiveOpticsSim flat and atmospheric cases and both REVOLT controller implementations compare transported outputs and plant state with direct references. The REVOLT fixture covers reset plus property and parameter updates. It retains independent reference states for each monotone parameter-adoption history, prunes histories against every command, and requires one identified history by sequence 8. Source-end equivalence and lockstep native-versus-Julia comparison through the nondeterministic adoption window remain |
+| RTC-DEV-007 | 2 and 3 | partial | partial | AdaptiveOpticsSim flat and atmospheric cases and both REVOLT controller implementations compare transported outputs and plant state with direct references. The REVOLT fixture covers reset plus property and parameter updates. It retains independent reference states for each monotone parameter-adoption history, prunes histories against every command, and requires one identified history by sequence 8. An external-owner completion notification after command 10 returns each controller from `RUNNING` to `READY` without changing plant or command state or removing external nodes. Automatic external source-end discovery and common-input lockstep native-versus-Julia comparison through the adoption window remain |
 | RTC-DEV-008 | 4 | implemented | partial | Calculon tests package-local stateless optical-gain, stateful integrator, multi-input pseudo-open-loop, and ndarray-parameter pixel-calibration declarations with ordinary arrays, a small non-PipeWire graph executor, and scientific error types. The ABI 7 C graph-host fixture loads the production bundle and processes these labels without a central adapter registry edit. It also checks detector-frame assembly and PDM system-flat parameter adoption. The declaration inventory remains red for three progressive labels lacking C-host cases: pixel-calibration readout, PWFS readout reconstruction, and SHWFS readout reconstruction |
 | RTC-DEV-009 | 1 | implemented | validated | Statig hierarchy, serialized dispatch, typed effects, effect failure, stale-completion rejection, and the full private-core lifecycle pass through the same dispatcher |
 | RTC-DEV-010 | 1c through 1e | implemented | validated | The exact serial, forked, and independent sessions each pass the private-core lifecycle and deliver to every sink; standard graph files are delegated unchanged and PipeWire owns branch execution. The private core injects failure after every actual owned node and link creation point and proves cleanup plus retry |
@@ -459,7 +464,11 @@ not mislabeled as calibrated pixels in PDE. The fixture now polls
 required objects during every frame exchange and checks the provider's WFS
 and command node IDs around each exchange. The provider closes and recreates
 those nodes only after the native RTC has unloaded and before the Julia RTC
-loads. Two consecutive monitored replays passed on 2026-09-29.
+loads. Two consecutive monitored replays passed on 2026-09-29. The finite
+source-end fixture explicitly sends the external-owner completion event after
+the tenth command and checks `READY` plus unchanged plant, command, and
+external-node state; it does not claim automatic PipeWire end-of-stream
+discovery for the external WFS.
 
 ## Development completion gate
 
