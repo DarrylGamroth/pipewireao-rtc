@@ -100,6 +100,18 @@ These individual runs show that both managed paths reach the wire boundary;
 three independent qualified runs per controller are still needed for a
 comparative latency claim.
 
+A second 1,024-frame replay of each controller used committed launcher
+revision `b799f74` with a clean RTC worktree and the finite, nonnegative
+latency check enabled. Both again passed exact delivery, offered schedule,
+reference vectors, wire-vector agreement, before/after placement, and clean
+unload. Native first-packet → DM p50/p99 was 1,150/1,355 µs and terminal
+p50/p99 was 153/358 µs. Julia first-packet p50/p99 was 1,152/1,275 µs and
+terminal p50/p99 was 152/279 µs. The raw reports are
+`~/.cache/rtc-copper-native-wire-committed-1024-20260929/report.json` and
+`~/.cache/rtc-copper-julia-wire-committed-1024-20260929/report.json`.
+Ambient load was not controlled across the four runs, so these values do not
+establish a comparative ranking.
+
 One 1,024-frame replay per controller passed this profile at 474 Hz on
 2026-09-29. Both produced 1,024 contiguous demanded commands with zero WFS
 drops, buffer starvations, or simulator timer overruns. The native vectors
