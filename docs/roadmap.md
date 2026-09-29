@@ -566,9 +566,23 @@ to one OpenBLAS thread. Four 1,024-frame Julia runs at 474 Hz delivered every
 command and matched the saved FGN vectors. An otherwise aligned eight-thread
 Julia run lost commands and callbacks; the retained native RTC run passed
 delivery, simulator-schedule, and vector checks. These runs identify a useful
-thread-count setting for this loaded workstation, but the RTC companion
-launcher still lacks fail-closed requested placement and does not yet meet
-RTC-DEV-019's latency-distribution and first-use evidence requirements.
+thread-count setting for this loaded workstation. They preceded the opt-in
+placement experiment below and do not meet RTC-DEV-019's latency-distribution
+or first-use evidence requirements.
+
+The managed RTC companion now accepts an opt-in host-specific thread profile.
+It preflights requested CPU masks and scheduler policy, explicitly configures
+the daemon data loop, pins the Julia owner's two threads through its maintained
+interface, and rejects a mismatched live thread map before starting the pixel
+source. One native and one Julia 1,024-frame replay at 474 Hz passed the
+before/after thread checks, exact ordered delivery, offered-schedule check,
+and demanded-vector comparison on 2026-09-29. The native difference from the
+saved FGN vector file was zero; Julia's was 2.981 × 10⁻⁸ µm. A deliberately
+incomplete RTC thread profile failed before ingress. The source process still
+has no pre-ingress thread handshake, and the managed fixture does not yet
+capture Standard-DM wire egress or first/terminal WFS-to-DM latency. The
+three-repeat, first-use, and progressive qualifications remain open, so
+RTC-DEV-019 remains partial.
 
 An opt-in Ryzen thread profile now checks exact policy and affinity counts at
 each runner's pre-ingress and post-replay boundary. It exposed the FGN daemon's

@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "roles": {
+    "daemon": {
+      "cpus": "0,2,4,6,8,10,14",
+      "leader_policy": "other",
+      "required_policy_counts": {
+        "other": 1,
+        "fifo:83": 1
+      },
+      "required_thread_placements": [
+        {
+          "policy": "fifo:83",
+          "cpus": "0",
+          "count": 1
+        }
+      ]
+    },
+    "observer": {
+      "cpus": "0-15",
+      "leader_policy": "other",
+      "required_policy_counts": {
+        "other": 1,
+        "fifo:83": 1
+      },
+      "required_thread_placements": []
+    },
+    "rtc": {
+      "cpus": "0,2,4,6,8,10,14",
+      "leader_policy": "other",
+      "required_policy_counts": {
+        "other": 3,
+        "fifo:83": 1
+      },
+      "required_thread_placements": []
+    },
+    "simulator": {
+      "cpus": "12",
+      "leader_policy": "fifo:20",
+      "required_policy_counts": {},
+      "required_thread_placements": []
+    }
+  }
+}

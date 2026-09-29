@@ -17,6 +17,9 @@ import time
 
 import numpy as np
 
+from lab_placement import (LaunchError, parse_cpu_list, parse_thread_policy,
+                           read_thread_profile, wrapper_argv)
+
 
 RTC = Path(__file__).resolve().parents[1]
 PIPEWIREAO_JLL_UUID = "cde84cf6-9a21-5ce0-b5e3-1526e778c30b"
@@ -76,18 +79,76 @@ def wfs_counters(dump: str) -> dict[str, int]:
     return counters
 
 
-def capture_placement(output: Path, phase: str, processes: dict, env: dict) -> dict:
+def capture_placement(output: Path, phase: str, processes: dict, env: dict,
+                      profile: dict | None = None, profile_sha256: str | None = None) -> dict:
     inspector = RTC / "benchmark/lab_placement.py"
     records = {}
     for role, process in processes.items():
         path = output / f"placement-{phase}-{role}.json"
-        subprocess.run(
-            [sys.executable, str(inspector), "inspect", "--pid", str(process.pid),
-             "--output", str(path)],
-            env=env, check=True,
-        )
+        if profile is None:
+            argv = [sys.executable, str(inspector), "inspect", "--pid", str(process.pid),
+                    "--output", str(path)]
+        else:
+            contract = profile["roles"][role]
+            argv = [sys.executable, str(inspector), "verify", "--role", role,
+                    "--pid", str(process.pid), "--cpus", contract["cpus"],
+                    "--leader-policy", contract["leader_policy"], "--output", str(path)]
+            for policy in sorted({contract["leader_policy"],
+                                  *contract["required_policy_counts"],
+                                  *(item["policy"] for item in contract["required_thread_placements"])}):
+                argv.extend(("--allowed-thread-policy", policy))
+            for policy, count in contract["required_policy_counts"].items():
+                argv.extend(("--required-thread-policy", f"{policy}={count}"))
+        completed = subprocess.run(argv, env=env, capture_output=True, text=True)
         records[role] = str(path)
+        if completed.returncode:
+            detail = json.loads(path.read_text()).get("error") if path.is_file() else completed.stderr
+            raise RuntimeError(f"{role} placement failed {phase}: {detail}; record: {path}")
+        if profile_sha256 is not None:
+            verified = json.loads(path.read_text())
+            actual = verified.get("requested", {}).get("thread_profile_sha256")
+            if actual != profile_sha256:
+                raise RuntimeError(f"{role} placement profile changed {phase}: {path}")
     return records
+
+
+def placement_contract(profile: dict, role: str) -> tuple[set[int], tuple[str, int]]:
+    contract = profile["roles"][role]
+    return parse_cpu_list(contract["cpus"]), parse_thread_policy(contract["leader_policy"])
+
+
+def placed_argv(profile: dict | None, role: str, argv: list[str]) -> list[str]:
+    if profile is None:
+        return argv
+    cpus, (policy, priority) = placement_contract(profile, role)
+    return wrapper_argv(argv, cpus, policy, priority)
+
+
+def preflight_placement(profile: dict, roles: set[str]) -> tuple[int, int]:
+    available = set(os.sched_getaffinity(0))
+    for role in sorted(roles):
+        cpus, (policy, priority) = placement_contract(profile, role)
+        contract = profile["roles"][role]
+        if role != "simulator":
+            counted = set(contract["required_policy_counts"])
+            used = {contract["leader_policy"],
+                    *(item["policy"] for item in contract["required_thread_placements"])}
+            if not used <= counted:
+                raise LaunchError(f"{role} profile must count every permitted thread policy")
+        missing = cpus - available
+        if missing:
+            raise LaunchError(f"{role} requested unavailable CPUs: {sorted(missing)}")
+        probe = subprocess.run(wrapper_argv(["true"], cpus, policy, priority),
+                               capture_output=True, text=True)
+        if probe.returncode:
+            raise LaunchError(f"{role} scheduler/affinity preflight failed: {probe.stderr.strip()}")
+    loops = [item for item in profile["roles"]["daemon"]["required_thread_placements"]
+             if item["count"] == 1 and item["policy"].startswith("fifo:")
+             and len(parse_cpu_list(item["cpus"])) == 1]
+    if len(loops) != 1:
+        raise LaunchError("daemon profile needs exactly one pinned FIFO data-loop placement")
+    loop = loops[0]
+    return next(iter(parse_cpu_list(loop["cpus"]))), parse_thread_policy(loop["policy"])[1]
 
 
 def main() -> None:
@@ -117,6 +178,10 @@ def main() -> None:
                         help="local PipeWireAO.jl package for the Julia provider")
     parser.add_argument("--julia-blas-threads", type=int, default=1,
                         help="OpenBLAS threads in the Julia controller (default: 1)")
+    parser.add_argument("--placement-profile", type=Path,
+                        help="opt-in role/thread contract; reject mismatches before image ingress")
+    parser.add_argument("--julia-pin-cpus",
+                        help="comma-separated CPU for each of the two Julia threads in placement mode")
     parser.add_argument("--frames", type=int, default=16)
     parser.add_argument("--rate-hz", type=int, default=474,
                         help="offered frame rate; the 2 ms wfsSimulator readout permits at most 474 Hz")
@@ -131,9 +196,34 @@ def main() -> None:
         parser.error("--julia-blas-threads must be positive")
     if args.controller == "native" and args.julia_blas_threads != 1:
         parser.error("--julia-blas-threads applies only to --controller julia")
+    if args.julia_pin_cpus and (args.controller != "julia" or args.placement_profile is None):
+        parser.error("--julia-pin-cpus requires Julia and --placement-profile")
+    if args.controller == "julia" and args.placement_profile and not args.julia_pin_cpus:
+        parser.error("Julia placement requires --julia-pin-cpus")
     output = args.output_dir.resolve()
     if output.exists():
         parser.error(f"output directory already exists: {output}")
+    profile = None
+    loop_cpu = loop_priority = None
+    if args.placement_profile is not None:
+        try:
+            profile = read_thread_profile(args.placement_profile.resolve())
+            roles = {"daemon", "observer", "rtc", "simulator"}
+            if args.controller == "julia":
+                roles.add("island")
+            absent = roles - profile["roles"].keys()
+            if absent:
+                raise LaunchError(f"placement profile lacks roles: {sorted(absent)}")
+            if args.controller == "julia":
+                pin_cpus = parse_cpu_list(args.julia_pin_cpus)
+                ordered_pins = [int(item) for item in args.julia_pin_cpus.split(",")]
+                if len(ordered_pins) != 2 or len(pin_cpus) != 2:
+                    raise LaunchError("Julia placement requires two distinct ordered pin CPUs")
+                if not pin_cpus <= parse_cpu_list(profile["roles"]["island"]["cpus"]):
+                    raise LaunchError("Julia pin CPUs exceed the island process CPU mask")
+            loop_cpu, loop_priority = preflight_placement(profile, roles)
+        except (LaunchError, ValueError, KeyError, TypeError, argparse.ArgumentTypeError) as error:
+            parser.error(f"placement preflight failed: {error}")
     scripts = args.algorithms_root.resolve() / "scripts"
     sys.path.insert(0, str(scripts))
     from run_fgn_copper_fullframe_live import (  # noqa: PLC0415
@@ -156,7 +246,17 @@ def main() -> None:
         require(deployment_project, "JuliaFilterGraph deployment project")
         require(pipewireao_julia_root / "Project.toml", "local PipeWireAO.jl project")
     output.mkdir(parents=True)
-    env = make_environment(output, heart, args.rate_hz, installation)
+    env = make_environment(output, heart, args.rate_hz, installation,
+                           loop_cpu, loop_priority)
+    if profile is not None:
+        env["PIPEWIREAO_RTC_THREAD_PROFILE"] = str(args.placement_profile.resolve())
+        daemon_config = (output / "config/fgn-copper-live.conf").read_text()
+        required_settings = ("mem.mlock-all = false", "loop.idle = eventfd",
+                             f"loop.rt-prio = {loop_priority}",
+                             f"thread.affinity = [ {loop_cpu} ]",
+                             "name = libpipewire-module-rt")
+        if any(setting not in daemon_config for setting in required_settings):
+            raise RuntimeError("generated daemon config lacks a requested loop or memory setting")
     observer_bin = compile_observer(output, env, args.rate_hz, installation)
     if args.controller == "native":
         subprocess.run(
@@ -189,6 +289,13 @@ def main() -> None:
               "delivery_qualified": False, "schedule_qualified": False,
               "numerical_comparison": "not_evaluated" if args.reference_vectors is not None
               else "not_requested"}
+    profile_sha256 = sha256_file(args.placement_profile) if profile is not None else None
+    if profile is not None:
+        report["placement_profile"] = str(args.placement_profile.resolve())
+        report["placement_profile_sha256"] = profile_sha256
+        report["requested_placement"] = {role: profile["roles"][role]
+                                          for role in sorted(roles)}
+        report["daemon_config_sha256"] = sha256_file(output / "config/fgn-copper-live.conf")
     report["pipewire_prefix"] = str(args.pipewire_prefix.resolve())
     report["input_sha256"] = sha256_file(cube)
     report["heart_plugin_sha256"] = sha256_file(heart)
@@ -207,7 +314,8 @@ def main() -> None:
     placement_processes = {}
     try:
         daemon, daemon_log = start(
-            [str(installation.daemon), "-c", "fgn-copper-live.conf"],
+            placed_argv(profile, "daemon",
+                        [str(installation.daemon), "-c", "fgn-copper-live.conf"]),
             env, output / "daemon.log", cwd=installation.working_directory,
         )
         processes.append((daemon, daemon_log, None))
@@ -215,9 +323,10 @@ def main() -> None:
         wait_for("private PipeWireAO socket",
                  lambda: (Path(env["XDG_RUNTIME_DIR"]) / "pipewire-ao-0").exists(), 15)
         observer, observer_log = start(
-            [str(observer_bin), "--csv", str(output / "demanded.csv"),
-             "--vectors", str(output / "demanded-um.f32"),
-             "--max-records", str(args.frames + 4)],
+            placed_argv(profile, "observer",
+                        [str(observer_bin), "--csv", str(output / "demanded.csv"),
+                         "--vectors", str(output / "demanded-um.f32"),
+                         "--max-records", str(args.frames + 4)]),
             env, output / "observer.log", stdin=True,
         )
         processes.append((observer, observer_log, "q"))
@@ -243,10 +352,14 @@ def main() -> None:
                 "JULIA_RTC_MANAGED_NODE_NAME": "calculon-revolt-copper-fullframe",
                 "JULIA_RTC_MANAGED_REMOTE": "pipewire-ao-0",
             })
+            if profile is not None:
+                env["JULIA_RTC_PIN_CPUS"] = args.julia_pin_cpus
             island, island_log = start(
-                ["julia", "--startup-file=no", "--threads=2",
-                 f"--project={jfg_root / 'deployment'}", str(island_script),
-                 "progressive-rtc-benchmark"],
+                placed_argv(profile, "island",
+                            ["julia", "--startup-file=no",
+                             "--threads=2,0" if profile is not None else "--threads=2",
+                             f"--project={jfg_root / 'deployment'}", str(island_script),
+                             "progressive-rtc-benchmark"]),
                 env, output / "julia-island.log", cwd=jfg_root,
             )
             processes.append((island, island_log, None))
@@ -254,23 +367,26 @@ def main() -> None:
             wait_text(output / "julia-island.log", "JULIA_ISLAND_CONNECT_ACCEPTED", 60,
                       island)
         rtc, rtc_log = start(
-            [str(rtc_bin), "--config",
-             str(fixture),
-             "--hold"], env, output / "rtc.log", stdin=True,
+            placed_argv(profile, "rtc",
+                        [str(rtc_bin), "--config", str(fixture), "--hold"]),
+            env, output / "rtc.log", stdin=True,
         )
         processes.append((rtc, rtc_log, "quit\n"))
+        placement_processes["rtc"] = rtc
         wait_text(output / "rtc.log", "RUNNING", 30, rtc)
         command([str(installation.tool("pwao-dump")), "-r", "pipewire-ao-0"], env)
         report["placement"] = {
             "before_ingress": capture_placement(
-                output, "before-ingress", placement_processes, env,
+                output, "before-ingress", placement_processes, env, profile,
+                profile_sha256,
             ),
         }
         (output / "input.fits").symlink_to(cube)
         replay, replay_log = start(
-            [str(simulator), "-file", "input.fits", "-tPort", "6000",
-             "-period", repr(1.0 / args.rate_hz), "-readout", "2000", "-lines", "32",
-             "-numFrames", str(args.frames)],
+            placed_argv(profile, "simulator",
+                        [str(simulator), "-file", "input.fits", "-tPort", "6000",
+                         "-period", repr(1.0 / args.rate_hz), "-readout", "2000", "-lines", "32",
+                         "-numFrames", str(args.frames)]),
             env, output / "wfs-simulator.log", cwd=output,
         )
         processes.append((replay, replay_log, None))
@@ -291,7 +407,8 @@ def main() -> None:
         (output / "pipewire-after-replay.json").write_text(dump)
         report["wfs_counters"] = wfs_counters(dump)
         report["placement"]["after_replay"] = capture_placement(
-            output, "after-replay", placement_processes, env,
+            output, "after-replay", placement_processes, env, profile,
+            profile_sha256,
         )
         stop(rtc, rtc_log, control="quit\n")
         processes.remove((rtc, rtc_log, "quit\n"))

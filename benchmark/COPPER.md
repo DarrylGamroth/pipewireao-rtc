@@ -23,6 +23,54 @@ matched Julia Copper runner does. `--julia-blas-threads` permits a recorded
 diagnostic comparison. The runner's Julia path requires the managed provider
 in the JuliaFilterGraph sibling repository.
 
+The RTC runner also accepts an opt-in per-role placement contract. The
+[native](profiles/ryzen-6800h-rtc-copper-native.json) and
+[Julia](profiles/ryzen-6800h-rtc-copper-julia.json) examples describe this
+workstation's CPU set, expected thread counts, FIFO83 data loop, and FIFO20
+pixel sender. They are separate because the RTC has one additional parameter
+thread when it owns the native graph. Before starting the sender, the runner
+checks that every requested CPU and scheduler policy is available, generates
+an explicit eventfd/FIFO83/CPU 0 daemon data loop with
+`mem.mlock-all=false`, and verifies each live daemon, observer, RTC, and
+optional Julia-island thread against the selected profile. It verifies them
+again after replay. The Julia owner receives `JULIA_RTC_PIN_CPUS` through its
+maintained ThreadPinning interface. A changed or unavailable thread layout
+fails the run; the JSON records name the failed process and thread.
+
+```sh
+python3 benchmark/run_copper_rtc.py \
+  --output-dir /path/to/new/native-strict \
+  --controller native --frames 1024 \
+  --placement-profile benchmark/profiles/ryzen-6800h-rtc-copper-native.json \
+  --reference-vectors /path/to/matched/fgn/demanded-um.f32
+
+python3 benchmark/run_copper_rtc.py \
+  --output-dir /path/to/new/julia-strict \
+  --controller julia --frames 1024 \
+  --placement-profile benchmark/profiles/ryzen-6800h-rtc-copper-julia.json \
+  --julia-pin-cpus 0,2 \
+  --reference-vectors /path/to/matched/fgn/demanded-um.f32
+```
+
+These host-specific profiles are an optional development experiment. The
+pixel sender's launch policy is preflighted, but its own threads cannot yet
+be inspected before it starts sending. The managed RTC fixture ends at the
+non-actuating demanded-command observer, so it does not provide Standard-DM
+wire egress or pixel-to-DM latency distributions. The three-way baseline
+runner remains the source of those complete-path measurements.
+
+One 1,024-frame replay per controller passed this profile at 474 Hz on
+2026-09-29. Both produced 1,024 contiguous demanded commands with zero WFS
+drops, buffer starvations, or simulator timer overruns. The native vectors
+matched the saved FGN vectors exactly; Julia's maximum absolute difference
+was 2.9802322387695312 × 10⁻⁸ µm. Every declared live role passed its
+before-ingress and after-replay thread check. The raw reports are
+`~/.cache/rtc-copper-native-strict-1024-20260929/report.json` and
+`~/.cache/rtc-copper-julia-strict-1024-20260929/report.json`. An earlier
+native attempt with an incomplete RTC thread contract failed before image
+ingress and named its unexpected FIFO83 thread. These replays validate the
+placement gate on this host; they are not a three-repeat latency comparison.
+
 Render the Copper graph and its startup calibration parameters from the
 maintained FGN generator and the same HEART configuration used by the
 comparison:
