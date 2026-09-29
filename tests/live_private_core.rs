@@ -1177,7 +1177,7 @@ fn run_external_julia_processing_graph_case(
     assert!(!after_unload.contains("pipewireao-rtc-source"));
     assert!(!after_unload.contains("pipewireao-rtc-sink"));
 
-    stop_provider(&mut provider, &stop_file, &provider_log, "Julia graph");
+    stop_julia_graph_after_unload(&mut provider, &stop_file, &provider_log, "Julia graph");
     wait_for_dump_absent(
         pipewire_build,
         environment,
@@ -1343,7 +1343,7 @@ fn run_live_property_update_cases(
         julia.dispatch(LifecycleEvent::Unload).unwrap(),
         LifecycleState::Offline,
     );
-    stop_provider(
+    stop_julia_graph_after_unload(
         &mut provider,
         &stop_file,
         &provider_log,
@@ -1624,7 +1624,7 @@ fn run_external_julia_processing_graph_fault_case(
         LifecycleState::Offline,
     );
     assert!(dump(pipewire_build, environment, core_name).contains("pipewireao-rtc-external-graph"));
-    stop_provider(
+    stop_julia_graph_after_unload(
         &mut replacement,
         &stop_file,
         &provider_log,
@@ -1696,7 +1696,7 @@ fn run_external_graph_equivalence_case(
     let julia_digest = run_finite_external_graph(core_name, &fixture, "Julia graph");
     assert_eq!(julia_digest, native_digest);
     assert_eq!(julia_digest, expected_leaky_digest(4));
-    stop_provider(
+    stop_julia_graph_after_unload(
         &mut julia,
         &stop_file,
         &provider_log,
@@ -2007,6 +2007,7 @@ fn run_revolt_classic_lockstep_case(
     }
 
     let stop_julia_graph = temporary.join("stop-revolt-lockstep-julia-graph");
+    let expected_julia_disconnect = temporary.join("revolt-lockstep-julia-disconnect");
     let julia_log = temporary.join("revolt-lockstep-julia-graph.log");
     let log = std::fs::File::create(&julia_log).expect("REVOLT lockstep Julia log");
     let mut command = command_with_environment("julia", environment);
@@ -2029,6 +2030,9 @@ fn run_revolt_classic_lockstep_case(
             julia_graph.to_str().expect("UTF-8 Julia graph path"),
             stop_julia_graph.to_str().expect("UTF-8 Julia stop file"),
             "pipewireao-rtc-revolt-julia",
+            expected_julia_disconnect
+                .to_str()
+                .expect("UTF-8 expected disconnect file"),
         ])
         .stdout(Stdio::from(log.try_clone().unwrap()))
         .stderr(Stdio::from(log))
@@ -2080,13 +2084,16 @@ fn run_revolt_classic_lockstep_case(
         runner.dispatch(LifecycleEvent::Stop).unwrap(),
         LifecycleState::Ready,
     );
+    let before_external_stop = dump(pipewire_build, environment, core_name);
+    assert!(before_external_stop.contains("pipewireao-rtc-revolt-julia"));
+    assert!(before_external_stop.contains("revolt-classic-sim-wfs"));
     assert_eq!(
         runner.dispatch(LifecycleEvent::Unload).unwrap(),
         LifecycleState::Offline,
     );
+    std::fs::write(&expected_julia_disconnect, "RTC unloaded\n").unwrap();
     let after = dump(pipewire_build, environment, core_name);
     assert!(!after.contains("pipewireao-rtc-revolt-native"));
-    assert!(after.contains("pipewireao-rtc-revolt-julia"));
     assert!(after.contains("revolt-classic-sim-wfs"));
     stop_provider(
         &mut julia_provider,
@@ -2332,6 +2339,7 @@ fn run_revolt_classic_reference_case(
     wait_for_text(&mut provider.0, &hil_log, "REVOLT_HIL_JULIA_READY");
 
     let stop_julia_graph = temporary.join("stop-revolt-julia-graph");
+    let expected_julia_disconnect = temporary.join("revolt-julia-disconnect");
     let julia_log = temporary.join("revolt-julia-graph.log");
     let log = std::fs::File::create(&julia_log).expect("REVOLT Julia graph log");
     let mut command = command_with_environment("julia", environment);
@@ -2355,6 +2363,10 @@ fn run_revolt_classic_reference_case(
             stop_julia_graph
                 .to_str()
                 .expect("UTF-8 Julia stop-file path"),
+            "pipewireao-rtc-revolt-controller",
+            expected_julia_disconnect
+                .to_str()
+                .expect("UTF-8 expected disconnect file"),
         ])
         .stdout(Stdio::from(log.try_clone().unwrap()))
         .stderr(Stdio::from(log))
@@ -2516,6 +2528,7 @@ fn run_revolt_classic_reference_case(
         runner.dispatch(LifecycleEvent::Unload).unwrap(),
         LifecycleState::Offline,
     );
+    std::fs::write(&expected_julia_disconnect, "RTC unloaded\n").unwrap();
     let after_julia = dump(pipewire_build, environment, core_name);
     assert!(after_julia.contains("revolt-classic-sim-wfs"));
     assert!(after_julia.contains("revolt-classic-sim-hsdm277-command"));
@@ -3235,7 +3248,12 @@ fn launch_external_provider(
 fn stop_provider(provider: &mut ChildGuard, stop_file: &Path, log: &Path, label: &str) {
     std::fs::write(stop_file, "stop\n").unwrap();
     for _ in 0..1_000 {
-        if provider.0.try_wait().unwrap().is_some() {
+        if let Some(status) = provider.0.try_wait().unwrap() {
+            assert!(
+                status.success(),
+                "{label} provider exited with {status}; log: {}",
+                std::fs::read_to_string(log).unwrap_or_default()
+            );
             return;
         }
         std::thread::sleep(Duration::from_millis(10));
@@ -3244,6 +3262,16 @@ fn stop_provider(provider: &mut ChildGuard, stop_file: &Path, log: &Path, label:
         "{label} provider did not stop; log: {}",
         std::fs::read_to_string(log).unwrap()
     );
+}
+
+fn stop_julia_graph_after_unload(
+    provider: &mut ChildGuard,
+    stop_file: &Path,
+    log: &Path,
+    label: &str,
+) {
+    std::fs::write(stop_file.with_extension("rtc-unloaded"), "RTC unloaded\n").unwrap();
+    stop_provider(provider, stop_file, log, label);
 }
 
 #[allow(clippy::too_many_lines)]
@@ -3858,7 +3886,7 @@ fn run_julia_latest_hold_live_case(
         fits_discard::node_is_visible(core_name, "pipewireao-rtc-latest-hold-graph"),
         "runner unload must not destroy the externally owned Julia graph"
     );
-    stop_provider(
+    stop_julia_graph_after_unload(
         &mut provider,
         &stop_file,
         &provider_log,

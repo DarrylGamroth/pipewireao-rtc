@@ -44,6 +44,23 @@ end
 
 try
     FilterGraphPipeWire.run!(node)
+catch error
+    # The runner has already unloaded and removed its source link before this
+    # marker is written. Preserve callback failures and every other run error.
+    if !(error isa PipeWireAO.PipeWireError &&
+         error.operation === :pw_ndarray_filter_run &&
+         error.code == -Base.Libc.EPIPE)
+        rethrow()
+    end
+    finished[] = true
+    deadline = time_ns() + 5_000_000_000
+    expected_disconnect = stop_file * ".rtc-unloaded"
+    while !isfile(expected_disconnect) && time_ns() < deadline
+        Base.Libc.systemsleep(0.01)
+    end
+    isfile(expected_disconnect) || rethrow()
+    println("JULIA_GRAPH_EXPECTED_DISCONNECT")
+    flush(stdout)
 finally
     finished[] = true
     wait(monitor)

@@ -127,15 +127,16 @@ end
 
 function wait_lockstep_command!(sink, sequence)
     start = time_ns()
-    while sink.state.ready[] != sequence
+    while true
         observed = sink.state.ready[]
+        PipeWireAO.stream_state(sink.stream)
+        observed == sequence && return nothing
         observed == 0 || error("Julia command sequence $observed; expected $sequence")
         time_ns() - start <= 5_000_000_000 || error(
             "Julia command sequence $sequence did not arrive before the fixture timeout",
         )
         sleep(0.001)
     end
-    return nothing
 end
 
 function close_lockstep_command_sink!(sink)
@@ -735,6 +736,7 @@ function run_lockstep(reference_slopes, control_matrix)
             # The callback cannot overwrite the command before this comparison.
             sink.state.ready[] = 0
         end
+        PipeWireAO.stream_state(sink.stream)
         println("REVOLT_HIL_LOCKSTEP_DONE sequence=10")
         flush(stdout)
         while !isfile(stop_file)
