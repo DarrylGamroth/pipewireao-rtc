@@ -3858,6 +3858,32 @@ const LATEST_HOLD_CYCLES_PER_SAMPLE: u32 = 10;
 const LATEST_HOLD_EXPECTED_OUTPUTS: u32 = LATEST_HOLD_SAMPLES * LATEST_HOLD_CYCLES_PER_SAMPLE;
 const LATEST_HOLD_STEADY_START: u64 = 11;
 
+fn assert_latest_hold_driver(core_name: &str) {
+    let driver = fits_discard::node_properties(core_name, "PipeWireAO-RTC-Dummy-Driver");
+    let driver_id = driver.get("object.id").expect("Dummy Driver object ID");
+    for name in [
+        "pipewireao-rtc-latest-hold",
+        "pipewireao-rtc-latest-hold-primary-source",
+        "pipewireao-rtc-latest-hold-slow-source",
+    ] {
+        let properties = fits_discard::node_properties(core_name, name);
+        assert_eq!(
+            properties.get("node.driver-id"),
+            Some(driver_id),
+            "{name} must be scheduled by the selected Dummy Driver"
+        );
+        if name == "pipewireao-rtc-latest-hold" {
+            assert_eq!(
+                properties
+                    .get("api.ndarray.output-rate")
+                    .map(String::as_str),
+                Some("1000/1"),
+                "the realized hold must retain its declared output cadence"
+            );
+        }
+    }
+}
+
 #[allow(clippy::too_many_lines)]
 fn run_native_latest_hold_live_case(
     repository: &Path,
@@ -3912,10 +3938,7 @@ fn run_native_latest_hold_live_case(
         "latest/hold start diagnostic: {:?}",
         runner.diagnostic()
     );
-    assert!(
-        dump(pipewire_build, environment, core_name).contains("PipeWireAO-RTC-Dummy-Driver"),
-        "latest/hold fixture requires its private Dummy Driver"
-    );
+    assert_latest_hold_driver(core_name);
     send_latest_hold_source_command(&mut source, b's');
     wait_for_text(&mut source.0, &log, "STARTED");
     let progress = wait_for_latest_hold_progress(&mut source, &log, 120);
@@ -3975,28 +3998,14 @@ fn run_native_latest_hold_live_case(
     );
     assert_eq!(metrics.output_starvations, 0);
 
-    assert_eq!(
-        runner
-            .dispatch(LifecycleEvent::Stop)
-            .expect("pause latest/hold"),
-        LifecycleState::Ready
-    );
-    assert_eq!(
-        runner
-            .dispatch(LifecycleEvent::Start)
-            .expect("restart latest/hold after pause"),
-        LifecycleState::Running
-    );
-    let after_restart = wait_for_latest_hold_progress(&mut source, &log, 130);
-    assert_eq!(
-        after_restart.received, LATEST_HOLD_EXPECTED_OUTPUTS,
-        "pause/restart must not replay expired output"
-    );
-    assert_eq!(
-        fits_discard::latest_hold_metrics(core_name, "pipewireao-rtc-latest-hold")
-            .outputs_published,
-        u64::from(LATEST_HOLD_EXPECTED_OUTPUTS),
-        "no backlog may appear after restart"
+    let (recovered, recovered_metrics) = exercise_latest_hold_recovery(
+        &mut runner,
+        &mut source,
+        &log,
+        pipewire_build,
+        environment,
+        core_name,
+        progress,
     );
     assert_eq!(
         runner
@@ -4021,9 +4030,9 @@ fn run_native_latest_hold_live_case(
         None => std::env::remove_var("PIPEWIREAO_RTC_GRAPH_LATEST_HOLD"),
     }
     LatestHoldCaseResult {
-        received: progress.received,
+        received: recovered.received,
         last_command_sequence: progress.last_command_sequence,
-        metrics,
+        metrics: recovered_metrics,
     }
 }
 
@@ -4086,10 +4095,7 @@ fn run_julia_latest_hold_live_case(
         "Julia latest/hold start diagnostic: {:?}",
         runner.diagnostic()
     );
-    assert!(
-        dump(pipewire_build, environment, core_name).contains("PipeWireAO-RTC-Dummy-Driver"),
-        "Julia latest/hold fixture requires its private Dummy Driver"
-    );
+    assert_latest_hold_driver(core_name);
     send_latest_hold_source_command(&mut source, b's');
     wait_for_text(&mut source.0, &log, "STARTED");
     let progress = wait_for_latest_hold_progress(&mut source, &log, 120);
@@ -4149,28 +4155,14 @@ fn run_julia_latest_hold_live_case(
     );
     assert_eq!(metrics.output_starvations, 0);
 
-    assert_eq!(
-        runner
-            .dispatch(LifecycleEvent::Stop)
-            .expect("pause Julia latest/hold"),
-        LifecycleState::Ready
-    );
-    assert_eq!(
-        runner
-            .dispatch(LifecycleEvent::Start)
-            .expect("restart Julia latest/hold after pause"),
-        LifecycleState::Running
-    );
-    let after_restart = wait_for_latest_hold_progress(&mut source, &log, 130);
-    assert_eq!(
-        after_restart.received, LATEST_HOLD_EXPECTED_OUTPUTS,
-        "Julia pause/restart must not replay expired output"
-    );
-    assert_eq!(
-        fits_discard::latest_hold_metrics(core_name, "pipewireao-rtc-latest-hold")
-            .outputs_published,
-        u64::from(LATEST_HOLD_EXPECTED_OUTPUTS),
-        "Julia pause/restart must not create a backlog"
+    let (recovered, recovered_metrics) = exercise_latest_hold_recovery(
+        &mut runner,
+        &mut source,
+        &log,
+        pipewire_build,
+        environment,
+        core_name,
+        progress,
     );
     assert_eq!(
         runner
@@ -4211,10 +4203,274 @@ fn run_julia_latest_hold_live_case(
         "deterministic Julia latest/hold source",
     );
     LatestHoldCaseResult {
-        received: progress.received,
+        received: recovered.received,
         last_command_sequence: progress.last_command_sequence,
-        metrics,
+        metrics: recovered_metrics,
     }
+}
+
+#[allow(clippy::too_many_lines)]
+fn exercise_latest_hold_recovery(
+    runner: &mut Runner<LiveGraphAdapter>,
+    source: &mut ChildGuard,
+    log: &Path,
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+    initial: LatestHoldProgress,
+) -> (LatestHoldProgress, fits_discard::LatestHoldMetrics) {
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Stop)
+            .expect("pause latest/hold"),
+        LifecycleState::Ready
+    );
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Reset)
+            .expect("reset latest/hold in READY"),
+        LifecycleState::Ready
+    );
+    assert_eq!(
+        runner.execution_group_states()["hold"],
+        ExecutionGroupState::Stopped
+    );
+    let before_probe = wait_for_latest_hold_progress(source, log, initial.cycles);
+    send_latest_hold_source_command(source, b'n');
+    wait_for_text(&mut source.0, log, "NEXT_SAMPLE_ENABLED identity=11");
+    let offered11 = wait_for_new_latest_hold_sample(source, log, before_probe, 11);
+    let ready_probe = wait_for_latest_hold_progress_until(
+        source,
+        log,
+        LatestHoldProgressThreshold {
+            cycles: offered11.offered_sample_cycle + 10,
+            offered_cycle: before_probe.offered_sample_cycle,
+            data: 11,
+            received: LATEST_HOLD_EXPECTED_OUTPUTS,
+            commands: before_probe.commands,
+            last_command_sequence: before_probe.last_command_sequence,
+        },
+    );
+    assert_eq!(ready_probe.received, LATEST_HOLD_EXPECTED_OUTPUTS);
+    assert_eq!(
+        ready_probe.commands, before_probe.commands,
+        "READY reset implicitly restarted the processing group"
+    );
+    send_latest_hold_source_command(source, b'g');
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Start)
+            .expect("restart latest/hold after reset"),
+        LifecycleState::Running
+    );
+    let restarted_cycle =
+        wait_for_latest_hold_restart_marker(source, log, b'r', "SESSION_RESTART_MARKER cycle=");
+    let after_restart = wait_for_latest_hold_progress_until(
+        source,
+        log,
+        LatestHoldProgressThreshold {
+            cycles: restarted_cycle + 10,
+            data: 11,
+            received: LATEST_HOLD_EXPECTED_OUTPUTS,
+            commands: before_probe.commands,
+            last_command_sequence: before_probe.last_command_sequence,
+            ..Default::default()
+        },
+    );
+    assert_eq!(
+        after_restart.received, LATEST_HOLD_EXPECTED_OUTPUTS,
+        "restart must not replay the sample offered while READY"
+    );
+    assert_eq!(
+        fits_discard::latest_hold_metrics(core_name, "pipewireao-rtc-latest-hold")
+            .outputs_published,
+        u64::from(LATEST_HOLD_EXPECTED_OUTPUTS),
+        "reset and restart must not create a held-output backlog"
+    );
+    send_latest_hold_source_command(source, b'n');
+    wait_for_text(&mut source.0, log, "NEXT_SAMPLE_ENABLED identity=12");
+    let offered12 = wait_for_new_latest_hold_sample(source, log, after_restart, 12);
+    assert!(u64::from(offered12.offered_primary_sequence) > after_restart.last_command_sequence);
+    let first_recovery = wait_for_latest_hold_progress_until(
+        source,
+        log,
+        LatestHoldProgressThreshold {
+            cycles: offered12.offered_sample_cycle + 10,
+            offered_cycle: ready_probe.offered_sample_cycle,
+            data: 12,
+            received: LATEST_HOLD_EXPECTED_OUTPUTS + LATEST_HOLD_CYCLES_PER_SAMPLE,
+            commands: after_restart.commands + 10,
+            last_command_sequence: u64::from(offered12.offered_primary_sequence)
+                + u64::from(LATEST_HOLD_CYCLES_PER_SAMPLE)
+                - 1,
+        },
+    );
+    assert_eq!(
+        first_recovery.received,
+        LATEST_HOLD_EXPECTED_OUTPUTS + LATEST_HOLD_CYCLES_PER_SAMPLE
+    );
+    assert_eq!(first_recovery.commands, after_restart.commands + 10);
+    assert_eq!(
+        first_recovery.last_command_sequence,
+        u64::from(offered12.offered_primary_sequence) + u64::from(LATEST_HOLD_CYCLES_PER_SAMPLE)
+            - 1
+    );
+    assert_eq!(first_recovery.allowed_command_gaps, 1);
+    assert!(first_recovery.offered_sample_cycle > ready_probe.offered_sample_cycle);
+    assert!(first_recovery.last_held_header_sequence > ready_probe.last_held_header_sequence);
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::StopExecutionGroup("hold".to_owned()))
+            .expect("stop latest/hold execution group"),
+        LifecycleState::Running
+    );
+    assert_eq!(
+        runner.execution_group_states()["hold"],
+        ExecutionGroupState::Stopped
+    );
+    let at_stop = wait_for_latest_hold_progress(source, log, first_recovery.cycles);
+    send_latest_hold_source_command(source, b'n');
+    wait_for_text(&mut source.0, log, "NEXT_SAMPLE_ENABLED identity=13");
+    let offered13 = wait_for_new_latest_hold_sample(source, log, at_stop, 13);
+    let stopped = wait_for_latest_hold_progress_until(
+        source,
+        log,
+        LatestHoldProgressThreshold {
+            cycles: offered13.offered_sample_cycle + 10,
+            offered_cycle: at_stop.offered_sample_cycle,
+            data: 13,
+            received: LATEST_HOLD_EXPECTED_OUTPUTS + LATEST_HOLD_CYCLES_PER_SAMPLE,
+            commands: at_stop.commands,
+            last_command_sequence: at_stop.last_command_sequence,
+        },
+    );
+    assert_eq!(
+        stopped.received,
+        LATEST_HOLD_EXPECTED_OUTPUTS + LATEST_HOLD_CYCLES_PER_SAMPLE
+    );
+    assert_eq!(
+        stopped.commands, at_stop.commands,
+        "the stopped execution group published a command"
+    );
+    let pool_replacement = std::env::var_os("PIPEWIREAO_RTC_LATEST_HOLD_POOL_REPLACEMENT")
+        .is_some_and(|value| value == "1");
+    if pool_replacement {
+        let pools_before_replacement = stopped.pool_counts;
+        send_latest_hold_source_command(source, b'u');
+        wait_for_text(&mut source.0, log, "SLOW_SOURCE_POOL_UPDATE_REQUESTED");
+        let source_pool_replaced = wait_for_latest_hold_pool_replacement(
+            source,
+            log,
+            pools_before_replacement,
+            LatestHoldPool::SlowSource,
+        );
+        send_latest_hold_source_command(source, b'v');
+        wait_for_text(&mut source.0, log, "HOLD_OBSERVER_POOL_UPDATE_REQUESTED");
+        let observer_pool_replaced = wait_for_latest_hold_pool_replacement(
+            source,
+            log,
+            source_pool_replaced.pool_counts,
+            LatestHoldPool::Observer,
+        );
+        assert_eq!(
+            observer_pool_replaced.received, stopped.received,
+            "pool replacement while the hold group is stopped published a held output"
+        );
+        assert_eq!(
+            observer_pool_replaced.commands, stopped.commands,
+            "pool replacement while the hold group is stopped published a command"
+        );
+    }
+    send_latest_hold_source_command(source, b'g');
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::StartExecutionGroup("hold".to_owned()))
+            .expect("restart latest/hold execution group"),
+        LifecycleState::Running
+    );
+    assert_eq!(
+        runner.execution_group_states()["hold"],
+        ExecutionGroupState::Running
+    );
+    let group_restarted_cycle =
+        wait_for_latest_hold_restart_marker(source, log, b't', "GROUP_RESTART_MARKER cycle=");
+    let after_group_restart = wait_for_latest_hold_progress_until(
+        source,
+        log,
+        LatestHoldProgressThreshold {
+            cycles: group_restarted_cycle + 10,
+            data: 13,
+            received: LATEST_HOLD_EXPECTED_OUTPUTS + LATEST_HOLD_CYCLES_PER_SAMPLE,
+            commands: at_stop.commands,
+            last_command_sequence: at_stop.last_command_sequence,
+            ..Default::default()
+        },
+    );
+    assert_eq!(
+        after_group_restart.received,
+        LATEST_HOLD_EXPECTED_OUTPUTS + LATEST_HOLD_CYCLES_PER_SAMPLE,
+        "group restart must not replay the sample offered while stopped"
+    );
+    send_latest_hold_source_command(source, b'n');
+    wait_for_text(&mut source.0, log, "NEXT_SAMPLE_ENABLED identity=14");
+    let offered14 = wait_for_new_latest_hold_sample(source, log, after_group_restart, 14);
+    assert!(
+        u64::from(offered14.offered_primary_sequence) > after_group_restart.last_command_sequence
+    );
+    let recovered = wait_for_latest_hold_progress_until(
+        source,
+        log,
+        LatestHoldProgressThreshold {
+            cycles: offered14.offered_sample_cycle + 10,
+            offered_cycle: stopped.offered_sample_cycle,
+            data: 14,
+            received: LATEST_HOLD_EXPECTED_OUTPUTS + 2 * LATEST_HOLD_CYCLES_PER_SAMPLE,
+            commands: after_group_restart.commands + 10,
+            last_command_sequence: u64::from(offered14.offered_primary_sequence)
+                + u64::from(LATEST_HOLD_CYCLES_PER_SAMPLE)
+                - 1,
+        },
+    );
+    let evidence = pool_replacement.then(|| {
+        capture_latest_hold_pool_replacement_evidence(
+            pipewire_build,
+            environment,
+            core_name,
+            log,
+            recovered,
+        )
+    });
+    assert_eq!(recovered.data, LATEST_HOLD_SAMPLES + 4);
+    assert_eq!(
+        recovered.received,
+        LATEST_HOLD_EXPECTED_OUTPUTS + 2 * LATEST_HOLD_CYCLES_PER_SAMPLE
+    );
+    assert_eq!(
+        recovered.allowed_command_gaps, 2,
+        "only the two declared resumption command gaps are admissible"
+    );
+    assert_eq!(
+        recovered.commands,
+        after_group_restart.commands + 10,
+        "fresh identity 14 must produce ten commands after group restart; pool evidence: {evidence:?}"
+    );
+    assert_eq!(
+        recovered.last_command_sequence,
+        u64::from(offered14.offered_primary_sequence) + u64::from(LATEST_HOLD_CYCLES_PER_SAMPLE) - 1,
+        "fresh identity 14 must advance command identity through its final primary sample; pool evidence: {evidence:?}"
+    );
+    assert!(recovered.offered_sample_cycle > stopped.offered_sample_cycle);
+    assert!(recovered.last_held_header_sequence > stopped.last_held_header_sequence);
+    let metrics = fits_discard::latest_hold_metrics(core_name, "pipewireao-rtc-latest-hold");
+    assert_eq!(metrics.updates_accepted, u64::from(LATEST_HOLD_SAMPLES + 2));
+    assert_eq!(metrics.updates_rejected, 0);
+    assert_eq!(metrics.protocol_errors, 0);
+    assert_eq!(
+        metrics.outputs_published,
+        u64::from(LATEST_HOLD_EXPECTED_OUTPUTS + 2 * LATEST_HOLD_CYCLES_PER_SAMPLE)
+    );
+    assert_eq!(metrics.output_starvations, 0);
+    (recovered, metrics)
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -4227,9 +4483,38 @@ struct LatestHoldProgress {
     commands: u32,
     first_command_sequence: u64,
     last_command_sequence: u64,
+    allowed_command_gaps: u32,
+    offered_sample_cycle: u32,
+    offered_primary_sequence: u32,
+    last_held_header_sequence: u64,
     position_rate_num: u32,
     position_rate_denom: u32,
     position_quantum: u32,
+    pool_counts: LatestHoldPoolCounts,
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+struct LatestHoldPoolCounts {
+    slow_source_added: u32,
+    slow_source_removed: u32,
+    observer_added: u32,
+    observer_removed: u32,
+}
+
+#[derive(Clone, Copy)]
+enum LatestHoldPool {
+    SlowSource,
+    Observer,
+}
+
+#[derive(Clone, Copy, Default)]
+struct LatestHoldProgressThreshold {
+    cycles: u32,
+    offered_cycle: u32,
+    data: u32,
+    received: u32,
+    commands: u32,
+    last_command_sequence: u64,
 }
 
 fn build_latest_hold_fixture_source(
@@ -4296,6 +4581,79 @@ fn wait_for_latest_hold_progress(
     log: &Path,
     minimum_cycles: u32,
 ) -> LatestHoldProgress {
+    wait_for_latest_hold_progress_until(
+        source,
+        log,
+        LatestHoldProgressThreshold {
+            cycles: minimum_cycles,
+            data: LATEST_HOLD_SAMPLES,
+            received: LATEST_HOLD_EXPECTED_OUTPUTS,
+            last_command_sequence: u64::from(LATEST_HOLD_EXPECTED_OUTPUTS),
+            ..Default::default()
+        },
+    )
+}
+
+fn wait_for_new_latest_hold_sample(
+    source: &mut ChildGuard,
+    log: &Path,
+    before: LatestHoldProgress,
+    sample: u32,
+) -> LatestHoldProgress {
+    let offered = wait_for_latest_hold_progress_until(
+        source,
+        log,
+        LatestHoldProgressThreshold {
+            offered_cycle: before.offered_sample_cycle,
+            data: sample,
+            received: before.received,
+            commands: before.commands,
+            last_command_sequence: before.last_command_sequence,
+            ..Default::default()
+        },
+    );
+    assert_eq!(offered.data, sample, "unexpected extra slow-source sample");
+    offered
+}
+
+fn wait_for_latest_hold_restart_marker(
+    source: &mut ChildGuard,
+    log: &Path,
+    command: u8,
+    prefix: &str,
+) -> u32 {
+    send_latest_hold_source_command(source, command);
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while Instant::now() < deadline {
+        assert!(
+            source
+                .0
+                .try_wait()
+                .expect("poll latest/hold source")
+                .is_none(),
+            "latest/hold source exited before {prefix}: {}",
+            std::fs::read_to_string(log).unwrap_or_default()
+        );
+        if let Some(cycle) = std::fs::read_to_string(log)
+            .unwrap_or_default()
+            .lines()
+            .find_map(|line| line.strip_prefix(prefix)?.parse::<u32>().ok())
+        {
+            return cycle;
+        }
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    panic!(
+        "latest/hold source did not acknowledge {prefix}: {}",
+        std::fs::read_to_string(log).unwrap_or_default()
+    );
+}
+
+fn wait_for_latest_hold_progress_until(
+    source: &mut ChildGuard,
+    log: &Path,
+    threshold: LatestHoldProgressThreshold,
+) -> LatestHoldProgress {
     let deadline = Instant::now() + Duration::from_secs(5);
     while Instant::now() < deadline {
         assert!(
@@ -4310,17 +4668,71 @@ fn wait_for_latest_hold_progress(
         send_latest_hold_source_command(source, b'p');
         std::thread::sleep(Duration::from_millis(5));
         if let Some(progress) = latest_hold_progress(log) {
-            if progress.cycles >= minimum_cycles
-                && progress.received >= LATEST_HOLD_EXPECTED_OUTPUTS
-                && progress.last_command_sequence >= u64::from(LATEST_HOLD_EXPECTED_OUTPUTS)
+            if progress.cycles >= threshold.cycles
+                && progress.offered_sample_cycle > threshold.offered_cycle
+                && progress.data >= threshold.data
+                && progress.received >= threshold.received
+                && progress.commands >= threshold.commands
+                && progress.last_command_sequence >= threshold.last_command_sequence
             {
                 return progress;
             }
         }
     }
     panic!(
-        "deterministic latest/hold source did not reach {minimum_cycles} fast cycles, {} held outputs, and the final command identity: {}\nprivate core log: {}",
-        LATEST_HOLD_EXPECTED_OUTPUTS,
+        "deterministic latest/hold source did not reach {} fast cycles, an offer after cycle {}, {} slow samples, {} held outputs, {} commands, and primary command identity {}: {}\nprivate core log: {}",
+        threshold.cycles,
+        threshold.offered_cycle,
+        threshold.data,
+        threshold.received,
+        threshold.commands,
+        threshold.last_command_sequence,
+        std::fs::read_to_string(log).unwrap_or_default(),
+        private_core_log(log),
+    );
+}
+
+fn wait_for_latest_hold_pool_replacement(
+    source: &mut ChildGuard,
+    log: &Path,
+    before: LatestHoldPoolCounts,
+    pool: LatestHoldPool,
+) -> LatestHoldProgress {
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while Instant::now() < deadline {
+        assert!(
+            source
+                .0
+                .try_wait()
+                .expect("poll deterministic latest/hold source")
+                .is_none(),
+            "deterministic latest/hold source exited during pool replacement: {}",
+            std::fs::read_to_string(log).unwrap_or_default()
+        );
+        send_latest_hold_source_command(source, b'p');
+        std::thread::sleep(Duration::from_millis(5));
+        if let Some(progress) = latest_hold_progress(log) {
+            let replaced = match pool {
+                LatestHoldPool::SlowSource => {
+                    progress.pool_counts.slow_source_added > before.slow_source_added
+                        && progress.pool_counts.slow_source_removed > before.slow_source_removed
+                }
+                LatestHoldPool::Observer => {
+                    progress.pool_counts.observer_added > before.observer_added
+                        && progress.pool_counts.observer_removed > before.observer_removed
+                }
+            };
+            if replaced {
+                return progress;
+            }
+        }
+    }
+    let label = match pool {
+        LatestHoldPool::SlowSource => "slow source",
+        LatestHoldPool::Observer => "hold observer",
+    };
+    panic!(
+        "{label} EnumFormat update did not remove and add a buffer pool after {before:?}: {}\nprivate core log: {}",
         std::fs::read_to_string(log).unwrap_or_default(),
         private_core_log(log),
     );
@@ -4336,7 +4748,7 @@ fn latest_hold_progress(log: &Path) -> Option<LatestHoldProgress> {
                 .strip_prefix("PROGRESS ")?
                 .split_whitespace()
                 .collect::<Vec<_>>();
-            if values.len() != 10 {
+            if values.len() != 18 {
                 return None;
             }
             let parse = |field: &str, value: &str| value.strip_prefix(field)?.parse().ok();
@@ -4356,6 +4768,16 @@ fn latest_hold_progress(log: &Path) -> Option<LatestHoldProgress> {
                 position_rate_num: position_rate_num.parse().ok()?,
                 position_rate_denom: position_rate_denom.parse().ok()?,
                 position_quantum: parse("quantum=", values[9])?,
+                allowed_command_gaps: parse("gaps=", values[10])?,
+                offered_sample_cycle: parse("offered_cycle=", values[11])?,
+                offered_primary_sequence: parse("offered_primary=", values[12])?,
+                last_held_header_sequence: parse_u64("held_last=", values[13])?,
+                pool_counts: LatestHoldPoolCounts {
+                    slow_source_added: parse("source_added=", values[14])?,
+                    slow_source_removed: parse("source_removed=", values[15])?,
+                    observer_added: parse("observer_added=", values[16])?,
+                    observer_removed: parse("observer_removed=", values[17])?,
+                },
             })
         })
 }
@@ -4827,6 +5249,54 @@ fn wait_for_dump_absent(
         std::thread::sleep(Duration::from_millis(20));
     }
     panic!("PipeWire dump still contains {needle:?}");
+}
+
+fn capture_latest_hold_pool_replacement_evidence(
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+    log: &Path,
+    progress: LatestHoldProgress,
+) -> PathBuf {
+    let cache = std::env::var_os("XDG_CACHE_HOME")
+        .map(PathBuf::from)
+        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".cache")))
+        .unwrap_or_else(std::env::temp_dir)
+        .join("pipewireao-rtc");
+    std::fs::create_dir_all(&cache).expect("create latest/hold evidence cache");
+    let source = log
+        .file_stem()
+        .and_then(std::ffi::OsStr::to_str)
+        .expect("UTF-8 latest/hold fixture log name");
+    let path = cache.join(format!(
+        "latest-hold-pool-replacement-{}-{source}.txt",
+        std::process::id()
+    ));
+    let contents = format!(
+        "progress: {progress:?}\n\nfixture log:\n{}\n\nPipeWire link and node state after group restart and identity 14:\n{}\n\nPipeWire objects after group restart and identity 14:\n{}",
+        std::fs::read_to_string(log).unwrap_or_default(),
+        dump_state(pipewire_build, environment, core_name),
+        dump(pipewire_build, environment, core_name),
+    );
+    std::fs::write(&path, contents).expect("write latest/hold pool-replacement evidence");
+    path
+}
+
+fn dump_state(
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+) -> String {
+    let output = command_with_environment(pipewire_build.join("src/tools/pwao-dump"), environment)
+        .args(["-N", "-r", core_name])
+        .output()
+        .expect("run pwao-dump");
+    assert!(
+        output.status.success(),
+        "pwao-dump failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    String::from_utf8(output.stdout).expect("pwao-dump UTF-8")
 }
 
 fn dump(pipewire_build: &Path, environment: &BTreeMap<String, PathBuf>, core_name: &str) -> String {

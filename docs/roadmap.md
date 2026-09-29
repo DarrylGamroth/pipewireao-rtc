@@ -342,11 +342,22 @@ the narrower synchronous callback boundary.
 | RTC-DEV-015 | 2 | implemented | validated | The private-core deterministic Shack–Hartmann fixture discovers external AOS nodes, generates an ordinary centroid → reconstructor → integrator FGN graph from a directly measured interaction matrix, and completes both flat and seeded four-layer-atmosphere cases. The flat case preserves the graph across stop/restart after sequence 7 and completes sequence 15 with direct DM-surface causality and residual convergence. The atmospheric case preserves the graph across stop/restart after sequence 10 and completes sequence 20; every WFS frame, atmosphere OPD, DM-surface OPD, pupil OPD, and transported command matches its direct oracle at declared tolerances, mean closed-loop Strehl exceeds 0.5 and improves by more than 3× over open loop, and mean pupil OPD RMS improves. Both cases unload to `OFFLINE`, remove runner-owned objects, preserve external and unrelated nodes, and run without a GUI |
 | RTC-DEV-016 | 2b | implemented | validated | The Version 1 public request/status POD contract, native FGN and standalone owner handling, safe Rust protocol API, `PipeWireAO.jl` flag, and `FilterGraphPipeWire` opt-in are implemented. The private core proves the same RTC configuration against externally owned FGN and Julia graphs, token-matched start/stop/restart, identity-loss fault, replacement retry for both providers, ownership-safe unload, and identical four-frame leaky-integrator payload digests at a non-overloaded 10 Hz fixture rate. Parser and RTC status tests reject malformed, future-token, conflicting, failed, and wrong-state values |
 | RTC-DEV-017 | 3 | implemented | validated | The separate REVOLT Classic adapter exposes the 352-by-352 WFS and 277-element HSDM277 HIL boundary with their declared REVOLT scientific schemas. The private core runs the same plant with native FGN and JuliaFilterGraph controllers, checks ten commands and plant diagnostics per implementation against direct oracles, proves command 1 first affects frame 2, exercises reset, two gain/pole transactions, and sparse-parameter adoption at controlled frame boundaries, polls required objects throughout processing, unloads to `OFFLINE`, and removes only RTC-owned nodes and links. Two consecutive monitored replays and the adapter package tests passed |
-| RTC-DEV-018 | 3b | implemented | partial | Optional per-port rates, rational link-rate validation, the exact maintained `api.ndarray.latest-hold` realization, standard Start/Pause ownership, READY-only reset ordering, and declared-source Julia Acquisition propagation are implemented. Parser, unit, adapter, and focused private-core tests cover a configured 1000 Hz Dummy Driver, a source with 100 Hz data and 1000 Hz Position cadence, exact hold publication, Acquisition provenance, contiguous sustained native/Julia command processing through the final current identity, stop/restart without replay, and cleanup. Selected-driver association and hold Position cadence, live READY reset, selective-group recovery with a new sample, cross-process pool replacement, steady-state allocation, and latency characterization remain required |
+| RTC-DEV-018 | 3b | implemented | partial | Optional per-port rates, rational link-rate validation, the exact maintained `api.ndarray.latest-hold` realization, standard Start/Pause ownership, READY-only reset ordering, and declared-source Julia Acquisition propagation are implemented. Parser, unit, adapter, and focused private-core tests cover a configured 1000 Hz Dummy Driver, a source with 100 Hz data and 1000 Hz Position cadence, exact hold publication, Acquisition provenance, contiguous sustained native/Julia command processing through the final current identity, stop/restart without replay, and cleanup. The live native/Julia replays check that the hold and both sources have the selected Dummy Driver object ID. The hold plugin publishes only when its Position clock matches the configured output rate; its 120 successful outputs with zero protocol errors establish 1000 Hz cadence admission. Both replays offer identity 11 while READY after reset and identity 13 while the group is stopped; neither may appear at the output. Explicit session and group restarts admit fresh identities 12 and 14, ten outputs each, with exact Acquisition and payload checks. Commands catch up to the primary identity recorded when each fresh sample is offered, with only two explicitly armed resumption gaps. Cross-process pool replacement, steady-state allocation, and latency characterization remain required |
 
 Implementation and evidence state remain separate when this table is updated.
 A merged implementation is not validated until its complete evidence passes
 for all maintained fixtures.
+
+The `PIPEWIREAO_RTC_LATEST_HOLD_POOL_REPLACEMENT=1` private-core diagnostic
+updates the existing slow-source and hold-observer `EnumFormat` while the hold
+group is stopped. In the final native and Julia replays, each external stream
+removed three buffers and added three, then fresh identity 14 reached ten held
+outputs and ten matching commands after explicit restart. An earlier
+source-only experiment and an initial two-update experiment stalled during
+recovery; their cause is unresolved. These checks observe endpoint pool
+replacement and recovery after both updates. They do not inspect the hold's
+internal pool generation or replace a live retained sample. RTC-DEV-018 stays
+partial until those cases and steady-state allocation and latency are measured.
 
 RTC-DEV-010 is tracked across its independently observable surfaces:
 
@@ -563,6 +574,13 @@ The FGN daemon loop was observed under SCHED_OTHER, while the JFG island loop
 used FIFO83. The workstation also had unrelated CPU-saturating Julia tasks.
 Strict thread placement, first-use characterization, and an uncontended
 latency comparison remain in the selected increment.
+
+The Copper pixel sender still starts its timer during `wfsSimulator` startup.
+Its `-sync` mode waits for another simulator's trigger and does not provide a
+launcher-controlled ready/release gate. The strict launcher therefore cannot
+inspect every sender thread before the first packet using this source. A
+maintained source readiness and release interface is required before that
+RTC-DEV-019 pre-ingress claim can be made.
 
 The managed Copper RTC runner now captures pre-ingress and post-replay thread
 snapshots, maps Julia's PipeWireAO JLL to the selected installation, and defaults

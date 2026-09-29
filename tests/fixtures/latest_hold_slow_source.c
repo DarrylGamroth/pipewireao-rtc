@@ -4,6 +4,7 @@
 
 #include <errno.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -24,8 +25,14 @@
 #define FAST_RATE 1000u
 #define SLOW_RATE 100u
 #define SAMPLES 10u
+#define EXTRA_SAMPLES 4u
+#define TOTAL_SAMPLES (SAMPLES + EXTRA_SAMPLES)
+#define INITIAL_HELD_OUTPUTS (SAMPLES * HOLD_CYCLES)
+#define FULL_HELD_OUTPUTS (INITIAL_HELD_OUTPUTS + 2u * HOLD_CYCLES)
 #define HOLD_CYCLES 10u
 #define EXPIRY_CHECK_CYCLE 120u
+#define PRIMARY_SCHEMA "org.pipewireao.rtc.latest-hold.primary/1"
+#define SLOW_SCHEMA "org.pipewireao.rtc.latest-hold.slow/1"
 
 struct fixture {
 	struct pw_main_loop *loop;
@@ -43,17 +50,31 @@ struct fixture {
 	atomic_uint source_cycles;
 	atomic_uint primary_cycles;
 	atomic_uint source_published;
+	atomic_uint extra_requests;
 	atomic_uint source_empty;
 	atomic_uint sink_received;
 	atomic_uint commands_received;
 	atomic_uint primary_rate_num;
 	atomic_uint primary_rate_denom;
 	atomic_uint primary_quantum;
+	atomic_uint input_data_cycle;
+	atomic_uint input_primary_sequence;
 	atomic_uint_fast64_t last_header_sequence;
 	atomic_uint_fast64_t first_command_sequence;
 	atomic_uint_fast64_t last_command_sequence;
+	atomic_uint command_gaps;
+	atomic_uint source_buffers_added;
+	atomic_uint source_buffers_removed;
+	atomic_uint observer_buffers_added;
+	atomic_uint observer_buffers_removed;
+	atomic_uint source_progress_sequence;
+	atomic_uint primary_progress_sequence;
+	atomic_uint sink_progress_sequence;
+	atomic_uint command_progress_sequence;
 	atomic_bool have_header;
 	atomic_bool have_command_sequence;
+	atomic_bool next_sample_enabled;
+	atomic_bool command_gap_armed;
 	atomic_bool active;
 	atomic_bool started;
 	atomic_bool failed;
@@ -67,6 +88,40 @@ static void fail(struct fixture *data, const char *message)
 	if (!atomic_exchange_explicit(&data->failed, true, memory_order_acq_rel))
 		fprintf(stderr, "%s\n", message);
 	pw_main_loop_quit(data->loop);
+}
+
+static bool increment_counter(atomic_uint *counter, uint32_t *value)
+{
+	unsigned int current = atomic_load_explicit(counter, memory_order_seq_cst);
+
+	do {
+		if (current == UINT_MAX)
+			return false;
+	} while (!atomic_compare_exchange_weak_explicit(counter, &current,
+			current + 1u, memory_order_seq_cst, memory_order_seq_cst));
+	*value = current + 1u;
+	return true;
+}
+
+static void progress_write_begin(atomic_uint *sequence)
+{
+	(void)atomic_fetch_add_explicit(sequence, 1u, memory_order_seq_cst);
+}
+
+static void progress_write_end(atomic_uint *sequence)
+{
+	(void)atomic_fetch_add_explicit(sequence, 1u, memory_order_seq_cst);
+}
+
+static bool progress_read_begin(const atomic_uint *sequence, uint32_t *value)
+{
+	*value = atomic_load_explicit(sequence, memory_order_seq_cst);
+	return (*value & 1u) == 0u;
+}
+
+static bool progress_read_end(const atomic_uint *sequence, uint32_t value)
+{
+	return atomic_load_explicit(sequence, memory_order_seq_cst) == value;
 }
 
 static struct spa_pod *build_format(struct spa_pod_builder *builder,
@@ -111,6 +166,32 @@ static struct spa_pod *build_acquisition_meta(struct spa_pod_builder *builder)
 	return spa_pod_builder_pop(builder, &object);
 }
 
+static bool update_stream_format(struct fixture *data, struct pw_stream *stream,
+		uint32_t rate, const char *schema, const char *label)
+{
+	uint8_t pods[512];
+	struct spa_pod_builder builder;
+	struct spa_pod *format;
+	const struct spa_pod *params[1];
+	int result;
+
+	spa_pod_builder_init(&builder, pods, sizeof(pods));
+	format = build_format(&builder, rate, schema);
+	if (format == NULL) {
+		fail(data, "could not rebuild stream EnumFormat for pool replacement");
+		return false;
+	}
+	params[0] = format;
+	result = pw_stream_update_params(stream, params, SPA_N_ELEMENTS(params));
+	if (result < 0) {
+		fprintf(stderr, "%s EnumFormat update failed: %s\n", label,
+			spa_strerror(result));
+		fail(data, "could not request stream pool replacement");
+		return false;
+	}
+	return true;
+}
+
 static void source_process(void *userdata)
 {
 	struct fixture *data = userdata;
@@ -124,19 +205,30 @@ static void source_process(void *userdata)
 
 	if (!atomic_load_explicit(&data->started, memory_order_acquire))
 		return;
-	cycle = atomic_fetch_add_explicit(&data->source_cycles, 1,
-		memory_order_relaxed) + 1u;
-	if ((cycle - 1u) % HOLD_CYCLES != 0 ||
-		atomic_load_explicit(&data->source_published, memory_order_relaxed) >=
-			SAMPLES) {
+	progress_write_begin(&data->source_progress_sequence);
+	if (!increment_counter(&data->source_cycles, &cycle)) {
+		progress_write_end(&data->source_progress_sequence);
+		fail(data, "slow source cycle counter overflowed");
+		return;
+	}
+	sample = atomic_load_explicit(&data->source_published, memory_order_relaxed);
+	if ((cycle - 1u) % HOLD_CYCLES != 0 || sample >= TOTAL_SAMPLES ||
+		(sample >= SAMPLES && !atomic_exchange_explicit(
+			&data->next_sample_enabled, false, memory_order_acq_rel))) {
 		/* Deliberately do not dequeue or queue a buffer: the output IO remains
 		 * SPA_STATUS_NEED_DATA for this slow-cadence callback. */
-		atomic_fetch_add_explicit(&data->source_empty, 1, memory_order_relaxed);
+		if (!increment_counter(&data->source_empty, &sample)) {
+			progress_write_end(&data->source_progress_sequence);
+			fail(data, "slow source empty-cycle counter overflowed");
+			return;
+		}
+		progress_write_end(&data->source_progress_sequence);
 		return;
 	}
 	buffer = pw_stream_dequeue_buffer(data->source);
 	if (buffer == NULL || buffer->buffer == NULL ||
 		buffer->buffer->n_datas != 1) {
+		progress_write_end(&data->source_progress_sequence);
 		fail(data, "slow source has no writable output buffer");
 		return;
 	}
@@ -148,11 +240,16 @@ static void source_process(void *userdata)
 	if (block->data == NULL || block->chunk == NULL ||
 		block->maxsize < sizeof(values) || header == NULL || acquisition == NULL) {
 		(void)pw_stream_queue_buffer(data->source, buffer);
+		progress_write_end(&data->source_progress_sequence);
 		fail(data, "slow source negotiated incomplete ndarray storage or metadata");
 		return;
 	}
-	sample = atomic_fetch_add_explicit(&data->source_published, 1,
-			memory_order_relaxed) + 1u;
+	if (!increment_counter(&data->source_published, &sample)) {
+		(void)pw_stream_queue_buffer(data->source, buffer);
+		progress_write_end(&data->source_progress_sequence);
+		fail(data, "slow source publication counter overflowed");
+		return;
+	}
 	values[0] = (float)sample;
 	values[1] = -(float)sample;
 	memcpy(block->data, values, sizeof(values));
@@ -170,11 +267,20 @@ static void source_process(void *userdata)
 	if (!spa_meta_acquisition_init(acquisition) ||
 		!spa_meta_acquisition_set_identity(acquisition, domain, 7u, sample)) {
 		(void)pw_stream_queue_buffer(data->source, buffer);
+		progress_write_end(&data->source_progress_sequence);
 		fail(data, "slow source could not write Acquisition identity");
 		return;
 	}
-	if (pw_stream_queue_buffer(data->source, buffer) < 0)
+	if (pw_stream_queue_buffer(data->source, buffer) < 0) {
+		progress_write_end(&data->source_progress_sequence);
 		fail(data, "slow source could not publish its sample");
+		return;
+	}
+	atomic_store_explicit(&data->input_primary_sequence,
+		atomic_load_explicit(&data->primary_cycles, memory_order_acquire),
+		memory_order_seq_cst);
+	atomic_store_explicit(&data->input_data_cycle, cycle, memory_order_seq_cst);
+	progress_write_end(&data->source_progress_sequence);
 }
 
 static void primary_process(void *userdata)
@@ -190,17 +296,19 @@ static void primary_process(void *userdata)
 
 	if (!atomic_load_explicit(&data->started, memory_order_acquire))
 		return;
+	progress_write_begin(&data->primary_progress_sequence);
 	if (pw_stream_get_time_n(data->primary_source, &time, sizeof(time)) == 0) {
 		atomic_store_explicit(&data->primary_rate_num, time.rate.num,
-			memory_order_relaxed);
+			memory_order_seq_cst);
 		atomic_store_explicit(&data->primary_rate_denom, time.rate.denom,
-			memory_order_relaxed);
+			memory_order_seq_cst);
 		atomic_store_explicit(&data->primary_quantum, (uint32_t)time.size,
-			memory_order_relaxed);
+			memory_order_seq_cst);
 	}
 	buffer = pw_stream_dequeue_buffer(data->primary_source);
 	if (buffer == NULL || buffer->buffer == NULL ||
 		buffer->buffer->n_datas != 1) {
+		progress_write_end(&data->primary_progress_sequence);
 		fail(data, "primary source has no writable output buffer");
 		return;
 	}
@@ -212,11 +320,16 @@ static void primary_process(void *userdata)
 	if (block->data == NULL || block->chunk == NULL ||
 		block->maxsize < sizeof(values) || header == NULL || acquisition == NULL) {
 		(void)pw_stream_queue_buffer(data->primary_source, buffer);
+		progress_write_end(&data->primary_progress_sequence);
 		fail(data, "primary source negotiated incomplete ndarray storage or metadata");
 		return;
 	}
-	sequence = atomic_fetch_add_explicit(&data->primary_cycles, 1,
-		memory_order_relaxed) + 1u;
+	if (!increment_counter(&data->primary_cycles, &sequence)) {
+		(void)pw_stream_queue_buffer(data->primary_source, buffer);
+		progress_write_end(&data->primary_progress_sequence);
+		fail(data, "primary source cycle counter overflowed");
+		return;
+	}
 	values[0] = (float)sequence;
 	values[1] = -(float)sequence;
 	memcpy(block->data, values, sizeof(values));
@@ -234,11 +347,27 @@ static void primary_process(void *userdata)
 	if (!spa_meta_acquisition_init(acquisition) ||
 		!spa_meta_acquisition_set_identity(acquisition, primary_domain, 9u, sequence)) {
 		(void)pw_stream_queue_buffer(data->primary_source, buffer);
+		progress_write_end(&data->primary_progress_sequence);
 		fail(data, "primary source could not write Acquisition identity");
 		return;
 	}
-	if (pw_stream_queue_buffer(data->primary_source, buffer) < 0)
+	if (pw_stream_queue_buffer(data->primary_source, buffer) < 0) {
+		progress_write_end(&data->primary_progress_sequence);
 		fail(data, "primary source could not publish its sample");
+		return;
+	}
+	progress_write_end(&data->primary_progress_sequence);
+}
+
+static uint32_t expected_held_sample(uint32_t received)
+{
+	if (received < INITIAL_HELD_OUTPUTS)
+		return received / HOLD_CYCLES + 1u;
+	if (received < INITIAL_HELD_OUTPUTS + HOLD_CYCLES)
+		return 12u;
+	if (received < FULL_HELD_OUTPUTS)
+		return 14u;
+	return 0u;
 }
 
 static void sink_process(void *userdata)
@@ -262,7 +391,7 @@ static void sink_process(void *userdata)
 	meta = spa_buffer_find_meta(buffer->buffer, SPA_META_Acquisition);
 	acquisition = meta == NULL ? NULL : meta->data;
 	received = atomic_load_explicit(&data->sink_received, memory_order_relaxed);
-	expected_sample = received / HOLD_CYCLES + 1u;
+	expected_sample = expected_held_sample(received);
 	if (block->data == NULL || block->chunk == NULL ||
 		block->chunk->offset > block->maxsize ||
 		block->chunk->size != VECTOR_LENGTH * sizeof(float) ||
@@ -270,29 +399,38 @@ static void sink_process(void *userdata)
 		header == NULL || !spa_meta_acquisition_is_valid(meta) ||
 		acquisition->generation != 7u || acquisition->sequence != expected_sample ||
 		memcmp(acquisition->domain, domain, sizeof(domain)) != 0 ||
-		received >= SAMPLES * HOLD_CYCLES) {
+		received >= FULL_HELD_OUTPUTS) {
 		(void)pw_stream_queue_buffer(data->sink, buffer);
 		fail(data, "hold sink observed an unexpected output or Acquisition identity");
 		return;
 	}
 	sequence = header->seq;
+	progress_write_begin(&data->sink_progress_sequence);
 	if (atomic_exchange_explicit(&data->have_header, true, memory_order_acq_rel) &&
 		sequence <= atomic_load_explicit(&data->last_header_sequence,
 			memory_order_relaxed)) {
 		(void)pw_stream_queue_buffer(data->sink, buffer);
+		progress_write_end(&data->sink_progress_sequence);
 		fail(data, "hold output Header sequence did not advance");
 		return;
 	}
 	atomic_store_explicit(&data->last_header_sequence, sequence,
-		memory_order_relaxed);
+		memory_order_seq_cst);
 	values = SPA_PTROFF(block->data, block->chunk->offset, const float);
 	if (values[0] != (float)expected_sample ||
 		values[1] != -(float)expected_sample) {
 		(void)pw_stream_queue_buffer(data->sink, buffer);
+		progress_write_end(&data->sink_progress_sequence);
 		fail(data, "hold sink observed a payload outside the retained identity run");
 		return;
 	}
-	atomic_fetch_add_explicit(&data->sink_received, 1, memory_order_release);
+	if (!increment_counter(&data->sink_received, &received)) {
+		(void)pw_stream_queue_buffer(data->sink, buffer);
+		progress_write_end(&data->sink_progress_sequence);
+		fail(data, "hold sink output counter overflowed");
+		return;
+	}
+	progress_write_end(&data->sink_progress_sequence);
 	(void)pw_stream_queue_buffer(data->sink, buffer);
 }
 
@@ -306,6 +444,7 @@ static void command_sink_process(void *userdata)
 	const struct spa_meta_acquisition *acquisition;
 	const float *values;
 	uint64_t sequence;
+	uint32_t commands;
 
 	buffer = pw_stream_dequeue_buffer(data->command_sink);
 	if (buffer == NULL)
@@ -332,30 +471,92 @@ static void command_sink_process(void *userdata)
 		fail(data, "processing graph output Header sequence did not match primary Acquisition identity");
 		return;
 	}
+	progress_write_begin(&data->command_progress_sequence);
 	if (!atomic_exchange_explicit(&data->have_command_sequence, true,
 			memory_order_acq_rel)) {
 		atomic_store_explicit(&data->first_command_sequence, sequence,
-			memory_order_relaxed);
+			memory_order_seq_cst);
 	} else if (sequence != atomic_load_explicit(
 			&data->last_command_sequence, memory_order_relaxed) + 1u) {
-		fprintf(stderr, "command identity gap: expected %" PRIuFAST64 ", observed %" PRIu64 "\n",
-			atomic_load_explicit(&data->last_command_sequence,
-				memory_order_relaxed) + 1u, sequence);
-		(void)pw_stream_queue_buffer(data->command_sink, buffer);
-		fail(data, "processing graph output did not advance through contiguous primary identities");
-		return;
+		if (sequence > atomic_load_explicit(&data->last_command_sequence,
+				memory_order_relaxed) && atomic_exchange_explicit(
+				&data->command_gap_armed, false, memory_order_acq_rel)) {
+			uint32_t gaps = atomic_load_explicit(&data->command_gaps,
+				memory_order_relaxed);
+
+			if (gaps >= 2u || !increment_counter(&data->command_gaps, &gaps)) {
+				(void)pw_stream_queue_buffer(data->command_sink, buffer);
+				progress_write_end(&data->command_progress_sequence);
+				fail(data, "processing graph observed too many command identity gaps");
+				return;
+			}
+		} else {
+			fprintf(stderr, "command identity gap: expected %" PRIuFAST64 ", observed %" PRIu64 "\n",
+				atomic_load_explicit(&data->last_command_sequence,
+					memory_order_relaxed) + 1u, sequence);
+			(void)pw_stream_queue_buffer(data->command_sink, buffer);
+			progress_write_end(&data->command_progress_sequence);
+			fail(data, "processing graph output did not advance through contiguous primary identities");
+			return;
+		}
 	}
 	values = SPA_PTROFF(block->data, block->chunk->offset, const float);
 	if (values[0] != (float)sequence || values[1] != -(float)sequence) {
 		(void)pw_stream_queue_buffer(data->command_sink, buffer);
+		progress_write_end(&data->command_progress_sequence);
 		fail(data, "processing graph output did not preserve the primary Float32 payload");
 		return;
 	}
 	atomic_store_explicit(&data->last_command_sequence, sequence,
-		memory_order_relaxed);
-	atomic_fetch_add_explicit(&data->commands_received, 1,
-		memory_order_release);
+		memory_order_seq_cst);
+	if (!increment_counter(&data->commands_received, &commands)) {
+		(void)pw_stream_queue_buffer(data->command_sink, buffer);
+		progress_write_end(&data->command_progress_sequence);
+		fail(data, "processing graph command counter overflowed");
+		return;
+	}
+	progress_write_end(&data->command_progress_sequence);
 	(void)pw_stream_queue_buffer(data->command_sink, buffer);
+}
+
+static void source_add_buffer(void *userdata, struct pw_buffer *buffer)
+{
+	struct fixture *data = userdata;
+	uint32_t count;
+
+	(void)buffer;
+	if (!increment_counter(&data->source_buffers_added, &count))
+		fail(data, "slow source add-buffer counter overflowed");
+}
+
+static void source_remove_buffer(void *userdata, struct pw_buffer *buffer)
+{
+	struct fixture *data = userdata;
+	uint32_t count;
+
+	(void)buffer;
+	if (!increment_counter(&data->source_buffers_removed, &count))
+		fail(data, "slow source remove-buffer counter overflowed");
+}
+
+static void sink_add_buffer(void *userdata, struct pw_buffer *buffer)
+{
+	struct fixture *data = userdata;
+	uint32_t count;
+
+	(void)buffer;
+	if (!increment_counter(&data->observer_buffers_added, &count))
+		fail(data, "hold observer add-buffer counter overflowed");
+}
+
+static void sink_remove_buffer(void *userdata, struct pw_buffer *buffer)
+{
+	struct fixture *data = userdata;
+	uint32_t count;
+
+	(void)buffer;
+	if (!increment_counter(&data->observer_buffers_removed, &count))
+		fail(data, "hold observer remove-buffer counter overflowed");
 }
 
 static void source_state_changed(void *userdata, enum pw_stream_state old,
@@ -413,6 +614,8 @@ static void command_sink_state_changed(void *userdata,
 static const struct pw_stream_events source_events = {
 	PW_VERSION_STREAM_EVENTS,
 	.state_changed = source_state_changed,
+	.add_buffer = source_add_buffer,
+	.remove_buffer = source_remove_buffer,
 	.process = source_process,
 };
 
@@ -425,6 +628,8 @@ static const struct pw_stream_events primary_events = {
 static const struct pw_stream_events sink_events = {
 	PW_VERSION_STREAM_EVENTS,
 	.state_changed = sink_state_changed,
+	.add_buffer = sink_add_buffer,
+	.remove_buffer = sink_remove_buffer,
 	.process = sink_process,
 };
 
@@ -436,18 +641,78 @@ static const struct pw_stream_events command_sink_events = {
 
 static void print_progress(const struct fixture *data)
 {
-	printf("PROGRESS cycles=%u primary=%u data=%u empty=%u received=%u commands=%u first=%" PRIuFAST64 " last=%" PRIuFAST64 " rate=%u/%u quantum=%u\n",
-		atomic_load_explicit(&data->source_cycles, memory_order_acquire),
-		atomic_load_explicit(&data->primary_cycles, memory_order_acquire),
-		atomic_load_explicit(&data->source_published, memory_order_acquire),
-		atomic_load_explicit(&data->source_empty, memory_order_acquire),
-		atomic_load_explicit(&data->sink_received, memory_order_acquire),
-		atomic_load_explicit(&data->commands_received, memory_order_acquire),
-		atomic_load_explicit(&data->first_command_sequence, memory_order_acquire),
-		atomic_load_explicit(&data->last_command_sequence, memory_order_acquire),
-		atomic_load_explicit(&data->primary_rate_num, memory_order_acquire),
-		atomic_load_explicit(&data->primary_rate_denom, memory_order_acquire),
-		atomic_load_explicit(&data->primary_quantum, memory_order_acquire));
+	uint32_t source_sequence, primary_sequence, sink_sequence, command_sequence;
+	uint32_t cycles, primary, published, empty, received, commands;
+	uint32_t rate_num, rate_denom, quantum, gaps, offered_cycle, offered_primary;
+	uint64_t first, last, held_last;
+	unsigned int attempt;
+
+	for (attempt = 0; attempt < 1000u; attempt++) {
+		if (!progress_read_begin(&data->source_progress_sequence,
+				&source_sequence))
+			continue;
+		cycles = atomic_load_explicit(&data->source_cycles, memory_order_seq_cst);
+		published = atomic_load_explicit(&data->source_published,
+			memory_order_seq_cst);
+		empty = atomic_load_explicit(&data->source_empty, memory_order_seq_cst);
+		offered_cycle = atomic_load_explicit(&data->input_data_cycle,
+			memory_order_seq_cst);
+		offered_primary = atomic_load_explicit(&data->input_primary_sequence,
+			memory_order_seq_cst);
+		if (progress_read_end(&data->source_progress_sequence, source_sequence))
+			break;
+	}
+	if (attempt == 1000u)
+		return;
+	for (attempt = 0; attempt < 1000u; attempt++) {
+		if (!progress_read_begin(&data->primary_progress_sequence,
+				&primary_sequence))
+			continue;
+		primary = atomic_load_explicit(&data->primary_cycles, memory_order_seq_cst);
+		rate_num = atomic_load_explicit(&data->primary_rate_num, memory_order_seq_cst);
+		rate_denom = atomic_load_explicit(&data->primary_rate_denom, memory_order_seq_cst);
+		quantum = atomic_load_explicit(&data->primary_quantum, memory_order_seq_cst);
+		if (progress_read_end(&data->primary_progress_sequence, primary_sequence))
+			break;
+	}
+	if (attempt == 1000u)
+		return;
+	for (attempt = 0; attempt < 1000u; attempt++) {
+		if (!progress_read_begin(&data->sink_progress_sequence, &sink_sequence))
+			continue;
+		received = atomic_load_explicit(&data->sink_received, memory_order_seq_cst);
+		held_last = atomic_load_explicit(&data->last_header_sequence,
+			memory_order_seq_cst);
+		if (progress_read_end(&data->sink_progress_sequence, sink_sequence))
+			break;
+	}
+	if (attempt == 1000u)
+		return;
+	for (attempt = 0; attempt < 1000u; attempt++) {
+		if (!progress_read_begin(&data->command_progress_sequence,
+				&command_sequence))
+			continue;
+		commands = atomic_load_explicit(&data->commands_received, memory_order_seq_cst);
+		first = atomic_load_explicit(&data->first_command_sequence,
+			memory_order_seq_cst);
+		last = atomic_load_explicit(&data->last_command_sequence, memory_order_seq_cst);
+		gaps = atomic_load_explicit(&data->command_gaps, memory_order_seq_cst);
+		if (progress_read_end(&data->command_progress_sequence, command_sequence))
+			break;
+	}
+	if (attempt == 1000u)
+		return;
+
+	printf("PROGRESS cycles=%u primary=%u data=%u empty=%u received=%u commands=%u first=%" PRIuFAST64 " last=%" PRIuFAST64 " rate=%u/%u quantum=%u gaps=%u offered_cycle=%u offered_primary=%u held_last=%" PRIuFAST64 " source_added=%u source_removed=%u observer_added=%u observer_removed=%u\n",
+		cycles, primary, published, empty, received, commands, first, last,
+		rate_num, rate_denom, quantum, gaps,
+		offered_cycle,
+		offered_primary,
+		held_last,
+		atomic_load_explicit(&data->source_buffers_added, memory_order_acquire),
+		atomic_load_explicit(&data->source_buffers_removed, memory_order_acquire),
+		atomic_load_explicit(&data->observer_buffers_added, memory_order_acquire),
+		atomic_load_explicit(&data->observer_buffers_removed, memory_order_acquire));
 	fflush(stdout);
 }
 
@@ -478,6 +743,47 @@ static void control(void *userdata, int fd, uint32_t mask)
 		}
 		printf("STARTED\n");
 		fflush(stdout);
+	} else if (command == 'n') {
+		uint32_t published = atomic_load_explicit(&data->source_published,
+			memory_order_acquire);
+		uint32_t requests = atomic_load_explicit(&data->extra_requests,
+			memory_order_acquire);
+
+		if (requests >= EXTRA_SAMPLES || published != SAMPLES + requests ||
+			atomic_load_explicit(&data->next_sample_enabled, memory_order_acquire)) {
+			fail(data, "slow source could not enable exactly one next sample");
+			return;
+		}
+		atomic_store_explicit(&data->extra_requests, requests + 1u,
+			memory_order_release);
+		atomic_store_explicit(&data->next_sample_enabled, true, memory_order_release);
+		printf("NEXT_SAMPLE_ENABLED identity=%u\n", published + 1u);
+		fflush(stdout);
+	} else if (command == 'g') {
+		if (atomic_load_explicit(&data->command_gaps, memory_order_acquire) >= 2u ||
+			atomic_exchange_explicit(&data->command_gap_armed, true,
+				memory_order_acq_rel))
+			fail(data, "processing graph command gap was already armed");
+	} else if (command == 'r') {
+		printf("SESSION_RESTART_MARKER cycle=%u\n",
+			atomic_load_explicit(&data->source_cycles, memory_order_seq_cst));
+		fflush(stdout);
+	} else if (command == 't') {
+		printf("GROUP_RESTART_MARKER cycle=%u\n",
+			atomic_load_explicit(&data->source_cycles, memory_order_seq_cst));
+		fflush(stdout);
+	} else if (command == 'u') {
+		if (!update_stream_format(data, data->source, SLOW_RATE, SLOW_SCHEMA,
+				"slow source"))
+			return;
+		printf("SLOW_SOURCE_POOL_UPDATE_REQUESTED\n");
+		fflush(stdout);
+	} else if (command == 'v') {
+		if (!update_stream_format(data, data->sink, FAST_RATE, SLOW_SCHEMA,
+				"hold observer"))
+			return;
+		printf("HOLD_OBSERVER_POOL_UPDATE_REQUESTED\n");
+		fflush(stdout);
 	} else if (command == 'p') {
 		print_progress(data);
 	} else if (command == 'q') {
@@ -485,6 +791,26 @@ static void control(void *userdata, int fd, uint32_t mask)
 		pw_main_loop_quit(data->loop);
 	} else {
 		fail(data, "unknown slow-source control command");
+	}
+}
+
+static void destroy_streams(struct fixture *data)
+{
+	if (data->primary_source != NULL) {
+		pw_stream_destroy(data->primary_source);
+		data->primary_source = NULL;
+	}
+	if (data->source != NULL) {
+		pw_stream_destroy(data->source);
+		data->source = NULL;
+	}
+	if (data->sink != NULL) {
+		pw_stream_destroy(data->sink);
+		data->sink = NULL;
+	}
+	if (data->command_sink != NULL) {
+		pw_stream_destroy(data->command_sink);
+		data->command_sink = NULL;
 	}
 }
 
@@ -505,14 +831,28 @@ int main(int argc, char *argv[])
 	atomic_init(&data.source_cycles, 0);
 	atomic_init(&data.primary_cycles, 0);
 	atomic_init(&data.source_published, 0);
+	atomic_init(&data.extra_requests, 0);
 	atomic_init(&data.source_empty, 0);
 	atomic_init(&data.sink_received, 0);
 	atomic_init(&data.commands_received, 0);
+	atomic_init(&data.input_data_cycle, 0);
+	atomic_init(&data.input_primary_sequence, 0);
 	atomic_init(&data.last_header_sequence, 0);
 	atomic_init(&data.first_command_sequence, 0);
 	atomic_init(&data.last_command_sequence, 0);
+	atomic_init(&data.command_gaps, 0);
+	atomic_init(&data.source_buffers_added, 0);
+	atomic_init(&data.source_buffers_removed, 0);
+	atomic_init(&data.observer_buffers_added, 0);
+	atomic_init(&data.observer_buffers_removed, 0);
+	atomic_init(&data.source_progress_sequence, 0);
+	atomic_init(&data.primary_progress_sequence, 0);
+	atomic_init(&data.sink_progress_sequence, 0);
+	atomic_init(&data.command_progress_sequence, 0);
 	atomic_init(&data.have_header, false);
 	atomic_init(&data.have_command_sequence, false);
+	atomic_init(&data.next_sample_enabled, false);
+	atomic_init(&data.command_gap_armed, false);
 	atomic_init(&data.active, false);
 	atomic_init(&data.started, false);
 	atomic_init(&data.failed, false);
@@ -571,22 +911,22 @@ int main(int argc, char *argv[])
 		&command_sink_events, &data);
 	spa_pod_builder_init(&source_builder, primary_pods, sizeof(primary_pods));
 	primary_params[0] = build_format(&source_builder, FAST_RATE,
-		"org.pipewireao.rtc.latest-hold.primary/1");
+		PRIMARY_SCHEMA);
 	primary_params[1] = build_header_meta(&source_builder);
 	primary_params[2] = build_acquisition_meta(&source_builder);
 	spa_pod_builder_init(&source_builder, source_pods, sizeof(source_pods));
 	source_params[0] = build_format(&source_builder, SLOW_RATE,
-		"org.pipewireao.rtc.latest-hold.slow/1");
+		SLOW_SCHEMA);
 	source_params[1] = build_header_meta(&source_builder);
 	source_params[2] = build_acquisition_meta(&source_builder);
 	spa_pod_builder_init(&sink_builder, sink_pods, sizeof(sink_pods));
 	sink_params[0] = build_format(&sink_builder, FAST_RATE,
-		"org.pipewireao.rtc.latest-hold.slow/1");
+		SLOW_SCHEMA);
 	sink_params[1] = build_header_meta(&sink_builder);
 	sink_params[2] = build_acquisition_meta(&sink_builder);
 	spa_pod_builder_init(&source_builder, command_pods, sizeof(command_pods));
 	command_params[0] = build_format(&source_builder, FAST_RATE,
-		"org.pipewireao.rtc.latest-hold.primary/1");
+		PRIMARY_SCHEMA);
 	command_params[1] = build_header_meta(&source_builder);
 	command_params[2] = build_acquisition_meta(&source_builder);
 	if (primary_params[0] == NULL || primary_params[1] == NULL ||
@@ -635,8 +975,12 @@ int main(int argc, char *argv[])
 	printf("READY\n");
 	fflush(stdout);
 	pw_main_loop_run(data.loop);
+	/* pw_stream_destroy synchronously removes each process callback before the
+	 * terminal counter relationships are checked below. */
+	destroy_streams(&data);
 	result = atomic_load_explicit(&data.failed, memory_order_acquire) ? 1 : 0;
 	if (result == 0 &&
+		atomic_load_explicit(&data.extra_requests, memory_order_acquire) == 0u &&
 		(!atomic_load_explicit(&data.started, memory_order_acquire) ||
 		 atomic_load_explicit(&data.source_cycles, memory_order_acquire) < EXPIRY_CHECK_CYCLE ||
 		 atomic_load_explicit(&data.primary_cycles, memory_order_acquire) < EXPIRY_CHECK_CYCLE ||
@@ -644,21 +988,41 @@ int main(int argc, char *argv[])
 		 atomic_load_explicit(&data.source_empty, memory_order_acquire) + SAMPLES !=
 			atomic_load_explicit(&data.source_cycles, memory_order_acquire) ||
 		 atomic_load_explicit(&data.sink_received, memory_order_acquire) !=
-			SAMPLES * HOLD_CYCLES ||
+			INITIAL_HELD_OUTPUTS ||
+		 atomic_load_explicit(&data.command_gaps, memory_order_acquire) != 0u ||
+		 atomic_load_explicit(&data.command_gap_armed, memory_order_acquire) ||
 		 atomic_load_explicit(&data.commands_received, memory_order_acquire) == 0)) {
 		fprintf(stderr, "latest-hold fixture did not prove cadence, expiry, or no backlog\n");
 		result = 1;
 	}
+	if (result == 0 &&
+		atomic_load_explicit(&data.extra_requests, memory_order_acquire) == EXTRA_SAMPLES &&
+		(!atomic_load_explicit(&data.started, memory_order_acquire) ||
+		 atomic_load_explicit(&data.source_cycles, memory_order_acquire) <
+			EXPIRY_CHECK_CYCLE ||
+		 atomic_load_explicit(&data.primary_cycles, memory_order_acquire) <
+			EXPIRY_CHECK_CYCLE ||
+		 atomic_load_explicit(&data.source_published, memory_order_acquire) !=
+			TOTAL_SAMPLES ||
+		 atomic_load_explicit(&data.source_empty, memory_order_acquire) +
+			TOTAL_SAMPLES !=
+			atomic_load_explicit(&data.source_cycles, memory_order_acquire) ||
+		 atomic_load_explicit(&data.sink_received, memory_order_acquire) !=
+			FULL_HELD_OUTPUTS ||
+		 atomic_load_explicit(&data.command_gap_armed, memory_order_acquire) ||
+		 atomic_load_explicit(&data.commands_received, memory_order_acquire) == 0)) {
+		fprintf(stderr, "latest-hold fixture did not prove the full restart identity run\n");
+		result = 1;
+	}
+	if (result == 0 && atomic_load_explicit(&data.extra_requests,
+			memory_order_acquire) != 0u &&
+		atomic_load_explicit(&data.extra_requests, memory_order_acquire) != EXTRA_SAMPLES) {
+		fprintf(stderr, "latest-hold fixture ended with a partial restart identity run\n");
+		result = 1;
+	}
 
 done:
-	if (data.primary_source != NULL)
-		pw_stream_destroy(data.primary_source);
-	if (data.source != NULL)
-		pw_stream_destroy(data.source);
-	if (data.sink != NULL)
-		pw_stream_destroy(data.sink);
-	if (data.command_sink != NULL)
-		pw_stream_destroy(data.command_sink);
+	destroy_streams(&data);
 	if (data.core != NULL)
 		pw_core_disconnect(data.core);
 	if (data.context != NULL)
