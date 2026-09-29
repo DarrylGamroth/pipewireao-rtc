@@ -61,8 +61,47 @@ and
 The direct path calls the maintained Calculon algorithms with the same
 prepared matrices, so this establishes execution-path equivalence for this
 input and configuration, not independent scientific validation of those
-algorithms. Source end, reset, and live property/parameter adoption in the
-Copper RTC fixtures remain untested.
+algorithms.
+
+The same fixtures also exercise source completion, reset, atomic controller
+property replacement, and reconstructor replacement. `--control-cycle`
+replays four measured frames, submits a half-scale reconstructor and the
+gain/pole/anti-windup transaction, then sends eight conditioning frames at
+10 Hz. It requires the host's requested and active reconstructor sequences
+to agree before a second reset and the final four measured frames at 474 Hz.
+All 16 offered frames and commands must arrive in order; the conditioning
+commands are retained in the raw files and excluded only from the direct
+before/after numerical comparison. This conditioning phase is necessary
+because a parameter submission does not establish its adoption boundary.
+
+```sh
+python3 benchmark/run_copper_rtc.py \
+  --output-dir /path/to/new/native-control-cycle \
+  --controller native --frames 8 --command-limit-um 0.2 \
+  --equivalence-observations --control-cycle \
+  --direct-oracle-bin /path/to/revolt_copper_fullframe_oracle
+
+python3 benchmark/run_copper_rtc.py \
+  --output-dir /path/to/new/julia-control-cycle \
+  --controller julia --frames 8 --command-limit-um 0.2 \
+  --equivalence-observations --control-cycle \
+  --direct-oracle-bin /path/to/revolt_copper_fullframe_oracle
+```
+
+The 2026-09-29 runs delivered 16/16 commands through each controller, with
+zero WFS drops, buffer starvations, or simulator overruns. Native adopted
+reconstructor sequence 3 and matched the direct Algorithm bitwise at all five
+observed boundaries. Julia adopted sequence 2; its largest correction and
+state differences were 1.490 × 10⁻⁷ and 1.565 × 10⁻⁷. The reports are
+`~/.cache/rtc-copper-control-cycle-native-8-verified-20260929/report.json` and
+`~/.cache/rtc-copper-control-cycle-julia-8-verified-20260929/report.json`.
+Julia used the focused GC-safe `pw_ndarray_filter_run` change in
+`PipeWireAO.jl`. Without it, the Julia parameter worker stalled in GC and
+only the first conditioning command arrived; a captured thread stack is in
+`~/.cache/rtc-copper-control-cycle-julia-8-stack-20260929/julia-gdb-stacks.txt`.
+The explicit RTC parameter-source trigger on session start is also required:
+without it, the replacement did not reach JuliaFilterGraph during conditioning.
+These are functional development replays, not latency benchmarks.
 
 The RTC runner also accepts an opt-in per-role placement contract. The
 [native](profiles/ryzen-6800h-rtc-copper-native.json) and

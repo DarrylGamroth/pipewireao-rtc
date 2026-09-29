@@ -49,9 +49,16 @@ prompt:
 ```text
 groups
 status
+properties GRAPH
+property-generation GRAPH NODE
+parameter-generation GRAPH NODE
 stop GROUP
 start GROUP
+session-stop
+session-start
+source-ended
 reset
+properties-set GRAPH NODE:PROPERTY TYPE VALUE [NODE:PROPERTY TYPE VALUE ...]
 property GRAPH NODE:PROPERTY TYPE VALUE
 parameter GRAPH PORT ELEMENT_TYPE DIMS SCHEMA PATH
 quit
@@ -63,6 +70,11 @@ not reset, reload, or unload the graph. `reset` clears graph processing state
 while stopped. `property` submits one typed scalar through the graph's standard
 Props surface. `parameter` publishes one complete ndarray value from a file on
 the exact configured Parameter Port; dimensions use forms such as `277x376`.
+`properties-set` submits all listed scalars as one transaction. The three
+read-only queries expose current graph values and requested/active generations;
+parameter submission alone does not prove adoption. `source-ended` reports
+completion of an externally owned finite source, `session-stop` stops the
+whole session, and `session-start` resumes it without rebuilding the graph.
 The referenced graph file is the
 complete standard argument object for
 `libpipewire-module-ndarray-filter-chain`; the runner passes it unchanged. The

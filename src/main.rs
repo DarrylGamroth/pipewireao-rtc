@@ -74,7 +74,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 #[allow(clippy::too_many_lines)]
 fn control_session(runner: &mut Runner<LiveGraphAdapter>) -> Result<(), ScientificDiagnostic> {
     println!(
-        "Commands: groups, status, stop GROUP, start GROUP, reset, \
+        "Commands: groups, status, properties GRAPH, property-generation GRAPH NODE, \
+         parameter-generation GRAPH NODE, stop GROUP, start GROUP, session-stop, \
+         session-start, source-ended, reset, properties-set GRAPH \
+         NODE:PROPERTY TYPE VALUE [NODE:PROPERTY TYPE VALUE ...], \
          property GRAPH NODE:PROPERTY TYPE VALUE, \
          parameter GRAPH PORT ELEMENT_TYPE DIMS SCHEMA PATH, quit"
     );
@@ -132,6 +135,20 @@ fn control_session(runner: &mut Runner<LiveGraphAdapter>) -> Result<(), Scientif
                 let counters = runner.executor_mut().observe_discarded_buffers()?;
                 println!("{:?} discarded={counters:?}", runner.executor().status());
             }
+            ["properties", graph] => println!(
+                "PROPERTIES {graph} {:?}",
+                runner.executor().observe_properties(graph)?
+            ),
+            ["property-generation", graph, node] => println!(
+                "PROPERTY_GENERATION {graph} {node} {:?}",
+                runner.executor().observe_property_generation(graph, node)?
+            ),
+            ["parameter-generation", graph, node] => println!(
+                "PARAMETER_GENERATION {graph} {node} {:?}",
+                runner
+                    .executor()
+                    .observe_parameter_generation(graph, node)?
+            ),
             ["stop", name] => dispatch_group(
                 runner,
                 LifecycleEvent::StopExecutionGroup((*name).to_owned()),
@@ -140,6 +157,15 @@ fn control_session(runner: &mut Runner<LiveGraphAdapter>) -> Result<(), Scientif
                 runner,
                 LifecycleEvent::StartExecutionGroup((*name).to_owned()),
             )?,
+            ["session-stop"] => {
+                dispatch_state_control(runner, LifecycleEvent::Stop, LifecycleState::Ready)?;
+            }
+            ["session-start"] => {
+                dispatch_state_control(runner, LifecycleEvent::Start, LifecycleState::Running)?;
+            }
+            ["source-ended"] => {
+                dispatch_ready_control(runner, LifecycleEvent::FiniteSourceCompleted)?;
+            }
             ["reset"] => dispatch_ready_control(runner, LifecycleEvent::Reset)?,
             ["property", graph, name, value_type, value] => dispatch_control(
                 runner,
@@ -151,6 +177,29 @@ fn control_session(runner: &mut Runner<LiveGraphAdapter>) -> Result<(), Scientif
                     )]),
                 },
             )?,
+            ["properties-set", graph, values @ ..]
+                if !values.is_empty() && values.len() % 3 == 0 =>
+            {
+                let mut properties = BTreeMap::new();
+                for fields in values.chunks_exact(3) {
+                    if properties
+                        .insert(fields[0].to_owned(), parse_scalar(fields[1], fields[2])?)
+                        .is_some()
+                    {
+                        return Err(ScientificDiagnostic::new(
+                            "command properties-set",
+                            format!("duplicate property {:?}", fields[0]),
+                        ));
+                    }
+                }
+                dispatch_control(
+                    runner,
+                    LifecycleEvent::UpdateProperties {
+                        graph: (*graph).to_owned(),
+                        values: properties,
+                    },
+                )?;
+            }
             ["parameter", graph, parameter, element_type, dimensions, schema, path] => {
                 let bytes = std::fs::read(path).map_err(|error| {
                     ScientificDiagnostic::new(
@@ -173,7 +222,10 @@ fn control_session(runner: &mut Runner<LiveGraphAdapter>) -> Result<(), Scientif
                 )?;
             }
             _ => eprintln!(
-                "expected groups, status, stop GROUP, start GROUP, reset, \
+                "expected groups, status, properties GRAPH, property-generation GRAPH NODE, \
+                 parameter-generation GRAPH NODE, stop GROUP, start GROUP, session-stop, \
+                 session-start, source-ended, reset, properties-set GRAPH \
+                 NODE:PROPERTY TYPE VALUE [NODE:PROPERTY TYPE VALUE ...], \
                  property GRAPH NODE:PROPERTY TYPE VALUE, \
                  parameter GRAPH PORT ELEMENT_TYPE DIMS SCHEMA PATH, or quit"
             ),
@@ -242,15 +294,28 @@ fn dispatch_ready_control(
     runner: &mut Runner<LiveGraphAdapter>,
     event: LifecycleEvent,
 ) -> Result<(), ScientificDiagnostic> {
+    dispatch_state_control(runner, event, LifecycleState::Ready)
+}
+
+fn dispatch_state_control(
+    runner: &mut Runner<LiveGraphAdapter>,
+    event: LifecycleEvent,
+    expected: LifecycleState,
+) -> Result<(), ScientificDiagnostic> {
     match runner.dispatch(event) {
-        Ok(LifecycleState::Ready) => {
-            println!("READY {:?}", runner.executor().status());
+        Ok(state) if state == expected => {
+            let label = match state {
+                LifecycleState::Ready => "READY",
+                LifecycleState::Running => "RUNNING",
+                _ => unreachable!("session control expects READY or RUNNING"),
+            };
+            println!("{label} {:?}", runner.executor().status());
             Ok(())
         }
         Ok(state) => Err(runner.diagnostic().cloned().unwrap_or_else(|| {
             ScientificDiagnostic::new(
                 "runtime control",
-                format!("expected Ready, reached {state:?}"),
+                format!("expected {expected:?}, reached {state:?}"),
             )
         })),
         Err(error) => {

@@ -367,7 +367,7 @@ struct ParameterPublisher {
     node_name: String,
     port: PortSpec,
     _listener: pw::stream::StreamListener<Rc<RefCell<ParameterProcessState>>>,
-    _stream: pw::stream::StreamRc,
+    stream: pw::stream::StreamRc,
     state: Rc<RefCell<ParameterProcessState>>,
 }
 
@@ -941,6 +941,7 @@ impl LiveGraphAdapter {
             "start latest/hold nodes",
         )?;
         self.wait_for_links_active("start complete-frame session")?;
+        self.trigger_pending_parameters()?;
         self.status.running = true;
         self.status.discarded_by_sink = if self.has_external_source {
             discarded_before_start
@@ -1332,6 +1333,28 @@ impl LiveGraphAdapter {
             }
             state.failure = None;
             state.pending = Some(value.bytes.clone());
+        }
+        if self.status.running {
+            publisher.stream.trigger_process().map_err(|error| {
+                ScientificDiagnostic::new(
+                    format!("graph {graph_name}.ports.{parameter_name}"),
+                    format!("cannot trigger parameter publication: {error}"),
+                )
+            })?;
+        }
+        Ok(())
+    }
+
+    fn trigger_pending_parameters(&self) -> Result<(), ScientificDiagnostic> {
+        for publisher in &self.parameter_publishers {
+            if publisher.state.borrow().pending.is_some() {
+                publisher.stream.trigger_process().map_err(|error| {
+                    ScientificDiagnostic::new(
+                        format!("source {}", publisher.node_name),
+                        format!("cannot trigger parameter publication: {error}"),
+                    )
+                })?;
+            }
         }
         Ok(())
     }
@@ -1939,7 +1962,7 @@ impl LiveGraphAdapter {
             node_name: source.node_name.clone(),
             port,
             _listener: listener,
-            _stream: stream,
+            stream,
             state,
         });
         self.wait_for_owned_node(ObjectRole::Source, &source.node_name)

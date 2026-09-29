@@ -20,6 +20,7 @@ import numpy as np
 
 from lab_placement import (LaunchError, parse_cpu_list, parse_thread_policy,
                            read_thread_profile, wrapper_argv)
+from fits_segment import write_fits_segment
 
 
 RTC = Path(__file__).resolve().parents[1]
@@ -37,6 +38,8 @@ EQUIVALENCE_OUTPUTS = (
     ("constraint-feedback", "command:constraint-feedback", 277,
      "org.calculon.ao.pdm-constraint-feedback/1"),
 )
+CONTROL_CYCLE_CONDITIONING_FRAMES = 8
+CONTROL_CYCLE_CONDITIONING_RATE_HZ = 10
 
 
 def sha256_file(path: Path) -> str:
@@ -109,6 +112,54 @@ def compare_algorithm_output(actual: np.ndarray, expected: np.ndarray,
     return float(np.max(difference))
 
 
+def measured_control_cycle_vectors(values: np.ndarray, frames: int,
+                                   extent: int) -> np.ndarray:
+    half = frames // 2
+    count = CONTROL_CYCLE_CONDITIONING_FRAMES
+    expected_size = (frames + count) * extent
+    if values.size != expected_size:
+        raise RuntimeError(f"control-cycle vector extent {values.size} != {expected_size}")
+    vectors = values.reshape(frames + count, extent)
+    return np.concatenate((vectors[:half], vectors[half + count:])).ravel()
+
+
+def graph_parameter_sequence(dump: str, graph_name: str, node: str) -> tuple[int, int]:
+    graphs = [item for item in json.loads(dump)
+              if item.get("type") == "PipeWire:Interface:Node"
+              and item.get("info", {}).get("props", {}).get("node.name") == graph_name]
+    if len(graphs) != 1:
+        raise RuntimeError(f"expected one graph {graph_name}, found {len(graphs)}")
+    props = graphs[0]["info"]["params"]["Props"]
+    values = next((item["params"] for item in props
+                   if "params" in item and f"{node}:requested-parameter-sequence" in item["params"]), None)
+    if values is None:
+        raise RuntimeError(f"parameter sequence is absent for {node}")
+    entries = dict(zip(values[::2], values[1::2], strict=True))
+    requested = entries.get(f"{node}:requested-parameter-sequence")
+    active = entries.get(f"{node}:active-parameter-sequence")
+    if not isinstance(requested, int) or not isinstance(active, int):
+        raise RuntimeError(f"parameter sequence is invalid: {requested}, {active}")
+    return requested, active
+
+
+def send_rtc_control(process: subprocess.Popen, log: Path, command: str,
+                     expected_state: str) -> None:
+    marker = f"{expected_state} "
+    before = log.read_text(errors="replace").count(marker)
+    if process.stdin is None:
+        raise RuntimeError("RTC control input is unavailable")
+    process.stdin.write(command + "\n")
+    process.stdin.flush()
+    deadline = time.monotonic() + 15
+    while time.monotonic() < deadline:
+        if process.poll() is not None:
+            raise RuntimeError(f"RTC exited while handling {command}")
+        if log.read_text(errors="replace").count(marker) > before:
+            return
+        time.sleep(0.05)
+    raise RuntimeError(f"timed out waiting for RTC {command} -> {expected_state}")
+
+
 def use_installed_julia_libraries(output: Path, installation) -> Path:
     """Point the Julia JLL at the same PipeWireAO build as the private core."""
     depot = output / "julia-depot"
@@ -135,7 +186,8 @@ def use_installed_julia_libraries(output: Path, installation) -> Path:
 
 
 def compile_equivalence_observers(output: Path, env: dict, installation,
-                                  jfg_root: Path, rate_hz: int) -> dict[str, Path]:
+                                  jfg_root: Path, rate_hz: int,
+                                  include_demanded: bool = False) -> dict[str, Path]:
     source = jfg_root / "scripts/julia_fits_command_observer.c"
     if "OBSERVER_NODE_NAME" not in source.read_text():
         raise RuntimeError("selected FITS observer does not support distinct node names")
@@ -146,9 +198,14 @@ def compile_equivalence_observers(output: Path, env: dict, installation,
         env=pkg, text=True,
     ).split()
     binaries = {}
-    for name, _, extent, schema in EQUIVALENCE_OUTPUTS:
+    specifications = list(EQUIVALENCE_OUTPUTS)
+    if include_demanded:
+        specifications.append(("demanded", "", 277,
+                               "org.calculon.ao.demanded-pdm-command/1"))
+    for name, _, extent, schema in specifications:
         binary = output / f"observer-{name}"
-        node_name = f"rtc-copper-{name}-observer"
+        node_name = ("julia-fits-command-observer" if name == "demanded"
+                     else f"rtc-copper-{name}-observer")
         subprocess.run(
             ["cc", "-std=gnu11", "-O2", "-Wall", "-Wextra", "-Werror",
              "-DALLOW_INVALID_PTS", f"-DCOMMAND_ELEMENTS={extent}",
@@ -292,6 +349,8 @@ def main() -> None:
     parser.add_argument("--direct-oracle-bin", type=Path,
                         help="direct Calculon Copper oracle executable for state comparison")
     parser.add_argument("--command-limit-um", type=float, default=0.8)
+    parser.add_argument("--control-cycle", action="store_true",
+                        help="two replay phases with source end, reset, property and reconstructor updates")
     parser.add_argument("--frames", type=int, default=16)
     parser.add_argument("--rate-hz", type=int, default=474,
                         help="offered frame rate; the 2 ms wfsSimulator readout permits at most 474 Hz")
@@ -301,6 +360,14 @@ def main() -> None:
     script_started_ns = time.monotonic_ns()
     if not 1 <= args.frames <= 1024:
         parser.error("--frames must be in 1..1024")
+    if args.control_cycle and (args.frames < 8 or args.frames % 2):
+        parser.error("--control-cycle requires an even frame count of at least 8")
+    if args.control_cycle and not args.equivalence_observations:
+        parser.error("--control-cycle requires --equivalence-observations")
+    if args.control_cycle and args.frames + CONTROL_CYCLE_CONDITIONING_FRAMES > 1024:
+        parser.error("--control-cycle exceeds the 1024-frame observation capacity")
+    if args.control_cycle and (args.wire_capture or args.reference_vectors):
+        parser.error("--control-cycle is incompatible with wire or saved-vector comparison")
     if not 1 <= args.rate_hz <= MAX_RATE_HZ:
         parser.error(f"--rate-hz must be in 1..{MAX_RATE_HZ} for the 2 ms readout")
     if args.julia_blas_threads < 1:
@@ -395,10 +462,12 @@ def main() -> None:
                              "name = libpipewire-module-rt")
         if any(setting not in daemon_config for setting in required_settings):
             raise RuntimeError("generated daemon config lacks a requested loop or memory setting")
-    observer_bin = compile_observer(output, env, args.rate_hz, installation)
     diagnostic_bins = (compile_equivalence_observers(
         output, env, installation, jfg_root, args.rate_hz,
+        include_demanded=args.control_cycle,
     ) if args.equivalence_observations else {})
+    observer_bin = (diagnostic_bins["demanded"] if args.control_cycle else
+                    compile_observer(output, env, args.rate_hz, installation))
     if args.controller == "native":
         render_argv = [sys.executable, str(RTC / "benchmark/render_revolt_copper_graph.py"),
                        "--algorithms-root", str(args.algorithms_root),
@@ -416,6 +485,11 @@ def main() -> None:
         env["PIPEWIREAO_RTC_GRAPH_COPPER_NATIVE"] = str(
             output / "revolt-copper-rtc-graph.conf"
         )
+    else:
+        prepare_artifacts(output, args.heart_config.resolve(), True)
+    env["PIPEWIREAO_RTC_PARAMETER_COPPER_RECONSTRUCTOR"] = str(
+        output / "parameter-reconstructor.f32"
+    )
     processes = []
     diagnostic_observers = {}
     measurement_links: list[tuple[str, str]] = []
@@ -435,6 +509,7 @@ def main() -> None:
               "controller": args.controller, "fixture": str(fixture),
               "wire_capture": args.wire_capture,
               "command_limit_um": args.command_limit_um,
+              "control_cycle": args.control_cycle,
               "equivalence_observations": args.equivalence_observations,
               "cube": str(cube), "qualified": False,
               "delivery_qualified": False, "schedule_qualified": False,
@@ -493,6 +568,13 @@ def main() -> None:
         report["qualifier_script_sha256"] = sha256_file(qualifier_script)
         report["decoder_script_sha256"] = sha256_file(decoder_script)
     placement_processes = {}
+    conditioning_frames = CONTROL_CYCLE_CONDITIONING_FRAMES if args.control_cycle else 0
+    observed_frames = args.frames + conditioning_frames
+    restart_arguments = (
+        ["--sequence-restart-at-record", str(args.frames // 2),
+         "--sequence-restart-at-record", str(args.frames // 2 + conditioning_frames)]
+        if args.control_cycle else []
+    )
     try:
         daemon, daemon_log = start(
             placed_argv(profile, "daemon",
@@ -507,7 +589,7 @@ def main() -> None:
             placed_argv(profile, "observer",
                         [str(observer_bin), "--csv", str(output / "demanded.csv"),
                          "--vectors", str(output / "demanded-um.f32"),
-                         "--max-records", str(args.frames + 4)]),
+                         "--max-records", str(observed_frames + 4)] + restart_arguments),
             env, output / "observer.log", stdin=True,
         )
         processes.append((observer, observer_log, "q"))
@@ -518,7 +600,7 @@ def main() -> None:
             diagnostic, diagnostic_log = start(
                 [str(diagnostic_bins[name]), "--csv", str(output / f"{name}.csv"),
                  "--vectors", str(output / f"{name}.f32"),
-                 "--max-records", str(args.frames + 4)],
+                 "--max-records", str(observed_frames + 4)] + restart_arguments,
                 env, output / f"observer-{name}.log", stdin=True,
             )
             processes.append((diagnostic, diagnostic_log, "q"))
@@ -638,25 +720,100 @@ def main() -> None:
             processes.append((capture, capture_log, None))
             wait_text(output / "dumpcap.log", "Capturing on", 15, capture)
         (output / "input.fits").symlink_to(cube)
-        replay, replay_log = start(
-            placed_argv(profile, "simulator",
-                        [str(simulator), "-file", "input.fits", "-tPort", "6000",
-                         "-period", repr(1.0 / args.rate_hz), "-readout", "2000", "-lines", "32",
-                         "-numFrames", str(args.frames)]),
-            env, output / "wfs-simulator.log", cwd=output,
+        def run_replay(file_name: str, frame_count: int, phase: str,
+                       rate_hz: int | None = None):
+            offered_rate = rate_hz or args.rate_hz
+            log = output / f"wfs-simulator{phase}.log"
+            replay, replay_log = start(
+                placed_argv(profile, "simulator",
+                            [str(simulator), "-file", file_name, "-tPort", "6000",
+                             "-period", repr(1.0 / offered_rate), "-readout", "2000",
+                             "-lines", "32", "-numFrames", str(frame_count)]),
+                env, log, cwd=output,
+            )
+            launched = time.monotonic_ns()
+            processes.append((replay, replay_log, None))
+            replay.wait(timeout=frame_count / offered_rate + 15)
+            elapsed = (time.monotonic_ns() - launched) / 1e6
+            if replay.returncode != 0:
+                raise RuntimeError(f"wfsSimulator failed in {phase or 'single'} replay")
+            overruns = re.findall(r"Timer\[0\] overrun: (\d+)",
+                                  log.read_text(errors="replace"))
+            return launched, elapsed, overruns
+
+        first_count = args.frames // 2 if args.control_cycle else args.frames
+        first_phase = "-phase-1" if args.control_cycle else ""
+        source_launched_ns, first_elapsed, overruns = run_replay(
+            "input.fits", first_count, first_phase,
         )
-        source_launched_ns = time.monotonic_ns()
         report["startup_intervals_ms"] = {
             "script_to_graph_ready": (graph_ready_ns - script_started_ns) / 1e6,
             "graph_ready_to_source_launch": (source_launched_ns - graph_ready_ns) / 1e6,
         }
-        processes.append((replay, replay_log, None))
-        replay.wait(timeout=args.frames / args.rate_hz + 15)
-        report["replay_elapsed_ms"] = (time.monotonic_ns() - source_launched_ns) / 1e6
-        if replay.returncode != 0:
-            raise RuntimeError("wfsSimulator failed")
-        overruns = re.findall(r"Timer\[0\] overrun: (\d+)",
-                              (output / "wfs-simulator.log").read_text(errors="replace"))
+        report["replay_elapsed_ms"] = first_elapsed
+        if args.control_cycle:
+            # Let the first finite source drain before the RTC stops its graph.
+            time.sleep(1.0)
+            send_rtc_control(rtc, output / "rtc.log", "source-ended", "READY")
+            send_rtc_control(rtc, output / "rtc.log", "reset", "READY")
+            matrix = np.fromfile(output / "parameter-reconstructor.f32", dtype="<f4")
+            if matrix.size != 253 * 3600:
+                raise RuntimeError("prepared Copper reconstructor has the wrong extent")
+            replacement = output / "parameter-reconstructor-half.f32"
+            (matrix * np.float32(0.5)).tofile(replacement)
+            port = ("reconstruct:reconstructor" if args.controller == "native"
+                    else "reconstructor")
+            graph_name = "calculon-revolt-copper-fullframe"
+            send_rtc_control(
+                rtc, output / "rtc.log",
+                f"parameter {graph_name} {port} F32_LE 253x3600 "
+                f"org.calculon.ao.pwfs-reconstructor/1 {replacement}", "Ready",
+            )
+            node = "control" if args.controller == "native" else "correction"
+            changes = {"gain": 0.02, "pole": 0.7, "anti-windup-gain": 0.25}
+            update = " ".join(f"{node}:{name} float {value}"
+                              for name, value in changes.items())
+            send_rtc_control(rtc, output / "rtc.log",
+                             f"properties-set {graph_name} {update}", "Ready")
+            send_rtc_control(rtc, output / "rtc.log", "session-start", "RUNNING")
+            write_fits_segment(cube, output / "conditioning.fits", 0,
+                               conditioning_frames)
+            _, conditioning_elapsed, conditioning_overruns = run_replay(
+                "conditioning.fits", conditioning_frames, "-conditioning",
+                CONTROL_CYCLE_CONDITIONING_RATE_HZ,
+            )
+            time.sleep(1.0)
+            send_rtc_control(rtc, output / "rtc.log", "source-ended", "READY")
+            intermediate = command(
+                [str(installation.tool("pwao-dump")), "-r", "pipewire-ao-0", "--raw"], env,
+            )
+            (output / "pipewire-after-conditioning.json").write_text(intermediate)
+            requested, active = graph_parameter_sequence(
+                intermediate, graph_name, "reconstruct",
+            )
+            report["conditioned_parameter_sequence"] = {
+                "requested": requested, "active": active,
+            }
+            minimum_sequence = 3 if args.controller == "native" else 2
+            if requested < minimum_sequence or active != requested:
+                raise RuntimeError(
+                    "replacement reconstructor did not become active after conditioning: "
+                    f"requested={requested} active={active}"
+                )
+            send_rtc_control(rtc, output / "rtc.log", "reset", "READY")
+            send_rtc_control(rtc, output / "rtc.log", "session-start", "RUNNING")
+            half = args.frames // 2
+            write_fits_segment(cube, output / "second-phase.fits", half, half)
+            _, second_elapsed, second_overruns = run_replay(
+                "second-phase.fits", half, "-phase-2",
+            )
+            report["replay_elapsed_ms"] += second_elapsed
+            report["control_cycle_phase_frames"] = half
+            report["conditioning_frames"] = conditioning_frames
+            report["conditioning_rate_hz"] = CONTROL_CYCLE_CONDITIONING_RATE_HZ
+            report["conditioning_elapsed_ms"] = conditioning_elapsed
+            report["control_cycle_replacement"] = str(replacement)
+            overruns += conditioning_overruns + second_overruns
         report["simulator_timer_overrun_events"] = len(overruns)
         report["simulator_timer_overrun_periods"] = sum(map(int, overruns))
         report["schedule_qualified"] = not overruns
@@ -666,6 +823,8 @@ def main() -> None:
         if args.wire_capture:
             stop(capture, capture_log)
             processes.remove((capture, capture_log, None))
+        send_rtc_control(rtc, output / "rtc.log", "source-ended", "READY")
+        report["finite_source_completed"] = True
         dump = command(
             [str(installation.tool("pwao-dump")), "-r", "pipewire-ao-0", "--raw"], env,
         )
@@ -711,6 +870,8 @@ def main() -> None:
             raise RuntimeError("RTC-owned Copper links survived unload")
         stop(observer, observer_log, control="q")
         processes.remove((observer, observer_log, "q"))
+        if observer.returncode != 0:
+            raise RuntimeError("demanded-command observer did not stop cleanly")
         for name, (diagnostic, diagnostic_log) in diagnostic_observers.items():
             stop(diagnostic, diagnostic_log, control="q")
             processes.remove((diagnostic, diagnostic_log, "q"))
@@ -736,28 +897,34 @@ def main() -> None:
                 raise RuntimeError("JuliaFilterGraph island did not report one callback count")
             report["julia_callbacks"] = int(callbacks[0])
             report["wfs_frames_without_julia_callback"] = (
-                args.frames - report["julia_callbacks"]
+                observed_frames - report["julia_callbacks"]
             )
         with (output / "demanded.csv").open(newline="") as stream:
             sequences = [int(row["sequence"]) for row in csv.DictReader(stream)]
         counts = Counter(sequences)
-        expected = set(range(args.frames))
-        missing = sorted(expected - counts.keys())
-        repeated = sorted(sequence for sequence, count in counts.items() if count > 1)
-        unexpected = sorted(counts.keys() - expected)
+        expected_sequence = (list(range(args.frames // 2))
+                             + list(range(conditioning_frames))
+                             + list(range(args.frames // 2))
+                             if args.control_cycle else list(range(args.frames)))
+        expected_counts = Counter(expected_sequence)
+        missing = sorted(sequence for sequence, count in expected_counts.items()
+                         if counts[sequence] < count)
+        repeated = sorted(sequence for sequence, count in counts.items()
+                          if count > expected_counts[sequence])
+        unexpected = sorted(counts.keys() - expected_counts.keys())
         report["observed_commands"] = len(sequences)
         report["missing_sequences"] = missing
         report["repeated_sequences"] = repeated
         report["unexpected_sequences"] = unexpected
         counters = report["wfs_counters"]
-        if (counters["heart.std-wfs.datagrams-received"] != 2 * args.frames
+        if (counters["heart.std-wfs.datagrams-received"] != 2 * observed_frames
                 or counters["heart.std-wfs.datagrams-rejected"] != 0
-                or counters["heart.std-wfs.frames-published"] != args.frames
+                or counters["heart.std-wfs.frames-published"] != observed_frames
                 or counters["heart.std-wfs.frames-dropped"] != 0
                 or counters["heart.std-wfs.buffer-starvations"] != 0):
             raise RuntimeError(f"HEART WFS did not deliver every frame: {counters}; "
                                f"missing commands={missing}")
-        if sequences != list(range(args.frames)):
+        if sequences != expected_sequence:
             raise RuntimeError(
                 "demanded command delivery is not contiguous: "
                 f"observed={len(sequences)} missing={missing} "
@@ -769,20 +936,46 @@ def main() -> None:
                 with (output / f"{name}.csv").open(newline="") as stream:
                     observed = [int(row["sequence"]) for row in csv.DictReader(stream)]
                 values = np.fromfile(output / f"{name}.f32", dtype="<f4")
-                if observed != list(range(args.frames)) or values.size != args.frames * extent:
+                if observed != expected_sequence or values.size != observed_frames * extent:
                     raise RuntimeError(f"{name} observations are incomplete or unordered")
                 if not np.isfinite(values).all():
                     raise RuntimeError(f"{name} observations contain non-finite values")
+                if args.control_cycle:
+                    measured_control_cycle_vectors(values, args.frames, extent).astype(
+                        "<f4", copy=False
+                    ).tofile(output / f"{name}-measured.f32")
                 report["equivalence_outputs"][name] = {
                     "schema": schema, "extent": extent, "frames": args.frames,
-                    "vectors": str(output / f"{name}.f32"),
+                    "vectors": str(output / (f"{name}-measured.f32" if args.control_cycle
+                                             else f"{name}.f32")),
                 }
             oracle_dir = output / "direct-oracle"
-            if args.controller == "julia":
-                prepare_artifacts(output, args.heart_config.resolve(), True)
-            command([str(direct_oracle_bin), "--run-dir", str(output),
-                     "--output-dir", str(oracle_dir), "--frames", str(args.frames),
-                     "--limit-um", str(args.command_limit_um)], env)
+            oracle_argv = [str(direct_oracle_bin), "--run-dir", str(output),
+                           "--output-dir", str(oracle_dir), "--frames", str(args.frames),
+                           "--limit-um", str(args.command_limit_um)]
+            checker_argv = [sys.executable, str(direct_oracle_checker), str(oracle_dir),
+                            "--reference-demanded", str(output / "demanded-um.f32"),
+                            "--limit-um", str(args.command_limit_um)]
+            if args.control_cycle:
+                changed = ["--reset-at", str(args.frames // 2 + 1),
+                           "--change-at", str(args.frames // 2 + 1),
+                           "--changed-gain", "0.02", "--changed-pole", "0.7",
+                           "--changed-anti-windup-gain", "0.25"]
+                oracle_argv.extend(changed)
+                oracle_argv.extend(("--changed-reconstructor",
+                                    str(output / "parameter-reconstructor-half.f32")))
+                checker_argv.extend(changed)
+                measured_demanded = measured_control_cycle_vectors(
+                    np.fromfile(output / "demanded-um.f32", dtype="<f4"),
+                    args.frames, 277,
+                )
+                measured_demanded.astype("<f4", copy=False).tofile(
+                    output / "demanded-measured-um.f32"
+                )
+                checker_argv[checker_argv.index("--reference-demanded") + 1] = str(
+                    output / "demanded-measured-um.f32"
+                )
+            command(oracle_argv, env)
             references = {
                 "mean": "mean.f32",
                 "correction": "correction.f32",
@@ -792,30 +985,32 @@ def main() -> None:
             report["algorithm_comparison"] = {}
             for name, oracle_file in references.items():
                 extent = report["equivalence_outputs"][name]["extent"]
-                actual = np.fromfile(output / f"{name}.f32", dtype="<f4")
+                actual = np.fromfile(
+                    output / (f"{name}-measured.f32" if args.control_cycle
+                              else f"{name}.f32"), dtype="<f4",
+                )
                 expected = np.fromfile(oracle_dir / oracle_file, dtype="<f4")
                 report["algorithm_comparison"][name] = compare_algorithm_output(
                     actual, expected, args.frames, extent, name,
                 )
             expected = np.fromfile(oracle_dir / "demanded-um.f32", dtype="<f4")
-            actual = np.fromfile(output / "demanded-um.f32", dtype="<f4")
+            actual = np.fromfile(
+                output / ("demanded-measured-um.f32" if args.control_cycle
+                          else "demanded-um.f32"), dtype="<f4",
+            )
             report["algorithm_comparison"]["demanded"] = compare_algorithm_output(
                 actual, expected, args.frames, 277, "demanded",
             )
-            report["direct_checker"] = json.loads(command(
-                [sys.executable, str(direct_oracle_checker), str(oracle_dir),
-                 "--reference-demanded", str(output / "demanded-um.f32"),
-                 "--limit-um", str(args.command_limit_um)], env,
-            ))
+            report["direct_checker"] = json.loads(command(checker_argv, env))
             report["numerical_comparison"] = "passed"
-        if args.controller == "julia" and report["julia_callbacks"] != args.frames:
+        if args.controller == "julia" and report["julia_callbacks"] != observed_frames:
             raise RuntimeError(
                 "JuliaFilterGraph callback count does not match the requested frames: "
-                f"{report['julia_callbacks']} != {args.frames}"
+                f"{report['julia_callbacks']} != {observed_frames}"
             )
         demanded = np.fromfile(output / "demanded-um.f32", dtype="<f4")
-        if demanded.size != args.frames * 277:
-            raise RuntimeError(f"demanded vector count is {demanded.size // 277}, expected {args.frames}")
+        if demanded.size != observed_frames * 277:
+            raise RuntimeError(f"demanded vector count is {demanded.size // 277}, expected {observed_frames}")
         if not np.isfinite(demanded).all():
             raise RuntimeError("demanded command contains non-finite values")
         report["delivery_qualified"] = True

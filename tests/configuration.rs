@@ -11,6 +11,7 @@ const EXTERNAL_GRAPH: &str = include_str!("../fixtures/external-graph-developmen
 const REVOLT_NATIVE: &str = include_str!("../fixtures/revolt-classic-native-development.conf");
 const REVOLT_JULIA: &str = include_str!("../fixtures/revolt-classic-julia-development.conf");
 const COPPER_NATIVE: &str = include_str!("../fixtures/revolt-copper-native-development.conf");
+const COPPER_JULIA: &str = include_str!("../fixtures/revolt-copper-julia-development.conf");
 const LATEST_HOLD_LIVE: &str = include_str!("../fixtures/latest-hold-live.conf");
 const LATEST_HOLD_JULIA_LIVE: &str = include_str!("../fixtures/latest-hold-julia-live.conf");
 
@@ -505,10 +506,17 @@ fn revolt_classic_variants_share_the_exact_external_plant_contract() {
 #[test]
 fn revolt_copper_preserves_raw_detector_and_demanded_command_contracts() {
     let copper = DevelopmentConfig::parse(COPPER_NATIVE).expect("Copper full-frame topology");
-    assert_eq!(copper.object_count(), 3);
-    assert_eq!(copper.owned_object_count(), 1);
-    assert_eq!(copper.links.len(), 2);
-    assert!(copper.parameters.is_empty());
+    let julia = DevelopmentConfig::parse(COPPER_JULIA).expect("Julia Copper full-frame topology");
+    for config in [&copper, &julia] {
+        assert_eq!(config.object_count(), 4);
+        assert_eq!(config.links.len(), 3);
+        assert_eq!(config.parameters.len(), 1);
+        assert_eq!(config.sources[1].node_name, "rtc-copper-reconstructor");
+        assert!(config.sources[1].ports[0].parameter);
+        assert!(config.graphs[0].ports[1].parameter);
+    }
+    assert_eq!(copper.owned_object_count(), 2);
+    assert_eq!(julia.owned_object_count(), 1);
     assert_eq!(copper.sources[0].ports[0].element_type, "U16_LE");
     assert_eq!(copper.sources[0].ports[0].shape, [64, 64]);
     assert_eq!(copper.graphs[0].ports[0].element_type, "U16_LE");
@@ -537,7 +545,7 @@ fn revolt_copper_preserves_raw_detector_and_demanded_command_contracts() {
         DevelopmentConfig::parse(&wrong_type)
             .expect_err("detector element type mismatch")
             .field(),
-        "links[0].element-type"
+        "links[1].element-type"
     );
 
     let wrong_units_schema = replace_once(
@@ -549,7 +557,7 @@ fn revolt_copper_preserves_raw_detector_and_demanded_command_contracts() {
         DevelopmentConfig::parse(&wrong_units_schema)
             .expect_err("micrometre command cannot link to metre sink")
             .field(),
-        "links[1].schema"
+        "links[2].schema"
     );
 }
 
