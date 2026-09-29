@@ -241,10 +241,13 @@ distinguishes submission from active host generations, and compares ten
 commands and plant states per controller with direct references. A second
 gain/pole transaction follows parameter adoption. The fixture accepts a
 one-way sparse-parameter adoption during sequences 6–8, classifies each
-command against its direct old and updated controller states, and requires the
-updated state by sequence 8. The private core separately
+command against its direct old and updated controller states, records the
+observed previous-to-requested transition, and requires the updated state by
+sequence 8. Before the numerical sequence begins, the private core separately
 proves repeated live gain/pole updates and rejection of an undeclared property
-for native and Julia graphs, including no generation change on rejection. It
+for native and Julia graphs, including no generation change on rejection; a
+wrong-shape reconstructor update reaches `FAULT`, `retry` rebuilds the declared
+topology, and unload/reload clears the retained rejection diagnostic. It
 stops a minimal graph, reloads a different serial topology, restarts, and
 confirms the old objects are absent. After the tenth Classic command, the
 external owner signals finite source completion to the RTC. The fixture checks

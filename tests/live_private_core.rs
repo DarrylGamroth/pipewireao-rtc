@@ -2254,6 +2254,30 @@ fn run_revolt_classic_reference_case(
     );
     assert_eq!(runner.executor().status().owned_nodes, 2);
     assert_eq!(runner.executor().status().owned_links, 3);
+    assert_revolt_wrong_shape_parameter_requires_retry(
+        &mut runner,
+        &environment["PIPEWIREAO_RTC_PARAMETER_REVOLT"],
+        "reconstruct:reconstructor",
+        2,
+        3,
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Unload).unwrap(),
+        LifecycleState::Offline,
+    );
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Load(ConfigurationInput::File(
+                repository.join("fixtures/revolt-classic-native-development.conf"),
+            )))
+            .unwrap(),
+        LifecycleState::Ready,
+        "native REVOLT reload after parameter-rejection retry diagnostic: {:?}",
+        runner.diagnostic(),
+    );
+    assert_eq!(runner.executor().status().owned_nodes, 2);
+    assert_eq!(runner.executor().status().owned_links, 3);
+    assert!(runner.diagnostic().is_none());
     assert_eq!(
         runner.dispatch(LifecycleEvent::Start).unwrap(),
         LifecycleState::Running,
@@ -2304,13 +2328,6 @@ fn run_revolt_classic_reference_case(
     assert_eq!(
         runner.dispatch(LifecycleEvent::Stop).unwrap(),
         LifecycleState::Ready,
-    );
-    assert_revolt_wrong_shape_parameter_requires_retry(
-        &mut runner,
-        &environment["PIPEWIREAO_RTC_PARAMETER_REVOLT"],
-        "reconstruct:reconstructor",
-        2,
-        3,
     );
     let native_second_property = apply_revolt_final_property_update(&mut runner);
     assert_eq!(
@@ -2461,6 +2478,30 @@ fn run_revolt_classic_reference_case(
     );
     assert_eq!(runner.executor().status().owned_nodes, 1);
     assert_eq!(runner.executor().status().owned_links, 3);
+    assert_revolt_wrong_shape_parameter_requires_retry(
+        &mut runner,
+        &environment["PIPEWIREAO_RTC_PARAMETER_REVOLT"],
+        "reconstructor",
+        1,
+        3,
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Unload).unwrap(),
+        LifecycleState::Offline,
+    );
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Load(ConfigurationInput::File(
+                repository.join("fixtures/revolt-classic-julia-development.conf"),
+            )))
+            .unwrap(),
+        LifecycleState::Ready,
+        "Julia REVOLT reload after parameter-rejection retry diagnostic: {:?}",
+        runner.diagnostic(),
+    );
+    assert_eq!(runner.executor().status().owned_nodes, 1);
+    assert_eq!(runner.executor().status().owned_links, 3);
+    assert!(runner.diagnostic().is_none());
     assert_eq!(
         runner.dispatch(LifecycleEvent::Start).unwrap(),
         LifecycleState::Running,
@@ -2512,13 +2553,6 @@ fn run_revolt_classic_reference_case(
     assert_eq!(
         runner.dispatch(LifecycleEvent::Stop).unwrap(),
         LifecycleState::Ready,
-    );
-    assert_revolt_wrong_shape_parameter_requires_retry(
-        &mut runner,
-        &environment["PIPEWIREAO_RTC_PARAMETER_REVOLT"],
-        "reconstructor",
-        1,
-        3,
     );
     let julia_second_property = apply_revolt_final_property_update(&mut runner);
     assert_eq!(
