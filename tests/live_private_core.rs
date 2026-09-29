@@ -2028,6 +2028,7 @@ fn run_revolt_classic_lockstep_case(
     let hil_log = temporary.join("revolt-lockstep-hil.log");
     let log = std::fs::File::create(&hil_log).expect("REVOLT lockstep HIL log");
     let provider = command_with_environment("julia", environment)
+        .env("OPENBLAS_NUM_THREADS", "1")
         .env("PIPEWIREAO_RTC_REVOLT_LOCKSTEP", "1")
         .args([
             "--startup-file=no",
@@ -2204,6 +2205,7 @@ fn run_revolt_classic_reference_case(
     let hil_log = temporary.join("revolt-hil.log");
     let log = std::fs::File::create(&hil_log).expect("REVOLT HIL log");
     let provider = command_with_environment("julia", environment)
+        .env("OPENBLAS_NUM_THREADS", "1")
         .args([
             "--startup-file=no",
             "--threads=2",
