@@ -8,6 +8,7 @@ from collections import Counter
 import csv
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -408,6 +409,35 @@ def preflight_placement(profile: dict, roles: set[str]) -> tuple[int, int]:
     return next(iter(parse_cpu_list(loop["cpus"]))), parse_thread_policy(loop["policy"])[1]
 
 
+def hold_live_update_failure(seconds: float, processes: list, report: dict,
+                             snapshot) -> None:
+    """Keep live processes inspectable for a finite diagnostic interval."""
+    if seconds == 0:
+        return
+    started = time.monotonic_ns()
+    record = {
+        "seconds": seconds, "started_ns": started,
+        "processes": [{"pid": process.pid, "argv": process.args,
+                       "returncode": process.poll()}
+                      for process, _, _ in processes],
+    }
+    report["live_update_failure_hold"] = record
+    report["qualified"] = False
+    try:
+        snapshot("matrix-timeout-before-hold")
+    except Exception as error:
+        record["snapshot_before_error"] = str(error)
+    print("LIVE_UPDATE_FAILURE_HOLD " + json.dumps(record), flush=True)
+    deadline = time.monotonic() + seconds
+    while (remaining := deadline - time.monotonic()) > 0:
+        time.sleep(min(1.0, remaining))
+    try:
+        snapshot("matrix-timeout-after-hold")
+    except Exception as error:
+        record["snapshot_after_error"] = str(error)
+    record["ended_ns"] = time.monotonic_ns()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, required=True)
@@ -452,6 +482,8 @@ def main() -> None:
                         help="two replay phases with source end, reset, property and reconstructor updates")
     parser.add_argument("--live-updates", action="store_true",
                         help="replace reconstructor and gain/pole during one continuous replay")
+    parser.add_argument("--live-update-failure-hold-seconds", type=float, default=0,
+                        help="diagnostic only: hold processes alive after matrix adoption timeout")
     parser.add_argument("--frames", type=int, default=16)
     parser.add_argument("--rate-hz", type=int, default=474,
                         help="offered frame rate; the 2 ms wfsSimulator readout permits at most 474 Hz")
@@ -463,6 +495,11 @@ def main() -> None:
             args.julia_trace_compile, args.controller)
     except ValueError as error:
         parser.error(str(error))
+    if (not math.isfinite(args.live_update_failure_hold_seconds)
+            or args.live_update_failure_hold_seconds < 0):
+        parser.error("--live-update-failure-hold-seconds must be finite and nonnegative")
+    if args.live_update_failure_hold_seconds and not args.live_updates:
+        parser.error("--live-update-failure-hold-seconds requires --live-updates")
     script_started_ns = time.monotonic_ns()
     if not 1 <= args.frames <= 1024:
         parser.error("--frames must be in 1..1024")
@@ -896,6 +933,8 @@ def main() -> None:
                     if requested > initial_requested and active == requested:
                         break
                     if replay.poll() is not None or time.monotonic() >= deadline:
+                        hold_live_update_failure(
+                            args.live_update_failure_hold_seconds, processes, report, snapshot)
                         raise RuntimeError("live reconstructor was not adopted during ingress")
                     time.sleep(0.01)
                 matrix_adopted_ns = time.monotonic_ns()

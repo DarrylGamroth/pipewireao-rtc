@@ -7,6 +7,8 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
 
 import numpy as np
 
@@ -17,6 +19,53 @@ SPEC = importlib.util.spec_from_file_location("run_copper_rtc", BENCHMARK / "run
 assert SPEC is not None and SPEC.loader is not None
 RUNNER = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(RUNNER)
+
+
+class LiveUpdateFailureHoldTests(unittest.TestCase):
+    def test_default_does_not_wait_or_change_report(self) -> None:
+        snapshot = Mock()
+        report = {"qualified": False}
+        with patch.object(RUNNER.time, "sleep") as sleep:
+            RUNNER.hold_live_update_failure(0, [], report, snapshot)
+        sleep.assert_not_called()
+        snapshot.assert_not_called()
+        self.assertEqual(report, {"qualified": False})
+
+    def test_finite_hold_preserves_failure_and_captures_processes(self) -> None:
+        now = [0.0]
+        sleeps = []
+
+        def sleep(seconds):
+            sleeps.append(seconds)
+            now[0] += seconds
+
+        process = SimpleNamespace(pid=42, args=["rtc"], poll=lambda: None)
+        report = {"qualified": True}
+        snapshot = Mock()
+        with patch.object(RUNNER.time, "monotonic", side_effect=lambda: now[0]), \
+                patch.object(RUNNER.time, "monotonic_ns", side_effect=lambda: int(now[0] * 1e9)), \
+                patch.object(RUNNER.time, "sleep", side_effect=sleep), \
+                patch("builtins.print"):
+            RUNNER.hold_live_update_failure(1.5, [(process, None, None)], report, snapshot)
+        self.assertEqual(sleeps, [1.0, 0.5])
+        self.assertFalse(report["qualified"])
+        record = report["live_update_failure_hold"]
+        self.assertEqual(record["processes"], [{"pid": 42, "argv": ["rtc"], "returncode": None}])
+        self.assertEqual(record["ended_ns"] - record["started_ns"], 1_500_000_000)
+        self.assertEqual([call.args[0] for call in snapshot.call_args_list],
+                         ["matrix-timeout-before-hold", "matrix-timeout-after-hold"])
+
+    def test_snapshot_errors_do_not_hide_failed_qualification(self) -> None:
+        snapshot = Mock(side_effect=RuntimeError("snapshot unavailable"))
+        report = {}
+        with patch.object(RUNNER.time, "monotonic", side_effect=[0.0, 2.0]), \
+                patch.object(RUNNER.time, "monotonic_ns", side_effect=[0, 2_000_000_000]), \
+                patch("builtins.print"):
+            RUNNER.hold_live_update_failure(1.0, [], report, snapshot)
+        self.assertFalse(report["qualified"])
+        record = report["live_update_failure_hold"]
+        self.assertEqual(record["snapshot_before_error"], "snapshot unavailable")
+        self.assertEqual(record["snapshot_after_error"], "snapshot unavailable")
 
 
 class WireLatencyQualificationTests(unittest.TestCase):
