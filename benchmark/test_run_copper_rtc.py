@@ -7,6 +7,8 @@ from pathlib import Path
 import sys
 import unittest
 
+import numpy as np
+
 
 BENCHMARK = Path(__file__).resolve().parent
 sys.path.insert(0, str(BENCHMARK))
@@ -17,6 +19,21 @@ SPEC.loader.exec_module(RUNNER)
 
 
 class WireLatencyQualificationTests(unittest.TestCase):
+    def test_algorithm_comparison_rejects_missing_nonfinite_and_different_values(self) -> None:
+        reference = np.array([0.1, -0.2], dtype=np.float32)
+        self.assertEqual(RUNNER.compare_algorithm_output(reference, reference, 1, 2,
+                                                         "correction"), 0.0)
+        for actual, expected in (
+            (reference[:1], reference),
+            (np.array([np.nan, -0.2], dtype=np.float32), reference),
+            (reference, np.array([np.inf, -0.2], dtype=np.float32)),
+            (np.array([0.1, -0.3], dtype=np.float32), reference),
+        ):
+            with self.subTest(actual=actual, expected=expected):
+                with self.assertRaises(RuntimeError):
+                    RUNNER.compare_algorithm_output(actual, expected, 1, 2,
+                                                    "correction")
+
     @staticmethod
     def physical() -> dict:
         summary = {"count": 2, "min": 100.0, "p50": 150.0,

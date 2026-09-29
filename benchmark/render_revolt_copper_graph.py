@@ -9,6 +9,22 @@ from pathlib import Path
 import sys
 
 
+def expose_equivalence_outputs(graph: str) -> str:
+    anchor = '            "feedback-to-controller:controller-constraint-feedback"\n'
+    outputs = ('pyramid:mean-pupil-intensity', 'control:correction',
+               'control:controller-state', 'command:constraint-feedback')
+    if graph.count(anchor) != 1:
+        raise ValueError("Copper feedback graph has no unique unmodified feedback output")
+    tail = graph.split(anchor, 1)[1].split(']', 1)[0]
+    if any(f'"{name}"' in tail for name in outputs):
+        raise ValueError("Copper feedback graph has no unique unmodified feedback output")
+    return graph.replace(
+        anchor,
+        anchor + ''.join(f'            "{name}"\n' for name in outputs),
+        1,
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--algorithms-root", type=Path, required=True)
@@ -19,12 +35,16 @@ def main() -> None:
     parser.add_argument("--rate-hz", type=int, default=474)
     parser.add_argument("--command-limit-um", type=float, default=0.8)
     parser.add_argument("--clipping-feedback", action="store_true")
+    parser.add_argument("--equivalence-observations", action="store_true",
+                        help="expose existing feedback-state outputs for a direct-Algorithm test")
     args = parser.parse_args()
 
     if args.rate_hz <= 0:
         parser.error("--rate-hz must be positive")
     if args.command_limit_um <= 0:
         parser.error("--command-limit-um must be positive")
+    if args.equivalence_observations and not args.clipping_feedback:
+        parser.error("--equivalence-observations requires --clipping-feedback")
     scripts = args.algorithms_root.resolve() / "scripts"
     if not (scripts / "run_fgn_copper_fullframe_live.py").is_file():
         parser.error(f"maintained Copper generator is missing from {scripts}")
@@ -46,6 +66,8 @@ def main() -> None:
         args.fgn_bundle.resolve(), args.rate_hz,
         args.clipping_feedback, args.command_limit_um,
     )
+    if args.equivalence_observations:
+        graph = expose_equivalence_outputs(graph)
     anchor = "    node.name = calculon-revolt-copper-fullframe\n"
     if graph.count(anchor) != 1:
         raise ValueError("maintained Copper graph changed its node identity")

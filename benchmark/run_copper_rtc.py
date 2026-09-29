@@ -27,6 +27,16 @@ PIPEWIREAO_JLL_UUID = "cde84cf6-9a21-5ce0-b5e3-1526e778c30b"
 # wfsSimulator requires readout < 95% of the frame period. At 2 ms, the
 # highest integral frame rate it admits is 474 Hz.
 MAX_RATE_HZ = 474
+EQUIVALENCE_OUTPUTS = (
+    ("mean", "pyramid:mean-pupil-intensity", 1,
+     "org.calculon.ao.pyramid-mean-pupil-intensity/1"),
+    ("correction", "control:correction", 253,
+     "org.calculon.ao.controller-command/1"),
+    ("controller-state", "control:controller-state", 253,
+     "org.calculon.ao.controller-state/1"),
+    ("constraint-feedback", "command:constraint-feedback", 277,
+     "org.calculon.ao.pdm-constraint-feedback/1"),
+)
 
 
 def sha256_file(path: Path) -> str:
@@ -79,6 +89,26 @@ def require_memory_record(record: dict, role: str, phase: str) -> None:
         raise RuntimeError(f"{role} locked-memory amount unavailable {phase}")
 
 
+def compare_algorithm_output(actual: np.ndarray, expected: np.ndarray,
+                             frames: int, extent: int, field: str) -> float:
+    if actual.size != expected.size or actual.size != frames * extent:
+        raise RuntimeError(f"{field} Algorithm comparison has an unexpected extent")
+    if not np.isfinite(actual).all():
+        raise RuntimeError(f"{field} observed output contains non-finite values")
+    if not np.isfinite(expected).all():
+        raise RuntimeError(f"{field} direct Algorithm reference contains non-finite values")
+    difference = np.abs(actual - expected)
+    mismatches = np.flatnonzero(difference > 1e-6)
+    if mismatches.size:
+        index = int(mismatches[0])
+        raise RuntimeError(
+            f"{field} differs from direct Algorithm at frame {index // extent}, "
+            f"element {index % extent}: expected {expected[index]}, "
+            f"observed {actual[index]}, absolute error {difference[index]}"
+        )
+    return float(np.max(difference))
+
+
 def use_installed_julia_libraries(output: Path, installation) -> Path:
     """Point the Julia JLL at the same PipeWireAO build as the private core."""
     depot = output / "julia-depot"
@@ -102,6 +132,32 @@ def use_installed_julia_libraries(output: Path, installation) -> Path:
     override.write_text(f"[{PIPEWIREAO_JLL_UUID}]\n"
                         f"PipeWireAO = {json.dumps(str(overlay))}\n")
     return depot
+
+
+def compile_equivalence_observers(output: Path, env: dict, installation,
+                                  jfg_root: Path, rate_hz: int) -> dict[str, Path]:
+    source = jfg_root / "scripts/julia_fits_command_observer.c"
+    if "OBSERVER_NODE_NAME" not in source.read_text():
+        raise RuntimeError("selected FITS observer does not support distinct node names")
+    pkg = env.copy()
+    pkg["PKG_CONFIG_PATH"] = str(installation.pkgconfig_directory)
+    flags = subprocess.check_output(
+        ["pkg-config", "--cflags", "--libs", "libpipewire-ao-0.3"],
+        env=pkg, text=True,
+    ).split()
+    binaries = {}
+    for name, _, extent, schema in EQUIVALENCE_OUTPUTS:
+        binary = output / f"observer-{name}"
+        node_name = f"rtc-copper-{name}-observer"
+        subprocess.run(
+            ["cc", "-std=gnu11", "-O2", "-Wall", "-Wextra", "-Werror",
+             "-DALLOW_INVALID_PTS", f"-DCOMMAND_ELEMENTS={extent}",
+             f"-DCOMMAND_RATE_HZ={rate_hz}", f'-DCOMMAND_SCHEMA="{schema}"',
+             f'-DOBSERVER_NODE_NAME="{node_name}"', str(source), *flags,
+             "-o", str(binary)], env=env, check=True,
+        )
+        binaries[name] = binary
+    return binaries
 
 
 def wfs_counters(dump: str) -> dict[str, int]:
@@ -231,6 +287,11 @@ def main() -> None:
                         help="comma-separated CPU for each of the two Julia threads in placement mode")
     parser.add_argument("--wire-capture", action="store_true",
                         help="link the Standard-DM adapter and qualify WFS-to-DM UDP latency")
+    parser.add_argument("--equivalence-observations", action="store_true",
+                        help="expose Copper state outputs for a direct-Algorithm comparison")
+    parser.add_argument("--direct-oracle-bin", type=Path,
+                        help="direct Calculon Copper oracle executable for state comparison")
+    parser.add_argument("--command-limit-um", type=float, default=0.8)
     parser.add_argument("--frames", type=int, default=16)
     parser.add_argument("--rate-hz", type=int, default=474,
                         help="offered frame rate; the 2 ms wfsSimulator readout permits at most 474 Hz")
@@ -244,8 +305,16 @@ def main() -> None:
         parser.error(f"--rate-hz must be in 1..{MAX_RATE_HZ} for the 2 ms readout")
     if args.julia_blas_threads < 1:
         parser.error("--julia-blas-threads must be positive")
+    if not np.isfinite(args.command_limit_um) or args.command_limit_um <= 0:
+        parser.error("--command-limit-um must be finite and positive")
     if args.controller == "native" and args.julia_blas_threads != 1:
         parser.error("--julia-blas-threads applies only to --controller julia")
+    if args.equivalence_observations and args.placement_profile is not None:
+        parser.error("diagnostic observers are not yet in a strict placement profile")
+    if args.equivalence_observations and args.direct_oracle_bin is None:
+        parser.error("--equivalence-observations requires --direct-oracle-bin")
+    if args.direct_oracle_bin is not None and not args.equivalence_observations:
+        parser.error("--direct-oracle-bin requires --equivalence-observations")
     if args.julia_pin_cpus and (args.controller != "julia" or args.placement_profile is None):
         parser.error("--julia-pin-cpus requires Julia and --placement-profile")
     if args.controller == "julia" and args.placement_profile and not args.julia_pin_cpus:
@@ -280,7 +349,8 @@ def main() -> None:
     sys.path.insert(0, str(scripts))
     from run_fgn_copper_fullframe_live import (  # noqa: PLC0415
         command, compile_observer, make_environment, pipewire_installation,
-        require, start, stop, validate_adapter_sequences, wait_for, wait_text,
+        prepare_artifacts, require, start, stop, validate_adapter_sequences,
+        wait_for, wait_text,
     )
 
     installation = pipewire_installation(None, args.pipewire_prefix)
@@ -288,6 +358,11 @@ def main() -> None:
     cube = require(args.cube, "Copper FITS cube")
     simulator = require(args.wfs_simulator, "wfsSimulator")
     rtc_bin = require(args.rtc_bin, "pipewireao-rtc executable")
+    direct_oracle_bin = (require(args.direct_oracle_bin, "direct Copper Algorithm oracle")
+                         if args.direct_oracle_bin is not None else None)
+    direct_oracle_checker = (require(args.algorithms_root / "scripts/check_direct_copper_oracle.py",
+                                     "direct Copper Algorithm checker")
+                             if args.equivalence_observations else None)
     bundle = require(args.fgn_bundle, "FGN Copper bundle") if args.controller == "native" else None
     jfg_root = args.jfg_root.resolve()
     pipewireao_julia_root = args.pipewireao_julia_root.resolve()
@@ -321,20 +396,28 @@ def main() -> None:
         if any(setting not in daemon_config for setting in required_settings):
             raise RuntimeError("generated daemon config lacks a requested loop or memory setting")
     observer_bin = compile_observer(output, env, args.rate_hz, installation)
+    diagnostic_bins = (compile_equivalence_observers(
+        output, env, installation, jfg_root, args.rate_hz,
+    ) if args.equivalence_observations else {})
     if args.controller == "native":
+        render_argv = [sys.executable, str(RTC / "benchmark/render_revolt_copper_graph.py"),
+                       "--algorithms-root", str(args.algorithms_root),
+                       "--heart-config", str(args.heart_config),
+                       "--fgn-bundle", str(bundle), "--clipping-feedback",
+                       "--rate-hz", str(args.rate_hz),
+                       "--command-limit-um", str(args.command_limit_um),
+                       "--output-dir", str(output)]
+        if args.equivalence_observations:
+            render_argv.append("--equivalence-observations")
         subprocess.run(
-            [sys.executable, str(RTC / "benchmark/render_revolt_copper_graph.py"),
-             "--algorithms-root", str(args.algorithms_root),
-             "--heart-config", str(args.heart_config),
-             "--fgn-bundle", str(bundle), "--clipping-feedback",
-             "--rate-hz", str(args.rate_hz),
-             "--output-dir", str(output)],
+            render_argv,
             check=True,
         )
         env["PIPEWIREAO_RTC_GRAPH_COPPER_NATIVE"] = str(
             output / "revolt-copper-rtc-graph.conf"
         )
     processes = []
+    diagnostic_observers = {}
     measurement_links: list[tuple[str, str]] = []
     island_quit_request = output / "julia-island.quit"
     adapter_stop = output / "adapter.stop"
@@ -351,6 +434,8 @@ def main() -> None:
     report = {"frames": args.frames, "rate_hz": args.rate_hz, "readout_us": 2000,
               "controller": args.controller, "fixture": str(fixture),
               "wire_capture": args.wire_capture,
+              "command_limit_um": args.command_limit_um,
+              "equivalence_observations": args.equivalence_observations,
               "cube": str(cube), "qualified": False,
               "delivery_qualified": False, "schedule_qualified": False,
               "wire_qualified": False if args.wire_capture else None,
@@ -396,6 +481,9 @@ def main() -> None:
         report["artifact_sha256"][str(output / "revolt-copper-rtc-graph.conf")] = (
             sha256_file(output / "revolt-copper-rtc-graph.conf")
         )
+    if direct_oracle_bin is not None:
+        report["direct_oracle_bin"] = str(direct_oracle_bin)
+        report["direct_oracle_sha256"] = sha256_file(direct_oracle_bin)
     if args.controller == "julia":
         report["jfg_root"] = str(jfg_root)
         report["jfg_script_sha256"] = sha256_file(island_script)
@@ -425,6 +513,19 @@ def main() -> None:
         processes.append((observer, observer_log, "q"))
         placement_processes["observer"] = observer
         wait_text(output / "observer.log", "CONNECT_ACCEPTED", process=observer)
+        for name, _, _, _ in (EQUIVALENCE_OUTPUTS
+                              if args.equivalence_observations else ()):
+            diagnostic, diagnostic_log = start(
+                [str(diagnostic_bins[name]), "--csv", str(output / f"{name}.csv"),
+                 "--vectors", str(output / f"{name}.f32"),
+                 "--max-records", str(args.frames + 4)],
+                env, output / f"observer-{name}.log", stdin=True,
+            )
+            processes.append((diagnostic, diagnostic_log, "q"))
+            diagnostic_observers[name] = (diagnostic, diagnostic_log)
+            placement_processes[f"observer-{name}"] = diagnostic
+            wait_text(output / f"observer-{name}.log", "CONNECT_ACCEPTED",
+                      process=diagnostic)
         if args.controller == "julia" or args.wire_capture:
             depot = use_installed_julia_libraries(output, installation)
             report["julia_artifact_overlay"] = str(depot / "native-artifact")
@@ -455,7 +556,10 @@ def main() -> None:
                 "JULIA_RTC_FRAME_RATE": str(args.rate_hz),
                 "JULIA_RTC_INGRESS_MODE": "frame",
                 "JULIA_RTC_CPU_WORKERS": "0",
-                "JULIA_RTC_COMMAND_LIMIT_UM": "0.8",
+                "JULIA_RTC_COMMAND_LIMIT_UM": str(args.command_limit_um),
+                "JULIA_RTC_EQUIVALENCE_OBSERVATIONS": (
+                    "1" if args.equivalence_observations else "0"
+                ),
                 "JULIA_ISLAND_QUIT_REQUEST": str(island_quit_request),
                 "JULIA_RTC_MANAGED_NODE_NAME": "calculon-revolt-copper-fullframe",
                 "JULIA_RTC_MANAGED_REMOTE": "pipewire-ao-0",
@@ -483,6 +587,21 @@ def main() -> None:
         placement_processes["rtc"] = rtc
         wait_text(output / "rtc.log", "RUNNING", 30, rtc)
         command([str(installation.tool("pwao-dump")), "-r", "pipewire-ao-0"], env)
+        if args.equivalence_observations:
+            for name, source_port, _, _ in EQUIVALENCE_OUTPUTS:
+                public_port = (source_port if args.controller == "native" else
+                               {"mean": "mean-pupil-intensity",
+                                "correction": "correction",
+                                "controller-state": "controller-state",
+                                "constraint-feedback": "constraint-feedback"}[name])
+                source = f"calculon-revolt-copper-fullframe:{public_port}"
+                sink = f"rtc-copper-{name}-observer:input_1"
+                command([str(installation.tool("pwao-link")), "-r", "pipewire-ao-0",
+                         "-w", "-L", source, sink], env)
+                measurement_links.append((source, sink))
+                wait_text(output / f"observer-{name}.log", "STREAMING", 15,
+                          diagnostic_observers[name][0])
+            report["measurement_links"] = list(measurement_links)
         if args.wire_capture:
             demanded_port = ("command:demanded" if args.controller == "native"
                              else "demanded")
@@ -501,7 +620,7 @@ def main() -> None:
             if any(source_port not in listed or sink_port not in listed
                    for source_port, sink_port in pairs):
                 raise RuntimeError("Standard-DM measurement link did not appear")
-            report["measurement_links"] = list(pairs)
+            report["measurement_links"] = list(measurement_links)
             wait_text(output / "adapter.log", "PREPARED", 60, adapter)
         graph_ready_ns = time.monotonic_ns()
         report["placement"] = {
@@ -577,6 +696,9 @@ def main() -> None:
         if args.wire_capture:
             required_external.update(("julia-heart-std-dm-command-adapter",
                                       "rtc-heart-std-dm-sink"))
+        if args.equivalence_observations:
+            required_external.update(f"rtc-copper-{name}-observer"
+                                     for name, _, _, _ in EQUIVALENCE_OUTPUTS)
         if not required_external <= nodes:
             raise RuntimeError("RTC unload removed an external Copper endpoint: "
                                f"{sorted(required_external - nodes)}")
@@ -589,6 +711,11 @@ def main() -> None:
             raise RuntimeError("RTC-owned Copper links survived unload")
         stop(observer, observer_log, control="q")
         processes.remove((observer, observer_log, "q"))
+        for name, (diagnostic, diagnostic_log) in diagnostic_observers.items():
+            stop(diagnostic, diagnostic_log, control="q")
+            processes.remove((diagnostic, diagnostic_log, "q"))
+            if diagnostic.returncode != 0:
+                raise RuntimeError(f"{name} observer did not stop cleanly")
         if args.wire_capture:
             adapter_stop.touch()
             stop(adapter, adapter_log)
@@ -636,6 +763,51 @@ def main() -> None:
                 f"observed={len(sequences)} missing={missing} "
                 f"repeated={repeated} unexpected={unexpected}"
             )
+        if args.equivalence_observations:
+            report["equivalence_outputs"] = {}
+            for name, _, extent, schema in EQUIVALENCE_OUTPUTS:
+                with (output / f"{name}.csv").open(newline="") as stream:
+                    observed = [int(row["sequence"]) for row in csv.DictReader(stream)]
+                values = np.fromfile(output / f"{name}.f32", dtype="<f4")
+                if observed != list(range(args.frames)) or values.size != args.frames * extent:
+                    raise RuntimeError(f"{name} observations are incomplete or unordered")
+                if not np.isfinite(values).all():
+                    raise RuntimeError(f"{name} observations contain non-finite values")
+                report["equivalence_outputs"][name] = {
+                    "schema": schema, "extent": extent, "frames": args.frames,
+                    "vectors": str(output / f"{name}.f32"),
+                }
+            oracle_dir = output / "direct-oracle"
+            if args.controller == "julia":
+                prepare_artifacts(output, args.heart_config.resolve(), True)
+            command([str(direct_oracle_bin), "--run-dir", str(output),
+                     "--output-dir", str(oracle_dir), "--frames", str(args.frames),
+                     "--limit-um", str(args.command_limit_um)], env)
+            references = {
+                "mean": "mean.f32",
+                "correction": "correction.f32",
+                "controller-state": "controller-state.f32",
+                "constraint-feedback": "constraint-feedback-um.f32",
+            }
+            report["algorithm_comparison"] = {}
+            for name, oracle_file in references.items():
+                extent = report["equivalence_outputs"][name]["extent"]
+                actual = np.fromfile(output / f"{name}.f32", dtype="<f4")
+                expected = np.fromfile(oracle_dir / oracle_file, dtype="<f4")
+                report["algorithm_comparison"][name] = compare_algorithm_output(
+                    actual, expected, args.frames, extent, name,
+                )
+            expected = np.fromfile(oracle_dir / "demanded-um.f32", dtype="<f4")
+            actual = np.fromfile(output / "demanded-um.f32", dtype="<f4")
+            report["algorithm_comparison"]["demanded"] = compare_algorithm_output(
+                actual, expected, args.frames, 277, "demanded",
+            )
+            report["direct_checker"] = json.loads(command(
+                [sys.executable, str(direct_oracle_checker), str(oracle_dir),
+                 "--reference-demanded", str(output / "demanded-um.f32"),
+                 "--limit-um", str(args.command_limit_um)], env,
+            ))
+            report["numerical_comparison"] = "passed"
         if args.controller == "julia" and report["julia_callbacks"] != args.frames:
             raise RuntimeError(
                 "JuliaFilterGraph callback count does not match the requested frames: "
