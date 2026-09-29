@@ -500,6 +500,18 @@ latency was 224 µs p50 and 468 µs p99. This single run establishes deployment
 function, not a latency regression or a matched three-way result. Its raw
 record is `/home/dgamroth/.cache/copper-merged-opt-jfg-474-20260928.json`.
 
+The [Copper post-install baseline](../benchmark/COPPER.md) now records three
+exact-delivery HEART, FGN, and JFG replays in each of row-block and full-frame
+ingress at that same offered load. Every run emitted 1,024 ordered commands
+and the cross-RTC command vectors agreed within 4.564 × 10⁻⁸ µm. The recorded
+process envelopes passed before/after checks. This is workload and numerical
+evidence, not completion of RTC-DEV-019: the current checks do not require
+specific RT-thread counts or prove the declared Julia and HEART worker pins.
+The FGN daemon loop was observed under SCHED_OTHER, while the JFG island loop
+used FIFO83. The workstation also had unrelated CPU-saturating Julia tasks.
+Strict thread placement, first-use characterization, and an uncontended
+latency comparison remain in the selected increment.
+
 ## Deferred capabilities
 
 The following topics are not active work. Their previous proposals are
