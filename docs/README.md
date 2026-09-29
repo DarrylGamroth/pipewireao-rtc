@@ -11,7 +11,7 @@ declared session without introducing another graph-authoring format.
 | Document | Authority |
 | --- | --- |
 | [Development architecture](architecture.md) | Scope, component boundary, configuration choice, scientist boundary, exclusions, RTCW composition, selective run control, external-node substitution, and the REVOLT Classic simulated-plant boundary |
-| [Development operating contract](operations.md) | RTC-DEV-001 through RTC-DEV-017, Statig lifecycle, multi-composite sessions, selective run control, external nodes, updates, observation, diagnostics, and equivalence |
+| [Development operating contract](operations.md) | RTC-DEV-001 through RTC-DEV-018, Statig lifecycle, multi-composite sessions, selective run control, external nodes, updates, observation, diagnostics, and equivalence |
 | [Development roadmap](roadmap.md) | Dependency-ordered implementation, completion evidence, performance characterization, and deferred capability triggers |
 
 These three files are the complete RTC-level implementation baseline. An

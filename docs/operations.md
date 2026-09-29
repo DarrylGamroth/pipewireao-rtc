@@ -212,6 +212,42 @@ point; stop and restart the complete session; unload it without removing an
 unrelated object; and verify that no runner-local filter-graph parser or
 scheduler is present.
 
+### RTC-DEV-018 — Explicit latest/hold rate transition
+
+A repeated data port MAY declare a positive exact rational rate. An omitted
+rate MUST inherit the session rate, and both ends of every ordinary link MUST
+have rationally equivalent effective rates. A sparse parameter port MUST NOT
+declare a repeated-data rate.
+
+The runner MAY realize `api.ndarray.latest-hold` as the only admitted multirate
+factory. It MUST preflight the configured maintained ndarray build artifact and
+request the fixed `ndarray/libspa-ndarray` library name; the PipeWire core's
+trusted `context.spa-libs` mapping remains authoritative for the library that is
+loaded. It MUST use exact construction properties for element type, shape,
+row-major layout, schema, input rate, output rate, and a hold bound from 1
+through `2^31 - 1` cycles. The node MUST have exactly one data input and one
+data output with matching element type, shape, and schema, and its output rate
+MUST be greater than its input rate. The runner MUST reject arbitrary SPA
+factories, plugin paths, aliases, parameter ports, and inferred rate-transition
+values.
+
+The latest/hold object MUST remain ordinary PipeWire topology. The runner MUST
+own it with the session, control it only with standard SPA `Start` and `Pause`,
+and exclude it from numerical graph-owner run control, reset control, and
+scientific property discovery. A reset MUST be accepted only in `READY`, pause
+the hold before numerical graph reset, and MUST NOT restart the execution group.
+The runner MUST NOT add a scheduler, timer, FIFO, worker, or private hold
+protocol. PipeWire selects the driver; live qualification MUST report the
+selected driver and prove that the node's `SPA_IO_Position` cadence admission
+matches the configured output rate.
+
+Verification intent (informative): validate the positive and negative
+configuration matrix, realize and inspect the exact factory and port rates,
+run a 100 Hz identity-bearing no-buffer follower behind a selected 1000 Hz
+driver, compare retained Acquisition identity and final command provenance for
+native FGN and JuliaFilterGraph, exercise stop, READY reset, explicit restart,
+pool replacement, and cleanup, and measure steady-state allocation and latency.
+
 ### RTC-DEV-011 — Selective execution groups
 
 The development configuration MUST declare one or more uniquely named,
@@ -492,9 +528,10 @@ The minimum configuration contains only these semantic fields:
 | Field | Meaning |
 | --- | --- |
 | profile | The literal `development` |
-| rate | Positive complete-frame session rate used by repeated data ports |
+| rate | Positive complete-frame session rate inherited by repeated data ports that omit a port rate |
+| port rate | Optional positive rational cadence; both ends of an ordinary link must be equivalent |
 | source | Simulated or recorded complete-frame source plus its node arguments |
-| graph | Canonical `fgn-native` graph configuration |
+| graph | Canonical `fgn-native` graph configuration or the admitted `api.ndarray.latest-hold` transition |
 | sink | Simulated, discard, or other non-actuating sink |
 | execution groups | Named sets of session nodes with selective start and stop control |
 | properties | Initial scalar values keyed by declared scientific names |

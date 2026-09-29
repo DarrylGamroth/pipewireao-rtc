@@ -9,6 +9,7 @@ const FITS_SOURCE_FACTORY: &str = "api.fits.source";
 const PARAMETER_SOURCE_FACTORY: &str = "pipewireao.runtime-parameter";
 const SINK_FACTORY: &str = "api.pipewireao.discard";
 const GRAPH_FACTORY: &str = "pipewireao.fgn-native";
+const LATEST_HOLD_FACTORY: &str = "api.ndarray.latest-hold";
 const FILTER_CHAIN_MODULE: &str = "libpipewire-module-ndarray-filter-chain";
 const SPA_NODE_FACTORY_MODULE: &str = "libpipewire-module-spa-node-factory";
 
@@ -119,12 +120,16 @@ impl EndpointFactory {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum GraphFactory {
     FgnNative,
+    NdarrayLatestHold,
 }
 
 impl GraphFactory {
     #[must_use]
     pub const fn configured_name(self) -> &'static str {
-        GRAPH_FACTORY
+        match self {
+            Self::FgnNative => GRAPH_FACTORY,
+            Self::NdarrayLatestHold => LATEST_HOLD_FACTORY,
+        }
     }
 }
 
@@ -155,6 +160,8 @@ pub struct PortSpec {
     pub element_type: String,
     pub shape: Vec<u32>,
     pub schema: String,
+    /// Optional repeated-data cadence. Omission inherits [`DevelopmentConfig::rate`].
+    pub rate: Option<String>,
 }
 
 /// One admitted `PipeWire` object at an RTC session boundary.
@@ -260,12 +267,12 @@ impl DevelopmentConfig {
             let field = format!("sources[{index}]");
             validate_source(source, &field)?;
             if let Some(rate) = source.arguments.get("api.fits.rate") {
-                if rate != &self.rate {
+                let port_rate = source.ports[0].rate.as_deref().unwrap_or(&self.rate);
+                if !rates_equivalent(rate, port_rate) {
                     return Err(ScientificDiagnostic::new(
                         format!("{field}.args.api.fits.rate"),
                         format!(
-                            "FITS source rate {rate:?} does not match session rate {:?}",
-                            self.rate
+                            "FITS source rate {rate:?} does not match its declared effective port rate {port_rate:?}",
                         ),
                     ));
                 }
@@ -274,7 +281,7 @@ impl DevelopmentConfig {
         }
         for (index, graph) in self.graphs.iter().enumerate() {
             let field = format!("graphs[{index}]");
-            validate_graph(graph, &field)?;
+            validate_graph(graph, &field, &self.rate)?;
             validate_node_name(&graph.node_name, &field, &mut node_names)?;
         }
         for (index, sink) in self.sinks.iter().enumerate() {
@@ -391,7 +398,13 @@ impl DevelopmentConfig {
         let controlled = self
             .graphs
             .iter()
-            .filter(|graph| graph.realization.is_session_controlled())
+            .filter(|graph| {
+                graph.realization.is_session_controlled()
+                    && !matches!(
+                        graph.realization,
+                        ObjectRealization::Factory(GraphFactory::NdarrayLatestHold)
+                    )
+            })
             .map(|graph| graph.node_name.as_str())
             .collect::<BTreeSet<_>>();
         self.topological_node_names()
@@ -539,24 +552,33 @@ impl DevelopmentConfig {
 }
 
 fn validate_rate(field: &str, rate: &str) -> Result<(), ScientificDiagnostic> {
+    parse_rate(rate)
+        .map(|_| ())
+        .map_err(|message| ScientificDiagnostic::new(field, message))
+}
+
+fn parse_rate(rate: &str) -> Result<(u32, u32), &'static str> {
     let Some((numerator, denominator)) = rate.split_once('/') else {
-        return Err(ScientificDiagnostic::new(
-            field,
-            "complete-frame rate must use positive numerator/denominator syntax",
-        ));
+        return Err("complete-frame rate must use positive numerator/denominator syntax");
     };
     let parsed = numerator
         .parse::<u32>()
         .ok()
         .zip(denominator.parse::<u32>().ok());
-    if parsed.is_some_and(|(numerator, denominator)| numerator > 0 && denominator > 0) {
-        Ok(())
-    } else {
-        Err(ScientificDiagnostic::new(
-            field,
-            "complete-frame rate must use positive u32 numerator/denominator values",
-        ))
-    }
+    parsed
+        .filter(|(numerator, denominator)| *numerator > 0 && *denominator > 0)
+        .ok_or("complete-frame rate must use positive u32 numerator/denominator values")
+}
+
+fn rates_equivalent(left: &str, right: &str) -> bool {
+    let Ok((left_numerator, left_denominator)) = parse_rate(left) else {
+        return false;
+    };
+    let Ok((right_numerator, right_denominator)) = parse_rate(right) else {
+        return false;
+    };
+    u64::from(left_numerator) * u64::from(right_denominator)
+        == u64::from(right_numerator) * u64::from(left_denominator)
 }
 
 fn validate_execution_groups(config: &DevelopmentConfig) -> Result<(), ScientificDiagnostic> {
@@ -568,6 +590,13 @@ fn validate_execution_groups(config: &DevelopmentConfig) -> Result<(), Scientifi
     let graph_names = config
         .graphs
         .iter()
+        .filter(|graph| {
+            graph.realization.is_session_controlled()
+                && !matches!(
+                    graph.realization,
+                    ObjectRealization::Factory(GraphFactory::NdarrayLatestHold)
+                )
+        })
         .map(|graph| graph.node_name.as_str())
         .collect::<BTreeSet<_>>();
     let application_controlled_names = config
@@ -656,10 +685,11 @@ fn validate_required_group_membership(
 ) -> Result<(), ScientificDiagnostic> {
     for graph in &config.graphs {
         let membership = membership.get(graph.node_name.as_str());
-        if graph.realization.is_session_controlled() && membership.is_none() {
+        let requires_group = graph.realization.is_session_controlled();
+        if requires_group && membership.is_none() {
             return Err(ScientificDiagnostic::new(
                 format!("graph {}.execution-group", graph.node_name),
-                "every session-controlled processing graph must belong to exactly one execution group",
+                "every session-controlled graph node must belong to exactly one execution group",
             ));
         }
         if !graph.realization.is_session_controlled() && membership.is_some() {
@@ -858,10 +888,11 @@ fn validate_parameter_routes(config: &DevelopmentConfig) -> Result<(), Scientifi
 fn validate_graph(
     graph: &ObjectSpec<GraphFactory>,
     field: &str,
+    session_rate: &str,
 ) -> Result<(), ScientificDiagnostic> {
-    validate_graph_ports(field, &graph.ports)?;
     match graph.realization {
         ObjectRealization::Factory(GraphFactory::FgnNative) => {
+            validate_graph_ports(field, &graph.ports)?;
             validate_required_module(field, graph.module.as_deref(), FILTER_CHAIN_MODULE)?;
             reject_plugin_path(field, graph.plugin_path.as_deref())?;
             validate_configuration_reference(
@@ -878,7 +909,192 @@ fn validate_graph(
                 ))
             }
         }
-        ObjectRealization::External { .. } => validate_external_object(graph, field),
+        ObjectRealization::Factory(GraphFactory::NdarrayLatestHold) => {
+            validate_latest_hold(graph, field, session_rate)
+        }
+        ObjectRealization::External { .. } => {
+            validate_graph_ports(field, &graph.ports)?;
+            validate_external_object(graph, field)
+        }
+    }
+}
+
+fn validate_latest_hold(
+    graph: &ObjectSpec<GraphFactory>,
+    field: &str,
+    session_rate: &str,
+) -> Result<(), ScientificDiagnostic> {
+    let (input, output) = validate_latest_hold_ports(graph, field)?;
+    validate_latest_hold_arguments(graph, field, session_rate, input, output)
+}
+
+fn validate_latest_hold_ports<'a>(
+    graph: &'a ObjectSpec<GraphFactory>,
+    field: &str,
+) -> Result<(&'a PortSpec, &'a PortSpec), ScientificDiagnostic> {
+    validate_ports(
+        field,
+        &graph.ports,
+        &[PortDirection::Input, PortDirection::Output],
+    )?;
+    reject_parameter_ports(field, &graph.ports)?;
+    validate_required_module(field, graph.module.as_deref(), SPA_NODE_FACTORY_MODULE)?;
+    validate_exact_reference(
+        &format!("{field}.plugin.path"),
+        graph.plugin_path.as_deref(),
+        "${PIPEWIREAO_NDARRAY_PLUGIN}",
+    )?;
+    reject_configuration_path(field, graph.configuration_path.as_deref())?;
+
+    let input = &graph.ports[0];
+    let output = &graph.ports[1];
+    if input.element_type != output.element_type {
+        return Err(ScientificDiagnostic::new(
+            format!("{field}.ports.{}.element-type", output.name),
+            "latest/hold input and output element types must match",
+        ));
+    }
+    if input.shape != output.shape {
+        return Err(ScientificDiagnostic::new(
+            format!("{field}.ports.{}.shape", output.name),
+            "latest/hold input and output shapes must match",
+        ));
+    }
+    if input.schema != output.schema {
+        return Err(ScientificDiagnostic::new(
+            format!("{field}.ports.{}.schema", output.name),
+            "latest/hold input and output schemas must match",
+        ));
+    }
+    Ok((input, output))
+}
+
+fn validate_latest_hold_arguments(
+    graph: &ObjectSpec<GraphFactory>,
+    field: &str,
+    session_rate: &str,
+    input: &PortSpec,
+    output: &PortSpec,
+) -> Result<(), ScientificDiagnostic> {
+    let expected = [
+        ("api.ndarray.element-type", input.element_type.as_str()),
+        ("api.ndarray.shape", ""),
+        ("api.ndarray.layout", "row-major"),
+        ("api.ndarray.schema", input.schema.as_str()),
+        ("api.ndarray.input-rate", ""),
+        ("api.ndarray.output-rate", ""),
+        ("api.ndarray.max-hold-cycles", ""),
+    ];
+    if let Some(name) = graph
+        .arguments
+        .keys()
+        .find(|name| !expected.iter().any(|(expected, _)| name == expected))
+    {
+        return Err(ScientificDiagnostic::new(
+            format!("{field}.args.{name}"),
+            "factory argument is not admitted for api.ndarray.latest-hold",
+        ));
+    }
+    for (name, expected_value) in expected.into_iter().filter(|(_, value)| !value.is_empty()) {
+        match graph.arguments.get(name) {
+            Some(value) if value == expected_value => {}
+            Some(value) => {
+                return Err(ScientificDiagnostic::new(
+                    format!("{field}.args.{name}"),
+                    format!("expected {expected_value:?}, got {value:?}"),
+                ));
+            }
+            None => {
+                return Err(ScientificDiagnostic::new(
+                    format!("{field}.args.{name}"),
+                    "required factory argument is missing",
+                ));
+            }
+        }
+    }
+    let shape = format!(
+        "[ {} ]",
+        input
+            .shape
+            .iter()
+            .map(u32::to_string)
+            .collect::<Vec<_>>()
+            .join(" ")
+    );
+    validate_exact_argument(graph, field, "api.ndarray.shape", &shape)?;
+
+    let input_rate = required_argument(graph, field, "api.ndarray.input-rate")?;
+    let output_rate = required_argument(graph, field, "api.ndarray.output-rate")?;
+    let (input_numerator, input_denominator) = parse_rate(input_rate).map_err(|message| {
+        ScientificDiagnostic::new(format!("{field}.args.api.ndarray.input-rate"), message)
+    })?;
+    let (output_numerator, output_denominator) = parse_rate(output_rate).map_err(|message| {
+        ScientificDiagnostic::new(format!("{field}.args.api.ndarray.output-rate"), message)
+    })?;
+    if u64::from(input_numerator) * u64::from(output_denominator)
+        >= u64::from(output_numerator) * u64::from(input_denominator)
+    {
+        return Err(ScientificDiagnostic::new(
+            format!("{field}.args.api.ndarray.output-rate"),
+            "output rate must be greater than input rate",
+        ));
+    }
+    if input.rate.as_deref().unwrap_or(session_rate) != input_rate {
+        return Err(ScientificDiagnostic::new(
+            format!("{field}.ports.{}.rate", input.name),
+            "latest/hold input port rate must exactly match api.ndarray.input-rate",
+        ));
+    }
+    if output.rate.as_deref().unwrap_or(session_rate) != output_rate {
+        return Err(ScientificDiagnostic::new(
+            format!("{field}.ports.{}.rate", output.name),
+            "latest/hold output port rate must exactly match api.ndarray.output-rate",
+        ));
+    }
+
+    let maximum = required_argument(graph, field, "api.ndarray.max-hold-cycles")?;
+    if !maximum.bytes().all(|byte| byte.is_ascii_digit())
+        || !maximum
+            .parse::<u32>()
+            .is_ok_and(|value| (1..=(1_u32 << 31) - 1).contains(&value))
+    {
+        return Err(ScientificDiagnostic::new(
+            format!("{field}.args.api.ndarray.max-hold-cycles"),
+            "max hold cycles must be a decimal integer from 1 through 2147483647",
+        ));
+    }
+    Ok(())
+}
+
+fn required_argument<'a>(
+    graph: &'a ObjectSpec<GraphFactory>,
+    field: &str,
+    name: &str,
+) -> Result<&'a str, ScientificDiagnostic> {
+    graph
+        .arguments
+        .get(name)
+        .map(String::as_str)
+        .ok_or_else(|| {
+            ScientificDiagnostic::new(
+                format!("{field}.args.{name}"),
+                "required factory argument is missing",
+            )
+        })
+}
+
+fn validate_exact_argument(
+    graph: &ObjectSpec<GraphFactory>,
+    field: &str,
+    name: &str,
+    expected: &str,
+) -> Result<(), ScientificDiagnostic> {
+    match required_argument(graph, field, name)? {
+        value if value == expected => Ok(()),
+        value => Err(ScientificDiagnostic::new(
+            format!("{field}.args.{name}"),
+            format!("expected {expected:?}, got {value:?}"),
+        )),
     }
 }
 
@@ -1054,7 +1270,7 @@ fn reject_parameter_ports(field: &str, ports: &[PortSpec]) -> Result<(), Scienti
     if let Some(port) = ports.iter().find(|port| port.parameter) {
         Err(ScientificDiagnostic::new(
             format!("{field}.ports.{}.parameter", port.name),
-            "sink data ports must not be declared as sparse parameters",
+            "factory data ports must not be declared as sparse parameters",
         ))
     } else {
         Ok(())
@@ -1088,6 +1304,15 @@ fn validate_port_declarations(field: &str, ports: &[PortSpec]) -> Result<(), Sci
                 format!("{port_field}.schema"),
                 "scientific schema must not be empty",
             ));
+        }
+        if let Some(rate) = port.rate.as_deref() {
+            if port.parameter {
+                return Err(ScientificDiagnostic::new(
+                    format!("{port_field}.rate"),
+                    "sparse parameter ports do not declare a repeated-data rate",
+                ));
+            }
+            validate_rate(&format!("{port_field}.rate"), rate)?;
         }
     }
     Ok(())
@@ -1437,6 +1662,17 @@ fn validate_links(config: &DevelopmentConfig) -> Result<(), ScientificDiagnostic
                 format!(
                     "output {} and input {} have incompatible schemas {:?} and {:?}",
                     link.output, link.input, output.port.schema, input.port.schema
+                ),
+            ));
+        }
+        let output_rate = output.port.rate.as_deref().unwrap_or(&config.rate);
+        let input_rate = input.port.rate.as_deref().unwrap_or(&config.rate);
+        if !rates_equivalent(output_rate, input_rate) {
+            return Err(ScientificDiagnostic::new(
+                format!("{field}.rate"),
+                format!(
+                    "output {} effective rate {:?} and input {} effective rate {:?} differ",
+                    link.output, output_rate, link.input, input_rate
                 ),
             ));
         }

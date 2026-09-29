@@ -1,8 +1,8 @@
 use super::{
     DevelopmentConfig, EndpointFactory, ExecutionGroupSpec, GraphFactory, LinkSpec,
     ObjectRealization, ObjectRole, ObjectSpec, PortDirection, PortSpec, RunControl,
-    ScientificDiagnostic, FITS_SOURCE_FACTORY, GRAPH_FACTORY, PARAMETER_SOURCE_FACTORY,
-    SIMULATED_SOURCE_FACTORY, SINK_FACTORY,
+    ScientificDiagnostic, FITS_SOURCE_FACTORY, GRAPH_FACTORY, LATEST_HOLD_FACTORY,
+    PARAMETER_SOURCE_FACTORY, SIMULATED_SOURCE_FACTORY, SINK_FACTORY,
 };
 use crate::ffi::spa_json::{Cursor, SyntaxError, Token};
 use std::collections::BTreeMap;
@@ -206,16 +206,21 @@ fn graph_object(
                     "runner-owned graph does not take an external run-control grant",
                 ));
             }
-            if object.factory.as_deref() != Some(GRAPH_FACTORY) {
-                return Err(ScientificDiagnostic::new(
-                    format!("{field}.factory"),
-                    format!(
-                        "expected the fgn-native factory {GRAPH_FACTORY:?}, got {:?}",
-                        object.factory
-                    ),
-                ));
+            match object.factory.as_deref() {
+                Some(GRAPH_FACTORY) => ObjectRealization::Factory(GraphFactory::FgnNative),
+                Some(LATEST_HOLD_FACTORY) => {
+                    ObjectRealization::Factory(GraphFactory::NdarrayLatestHold)
+                }
+                _ => {
+                    return Err(ScientificDiagnostic::new(
+                        format!("{field}.factory"),
+                        format!(
+                            "expected admitted graph factory {GRAPH_FACTORY:?} or {LATEST_HOLD_FACTORY:?}, got {:?}",
+                            object.factory
+                        ),
+                    ));
+                }
             }
-            ObjectRealization::Factory(GraphFactory::FgnNative)
         }
         Some(value) => {
             return Err(ScientificDiagnostic::new(
@@ -334,6 +339,7 @@ fn port(token: Token<'_>, field: &str) -> Result<PortSpec, ScientificDiagnostic>
     let mut element_type = None;
     let mut shape = None;
     let mut schema = None;
+    let mut rate = None;
     while let Some((key, value)) = object.next()? {
         match key.as_str() {
             "name" => assign(&mut name, value, &format!("{field}.name"))?,
@@ -342,6 +348,7 @@ fn port(token: Token<'_>, field: &str) -> Result<PortSpec, ScientificDiagnostic>
             "element-type" => assign(&mut element_type, value, &format!("{field}.element-type"))?,
             "shape" => assign(&mut shape, value, &format!("{field}.shape"))?,
             "schema" => assign(&mut schema, value, &format!("{field}.schema"))?,
+            "rate" => assign(&mut rate, value, &format!("{field}.rate"))?,
             _ => return unknown_field(field, &key),
         }
     }
@@ -371,6 +378,9 @@ fn port(token: Token<'_>, field: &str) -> Result<PortSpec, ScientificDiagnostic>
             required(schema, &format!("{field}.schema"))?,
             &format!("{field}.schema"),
         )?,
+        rate: rate
+            .map(|token| scalar(token, &format!("{field}.rate")))
+            .transpose()?,
     })
 }
 

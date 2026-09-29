@@ -90,6 +90,11 @@ cargo test --features live --test live_private_core -- --ignored --nocapture
 Set `PIPEWIREAO_RTC_LIVE_SCOPE=revolt` on that command to run only the REVOLT
 Classic native/Julia equivalence fixture on the isolated core.
 
+For the latest/hold fixture, set `PIPEWIREAO_RTC_LIVE_SCOPE=latest-hold`. The
+Julia environment selected by `PIPEWIREAO_RTC_PIPEWIREAO_JULIA` must resolve
+`PipeWireAO_jll` 1.7.0+17 or newer; the JFG `deployment` environment is a
+working choice when the local `PipeWireAO.jl` manifest is older.
+
 ## Completion-paced REVOLT graph-path latency
 
 The optional [REVOLT latency harness](benchmark/README.md) repeats that same

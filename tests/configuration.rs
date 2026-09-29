@@ -10,6 +10,63 @@ const AOS_HIL_ATMOSPHERE: &str = include_str!("../fixtures/aos-hil-atmosphere-de
 const EXTERNAL_GRAPH: &str = include_str!("../fixtures/external-graph-development.conf");
 const REVOLT_NATIVE: &str = include_str!("../fixtures/revolt-classic-native-development.conf");
 const REVOLT_JULIA: &str = include_str!("../fixtures/revolt-classic-julia-development.conf");
+const LATEST_HOLD_LIVE: &str = include_str!("../fixtures/latest-hold-live.conf");
+const LATEST_HOLD_JULIA_LIVE: &str = include_str!("../fixtures/latest-hold-julia-live.conf");
+
+const LATEST_HOLD: &str = r#"
+{
+    profile = development execution = complete-frame authority = none
+    claim = development-characterization rate = 1000/1
+    sources = [ {
+        factory = api.fits.source module = libpipewire-module-spa-node-factory
+        node.name = slow-source plugin.path = "${PIPEWIREAO_FITS_PLUGIN}"
+        args = {
+            api.fits.path = "${PIPEWIREAO_RTC_FITS_PATH_HOLD}"
+            api.fits.hdu = 1 api.fits.sample-rank = 1 api.fits.rate = 100/1
+            api.fits.schema = org.pipewireao.rtc.slow.f32/1
+            api.fits.io-mode = file api.fits.prefault = false api.fits.loop = true
+            api.fits.readiness = timerfd api.fits.output-mode = frame
+        }
+        ports = [ { name = output direction = output element-type = F32_LE shape = [ 2 ] schema = org.pipewireao.rtc.slow.f32/1 rate = 100/1 } ]
+    } ]
+    graphs = [
+        {
+            factory = api.ndarray.latest-hold module = libpipewire-module-spa-node-factory
+            node.name = slow-hold plugin.path = "${PIPEWIREAO_NDARRAY_PLUGIN}"
+            args = {
+                api.ndarray.element-type = F32_LE api.ndarray.shape = [ 2 ]
+                api.ndarray.layout = row-major api.ndarray.schema = org.pipewireao.rtc.slow.f32/1
+                api.ndarray.input-rate = 100/1 api.ndarray.output-rate = 1000/1
+                api.ndarray.max-hold-cycles = 10
+            }
+            ports = [
+                { name = input direction = input element-type = F32_LE shape = [ 2 ] schema = org.pipewireao.rtc.slow.f32/1 rate = 100/1 }
+                { name = output direction = output element-type = F32_LE shape = [ 2 ] schema = org.pipewireao.rtc.slow.f32/1 }
+            ]
+        }
+        {
+            factory = pipewireao.fgn-native module = libpipewire-module-ndarray-filter-chain
+            node.name = graph config.path = "${PIPEWIREAO_RTC_GRAPH_MINIMAL}"
+            ports = [
+                { name = input direction = input element-type = F32_LE shape = [ 2 ] schema = org.pipewireao.rtc.slow.f32/1 }
+                { name = output direction = output element-type = F32_LE shape = [ 2 ] schema = org.pipewireao.rtc.command.f32/1 }
+            ]
+        }
+    ]
+    sinks = [ {
+        factory = api.pipewireao.discard module = libpipewire-module-spa-node-factory
+        node.name = sink plugin.path = "${PIPEWIREAO_DISCARD_PLUGIN}"
+        ports = [ { name = input direction = input element-type = F32_LE shape = [ 2 ] schema = org.pipewireao.rtc.command.f32/1 } ]
+    } ]
+    execution-groups = [ { name = main nodes = [ slow-source slow-hold graph sink ] } ]
+    properties = {} parameters = {} observations = []
+    links = [
+        { output = "slow-source:output" input = "slow-hold:input" passive = false }
+        { output = "slow-hold:output" input = "graph:input" passive = false }
+        { output = "graph:output" input = "sink:input" passive = false }
+    ]
+}
+"#;
 
 fn replace_once(document: &str, before: &str, after: &str) -> String {
     assert!(
@@ -36,6 +93,15 @@ fn maintained_session_topologies_are_resolved() {
         assert!(config.properties.is_empty());
         assert!(config.parameters.is_empty());
         assert_eq!(config.observations.len(), observations);
+        for port in config.sources.iter().flat_map(|object| &object.ports) {
+            assert_eq!(port.rate, None);
+        }
+        for port in config.graphs.iter().flat_map(|object| &object.ports) {
+            assert_eq!(port.rate, None);
+        }
+        for port in config.sinks.iter().flat_map(|object| &object.ports) {
+            assert_eq!(port.rate, None);
+        }
     }
 
     let external = DevelopmentConfig::parse(EXTERNAL).expect("external topology");
@@ -48,6 +114,146 @@ fn maintained_session_topologies_are_resolved() {
     assert_eq!(atmosphere.object_count(), 3);
     assert_eq!(atmosphere.owned_object_count(), 1);
     assert_eq!(atmosphere.links.len(), 2);
+}
+
+#[test]
+fn latest_hold_is_admitted_as_an_ordinary_multirate_topology_node() {
+    let config = DevelopmentConfig::parse(LATEST_HOLD).expect("100 Hz to 1000 Hz latest/hold");
+    assert_eq!(config.object_count(), 4);
+    assert_eq!(config.graphs[0].ports[0].rate.as_deref(), Some("100/1"));
+    assert_eq!(config.graphs[0].ports[1].rate, None);
+    assert_eq!(config.session_controlled_graph_names(), ["graph"]);
+    assert_eq!(
+        config.execution_group_graph_names("main"),
+        Some(vec!["graph".to_owned()])
+    );
+    assert_eq!(
+        config.execution_group_node_names("main"),
+        Some(vec![
+            "slow-source".to_owned(),
+            "slow-hold".to_owned(),
+            "graph".to_owned(),
+            "sink".to_owned(),
+        ])
+    );
+
+    let error = DevelopmentConfig::parse(&replace_once(
+        LATEST_HOLD,
+        "slow-source slow-hold graph sink",
+        "slow-source graph sink",
+    ))
+    .expect_err("latest/hold remains a required group topology member");
+    assert_eq!(error.field(), "graph slow-hold.execution-group");
+}
+
+#[test]
+fn latest_hold_live_fixture_declares_primary_and_held_native_inputs() {
+    let config = DevelopmentConfig::parse(LATEST_HOLD_LIVE)
+        .expect("two-input native latest/hold live fixture");
+    assert_eq!(config.sources.len(), 2);
+    assert_eq!(config.graphs.len(), 2);
+    assert_eq!(config.sinks.len(), 2);
+    assert_eq!(config.owned_object_count(), 2);
+    assert_eq!(config.links.len(), 5);
+    assert_eq!(
+        config.execution_group_node_names("hold"),
+        Some(vec![
+            "pipewireao-rtc-latest-hold".to_owned(),
+            "pipewireao-rtc-latest-hold-graph".to_owned(),
+        ])
+    );
+}
+
+#[test]
+fn latest_hold_julia_live_fixture_substitutes_only_the_processing_owner() {
+    let native = DevelopmentConfig::parse(LATEST_HOLD_LIVE)
+        .expect("two-input native latest/hold live fixture");
+    let julia = DevelopmentConfig::parse(LATEST_HOLD_JULIA_LIVE)
+        .expect("two-input Julia latest/hold live fixture");
+
+    assert_eq!(julia.sources, native.sources);
+    assert_eq!(julia.sinks, native.sinks);
+    assert_eq!(julia.links.len(), native.links.len());
+    assert_eq!(julia.owned_object_count(), 1);
+    assert_eq!(
+        julia.graphs[1].realization,
+        ObjectRealization::External {
+            run_control: RunControl::Session,
+        }
+    );
+    assert_eq!(
+        julia.execution_group_node_names("hold"),
+        Some(vec![
+            "pipewireao-rtc-latest-hold".to_owned(),
+            "pipewireao-rtc-latest-hold-graph".to_owned(),
+        ])
+    );
+}
+
+#[test]
+fn latest_hold_rejects_each_factory_contract_violation() {
+    let cases = [
+        ("api.ndarray.latest-hold", "api.ndarray.unknown", "graphs[0].factory"),
+        (
+            "factory = api.ndarray.latest-hold module = libpipewire-module-spa-node-factory",
+            "factory = api.ndarray.latest-hold module = wrong",
+            "graphs[0].module",
+        ),
+        ("${PIPEWIREAO_NDARRAY_PLUGIN}", "${PIPEWIREAO_WRONG_PLUGIN}", "graphs[0].plugin.path"),
+        ("node.name = slow-hold plugin.path", "node.name = slow-hold config.path = \"${PIPEWIREAO_RTC_GRAPH_MINIMAL}\" plugin.path", "graphs[0].config.path"),
+        ("api.ndarray.layout = row-major", "api.ndarray.layout = column-major", "graphs[0].args.api.ndarray.layout"),
+        ("api.ndarray.element-type = F32_LE", "api.ndarray.element-type = U16_LE", "graphs[0].args.api.ndarray.element-type"),
+        ("api.ndarray.shape = [ 2 ]", "api.ndarray.shape = [ 3 ]", "graphs[0].args.api.ndarray.shape"),
+        ("api.ndarray.schema = org.pipewireao.rtc.slow.f32/1", "api.ndarray.schema = org.pipewireao.rtc.other.f32/1", "graphs[0].args.api.ndarray.schema"),
+        ("api.ndarray.input-rate = 100/1", "api.ndarray.input-rate = 0/1", "graphs[0].args.api.ndarray.input-rate"),
+        ("api.ndarray.output-rate = 1000/1", "api.ndarray.output-rate = 100/1", "graphs[0].args.api.ndarray.output-rate"),
+        ("api.ndarray.max-hold-cycles = 10", "api.ndarray.max-hold-cycles = 0", "graphs[0].args.api.ndarray.max-hold-cycles"),
+        ("api.ndarray.max-hold-cycles = 10", "api.ndarray.max-hold-cycles = 2147483648", "graphs[0].args.api.ndarray.max-hold-cycles"),
+        ("name = input direction = input", "name = input direction = output", "graphs[0].ports.input.direction"),
+        (
+            "ports = [\n                { name = input direction = input element-type = F32_LE shape = [ 2 ] schema = org.pipewireao.rtc.slow.f32/1 rate = 100/1 }\n                { name = output direction = output",
+            "ports = [\n                { name = input direction = input element-type = F32_LE shape = [ 2 ] schema = org.pipewireao.rtc.slow.f32/1 rate = 100/1 }\n                { name = output direction = input",
+            "graphs[0].ports.output.direction",
+        ),
+        (
+            "ports = [\n                { name = input direction = input element-type = F32_LE shape = [ 2 ] schema = org.pipewireao.rtc.slow.f32/1 rate = 100/1 }\n                { name = output direction = output element-type = F32_LE shape = [ 2 ] schema = org.pipewireao.rtc.slow.f32/1",
+            "ports = [\n                { name = input direction = input element-type = F32_LE shape = [ 2 ] schema = org.pipewireao.rtc.slow.f32/1 rate = 100/1 }\n                { name = output direction = output element-type = F32_LE shape = [ 3 ] schema = org.pipewireao.rtc.slow.f32/1",
+            "graphs[0].ports.output.shape",
+        ),
+        (
+            "name = input direction = input element-type = F32_LE shape = [ 2 ] schema = org.pipewireao.rtc.slow.f32/1 rate = 100/1",
+            "name = input direction = input parameter = true element-type = F32_LE shape = [ 2 ] schema = org.pipewireao.rtc.slow.f32/1",
+            "graphs[0].ports.input.parameter",
+        ),
+        (
+            "rate = 100/1 }\n                { name = output",
+            "rate = 100/1 }\n                { name = extra direction = output element-type = F32_LE shape = [ 2 ] schema = org.pipewireao.rtc.slow.f32/1 }\n                { name = output",
+            "graphs[0].ports",
+        ),
+        ("rate = 100/1 }\n                { name = output", "rate = 200/1 }\n                { name = output", "graphs[0].ports.input.rate"),
+    ];
+    for (before, after, field) in cases {
+        let error = DevelopmentConfig::parse(&replace_once(LATEST_HOLD, before, after))
+            .expect_err("invalid latest/hold factory declaration");
+        assert_eq!(error.field(), field, "mutation {after:?}");
+    }
+}
+
+#[test]
+fn repeated_links_require_rationally_equivalent_effective_rates() {
+    DevelopmentConfig::parse(&replace_once(
+        LATEST_HOLD,
+        "{ name = input direction = input element-type = F32_LE shape = [ 2 ] schema = org.pipewireao.rtc.slow.f32/1 }\n                { name = output direction = output element-type = F32_LE shape = [ 2 ] schema = org.pipewireao.rtc.command.f32/1 }",
+        "{ name = input direction = input element-type = F32_LE shape = [ 2 ] schema = org.pipewireao.rtc.slow.f32/1 rate = 2000/2 }\n                { name = output direction = output element-type = F32_LE shape = [ 2 ] schema = org.pipewireao.rtc.command.f32/1 }",
+    ))
+    .expect("equivalent declared port rate");
+
+    let error = DevelopmentConfig::parse(&LATEST_HOLD.replace(
+        "{ name = input direction = input element-type = F32_LE shape = [ 2 ] schema = org.pipewireao.rtc.slow.f32/1 }\n                { name = output direction = output element-type = F32_LE shape = [ 2 ] schema = org.pipewireao.rtc.command.f32/1 }",
+        "{ name = input direction = input element-type = F32_LE shape = [ 2 ] schema = org.pipewireao.rtc.slow.f32/1 rate = 500/1 }\n                { name = output direction = output element-type = F32_LE shape = [ 2 ] schema = org.pipewireao.rtc.command.f32/1 }",
+    ))
+    .expect_err("mismatched link rates");
+    assert_eq!(error.field(), "links[1].rate");
 }
 
 #[test]
@@ -273,6 +479,18 @@ fn revolt_classic_variants_share_the_exact_external_plant_contract() {
     let error =
         DevelopmentConfig::parse(&parameter_output).expect_err("processing graph parameter output");
     assert_eq!(error.field(), "graphs[0].ports.integrate:output.parameter");
+
+    let rated_parameter = replace_once(
+        REVOLT_NATIVE,
+        "name = \"reconstruct:reconstructor\" direction = input parameter = true",
+        "name = \"reconstruct:reconstructor\" direction = input parameter = true rate = 1000/1",
+    );
+    let error = DevelopmentConfig::parse(&rated_parameter)
+        .expect_err("sparse parameter with repeated-data rate");
+    assert_eq!(
+        error.field(),
+        "graphs[0].ports.reconstruct:reconstructor.rate"
+    );
 
     let parameter_sink = replace_once(
         REVOLT_NATIVE,

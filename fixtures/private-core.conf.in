@@ -3,12 +3,17 @@ context.properties = {
     core.daemon = true
     core.name = @CORE_NAME@
     library.use-fallback = false
+    # Permit the latest-hold fixture to request one frame per scheduling cycle.
+    # Other fixtures retain the core's ordinary default and maximum quantum.
+    default.clock.min-quantum = 1
+    default.clock.quantum-floor = 1
 }
 
 context.spa-libs = {
     support.* = support/libspa-support
     api.fits.source = fits/libspa-fits
     api.pipewireao.discard = discard/libspa-pipewireao-discard
+    api.ndarray.* = ndarray/libspa-ndarray
 }
 
 context.modules = [

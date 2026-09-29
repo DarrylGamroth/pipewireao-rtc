@@ -125,7 +125,7 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
         PathBuf::from,
     );
     let plugin_build = std::env::var_os("PIPEWIREAO_SPA_PLUGINS_BUILD").map_or_else(
-        || workspace.join("pipewireao-spa-plugins/build"),
+        || workspace.join("pipewireao-spa-plugins-core/build"),
         PathBuf::from,
     );
     let temporary = tempfile::tempdir().expect("private fixture directory");
@@ -328,6 +328,18 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
             );
             return;
         }
+        Ok("latest-hold") => {
+            run_latest_hold_live_case(
+                &repository,
+                &pipewire_build,
+                &environment,
+                &core_name,
+                temporary.path(),
+                &pipewireao_julia,
+                &julia_filter_graph,
+            );
+            return;
+        }
         Ok("all") | Err(std::env::VarError::NotPresent) => {}
         Ok(scope) => panic!("unsupported PIPEWIREAO_RTC_LIVE_SCOPE {scope:?}"),
         Err(error) => panic!("invalid PIPEWIREAO_RTC_LIVE_SCOPE: {error}"),
@@ -353,6 +365,15 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
         &core_name,
         temporary.path(),
         &environment,
+    );
+    run_latest_hold_live_case(
+        &repository,
+        &pipewire_build,
+        &environment,
+        &core_name,
+        temporary.path(),
+        &pipewireao_julia,
+        &julia_filter_graph,
     );
     run_live_creation_failure_matrix(&repository, &pipewire_build, &environment, &core_name);
 
@@ -1186,6 +1207,64 @@ fn launch_external_julia(
         environment,
         core_name,
         "pipewireao-rtc-external-graph",
+    );
+    (provider, stop_file, provider_log)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn launch_latest_hold_external_julia(
+    repository: &Path,
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+    temporary: &Path,
+    pipewireao_julia: &Path,
+    julia_filter_graph: &Path,
+) -> (ChildGuard, PathBuf, PathBuf) {
+    let stop_file = temporary.join("stop-latest-hold-julia-graph");
+    let provider_log = temporary.join("latest-hold-julia-graph.log");
+    let log = std::fs::File::create(&provider_log).expect("Julia latest/hold graph log");
+    let mut command = command_with_environment("julia", environment);
+    command.env(
+        "JULIA_LOAD_PATH",
+        format!("{}:@:@stdlib", pipewireao_julia.display()),
+    );
+    let provider = command
+        .args([
+            "--startup-file=no",
+            "--threads=2",
+            &format!(
+                "--project={}",
+                julia_filter_graph.join("deployment").display()
+            ),
+        ])
+        .arg(repository.join("tests/live_private_core/latest_hold_julia_graph_provider.jl"))
+        .args([
+            core_name,
+            repository
+                .join("fixtures/graphs/julia-latest-hold-pass.conf")
+                .to_str()
+                .expect("UTF-8 Julia latest/hold graph configuration"),
+            stop_file
+                .to_str()
+                .expect("UTF-8 Julia latest/hold stop path"),
+            "1000",
+        ])
+        .stdout(Stdio::from(log.try_clone().unwrap()))
+        .stderr(Stdio::from(log))
+        .spawn()
+        .expect("start external Julia latest/hold graph owner");
+    let mut provider = ChildGuard(provider);
+    wait_for_text(
+        &mut provider.0,
+        &provider_log,
+        "LATEST_HOLD_JULIA_GRAPH_READY",
+    );
+    wait_for_dump(
+        pipewire_build,
+        environment,
+        core_name,
+        "pipewireao-rtc-latest-hold-graph",
     );
     (provider, stop_file, provider_log)
 }
@@ -2760,6 +2839,593 @@ fn run_native_numerical_group_restart_case(
     }
 }
 
+fn run_latest_hold_live_case(
+    repository: &Path,
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+    temporary: &Path,
+    pipewireao_julia: &Path,
+    julia_filter_graph: &Path,
+) {
+    let native = run_native_latest_hold_live_case(
+        repository,
+        pipewire_build,
+        environment,
+        core_name,
+        temporary,
+    );
+    let julia = run_julia_latest_hold_live_case(
+        repository,
+        pipewire_build,
+        environment,
+        core_name,
+        temporary,
+        pipewireao_julia,
+        julia_filter_graph,
+    );
+    assert_eq!(
+        native.received, julia.received,
+        "native and Julia processing graphs must observe the same held-output availability"
+    );
+    assert_eq!(native.last_command_sequence, julia.last_command_sequence);
+    assert_eq!(
+        native.metrics.updates_accepted, julia.metrics.updates_accepted,
+        "latest/hold accepted-update counter must not depend on the downstream graph owner"
+    );
+    assert_eq!(
+        native.metrics.updates_rejected, julia.metrics.updates_rejected,
+        "latest/hold rejected-update counter must not depend on the downstream graph owner"
+    );
+    assert_eq!(
+        native.metrics.protocol_errors, julia.metrics.protocol_errors,
+        "latest/hold protocol-error counter must not depend on the downstream graph owner"
+    );
+    assert_eq!(
+        native.metrics.outputs_published, julia.metrics.outputs_published,
+        "latest/hold output counter must not depend on the downstream graph owner"
+    );
+    assert_eq!(
+        native.metrics.output_starvations, julia.metrics.output_starvations,
+        "latest/hold starvation counter must not depend on the downstream graph owner"
+    );
+    assert!(native.metrics.unavailable_cycles >= 20);
+    assert!(julia.metrics.unavailable_cycles >= 20);
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct LatestHoldCaseResult {
+    received: u32,
+    last_command_sequence: u64,
+    metrics: fits_discard::LatestHoldMetrics,
+}
+
+const LATEST_HOLD_SAMPLES: u32 = 10;
+const LATEST_HOLD_CYCLES_PER_SAMPLE: u32 = 10;
+const LATEST_HOLD_EXPECTED_OUTPUTS: u32 = LATEST_HOLD_SAMPLES * LATEST_HOLD_CYCLES_PER_SAMPLE;
+const LATEST_HOLD_STEADY_START: u64 = 11;
+
+#[allow(clippy::too_many_lines)]
+fn run_native_latest_hold_live_case(
+    repository: &Path,
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+    temporary: &Path,
+) -> LatestHoldCaseResult {
+    let graph = temporary.join("latest-hold-native.conf");
+    write_latest_hold_graph_configuration(
+        &graph,
+        &environment["PIPEWIREAO_RTC_FGN_BUNDLE"],
+        core_name,
+    );
+    let original_graph = std::env::var_os("PIPEWIREAO_RTC_GRAPH_LATEST_HOLD");
+    std::env::set_var("PIPEWIREAO_RTC_GRAPH_LATEST_HOLD", &graph);
+    let source = build_latest_hold_fixture_source(repository, pipewire_build, temporary);
+    let log = temporary.join("latest-hold-source.log");
+    let output = std::fs::File::create(&log).expect("latest/hold source log");
+    let mut source = ChildGuard(
+        command_with_environment(&source, environment)
+            .arg(core_name)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::from(output.try_clone().expect("clone source log")))
+            .stderr(Stdio::from(output))
+            .spawn()
+            .expect("start deterministic latest/hold source"),
+    );
+    wait_for_text(&mut source.0, &log, "READY");
+
+    let adapter = LiveGraphAdapter::connect(core_name).expect("connect latest/hold adapter");
+    let mut runner = Runner::new(adapter);
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Load(ConfigurationInput::File(
+                repository.join("fixtures/latest-hold-live.conf"),
+            )))
+            .expect("load latest/hold fixture"),
+        LifecycleState::Ready,
+        "latest/hold realization diagnostic: {:?}",
+        runner.diagnostic()
+    );
+    assert_eq!(runner.executor().status().owned_nodes, 2);
+    assert_eq!(runner.executor().status().owned_links, 5);
+    send_latest_hold_source_command(&mut source, b'a');
+    wait_for_text(&mut source.0, &log, "ACTIVE");
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Start)
+            .expect("start latest/hold"),
+        LifecycleState::Running,
+        "latest/hold start diagnostic: {:?}",
+        runner.diagnostic()
+    );
+    assert!(
+        dump(pipewire_build, environment, core_name).contains("PipeWireAO-RTC-Dummy-Driver"),
+        "latest/hold fixture requires its private Dummy Driver"
+    );
+    send_latest_hold_source_command(&mut source, b's');
+    wait_for_text(&mut source.0, &log, "STARTED");
+    let progress = wait_for_latest_hold_progress(&mut source, &log, 120);
+    assert_eq!(
+        progress.data, LATEST_HOLD_SAMPLES,
+        "source must publish only the configured identities"
+    );
+    assert_eq!(
+        (
+            progress.position_rate_num,
+            progress.position_rate_denom,
+            progress.position_quantum
+        ),
+        (1, 1000, 1),
+        "native fixture must follow the Dummy Driver's 1/1000 Position cadence: {progress:?}"
+    );
+    assert!(
+        progress.primary >= progress.cycles,
+        "the primary source must own every fast driver cycle"
+    );
+    assert_eq!(
+        progress.empty + progress.data,
+        progress.cycles,
+        "every non-publication fast cycle must leave source output empty"
+    );
+    let metrics = fits_discard::latest_hold_metrics(core_name, "pipewireao-rtc-latest-hold");
+    assert_eq!(
+        progress.received, LATEST_HOLD_EXPECTED_OUTPUTS,
+        "hold must publish each retained value ten times: {progress:?}, {metrics:?}\nsource log: {}\nprivate core log: {}",
+        std::fs::read_to_string(&log).unwrap_or_default(),
+        private_core_log(&log),
+    );
+    assert_eq!(
+        u64::from(progress.commands),
+        progress.last_command_sequence - progress.first_command_sequence + 1,
+        "native FGN command identities must form one contiguous suffix: {progress:?}"
+    );
+    assert!(
+        progress.first_command_sequence <= LATEST_HOLD_STEADY_START,
+        "native FGN must publish every command after the designated ten-cycle startup window: {progress:?}"
+    );
+    assert_eq!(
+        progress.last_command_sequence,
+        u64::from(LATEST_HOLD_EXPECTED_OUTPUTS)
+    );
+
+    assert_eq!(metrics.updates_accepted, u64::from(LATEST_HOLD_SAMPLES));
+    assert_eq!(metrics.updates_rejected, 0);
+    assert_eq!(metrics.protocol_errors, 0);
+    assert_eq!(
+        metrics.outputs_published,
+        u64::from(LATEST_HOLD_EXPECTED_OUTPUTS)
+    );
+    assert!(
+        metrics.unavailable_cycles >= 20,
+        "missing first samples and post-expiry cycles must be visible: {metrics:?}"
+    );
+    assert_eq!(metrics.output_starvations, 0);
+
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Stop)
+            .expect("pause latest/hold"),
+        LifecycleState::Ready
+    );
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Start)
+            .expect("restart latest/hold after pause"),
+        LifecycleState::Running
+    );
+    let after_restart = wait_for_latest_hold_progress(&mut source, &log, 130);
+    assert_eq!(
+        after_restart.received, LATEST_HOLD_EXPECTED_OUTPUTS,
+        "pause/restart must not replay expired output"
+    );
+    assert_eq!(
+        fits_discard::latest_hold_metrics(core_name, "pipewireao-rtc-latest-hold")
+            .outputs_published,
+        u64::from(LATEST_HOLD_EXPECTED_OUTPUTS),
+        "no backlog may appear after restart"
+    );
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Stop)
+            .expect("stop latest/hold"),
+        LifecycleState::Ready
+    );
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Unload)
+            .expect("unload latest/hold"),
+        LifecycleState::Offline
+    );
+    assert!(
+        !fits_discard::node_is_visible(core_name, "pipewireao-rtc-latest-hold"),
+        "RTC-owned latest/hold node survived unload"
+    );
+    send_latest_hold_source_command(&mut source, b'q');
+    wait_for_child_exit(&mut source.0, &log, "deterministic latest/hold source");
+    match original_graph {
+        Some(path) => std::env::set_var("PIPEWIREAO_RTC_GRAPH_LATEST_HOLD", path),
+        None => std::env::remove_var("PIPEWIREAO_RTC_GRAPH_LATEST_HOLD"),
+    }
+    LatestHoldCaseResult {
+        received: progress.received,
+        last_command_sequence: progress.last_command_sequence,
+        metrics,
+    }
+}
+
+#[allow(clippy::too_many_arguments, clippy::too_many_lines)]
+fn run_julia_latest_hold_live_case(
+    repository: &Path,
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+    temporary: &Path,
+    pipewireao_julia: &Path,
+    julia_filter_graph: &Path,
+) -> LatestHoldCaseResult {
+    let (mut provider, stop_file, provider_log) = launch_latest_hold_external_julia(
+        repository,
+        pipewire_build,
+        environment,
+        core_name,
+        temporary,
+        pipewireao_julia,
+        julia_filter_graph,
+    );
+    let source = build_latest_hold_fixture_source(repository, pipewire_build, temporary);
+    let log = temporary.join("latest-hold-julia-source.log");
+    let output = std::fs::File::create(&log).expect("Julia latest/hold source log");
+    let mut source = ChildGuard(
+        command_with_environment(&source, environment)
+            .arg(core_name)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::from(
+                output.try_clone().expect("clone Julia source log"),
+            ))
+            .stderr(Stdio::from(output))
+            .spawn()
+            .expect("start deterministic Julia latest/hold source"),
+    );
+    wait_for_text(&mut source.0, &log, "READY");
+
+    let adapter = LiveGraphAdapter::connect(core_name).expect("connect Julia latest/hold adapter");
+    let mut runner = Runner::new(adapter);
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Load(ConfigurationInput::File(
+                repository.join("fixtures/latest-hold-julia-live.conf"),
+            )))
+            .expect("load Julia latest/hold fixture"),
+        LifecycleState::Ready,
+        "Julia latest/hold realization diagnostic: {:?}",
+        runner.diagnostic()
+    );
+    assert_eq!(runner.executor().status().owned_nodes, 1);
+    assert_eq!(runner.executor().status().owned_links, 5);
+    send_latest_hold_source_command(&mut source, b'a');
+    wait_for_text(&mut source.0, &log, "ACTIVE");
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Start)
+            .expect("start Julia latest/hold"),
+        LifecycleState::Running,
+        "Julia latest/hold start diagnostic: {:?}",
+        runner.diagnostic()
+    );
+    assert!(
+        dump(pipewire_build, environment, core_name).contains("PipeWireAO-RTC-Dummy-Driver"),
+        "Julia latest/hold fixture requires its private Dummy Driver"
+    );
+    send_latest_hold_source_command(&mut source, b's');
+    wait_for_text(&mut source.0, &log, "STARTED");
+    let progress = wait_for_latest_hold_progress(&mut source, &log, 120);
+    assert_eq!(
+        progress.data, LATEST_HOLD_SAMPLES,
+        "Julia case source must publish only the configured identities"
+    );
+    assert_eq!(
+        (
+            progress.position_rate_num,
+            progress.position_rate_denom,
+            progress.position_quantum
+        ),
+        (1, 1000, 1),
+        "Julia fixture must follow the Dummy Driver's 1/1000 Position cadence: {progress:?}"
+    );
+    assert!(
+        progress.primary >= progress.cycles,
+        "Julia case primary source must own every fast driver cycle"
+    );
+    assert_eq!(
+        progress.empty + progress.data,
+        progress.cycles,
+        "Julia case non-publication fast cycles must leave source output empty"
+    );
+    let metrics = fits_discard::latest_hold_metrics(core_name, "pipewireao-rtc-latest-hold");
+    assert_eq!(
+        progress.received, LATEST_HOLD_EXPECTED_OUTPUTS,
+        "Julia case hold must publish each retained value ten times: {progress:?}, {metrics:?}\nsource log: {}\nprivate core log: {}",
+        std::fs::read_to_string(&log).unwrap_or_default(),
+        private_core_log(&log),
+    );
+    assert_eq!(
+        u64::from(progress.commands),
+        progress.last_command_sequence - progress.first_command_sequence + 1,
+        "Julia command identities must form one contiguous suffix under drain-to-latest admission: {progress:?}"
+    );
+    assert!(
+        progress.first_command_sequence <= LATEST_HOLD_STEADY_START,
+        "Julia must publish every command after the designated ten-cycle startup window: {progress:?}"
+    );
+    assert_eq!(
+        progress.last_command_sequence,
+        u64::from(LATEST_HOLD_EXPECTED_OUTPUTS)
+    );
+
+    assert_eq!(metrics.updates_accepted, u64::from(LATEST_HOLD_SAMPLES));
+    assert_eq!(metrics.updates_rejected, 0);
+    assert_eq!(metrics.protocol_errors, 0);
+    assert_eq!(
+        metrics.outputs_published,
+        u64::from(LATEST_HOLD_EXPECTED_OUTPUTS)
+    );
+    assert!(
+        metrics.unavailable_cycles >= 20,
+        "Julia case missing first samples and post-expiry cycles must be visible: {metrics:?}"
+    );
+    assert_eq!(metrics.output_starvations, 0);
+
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Stop)
+            .expect("pause Julia latest/hold"),
+        LifecycleState::Ready
+    );
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Start)
+            .expect("restart Julia latest/hold after pause"),
+        LifecycleState::Running
+    );
+    let after_restart = wait_for_latest_hold_progress(&mut source, &log, 130);
+    assert_eq!(
+        after_restart.received, LATEST_HOLD_EXPECTED_OUTPUTS,
+        "Julia pause/restart must not replay expired output"
+    );
+    assert_eq!(
+        fits_discard::latest_hold_metrics(core_name, "pipewireao-rtc-latest-hold")
+            .outputs_published,
+        u64::from(LATEST_HOLD_EXPECTED_OUTPUTS),
+        "Julia pause/restart must not create a backlog"
+    );
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Stop)
+            .expect("stop Julia latest/hold"),
+        LifecycleState::Ready
+    );
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Unload)
+            .expect("unload Julia latest/hold"),
+        LifecycleState::Offline
+    );
+    assert!(
+        !fits_discard::node_is_visible(core_name, "pipewireao-rtc-latest-hold"),
+        "RTC-owned Julia latest/hold node survived unload"
+    );
+    assert!(
+        fits_discard::node_is_visible(core_name, "pipewireao-rtc-latest-hold-graph"),
+        "runner unload must not destroy the externally owned Julia graph"
+    );
+    stop_provider(
+        &mut provider,
+        &stop_file,
+        &provider_log,
+        "Julia latest/hold graph",
+    );
+    wait_for_dump_absent(
+        pipewire_build,
+        environment,
+        core_name,
+        "pipewireao-rtc-latest-hold-graph",
+    );
+    send_latest_hold_source_command(&mut source, b'q');
+    wait_for_child_exit(
+        &mut source.0,
+        &log,
+        "deterministic Julia latest/hold source",
+    );
+    LatestHoldCaseResult {
+        received: progress.received,
+        last_command_sequence: progress.last_command_sequence,
+        metrics,
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+struct LatestHoldProgress {
+    cycles: u32,
+    primary: u32,
+    data: u32,
+    empty: u32,
+    received: u32,
+    commands: u32,
+    first_command_sequence: u64,
+    last_command_sequence: u64,
+    position_rate_num: u32,
+    position_rate_denom: u32,
+    position_quantum: u32,
+}
+
+fn build_latest_hold_fixture_source(
+    repository: &Path,
+    pipewire_build: &Path,
+    temporary: &Path,
+) -> PathBuf {
+    let pkg_config = pipewire_build.join("meson-uninstalled");
+    let flags = Command::new("pkg-config")
+        .env("PKG_CONFIG_PATH", &pkg_config)
+        .args(["--cflags", "--libs", "libpipewire-ao-0.3"])
+        .output()
+        .expect("run pkg-config for deterministic latest/hold source");
+    assert!(
+        flags.status.success(),
+        "pkg-config could not describe maintained PipeWire build {}: {}",
+        pkg_config.display(),
+        String::from_utf8_lossy(&flags.stderr)
+    );
+    let binary = temporary.join("latest-hold-slow-source");
+    let compilation = Command::new("cc")
+        .args(["-std=c11", "-Wall", "-Wextra", "-Werror"])
+        .arg(repository.join("tests/fixtures/latest_hold_slow_source.c"))
+        .arg("-o")
+        .arg(&binary)
+        .args(
+            String::from_utf8(flags.stdout)
+                .expect("UTF-8 pkg-config flags")
+                .split_whitespace(),
+        )
+        .arg(format!(
+            "-Wl,-rpath,{}",
+            pipewire_build.join("src/pipewire").display()
+        ))
+        .output()
+        .expect("compile deterministic latest/hold source");
+    assert!(
+        compilation.status.success(),
+        "could not compile deterministic latest/hold source: {}",
+        String::from_utf8_lossy(&compilation.stderr)
+    );
+    binary
+}
+
+fn send_latest_hold_source_command(source: &mut ChildGuard, command: u8) {
+    source
+        .0
+        .stdin
+        .as_mut()
+        .expect("deterministic latest/hold source stdin")
+        .write_all(&[command])
+        .expect("send deterministic latest/hold source command");
+    source
+        .0
+        .stdin
+        .as_mut()
+        .expect("deterministic latest/hold source stdin")
+        .flush()
+        .expect("flush deterministic latest/hold source command");
+}
+
+fn wait_for_latest_hold_progress(
+    source: &mut ChildGuard,
+    log: &Path,
+    minimum_cycles: u32,
+) -> LatestHoldProgress {
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while Instant::now() < deadline {
+        assert!(
+            source
+                .0
+                .try_wait()
+                .expect("poll deterministic latest/hold source")
+                .is_none(),
+            "deterministic latest/hold source exited early: {}",
+            std::fs::read_to_string(log).unwrap_or_default()
+        );
+        send_latest_hold_source_command(source, b'p');
+        std::thread::sleep(Duration::from_millis(5));
+        if let Some(progress) = latest_hold_progress(log) {
+            if progress.cycles >= minimum_cycles
+                && progress.received >= LATEST_HOLD_EXPECTED_OUTPUTS
+                && progress.last_command_sequence >= u64::from(LATEST_HOLD_EXPECTED_OUTPUTS)
+            {
+                return progress;
+            }
+        }
+    }
+    panic!(
+        "deterministic latest/hold source did not reach {minimum_cycles} fast cycles, {} held outputs, and the final command identity: {}\nprivate core log: {}",
+        LATEST_HOLD_EXPECTED_OUTPUTS,
+        std::fs::read_to_string(log).unwrap_or_default(),
+        private_core_log(log),
+    );
+}
+
+fn latest_hold_progress(log: &Path) -> Option<LatestHoldProgress> {
+    std::fs::read_to_string(log)
+        .ok()?
+        .lines()
+        .rev()
+        .find_map(|line| {
+            let values = line
+                .strip_prefix("PROGRESS ")?
+                .split_whitespace()
+                .collect::<Vec<_>>();
+            if values.len() != 10 {
+                return None;
+            }
+            let parse = |field: &str, value: &str| value.strip_prefix(field)?.parse().ok();
+            let parse_u64 =
+                |field: &str, value: &str| value.strip_prefix(field)?.parse::<u64>().ok();
+            let (position_rate_num, position_rate_denom) =
+                values[8].strip_prefix("rate=")?.split_once('/')?;
+            Some(LatestHoldProgress {
+                cycles: parse("cycles=", values[0])?,
+                primary: parse("primary=", values[1])?,
+                data: parse("data=", values[2])?,
+                empty: parse("empty=", values[3])?,
+                received: parse("received=", values[4])?,
+                commands: parse("commands=", values[5])?,
+                first_command_sequence: parse_u64("first=", values[6])?,
+                last_command_sequence: parse_u64("last=", values[7])?,
+                position_rate_num: position_rate_num.parse().ok()?,
+                position_rate_denom: position_rate_denom.parse().ok()?,
+                position_quantum: parse("quantum=", values[9])?,
+            })
+        })
+}
+
+fn wait_for_child_exit(child: &mut Child, log: &Path, label: &str) {
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while Instant::now() < deadline {
+        if let Some(status) = child.try_wait().expect("wait for fixture process") {
+            assert!(
+                status.success(),
+                "{label} failed: {}",
+                std::fs::read_to_string(log).unwrap_or_default()
+            );
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    panic!(
+        "{label} did not exit: {}",
+        std::fs::read_to_string(log).unwrap_or_default()
+    );
+}
+
 fn run_finite_source_completion_case(
     repository: &Path,
     pipewire_build: &Path,
@@ -3006,6 +3672,14 @@ fn write_graph_configuration(
     std::fs::write(path, graph).expect("materialize standard filter.graph configuration");
 }
 
+fn write_latest_hold_graph_configuration(path: &Path, fgn_bundle: &Path, remote_name: &str) {
+    let graph = include_str!("fixtures/latest-hold-two-input.conf.in")
+        .replace("@FGN_BUNDLE@", &fgn_bundle.display().to_string())
+        .replace("@REMOTE_NAME@", remote_name)
+        .replace("@NODE_NAME@", "pipewireao-rtc-latest-hold-graph");
+    std::fs::write(path, graph).expect("materialize two-input latest/hold FGN configuration");
+}
+
 fn fixture_environment(
     runtime: &Path,
     config_directory: &Path,
@@ -3049,6 +3723,10 @@ fn fixture_environment(
         (
             "PIPEWIREAO_FITS_PLUGIN".to_owned(),
             plugin_build.join("spa/plugins/fits/libspa-fits.so"),
+        ),
+        (
+            "PIPEWIREAO_NDARRAY_PLUGIN".to_owned(),
+            plugin_build.join("spa/plugins/ndarray/libspa-ndarray.so"),
         ),
     ])
 }

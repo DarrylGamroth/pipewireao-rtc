@@ -24,6 +24,13 @@ const DISCARD_BYTES: u32 = DISCARD_BUFFERS + 2;
 const DISCARD_PROTOCOL_ERRORS: u32 = DISCARD_BUFFERS + 3;
 const DISCARD_PROCESS_CALLS: u32 = DISCARD_BUFFERS + 4;
 const METRIC_SEQUENCE: i32 = 0x4644;
+const LATEST_HOLD_METRIC_SEQUENCE: i32 = 0x4c48;
+const LATEST_HOLD_UPDATES_ACCEPTED: u32 = 0x0100_0000;
+const LATEST_HOLD_UPDATES_REJECTED: u32 = LATEST_HOLD_UPDATES_ACCEPTED + 1;
+const LATEST_HOLD_PROTOCOL_ERRORS: u32 = LATEST_HOLD_UPDATES_ACCEPTED + 2;
+const LATEST_HOLD_OUTPUTS_PUBLISHED: u32 = LATEST_HOLD_UPDATES_ACCEPTED + 3;
+const LATEST_HOLD_UNAVAILABLE_CYCLES: u32 = LATEST_HOLD_UPDATES_ACCEPTED + 4;
+const LATEST_HOLD_OUTPUT_STARVATIONS: u32 = LATEST_HOLD_UPDATES_ACCEPTED + 5;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct DiscardMetrics {
@@ -32,6 +39,16 @@ struct DiscardMetrics {
     bytes: u64,
     protocol_errors: u64,
     process_calls: u64,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct LatestHoldMetrics {
+    pub updates_accepted: u64,
+    pub updates_rejected: u64,
+    pub protocol_errors: u64,
+    pub outputs_published: u64,
+    pub unavailable_cycles: u64,
+    pub output_starvations: u64,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -288,6 +305,55 @@ pub fn node_properties(remote_name: &str, node_name: &str) -> BTreeMap<String, S
     client.roundtrip("observation node properties");
     let properties = result.borrow().clone();
     properties
+}
+
+pub fn node_is_visible(remote_name: &str, node_name: &str) -> bool {
+    let client = CoreClient::connect(remote_name);
+    client.node_id(node_name).is_some()
+}
+
+pub fn latest_hold_metrics(remote_name: &str, node_name: &str) -> LatestHoldMetrics {
+    let client = CoreClient::connect(remote_name);
+    let node_id = client.wait_for_node(node_name);
+    let globals = client.globals.borrow();
+    let global = globals.get(&node_id).expect("inspectable latest/hold node");
+    let node = client
+        .registry
+        .bind::<pw::node::Node, _>(global)
+        .expect("bind latest/hold node");
+    drop(globals);
+    let metrics = Rc::new(RefCell::new(None));
+    let observed = Rc::clone(&metrics);
+    let listener = node
+        .add_listener_local()
+        .param(move |_sequence, param_type, _index, _next, param| {
+            if param_type != pw::spa::param::ParamType::Props {
+                return;
+            }
+            let result = param
+                .ok_or_else(|| "empty latest/hold Props parameter".to_owned())
+                .and_then(|pod| {
+                    pod.as_object()
+                        .map_err(|error| format!("latest/hold Props is not an object: {error}"))
+                })
+                .and_then(parse_latest_hold_metrics);
+            *observed.borrow_mut() = Some(result);
+        })
+        .register();
+    node.enum_params(
+        LATEST_HOLD_METRIC_SEQUENCE,
+        Some(pw::spa::param::ParamType::Props),
+        0,
+        1,
+    );
+    client.roundtrip("latest/hold metric observation");
+    drop(listener);
+    let result = metrics
+        .borrow()
+        .clone()
+        .expect("latest/hold node did not return Props")
+        .expect("latest/hold node returned invalid Props");
+    result
 }
 
 pub struct NamedLink {
@@ -586,6 +652,43 @@ fn parse_metrics(object: &pw::spa::pod::PodObject) -> Result<DiscardMetrics, Str
         bytes: metric(object, DISCARD_BYTES, "discard.bytes")?,
         protocol_errors: metric(object, DISCARD_PROTOCOL_ERRORS, "discard.protocol-errors")?,
         process_calls: metric(object, DISCARD_PROCESS_CALLS, "discard.process-calls")?,
+    })
+}
+
+fn parse_latest_hold_metrics(
+    object: &pw::spa::pod::PodObject,
+) -> Result<LatestHoldMetrics, String> {
+    Ok(LatestHoldMetrics {
+        updates_accepted: metric(
+            object,
+            LATEST_HOLD_UPDATES_ACCEPTED,
+            "latest-hold.updates-accepted",
+        )?,
+        updates_rejected: metric(
+            object,
+            LATEST_HOLD_UPDATES_REJECTED,
+            "latest-hold.updates-rejected",
+        )?,
+        protocol_errors: metric(
+            object,
+            LATEST_HOLD_PROTOCOL_ERRORS,
+            "latest-hold.protocol-errors",
+        )?,
+        outputs_published: metric(
+            object,
+            LATEST_HOLD_OUTPUTS_PUBLISHED,
+            "latest-hold.outputs-published",
+        )?,
+        unavailable_cycles: metric(
+            object,
+            LATEST_HOLD_UNAVAILABLE_CYCLES,
+            "latest-hold.unavailable-cycles",
+        )?,
+        output_starvations: metric(
+            object,
+            LATEST_HOLD_OUTPUT_STARVATIONS,
+            "latest-hold.output-starvations",
+        )?,
     })
 }
 

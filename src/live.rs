@@ -28,6 +28,8 @@ const SPA_NODE_FACTORY: &str = "spa-node-factory";
 const FITS_LIBRARY_FILE: &str = "libspa-fits.so";
 const DISCARD_LIBRARY: &str = "pipewireao/libspa-pipewireao-discard";
 const DISCARD_LIBRARY_FILE: &str = "libspa-pipewireao-discard.so";
+const NDARRAY_LIBRARY: &str = "ndarray/libspa-ndarray";
+const NDARRAY_LIBRARY_FILE: &str = "libspa-ndarray.so";
 const DISCARD_METRIC_SEQUENCE: i32 = 0x4453;
 const FITS_STATUS_SEQUENCE: i32 = 0x4649;
 const FORMAT_ENUM_SEQUENCE: i32 = 0x4654;
@@ -58,6 +60,42 @@ struct ControlledGraph {
     status_events: Rc<RefCell<Vec<Result<RunControlStatus, String>>>>,
     reset_events: Rc<RefCell<Vec<Result<ResetControlStatus, String>>>>,
     property_events: GraphPropertyEvents,
+}
+
+struct LatestHoldNode {
+    name: String,
+    global_id: u32,
+    _listener: pw::node::NodeListener,
+    proxy: pw::node::Node,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum LatestHoldCommand {
+    Start,
+    Pause,
+}
+
+impl LatestHoldCommand {
+    fn node_command(self) -> pw::spa::node::command::NodeCommand {
+        let id = match self {
+            Self::Start => pw::spa::node::command::NodeCommandId::START,
+            Self::Pause => pw::spa::node::command::NodeCommandId::PAUSE,
+        };
+        pw::spa::node::command::NodeCommand::new(id)
+    }
+}
+
+fn link_admission_key(
+    input_is_latest_hold: bool,
+    input_order: usize,
+    output_order: usize,
+) -> (u8, usize) {
+    if input_is_latest_hold {
+        // Allocation dependencies between cascaded hold nodes run upstream-first.
+        (0, input_order)
+    } else {
+        (1, usize::MAX - output_order)
+    }
 }
 
 type GraphPropertyEvents = Rc<RefCell<Vec<Result<BTreeMap<String, ScalarValue>, String>>>>;
@@ -223,6 +261,71 @@ mod run_control_status_tests {
     }
 }
 
+#[cfg(test)]
+mod latest_hold_control_tests {
+    use super::*;
+
+    #[test]
+    fn standard_commands_are_start_and_pause_never_suspend() {
+        let start = LatestHoldCommand::Start.node_command();
+        let pause = LatestHoldCommand::Pause.node_command();
+        assert_eq!(start.id(), pw::spa::node::command::NodeCommandId::START);
+        assert_eq!(pause.id(), pw::spa::node::command::NodeCommandId::PAUSE);
+        assert_ne!(start.id(), pw::spa::node::command::NodeCommandId::SUSPEND);
+        assert_ne!(pause.id(), pw::spa::node::command::NodeCommandId::SUSPEND);
+    }
+
+    #[test]
+    fn factory_identity_uses_node_information_not_registry_global_properties() {
+        assert!(validate_node_factory_identity(
+            "graphs[0]",
+            Some("api.ndarray.latest-hold"),
+            "api.ndarray.latest-hold",
+        )
+        .is_ok());
+        let error = validate_node_factory_identity(
+            "graphs[0]",
+            Some("api.ndarray.other"),
+            "api.ndarray.latest-hold",
+        )
+        .expect_err("mismatched NodeInfo factory identity");
+        assert_eq!(error.field(), "graphs[0].factory");
+        let error = validate_node_factory_identity("graphs[0]", None, "api.ndarray.latest-hold")
+            .expect_err("missing NodeInfo factory identity");
+        assert_eq!(error.field(), "graphs[0].factory");
+    }
+
+    #[test]
+    fn hold_ingress_allocation_dependencies_precede_downstream_links() {
+        let source_to_first_hold = link_admission_key(true, 1, 0);
+        let first_to_second_hold = link_admission_key(true, 2, 1);
+        let second_hold_to_sink = link_admission_key(false, 3, 2);
+        assert!(source_to_first_hold < first_to_second_hold);
+        assert!(first_to_second_hold < second_hold_to_sink);
+    }
+
+    #[test]
+    fn observed_port_rate_accepts_equivalent_rational_spelling() {
+        assert!(fractions_equivalent(
+            Fraction {
+                num: 2000,
+                denom: 2
+            },
+            Fraction {
+                num: 1000,
+                denom: 1
+            },
+        ));
+        assert!(!fractions_equivalent(
+            Fraction { num: 500, denom: 1 },
+            Fraction {
+                num: 1000,
+                denom: 1
+            },
+        ));
+    }
+}
+
 struct LiveLink {
     listener: pw::link::LinkListener,
     proxy: pw::link::Link,
@@ -241,13 +344,13 @@ enum LinkAdmissionState {
 struct RequiredExternalPort {
     global_id: u32,
     specification: PortSpec,
+    expected_rate: Fraction,
 }
 
 struct RequiredExternalObject {
     role: ObjectRole,
     node_name: String,
     global_id: u32,
-    expected_rate: Fraction,
     ports: Vec<RequiredExternalPort>,
 }
 
@@ -278,13 +381,16 @@ pub struct LiveGraphAdapter {
     parameter_publishers: Vec<ParameterPublisher>,
     links: Vec<LiveLink>,
     controlled_graphs: Vec<ControlledGraph>,
+    latest_hold_nodes: Vec<LatestHoldNode>,
     owned_node_names: Vec<String>,
     required_node_names: Vec<String>,
     required_external_objects: Vec<RequiredExternalObject>,
     finite_source_names: Vec<String>,
     graph_order: Vec<String>,
+    latest_hold_order: Vec<String>,
     sink_names: Vec<String>,
     execution_group_nodes: BTreeMap<String, Vec<String>>,
+    execution_group_latest_holds: BTreeMap<String, Vec<String>>,
     execution_group_sinks: BTreeMap<String, Vec<String>>,
     parameter_routes: BTreeMap<(String, String), String>,
     expected_objects: usize,
@@ -390,13 +496,16 @@ impl LiveGraphAdapter {
             parameter_publishers: Vec::new(),
             links: Vec::new(),
             controlled_graphs: Vec::new(),
+            latest_hold_nodes: Vec::new(),
             owned_node_names: Vec::new(),
             required_node_names: Vec::new(),
             required_external_objects: Vec::new(),
             finite_source_names: Vec::new(),
             graph_order: Vec::new(),
+            latest_hold_order: Vec::new(),
             sink_names: Vec::new(),
             execution_group_nodes: BTreeMap::new(),
+            execution_group_latest_holds: BTreeMap::new(),
             execution_group_sinks: BTreeMap::new(),
             parameter_routes: BTreeMap::new(),
             expected_objects: 0,
@@ -633,6 +742,7 @@ impl LiveGraphAdapter {
             Vec::new()
         };
         self.graph_order = config.session_controlled_graph_names();
+        self.prepare_latest_holds(config);
         self.sink_names = config
             .sinks
             .iter()
@@ -682,6 +792,40 @@ impl LiveGraphAdapter {
         self.expected_links = config.links.len();
     }
 
+    fn prepare_latest_holds(&mut self, config: &DevelopmentConfig) {
+        let latest_holds = config
+            .graphs
+            .iter()
+            .filter(|graph| {
+                matches!(
+                    graph.realization,
+                    ObjectRealization::Factory(GraphFactory::NdarrayLatestHold)
+                )
+            })
+            .map(|graph| graph.node_name.as_str())
+            .collect::<BTreeSet<_>>();
+        self.latest_hold_order = config
+            .session_controlled_topological_node_names()
+            .into_iter()
+            .filter(|node| latest_holds.contains(node.as_str()))
+            .collect();
+        self.execution_group_latest_holds = config
+            .execution_groups
+            .iter()
+            .map(|group| {
+                (
+                    group.name.clone(),
+                    config
+                        .execution_group_node_names(&group.name)
+                        .expect("validated execution group")
+                        .into_iter()
+                        .filter(|node| latest_holds.contains(node.as_str()))
+                        .collect(),
+                )
+            })
+            .collect();
+    }
+
     fn finish_creation_point(&mut self, field: &str) -> Result<(), ScientificDiagnostic> {
         self.created_resources += 1;
         if self.creation_failure_after == Some(self.created_resources) {
@@ -704,8 +848,38 @@ impl LiveGraphAdapter {
     ) -> Result<(), ScientificDiagnostic> {
         self.validate_live_ports(config)?;
         // Admit links downstream-first so no source can publish into a
-        // partially realized processing path.
-        for (index, link) in config.links_downstream_first() {
+        // partially realized processing path. A latest/hold ingress is the
+        // exception: its input pool must exist before PipeWire asks its output
+        // port to allocate zero-copy aliases.
+        let node_order = config
+            .topological_node_names()
+            .into_iter()
+            .enumerate()
+            .map(|(index, name)| (name, index))
+            .collect::<BTreeMap<_, _>>();
+        let latest_hold_names = config
+            .graphs
+            .iter()
+            .filter(|graph| {
+                graph.realization == ObjectRealization::Factory(GraphFactory::NdarrayLatestHold)
+            })
+            .map(|graph| graph.node_name.as_str())
+            .collect::<BTreeSet<_>>();
+        let mut links = config.links.iter().enumerate().collect::<Vec<_>>();
+        links.sort_by_key(|(_, link)| {
+            let input_node = split_endpoint(&link.input)
+                .expect("validated latest/hold input endpoint")
+                .0;
+            let output_node = split_endpoint(&link.output)
+                .expect("validated latest/hold output endpoint")
+                .0;
+            link_admission_key(
+                latest_hold_names.contains(input_node),
+                node_order[input_node],
+                node_order[output_node],
+            )
+        });
+        for (index, link) in links {
             self.create_link(index, &link.output, &link.input, link.passive)?;
             self.finish_creation_point(&format!("links[{index}]"))?;
         }
@@ -736,6 +910,13 @@ impl LiveGraphAdapter {
             RunState::Running,
             "start complete-frame session",
         )?;
+        let mut latest_hold_start_order = self.latest_hold_order.clone();
+        latest_hold_start_order.reverse();
+        self.request_latest_holds(
+            &latest_hold_start_order,
+            LatestHoldCommand::Start,
+            "start latest/hold nodes",
+        )?;
         self.wait_for_links_active("start complete-frame session")?;
         self.status.running = true;
         self.status.discarded_by_sink = self.wait_for_discarded_buffers(&discarded_before_start)?;
@@ -745,6 +926,12 @@ impl LiveGraphAdapter {
 
     fn stop(&mut self, token: EffectToken) -> Result<(), ScientificDiagnostic> {
         self.clear_errors();
+        let latest_hold_order = self.latest_hold_order.clone();
+        self.request_latest_holds(
+            &latest_hold_order,
+            LatestHoldCommand::Pause,
+            "pause latest/hold nodes",
+        )?;
         let graph_order = self.graph_order.clone();
         if !graph_order.is_empty() {
             self.request_graphs(
@@ -789,6 +976,18 @@ impl LiveGraphAdapter {
             RunState::Running,
             &format!("start execution group {name}"),
         )?;
+        let latest_holds = self
+            .execution_group_latest_holds
+            .get(name)
+            .expect("realized group latest/hold nodes")
+            .clone();
+        let mut latest_holds = latest_holds;
+        latest_holds.reverse();
+        self.request_latest_holds(
+            &latest_holds,
+            LatestHoldCommand::Start,
+            &format!("start latest/hold nodes in execution group {name}"),
+        )?;
         let observed = self.wait_for_discarded_buffers(&before)?;
         self.status.discarded_by_sink.extend(observed);
         self.status.discarded_buffers = self.status.discarded_by_sink.values().sum();
@@ -810,6 +1009,16 @@ impl LiveGraphAdapter {
                     "group is not realized",
                 )
             })?;
+        let latest_holds = self
+            .execution_group_latest_holds
+            .get(name)
+            .expect("realized group latest/hold nodes")
+            .clone();
+        self.request_latest_holds(
+            &latest_holds,
+            LatestHoldCommand::Pause,
+            &format!("pause latest/hold nodes in execution group {name}"),
+        )?;
         self.request_graphs(
             &nodes,
             token,
@@ -827,6 +1036,16 @@ impl LiveGraphAdapter {
     }
 
     fn reset(&mut self, token: EffectToken) -> Result<(), ScientificDiagnostic> {
+        let latest_hold_order = self.latest_hold_order.clone();
+        self.request_latest_holds(
+            &latest_hold_order,
+            LatestHoldCommand::Pause,
+            "pause latest/hold nodes before reset",
+        )?;
+        self.reset_numerical_graphs(token)
+    }
+
+    fn reset_numerical_graphs(&mut self, token: EffectToken) -> Result<(), ScientificDiagnostic> {
         let wire_token = i64::try_from(token.value()).map_err(|_| {
             ScientificDiagnostic::new(
                 "lifecycle effect token",
@@ -1285,6 +1504,45 @@ impl LiveGraphAdapter {
         ))
     }
 
+    fn request_latest_holds(
+        &self,
+        node_names: &[String],
+        command: LatestHoldCommand,
+        label: &str,
+    ) -> Result<(), ScientificDiagnostic> {
+        if node_names.is_empty() {
+            return Ok(());
+        }
+        for node_name in node_names {
+            let node = self
+                .latest_hold_nodes
+                .iter()
+                .find(|node| node.name == *node_name)
+                .ok_or_else(|| {
+                    ScientificDiagnostic::new(
+                        format!("graph {node_name}.command"),
+                        "latest/hold node is not bound to its standard SPA command surface",
+                    )
+                })?;
+            if !self
+                .globals
+                .borrow()
+                .get(&node.global_id)
+                .is_some_and(|global| is_node_named(global, node_name))
+            {
+                return Err(ScientificDiagnostic::new(
+                    format!("graph {node_name}.command"),
+                    "required latest/hold node disappeared before the command",
+                ));
+            }
+            node.proxy.send_command(&command.node_command());
+        }
+        // The public pw_node command method has no tokened completion reply.
+        // A core roundtrip proves delivery and reports asynchronous core
+        // errors without inventing a private acknowledgement protocol.
+        self.roundtrip(label)
+    }
+
     fn wait_for_links_active(&mut self, label: &str) -> Result<(), ScientificDiagnostic> {
         let mut states = Vec::new();
         for _ in 0..100 {
@@ -1309,6 +1567,21 @@ impl LiveGraphAdapter {
     }
 
     fn cleanup(&mut self, token: Option<EffectToken>) -> Result<(), ScientificDiagnostic> {
+        let present_latest_holds = self
+            .latest_hold_order
+            .iter()
+            .filter(|name| {
+                self.latest_hold_nodes.iter().any(|node| {
+                    node.name == **name
+                        && self
+                            .globals
+                            .borrow()
+                            .get(&node.global_id)
+                            .is_some_and(|global| is_node_named(global, name))
+                })
+            })
+            .cloned()
+            .collect::<Vec<_>>();
         let present_graphs = self
             .graph_order
             .iter()
@@ -1324,7 +1597,17 @@ impl LiveGraphAdapter {
             })
             .cloned()
             .collect::<Vec<_>>();
-        let mut first_error = token.and_then(|token| {
+        let mut first_error = (!present_latest_holds.is_empty())
+            .then(|| {
+                self.request_latest_holds(
+                    &present_latest_holds,
+                    LatestHoldCommand::Pause,
+                    "pause latest/hold nodes before cleanup",
+                )
+                .err()
+            })
+            .flatten();
+        let graph_stop_error = token.and_then(|token| {
             (!present_graphs.is_empty())
                 .then(|| {
                     self.request_graphs(
@@ -1337,6 +1620,9 @@ impl LiveGraphAdapter {
                 })
                 .flatten()
         });
+        if let Some(error) = graph_stop_error {
+            first_error.get_or_insert(error);
+        }
         self.status.running = false;
         self.clear_errors();
         for link in self.links.drain(..) {
@@ -1355,6 +1641,7 @@ impl LiveGraphAdapter {
         if let Err(error) = self.roundtrip("processing graph control release") {
             first_error.get_or_insert(error);
         }
+        self.latest_hold_nodes.clear();
         self.spa_nodes.clear();
         self.parameter_publishers.clear();
         self.modules.clear();
@@ -1367,8 +1654,10 @@ impl LiveGraphAdapter {
         self.required_external_objects.clear();
         self.finite_source_names.clear();
         self.graph_order.clear();
+        self.latest_hold_order.clear();
         self.sink_names.clear();
         self.execution_group_nodes.clear();
+        self.execution_group_latest_holds.clear();
         self.execution_group_sinks.clear();
         self.parameter_routes.clear();
         self.expected_objects = 0;
@@ -1630,10 +1919,94 @@ impl LiveGraphAdapter {
                     &graph.node_name,
                 )
             }
+            ObjectRealization::Factory(GraphFactory::NdarrayLatestHold) => {
+                let plugin = resolve_artifact(
+                    &format!("{field}.plugin.path"),
+                    graph
+                        .plugin_path
+                        .as_deref()
+                        .expect("latest/hold plugin path was validated"),
+                    "PIPEWIREAO_NDARRAY_PLUGIN",
+                )?;
+                self.create_owned_latest_hold(graph, field, &plugin)
+            }
             ObjectRealization::External { .. } => {
                 self.wait_for_external_object(ObjectRole::Graph, &graph.node_name)
             }
         }
+    }
+
+    fn create_owned_latest_hold(
+        &mut self,
+        graph: &ObjectSpec<GraphFactory>,
+        field: &str,
+        plugin: &Path,
+    ) -> Result<(), ScientificDiagnostic> {
+        if plugin.file_name().and_then(|name| name.to_str()) != Some(NDARRAY_LIBRARY_FILE) {
+            return Err(ScientificDiagnostic::new(
+                format!("{field}.plugin.path"),
+                format!(
+                    "expected maintained ndarray plugin {NDARRAY_LIBRARY_FILE:?}, got {}",
+                    plugin.display()
+                ),
+            ));
+        }
+        let factory = match graph.realization {
+            ObjectRealization::Factory(factory) => factory,
+            ObjectRealization::External { .. } => unreachable!("owned latest/hold node"),
+        };
+        let mut properties = PropertiesBox::new();
+        properties.insert("factory.name", factory.configured_name());
+        properties.insert("library.name", NDARRAY_LIBRARY);
+        properties.insert("node.name", graph.node_name.as_str());
+        properties.insert("node.description", "PipeWireAO RTC ndarray latest/hold");
+        properties.insert("node.virtual", "true");
+        properties.insert("node.want-driver", "false");
+        properties.insert("object.linger", "false");
+        for (name, value) in &graph.arguments {
+            properties.insert(name.as_str(), value.as_str());
+        }
+        let node = self
+            .core
+            .create_object::<pw::node::Node>(SPA_NODE_FACTORY, &properties)
+            .map_err(|error| {
+                ScientificDiagnostic::new(
+                    format!("{field}.factory"),
+                    format!(
+                        "PipeWire spa-node-factory rejected {:?}: {error}",
+                        factory.configured_name()
+                    ),
+                )
+            })?;
+        let observed_factory = Rc::new(RefCell::new(None));
+        let observed = Rc::clone(&observed_factory);
+        let listener = node
+            .add_listener_local()
+            .info(move |info| {
+                if let Some(factory) = info
+                    .props()
+                    .and_then(|properties| properties.get("factory.name"))
+                {
+                    *observed.borrow_mut() = Some(factory.to_owned());
+                }
+            })
+            .register();
+        self.wait_for_owned_node(ObjectRole::Graph, &graph.node_name)?;
+        let global = self.node_global(&graph.node_name)?;
+        self.roundtrip(&format!("{field} NodeInfo factory identity"))?;
+        let observed_factory = observed_factory.borrow().clone();
+        validate_node_factory_identity(
+            field,
+            observed_factory.as_deref(),
+            factory.configured_name(),
+        )?;
+        self.latest_hold_nodes.push(LatestHoldNode {
+            name: graph.node_name.clone(),
+            global_id: global.id,
+            _listener: listener,
+            proxy: node,
+        });
+        Ok(())
     }
 
     fn create_sink(
@@ -2083,7 +2456,6 @@ impl LiveGraphAdapter {
     }
 
     fn validate_live_ports(&self, config: &DevelopmentConfig) -> Result<(), ScientificDiagnostic> {
-        let expected_rate = configured_frame_rate(config)?;
         let expected = config
             .sources
             .iter()
@@ -2119,7 +2491,12 @@ impl LiveGraphAdapter {
                 if is_discard_sink {
                     validate_discard_wildcard(&format, role, &port.name)?;
                 } else {
-                    validate_ndarray_port(&format, role, port, expected_rate)?;
+                    validate_ndarray_port(
+                        &format,
+                        role,
+                        port,
+                        configured_port_rate(config, port)?,
+                    )?;
                 }
             }
         }
@@ -2130,7 +2507,6 @@ impl LiveGraphAdapter {
         &self,
         config: &DevelopmentConfig,
     ) -> Result<Vec<RequiredExternalObject>, ScientificDiagnostic> {
-        let expected_rate = configured_frame_rate(config)?;
         let expected = config
             .sources
             .iter()
@@ -2164,6 +2540,7 @@ impl LiveGraphAdapter {
                         Ok(RequiredExternalPort {
                             global_id: port.id,
                             specification: specification.clone(),
+                            expected_rate: configured_port_rate(config, specification)?,
                         })
                     })
                     .collect::<Result<Vec<_>, ScientificDiagnostic>>()?;
@@ -2171,7 +2548,6 @@ impl LiveGraphAdapter {
                     role,
                     node_name: node_name.clone(),
                     global_id: node.id,
-                    expected_rate,
                     ports,
                 })
             })
@@ -2240,7 +2616,12 @@ impl LiveGraphAdapter {
                         )
                     })?;
                 let format = self.enumerate_port_format(object.role, &specification.name, &port)?;
-                validate_ndarray_port(&format, object.role, specification, object.expected_rate)?;
+                validate_ndarray_port(
+                    &format,
+                    object.role,
+                    specification,
+                    required_port.expected_rate,
+                )?;
             }
         }
         match synchronization_error {
@@ -2577,6 +2958,25 @@ fn is_node_named(global: &GlobalObject<PropertiesBox>, node_name: &str) -> bool 
             == Some(node_name)
 }
 
+fn validate_node_factory_identity(
+    field: &str,
+    observed: Option<&str>,
+    expected: &str,
+) -> Result<(), ScientificDiagnostic> {
+    if observed == Some(expected) {
+        Ok(())
+    } else {
+        Err(ScientificDiagnostic::new(
+            format!("{field}.factory"),
+            format!("expected realized factory {expected:?}, observed {observed:?}"),
+        ))
+    }
+}
+
+fn fractions_equivalent(left: Fraction, right: Fraction) -> bool {
+    u64::from(left.num) * u64::from(right.denom) == u64::from(right.num) * u64::from(left.denom)
+}
+
 fn validate_ndarray_port(
     object: &PodObject,
     role: ObjectRole,
@@ -2609,7 +3009,11 @@ fn validate_ndarray_port(
             format!("expected row-major, observed {:?}", observed.layout()),
         ));
     }
-    if !port.parameter && observed.rate() != Some(expected_rate) {
+    if !port.parameter
+        && !observed
+            .rate()
+            .is_some_and(|rate| fractions_equivalent(rate, expected_rate))
+    {
         return Err(ScientificDiagnostic::new(
             format!("{}.ports.{}.rate", role.name(), port.name),
             format!(
@@ -2636,18 +3040,27 @@ fn validate_ndarray_port(
     Ok(())
 }
 
-fn configured_frame_rate(config: &DevelopmentConfig) -> Result<Fraction, ScientificDiagnostic> {
-    let rate = config.rate.as_str();
+fn configured_port_rate(
+    config: &DevelopmentConfig,
+    port: &PortSpec,
+) -> Result<Fraction, ScientificDiagnostic> {
+    configured_rate(
+        &format!("port {}.rate", port.name),
+        port.rate.as_deref().unwrap_or(&config.rate),
+    )
+}
+
+fn configured_rate(field: &str, rate: &str) -> Result<Fraction, ScientificDiagnostic> {
     let (numerator, denominator) = rate
         .split_once('/')
-        .ok_or_else(|| ScientificDiagnostic::new("rate", "invalid configured frame rate"))?;
+        .ok_or_else(|| ScientificDiagnostic::new(field, "invalid configured frame rate"))?;
     Ok(Fraction {
         num: numerator
             .parse()
-            .map_err(|_| ScientificDiagnostic::new("rate", "invalid rate numerator"))?,
+            .map_err(|_| ScientificDiagnostic::new(field, "invalid rate numerator"))?,
         denom: denominator
             .parse()
-            .map_err(|_| ScientificDiagnostic::new("rate", "invalid rate denominator"))?,
+            .map_err(|_| ScientificDiagnostic::new(field, "invalid rate denominator"))?,
     })
 }
 
