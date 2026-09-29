@@ -13,7 +13,7 @@ use pw::spa::param::format::{ElementType, NdArrayFormat, NdArrayLayout};
 use pw::spa::param::Parameters;
 use pw::spa::pod::deserialize::PodDeserializer;
 use pw::spa::pod::serialize::PodSerializer;
-use pw::spa::pod::{Object as PodObject, Property as PodProperty, Value};
+use pw::spa::pod::{Object as PodObject, Property as PodProperty, PropertyFlags, Value};
 use pw::spa::utils::{Fraction, Id, SpaTypes};
 use pw::types::ObjectType;
 use std::cell::{Cell, RefCell};
@@ -60,6 +60,7 @@ struct ControlledGraph {
     status_events: Rc<RefCell<Vec<Result<RunControlStatus, String>>>>,
     reset_events: Rc<RefCell<Vec<Result<ResetControlStatus, String>>>>,
     property_events: GraphPropertyEvents,
+    property_info: GraphPropertyInfoEvents,
 }
 
 struct LatestHoldNode {
@@ -99,6 +100,7 @@ fn link_admission_key(
 }
 
 type GraphPropertyEvents = Rc<RefCell<Vec<Result<BTreeMap<String, ScalarValue>, String>>>>;
+type GraphPropertyInfoEvents = Rc<RefCell<Vec<Result<(String, bool), String>>>>;
 
 fn graph_reached_requested_state(
     graph: &ControlledGraph,
@@ -578,6 +580,20 @@ impl LiveGraphAdapter {
         self.roundtrip(&format!("graph {graph_name} property observation"))?;
         let graph = self.controlled_graph(graph_name)?;
         property_generation(&latest_property_snapshot(graph)?, node_name)
+    }
+
+    /// Reads the graph owner's latest standard `SPA_PARAM_Props` snapshot.
+    ///
+    /// # Errors
+    ///
+    /// Returns a diagnostic if the graph or its published scientific Props
+    /// snapshot is unavailable.
+    pub fn observe_properties(
+        &self,
+        graph_name: &str,
+    ) -> Result<BTreeMap<String, ScalarValue>, ScientificDiagnostic> {
+        self.roundtrip(&format!("graph {graph_name} property observation"))?;
+        latest_property_snapshot(self.controlled_graph(graph_name)?)
     }
 
     /// Observes the requested and active ndarray-parameter sequences exported
@@ -1116,6 +1132,7 @@ impl LiveGraphAdapter {
                     "graph is not realized under RTC control",
                 )
             })?;
+        validate_property_declarations(graph_name, values, &graph.property_info.borrow())?;
         let baseline_generations = if running {
             let baseline = latest_property_snapshot(graph)?;
             affected_nodes
@@ -1324,9 +1341,19 @@ impl LiveGraphAdapter {
             let observed_resets = Rc::clone(&reset_events);
             let property_events = Rc::new(RefCell::new(Vec::new()));
             let observed_properties = Rc::clone(&property_events);
+            let property_info = Rc::new(RefCell::new(Vec::new()));
+            let observed_property_info = Rc::clone(&property_info);
             let listener = node
                 .add_listener_local()
                 .param(move |_sequence, param_type, _index, _next, param| {
+                    if param_type == pw::spa::param::ParamType::PropInfo {
+                        if let Some(pod) = param {
+                            observed_property_info
+                                .borrow_mut()
+                                .push(parse_property_info(pod));
+                        }
+                        return;
+                    }
                     if param_type != pw::spa::param::ParamType::Props {
                         return;
                     }
@@ -1355,7 +1382,10 @@ impl LiveGraphAdapter {
                     }
                 })
                 .register();
-            node.subscribe_params(&[pw::spa::param::ParamType::Props]);
+            node.subscribe_params(&[
+                pw::spa::param::ParamType::Props,
+                pw::spa::param::ParamType::PropInfo,
+            ]);
             self.controlled_graphs.push(ControlledGraph {
                 name: node_name.clone(),
                 global_id: global.id,
@@ -1364,6 +1394,7 @@ impl LiveGraphAdapter {
                 status_events,
                 reset_events,
                 property_events,
+                property_info,
             });
         }
         self.roundtrip("processing graph run-control discovery")?;
@@ -2991,10 +3022,19 @@ fn validate_ndarray_port(
                 format!("invalid ndarray EnumFormat: {error}"),
             )
         })?;
-    if observed.element_type() != ElementType::F32Le {
+    let expected_element_type = match port.element_type.as_str() {
+        "F32_LE" => ElementType::F32Le,
+        "U16_LE" => ElementType::U16Le,
+        _ => unreachable!("port element type was validated before realization"),
+    };
+    if observed.element_type() != expected_element_type {
         return Err(ScientificDiagnostic::new(
             format!("{}.ports.{}.element-type", role.name(), port.name),
-            format!("expected F32_LE, observed {:?}", observed.element_type()),
+            format!(
+                "expected {}, observed {:?}",
+                port.element_type,
+                observed.element_type()
+            ),
         ));
     }
     if observed.shape() != port.shape {
@@ -3233,6 +3273,71 @@ impl Drop for LiveGraphAdapter {
     fn drop(&mut self) {
         let _ = self.cleanup(None);
     }
+}
+
+fn parse_property_info(pod: &pw::spa::pod::Pod) -> Result<(String, bool), String> {
+    let (_, value) = PodDeserializer::deserialize_from::<Value>(pod.as_bytes())
+        .map_err(|error| format!("cannot decode SPA_PARAM_PropInfo: {error:?}"))?;
+    let Value::Object(object) = value else {
+        return Err("SPA_PARAM_PropInfo is not an object".to_owned());
+    };
+    if object.type_ != SpaTypes::ObjectParamPropInfo.as_raw()
+        || object.id != pw::spa::param::ParamType::PropInfo.as_raw()
+    {
+        return Err("scientific SPA_PARAM_PropInfo has an invalid envelope".to_owned());
+    }
+    let name = object
+        .properties
+        .iter()
+        .find(|property| property.key == pw::spa::sys::SPA_PROP_INFO_name)
+        .and_then(|property| match &property.value {
+            Value::String(name) => Some(name.clone()),
+            _ => None,
+        })
+        .ok_or_else(|| "scientific SPA_PARAM_PropInfo has no String name".to_owned())?;
+    let type_property = object
+        .properties
+        .iter()
+        .find(|property| property.key == pw::spa::sys::SPA_PROP_INFO_type)
+        .ok_or_else(|| format!("scientific property {name:?} has no type declaration"))?;
+    Ok((name, !type_property.flags.contains(PropertyFlags::READONLY)))
+}
+
+fn validate_property_declarations(
+    graph_name: &str,
+    values: &BTreeMap<String, ScalarValue>,
+    declarations: &[Result<(String, bool), String>],
+) -> Result<(), ScientificDiagnostic> {
+    for declaration in declarations {
+        if let Err(error) = declaration {
+            return Err(ScientificDiagnostic::new(
+                format!("graph {graph_name}.properties"),
+                format!("invalid host property declaration: {error}"),
+            ));
+        }
+    }
+    for name in values.keys() {
+        let declared = declarations
+            .iter()
+            .filter_map(|declaration| declaration.as_ref().ok())
+            .find(|(declared_name, _)| declared_name == name);
+        match declared {
+            Some((_, true)) => {}
+            Some((_, false)) => {
+                return Err(ScientificDiagnostic::new(
+                    format!("graph {graph_name}.properties.{name}"),
+                    "property is read-only",
+                ));
+            }
+            None => {
+                return Err(ScientificDiagnostic::new(
+                    format!("graph {graph_name}.properties.{name}"),
+                    "property is not declared by the graph owner",
+                ));
+            }
+        }
+    }
+    Ok(())
 }
 
 fn parse_property_snapshot(

@@ -241,8 +241,11 @@ submission from active host generations, and compares eight commands and
 plant states per controller with direct references. The worker can adopt the
 sparse parameter on either of two adjacent graph cycles, so the fixture
 classifies that bounded one-way transition against both valid direct states
-and requires the updated state by sequence 8. Source-end equivalence,
-multi-property and rejected live updates, repeated updates, and lockstep
+and requires the updated state by sequence 8. The private core separately
+proves repeated live gain/pole updates and rejection of an undeclared property
+for native and Julia graphs, including no generation change on rejection. It
+stops a minimal graph, reloads a different serial topology, restarts, and
+confirms the old objects are absent. Source-end equivalence and lockstep
 native-versus-Julia comparison through the adoption window remain.
 
 ### 4. Prove scientist authoring
@@ -296,7 +299,7 @@ measured report is checked in as evidence.
 | RTC-DEV-002 | 1 | implemented | validated | The minimal FITS → graph → discard fixture and field-by-field diagnostics pass; the live adapter validates directions, F32_LE, shape `[2]`, row-major layout, 1000/1 rate, scientific schemas, the discard wildcard, and both links before `RUNNING` |
 | RTC-DEV-003 | 1 | implemented | validated | Exact topology and ordinary introspection pass. The private-core matrix injects a one-shot failure after every runner-owned node and link creation point, removes only the partial session, preserves the unrelated node, retries to `READY`, and unloads cleanly |
 | RTC-DEV-004 | 1 | implemented | validated | Transition, retry, invalid-command, required-object failure, repeated-cycle, and lifecycle-dispatch tests pass. Native and Julia graphs stop to durable live `READY` and restart without reconstructing objects or links. A non-looping FITS source publishes completion after its final buffer returns, and the sole dispatcher automatically returns `RUNNING` to `READY` |
-| RTC-DEV-005 | 3 | implemented | partial | Reset, typed scalar-property updates, and typed ndarray Parameter Port publication use the one lifecycle dispatcher and standard host surfaces. The private core proves submitted-versus-active behavior and generation advancement for native FGN and JuliaFilterGraph REVOLT controllers. Live multi-property, rejected, and repeated-update cases remain |
+| RTC-DEV-005 | 3 | implemented | partial | Reset, typed scalar-property updates, and typed ndarray Parameter Port publication use the one lifecycle dispatcher and standard host surfaces. The private core proves submitted-versus-active behavior and generation advancement for native FGN and JuliaFilterGraph REVOLT controllers. Separate native and Julia private-core cases prove two successive live gain/pole transactions, observed values and generations, and undeclared-property rejection without generation change. A minimal-to-serial structural reload preserves the lifecycle and replaces every former graph object. Direct numerical equivalence through repeated multi-property updates remains |
 | RTC-DEV-006 | 1 and 2 | implemented | validated | The private-core runner reaches and remains in its lifecycle without a GUI. A declared source output feeds the bounded PipeWireAO queue in copy/drop-oldest mode; a Julia observer attaches, holds a buffer, detaches, and reattaches while the required sink and lifecycle continue. An identical finite replay without the observer produces the same accepted buffer count, byte count, and payload digest |
 | RTC-DEV-007 | 2 and 3 | partial | partial | AdaptiveOpticsSim flat and atmospheric cases and both REVOLT controller implementations compare transported outputs and plant state with direct references. The REVOLT fixture now covers reset plus property and parameter updates, including either valid worker-adoption boundary and a required one-way transition. Source-end equivalence and lockstep native-versus-Julia comparison through the nondeterministic adoption window remain |
 | RTC-DEV-008 | 4 | planned | missing | Package-local declaration examples and ordinary-array tests |

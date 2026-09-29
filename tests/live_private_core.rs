@@ -340,6 +340,19 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
             );
             return;
         }
+        Ok("properties") => {
+            run_live_property_update_cases(
+                &repository,
+                &pipewire_build,
+                &environment,
+                &core_name,
+                temporary.path(),
+                &pipewireao_julia,
+                &julia_filter_graph,
+            );
+            run_structural_reload_case(&repository, &pipewire_build, &environment, &core_name);
+            return;
+        }
         Ok("all") | Err(std::env::VarError::NotPresent) => {}
         Ok(scope) => panic!("unsupported PIPEWIREAO_RTC_LIVE_SCOPE {scope:?}"),
         Err(error) => panic!("invalid PIPEWIREAO_RTC_LIVE_SCOPE: {error}"),
@@ -474,6 +487,16 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
         &pipewireao_julia,
         &julia_filter_graph,
     );
+    run_live_property_update_cases(
+        &repository,
+        &pipewire_build,
+        &environment,
+        &core_name,
+        temporary.path(),
+        &pipewireao_julia,
+        &julia_filter_graph,
+    );
+    run_structural_reload_case(&repository, &pipewire_build, &environment, &core_name);
     run_external_graph_equivalence_case(
         &repository,
         &pipewire_build,
@@ -877,15 +900,16 @@ fn launch_observation_queue(
     environment: &BTreeMap<String, PathBuf>,
     core_name: &str,
 ) -> ChildGuard {
-    let owner = command_with_environment(
-        plugin_build.join("src/modules/queue/pipewireao-queue-remote-test"),
-        environment,
-    )
-    .args([core_name, "--serve-rtc-observer"])
-    .stdout(Stdio::null())
-    .stderr(Stdio::null())
-    .spawn()
-    .expect("start bounded observation queue owner");
+    let queue_owner = std::env::var_os("PIPEWIREAO_RTC_QUEUE_REMOTE_TEST").map_or_else(
+        || plugin_build.join("src/modules/queue/pipewireao-queue-remote-test"),
+        PathBuf::from,
+    );
+    let owner = command_with_environment(queue_owner, environment)
+        .args([core_name, "--serve-rtc-observer"])
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .expect("start bounded observation queue owner");
     wait_for_dump(
         pipewire_build,
         environment,
@@ -1155,6 +1179,228 @@ fn run_external_julia_processing_graph_case(
         pipewireao_julia,
         julia_filter_graph,
     );
+}
+
+fn exercise_live_property_updates(runner: &mut Runner<LiveGraphAdapter>, graph: &str, node: &str) {
+    let mut previous = runner
+        .executor()
+        .observe_property_generation(graph, node)
+        .expect("observe initial property generations");
+    for (gain, pole) in [(0.25_f32, 0.5_f32), (0.125_f32, 0.75_f32)] {
+        let values = BTreeMap::from([
+            (format!("{node}:gain"), ScalarValue::float(gain)),
+            (format!("{node}:pole"), ScalarValue::float(pole)),
+        ]);
+        assert_eq!(
+            runner
+                .dispatch(LifecycleEvent::UpdateProperties {
+                    graph: graph.to_owned(),
+                    values: values.clone(),
+                })
+                .unwrap(),
+            LifecycleState::Running,
+            "multi-property update diagnostic: {:?}",
+            runner.diagnostic(),
+        );
+        let generation = runner
+            .executor()
+            .observe_property_generation(graph, node)
+            .expect("observe active multi-property transaction");
+        assert_eq!(generation.requested, previous.requested + 1);
+        assert_eq!(generation.active, Some(generation.requested));
+        let snapshot = runner
+            .executor()
+            .observe_properties(graph)
+            .expect("inspect standard scientific Props snapshot");
+        for (name, value) in &values {
+            assert_eq!(snapshot.get(name), Some(value), "{name} active value");
+        }
+        previous = generation;
+    }
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::UpdateProperties {
+                graph: graph.to_owned(),
+                values: BTreeMap::from([(format!("{node}:unknown"), ScalarValue::float(1.0),)]),
+            })
+            .unwrap(),
+        LifecycleState::Fault,
+        "rejected property diagnostic: {:?}",
+        runner.diagnostic(),
+    );
+    let diagnostic = runner.diagnostic().expect("rejected property diagnostic");
+    assert_eq!(
+        diagnostic.field(),
+        format!("graph {graph}.properties.{node}:unknown")
+    );
+    assert!(diagnostic.message().contains("not declared"));
+    assert_eq!(
+        runner
+            .executor()
+            .observe_property_generation(graph, node)
+            .expect("rejected update preserves property generations"),
+        previous,
+    );
+    assert!(!runner
+        .executor()
+        .observe_properties(graph)
+        .expect("rejected update preserves property snapshot")
+        .contains_key(&format!("{node}:unknown")));
+}
+
+#[allow(clippy::too_many_arguments)]
+fn run_live_property_update_cases(
+    repository: &Path,
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+    temporary: &Path,
+    pipewireao_julia: &Path,
+    julia_filter_graph: &Path,
+) {
+    let mut native =
+        Runner::new(LiveGraphAdapter::connect(core_name).expect("connect native property session"));
+    assert_eq!(
+        native
+            .dispatch(LifecycleEvent::Load(ConfigurationInput::File(
+                repository.join("fixtures/minimal-development.conf"),
+            )))
+            .unwrap(),
+        LifecycleState::Ready,
+        "native property load diagnostic: {:?}",
+        native.diagnostic(),
+    );
+    assert_eq!(
+        native.dispatch(LifecycleEvent::Start).unwrap(),
+        LifecycleState::Running,
+    );
+    exercise_live_property_updates(&mut native, "pipewireao-rtc-graph", "graph");
+    assert_eq!(
+        native.dispatch(LifecycleEvent::Unload).unwrap(),
+        LifecycleState::Offline,
+        "native property unload diagnostic: {:?}",
+        native.diagnostic(),
+    );
+    for node in [
+        "pipewireao-rtc-source",
+        "pipewireao-rtc-graph",
+        "pipewireao-rtc-sink",
+    ] {
+        wait_for_dump_absent(pipewire_build, environment, core_name, node);
+    }
+
+    let fixture = temporary.join("external-julia-property-development.conf");
+    let configuration =
+        std::fs::read_to_string(repository.join("fixtures/external-graph-development.conf"))
+            .expect("read external graph fixture")
+            .replace("api.fits.rate = 1000/1", "api.fits.rate = 10/1")
+            .replacen("\n    rate = 1000/1", "\n    rate = 10/1", 1);
+    std::fs::write(&fixture, configuration).expect("write Julia property fixture");
+    let (mut provider, stop_file, provider_log) = launch_external_julia(
+        repository,
+        pipewire_build,
+        environment,
+        core_name,
+        temporary,
+        pipewireao_julia,
+        julia_filter_graph,
+        "property",
+        10,
+    );
+    let mut julia =
+        Runner::new(LiveGraphAdapter::connect(core_name).expect("connect Julia property session"));
+    assert_eq!(
+        julia
+            .dispatch(LifecycleEvent::Load(ConfigurationInput::File(fixture)))
+            .unwrap(),
+        LifecycleState::Ready,
+        "Julia property load diagnostic: {:?}",
+        julia.diagnostic(),
+    );
+    assert_eq!(
+        julia.dispatch(LifecycleEvent::Start).unwrap(),
+        LifecycleState::Running,
+        "Julia property start diagnostic: {:?}",
+        julia.diagnostic(),
+    );
+    exercise_live_property_updates(&mut julia, "pipewireao-rtc-external-graph", "integrate");
+    assert_eq!(
+        julia.dispatch(LifecycleEvent::Unload).unwrap(),
+        LifecycleState::Offline,
+    );
+    stop_provider(
+        &mut provider,
+        &stop_file,
+        &provider_log,
+        "Julia property graph",
+    );
+    wait_for_dump_absent(
+        pipewire_build,
+        environment,
+        core_name,
+        "pipewireao-rtc-external-graph",
+    );
+}
+
+fn run_structural_reload_case(
+    repository: &Path,
+    pipewire_build: &Path,
+    environment: &BTreeMap<String, PathBuf>,
+    core_name: &str,
+) {
+    let mut runner =
+        Runner::new(LiveGraphAdapter::connect(core_name).expect("connect reload session"));
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Load(ConfigurationInput::File(
+                repository.join("fixtures/minimal-development.conf"),
+            )))
+            .unwrap(),
+        LifecycleState::Ready,
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Start).unwrap(),
+        LifecycleState::Running
+    );
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Stop).unwrap(),
+        LifecycleState::Ready
+    );
+    assert_eq!(
+        runner
+            .dispatch(LifecycleEvent::Reload(ConfigurationInput::File(
+                repository.join("fixtures/serial-development.conf"),
+            )))
+            .unwrap(),
+        LifecycleState::Ready,
+        "structural reload diagnostic: {:?}",
+        runner.diagnostic(),
+    );
+    let realized = dump(pipewire_build, environment, core_name);
+    assert!(realized.contains("pipewireao-rtc-serial-graph-a"));
+    assert!(realized.contains("pipewireao-rtc-serial-graph-b"));
+    assert!(!realized.contains("pipewireao-rtc-graph"));
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Start).unwrap(),
+        LifecycleState::Running
+    );
+    let delivered = runner
+        .executor_mut()
+        .observe_discarded_buffers()
+        .expect("observe reloaded topology");
+    assert!(delivered["pipewireao-rtc-serial-sink"] > 0);
+    assert_eq!(
+        runner.dispatch(LifecycleEvent::Unload).unwrap(),
+        LifecycleState::Offline
+    );
+    for node in [
+        "pipewireao-rtc-serial-source",
+        "pipewireao-rtc-serial-graph-a",
+        "pipewireao-rtc-serial-graph-b",
+        "pipewireao-rtc-serial-sink",
+    ] {
+        wait_for_dump_absent(pipewire_build, environment, core_name, node);
+    }
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -3736,9 +3982,29 @@ fn fixture_environment(
     pipewire_build: &Path,
     plugin_build: &Path,
 ) -> BTreeMap<String, PathBuf> {
+    let fits_plugin = std::env::var_os("PIPEWIREAO_RTC_FITS_PLUGIN").map_or_else(
+        || {
+            let combined = plugin_build.join("spa/plugins/fits/libspa-fits.so");
+            if combined.is_file() {
+                combined
+            } else {
+                plugin_build
+                    .parent()
+                    .and_then(Path::parent)
+                    .expect("SPA plugin workspace")
+                    .join("pipewireao-spa-plugin-fits/build/spa/plugins/fits/libspa-fits.so")
+            }
+        },
+        PathBuf::from,
+    );
     let plugin_search_path = std::env::join_paths([
         pipewire_build.join("spa/plugins"),
         plugin_build.join("spa/plugins"),
+        fits_plugin
+            .parent()
+            .and_then(Path::parent)
+            .expect("FITS plugin build directory")
+            .to_owned(),
     ])
     .expect("private SPA plugin search path");
     let module_search_path = std::env::join_paths([
@@ -3770,10 +4036,7 @@ fn fixture_environment(
             "PIPEWIREAO_DISCARD_PLUGIN".to_owned(),
             plugin_build.join("spa/plugins/discard/libspa-pipewireao-discard.so"),
         ),
-        (
-            "PIPEWIREAO_FITS_PLUGIN".to_owned(),
-            plugin_build.join("spa/plugins/fits/libspa-fits.so"),
-        ),
+        ("PIPEWIREAO_FITS_PLUGIN".to_owned(), fits_plugin),
         (
             "PIPEWIREAO_NDARRAY_PLUGIN".to_owned(),
             plugin_build.join("spa/plugins/ndarray/libspa-ndarray.so"),

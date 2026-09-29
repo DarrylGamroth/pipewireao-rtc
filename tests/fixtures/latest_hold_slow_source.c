@@ -338,6 +338,9 @@ static void command_sink_process(void *userdata)
 			memory_order_relaxed);
 	} else if (sequence != atomic_load_explicit(
 			&data->last_command_sequence, memory_order_relaxed) + 1u) {
+		fprintf(stderr, "command identity gap: expected %" PRIuFAST64 ", observed %" PRIu64 "\n",
+			atomic_load_explicit(&data->last_command_sequence,
+				memory_order_relaxed) + 1u, sequence);
 		(void)pw_stream_queue_buffer(data->command_sink, buffer);
 		fail(data, "processing graph output did not advance through contiguous primary identities");
 		return;
