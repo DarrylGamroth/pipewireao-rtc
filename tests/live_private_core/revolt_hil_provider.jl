@@ -13,9 +13,11 @@ length(ARGS) == 4 || error(
 core_name, control_directory, native_graph_path, julia_graph_path = ARGS
 native_phase_1 = joinpath(control_directory, "revolt-native-phase-1")
 native_phase_2 = joinpath(control_directory, "revolt-native-phase-2")
+native_phase_2_continue = joinpath(control_directory, "revolt-native-phase-2-continue")
 switch_to_julia = joinpath(control_directory, "revolt-switch-to-julia")
 julia_phase_1 = joinpath(control_directory, "revolt-julia-phase-1")
 julia_phase_2 = joinpath(control_directory, "revolt-julia-phase-2")
+julia_phase_2_continue = joinpath(control_directory, "revolt-julia-phase-2-continue")
 stop_file = joinpath(control_directory, "stop-revolt-hil")
 native_latency_phase = joinpath(control_directory, "revolt-native-latency")
 julia_latency_phase = joinpath(control_directory, "revolt-julia-latency")
@@ -280,7 +282,23 @@ function prepare_phase(control_matrix)
     oracle_sequence = Ref(step_hil_frame!(oracle.boundary))
     direct_state = zeros(Float32, command_count())
     start!(plant.pipewire)
-    return (; plant, oracle, oracle_sequence, direct_state)
+    frame_node_id = PipeWireAO.node_id(plant.pipewire.frame_stream)
+    command_node_id = PipeWireAO.node_id(plant.pipewire.command_stream)
+    return (; plant, oracle, oracle_sequence, direct_state, frame_node_id, command_node_id)
+end
+
+function require_stable_provider_nodes(phase, implementation, sequence)
+    frame_id = PipeWireAO.node_id(phase.plant.pipewire.frame_stream)
+    command_id = PipeWireAO.node_id(phase.plant.pipewire.command_stream)
+    frame_id == phase.frame_node_id || error(
+        "$implementation WFS node changed identity at sequence $sequence: " *
+        "$(phase.frame_node_id) → $frame_id",
+    )
+    command_id == phase.command_node_id || error(
+        "$implementation HSDM277 command node changed identity at sequence $sequence: " *
+        "$(phase.command_node_id) → $command_id",
+    )
+    return nothing
 end
 
 function require_plant_oracle_frame!(phase, sequence)
@@ -322,9 +340,11 @@ function exchange_range!(
 )
     reset_state && fill!(phase.direct_state, 0.0f0)
     for expected_sequence in sequences
+        require_stable_provider_nodes(phase, implementation, expected_sequence)
         println("REVOLT_HIL_FRAME_BEGIN implementation=$implementation sequence=$expected_sequence")
         flush(stdout)
         completed_sequence = exchange_frame!(phase.plant.pipewire)
+        require_stable_provider_nodes(phase, implementation, expected_sequence)
         println("REVOLT_HIL_FRAME_EXCHANGED implementation=$implementation sequence=$expected_sequence")
         flush(stdout)
         completed_sequence == expected_sequence || error(
@@ -540,6 +560,7 @@ function main()
     println("REVOLT_HIL_NATIVE_READY")
     flush(stdout)
     native_first_done = false
+    native_second_first_done = false
     native_second_done = false
     native_latency_done = isnothing(latency)
 
@@ -557,17 +578,32 @@ function main()
                 println("REVOLT_HIL_NATIVE_PHASE_1_DONE sequence=4")
                 flush(stdout)
                 native_first_done = true
-            elseif native_first_done && !native_second_done && isfile(native_phase_2)
+            elseif native_first_done && !native_second_first_done && isfile(native_phase_2)
+                exchange_range!(
+                    phase,
+                    UInt64(5):UInt64(5),
+                    reference_slopes,
+                    control_matrix,
+                    native_commands,
+                    :native,
+                    UPDATED_CONTROLLER_GAIN,
+                    true,
+                )
+                println("REVOLT_HIL_NATIVE_PHASE_2_FIRST_DONE sequence=5")
+                flush(stdout)
+                native_second_first_done = true
+            elseif native_second_first_done && !native_second_done &&
+                   isfile(native_phase_2_continue)
                 parameter_adopted = Ref(false)
                 exchange_range!(
                     phase,
-                    UInt64(5):UInt64(8),
+                    UInt64(6):UInt64(8),
                     reference_slopes,
                     UPDATED_RECONSTRUCTOR_SCALE .* control_matrix,
                     native_commands,
                     :native,
                     UPDATED_CONTROLLER_GAIN,
-                    true,
+                    false,
                     control_matrix,
                     parameter_adopted,
                     false,
@@ -608,6 +644,7 @@ function main()
         println("REVOLT_HIL_JULIA_READY")
         flush(stdout)
         julia_first_done = false
+        julia_second_first_done = false
         julia_second_done = false
         julia_latency_done = isnothing(latency)
 
@@ -624,17 +661,32 @@ function main()
                 println("REVOLT_HIL_JULIA_PHASE_1_DONE sequence=4")
                 flush(stdout)
                 julia_first_done = true
-            elseif julia_first_done && !julia_second_done && isfile(julia_phase_2)
+            elseif julia_first_done && !julia_second_first_done && isfile(julia_phase_2)
+                exchange_range!(
+                    phase,
+                    UInt64(5):UInt64(5),
+                    reference_slopes,
+                    control_matrix,
+                    native_commands,
+                    :julia,
+                    UPDATED_CONTROLLER_GAIN,
+                    true,
+                )
+                println("REVOLT_HIL_JULIA_PHASE_2_FIRST_DONE sequence=5")
+                flush(stdout)
+                julia_second_first_done = true
+            elseif julia_second_first_done && !julia_second_done &&
+                   isfile(julia_phase_2_continue)
                 parameter_adopted = Ref(false)
                 exchange_range!(
                     phase,
-                    UInt64(5):UInt64(8),
+                    UInt64(6):UInt64(8),
                     reference_slopes,
                     UPDATED_RECONSTRUCTOR_SCALE .* control_matrix,
                     native_commands,
                     :julia,
                     UPDATED_CONTROLLER_GAIN,
-                    true,
+                    false,
                     control_matrix,
                     parameter_adopted,
                     false,
