@@ -24,6 +24,46 @@ matched Julia Copper runner does. `--julia-blas-threads` permits a recorded
 diagnostic comparison. The runner's Julia path requires the managed provider
 in the JuliaFilterGraph sibling repository.
 
+For numerical equivalence, `--equivalence-observations` exposes mean pupil
+intensity, controller correction, controller state, and PDM constraint feedback
+from either graph. The runner links four additional non-actuating observers,
+replays the same FITS frames, and compares those four outputs and the demanded
+command with the direct Calculon complete-frame oracle. It also runs the
+oracle's independent controller-recurrence, reset, clipping, and feedback
+checks. These diagnostic links and observers change graph scheduling and are
+for numerical validation, not latency measurement. Use a fresh output path:
+
+```sh
+python3 benchmark/run_copper_rtc.py \
+  --output-dir /path/to/new/native-equivalence \
+  --controller native --frames 16 --command-limit-um 0.2 \
+  --equivalence-observations \
+  --direct-oracle-bin /path/to/revolt_copper_fullframe_oracle
+
+python3 benchmark/run_copper_rtc.py \
+  --output-dir /path/to/new/julia-equivalence \
+  --controller julia --frames 16 --command-limit-um 0.2 \
+  --equivalence-observations \
+  --direct-oracle-bin /path/to/revolt_copper_fullframe_oracle
+```
+
+At 474 Hz on 2026-09-29, both 16-frame clipped runs delivered every ordered
+command with zero WFS drops, buffer starvations, or simulator overruns. All 16
+frames had clipped actuators. Native matched the direct oracle exactly at all
+five observed boundaries. Julia's largest differences were 0 for mean,
+6.855 × 10⁻⁷ for correction, 7.153 × 10⁻⁷ for controller state,
+2.981 × 10⁻⁸ µm for constraint feedback, and 1.491 × 10⁻⁸ µm for demanded
+command. The checker reported zero recurrence, clipping, and feedback error
+in the direct path. Raw reports are
+`~/.cache/rtc-copper-native-direct-oracle-checker-clip-16-20260929/report.json`
+and
+`~/.cache/rtc-copper-julia-direct-oracle-checker-clip-16-20260929/report.json`.
+The direct path calls the maintained Calculon algorithms with the same
+prepared matrices, so this establishes execution-path equivalence for this
+input and configuration, not independent scientific validation of those
+algorithms. Source end, reset, and live property/parameter adoption in the
+Copper RTC fixtures remain untested.
+
 The RTC runner also accepts an opt-in per-role placement contract. The
 [native](profiles/ryzen-6800h-rtc-copper-native.json) and
 [Julia](profiles/ryzen-6800h-rtc-copper-julia.json) examples describe this
