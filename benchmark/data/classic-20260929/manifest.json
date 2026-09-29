@@ -1,0 +1,678 @@
+{
+  "timestamp_utc": "2026-09-29T10:34:37.336964+00:00",
+  "host": {
+    "platform": "Linux-6.12.107+deb13-amd64-x86_64-with-glibc2.41",
+    "machine": "x86_64",
+    "uname": [
+      "Linux",
+      "rtc-devel",
+      "6.12.107+deb13-amd64",
+      "#1 SMP PREEMPT_DYNAMIC Debian 6.12.107-1 (2026-08-29)",
+      "x86_64",
+      ""
+    ],
+    "affinity": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "load_average": [
+      5.4599609375,
+      5.83984375,
+      5.4072265625
+    ],
+    "cpu_pressure": "some avg10=0.00 avg60=0.03 avg300=0.38 total=3718244153\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0",
+    "memory_pressure": "some avg10=0.00 avg60=0.00 avg300=0.00 total=311113518\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=221543361",
+    "scaling_governors": [
+      "powersave"
+    ],
+    "cpu_topology": "Architecture:                            x86_64\nCPU op-mode(s):                          32-bit, 64-bit\nAddress sizes:                           48 bits physical, 48 bits virtual\nByte Order:                              Little Endian\nCPU(s):                                  16\nOn-line CPU(s) list:                     0-15\nVendor ID:                               AuthenticAMD\nModel name:                              AMD Ryzen 7 6800H with Radeon Graphics\nCPU family:                              25\nModel:                                   68\nThread(s) per core:                      2\nCore(s) per socket:                      8\nSocket(s):                               1\nStepping:                                1\nFrequency boost:                         enabled\nCPU(s) scaling MHz:                      65%\nCPU max MHz:                             4785.0000\nCPU min MHz:                             400.0000\nBogoMIPS:                                6387.89\nFlags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 x2apic movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local user_shstk clzero irperf xsaveerptr rdpru wbnoinvd cppc arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm debug_swap\nVirtualization:                          AMD-V\nL1d cache:                               256 KiB (8 instances)\nL1i cache:                               256 KiB (8 instances)\nL2 cache:                                4 MiB (8 instances)\nL3 cache:                                16 MiB (1 instance)\nNUMA node(s):                            1\nNUMA node0 CPU(s):                       0-15\nVulnerability Gather data sampling:      Not affected\nVulnerability Indirect target selection: Not affected\nVulnerability Itlb multihit:             Not affected\nVulnerability L1tf:                      Not affected\nVulnerability Mds:                       Not affected\nVulnerability Meltdown:                  Not affected\nVulnerability Mmio stale data:           Not affected\nVulnerability Reg file data sampling:    Not affected\nVulnerability Retbleed:                  Not affected\nVulnerability Spec rstack overflow:      Mitigation; Safe RET\nVulnerability Spec store bypass:         Mitigation; Speculative Store Bypass disabled via prctl\nVulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization\nVulnerability Spectre v2:                Mitigation; Retpolines; IBPB conditional; IBRS_FW; STIBP always-on; RSB filling; PBRSB-eIBRS Not affected; BHI Not affected\nVulnerability Srbds:                     Not affected\nVulnerability Tsa:                       Vulnerable: Clear CPU buffers attempted, no microcode\nVulnerability Tsx async abort:           Not affected\nVulnerability Vmscape:                   Mitigation; IBPB before exit to userspace",
+    "cc": "cc (Debian 14.2.0-19) 14.2.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.",
+    "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: x86_64-unknown-linux-gnu\nrelease: 1.97.1\nLLVM version: 22.1.6",
+    "cargo": "cargo 1.97.1 (c980f4866 2026-06-30)",
+    "meson": "1.7.0"
+  },
+  "experiment": {
+    "profile": "REVOLT Classic simulated",
+    "source_profile": "/home/dgamroth/workspaces/codex/pipewire/plugins/profiles/revolt-classic.toml",
+    "detector_shape": [
+      352,
+      352
+    ],
+    "frame_rate": [
+      10,
+      1
+    ],
+    "subapertures": 188,
+    "subaperture_shape": [
+      22,
+      22
+    ],
+    "slopes": 376,
+    "controlled_vdm_coordinates": 221,
+    "full_vdm_coordinates": 277,
+    "pdm_actuators": 277,
+    "graph_nodes": 9,
+    "worker_helpers": 0,
+    "row_block_rows": null,
+    "samples": 5000,
+    "warmup": 2000,
+    "repetitions": 5,
+    "cpu": 14,
+    "realtime_priority": 0,
+    "operation_boundary": "one synchronous direct scientific replay call versus one spa_fgn_graph_process callback; graph construction, fixture copies, feedback carry, parameter publication, PipeWire scheduling, device I/O, and teardown are outside timing",
+    "correctness_oracle": "seven pinned frames at five public boundaries plus 1024 delayed-feedback frames; calibrated pixels require bitwise equality and remaining F32 values use combined 1e-6 absolute/scaled-relative tolerance",
+    "comparison_limitations": [
+      "The direct replay materializes a region-major SHWFS pixel slab; the graph uses image views.",
+      "The graph exposes all five comparison boundaries and controller feedback; the direct replay stores the same values in one Frame.",
+      "These service-time samples do not measure scheduled end-to-end latency or overload behavior.",
+      "Frequency and host isolation are observational unless controlled outside this script.",
+      "CPU time, context switches, and page faults cover the entire measured child process, including setup and correctness replay, not only timed callbacks."
+    ]
+  },
+  "repositories": {
+    "calculon": {
+      "path": "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-rtc-performance",
+      "revision": "36d9eca595c2f55865802def04a24fc823f04417",
+      "dirty": true,
+      "status": [
+        "M scripts/qualify_fgn_revolt_classic.py"
+      ],
+      "tracked_diff_sha256": "95da5f59aa9e6d29b281c6cc06cde5f4c7c176c645555c613cf9b39fc9ebc043",
+      "untracked_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "plugins": {
+      "path": "/home/dgamroth/workspaces/codex/pipewire/plugins",
+      "revision": "d376a439eb920fe6b0da369ffe4a54ce034406ba",
+      "dirty": true,
+      "status": [
+        "?? 121852C.pdf",
+        "?? \"TNO-029 Dithering.pdf\""
+      ],
+      "tracked_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "untracked_sha256": "63955d9018333ae3cbbcd1ed4a99267caa59fb7feb115e6c0f5bb618bebde763"
+    },
+    "pipewire": {
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewire",
+      "revision": "7de647dabe9f71cb73c0c78835319c79cee61cf4",
+      "dirty": false,
+      "status": [],
+      "tracked_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "untracked_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "artifacts": {
+    "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-rtc-performance/target/release/libcalculon_fgn_bundle.so": {
+      "sha256": "51d842aff4175ac30042d9bcfee193538cb4be3a75c2d69f79a9293cbd4b4cc6",
+      "bytes": 3061328
+    },
+    "/home/dgamroth/workspaces/codex/pipewire/plugins/target/release/calculon-revolt-classic-direct-replay": {
+      "sha256": "0d9fcb9324ca35a6e5f8bd527d5100e9da63a6af58621c797a1bf054a7c4ffd9",
+      "bytes": 1532960
+    },
+    "/home/dgamroth/workspaces/codex/pipewire/pipewire/build/spa/plugins/filter-graph/benchmark-filter-graph-ndarray-revolt-classic": {
+      "sha256": "9b7400bb55b908fc3b52668cd57b932c99a1a97647ced509cde32382bf931da0",
+      "bytes": 507576
+    },
+    "/home/dgamroth/workspaces/codex/pipewire/plugins/profiles/revolt-classic.toml": {
+      "sha256": "1ea4981c7f53a7066a4379f28836ded87839f36603ec0556da86fa4354cd16d2",
+      "bytes": 4827
+    },
+    "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/fixture/prepared-profile.toml": {
+      "sha256": "033936326f6a5e479bc70821ed0a9e84042c9010e68d7f56558f8c4b762cb7b4",
+      "bytes": 10763
+    },
+    "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/revolt-classic-filter-chain.conf": {
+      "sha256": "ca8fd7d6384cf1c6481c54bcec2a25bf211d24b839794d5314625e54dff8c2f0",
+      "bytes": 9874
+    }
+  },
+  "fixture_command": [
+    "/home/dgamroth/workspaces/codex/pipewire/plugins/target/release/calculon-revolt-classic-direct-replay",
+    "fixture",
+    "--artifact-root",
+    "/home/dgamroth/workspaces/codex/heart/revolt-rtc",
+    "--manifest",
+    "/home/dgamroth/workspaces/codex/pipewire/plugins/profiles/revolt-classic.toml",
+    "--output",
+    "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/fixture"
+  ],
+  "fixture_stdout": "validated REVOLT Classic simulated: 7 frames of 352x352 at 10/1 Hz; CLWC loop gain -0.3; pole 0.99\nframe 1: valid subapertures 188; max |slope| 2.480375290; max |DM command| 0.085006602\nframe 2: valid subapertures 188; max |slope| 2.478740692; max |DM command| 0.169209853\nframe 3: valid subapertures 188; max |slope| 2.477520704; max |DM command| 0.252517879\nframe 4: valid subapertures 188; max |slope| 2.475939751; max |DM command| 0.335017145\nframe 5: valid subapertures 188; max |slope| 2.476179123; max |DM command| 0.416697443\nframe 6: valid subapertures 188; max |slope| 2.476938725; max |DM command| 0.497537285\nframe 7: valid subapertures 188; max |slope| 2.475831509; max |DM command| 0.577548027\nfeedback replay: frames=1024 nonzero-feedback-frames=1022\nwrote all five REVOLT Classic numerical boundaries to /home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/fixture\n",
+  "runs": [
+    {
+      "repetition": 1,
+      "order": [
+        "direct",
+        "graph"
+      ],
+      "load_before": {
+        "load_average": [
+          5.4599609375,
+          5.83984375,
+          5.4072265625
+        ],
+        "cpu_pressure": "some avg10=0.00 avg60=0.03 avg300=0.38 total=3718244259\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0"
+      },
+      "load_after": {
+        "load_average": [
+          5.4599609375,
+          5.83984375,
+          5.4072265625
+        ],
+        "cpu_pressure": "some avg10=0.00 avg60=0.03 avg300=0.37 total=3718245196\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0"
+      },
+      "graph": {
+        "command": [
+          "taskset",
+          "--cpu-list",
+          "14",
+          "/home/dgamroth/workspaces/codex/pipewire/pipewire/build/spa/plugins/filter-graph/benchmark-filter-graph-ndarray-revolt-classic",
+          "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/revolt-classic-filter-chain.conf",
+          "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/fixture",
+          "5000",
+          "2000",
+          "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/graph.run-1.csv"
+        ],
+        "stdout": "numerical-equivalence: 7/7 frames; five public boundaries match\n  calibrated pixels: max-abs=0 max-scaled-rel=0 worst-frame=0 worst-index=0 bitwise\n  slopes: max-abs=0 max-scaled-rel=0 worst-frame=0 worst-index=0\n  reconstructed DM error: max-abs=0 max-scaled-rel=0 worst-frame=0 worst-index=0\n  unconstrained VDM command: max-abs=0 max-scaled-rel=0 worst-frame=0 worst-index=0\n  demanded PDM command: max-abs=0 max-scaled-rel=0 worst-frame=0 worst-index=0\ndelayed-feedback-equivalence: frames=1024 expected-nonzero=1022 actual-nonzero=1022\nnine-node REVOLT Classic FGN graph: n=5000 mean=155225.3 ns p50=153838 ns p90=156123 ns p99=185198 ns p99.9=238848 ns max=275076 ns\nbenchmark-scope: direct graph callback only; warmup=2000 samples=5000; PipeWire scheduling and device I/O excluded\n",
+        "csv": "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/graph.run-1.csv",
+        "metrics": {
+          "count": 5000,
+          "measured_service_ns": 776126408,
+          "serialized_service_capacity_hz": 6442.249546545516,
+          "mean_ns": 155225.2816,
+          "p50_ns": 153838,
+          "p90_ns": 156123,
+          "p99_ns": 185198,
+          "p99_9_ns": 238848,
+          "maximum_ns": 275076
+        },
+        "resources": {
+          "process_envelope_wall_ns": 1314826411,
+          "user_cpu_seconds": 1.298343,
+          "system_cpu_seconds": 0.015978999999999993,
+          "voluntary_context_switches": 1,
+          "involuntary_context_switches": 7,
+          "minor_page_faults": 3948,
+          "major_page_faults": 0
+        }
+      },
+      "direct": {
+        "command": [
+          "taskset",
+          "--cpu-list",
+          "14",
+          "/home/dgamroth/workspaces/codex/pipewire/plugins/target/release/calculon-revolt-classic-direct-replay",
+          "benchmark",
+          "--artifact-root",
+          "/home/dgamroth/workspaces/codex/heart/revolt-rtc",
+          "--manifest",
+          "/home/dgamroth/workspaces/codex/pipewire/plugins/profiles/revolt-classic.toml",
+          "--samples",
+          "5000",
+          "--warmup",
+          "2000",
+          "--csv",
+          "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/direct.run-1.csv"
+        ],
+        "stdout": "validated REVOLT Classic simulated: 7 frames of 352x352 at 10/1 Hz; CLWC loop gain -0.3; pole 0.99\ndirect fused Calculon replay: n=5000 mean=149963.4 ns p50=141205 ns p90=180237 ns p99=233026 ns max=255288 ns\nbenchmark-state: warmup=2000 samples=5000 last-sequence=7000 max-|PDM|=0.800000012\n",
+        "csv": "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/direct.run-1.csv",
+        "metrics": {
+          "count": 5000,
+          "measured_service_ns": 749817230,
+          "serialized_service_capacity_hz": 6668.291684894998,
+          "mean_ns": 149963.446,
+          "p50_ns": 141205,
+          "p90_ns": 180237,
+          "p99_ns": 233026,
+          "p99_9_ns": 247143,
+          "maximum_ns": 255288
+        },
+        "resources": {
+          "process_envelope_wall_ns": 1054015261,
+          "user_cpu_seconds": 1.049653,
+          "system_cpu_seconds": 0.0040070000000000106,
+          "voluntary_context_switches": 1,
+          "involuntary_context_switches": 7,
+          "minor_page_faults": 3450,
+          "major_page_faults": 0
+        }
+      },
+      "graph_over_direct_p50_ratio": 1.0894656704790906
+    },
+    {
+      "repetition": 2,
+      "order": [
+        "graph",
+        "direct"
+      ],
+      "load_before": {
+        "load_average": [
+          5.4599609375,
+          5.83984375,
+          5.4072265625
+        ],
+        "cpu_pressure": "some avg10=0.00 avg60=0.03 avg300=0.37 total=3718245196\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0"
+      },
+      "load_after": {
+        "load_average": [
+          5.50341796875,
+          5.8427734375,
+          5.41064453125
+        ],
+        "cpu_pressure": "some avg10=0.00 avg60=0.02 avg300=0.37 total=3718245480\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0"
+      },
+      "graph": {
+        "command": [
+          "taskset",
+          "--cpu-list",
+          "14",
+          "/home/dgamroth/workspaces/codex/pipewire/pipewire/build/spa/plugins/filter-graph/benchmark-filter-graph-ndarray-revolt-classic",
+          "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/revolt-classic-filter-chain.conf",
+          "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/fixture",
+          "5000",
+          "2000",
+          "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/graph.run-2.csv"
+        ],
+        "stdout": "numerical-equivalence: 7/7 frames; five public boundaries match\n  calibrated pixels: max-abs=0 max-scaled-rel=0 worst-frame=0 worst-index=0 bitwise\n  slopes: max-abs=0 max-scaled-rel=0 worst-frame=0 worst-index=0\n  reconstructed DM error: max-abs=0 max-scaled-rel=0 worst-frame=0 worst-index=0\n  unconstrained VDM command: max-abs=0 max-scaled-rel=0 worst-frame=0 worst-index=0\n  demanded PDM command: max-abs=0 max-scaled-rel=0 worst-frame=0 worst-index=0\ndelayed-feedback-equivalence: frames=1024 expected-nonzero=1022 actual-nonzero=1022\nnine-node REVOLT Classic FGN graph: n=5000 mean=155877.4 ns p50=153988 ns p90=158086 ns p99=201408 ns p99.9=239249 ns max=273914 ns\nbenchmark-scope: direct graph callback only; warmup=2000 samples=5000; PipeWire scheduling and device I/O excluded\n",
+        "csv": "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/graph.run-2.csv",
+        "metrics": {
+          "count": 5000,
+          "measured_service_ns": 779387245,
+          "serialized_service_capacity_hz": 6415.296159998102,
+          "mean_ns": 155877.449,
+          "p50_ns": 153988,
+          "p90_ns": 158086,
+          "p99_ns": 201408,
+          "p99_9_ns": 239249,
+          "maximum_ns": 273914
+        },
+        "resources": {
+          "process_envelope_wall_ns": 1338518038,
+          "user_cpu_seconds": 1.3262380000000005,
+          "system_cpu_seconds": 0.012021000000000004,
+          "voluntary_context_switches": 1,
+          "involuntary_context_switches": 6,
+          "minor_page_faults": 3944,
+          "major_page_faults": 0
+        }
+      },
+      "direct": {
+        "command": [
+          "taskset",
+          "--cpu-list",
+          "14",
+          "/home/dgamroth/workspaces/codex/pipewire/plugins/target/release/calculon-revolt-classic-direct-replay",
+          "benchmark",
+          "--artifact-root",
+          "/home/dgamroth/workspaces/codex/heart/revolt-rtc",
+          "--manifest",
+          "/home/dgamroth/workspaces/codex/pipewire/plugins/profiles/revolt-classic.toml",
+          "--samples",
+          "5000",
+          "--warmup",
+          "2000",
+          "--csv",
+          "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/direct.run-2.csv"
+        ],
+        "stdout": "validated REVOLT Classic simulated: 7 frames of 352x352 at 10/1 Hz; CLWC loop gain -0.3; pole 0.99\ndirect fused Calculon replay: n=5000 mean=142259.6 ns p50=140754 ns p90=144771 ns p99=173235 ns max=242774 ns\nbenchmark-state: warmup=2000 samples=5000 last-sequence=7000 max-|PDM|=0.800000012\n",
+        "csv": "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/direct.run-2.csv",
+        "metrics": {
+          "count": 5000,
+          "measured_service_ns": 711298112,
+          "serialized_service_capacity_hz": 7029.401478293254,
+          "mean_ns": 142259.6224,
+          "p50_ns": 140754,
+          "p90_ns": 144771,
+          "p99_ns": 173235,
+          "p99_9_ns": 205515,
+          "maximum_ns": 242774
+        },
+        "resources": {
+          "process_envelope_wall_ns": 1016199961,
+          "user_cpu_seconds": 1.0077909999999992,
+          "system_cpu_seconds": 0.007998000000000005,
+          "voluntary_context_switches": 1,
+          "involuntary_context_switches": 7,
+          "minor_page_faults": 3448,
+          "major_page_faults": 0
+        }
+      },
+      "graph_over_direct_p50_ratio": 1.0940221947511262
+    },
+    {
+      "repetition": 3,
+      "order": [
+        "direct",
+        "graph"
+      ],
+      "load_before": {
+        "load_average": [
+          5.50341796875,
+          5.8427734375,
+          5.41064453125
+        ],
+        "cpu_pressure": "some avg10=0.00 avg60=0.02 avg300=0.37 total=3718245480\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0"
+      },
+      "load_after": {
+        "load_average": [
+          5.50341796875,
+          5.8427734375,
+          5.41064453125
+        ],
+        "cpu_pressure": "some avg10=0.00 avg60=0.02 avg300=0.37 total=3718245691\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0"
+      },
+      "graph": {
+        "command": [
+          "taskset",
+          "--cpu-list",
+          "14",
+          "/home/dgamroth/workspaces/codex/pipewire/pipewire/build/spa/plugins/filter-graph/benchmark-filter-graph-ndarray-revolt-classic",
+          "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/revolt-classic-filter-chain.conf",
+          "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/fixture",
+          "5000",
+          "2000",
+          "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/graph.run-3.csv"
+        ],
+        "stdout": "numerical-equivalence: 7/7 frames; five public boundaries match\n  calibrated pixels: max-abs=0 max-scaled-rel=0 worst-frame=0 worst-index=0 bitwise\n  slopes: max-abs=0 max-scaled-rel=0 worst-frame=0 worst-index=0\n  reconstructed DM error: max-abs=0 max-scaled-rel=0 worst-frame=0 worst-index=0\n  unconstrained VDM command: max-abs=0 max-scaled-rel=0 worst-frame=0 worst-index=0\n  demanded PDM command: max-abs=0 max-scaled-rel=0 worst-frame=0 worst-index=0\ndelayed-feedback-equivalence: frames=1024 expected-nonzero=1022 actual-nonzero=1022\nnine-node REVOLT Classic FGN graph: n=5000 mean=156584.8 ns p50=154480 ns p90=158717 ns p99=196629 ns p99.9=267913 ns max=283912 ns\nbenchmark-scope: direct graph callback only; warmup=2000 samples=5000; PipeWire scheduling and device I/O excluded\n",
+        "csv": "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/graph.run-3.csv",
+        "metrics": {
+          "count": 5000,
+          "measured_service_ns": 782924029,
+          "serialized_service_capacity_hz": 6386.315676613369,
+          "mean_ns": 156584.8058,
+          "p50_ns": 154480,
+          "p90_ns": 158717,
+          "p99_ns": 196629,
+          "p99_9_ns": 267913,
+          "maximum_ns": 283912
+        },
+        "resources": {
+          "process_envelope_wall_ns": 1352824162,
+          "user_cpu_seconds": 1.3403349999999996,
+          "system_cpu_seconds": 0.012002999999999986,
+          "voluntary_context_switches": 1,
+          "involuntary_context_switches": 10,
+          "minor_page_faults": 3946,
+          "major_page_faults": 0
+        }
+      },
+      "direct": {
+        "command": [
+          "taskset",
+          "--cpu-list",
+          "14",
+          "/home/dgamroth/workspaces/codex/pipewire/plugins/target/release/calculon-revolt-classic-direct-replay",
+          "benchmark",
+          "--artifact-root",
+          "/home/dgamroth/workspaces/codex/heart/revolt-rtc",
+          "--manifest",
+          "/home/dgamroth/workspaces/codex/pipewire/plugins/profiles/revolt-classic.toml",
+          "--samples",
+          "5000",
+          "--warmup",
+          "2000",
+          "--csv",
+          "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/direct.run-3.csv"
+        ],
+        "stdout": "validated REVOLT Classic simulated: 7 frames of 352x352 at 10/1 Hz; CLWC loop gain -0.3; pole 0.99\ndirect fused Calculon replay: n=5000 mean=147960.4 ns p50=141785 ns p90=152706 ns p99=236563 ns max=263444 ns\nbenchmark-state: warmup=2000 samples=5000 last-sequence=7000 max-|PDM|=0.800000012\n",
+        "csv": "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/direct.run-3.csv",
+        "metrics": {
+          "count": 5000,
+          "measured_service_ns": 739802246,
+          "serialized_service_capacity_hz": 6758.562882221907,
+          "mean_ns": 147960.4492,
+          "p50_ns": 141785,
+          "p90_ns": 152706,
+          "p99_ns": 236563,
+          "p99_9_ns": 248115,
+          "maximum_ns": 263444
+        },
+        "resources": {
+          "process_envelope_wall_ns": 1046621217,
+          "user_cpu_seconds": 1.0382770000000008,
+          "system_cpu_seconds": 0.007986999999999994,
+          "voluntary_context_switches": 1,
+          "involuntary_context_switches": 8,
+          "minor_page_faults": 3451,
+          "major_page_faults": 0
+        }
+      },
+      "graph_over_direct_p50_ratio": 1.0895369749973551
+    },
+    {
+      "repetition": 4,
+      "order": [
+        "graph",
+        "direct"
+      ],
+      "load_before": {
+        "load_average": [
+          5.50341796875,
+          5.8427734375,
+          5.41064453125
+        ],
+        "cpu_pressure": "some avg10=0.00 avg60=0.02 avg300=0.37 total=3718245691\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0"
+      },
+      "load_after": {
+        "load_average": [
+          5.54345703125,
+          5.845703125,
+          5.4140625
+        ],
+        "cpu_pressure": "some avg10=0.00 avg60=0.02 avg300=0.36 total=3718245849\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0"
+      },
+      "graph": {
+        "command": [
+          "taskset",
+          "--cpu-list",
+          "14",
+          "/home/dgamroth/workspaces/codex/pipewire/pipewire/build/spa/plugins/filter-graph/benchmark-filter-graph-ndarray-revolt-classic",
+          "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/revolt-classic-filter-chain.conf",
+          "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/fixture",
+          "5000",
+          "2000",
+          "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/graph.run-4.csv"
+        ],
+        "stdout": "numerical-equivalence: 7/7 frames; five public boundaries match\n  calibrated pixels: max-abs=0 max-scaled-rel=0 worst-frame=0 worst-index=0 bitwise\n  slopes: max-abs=0 max-scaled-rel=0 worst-frame=0 worst-index=0\n  reconstructed DM error: max-abs=0 max-scaled-rel=0 worst-frame=0 worst-index=0\n  unconstrained VDM command: max-abs=0 max-scaled-rel=0 worst-frame=0 worst-index=0\n  demanded PDM command: max-abs=0 max-scaled-rel=0 worst-frame=0 worst-index=0\ndelayed-feedback-equivalence: frames=1024 expected-nonzero=1022 actual-nonzero=1022\nnine-node REVOLT Classic FGN graph: n=5000 mean=159664.2 ns p50=154219 ns p90=160581 ns p99=262112 ns p99.9=275857 ns max=292829 ns\nbenchmark-scope: direct graph callback only; warmup=2000 samples=5000; PipeWire scheduling and device I/O excluded\n",
+        "csv": "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/graph.run-4.csv",
+        "metrics": {
+          "count": 5000,
+          "measured_service_ns": 798321223,
+          "serialized_service_capacity_hz": 6263.143025573805,
+          "mean_ns": 159664.2446,
+          "p50_ns": 154219,
+          "p90_ns": 160581,
+          "p99_ns": 262112,
+          "p99_9_ns": 275857,
+          "maximum_ns": 292829
+        },
+        "resources": {
+          "process_envelope_wall_ns": 1339312144,
+          "user_cpu_seconds": 1.3229980000000001,
+          "system_cpu_seconds": 0.015988000000000002,
+          "voluntary_context_switches": 1,
+          "involuntary_context_switches": 7,
+          "minor_page_faults": 4453,
+          "major_page_faults": 0
+        }
+      },
+      "direct": {
+        "command": [
+          "taskset",
+          "--cpu-list",
+          "14",
+          "/home/dgamroth/workspaces/codex/pipewire/plugins/target/release/calculon-revolt-classic-direct-replay",
+          "benchmark",
+          "--artifact-root",
+          "/home/dgamroth/workspaces/codex/heart/revolt-rtc",
+          "--manifest",
+          "/home/dgamroth/workspaces/codex/pipewire/plugins/profiles/revolt-classic.toml",
+          "--samples",
+          "5000",
+          "--warmup",
+          "2000",
+          "--csv",
+          "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/direct.run-4.csv"
+        ],
+        "stdout": "validated REVOLT Classic simulated: 7 frames of 352x352 at 10/1 Hz; CLWC loop gain -0.3; pole 0.99\ndirect fused Calculon replay: n=5000 mean=141514.5 ns p50=140944 ns p90=141856 ns p99=155030 ns max=206818 ns\nbenchmark-state: warmup=2000 samples=5000 last-sequence=7000 max-|PDM|=0.800000012\n",
+        "csv": "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/direct.run-4.csv",
+        "metrics": {
+          "count": 5000,
+          "measured_service_ns": 707572302,
+          "serialized_service_capacity_hz": 7066.415666451568,
+          "mean_ns": 141514.4604,
+          "p50_ns": 140944,
+          "p90_ns": 141856,
+          "p99_ns": 155030,
+          "p99_9_ns": 176831,
+          "maximum_ns": 206818
+        },
+        "resources": {
+          "process_envelope_wall_ns": 1020051342,
+          "user_cpu_seconds": 1.0155449999999995,
+          "system_cpu_seconds": 0.0039980000000000016,
+          "voluntary_context_switches": 1,
+          "involuntary_context_switches": 9,
+          "minor_page_faults": 3448,
+          "major_page_faults": 0
+        }
+      },
+      "graph_over_direct_p50_ratio": 1.094186343512317
+    },
+    {
+      "repetition": 5,
+      "order": [
+        "direct",
+        "graph"
+      ],
+      "load_before": {
+        "load_average": [
+          5.54345703125,
+          5.845703125,
+          5.4140625
+        ],
+        "cpu_pressure": "some avg10=0.00 avg60=0.02 avg300=0.36 total=3718245849\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0"
+      },
+      "load_after": {
+        "load_average": [
+          5.54345703125,
+          5.845703125,
+          5.4140625
+        ],
+        "cpu_pressure": "some avg10=0.00 avg60=0.02 avg300=0.36 total=3718246003\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0"
+      },
+      "graph": {
+        "command": [
+          "taskset",
+          "--cpu-list",
+          "14",
+          "/home/dgamroth/workspaces/codex/pipewire/pipewire/build/spa/plugins/filter-graph/benchmark-filter-graph-ndarray-revolt-classic",
+          "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/revolt-classic-filter-chain.conf",
+          "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/fixture",
+          "5000",
+          "2000",
+          "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/graph.run-5.csv"
+        ],
+        "stdout": "numerical-equivalence: 7/7 frames; five public boundaries match\n  calibrated pixels: max-abs=0 max-scaled-rel=0 worst-frame=0 worst-index=0 bitwise\n  slopes: max-abs=0 max-scaled-rel=0 worst-frame=0 worst-index=0\n  reconstructed DM error: max-abs=0 max-scaled-rel=0 worst-frame=0 worst-index=0\n  unconstrained VDM command: max-abs=0 max-scaled-rel=0 worst-frame=0 worst-index=0\n  demanded PDM command: max-abs=0 max-scaled-rel=0 worst-frame=0 worst-index=0\ndelayed-feedback-equivalence: frames=1024 expected-nonzero=1022 actual-nonzero=1022\nnine-node REVOLT Classic FGN graph: n=5000 mean=156469.1 ns p50=154590 ns p90=158948 ns p99=180769 ns p99.9=268583 ns max=288741 ns\nbenchmark-scope: direct graph callback only; warmup=2000 samples=5000; PipeWire scheduling and device I/O excluded\n",
+        "csv": "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/graph.run-5.csv",
+        "metrics": {
+          "count": 5000,
+          "measured_service_ns": 782345406,
+          "serialized_service_capacity_hz": 6391.038998444633,
+          "mean_ns": 156469.0812,
+          "p50_ns": 154590,
+          "p90_ns": 158948,
+          "p99_ns": 180769,
+          "p99_9_ns": 268583,
+          "maximum_ns": 288741
+        },
+        "resources": {
+          "process_envelope_wall_ns": 1332992702,
+          "user_cpu_seconds": 1.3244810000000005,
+          "system_cpu_seconds": 0.00800300000000001,
+          "voluntary_context_switches": 1,
+          "involuntary_context_switches": 8,
+          "minor_page_faults": 4452,
+          "major_page_faults": 0
+        }
+      },
+      "direct": {
+        "command": [
+          "taskset",
+          "--cpu-list",
+          "14",
+          "/home/dgamroth/workspaces/codex/pipewire/plugins/target/release/calculon-revolt-classic-direct-replay",
+          "benchmark",
+          "--artifact-root",
+          "/home/dgamroth/workspaces/codex/heart/revolt-rtc",
+          "--manifest",
+          "/home/dgamroth/workspaces/codex/pipewire/plugins/profiles/revolt-classic.toml",
+          "--samples",
+          "5000",
+          "--warmup",
+          "2000",
+          "--csv",
+          "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/direct.run-5.csv"
+        ],
+        "stdout": "validated REVOLT Classic simulated: 7 frames of 352x352 at 10/1 Hz; CLWC loop gain -0.3; pole 0.99\ndirect fused Calculon replay: n=5000 mean=143935.1 ns p50=140824 ns p90=146495 ns p99=233227 ns max=249397 ns\nbenchmark-state: warmup=2000 samples=5000 last-sequence=7000 max-|PDM|=0.800000012\n",
+        "csv": "/home/dgamroth/.cache/rtc-dev-performance-classic-cpu14-20260929/direct.run-5.csv",
+        "metrics": {
+          "count": 5000,
+          "measured_service_ns": 719675499,
+          "serialized_service_capacity_hz": 6947.57568785873,
+          "mean_ns": 143935.0998,
+          "p50_ns": 140824,
+          "p90_ns": 146495,
+          "p99_ns": 233227,
+          "p99_9_ns": 237374,
+          "maximum_ns": 249397
+        },
+        "resources": {
+          "process_envelope_wall_ns": 1023167786,
+          "user_cpu_seconds": 1.014806,
+          "system_cpu_seconds": 0.007989999999999997,
+          "voluntary_context_switches": 1,
+          "involuntary_context_switches": 6,
+          "minor_page_faults": 3445,
+          "major_page_faults": 0
+        }
+      },
+      "graph_over_direct_p50_ratio": 1.0977532238822927
+    }
+  ],
+  "summary": {
+    "graph_p50_median_ns": 154219,
+    "graph_p50_range_ns": [
+      153838,
+      154590
+    ],
+    "graph_p50_spread": 1.004888259077731,
+    "direct_p50_median_ns": 140944,
+    "direct_p50_range_ns": [
+      140754,
+      141785
+    ],
+    "direct_p50_spread": 1.0073248362391123,
+    "ratio_of_median_run_p50": 1.094186343512317,
+    "graph_over_direct_p50_ratio_median": 1.0940221947511262,
+    "graph_over_direct_p50_ratio_range": [
+      1.0894656704790906,
+      1.0977532238822927
+    ],
+    "stable_for_relative_performance_claim": true,
+    "interpretation": "paired engineering service-time comparison"
+  }
+}

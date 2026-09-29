@@ -312,7 +312,11 @@ histograms outside the timed boundary, and retains sequence/correctness
 counters. The simulated HIL exchange is one-frame completion-paced, so this
 implementation is only graph-path characterization; it is not fixed-arrival,
 detector-readout-overlap, PTP, physical-loop, or real-time qualification. No
-measured report is checked in as evidence.
+fixed-arrival result is checked in. The separate
+[Classic development callback report](../benchmark/CLASSIC_DEVELOPMENT_PERFORMANCE.md)
+records the paired complete-frame graph/direct comparison, raw distributions,
+whole-process counters, allocation differential, and profile attribution at
+the narrower synchronous callback boundary.
 
 ## Requirement delivery map
 
@@ -509,8 +513,8 @@ The ordinary Rust suite, the full private-core lifecycle fixture, the focused
 sequential and common-input REVOLT Classic fixtures, and Calculon's
 ordinary-array and ABI 7 FGN declaration-host checks passed on 2026-09-29.
 The development gate remains open for direct numerical checks of every
-serial, forked, and independent small-graph output and for the measured
-development performance report. RTC-DEV-018 latest/hold evidence and the
+serial, forked, and independent small-graph output. The measured development
+performance report is now checked in. RTC-DEV-018 latest/hold evidence and the
 optional RTC-DEV-019 laboratory placement profile are separate from this gate.
 
 ## Selected next increment: laboratory deployment profile

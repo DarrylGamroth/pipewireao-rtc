@@ -133,7 +133,11 @@ working choice when the local `PipeWireAO.jl` manifest is older.
 
 ## Completion-paced REVOLT graph-path latency
 
-The optional [REVOLT latency harness](benchmark/README.md) repeats that same
+The [Classic development callback report](benchmark/CLASSIC_DEVELOPMENT_PERFORMANCE.md)
+compares the complete-frame native FGN graph with direct Calculon replay at a
+single synchronous processing boundary and retains the raw per-frame samples.
+
+The optional [REVOLT latency harness](benchmark/README.md) repeats the
 ignored private-core fixture and records the HIL source Header-PTS through
 matching command-receipt interval for the native and external Julia controller
 paths. It retains raw observations, excludes warmup from its mergeable
