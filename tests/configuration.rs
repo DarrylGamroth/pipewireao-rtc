@@ -10,6 +10,7 @@ const AOS_HIL_ATMOSPHERE: &str = include_str!("../fixtures/aos-hil-atmosphere-de
 const EXTERNAL_GRAPH: &str = include_str!("../fixtures/external-graph-development.conf");
 const REVOLT_NATIVE: &str = include_str!("../fixtures/revolt-classic-native-development.conf");
 const REVOLT_JULIA: &str = include_str!("../fixtures/revolt-classic-julia-development.conf");
+const COPPER_NATIVE: &str = include_str!("../fixtures/revolt-copper-native-development.conf");
 const LATEST_HOLD_LIVE: &str = include_str!("../fixtures/latest-hold-live.conf");
 const LATEST_HOLD_JULIA_LIVE: &str = include_str!("../fixtures/latest-hold-julia-live.conf");
 
@@ -499,6 +500,57 @@ fn revolt_classic_variants_share_the_exact_external_plant_contract() {
     );
     let error = DevelopmentConfig::parse(&parameter_sink).expect_err("parameter sink port");
     assert_eq!(error.field(), "sinks[0].ports.input_1.parameter");
+}
+
+#[test]
+fn revolt_copper_preserves_raw_detector_and_demanded_command_contracts() {
+    let copper = DevelopmentConfig::parse(COPPER_NATIVE).expect("Copper full-frame topology");
+    assert_eq!(copper.object_count(), 3);
+    assert_eq!(copper.owned_object_count(), 1);
+    assert_eq!(copper.links.len(), 2);
+    assert!(copper.parameters.is_empty());
+    assert_eq!(copper.sources[0].ports[0].element_type, "U16_LE");
+    assert_eq!(copper.sources[0].ports[0].shape, [64, 64]);
+    assert_eq!(copper.graphs[0].ports[0].element_type, "U16_LE");
+    assert_eq!(copper.graphs[0].ports[0].shape, [64, 64]);
+    assert_eq!(
+        copper.graphs[0].ports[0].schema,
+        "org.calculon.ao.raw-detector-pixels/1"
+    );
+    assert_eq!(copper.sinks[0].ports[0].element_type, "F32_LE");
+    assert_eq!(copper.sinks[0].ports[0].shape, [277]);
+    assert_eq!(
+        copper.sinks[0].ports[0].schema,
+        "org.calculon.ao.demanded-pdm-command/1"
+    );
+    assert_eq!(
+        copper.session_controlled_graph_names(),
+        ["calculon-revolt-copper-fullframe"]
+    );
+
+    let wrong_type = replace_once(
+        COPPER_NATIVE,
+        "name = \"calibrate:raw\" direction = input element-type = U16_LE",
+        "name = \"calibrate:raw\" direction = input element-type = F32_LE",
+    );
+    assert_eq!(
+        DevelopmentConfig::parse(&wrong_type)
+            .expect_err("detector element type mismatch")
+            .field(),
+        "links[0].element-type"
+    );
+
+    let wrong_units_schema = replace_once(
+        COPPER_NATIVE,
+        "name = input_1 direction = input element-type = F32_LE shape = [ 277 ] schema = org.calculon.ao.demanded-pdm-command/1",
+        "name = input_1 direction = input element-type = F32_LE shape = [ 277 ] schema = org.revolt.hsdm277.actuator-surface-opd-m.f32/1",
+    );
+    assert_eq!(
+        DevelopmentConfig::parse(&wrong_units_schema)
+            .expect_err("micrometre command cannot link to metre sink")
+            .field(),
+        "links[1].schema"
+    );
 }
 
 #[test]

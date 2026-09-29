@@ -1,5 +1,60 @@
 # Copper post-install baseline
 
+## RTC development configuration
+
+The RTC has maintained complete-frame fixtures for
+[`REVOLT Classic (native FGN)`](../fixtures/revolt-classic-native-development.conf),
+[`REVOLT Classic (Julia)`](../fixtures/revolt-classic-julia-development.conf),
+and [`REVOLT Copper (native FGN)`](../fixtures/revolt-copper-native-development.conf).
+The Copper fixture uses the existing HEART WFS source and demanded-command
+observer from the matched comparison at 474 Hz. The graph input is a 64 × 64
+U16 detector image; the observed 277-element Float32 command is in
+micrometres. The observer is non-actuating. The Standard-DM conversion and
+wire output used by the three-way baseline are outside this RTC fixture.
+
+Render the Copper graph and its four startup calibration parameters from the
+maintained FGN generator and the same HEART configuration used by the
+comparison:
+
+```sh
+python3 benchmark/render_revolt_copper_graph.py \
+  --algorithms-root ../calculon-algorithms-main-copper \
+  --heart-config ../../heart/revolt-rtc/config \
+  --fgn-bundle ../calculon-algorithms-copper-fullframe/target/release/libcalculon_fgn_bundle.so \
+  --clipping-feedback \
+  --output-dir /path/to/copper-rtc-artifacts
+```
+
+The script prints `PIPEWIREAO_RTC_GRAPH_COPPER_NATIVE` for the RTC fixture.
+It writes the module arguments, prepared F32 calibration payloads, and a
+parameter manifest under `--output-dir`. Keep that directory available for the
+whole session: the FGN host maps the calibration files during graph creation.
+The 474 Hz fixture rate, generated graph rate, and external WFS source rate
+must agree. The external source and observer must be running on the selected
+private PipeWire core before loading the RTC fixture. The RTC owns the FGN
+graph and its two links; it does not create those external endpoints.
+
+`run_copper_rtc.py` starts those external endpoints on a private core, loads
+and controls the graph and links through `pipewireao-rtc`, replays the common
+FITS cube with `wfsSimulator`, and requires one contiguous demanded command per
+frame. An optional reference file checks every command value:
+
+```sh
+python3 benchmark/run_copper_rtc.py \
+  --output-dir /path/to/new/copper-rtc-replay \
+  --frames 1024 \
+  --reference-vectors /path/to/matched/fgn/demanded-um.f32
+```
+
+The retained run at
+`~/.cache/rtc-copper-managed-1024-20260929/report.json` delivered 1,024
+contiguous commands at 474 Hz, matched the saved full-frame FGN commanded
+vectors exactly (`max_reference_difference_um = 0.0`), and stopped and unloaded
+the RTC cleanly. This verifies RTC-managed graph loading, startup parameters,
+links, and the demanded-command data boundary. The script does not send a
+Standard-DM command or measure pixel-ingress-to-DM-egress latency; the
+three-way comparison below retains those measurements.
+
 `run_copper_baseline.py` runs the existing HEART, FGN, and JFG Copper runners
 serially for either row-block or full-frame ingress. It does not create graph
 configuration or schedule graph work.

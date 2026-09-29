@@ -739,6 +739,12 @@ fn validate_source(
     match source.realization {
         ObjectRealization::Factory(EndpointFactory::FitsCompleteFrameSource) => {
             validate_exact_shape(&source.ports[0], field, &[2])?;
+            if source.ports[0].element_type != "F32_LE" {
+                return Err(ScientificDiagnostic::new(
+                    format!("{field}.ports.{}.element-type", source.ports[0].name),
+                    "the maintained FITS source publishes F32_LE frames",
+                ));
+            }
             validate_required_module(field, source.module.as_deref(), SPA_NODE_FACTORY_MODULE)?;
             validate_exact_reference(
                 &format!("{field}.plugin.path"),
@@ -1287,10 +1293,16 @@ fn validate_port_declarations(field: &str, ports: &[PortSpec]) -> Result<(), Sci
                 "port name must be non-empty and unique on its node",
             ));
         }
-        if port.element_type != "F32_LE" {
+        if port.element_type != "F32_LE" && port.element_type != "U16_LE" {
             return Err(ScientificDiagnostic::new(
                 format!("{port_field}.element-type"),
-                format!("expected F32_LE, got {:?}", port.element_type),
+                format!("expected F32_LE or U16_LE, got {:?}", port.element_type),
+            ));
+        }
+        if port.parameter && port.element_type != "F32_LE" {
+            return Err(ScientificDiagnostic::new(
+                format!("{port_field}.element-type"),
+                "runtime ndarray parameters require F32_LE",
             ));
         }
         if port.shape.is_empty() || port.shape.contains(&0) {
