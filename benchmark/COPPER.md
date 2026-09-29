@@ -56,6 +56,20 @@ links, and the demanded-command data boundary. The script does not send a
 Standard-DM command or measure pixel-ingress-to-DM-egress latency; the
 three-way comparison below retains those measurements.
 
+A later uninstrumented 1,024-frame replay at
+`~/.cache/rtc-copper-managed-main-a4ed874-20260929/` missed demanded-command
+sequences 539, 546, and 618. Its `wfsSimulator` log reported six timer-overrun
+events, but no WFS source counter snapshot was taken, so the loss location is
+unknown. The managed runner now archives a post-replay PipeWire dump and
+reports received/rejected datagrams, published/dropped WFS frames, buffer
+starvations, and missing or repeated command identities. Twelve subsequent
+1,024-frame replays under
+`~/.cache/rtc-copper-diagnostics-{1024,repeat-*,series-*}-20260929/`
+each received 2,048 WFS datagrams, published 1,024 frames with zero WFS drops,
+delivered 1,024 ordered commands, and matched the saved FGN command vectors
+exactly. None logged a simulator timer overrun. These passes do not explain the
+earlier failure or establish loss-free operation under all host loads.
+
 `run_copper_baseline.py` runs the existing HEART, FGN, and JFG Copper runners
 serially for either row-block or full-frame ingress. It does not create graph
 configuration or schedule graph work.

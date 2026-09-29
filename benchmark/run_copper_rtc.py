@@ -4,9 +4,11 @@
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import csv
 import json
 from pathlib import Path
+import re
 import subprocess
 import sys
 import time
@@ -15,6 +17,27 @@ import numpy as np
 
 
 RTC = Path(__file__).resolve().parents[1]
+
+
+def wfs_counters(dump: str) -> dict[str, int]:
+    nodes = [entry for entry in json.loads(dump)
+             if entry.get("type") == "PipeWire:Interface:Node"
+             and entry.get("info", {}).get("props", {}).get("node.name")
+             == "rtc-heart-wfs-row-source"]
+    if len(nodes) != 1:
+        raise RuntimeError(f"expected one HEART WFS node, found {len(nodes)}")
+    params = nodes[0]["info"]["params"]
+    names = {item["id"]: item["name"] for item in params["PropInfo"]}
+    values = params["Props"][0]
+    counters = {names[key]: value for key, value in values.items() if key in names}
+    required = {"heart.std-wfs.datagrams-received",
+                "heart.std-wfs.datagrams-rejected",
+                "heart.std-wfs.frames-published",
+                "heart.std-wfs.frames-dropped",
+                "heart.std-wfs.buffer-starvations"}
+    if not required <= counters.keys():
+        raise RuntimeError(f"HEART WFS counters missing: {sorted(required - counters.keys())}")
+    return counters
 
 
 def main() -> None:
@@ -109,9 +132,18 @@ def main() -> None:
         replay.wait(timeout=args.frames / 474 + 15)
         if replay.returncode != 0:
             raise RuntimeError("wfsSimulator failed")
+        overruns = re.findall(r"Timer\[0\] overrun: (\d+)",
+                              (output / "wfs-simulator.log").read_text(errors="replace"))
+        report["simulator_timer_overrun_events"] = len(overruns)
+        report["simulator_timer_overrun_periods"] = sum(map(int, overruns))
         # The observer flushes its FILE streams when it stops. The matched
         # Copper runner also allows one second for queued graph output here.
         time.sleep(1.0)
+        dump = command(
+            [str(installation.tool("pwao-dump")), "-r", "pipewire-ao-0", "--raw"], env,
+        )
+        (output / "pipewire-after-replay.json").write_text(dump)
+        report["wfs_counters"] = wfs_counters(dump)
         stop(rtc, rtc_log, control="quit\n")
         processes.remove((rtc, rtc_log, "quit\n"))
         if rtc.returncode != 0 or "OFFLINE" not in (output / "rtc.log").read_text():
@@ -120,8 +152,29 @@ def main() -> None:
         processes.remove((observer, observer_log, "q"))
         with (output / "demanded.csv").open(newline="") as stream:
             sequences = [int(row["sequence"]) for row in csv.DictReader(stream)]
+        counts = Counter(sequences)
+        expected = set(range(args.frames))
+        missing = sorted(expected - counts.keys())
+        repeated = sorted(sequence for sequence, count in counts.items() if count > 1)
+        unexpected = sorted(counts.keys() - expected)
+        report["observed_commands"] = len(sequences)
+        report["missing_sequences"] = missing
+        report["repeated_sequences"] = repeated
+        report["unexpected_sequences"] = unexpected
+        counters = report["wfs_counters"]
+        if (counters["heart.std-wfs.datagrams-received"] != 2 * args.frames
+                or counters["heart.std-wfs.datagrams-rejected"] != 0
+                or counters["heart.std-wfs.frames-published"] != args.frames
+                or counters["heart.std-wfs.frames-dropped"] != 0
+                or counters["heart.std-wfs.buffer-starvations"] != 0):
+            raise RuntimeError(f"HEART WFS did not deliver every frame: {counters}; "
+                               f"missing commands={missing}")
         if sequences != list(range(args.frames)):
-            raise RuntimeError(f"demanded command delivery is not contiguous: {sequences}")
+            raise RuntimeError(
+                "demanded command delivery is not contiguous: "
+                f"observed={len(sequences)} missing={missing} "
+                f"repeated={repeated} unexpected={unexpected}"
+            )
         demanded = np.fromfile(output / "demanded-um.f32", dtype="<f4")
         if demanded.size != args.frames * 277:
             raise RuntimeError(f"demanded vector count is {demanded.size // 277}, expected {args.frames}")
