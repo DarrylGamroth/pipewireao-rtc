@@ -2,10 +2,11 @@ use pipewireao_rtc::{
     ConfigurationInput, LifecycleEvent, LifecycleState, LiveGraphAdapter, NdArrayParameterValue,
     Runner, ScalarValue, ScientificDiagnostic,
 };
-use std::collections::BTreeMap;
+use std::cell::RefCell;
+use std::collections::{BTreeMap, VecDeque};
 use std::path::PathBuf;
-use std::sync::mpsc::{self, RecvTimeoutError};
-use std::time::Duration;
+use std::rc::Rc;
+use std::time::{Duration, Instant};
 
 struct Arguments {
     config: PathBuf,
@@ -13,6 +14,7 @@ struct Arguments {
     hold: bool,
 }
 
+#[derive(Debug)]
 enum ControlInput {
     Line(String),
     End,
@@ -81,7 +83,15 @@ fn control_session(runner: &mut Runner<LiveGraphAdapter>) -> Result<(), Scientif
          property GRAPH NODE:PROPERTY TYPE VALUE, \
          parameter GRAPH PORT ELEMENT_TYPE DIMS SCHEMA PATH, quit"
     );
-    let (sender, receiver) = mpsc::channel();
+    let main_loop = runner.executor().main_loop();
+    let inputs = Rc::new(RefCell::new(VecDeque::new()));
+    let queued_inputs = Rc::clone(&inputs);
+    let (sender, receiver) = pipewire::channel::channel();
+    // Dispatch outside this callback: runner effects may synchronize with the
+    // core and dispatch this loop again while the channel lock is held.
+    let _receiver = receiver.attach(main_loop.loop_(), move |input| {
+        queued_inputs.borrow_mut().push_back(input);
+    });
     std::thread::spawn(move || loop {
         let mut input = String::new();
         match std::io::stdin().read_line(&mut input) {
@@ -101,30 +111,32 @@ fn control_session(runner: &mut Runner<LiveGraphAdapter>) -> Result<(), Scientif
         }
     });
     print_prompt()?;
+    let mut monitor_deadline = Instant::now() + Duration::from_millis(100);
     loop {
-        let input = match receiver.recv_timeout(Duration::from_millis(100)) {
-            Ok(ControlInput::Line(input)) => input,
-            Ok(ControlInput::End) | Err(RecvTimeoutError::Disconnected) => return Ok(()),
-            Ok(ControlInput::Failed(error)) => {
+        let input = next_control_input(main_loop.loop_(), &inputs, &mut monitor_deadline, || {
+            let state = runner.poll_required_objects().map_err(|error| {
+                ScientificDiagnostic::new("lifecycle dispatcher", error.to_string())
+            })?;
+            if state == LifecycleState::Fault {
+                return Err(runner.diagnostic().cloned().unwrap_or_else(|| {
+                    ScientificDiagnostic::new(
+                        "required object",
+                        "required-object monitoring reached FAULT",
+                    )
+                }));
+            }
+            Ok(())
+        })?;
+        let input = match input {
+            Some(ControlInput::Line(input)) => input,
+            Some(ControlInput::End) => return Ok(()),
+            Some(ControlInput::Failed(error)) => {
                 return Err(ScientificDiagnostic::new(
                     "command",
                     format!("cannot read control command: {error}"),
                 ));
             }
-            Err(RecvTimeoutError::Timeout) => {
-                let state = runner.poll_required_objects().map_err(|error| {
-                    ScientificDiagnostic::new("lifecycle dispatcher", error.to_string())
-                })?;
-                if state == LifecycleState::Fault {
-                    return Err(runner.diagnostic().cloned().unwrap_or_else(|| {
-                        ScientificDiagnostic::new(
-                            "required object",
-                            "required-object monitoring reached FAULT",
-                        )
-                    }));
-                }
-                continue;
-            }
+            None => continue,
         };
         let fields = input.split_whitespace().collect::<Vec<_>>();
         match fields.as_slice() {
@@ -232,6 +244,38 @@ fn control_session(runner: &mut Runner<LiveGraphAdapter>) -> Result<(), Scientif
         }
         print_prompt()?;
     }
+}
+
+/// Pumps owner-thread callbacks, then monitors and takes one queued command.
+/// No queue borrow spans monitoring or command execution, which can roundtrip.
+fn next_control_input(
+    loop_: &pipewire::loop_::Loop,
+    inputs: &RefCell<VecDeque<ControlInput>>,
+    monitor_deadline: &mut Instant,
+    mut monitor: impl FnMut() -> Result<(), ScientificDiagnostic>,
+) -> Result<Option<ControlInput>, ScientificDiagnostic> {
+    let timeout = if inputs.borrow().is_empty() {
+        monitor_deadline.saturating_duration_since(Instant::now())
+    } else {
+        Duration::ZERO
+    };
+    let result = loop_.iterate(pipewire::loop_::Timeout::Finite(timeout));
+    if result < 0 {
+        let error = std::io::Error::from_raw_os_error(-result);
+        if error.kind() != std::io::ErrorKind::Interrupted {
+            return Err(ScientificDiagnostic::new(
+                "PipeWire main loop",
+                format!("iteration failed: {error}"),
+            ));
+        }
+    }
+    // Check the deadline even during a command flood. MainLoop::quit() from
+    // a synchronization callback must not skip queued commands or monitoring.
+    if Instant::now() >= *monitor_deadline {
+        monitor()?;
+        *monitor_deadline = Instant::now() + Duration::from_millis(100);
+    }
+    Ok(inputs.borrow_mut().pop_front())
 }
 
 fn parse_dimensions(value: &str) -> Result<Vec<u32>, ScientificDiagnostic> {
@@ -444,6 +488,126 @@ fn parse_arguments() -> Result<Arguments, ScientificDiagnostic> {
 #[cfg(test)]
 mod tests {
     use super::parse_dimensions;
+
+    use super::{next_control_input, ControlInput};
+    use std::cell::{Cell, RefCell};
+    use std::collections::VecDeque;
+    use std::rc::Rc;
+    use std::time::{Duration, Instant};
+
+    #[test]
+    fn owner_loop_services_timer_without_control_input_and_monitors_on_deadline() {
+        let main_loop = pipewire::main_loop::MainLoopRc::new(None).unwrap();
+        let ticks = Rc::new(Cell::new(0));
+        let observed_ticks = Rc::clone(&ticks);
+        let timer = main_loop.loop_().add_timer(move |_| {
+            observed_ticks.set(observed_ticks.get() + 1);
+        });
+        timer
+            .update_timer(
+                Some(Duration::from_millis(2)),
+                Some(Duration::from_millis(2)),
+            )
+            .into_result()
+            .unwrap();
+        let inputs = RefCell::new(VecDeque::new());
+        let mut deadline = Instant::now() + Duration::from_millis(30);
+        let mut monitors = 0;
+        while monitors == 0 {
+            assert!(
+                next_control_input(main_loop.loop_(), &inputs, &mut deadline, || {
+                    monitors += 1;
+                    Ok(())
+                })
+                .unwrap()
+                .is_none()
+            );
+        }
+        assert!(ticks.get() > 0);
+        assert_eq!(monitors, 1);
+    }
+
+    #[test]
+    fn owner_loop_control_channel_wakes_before_monitor_timeout() {
+        let main_loop = pipewire::main_loop::MainLoopRc::new(None).unwrap();
+        let inputs = Rc::new(RefCell::new(VecDeque::new()));
+        let queued = Rc::clone(&inputs);
+        let (sender, receiver) = pipewire::channel::channel();
+        let _receiver = receiver.attach(main_loop.loop_(), move |input| {
+            queued.borrow_mut().push_back(input);
+        });
+        let sender_thread = std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_millis(10));
+            sender.send(ControlInput::End).unwrap();
+        });
+        let mut deadline = Instant::now() + Duration::from_secs(2);
+        let started = Instant::now();
+        let input = next_control_input(main_loop.loop_(), &inputs, &mut deadline, || {
+            panic!("control channel did not wake before the monitor deadline")
+        })
+        .unwrap();
+        assert!(matches!(input, Some(ControlInput::End)));
+        assert!(started.elapsed() < Duration::from_secs(1));
+        sender_thread.join().unwrap();
+    }
+
+    #[test]
+    fn owner_loop_checks_monitor_during_queued_command_flood() {
+        let main_loop = pipewire::main_loop::MainLoopRc::new(None).unwrap();
+        let inputs = RefCell::new(VecDeque::from([
+            ControlInput::Line("first".to_owned()),
+            ControlInput::Line("second".to_owned()),
+            ControlInput::Failed("stdin failure".to_owned()),
+        ]));
+        let mut deadline = Instant::now();
+        let mut monitors = 0;
+        for expected_remaining in (0..3).rev() {
+            deadline = deadline.min(Instant::now());
+            let input = next_control_input(main_loop.loop_(), &inputs, &mut deadline, || {
+                monitors += 1;
+                Ok(())
+            })
+            .unwrap();
+            assert!(input.is_some());
+            assert_eq!(inputs.borrow().len(), expected_remaining);
+        }
+        assert_eq!(monitors, 3);
+    }
+
+    #[test]
+    fn owner_loop_monitor_can_roundtrip_without_reentrant_command_dispatch() {
+        let main_loop = pipewire::main_loop::MainLoopRc::new(None).unwrap();
+        let inputs = Rc::new(RefCell::new(VecDeque::new()));
+        let queued = Rc::clone(&inputs);
+        let in_callback = Rc::new(Cell::new(false));
+        let callback_active = Rc::clone(&in_callback);
+        let callback_loop = main_loop.clone();
+        let (sender, receiver) = pipewire::channel::channel();
+        let _receiver = receiver.attach(main_loop.loop_(), move |input| {
+            callback_active.set(true);
+            queued.borrow_mut().push_back(input);
+            callback_loop.quit();
+            callback_active.set(false);
+        });
+        sender.send(ControlInput::Line("first".to_owned())).unwrap();
+        let mut deadline = Instant::now();
+        let first = next_control_input(main_loop.loop_(), &inputs, &mut deadline, || {
+            assert!(!in_callback.get());
+            // Model a synchronous effect dispatching the same loop again.
+            // Sending would deadlock if monitoring ran inside channel callback.
+            sender
+                .send(ControlInput::Line("second".to_owned()))
+                .unwrap();
+            main_loop.loop_().iterate(pipewire::loop_::Timeout::None);
+            Ok(())
+        })
+        .unwrap();
+        assert!(matches!(first, Some(ControlInput::Line(line)) if line == "first"));
+        assert_eq!(inputs.borrow().len(), 1);
+        let second =
+            next_control_input(main_loop.loop_(), &inputs, &mut deadline, || Ok(())).unwrap();
+        assert!(matches!(second, Some(ControlInput::Line(line)) if line == "second"));
+    }
 
     #[test]
     fn parameter_dimensions_use_explicit_scientific_shape_order() {

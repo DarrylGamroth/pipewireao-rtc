@@ -23,6 +23,7 @@ use std::io::Cursor;
 use std::mem::size_of;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::time::{Duration, Instant};
 
 const SPA_NODE_FACTORY: &str = "spa-node-factory";
 const FITS_LIBRARY_FILE: &str = "libspa-fits.so";
@@ -529,6 +530,16 @@ impl LiveGraphAdapter {
         };
         adapter.roundtrip("PipeWire registry discovery")?;
         Ok(adapter)
+    }
+
+    /// Shares the adapter's owner-thread main loop with an embedding event loop.
+    ///
+    /// Drive this loop on the thread that owns the adapter. Call runner control
+    /// methods after loop callbacks return, since those methods may perform
+    /// nested `PipeWire` synchronization. Callbacks should enqueue control work.
+    #[must_use]
+    pub fn main_loop(&self) -> pw::main_loop::MainLoopRc {
+        self.main_loop.clone()
     }
 
     #[must_use]
@@ -1107,7 +1118,8 @@ impl LiveGraphAdapter {
                 .proxy
                 .set_param(pw::spa::param::ParamType::Props, 0, pod);
         }
-        for _ in 0..1_000 {
+        let deadline = Instant::now() + Duration::from_secs(5);
+        loop {
             self.roundtrip("reset processing graphs")?;
             let completed = self
                 .controlled_graphs
@@ -1120,7 +1132,9 @@ impl LiveGraphAdapter {
             if completed == self.controlled_graphs.len() {
                 return Ok(());
             }
-            std::thread::sleep(std::time::Duration::from_millis(5));
+            if !self.wait_for_callbacks(deadline, "reset processing graphs")? {
+                break;
+            }
         }
         Err(ScientificDiagnostic::new(
             "reset-control",
@@ -1178,7 +1192,8 @@ impl LiveGraphAdapter {
             self.roundtrip(&format!("graph {graph_name} property submission"))?;
             return Ok(PropertyUpdateOutcome::Submitted);
         }
-        for _ in 0..1_000 {
+        let deadline = Instant::now() + Duration::from_secs(5);
+        loop {
             self.roundtrip(&format!("graph {graph_name} property transaction"))?;
             let snapshot = latest_property_snapshot(graph)?;
             let mut observed = BTreeMap::new();
@@ -1203,7 +1218,12 @@ impl LiveGraphAdapter {
             if complete {
                 return Ok(PropertyUpdateOutcome::Active(observed));
             }
-            std::thread::sleep(std::time::Duration::from_millis(5));
+            if !self.wait_for_callbacks(
+                deadline,
+                &format!("graph {graph_name} property transaction"),
+            )? {
+                break;
+            }
         }
         Err(ScientificDiagnostic::new(
             format!("graph {graph_name}.properties"),
@@ -1540,7 +1560,8 @@ impl LiveGraphAdapter {
                 .proxy
                 .set_param(pw::spa::param::ParamType::Props, 0, pod);
         }
-        for _ in 0..1_000 {
+        let deadline = Instant::now() + Duration::from_secs(5);
+        loop {
             self.roundtrip(label)?;
             let mut completed = 0;
             for graph in self
@@ -1557,7 +1578,9 @@ impl LiveGraphAdapter {
             if completed == graph_names.len() {
                 return Ok(());
             }
-            std::thread::sleep(std::time::Duration::from_millis(5));
+            if !self.wait_for_callbacks(deadline, label)? {
+                break;
+            }
         }
         let status_events = self
             .controlled_graphs
@@ -1613,8 +1636,9 @@ impl LiveGraphAdapter {
     }
 
     fn wait_for_links_active(&mut self, label: &str) -> Result<(), ScientificDiagnostic> {
-        let mut states = Vec::new();
-        for _ in 0..100 {
+        let mut states;
+        let deadline = Instant::now() + Duration::from_millis(500);
+        loop {
             self.roundtrip(label)?;
             states = self
                 .links
@@ -1627,7 +1651,9 @@ impl LiveGraphAdapter {
             {
                 return Ok(());
             }
-            std::thread::sleep(std::time::Duration::from_millis(5));
+            if !self.wait_for_callbacks(deadline, label)? {
+                break;
+            }
         }
         Err(ScientificDiagnostic::new(
             "topology",
@@ -1739,12 +1765,15 @@ impl LiveGraphAdapter {
     }
 
     fn wait_for_owned_nodes_removed(&self) -> Result<(), ScientificDiagnostic> {
-        for _ in 0..100 {
+        let deadline = Instant::now() + Duration::from_millis(500);
+        loop {
             self.roundtrip("runner-owned node cleanup")?;
             if self.count_owned_nodes() == 0 {
                 return Ok(());
             }
-            std::thread::sleep(std::time::Duration::from_millis(5));
+            if !self.wait_for_callbacks(deadline, "runner-owned node cleanup")? {
+                break;
+            }
         }
         let remaining = self
             .owned_node_names
@@ -2227,7 +2256,8 @@ impl LiveGraphAdapter {
         role: ObjectRole,
         node_name: &str,
     ) -> Result<(), ScientificDiagnostic> {
-        for _ in 0..100 {
+        let deadline = Instant::now() + Duration::from_millis(500);
+        loop {
             self.roundtrip(&format!("{} node creation", role.name()))?;
             let matches = self
                 .globals
@@ -2238,7 +2268,9 @@ impl LiveGraphAdapter {
             if matches == 1 {
                 return Ok(());
             }
-            std::thread::sleep(std::time::Duration::from_millis(5));
+            if !self.wait_for_callbacks(deadline, &format!("{} node creation", role.name()))? {
+                break;
+            }
         }
         let visible = self
             .globals
@@ -2266,7 +2298,8 @@ impl LiveGraphAdapter {
         role: ObjectRole,
         node_name: &str,
     ) -> Result<(), ScientificDiagnostic> {
-        for _ in 0..100 {
+        let deadline = Instant::now() + Duration::from_millis(500);
+        loop {
             self.roundtrip(&format!("external {} discovery", role.name()))?;
             let globals = self.globals.borrow();
             let matches = globals
@@ -2283,7 +2316,9 @@ impl LiveGraphAdapter {
                 ));
             }
             drop(globals);
-            std::thread::sleep(std::time::Duration::from_millis(5));
+            if !self.wait_for_callbacks(deadline, &format!("external {} discovery", role.name()))? {
+                break;
+            }
         }
         Err(ScientificDiagnostic::new(
             format!("{}.node.name", role.name()),
@@ -2468,8 +2503,9 @@ impl LiveGraphAdapter {
         &self,
         previous: &BTreeMap<String, u64>,
     ) -> Result<BTreeMap<String, u64>, ScientificDiagnostic> {
-        let mut observed = previous.clone();
-        for _ in 0..1_000 {
+        let mut observed;
+        let deadline = Instant::now() + Duration::from_secs(5);
+        loop {
             observed = self.discard_buffer_counts()?;
             if previous
                 .iter()
@@ -2477,7 +2513,9 @@ impl LiveGraphAdapter {
             {
                 return Ok(observed);
             }
-            std::thread::sleep(std::time::Duration::from_millis(5));
+            if !self.wait_for_callbacks(deadline, "discard buffer progress")? {
+                break;
+            }
         }
         let stalled = previous
             .iter()
@@ -2508,8 +2546,15 @@ impl LiveGraphAdapter {
     ) -> Result<BTreeMap<String, u64>, ScientificDiagnostic> {
         let mut previous = self.discard_buffer_counts_for(sink_names)?;
         let mut stable_samples = 0;
-        for _ in 0..100 {
-            std::thread::sleep(std::time::Duration::from_millis(5));
+        let deadline = Instant::now() + Duration::from_millis(500);
+        while Instant::now() < deadline {
+            // Stability samples retain their 5 ms spacing while callbacks
+            // continue to run between observations.
+            let sample_deadline = Instant::now() + Duration::from_millis(5);
+            if sample_deadline > deadline {
+                break;
+            }
+            while self.wait_for_callbacks(sample_deadline, "discard quiescence")? {}
             let observed = self.discard_buffer_counts_for(sink_names)?;
             if observed == previous {
                 stable_samples += 1;
@@ -2832,7 +2877,8 @@ impl LiveGraphAdapter {
         });
 
         let label = format!("links[{index}] {output} -> {input}");
-        for _ in 0..100 {
+        let deadline = Instant::now() + Duration::from_millis(500);
+        loop {
             self.roundtrip(&label)?;
             match state.borrow().clone() {
                 LinkAdmissionState::Paused | LinkAdmissionState::Active => {
@@ -2853,7 +2899,9 @@ impl LiveGraphAdapter {
                 }
                 LinkAdmissionState::Unknown | LinkAdmissionState::Pending(_) => {}
             }
-            std::thread::sleep(std::time::Duration::from_millis(5));
+            if !self.wait_for_callbacks(deadline, &label)? {
+                break;
+            }
         }
         let final_state = state.borrow().clone();
         Err(ScientificDiagnostic::new(
@@ -2957,6 +3005,25 @@ impl LiveGraphAdapter {
                     "private core does not expose a public PipeWire link factory",
                 )
             })
+    }
+
+    /// Waits for callback activity or the next 5 ms condition check.
+    /// Returns false once the wall-clock deadline has expired.
+    fn wait_for_callbacks(
+        &self,
+        deadline: Instant,
+        field: &str,
+    ) -> Result<bool, ScientificDiagnostic> {
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            return Ok(false);
+        }
+        iterate_callbacks(
+            self.main_loop.loop_(),
+            remaining.min(Duration::from_millis(5)),
+            field,
+        )?;
+        Ok(true)
     }
 
     fn roundtrip(&self, field: &str) -> Result<(), ScientificDiagnostic> {
@@ -3314,6 +3381,24 @@ impl Drop for LiveGraphAdapter {
     fn drop(&mut self) {
         let _ = self.cleanup(None);
     }
+}
+
+fn iterate_callbacks(
+    loop_: &pw::loop_::Loop,
+    timeout: Duration,
+    field: &str,
+) -> Result<(), ScientificDiagnostic> {
+    let result = loop_.iterate(pw::loop_::Timeout::Finite(timeout));
+    if result < 0 {
+        let error = std::io::Error::from_raw_os_error(-result);
+        if error.kind() != std::io::ErrorKind::Interrupted {
+            return Err(ScientificDiagnostic::new(
+                field,
+                format!("PipeWire loop iteration failed: {error}"),
+            ));
+        }
+    }
+    Ok(())
 }
 
 fn parse_property_info(pod: &pw::spa::pod::Pod) -> Result<(String, bool), String> {
@@ -3709,4 +3794,34 @@ fn read_module_arguments(field: &str, configured: &str) -> Result<String, Scient
             ),
         )
     })
+}
+
+#[cfg(test)]
+mod callback_wait_tests {
+    use super::iterate_callbacks;
+    use std::cell::Cell;
+    use std::rc::Rc;
+    use std::time::{Duration, Instant};
+
+    #[test]
+    fn control_wait_services_pending_owner_thread_callback() {
+        let main_loop = pipewire::main_loop::MainLoopRc::new(None).unwrap();
+        let completed = Rc::new(Cell::new(false));
+        let callback_completed = Rc::clone(&completed);
+        let timer = main_loop.loop_().add_timer(move |_| {
+            callback_completed.set(true);
+        });
+        timer
+            .update_timer(Some(Duration::from_millis(1)), None)
+            .into_result()
+            .unwrap();
+        let deadline = Instant::now() + Duration::from_secs(1);
+        while !completed.get() && Instant::now() < deadline {
+            iterate_callbacks(main_loop.loop_(), Duration::from_millis(5), "control wait").unwrap();
+        }
+        assert!(
+            completed.get(),
+            "owner-thread callback stalled during control wait"
+        );
+    }
 }
