@@ -38,6 +38,19 @@ profile. It verifies them
 again after replay. The Julia owner receives `JULIA_RTC_PIN_CPUS` through its
 maintained ThreadPinning interface. A changed or unavailable thread layout
 fails the run; the JSON records name the failed process and thread.
+Each placement record also retains `VmLck`, `/proc/PID/smaps_rollup`, and a
+read-only `/proc/PID/smaps` summary of resident memory by reported kernel
+page size and huge-page category. A strict run fails before ingress if the
+page-backing record is unavailable. The mapping page-size total is an
+observation of the kernel's VMA report; `AnonHugePages` and hugetlb fields
+are kept separately because a VMA page-size label alone does not establish
+the exact backing of every resident page.
+One 16-frame strict wire replay per controller passed with this record on
+2026-09-29. Both before-ingress and after-replay snapshots were available for
+every inspected process. The raw reports are
+`~/.cache/rtc-copper-native-pagebacking-16-20260929/report.json` and
+`~/.cache/rtc-copper-julia-pagebacking-16-20260929/report.json`. These short
+runs validate the recording path, not the memory behavior of a long replay.
 
 ```sh
 python3 benchmark/run_copper_rtc.py \

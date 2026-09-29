@@ -589,8 +589,11 @@ qualify WFS and DM UDP packets with demanded-vector equivalence. One
 first-packet → DM p50 values were 1,164 and 1,169 µs, respectively, and
 terminal-packet → DM p50 values were 166 and 171 µs. These are individual
 software-boundary observations under an offered schedule, not a comparative
-ranking or physical camera-to-DM result. The three-repeat, first-use,
-observed page-backing, and progressive qualifications remain open, so
+ranking or physical camera-to-DM result. The placement records now include
+resident memory by reported kernel page size, huge-page categories, and
+locked-memory amount for every inspected process, with a strict pre-ingress
+failure when page backing is unavailable. The three-repeat, first-use, and
+progressive qualifications remain open, so
 RTC-DEV-019 remains partial.
 
 An opt-in Ryzen thread profile now checks exact policy and affinity counts at

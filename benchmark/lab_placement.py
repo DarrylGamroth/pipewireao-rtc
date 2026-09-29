@@ -22,6 +22,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import socket
 import subprocess
 import sys
@@ -136,6 +137,62 @@ def read_smaps_rollup(pid: int) -> dict[str, Any]:
         return {"available": False, "error": str(error)}
 
 
+def summarize_page_backing(smaps: str) -> dict[str, Any]:
+    """Sum resident mappings by their reported kernel page size."""
+    resident_by_page_size: dict[str, int] = {}
+    totals = {name: 0 for name in ("Rss", "AnonHugePages", "ShmemPmdMapped",
+                                   "FilePmdMapped", "Shared_Hugetlb", "Private_Hugetlb")}
+    mapping_count = 0
+    missing_rss_mappings = 0
+    missing_resident_page_size_mappings = 0
+    current: dict[str, int] = {}
+
+    def finish_mapping() -> None:
+        nonlocal missing_rss_mappings, missing_resident_page_size_mappings
+        if mapping_count == 0:
+            return
+        if "Rss" not in current:
+            missing_rss_mappings += 1
+        for name in totals:
+            totals[name] += current.get(name, 0)
+        rss = current.get("Rss", 0)
+        if rss:
+            if "KernelPageSize" not in current:
+                missing_resident_page_size_mappings += 1
+            else:
+                key = str(current["KernelPageSize"])
+                resident_by_page_size[key] = resident_by_page_size.get(key, 0) + rss
+
+    for line in smaps.splitlines():
+        if re.match(r"^[0-9a-f]+-[0-9a-f]+\s", line):
+            finish_mapping()
+            mapping_count += 1
+            current = {}
+            continue
+        if ":" not in line:
+            continue
+        name, value = line.split(":", 1)
+        parts = value.split()
+        if len(parts) == 2 and parts[0].isdigit() and parts[1] == "kB":
+            current[name] = int(parts[0])
+    finish_mapping()
+    return {"mappings": mapping_count,
+            "complete": mapping_count > 0 and missing_rss_mappings == 0
+                        and missing_resident_page_size_mappings == 0,
+            "missing_rss_mappings": missing_rss_mappings,
+            "missing_resident_page_size_mappings": missing_resident_page_size_mappings,
+            "kilobytes": totals,
+            "resident_by_kernel_page_size_kilobytes": resident_by_page_size}
+
+
+def read_page_backing(pid: int) -> dict[str, Any]:
+    try:
+        return {"available": True,
+                **summarize_page_backing(Path(f"/proc/{pid}/smaps").read_text())}
+    except (FileNotFoundError, PermissionError, ProcessLookupError) as error:
+        return {"available": False, "error": str(error)}
+
+
 def scheduler_name(policy: int) -> str:
     policy &= ~SCHED_RESET_ON_FORK
     names = {
@@ -209,6 +266,7 @@ def snapshot_process(pid: int) -> dict[str, Any]:
         "threads": threads,
         "status": {"vm_lck": vm_lck},
         "smaps_rollup": read_smaps_rollup(pid),
+        "page_backing": read_page_backing(pid),
     }
 
 
@@ -568,6 +626,7 @@ def inspect(args: argparse.Namespace) -> int:
             "threads": [inspect_thread(tid) for tid in tids],
             "status": {"vm_lck": read_status(Path(f"/proc/{args.pid}/status")).get("VmLck")},
             "smaps_rollup": read_smaps_rollup(args.pid),
+            "page_backing": read_page_backing(args.pid),
         }
         result = 0
     except (LaunchError, FileNotFoundError, ProcessLookupError, PermissionError, OSError) as error:

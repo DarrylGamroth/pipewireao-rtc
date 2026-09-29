@@ -37,6 +37,22 @@ class WireLatencyQualificationTests(unittest.TestCase):
                 with self.assertRaises(RuntimeError):
                     RUNNER.require_physical_latencies(physical, 2)
 
+    def test_requires_complete_memory_record(self) -> None:
+        record = {"observed": {
+            "page_backing": {"available": True, "complete": True, "mappings": 2,
+                             "kilobytes": {"Rss": 12},
+                             "resident_by_kernel_page_size_kilobytes": {"4": 12}},
+            "smaps_rollup": {"available": True},
+            "status": {"vm_lck": "0 kB"},
+        }}
+        RUNNER.require_memory_record(record, "daemon", "before-ingress")
+        record["observed"]["page_backing"]["kilobytes"]["Rss"] = 13
+        with self.assertRaisesRegex(RuntimeError, "incomplete resident accounting"):
+            RUNNER.require_memory_record(record, "daemon", "before-ingress")
+        record["observed"]["page_backing"]["available"] = False
+        with self.assertRaisesRegex(RuntimeError, "page backing unavailable"):
+            RUNNER.require_memory_record(record, "daemon", "before-ingress")
+
 
 if __name__ == "__main__":
     unittest.main()

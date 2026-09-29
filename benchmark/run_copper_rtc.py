@@ -63,6 +63,22 @@ def require_physical_latencies(physical: dict, frames: int) -> None:
                 raise RuntimeError(f"invalid {name} {statistic} latency: {value}")
 
 
+def require_memory_record(record: dict, role: str, phase: str) -> None:
+    observed = record.get("observed", {})
+    backing = observed.get("page_backing", {})
+    if (backing.get("available") is not True or backing.get("complete") is not True
+            or backing.get("mappings", 0) < 1):
+        raise RuntimeError(f"{role} page backing unavailable {phase}")
+    rss = backing.get("kilobytes", {}).get("Rss")
+    sizes = backing.get("resident_by_kernel_page_size_kilobytes", {})
+    if not isinstance(rss, int) or sum(sizes.values()) != rss:
+        raise RuntimeError(f"{role} page backing has incomplete resident accounting {phase}")
+    if observed.get("smaps_rollup", {}).get("available") is not True:
+        raise RuntimeError(f"{role} memory rollup unavailable {phase}")
+    if observed.get("status", {}).get("vm_lck") is None:
+        raise RuntimeError(f"{role} locked-memory amount unavailable {phase}")
+
+
 def use_installed_julia_libraries(output: Path, installation) -> Path:
     """Point the Julia JLL at the same PipeWireAO build as the private core."""
     depot = output / "julia-depot"
@@ -139,6 +155,7 @@ def capture_placement(output: Path, phase: str, processes: dict, env: dict,
             actual = verified.get("requested", {}).get("thread_profile_sha256")
             if actual != profile_sha256:
                 raise RuntimeError(f"{role} placement profile changed {phase}: {path}")
+            require_memory_record(verified, role, phase)
     return records
 
 

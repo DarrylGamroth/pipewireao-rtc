@@ -20,6 +20,32 @@ SPEC.loader.exec_module(LAB_PLACEMENT)
 
 
 class LabPlacementTests(unittest.TestCase):
+    def test_page_backing_accounts_for_resident_mapping_sizes(self) -> None:
+        smaps = """1000-2000 rw-p 00000000 00:00 0
+KernelPageSize:        4 kB
+Rss:                  12 kB
+AnonHugePages:         0 kB
+2000-3000 rw-p 00000000 00:00 0
+KernelPageSize:     2048 kB
+Rss:                2048 kB
+AnonHugePages:      2048 kB
+Private_Hugetlb:       0 kB
+"""
+        summary = LAB_PLACEMENT.summarize_page_backing(smaps)
+        self.assertEqual(summary["mappings"], 2)
+        self.assertEqual(summary["kilobytes"]["Rss"], 2060)
+        self.assertEqual(summary["kilobytes"]["AnonHugePages"], 2048)
+        self.assertEqual(summary["resident_by_kernel_page_size_kilobytes"],
+                         {"4": 12, "2048": 2048})
+        self.assertTrue(summary["complete"])
+        self.assertFalse(LAB_PLACEMENT.summarize_page_backing(
+            "1000-2000 rw-p 00000000 00:00 0\nKernelPageSize: 4 kB\n"
+        )["complete"])
+        self.assertFalse(LAB_PLACEMENT.summarize_page_backing(
+            "1000-2000 rw-p 00000000 00:00 0\nRss: 4 kB\n"
+        )["complete"])
+        self.assertTrue(LAB_PLACEMENT.read_page_backing(os.getpid())["available"])
+
     def run_launcher(self, *arguments: str) -> subprocess.CompletedProcess[str]:
         return subprocess.run([sys.executable, str(LAUNCHER), *arguments], text=True,
                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
@@ -91,6 +117,8 @@ class LabPlacementTests(unittest.TestCase):
                 record = json.loads(output.read_text())
                 self.assertEqual(record["outcome"], "verified")
                 self.assertTrue(record["observed"]["available"])
+                self.assertTrue(record["observed"]["page_backing"]["available"])
+                self.assertGreater(record["observed"]["page_backing"]["mappings"], 0)
                 self.assertEqual(record["requested"]["pid"], process.pid)
         finally:
             process.terminate()
