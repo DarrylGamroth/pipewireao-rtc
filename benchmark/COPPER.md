@@ -45,12 +45,13 @@ page-backing record is unavailable. The mapping page-size total is an
 observation of the kernel's VMA report; `AnonHugePages` and hugetlb fields
 are kept separately because a VMA page-size label alone does not establish
 the exact backing of every resident page.
-One 16-frame strict wire replay per controller passed with this record on
-2026-09-29. Both before-ingress and after-replay snapshots were available for
-every inspected process. The raw reports are
-`~/.cache/rtc-copper-native-pagebacking-16-20260929/report.json` and
-`~/.cache/rtc-copper-julia-pagebacking-16-20260929/report.json`. These short
-runs validate the recording path, not the memory behavior of a long replay.
+One 16-frame strict wire replay per controller passed from clean launcher
+revision `1623a2b` on 2026-09-29. Both before-ingress and after-replay
+snapshots were complete for every inspected process. The raw reports are
+`~/.cache/rtc-copper-native-pagebacking-final-16-20260929/report.json` and
+`~/.cache/rtc-copper-julia-pagebacking-final-16-20260929/report.json`.
+These short runs validate the recording path, not the memory behavior of a
+long replay.
 
 ```sh
 python3 benchmark/run_copper_rtc.py \
