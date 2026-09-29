@@ -2,6 +2,8 @@
 
 #[path = "live_private_core/fits_discard.rs"]
 mod fits_discard;
+#[path = "live_private_core/stepped_topology.rs"]
+mod stepped_topology;
 
 use pipewireao_rtc::{
     ConfigurationInput, DiscardObservation, ExecutionGroupState, LifecycleEvent, LifecycleState,
@@ -325,7 +327,9 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
     );
     let revolt_latency = RevoltLatencyCollection::from_environment();
 
-    match std::env::var("PIPEWIREAO_RTC_LIVE_SCOPE").as_deref() {
+    let scope = std::env::var("PIPEWIREAO_RTC_LIVE_SCOPE");
+    let topology_only = matches!(scope.as_deref(), Ok("topologies" | "topologies-revolt"));
+    match scope.as_deref() {
         Ok("revolt-lockstep") => {
             run_revolt_classic_lockstep_case(
                 &repository,
@@ -382,42 +386,44 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
             run_structural_reload_case(&repository, &pipewire_build, &environment, &core_name);
             return;
         }
-        Ok("all") | Err(std::env::VarError::NotPresent) => {}
+        Ok("all" | "topologies" | "topologies-revolt") | Err(std::env::VarError::NotPresent) => {}
         Ok(scope) => panic!("unsupported PIPEWIREAO_RTC_LIVE_SCOPE {scope:?}"),
         Err(error) => panic!("invalid PIPEWIREAO_RTC_LIVE_SCOPE: {error}"),
     }
 
-    // The transport fixture deliberately precedes graph hosting. It proves the
-    // maintained FITS source and discard SPA factories directly first.
-    fits_discard::run(&core_name, &temporary.path().join("image.fits"));
-    let transport_cleanup = dump(&pipewire_build, &environment, &core_name);
-    assert!(transport_cleanup.contains("pipewireao-rtc-unrelated"));
-    assert!(!transport_cleanup.contains(fits_discard::SOURCE_NAME));
-    assert!(!transport_cleanup.contains(fits_discard::SINK_NAME));
+    if !topology_only {
+        // The transport fixture deliberately precedes graph hosting. It proves the
+        // maintained FITS source and discard SPA factories directly first.
+        fits_discard::run(&core_name, &temporary.path().join("image.fits"));
+        let transport_cleanup = dump(&pipewire_build, &environment, &core_name);
+        assert!(transport_cleanup.contains("pipewireao-rtc-unrelated"));
+        assert!(!transport_cleanup.contains(fits_discard::SOURCE_NAME));
+        assert!(!transport_cleanup.contains(fits_discard::SINK_NAME));
 
-    run_finite_source_completion_case(
-        &repository,
-        &pipewire_build,
-        &environment,
-        &core_name,
-        temporary.path(),
-    );
-    run_native_numerical_group_restart_case(
-        &repository,
-        &core_name,
-        temporary.path(),
-        &environment,
-    );
-    run_latest_hold_live_case(
-        &repository,
-        &pipewire_build,
-        &environment,
-        &core_name,
-        temporary.path(),
-        &pipewireao_julia,
-        &julia_filter_graph,
-    );
-    run_live_creation_failure_matrix(&repository, &pipewire_build, &environment, &core_name);
+        run_finite_source_completion_case(
+            &repository,
+            &pipewire_build,
+            &environment,
+            &core_name,
+            temporary.path(),
+        );
+        run_native_numerical_group_restart_case(
+            &repository,
+            &core_name,
+            temporary.path(),
+            &environment,
+        );
+        run_latest_hold_live_case(
+            &repository,
+            &pipewire_build,
+            &environment,
+            &core_name,
+            temporary.path(),
+            &pipewireao_julia,
+            &julia_filter_graph,
+        );
+        run_live_creation_failure_matrix(&repository, &pipewire_build, &environment, &core_name);
+    }
 
     let cases = [
         SessionCase {
@@ -492,6 +498,36 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
             &core_name,
             &case,
         );
+        if case.payload_oracle.is_some() || case.fixture == "minimal-development.conf" {
+            stepped_topology::run(
+                &repository,
+                &pipewire_build,
+                &environment,
+                &core_name,
+                temporary.path(),
+                &pipewireao_julia,
+                &case,
+            );
+        }
+    }
+    if scope.as_deref() == Ok("topologies") {
+        return;
+    }
+    if scope.as_deref() == Ok("topologies-revolt") {
+        run_revolt_classic_reference_case(
+            &repository,
+            &revolt_hil_package,
+            &pipewire_build,
+            &environment,
+            &core_name,
+            temporary.path(),
+            &revolt_native_graph,
+            &revolt_julia_graph,
+            &pipewireao_julia,
+            &julia_filter_graph,
+            revolt_latency.as_ref(),
+        );
+        return;
     }
 
     run_bounded_observer_case(

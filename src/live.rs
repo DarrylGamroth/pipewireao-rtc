@@ -388,6 +388,8 @@ pub struct LiveGraphAdapter {
     required_node_names: Vec<String>,
     required_external_objects: Vec<RequiredExternalObject>,
     finite_source_names: Vec<String>,
+    // An external source may publish only after the session reaches RUNNING.
+    has_external_source: bool,
     graph_order: Vec<String>,
     latest_hold_order: Vec<String>,
     sink_names: Vec<String>,
@@ -503,6 +505,7 @@ impl LiveGraphAdapter {
             required_node_names: Vec::new(),
             required_external_objects: Vec::new(),
             finite_source_names: Vec::new(),
+            has_external_source: false,
             graph_order: Vec::new(),
             latest_hold_order: Vec::new(),
             sink_names: Vec::new(),
@@ -757,6 +760,10 @@ impl LiveGraphAdapter {
         } else {
             Vec::new()
         };
+        self.has_external_source = config
+            .sources
+            .iter()
+            .any(|source| source.realization.is_external());
         self.graph_order = config.session_controlled_graph_names();
         self.prepare_latest_holds(config);
         self.sink_names = config
@@ -935,7 +942,11 @@ impl LiveGraphAdapter {
         )?;
         self.wait_for_links_active("start complete-frame session")?;
         self.status.running = true;
-        self.status.discarded_by_sink = self.wait_for_discarded_buffers(&discarded_before_start)?;
+        self.status.discarded_by_sink = if self.has_external_source {
+            discarded_before_start
+        } else {
+            self.wait_for_discarded_buffers(&discarded_before_start)?
+        };
         self.status.discarded_buffers = self.status.discarded_by_sink.values().sum();
         Ok(())
     }
@@ -1004,7 +1015,11 @@ impl LiveGraphAdapter {
             LatestHoldCommand::Start,
             &format!("start latest/hold nodes in execution group {name}"),
         )?;
-        let observed = self.wait_for_discarded_buffers(&before)?;
+        let observed = if self.has_external_source {
+            before
+        } else {
+            self.wait_for_discarded_buffers(&before)?
+        };
         self.status.discarded_by_sink.extend(observed);
         self.status.discarded_buffers = self.status.discarded_by_sink.values().sum();
         Ok(())
@@ -1684,6 +1699,7 @@ impl LiveGraphAdapter {
         self.required_node_names.clear();
         self.required_external_objects.clear();
         self.finite_source_names.clear();
+        self.has_external_source = false;
         self.graph_order.clear();
         self.latest_hold_order.clear();
         self.sink_names.clear();
