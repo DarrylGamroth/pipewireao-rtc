@@ -339,6 +339,10 @@ function exchange_range!(
     compare_implementations=true,
 )
     reset_state && fill!(phase.direct_state, 0.0f0)
+    # The parameter may become active at any frame boundary in this window.
+    # Keep an independent reference state for each monotone adoption history.
+    candidate_states = isnothing(alternate_control_matrix) ? nothing :
+                       [(copy(phase.direct_state), false)]
     for expected_sequence in sequences
         require_stable_provider_nodes(phase, implementation, expected_sequence)
         println("REVOLT_HIL_FRAME_BEGIN implementation=$implementation sequence=$expected_sequence")
@@ -360,47 +364,50 @@ function exchange_range!(
         slopes = controller_slopes(hil_frame_buffer(phase.plant.boundary))
         transported_command = hil_command_buffer(phase.plant.boundary)
         residual_command = control_matrix * (slopes - reference_slopes)
-        updated_state = @. CONTROLLER_POLE * phase.direct_state + gain * residual_command
         if isnothing(alternate_control_matrix)
+            updated_state = @. CONTROLLER_POLE * phase.direct_state + gain * residual_command
             copyto!(phase.direct_state, updated_state)
         else
             alternate_residual = alternate_control_matrix * (slopes - reference_slopes)
-            alternate_state =
-                @. CONTROLLER_POLE * phase.direct_state + gain * alternate_residual
-            matches_updated = arrays_close(
-                transported_command,
-                updated_state;
-                rtol=COMMAND_RTOL,
-                atol=COMMAND_ATOL,
+            next_states = Tuple{Vector{Float32},Bool}[]
+            for (state, adopted) in candidate_states
+                updated_state = @. CONTROLLER_POLE * state + gain * residual_command
+                if arrays_close(
+                    transported_command,
+                    updated_state;
+                    rtol=COMMAND_RTOL,
+                    atol=COMMAND_ATOL,
+                )
+                    push!(next_states, (updated_state, true))
+                end
+                if !adopted
+                    alternate_state = @. CONTROLLER_POLE * state + gain * alternate_residual
+                    if arrays_close(
+                        transported_command,
+                        alternate_state;
+                        rtol=COMMAND_RTOL,
+                        atol=COMMAND_ATOL,
+                    )
+                        push!(next_states, (alternate_state, false))
+                    end
+                end
+            end
+            isempty(next_states) && error(
+                "$implementation command at sequence $expected_sequence matches no monotone reconstructor-adoption history",
             )
-            matches_alternate = arrays_close(
-                transported_command,
-                alternate_state;
-                rtol=COMMAND_RTOL,
-                atol=COMMAND_ATOL,
-            )
-            parameter_adopted[] && !matches_updated && error(
-                "$implementation reverted to the previous reconstructor at sequence $expected_sequence",
-            )
-            (matches_updated || matches_alternate) || require_close(
+            candidate_states = next_states
+            parameter_adopted[] = all(last, candidate_states)
+        end
+        if isnothing(alternate_control_matrix)
+            require_close(
                 "hsdm277_command",
                 expected_sequence,
                 transported_command,
-                updated_state;
+                phase.direct_state;
                 rtol=COMMAND_RTOL,
                 atol=COMMAND_ATOL,
             )
-            parameter_adopted[] = parameter_adopted[] || matches_updated
-            copyto!(phase.direct_state, matches_updated ? updated_state : alternate_state)
         end
-        require_close(
-            "hsdm277_command",
-            expected_sequence,
-            transported_command,
-            phase.direct_state;
-            rtol=COMMAND_RTOL,
-            atol=COMMAND_ATOL,
-        )
 
         if implementation === :native
             push!(native_commands, copy(transported_command))
@@ -439,6 +446,14 @@ function exchange_range!(
         adopt_hil_command!(phase.oracle.boundary, phase.oracle_sequence[])
         expected_sequence < UInt64(8) &&
             (phase.oracle_sequence[] = step_hil_frame!(phase.oracle.boundary))
+    end
+    if !isnothing(alternate_control_matrix)
+        # This fixture needs to identify the adoption boundary to carry one
+        # independent controller state into the following frames.
+        length(candidate_states) == 1 || error(
+            "$implementation reconstructor adoption remains ambiguous across $(length(candidate_states)) reference histories",
+        )
+        copyto!(phase.direct_state, only(candidate_states)[1])
     end
 end
 

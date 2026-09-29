@@ -90,6 +90,21 @@ cargo test --features live --test live_private_core -- --ignored --nocapture
 Set `PIPEWIREAO_RTC_LIVE_SCOPE=revolt` on that command to run only the REVOLT
 Classic native/Julia equivalence fixture on the isolated core.
 
+## REVOLT development configurations
+
+| System | RTC configuration | Input → command | Maintained replay |
+| --- | --- | --- | --- |
+| Classic, native FGN | [`revolt-classic-native-development.conf`](fixtures/revolt-classic-native-development.conf) | Simulated 352 × 352 F32 SHWFS frame → 277 actuator-surface OPD values in metres | The private-core command above with `PIPEWIREAO_RTC_LIVE_SCOPE=revolt` |
+| Classic, JuliaFilterGraph | [`revolt-classic-julia-development.conf`](fixtures/revolt-classic-julia-development.conf) | The same simulated plant and scientific boundary | The same private-core command; it runs after the native fixture |
+| Copper, native FGN | [`revolt-copper-native-development.conf`](fixtures/revolt-copper-native-development.conf) | HEART WFS 64 × 64 U16 detector frame → 277 demanded commands in micrometres | [`run_copper_rtc.py`](benchmark/run_copper_rtc.py), documented in [COPPER.md](benchmark/COPPER.md) |
+
+The Classic fixtures use the external `REVOLTClassicSimPipeWireHIL.jl` plant,
+the generated controller graph, and a published 277 × 376 reconstructor
+parameter. The Copper replay prepares its calibration in the generated graph
+arguments and uses the shared FITS cube through HEART's WFS source. These are
+different optical systems and command units; their command vectors are not
+interchangeable. Both RTC configurations are complete-frame and non-actuating.
+
 For the latest/hold fixture, set `PIPEWIREAO_RTC_LIVE_SCOPE=latest-hold`. The
 Julia environment selected by `PIPEWIREAO_RTC_PIPEWIREAO_JULIA` must resolve
 `PipeWireAO_jll` 1.7.0+17 or newer; the JFG `deployment` environment is a
