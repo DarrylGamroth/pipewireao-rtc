@@ -130,7 +130,9 @@ interchangeable. Both RTC configurations are complete-frame and non-actuating.
 The managed Copper JuliaFilterGraph provider prepares the matched Copper
 calibration, publishes at the selected rate, and enables session run control. Both
 Copper configurations replay the same FITS cube through the same HEART WFS
-source and non-actuating demanded-command observer.
+source and non-actuating demanded-command observer. The managed runner uses
+the selected PipeWireAO installation for Julia's JLL and one OpenBLAS thread
+by default; [COPPER.md](benchmark/COPPER.md) records the thread-count comparison.
 
 For the latest/hold fixture, set `PIPEWIREAO_RTC_LIVE_SCOPE=latest-hold`. The
 Julia environment selected by `PIPEWIREAO_RTC_PIPEWIREAO_JULIA` must resolve

@@ -6,7 +6,9 @@ from __future__ import annotations
 import argparse
 from collections import Counter
 import csv
+import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -17,6 +19,40 @@ import numpy as np
 
 
 RTC = Path(__file__).resolve().parents[1]
+PIPEWIREAO_JLL_UUID = "cde84cf6-9a21-5ce0-b5e3-1526e778c30b"
+# wfsSimulator requires readout < 95% of the frame period. At 2 ms, the
+# highest integral frame rate it admits is 474 Hz.
+MAX_RATE_HZ = 474
+
+
+def sha256_file(path: Path) -> str:
+    with path.open("rb") as stream:
+        return hashlib.file_digest(stream, "sha256").hexdigest()
+
+
+def use_installed_julia_libraries(output: Path, installation) -> Path:
+    """Point the Julia JLL at the same PipeWireAO build as the private core."""
+    depot = output / "julia-depot"
+    overlay = depot / "native-artifact"
+    files = {
+        "lib/libpipewire-ao-0.3.so":
+            installation.library_directory / "libpipewire-ao-0.3.so",
+        "lib/spa-ao-0.2/libspa-ao.so":
+            installation.spa_library_directory / "libspa-ao.so",
+        "lib/spa-ao-0.2/support/libspa-support.so":
+            installation.support_directory / "libspa-support.so",
+    }
+    for relative, installed in files.items():
+        if not installed.is_file():
+            raise RuntimeError(f"selected PipeWireAO library is absent: {installed}")
+        destination = overlay / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.symlink_to(installed)
+    override = depot / "artifacts/Overrides.toml"
+    override.parent.mkdir(parents=True, exist_ok=True)
+    override.write_text(f"[{PIPEWIREAO_JLL_UUID}]\n"
+                        f"PipeWireAO = {json.dumps(str(overlay))}\n")
+    return depot
 
 
 def wfs_counters(dump: str) -> dict[str, int]:
@@ -38,6 +74,20 @@ def wfs_counters(dump: str) -> dict[str, int]:
     if not required <= counters.keys():
         raise RuntimeError(f"HEART WFS counters missing: {sorted(required - counters.keys())}")
     return counters
+
+
+def capture_placement(output: Path, phase: str, processes: dict, env: dict) -> dict:
+    inspector = RTC / "benchmark/lab_placement.py"
+    records = {}
+    for role, process in processes.items():
+        path = output / f"placement-{phase}-{role}.json"
+        subprocess.run(
+            [sys.executable, str(inspector), "inspect", "--pid", str(process.pid),
+             "--output", str(path)],
+            env=env, check=True,
+        )
+        records[role] = str(path)
+    return records
 
 
 def main() -> None:
@@ -65,16 +115,22 @@ def main() -> None:
     parser.add_argument("--pipewireao-julia-root", type=Path,
                         default=RTC.parent / "PipeWireAO.jl",
                         help="local PipeWireAO.jl package for the Julia provider")
+    parser.add_argument("--julia-blas-threads", type=int, default=1,
+                        help="OpenBLAS threads in the Julia controller (default: 1)")
     parser.add_argument("--frames", type=int, default=16)
     parser.add_argument("--rate-hz", type=int, default=474,
-                        help="offered frame rate; 2 ms detector readout requires at most 500 Hz")
+                        help="offered frame rate; the 2 ms wfsSimulator readout permits at most 474 Hz")
     parser.add_argument("--reference-vectors", type=Path,
                         help="optional demanded-um.f32 from the matched FGN full-frame replay")
     args = parser.parse_args()
     if not 1 <= args.frames <= 1024:
         parser.error("--frames must be in 1..1024")
-    if not 1 <= args.rate_hz <= 500:
-        parser.error("--rate-hz must be in 1..500 for the 2 ms readout")
+    if not 1 <= args.rate_hz <= MAX_RATE_HZ:
+        parser.error(f"--rate-hz must be in 1..{MAX_RATE_HZ} for the 2 ms readout")
+    if args.julia_blas_threads < 1:
+        parser.error("--julia-blas-threads must be positive")
+    if args.controller == "native" and args.julia_blas_threads != 1:
+        parser.error("--julia-blas-threads applies only to --controller julia")
     output = args.output_dir.resolve()
     if output.exists():
         parser.error(f"output directory already exists: {output}")
@@ -130,20 +186,32 @@ def main() -> None:
     report = {"frames": args.frames, "rate_hz": args.rate_hz, "readout_us": 2000,
               "controller": args.controller, "fixture": str(fixture),
               "cube": str(cube), "qualified": False,
+              "delivery_qualified": False, "schedule_qualified": False,
               "numerical_comparison": "not_evaluated" if args.reference_vectors is not None
               else "not_requested"}
+    report["pipewire_prefix"] = str(args.pipewire_prefix.resolve())
+    report["input_sha256"] = sha256_file(cube)
+    report["heart_plugin_sha256"] = sha256_file(heart)
+    report["pipewire_library_sha256"] = sha256_file(
+        installation.library_directory / "libpipewire-ao-0.3.so"
+    )
     if args.reference_vectors is not None:
         report["reference_vectors"] = str(args.reference_vectors.resolve())
     if bundle is not None:
         report["bundle"] = str(bundle)
+        report["bundle_sha256"] = sha256_file(bundle)
     if args.controller == "julia":
         report["jfg_root"] = str(jfg_root)
+        report["jfg_script_sha256"] = sha256_file(island_script)
+        report["julia_blas_threads"] = args.julia_blas_threads
+    placement_processes = {}
     try:
         daemon, daemon_log = start(
             [str(installation.daemon), "-c", "fgn-copper-live.conf"],
             env, output / "daemon.log", cwd=installation.working_directory,
         )
         processes.append((daemon, daemon_log, None))
+        placement_processes["daemon"] = daemon
         wait_for("private PipeWireAO socket",
                  lambda: (Path(env["XDG_RUNTIME_DIR"]) / "pipewire-ao-0").exists(), 15)
         observer, observer_log = start(
@@ -153,15 +221,23 @@ def main() -> None:
             env, output / "observer.log", stdin=True,
         )
         processes.append((observer, observer_log, "q"))
+        placement_processes["observer"] = observer
         wait_text(output / "observer.log", "CONNECT_ACCEPTED", process=observer)
         if args.controller == "julia":
+            depot = use_installed_julia_libraries(output, installation)
+            report["julia_artifact_overlay"] = str(depot / "native-artifact")
             env.update({
+                "JULIA_DEPOT_PATH": os.pathsep.join((
+                    str(depot), os.environ.get("JULIA_DEPOT_PATH") or
+                    str(Path.home() / ".julia"),
+                )),
                 "JULIA_LOAD_PATH": f"{pipewireao_julia_root}:@:@stdlib",
                 "JULIA_RTC_WORKLOAD": "copper-fits-full-frame-feedback",
                 "JULIA_RTC_COPPER_CONFIG_DIR": str(args.heart_config.resolve()),
                 "JULIA_RTC_FRAME_RATE": str(args.rate_hz),
                 "JULIA_RTC_INGRESS_MODE": "frame",
                 "JULIA_RTC_CPU_WORKERS": "0",
+                "OPENBLAS_NUM_THREADS": str(args.julia_blas_threads),
                 "JULIA_RTC_COMMAND_LIMIT_UM": "0.8",
                 "JULIA_ISLAND_QUIT_REQUEST": str(island_quit_request),
                 "JULIA_RTC_MANAGED_NODE_NAME": "calculon-revolt-copper-fullframe",
@@ -174,6 +250,7 @@ def main() -> None:
                 env, output / "julia-island.log", cwd=jfg_root,
             )
             processes.append((island, island_log, None))
+            placement_processes["island"] = island
             wait_text(output / "julia-island.log", "JULIA_ISLAND_CONNECT_ACCEPTED", 60,
                       island)
         rtc, rtc_log = start(
@@ -184,6 +261,11 @@ def main() -> None:
         processes.append((rtc, rtc_log, "quit\n"))
         wait_text(output / "rtc.log", "RUNNING", 30, rtc)
         command([str(installation.tool("pwao-dump")), "-r", "pipewire-ao-0"], env)
+        report["placement"] = {
+            "before_ingress": capture_placement(
+                output, "before-ingress", placement_processes, env,
+            ),
+        }
         (output / "input.fits").symlink_to(cube)
         replay, replay_log = start(
             [str(simulator), "-file", "input.fits", "-tPort", "6000",
@@ -199,6 +281,7 @@ def main() -> None:
                               (output / "wfs-simulator.log").read_text(errors="replace"))
         report["simulator_timer_overrun_events"] = len(overruns)
         report["simulator_timer_overrun_periods"] = sum(map(int, overruns))
+        report["schedule_qualified"] = not overruns
         # The observer flushes its FILE streams when it stops. The matched
         # Copper runner also allows one second for queued graph output here.
         time.sleep(1.0)
@@ -207,6 +290,9 @@ def main() -> None:
         )
         (output / "pipewire-after-replay.json").write_text(dump)
         report["wfs_counters"] = wfs_counters(dump)
+        report["placement"]["after_replay"] = capture_placement(
+            output, "after-replay", placement_processes, env,
+        )
         stop(rtc, rtc_log, control="quit\n")
         processes.remove((rtc, rtc_log, "quit\n"))
         if rtc.returncode != 0 or "OFFLINE" not in (output / "rtc.log").read_text():
@@ -282,6 +368,7 @@ def main() -> None:
             raise RuntimeError(f"demanded vector count is {demanded.size // 277}, expected {args.frames}")
         if not np.isfinite(demanded).all():
             raise RuntimeError("demanded command contains non-finite values")
+        report["delivery_qualified"] = True
         if args.reference_vectors is not None:
             reference = np.fromfile(args.reference_vectors, dtype="<f4")[:demanded.size]
             if reference.size != demanded.size:
@@ -292,6 +379,12 @@ def main() -> None:
                 report["numerical_comparison"] = "failed"
                 raise RuntimeError(f"RTC demanded vectors differ from FGN reference by {difference} µm")
             report["numerical_comparison"] = "passed"
+        if not report["schedule_qualified"]:
+            raise RuntimeError(
+                "wfsSimulator missed its offered frame schedule: "
+                f"{report['simulator_timer_overrun_events']} overrun events, "
+                f"{report['simulator_timer_overrun_periods']} periods"
+            )
         report["qualified"] = True
         print(json.dumps(report, indent=2))
     except Exception as error:

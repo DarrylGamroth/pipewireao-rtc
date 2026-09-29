@@ -560,6 +560,16 @@ used FIFO83. The workstation also had unrelated CPU-saturating Julia tasks.
 Strict thread placement, first-use characterization, and an uncontended
 latency comparison remain in the selected increment.
 
+The managed Copper RTC runner now captures pre-ingress and post-replay thread
+snapshots, maps Julia's PipeWireAO JLL to the selected installation, and defaults
+to one OpenBLAS thread. Four 1,024-frame Julia runs at 474 Hz delivered every
+command and matched the saved FGN vectors. An otherwise aligned eight-thread
+Julia run lost commands and callbacks; the retained native RTC run passed
+delivery, simulator-schedule, and vector checks. These runs identify a useful
+thread-count setting for this loaded workstation, but the RTC companion
+launcher still lacks fail-closed requested placement and does not yet meet
+RTC-DEV-019's latency-distribution and first-use evidence requirements.
+
 An opt-in Ryzen thread profile now checks exact policy and affinity counts at
 each runner's pre-ingress and post-replay boundary. It exposed the FGN daemon's
 missing RT loop before pixels were sent. A separate FGN laboratory setting

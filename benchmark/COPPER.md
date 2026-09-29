@@ -14,11 +14,14 @@ micrometres. The observer is non-actuating. The Standard-DM conversion and
 wire output used by the three-way baseline are outside this RTC fixture.
 
 The managed JuliaFilterGraph island prepares the calibration matched to this
-Copper workload, publishes the graph at the selected rate, and enables RTC session run
-control. `run_copper_rtc.py --controller julia` launches it before the RTC,
+Copper workload, publishes the graph at the selected rate, and enables RTC
+session run control. `run_copper_rtc.py --controller julia` launches it before the RTC,
 uses the same HEART WFS and observer, and checks ordered delivery and optional
-command-vector equivalence. The runner's Julia path requires the managed
-provider in the JuliaFilterGraph sibling repository.
+command-vector equivalence. It maps Julia's PipeWireAO JLL to the selected
+PipeWireAO installation and uses one OpenBLAS thread by default, as the
+matched Julia Copper runner does. `--julia-blas-threads` permits a recorded
+diagnostic comparison. The runner's Julia path requires the managed provider
+in the JuliaFilterGraph sibling repository.
 
 Render the Copper graph and its startup calibration parameters from the
 maintained FGN generator and the same HEART configuration used by the
@@ -78,23 +81,41 @@ configuration and numerical boundary; they do not establish loss-free
 operation at a sustained offered load or camera-to-DM latency.
 
 `--rate-hz` selects the offered rate and updates the fixture, source, observer,
-graph, and simulator together. Its admitted range is 1–500 Hz because the
-simulator's configured detector readout is 2 ms. The report records the rate,
+graph, and simulator together. Its admitted range is 1–474 Hz: HEART's
+`wfsSimulator` requires its 2 ms readout to be less than 95% of the frame
+period, which excludes 475 Hz and above. The report records the rate,
 WFS counters, Julia callback count when applicable, command identities,
-numerical-comparison status, and post-unload link count. A failed delivery
-check leaves `qualified` false and does not treat a saved vector prefix as a
-valid numerical comparison.
+numerical-comparison status, pre-ingress and post-replay process placement,
+and post-unload link count. It distinguishes delivery from the simulator's
+offered-schedule check; `qualified` requires both, plus any requested vector
+comparison. A failed delivery check leaves numerical comparison unevaluated.
+An attempted 500 Hz replay exited before ingress at that `wfsSimulator`
+validation check; it says nothing about the controller's independent capacity.
 
-The managed Julia path has not passed a sustained 1,024-frame replay on this
-loaded development host. At 474 Hz one uninstrumented replay published all
-1,024 WFS frames and invoked 1,024 Julia callbacks, but the observer received
-1,022 commands. At 100 Hz, an uninstrumented replay again invoked all 1,024
-callbacks but the observer missed one command. A traced 100 Hz replay published
-all frames, then spent about 63 ms inside the Julia callback for frame 435;
-frames 436–440 did not reach a Julia callback and the observer also missed
-frame 435. These are different observed failure boundaries. The callback
-stall's cause and the output handoff loss remain unproven, so these runs do
-not support a maximum loss-free rate or a Julia-versus-HEART latency ranking.
+The initial managed Julia runs inherited Julia's eight OpenBLAS threads.
+At 474 Hz, one uninstrumented 1,024-frame replay published all WFS frames and
+invoked all Julia callbacks, but the observer received 1,022 commands. At
+100 Hz, another replay invoked all callbacks but missed one observer command.
+An aligned PipeWireAO trace at 100 Hz localized four further missed commands:
+callbacks for frames 769, 841, 930, and 1006 took 10–32 ms, each produced an
+output, and the next frame completed roughly 0.1–0.2 ms later. The observer
+received the newer frame but not the delayed one; frames 931 and 932 also
+failed to enter Julia during the longest stall. The trace is retained under
+`~/.cache/rtc-copper-tracehooks-aligned-100hz-1024-20260929/`.
+
+With one OpenBLAS thread, four independent 1,024-frame managed Julia replays
+at 474 Hz through the selected PipeWireAO installation delivered all commands
+and matched the saved FGN vectors within 2.981 × 10⁻⁸ µm. Three further
+one-thread replays with the prior Julia JLL also passed. An eight-thread replay
+with the aligned library missed 15 observer commands and eight Julia inputs.
+The repeated A/B result implicates BLAS thread count on this loaded host;
+the exact source of the long callback stalls still needs a scheduler or
+thread-level profile. The four aligned passing reports are retained under
+`~/.cache/rtc-copper-julia-aligned-blas1-474hz-1024-{a,b,c,d}-20260929/`.
+One native 1,024-frame replay passed the new delivery, schedule, and vector
+checks under `~/.cache/rtc-copper-native-schedule-474hz-1024-a-20260929/`.
+These are complete-frame demanded-command observations, not
+pixel-ingress-to-Standard-DM-egress latency or a general maximum-rate claim.
 
 The retained run at
 `~/.cache/rtc-copper-managed-1024-20260929/report.json` delivered 1,024
