@@ -89,6 +89,26 @@ cargo test --features live --test live_private_core -- --ignored --nocapture
 
 Set `PIPEWIREAO_RTC_LIVE_SCOPE=revolt` on that command to run only the REVOLT
 Classic native/Julia equivalence fixture on the isolated core.
+Set `PIPEWIREAO_RTC_LIVE_SCOPE=revolt-lockstep` to run the common-input
+fixture. Its one WFS source fans each 352 × 352 F32 frame out to distinct
+native FGN and JuliaFilterGraph nodes. Separate 277-element F32 metre command
+sinks receive matching Header sequences. The provider checks both commands
+against the direct Classic oracle and each other before advancing the plant.
+This ten-frame fixture uses the initial calibrated reconstructor, gain, and
+pole. The separate `revolt` fixture covers controller updates and finite
+source completion; simultaneous parity during the parameter-adoption window
+remains unverified.
+
+The common-input fixture passed on the development host with this command
+on 2026-09-29:
+
+```sh
+PKG_CONFIG_PATH=/opt/pipewireao/lib/x86_64-linux-gnu/pkgconfig \
+LD_LIBRARY_PATH=/opt/pipewireao/lib/x86_64-linux-gnu \
+PIPEWIREAO_RTC_FGN_BUNDLE=/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-copper-fullframe/target/release/libcalculon_fgn_bundle.so \
+PIPEWIREAO_RTC_LIVE_SCOPE=revolt-lockstep \
+cargo test --features live --test live_private_core -- --ignored --nocapture
+```
 
 ## REVOLT development configurations
 
@@ -96,6 +116,7 @@ Classic native/Julia equivalence fixture on the isolated core.
 | --- | --- | --- | --- |
 | Classic, native FGN | [`revolt-classic-native-development.conf`](fixtures/revolt-classic-native-development.conf) | Simulated 352 × 352 F32 SHWFS frame → 277 actuator-surface OPD values in metres | The private-core command above with `PIPEWIREAO_RTC_LIVE_SCOPE=revolt` |
 | Classic, JuliaFilterGraph | [`revolt-classic-julia-development.conf`](fixtures/revolt-classic-julia-development.conf) | The same simulated plant and scientific boundary | The same private-core command; it runs after the native fixture |
+| Classic, common input | [`revolt-classic-lockstep-development.conf`](fixtures/revolt-classic-lockstep-development.conf) | One simulated WFS frame → native and Julia controllers → separate HSDM277 command sinks | The private-core command above with `PIPEWIREAO_RTC_LIVE_SCOPE=revolt-lockstep` |
 | Copper, native FGN | [`revolt-copper-native-development.conf`](fixtures/revolt-copper-native-development.conf) | HEART WFS 64 × 64 U16 detector frame → 277 demanded commands in micrometres | [`run_copper_rtc.py`](benchmark/run_copper_rtc.py), documented in [COPPER.md](benchmark/COPPER.md) |
 
 The Classic fixtures use the external `REVOLTClassicSimPipeWireHIL.jl` plant,
