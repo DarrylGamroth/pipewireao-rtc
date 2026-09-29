@@ -28,7 +28,7 @@ REPORT_SPEC.loader.exec_module(REPORT)
 
 class CapturePhaseTests(unittest.TestCase):
     def test_pinned_data_loop_requires_named_single_cpu_fifo_rule(self) -> None:
-        profile = {"roles": {"island": {"required_thread_placements": [
+        profile = {"roles": {"island": {"cpus": "0,2", "required_thread_placements": [
             {"name": "data-loop.0", "policy": "fifo:83", "cpus": "0", "count": 1},
         ]}}}
         self.assertEqual(RUNNER.pinned_data_loop(profile, "island", "data-loop.0"),
@@ -36,6 +36,37 @@ class CapturePhaseTests(unittest.TestCase):
         profile["roles"]["island"]["required_thread_placements"][0]["cpus"] = "0,2"
         with self.assertRaisesRegex(ValueError, "one pinned FIFO island data-loop"):
             RUNNER.pinned_data_loop(profile, "island", "data-loop.0")
+
+    def test_required_data_loop_preserves_exact_profile_mask(self) -> None:
+        profile = {"roles": {"observer": {"cpus": "0-3", "required_thread_placements": [
+            {"name": "data-loop.0", "policy": "fifo:83", "cpus": "0,2", "count": 1},
+        ]}}}
+        self.assertEqual(RUNNER.required_data_loop(profile, "observer", "data-loop.0"),
+                         ({0, 2}, 83))
+        self.assertEqual(RUNNER.comma_cpu_list({2, 0}), "0,2")
+        profile["roles"]["observer"]["required_thread_placements"][0]["cpus"] = "0,4"
+        with self.assertRaisesRegex(ValueError, "exceed the process envelope"):
+            RUNNER.required_data_loop(profile, "observer", "data-loop.0")
+
+    def test_single_command_link_requires_wire_vectors_without_observer_claim(self) -> None:
+        report = {"qualified": True, "errors": [], "requested_frames": 3,
+                  "dm_vectors": 3, "demanded_vectors": None,
+                  "command_topology": {"mode": "single-command-link"},
+                  "pipewire_mode": "installed-prefix", "pipewire_daemon_sha256": "daemon",
+                  "ndarray_filter_chain_sha256": "module"}
+        physical = {"qualified": True, "captured_wfs_packets": 6,
+                    "captured_dm_commands": 3}
+        with patch.object(RUNNER, "json_file", side_effect=[report, physical]):
+            self.assertEqual(RUNNER.require_fgn(Path("run"), 3, "daemon", "module"), physical)
+        report["demanded_vectors"] = 3
+        with patch.object(RUNNER, "json_file", side_effect=[report, physical]):
+            with self.assertRaisesRegex(RuntimeError, "cannot claim demanded"):
+                RUNNER.require_fgn(Path("run"), 3, "daemon", "module")
+        report["command_topology"] = {"mode": "observer-fanout"}
+        report["demanded_vectors"] = None
+        with patch.object(RUNNER, "json_file", side_effect=[report, physical]):
+            with self.assertRaisesRegex(RuntimeError, "observer report"):
+                RUNNER.require_fgn(Path("run"), 3, "daemon", "module")
 
     @staticmethod
     def write_packets(path: Path, times: list[Decimal], *, kind: str,

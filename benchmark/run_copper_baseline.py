@@ -39,14 +39,27 @@ VECTOR_TOLERANCE_UM = 1e-6
 
 def pinned_data_loop(profile: dict, role: str, name: str) -> tuple[int, int]:
     """Return the one declared FIFO data loop for a strict laboratory role."""
+    cpus, priority = required_data_loop(profile, role, name)
+    if len(cpus) != 1:
+        raise ValueError(f"strict profile requires one pinned FIFO {role} {name}")
+    return next(iter(cpus)), priority
+
+
+def required_data_loop(profile: dict, role: str, name: str) -> tuple[set[int], int]:
+    """Return an exact named FIFO loop mask and priority from a strict profile."""
     rules = [rule for rule in profile["roles"][role]["required_thread_placements"]
              if rule.get("name") == name and rule["count"] == 1
-             and parse_thread_policy(rule["policy"])[0] == "fifo"
-             and len(parse_cpu_list(rule["cpus"])) == 1]
+             and parse_thread_policy(rule["policy"])[0] == "fifo"]
     if len(rules) != 1:
-        raise ValueError(f"strict profile requires one pinned FIFO {role} {name}")
-    return (next(iter(parse_cpu_list(rules[0]["cpus"]))),
-            parse_thread_policy(rules[0]["policy"])[1])
+        raise ValueError(f"strict profile requires one FIFO {role} {name}")
+    cpus = parse_cpu_list(rules[0]["cpus"])
+    if not cpus <= parse_cpu_list(profile["roles"][role]["cpus"]):
+        raise ValueError(f"{role} {name} CPUs exceed the process envelope")
+    return cpus, parse_thread_policy(rules[0]["policy"])[1]
+
+
+def comma_cpu_list(cpus: set[int]) -> str:
+    return ",".join(str(cpu) for cpu in sorted(cpus))
 
 
 def sha256(path: Path) -> str:
@@ -136,9 +149,14 @@ def require_fgn(run: Path, frames: int, daemon_sha256: str,
     physical = json_file(run / "physical-summary.json")
     require_exact(report.get("qualified") is True and not report.get("errors"),
                   "FGN runner did not qualify exact delivery")
-    require_exact(report.get("requested_frames") == frames and
-                  report.get("demanded_vectors") == frames and report.get("dm_vectors") == frames,
-                  "FGN report does not contain exactly one demanded and DM vector per frame")
+    require_exact(report.get("requested_frames") == frames and report.get("dm_vectors") == frames,
+                  "FGN report does not contain exactly one DM vector per frame")
+    if report.get("command_topology", {}).get("mode") == "single-command-link":
+        require_exact(report.get("demanded_vectors") is None,
+                      "single command link cannot claim demanded observer vectors")
+    else:
+        require_exact(report.get("demanded_vectors") == frames,
+                      "FGN observer report does not contain exactly one demanded vector per frame")
     require_exact(physical.get("qualified") is True and
                   physical.get("captured_wfs_packets") == frames * 2 and
                   physical.get("captured_dm_commands") == frames,
@@ -283,6 +301,10 @@ def main() -> None:
                         help="sequential repetitions of the fixed workload (default: 1)")
     parser.add_argument("--mode", choices=("row", "fullframe"), default="row",
                         help="FGN ingress mode; row is the selected baseline")
+    parser.add_argument("--single-command-link", action="store_true",
+                        help="complete-frame command chain without an observer branch")
+    parser.add_argument("--heart-plugin", type=Path,
+                        help="explicit HEART SPA plugin override for transport qualification")
     parser.add_argument("--frames", type=int, default=1024)
     parser.add_argument("--jfg-graph-warmup", choices=("offline", "none"), default="offline",
                         help="recorded JFG first-use policy (default: offline)")
@@ -297,6 +319,8 @@ def main() -> None:
     parser.add_argument("--fgn-root", type=Path, default=FGN)
     parser.add_argument("--fgn-fullframe-root", type=Path, default=FGN_FULLFRAME)
     parser.add_argument("--jfg-root", type=Path, default=JFG)
+    parser.add_argument("--jfg-pipewireao-julia-root", type=Path,
+                        help="opt in to a local PipeWireAO.jl binding for the JFG island")
     parser.add_argument("--heart-cpu-map", type=Path, default=JFG / "benchmark/heart/affinity/ryzen-6800h.cpu")
     parser.add_argument("--heart-thread-map", type=Path, default=JFG / "benchmark/heart/affinity/ryzen-6800h.threads")
     parser.add_argument("--source-core", default="12")
@@ -306,6 +330,8 @@ def main() -> None:
                         help="verify declared process envelopes before ingress and after replay")
     parser.add_argument("--strict-placement-profile", type=Path,
                         help="host-specific thread profile enforced by every pre-ingress verifier")
+    parser.add_argument("--configure-all-loops", action="store_true",
+                        help="request explicit daemon and client loops from the strict profile")
     parser.add_argument("--julia-pin-cpus", default="0,2",
                         help="CPU list for the two Julia island threads when verifying placement")
     args = parser.parse_args()
@@ -315,7 +341,13 @@ def main() -> None:
         parser.error("--repeats must be positive")
     if args.gated_source and args.strict_placement_profile is None:
         parser.error("--gated-source requires --strict-placement-profile")
+    if args.configure_all_loops and args.strict_placement_profile is None:
+        parser.error("--configure-all-loops requires --strict-placement-profile")
 
+    if args.single_command_link and args.mode != "fullframe":
+        parser.error("--single-command-link requires --mode fullframe")
+    heart_plugin = (args.heart_plugin or args.pipewire_prefix /
+                    "lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so").resolve()
     output = args.output_dir.resolve()
     if output.exists():
         parser.error(f"--output-dir already exists: {output}")
@@ -329,7 +361,7 @@ def main() -> None:
     pacer_source = ROOT / "benchmark/wfs_sync_pacer.c"
     source_executable = gate_wrapper if args.gated_source else args.wfs_simulator
     required = (cube, native_daemon, native_module,
-                args.pipewire_prefix / "lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so",
+                heart_plugin,
                 args.heart_root / "source/template/bin/scaoTemplate",
                 args.jfg_root / "benchmark/heart/run_copper_aos_matched.sh",
                 args.jfg_root / "benchmark/heart/compare_command_vectors.py",
@@ -345,6 +377,11 @@ def main() -> None:
     for path in required:
         if not path.exists():
             parser.error(f"required path is absent: {path}")
+    binding = None
+    if args.jfg_pipewireao_julia_root is not None:
+        binding = args.jfg_pipewireao_julia_root.resolve()
+        if not (binding / "Project.toml").is_file():
+            parser.error(f"JFG PipeWireAO.jl project is absent: {binding}")
     if not args.revolt_config_dir.is_dir():
         parser.error(f"REVOLT configuration directory is absent: {args.revolt_config_dir}")
     if sha256(cube) != EXPECTED_CUBE_SHA256:
@@ -356,6 +393,7 @@ def main() -> None:
     thread_profile_sha256 = None
     fgn_loop: tuple[int, int] | None = None
     jfg_loop: tuple[int, int] | None = None
+    all_loops: dict[str, tuple[set[int], int]] = {}
     if args.strict_placement_profile is not None:
         if not args.verify_placement:
             parser.error("--strict-placement-profile requires --verify-placement")
@@ -371,6 +409,15 @@ def main() -> None:
         try:
             fgn_loop = pinned_data_loop(profile, "pipewire-ao-daemon", "rtc-data-loop")
             jfg_loop = pinned_data_loop(profile, "island", "data-loop.0")
+            if args.configure_all_loops:
+                for role, name in (("daemon", "rtc-data-loop"),
+                                   ("observer", "data-loop.0"),
+                                   ("adapter", "data-loop.0"),
+                                   ("fgn-command-observer", "data-loop.0"),
+                                   ("julia-heart-std-dm-command-adapter", "data-loop.0")):
+                    all_loops[role] = required_data_loop(profile, role, name)
+                if len(all_loops["daemon"][0]) != 1:
+                    raise ValueError("JFG daemon loop must have one pinned CPU")
         except ValueError as error:
             parser.error(str(error))
         thread_profile_sha256 = sha256(thread_profile)
@@ -422,6 +469,11 @@ def main() -> None:
                               if args.gated_source else None),
         "gated_pacer_build": pacer_build,
         "jfg_graph_warmup": args.jfg_graph_warmup,
+        "command_topology": "single-command-link" if args.single_command_link else "observer-and-adapter",
+        "heart_plugin": str(heart_plugin),
+        "heart_plugin_sha256": sha256(heart_plugin),
+        "jfg_pipewireao_julia_root": str(binding) if binding is not None else None,
+        "configure_all_loops": args.configure_all_loops,
         "verify_placement": args.verify_placement,
         "strict_placement_profile": str(thread_profile) if thread_profile else None,
         "strict_placement_profile_sha256": thread_profile_sha256,
@@ -455,6 +507,10 @@ def main() -> None:
                            *((pacer_binary,) if pacer_binary is not None else ())) if path.is_file()},
         "runs": [], "qualified": False,
     }
+    if binding is not None:
+        manifest["source_revisions"]["jfg_pipewireao_julia"] = git_state(binding)
+        manifest["source_archives"]["jfg_pipewireao_julia"] = archive_source_state(
+            binding, output / "source-state/jfg_pipewireao_julia")
     manifest_path = output / "manifest.json"
     try:
         for index in range(1, args.repeats + 1):
@@ -483,6 +539,14 @@ def main() -> None:
                 assert jfg_loop is not None
                 jfg_env["JULIA_RTC_LAB_CLIENT_LOOP_CPU"] = str(jfg_loop[0])
                 jfg_env["JULIA_RTC_LAB_CLIENT_LOOP_RT_PRIORITY"] = str(jfg_loop[1])
+                if args.configure_all_loops:
+                    for role, prefix in (("daemon", "JULIA_RTC_LAB_DAEMON_LOOP"),
+                                         ("observer", "JULIA_RTC_LAB_OBSERVER_LOOP"),
+                                         ("adapter", "JULIA_RTC_LAB_ADAPTER_LOOP")):
+                        cpus, priority = all_loops[role]
+                        suffix = "CPU" if role == "daemon" else "CPUS"
+                        jfg_env[f"{prefix}_{suffix}"] = comma_cpu_list(cpus)
+                        jfg_env[f"{prefix}_RT_PRIORITY"] = str(priority)
             if args.gated_source:
                 assert pacer_binary is not None
                 for environment, report_path in (
@@ -513,14 +577,14 @@ def main() -> None:
                         "--rtc-cpus", args.rtc_cpus, "--source-cpu", args.source_core,
                         "--source-rt-priority", args.source_rt_priority,
                         "--plugin", str(args.fgn_fullframe_root / "target/release/libcalculon_fgn_bundle.so"),
-                        "--heart-plugin", str(args.pipewire_prefix / "lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so"),
+                        "--heart-plugin", str(heart_plugin),
                         "--config-dir", str(args.revolt_config_dir), "--cube", str(cube),
                         "--wfs-simulator", str(source_executable)],
                 "jfg": ["julia", "--startup-file=no", f"--project={args.jfg_root / 'benchmark'}",
                         str(args.jfg_root / "benchmark/run_shared_copper_fits.jl"), "--fits", str(cube),
                         "--native-prefix", str(args.pipewire_prefix), "--profile", "matched",
                         "--revolt-config-dir", str(args.revolt_config_dir), "--pixel-source", "heart-wfs",
-                        "--heart-plugin", str(args.pipewire_prefix / "lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so"),
+                        "--heart-plugin", str(heart_plugin),
                         "--wfs-simulator", str(source_executable), "--frames", str(args.frames),
                         "--frame-rate-hz", "474", "--readout-us", "2000", "--clipping-feedback", "true",
                         "--command-limit-um", "0.8", "--ingress-mode", jfg_mode,
@@ -529,11 +593,24 @@ def main() -> None:
                         "--std-wfs-port", "65310", "--std-dm-port", "65311",
                         "--output", str(jfg_report)],
             }
+            if args.single_command_link:
+                commands["fgn"].append("--single-command-link")
+                commands["jfg"].extend(("--single-command-link", "true"))
+            if args.heart_plugin is not None:
+                commands["fgn"].extend(("--heart-plugin-sha256", sha256(heart_plugin)))
             if args.verify_placement:
                 commands["fgn"].extend(("--placement-verify", str(verifier)))
+            if binding is not None:
+                commands["jfg"].extend(("--pipewireao-julia", str(binding)))
             if fgn_loop is not None:
                 commands["fgn"].extend(("--lab-loop-cpu", str(fgn_loop[0]),
                                         "--lab-loop-rt-priority", str(fgn_loop[1])))
+            if args.configure_all_loops:
+                for role, prefix in (("fgn-command-observer", "observer"),
+                                     ("julia-heart-std-dm-command-adapter", "adapter")):
+                    cpus, priority = all_loops[role]
+                    commands["fgn"].extend((f"--{prefix}-loop-cpus", comma_cpu_list(cpus),
+                                            f"--{prefix}-loop-rt-priority", str(priority)))
             record: dict[str, Any] = {"index": index, "commands": {}}
             manifest["runs"].append(record)
             for name in ("heart", "fgn", "jfg"):
@@ -566,6 +643,9 @@ def main() -> None:
                 expected_roles = {"heart": {"scaoTemplate"},
                                   "fgn": {"daemon", "observer", "adapter"},
                                   "jfg": {"daemon", "island", "observer", "adapter"}}
+                if args.single_command_link:
+                    expected_roles["fgn"].remove("observer")
+                    expected_roles["jfg"].remove("observer")
                 for system, phases in placement_paths.items():
                     for phase, roles in phases.items():
                         require_exact(set(roles) == expected_roles[system],

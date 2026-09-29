@@ -92,6 +92,10 @@ def require_memory_record(record: dict, role: str, phase: str) -> None:
         raise RuntimeError(f"{role} locked-memory amount unavailable {phase}")
 
 
+class AlgorithmComparisonMismatch(RuntimeError):
+    """Finite, complete output differs from the independent replay."""
+
+
 def compare_algorithm_output(actual: np.ndarray, expected: np.ndarray,
                              frames: int, extent: int, field: str) -> float:
     if actual.size != expected.size or actual.size != frames * extent:
@@ -104,12 +108,56 @@ def compare_algorithm_output(actual: np.ndarray, expected: np.ndarray,
     mismatches = np.flatnonzero(difference > 1e-6)
     if mismatches.size:
         index = int(mismatches[0])
-        raise RuntimeError(
+        raise AlgorithmComparisonMismatch(
             f"{field} differs from direct Algorithm at frame {index // extent}, "
             f"element {index % extent}: expected {expected[index]}, "
             f"observed {actual[index]}, absolute error {difference[index]}"
         )
     return float(np.max(difference))
+
+
+def compare_reported_algorithm_output(actual: np.ndarray, expected: np.ndarray,
+                                      frames: int, extent: int, field: str,
+                                      report: dict) -> float:
+    """Keep a failed replay inconclusive when live adoption is ambiguous.
+
+    This still rejects the run. Extent, finite-value, file and checker failures
+    retain their original errors, and the numerical tolerance is unchanged.
+    """
+    try:
+        return compare_algorithm_output(actual, expected, frames, extent, field)
+    except AlgorithmComparisonMismatch as error:
+        boundaries = report.get("live_update_boundaries", {})
+        ambiguous = {
+            name: boundaries[name]
+            for name in ("matrix_change_at_interval", "property_change_at_interval")
+            if report.get("live_updates") is True and name in boundaries
+            and len(boundaries[name]) == 2 and boundaries[name][0] < boundaries[name][1]
+        }
+        if (not ambiguous
+                or field not in {"correction", "controller-state", "constraint-feedback", "demanded"}):
+            report["numerical_comparison"] = "failed"
+            raise
+        diagnostic = (
+            "independent live-update replay comparison is inconclusive: "
+            "adoption intervals admit multiple boundaries; a mismatch for the "
+            "selected replay does not establish an Algorithm error"
+        )
+        report["numerical_comparison"] = "inconclusive"
+        report["live_update_comparison_ambiguity"] = {
+            "diagnostic": diagnostic,
+            "ambiguous_intervals": ambiguous,
+            "selected_matrix_change_at": boundaries.get("matrix_change_at"),
+            "selected_property_change_at": boundaries.get("property_change_at"),
+            "selected_replay_mismatch": str(error),
+        }
+        raise RuntimeError(f"{diagnostic}; selected replay: {error}") from error
+
+
+def record_live_update_timing(report: dict, latency: dict) -> None:
+    """Record software timing separately from the existing qualification result."""
+    report["live_command_latency"] = latency
+    report["live_update_timing_qualified"] = not latency["over_frame_period_sequences"]
 
 
 def measured_control_cycle_vectors(values: np.ndarray, frames: int,
@@ -121,6 +169,55 @@ def measured_control_cycle_vectors(values: np.ndarray, frames: int,
         raise RuntimeError(f"control-cycle vector extent {values.size} != {expected_size}")
     vectors = values.reshape(frames + count, extent)
     return np.concatenate((vectors[:half], vectors[half + count:])).ravel()
+
+
+def live_command_latency(trace_directory: Path, command_csv: Path,
+                         frames: int, rate_hz: int) -> dict:
+    files = list(trace_directory.glob("source-*.csv"))
+    if len(files) != 1:
+        raise RuntimeError("live update source trace is absent or ambiguous")
+    with files[0].open(newline="") as stream:
+        header = stream.readline()
+        if "omitted=0" not in header.split():
+            raise RuntimeError("live source trace omitted records")
+        terminal = {int(row["frame"]): int(row["start_ns"])
+                    for row in csv.DictReader(stream)
+                    if row["event"] == "R" and int(row["ordinal"]) == 2}
+    with command_csv.open(newline="") as stream:
+        commands = list(csv.DictReader(stream))
+    if len(commands) != frames or set(terminal) != set(range(frames)):
+        raise RuntimeError("live latency trace is incomplete")
+    elapsed = np.array([int(row["receipt_ns"]) - terminal[int(row["sequence"])]
+                        for row in commands], dtype=np.int64)
+    if np.any(elapsed < 0):
+        raise RuntimeError("command preceded source terminal receive")
+    late = np.flatnonzero(elapsed * rate_hz > 1_000_000_000)
+    return {"boundary": "source-plugin-terminal-receive-to-demanded-observer",
+            "scope": "diagnostic software timing; excludes physical DM and actuator response",
+            "clock": "CLOCK_MONOTONIC", "instrumented": True, "count": frames,
+            "p50_us": float(np.percentile(elapsed, 50) / 1000),
+            "p99_us": float(np.percentile(elapsed, 99) / 1000),
+            "max_us": float(np.max(elapsed) / 1000),
+            "frame_period_budget_us": 1_000_000 / rate_hz,
+            "over_frame_period_sequences": late.tolist(),
+            "per_frame_us": (elapsed / 1000).tolist()}
+
+
+def julia_trace_compile_arguments(path: Path | None, controller: str) -> list[str]:
+    """Validate and resolve Julia island compiler arguments without writing files."""
+    if path is None:
+        return []
+    if controller != "julia":
+        raise ValueError("--julia-trace-compile requires --controller julia")
+    resolved = path.expanduser().resolve()
+    return [f"--trace-compile={resolved}", "--trace-compile-timing"]
+
+
+def create_output_directory(output: Path, trace_compile: Path | None) -> None:
+    """Create the exclusive run directory before a possibly nested trace path."""
+    output.mkdir(parents=True)
+    if trace_compile is not None:
+        trace_compile.expanduser().resolve().parent.mkdir(parents=True, exist_ok=True)
 
 
 def graph_parameter_sequence(dump: str, graph_name: str, node: str) -> tuple[int, int]:
@@ -338,6 +435,8 @@ def main() -> None:
                         help="local PipeWireAO.jl package for the Julia provider")
     parser.add_argument("--julia-blas-threads", type=int, default=1,
                         help="OpenBLAS threads in the Julia controller (default: 1)")
+    parser.add_argument("--julia-trace-compile", type=Path,
+                        help="optional Julia island compilation trace path (Julia controller only)")
     parser.add_argument("--placement-profile", type=Path,
                         help="opt-in role/thread contract; reject mismatches before image ingress")
     parser.add_argument("--julia-pin-cpus",
@@ -351,15 +450,26 @@ def main() -> None:
     parser.add_argument("--command-limit-um", type=float, default=0.8)
     parser.add_argument("--control-cycle", action="store_true",
                         help="two replay phases with source end, reset, property and reconstructor updates")
+    parser.add_argument("--live-updates", action="store_true",
+                        help="replace reconstructor and gain/pole during one continuous replay")
     parser.add_argument("--frames", type=int, default=16)
     parser.add_argument("--rate-hz", type=int, default=474,
                         help="offered frame rate; the 2 ms wfsSimulator readout permits at most 474 Hz")
     parser.add_argument("--reference-vectors", type=Path,
                         help="optional demanded-um.f32 from the matched FGN full-frame replay")
     args = parser.parse_args()
+    try:
+        trace_compile_arguments = julia_trace_compile_arguments(
+            args.julia_trace_compile, args.controller)
+    except ValueError as error:
+        parser.error(str(error))
     script_started_ns = time.monotonic_ns()
     if not 1 <= args.frames <= 1024:
         parser.error("--frames must be in 1..1024")
+    if args.live_updates and (args.control_cycle or not args.equivalence_observations
+                              or args.wire_capture or args.reference_vectors or args.frames < 256):
+        parser.error("--live-updates requires at least 256 frames and equivalence observations; "
+                     "control-cycle, wire fanout and saved-vector comparison are incompatible")
     if args.control_cycle and (args.frames < 8 or args.frames % 2):
         parser.error("--control-cycle requires an even frame count of at least 8")
     if args.control_cycle and not args.equivalence_observations:
@@ -450,9 +560,13 @@ def main() -> None:
         for program in ("dumpcap", "tshark"):
             if shutil.which(program) is None:
                 parser.error(f"--wire-capture requires {program}")
-    output.mkdir(parents=True)
+    create_output_directory(output, args.julia_trace_compile)
     env = make_environment(output, heart, args.rate_hz, installation,
                            loop_cpu, loop_priority)
+    if args.live_updates:
+        trace_directory = output / "live-source-trace"
+        trace_directory.mkdir()
+        env["HEART_RTC_TRACE_DIR"] = str(trace_directory)
     if profile is not None:
         env["PIPEWIREAO_RTC_THREAD_PROFILE"] = str(args.placement_profile.resolve())
         daemon_config = (output / "config/fgn-copper-live.conf").read_text()
@@ -487,6 +601,19 @@ def main() -> None:
         )
     else:
         prepare_artifacts(output, args.heart_config.resolve(), True)
+    if args.live_updates:
+        matrix = np.fromfile(output / "parameter-reconstructor.f32", dtype="<f4")
+        if matrix.size != 253 * 3600:
+            raise RuntimeError("prepared Copper reconstructor has the wrong extent")
+        (matrix * np.float32(0.5)).tofile(output / "parameter-reconstructor-half.f32")
+        if args.controller == "native":
+            graph_path = output / "revolt-copper-rtc-graph.conf"
+            graph_text = graph_path.read_text()
+            anchor = "    node.name = calculon-revolt-copper-fullframe\n"
+            if graph_text.count(anchor) != 1:
+                raise RuntimeError("Copper graph reliability insertion is ambiguous")
+            graph_path.write_text(graph_text.replace(anchor, anchor +
+                "    node.reliable = true\n    pipewireao.fifo-inputs = true\n", 1))
     env["PIPEWIREAO_RTC_PARAMETER_COPPER_RECONSTRUCTOR"] = str(
         output / "parameter-reconstructor.f32"
     )
@@ -514,6 +641,7 @@ def main() -> None:
               "cube": str(cube), "qualified": False,
               "delivery_qualified": False, "schedule_qualified": False,
               "wire_qualified": False if args.wire_capture else None,
+              "live_update_timing_qualified": False if args.live_updates else None,
               "numerical_comparison": "not_evaluated" if args.reference_vectors is not None
               else "not_requested"}
     profile_sha256 = sha256_file(args.placement_profile) if profile is not None else None
@@ -563,6 +691,9 @@ def main() -> None:
         report["jfg_root"] = str(jfg_root)
         report["jfg_script_sha256"] = sha256_file(island_script)
         report["julia_blas_threads"] = args.julia_blas_threads
+        if args.julia_trace_compile is not None:
+            report["julia_trace_compile"] = str(args.julia_trace_compile.expanduser().resolve())
+    report["live_updates"] = args.live_updates
     if args.wire_capture:
         report["adapter_script_sha256"] = sha256_file(adapter_script)
         report["qualifier_script_sha256"] = sha256_file(qualifier_script)
@@ -632,6 +763,8 @@ def main() -> None:
             placement_processes["adapter"] = adapter
             wait_text(output / "adapter.log", "CONNECT_ACCEPTED", 60, adapter)
         if args.controller == "julia":
+            if args.live_updates:
+                env["PIPEWIREAO_PROPS"] = "node.reliable = true"
             env.update({
                 "JULIA_RTC_WORKLOAD": "copper-fits-full-frame-feedback",
                 "JULIA_RTC_COPPER_CONFIG_DIR": str(args.heart_config.resolve()),
@@ -651,9 +784,10 @@ def main() -> None:
             island, island_log = start(
                 placed_argv(profile, "island",
                             ["julia", "--startup-file=no",
-                             "--threads=2,0" if profile is not None else "--threads=2",
-                             f"--project={jfg_root / 'deployment'}", str(island_script),
-                             "progressive-rtc-benchmark"]),
+                             "--threads=2,0" if profile is not None else "--threads=2"]
+                            + trace_compile_arguments
+                            + [f"--project={jfg_root / 'deployment'}", str(island_script),
+                               "progressive-rtc-benchmark"]),
                 env, output / "julia-island.log", cwd=jfg_root,
             )
             processes.append((island, island_log, None))
@@ -733,6 +867,63 @@ def main() -> None:
             )
             launched = time.monotonic_ns()
             processes.append((replay, replay_log, None))
+            if args.live_updates:
+                graph_name = "calculon-revolt-copper-fullframe"
+                duration = frame_count / offered_rate
+                time.sleep(duration / 4)
+                if replay.poll() is not None:
+                    raise RuntimeError("pixel source ended before live reconstructor update")
+                def snapshot(label):
+                    text = command([str(installation.tool("pwao-dump")), "-r",
+                                    "pipewire-ao-0", "--raw"], env)
+                    (output / f"pipewire-live-{label}.json").write_text(text)
+                    return text
+                baseline = snapshot("before-matrix")
+                initial_requested, initial_active = graph_parameter_sequence(
+                    baseline, graph_name, "reconstruct")
+                port = ("reconstruct:reconstructor" if args.controller == "native"
+                        else "reconstructor")
+                matrix_submitted_ns = time.monotonic_ns()
+                send_rtc_control(rtc, output / "rtc.log",
+                    f"parameter {graph_name} {port} F32_LE 253x3600 "
+                    f"org.calculon.ao.pwfs-reconstructor/1 "
+                    f"{output / 'parameter-reconstructor-half.f32'}", "Running")
+                deadline = time.monotonic() + duration / 4
+                while True:
+                    active_dump = snapshot("matrix-adoption")
+                    requested, active = graph_parameter_sequence(
+                        active_dump, graph_name, "reconstruct")
+                    if requested > initial_requested and active == requested:
+                        break
+                    if replay.poll() is not None or time.monotonic() >= deadline:
+                        raise RuntimeError("live reconstructor was not adopted during ingress")
+                    time.sleep(0.01)
+                matrix_adopted_ns = time.monotonic_ns()
+                time.sleep(max(0, (launched / 1e9 + duration / 2) - time.monotonic()))
+                if replay.poll() is not None:
+                    raise RuntimeError("pixel source ended before live Property update")
+                node = "control" if args.controller == "native" else "correction"
+                property_submitted_ns = time.monotonic_ns()
+                send_rtc_control(rtc, output / "rtc.log",
+                    f"properties-set {graph_name} {node}:gain float 0.02 "
+                    f"{node}:pole float 0.7", "Running")
+                property_adopted_ns = time.monotonic_ns()
+                snapshot("property-adoption")
+                if replay.poll() is not None:
+                    raise RuntimeError("pixel source ended before live Property acknowledgement")
+                report["live_update_control"] = {
+                    "initial_parameter_requested": initial_requested,
+                    "initial_parameter_active": initial_active,
+                    "replacement_parameter_requested": requested,
+                    "replacement_parameter_active": active,
+                    "matrix_submitted_ns": matrix_submitted_ns,
+                    "matrix_adopted_observed_ns": matrix_adopted_ns,
+                    "property_submitted_ns": property_submitted_ns,
+                    "property_adopted_observed_ns": property_adopted_ns,
+                    "no_reset": True,
+                    "changed_gain": 0.02, "changed_pole": 0.7,
+                    "unchanged_anti_windup_gain": 0.99,
+                }
             replay.wait(timeout=frame_count / offered_rate + 15)
             elapsed = (time.monotonic_ns() - launched) / 1e6
             if replay.returncode != 0:
@@ -930,6 +1121,12 @@ def main() -> None:
                 f"observed={len(sequences)} missing={missing} "
                 f"repeated={repeated} unexpected={unexpected}"
             )
+        if args.live_updates:
+            stop(daemon, daemon_log)
+            processes.remove((daemon, daemon_log, None))
+            record_live_update_timing(report, live_command_latency(
+                output / "live-source-trace", output / "demanded.csv",
+                args.frames, args.rate_hz))
         if args.equivalence_observations:
             report["equivalence_outputs"] = {}
             for name, _, extent, schema in EQUIVALENCE_OUTPUTS:
@@ -975,6 +1172,26 @@ def main() -> None:
                 checker_argv[checker_argv.index("--reference-demanded") + 1] = str(
                     output / "demanded-measured-um.f32"
                 )
+            if args.live_updates:
+                from check_copper_live_updates import infer_live_update_boundaries
+                baseline_dir = output / "direct-oracle-before-updates"
+                command([str(direct_oracle_bin), "--run-dir", str(output),
+                         "--output-dir", str(baseline_dir), "--frames", str(args.frames),
+                         "--limit-um", str(args.command_limit_um)], env)
+                shaped = lambda path: np.fromfile(path, dtype="<f4").reshape(args.frames, 253)
+                boundaries = infer_live_update_boundaries(
+                    shaped(output / "correction.f32"),
+                    shaped(output / "controller-state.f32"),
+                    shaped(baseline_dir / "residual.f32"),
+                )
+                report["live_update_boundaries"] = boundaries
+                changed = ["--change-at", str(boundaries["property_change_at"]),
+                           "--changed-gain", "0.02", "--changed-pole", "0.7"]
+                oracle_argv.extend(changed)
+                oracle_argv.extend(("--reconstructor-change-at", str(boundaries["matrix_change_at"]),
+                                    "--changed-reconstructor",
+                                    str(output / "parameter-reconstructor-half.f32")))
+                checker_argv.extend(changed)
             command(oracle_argv, env)
             references = {
                 "mean": "mean.f32",
@@ -990,16 +1207,16 @@ def main() -> None:
                               else f"{name}.f32"), dtype="<f4",
                 )
                 expected = np.fromfile(oracle_dir / oracle_file, dtype="<f4")
-                report["algorithm_comparison"][name] = compare_algorithm_output(
-                    actual, expected, args.frames, extent, name,
+                report["algorithm_comparison"][name] = compare_reported_algorithm_output(
+                    actual, expected, args.frames, extent, name, report,
                 )
             expected = np.fromfile(oracle_dir / "demanded-um.f32", dtype="<f4")
             actual = np.fromfile(
                 output / ("demanded-measured-um.f32" if args.control_cycle
                           else "demanded-um.f32"), dtype="<f4",
             )
-            report["algorithm_comparison"]["demanded"] = compare_algorithm_output(
-                actual, expected, args.frames, 277, "demanded",
+            report["algorithm_comparison"]["demanded"] = compare_reported_algorithm_output(
+                actual, expected, args.frames, 277, "demanded", report,
             )
             report["direct_checker"] = json.loads(command(checker_argv, env))
             report["numerical_comparison"] = "passed"
