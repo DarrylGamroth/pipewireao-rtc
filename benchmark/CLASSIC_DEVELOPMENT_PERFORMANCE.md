@@ -76,6 +76,33 @@ latency, detector-readout overlap, a sustainable offered frame rate, or a
 correction-critical deadline. The existing live Classic harness measures a
 different completion-paced end-to-end boundary; keep those results separate.
 
+## Warmup-instrumented replication
+
+A second five-pair run on 2026-09-29 used the same CPU, profile, 2,000 warmups,
+5,000 measured calls, and alternating order. The graph and direct replay now
+measure warmup wall and process-CPU time around their warmup loops, separately
+from the steady-state callback samples. The new source revisions are PipeWire
+`1045d32`, plugins `e4c2319`, and Calculon `f2ca4ac`. The complete second
+manifest and ten raw distributions are in
+[`data/classic-warmup-20260929`](data/classic-warmup-20260929/manifest.json).
+
+| Median across five runs | Nine-node FGN graph | Direct Calculon replay |
+| --- | ---: | ---: |
+| Warmup wall time, 2,000 frames | 325.554 ms | 291.030 ms |
+| Warmup process CPU time, 2,000 frames | 325.540 ms | 290.982 ms |
+| Steady p50, 5,000 frames | 155.993 µs | 144.070 µs |
+| Steady p50 range | 155.461–156.434 µs | 143.729–145.342 µs |
+| Steady p99 median | 189.235 µs | 163.636 µs |
+| Serialized service estimate, median | 6,367/s | 6,895/s |
+
+The paired p50 ratio median was 1.0816, ranging from 1.0742 to 1.0858;
+both within-path p50 spreads passed the 10% gate. The two experiments agree
+that the graph callback costs about 8–10% more than direct replay at this
+boundary. Warmup time includes frame preparation and feedback carry; the
+steady samples time only the processing call. Neither measures first use or
+package/load startup. The clock calls added around warmup do not occur in
+the timed per-frame processing loop.
+
 ## Reproduction
 
 The measured revisions were Calculon `36d9eca` plus the qualification-driver
