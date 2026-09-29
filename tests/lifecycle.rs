@@ -5,6 +5,7 @@ use pipewireao_rtc::{
     ScalarValue, ScientificDiagnostic,
 };
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 const VALID: &str = include_str!("../fixtures/minimal-development.conf");
 
@@ -51,6 +52,42 @@ fn start_running(dispatcher: &mut LifecycleDispatcher) {
 }
 
 #[test]
+fn parameter_effect_and_pending_effect_share_prepared_payload() {
+    let mut dispatcher = LifecycleDispatcher::new();
+    load_ready(&mut dispatcher);
+    start_running(&mut dispatcher);
+    let bytes = Arc::new(vec![0; 16]);
+    let effect = dispatcher
+        .dispatch(LifecycleEvent::UpdateParameter {
+            graph: "pipewireao-rtc-graph".to_owned(),
+            parameter: "reconstruct:reconstructor".to_owned(),
+            value: NdArrayParameterValue {
+                element_type: "F32_LE".to_owned(),
+                shape: vec![2, 2],
+                schema: "org.example.reconstructor/1".to_owned(),
+                bytes: Arc::clone(&bytes),
+            },
+        })
+        .unwrap()
+        .effect
+        .unwrap();
+    for effect in [
+        &effect,
+        dispatcher.pending_effect().unwrap(),
+        &effect.clone(),
+    ] {
+        let LifecycleEffect::UpdateParameter { value, .. } = effect else {
+            panic!("expected parameter effect");
+        };
+        assert!(Arc::ptr_eq(&bytes, &value.bytes));
+    }
+    assert_eq!(
+        complete(&mut dispatcher, &effect, Ok(())),
+        LifecycleState::Running
+    );
+}
+
+#[test]
 #[allow(clippy::too_many_lines)]
 fn every_legal_transition_succeeds() {
     let mut dispatcher = LifecycleDispatcher::new();
@@ -69,7 +106,7 @@ fn every_legal_transition_succeeds() {
                 element_type: "F32_LE".to_owned(),
                 shape: vec![2, 2],
                 schema: "org.example.reconstructor/1".to_owned(),
-                bytes: vec![0; 16],
+                bytes: Arc::new(vec![0; 16]),
             },
         },
     ] {
@@ -97,7 +134,7 @@ fn every_legal_transition_succeeds() {
                 element_type: "F32_LE".to_owned(),
                 shape: vec![2, 2],
                 schema: "org.example.reconstructor/1".to_owned(),
-                bytes: vec![0; 16],
+                bytes: Arc::new(vec![0; 16]),
             },
         },
     ] {

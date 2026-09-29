@@ -6,6 +6,7 @@ use std::cell::RefCell;
 use std::collections::{BTreeMap, VecDeque};
 use std::path::PathBuf;
 use std::rc::Rc;
+use std::sync::{mpsc, Arc};
 use std::time::{Duration, Instant};
 
 struct Arguments {
@@ -17,6 +18,12 @@ struct Arguments {
 #[derive(Debug)]
 enum ControlInput {
     Line(String),
+    Parameter {
+        graph: String,
+        parameter: String,
+        value: NdArrayParameterValue,
+    },
+    PreparationFailed(ScientificDiagnostic),
     End,
     Failed(String),
 }
@@ -92,6 +99,9 @@ fn control_session(runner: &mut Runner<LiveGraphAdapter>) -> Result<(), Scientif
     let _receiver = receiver.attach(main_loop.loop_(), move |input| {
         queued_inputs.borrow_mut().push_back(input);
     });
+    // Keep the sole acknowledgement sender on the owner. A queued PipeWire
+    // input must not retain it: PipeWire senders keep their native queue alive.
+    let (parameter_dispatched, parameter_received) = mpsc::sync_channel(1);
     std::thread::spawn(move || loop {
         let mut input = String::new();
         match std::io::stdin().read_line(&mut input) {
@@ -100,7 +110,12 @@ fn control_session(runner: &mut Runner<LiveGraphAdapter>) -> Result<(), Scientif
                 return;
             }
             Ok(_) => {
-                if sender.send(ControlInput::Line(input)).is_err() {
+                if !send_prepared_control_input(
+                    input,
+                    |path| std::fs::read(path),
+                    |input| sender.send(input).is_ok(),
+                    &parameter_received,
+                ) {
                     return;
                 }
             }
@@ -129,6 +144,26 @@ fn control_session(runner: &mut Runner<LiveGraphAdapter>) -> Result<(), Scientif
         })?;
         let input = match input {
             Some(ControlInput::Line(input)) => input,
+            Some(ControlInput::Parameter {
+                graph,
+                parameter,
+                value,
+            }) => {
+                dispatch_control(
+                    runner,
+                    LifecycleEvent::UpdateParameter {
+                        graph,
+                        parameter,
+                        value,
+                    },
+                )?;
+                // Capacity one makes acknowledgement nonblocking on the owner.
+                // An error or session exit drops the sender and releases the reader.
+                let _ = parameter_dispatched.try_send(());
+                print_prompt()?;
+                continue;
+            }
+            Some(ControlInput::PreparationFailed(error)) => return Err(error),
             Some(ControlInput::End) => return Ok(()),
             Some(ControlInput::Failed(error)) => {
                 return Err(ScientificDiagnostic::new(
@@ -212,27 +247,6 @@ fn control_session(runner: &mut Runner<LiveGraphAdapter>) -> Result<(), Scientif
                     },
                 )?;
             }
-            ["parameter", graph, parameter, element_type, dimensions, schema, path] => {
-                let bytes = std::fs::read(path).map_err(|error| {
-                    ScientificDiagnostic::new(
-                        "command parameter payload",
-                        format!("cannot read {path:?}: {error}"),
-                    )
-                })?;
-                dispatch_control(
-                    runner,
-                    LifecycleEvent::UpdateParameter {
-                        graph: (*graph).to_owned(),
-                        parameter: (*parameter).to_owned(),
-                        value: NdArrayParameterValue {
-                            element_type: (*element_type).to_owned(),
-                            shape: parse_dimensions(dimensions)?,
-                            schema: (*schema).to_owned(),
-                            bytes,
-                        },
-                    },
-                )?;
-            }
             _ => eprintln!(
                 "expected groups, status, properties GRAPH, property-generation GRAPH NODE, \
                  parameter-generation GRAPH NODE, stop GROUP, start GROUP, session-stop, \
@@ -244,6 +258,58 @@ fn control_session(runner: &mut Runner<LiveGraphAdapter>) -> Result<(), Scientif
         }
         print_prompt()?;
     }
+}
+
+/// Prepares file-backed parameters on the stdin reader, preserving command order.
+/// Payload errors precede dimension errors, as in the owner-thread command path.
+fn prepare_control_input(
+    input: String,
+    read_payload: impl FnOnce(&str) -> std::io::Result<Vec<u8>>,
+) -> ControlInput {
+    let fields = input.split_whitespace().collect::<Vec<_>>();
+    let ["parameter", graph, parameter, element_type, dimensions, schema, path] = fields.as_slice()
+    else {
+        return ControlInput::Line(input);
+    };
+    let value = read_payload(path)
+        .map_err(|error| {
+            ScientificDiagnostic::new(
+                "command parameter payload",
+                format!("cannot read {path:?}: {error}"),
+            )
+        })
+        .and_then(|bytes| {
+            Ok(NdArrayParameterValue {
+                element_type: (*element_type).to_owned(),
+                shape: parse_dimensions(dimensions)?,
+                schema: (*schema).to_owned(),
+                bytes: Arc::new(bytes),
+            })
+        });
+    match value {
+        Ok(value) => ControlInput::Parameter {
+            graph: (*graph).to_owned(),
+            parameter: (*parameter).to_owned(),
+            value,
+        },
+        Err(error) => ControlInput::PreparationFailed(error),
+    }
+}
+
+/// The reader waits for each parameter dispatch before reading another command.
+/// This bounds prepared parameters awaiting dispatch to one; the owner never waits for stdin.
+fn send_prepared_control_input(
+    input: String,
+    read_payload: impl FnOnce(&str) -> std::io::Result<Vec<u8>>,
+    send: impl FnOnce(ControlInput) -> bool,
+    dispatched: &mpsc::Receiver<()>,
+) -> bool {
+    let input = prepare_control_input(input, read_payload);
+    let parameter = matches!(input, ControlInput::Parameter { .. });
+    if !send(input) {
+        return false;
+    }
+    !parameter || dispatched.recv().is_ok()
 }
 
 /// Pumps owner-thread callbacks, then monitors and takes one queued command.
@@ -489,7 +555,9 @@ fn parse_arguments() -> Result<Arguments, ScientificDiagnostic> {
 mod tests {
     use super::parse_dimensions;
 
-    use super::{next_control_input, ControlInput};
+    use super::{
+        next_control_input, prepare_control_input, send_prepared_control_input, ControlInput,
+    };
     use std::cell::{Cell, RefCell};
     use std::collections::VecDeque;
     use std::rc::Rc;
@@ -607,6 +675,227 @@ mod tests {
         let second =
             next_control_input(main_loop.loop_(), &inputs, &mut deadline, || Ok(())).unwrap();
         assert!(matches!(second, Some(ControlInput::Line(line)) if line == "second"));
+    }
+
+    #[test]
+    fn prepared_parameter_moves_payload_and_preserves_preparation_errors() {
+        let bytes = vec![1, 2, 3, 4];
+        let storage = bytes.as_ptr();
+        let input = prepare_control_input(
+            "parameter graph port F32_LE 1 schema payload".to_owned(),
+            |path| {
+                assert_eq!(path, "payload");
+                Ok(bytes)
+            },
+        );
+        let ControlInput::Parameter {
+            graph,
+            parameter,
+            value,
+            ..
+        } = input
+        else {
+            panic!("expected prepared parameter");
+        };
+        assert_eq!(graph, "graph");
+        assert_eq!(parameter, "port");
+        assert_eq!(
+            value.bytes.as_ptr(),
+            storage,
+            "preparation copied the payload"
+        );
+        assert_eq!(value.shape, [1]);
+        assert_eq!(value.schema, "schema");
+        assert_eq!(value.element_type, "F32_LE");
+        let invalid = "parameter graph port F32_LE invalid schema payload";
+        for (read, expected_field) in [
+            (
+                Err(std::io::Error::from(std::io::ErrorKind::NotFound)),
+                "command parameter payload",
+            ),
+            (Ok(vec![0; 4]), "command parameter dimensions"),
+        ] {
+            let ControlInput::PreparationFailed(error) =
+                prepare_control_input(invalid.to_owned(), |_| read)
+            else {
+                panic!("expected preparation error");
+            };
+            assert_eq!(error.field(), expected_field);
+        }
+        let malformed = "parameter graph port";
+        assert!(matches!(prepare_control_input(malformed.to_owned(), |_| {
+            panic!("malformed command must not read a payload")
+        }), ControlInput::Line(line) if line == malformed));
+    }
+
+    #[test]
+    fn owner_callbacks_and_monitor_progress_while_reader_prepares_in_order() {
+        let main_loop = pipewire::main_loop::MainLoopRc::new(None).unwrap();
+        let inputs = Rc::new(RefCell::new(VecDeque::new()));
+        let queued = Rc::clone(&inputs);
+        let (sender, receiver) = pipewire::channel::channel();
+        let _receiver = receiver.attach(main_loop.loop_(), move |input| {
+            queued.borrow_mut().push_back(input);
+        });
+        let (parameter_dispatched, parameter_received) = std::sync::mpsc::sync_channel(1);
+        let (loading, loaded) = std::sync::mpsc::channel();
+        let (release, released) = std::sync::mpsc::channel();
+        let reader = std::thread::spawn(move || {
+            sender
+                .send(prepare_control_input(
+                    "status".to_owned(),
+                    |_| unreachable!(),
+                ))
+                .unwrap();
+            assert!(send_prepared_control_input(
+                "parameter graph port F32_LE 1 schema payload".to_owned(),
+                |_| {
+                    loading.send(()).unwrap();
+                    released.recv().unwrap();
+                    Ok(vec![0; 4])
+                },
+                |input| sender.send(input).is_ok(),
+                &parameter_received,
+            ));
+            sender
+                .send(prepare_control_input(
+                    "parameter graph port F32_LE 0 schema payload".to_owned(),
+                    |_| Ok(vec![0; 4]),
+                ))
+                .unwrap();
+            sender.send(ControlInput::End).unwrap();
+        });
+        loaded.recv_timeout(Duration::from_secs(1)).unwrap();
+        let ticks = Rc::new(Cell::new(0));
+        let observed_ticks = Rc::clone(&ticks);
+        let timer = main_loop.loop_().add_timer(move |_| {
+            observed_ticks.set(observed_ticks.get() + 1);
+        });
+        timer
+            .update_timer(
+                Some(Duration::from_millis(2)),
+                Some(Duration::from_millis(2)),
+            )
+            .into_result()
+            .unwrap();
+        let mut deadline = Instant::now() + Duration::from_millis(10);
+        let mut monitors = 0;
+        let limit = Instant::now() + Duration::from_secs(1);
+        let mut observed = Vec::new();
+        while (ticks.get() < 3 || monitors == 0) && Instant::now() < limit {
+            if let Some(input) =
+                next_control_input(main_loop.loop_(), &inputs, &mut deadline, || {
+                    monitors += 1;
+                    Ok(())
+                })
+                .unwrap()
+            {
+                observed.push(input);
+            }
+        }
+        release.send(()).unwrap();
+        assert!(
+            ticks.get() >= 3,
+            "reader preparation stalled owner callbacks"
+        );
+        assert!(
+            monitors > 0,
+            "reader preparation stalled required-object monitoring"
+        );
+        while observed.len() < 4 && Instant::now() < limit {
+            if let Some(input) =
+                next_control_input(main_loop.loop_(), &inputs, &mut deadline, || Ok(())).unwrap()
+            {
+                if matches!(&input, ControlInput::Parameter { .. }) {
+                    parameter_dispatched.try_send(()).unwrap();
+                }
+                observed.push(input);
+            }
+        }
+        reader.join().unwrap();
+        assert_eq!(observed.len(), 4);
+        assert!(matches!(&observed[0], ControlInput::Line(line) if line == "status"));
+        assert!(matches!(&observed[1], ControlInput::Parameter { .. }));
+        assert!(
+            matches!(&observed[2], ControlInput::PreparationFailed(error)
+            if error.field() == "command parameter dimensions")
+        );
+        assert!(matches!(&observed[3], ControlInput::End));
+    }
+
+    #[test]
+    fn parameter_flood_prepares_one_payload_at_a_time_until_dispatch() {
+        let (sender, receiver) = std::sync::mpsc::channel();
+        let (acknowledge, dispatched) = std::sync::mpsc::sync_channel(1);
+        let prepared = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let reader_prepared = std::sync::Arc::clone(&prepared);
+        let reader = std::thread::spawn(move || {
+            for _ in 0..32 {
+                assert!(send_prepared_control_input(
+                    "parameter graph port F32_LE 1 schema payload".to_owned(),
+                    |_| {
+                        reader_prepared.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                        Ok(vec![0; 4])
+                    },
+                    |input| sender.send(input).is_ok(),
+                    &dispatched,
+                ));
+            }
+        });
+        for ordinal in 1..=32 {
+            let input = receiver.recv_timeout(Duration::from_secs(1)).unwrap();
+            assert!(matches!(input, ControlInput::Parameter { .. }));
+            assert_eq!(prepared.load(std::sync::atomic::Ordering::SeqCst), ordinal);
+            assert!(matches!(
+                receiver.try_recv(),
+                Err(std::sync::mpsc::TryRecvError::Empty)
+            ));
+            acknowledge.try_send(()).unwrap();
+        }
+        reader.join().unwrap();
+    }
+
+    #[test]
+    fn session_exit_releases_reader_with_parameter_in_undrained_pipewire_queue() {
+        let main_loop = pipewire::main_loop::MainLoopRc::new(None).unwrap();
+        let (sender, receiver) = pipewire::channel::channel();
+        let attached = receiver.attach(main_loop.loop_(), |_| {
+            panic!("shutdown test must leave the native queue undrained")
+        });
+        let (acknowledge, dispatched) = std::sync::mpsc::sync_channel(1);
+        let (sent, queued) = std::sync::mpsc::channel();
+        let (finished, completion) = std::sync::mpsc::channel();
+        let reader = std::thread::spawn(move || {
+            let result = send_prepared_control_input(
+                "parameter graph port F32_LE 1 schema payload".to_owned(),
+                |_| Ok(vec![0; 4]),
+                |input| {
+                    let result = sender.send(input).is_ok();
+                    sent.send(()).unwrap();
+                    result
+                },
+                &dispatched,
+            );
+            finished.send(result).unwrap();
+        });
+        queued.recv_timeout(Duration::from_secs(1)).unwrap();
+        drop(attached);
+        // The acknowledgement sender belongs to the owner, never to an input
+        // retained in PipeWire's sender-owned native queue.
+        drop(acknowledge);
+        assert!(!completion.recv_timeout(Duration::from_secs(1)).unwrap());
+        reader.join().unwrap();
+        let (acknowledge, dispatched) = std::sync::mpsc::sync_channel(1);
+        assert!(
+            !send_prepared_control_input(
+                "parameter graph port F32_LE 1 schema payload".to_owned(),
+                |_| Ok(vec![0; 4]),
+                |_| false,
+                &dispatched,
+            ),
+            "failed send must not wait for acknowledgement"
+        );
+        drop(acknowledge);
     }
 
     #[test]

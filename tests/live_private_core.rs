@@ -3029,7 +3029,7 @@ fn apply_revolt_runtime_parameter_update(
                     element_type: "F32_LE".to_owned(),
                     shape: vec![277, 376],
                     schema: "org.calculon.ao.shwfs-reconstructor/1".to_owned(),
-                    bytes: scaled,
+                    bytes: std::sync::Arc::new(scaled),
                 },
             })
             .unwrap(),
@@ -3095,7 +3095,7 @@ fn assert_revolt_wrong_shape_parameter_requires_retry(
                     element_type: "F32_LE".to_owned(),
                     shape: vec![376, 277],
                     schema: "org.calculon.ao.shwfs-reconstructor/1".to_owned(),
-                    bytes,
+                    bytes: std::sync::Arc::new(bytes),
                 },
             })
             .unwrap(),

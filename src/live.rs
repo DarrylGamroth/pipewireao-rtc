@@ -23,6 +23,7 @@ use std::io::Cursor;
 use std::mem::size_of;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 const SPA_NODE_FACTORY: &str = "spa-node-factory";
@@ -359,9 +360,20 @@ struct RequiredExternalObject {
 
 #[derive(Default)]
 struct ParameterProcessState {
-    pending: Option<Vec<u8>>,
+    pending: Option<Arc<Vec<u8>>>,
     failure: Option<String>,
     stride: i32,
+}
+
+impl ParameterProcessState {
+    fn queue_payload(&mut self, payload: &Arc<Vec<u8>>) -> Result<(), &'static str> {
+        if self.pending.is_some() {
+            return Err("a parameter value is already pending");
+        }
+        self.failure = None;
+        self.pending = Some(Arc::clone(payload));
+        Ok(())
+    }
 }
 
 struct ParameterPublisher {
@@ -1274,7 +1286,7 @@ impl LiveGraphAdapter {
                     element_type: port.element_type.clone(),
                     shape: port.shape.clone(),
                     schema: port.schema.clone(),
-                    bytes,
+                    bytes: Arc::new(bytes),
                 },
             )?;
         }
@@ -1345,14 +1357,12 @@ impl LiveGraphAdapter {
         }
         {
             let mut state = publisher.state.borrow_mut();
-            if state.pending.is_some() {
-                return Err(ScientificDiagnostic::new(
+            state.queue_payload(&value.bytes).map_err(|message| {
+                ScientificDiagnostic::new(
                     format!("graph {graph_name}.ports.{parameter_name}"),
-                    "a parameter value is already pending",
-                ));
-            }
-            state.failure = None;
-            state.pending = Some(value.bytes.clone());
+                    message,
+                )
+            })?;
         }
         if self.status.running {
             publisher.stream.trigger_process().map_err(|error| {
@@ -1948,7 +1958,7 @@ impl LiveGraphAdapter {
                     ));
                     return;
                 };
-                storage[..payload.len()].copy_from_slice(&payload);
+                storage[..payload.len()].copy_from_slice(payload.as_slice());
                 let state = state.borrow();
                 let chunk = data.chunk_mut();
                 *chunk.offset_mut() = 0;
@@ -3801,7 +3811,29 @@ mod callback_wait_tests {
     use super::iterate_callbacks;
     use std::cell::Cell;
     use std::rc::Rc;
+    use std::sync::Arc;
     use std::time::{Duration, Instant};
+
+    #[test]
+    fn parameter_pending_publication_and_retry_share_payload() {
+        let payload = Arc::new(vec![0; 16]);
+        let mut state = super::ParameterProcessState {
+            failure: Some("previous failure".to_owned()),
+            ..super::ParameterProcessState::default()
+        };
+        state.queue_payload(&payload).unwrap();
+        assert!(state.failure.is_none());
+        assert!(Arc::ptr_eq(&payload, state.pending.as_ref().unwrap()));
+        let replacement = Arc::new(vec![1; 16]);
+        assert_eq!(
+            state.queue_payload(&replacement),
+            Err("a parameter value is already pending")
+        );
+        // A callback without an available SPA buffer retains the same allocation.
+        let pending = state.pending.take().unwrap();
+        state.pending = Some(pending);
+        assert!(Arc::ptr_eq(&payload, state.pending.as_ref().unwrap()));
+    }
 
     #[test]
     fn control_wait_services_pending_owner_thread_callback() {

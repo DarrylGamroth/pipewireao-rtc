@@ -4,6 +4,7 @@ use statig::prelude::{state_machine, Handled, Outcome, Super, Transition};
 use std::collections::BTreeMap;
 use std::fmt;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ConfigurationInput {
@@ -130,7 +131,11 @@ pub struct NdArrayParameterValue {
     pub element_type: String,
     pub shape: Vec<u32>,
     pub schema: String,
-    pub bytes: Vec<u8>,
+    /// Owned payload shared without byte copies across lifecycle effects and
+    /// pending publication. Construct from a prepared `Vec` before owner-thread
+    /// dispatch; treat the bytes as immutable. Publication copies them into SPA
+    /// storage, whose lifetime is independent of this value.
+    pub bytes: Arc<Vec<u8>>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
