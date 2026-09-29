@@ -620,8 +620,8 @@ software-boundary observations under an offered schedule, not a comparative
 ranking or physical camera-to-DM result. The placement records now include
 resident memory by reported kernel page size, huge-page categories, and
 locked-memory amount for every inspected process, with a strict pre-ingress
-failure when page backing is unavailable. The three-repeat, first-use, and
-progressive qualifications remain open, so
+failure when page backing is unavailable. At that stage, strict three-repeat,
+cold-graph first-use, and progressive qualifications remained open, so
 RTC-DEV-019 remains partial.
 
 The managed complete-frame wire path subsequently passed three independent
@@ -634,8 +634,8 @@ first transported command from later packet intervals in these qualified
 captures. This closes the repeated managed
 complete-frame delivery measurement on this host; it does not establish a
 cross-implementation latency ranking because ambient load was not controlled.
-HEART/FGN/JFG progressive repetitions, cold-graph first-use isolation, and source
-pre-ingress thread inspection remain open.
+Strict HEART/FGN/JFG progressive repetitions, cold-graph first-use isolation,
+and source pre-ingress thread inspection remained open at that point.
 
 An opt-in Ryzen thread profile now checks exact policy and affinity counts at
 each runner's pre-ingress and post-replay boundary. It exposed the FGN daemon's
@@ -646,8 +646,20 @@ numerical comparison; the raw records are linked from
 [the Copper benchmark](../benchmark/COPPER.md). The workstation still had
 competing CPU-saturating tasks, and the profile does not prove the identity of
 each algorithm worker. Explicit loop and memory settings for the remaining
-PipeWireAO processes, owner pin identity, first-use evidence, and three
+PipeWireAO processes, owner pin identity, cold-graph first-use evidence, and three
 uncontended independent repetitions per mode remain open.
+
+Three subsequent strict-profile 1,024-frame repetitions per ingress mode
+qualified for HEART, FGN, and JFG, with complete WFS and Standard-DM packet
+capture, exact ordered delivery, and command-vector parity. The
+[repeated Copper result](../benchmark/COPPER.md) retains the manifests and
+per-run latency distributions. This closes repeated strict-profile
+qualification at the tested 474 Hz offered load, including row blocks. Six
+CPU-saturating Julia analysis processes were observed and run order was
+fixed, so these measurements do not establish an uncontended latency ranking.
+Source pre-ingress thread inspection, exact Julia owner pin identity, cold
+graph first-use isolation, and controlled placement/memory experiments remain
+open. RTC-DEV-019 remains partial.
 
 ## Deferred capabilities
 

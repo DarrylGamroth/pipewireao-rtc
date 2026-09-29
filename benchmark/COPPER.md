@@ -498,3 +498,43 @@ but does not prove each thread's algorithmic role. Julia owner pin identity,
 complete explicit PipeWireAO loop and memory settings for every process,
 first-use characterization, and at least three uncontended repetitions per
 mode remain open for RTC-DEV-019.
+
+## Repeated strict-placement series, 2026-09-29
+
+The follow-up manifests are
+`~/.cache/rtc-copper-strict-row-3x-20260929/manifest.json` and
+`~/.cache/rtc-copper-strict-fullframe-3x-20260929/manifest.json`.
+Each mode has three sequential 1,024-frame HEART, FGN, and JFG replays with
+the same FITS cube, 474 Hz offered rate, 2,000 µs readout, clipping feedback,
+and strict Ryzen thread profile. All 18 RTC executions qualified: each
+captured 2,048 WFS packets, emitted 1,024 ordered Standard-DM commands,
+passed pre-ingress and post-replay role-profile checks, and passed the
+numerical vector comparison. The largest HEART↔JFG difference was
+4.563 × 10⁻⁸ µm and FGN↔JFG was 2.980 × 10⁻⁸ µm, rounded to four
+significant figures.
+
+The [packet-level phase record](data/copper_strict_phases_20260929.json)
+requalifies the current captures against FITS pixels and Standard-DM packets,
+checks packet identity and capture order, and retains the hashes and per-run
+first-frame and later-frame intervals. The table gives the minimum–maximum
+range of the three **per-run** all-frame percentiles in microseconds. It does
+not pool the runs.
+
+| Ingress | RTC | First packet → DM p50 | Terminal packet → DM p50 | Terminal packet → DM p99 |
+| --- | --- | ---: | ---: | ---: |
+| Row blocks | HEART | 1,175–1,192 | 178–193 | 216–237 |
+| Row blocks | FGN | 1,127–1,128 | 130–131 | 185–218 |
+| Row blocks | JFG | 1,128–1,144 | 129–147 | 245–272 |
+| Complete frame | HEART | 1,231–1,262 | 233–264 | 351–380 |
+| Complete frame | FGN | 1,127–1,157 | 129–159 | 235–239 |
+| Complete frame | JFG | 1,138–1,154 | 140–156 | 267–317 |
+
+These runs close the repeated strict-profile delivery and packet-latency
+measurement for both ingress modes on this host. Six CPU-saturating Julia
+analysis processes were observed during the series; a
+[post-series host snapshot](data/copper_strict_ambient_20260929.json) records
+their PIDs, CPU usage, and affinity. The RTCs ran in fixed
+HEART→FGN→JFG order, and the source still has no pre-ingress release gate.
+The latency spread therefore does not establish an uncontended performance
+ranking or the complete RTC-DEV-019 placement claim. Offline graph warmup was
+used; cold-graph first use remains a separate experiment.

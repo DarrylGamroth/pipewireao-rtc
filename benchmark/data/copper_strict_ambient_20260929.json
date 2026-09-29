@@ -1,0 +1,151 @@
+{
+  "kind": "post-series ambient process snapshot",
+  "observed_utc": "2026-09-29T17:29:27.759132+00:00",
+  "processes": [
+    {
+      "affinity": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "comm": "julia",
+      "cpu_percent_ps_snapshot": 99.9,
+      "pid": 689744,
+      "state": "RNl"
+    },
+    {
+      "affinity": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "comm": "julia",
+      "cpu_percent_ps_snapshot": 99.9,
+      "pid": 2085163,
+      "state": "RNl"
+    },
+    {
+      "affinity": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "comm": "julia",
+      "cpu_percent_ps_snapshot": 99.9,
+      "pid": 2156659,
+      "state": "RNl"
+    },
+    {
+      "affinity": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "comm": "julia",
+      "cpu_percent_ps_snapshot": 99.9,
+      "pid": 2437253,
+      "state": "RNl"
+    },
+    {
+      "affinity": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "comm": "julia",
+      "cpu_percent_ps_snapshot": 99.9,
+      "pid": 2455387,
+      "state": "RNl"
+    },
+    {
+      "affinity": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "comm": "julia",
+      "cpu_percent_ps_snapshot": 99.9,
+      "pid": 3079548,
+      "state": "RNl"
+    }
+  ],
+  "selection": "Julia dynamic-analysis process with ps CPU usage >=90% in the post-series snapshot"
+}
