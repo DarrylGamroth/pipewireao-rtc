@@ -238,10 +238,10 @@ RTC-owned ordinary PipeWire stream for the declared sparse reconstructor
 parameter link. The private-core fixture resets controller state, submits a
 new scalar gain and scaled reconstructor while stopped, distinguishes
 submission from active host generations, and compares eight commands and
-plant states per controller with direct references. The worker can adopt the
-sparse parameter on either of two adjacent graph cycles, so the fixture
-classifies that bounded one-way transition against both valid direct states
-and requires the updated state by sequence 8. The private core separately
+plant states per controller with direct references. The fixture accepts a
+one-way sparse-parameter adoption during sequences 6–8, classifies each
+command against its direct old and updated controller states, and requires the
+updated state by sequence 8. The private core separately
 proves repeated live gain/pole updates and rejection of an undeclared property
 for native and Julia graphs, including no generation change on rejection. It
 stops a minimal graph, reloads a different serial topology, restarts, and

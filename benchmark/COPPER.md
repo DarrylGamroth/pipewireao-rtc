@@ -12,7 +12,7 @@ U16 detector image; the observed 277-element Float32 command is in
 micrometres. The observer is non-actuating. The Standard-DM conversion and
 wire output used by the three-way baseline are outside this RTC fixture.
 
-Render the Copper graph and its four startup calibration parameters from the
+Render the Copper graph and its startup calibration parameters from the
 maintained FGN generator and the same HEART configuration used by the
 comparison:
 
@@ -26,7 +26,8 @@ python3 benchmark/render_revolt_copper_graph.py \
 ```
 
 The script prints `PIPEWIREAO_RTC_GRAPH_COPPER_NATIVE` for the RTC fixture.
-It writes the module arguments, prepared F32 calibration payloads, and a
+It writes the module arguments, four prepared F32 calibration payloads (eight
+when `--clipping-feedback` is selected), and a
 parameter manifest under `--output-dir`. Keep that directory available for the
 whole session: the FGN host maps the calibration files during graph creation.
 The 474 Hz fixture rate, generated graph rate, and external WFS source rate

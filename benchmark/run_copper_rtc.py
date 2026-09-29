@@ -125,6 +125,8 @@ def main() -> None:
         demanded = np.fromfile(output / "demanded-um.f32", dtype="<f4")
         if demanded.size != args.frames * 277:
             raise RuntimeError(f"demanded vector count is {demanded.size // 277}, expected {args.frames}")
+        if not np.isfinite(demanded).all():
+            raise RuntimeError("demanded command contains non-finite values")
         if args.reference_vectors is not None:
             reference = np.fromfile(args.reference_vectors, dtype="<f4")[:demanded.size]
             if reference.size != demanded.size:
