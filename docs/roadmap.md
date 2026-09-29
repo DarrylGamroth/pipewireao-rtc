@@ -705,6 +705,13 @@ and after ingress. The [evidence](../benchmark/data/copper_client_loop_evidence_
 does not cover explicit client settings for every other PipeWireAO process,
 long-run latency, or uncontended repetitions. RTC-DEV-019 remains partial.
 
+After merging, one 1,024-frame run in each Copper ingress mode qualified
+three-way WFS/DM delivery, command comparison, and strict placement. The
+[packet-phase record](../benchmark/data/copper_client_loop_main_phases_20260929.json)
+requalifies both captures. Six unrelated CPU-saturating Julia processes and
+fixed run order still prevent a controlled cross-RTC latency ranking.
+RTC-DEV-019 remains partial.
+
 ## Deferred capabilities
 
 The following topics are not active work. Their previous proposals are

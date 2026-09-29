@@ -579,3 +579,26 @@ records the manifests, configuration hashes, and thread records. These short
 runs establish configuration and functional compatibility, not an
 uncontended latency result. Explicit client settings for the remaining
 PipeWireAO processes are still open under RTC-DEV-019.
+
+The same configuration subsequently passed one merged-main 1,024-frame run
+per ingress mode. Every HEART, FGN, and JFG run captured 2,048 WFS packets,
+emitted 1,024 ordered DM commands, and passed numerical comparison and
+pre/post placement checks. The [requalified packet phases](data/copper_client_loop_main_phases_20260929.json)
+give the following all-frame values in µs:
+
+| Ingress | RTC | First packet → DM p50 | Terminal packet → DM p50 | Terminal packet → DM p99 |
+| --- | --- | ---: | ---: | ---: |
+| Row blocks | HEART | 1,154 | 157 | 223 |
+| Row blocks | FGN | 1,126 | 129 | 190 |
+| Row blocks | JFG | 1,127 | 129 | 317 |
+| Complete frame | HEART | 1,246 | 248 | 387 |
+| Complete frame | FGN | 1,157 | 159 | 212 |
+| Complete frame | JFG | 1,148 | 150 | 395 |
+
+Each row is one run. Six unrelated Julia analysis processes still consumed
+full CPU cores, and HEART→FGN→JFG run order was fixed. These values do not
+rank the RTCs under controlled host load. An earlier attempted row-block run
+stopped before FGN pixel ingress because the local, ignored JFG benchmark
+Manifest was accidentally removed during worktree cleanup; the environment
+was restored before these two qualified replays. Its failed manifest remains
+at `~/.cache/rtc-copper-client-loop-main-row-1024-20260929/manifest.json`.

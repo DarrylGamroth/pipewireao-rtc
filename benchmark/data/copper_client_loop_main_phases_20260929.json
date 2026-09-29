@@ -1,0 +1,534 @@
+{
+  "qualified_manifests": [
+    {
+      "frames": 1024,
+      "historical_capture_integrity": "qualification-time capture hashes unavailable; current captures checked against retained summaries and packet identities",
+      "jfg_graph_warmup": "offline",
+      "manifest": "/home/dgamroth/.cache/rtc-copper-client-loop-main-row-1024-r2-20260929/manifest.json",
+      "manifest_sha256": "66543f5c4edaec1e06e7824dba057ad8c618a5a56936d3f907918edf69daf4a7",
+      "mode": "row",
+      "requalification_scripts_sha256": {
+        "decode_std_dm_packets.py": "fa1ad25877f237884ff931e0f0fc5379222c1dd317827dde09caf508a8160f04",
+        "qualify_copper_aos_capture.py": "d72c6ce78c551f1d0b46d64b8dae2fb6c979dd9ac970f713f4d98a6cee759868"
+      },
+      "runs": [
+        {
+          "index": 1,
+          "owners": {
+            "fgn": {
+              "dm": "/home/dgamroth/.cache/rtc-copper-client-loop-main-row-1024-r2-20260929/run-001/fgn/dm-packets.tsv",
+              "dm_sha256": "996d6b3676e36ef18ca0b8532413604e31b14b1e634612cb3284f5bd5b306992",
+              "phases": {
+                "all_frames": {
+                  "first_to_terminal_wfs_us": {
+                    "count": 1024,
+                    "max": 1016.694,
+                    "min": 966.31,
+                    "p50": 998.691,
+                    "p99": 1005.08554
+                  },
+                  "first_wfs_packet_to_dm_us": {
+                    "count": 1024,
+                    "max": 1215.687,
+                    "min": 1092.106,
+                    "p50": 1125.764,
+                    "p99": 1185.97107
+                  },
+                  "terminal_wfs_packet_to_dm_us": {
+                    "count": 1024,
+                    "max": 214.632,
+                    "min": 96.1,
+                    "p50": 128.5405,
+                    "p99": 190.12687
+                  }
+                },
+                "first_frame": {
+                  "first_to_terminal_wfs_us": 966.31,
+                  "first_wfs_packet_to_dm_us": 1180.942,
+                  "terminal_wfs_packet_to_dm_us": 214.632
+                },
+                "frames_101_onward": {
+                  "first_to_terminal_wfs_us": {
+                    "count": 924,
+                    "max": 1016.694,
+                    "min": 986.648,
+                    "p50": 998.7405,
+                    "p99": 1005.08554
+                  },
+                  "first_wfs_packet_to_dm_us": {
+                    "count": 924,
+                    "max": 1215.687,
+                    "min": 1093.417,
+                    "p50": 1126.3795,
+                    "p99": 1185.97107
+                  },
+                  "terminal_wfs_packet_to_dm_us": {
+                    "count": 924,
+                    "max": 206.918,
+                    "min": 96.1,
+                    "p50": 129.397,
+                    "p99": 189.7835
+                  }
+                },
+                "frames_2_through_10": {
+                  "first_to_terminal_wfs_us": {
+                    "count": 9,
+                    "max": 999.032,
+                    "min": 986.848,
+                    "p50": 994.983,
+                    "p99": 998.74256
+                  },
+                  "first_wfs_packet_to_dm_us": {
+                    "count": 9,
+                    "max": 1208.343,
+                    "min": 1095.722,
+                    "p50": 1107.464,
+                    "p99": 1205.90244
+                  },
+                  "terminal_wfs_packet_to_dm_us": {
+                    "count": 9,
+                    "max": 213.991,
+                    "min": 100.328,
+                    "p50": 112.481,
+                    "p99": 211.17604
+                  }
+                }
+              },
+              "wfs": "/home/dgamroth/.cache/rtc-copper-client-loop-main-row-1024-r2-20260929/run-001/fgn/wfs-packets.tsv",
+              "wfs_sha256": "32d0498c8e1b5b0ef385e51aec033704aaf189edbda0f567d0a9870020f1d2e9"
+            },
+            "heart": {
+              "dm": "/home/dgamroth/.cache/rtc-copper-client-loop-main-row-1024-r2-20260929/run-001/heart/std-dm-packets.tsv",
+              "dm_sha256": "4b8bafa05f21c2556807a66515802efda77eb5e3d590c4b9ce6e213e965be232",
+              "phases": {
+                "all_frames": {
+                  "first_to_terminal_wfs_us": {
+                    "count": 1024,
+                    "max": 1011.635,
+                    "min": 949.428,
+                    "p50": 998.5705,
+                    "p99": 1003.7502
+                  },
+                  "first_wfs_packet_to_dm_us": {
+                    "count": 1024,
+                    "max": 1567.205,
+                    "min": 1095.091,
+                    "p50": 1154.4325,
+                    "p99": 1222.02724
+                  },
+                  "terminal_wfs_packet_to_dm_us": {
+                    "count": 1024,
+                    "max": 617.777,
+                    "min": 99.186,
+                    "p50": 156.919,
+                    "p99": 223.30190999999996
+                  }
+                },
+                "first_frame": {
+                  "first_to_terminal_wfs_us": 949.428,
+                  "first_wfs_packet_to_dm_us": 1567.205,
+                  "terminal_wfs_packet_to_dm_us": 617.777
+                },
+                "frames_101_onward": {
+                  "first_to_terminal_wfs_us": {
+                    "count": 924,
+                    "max": 1011.635,
+                    "min": 989.513,
+                    "p50": 998.545,
+                    "p99": 1003.2214
+                  },
+                  "first_wfs_packet_to_dm_us": {
+                    "count": 924,
+                    "max": 1311.747,
+                    "min": 1095.091,
+                    "p50": 1153.5755,
+                    "p99": 1215.02627
+                  },
+                  "terminal_wfs_packet_to_dm_us": {
+                    "count": 924,
+                    "max": 313.107,
+                    "min": 99.186,
+                    "p50": 155.7115,
+                    "p99": 218.35574999999994
+                  }
+                },
+                "frames_2_through_10": {
+                  "first_to_terminal_wfs_us": {
+                    "count": 9,
+                    "max": 1001.045,
+                    "min": 994.182,
+                    "p50": 996.016,
+                    "p99": 1000.80132
+                  },
+                  "first_wfs_packet_to_dm_us": {
+                    "count": 9,
+                    "max": 1181.232,
+                    "min": 1132.06,
+                    "p50": 1149.864,
+                    "p99": 1181.0044
+                  },
+                  "terminal_wfs_packet_to_dm_us": {
+                    "count": 9,
+                    "max": 183.233,
+                    "min": 136.044,
+                    "p50": 149.53,
+                    "p99": 183.21452
+                  }
+                }
+              },
+              "wfs": "/home/dgamroth/.cache/rtc-copper-client-loop-main-row-1024-r2-20260929/run-001/heart/std-wfs-packets.tsv",
+              "wfs_sha256": "53c69879809ea535ac6264a8601544290064d74d5a31dcaeadfeaa7bead1714e"
+            },
+            "jfg": {
+              "dm": "/home/dgamroth/.cache/rtc-copper-client-loop-main-row-1024-r2-20260929/run-001/jfg-dm-packets.tsv",
+              "dm_sha256": "cfb0ab6d6210bcbea66d5a0d4690f69d18256aefc1f26b6def99293b4cc7827e",
+              "phases": {
+                "all_frames": {
+                  "first_to_terminal_wfs_us": {
+                    "count": 1024,
+                    "max": 1043.024,
+                    "min": 962.082,
+                    "p50": 998.8355,
+                    "p99": 1006.2109399999999
+                  },
+                  "first_wfs_packet_to_dm_us": {
+                    "count": 1024,
+                    "max": 1351.611,
+                    "min": 1109.748,
+                    "p50": 1126.705,
+                    "p99": 1313.2664399999999
+                  },
+                  "terminal_wfs_packet_to_dm_us": {
+                    "count": 1024,
+                    "max": 375.333,
+                    "min": 113.192,
+                    "p50": 128.8765,
+                    "p99": 316.57777
+                  }
+                },
+                "first_frame": {
+                  "first_to_terminal_wfs_us": 962.082,
+                  "first_wfs_packet_to_dm_us": 1337.415,
+                  "terminal_wfs_packet_to_dm_us": 375.333
+                },
+                "frames_101_onward": {
+                  "first_to_terminal_wfs_us": {
+                    "count": 924,
+                    "max": 1018.378,
+                    "min": 973.604,
+                    "p50": 998.82,
+                    "p99": 1005.1861
+                  },
+                  "first_wfs_packet_to_dm_us": {
+                    "count": 924,
+                    "max": 1351.611,
+                    "min": 1109.748,
+                    "p50": 1125.002,
+                    "p99": 1294.73859
+                  },
+                  "terminal_wfs_packet_to_dm_us": {
+                    "count": 924,
+                    "max": 352.961,
+                    "min": 113.192,
+                    "p50": 127.3985,
+                    "p99": 293.83114
+                  }
+                },
+                "frames_2_through_10": {
+                  "first_to_terminal_wfs_us": {
+                    "count": 9,
+                    "max": 1043.024,
+                    "min": 997.138,
+                    "p50": 999.262,
+                    "p99": 1039.56632
+                  },
+                  "first_wfs_packet_to_dm_us": {
+                    "count": 9,
+                    "max": 1286.36,
+                    "min": 1143.893,
+                    "p50": 1190.901,
+                    "p99": 1283.606
+                  },
+                  "terminal_wfs_packet_to_dm_us": {
+                    "count": 9,
+                    "max": 287.088,
+                    "min": 144.09,
+                    "p50": 178.865,
+                    "p99": 284.41016
+                  }
+                }
+              },
+              "wfs": "/home/dgamroth/.cache/rtc-copper-client-loop-main-row-1024-r2-20260929/run-001/jfg-wfs-packets.tsv",
+              "wfs_sha256": "a96e9f690b27cac6e1cc807d243a450d6092efa4fe7eb4554f4ccb75b773ee42"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "frames": 1024,
+      "historical_capture_integrity": "qualification-time capture hashes unavailable; current captures checked against retained summaries and packet identities",
+      "jfg_graph_warmup": "offline",
+      "manifest": "/home/dgamroth/.cache/rtc-copper-client-loop-main-fullframe-1024-20260929/manifest.json",
+      "manifest_sha256": "c7b96b1153189fb37212a15fed80493f4013b2f904bad9e3194aabebe0ed73e8",
+      "mode": "fullframe",
+      "requalification_scripts_sha256": {
+        "decode_std_dm_packets.py": "fa1ad25877f237884ff931e0f0fc5379222c1dd317827dde09caf508a8160f04",
+        "qualify_copper_aos_capture.py": "d72c6ce78c551f1d0b46d64b8dae2fb6c979dd9ac970f713f4d98a6cee759868"
+      },
+      "runs": [
+        {
+          "index": 1,
+          "owners": {
+            "fgn": {
+              "dm": "/home/dgamroth/.cache/rtc-copper-client-loop-main-fullframe-1024-20260929/run-001/fgn/dm-packets.tsv",
+              "dm_sha256": "5fbb8518b9328068c8ddd9456eca003920b9491b62cf2d3e4d963e16d516fae9",
+              "phases": {
+                "all_frames": {
+                  "first_to_terminal_wfs_us": {
+                    "count": 1024,
+                    "max": 1010.723,
+                    "min": 964.377,
+                    "p50": 998.45,
+                    "p99": 1005.05464
+                  },
+                  "first_wfs_packet_to_dm_us": {
+                    "count": 1024,
+                    "max": 1424.959,
+                    "min": 1115.149,
+                    "p50": 1156.957,
+                    "p99": 1212.42554
+                  },
+                  "terminal_wfs_packet_to_dm_us": {
+                    "count": 1024,
+                    "max": 460.582,
+                    "min": 122.259,
+                    "p50": 159.344,
+                    "p99": 212.46841999999995
+                  }
+                },
+                "first_frame": {
+                  "first_to_terminal_wfs_us": 964.377,
+                  "first_wfs_packet_to_dm_us": 1424.959,
+                  "terminal_wfs_packet_to_dm_us": 460.582
+                },
+                "frames_101_onward": {
+                  "first_to_terminal_wfs_us": {
+                    "count": 924,
+                    "max": 1010.723,
+                    "min": 987.188,
+                    "p50": 998.34,
+                    "p99": 1005.3154
+                  },
+                  "first_wfs_packet_to_dm_us": {
+                    "count": 924,
+                    "max": 1315.123,
+                    "min": 1115.149,
+                    "p50": 1157.809,
+                    "p99": 1212.42554
+                  },
+                  "terminal_wfs_packet_to_dm_us": {
+                    "count": 924,
+                    "max": 308.778,
+                    "min": 122.599,
+                    "p50": 160.336,
+                    "p99": 212.46841999999995
+                  }
+                },
+                "frames_2_through_10": {
+                  "first_to_terminal_wfs_us": {
+                    "count": 9,
+                    "max": 1000.985,
+                    "min": 998.31,
+                    "p50": 998.981,
+                    "p99": 1000.95532
+                  },
+                  "first_wfs_packet_to_dm_us": {
+                    "count": 9,
+                    "max": 1197.713,
+                    "min": 1123.434,
+                    "p50": 1134.565,
+                    "p99": 1193.8698
+                  },
+                  "terminal_wfs_packet_to_dm_us": {
+                    "count": 9,
+                    "max": 197.099,
+                    "min": 125.124,
+                    "p50": 135.584,
+                    "p99": 193.39123999999998
+                  }
+                }
+              },
+              "wfs": "/home/dgamroth/.cache/rtc-copper-client-loop-main-fullframe-1024-20260929/run-001/fgn/wfs-packets.tsv",
+              "wfs_sha256": "39af190733bfb5fdfe0c1e84b8c0da9607d63b56a495dacc1b02da4020e56964"
+            },
+            "heart": {
+              "dm": "/home/dgamroth/.cache/rtc-copper-client-loop-main-fullframe-1024-20260929/run-001/heart/std-dm-packets.tsv",
+              "dm_sha256": "20d7b93be7932e5fba17bd81298e401af7a6d4d6072178e936570721d9021269",
+              "phases": {
+                "all_frames": {
+                  "first_to_terminal_wfs_us": {
+                    "count": 1024,
+                    "max": 1022.736,
+                    "min": 976.559,
+                    "p50": 998.365,
+                    "p99": 1005.00147
+                  },
+                  "first_wfs_packet_to_dm_us": {
+                    "count": 1024,
+                    "max": 2643.902,
+                    "min": 1151.566,
+                    "p50": 1245.618,
+                    "p99": 1387.4288
+                  },
+                  "terminal_wfs_packet_to_dm_us": {
+                    "count": 1024,
+                    "max": 1665.52,
+                    "min": 156.804,
+                    "p50": 248.455,
+                    "p99": 387.3651299999999
+                  }
+                },
+                "first_frame": {
+                  "first_to_terminal_wfs_us": 978.382,
+                  "first_wfs_packet_to_dm_us": 2643.902,
+                  "terminal_wfs_packet_to_dm_us": 1665.52
+                },
+                "frames_101_onward": {
+                  "first_to_terminal_wfs_us": {
+                    "count": 924,
+                    "max": 1011.054,
+                    "min": 976.559,
+                    "p50": 998.475,
+                    "p99": 1003.1691
+                  },
+                  "first_wfs_packet_to_dm_us": {
+                    "count": 924,
+                    "max": 1476.335,
+                    "min": 1151.566,
+                    "p50": 1243.635,
+                    "p99": 1381.7867099999999
+                  },
+                  "terminal_wfs_packet_to_dm_us": {
+                    "count": 924,
+                    "max": 476.422,
+                    "min": 156.804,
+                    "p50": 246.602,
+                    "p99": 381.73433999999986
+                  }
+                },
+                "frames_2_through_10": {
+                  "first_to_terminal_wfs_us": {
+                    "count": 9,
+                    "max": 1022.736,
+                    "min": 995.475,
+                    "p50": 995.835,
+                    "p99": 1021.4752
+                  },
+                  "first_wfs_packet_to_dm_us": {
+                    "count": 9,
+                    "max": 1246.816,
+                    "min": 1203.855,
+                    "p50": 1220.205,
+                    "p99": 1246.6148
+                  },
+                  "terminal_wfs_packet_to_dm_us": {
+                    "count": 9,
+                    "max": 248.826,
+                    "min": 196.879,
+                    "p50": 224.08,
+                    "p99": 247.84656
+                  }
+                }
+              },
+              "wfs": "/home/dgamroth/.cache/rtc-copper-client-loop-main-fullframe-1024-20260929/run-001/heart/std-wfs-packets.tsv",
+              "wfs_sha256": "afa15bab080fce13a3a3d226f8a1801e343c238a2e4978c5701987441fb05052"
+            },
+            "jfg": {
+              "dm": "/home/dgamroth/.cache/rtc-copper-client-loop-main-fullframe-1024-20260929/run-001/jfg-dm-packets.tsv",
+              "dm_sha256": "92a99fc34ba56c390e20645d7685e6b3b7cd999a9123f6c8c6a1021361ede2fd",
+              "phases": {
+                "all_frames": {
+                  "first_to_terminal_wfs_us": {
+                    "count": 1024,
+                    "max": 1031.482,
+                    "min": 950.39,
+                    "p50": 998.701,
+                    "p99": 1004.7713
+                  },
+                  "first_wfs_packet_to_dm_us": {
+                    "count": 1024,
+                    "max": 1600.789,
+                    "min": 1121.351,
+                    "p50": 1148.2505,
+                    "p99": 1393.16952
+                  },
+                  "terminal_wfs_packet_to_dm_us": {
+                    "count": 1024,
+                    "max": 650.399,
+                    "min": 125.485,
+                    "p50": 150.1465,
+                    "p99": 395.1398299999998
+                  }
+                },
+                "first_frame": {
+                  "first_to_terminal_wfs_us": 950.39,
+                  "first_wfs_packet_to_dm_us": 1600.789,
+                  "terminal_wfs_packet_to_dm_us": 650.399
+                },
+                "frames_101_onward": {
+                  "first_to_terminal_wfs_us": {
+                    "count": 924,
+                    "max": 1019.76,
+                    "min": 988.582,
+                    "p50": 998.6555,
+                    "p99": 1004.7713
+                  },
+                  "first_wfs_packet_to_dm_us": {
+                    "count": 924,
+                    "max": 1426.171,
+                    "min": 1121.351,
+                    "p50": 1148.235,
+                    "p99": 1331.08789
+                  },
+                  "terminal_wfs_packet_to_dm_us": {
+                    "count": 924,
+                    "max": 430.767,
+                    "min": 125.485,
+                    "p50": 150.1065,
+                    "p99": 335.3053599999999
+                  }
+                },
+                "frames_2_through_10": {
+                  "first_to_terminal_wfs_us": {
+                    "count": 9,
+                    "max": 1031.482,
+                    "min": 995.104,
+                    "p50": 998.821,
+                    "p99": 1028.94688
+                  },
+                  "first_wfs_packet_to_dm_us": {
+                    "count": 9,
+                    "max": 1497.995,
+                    "min": 1204.566,
+                    "p50": 1403.859,
+                    "p99": 1493.2549999999999
+                  },
+                  "terminal_wfs_packet_to_dm_us": {
+                    "count": 9,
+                    "max": 499.676,
+                    "min": 206.587,
+                    "p50": 405.038,
+                    "p99": 494.92624
+                  }
+                }
+              },
+              "wfs": "/home/dgamroth/.cache/rtc-copper-client-loop-main-fullframe-1024-20260929/run-001/jfg-wfs-packets.tsv",
+              "wfs_sha256": "c222977136269c7fd4367d0f89c3f16cf414af74729a8bc032f6110ca26e9971"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
