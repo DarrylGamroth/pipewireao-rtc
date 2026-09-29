@@ -2032,6 +2032,8 @@ impl LiveGraphAdapter {
         properties.insert("node.description", "PipeWireAO RTC ndarray latest/hold");
         properties.insert("node.virtual", "true");
         properties.insert("node.want-driver", "false");
+        // Live Props counters must reach the SPA node after a broad param query.
+        properties.insert("node.cache-params", "false");
         properties.insert("object.linger", "false");
         for (name, value) in &graph.arguments {
             properties.insert(name.as_str(), value.as_str());

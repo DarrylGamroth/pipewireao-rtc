@@ -1,0 +1,83 @@
+{
+  "compiler": "cc (Debian 14.2.0-19) 14.2.0",
+  "cpu_model": "AMD Ryzen 7 6800H with Radeon Graphics",
+  "date_utc": "2026-09-29T16:40:13Z",
+  "files": {
+    "fgn_bundle": {
+      "bytes": 3061328,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-copper-fullframe/target/release/libcalculon_fgn_bundle.so",
+      "sha256": "51d842aff4175ac30042d9bcfee193538cb4be3a75c2d69f79a9293cbd4b4cc6"
+    },
+    "latest_hold_source": {
+      "bytes": 51572,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-latest-hold-characterization/tests/fixtures/latest_hold_slow_source.c",
+      "sha256": "483335be5fe8744c3146fba759af5f613c658f458c67d7793ba406ccbb14b072"
+    },
+    "ndarray_spa_plugin": {
+      "bytes": 15478608,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugins-core/build/spa/plugins/ndarray/libspa-ndarray.so",
+      "sha256": "a10185a0c5379cee3c128fe5bb2e9fcadc21b7f2b6e34fc31a3aa2ce5935dbbc"
+    },
+    "pipewire_ao_daemon": {
+      "bytes": 35488,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewire/build/src/daemon/pipewire-ao",
+      "sha256": "1804571dc5560d482746695d68574e3705e9004d60263bcaf88851b67162591d"
+    },
+    "rtc_live_runner": {
+      "bytes": 139958,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-latest-hold-characterization/src/live.rs",
+      "sha256": "a0316d6d60ed7c9d9a99dc7540f99b70d0dd11c266edbe12f551f27009334881"
+    },
+    "rtc_live_test": {
+      "bytes": 194550,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-latest-hold-characterization/tests/live_private_core.rs",
+      "sha256": "535f5c3309b2865159a66cc049ae7f02bfe0c5a1f3f7d63c455ca8355e8cf8ea"
+    }
+  },
+  "governors": [
+    "powersave"
+  ],
+  "hugepages_total": "HugePages_Total:    1024",
+  "julia": "julia version 1.12.7",
+  "kernel": "6.12.107+deb13-amd64",
+  "logical_cpus": 16,
+  "post_measurement_harness": {
+    "bytes": 196226,
+    "change": "The final harness adds failure-unwind retention, a simulated-panic regression test, and heaptrack timeout cleanup beyond the recorded source snapshot. These affect teardown and tests; the measured C callback and RTC-owned latest/hold implementation did not change.",
+    "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-latest-hold-characterization/tests/live_private_core.rs",
+    "sha256": "8ffa506fb3a38bc3e8d269d8f7fabf74bda9516e50f6074e8a6828d07e1c4f67"
+  },
+  "repos": {
+    "fgn_bundle": {
+      "path": "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-copper-fullframe",
+      "revision": "174cc16403374070bb2e02dcce57f3d9dcc27076",
+      "status": "?? .live-fgn-abi7-1000hz-1024f-500us-pinned-r1/\n?? .live-fgn-abi7-1000hz-1024f-500us-pinned-rt-source-r1/\n?? .live-fgn-abi7-10hz-20f-static-r2/\n?? .live-fgn-abi7-1500hz-1024f-500us-pinned-rt-source-r1/\n?? .live-fgn-abi7-1800hz-1024f-500us-pinned-rt-source-r1/\n?? .live-fgn-abi7-1899hz-1024f-500us-pinned-rt-source-r1/\n?? .live-fgn-abi7-474hz-1024f-static-pinned-r2/\n?? .live-fgn-abi7-474hz-1024f-static-pinned/\n?? .live-fgn-abi7-474hz-1024f-static/\n?? .live-fgn-abi7-600hz-1024f-500us-pinned-r1/\n?? .live-fgn-abi7-startup-fifo-negative/\n?? .live-fgn-abi7-startup-name-negative/\n?? .live-fgn-abi7-startup-negative/\n?? .live-fgn-bridge-474hz-default-source-1024f/\n?? .live-fgn-bridge-474hz-rt-source-1024f/\n?? .live-fgn-bridge-clip-474hz-1024f/\n?? .live-fgn-bridge-clip-feedback/\n?? .live-fgn-bridge-clip-open/\n?? .live-fgn-bridge-rt-source-20f-valid/\n?? .live-fgn-bridge-rt-source-5f-valid/\n?? .live-fgn-bridge-smoke-5f/"
+    },
+    "julia_filter_graph": {
+      "path": "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph.jl",
+      "revision": "f4cbe52814591c97767e40b65d487aaf13c603e5",
+      "status": "?? benchmark/__pycache__/\n?? benchmark/heart/__pycache__/"
+    },
+    "pipewire": {
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewire",
+      "revision": "1045d32aedcd800783c69e984ac62de22d6187f8",
+      "status": ""
+    },
+    "rtc": {
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-latest-hold-characterization",
+      "revision": "feab69c319b329533e8f91a5e252576f3d317283",
+      "status": "M README.md\n M docs/roadmap.md\n M src/live.rs\n M tests/fixtures/latest_hold_slow_source.c\n M tests/live_private_core.rs\n?? benchmark/LATEST_HOLD.md\n?? benchmark/LATEST_HOLD_RESULTS_20260929.md\n?? benchmark/RUN_COMMANDS_20260929.md\n?? benchmark/data/latest_hold_20260929.json\n?? benchmark/data/latest_hold_20260929_raw.tar.zst\n?? benchmark/data/latest_hold_environment_20260929.json\n?? benchmark/report_latest_hold.py\n?? benchmark/test_report_latest_hold.py"
+    },
+    "spa_plugins": {
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugins-core",
+      "revision": "ac82518cc876cb6fce8baf55fc6875f8fba0f71f",
+      "status": "M crates/ndarray-spa-plugin/src/config.rs\n M crates/ndarray-spa-plugin/src/frame_assembly.rs\n M crates/ndarray-spa-plugin/src/lib.rs\n M crates/pipewireao-spa-node/src/buffer.rs\n M crates/pipewireao-spa-node/src/factory.rs\n M crates/pipewireao-spa-node/src/lib.rs\n M crates/pipewireao-spa-node/src/pod.rs\n M crates/pipewireao-spa-node/src/port.rs\n M include/pipewireao-plugins/ndarray.h\n M spa/plugins/ndarray/meson.build\n M spa/plugins/ndarray/test-frame-assembly.c\n?? crates/ndarray-spa-plugin/src/latest_hold.rs\n?? spa/plugins/ndarray/test-latest-hold-factory.c\n?? spa/plugins/ndarray/test-latest-hold.c"
+    }
+  },
+  "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+  "sched_rt_period_us": "1000000",
+  "sched_rt_runtime_us": "950000",
+  "transparent_hugepage_enabled": "[always] madvise never",
+  "ulimit_memlock_kb": "4194304",
+  "ulimit_rtprio": "95"
+}

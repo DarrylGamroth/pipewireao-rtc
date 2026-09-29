@@ -153,6 +153,10 @@ For the latest/hold fixture, set `PIPEWIREAO_RTC_LIVE_SCOPE=latest-hold`. The
 Julia environment selected by `PIPEWIREAO_RTC_PIPEWIREAO_JULIA` must resolve
 `PipeWireAO_jll` 1.7.0+17 or newer; the JFG `deployment` environment is a
 working choice when the local `PipeWireAO.jl` manifest is older.
+The optional `PIPEWIREAO_RTC_LATEST_HOLD_TIMING_DIR` selects a fresh output
+directory for the long driver-paced characterization; see
+[the protocol](benchmark/LATEST_HOLD.md) and
+[host results](benchmark/LATEST_HOLD_RESULTS_20260929.md).
 
 ## Completion-paced REVOLT graph-path latency
 

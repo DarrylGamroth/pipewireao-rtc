@@ -12,6 +12,13 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifdef LATEST_HOLD_BENCH_SAMPLES
+#include <time.h>
+#if LATEST_HOLD_BENCH_SAMPLES <= 0
+#error "LATEST_HOLD_BENCH_SAMPLES must be a positive constant"
+#endif
+#endif
+
 #include <spa/buffer/buffer.h>
 #include <spa/buffer/meta.h>
 #include <spa/param/format.h>
@@ -33,6 +40,20 @@
 #define EXPIRY_CHECK_CYCLE 120u
 #define PRIMARY_SCHEMA "org.pipewireao.rtc.latest-hold.primary/1"
 #define SLOW_SCHEMA "org.pipewireao.rtc.latest-hold.slow/1"
+
+#ifdef LATEST_HOLD_BENCH_SAMPLES
+#define BENCH_FIRST_IDENTITY (TOTAL_SAMPLES + 1u)
+#define BENCH_PRIMARY_CAPACITY (LATEST_HOLD_BENCH_SAMPLES * HOLD_CYCLES + 2u * HOLD_CYCLES)
+#define BENCH_CLOCK_OVERHEAD_SAMPLES 1000u
+
+struct timing_record {
+	uint64_t identity;
+	uint32_t callback_count;
+	uint64_t callback_ns;
+	uint64_t queue_ns;
+	uint64_t receipt_ns;
+};
+#endif
 
 struct fixture {
 	struct pw_main_loop *loop;
@@ -78,10 +99,41 @@ struct fixture {
 	atomic_bool active;
 	atomic_bool started;
 	atomic_bool failed;
+#ifdef LATEST_HOLD_BENCH_SAMPLES
+	const char *timing_csv_path;
+	atomic_bool bench_requested;
+	atomic_bool bench_started;
+	uint32_t bench_first_primary_sequence;
+	uint32_t bench_primary_records;
+	uint32_t bench_command_records;
+	struct timing_record bench_slow[LATEST_HOLD_BENCH_SAMPLES];
+	struct timing_record bench_primary[BENCH_PRIMARY_CAPACITY];
+	struct timing_record bench_command[BENCH_PRIMARY_CAPACITY];
+#endif
 };
 
 static const uint8_t domain[SPA_META_ACQUISITION_DOMAIN_SIZE] = { 0x42 };
 static const uint8_t primary_domain[SPA_META_ACQUISITION_DOMAIN_SIZE] = { 0x24 };
+
+#ifdef LATEST_HOLD_BENCH_SAMPLES
+static bool raw_now(uint64_t *result)
+{
+	struct timespec now;
+
+	if (clock_gettime(CLOCK_MONOTONIC_RAW, &now) != 0)
+		return false;
+	*result = (uint64_t)now.tv_sec * UINT64_C(1000000000) + (uint64_t)now.tv_nsec;
+	return true;
+}
+
+static struct timing_record *next_timing_record(struct timing_record *records,
+		uint32_t *count, uint32_t capacity)
+{
+	if (*count >= capacity)
+		return NULL;
+	return &records[(*count)++];
+}
+#endif
 
 static void fail(struct fixture *data, const char *message)
 {
@@ -202,9 +254,20 @@ static void source_process(void *userdata)
 	uint32_t cycle;
 	uint32_t sample;
 	float values[VECTOR_LENGTH];
+#ifdef LATEST_HOLD_BENCH_SAMPLES
+	struct timing_record *timing = NULL;
+	uint64_t callback_ns = 0;
+#endif
 
 	if (!atomic_load_explicit(&data->started, memory_order_acquire))
 		return;
+#ifdef LATEST_HOLD_BENCH_SAMPLES
+	if (atomic_load_explicit(&data->bench_requested, memory_order_acquire) &&
+		!raw_now(&callback_ns)) {
+		fail(data, "slow source could not timestamp benchmark callback");
+		return;
+	}
+#endif
 	progress_write_begin(&data->source_progress_sequence);
 	if (!increment_counter(&data->source_cycles, &cycle)) {
 		progress_write_end(&data->source_progress_sequence);
@@ -212,8 +275,15 @@ static void source_process(void *userdata)
 		return;
 	}
 	sample = atomic_load_explicit(&data->source_published, memory_order_relaxed);
-	if ((cycle - 1u) % HOLD_CYCLES != 0 || sample >= TOTAL_SAMPLES ||
-		(sample >= SAMPLES && !atomic_exchange_explicit(
+	if ((cycle - 1u) % HOLD_CYCLES != 0 ||
+#ifdef LATEST_HOLD_BENCH_SAMPLES
+		(sample >= TOTAL_SAMPLES + LATEST_HOLD_BENCH_SAMPLES ||
+		 (sample >= TOTAL_SAMPLES && !atomic_load_explicit(
+			&data->bench_requested, memory_order_acquire))) ||
+#else
+		sample >= TOTAL_SAMPLES ||
+#endif
+		(sample >= SAMPLES && sample < TOTAL_SAMPLES && !atomic_exchange_explicit(
 			&data->next_sample_enabled, false, memory_order_acq_rel))) {
 		/* Deliberately do not dequeue or queue a buffer: the output IO remains
 		 * SPA_STATUS_NEED_DATA for this slow-cadence callback. */
@@ -271,6 +341,20 @@ static void source_process(void *userdata)
 		fail(data, "slow source could not write Acquisition identity");
 		return;
 	}
+#ifdef LATEST_HOLD_BENCH_SAMPLES
+	if (sample >= BENCH_FIRST_IDENTITY) {
+		timing = &data->bench_slow[sample - BENCH_FIRST_IDENTITY];
+		timing->identity = sample;
+		timing->callback_count = cycle;
+		timing->callback_ns = callback_ns;
+		if (!raw_now(&timing->queue_ns)) {
+			(void)pw_stream_queue_buffer(data->source, buffer);
+			progress_write_end(&data->source_progress_sequence);
+			fail(data, "slow source could not timestamp benchmark sample");
+			return;
+		}
+	}
+#endif
 	if (pw_stream_queue_buffer(data->source, buffer) < 0) {
 		progress_write_end(&data->source_progress_sequence);
 		fail(data, "slow source could not publish its sample");
@@ -280,6 +364,13 @@ static void source_process(void *userdata)
 		atomic_load_explicit(&data->primary_cycles, memory_order_acquire),
 		memory_order_seq_cst);
 	atomic_store_explicit(&data->input_data_cycle, cycle, memory_order_seq_cst);
+#ifdef LATEST_HOLD_BENCH_SAMPLES
+	if (sample == BENCH_FIRST_IDENTITY) {
+		data->bench_first_primary_sequence = atomic_load_explicit(
+			&data->primary_cycles, memory_order_acquire);
+		atomic_store_explicit(&data->bench_started, true, memory_order_release);
+	}
+#endif
 	progress_write_end(&data->source_progress_sequence);
 }
 
@@ -293,9 +384,20 @@ static void primary_process(void *userdata)
 	struct spa_meta_acquisition *acquisition;
 	uint32_t sequence;
 	float values[VECTOR_LENGTH];
+#ifdef LATEST_HOLD_BENCH_SAMPLES
+	struct timing_record *timing = NULL;
+	uint64_t callback_ns = 0;
+#endif
 
 	if (!atomic_load_explicit(&data->started, memory_order_acquire))
 		return;
+#ifdef LATEST_HOLD_BENCH_SAMPLES
+	if (atomic_load_explicit(&data->bench_requested, memory_order_acquire) &&
+		!raw_now(&callback_ns)) {
+		fail(data, "primary source could not timestamp benchmark callback");
+		return;
+	}
+#endif
 	progress_write_begin(&data->primary_progress_sequence);
 	if (pw_stream_get_time_n(data->primary_source, &time, sizeof(time)) == 0) {
 		atomic_store_explicit(&data->primary_rate_num, time.rate.num,
@@ -351,6 +453,24 @@ static void primary_process(void *userdata)
 		fail(data, "primary source could not write Acquisition identity");
 		return;
 	}
+#ifdef LATEST_HOLD_BENCH_SAMPLES
+	if (atomic_load_explicit(&data->bench_requested, memory_order_acquire) &&
+		(!atomic_load_explicit(&data->bench_started, memory_order_acquire) ||
+		 sequence <= data->bench_first_primary_sequence +
+			LATEST_HOLD_BENCH_SAMPLES * HOLD_CYCLES - 1u)) {
+		timing = next_timing_record(data->bench_primary, &data->bench_primary_records,
+			BENCH_PRIMARY_CAPACITY);
+		if (timing == NULL || !raw_now(&timing->queue_ns)) {
+			(void)pw_stream_queue_buffer(data->primary_source, buffer);
+			progress_write_end(&data->primary_progress_sequence);
+			fail(data, "primary source exhausted or could not timestamp benchmark records");
+			return;
+		}
+		timing->identity = sequence;
+		timing->callback_count = sequence;
+		timing->callback_ns = callback_ns;
+	}
+#endif
 	if (pw_stream_queue_buffer(data->primary_source, buffer) < 0) {
 		progress_write_end(&data->primary_progress_sequence);
 		fail(data, "primary source could not publish its sample");
@@ -367,6 +487,10 @@ static uint32_t expected_held_sample(uint32_t received)
 		return 12u;
 	if (received < FULL_HELD_OUTPUTS)
 		return 14u;
+#ifdef LATEST_HOLD_BENCH_SAMPLES
+	if (received < FULL_HELD_OUTPUTS + LATEST_HOLD_BENCH_SAMPLES * HOLD_CYCLES)
+		return BENCH_FIRST_IDENTITY + (received - FULL_HELD_OUTPUTS) / HOLD_CYCLES;
+#endif
 	return 0u;
 }
 
@@ -399,7 +523,11 @@ static void sink_process(void *userdata)
 		header == NULL || !spa_meta_acquisition_is_valid(meta) ||
 		acquisition->generation != 7u || acquisition->sequence != expected_sample ||
 		memcmp(acquisition->domain, domain, sizeof(domain)) != 0 ||
-		received >= FULL_HELD_OUTPUTS) {
+		received >= FULL_HELD_OUTPUTS
+#ifdef LATEST_HOLD_BENCH_SAMPLES
+			+ LATEST_HOLD_BENCH_SAMPLES * HOLD_CYCLES
+#endif
+		) {
 		(void)pw_stream_queue_buffer(data->sink, buffer);
 		fail(data, "hold sink observed an unexpected output or Acquisition identity");
 		return;
@@ -414,6 +542,16 @@ static void sink_process(void *userdata)
 		fail(data, "hold output Header sequence did not advance");
 		return;
 	}
+#ifdef LATEST_HOLD_BENCH_SAMPLES
+	if (expected_sample >= BENCH_FIRST_IDENTITY &&
+		sequence != atomic_load_explicit(&data->last_header_sequence,
+			memory_order_relaxed) + 1u) {
+		(void)pw_stream_queue_buffer(data->sink, buffer);
+		progress_write_end(&data->sink_progress_sequence);
+		fail(data, "hold benchmark Header sequence was not contiguous");
+		return;
+	}
+#endif
 	atomic_store_explicit(&data->last_header_sequence, sequence,
 		memory_order_seq_cst);
 	values = SPA_PTROFF(block->data, block->chunk->offset, const float);
@@ -424,6 +562,19 @@ static void sink_process(void *userdata)
 		fail(data, "hold sink observed a payload outside the retained identity run");
 		return;
 	}
+#ifdef LATEST_HOLD_BENCH_SAMPLES
+	if (expected_sample >= BENCH_FIRST_IDENTITY) {
+		struct timing_record *timing =
+			&data->bench_slow[expected_sample - BENCH_FIRST_IDENTITY];
+
+		if (timing->receipt_ns == 0u && !raw_now(&timing->receipt_ns)) {
+			(void)pw_stream_queue_buffer(data->sink, buffer);
+			progress_write_end(&data->sink_progress_sequence);
+			fail(data, "hold sink could not record one benchmark receipt");
+			return;
+		}
+	}
+#endif
 	if (!increment_counter(&data->sink_received, &received)) {
 		(void)pw_stream_queue_buffer(data->sink, buffer);
 		progress_write_end(&data->sink_progress_sequence);
@@ -445,6 +596,9 @@ static void command_sink_process(void *userdata)
 	const float *values;
 	uint64_t sequence;
 	uint32_t commands;
+#ifdef LATEST_HOLD_BENCH_SAMPLES
+	struct timing_record *timing = NULL;
+#endif
 
 	buffer = pw_stream_dequeue_buffer(data->command_sink);
 	if (buffer == NULL)
@@ -471,6 +625,22 @@ static void command_sink_process(void *userdata)
 		fail(data, "processing graph output Header sequence did not match primary Acquisition identity");
 		return;
 	}
+#ifdef LATEST_HOLD_BENCH_SAMPLES
+	if (atomic_load_explicit(&data->bench_requested, memory_order_acquire) &&
+		(!atomic_load_explicit(&data->bench_started, memory_order_acquire) ||
+		 sequence <= data->bench_first_primary_sequence +
+			LATEST_HOLD_BENCH_SAMPLES * HOLD_CYCLES - 1u)) {
+		timing = next_timing_record(data->bench_command, &data->bench_command_records,
+			BENCH_PRIMARY_CAPACITY);
+		if (timing == NULL || !raw_now(&timing->receipt_ns)) {
+			(void)pw_stream_queue_buffer(data->command_sink, buffer);
+			fail(data, "command sink exhausted or could not timestamp benchmark records");
+			return;
+		}
+		timing->identity = sequence;
+		timing->callback_count = 0u;
+	}
+#endif
 	progress_write_begin(&data->command_progress_sequence);
 	if (!atomic_exchange_explicit(&data->have_command_sequence, true,
 			memory_order_acq_rel)) {
@@ -484,7 +654,13 @@ static void command_sink_process(void *userdata)
 			uint32_t gaps = atomic_load_explicit(&data->command_gaps,
 				memory_order_relaxed);
 
-			if (gaps >= 2u || !increment_counter(&data->command_gaps, &gaps)) {
+			if (gaps >=
+#ifdef LATEST_HOLD_BENCH_SAMPLES
+				3u
+#else
+				2u
+#endif
+				|| !increment_counter(&data->command_gaps, &gaps)) {
 				(void)pw_stream_queue_buffer(data->command_sink, buffer);
 				progress_write_end(&data->command_progress_sequence);
 				fail(data, "processing graph observed too many command identity gaps");
@@ -716,6 +892,154 @@ static void print_progress(const struct fixture *data)
 	fflush(stdout);
 }
 
+#ifdef LATEST_HOLD_BENCH_SAMPLES
+static uint32_t find_timing_record(const struct timing_record *records,
+		uint32_t count, uint64_t identity)
+{
+	uint32_t index;
+
+	for (index = 0; index < count; index++)
+		if (records[index].identity == identity)
+			return index;
+	return count;
+}
+
+static bool write_partial_timing_csv(const struct fixture *data)
+{
+	FILE *csv = fopen(data->timing_csv_path, "w");
+	uint32_t index;
+
+	if (csv == NULL)
+		return false;
+	if (fprintf(csv, "path,identity,callback_count,callback_ns,queue_ns,receipt_ns\n") < 0)
+		goto failed;
+	for (index = 0; index < LATEST_HOLD_BENCH_SAMPLES; index++) {
+		const struct timing_record *record = &data->bench_slow[index];
+
+		if (record->identity != 0u && fprintf(csv,
+			"slow,%" PRIu64 ",%u,%" PRIu64 ",%" PRIu64 ",%" PRIu64 "\n",
+			record->identity, record->callback_count, record->callback_ns,
+			record->queue_ns, record->receipt_ns) < 0)
+			goto failed;
+	}
+	for (index = 0; index < data->bench_primary_records; index++) {
+		const struct timing_record *record = &data->bench_primary[index];
+
+		if (record->identity != 0u && fprintf(csv,
+			"primary,%" PRIu64 ",%u,%" PRIu64 ",%" PRIu64 ",%" PRIu64 "\n",
+			record->identity, record->callback_count, record->callback_ns,
+			record->queue_ns, record->receipt_ns) < 0)
+			goto failed;
+	}
+	for (index = 0; index < data->bench_command_records; index++) {
+		const struct timing_record *record = &data->bench_command[index];
+
+		if (record->identity != 0u && fprintf(csv,
+			"command,%" PRIu64 ",%u,%" PRIu64 ",%" PRIu64 ",%" PRIu64 "\n",
+			record->identity, record->callback_count, record->callback_ns,
+			record->queue_ns, record->receipt_ns) < 0)
+			goto failed;
+	}
+	return fclose(csv) == 0;
+
+failed:
+	(void)fclose(csv);
+	return false;
+}
+
+static bool write_timing_csv(const struct fixture *data)
+{
+	FILE *csv;
+	uint32_t index, primary_start, command_start;
+	uint64_t first_primary = data->bench_first_primary_sequence;
+
+	if (!atomic_load_explicit(&data->bench_requested, memory_order_acquire) ||
+		!atomic_load_explicit(&data->bench_started, memory_order_acquire) ||
+		first_primary == 0u ||
+		atomic_load_explicit(&data->source_published, memory_order_acquire) !=
+			TOTAL_SAMPLES + LATEST_HOLD_BENCH_SAMPLES ||
+		atomic_load_explicit(&data->sink_received, memory_order_acquire) !=
+			FULL_HELD_OUTPUTS + LATEST_HOLD_BENCH_SAMPLES * HOLD_CYCLES ||
+		atomic_load_explicit(&data->command_gaps, memory_order_acquire) != 3u ||
+		atomic_load_explicit(&data->command_gap_armed, memory_order_acquire)) {
+		fprintf(stderr, "benchmark terminal counts or state invalid\n");
+		return false;
+	}
+	for (index = 0; index < LATEST_HOLD_BENCH_SAMPLES; index++) {
+		const struct timing_record *slow = &data->bench_slow[index];
+
+		if (slow->identity != BENCH_FIRST_IDENTITY + index ||
+			slow->callback_ns == 0u || slow->queue_ns == 0u ||
+			slow->receipt_ns == 0u) {
+			fprintf(stderr, "benchmark slow timing invalid at %u\n", index);
+			return false;
+		}
+	}
+	primary_start = find_timing_record(data->bench_primary,
+		data->bench_primary_records, first_primary);
+	command_start = find_timing_record(data->bench_command,
+		data->bench_command_records, first_primary);
+	if (primary_start == data->bench_primary_records ||
+		command_start == data->bench_command_records ||
+		data->bench_primary_records - primary_start <
+			LATEST_HOLD_BENCH_SAMPLES * HOLD_CYCLES ||
+		data->bench_command_records - command_start <
+			LATEST_HOLD_BENCH_SAMPLES * HOLD_CYCLES) {
+		fprintf(stderr, "benchmark primary record window invalid: first=%" PRIu64 " primary=%u/%u command=%u/%u\n",
+			first_primary, primary_start, data->bench_primary_records,
+			command_start, data->bench_command_records);
+		return false;
+	}
+	csv = fopen(data->timing_csv_path, "w");
+	if (csv == NULL)
+		return false;
+	if (fprintf(csv, "path,identity,callback_count,callback_ns,queue_ns,receipt_ns\n") < 0)
+		goto failed;
+	for (index = 0; index < LATEST_HOLD_BENCH_SAMPLES; index++) {
+		const struct timing_record *slow = &data->bench_slow[index];
+
+		if (fprintf(csv, "slow,%" PRIu64 ",%u,%" PRIu64 ",%" PRIu64 ",%" PRIu64 "\n",
+			slow->identity, slow->callback_count, slow->callback_ns, slow->queue_ns,
+			slow->receipt_ns) < 0)
+			goto failed;
+	}
+	for (index = 0; index < LATEST_HOLD_BENCH_SAMPLES * HOLD_CYCLES; index++) {
+		uint64_t identity = first_primary + index;
+		const struct timing_record *primary =
+			&data->bench_primary[primary_start + index];
+		const struct timing_record *command =
+			&data->bench_command[command_start + index];
+
+		if (primary->identity != identity || command->identity != identity ||
+			primary->callback_ns == 0u || primary->queue_ns == 0u ||
+			command->receipt_ns == 0u) {
+			fprintf(stderr, "benchmark primary timing invalid at %u expected=%" PRIu64 " primary=%" PRIu64 " command=%" PRIu64 "\n",
+				index, identity, primary->identity, command->identity);
+			goto failed;
+		}
+		if (fprintf(csv, "primary,%" PRIu64 ",%u,%" PRIu64 ",%" PRIu64 ",%" PRIu64 "\n",
+			identity, primary->callback_count, primary->callback_ns, primary->queue_ns,
+			command->receipt_ns) < 0)
+			goto failed;
+	}
+	for (index = 0; index < BENCH_CLOCK_OVERHEAD_SAMPLES; index++) {
+		uint64_t first, second;
+
+		if (!raw_now(&first) || !raw_now(&second) ||
+			fprintf(csv, "overhead,0,0,0,%" PRIu64 ",%" PRIu64 "\n",
+				first, second) < 0)
+			goto failed;
+	}
+	if (fclose(csv) == 0)
+		return true;
+	return false;
+
+failed:
+	(void)fclose(csv);
+	return false;
+}
+#endif
+
 static void control(void *userdata, int fd, uint32_t mask)
 {
 	struct fixture *data = userdata;
@@ -760,10 +1084,30 @@ static void control(void *userdata, int fd, uint32_t mask)
 		printf("NEXT_SAMPLE_ENABLED identity=%u\n", published + 1u);
 		fflush(stdout);
 	} else if (command == 'g') {
-		if (atomic_load_explicit(&data->command_gaps, memory_order_acquire) >= 2u ||
+		if (atomic_load_explicit(&data->command_gaps, memory_order_acquire) >=
+#ifdef LATEST_HOLD_BENCH_SAMPLES
+			3u
+#else
+			2u
+#endif
+			||
 			atomic_exchange_explicit(&data->command_gap_armed, true,
 				memory_order_acq_rel))
 			fail(data, "processing graph command gap was already armed");
+	} else if (command == 'b') {
+#ifdef LATEST_HOLD_BENCH_SAMPLES
+		if (atomic_load_explicit(&data->source_published, memory_order_acquire) !=
+			TOTAL_SAMPLES || atomic_load_explicit(&data->bench_requested,
+			memory_order_acquire)) {
+			fail(data, "slow source could not begin benchmark after identity 14");
+			return;
+		}
+		atomic_store_explicit(&data->bench_requested, true, memory_order_release);
+		printf("BENCH_STARTED samples=%u\n", LATEST_HOLD_BENCH_SAMPLES);
+		fflush(stdout);
+#else
+		fail(data, "benchmark timing mode was not compiled");
+#endif
 	} else if (command == 'r') {
 		printf("SESSION_RESTART_MARKER cycle=%u\n",
 			atomic_load_explicit(&data->source_cycles, memory_order_seq_cst));
@@ -823,10 +1167,23 @@ int main(int argc, char *argv[])
 	uint8_t primary_pods[1024], source_pods[1024], sink_pods[1024], command_pods[1024];
 	int result;
 
-	if (argc != 2) {
+	if (argc !=
+#ifdef LATEST_HOLD_BENCH_SAMPLES
+		3
+#else
+		2
+#endif
+		) {
+#ifdef LATEST_HOLD_BENCH_SAMPLES
+		fprintf(stderr, "usage: %s REMOTE_NAME TIMING_CSV\n", argv[0]);
+#else
 		fprintf(stderr, "usage: %s REMOTE_NAME\n", argv[0]);
+#endif
 		return 2;
 	}
+#ifdef LATEST_HOLD_BENCH_SAMPLES
+	data.timing_csv_path = argv[2];
+#endif
 	pw_init(&argc, &argv);
 	atomic_init(&data.source_cycles, 0);
 	atomic_init(&data.primary_cycles, 0);
@@ -856,6 +1213,10 @@ int main(int argc, char *argv[])
 	atomic_init(&data.active, false);
 	atomic_init(&data.started, false);
 	atomic_init(&data.failed, false);
+#ifdef LATEST_HOLD_BENCH_SAMPLES
+	atomic_init(&data.bench_requested, false);
+	atomic_init(&data.bench_started, false);
+#endif
 
 	data.loop = pw_main_loop_new(NULL);
 	if (data.loop == NULL) {
@@ -979,6 +1340,20 @@ int main(int argc, char *argv[])
 	 * terminal counter relationships are checked below. */
 	destroy_streams(&data);
 	result = atomic_load_explicit(&data.failed, memory_order_acquire) ? 1 : 0;
+#ifdef LATEST_HOLD_BENCH_SAMPLES
+	if (atomic_load_explicit(&data.bench_requested, memory_order_acquire)) {
+		if (result != 0 || !write_timing_csv(&data)) {
+			fprintf(stderr, "latest-hold benchmark did not produce exact timing pairs; writing partial records\n");
+			if (!write_partial_timing_csv(&data))
+				fprintf(stderr, "latest-hold benchmark could not write partial records\n");
+			result = 1;
+		}
+	} else if (result == 0) {
+		fprintf(stderr, "latest-hold benchmark was not requested\n");
+		result = 1;
+	}
+#endif
+#ifndef LATEST_HOLD_BENCH_SAMPLES
 	if (result == 0 &&
 		atomic_load_explicit(&data.extra_requests, memory_order_acquire) == 0u &&
 		(!atomic_load_explicit(&data.started, memory_order_acquire) ||
@@ -1020,6 +1395,7 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "latest-hold fixture ended with a partial restart identity run\n");
 		result = 1;
 	}
+#endif
 
 done:
 	destroy_streams(&data);

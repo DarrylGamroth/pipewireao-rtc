@@ -58,6 +58,14 @@ in the direct path. Raw reports are
 `~/.cache/rtc-copper-native-direct-oracle-checker-clip-16-20260929/report.json`
 and
 `~/.cache/rtc-copper-julia-direct-oracle-checker-clip-16-20260929/report.json`.
+The RTC worktree was replayed again after the latest/hold changes, using the
+same commands above. The native and Julia reports are
+`~/.cache/rtc-copper-rtc-final-native-16-20260929/report.json` and
+`~/.cache/rtc-copper-rtc-final-julia-16-20260929/report.json`. Both passed
+16/16 ordered commands, direct-oracle comparison, and zero WFS frame drops,
+buffer starvations, and simulator timer overruns. The native differences were
+zero at all five observed boundaries; the Julia differences matched the
+earlier tolerances above.
 The direct path calls the maintained Calculon algorithms with the same
 prepared matrices, so this establishes execution-path equivalence for this
 input and configuration, not independent scientific validation of those

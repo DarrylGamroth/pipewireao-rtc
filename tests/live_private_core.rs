@@ -11,6 +11,7 @@ use pipewireao_rtc::{
 };
 use std::collections::BTreeMap;
 use std::io::Write;
+use std::ops::{Deref, DerefMut};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant, SystemTime};
@@ -60,6 +61,119 @@ impl Drop for ChildGuard {
         let _ = self.0.kill();
         let _ = self.0.wait();
     }
+}
+
+struct CoreGuard {
+    child: ChildGuard,
+    heaptrack: bool,
+}
+
+impl Deref for CoreGuard {
+    type Target = ChildGuard;
+
+    fn deref(&self) -> &Self::Target {
+        &self.child
+    }
+}
+
+impl DerefMut for CoreGuard {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.child
+    }
+}
+
+impl Drop for CoreGuard {
+    fn drop(&mut self) {
+        if self.heaptrack {
+            finish_heaptracked_core(&mut self.child);
+        }
+    }
+}
+
+struct LatestHoldSourceGuard {
+    child: ChildGuard,
+    log: PathBuf,
+    csv: Option<PathBuf>,
+    retained_dir: Option<PathBuf>,
+}
+
+impl Deref for LatestHoldSourceGuard {
+    type Target = ChildGuard;
+
+    fn deref(&self) -> &Self::Target {
+        &self.child
+    }
+}
+
+impl DerefMut for LatestHoldSourceGuard {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.child
+    }
+}
+
+impl Drop for LatestHoldSourceGuard {
+    fn drop(&mut self) {
+        if self.child.0.try_wait().ok().flatten().is_none() {
+            if let Some(stdin) = self.child.0.stdin.as_mut() {
+                let _ = stdin.write_all(b"q");
+                let _ = stdin.flush();
+            }
+            let deadline = Instant::now() + Duration::from_secs(3);
+            while self.child.0.try_wait().ok().flatten().is_none() && Instant::now() < deadline {
+                std::thread::sleep(Duration::from_millis(10));
+            }
+        }
+        if let Some(directory) = &self.retained_dir {
+            let _ = std::fs::create_dir_all(directory);
+            let label = self
+                .csv
+                .as_ref()
+                .and_then(|csv| csv.file_stem())
+                .and_then(|stem| stem.to_str())
+                .unwrap_or("latest-hold-source");
+            let _ = std::fs::copy(&self.log, directory.join(format!("{label}-source.log")));
+            if let Some(csv) = &self.csv {
+                let _ = std::fs::copy(csv, directory.join(format!("{label}-timing.csv")));
+            }
+        }
+    }
+}
+
+#[test]
+fn latest_hold_source_guard_retains_partial_records_on_unwind() {
+    let temporary = tempfile::tempdir().expect("source guard fixture directory");
+    let log = temporary.path().join("source.log");
+    let csv = temporary.path().join("latest-hold-native-timing.csv");
+    let retained = temporary.path().join("retained");
+    let output = std::fs::File::create(&log).expect("source guard log");
+    let source = Command::new("python3")
+        .arg("-c")
+        .arg("import pathlib,sys; sys.stdin.buffer.read(1); pathlib.Path(sys.argv[1]).write_text('partial\\n'); print('STOPPED',flush=True)")
+        .arg(&csv)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::from(output))
+        .spawn()
+        .expect("start source guard fixture");
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let _source = LatestHoldSourceGuard {
+            child: ChildGuard(source),
+            log,
+            csv: Some(csv),
+            retained_dir: Some(retained.clone()),
+        };
+        panic!("simulate timing assertion failure");
+    }));
+    assert!(result.is_err());
+    assert_eq!(
+        std::fs::read_to_string(retained.join("latest-hold-native-timing-timing.csv"))
+            .expect("retained partial CSV"),
+        "partial\n"
+    );
+    assert!(
+        std::fs::read_to_string(retained.join("latest-hold-native-timing-source.log"))
+            .expect("retained source log")
+            .contains("STOPPED")
+    );
 }
 
 struct SessionCase<'a> {
@@ -144,7 +258,20 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
         || workspace.join("pipewireao-spa-plugins-core/build"),
         PathBuf::from,
     );
-    let temporary = tempfile::tempdir().expect("private fixture directory");
+    let timing_directory = latest_hold_timing_dir();
+    if let Some(directory) = &timing_directory {
+        std::fs::create_dir(directory).expect("latest/hold timing output must be a new directory");
+    }
+    let mut temporary = tempfile::tempdir().expect("private fixture directory");
+    if let Some(directory) = timing_directory {
+        temporary.disable_cleanup(true);
+        std::os::unix::fs::symlink(temporary.path(), directory.join("private-core"))
+            .expect("link retained private-core evidence");
+        eprintln!(
+            "latest/hold private-core evidence: {}",
+            temporary.path().display()
+        );
+    }
     let fits_a = temporary.path().join("excitation-a.fits");
     let fits_b = temporary.path().join("excitation-b.fits");
     fits_discard::write_vector_sequence(&fits_a);
@@ -288,16 +415,35 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
 
     let core_log = std::fs::File::create(diagnostic_directory.join("private-core.log"))
         .expect("create private core log");
-    let core =
-        command_with_environment(pipewire_build.join("src/daemon/pipewire-ao"), &environment)
-            .args(["-c", "private-core.conf"])
-            .stdout(Stdio::from(
-                core_log.try_clone().expect("clone private core log"),
-            ))
-            .stderr(Stdio::from(core_log))
-            .spawn()
-            .expect("start private PipeWireAO core");
-    let mut core = ChildGuard(core);
+    let core_executable = pipewire_build.join("src/daemon/pipewire-ao");
+    let heaptrack_output = std::env::var_os("PIPEWIREAO_RTC_LATEST_HOLD_HEAPTRACK_OUTPUT");
+    if heaptrack_output.is_some() {
+        assert_eq!(
+            std::env::var("PIPEWIREAO_RTC_LIVE_SCOPE").as_deref(),
+            Ok("latest-hold"),
+            "latest/hold heaptrack mode requires PIPEWIREAO_RTC_LIVE_SCOPE=latest-hold"
+        );
+    }
+    let mut core_command = if let Some(output) = &heaptrack_output {
+        let mut command = command_with_environment("heaptrack", &environment);
+        command.args(["--raw", "--output"]);
+        command.arg(output).arg(&core_executable);
+        command
+    } else {
+        command_with_environment(&core_executable, &environment)
+    };
+    let core = core_command
+        .args(["-c", "private-core.conf"])
+        .stdout(Stdio::from(
+            core_log.try_clone().expect("clone private core log"),
+        ))
+        .stderr(Stdio::from(core_log))
+        .spawn()
+        .expect("start private PipeWireAO core");
+    let mut core = CoreGuard {
+        child: ChildGuard(core),
+        heaptrack: heaptrack_output.is_some(),
+    };
     wait_for_core(&mut core.0, &runtime.join(&core_name));
 
     let example_plugin = environment
@@ -371,6 +517,7 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
                 &pipewireao_julia,
                 &julia_filter_graph,
             );
+            drop(unrelated);
             return;
         }
         Ok("properties") => {
@@ -636,6 +783,35 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
 
     drop(unrelated);
     drop(core);
+}
+
+fn finish_heaptracked_core(core: &mut ChildGuard) {
+    let parent = core.0.id();
+    let Ok(children) = std::fs::read_to_string(format!("/proc/{parent}/task/{parent}/children"))
+    else {
+        return;
+    };
+    let Some(server) = children.split_whitespace().find(|child| {
+        std::fs::read(format!("/proc/{child}/cmdline")).is_ok_and(|command| {
+            command
+                .windows(b"/pipewire-ao\0".len())
+                .any(|part| part == b"/pipewire-ao\0")
+        })
+    }) else {
+        return;
+    };
+    let _ = Command::new("kill").args(["-TERM", server]).status();
+    let deadline = Instant::now() + Duration::from_secs(10);
+    loop {
+        if core.0.try_wait().ok().flatten().is_some() {
+            return;
+        }
+        if Instant::now() >= deadline {
+            let _ = Command::new("kill").args(["-KILL", server]).status();
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(20));
+    }
 }
 
 fn run_external_processing_graph_case(
@@ -3857,6 +4033,11 @@ const LATEST_HOLD_SAMPLES: u32 = 10;
 const LATEST_HOLD_CYCLES_PER_SAMPLE: u32 = 10;
 const LATEST_HOLD_EXPECTED_OUTPUTS: u32 = LATEST_HOLD_SAMPLES * LATEST_HOLD_CYCLES_PER_SAMPLE;
 const LATEST_HOLD_STEADY_START: u64 = 11;
+const LATEST_HOLD_BENCH_SAMPLES: u32 = 2_500;
+
+fn latest_hold_timing_dir() -> Option<PathBuf> {
+    std::env::var_os("PIPEWIREAO_RTC_LATEST_HOLD_TIMING_DIR").map(PathBuf::from)
+}
 
 fn assert_latest_hold_driver(core_name: &str) {
     let driver = fits_discard::node_properties(core_name, "PipeWireAO-RTC-Dummy-Driver");
@@ -3902,16 +4083,27 @@ fn run_native_latest_hold_live_case(
     std::env::set_var("PIPEWIREAO_RTC_GRAPH_LATEST_HOLD", &graph);
     let source = build_latest_hold_fixture_source(repository, pipewire_build, temporary);
     let log = temporary.join("latest-hold-source.log");
+    let timing_csv =
+        latest_hold_timing_dir().map(|_| temporary.join("latest-hold-native-timing.csv"));
     let output = std::fs::File::create(&log).expect("latest/hold source log");
-    let mut source = ChildGuard(
-        command_with_environment(&source, environment)
-            .arg(core_name)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::from(output.try_clone().expect("clone source log")))
-            .stderr(Stdio::from(output))
-            .spawn()
-            .expect("start deterministic latest/hold source"),
-    );
+    let mut source_command = command_with_environment(&source, environment);
+    source_command.arg(core_name);
+    if let Some(path) = &timing_csv {
+        source_command.arg(path);
+    }
+    let mut source = LatestHoldSourceGuard {
+        child: ChildGuard(
+            source_command
+                .stdin(Stdio::piped())
+                .stdout(Stdio::from(output.try_clone().expect("clone source log")))
+                .stderr(Stdio::from(output))
+                .spawn()
+                .expect("start deterministic latest/hold source"),
+        ),
+        log: log.clone(),
+        csv: timing_csv.clone(),
+        retained_dir: latest_hold_timing_dir(),
+    };
     wait_for_text(&mut source.0, &log, "READY");
 
     let adapter = LiveGraphAdapter::connect(core_name).expect("connect latest/hold adapter");
@@ -4007,6 +4199,9 @@ fn run_native_latest_hold_live_case(
         core_name,
         progress,
     );
+    if timing_csv.is_some() {
+        exercise_latest_hold_timing(&mut source, &log, core_name, recovered);
+    }
     assert_eq!(
         runner
             .dispatch(LifecycleEvent::Stop)
@@ -4025,6 +4220,12 @@ fn run_native_latest_hold_live_case(
     );
     send_latest_hold_source_command(&mut source, b'q');
     wait_for_child_exit(&mut source.0, &log, "deterministic latest/hold source");
+    if let (Some(directory), Some(csv)) = (latest_hold_timing_dir(), timing_csv) {
+        std::fs::copy(csv, directory.join("native-timing.csv"))
+            .expect("retain native latest/hold timing samples");
+        std::fs::copy(&log, directory.join("native-source.log"))
+            .expect("retain native latest/hold source log");
+    }
     match original_graph {
         Some(path) => std::env::set_var("PIPEWIREAO_RTC_GRAPH_LATEST_HOLD", path),
         None => std::env::remove_var("PIPEWIREAO_RTC_GRAPH_LATEST_HOLD"),
@@ -4057,18 +4258,29 @@ fn run_julia_latest_hold_live_case(
     );
     let source = build_latest_hold_fixture_source(repository, pipewire_build, temporary);
     let log = temporary.join("latest-hold-julia-source.log");
+    let timing_csv =
+        latest_hold_timing_dir().map(|_| temporary.join("latest-hold-julia-timing.csv"));
     let output = std::fs::File::create(&log).expect("Julia latest/hold source log");
-    let mut source = ChildGuard(
-        command_with_environment(&source, environment)
-            .arg(core_name)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::from(
-                output.try_clone().expect("clone Julia source log"),
-            ))
-            .stderr(Stdio::from(output))
-            .spawn()
-            .expect("start deterministic Julia latest/hold source"),
-    );
+    let mut source_command = command_with_environment(&source, environment);
+    source_command.arg(core_name);
+    if let Some(path) = &timing_csv {
+        source_command.arg(path);
+    }
+    let mut source = LatestHoldSourceGuard {
+        child: ChildGuard(
+            source_command
+                .stdin(Stdio::piped())
+                .stdout(Stdio::from(
+                    output.try_clone().expect("clone Julia source log"),
+                ))
+                .stderr(Stdio::from(output))
+                .spawn()
+                .expect("start deterministic Julia latest/hold source"),
+        ),
+        log: log.clone(),
+        csv: timing_csv.clone(),
+        retained_dir: latest_hold_timing_dir(),
+    };
     wait_for_text(&mut source.0, &log, "READY");
 
     let adapter = LiveGraphAdapter::connect(core_name).expect("connect Julia latest/hold adapter");
@@ -4164,6 +4376,9 @@ fn run_julia_latest_hold_live_case(
         core_name,
         progress,
     );
+    if timing_csv.is_some() {
+        exercise_latest_hold_timing(&mut source, &log, core_name, recovered);
+    }
     assert_eq!(
         runner
             .dispatch(LifecycleEvent::Stop)
@@ -4202,6 +4417,12 @@ fn run_julia_latest_hold_live_case(
         &log,
         "deterministic Julia latest/hold source",
     );
+    if let (Some(directory), Some(csv)) = (latest_hold_timing_dir(), timing_csv) {
+        std::fs::copy(csv, directory.join("julia-timing.csv"))
+            .expect("retain Julia latest/hold timing samples");
+        std::fs::copy(&log, directory.join("julia-source.log"))
+            .expect("retain Julia latest/hold source log");
+    }
     LatestHoldCaseResult {
         received: recovered.received,
         last_command_sequence: progress.last_command_sequence,
@@ -4473,6 +4694,82 @@ fn exercise_latest_hold_recovery(
     (recovered, metrics)
 }
 
+fn exercise_latest_hold_timing(
+    source: &mut ChildGuard,
+    log: &Path,
+    core_name: &str,
+    recovered: LatestHoldProgress,
+) {
+    let expired = wait_for_latest_hold_progress_until(
+        source,
+        log,
+        LatestHoldProgressThreshold {
+            cycles: recovered.cycles + 10,
+            data: LATEST_HOLD_SAMPLES + 4,
+            received: recovered.received,
+            commands: recovered.commands,
+            last_command_sequence: recovered.last_command_sequence,
+            ..Default::default()
+        },
+    );
+    assert_eq!(expired.received, recovered.received);
+    assert_eq!(expired.commands, recovered.commands);
+    send_latest_hold_source_command(source, b'g');
+    send_latest_hold_source_command(source, b'b');
+    wait_for_text(&mut source.0, log, "BENCH_STARTED");
+
+    let expected_data = LATEST_HOLD_SAMPLES + 4 + LATEST_HOLD_BENCH_SAMPLES;
+    let expected_output =
+        recovered.received + LATEST_HOLD_BENCH_SAMPLES * LATEST_HOLD_CYCLES_PER_SAMPLE;
+    let expected_commands =
+        recovered.commands + LATEST_HOLD_BENCH_SAMPLES * LATEST_HOLD_CYCLES_PER_SAMPLE;
+    let deadline = Instant::now() + Duration::from_secs(40);
+    let completed = loop {
+        assert!(
+            source
+                .0
+                .try_wait()
+                .expect("poll latest/hold timing source")
+                .is_none(),
+            "latest/hold timing source exited early: {}",
+            std::fs::read_to_string(log).unwrap_or_default()
+        );
+        send_latest_hold_source_command(source, b'p');
+        std::thread::sleep(Duration::from_millis(100));
+        if let Some(progress) = latest_hold_progress(log) {
+            if progress.data >= expected_data
+                && progress.received >= expected_output
+                && progress.commands >= expected_commands
+            {
+                break progress;
+            }
+        }
+        assert!(
+            Instant::now() < deadline,
+            "latest/hold timing phase did not finish: {}",
+            std::fs::read_to_string(log).unwrap_or_default()
+        );
+    };
+    assert_eq!(completed.data, expected_data);
+    assert_eq!(completed.received, expected_output);
+    assert_eq!(completed.commands, expected_commands);
+    assert_eq!(completed.allowed_command_gaps, 3);
+    assert_eq!(
+        completed.last_held_header_sequence,
+        u64::from(expected_output - 1)
+    );
+    assert_eq!(completed.empty + completed.data, completed.cycles);
+    let metrics = fits_discard::latest_hold_metrics(core_name, "pipewireao-rtc-latest-hold");
+    assert_eq!(
+        metrics.updates_accepted,
+        u64::from(LATEST_HOLD_SAMPLES + 2 + LATEST_HOLD_BENCH_SAMPLES)
+    );
+    assert_eq!(metrics.updates_rejected, 0);
+    assert_eq!(metrics.protocol_errors, 0);
+    assert_eq!(metrics.outputs_published, u64::from(expected_output));
+    assert_eq!(metrics.output_starvations, 0);
+}
+
 #[derive(Clone, Copy, Debug)]
 struct LatestHoldProgress {
     cycles: u32,
@@ -4535,8 +4832,14 @@ fn build_latest_hold_fixture_source(
         String::from_utf8_lossy(&flags.stderr)
     );
     let binary = temporary.join("latest-hold-slow-source");
-    let compilation = Command::new("cc")
-        .args(["-std=c11", "-Wall", "-Wextra", "-Werror"])
+    let mut compiler = Command::new("cc");
+    compiler.args(["-std=c11", "-Wall", "-Wextra", "-Werror"]);
+    if latest_hold_timing_dir().is_some() {
+        compiler.arg(format!(
+            "-DLATEST_HOLD_BENCH_SAMPLES={LATEST_HOLD_BENCH_SAMPLES}"
+        ));
+    }
+    let compilation = compiler
         .arg(repository.join("tests/fixtures/latest_hold_slow_source.c"))
         .arg("-o")
         .arg(&binary)

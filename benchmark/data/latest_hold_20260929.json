@@ -1,0 +1,556 @@
+{
+  "runs": [
+    {
+      "clock": "CLOCK_MONOTONIC_RAW",
+      "clock_two_reads_ns": {
+        "count": 1000,
+        "max": 291,
+        "min": 20,
+        "p50": 20,
+        "p90": 21,
+        "p99": 30
+      },
+      "file": "/home/dgamroth/.cache/pipewireao-rtc/latest-hold-char-final-config3/data/native-timing.csv",
+      "load": "single PipeWire Dummy Driver; driver-paced 1000 Hz primary and every-tenth-cycle slow offer",
+      "primary": {
+        "achieved_callback_hz": 999.9959836653135,
+        "achieved_offer_hz": 999.9959856653974,
+        "callback_interval_ns": {
+          "count": 19999,
+          "max": 1096817,
+          "min": 926097,
+          "p50": 999805,
+          "p90": 1007910,
+          "p99": 1017609
+        },
+        "callback_to_queue_ns": {
+          "count": 20000,
+          "max": 9478,
+          "min": 170,
+          "p50": 321,
+          "p90": 581,
+          "p99": 931
+        },
+        "identity_first": 5351,
+        "identity_last": 25350,
+        "offer_interval_ns": {
+          "count": 19999,
+          "max": 1097097,
+          "min": 926087,
+          "p50": 999805,
+          "p90": 1007950,
+          "p99": 1017739
+        },
+        "queue_to_receipt_ns": {
+          "count": 20000,
+          "max": 127810,
+          "min": 13074,
+          "p50": 23334,
+          "p90": 32902,
+          "p99": 41287
+        }
+      },
+      "sha256": "c5fb085e3063fc867d36ef444f02a14d75dd1b6fafca29a5fa2c59d2ac2eb867",
+      "slow": {
+        "achieved_callback_hz": 99.9996007369618,
+        "achieved_offer_hz": 99.99959933627265,
+        "callback_interval_ns": {
+          "count": 1999,
+          "max": 10100482,
+          "min": 9898334,
+          "p50": 10000215,
+          "p90": 10011476,
+          "p99": 10026494
+        },
+        "callback_to_queue_ns": {
+          "count": 2000,
+          "max": 1122,
+          "min": 180,
+          "p50": 281,
+          "p90": 491,
+          "p99": 701
+        },
+        "identity_first": 515,
+        "identity_last": 2514,
+        "offer_interval_ns": {
+          "count": 1999,
+          "max": 10100502,
+          "min": 9898293,
+          "p50": 10000254,
+          "p90": 10011606,
+          "p99": 10026444
+        },
+        "queue_to_receipt_ns": {
+          "count": 2000,
+          "max": 36949,
+          "min": 9318,
+          "p50": 16982,
+          "p90": 22042,
+          "p99": 30256
+        }
+      },
+      "warmup_primary_identities": 5000,
+      "warmup_slow_identities": 500
+    },
+    {
+      "clock": "CLOCK_MONOTONIC_RAW",
+      "clock_two_reads_ns": {
+        "count": 1000,
+        "max": 50,
+        "min": 20,
+        "p50": 20,
+        "p90": 20,
+        "p99": 30
+      },
+      "file": "/home/dgamroth/.cache/pipewireao-rtc/latest-hold-char-final-config3/data/julia-timing.csv",
+      "load": "single PipeWire Dummy Driver; driver-paced 1000 Hz primary and every-tenth-cycle slow offer",
+      "primary": {
+        "achieved_callback_hz": 999.995744705342,
+        "achieved_offer_hz": 999.9957472054457,
+        "callback_interval_ns": {
+          "count": 19999,
+          "max": 1091497,
+          "min": 907633,
+          "p50": 999785,
+          "p90": 1007238,
+          "p99": 1014652
+        },
+        "callback_to_queue_ns": {
+          "count": 20000,
+          "max": 6001,
+          "min": 170,
+          "p50": 361,
+          "p90": 582,
+          "p99": 831
+        },
+        "identity_first": 5341,
+        "identity_last": 25340,
+        "offer_interval_ns": {
+          "count": 19999,
+          "max": 1091527,
+          "min": 907242,
+          "p50": 999795,
+          "p90": 1007279,
+          "p99": 1014683
+        },
+        "queue_to_receipt_ns": {
+          "count": 20000,
+          "max": 155031,
+          "min": 12523,
+          "p50": 21721,
+          "p90": 27151,
+          "p99": 36889
+        }
+      },
+      "sha256": "4b977e78d3bf71e34351a3604cc1ccf62546ae9f0c5451ffa88ab22087fc850a",
+      "slow": {
+        "achieved_callback_hz": 99.99957367365347,
+        "achieved_offer_hz": 99.99957346855267,
+        "callback_interval_ns": {
+          "count": 1999,
+          "max": 10029159,
+          "min": 9970979,
+          "p50": 10000084,
+          "p90": 10003110,
+          "p99": 10009322
+        },
+        "callback_to_queue_ns": {
+          "count": 2000,
+          "max": 1052,
+          "min": 180,
+          "p50": 310,
+          "p90": 490,
+          "p99": 601
+        },
+        "identity_first": 515,
+        "identity_last": 2514,
+        "offer_interval_ns": {
+          "count": 1999,
+          "max": 10029178,
+          "min": 9970970,
+          "p50": 10000064,
+          "p90": 10003170,
+          "p99": 10009602
+        },
+        "queue_to_receipt_ns": {
+          "count": 2000,
+          "max": 38703,
+          "min": 9518,
+          "p50": 18775,
+          "p90": 24846,
+          "p99": 30888
+        }
+      },
+      "warmup_primary_identities": 5000,
+      "warmup_slow_identities": 500
+    },
+    {
+      "clock": "CLOCK_MONOTONIC_RAW",
+      "clock_two_reads_ns": {
+        "count": 1000,
+        "max": 60,
+        "min": 20,
+        "p50": 20,
+        "p90": 20,
+        "p99": 30
+      },
+      "file": "/home/dgamroth/.cache/pipewireao-rtc/latest-hold-char-final-config4/data/native-timing.csv",
+      "load": "single PipeWire Dummy Driver; driver-paced 1000 Hz primary and every-tenth-cycle slow offer",
+      "primary": {
+        "achieved_callback_hz": 999.9960933699296,
+        "achieved_offer_hz": 999.9960959200372,
+        "callback_interval_ns": {
+          "count": 19999,
+          "max": 1096176,
+          "min": 912431,
+          "p50": 999795,
+          "p90": 1008261,
+          "p99": 1016306
+        },
+        "callback_to_queue_ns": {
+          "count": 20000,
+          "max": 5741,
+          "min": 160,
+          "p50": 360,
+          "p90": 631,
+          "p99": 912
+        },
+        "identity_first": 5351,
+        "identity_last": 25350,
+        "offer_interval_ns": {
+          "count": 19999,
+          "max": 1095955,
+          "min": 912371,
+          "p50": 999795,
+          "p90": 1008331,
+          "p99": 1016436
+        },
+        "queue_to_receipt_ns": {
+          "count": 20000,
+          "max": 246472,
+          "min": 14276,
+          "p50": 22332,
+          "p90": 27492,
+          "p99": 34835
+        }
+      },
+      "sha256": "e9b72ba7c6fbfdb34daee67239ed80d82d7e9c886d0044ea46a18ebb0b240ea6",
+      "slow": {
+        "achieved_callback_hz": 99.99955653023079,
+        "achieved_offer_hz": 99.99955547971486,
+        "callback_interval_ns": {
+          "count": 1999,
+          "max": 10042804,
+          "min": 9957174,
+          "p50": 9999984,
+          "p90": 10011786,
+          "p99": 10019581
+        },
+        "callback_to_queue_ns": {
+          "count": 2000,
+          "max": 4428,
+          "min": 180,
+          "p50": 321,
+          "p90": 521,
+          "p99": 762
+        },
+        "identity_first": 515,
+        "identity_last": 2514,
+        "offer_interval_ns": {
+          "count": 1999,
+          "max": 10042784,
+          "min": 9957174,
+          "p50": 9999914,
+          "p90": 10011867,
+          "p99": 10019651
+        },
+        "queue_to_receipt_ns": {
+          "count": 2000,
+          "max": 37731,
+          "min": 8165,
+          "p50": 16992,
+          "p90": 23274,
+          "p99": 30577
+        }
+      },
+      "warmup_primary_identities": 5000,
+      "warmup_slow_identities": 500
+    },
+    {
+      "clock": "CLOCK_MONOTONIC_RAW",
+      "clock_two_reads_ns": {
+        "count": 1000,
+        "max": 50,
+        "min": 20,
+        "p50": 20,
+        "p90": 21,
+        "p99": 30
+      },
+      "file": "/home/dgamroth/.cache/pipewireao-rtc/latest-hold-char-final-config4/data/julia-timing.csv",
+      "load": "single PipeWire Dummy Driver; driver-paced 1000 Hz primary and every-tenth-cycle slow offer",
+      "primary": {
+        "achieved_callback_hz": 999.9968127507956,
+        "achieved_offer_hz": 999.9968112507302,
+        "callback_interval_ns": {
+          "count": 19999,
+          "max": 1101205,
+          "min": 901441,
+          "p50": 999805,
+          "p90": 1007099,
+          "p99": 1015154
+        },
+        "callback_to_queue_ns": {
+          "count": 20000,
+          "max": 5440,
+          "min": 160,
+          "p50": 320,
+          "p90": 571,
+          "p99": 801
+        },
+        "identity_first": 5331,
+        "identity_last": 25330,
+        "offer_interval_ns": {
+          "count": 19999,
+          "max": 1101235,
+          "min": 901480,
+          "p50": 999805,
+          "p90": 1007118,
+          "p99": 1015204
+        },
+        "queue_to_receipt_ns": {
+          "count": 20000,
+          "max": 129072,
+          "min": 12183,
+          "p50": 21761,
+          "p90": 27071,
+          "p99": 36779
+        }
+      },
+      "sha256": "fb423eb78d9d0f687ccef9eac1e7762b9b63e7785c2d3006a1145aab42ebb088",
+      "slow": {
+        "achieved_callback_hz": 99.9996810265302,
+        "achieved_offer_hz": 99.9996810765549,
+        "callback_interval_ns": {
+          "count": 1999,
+          "max": 10102696,
+          "min": 9896480,
+          "p50": 10000194,
+          "p90": 10009773,
+          "p99": 10019060
+        },
+        "callback_to_queue_ns": {
+          "count": 2000,
+          "max": 3737,
+          "min": 170,
+          "p50": 231,
+          "p90": 451,
+          "p99": 661
+        },
+        "identity_first": 515,
+        "identity_last": 2514,
+        "offer_interval_ns": {
+          "count": 1999,
+          "max": 10102797,
+          "min": 9896420,
+          "p50": 10000324,
+          "p90": 10009772,
+          "p99": 10019361
+        },
+        "queue_to_receipt_ns": {
+          "count": 2000,
+          "max": 36047,
+          "min": 9328,
+          "p50": 16241,
+          "p90": 20989,
+          "p99": 28143
+        }
+      },
+      "warmup_primary_identities": 5000,
+      "warmup_slow_identities": 500
+    },
+    {
+      "clock": "CLOCK_MONOTONIC_RAW",
+      "clock_two_reads_ns": {
+        "count": 1000,
+        "max": 40,
+        "min": 20,
+        "p50": 20,
+        "p90": 30,
+        "p99": 31
+      },
+      "file": "/home/dgamroth/.cache/pipewireao-rtc/latest-hold-char-final-config5/data/native-timing.csv",
+      "load": "single PipeWire Dummy Driver; driver-paced 1000 Hz primary and every-tenth-cycle slow offer",
+      "primary": {
+        "achieved_callback_hz": 999.996471086007,
+        "achieved_offer_hz": 999.9964715860284,
+        "callback_interval_ns": {
+          "count": 19999,
+          "max": 1124810,
+          "min": 871724,
+          "p50": 999815,
+          "p90": 1008021,
+          "p99": 1016095
+        },
+        "callback_to_queue_ns": {
+          "count": 20000,
+          "max": 6682,
+          "min": 180,
+          "p50": 531,
+          "p90": 651,
+          "p99": 1032
+        },
+        "identity_first": 5351,
+        "identity_last": 25350,
+        "offer_interval_ns": {
+          "count": 19999,
+          "max": 1125030,
+          "min": 871244,
+          "p50": 999815,
+          "p90": 1008051,
+          "p99": 1016106
+        },
+        "queue_to_receipt_ns": {
+          "count": 20000,
+          "max": 223389,
+          "min": 14548,
+          "p50": 25988,
+          "p90": 60363,
+          "p99": 128611
+        }
+      },
+      "sha256": "5bd33152c0bce8fb6e3fe8d4dc4bcf99aa5ed1fabfb83e54c5fae0d3c3817955",
+      "slow": {
+        "achieved_callback_hz": 99.99966172700722,
+        "achieved_offer_hz": 99.99966112671113,
+        "callback_interval_ns": {
+          "count": 1999,
+          "max": 10097517,
+          "min": 9902942,
+          "p50": 10000034,
+          "p90": 10010032,
+          "p99": 10018829
+        },
+        "callback_to_queue_ns": {
+          "count": 2000,
+          "max": 1162,
+          "min": 180,
+          "p50": 431,
+          "p90": 501,
+          "p99": 661
+        },
+        "identity_first": 515,
+        "identity_last": 2514,
+        "offer_interval_ns": {
+          "count": 1999,
+          "max": 10098128,
+          "min": 9902652,
+          "p50": 10000084,
+          "p90": 10010042,
+          "p99": 10019020
+        },
+        "queue_to_receipt_ns": {
+          "count": 2000,
+          "max": 94928,
+          "min": 9097,
+          "p50": 16731,
+          "p90": 22743,
+          "p99": 29375
+        }
+      },
+      "warmup_primary_identities": 5000,
+      "warmup_slow_identities": 500
+    },
+    {
+      "clock": "CLOCK_MONOTONIC_RAW",
+      "clock_two_reads_ns": {
+        "count": 1000,
+        "max": 50,
+        "min": 20,
+        "p50": 20,
+        "p90": 30,
+        "p99": 31
+      },
+      "file": "/home/dgamroth/.cache/pipewireao-rtc/latest-hold-char-final-config5/data/julia-timing.csv",
+      "load": "single PipeWire Dummy Driver; driver-paced 1000 Hz primary and every-tenth-cycle slow offer",
+      "primary": {
+        "achieved_callback_hz": 999.995626000431,
+        "achieved_offer_hz": 999.9956184501197,
+        "callback_interval_ns": {
+          "count": 19999,
+          "max": 1089072,
+          "min": 907122,
+          "p50": 999775,
+          "p90": 1007490,
+          "p99": 1015585
+        },
+        "callback_to_queue_ns": {
+          "count": 20000,
+          "max": 5300,
+          "min": 160,
+          "p50": 451,
+          "p90": 601,
+          "p99": 842
+        },
+        "identity_first": 5331,
+        "identity_last": 25330,
+        "offer_interval_ns": {
+          "count": 19999,
+          "max": 1089133,
+          "min": 906199,
+          "p50": 999765,
+          "p90": 1007520,
+          "p99": 1015595
+        },
+        "queue_to_receipt_ns": {
+          "count": 20000,
+          "max": 79659,
+          "min": 12473,
+          "p50": 22743,
+          "p90": 28423,
+          "p99": 34845
+        }
+      },
+      "sha256": "4aa871eb227b05f6c344fa773e63a8c09e5b85fcd5d8f321f55131784a23c42d",
+      "slow": {
+        "achieved_callback_hz": 99.99966698960321,
+        "achieved_offer_hz": 99.99966598910963,
+        "callback_interval_ns": {
+          "count": 1999,
+          "max": 10091386,
+          "min": 9904715,
+          "p50": 10000044,
+          "p90": 10003470,
+          "p99": 10009051
+        },
+        "callback_to_queue_ns": {
+          "count": 2000,
+          "max": 991,
+          "min": 170,
+          "p50": 381,
+          "p90": 481,
+          "p99": 631
+        },
+        "identity_first": 515,
+        "identity_last": 2514,
+        "offer_interval_ns": {
+          "count": 1999,
+          "max": 10091386,
+          "min": 9904735,
+          "p50": 10000054,
+          "p90": 10003501,
+          "p99": 10009071
+        },
+        "queue_to_receipt_ns": {
+          "count": 2000,
+          "max": 34013,
+          "min": 10209,
+          "p50": 19126,
+          "p90": 24757,
+          "p99": 30888
+        }
+      },
+      "warmup_primary_identities": 5000,
+      "warmup_slow_identities": 500
+    }
+  ]
+}
