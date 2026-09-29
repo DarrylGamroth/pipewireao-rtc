@@ -1,6 +1,15 @@
 {
   "schema_version": 1,
   "roles": {
+    "adapter": {
+      "cpus": "0,2,4,6,8,10,14",
+      "leader_policy": "other",
+      "required_policy_counts": {
+        "other": 6,
+        "fifo:83": 1
+      },
+      "required_thread_placements": []
+    },
     "daemon": {
       "cpus": "0,2,4,6,8,10,14",
       "leader_policy": "other",
@@ -12,6 +21,31 @@
         {
           "policy": "fifo:83",
           "cpus": "0",
+          "count": 1
+        }
+      ]
+    },
+    "island": {
+      "cpus": "0,2,4,6,8,10,14",
+      "leader_policy": "other",
+      "required_policy_counts": {
+        "other": 6,
+        "fifo:83": 1
+      },
+      "required_thread_placements": [
+        {
+          "policy": "fifo:83",
+          "cpus": "0",
+          "count": 1
+        },
+        {
+          "policy": "other",
+          "cpus": "0",
+          "count": 2
+        },
+        {
+          "policy": "other",
+          "cpus": "2",
           "count": 1
         }
       ]
@@ -38,31 +72,6 @@
       "leader_policy": "fifo:20",
       "required_policy_counts": {},
       "required_thread_placements": []
-    },
-    "island": {
-      "cpus": "0,2,4,6,8,10,14",
-      "leader_policy": "other",
-      "required_policy_counts": {
-        "other": 6,
-        "fifo:83": 1
-      },
-      "required_thread_placements": [
-        {
-          "policy": "fifo:83",
-          "cpus": "0",
-          "count": 1
-        },
-        {
-          "policy": "other",
-          "cpus": "0",
-          "count": 2
-        },
-        {
-          "policy": "other",
-          "cpus": "2",
-          "count": 1
-        }
-      ]
     }
   }
 }

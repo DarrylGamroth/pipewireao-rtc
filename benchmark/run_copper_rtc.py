@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -31,6 +32,35 @@ MAX_RATE_HZ = 474
 def sha256_file(path: Path) -> str:
     with path.open("rb") as stream:
         return hashlib.file_digest(stream, "sha256").hexdigest()
+
+
+def git_state(path: Path) -> dict:
+    """Record the source revision and dirty paths behind a selected artifact."""
+    directory = path if path.is_dir() else path.parent
+    def git(*arguments: str) -> str:
+        return subprocess.check_output(
+            ["git", "-C", str(directory), *arguments], text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    try:
+        status = git("status", "--porcelain")
+        return {"root": git("rev-parse", "--show-toplevel"),
+                "revision": git("rev-parse", "HEAD"),
+                "dirty": bool(status), "status_porcelain": status}
+    except (OSError, subprocess.CalledProcessError) as error:
+        return {"path": str(path), "unavailable": str(error)}
+
+
+def require_physical_latencies(physical: dict, frames: int) -> None:
+    for name in ("first_wfs_packet_to_dm_us", "terminal_wfs_packet_to_dm_us",
+                 "source_first_to_terminal_us"):
+        summary = physical.get(name)
+        if not isinstance(summary, dict) or summary.get("count") != frames:
+            raise RuntimeError(f"incomplete {name} latency distribution")
+        for statistic in ("min", "p50", "p99", "max"):
+            value = summary.get(statistic)
+            if not isinstance(value, (int, float)) or not np.isfinite(value) or value < 0:
+                raise RuntimeError(f"invalid {name} {statistic} latency: {value}")
 
 
 def use_installed_julia_libraries(output: Path, installation) -> Path:
@@ -182,12 +212,15 @@ def main() -> None:
                         help="opt-in role/thread contract; reject mismatches before image ingress")
     parser.add_argument("--julia-pin-cpus",
                         help="comma-separated CPU for each of the two Julia threads in placement mode")
+    parser.add_argument("--wire-capture", action="store_true",
+                        help="link the Standard-DM adapter and qualify WFS-to-DM UDP latency")
     parser.add_argument("--frames", type=int, default=16)
     parser.add_argument("--rate-hz", type=int, default=474,
                         help="offered frame rate; the 2 ms wfsSimulator readout permits at most 474 Hz")
     parser.add_argument("--reference-vectors", type=Path,
                         help="optional demanded-um.f32 from the matched FGN full-frame replay")
     args = parser.parse_args()
+    script_started_ns = time.monotonic_ns()
     if not 1 <= args.frames <= 1024:
         parser.error("--frames must be in 1..1024")
     if not 1 <= args.rate_hz <= MAX_RATE_HZ:
@@ -211,6 +244,8 @@ def main() -> None:
             roles = {"daemon", "observer", "rtc", "simulator"}
             if args.controller == "julia":
                 roles.add("island")
+            if args.wire_capture:
+                roles.add("adapter")
             absent = roles - profile["roles"].keys()
             if absent:
                 raise LaunchError(f"placement profile lacks roles: {sorted(absent)}")
@@ -228,7 +263,7 @@ def main() -> None:
     sys.path.insert(0, str(scripts))
     from run_fgn_copper_fullframe_live import (  # noqa: PLC0415
         command, compile_observer, make_environment, pipewire_installation,
-        require, start, stop, wait_for, wait_text,
+        require, start, stop, validate_adapter_sequences, wait_for, wait_text,
     )
 
     installation = pipewire_installation(None, args.pipewire_prefix)
@@ -245,6 +280,17 @@ def main() -> None:
         require(island_script, "JuliaFilterGraph PipeWire island script")
         require(deployment_project, "JuliaFilterGraph deployment project")
         require(pipewireao_julia_root / "Project.toml", "local PipeWireAO.jl project")
+    adapter_script = jfg_root / "scripts/heart_std_dm_command_adapter.jl"
+    qualifier_script = jfg_root / "benchmark/heart/qualify_copper_aos_capture.py"
+    decoder_script = jfg_root / "benchmark/heart/decode_std_dm_packets.py"
+    if args.wire_capture:
+        for path, description in ((adapter_script, "Standard-DM adapter"),
+                                  (qualifier_script, "WFS/DM capture qualifier"),
+                                  (decoder_script, "Standard-DM decoder")):
+            require(path, description)
+        for program in ("dumpcap", "tshark"):
+            if shutil.which(program) is None:
+                parser.error(f"--wire-capture requires {program}")
     output.mkdir(parents=True)
     env = make_environment(output, heart, args.rate_hz, installation,
                            loop_cpu, loop_priority)
@@ -272,7 +318,9 @@ def main() -> None:
             output / "revolt-copper-rtc-graph.conf"
         )
     processes = []
+    measurement_links: list[tuple[str, str]] = []
     island_quit_request = output / "julia-island.quit"
+    adapter_stop = output / "adapter.stop"
     fixture = require(RTC / f"fixtures/revolt-copper-{args.controller}-development.conf",
                       f"Copper {args.controller} RTC fixture")
     if args.rate_hz != 474:
@@ -285,8 +333,10 @@ def main() -> None:
         fixture = rate_fixture
     report = {"frames": args.frames, "rate_hz": args.rate_hz, "readout_us": 2000,
               "controller": args.controller, "fixture": str(fixture),
+              "wire_capture": args.wire_capture,
               "cube": str(cube), "qualified": False,
               "delivery_qualified": False, "schedule_qualified": False,
+              "wire_qualified": False if args.wire_capture else None,
               "numerical_comparison": "not_evaluated" if args.reference_vectors is not None
               else "not_requested"}
     profile_sha256 = sha256_file(args.placement_profile) if profile is not None else None
@@ -297,6 +347,25 @@ def main() -> None:
                                           for role in sorted(roles)}
         report["daemon_config_sha256"] = sha256_file(output / "config/fgn-copper-live.conf")
     report["pipewire_prefix"] = str(args.pipewire_prefix.resolve())
+    report["source_revisions"] = {
+        "rtc": git_state(RTC),
+        "calculon": git_state(args.algorithms_root),
+        "bundle": git_state(args.fgn_bundle),
+        "heart": git_state(simulator),
+        "heart_plugin": git_state(heart),
+        "jfg": git_state(jfg_root),
+        "pipewireao_julia": git_state(pipewireao_julia_root),
+    }
+    artifacts = (rtc_bin, installation.daemon,
+                 installation.module_directory / "libpipewire-module-ndarray-filter-chain.so",
+                 installation.tool("pwao-link"), installation.tool("pwao-dump"),
+                 observer_bin, simulator, heart, fixture,
+                 output / "config/fgn-copper-live.conf")
+    report["artifact_sha256"] = {str(path): sha256_file(path) for path in artifacts}
+    report["calibration_sha256"] = {
+        str(path): sha256_file(path)
+        for path in sorted(args.heart_config.resolve().iterdir()) if path.is_file()
+    }
     report["input_sha256"] = sha256_file(cube)
     report["heart_plugin_sha256"] = sha256_file(heart)
     report["pipewire_library_sha256"] = sha256_file(
@@ -307,10 +376,17 @@ def main() -> None:
     if bundle is not None:
         report["bundle"] = str(bundle)
         report["bundle_sha256"] = sha256_file(bundle)
+        report["artifact_sha256"][str(output / "revolt-copper-rtc-graph.conf")] = (
+            sha256_file(output / "revolt-copper-rtc-graph.conf")
+        )
     if args.controller == "julia":
         report["jfg_root"] = str(jfg_root)
         report["jfg_script_sha256"] = sha256_file(island_script)
         report["julia_blas_threads"] = args.julia_blas_threads
+    if args.wire_capture:
+        report["adapter_script_sha256"] = sha256_file(adapter_script)
+        report["qualifier_script_sha256"] = sha256_file(qualifier_script)
+        report["decoder_script_sha256"] = sha256_file(decoder_script)
     placement_processes = {}
     try:
         daemon, daemon_log = start(
@@ -332,7 +408,7 @@ def main() -> None:
         processes.append((observer, observer_log, "q"))
         placement_processes["observer"] = observer
         wait_text(output / "observer.log", "CONNECT_ACCEPTED", process=observer)
-        if args.controller == "julia":
+        if args.controller == "julia" or args.wire_capture:
             depot = use_installed_julia_libraries(output, installation)
             report["julia_artifact_overlay"] = str(depot / "native-artifact")
             env.update({
@@ -341,12 +417,27 @@ def main() -> None:
                     str(Path.home() / ".julia"),
                 )),
                 "JULIA_LOAD_PATH": f"{pipewireao_julia_root}:@:@stdlib",
+                "OPENBLAS_NUM_THREADS": str(args.julia_blas_threads),
+            })
+        if args.wire_capture:
+            adapter, adapter_log = start(
+                placed_argv(profile, "adapter",
+                            ["julia", "--startup-file=no", "--threads=2",
+                             f"--project={jfg_root / 'benchmark'}", str(adapter_script),
+                             "pipewire-ao-0", str(adapter_stop), str(args.rate_hz),
+                             "277", str(output / "adapter-sequences.csv")]),
+                env, output / "adapter.log", cwd=jfg_root,
+            )
+            processes.append((adapter, adapter_log, None))
+            placement_processes["adapter"] = adapter
+            wait_text(output / "adapter.log", "CONNECT_ACCEPTED", 60, adapter)
+        if args.controller == "julia":
+            env.update({
                 "JULIA_RTC_WORKLOAD": "copper-fits-full-frame-feedback",
                 "JULIA_RTC_COPPER_CONFIG_DIR": str(args.heart_config.resolve()),
                 "JULIA_RTC_FRAME_RATE": str(args.rate_hz),
                 "JULIA_RTC_INGRESS_MODE": "frame",
                 "JULIA_RTC_CPU_WORKERS": "0",
-                "OPENBLAS_NUM_THREADS": str(args.julia_blas_threads),
                 "JULIA_RTC_COMMAND_LIMIT_UM": "0.8",
                 "JULIA_ISLAND_QUIT_REQUEST": str(island_quit_request),
                 "JULIA_RTC_MANAGED_NODE_NAME": "calculon-revolt-copper-fullframe",
@@ -375,12 +466,41 @@ def main() -> None:
         placement_processes["rtc"] = rtc
         wait_text(output / "rtc.log", "RUNNING", 30, rtc)
         command([str(installation.tool("pwao-dump")), "-r", "pipewire-ao-0"], env)
+        if args.wire_capture:
+            demanded_port = ("command:demanded" if args.controller == "native"
+                             else "demanded")
+            pairs = (
+                (f"calculon-revolt-copper-fullframe:{demanded_port}",
+                 "julia-heart-std-dm-command-adapter:demanded"),
+                ("julia-heart-std-dm-command-adapter:standard-dm",
+                 "rtc-heart-std-dm-sink:command"),
+            )
+            link_tool = str(installation.tool("pwao-link"))
+            for source_port, sink_port in pairs:
+                command([link_tool, "-r", "pipewire-ao-0", "-w", "-L",
+                         source_port, sink_port], env)
+                measurement_links.append((source_port, sink_port))
+            listed = command([link_tool, "-r", "pipewire-ao-0", "-l"], env)
+            if any(source_port not in listed or sink_port not in listed
+                   for source_port, sink_port in pairs):
+                raise RuntimeError("Standard-DM measurement link did not appear")
+            report["measurement_links"] = list(pairs)
+            wait_text(output / "adapter.log", "PREPARED", 60, adapter)
+        graph_ready_ns = time.monotonic_ns()
         report["placement"] = {
             "before_ingress": capture_placement(
                 output, "before-ingress", placement_processes, env, profile,
                 profile_sha256,
             ),
         }
+        if args.wire_capture:
+            capture, capture_log = start(
+                ["dumpcap", "-p", "-i", "any", "-f",
+                 "udp port 6000 or udp port 6100", "-w", str(output / "wire.pcapng")],
+                env, output / "dumpcap.log",
+            )
+            processes.append((capture, capture_log, None))
+            wait_text(output / "dumpcap.log", "Capturing on", 15, capture)
         (output / "input.fits").symlink_to(cube)
         replay, replay_log = start(
             placed_argv(profile, "simulator",
@@ -389,8 +509,14 @@ def main() -> None:
                          "-numFrames", str(args.frames)]),
             env, output / "wfs-simulator.log", cwd=output,
         )
+        source_launched_ns = time.monotonic_ns()
+        report["startup_intervals_ms"] = {
+            "script_to_graph_ready": (graph_ready_ns - script_started_ns) / 1e6,
+            "graph_ready_to_source_launch": (source_launched_ns - graph_ready_ns) / 1e6,
+        }
         processes.append((replay, replay_log, None))
         replay.wait(timeout=args.frames / args.rate_hz + 15)
+        report["replay_elapsed_ms"] = (time.monotonic_ns() - source_launched_ns) / 1e6
         if replay.returncode != 0:
             raise RuntimeError("wfsSimulator failed")
         overruns = re.findall(r"Timer\[0\] overrun: (\d+)",
@@ -401,6 +527,9 @@ def main() -> None:
         # The observer flushes its FILE streams when it stops. The matched
         # Copper runner also allows one second for queued graph output here.
         time.sleep(1.0)
+        if args.wire_capture:
+            stop(capture, capture_log)
+            processes.remove((capture, capture_log, None))
         dump = command(
             [str(installation.tool("pwao-dump")), "-r", "pipewire-ao-0", "--raw"], env,
         )
@@ -410,6 +539,10 @@ def main() -> None:
             output, "after-replay", placement_processes, env, profile,
             profile_sha256,
         )
+        for source_port, sink_port in reversed(measurement_links):
+            command([str(installation.tool("pwao-link")), "-r", "pipewire-ao-0",
+                     "-d", source_port, sink_port], env)
+        measurement_links.clear()
         stop(rtc, rtc_log, control="quit\n")
         processes.remove((rtc, rtc_log, "quit\n"))
         if rtc.returncode != 0 or "OFFLINE" not in (output / "rtc.log").read_text():
@@ -424,6 +557,9 @@ def main() -> None:
         required_external = {"rtc-heart-wfs-row-source", "julia-fits-command-observer"}
         if args.controller == "julia":
             required_external.add("calculon-revolt-copper-fullframe")
+        if args.wire_capture:
+            required_external.update(("julia-heart-std-dm-command-adapter",
+                                      "rtc-heart-std-dm-sink"))
         if not required_external <= nodes:
             raise RuntimeError("RTC unload removed an external Copper endpoint: "
                                f"{sorted(required_external - nodes)}")
@@ -436,6 +572,14 @@ def main() -> None:
             raise RuntimeError("RTC-owned Copper links survived unload")
         stop(observer, observer_log, control="q")
         processes.remove((observer, observer_log, "q"))
+        if args.wire_capture:
+            adapter_stop.touch()
+            stop(adapter, adapter_log)
+            processes.remove((adapter, adapter_log, None))
+            if adapter.returncode != 0:
+                raise RuntimeError("Standard-DM adapter did not stop cleanly")
+            validate_adapter_sequences(output / "adapter-sequences.csv", args.frames)
+            report["adapter_callbacks"] = args.frames
         if args.controller == "julia":
             island_quit_request.touch()
             stop(island, island_log)
@@ -502,6 +646,49 @@ def main() -> None:
                 f"{report['simulator_timer_overrun_events']} overrun events, "
                 f"{report['simulator_timer_overrun_periods']} periods"
             )
+        if args.wire_capture:
+            for port, target in ((6000, "wfs-packets.tsv"), (6100, "dm-packets.tsv")):
+                packets = command(
+                    ["tshark", "-r", str(output / "wire.pcapng"),
+                     "-Y", f"udp.port=={port}", "-T", "fields",
+                     "-e", "frame.time_epoch", "-e", "udp.length", "-e", "data.data"],
+                    env, cwd=output,
+                )
+                (output / target).write_text(packets)
+            command(
+                [sys.executable, str(decoder_script), str(output / "dm-packets.tsv"),
+                 "--vectors", str(output / "dm-wire-um.f32"),
+                 "--summary", str(output / "dm-summary.json")], env,
+            )
+            command(
+                [sys.executable, str(qualifier_script), "--fits", str(cube),
+                 "--frames", str(args.frames), "--period", repr(1.0 / args.rate_hz),
+                 "--readout-us", "2000", "--lines", "32",
+                 "--wfs-packets", str(output / "wfs-packets.tsv"),
+                 "--dm-summary", str(output / "dm-summary.json"),
+                 "--dm-id-base", "0", "--summary", str(output / "physical-summary.json")],
+                env,
+            )
+            physical = json.loads((output / "physical-summary.json").read_text())
+            if physical.get("qualified") is not True:
+                raise RuntimeError("WFS/Standard-DM capture did not qualify")
+            require_physical_latencies(physical, args.frames)
+            # The adapter accepts micrometres and presents metres to HEART;
+            # the Standard-DM UDP protocol encodes micrometres again.
+            wire_micrometres = np.fromfile(output / "dm-wire-um.f32", dtype="<f4")
+            if wire_micrometres.size != demanded.size:
+                raise RuntimeError("Standard-DM wire vector extent differs from demand")
+            wire_difference = float(np.max(np.abs(wire_micrometres - demanded)))
+            report["max_wire_difference_um"] = wire_difference
+            if not np.isfinite(wire_difference) or wire_difference > 1e-6:
+                raise RuntimeError(f"Standard-DM wire vectors differ from demand by {wire_difference} µm")
+            report["wire_qualified"] = True
+            report["latency_us"] = {
+                "first_wfs_packet_to_dm": physical["first_wfs_packet_to_dm_us"],
+                "terminal_wfs_packet_to_dm": physical["terminal_wfs_packet_to_dm_us"],
+                "source_first_to_terminal": physical["source_first_to_terminal_us"],
+            }
+            report["physical_summary"] = str(output / "physical-summary.json")
         report["qualified"] = True
         print(json.dumps(report, indent=2))
     except Exception as error:
@@ -510,6 +697,18 @@ def main() -> None:
     finally:
         if args.controller == "julia":
             island_quit_request.touch(exist_ok=True)
+        if args.wire_capture:
+            adapter_stop.touch(exist_ok=True)
+        if measurement_links:
+            link_tool = str(installation.tool("pwao-link"))
+            for source_port, sink_port in reversed(measurement_links):
+                try:
+                    command([link_tool, "-r", "pipewire-ao-0", "-d",
+                             source_port, sink_port], env)
+                except Exception as cleanup_error:
+                    report.setdefault("cleanup_errors", []).append(
+                        f"{source_port} -> {sink_port}: {cleanup_error}"
+                    )
         for process, stream, control in reversed(processes):
             stop(process, stream, control=control)
         (output / "report.json").write_text(json.dumps(report, indent=2) + "\n")

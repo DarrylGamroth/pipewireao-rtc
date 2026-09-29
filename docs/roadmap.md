@@ -582,9 +582,15 @@ before/after thread checks, exact ordered delivery, offered-schedule check,
 and demanded-vector comparison on 2026-09-29. The native difference from the
 saved FGN vector file was zero; Julia's was 2.981 × 10⁻⁸ µm. A deliberately
 incomplete RTC thread profile failed before ingress. The source process still
-has no pre-ingress thread handshake, and the managed fixture does not yet
-capture Standard-DM wire egress or first/terminal WFS-to-DM latency. The
-three-repeat, first-use, and progressive qualifications remain open, so
+has no pre-ingress thread handshake. The companion launcher can now attach
+the maintained Standard-DM adapter and sink outside the RTC fixture and
+qualify WFS and DM UDP packets with demanded-vector equivalence. One
+1,024-frame native and one Julia managed wire replay passed at 474 Hz; their
+first-packet → DM p50 values were 1,164 and 1,169 µs, respectively, and
+terminal-packet → DM p50 values were 166 and 171 µs. These are individual
+software-boundary observations under an offered schedule, not a comparative
+ranking or physical camera-to-DM result. The three-repeat, first-use,
+observed page-backing, and progressive qualifications remain open, so
 RTC-DEV-019 remains partial.
 
 An opt-in Ryzen thread profile now checks exact policy and affinity counts at

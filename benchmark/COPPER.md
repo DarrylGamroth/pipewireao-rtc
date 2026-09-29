@@ -10,8 +10,9 @@ and [`REVOLT Copper (JuliaFilterGraph)`](../fixtures/revolt-copper-julia-develop
 The Copper fixtures use the existing HEART WFS source and demanded-command
 observer from the matched comparison at 474 Hz. The graph input is a 64 × 64
 U16 detector image; the observed 277-element Float32 command is in
-micrometres. The observer is non-actuating. The Standard-DM conversion and
-wire output used by the three-way baseline are outside this RTC fixture.
+micrometres. The observer is non-actuating. Optional Standard-DM conversion
+and wire capture are attached by the companion launcher after the RTC reaches
+`RUNNING`; these measurement links are outside RTC configuration and ownership.
 
 The managed JuliaFilterGraph island prepares the calibration matched to this
 Copper workload, publishes the graph at the selected rate, and enables RTC
@@ -32,7 +33,8 @@ thread when it owns the native graph. Before starting the sender, the runner
 checks that every requested CPU and scheduler policy is available, generates
 an explicit eventfd/FIFO83/CPU 0 daemon data loop with
 `mem.mlock-all=false`, and verifies each live daemon, observer, RTC, and
-optional Julia-island thread against the selected profile. It verifies them
+optional Julia-island and Standard-DM-adapter thread against the selected
+profile. It verifies them
 again after replay. The Julia owner receives `JULIA_RTC_PIN_CPUS` through its
 maintained ThreadPinning interface. A changed or unavailable thread layout
 fails the run; the JSON records name the failed process and thread.
@@ -54,10 +56,49 @@ python3 benchmark/run_copper_rtc.py \
 
 These host-specific profiles are an optional development experiment. The
 pixel sender's launch policy is preflighted, but its own threads cannot yet
-be inspected before it starts sending. The managed RTC fixture ends at the
-non-actuating demanded-command observer, so it does not provide Standard-DM
-wire egress or pixel-to-DM latency distributions. The three-way baseline
-runner remains the source of those complete-path measurements.
+be inspected before it starts sending. The RTC fixture owns only the path to
+the non-actuating demanded-command observer. `--wire-capture` adds a second,
+companion-owned demanded-command link to the maintained Standard-DM adapter
+and then to the HEART Standard-DM sink. The runner removes both links before
+RTC unload. This keeps the fixture's declared rate contract intact while
+providing packet-level egress evidence.
+
+```sh
+python3 benchmark/run_copper_rtc.py \
+  --output-dir /path/to/new/native-wire \
+  --controller native --frames 1024 --wire-capture \
+  --placement-profile benchmark/profiles/ryzen-6800h-rtc-copper-native.json \
+  --reference-vectors /path/to/matched/fgn/demanded-um.f32
+
+python3 benchmark/run_copper_rtc.py \
+  --output-dir /path/to/new/julia-wire \
+  --controller julia --frames 1024 --wire-capture \
+  --placement-profile benchmark/profiles/ryzen-6800h-rtc-copper-julia.json \
+  --julia-pin-cpus 0,2 \
+  --reference-vectors /path/to/matched/fgn/demanded-um.f32
+```
+
+Wire qualification requires the expected WFS and Standard-DM packet counts,
+ordered identities, matching FITS payload and command vectors, no WFS drops
+or simulator overruns, and the same numerical-reference check as the demanded
+observer. The report retains the capture, decoded vectors, physical packet
+summary, source revisions, selected artifact and calibration hashes, placement
+records, and startup and replay intervals. Its latency distributions run from
+the first or terminal WFS UDP packet to Standard-DM UDP egress. These are
+software packet boundaries, not a physical camera or DM measurement.
+
+One 1,024-frame wire run per controller passed at 474 Hz on 2026-09-29.
+The native run had first-packet → DM p50/p99 of 1,164/1,402 µs and
+terminal-packet → DM p50/p99 of 166/403 µs. The Julia run had
+1,169/1,501 µs and 171/504 µs respectively. Each delivered 1,024 ordered
+commands, had zero source drops, buffer starvations, and simulator overruns,
+and matched Standard-DM wire vectors to demanded vectors within
+1.491 × 10⁻⁸ µm. Raw reports are
+`~/.cache/rtc-copper-native-wire-1024-20260929/report.json` and
+`~/.cache/rtc-copper-julia-wire-1024-20260929/report.json`.
+These individual runs show that both managed paths reach the wire boundary;
+three independent qualified runs per controller are still needed for a
+comparative latency claim.
 
 One 1,024-frame replay per controller passed this profile at 474 Hz on
 2026-09-29. Both produced 1,024 contiguous demanded commands with zero WFS
@@ -170,9 +211,9 @@ The retained run at
 contiguous commands at 474 Hz, matched the saved full-frame FGN commanded
 vectors exactly (`max_reference_difference_um = 0.0`), and stopped and unloaded
 the RTC cleanly. This verifies RTC-managed graph loading, startup parameters,
-links, and the demanded-command data boundary. The script does not send a
-Standard-DM command or measure pixel-ingress-to-DM-egress latency; the
-three-way comparison below retains those measurements.
+links, and the demanded-command data boundary. That earlier invocation did
+not select the later `--wire-capture` path; the three-way comparison below
+retains its own complete-path measurements.
 
 A later uninstrumented 1,024-frame replay at
 `~/.cache/rtc-copper-managed-main-a4ed874-20260929/` missed demanded-command

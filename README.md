@@ -133,6 +133,9 @@ Copper configurations replay the same FITS cube through the same HEART WFS
 source and non-actuating demanded-command observer. The managed runner uses
 the selected PipeWireAO installation for Julia's JLL and one OpenBLAS thread
 by default; [COPPER.md](benchmark/COPPER.md) records the thread-count comparison.
+The companion runner can also attach a measurement-only Standard-DM path with
+`--wire-capture` and qualify software WFS-packet to DM-packet latency without
+adding those links to the RTC-owned fixture.
 
 For the latest/hold fixture, set `PIPEWIREAO_RTC_LIVE_SCOPE=latest-hold`. The
 Julia environment selected by `PIPEWIREAO_RTC_PIPEWIREAO_JULIA` must resolve
