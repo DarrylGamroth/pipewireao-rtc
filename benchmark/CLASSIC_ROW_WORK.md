@@ -208,3 +208,66 @@ qualification. It does not establish pure kernel service time, whole-stack
 allocation freedom, uninstrumented deadline performance, maximum sustained
 capacity or physical application accuracy. JFG allocation measurements retain
 their recorded callback-body scope; the C trace measures no allocations.
+
+## Saved JFG result with the reviewed source fixes at 250 Hz
+
+Input directory:
+`~/.cache/rtc-classic-jfg-admission-fixed63-250hz-20260930`.
+This successful diagnostic uses the reviewed early source notification and
+64-buffer preference from HEART commits `9f3c321` and `10388618`, with the same
+calibrations and split JFG science. Source pacing is 250 Hz with 2,000 µs readout,
+11-row packets, workers 0 and shared matrix layout. All 63 frames and 2,016
+callbacks are included, with no first-frame or warmup exclusion. Complete
+ordered WFS/DM delivery, arithmetic consistency, command limits, retained
+controller feedback and all four normal exits pass, as recorded in
+[the admission remediation evidence](CLASSIC_ROW_ADMISSION.md#reviewed-remediation-and-saved-successful-check).
+
+The authored split graph hash remains
+`e5d8ae5f9dec86089f704b120b84343334dd5ae079465e79570c50821ea55425`.
+Its exact reviewed output-boundary adaptation has hash
+`7f07395864f508fb405a64cfed67f7a16f40332a39d4cdee39e0dbd5d2a4c458`.
+The analyzer verifies that adaptation, worker count 0, complete ordered
+identities, calibration/profile hashes, science evidence, trace completeness
+and clock causality. Recomputing the entire analyzer result reproduces the
+saved JSON exactly. A separate compact check recomputes the ROI prefix and
+strict `callback end + maximum offset < terminal capture` comparison from the
+raw callback and packet files.
+
+| Additional clock margin | Positive frames | SH subapertures: min / median / max | MVM matrix columns: min / median / max |
+| --- | --- | --- | --- |
+| 0 ns | 63 / 63 | 4 / 166 / 184 | 8 / 332 / 368 |
+| 10,000 ns | 63 / 63 | 4 / 166 / 184 | 8 / 332 / 368 |
+
+These are **derived cumulative lower bounds** on completed work before each
+frame's terminal local capture observation. The full scientific frame has 188
+SH subapertures and 376 x/y matrix columns. Each counted column updates all 221
+controlled output coordinates. Callback counts are not themselves counts of
+subapertures or columns, and individual SH/MVM kernels are not timestamped.
+
+The default clock-offset hull is
+[1789232089873565251, 1789232089873566999] ns, width 1,748 ns, including the
+248 ns Float64 rounding margin at each endpoint. The extra 10 µs expands this
+hull by 10,000 ns at both ends. Positive bounds still hold in all 63 frames,
+including frame 0's four SH subapertures and eight columns. The added margin
+reduces SH bounds for frames 21, 48 and 61 from 154 to 140, and frame 33 from
+184 to 176; unchanged summary ranges and medians do not imply unchanged
+per-frame evidence.
+
+The endpoint-hull assumption and local-capture limitations above remain
+load bearing. This run includes process-global Julia allocation/GC counter
+reads and macro-enabled native diagnostics. Its derived completed-work counts
+qualify this instrumented observation. They do not establish direct kernel
+service times, a normal latency baseline, sustained capacity, or the isolated
+performance effect of either source fix. The earlier saved-source results
+above remain unchanged.
+
+The exact saved result is retained as
+[data/classic_row_work_fixed250_20260930.json](data/classic_row_work_fixed250_20260930.json).
+Its SHA-256 is
+`f85a910862c71756de05c348d064215fd3ab5596b16684205012c7b50c13e3f6`.
+It includes all per-frame bounds, both clock models, graph and input hashes,
+arithmetic evidence and scope limitations. The compact review script is
+`review-row-work.py` in the input directory, SHA-256
+`1c2d9cbf1e876ba23d45594ac84c75a24433f9cb704f588681b941f5b9796fba`;
+its output is `row-work-review-summary.json` there. The read-only computation
+ran on CPU 14 in under 0.1 seconds, without builds or live replay.
