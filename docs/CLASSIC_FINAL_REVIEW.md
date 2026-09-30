@@ -93,13 +93,28 @@ stderr records the additional failure. Filesystem write failure cannot promise
 a durable report. The existing transport helper continues to own process
 stopping; this change adds no new stop framework or realtime behavior.
 
-**Verification:** One authorized focused invocation on CPU 14 passed all seven
-sender tests in 0.014 s. New mocked cases cover normal cleanup, stop failure,
-runtime removal failure, and simultaneous cleanup failures during an original
-replay exception. They inspect the persisted report, failed qualification,
-cleanup states, and original exception identity. No new fail-before execution
-was requested for this fix; the original source control flow establishes the
-failure mechanism. No claim is made that a saved sender run encountered it.
+**Verification:** The initial focused invocation on CPU 14 passed all seven
+sender tests in 0.014 s. A subsequently authorized same-suite comparison loaded
+the unmodified module from `git show b892258^:benchmark/run_classic_spa_sender.py`
+into the current test module's `SENDER` binding, without changing the worktree.
+The old module failed in 0.021 s with four errors: three cleanup-failure cases
+had no `report.json`, and normal cleanup lacked the new outcome field. The same
+seven tests with the corrected module passed in 0.014 s. These mocked cases
+cover normal cleanup, stop failure, runtime removal failure, and simultaneous
+cleanup failures during an original replay exception. They inspect the
+persisted report, failed qualification, cleanup states, and original exception
+identity. No claim is made that a saved sender run encountered this failure.
+
+The retained `run_sender_cleanup_tests.py` runner selects only the sender
+module; both invocations use the same checked-in focused tests. Reproduce from
+the RTC repository root, using `run_classic_spa_sender_before.py` for the
+fail-before invocation and `benchmark/run_classic_spa_sender.py` for pass-after:
+
+```sh
+taskset -c 14 python3 -B \
+  ~/.cache/classic-final-review-20260930/run_sender_cleanup_tests.py \
+  ~/.cache/classic-final-review-20260930/run_classic_spa_sender_before.py
+```
 
 ## Callback ownership, allocation and disabled tracing
 
@@ -191,3 +206,7 @@ Logs are retained under `~/.cache/classic-final-review-20260930/`:
 | `classic-final-review-campaign-before.log` | `ac793daccb337066950b2a90d77ecbf365d925aa2f010a470af12e4c142d5408` |
 | `classic-final-review-campaign-after.log` | `8e6ee86a19f09028b0eb7e7edea126c74fdebb386dee5cf606adff182dac161c` |
 | `spa-sender-cleanup-after.log` | `cedb82dc56386349028ceffb44102c4710aeaac8c7851a279af282486d8d23a8` |
+| `spa-sender-cleanup-same-suite-before.log` | `a56e479d55d7335f163af0df8f24b18cb3870c5f5b3526db6aee5728d8c07d84` |
+| `spa-sender-cleanup-same-suite-after.log` | `ce260cec0813a18bf562d84755786f5ba666fa2a8effe40c3f0b1f468aa22832` |
+| `run_sender_cleanup_tests.py` | `07f86b35c1b53966ebe123206d5d9fa46fc1778128a47aa40f17d651e169acec` |
+| `run_classic_spa_sender_before.py` | `e14238ffb0340c9a7a6d974d2a71b0dea0845e74278079c6643d5f565b20feae` |
