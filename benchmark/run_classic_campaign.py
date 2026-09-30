@@ -20,6 +20,8 @@ WORKSPACE = ROOT.parent
 WFS = struct.Struct('<4B8HIQII')
 DM = struct.Struct('<4BHHQII')
 PATHS = ('heart', 'fgn-frame', 'jfg-frame', 'fgn-row', 'jfg-row')
+DEFAULT_HEART_PLUGIN = Path('/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so')
+DEFAULT_HEART_PLUGIN_SHA256 = 'db021461bfb05d41939e0db54e56620c3d7ae38e626763aee59110becd65f784'
 
 
 def summarize(values):
@@ -87,7 +89,8 @@ def archive_wire(directory):
     (directory/'wire-archives.json').write_text(json.dumps(records,indent=2)+'\n')
 
 
-def command(path, corpus, output, rate, readout, frames, trace=0, workers=0, layout='shared'):
+def command(path, corpus, output, rate, readout, frames, trace=0, workers=0, layout='shared',
+            heart_plugin: Path | None = None, heart_plugin_sha256: str | None = None):
     fixture=Path('/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture')
     common=['--fixture',str(fixture),'--cube',str(corpus/'input.fits'),'--replay-corpus',str(corpus),
             '--frames',str(frames),'--output',str(output),'--rate-hz',str(rate),'--readout-us',str(readout),
@@ -100,10 +103,17 @@ def command(path, corpus, output, rate, readout, frames, trace=0, workers=0, lay
                 '--thread-map',str(ROOT/'benchmark/profiles/ryzen-6800h-classic.threads'),
                 '--telemetry-python','/home/dgamroth/.cache/rtc-heart-telemetry-venv-20260930/bin/python']
     role,mode=path.split('-')
+    if heart_plugin is None:
+        heart_plugin = DEFAULT_HEART_PLUGIN
+        if heart_plugin_sha256 is None:
+            heart_plugin_sha256 = DEFAULT_HEART_PLUGIN_SHA256
+    elif heart_plugin_sha256 is None:
+        heart_plugin = heart_plugin.resolve(strict=True)
+        heart_plugin_sha256 = hashlib.sha256(heart_plugin.read_bytes()).hexdigest()
     result=[sys.executable,str(ROOT/'benchmark/run_classic_live.py'),*common,'--role',role,'--mode',mode,
             '--plugin',str(WORKSPACE/'calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so'),
-            '--heart-plugin','/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so',
-            '--heart-plugin-sha256','db021461bfb05d41939e0db54e56620c3d7ae38e626763aee59110becd65f784',
+            '--heart-plugin',str(heart_plugin),
+            '--heart-plugin-sha256',heart_plugin_sha256,
             '--wfs-simulator',str(WORKSPACE.parent/'heart/heart-copper-comparison/source/testServer/bin/wfsSimulator'),
             '--lab-loop-cpu','0','--adapter-loop-cpu','4']
     if role=='jfg':
@@ -125,7 +135,13 @@ def main():
     parser.add_argument('--trace',type=int,default=0)
     parser.add_argument('--workers',type=int,default=0)
     parser.add_argument('--layout',choices=('shared','sharded'),default='shared')
+    parser.add_argument('--heart-plugin',type=Path,default=DEFAULT_HEART_PLUGIN,
+                        help='HEART SPA DSO used by FGN/JFG, exposed as libspa-heart.so in its directory')
     args=parser.parse_args()
+    heart_plugin = args.heart_plugin.resolve(strict=True)
+    if (heart_plugin.parent/'libspa-heart.so').resolve(strict=True) != heart_plugin:
+        parser.error('HEART plugin directory must expose the selected file as libspa-heart.so')
+    heart_plugin_sha256 = hashlib.sha256(heart_plugin.read_bytes()).hexdigest()
     if args.output.exists():parser.error('output must be new')
     args.output.mkdir()
     revisions = {}
@@ -136,7 +152,9 @@ def main():
             'revision': subprocess.check_output(['git', '-C', str(repo), 'rev-parse', 'HEAD'], text=True).strip(),
             'status': subprocess.check_output(['git', '-C', str(repo), 'status', '--short'], text=True),
         }
-    manifest={'host':host_record(),'source_revisions':revisions,'runs':[],'requested':vars(args)|{'output':str(args.output),'corpus':str(args.corpus)},
+    manifest={'host':host_record(),'source_revisions':revisions,'runs':[],
+              'heart_plugin':{'path':str(heart_plugin),'sha256':heart_plugin_sha256},
+              'requested':vars(args)|{'output':str(args.output),'corpus':str(args.corpus),'heart_plugin':str(args.heart_plugin)},
               'scope':'finite-window open-loop characterization; strict numerical failures retained separately; no physical-loop qualification'}
     for rate in args.rates:
         readout=min(args.readout_us,int(850000/rate))
@@ -145,7 +163,8 @@ def main():
             if repeat%2:paths.reverse()
             for path in paths:
                 directory=args.output/f'{path}-{rate}hz-r{repeat+1}'
-                cmd=command(path,args.corpus,directory,rate,readout,args.frames,args.trace,args.workers,args.layout)
+                cmd=command(path,args.corpus,directory,rate,readout,args.frames,args.trace,args.workers,args.layout,
+                            heart_plugin=heart_plugin,heart_plugin_sha256=heart_plugin_sha256)
                 competing = subprocess.check_output(['ps', '-eo', 'pid,comm,psr,pcpu', '--sort=-pcpu'], text=True).splitlines()[:16]
                 print(f'START {path} {rate} Hz repeat{repeat+1}',flush=True)
                 with (args.output/f'{directory.name}.launch.log').open('w') as log:
