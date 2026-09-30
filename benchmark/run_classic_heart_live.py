@@ -90,6 +90,10 @@ def guard_ports() -> None:
     for port in PORTS:
         for kind in (socket.SOCK_STREAM, socket.SOCK_DGRAM):
             with socket.socket(socket.AF_INET, kind) as probe:
+                # Match HEART's daoSock TCP server; TIME_WAIT is reusable,
+                # while an active listening socket remains a conflict.
+                if kind == socket.SOCK_STREAM:
+                    probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 try:
                     probe.bind(("0.0.0.0", port))
                 except OSError as error:

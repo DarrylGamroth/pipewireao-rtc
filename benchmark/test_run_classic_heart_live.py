@@ -1,4 +1,4 @@
-"""Mocked lifecycle checks; no HEART execution or live network traffic."""
+"""Lifecycle checks and local socket reuse regression; no HEART execution."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import importlib.util
 import json
 from pathlib import Path
 import subprocess
+import socket
 import sys
 import tempfile
 from types import SimpleNamespace
@@ -99,6 +100,31 @@ class RunnerTests(unittest.TestCase):
             socket_factory.return_value.__enter__.return_value.bind.side_effect = OSError("occupied")
             with self.assertRaisesRegex(RuntimeError, "port 5000 is unavailable"):
                 RUNNER.guard_ports()
+
+    def test_tcp_time_wait_does_not_block_reusable_server_port(self) -> None:
+        with socket.socket() as listener:
+            listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            listener.bind(("127.0.0.1", 0))
+            port = listener.getsockname()[1]
+            listener.listen(1)
+            with socket.socket() as client:
+                client.connect(("127.0.0.1", port))
+                connection, _ = listener.accept()
+                connection.shutdown(socket.SHUT_WR)
+                connection.close()
+                self.assertEqual(client.recv(1), b"")
+        with patch.object(RUNNER, "PORTS", (port,)):
+            RUNNER.guard_ports()
+
+    def test_tcp_listener_remains_a_conflict_with_reuse_enabled(self) -> None:
+        with socket.socket() as listener:
+            listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            listener.bind(("0.0.0.0", 0))
+            port = listener.getsockname()[1]
+            listener.listen(1)
+            with patch.object(RUNNER, "PORTS", (port,)):
+                with self.assertRaisesRegex(RuntimeError, "TCP port"):
+                    RUNNER.guard_ports()
 
     def test_secondary_telemetry_ports_are_guarded(self) -> None:
         self.assertTrue({6200, 6201, 6202, 6300, 6301}.issubset(RUNNER.PORTS))
