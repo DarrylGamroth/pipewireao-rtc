@@ -48,6 +48,13 @@ def load_script(name: str, path: Path):
     return module
 
 
+def wait_capture_ready(helper, directory: Path, capture) -> None:
+    # dumpcap reports this after opening input, initializing and flushing output.
+    # Its earlier "Capturing on" banner precedes capture-loop initialization.
+    helper.wait_text(directory / "dumpcap.log",
+                     f"File: {directory / 'wire.pcapng'}", 30, capture)
+
+
 def replace_once(text: str, old: str, new: str) -> str:
     if text.count(old) != 1:
         raise ValueError(f"expected one configuration insertion point: {old!r}")
@@ -434,7 +441,7 @@ def main():
         helper.capture_thread_map(directory / "thread-map-before-replay.txt", placement_processes)
         capture, log = helper.start(["dumpcap", "-p", "-i", "any", "-f", "udp port 6000 or udp port 6100", "-w", str(directory / "wire.pcapng")], env, directory / "dumpcap.log")
         processes.append((capture, log))
-        helper.wait_text(directory / "dumpcap.log", "Capturing on", 30, capture)
+        wait_capture_ready(helper, directory, capture)
         (directory / "input.fits").symlink_to(cube)
         source = helper.placed([str(args.wfs_simulator.resolve()), "-file", "input.fits", "-tPort", "6000", "-period", repr(1 / args.rate_hz), "-readout", str(args.readout_us), "-lines", str(args.rows_per_packet), "-numFrames", str(args.frames)], args.source_cpus)
         report["source_command"] = source

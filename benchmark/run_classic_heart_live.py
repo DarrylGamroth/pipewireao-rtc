@@ -24,7 +24,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from prepare_classic_heart_config import write_config
-from run_classic_live import ROOT, WORKSPACE, compare_commands, load_script
+from run_classic_live import ROOT, WORKSPACE, compare_commands, load_script, wait_capture_ready
 
 
 GMS_SECTIONS = {"clwcBlock": "CLWFC", "tfcBlock": "TFC"}
@@ -505,7 +505,7 @@ def run(args: argparse.Namespace) -> dict:
         capture, capture_stream = start(
             ["dumpcap", "-p", "-i", "any", "-f", "udp port 6000 or udp port 6100",
              "-w", str(directory / "wire.pcapng")], "dumpcap.log")
-        helper.wait_text(directory / "dumpcap.log", "Capturing on", 30, capture)
+        wait_capture_ready(helper, directory, capture)
         source = helper.placed([str(simulator), "-file", "input.fits", "-tPort", "6000",
                                 "-period", repr(1 / args.rate_hz), "-readout", str(args.readout_us),
                                 "-lines", str(args.rows_per_packet), "-numFrames", str(args.frames)], args.source_cpus)

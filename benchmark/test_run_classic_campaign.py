@@ -28,8 +28,9 @@ class CampaignTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             directory=Path(temp);(directory/'wire.pcapng').write_bytes(b'abc')
             archive_wire(directory)
-            import lzma
-            self.assertEqual(lzma.open(directory/'wire.pcapng.xz','rb').read(),b'abc')
+            from classic_wire import open_evidence
+            with open_evidence(directory/'wire.pcapng','rb') as reader:
+                self.assertEqual(reader.read(),b'abc')
             self.assertTrue((directory/'wire-archives.json').exists())
     def test_command_records_defined_placement(self):
         c=command('jfg-row',Path('/corpus'),Path('/out'),100,2000,1029,100,2,'sharded')

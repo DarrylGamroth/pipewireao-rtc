@@ -21,6 +21,13 @@ SPEC.loader.exec_module(RUNNER)
 
 
 class ReplaceOnceTests(unittest.TestCase):
+    def test_capture_waits_for_initialized_output(self) -> None:
+        helper, process = Mock(), Mock()
+        directory = Path('/capture')
+        RUNNER.wait_capture_ready(helper, directory, process)
+        helper.wait_text.assert_called_once_with(
+            directory / 'dumpcap.log', 'File: /capture/wire.pcapng', 30, process)
+
     def test_replaces_exactly_one_occurrence(self) -> None:
         self.assertEqual(RUNNER.replace_once("before TOKEN after", "TOKEN", "value"),
                          "before value after")

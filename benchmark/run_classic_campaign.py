@@ -69,11 +69,20 @@ def archive_wire(directory):
         source=directory/name
         if not source.is_file():continue
         digest=hashlib.sha256()
-        target=source.with_suffix(source.suffix+'.xz')
-        with source.open('rb') as reader,lzma.open(target,'xb',filters=[{'id':lzma.FILTER_LZMA2,'preset':1,'dict_size':8*1024*1024}]) as writer:
+        zstd = shutil.which('zstd')
+        target=source.with_suffix(source.suffix+('.zst' if zstd else '.xz'))
+        with source.open('rb') as reader:
             while data:=reader.read(1024*1024):
-                digest.update(data);writer.write(data)
-        records.append({'file':name,'sha256_uncompressed':digest.hexdigest(),'bytes':source.stat().st_size,'archive':target.name})
+                digest.update(data)
+        if zstd:
+            with target.open('xb') as writer:
+                subprocess.run([zstd,'-q','-T1','-3','--long=23','--stdout',str(source)],
+                               stdout=writer,check=True)
+        else:
+            with source.open('rb') as reader,lzma.open(target,'xb',preset=4) as writer:
+                shutil.copyfileobj(reader,writer,1024*1024)
+        records.append({'file':name,'sha256_uncompressed':digest.hexdigest(),'bytes':source.stat().st_size,
+                        'archive':target.name,'compression':'zstd level3 window8MiB' if zstd else 'lzma preset4'})
         source.unlink()
     (directory/'wire-archives.json').write_text(json.dumps(records,indent=2)+'\n')
 
