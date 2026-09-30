@@ -37,7 +37,8 @@ examined rather than asserting source-to-binary attestation.
 | Same directory, `capacity.json` | `f9ca2cca31737f16cce33b98d4451809d11d5098b52299a4cee7a68b74447601` |
 | `~/.cache/classic-campaign-timestamp-audit-20260930.json` | `6dc4529ee841043c839c20d5d45df38a77c8cc1568f2ba7fda27aa633b6ead51` |
 | `~/.cache/rtc-classic-spa-clean-five-paths63-20260930/manifest.json` | `9c33581c42a922046614e782db0148ae1ecc5e23c70951b2ab7b4077eac9662b` |
-| `~/.cache/rtc-classic-spa-installed-five-paths63-20260930/manifest.json` | `ff23e2f71e75640b0ac43f2e6cead89cbaaa5df3c2cdc4b0b23e931ffb99dd9e` |
+| `~/.cache/rtc-classic-spa-installed-five-paths63-20260930/manifest.json` | `f75abd47fa1362ef71936355053dc63b5a058a0d3c6bb77486047ae72f33cf4e` |
+| `benchmark/data/classic_spa_installed_qualification_20260930.json` | `33b2371df4dc73cd51c14e7d45ef693564da63ad59a059c220e0e2d5af44daa6` |
 
 The capacity JSON's embedded manifest and classifier hashes match the actual
 files. There are **79 selected capacity windows**. The separate timestamp audit
@@ -237,6 +238,18 @@ nonzero values and errors at most 1.19 × 10⁻⁷ µm (frame) and
 2.38 × 10⁻⁷ µm (row). FGN's absent separate feedback field and HEART's broad
 legacy qualification limits remain unchanged. The manifest retains both failed
 initial Julia attempts with `selected = false`.
+
+The frozen [installed evidence index](../benchmark/data/classic_spa_installed_qualification_20260930.json)
+adds artifact hashes, cleanup observations and post-run installed core hashes.
+This reviewer checked its manifest hash, unchanged selected results, all selected
+report/physical-summary/archive-index hashes, both retained failure reports and
+node logs, and the three installed core files: 29 comparisons, all matching.
+Archive indexes agree with their saved records; raw archives were not reread.
+The cleanup observation records no remaining UDP 6000 listener. The final
+provenance explicitly distinguishes the source checkout revision from the
+installed normal core's binary hashes; it does not assert that the current
+diagnostic source HEAD built that installed core. These additions do not change
+any qualification result or expand the functional claim.
 
 ## Remaining claim limits and dispositions
 
