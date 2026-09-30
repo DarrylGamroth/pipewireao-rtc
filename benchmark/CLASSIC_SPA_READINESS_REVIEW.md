@@ -74,7 +74,7 @@ Retained tests demonstrate positive acknowledgement failing with old code,
 passing with new code, short-size rejection, clear, unknown Clock rejection and
 consumer callback/error propagation. The same seven-frame source graph and
 unchanged installed PipeWire core produced zero packets before the combined
-plugin changes and224 exact header/pixel datagrams afterward. This establishes
+plugin changes and 224 exact header/pixel datagrams afterward. This establishes
 that the reviewed changes together repair the observed transport obstruction;
 it does not isolate each plugin's contribution in a full factorial experiment.
 
@@ -100,7 +100,7 @@ that behavior predates these changes.
 Wrapper evidence is under the wrapper worktree's `evidence/` directory:
 `fail-before.txt`, `sr01-fail-before.txt`, `position-fail-before.txt`,
 `pass-after-reviewed.txt`, and `rust-tests-position.txt`. The latter records
-12 ndarray tests and20 wrapper tests passing, including all three new Rust
+12 ndarray tests and 20 wrapper tests passing, including all three new Rust
 regressions. The compiler's unused `size` warning in installed SPA compare.h
 is unrelated to the changes.
 
@@ -117,9 +117,9 @@ The reviewer inspected `report.json` and `udp-summary.json` in:
 
 Both use the same source cube SHA-256, identical generated config SHA-256
 `bfb55a2e39922ed4f91f9c0aa69cae6a25f42bc03305914d704b942ffd2c77e3`,
-and `/opt/pipewireao/bin/pipewire-ao`. Before:0 packets, source timeout.
-After:224 packets, frame IDs0–6,7 source frames sent,0 rejected frames,0 send errors,
-normal process exit0. Candidate plugin hashes and the unchanged HEART sink hash
+and `/opt/pipewireao/bin/pipewire-ao`. Before: 0 packets, source timeout.
+After: 224 packets, frame IDs 0–6, 7 source frames sent, 0 rejected frames, 0 send errors,
+normal process exit 0. Candidate plugin hashes and the unchanged HEART sink hash
 are retained in the report. Private plugin paths distinguish candidates from
 installed artifacts.
 

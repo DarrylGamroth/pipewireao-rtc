@@ -28,7 +28,7 @@ bounded progress instrumentation is the cheaper discriminating measurement.
 ## Event semantics and units
 
 All event timestamps come from the same `CLOCK_MONOTONIC` clock in nanoseconds.
-The terminal boundary is kind 1 `wfsReceive`, packet32 of32, stamped immediately
+The terminal boundary is kind 1 `wfsReceive`, packet 32 of 32, stamped immediately
 after `daoUdp_recv` returns. It is not NIC arrival time or kind3 `wfsFrameDone`.
 SH and MVM observations must precede this timestamp strictly. Thus the claim
 concerns work before the recorded final receive observation in the WFS handler.
@@ -38,17 +38,17 @@ that gap or establish precedence against the exact syscall-return instant.
 
 | Event | What has completed at its timestamp |
 | --- | --- |
-| kind5 `wfsProcDone` | `aux` subaperture SH calculations; event follows `hrtWfsProcSH_grad`; `progress` counts detector rows, total352 |
+| kind5 `wfsProcDone` | `aux` subaperture SH calculations; event follows `hrtWfsProcSH_grad`; `progress` counts detector rows, total 352 |
 | kind7 `mvmAvailable` | `progress − aux` prior subaperture iterations; `aux` is a newly available batch whose computation has **not** yet happened |
-| kind8 `mvmColumnDone` | Explicit completed iteration count; for188 subapertures, the existing every900/end trace normally emits only at completion |
+| kind8 `mvmColumnDone` | Explicit completed iteration count; for 188 subapertures, the existing every900/end trace normally emits only at completion |
 | kind10 `mvmComplete` | Full MVM routine has returned |
 
 For the unpartitioned Classic SH reconstructor, each active subaperture invokes
-one synchronous `hrtVec_acc_ax_by` over277 padded actuator rows. It uses two
+one synchronous `hrtVec_acc_ax_by` over 277 padded actuator rows. It uses two
 adjacent matrix columns, x then y. Therefore one completed subaperture iteration
 is one x/y pair, two matrix columns and two slope values. The188 subapertures
-correspond to376 columns. These column units differ from277 physical/padded
-actuator rows and221 controlled actuator coordinates. SH also computes flux;
+correspond to 376 columns. These column units differ from 277 physical/padded
+actuator rows and 221 controlled actuator coordinates. SH also computes flux;
 its188-completed-subaperture count is not376 subapertures.
 
 At each frame, the analyzer takes maxima over observations strictly before
@@ -60,7 +60,7 @@ No claim of exact intermediate call count follows.
 
 ## Required assumptions and validation
 
-The Classic fixture's active mask is exactly188 ones. The existing numerical
+The Classic fixture's active mask is exactly 188 ones. The existing numerical
 acceptance evaluator checks this and verifies all seven source images retain
 positive flux margins above the deactivation threshold. The same images repeat
 through the validated corpus. The generated YAML omits partition, streaming
@@ -115,32 +115,32 @@ The original r1 attempt is also retained. It failed before HEART startup because
 an outer CPU14 affinity restricted the harness's allowed CPU set. The helper now
 pins only its observer after launch. The two successful launches occurred within
 the TCP TIME_WAIT interval; both independently connected public telemetry and
-shut down with all three recorded child processes returning0. This supports the
+shut down with all three recorded child processes returning 0. This supports the
 specific immediate-relaunch functional check, not a long-run lifecycle claim.
 
 | Measurement before final receive observation | r2 | r3 |
 | --- | --- | --- |
 | Frames with observed completed SH work | 63/63 | 63/63 |
 | Frames with positive MVM arithmetic lower bound | 62/63 | 62/63 |
-| Frame0 SH lower bound, subapertures | 22 | 12 |
-| Frame0 MVM lower bound, x/y pairs | 0 | 0 |
-| Frames1–62 SH lower-bound range, subapertures | 166–184 | 126–184 |
-| Frames1–62 MVM lower-bound range, x/y pairs | 94–176 | 34–176 |
-| Frames1–62 MVM lower-bound range, matrix columns | 188–352 | 68–352 |
+| Frame 0 SH lower bound, subapertures | 22 | 12 |
+| Frame 0 MVM lower bound, x/y pairs | 0 | 0 |
+| Frames 1–62 SH lower-bound range, subapertures | 166–184 | 126–184 |
+| Frames 1–62 MVM lower-bound range, x/y pairs | 94–176 | 34–176 |
+| Frames 1–62 MVM lower-bound range, matrix columns | 188–352 | 68–352 |
 | Lost events / untraced threads | 0 / 0 | 0 / 0 |
 
 The first frame's zero MVM bound means **overlap unproven in that frame**. It
 cannot establish absence of overlap. Later positive bounds demonstrate actual
 previous MVM pair computations, conditional on the reviewed activity/configuration
 assumptions; they do not merely count input-ready announcements. Both traces map
-wire frame0 to sync1 and SH/MVM bucket0, then advance uniquely through all63 frames.
+wire frame 0 to sync1 and SH/MVM bucket0, then advance uniquely through all 63 frames.
 
 Both runs independently pass exact WFS/DM delivery, arithmetic consistency and
 the exact HEART wire model (17,451 float32 commands per run). The original strict
-gate remains failed:22 values per run, maximum absolute discrepancy
+gate remains failed: 22 values per run, maximum absolute discrepancy
 1.3113021850585938 ×10⁻⁶ µm. Clipping decisions agree (1,614 saturated values;
 zero classification mismatches). The conservative minimum flux-threshold margin
-is2,323,706.8821629593, supporting all188 active-subaperture arithmetic iterations.
+is 2,323,706.8821629593, supporting all 188 active-subaperture arithmetic iterations.
 Effective flags are verified; the runner's full `qualified` remains false because
 independent initial-state readback is unavailable. Application accuracy remains
 unassessed. These trace runs provide functional overlap evidence only.
