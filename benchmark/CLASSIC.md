@@ -16,8 +16,9 @@ FGN/JFG, and limits ±0.8 µm. Background, coordinates, reference slopes,
 thresholds, active mask and projection arrays come from the maintained Classic
 calibrations. See [the matched-chain review](CLASSIC_MATCHED_REVIEW.md).
 
-All live attempts use unchanged `wfsSimulator` with 11 rows per UDP packet:
-32 packets per frame. The initial functional gate uses seven frames at 10 Hz
+The baseline and capacity attempts use unchanged `wfsSimulator` with 11 rows per
+UDP packet: 32 packets per frame. The separate FITS/SPA sender qualification uses
+the same pixels and packet layout. The initial functional gate uses seven frames at 10 Hz
 and 2,000 µs nominal readout. It does not establish latency percentiles,
 maximum throughput, strict RT placement, or physical operation.
 
@@ -145,16 +146,53 @@ not capacity or tail-latency qualification.
    selected equations and Float32 arithmetic behavior, not an application
    physical accuracy budget. Longer campaigns select this documented policy
    explicitly; their strict comparison files remain present.
-2. Helper characterization has passed 18 array cases (0/1/2 workers,
-   shared/sharded matrices, three repetitions). Live callback allocation and
-   readout timing are still being collected.
-3. Long pilot captures now attest exact 1,029-frame delivery for HEART,
-   FGN complete frame, FGN rows, JFG complete frame, and JFG rows. They are
-   retained as pilots: the repeated placement-controlled series and capacity
-   search are not complete.
-4. SPA sender qualification has exposed premature Start in the generic
-   video-view adapter. The source-only zero-packet failures are preserved.
-   A targeted readiness correction is being validated before receiver tests.
+2. Helper characterization passed 18 array cases (0/1/2 workers,
+   shared/sharded matrices, three repetitions). Warmed frame and batch allocations
+   are zero. Four live 63-frame JFG captures (frame mode and row mode with 0/1/2
+   workers) have zero process-wide allocation/GC increments inside every recorded
+   callback body. This boundary excludes native transport, initial dispatch,
+   property adoption and notification. Whole-stack allocation freedom is not
+   claimed. See the JFG live callback and helper evidence documents.
+3. The controlled 100 Hz baseline is complete: three successful 1,029-frame
+   windows per path, exact delivery and no one-period misses. The original
+   failed third HEART attempt is retained alongside its successful replacement.
+   Actual readout traces establish completed science work in HEART and derived
+   lower bounds in both graph implementations. See [HEART readout evidence](CLASSIC_HEART_READOUT.md)
+   and [graph row-work evidence](CLASSIC_ROW_WORK.md). The higher-rate search
+   remains in progress.
+4. The same FITS cube now passes through the SPA stdWfs sender into all five
+   RTC paths: 2,016 exact input packets and 63 ordered commands per path,
+   accepted numerical checks, normal exits and zero source/sender errors.
+   Readiness and Position acknowledgement corrections were necessary; the
+   zero-packet failures and independent review remain preserved. These results
+   use the recorded private candidate plugin pair, not an assertion that the
+   installed old pair works. See [SPA sender qualification](CLASSIC_SPA_SENDER.md).
+
+## Repeated 100 Hz baseline
+
+Each path has three independent process windows of 1,029 detector frames with
+2,000 µs requested readout. Latency runs use the documented CPU placement and
+uninstrumented deployed PipeWire core. The table gives the range of per-run
+percentiles after the first 100 frames (929 samples per run); exact delivery
+and the one-period check include all frames. Percentiles are not pooled or
+worst-case bounds. All paths emitted 3,087 commands without missing delivery
+or 10 ms period overruns.
+
+| RTC path | First packet → DM p50, µs | p99, µs | Terminal packet → DM p50, µs | p99, µs |
+| --- | ---: | ---: | ---: | ---: |
+| HEART progressive | 2,152–2,160 | 2,268–2,319 | 241–251 | 366–407 |
+| FGN complete frame | 2,222–2,225 | 2,545–2,619 | 315–317 | 632–688 |
+| JFG complete frame | 2,415–2,454 | 2,679–2,693 | 519–545 | 783–804 |
+| FGN rows | 2,366–2,370 | 3,161–3,374 | 450–455 | 1,241–1,451 |
+| JFG rows | 2,431–2,495 | 3,001–3,284 | 518–578 | 1,080–1,369 |
+
+The [baseline evidence](data/classic_baseline_20260930.json) records exact
+per-window values, artifact hashes and the retained failed HEART attempt.
+These Classic results do not show an end-to-end advantage over HEART. Early
+scientific work is demonstrated, but does not establish a net latency benefit
+for the current row transport/executors at this workload and pacing. Different
+rates can change wake-up and service costs; the high-rate search measures them
+rather than extrapolating this table.
 
 ## Original gate obligations
 
