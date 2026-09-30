@@ -63,6 +63,10 @@ def cleanup_replay(helper, stop_files, processes, report):
             report["errors"].append(f"stop request failed for {marker}: {error}")
     for process, log in reversed(processes):
         try:
+            if Path(str(getattr(log, "name", ""))).name == "node.log":
+                # Trace/report serialization is off the frame path and may
+                # specialize on first use. Allow it to finish before signals.
+                helper.wait_for("Julia node graceful report", lambda: process.poll() is not None, 90)
             helper.stop(process, log)
         except Exception as error:
             report["errors"].append(f"cleanup failed for PID {process.pid}: {error}")

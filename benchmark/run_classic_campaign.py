@@ -119,7 +119,15 @@ def main():
     args=parser.parse_args()
     if args.output.exists():parser.error('output must be new')
     args.output.mkdir()
-    manifest={'host':host_record(),'runs':[],'requested':vars(args)|{'output':str(args.output),'corpus':str(args.corpus)},
+    revisions = {}
+    for name in ('pipewireao-rtc-progressive-requal', 'JuliaFilterGraph-progressive-requal',
+                 'calculon-algorithms-main-copper', 'pipewire'):
+        repo = WORKSPACE / name
+        revisions[name] = {
+            'revision': subprocess.check_output(['git', '-C', str(repo), 'rev-parse', 'HEAD'], text=True).strip(),
+            'status': subprocess.check_output(['git', '-C', str(repo), 'status', '--short'], text=True),
+        }
+    manifest={'host':host_record(),'source_revisions':revisions,'runs':[],'requested':vars(args)|{'output':str(args.output),'corpus':str(args.corpus)},
               'scope':'finite-window open-loop characterization; strict numerical failures retained separately; no physical-loop qualification'}
     for rate in args.rates:
         readout=min(args.readout_us,int(850000/rate))
@@ -129,21 +137,23 @@ def main():
             for path in paths:
                 directory=args.output/f'{path}-{rate}hz-r{repeat+1}'
                 cmd=command(path,args.corpus,directory,rate,readout,args.frames,args.trace,args.workers,args.layout)
+                competing = subprocess.check_output(['ps', '-eo', 'pid,comm,psr,pcpu', '--sort=-pcpu'], text=True).splitlines()[:16]
                 print(f'START {path} {rate} Hz repeat{repeat+1}',flush=True)
                 with (args.output/f'{directory.name}.launch.log').open('w') as log:
                     result=subprocess.run(cmd,stdout=log,stderr=subprocess.STDOUT,check=False)
-                record={'path':path,'rate_hz':rate,'readout_us':readout,'repeat':repeat+1,'directory':str(directory),'command':cmd,'returncode':result.returncode}
+                record={'path':path,'rate_hz':rate,'readout_us':readout,'repeat':repeat+1,'directory':str(directory),'command':cmd,'returncode':result.returncode,'competing_process_snapshot_before':competing}
                 try:
                     report=json.loads((directory/'report.json').read_text());record['report']=report
                     record['latency']=intervals(directory,args.frames,1 if path=='heart' else 0,rate)
                     physical=json.loads((directory/'physical-summary.json').read_text())
                     record['exact_wire_delivery']=physical.get('qualified') is True
                 except Exception as error:record['analysis_error']=str(error);record['exact_wire_delivery']=False
+                manifest['runs'].append(record)
+                (args.output/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
                 try:
                     archive_wire(directory)
                 except Exception as error:
                     record['archive_error'] = str(error)
-                manifest['runs'].append(record)
                 (args.output/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
                 print(json.dumps({'path':path,'rate':rate,'returncode':result.returncode,'exact_wire_delivery':record['exact_wire_delivery'],'latency':record.get('latency')}),flush=True)
 
