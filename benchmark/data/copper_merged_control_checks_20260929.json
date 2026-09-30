@@ -1,0 +1,490 @@
+{
+  "purpose": "Merged installed complete-frame continuous updates and clipped stop/reset/restart validation; numerical observation, no latency claim",
+  "manifest": {
+    "path": "/home/dgamroth/.cache/rtc-copper-installed-control-checks-untraced-20260929/manifest.json",
+    "sha256": "0e9fa5f95b38e3a0588b15c10648b9ac00cb09cc94afce7a338fd80906c23b2f"
+  },
+  "runs": [
+    {
+      "mode": "live",
+      "controller": "native",
+      "report": "/home/dgamroth/.cache/rtc-copper-installed-control-checks-untraced-20260929/live-native/report.json",
+      "report_sha256": "fdf97181bb906127082b19a0fdd1238b87f1f4f8a921d81ee2bcb7a27b87011c",
+      "source_revisions": {
+        "rtc": {
+          "root": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc",
+          "revision": "fe19c79a69c6c0f7ea0e8272ae8f1e179a81a0ce",
+          "dirty": false,
+          "status_porcelain": ""
+        },
+        "calculon": {
+          "root": "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper",
+          "revision": "8361b31a9e41a78510ba8a367ac2809651cce261",
+          "dirty": false,
+          "status_porcelain": ""
+        },
+        "bundle": {
+          "root": "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-copper-fullframe",
+          "revision": "174cc16403374070bb2e02dcce57f3d9dcc27076",
+          "dirty": true,
+          "status_porcelain": "?? .live-fgn-abi7-1000hz-1024f-500us-pinned-r1/\n?? .live-fgn-abi7-1000hz-1024f-500us-pinned-rt-source-r1/\n?? .live-fgn-abi7-10hz-20f-static-r2/\n?? .live-fgn-abi7-1500hz-1024f-500us-pinned-rt-source-r1/\n?? .live-fgn-abi7-1800hz-1024f-500us-pinned-rt-source-r1/\n?? .live-fgn-abi7-1899hz-1024f-500us-pinned-rt-source-r1/\n?? .live-fgn-abi7-474hz-1024f-static-pinned-r2/\n?? .live-fgn-abi7-474hz-1024f-static-pinned/\n?? .live-fgn-abi7-474hz-1024f-static/\n?? .live-fgn-abi7-600hz-1024f-500us-pinned-r1/\n?? .live-fgn-abi7-startup-fifo-negative/\n?? .live-fgn-abi7-startup-name-negative/\n?? .live-fgn-abi7-startup-negative/\n?? .live-fgn-bridge-474hz-default-source-1024f/\n?? .live-fgn-bridge-474hz-rt-source-1024f/\n?? .live-fgn-bridge-clip-474hz-1024f/\n?? .live-fgn-bridge-clip-feedback/\n?? .live-fgn-bridge-clip-open/\n?? .live-fgn-bridge-rt-source-20f-valid/\n?? .live-fgn-bridge-rt-source-5f-valid/\n?? .live-fgn-bridge-smoke-5f/"
+        },
+        "heart": {
+          "root": "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison",
+          "revision": "6a5c06b11a8b934effeb6328a73a70895b2af94a",
+          "dirty": true,
+          "status_porcelain": "?? benchmarks/src/__pycache__/\n?? doc/subdirs_gen.txt\n?? source/aoTypes/test/coverage/scripts/hrtApiCli_testInputs_gen.py\n?? source/python/heart/api/commands.py\n?? source/python/heart/api/hrtApiCommandCatalog.json"
+        },
+        "heart_plugin": {
+          "path": "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so",
+          "unavailable": "Command '['git', '-C', '/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/heart', 'status', '--porcelain']' returned non-zero exit status 128."
+        },
+        "jfg": {
+          "root": "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph.jl",
+          "revision": "7a126ecb85fc122dfe2058beb80933b7035923d0",
+          "dirty": true,
+          "status_porcelain": "?? benchmark/__pycache__/\n?? benchmark/heart/__pycache__/"
+        },
+        "pipewireao_julia": {
+          "root": "/home/dgamroth/workspaces/codex/pipewire/PipeWireAO.jl",
+          "revision": "71d567f74d99a618a8225ef608afaa9588f9144f",
+          "dirty": false,
+          "status_porcelain": ""
+        }
+      },
+      "qualified": true,
+      "delivery_qualified": true,
+      "schedule_qualified": true,
+      "numerical_comparison": "passed",
+      "frames": 1024,
+      "observed_commands": 1024,
+      "live_updates": true,
+      "control_cycle": false,
+      "live_update_timing_requested": false,
+      "live_update_timing_qualified": null,
+      "wfs_counters": {
+        "heart.std-wfs.datagrams-received": 2048,
+        "heart.std-wfs.datagrams-rejected": 0,
+        "heart.std-wfs.frames-published": 1024,
+        "heart.std-wfs.frames-dropped": 0,
+        "heart.std-wfs.buffer-starvations": 0,
+        "heart.std-wfs.blocks-published": 0
+      },
+      "missing_sequences": [],
+      "repeated_sequences": [],
+      "unexpected_sequences": [],
+      "algorithm_comparison": {
+        "mean": 0.0,
+        "correction": 0.0,
+        "controller-state": 0.0,
+        "constraint-feedback": 0.0,
+        "demanded": 0.0
+      },
+      "direct_checker": {
+        "clipped_frames": 0,
+        "different_reference_values": 0,
+        "frames": 1024,
+        "max_clipping_error_um": 0.0,
+        "max_constraint_feedback_error": 0.0,
+        "max_correction_error": 0.0,
+        "max_reference_error_um": 0.0,
+        "max_state_error": 0.0
+      },
+      "live_update_boundaries": {
+        "frames": 1024,
+        "modes": 253,
+        "matrix_change_at": 256,
+        "property_change_at": 507,
+        "matrix_change_at_interval": [
+          256,
+          256
+        ],
+        "property_change_at_interval": [
+          507,
+          507
+        ],
+        "max_candidate_error": 0.0,
+        "max_selected_error": 0.0,
+        "distinguishable_observations": {
+          "matrix": {
+            "original_frames": 253,
+            "changed_frames": 769
+          },
+          "properties": {
+            "original_frames": 504,
+            "changed_frames": 518
+          }
+        },
+        "tolerance": 1e-06,
+        "original_properties": {
+          "gain": 0.01,
+          "pole": 0.99
+        },
+        "changed_properties": {
+          "gain": 0.02,
+          "pole": 0.7
+        },
+        "matrix_scale": 0.5
+      },
+      "live_update_control": {
+        "initial_parameter_requested": 2,
+        "initial_parameter_active": 2,
+        "replacement_parameter_requested": 3,
+        "replacement_parameter_active": 3,
+        "matrix_submitted_ns": 1496103710312843,
+        "matrix_adopted_observed_ns": 1496103767712505,
+        "property_submitted_ns": 1496104243660478,
+        "property_adopted_observed_ns": 1496104294099787,
+        "no_reset": true,
+        "changed_gain": 0.02,
+        "changed_pole": 0.7,
+        "unchanged_anti_windup_gain": 0.99
+      },
+      "command_limit_um": 0.8,
+      "pipewire_library_sha256": "0bff76749203b1cbe6c80b16b74ff40af42c1535427bbc4f235cb9fd6391abc1",
+      "heart_plugin_sha256": "db021461bfb05d41939e0db54e56620c3d7ae38e626763aee59110becd65f784",
+      "input_sha256": "880e46b8e45c848a8c2df74e5591731ea161ac7009a02ad29e2fc79f6fd06abf"
+    },
+    {
+      "mode": "live",
+      "controller": "julia",
+      "report": "/home/dgamroth/.cache/rtc-copper-installed-control-checks-untraced-20260929/live-julia/report.json",
+      "report_sha256": "03580c2427ec025758a59914055102b42e2e322fb529e8a37b8f0d558feff3ab",
+      "source_revisions": {
+        "rtc": {
+          "root": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc",
+          "revision": "fe19c79a69c6c0f7ea0e8272ae8f1e179a81a0ce",
+          "dirty": false,
+          "status_porcelain": ""
+        },
+        "calculon": {
+          "root": "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper",
+          "revision": "8361b31a9e41a78510ba8a367ac2809651cce261",
+          "dirty": false,
+          "status_porcelain": ""
+        },
+        "bundle": {
+          "root": "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-copper-fullframe",
+          "revision": "174cc16403374070bb2e02dcce57f3d9dcc27076",
+          "dirty": true,
+          "status_porcelain": "?? .live-fgn-abi7-1000hz-1024f-500us-pinned-r1/\n?? .live-fgn-abi7-1000hz-1024f-500us-pinned-rt-source-r1/\n?? .live-fgn-abi7-10hz-20f-static-r2/\n?? .live-fgn-abi7-1500hz-1024f-500us-pinned-rt-source-r1/\n?? .live-fgn-abi7-1800hz-1024f-500us-pinned-rt-source-r1/\n?? .live-fgn-abi7-1899hz-1024f-500us-pinned-rt-source-r1/\n?? .live-fgn-abi7-474hz-1024f-static-pinned-r2/\n?? .live-fgn-abi7-474hz-1024f-static-pinned/\n?? .live-fgn-abi7-474hz-1024f-static/\n?? .live-fgn-abi7-600hz-1024f-500us-pinned-r1/\n?? .live-fgn-abi7-startup-fifo-negative/\n?? .live-fgn-abi7-startup-name-negative/\n?? .live-fgn-abi7-startup-negative/\n?? .live-fgn-bridge-474hz-default-source-1024f/\n?? .live-fgn-bridge-474hz-rt-source-1024f/\n?? .live-fgn-bridge-clip-474hz-1024f/\n?? .live-fgn-bridge-clip-feedback/\n?? .live-fgn-bridge-clip-open/\n?? .live-fgn-bridge-rt-source-20f-valid/\n?? .live-fgn-bridge-rt-source-5f-valid/\n?? .live-fgn-bridge-smoke-5f/"
+        },
+        "heart": {
+          "root": "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison",
+          "revision": "6a5c06b11a8b934effeb6328a73a70895b2af94a",
+          "dirty": true,
+          "status_porcelain": "?? benchmarks/src/__pycache__/\n?? doc/subdirs_gen.txt\n?? source/aoTypes/test/coverage/scripts/hrtApiCli_testInputs_gen.py\n?? source/python/heart/api/commands.py\n?? source/python/heart/api/hrtApiCommandCatalog.json"
+        },
+        "heart_plugin": {
+          "path": "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so",
+          "unavailable": "Command '['git', '-C', '/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/heart', 'status', '--porcelain']' returned non-zero exit status 128."
+        },
+        "jfg": {
+          "root": "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph.jl",
+          "revision": "7a126ecb85fc122dfe2058beb80933b7035923d0",
+          "dirty": true,
+          "status_porcelain": "?? benchmark/__pycache__/\n?? benchmark/heart/__pycache__/"
+        },
+        "pipewireao_julia": {
+          "root": "/home/dgamroth/workspaces/codex/pipewire/PipeWireAO.jl",
+          "revision": "71d567f74d99a618a8225ef608afaa9588f9144f",
+          "dirty": false,
+          "status_porcelain": ""
+        }
+      },
+      "qualified": true,
+      "delivery_qualified": true,
+      "schedule_qualified": true,
+      "numerical_comparison": "passed",
+      "frames": 1024,
+      "observed_commands": 1024,
+      "live_updates": true,
+      "control_cycle": false,
+      "live_update_timing_requested": false,
+      "live_update_timing_qualified": null,
+      "wfs_counters": {
+        "heart.std-wfs.datagrams-received": 2048,
+        "heart.std-wfs.datagrams-rejected": 0,
+        "heart.std-wfs.frames-published": 1024,
+        "heart.std-wfs.frames-dropped": 0,
+        "heart.std-wfs.buffer-starvations": 0,
+        "heart.std-wfs.blocks-published": 0
+      },
+      "missing_sequences": [],
+      "repeated_sequences": [],
+      "unexpected_sequences": [],
+      "algorithm_comparison": {
+        "mean": 0.0,
+        "correction": 7.152557373046875e-07,
+        "controller-state": 7.152557373046875e-07,
+        "constraint-feedback": 0.0,
+        "demanded": 2.9802322387695312e-08
+      },
+      "direct_checker": {
+        "clipped_frames": 0,
+        "different_reference_values": 52250,
+        "frames": 1024,
+        "max_clipping_error_um": 0.0,
+        "max_constraint_feedback_error": 0.0,
+        "max_correction_error": 0.0,
+        "max_reference_error_um": 2.9802322387695312e-08,
+        "max_state_error": 0.0
+      },
+      "live_update_boundaries": {
+        "frames": 1024,
+        "modes": 253,
+        "matrix_change_at": 258,
+        "property_change_at": 507,
+        "matrix_change_at_interval": [
+          258,
+          258
+        ],
+        "property_change_at_interval": [
+          507,
+          507
+        ],
+        "max_candidate_error": 2.384185791015625e-07,
+        "max_selected_error": 2.384185791015625e-07,
+        "distinguishable_observations": {
+          "matrix": {
+            "original_frames": 255,
+            "changed_frames": 767
+          },
+          "properties": {
+            "original_frames": 504,
+            "changed_frames": 518
+          }
+        },
+        "tolerance": 1e-06,
+        "original_properties": {
+          "gain": 0.01,
+          "pole": 0.99
+        },
+        "changed_properties": {
+          "gain": 0.02,
+          "pole": 0.7
+        },
+        "matrix_scale": 0.5
+      },
+      "live_update_control": {
+        "initial_parameter_requested": 1,
+        "initial_parameter_active": 1,
+        "replacement_parameter_requested": 2,
+        "replacement_parameter_active": 2,
+        "matrix_submitted_ns": 1496173076225908,
+        "matrix_adopted_observed_ns": 1496173133167991,
+        "property_submitted_ns": 1496173608476122,
+        "property_adopted_observed_ns": 1496173658861440,
+        "no_reset": true,
+        "changed_gain": 0.02,
+        "changed_pole": 0.7,
+        "unchanged_anti_windup_gain": 0.99
+      },
+      "command_limit_um": 0.8,
+      "pipewire_library_sha256": "0bff76749203b1cbe6c80b16b74ff40af42c1535427bbc4f235cb9fd6391abc1",
+      "heart_plugin_sha256": "db021461bfb05d41939e0db54e56620c3d7ae38e626763aee59110becd65f784",
+      "input_sha256": "880e46b8e45c848a8c2df74e5591731ea161ac7009a02ad29e2fc79f6fd06abf"
+    },
+    {
+      "mode": "cycle",
+      "controller": "native",
+      "report": "/home/dgamroth/.cache/rtc-copper-installed-control-checks-untraced-20260929/cycle-native/report.json",
+      "report_sha256": "2768b08930df5a9c46f765da29404ed3c2300c1220447db6e15feab8189ae628",
+      "source_revisions": {
+        "rtc": {
+          "root": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc",
+          "revision": "fe19c79a69c6c0f7ea0e8272ae8f1e179a81a0ce",
+          "dirty": false,
+          "status_porcelain": ""
+        },
+        "calculon": {
+          "root": "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper",
+          "revision": "8361b31a9e41a78510ba8a367ac2809651cce261",
+          "dirty": false,
+          "status_porcelain": ""
+        },
+        "bundle": {
+          "root": "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-copper-fullframe",
+          "revision": "174cc16403374070bb2e02dcce57f3d9dcc27076",
+          "dirty": true,
+          "status_porcelain": "?? .live-fgn-abi7-1000hz-1024f-500us-pinned-r1/\n?? .live-fgn-abi7-1000hz-1024f-500us-pinned-rt-source-r1/\n?? .live-fgn-abi7-10hz-20f-static-r2/\n?? .live-fgn-abi7-1500hz-1024f-500us-pinned-rt-source-r1/\n?? .live-fgn-abi7-1800hz-1024f-500us-pinned-rt-source-r1/\n?? .live-fgn-abi7-1899hz-1024f-500us-pinned-rt-source-r1/\n?? .live-fgn-abi7-474hz-1024f-static-pinned-r2/\n?? .live-fgn-abi7-474hz-1024f-static-pinned/\n?? .live-fgn-abi7-474hz-1024f-static/\n?? .live-fgn-abi7-600hz-1024f-500us-pinned-r1/\n?? .live-fgn-abi7-startup-fifo-negative/\n?? .live-fgn-abi7-startup-name-negative/\n?? .live-fgn-abi7-startup-negative/\n?? .live-fgn-bridge-474hz-default-source-1024f/\n?? .live-fgn-bridge-474hz-rt-source-1024f/\n?? .live-fgn-bridge-clip-474hz-1024f/\n?? .live-fgn-bridge-clip-feedback/\n?? .live-fgn-bridge-clip-open/\n?? .live-fgn-bridge-rt-source-20f-valid/\n?? .live-fgn-bridge-rt-source-5f-valid/\n?? .live-fgn-bridge-smoke-5f/"
+        },
+        "heart": {
+          "root": "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison",
+          "revision": "6a5c06b11a8b934effeb6328a73a70895b2af94a",
+          "dirty": true,
+          "status_porcelain": "?? benchmarks/src/__pycache__/\n?? doc/subdirs_gen.txt\n?? source/aoTypes/test/coverage/scripts/hrtApiCli_testInputs_gen.py\n?? source/python/heart/api/commands.py\n?? source/python/heart/api/hrtApiCommandCatalog.json"
+        },
+        "heart_plugin": {
+          "path": "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so",
+          "unavailable": "Command '['git', '-C', '/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/heart', 'status', '--porcelain']' returned non-zero exit status 128."
+        },
+        "jfg": {
+          "root": "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph.jl",
+          "revision": "7a126ecb85fc122dfe2058beb80933b7035923d0",
+          "dirty": true,
+          "status_porcelain": "?? benchmark/__pycache__/\n?? benchmark/heart/__pycache__/"
+        },
+        "pipewireao_julia": {
+          "root": "/home/dgamroth/workspaces/codex/pipewire/PipeWireAO.jl",
+          "revision": "71d567f74d99a618a8225ef608afaa9588f9144f",
+          "dirty": false,
+          "status_porcelain": ""
+        }
+      },
+      "qualified": true,
+      "delivery_qualified": true,
+      "schedule_qualified": true,
+      "numerical_comparison": "passed",
+      "frames": 8,
+      "observed_commands": 16,
+      "live_updates": false,
+      "control_cycle": true,
+      "live_update_timing_requested": false,
+      "live_update_timing_qualified": null,
+      "wfs_counters": {
+        "heart.std-wfs.datagrams-received": 32,
+        "heart.std-wfs.datagrams-rejected": 0,
+        "heart.std-wfs.frames-published": 16,
+        "heart.std-wfs.frames-dropped": 0,
+        "heart.std-wfs.buffer-starvations": 0,
+        "heart.std-wfs.blocks-published": 0
+      },
+      "missing_sequences": [],
+      "repeated_sequences": [],
+      "unexpected_sequences": [],
+      "algorithm_comparison": {
+        "mean": 0.0,
+        "correction": 0.0,
+        "controller-state": 0.0,
+        "constraint-feedback": 0.0,
+        "demanded": 0.0
+      },
+      "direct_checker": {
+        "clipped_frames": 8,
+        "different_reference_values": 0,
+        "frames": 8,
+        "max_clipping_error_um": 0.0,
+        "max_constraint_feedback_error": 0.0,
+        "max_correction_error": 0.0,
+        "max_reference_error_um": 0.0,
+        "max_state_error": 0.0
+      },
+      "command_limit_um": 0.2,
+      "pipewire_library_sha256": "0bff76749203b1cbe6c80b16b74ff40af42c1535427bbc4f235cb9fd6391abc1",
+      "heart_plugin_sha256": "db021461bfb05d41939e0db54e56620c3d7ae38e626763aee59110becd65f784",
+      "input_sha256": "880e46b8e45c848a8c2df74e5591731ea161ac7009a02ad29e2fc79f6fd06abf"
+    },
+    {
+      "mode": "cycle",
+      "controller": "julia",
+      "report": "/home/dgamroth/.cache/rtc-copper-installed-control-checks-untraced-20260929/cycle-julia/report.json",
+      "report_sha256": "36d4d7c1f493890f62aa883c026dca8cf630b40c9d670f74d0ed6afe3696fa18",
+      "source_revisions": {
+        "rtc": {
+          "root": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc",
+          "revision": "fe19c79a69c6c0f7ea0e8272ae8f1e179a81a0ce",
+          "dirty": false,
+          "status_porcelain": ""
+        },
+        "calculon": {
+          "root": "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper",
+          "revision": "8361b31a9e41a78510ba8a367ac2809651cce261",
+          "dirty": false,
+          "status_porcelain": ""
+        },
+        "bundle": {
+          "root": "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-copper-fullframe",
+          "revision": "174cc16403374070bb2e02dcce57f3d9dcc27076",
+          "dirty": true,
+          "status_porcelain": "?? .live-fgn-abi7-1000hz-1024f-500us-pinned-r1/\n?? .live-fgn-abi7-1000hz-1024f-500us-pinned-rt-source-r1/\n?? .live-fgn-abi7-10hz-20f-static-r2/\n?? .live-fgn-abi7-1500hz-1024f-500us-pinned-rt-source-r1/\n?? .live-fgn-abi7-1800hz-1024f-500us-pinned-rt-source-r1/\n?? .live-fgn-abi7-1899hz-1024f-500us-pinned-rt-source-r1/\n?? .live-fgn-abi7-474hz-1024f-static-pinned-r2/\n?? .live-fgn-abi7-474hz-1024f-static-pinned/\n?? .live-fgn-abi7-474hz-1024f-static/\n?? .live-fgn-abi7-600hz-1024f-500us-pinned-r1/\n?? .live-fgn-abi7-startup-fifo-negative/\n?? .live-fgn-abi7-startup-name-negative/\n?? .live-fgn-abi7-startup-negative/\n?? .live-fgn-bridge-474hz-default-source-1024f/\n?? .live-fgn-bridge-474hz-rt-source-1024f/\n?? .live-fgn-bridge-clip-474hz-1024f/\n?? .live-fgn-bridge-clip-feedback/\n?? .live-fgn-bridge-clip-open/\n?? .live-fgn-bridge-rt-source-20f-valid/\n?? .live-fgn-bridge-rt-source-5f-valid/\n?? .live-fgn-bridge-smoke-5f/"
+        },
+        "heart": {
+          "root": "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison",
+          "revision": "6a5c06b11a8b934effeb6328a73a70895b2af94a",
+          "dirty": true,
+          "status_porcelain": "?? benchmarks/src/__pycache__/\n?? doc/subdirs_gen.txt\n?? source/aoTypes/test/coverage/scripts/hrtApiCli_testInputs_gen.py\n?? source/python/heart/api/commands.py\n?? source/python/heart/api/hrtApiCommandCatalog.json"
+        },
+        "heart_plugin": {
+          "path": "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so",
+          "unavailable": "Command '['git', '-C', '/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/heart', 'status', '--porcelain']' returned non-zero exit status 128."
+        },
+        "jfg": {
+          "root": "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph.jl",
+          "revision": "7a126ecb85fc122dfe2058beb80933b7035923d0",
+          "dirty": true,
+          "status_porcelain": "?? benchmark/__pycache__/\n?? benchmark/heart/__pycache__/"
+        },
+        "pipewireao_julia": {
+          "root": "/home/dgamroth/workspaces/codex/pipewire/PipeWireAO.jl",
+          "revision": "71d567f74d99a618a8225ef608afaa9588f9144f",
+          "dirty": false,
+          "status_porcelain": ""
+        }
+      },
+      "qualified": true,
+      "delivery_qualified": true,
+      "schedule_qualified": true,
+      "numerical_comparison": "passed",
+      "frames": 8,
+      "observed_commands": 16,
+      "live_updates": false,
+      "control_cycle": true,
+      "live_update_timing_requested": false,
+      "live_update_timing_qualified": null,
+      "wfs_counters": {
+        "heart.std-wfs.datagrams-received": 32,
+        "heart.std-wfs.datagrams-rejected": 0,
+        "heart.std-wfs.frames-published": 16,
+        "heart.std-wfs.frames-dropped": 0,
+        "heart.std-wfs.buffer-starvations": 0,
+        "heart.std-wfs.blocks-published": 0
+      },
+      "missing_sequences": [],
+      "repeated_sequences": [],
+      "unexpected_sequences": [],
+      "algorithm_comparison": {
+        "mean": 0.0,
+        "correction": 1.4901161193847656e-07,
+        "controller-state": 1.564621925354004e-07,
+        "constraint-feedback": 1.4901161193847656e-08,
+        "demanded": 1.4901161193847656e-08
+      },
+      "direct_checker": {
+        "clipped_frames": 8,
+        "different_reference_values": 288,
+        "frames": 8,
+        "max_clipping_error_um": 0.0,
+        "max_constraint_feedback_error": 0.0,
+        "max_correction_error": 0.0,
+        "max_reference_error_um": 1.4901161193847656e-08,
+        "max_state_error": 0.0
+      },
+      "command_limit_um": 0.2,
+      "pipewire_library_sha256": "0bff76749203b1cbe6c80b16b74ff40af42c1535427bbc4f235cb9fd6391abc1",
+      "heart_plugin_sha256": "db021461bfb05d41939e0db54e56620c3d7ae38e626763aee59110becd65f784",
+      "input_sha256": "880e46b8e45c848a8c2df74e5591731ea161ac7009a02ad29e2fc79f6fd06abf"
+    }
+  ],
+  "fail_before": {
+    "report": "/home/dgamroth/.cache/rtc-copper-installed-control-checks-20260929/live-native/report.json",
+    "report_sha256": "9bb6af095ae5902996d16106a70178930da58fa1b639551a24b2ca9b1d27986d",
+    "failure": "live update source trace is absent or ambiguous",
+    "qualified": false,
+    "observed_commands": 1024,
+    "wfs_counters": {
+      "heart.std-wfs.datagrams-received": 2048,
+      "heart.std-wfs.datagrams-rejected": 0,
+      "heart.std-wfs.frames-published": 1024,
+      "heart.std-wfs.frames-dropped": 0,
+      "heart.std-wfs.buffer-starvations": 0,
+      "heart.std-wfs.blocks-published": 0
+    },
+    "numerical_comparison": "not reached; source trace required by old harness despite normal build"
+  },
+  "limits": [
+    "Finite software validation only; no worst-case timing or physical correction claim.",
+    "Observer links change scheduling and are not the wire-latency benchmark.",
+    "Diagnostic --live-update-timing requires a trace-enabled source; omitted timing is null, never a measured pass."
+  ]
+}

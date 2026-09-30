@@ -602,3 +602,303 @@ stopped before FGN pixel ingress because the local, ignored JFG benchmark
 Manifest was accidentally removed during worktree cleanup; the environment
 was restored before these two qualified replays. Its failed manifest remains
 at `~/.cache/rtc-copper-client-loop-main-row-1024-20260929/manifest.json`.
+
+## Explicit PipeWireAO loops for the Copper laboratory profile
+
+The opt-in [all-loop Ryzen profile](profiles/ryzen-6800h-copper-all-loops.json)
+adds a named CPU 0 / FIFO83 JFG daemon loop to the earlier strict profile.
+With `--configure-all-loops`, the launcher derives both daemon and all
+observer/adapter client masks and FIFO priorities from that file. The FGN and
+JFG runners render private PipeWireAO configurations with eventfd idle and
+`mem.mlock-all=false`; the JFG island retains its existing private client
+configuration. Each runner records requested settings and hashes of the
+rendered configurations. Default loop placement remains unchanged. The
+complete-frame FGN runner now requests FIFO input admission; that preserves
+already-dequeued inputs but does not repair an upstream handoff overwrite.
+
+One gated 16-frame row-block replay and one gated 16-frame complete-frame
+replay passed the new profile before ingress and after replay. In each mode,
+HEART, FGN, and JFG captured 32 WFS packets and emitted 16 ordered DM
+commands with passing numerical comparison. Both FGN and JFG had a named
+daemon loop on CPU 0 / FIFO83, an observer loop on CPUs 0–15 / FIFO83, and an
+adapter loop on CPUs 0,2,4,6,8,10,14 / FIFO83. The
+[all-loop evidence](data/copper_all_loop_evidence_20260929.json) retains the
+manifests, configuration hashes, and pre/post thread records. These short
+functional runs do not establish a latency ranking.
+
+Three gated 1,024-frame replays per ingress mode also passed with the local
+PipeWireAO.jl binding at commit `6d37e1d`. Every one of the 18 RTC runs
+captured 2,048 WFS packets and produced 1,024 ordered DM commands. The
+largest HEART↔JFG difference was 4.564 × 10⁻⁸ µm and the largest FGN↔JFG
+difference was 2.981 × 10⁻⁸ µm. The retained [phase report](data/copper_all_loop_local_binding_phases_20260929.json)
+contains the manifests and per-run first-packet and terminal-packet timing.
+For frames 101 onward, per-run terminal WFS packet → DM percentiles were:
+
+| Ingress | RTC | p50 range (µs) | p99 range (µs) |
+| --- | --- | ---: | ---: |
+| Row-block | HEART | 152.6–153.4 | 190.4–195.5 |
+| Row-block | FGN | 127.1–129.2 | 149.7–216.4 |
+| Row-block | JFG | 133.2–136.5 | 198.1–282.1 |
+| Complete frame | HEART | 219.1–239.8 | 308.7–346.3 |
+| Complete frame | FGN | 159.0–161.8 | 203.0–235.8 |
+| Complete frame | JFG | 143.7–152.8 | 233.8–403.7 |
+
+An earlier three-repeat complete-frame attempt using installed PipeWireAO.jl
+0.6.10 failed at 1,009 JFG commands in its first run. Its manifest is
+`~/.cache/rtc-copper-all-loops-fullframe-3x-20260929/manifest.json` and is
+excluded from the qualified phase report. The sender and packet capture show
+all 1,024 frames reached the host, while a Julia stack captured the owner
+thread in the native event loop, the PipeWire callback at a GC safepoint, and
+the quit-monitor task waiting for GC. Installed 0.6.10 lacks the local
+`gc_safe=true` native-loop call at `6d37e1d`; the six passing longer JFG
+replays used that local binding through `--jfg-pipewireao-julia-root`. A
+temporary forced-GC diagnostic then reproduced the wait with installed 0.6.10:
+the island logged `JULIA_ISLAND_FORCED_GC_BEGIN` but never logged its end or
+quit. The same 16-frame diagnostic with local `6d37e1d` logged GC completion,
+quit completion, and 16 exact commands. The failed and passing manifests are
+`~/.cache/rtc-copper-forced-gc-installed-binding-20260929/manifest.json` and
+`~/.cache/rtc-copper-forced-gc-local-binding-20260929/manifest.json`. Both
+archive the temporary diagnostic patch; it has been removed from the working
+tree. The local binding is not the registered 0.6.10 package.
+
+The host still ran unrelated CPU-consuming Julia analysis processes. These
+software packet boundaries show row-block work hiding part of the readout on
+this Copper workload, but they do not establish an isolated p99 ranking or a
+physical camera-to-DM latency. Startup/warmup intervals and controlled
+host-load repetitions remain open.
+
+## Registered binding and full-frame delivery investigation
+
+PipeWireAO.jl 0.6.11 includes the GC-safe native main-loop call used by the
+passing local-binding runs above. A 16-frame three-way smoke replay passed
+with the registered package. Longer registered-package repeats exposed a
+separate delivery problem: the third complete-frame run emitted 1,020 of
+1,024 FGN DM commands, and the first row-block run emitted 1,023 of 1,024
+HEART commands. Their manifests are
+`~/.cache/rtc-copper-all-loops-registered-0611-fullframe-3x-20260929/manifest.json`
+and
+`~/.cache/rtc-copper-all-loops-registered-0611-row-3x-20260929/manifest.json`.
+Neither failed run is part of a latency ranking.
+
+The FGN complete-frame failure was investigated with bounded, compile-time
+enabled trace buffers in the existing PipeWireAO and HEART SPA builds. The
+instrumented builds were used only for diagnosis; their timing is not a
+baseline. With the ordinary output tee and a controlled late-trigger burst,
+the WFS SPA source published all 1,024 frames and reported zero source drops
+and buffer starvation, yet the FGN filter did not receive frame 211. For that
+frame the source trace recorded publication, the PipeWire port trace recorded
+one `HAVE_DATA` handoff followed by a `NEED_DATA` handoff to the same mix, and
+the filter trace recorded no input. The source recycled the buffer afterward.
+The retained trace is
+`~/.cache/rtc-copper-full-handoff-trace-20260929/port-trace-001`.
+This is a confirmed source-to-filter handoff loss after publication, not a
+missing WFS packet or a GC stall.
+
+In a diagnostic single-link configuration, `node.reliable = true` on the
+WFS source removed that particular overwrite pattern: its first passing
+1,024-frame burst trace had exactly 1,024 source handoffs, all with
+`HAVE_DATA`. It did not make the complete command path loss-free. In a later
+failed replay, FGN and the Julia Standard-DM adapter both received frame
+760, and the adapter handed its output to the sink link. The sink next
+consumed frame 761 without consuming 760: the second output handoff replaced
+the pending command. The retained trace is
+`~/.cache/rtc-copper-full-handoff-trace-20260929/reliable-trace-006`.
+Other failed repeats lost frames between FGN output and the observer or
+adapter. The source counter remained at 1,024 published and zero drops in
+these runs. These traces distinguish multiple link losses; they do not prove
+that every edge has the same mechanism.
+
+The present FGN demanded output broadcasts to both the command observer and
+the Standard-DM adapter. PipeWire's current reliable tee transfers to the
+first available downstream mix, so enabling it on this two-link output would
+change broadcast into competition. The output topology and numerical capture
+must be redesigned before applying it there.
+
+A further diagnostic set `PIPEWIREAO_PROPS=node.reliable=true` only for the
+single-link Julia adapter, while retaining the reliable WFS source and the
+ordinary two-link FGN output. All 1,024 WFS frames reached FGN. Frame 635
+did not reach the adapter; this is a separate FGN fanout loss. Frame 1,023
+entered the adapter's PipeWire input but never reached its Julia callback.
+The sink emitted command 1,022 and no later command before stopping about
+7.4 s later. The trace is
+`~/.cache/rtc-copper-full-handoff-trace-20260929/source-adapter-trace-001`.
+A second replay enabled the bounded ndarray-helper trace. It recorded the
+adapter dequeuing final frame 1,023 (`D`) with no process entry (`G`), while
+it processed and published frame 1,022 in that same final activation.
+`schedule_fifo_backlog()` dequeued the final input after that callback;
+there was no subsequent activation to evaluate its readiness. Output-buffer
+availability was not measured. This run emitted 1,023 DM commands, ending at
+frame 1,022; its trace is
+`~/.cache/rtc-copper-full-handoff-trace-20260929/helper-trace-001`.
+The native filter has output-return retry enabled, but neither trace shows a
+further driver cycle. The HEART full-frame WFS driver rejects
+`RequestProcess` if a retry is requested.
+This demonstrates the final-frame progress gap under the current driver
+contract. Reliable descriptors alone therefore cannot qualify this path.
+Until exact delivery and end-of-stream draining pass, the registered-package
+long runs cannot establish a three-way latency or throughput ranking.
+
+
+## Complete-frame borrowed delivery qualification
+
+The Standard WFS source repair uses its existing bounded borrowed-buffer
+transport for complete frames. It preserves full-frame payloads and schemas;
+no frame-progress metadata is added. Published storage is returned only by
+exact buffer ID. RequestProcess and output reattachment wake queued work
+through the existing eventfd and core cycle gate. Overload causes an explicit
+whole-frame drop while UDP reception continues. The source tests establish
+fail-before/pass-after for early recycling and queued reattachment, and all
+five plugin tests pass in normal and trace builds.
+
+`--single-command-link` selects WFS → FGN/JFG → Standard-DM unit adapter → DM
+sink. The command observer is absent; DM wire vectors and adapter Header
+sequences establish numerical alignment. The ordinary observer topology
+remains available for diagnostics. Reliable output dispatch has one consumer
+per output in this comparison.
+
+Three 1,024-frame repetitions at 474 Hz qualified all three RTCs with plugin
+DSO `4ae841c65d9dbb6cd180884ffa57d83d3f0094f6f088669a399b89cd57eb037c`.
+After the running-reattachment fix, another 1,024-frame three-way replay
+qualified with DSO
+`19e03eaf1d2164e096890df0309a0fef175c3fd55f646b6af2f6eb543e0e8ea8`.
+Each system emitted every ordered command, including the final frame, and
+passed command comparison on the same Copper input and calibration. These
+12,288 commands are recorded in the
+[delivery evidence](data/copper_fullframe_borrowed_delivery_20260929.json).
+The final replay's terminal-packet-to-DM p50/p99 were 443/730 µs for HEART,
+249/762 µs for FGN, and 245/694 µs for JFG. These are characterization results:
+fixed run order and concurrent development/build work do not establish a
+controlled performance ranking.
+
+The connected Graph-control test initially expected the old gain after first
+RUNNING preparation. A direct owner probe showed preparation/reset had
+already adopted gain 3, generation 1, with zero processed frames. The corrected
+qualification now verifies a stopped update adopted during preparation and a
+second running update adopted on the first data frame, including generation,
+pole preservation, reset, and restart. It passes with registered
+PipeWireAO.jl 0.6.11 and JLL 1.7.0+17.
+
+The continuous live-update test exposed a separate RTC integration failure:
+`control_session` blocked on stdin for 100 ms while its runtime Parameter
+stream callback ran on the same PipeWire owner loop. The first 1,024-frame
+native attempt published only 53 frames and explicitly dropped 971; source
+P/Q records showed approximately 100 ms holds before either live update.
+The failed run is preserved at
+`~/.cache/rtc-copper-native-live-updates-1024-20260929/report.json`.
+This is outside the standalone three-way runner. The launcher now receives
+stdin through a PipeWire channel and dispatches commands after owner-loop
+callbacks return. Property/reset acknowledgment, admission, and cleanup waits
+also service that loop instead of sleeping on its owner thread. They retain
+wall-clock retry deadlines and the existing acknowledgment predicates. The
+first repair restored 1,024 commands but left approximately 5 ms holds during
+property acknowledgment; removing those owner-thread sleeps eliminated that
+pattern in the next native replay.
+
+The native and Julia 1,024-frame continuous runs with callback-serving waits
+both delivered every ordered frame, adopted a half-scale reconstructor and a
+single gain/pole transaction without reset, and passed the independent replay
+at the unchanged 10⁻⁶ tolerance. Native intermediate outputs were bitwise equal;
+Julia's maximum intermediate difference was 7.153 × 10⁻⁷. No clipping occurred.
+Their reports are
+`~/.cache/rtc-copper-native-live-updates-pumped-waits-1024-20260929/report.json`
+and
+`~/.cache/rtc-copper-julia-live-updates-pumped-waits-1024-20260929/report.json`.
+
+These instrumented runs measured source-plugin terminal-packet receipt to
+*demanded observer receipt*, not physical DM output. Native p50/p99/max were
+258/865/1,580 µs; Julia's were 242/402/1,493 µs. None exceeded the 2,110 µs
+frame period. This finite unpinned diagnostic does not establish a worst-case
+bound or a performance ranking.
+
+Julia's first scalar transaction still became active about 0.8 s after
+submission, although frame processing continued. An opt-in compiler trace and
+property callback timestamps placed 785 ms before the scalar callback, with
+cold dynamic transaction methods accounting for approximately 48 ms inside
+preparation. Explicit scalar native/callback precompilation reduced the next
+observed acknowledgment to approximately 100 ms. The diagnostic GC counters
+bracket startup and running together; its 13 ms collection cannot yet be
+attributed to a particular live frame.
+
+That next replay nevertheless dropped frames 260–264 during reconstructor
+replacement: source frame 256 was borrowed for 17.1 ms. The source received
+all 2,048 datagrams and counted five whole-frame drops from pool starvation.
+Its report is
+`~/.cache/rtc-copper-julia-live-updates-property-precompile-1024-20260929/report.json`.
+At that point, the prior pass did not resolve this intermittent failure, and
+timestamped GC counters and callback timing were the planned discriminators.
+The later repaired-candidate results and merged deployment status below
+supersede that open repair-validation status. Progressive benchmarking remains
+separate from the complete-frame qualification below.
+
+The repaired source/core ready-retry path is merged to `master` in PipeWireAO
+core (`d130d3afa`) and to `main` in the HEART plugin (`83e3c7b`). Related RTC
+(`6154ad4`), JuliaFilterGraph (`7a126ec`), and Calculon/FGN algorithms
+(`8361b31`) changes are also merged to `main`. The normal `/opt/pipewireao`
+release is deployed; deployment provenance is recorded in
+`~/.cache/pipewireao-merged-ready-deploy-20260929/deployment.json`.
+
+Three repaired 1,024-frame diagnostic replays per controller (Julia and
+native) passed: all frames delivered, both live updates adopted, five outputs
+matched within 1e-6, and recorded diagnostic timing qualified. Detailed
+reports, traces, and limitations are in the
+[live-update evidence](data/copper_live_update_delivery_20260929.json) and
+[full-frame review](COPPER_FULLFRAME_REVIEW.md). These measure source-plugin
+terminal-packet receipt to demanded-observer receipt, not DM wire latency or
+actuator response. They are finite diagnostic candidate evidence and do not
+establish a worst-case timing bound.
+
+The first installed three-way attempt at
+`~/.cache/rtc-copper-fullframe-merged-ready-1024x3-20260929` failed before
+Julia ingress because the main checkout's ignored benchmark Manifest still
+resolved PipeWireAO.jl 0.6.10. Resolving PipeWireAO.jl 0.6.11 with
+`Pkg.update("PipeWireAO")` made no tracked changes. The resolved rerun below
+then passed.
+
+### Merged installed full-frame baseline
+
+The three-repeat installed baseline at
+`~/.cache/rtc-copper-fullframe-merged-ready-resolved-1024x3-20260929` passed
+its manifest qualification. All three controllers delivered 1,024 ordered
+commands in each of three runs, for 9,216 commands total. All nine runner
+reports qualified. HEART↔JFG and FGN↔JFG comparisons matched all 1,024
+commands per run; maximum absolute differences were 3.726 × 10⁻⁸ µm and
+2.981 × 10⁻⁸ µm, within the 10⁻⁶ µm tolerance. No command reached the
+0.8 µm clipping limit.
+
+For frames 101 onward, the table reports repeat-to-repeat ranges of per-run
+p50 and p99 terminal-WFS-packet-to-DM-wire latency, from integer-nanosecond
+phase measurements in the manifest:
+
+| Controller | p50 range (µs) | p99 range (µs) |
+| --- | ---: | ---: |
+| HEART | 461.164–470.156 | 736.132–750.555 |
+| FGN | 251.281–254.266 | 399.003–617.062 |
+| JFG | 243.962–251.150 | 474.535–947.609 |
+
+First-WFS-packet-to-DM-wire phase statistics and all-frame summaries are also
+in the [baseline evidence](data/copper_merged_fullframe_baseline_20260929.json).
+The first HEART frame's terminal-packet-to-DM latency reached 2,653.722 µs,
+above the nominal 2,109.705 µs frame period, while exact delivery and
+comparison checks still passed. The controller run order was fixed; host
+isolation is unproven. The observed p99 spread is characterization and does
+not establish a worst-case bound or physical DM response.
+
+The initial installed managed-live check delivered 1,024 ordered commands
+with zero source drops, then stopped in the harness because it required a
+source trace produced only by the diagnostic HEART build; it failed before
+numerical comparison. The launcher now has opt-in `--live-update-timing`
+(default off). Without it, timing fields are null and no timing claim is made;
+when enabled, a missing or ambiguous trace is an error. This harness correction
+is in RTC commit `fe19c79` on `main`; its 18 unit tests passed. Fresh installed
+checks at `~/.cache/rtc-copper-installed-control-checks-untraced-20260929`
+passed: native and Julia each delivered all 1,024 continuous-update commands
+and all 16 control-cycle commands with zero source drops or starvations.
+Both continuous runs adopted the half-scale reconstructor and gain/pole
+transaction without reset; inferred adoption intervals were singleton.
+The maximum five-output Julia differences were 7.153 × 10⁻⁷ during live
+updates and 1.565 × 10⁻⁷ during the control cycle; native matched bitwise.
+Live outputs were unclipped, and the control-cycle checker exercised clipping
+on all eight measured frames. The [installed control evidence](data/copper_merged_control_checks_20260929.json)
+retains reports, hashes, adoption boundaries, and the rejected pre-fix harness
+run. These checks establish finite delivery and numerical behavior; their
+timing fields are null.

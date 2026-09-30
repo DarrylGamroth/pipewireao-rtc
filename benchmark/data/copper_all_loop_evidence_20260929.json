@@ -1,0 +1,705 @@
+{
+  "limits": [
+    "Two short replays do not establish latency ranking or tail behavior.",
+    "Competing Julia analysis processes consumed full CPU cores.",
+    "HEART source and stage placement are verified by their existing profile; HEART source is unchanged."
+  ],
+  "runs": [
+    {
+      "delivery": {
+        "fgn": {
+          "captured_dm_commands": 16,
+          "captured_wfs_packets": 32,
+          "qualified": true,
+          "wfs_payload_mismatch_packets": 0
+        },
+        "heart": {
+          "captured_dm_commands": 16,
+          "captured_wfs_packets": 32,
+          "qualified": true,
+          "wfs_payload_mismatch_packets": 0
+        },
+        "jfg": {
+          "captured_dm_commands": 16,
+          "captured_wfs_packets": 32,
+          "qualified": true,
+          "wfs_payload_mismatch_packets": 0
+        }
+      },
+      "frame_rate_hz": 474,
+      "frames": 16,
+      "loop_configs": {
+        "fgn-adapter": {
+          "cpus": [
+            0,
+            2,
+            4,
+            6,
+            8,
+            10,
+            14
+          ],
+          "path": "/home/dgamroth/.cache/rtc-copper-all-loops-row-16-20260929/run-001/fgn/adapter-client-config/client.conf",
+          "priority": 83,
+          "sha256": "663b5bb06c869c35dc10ade427a76d8f71254846dfb0678b778a471e8f75f68c"
+        },
+        "fgn-daemon": {
+          "cpus": [
+            0
+          ],
+          "path": "/home/dgamroth/.cache/rtc-copper-all-loops-row-16-20260929/run-001/fgn/config/fgn-copper-live.conf",
+          "priority": 83,
+          "sha256": "22a764eebfefde438eb45cec6caee559afba88321f81ea6053e27450f5613053"
+        },
+        "fgn-observer": {
+          "cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "path": "/home/dgamroth/.cache/rtc-copper-all-loops-row-16-20260929/run-001/fgn/observer-client-config/client.conf",
+          "priority": 83,
+          "sha256": "1c65a29723759dac17719a06b930e4deb20fbdb526285cce66cb3908bb0cdfa4"
+        },
+        "jfg-adapter": {
+          "cpus": [
+            0,
+            2,
+            4,
+            6,
+            8,
+            10,
+            14
+          ],
+          "path": "/home/dgamroth/.cache/jfg-shared-copper-fits-qqtII3/adapter-config/client.conf",
+          "priority": 83,
+          "sha256": "641165d27aff21465b696799c2cb1f68025d2bc0dbcd206109388be50efeb805"
+        },
+        "jfg-daemon": {
+          "cpus": [
+            0
+          ],
+          "path": "/home/dgamroth/.cache/jfg-shared-copper-fits-qqtII3/config/fgn-copper-fits-live.conf",
+          "priority": 83,
+          "sha256": "b4309e100650906f79a6930eb6aa954f91fc92365f3bcfa8bc1a0ca25d4aa998"
+        },
+        "jfg-island": {
+          "cpus": [
+            0
+          ],
+          "path": "/home/dgamroth/.cache/jfg-shared-copper-fits-qqtII3/island-config/client.conf",
+          "priority": 83,
+          "sha256": "bc185bbebd85df48f5f6227d50c0a1444ab1e6ec853682844b62e63e4eb38a6f"
+        },
+        "jfg-observer": {
+          "cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "path": "/home/dgamroth/.cache/jfg-shared-copper-fits-qqtII3/observer-config/client.conf",
+          "priority": 83,
+          "sha256": "11ba882738be516505554cdbe0d9d5e9f710ebb1f42d92811c94dfabfcf81316"
+        }
+      },
+      "manifest": "/home/dgamroth/.cache/rtc-copper-all-loops-row-16-20260929/manifest.json",
+      "manifest_sha256": "85a2d5bf6fdfa473a3192e798ce7e96f109f50b5d2ff2a299b7a4c8233bb8aa1",
+      "mode": "row",
+      "placements": {
+        "fgn-adapter": {
+          "after": {
+            "cpus": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              14
+            ],
+            "name": "data-loop.0",
+            "policy": "fifo",
+            "priority": 83,
+            "record": "/home/dgamroth/.cache/rtc-copper-all-loops-row-16-20260929/run-001/fgn/placement-post-replay-adapter.json",
+            "sha256": "1d5347fb02b7c6f4960f03db58e50df4bafedbb043370a771b1bfd98cc2ffd2e"
+          },
+          "before": {
+            "cpus": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              14
+            ],
+            "name": "data-loop.0",
+            "policy": "fifo",
+            "priority": 83,
+            "record": "/home/dgamroth/.cache/rtc-copper-all-loops-row-16-20260929/run-001/fgn/placement-pre-ingress-adapter.json",
+            "sha256": "3081a165020af73fef18f5afa7bf8262dc22a7d4fb86a3526ebde3069b1b10f4"
+          }
+        },
+        "fgn-daemon": {
+          "after": {
+            "cpus": [
+              0
+            ],
+            "name": "rtc-data-loop",
+            "policy": "fifo",
+            "priority": 83,
+            "record": "/home/dgamroth/.cache/rtc-copper-all-loops-row-16-20260929/run-001/fgn/placement-post-replay-daemon.json",
+            "sha256": "45ac4d9e07c1b16f3b4a4d87f2a04a8e6cbcb72e93e3cce1c854ffd64a1a0b9d"
+          },
+          "before": {
+            "cpus": [
+              0
+            ],
+            "name": "rtc-data-loop",
+            "policy": "fifo",
+            "priority": 83,
+            "record": "/home/dgamroth/.cache/rtc-copper-all-loops-row-16-20260929/run-001/fgn/placement-pre-ingress-daemon.json",
+            "sha256": "027ef77bdd8df0d97ce7a27caa859cd792aa49167e7b36c1672040537c3bc6a9"
+          }
+        },
+        "fgn-observer": {
+          "after": {
+            "cpus": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15
+            ],
+            "name": "data-loop.0",
+            "policy": "fifo",
+            "priority": 83,
+            "record": "/home/dgamroth/.cache/rtc-copper-all-loops-row-16-20260929/run-001/fgn/placement-post-replay-observer.json",
+            "sha256": "0a4e02b7e5205f498dcabe682bd9e2fae31baecc61a9036f09bb05915a6fbf7a"
+          },
+          "before": {
+            "cpus": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15
+            ],
+            "name": "data-loop.0",
+            "policy": "fifo",
+            "priority": 83,
+            "record": "/home/dgamroth/.cache/rtc-copper-all-loops-row-16-20260929/run-001/fgn/placement-pre-ingress-observer.json",
+            "sha256": "4034b861f2f2b9a4bbc541f668a58bf412b6a62f9cfa0fb103298b56c338b42f"
+          }
+        },
+        "jfg-adapter": {
+          "after": {
+            "cpus": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              14
+            ],
+            "name": "data-loop.0",
+            "policy": "fifo",
+            "priority": 83,
+            "record": "/home/dgamroth/.cache/rtc-copper-all-loops-row-16-20260929/run-001/jfg-adapter-after-replay-placement.json",
+            "sha256": "2a687db0f2cf3dcec160567ce68dc093dbb0ef0c4a5899d6d8ce20ed8595305c"
+          },
+          "before": {
+            "cpus": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              14
+            ],
+            "name": "data-loop.0",
+            "policy": "fifo",
+            "priority": 83,
+            "record": "/home/dgamroth/.cache/rtc-copper-all-loops-row-16-20260929/run-001/jfg-adapter-before-ingress-placement.json",
+            "sha256": "8c034dd1a0e9a95e28e678423a84fba8e21eb89bfada1f9ee2ddf89b1faea148"
+          }
+        },
+        "jfg-daemon": {
+          "after": {
+            "cpus": [
+              0
+            ],
+            "name": "rtc-data-loop",
+            "policy": "fifo",
+            "priority": 83,
+            "record": "/home/dgamroth/.cache/rtc-copper-all-loops-row-16-20260929/run-001/jfg-daemon-after-replay-placement.json",
+            "sha256": "10b6b0959ba304b767c1747c262d620091018aad5fdcf5de15c60f92252148e9"
+          },
+          "before": {
+            "cpus": [
+              0
+            ],
+            "name": "rtc-data-loop",
+            "policy": "fifo",
+            "priority": 83,
+            "record": "/home/dgamroth/.cache/rtc-copper-all-loops-row-16-20260929/run-001/jfg-daemon-before-ingress-placement.json",
+            "sha256": "a13a63515a7b975912b4917a82ff6c56320790ad210b51443616a11d75812164"
+          }
+        },
+        "jfg-observer": {
+          "after": {
+            "cpus": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15
+            ],
+            "name": "data-loop.0",
+            "policy": "fifo",
+            "priority": 83,
+            "record": "/home/dgamroth/.cache/rtc-copper-all-loops-row-16-20260929/run-001/jfg-observer-after-replay-placement.json",
+            "sha256": "973dc72219e02712f23f697c8834c5410b6472c8de16eca00f1d2be571286bff"
+          },
+          "before": {
+            "cpus": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15
+            ],
+            "name": "data-loop.0",
+            "policy": "fifo",
+            "priority": 83,
+            "record": "/home/dgamroth/.cache/rtc-copper-all-loops-row-16-20260929/run-001/jfg-observer-before-ingress-placement.json",
+            "sha256": "1d25452ecc821c3211c903be4e7c2f776d01aadf83dc1804224f08733f3f27e5"
+          }
+        }
+      },
+      "qualified": true,
+      "readout_us": 2000
+    },
+    {
+      "delivery": {
+        "fgn": {
+          "captured_dm_commands": 16,
+          "captured_wfs_packets": 32,
+          "qualified": true,
+          "wfs_payload_mismatch_packets": 0
+        },
+        "heart": {
+          "captured_dm_commands": 16,
+          "captured_wfs_packets": 32,
+          "qualified": true,
+          "wfs_payload_mismatch_packets": 0
+        },
+        "jfg": {
+          "captured_dm_commands": 16,
+          "captured_wfs_packets": 32,
+          "qualified": true,
+          "wfs_payload_mismatch_packets": 0
+        }
+      },
+      "frame_rate_hz": 474,
+      "frames": 16,
+      "loop_configs": {
+        "fgn-adapter": {
+          "cpus": [
+            0,
+            2,
+            4,
+            6,
+            8,
+            10,
+            14
+          ],
+          "path": "/home/dgamroth/.cache/rtc-copper-all-loops-fullframe-16-20260929/run-001/fgn/adapter-client-config/client.conf",
+          "priority": 83,
+          "sha256": "663b5bb06c869c35dc10ade427a76d8f71254846dfb0678b778a471e8f75f68c"
+        },
+        "fgn-daemon": {
+          "cpus": [
+            0
+          ],
+          "path": "/home/dgamroth/.cache/rtc-copper-all-loops-fullframe-16-20260929/run-001/fgn/config/fgn-copper-live.conf",
+          "priority": 83,
+          "sha256": "e7fa0bbf2150d75dc8720bade52811927b23537223f686befd51525a9d2f4355"
+        },
+        "fgn-observer": {
+          "cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "path": "/home/dgamroth/.cache/rtc-copper-all-loops-fullframe-16-20260929/run-001/fgn/observer-client-config/client.conf",
+          "priority": 83,
+          "sha256": "1c65a29723759dac17719a06b930e4deb20fbdb526285cce66cb3908bb0cdfa4"
+        },
+        "jfg-adapter": {
+          "cpus": [
+            0,
+            2,
+            4,
+            6,
+            8,
+            10,
+            14
+          ],
+          "path": "/home/dgamroth/.cache/jfg-shared-copper-fits-2MxYmJ/adapter-config/client.conf",
+          "priority": 83,
+          "sha256": "641165d27aff21465b696799c2cb1f68025d2bc0dbcd206109388be50efeb805"
+        },
+        "jfg-daemon": {
+          "cpus": [
+            0
+          ],
+          "path": "/home/dgamroth/.cache/jfg-shared-copper-fits-2MxYmJ/config/fgn-copper-fits-live.conf",
+          "priority": 83,
+          "sha256": "abfd56ae644628df28c62a2629c8e39c5330257fe720f77dde2017dbcfb2f1bc"
+        },
+        "jfg-island": {
+          "cpus": [
+            0
+          ],
+          "path": "/home/dgamroth/.cache/jfg-shared-copper-fits-2MxYmJ/island-config/client.conf",
+          "priority": 83,
+          "sha256": "bc185bbebd85df48f5f6227d50c0a1444ab1e6ec853682844b62e63e4eb38a6f"
+        },
+        "jfg-observer": {
+          "cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "path": "/home/dgamroth/.cache/jfg-shared-copper-fits-2MxYmJ/observer-config/client.conf",
+          "priority": 83,
+          "sha256": "11ba882738be516505554cdbe0d9d5e9f710ebb1f42d92811c94dfabfcf81316"
+        }
+      },
+      "manifest": "/home/dgamroth/.cache/rtc-copper-all-loops-fullframe-16-20260929/manifest.json",
+      "manifest_sha256": "1ed2c2a7292c34352a2a7da6c3a3603492064c6c272ae42d1a6cf53c9cace6d6",
+      "mode": "fullframe",
+      "placements": {
+        "fgn-adapter": {
+          "after": {
+            "cpus": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              14
+            ],
+            "name": "data-loop.0",
+            "policy": "fifo",
+            "priority": 83,
+            "record": "/home/dgamroth/.cache/rtc-copper-all-loops-fullframe-16-20260929/run-001/fgn/placement-post-replay-adapter.json",
+            "sha256": "51b350945c0ee3d95bb124a9f2712c0e57a0a8cefb73038b99ea28d20f215315"
+          },
+          "before": {
+            "cpus": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              14
+            ],
+            "name": "data-loop.0",
+            "policy": "fifo",
+            "priority": 83,
+            "record": "/home/dgamroth/.cache/rtc-copper-all-loops-fullframe-16-20260929/run-001/fgn/placement-pre-ingress-adapter.json",
+            "sha256": "7ff5cf94d4924d8c554035d7ec09e9b60f54aa948157762c800864cb7a476a53"
+          }
+        },
+        "fgn-daemon": {
+          "after": {
+            "cpus": [
+              0
+            ],
+            "name": "rtc-data-loop",
+            "policy": "fifo",
+            "priority": 83,
+            "record": "/home/dgamroth/.cache/rtc-copper-all-loops-fullframe-16-20260929/run-001/fgn/placement-post-replay-daemon.json",
+            "sha256": "2b8907996792d24ea570fdc8a14ccbb90c8e6238e8a43d0cf47b567c08c72950"
+          },
+          "before": {
+            "cpus": [
+              0
+            ],
+            "name": "rtc-data-loop",
+            "policy": "fifo",
+            "priority": 83,
+            "record": "/home/dgamroth/.cache/rtc-copper-all-loops-fullframe-16-20260929/run-001/fgn/placement-pre-ingress-daemon.json",
+            "sha256": "042713c278caee40404f1377da7e91e7a71adc838db83c5fd6c278c5287c657f"
+          }
+        },
+        "fgn-observer": {
+          "after": {
+            "cpus": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15
+            ],
+            "name": "data-loop.0",
+            "policy": "fifo",
+            "priority": 83,
+            "record": "/home/dgamroth/.cache/rtc-copper-all-loops-fullframe-16-20260929/run-001/fgn/placement-post-replay-observer.json",
+            "sha256": "4668b3e8ed0722170487a7d0872fe94edb8507f62ab62c47e396107a66bc8e76"
+          },
+          "before": {
+            "cpus": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15
+            ],
+            "name": "data-loop.0",
+            "policy": "fifo",
+            "priority": 83,
+            "record": "/home/dgamroth/.cache/rtc-copper-all-loops-fullframe-16-20260929/run-001/fgn/placement-pre-ingress-observer.json",
+            "sha256": "c670e742ce63fc59876a08a3d5ec8b7f28a254ca9a77798f264af31818f7a417"
+          }
+        },
+        "jfg-adapter": {
+          "after": {
+            "cpus": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              14
+            ],
+            "name": "data-loop.0",
+            "policy": "fifo",
+            "priority": 83,
+            "record": "/home/dgamroth/.cache/rtc-copper-all-loops-fullframe-16-20260929/run-001/jfg-adapter-after-replay-placement.json",
+            "sha256": "023f6ea6fe3eb8c5daa0702fb663ca45a73feeec7840c5b267894461c97a4775"
+          },
+          "before": {
+            "cpus": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              14
+            ],
+            "name": "data-loop.0",
+            "policy": "fifo",
+            "priority": 83,
+            "record": "/home/dgamroth/.cache/rtc-copper-all-loops-fullframe-16-20260929/run-001/jfg-adapter-before-ingress-placement.json",
+            "sha256": "2bc000ad5fcffa972767b015c7bf0bbd89364ed48ea4c26c6e0423af18b8d008"
+          }
+        },
+        "jfg-daemon": {
+          "after": {
+            "cpus": [
+              0
+            ],
+            "name": "rtc-data-loop",
+            "policy": "fifo",
+            "priority": 83,
+            "record": "/home/dgamroth/.cache/rtc-copper-all-loops-fullframe-16-20260929/run-001/jfg-daemon-after-replay-placement.json",
+            "sha256": "9314f70e627d843515fc303b7e4abce597ae99726c3f7a1ae8629edf09a0155d"
+          },
+          "before": {
+            "cpus": [
+              0
+            ],
+            "name": "rtc-data-loop",
+            "policy": "fifo",
+            "priority": 83,
+            "record": "/home/dgamroth/.cache/rtc-copper-all-loops-fullframe-16-20260929/run-001/jfg-daemon-before-ingress-placement.json",
+            "sha256": "d81aeda3329c34d4da7f37dc7e8495e1b01b69c2441fc2d07325a533ee81f79b"
+          }
+        },
+        "jfg-observer": {
+          "after": {
+            "cpus": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15
+            ],
+            "name": "data-loop.0",
+            "policy": "fifo",
+            "priority": 83,
+            "record": "/home/dgamroth/.cache/rtc-copper-all-loops-fullframe-16-20260929/run-001/jfg-observer-after-replay-placement.json",
+            "sha256": "ea5dfa4cb67fbde3086a0ca17a7e82d80096a5f5dd27806cebc293c9892b2ddc"
+          },
+          "before": {
+            "cpus": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15
+            ],
+            "name": "data-loop.0",
+            "policy": "fifo",
+            "priority": 83,
+            "record": "/home/dgamroth/.cache/rtc-copper-all-loops-fullframe-16-20260929/run-001/jfg-observer-before-ingress-placement.json",
+            "sha256": "5da7c165be70fca26cd89a988c18f06de8e049ce692e25181eeb9ec4439616d2"
+          }
+        }
+      },
+      "qualified": true,
+      "readout_us": 2000
+    }
+  ],
+  "schema_version": 1,
+  "scope": "Opt-in explicit daemon and client loops, gated Copper functional qualification"
+}

@@ -99,7 +99,15 @@ hash. Two gated 16-frame three-way replays verified the resulting CPU 0 /
 FIFO83 loop before ingress and after replay. The
 [client-loop record](data/copper_client_loop_evidence_20260929.json) retains
 the manifests and thread evidence. Other clients still use the installed
-generic client configuration.
+generic client configuration in those island-only runs. The later opt-in
+[all-loop Copper profile](profiles/ryzen-6800h-copper-all-loops.json) also
+configures the FGN and JFG daemons, observers, and adapters explicitly; its
+[evidence](data/copper_all_loop_evidence_20260929.json) includes two 16-frame
+gated replays and pre/post named thread checks. Three 1,024-frame repetitions
+per ingress mode also qualified with the local PipeWireAO.jl GC-safe binding;
+the [phase record](data/copper_all_loop_local_binding_phases_20260929.json)
+retains their packet-level timing and provenance. These runs still lack
+controlled host isolation and do not close RTC-DEV-019.
 
 The resulting JSON includes the requested envelope, command, host, each
 pre-gate map, post-run map when the finish/release handshake is used, `VmLck`,

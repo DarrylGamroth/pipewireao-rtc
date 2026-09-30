@@ -1,0 +1,366 @@
+{
+  "date": "2026-09-29",
+  "profile": "RTC-ARCH-019 step 1 post-install Copper baseline",
+  "qualification": {
+    "qualified": true,
+    "rtc_dev_019_qualified": false,
+    "mode": "fullframe",
+    "repeats": 3,
+    "frames_per_controller_per_run": 1024,
+    "controllers": [
+      "heart",
+      "fgn",
+      "jfg"
+    ],
+    "commands_per_controller": 3072,
+    "total_commands": 9216,
+    "delivery": "all 1024 requested frames and commands per controller per run; ordered delivery checks passed",
+    "numerical_comparison": {
+      "max_absolute_difference_um": 3.725290298461914e-08,
+      "tolerance_um": 1e-06,
+      "heart_to_jfg_max_um": 3.725290298461914e-08,
+      "fgn_to_jfg_max_um": 2.9802322387695312e-08
+    },
+    "clipping": {
+      "command_limit_um": 0.8,
+      "max_observed_absolute_command_um": 0.27198049426078796,
+      "outputs_at_or_above_limit": 0
+    }
+  },
+  "manifest": {
+    "path": "/home/dgamroth/.cache/rtc-copper-fullframe-merged-ready-resolved-1024x3-20260929/manifest.json",
+    "sha256": "e7f0c6efb049aba3c9a91ee9e2cc40343f220ba985ae3e80731e343b47be6adb"
+  },
+  "input": {
+    "path": "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph.jl/benchmark/data/revolt-copper-aos-openloop-1024f-u16.fits",
+    "sha256": "880e46b8e45c848a8c2df74e5591731ea161ac7009a02ad29e2fc79f6fd06abf"
+  },
+  "installed_artifacts": {
+    "core_revision": "d130d3afa",
+    "core_branch": "master",
+    "core_sha256": "0bff76749203b1cbe6c80b16b74ff40af42c1535427bbc4f235cb9fd6391abc1",
+    "heart_plugin_revision": "83e3c7b",
+    "heart_plugin_branch": "main",
+    "heart_plugin_sha256": "db021461bfb05d41939e0db54e56620c3d7ae38e626763aee59110becd65f784",
+    "deployment_provenance": "/home/dgamroth/.cache/pipewireao-merged-ready-deploy-20260929/deployment.json"
+  },
+  "source_revisions": {
+    "rtc_deployment": "6154ad488e6d85bd1a1b44f66e344ef381371c82",
+    "jfg": "7a126ecb85fc122dfe2058beb80933b7035923d0",
+    "fgn": "8361b31a9e41a78510ba8a367ac2809651cce261",
+    "pipewireao_core": "d130d3afac6e81519dad019629c7ba245e6de34c"
+  },
+  "runs": [
+    {
+      "index": 1,
+      "reports": {
+        "heart": "/home/dgamroth/.cache/rtc-copper-fullframe-merged-ready-resolved-1024x3-20260929/run-001/heart/qualification.json",
+        "fgn": "/home/dgamroth/.cache/rtc-copper-fullframe-merged-ready-resolved-1024x3-20260929/run-001/fgn/report.json",
+        "jfg": "/home/dgamroth/.cache/rtc-copper-fullframe-merged-ready-resolved-1024x3-20260929/run-001/jfg.json"
+      },
+      "delivery": {
+        "heart": {
+          "qualified": true,
+          "frames_requested": 1024,
+          "wfs_packets": 2048,
+          "dm_commands": 1024
+        },
+        "fgn": {
+          "qualified": true,
+          "wfs_frames": 1024,
+          "dm_commands": 1024
+        },
+        "jfg": {
+          "qualified": true,
+          "wfs_packets": 2048,
+          "dm_commands": 1024,
+          "adapter_frames": true
+        }
+      },
+      "comparisons": {
+        "heart_to_jfg": {
+          "matched_commands": 1024,
+          "max_absolute_difference_um": 3.725290298461914e-08,
+          "tolerance_um": 1e-06,
+          "outputs_at_or_above_0_8_um_limit": 0
+        },
+        "fgn_to_jfg": {
+          "matched_commands": 1024,
+          "max_absolute_difference_um": 2.9802322387695312e-08,
+          "tolerance_um": 1e-06,
+          "outputs_at_or_above_0_8_um_limit": 0
+        }
+      }
+    },
+    {
+      "index": 2,
+      "reports": {
+        "heart": "/home/dgamroth/.cache/rtc-copper-fullframe-merged-ready-resolved-1024x3-20260929/run-002/heart/qualification.json",
+        "fgn": "/home/dgamroth/.cache/rtc-copper-fullframe-merged-ready-resolved-1024x3-20260929/run-002/fgn/report.json",
+        "jfg": "/home/dgamroth/.cache/rtc-copper-fullframe-merged-ready-resolved-1024x3-20260929/run-002/jfg.json"
+      },
+      "delivery": {
+        "heart": {
+          "qualified": true,
+          "frames_requested": 1024,
+          "wfs_packets": 2048,
+          "dm_commands": 1024
+        },
+        "fgn": {
+          "qualified": true,
+          "wfs_frames": 1024,
+          "dm_commands": 1024
+        },
+        "jfg": {
+          "qualified": true,
+          "wfs_packets": 2048,
+          "dm_commands": 1024,
+          "adapter_frames": true
+        }
+      },
+      "comparisons": {
+        "heart_to_jfg": {
+          "matched_commands": 1024,
+          "max_absolute_difference_um": 3.725290298461914e-08,
+          "tolerance_um": 1e-06,
+          "outputs_at_or_above_0_8_um_limit": 0
+        },
+        "fgn_to_jfg": {
+          "matched_commands": 1024,
+          "max_absolute_difference_um": 2.9802322387695312e-08,
+          "tolerance_um": 1e-06,
+          "outputs_at_or_above_0_8_um_limit": 0
+        }
+      }
+    },
+    {
+      "index": 3,
+      "reports": {
+        "heart": "/home/dgamroth/.cache/rtc-copper-fullframe-merged-ready-resolved-1024x3-20260929/run-003/heart/qualification.json",
+        "fgn": "/home/dgamroth/.cache/rtc-copper-fullframe-merged-ready-resolved-1024x3-20260929/run-003/fgn/report.json",
+        "jfg": "/home/dgamroth/.cache/rtc-copper-fullframe-merged-ready-resolved-1024x3-20260929/run-003/jfg.json"
+      },
+      "delivery": {
+        "heart": {
+          "qualified": true,
+          "frames_requested": 1024,
+          "wfs_packets": 2048,
+          "dm_commands": 1024
+        },
+        "fgn": {
+          "qualified": true,
+          "wfs_frames": 1024,
+          "dm_commands": 1024
+        },
+        "jfg": {
+          "qualified": true,
+          "wfs_packets": 2048,
+          "dm_commands": 1024,
+          "adapter_frames": true
+        }
+      },
+      "comparisons": {
+        "heart_to_jfg": {
+          "matched_commands": 1024,
+          "max_absolute_difference_um": 3.725290298461914e-08,
+          "tolerance_um": 1e-06,
+          "outputs_at_or_above_0_8_um_limit": 0
+        },
+        "fgn_to_jfg": {
+          "matched_commands": 1024,
+          "max_absolute_difference_um": 2.9802322387695312e-08,
+          "tolerance_um": 1e-06,
+          "outputs_at_or_above_0_8_um_limit": 0
+        }
+      }
+    }
+  ],
+  "latency": {
+    "source": "manifest latency_phases; nanosecond timestamp differences summarized by phase",
+    "unit": "microseconds",
+    "boundary": "first or terminal HEART WFS packet receipt to Standard-DM wire packet receipt",
+    "all_frames": {
+      "first_wfs_packet_to_dm": {
+        "heart": {
+          "count_per_run": 1024,
+          "p50_us_range": [
+            1456.645,
+            1466.181
+          ],
+          "p99_us_range": [
+            1766.99,
+            1873.909
+          ]
+        },
+        "fgn": {
+          "count_per_run": 1024,
+          "p50_us_range": [
+            1248.539,
+            1249.782
+          ],
+          "p99_us_range": [
+            1462.08,
+            1806.464
+          ]
+        },
+        "jfg": {
+          "count_per_run": 1024,
+          "p50_us_range": [
+            1238.505,
+            1249.306
+          ],
+          "p99_us_range": [
+            1535.732,
+            1965.439
+          ]
+        }
+      },
+      "terminal_wfs_packet_to_dm": {
+        "heart": {
+          "count_per_run": 1024,
+          "p50_us_range": [
+            458.729,
+            470.712
+          ],
+          "p99_us_range": [
+            743.26,
+            858.35
+          ]
+        },
+        "fgn": {
+          "count_per_run": 1024,
+          "p50_us_range": [
+            252.719,
+            254.523
+          ],
+          "p99_us_range": [
+            479.381,
+            832.354
+          ]
+        },
+        "jfg": {
+          "count_per_run": 1024,
+          "p50_us_range": [
+            243.566,
+            253.555
+          ],
+          "p99_us_range": [
+            526.09,
+            996.129
+          ]
+        }
+      }
+    },
+    "frames_101_onward": {
+      "first_wfs_packet_to_dm": {
+        "heart": {
+          "count_per_run": 924,
+          "p50_us_range": [
+            1458.854,
+            1465.961
+          ],
+          "p99_us_range": [
+            1757.047,
+            1771.705
+          ]
+        },
+        "fgn": {
+          "count_per_run": 924,
+          "p50_us_range": [
+            1246.876,
+            1249.446
+          ],
+          "p99_us_range": [
+            1400.448,
+            1593.983
+          ]
+        },
+        "jfg": {
+          "count_per_run": 924,
+          "p50_us_range": [
+            1238.811,
+            1247.447
+          ],
+          "p99_us_range": [
+            1473.208,
+            1926.423
+          ]
+        }
+      },
+      "terminal_wfs_packet_to_dm": {
+        "heart": {
+          "count_per_run": 924,
+          "p50_us_range": [
+            461.164,
+            470.156
+          ],
+          "p99_us_range": [
+            736.132,
+            750.555
+          ]
+        },
+        "fgn": {
+          "count_per_run": 924,
+          "p50_us_range": [
+            251.281,
+            254.266
+          ],
+          "p99_us_range": [
+            399.003,
+            617.062
+          ]
+        },
+        "jfg": {
+          "count_per_run": 924,
+          "p50_us_range": [
+            243.962,
+            251.15
+          ],
+          "p99_us_range": [
+            474.535,
+            947.609
+          ]
+        }
+      }
+    },
+    "first_frame": {
+      "heart": {
+        "first_wfs_packet_to_dm_us_range": [
+          3286.51,
+          3587.741
+        ],
+        "terminal_wfs_packet_to_dm_us_range": [
+          2377.536,
+          2653.722
+        ]
+      },
+      "fgn": {
+        "first_wfs_packet_to_dm_us_range": [
+          1268.968,
+          1814.038
+        ],
+        "terminal_wfs_packet_to_dm_us_range": [
+          403.416,
+          897.601
+        ]
+      },
+      "jfg": {
+        "first_wfs_packet_to_dm_us_range": [
+          1543.883,
+          1858.301
+        ],
+        "terminal_wfs_packet_to_dm_us_range": [
+          638.045,
+          857.115
+        ]
+      }
+    },
+    "interpretation": "Run order was fixed; host isolation was not established. Repeat-to-repeat p99 spread is shown; no worst-case latency or physical camera-to-DM/actuator claim follows."
+  },
+  "limitations": [
+    "The comparison ends at the Standard-DM wire packet boundary, not physical DM response.",
+    "The first HEART frame terminal-packet-to-DM maximum exceeded the nominal 2,109.705 us frame period; exact delivery and numerical qualification passed.",
+    "Run order was fixed; host isolation was not established; observed p99 values and spreads are characterization, not a worst-case bound.",
+    "RTC-DEV-019 remains partial; separate installed managed-live and cycle validations passed and are retained in copper_merged_control_checks_20260929.json."
+  ]
+}

@@ -582,6 +582,31 @@ used FIFO83. The workstation also had unrelated CPU-saturating Julia tasks.
 Strict thread placement, first-use characterization, and an uncontended
 latency comparison remain in the selected increment.
 
+The source/core ready-retry repair has since been merged to PipeWireAO
+`master` (`d130d3afa`) and HEART plugin `main` (`83e3c7b`); related RTC
+(`6154ad4`), JuliaFilterGraph (`7a126ec`), and Calculon/FGN algorithms
+(`8361b31`) changes are merged as well. The normal `/opt/pipewireao` release
+is deployed, with provenance at
+`~/.cache/pipewireao-merged-ready-deploy-20260929/deployment.json`. Three
+repaired 1,024-frame live-update diagnostic runs per controller (Julia and
+native) passed delivery, update adoption, five-output comparison, and the
+recorded diagnostic timing checks. The first installed three-way 1,024-frame ×
+3 attempt failed before Julia ingress because the ignored benchmark Manifest
+resolved PipeWireAO.jl 0.6.10. After resolving PipeWireAO.jl 0.6.11 with no
+tracked changes, the fresh three-way baseline passed all nine reports and
+9,216 ordered commands. Its [evidence](../benchmark/data/copper_merged_fullframe_baseline_20260929.json)
+records exact delivery, numerical comparisons, clipping checks, and latency
+phases. Diagnostic observer timing remains distinct from the packet-to-DM
+wire boundary and does not establish a worst-case latency bound. Follow-up
+[installed control checks](../benchmark/data/copper_merged_control_checks_20260929.json)
+also passed: native and Julia each delivered 1,024 continuous-update commands
+and 16 reset/restart commands, with five-output numerical agreement and zero
+source drops. The live runs adopted reconstructor and gain/pole updates without
+reset. Clipped control cycles exercised limiting and feedback. Source timing
+is opt-in through `--live-update-timing`; normal release checks leave timing
+fields null. Complete-frame correctness is established for this workload;
+progressive and Classic fixed-arrival characterization remain separate.
+
 The timer-driven Copper sender starts its clock during `wfsSimulator`
 startup, before the launcher can inspect its threads. HEART's existing
 `-wfs 1 -sync 1` mode has a ready semaphore and an external frame trigger.
@@ -711,6 +736,28 @@ three-way WFS/DM delivery, command comparison, and strict placement. The
 requalifies both captures. Six unrelated CPU-saturating Julia processes and
 fixed run order still prevent a controlled cross-RTC latency ranking.
 RTC-DEV-019 remains partial.
+
+An opt-in [all-loop Copper profile](../benchmark/profiles/ryzen-6800h-copper-all-loops.json)
+now drives explicit PipeWireAO daemon, island, observer, and adapter loop
+settings for FGN and JFG. Two gated 16-frame three-way replays, one per
+ingress mode, passed numerical and exact delivery checks and verified the
+named loops before ingress and after replay. The
+[placement record](../benchmark/data/copper_all_loop_evidence_20260929.json)
+retains each rendered configuration hash and thread snapshot. Three gated
+1,024-frame repetitions per Copper ingress mode subsequently qualified with
+the local GC-safe PipeWireAO.jl binding. Each of the 18 RTC runs delivered all
+frames and passed command comparison; the [phase report](../benchmark/data/copper_all_loop_local_binding_phases_20260929.json)
+retains the packet timing. An earlier complete-frame attempt using installed
+PipeWireAO.jl 0.6.10 stalled after 1,009 JFG commands with a Julia GC wait
+cycle; its failed manifest is retained and excluded from latency summaries.
+The GC-safe binding is now registered as PipeWireAO.jl 0.6.11. Longer registered
+replays exposed intermittent complete-frame command loss and a final retained
+input without a subsequent driver cycle; those failed captures are excluded
+from latency rankings. The ready-retry handoff repair has since been merged
+and deployed, repaired live-update candidate replays pass, and the resolved
+installed three-way baseline passes (see [Copper evidence](../benchmark/COPPER.md)). Startup/warmup intervals,
+controlled host-load repetitions, and a Classic fixed-arrival profile remain
+open. RTC-DEV-019 remains partial.
 
 ## Deferred capabilities
 
