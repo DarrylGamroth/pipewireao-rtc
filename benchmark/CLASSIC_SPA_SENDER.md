@@ -247,3 +247,48 @@ the fresh `heart-r2` result is retained alongside the failed attempt.
 
 This sequence ran alongside functional diagnostics and proves transport and
 selected numerical consistency. It does not qualify latency or capacity.
+
+## Clean committed-baseline sender qualification
+
+The generic SDK fixes were narrowly backported onto committed core baseline
+`ac82518` without investigative snapshot `a498b10`, latest-hold, leases,
+observer, acquisition metadata or latency implementation. The clean branch is
+`codex/classic-spa-readiness-clean`, production code/test commit `fefc8f3`.
+Its release DSO passed 14 wrapper tests, 5 ndarray tests, the full C regression,
+exports, a discriminating video-view readiness comparison, and a reentrant
+snapshot negative control. Runtime enumeration returns exactly the baseline
+`api.ndarray.frame-assembly` and `api.ndarray.video-view` factories.
+
+A separate frozen private directory
+`/home/dgamroth/.cache/rtc-classic-spa-private-clean-plugins-20260930` contains:
+
+- ndarray SHA-256 `153839f352590a992655f327ef892c1dff3595ab9fbe80f183ed2aeb7ec6458c`;
+- FITS SHA-256 `947ba07a07f5da0e8c60b408455933689e3cc7a7cc1ca8dbf8c358c9ac3f8a41`;
+- symlinks to unchanged installed unrelated plugins, including HEART.
+
+The actual clean pair passed its own seven-frame connected source check:
+exactly 224 datagrams, complete IDs 0–6, every header/pixel byte matching, no
+sink rejection/send error, and normal exit. It then passed the same five
+receiving paths sequentially using the 63-frame corpus, 100 Hz and 2,000 µs
+readout. Every path delivered exactly 2,016 WFS packets and 63 DM commands,
+ordered complete WFS IDs 0–62, zero payload mismatch, and no repeated/decreasing
+DM IDs. Selected source-arithmetic checks and all process exits passed.
+
+Sender and FGN/JFG receiver counters matched the preceding comparison; JFG
+final-feedback errors were again 1.19 × 10⁻⁷ µm (frame) and 2.38 × 10⁻⁷ µm
+(row), with 74 expected nonzero values. HEART's exact source model had zero
+unequal command bits, and final clips were 76/76. Its existing broad legacy
+qualification/readback limitations and FGN's unavailable separate feedback
+field remain documented. The current JFG harness uses four process roles;
+all four returned zero, while HEART/FGN returned three zero process statuses.
+
+Fresh exact commands, harness revision `ebe583f`, script/plugin hashes, reports,
+validation and Zstandard capture archive hashes are at
+`/home/dgamroth/.cache/rtc-classic-spa-clean-five-paths63-20260930/manifest.json`;
+the seven-frame source result is at
+`/home/dgamroth/.cache/rtc-classic-spa-clean-source7-20260930`.
+Historical failed attempts and the earlier three-factory binary remain
+preserved separately. The clean pair, rather than the earlier binary's result,
+now establishes the clean backport's functional transport gate. No latency,
+capacity, hardware, deployment, main update or push is claimed. Existing local
+SDK changes and deployed factory-set intent remain unchanged.
