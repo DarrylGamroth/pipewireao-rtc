@@ -235,6 +235,18 @@ class RunnerTests(unittest.TestCase):
         self.assertIn(str(RUNNER.ROOT / 'benchmark/classic_heart_telemetry.py'), commands[0]['argv'])
         self.assertTrue((args.output / 'telemetry.stop').exists())
 
+    def test_mocked_spa_source_uses_the_selected_cube(self) -> None:
+        args, _, _, _ = self.setup_mocked_run()
+        args.sender = 'spa'
+        helper = RUNNER.load_helpers.return_value[0]
+        installation = object()
+        helper.pipewire_installation = lambda *unused: installation
+        with patch.object(RUNNER, 'replay_spa_source', return_value={'qualified': True}) as sender:
+            report = RUNNER.run(args)
+        self.assertTrue(report['functional_wire_qualified'], report['errors'])
+        self.assertEqual(sender.call_args.args, (helper, installation, args, args.output, args.cube))
+        self.assertFalse(any(row['log'] == 'wfs-simulator.log' for row in report['commands']))
+
     def test_mocked_success_records_flag_readback_and_unverified_initial_state(self) -> None:
         args, processes, actions, environments = self.setup_mocked_run()
         report = RUNNER.run(args)

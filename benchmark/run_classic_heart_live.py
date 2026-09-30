@@ -24,7 +24,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from prepare_classic_heart_config import write_config
-from run_classic_live import ROOT, WORKSPACE, compare_commands, load_script, wait_capture_ready
+from run_classic_live import ROOT, WORKSPACE, compare_commands, load_script, wait_capture_ready, replay_spa_source
 
 
 GMS_SECTIONS = {"clwcBlock": "CLWFC", "tfcBlock": "TFC"}
@@ -49,6 +49,9 @@ def arguments(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--rate-hz", type=int, default=10)
     parser.add_argument("--readout-us", type=int, default=2000)
     parser.add_argument("--rows-per-packet", type=int, default=11)
+    parser.add_argument("--sender", choices=("wfs-simulator", "spa"), default="wfs-simulator")
+    parser.add_argument("--sender-spa-directory", type=Path,
+                        help="private source plugin directory for SPA sender qualification")
     parser.add_argument("--rtc-cpus")
     parser.add_argument("--source-cpus")
     parser.add_argument("--cpu-map", type=Path)
@@ -509,7 +512,11 @@ def run(args: argparse.Namespace) -> dict:
         source = helper.placed([str(simulator), "-file", "input.fits", "-tPort", "6000",
                                 "-period", repr(1 / args.rate_hz), "-readout", str(args.readout_us),
                                 "-lines", str(args.rows_per_packet), "-numFrames", str(args.frames)], args.source_cpus)
-        recorder.run(source, "wfs-simulator.log", timeout=args.frames / args.rate_hz + 30)
+        if args.sender == 'spa':
+            installation = helper.pipewire_installation(None, Path('/opt/pipewireao'))
+            report['spa_sender'] = replay_spa_source(helper, installation, args, directory, args.cube)
+        else:
+            recorder.run(source, "wfs-simulator.log", timeout=args.frames / args.rate_hz + 30)
         time.sleep(0.5)
         if rtc.poll() is not None:
             raise RuntimeError("scaoTemplate exited during replay; see scao.log")

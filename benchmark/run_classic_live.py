@@ -10,6 +10,7 @@ and performance characterization are separate checks.
 from __future__ import annotations
 
 import argparse
+from dataclasses import replace
 import importlib.util
 import json
 from pathlib import Path
@@ -53,6 +54,17 @@ def wait_capture_ready(helper, directory: Path, capture) -> None:
     # Its earlier "Capturing on" banner precedes capture-loop initialization.
     helper.wait_text(directory / "dumpcap.log",
                      f"File: {directory / 'wire.pcapng'}", 30, capture)
+
+
+def replay_spa_source(helper, installation, args, directory: Path, cube: Path) -> dict:
+    from run_classic_spa_sender import run_sender
+    if args.sender_spa_directory is not None:
+        installation = replace(installation,
+                               spa_library_directory=args.sender_spa_directory.resolve(strict=True))
+    return run_sender(helper=helper, installation=installation,
+                      directory=directory / 'spa-sender', cube=cube, frames=args.frames,
+                      rate_hz=args.rate_hz, readout_us=args.readout_us,
+                      rows_per_packet=args.rows_per_packet, source_cpus=args.source_cpus)
 
 
 def replace_once(text: str, old: str, new: str) -> str:
@@ -287,6 +299,9 @@ def arguments():
     parser.add_argument("--heart-plugin", type=Path, required=True)
     parser.add_argument("--heart-plugin-sha256", required=True)
     parser.add_argument("--wfs-simulator", type=Path, required=True)
+    parser.add_argument("--sender", choices=("wfs-simulator", "spa"), default="wfs-simulator")
+    parser.add_argument("--sender-spa-directory", type=Path,
+                        help="private source plugin directory for SPA sender qualification")
     parser.add_argument("--rtc-cpus")
     parser.add_argument("--source-cpus")
     parser.add_argument("--lab-loop-cpu", type=int)
@@ -445,7 +460,11 @@ def main():
         (directory / "input.fits").symlink_to(cube)
         source = helper.placed([str(args.wfs_simulator.resolve()), "-file", "input.fits", "-tPort", "6000", "-period", repr(1 / args.rate_hz), "-readout", str(args.readout_us), "-lines", str(args.rows_per_packet), "-numFrames", str(args.frames)], args.source_cpus)
         report["source_command"] = source
-        (directory / "wfs-simulator.log").write_text(helper.command(source, env, cwd=directory, timeout=args.frames / args.rate_hz + 30))
+        if args.sender == 'spa':
+            report['spa_sender'] = replay_spa_source(helper, installation, args, directory, cube)
+            report['source_command'] = report['spa_sender']['source_command']
+        else:
+            (directory / "wfs-simulator.log").write_text(helper.command(source, env, cwd=directory, timeout=args.frames / args.rate_hz + 30))
         time.sleep(0.5)
         record_placement(directory, "after", placement_processes, args)
         helper.stop(capture, log)

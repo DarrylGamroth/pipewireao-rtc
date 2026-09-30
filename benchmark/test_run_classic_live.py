@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import importlib.util
+from dataclasses import dataclass
 from pathlib import Path
 import sys
 import tempfile
 import unittest
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 import numpy as np
@@ -21,6 +23,27 @@ SPEC.loader.exec_module(RUNNER)
 
 
 class ReplaceOnceTests(unittest.TestCase):
+    def test_spa_sender_preserves_native_installation(self) -> None:
+        @dataclass
+        class Installation:
+            spa_library_directory: Path
+            library_directory: Path
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            installation = Installation(root / 'installed-spa', root / 'installed-library')
+            args = SimpleNamespace(sender_spa_directory=root, frames=63, rate_hz=100,
+                                   readout_us=2000, rows_per_packet=11, source_cpus='12')
+            helper = Mock()
+            with patch('run_classic_spa_sender.run_sender', return_value={'qualified': True}) as sender:
+                result = RUNNER.replay_spa_source(helper, installation, args, root, root / 'cube')
+            self.assertTrue(result['qualified'])
+            self.assertEqual(sender.call_args.kwargs['installation'].library_directory,
+                             installation.library_directory)
+            self.assertEqual(sender.call_args.kwargs['installation'].spa_library_directory, root)
+            self.assertEqual(installation.spa_library_directory, root / 'installed-spa')
+            self.assertEqual(sender.call_args.kwargs['frames'], 63)
+            self.assertEqual(sender.call_args.kwargs['source_cpus'], '12')
+
     def test_capture_waits_for_initialized_output(self) -> None:
         helper, process = Mock(), Mock()
         directory = Path('/capture')
