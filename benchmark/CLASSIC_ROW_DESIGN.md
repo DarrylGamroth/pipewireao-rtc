@@ -402,6 +402,25 @@ Relevant implementation and test references:
 - [FGN generated SH row/helper Graph tests](../../calculon-algorithms-progressive-requal/crates/calculon-fgn/tests/algorithm_declaration_graph.c)
 - [Native filter bounded buffers](../../pipewire-classic-warmup/src/pipewire/filter.c)
 
-This pass inspected source and configuration only. Its buffer incompatibility
-and helper capabilities are observed source facts; performance benefits remain
-unmeasured. No new production source or live transport was changed or exercised.
+The original design pass inspected source and configuration only. Subsequent
+implementation on 2026-09-30 widened the two ndarray consumer ranges to 64,
+explicitly configured the private daemon's existing 64-buffer policy, and
+added the complete FGN/JFG row fixtures and replay modes. Connected 32-buffer
+negotiation has matching fail-before/pass-after evidence, and the 16 ndarray
+tests pass. Native source admission plus successful JFG/FGN live replay also
+exercise Classic's 32-buffer minimum. Both row paths pass with the release
+core staged and installed in `/opt/pipewireao`; the release ndarray suite
+passes all 16 tests.
+
+Both row RTCs now deliver seven ordered DM commands from all 224 source row
+blocks at 10 Hz with 2 ms nominal readout. The native path required a Rust
+calibration discontinuity fix: short-circuiting the incoming flag previously
+left a pending flag for row two, abandoning frame zero. Four focused regressions
+and the repeated live replay establish its correction. JFG passes its array
+numerical/lifecycle checks with zero warmed steady-frame heap allocation.
+
+See [the maintained comparison](CLASSIC.md) and
+[the retained row evidence](data/classic_row_development_20260930.json).
+These are short unsaturated software transport checks. Performance benefits,
+live nonzero clipping feedback, long precision acceptance, helper layouts,
+and sustained offered-rate capacity remain unqualified.

@@ -44,6 +44,49 @@ The [transport review](CLASSIC_TRANSPORT_REVIEW.md) records their dispositions.
 The Python harness requires NumPy and PyYAML plus the existing capture tools;
 it loads developed graphs and provides no scientific implementation.
 
+## Row functional checks
+
+Both developed row paths now pass the same short, unsaturated gate: 224 row
+blocks, seven ordered DM commands with IDs 0–6, no rejected/dropped/starved
+source frames, healthy feedback, and normal process exits.
+
+| Row RTC | Maximum command difference from Rust reference |
+| --- | ---: |
+| FGN fused SH sensing/reconstruction plus complete control chain | 1.19 × 10⁻⁷ µm |
+| JFG split SH measurement blocks/incremental reconstruction plus complete control chain | 2.68 × 10⁻⁷ µm |
+
+JFG's array replay also passes 1,621 lifecycle assertions and allocates zero
+steady-frame heap bytes after warmup. Its live owner reports 224 callbacks;
+successful frames are attested by the independent DM capture, not inferred
+from the callback count. Live allocation and GC diagnostics include session
+setup/shutdown and do not establish a zero-allocation transport callback.
+
+Classic requires 32 buffers reserved per frame. The ndarray consumers now
+advertise a maximum of 64, retaining their default of four and minimum of two.
+The private row daemon explicitly sets the existing `link.max-buffers = 64`
+policy. No watermark metadata, extra pixel copy, or camera backpressure was
+added. The connected 32-buffer test fails with the former maximum of 16 and
+passes with 64 under the same daemon policy; all 16 ndarray tests pass.
+
+The original native FGN replay received every block but omitted frame 0 at
+both 2 ms and 20 ms readout. Rust calibration incorrectly retained its pending
+discontinuity when the first incoming row was already discontinuous, marking
+row two discontinuous and abandoning reconstruction. Both row and region
+calibration now consume the pending flag unconditionally before combining it
+with the incoming flag. Four reset/adoption regressions fail before the fix
+and pass afterward; the two complete integration test files pass 20 tests.
+The fixed bundle delivers all seven commands at the original 2 ms pacing.
+Calibration arithmetic and controller coefficients are unchanged.
+
+[The row evidence record](data/classic_row_development_20260930.json) retains
+ten attempts, the original regression logs, binary hashes, and numerical
+reports. Both row paths pass with the staged release core and with that core
+installed in `/opt/pipewireao`. All 16 ndarray tests pass in the release build.
+Deployment hashes are recorded retrospectively; original run reports are kept. The unchanged HEART
+short gate above provides the third RTC comparison. Long clipping/precision,
+helper placement, latency percentiles, capacity, and the FITS-to-stdWfs SPA
+sender path remain separate work.
+
 ## Clipping and numerical limits
 
 None of the seven live frames clip. They establish unsaturated wire agreement,
@@ -58,9 +101,10 @@ See [the precision review](CLASSIC_PRECISION_REVIEW.md).
 
 1. Exercise live nonzero clipping feedback and preserve the long-sequence
    precision evidence before reporting scientific equivalence.
-2. Qualify Classic row graphs. Their 32-buffer source requirement currently
-   conflicts with the 16-buffer maximum advertised by ndarray consumers;
-   [the row design](CLASSIC_ROW_DESIGN.md) proposes a bounded range correction.
+2. Characterize helper layouts and live allocation boundaries after the
+   successful release-deployment checks for both short Classic row graphs.
+   The 32-buffer negotiation correction is implemented and tested as described
+   in [the row design](CLASSIC_ROW_DESIGN.md).
 3. Measure repeated first-packet → DM and terminal-packet → DM distributions,
    work completed during readout, and maximum exact-delivery rates for all five
    selected receiver/graph configurations under documented placement.

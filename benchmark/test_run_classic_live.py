@@ -112,6 +112,58 @@ class SourceCounterTests(unittest.TestCase):
         line = self.diagnostic()
         self.assertIsNone(RUNNER.source_counters(line + "\n" + line))
 
+    def test_frame_and_row_delivery_expectations(self) -> None:
+        frame = RUNNER.expected_source_counters("frame", 7, 11)
+        row = RUNNER.expected_source_counters("row", 7, 11)
+        self.assertEqual(frame["received"], 224)
+        self.assertEqual(frame["blocks"], 0)
+        self.assertEqual(row["blocks"], 224)
+        self.assertEqual(row["frames"], 7)
+
+
+class NodeReportTests(unittest.TestCase):
+    def test_row_counts_are_not_treated_as_terminal_publications(self) -> None:
+        report = {"status": "stopped", "callback_count": 224,
+                  "feedback_bridge_failed": False, "mode": "row",
+                  "callbacks_per_frame": 32, "frame_count": None}
+        RUNNER.validate_node_report(report, "row", 7)
+        for field, value in (("callback_count", 223), ("feedback_bridge_failed", True),
+                             ("mode", "frame"), ("callbacks_per_frame", 1)):
+            with self.subTest(field=field), self.assertRaises(RuntimeError):
+                RUNNER.validate_node_report(dict(report, **{field: value}), "row", 7)
+
+    def test_full_frame_report_still_requires_one_callback_per_frame(self) -> None:
+        report = {"status": "stopped", "callback_count": 7,
+                  "feedback_bridge_failed": False}
+        RUNNER.validate_node_report(report, "frame", 7)
+        with self.assertRaises(RuntimeError):
+            RUNNER.validate_node_report(dict(report, callback_count=224), "frame", 7)
+
+
+class SourceConfigurationTests(unittest.TestCase):
+    SOURCE = """context.properties = {
+}
+api.heart.std-wfs.width = 64
+api.heart.std-wfs.height = 64
+api.heart.std-wfs.output-mode = frame
+api.heart.std-wfs.ndarray-schema = org.calculon.ao.raw-detector-pixels/1
+"""
+
+    def test_row_negotiation_policy_and_canonical_source_schema(self) -> None:
+        text = RUNNER.configure_source(self.SOURCE, "row")
+        self.assertIn("link.max-buffers = 64", text)
+        self.assertIn("api.heart.std-wfs.row-block-rows = 11", text)
+        self.assertIn("api.heart.std-wfs.output-mode = row-block", text)
+        self.assertNotIn("api.heart.std-wfs.ndarray-schema", text)
+        self.assertIn("width = 352", text)
+        self.assertIn("height = 352", text)
+
+    def test_frame_preserves_source_schema_and_default_buffer_policy(self) -> None:
+        text = RUNNER.configure_source(self.SOURCE, "frame")
+        self.assertIn("api.heart.std-wfs.ndarray-schema", text)
+        self.assertNotIn("row-block-rows", text)
+        self.assertNotIn("link.max-buffers", text)
+
 
 class ArgumentValidationTests(unittest.TestCase):
     BASE_ARGS = ["run_classic_live.py", "--role", "fgn", "--fixture", "fixture",
@@ -130,6 +182,14 @@ class ArgumentValidationTests(unittest.TestCase):
 
     def test_rejects_nondivisor_row_quantum(self) -> None:
         with patch.object(sys, "argv", self.BASE_ARGS + ["--rows-per-packet", "23"]):
+            with self.assertRaises(SystemExit):
+                RUNNER.arguments()
+
+    def test_row_requires_the_prepared_eleven_row_geometry(self) -> None:
+        with patch.object(sys, "argv", self.BASE_ARGS + ["--mode", "row"]):
+            self.assertEqual(RUNNER.arguments().mode, "row")
+        with patch.object(sys, "argv", self.BASE_ARGS +
+                          ["--mode", "row", "--rows-per-packet", "8"]):
             with self.assertRaises(SystemExit):
                 RUNNER.arguments()
 

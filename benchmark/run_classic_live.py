@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Replay the pinned Classic FITS corpus through a developed full-frame RTC.
+"""Replay the pinned Classic FITS corpus through a developed frame or row RTC.
 
 The shared fixture comes from the maintained Rust profile exporter. This runner
 loads the existing nine-node graph and adapters; it implements no AO algorithms.
@@ -118,8 +118,43 @@ def source_counters(log: str) -> dict | None:
                     map(int, records[0])))
 
 
+def expected_source_counters(mode: str, frames: int, rows_per_packet: int) -> dict:
+    packets = frames * (352 // rows_per_packet)
+    return {"received": packets, "rejected": 0,
+            "blocks": packets if mode == "row" else 0,
+            "frames": frames, "dropped": 0, "starvations": 0}
+
+
+def validate_node_report(report: dict, mode: str, frames: int) -> None:
+    callbacks = frames * (32 if mode == "row" else 1)
+    if (report.get("status") != "stopped" or
+            report.get("callback_count") != callbacks or
+            report.get("feedback_bridge_failed") is not False or "error" in report):
+        raise RuntimeError("Julia owner did not attest successful callbacks and feedback")
+    # Row callbacks are arrivals, not command publications. The separate wire
+    # and adapter checks must attest exactly one ordered DM command per frame.
+    if mode == "row" and (report.get("mode") != "row" or
+                          report.get("callbacks_per_frame") != 32):
+        raise RuntimeError("Julia owner did not attest Classic row execution")
+
+
+def configure_source(text: str, mode: str) -> str:
+    text = replace_once(text, "api.heart.std-wfs.width = 64", "api.heart.std-wfs.width = 352")
+    text = replace_once(text, "api.heart.std-wfs.height = 64", "api.heart.std-wfs.height = 352")
+    if mode == "row":
+        text = replace_once(text, "context.properties = {",
+                            "context.properties = {\n    link.max-buffers = 64")
+        text = replace_once(text, "api.heart.std-wfs.output-mode = frame",
+                            "api.heart.std-wfs.output-mode = row-block\n"
+                            "            api.heart.std-wfs.row-block-rows = 11")
+        # Explicit ndarray-schema is the frame-only raw-pixel adapter option.
+        # Row mode already declares its canonical row-block schema.
+        text = replace_once(text, "api.heart.std-wfs.ndarray-schema = org.calculon.ao.raw-detector-pixels/1", "")
+    return text
+
+
 def install_graph(helper, qualifier, directory: Path, fixture: Path,
-                  plugin: Path, rate: int) -> tuple[str, str]:
+                  plugin: Path, rate: int, mode: str = "frame") -> tuple[str, str]:
     graph_path = directory / "graph.conf"
     profile = qualifier.load_prepared_profile(fixture / "prepared-profile.toml")
     if (profile.detector_height, profile.detector_width, profile.frame_count,
@@ -128,7 +163,8 @@ def install_graph(helper, qualifier, directory: Path, fixture: Path,
         raise ValueError("prepared fixture is not the pinned Classic geometry")
     if abs(profile.clwc_anti_windup_gain - 0.99) > 1e-6:
         raise ValueError("Classic HEART comparison requires anti-windup gain 0.99")
-    graph = qualifier.resolve_config(plugin, profile, 0, 7)
+    graph = (qualifier.resolve_row_feedback_config(plugin, profile, 11, 0, 7)
+             if mode == "row" else qualifier.resolve_config(plugin, profile, 0, 7))
     # The deployed startup-artifact interface accepts F32 only. The developed
     # SHWFS declaration also accepts origins and active state at construction.
     # Use those public fields for these two typed parameters, checking the
@@ -139,9 +175,11 @@ def install_graph(helper, qualifier, directory: Path, fixture: Path,
     active = np.fromfile(fixture / "active-subapertures.u8", dtype=np.uint8)
     if active.size != 188 or np.any(active > 1):
         raise ValueError("invalid exported active mask")
-    graph = replace_once(graph, "coordinate_scale = 1.0", "coordinate_scale = 1.0\n"
-                         "                    active = [ " + " ".join(
-                             "true" if value else "false" for value in active) + " ]")
+    active_field = "active = [ " + " ".join(
+        "true" if value else "false" for value in active) + " ]"
+    graph = (replace_once(graph, "active = null", active_field) if mode == "row"
+             else replace_once(graph, "coordinate_scale = 1.0",
+                               "coordinate_scale = 1.0\n                    " + active_field))
     # The scientific port rate must match the offered rate, not the fixture's
     # original 10 Hz. Preserve the parameter values and graph topology.
     graph = graph.replace(
@@ -165,11 +203,13 @@ def install_graph(helper, qualifier, directory: Path, fixture: Path,
             raise ValueError(f"invalid prepared parameter extent: {parameter}")
         if name in ("subaperture-origins.u32le", "active-subapertures.u8"):
             continue
+        if mode == "row":
+            port = port.replace("shack-hartmann:", "reconstruction:")
         startup.append(
             f"            {helper.spa_quote('pipewireao.startup-parameter.' + port)}"
             f" = {helper.spa_quote(str(parameter))}"
         )
-    graph_name = "calculon-revolt-classic-fullframe"
+    graph_name = "calculon-revolt-classic-" + ("row" if mode == "row" else "fullframe")
     module = """    {
         name = libpipewire-module-ndarray-filter-chain
         args = {
@@ -194,6 +234,7 @@ def install_graph(helper, qualifier, directory: Path, fixture: Path,
 def arguments():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--role", choices=("fgn", "jfg"), required=True)
+    parser.add_argument("--mode", choices=("frame", "row"), default="frame")
     parser.add_argument("--fixture", type=Path, required=True)
     parser.add_argument("--cube", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
@@ -201,7 +242,9 @@ def arguments():
     parser.add_argument("--rate-hz", type=int, default=10)
     parser.add_argument("--readout-us", type=int, default=2000)
     parser.add_argument("--rows-per-packet", type=int, default=11)
-    parser.add_argument("--pipewire-prefix", type=Path, default=Path("/opt/pipewireao"))
+    installation = parser.add_mutually_exclusive_group()
+    installation.add_argument("--pipewire-prefix", type=Path)
+    installation.add_argument("--pipewire-root", type=Path)
     parser.add_argument("--fgn-root", type=Path, default=WORKSPACE / "calculon-algorithms-progressive-requal")
     parser.add_argument("--jfg-root", type=Path, default=WORKSPACE / "JuliaFilterGraph-progressive-requal")
     parser.add_argument("--plugin", type=Path, required=True)
@@ -219,6 +262,8 @@ def arguments():
         parser.error("rows-per-packet must be a positive divisor of 352")
     if args.rows_per_packet * 352 * 2 > 8024:
         parser.error("rows-per-packet exceeds wfsSimulator's 8024-byte payload limit")
+    if args.mode == "row" and args.rows_per_packet != 11:
+        parser.error("the qualified Classic row graph requires 11 rows per packet")
     return args
 
 
@@ -232,35 +277,43 @@ def main():
         raise ValueError(f"output already exists: {directory}")
     helper.verify_abi7(args.plugin)
     helper.verify_heart_plugin(args.heart_plugin, args.heart_plugin_sha256)
-    installation = helper.pipewire_installation(None, args.pipewire_prefix)
+    installation = helper.pipewire_installation(
+        args.pipewire_root, args.pipewire_prefix or
+        (None if args.pipewire_root else Path("/opt/pipewireao")))
     directory.mkdir(parents=True)
     env = helper.make_environment(directory, args.heart_plugin.resolve(), args.rate_hz, installation)
     env["HEART_RTC_DIAG"] = "1"
     helper.use_native_julia_libraries(directory, installation, env)
     config = directory / "config/fgn-copper-live.conf"
-    text = replace_once(config.read_text(), "api.heart.std-wfs.width = 64", "api.heart.std-wfs.width = 352")
-    text = replace_once(text, "api.heart.std-wfs.height = 64", "api.heart.std-wfs.height = 352")
-    config.write_text(text)
+    config.write_text(configure_source(config.read_text(), args.mode))
     # Only one DM consumer. The feedback ports are host-local, not PipeWire links.
     adapter_env = helper.reliable_adapter_environment(env)
     report = {
-        "role": args.role, "receiver_mode": "complete-frame", "frames": args.frames,
+        "role": args.role, "receiver_mode": "row-block" if args.mode == "row" else "complete-frame", "frames": args.frames,
         "rate_hz": args.rate_hz, "readout_us": args.readout_us,
         "rows_per_packet": args.rows_per_packet, "qualified": False,
         "scope": "short live transport and numerical gate; not a capacity or tail-latency result",
         "sha256": {str(path): helper.sha256_file(path) for path in
                    (cube, args.plugin, args.heart_plugin, args.wfs_simulator,
                     fixture / "prepared-profile.toml")},
+        "parameter_sha256": {name: helper.sha256_file(fixture / name)
+                             for _, name, _ in PARAMETERS},
         "errors": [],
+        "pipewire_provenance": helper.pipewire_provenance(
+            installation, installation.module_directory / "libpipewire-module-ndarray-filter-chain.so"),
     }
     processes = []
     stop_files = []
     try:
         if args.role == "fgn":
-            graph_name, raw_port = install_graph(helper, qualifier, directory, fixture, args.plugin.resolve(), args.rate_hz)
+            graph_name, raw_port = install_graph(helper, qualifier, directory, fixture, args.plugin.resolve(), args.rate_hz, args.mode)
             command_port = "pdm-command:demanded"
         else:
-            graph_name, raw_port, command_port = "julia-revolt-classic-fullframe", "raw", "demanded"
+            graph_name = "julia-revolt-classic-" + ("row" if args.mode == "row" else "fullframe")
+            raw_port, command_port = "raw", "demanded"
+        report["daemon_configuration_sha256"] = helper.sha256_file(config)
+        if args.role == "fgn":
+            report["resolved_graph_sha256"] = helper.sha256_file(directory / "graph.conf")
         daemon, log = helper.start(helper.placed([str(installation.daemon), "-c", config.name], args.rtc_cpus), env, directory / "daemon.log", cwd=installation.working_directory)
         processes.append((daemon, log))
         def socket_ready():
@@ -276,6 +329,7 @@ def main():
                 str(args.jfg_root / "benchmark/run_classic_pipewire_node.jl"),
                 "--fixture", str(fixture), "--remote", helper.REMOTE,
                 "--rate-hz", str(args.rate_hz), "--stop-file", str(node_stop),
+                "--mode", args.mode,
                 "--report", str(directory / "node-report.json"),
             ], args.rtc_cpus), adapter_env, directory / "node.log")
             processes.append((node, log))
@@ -328,11 +382,7 @@ def main():
                 helper.validate_adapter_sequences(directory / "adapter-sequences.csv", args.frames)
                 if args.role == "jfg":
                     node_report = json.loads((directory / "node-report.json").read_text())
-                    if (node_report.get("status") != "stopped" or
-                            node_report.get("callback_count") != args.frames or
-                            node_report.get("feedback_bridge_failed") is not False or
-                            "error" in node_report):
-                        raise RuntimeError("Julia owner did not attest successful full-frame callbacks and feedback")
+                    validate_node_report(node_report, args.mode, args.frames)
                 if any(process.returncode != 0 for process, _ in processes):
                     raise RuntimeError("a replay process exited unsuccessfully")
             except Exception as error:
@@ -340,12 +390,9 @@ def main():
                 report["errors"].append(str(error))
         counters = source_counters((directory / "daemon.log").read_text()) if (directory / "daemon.log").exists() else None
         report["source_counters"] = counters
-        if report["qualified"] and counters != {
-            "received": args.frames * (352 // args.rows_per_packet), "rejected": 0,
-            "blocks": 0, "frames": args.frames, "dropped": 0, "starvations": 0,
-        }:
+        if report["qualified"] and counters != expected_source_counters(args.mode, args.frames, args.rows_per_packet):
             report["qualified"] = False
-            report["errors"].append("source counters missing or do not attest loss-free complete-frame delivery")
+            report["errors"].append("source counters missing or do not attest loss-free delivery")
         (directory / "report.json").write_text(json.dumps(report, indent=2) + "\n")
     if not report["qualified"]:
         raise RuntimeError("Classic replay failed qualification; see report.json")

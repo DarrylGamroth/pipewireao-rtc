@@ -1,0 +1,2756 @@
+{
+  "date": "2026-09-30",
+  "scope": "short unsaturated Classic row transport, numerical and allocation gate; no tail-latency or sustained capacity claim",
+  "nominal_rate_hz": 10,
+  "nominal_readout_us": 2000,
+  "rows_per_packet": 11,
+  "packets_per_frame": 32,
+  "frames": 7,
+  "clipping_qualified": false,
+  "long_precision_qualified": false,
+  "attempts": [
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-fgn-row-short-r1-20260930",
+      "report.json": {
+        "role": "fgn",
+        "receiver_mode": "row-block",
+        "frames": 7,
+        "rate_hz": 10,
+        "readout_us": 2000,
+        "rows_per_packet": 11,
+        "qualified": false,
+        "scope": "short live transport and numerical gate; not a capacity or tail-latency result",
+        "sha256": {
+          "/home/dgamroth/workspaces/codex/heart/revolt-rtc/sim_wfs_data/classic_wfs.fits": "ac5d14eb90de51924af61ac12915833e8ef5c1a1fdde2237b628b49f65fc9aca",
+          "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-copper-fullframe/target/release/libcalculon_fgn_bundle.so": "51d842aff4175ac30042d9bcfee193538cb4be3a75c2d69f79a9293cbd4b4cc6",
+          "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so": "db021461bfb05d41939e0db54e56620c3d7ae38e626763aee59110becd65f784",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator": "4930489f2655da4c33fdabc47ee96a7d051ea125e8492a8f1923c0ee0ed9580b",
+          "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4"
+        },
+        "errors": [
+          "PipeWireAO exited with 234; see daemon.log"
+        ],
+        "pipewire_provenance": {
+          "pipewire_mode": "build-tree",
+          "pipewire_daemon": "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/src/daemon/pipewire-ao",
+          "pipewire_daemon_sha256": "0349892cbf93e2fc4f8e5dd426d8c48df8dc34db4d722fe23b29c72caeb2cdb3",
+          "ndarray_filter_chain": "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/src/modules/libpipewire-module-ndarray-filter-chain.so",
+          "ndarray_filter_chain_sha256": "cc70dd112c643db7abcc6a733dabc862f62234df0e4c198d1b0eeb90e3bb604d",
+          "pipewire_support_spa": "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/spa/plugins/support/libspa-support.so",
+          "pipewire_support_spa_sha256": "c00708b68741f7254bb4e7a122d7265c6d8d2713fa55623662b70420f97e60c9",
+          "pipewire_client_library": "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/src/pipewire/libpipewire-ao-0.3.so",
+          "pipewire_client_library_sha256": "3dab9af4f4115fad77c70350d634e2731d43851333a085573757fdbce8933c2c",
+          "pipewire_root": "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers",
+          "pipewire_revision": "d130d3afac6e81519dad019629c7ba245e6de34c",
+          "pipewire_build_flags": {
+            "buildtype": "debugoptimized",
+            "optimization": "2",
+            "b_lto": false,
+            "c_args": [],
+            "cpp_args": []
+          }
+        },
+        "process_returncodes": [
+          234
+        ],
+        "source_counters": null
+      },
+      "daemon.log": ""
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-fgn-row-short-r2-20260930",
+      "report.json": {
+        "role": "fgn",
+        "receiver_mode": "row-block",
+        "frames": 7,
+        "rate_hz": 10,
+        "readout_us": 2000,
+        "rows_per_packet": 11,
+        "qualified": false,
+        "scope": "short live transport and numerical gate; not a capacity or tail-latency result",
+        "sha256": {
+          "/home/dgamroth/workspaces/codex/heart/revolt-rtc/sim_wfs_data/classic_wfs.fits": "ac5d14eb90de51924af61ac12915833e8ef5c1a1fdde2237b628b49f65fc9aca",
+          "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-copper-fullframe/target/release/libcalculon_fgn_bundle.so": "51d842aff4175ac30042d9bcfee193538cb4be3a75c2d69f79a9293cbd4b4cc6",
+          "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so": "db021461bfb05d41939e0db54e56620c3d7ae38e626763aee59110becd65f784",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator": "4930489f2655da4c33fdabc47ee96a7d051ea125e8492a8f1923c0ee0ed9580b",
+          "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4"
+        },
+        "errors": [
+          "PipeWireAO exited with 234; see daemon.log"
+        ],
+        "pipewire_provenance": {
+          "pipewire_mode": "build-tree",
+          "pipewire_daemon": "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/src/daemon/pipewire-ao",
+          "pipewire_daemon_sha256": "0349892cbf93e2fc4f8e5dd426d8c48df8dc34db4d722fe23b29c72caeb2cdb3",
+          "ndarray_filter_chain": "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/src/modules/libpipewire-module-ndarray-filter-chain.so",
+          "ndarray_filter_chain_sha256": "cc70dd112c643db7abcc6a733dabc862f62234df0e4c198d1b0eeb90e3bb604d",
+          "pipewire_support_spa": "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/spa/plugins/support/libspa-support.so",
+          "pipewire_support_spa_sha256": "c00708b68741f7254bb4e7a122d7265c6d8d2713fa55623662b70420f97e60c9",
+          "pipewire_client_library": "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/src/pipewire/libpipewire-ao-0.3.so",
+          "pipewire_client_library_sha256": "3dab9af4f4115fad77c70350d634e2731d43851333a085573757fdbce8933c2c",
+          "pipewire_root": "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers",
+          "pipewire_revision": "d130d3afac6e81519dad019629c7ba245e6de34c",
+          "pipewire_build_flags": {
+            "buildtype": "debugoptimized",
+            "optimization": "2",
+            "b_lto": false,
+            "c_args": [],
+            "cpp_args": []
+          }
+        },
+        "process_returncodes": [
+          234
+        ],
+        "source_counters": null
+      },
+      "daemon.log": ""
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-fgn-row-short-r3-20260930",
+      "report.json": {
+        "role": "fgn",
+        "receiver_mode": "row-block",
+        "frames": 7,
+        "rate_hz": 10,
+        "readout_us": 2000,
+        "rows_per_packet": 11,
+        "qualified": false,
+        "scope": "short live transport and numerical gate; not a capacity or tail-latency result",
+        "sha256": {
+          "/home/dgamroth/workspaces/codex/heart/revolt-rtc/sim_wfs_data/classic_wfs.fits": "ac5d14eb90de51924af61ac12915833e8ef5c1a1fdde2237b628b49f65fc9aca",
+          "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-copper-fullframe/target/release/libcalculon_fgn_bundle.so": "51d842aff4175ac30042d9bcfee193538cb4be3a75c2d69f79a9293cbd4b4cc6",
+          "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so": "db021461bfb05d41939e0db54e56620c3d7ae38e626763aee59110becd65f784",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator": "4930489f2655da4c33fdabc47ee96a7d051ea125e8492a8f1923c0ee0ed9580b",
+          "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4"
+        },
+        "errors": [
+          "command failed (1): /usr/bin/python3 /home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph-progressive-requal/benchmark/heart/qualify_copper_aos_capture.py --fits /home/dgamroth/workspaces/codex/heart/revolt-rtc/sim_wfs_data/classic_wfs.fits --frames 7 --period 0.1 --readout-us 2000 --lines 11 --wfs-packets /home/dgamroth/.cache/rtc-classic-fgn-row-short-r3-20260930/wfs-packets.tsv --dm-summary /home/dgamroth/.cache/rtc-classic-fgn-row-short-r3-20260930/dm-summary.json --dm-id-base 0 --summary /home/dgamroth/.cache/rtc-classic-fgn-row-short-r3-20260930/physical-summary.json\ncapture qualification failed; see /home/dgamroth/.cache/rtc-classic-fgn-row-short-r3-20260930/physical-summary.json\n"
+        ],
+        "pipewire_provenance": {
+          "pipewire_mode": "build-tree",
+          "pipewire_daemon": "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/src/daemon/pipewire-ao",
+          "pipewire_daemon_sha256": "0349892cbf93e2fc4f8e5dd426d8c48df8dc34db4d722fe23b29c72caeb2cdb3",
+          "ndarray_filter_chain": "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/src/modules/libpipewire-module-ndarray-filter-chain.so",
+          "ndarray_filter_chain_sha256": "cc70dd112c643db7abcc6a733dabc862f62234df0e4c198d1b0eeb90e3bb604d",
+          "pipewire_support_spa": "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/spa/plugins/support/libspa-support.so",
+          "pipewire_support_spa_sha256": "c00708b68741f7254bb4e7a122d7265c6d8d2713fa55623662b70420f97e60c9",
+          "pipewire_client_library": "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/src/pipewire/libpipewire-ao-0.3.so",
+          "pipewire_client_library_sha256": "3dab9af4f4115fad77c70350d634e2731d43851333a085573757fdbce8933c2c",
+          "pipewire_root": "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers",
+          "pipewire_revision": "d130d3afac6e81519dad019629c7ba245e6de34c",
+          "pipewire_build_flags": {
+            "buildtype": "debugoptimized",
+            "optimization": "2",
+            "b_lto": false,
+            "c_args": [],
+            "cpp_args": []
+          }
+        },
+        "source_command": [
+          "taskset",
+          "--cpu-list",
+          "14",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator",
+          "-file",
+          "input.fits",
+          "-tPort",
+          "6000",
+          "-period",
+          "0.1",
+          "-readout",
+          "2000",
+          "-lines",
+          "11",
+          "-numFrames",
+          "7"
+        ],
+        "process_returncodes": [
+          0,
+          0,
+          0
+        ],
+        "source_counters": {
+          "received": 224,
+          "rejected": 0,
+          "blocks": 224,
+          "frames": 7,
+          "dropped": 0,
+          "starvations": 0
+        }
+      },
+      "physical-summary.json": {
+        "fits": "/home/dgamroth/workspaces/codex/heart/revolt-rtc/sim_wfs_data/classic_wfs.fits",
+        "fits_width": 352,
+        "fits_height": 352,
+        "fits_frame_count": 7,
+        "requested_frames": 7,
+        "period_s": 0.1,
+        "readout_us": 2000.0,
+        "lines_per_datagram": 11,
+        "expected_wfs_packets": 224,
+        "expected_dm_commands": 7,
+        "captured_wfs_packets": 224,
+        "captured_wfs_frame_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "captured_dm_commands": 6,
+        "wfs_checksum_mode": "nop",
+        "wfs_payload_mismatch_packets": 0,
+        "dm_first_frame_id": 1,
+        "dm_last_frame_id": 6,
+        "dm_repeated_frame_ids": 0,
+        "dm_decreasing_frame_ids": 0,
+        "source_first_to_terminal_us": {
+          "count": 7,
+          "min": 1805.7823181152344,
+          "p50": 1869.20166015625,
+          "p99": 1887.2737884521484,
+          "max": 1888.275146484375
+        },
+        "source_first_packet_period_us": {
+          "count": 6,
+          "min": 99562.8833770752,
+          "p50": 99888.32473754883,
+          "p99": 100618.18361282349,
+          "max": 100640.05851745605
+        },
+        "first_wfs_packet_to_dm_us": null,
+        "terminal_wfs_packet_to_dm_us": null,
+        "qualified": false,
+        "errors": [
+          "DM commands: expected 7, captured 6",
+          "DM frame IDs: expected 0..6, captured [1, 2, 3, 4, 5, 6]"
+        ]
+      },
+      "daemon.log": "HEART_WFS_DIAG name=rtc-heart-wfs-row-source starts=1 stops=1 discarded_stopped=0 drained_start=0 received=224 rejected=0 blocks=224 frames=7 dropped=0 starvations=0\nHEART_DM_DIAG name=rtc-heart-std-dm-sink starts=1 stops=1 commands=6 rejected=0 datagrams=6 send_errors=0 first_seq=1 last_seq=6 have_seq=1\n",
+      "adapter.log": "CONNECT_ACCEPTED\nPREPARED\nADAPTER_CALLBACKS 6 MISSING_HEADERS 0\n"
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-fgn-row-short-readout20ms-r1-20260930",
+      "report.json": {
+        "role": "fgn",
+        "receiver_mode": "row-block",
+        "frames": 7,
+        "rate_hz": 10,
+        "readout_us": 20000,
+        "rows_per_packet": 11,
+        "qualified": false,
+        "scope": "short live transport and numerical gate; not a capacity or tail-latency result",
+        "sha256": {
+          "/home/dgamroth/workspaces/codex/heart/revolt-rtc/sim_wfs_data/classic_wfs.fits": "ac5d14eb90de51924af61ac12915833e8ef5c1a1fdde2237b628b49f65fc9aca",
+          "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-copper-fullframe/target/release/libcalculon_fgn_bundle.so": "51d842aff4175ac30042d9bcfee193538cb4be3a75c2d69f79a9293cbd4b4cc6",
+          "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so": "db021461bfb05d41939e0db54e56620c3d7ae38e626763aee59110becd65f784",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator": "4930489f2655da4c33fdabc47ee96a7d051ea125e8492a8f1923c0ee0ed9580b",
+          "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4"
+        },
+        "errors": [
+          "command failed (1): /usr/bin/python3 /home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph-progressive-requal/benchmark/heart/qualify_copper_aos_capture.py --fits /home/dgamroth/workspaces/codex/heart/revolt-rtc/sim_wfs_data/classic_wfs.fits --frames 7 --period 0.1 --readout-us 20000 --lines 11 --wfs-packets /home/dgamroth/.cache/rtc-classic-fgn-row-short-readout20ms-r1-20260930/wfs-packets.tsv --dm-summary /home/dgamroth/.cache/rtc-classic-fgn-row-short-readout20ms-r1-20260930/dm-summary.json --dm-id-base 0 --summary /home/dgamroth/.cache/rtc-classic-fgn-row-short-readout20ms-r1-20260930/physical-summary.json\ncapture qualification failed; see /home/dgamroth/.cache/rtc-classic-fgn-row-short-readout20ms-r1-20260930/physical-summary.json\n"
+        ],
+        "pipewire_provenance": {
+          "pipewire_mode": "build-tree",
+          "pipewire_daemon": "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/src/daemon/pipewire-ao",
+          "pipewire_daemon_sha256": "0349892cbf93e2fc4f8e5dd426d8c48df8dc34db4d722fe23b29c72caeb2cdb3",
+          "ndarray_filter_chain": "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/src/modules/libpipewire-module-ndarray-filter-chain.so",
+          "ndarray_filter_chain_sha256": "cc70dd112c643db7abcc6a733dabc862f62234df0e4c198d1b0eeb90e3bb604d",
+          "pipewire_support_spa": "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/spa/plugins/support/libspa-support.so",
+          "pipewire_support_spa_sha256": "c00708b68741f7254bb4e7a122d7265c6d8d2713fa55623662b70420f97e60c9",
+          "pipewire_client_library": "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/src/pipewire/libpipewire-ao-0.3.so",
+          "pipewire_client_library_sha256": "3dab9af4f4115fad77c70350d634e2731d43851333a085573757fdbce8933c2c",
+          "pipewire_root": "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers",
+          "pipewire_revision": "d130d3afac6e81519dad019629c7ba245e6de34c",
+          "pipewire_build_flags": {
+            "buildtype": "debugoptimized",
+            "optimization": "2",
+            "b_lto": false,
+            "c_args": [],
+            "cpp_args": []
+          }
+        },
+        "source_command": [
+          "taskset",
+          "--cpu-list",
+          "14",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator",
+          "-file",
+          "input.fits",
+          "-tPort",
+          "6000",
+          "-period",
+          "0.1",
+          "-readout",
+          "20000",
+          "-lines",
+          "11",
+          "-numFrames",
+          "7"
+        ],
+        "process_returncodes": [
+          0,
+          0,
+          0
+        ],
+        "source_counters": {
+          "received": 224,
+          "rejected": 0,
+          "blocks": 224,
+          "frames": 7,
+          "dropped": 0,
+          "starvations": 0
+        }
+      },
+      "physical-summary.json": {
+        "fits": "/home/dgamroth/workspaces/codex/heart/revolt-rtc/sim_wfs_data/classic_wfs.fits",
+        "fits_width": 352,
+        "fits_height": 352,
+        "fits_frame_count": 7,
+        "requested_frames": 7,
+        "period_s": 0.1,
+        "readout_us": 20000.0,
+        "lines_per_datagram": 11,
+        "expected_wfs_packets": 224,
+        "expected_dm_commands": 7,
+        "captured_wfs_packets": 224,
+        "captured_wfs_frame_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "captured_dm_commands": 6,
+        "wfs_checksum_mode": "nop",
+        "wfs_payload_mismatch_packets": 0,
+        "dm_first_frame_id": 1,
+        "dm_last_frame_id": 6,
+        "dm_repeated_frame_ids": 0,
+        "dm_decreasing_frame_ids": 0,
+        "source_first_to_terminal_us": {
+          "count": 7,
+          "min": 19243.00193786621,
+          "p50": 19305.22918701172,
+          "p99": 19309.47780609131,
+          "max": 19309.520721435547
+        },
+        "source_first_packet_period_us": {
+          "count": 6,
+          "min": 99624.6337890625,
+          "p50": 99991.20235443115,
+          "p99": 100365.5195236206,
+          "max": 100384.71221923828
+        },
+        "first_wfs_packet_to_dm_us": null,
+        "terminal_wfs_packet_to_dm_us": null,
+        "qualified": false,
+        "errors": [
+          "DM commands: expected 7, captured 6",
+          "DM frame IDs: expected 0..6, captured [1, 2, 3, 4, 5, 6]"
+        ]
+      },
+      "daemon.log": "HEART_WFS_DIAG name=rtc-heart-wfs-row-source starts=1 stops=1 discarded_stopped=0 drained_start=0 received=224 rejected=0 blocks=224 frames=7 dropped=0 starvations=0\nHEART_DM_DIAG name=rtc-heart-std-dm-sink starts=1 stops=1 commands=6 rejected=0 datagrams=6 send_errors=0 first_seq=1 last_seq=6 have_seq=1\n",
+      "adapter.log": "CONNECT_ACCEPTED\nPREPARED\nADAPTER_CALLBACKS 6 MISSING_HEADERS 0\n"
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-jfg-row-short-r1-20260930",
+      "report.json": {
+        "role": "jfg",
+        "receiver_mode": "row-block",
+        "frames": 7,
+        "rate_hz": 10,
+        "readout_us": 2000,
+        "rows_per_packet": 11,
+        "qualified": true,
+        "scope": "short live transport and numerical gate; not a capacity or tail-latency result",
+        "sha256": {
+          "/home/dgamroth/workspaces/codex/heart/revolt-rtc/sim_wfs_data/classic_wfs.fits": "ac5d14eb90de51924af61ac12915833e8ef5c1a1fdde2237b628b49f65fc9aca",
+          "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-copper-fullframe/target/release/libcalculon_fgn_bundle.so": "51d842aff4175ac30042d9bcfee193538cb4be3a75c2d69f79a9293cbd4b4cc6",
+          "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so": "db021461bfb05d41939e0db54e56620c3d7ae38e626763aee59110becd65f784",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator": "4930489f2655da4c33fdabc47ee96a7d051ea125e8492a8f1923c0ee0ed9580b",
+          "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4"
+        },
+        "errors": [],
+        "pipewire_provenance": {
+          "pipewire_mode": "build-tree",
+          "pipewire_daemon": "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/src/daemon/pipewire-ao",
+          "pipewire_daemon_sha256": "0349892cbf93e2fc4f8e5dd426d8c48df8dc34db4d722fe23b29c72caeb2cdb3",
+          "ndarray_filter_chain": "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/src/modules/libpipewire-module-ndarray-filter-chain.so",
+          "ndarray_filter_chain_sha256": "cc70dd112c643db7abcc6a733dabc862f62234df0e4c198d1b0eeb90e3bb604d",
+          "pipewire_support_spa": "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/spa/plugins/support/libspa-support.so",
+          "pipewire_support_spa_sha256": "c00708b68741f7254bb4e7a122d7265c6d8d2713fa55623662b70420f97e60c9",
+          "pipewire_client_library": "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/src/pipewire/libpipewire-ao-0.3.so",
+          "pipewire_client_library_sha256": "3dab9af4f4115fad77c70350d634e2731d43851333a085573757fdbce8933c2c",
+          "pipewire_root": "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers",
+          "pipewire_revision": "d130d3afac6e81519dad019629c7ba245e6de34c",
+          "pipewire_build_flags": {
+            "buildtype": "debugoptimized",
+            "optimization": "2",
+            "b_lto": false,
+            "c_args": [],
+            "cpp_args": []
+          }
+        },
+        "source_command": [
+          "taskset",
+          "--cpu-list",
+          "14",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator",
+          "-file",
+          "input.fits",
+          "-tPort",
+          "6000",
+          "-period",
+          "0.1",
+          "-readout",
+          "2000",
+          "-lines",
+          "11",
+          "-numFrames",
+          "7"
+        ],
+        "process_returncodes": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "source_counters": {
+          "received": 224,
+          "rejected": 0,
+          "blocks": 224,
+          "frames": 7,
+          "dropped": 0,
+          "starvations": 0
+        }
+      },
+      "physical-summary.json": {
+        "fits": "/home/dgamroth/workspaces/codex/heart/revolt-rtc/sim_wfs_data/classic_wfs.fits",
+        "fits_width": 352,
+        "fits_height": 352,
+        "fits_frame_count": 7,
+        "requested_frames": 7,
+        "period_s": 0.1,
+        "readout_us": 2000.0,
+        "lines_per_datagram": 11,
+        "expected_wfs_packets": 224,
+        "expected_dm_commands": 7,
+        "captured_wfs_packets": 224,
+        "captured_wfs_frame_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "captured_dm_commands": 7,
+        "wfs_checksum_mode": "nop",
+        "wfs_payload_mismatch_packets": 0,
+        "dm_first_frame_id": 0,
+        "dm_last_frame_id": 6,
+        "dm_repeated_frame_ids": 0,
+        "dm_decreasing_frame_ids": 0,
+        "source_first_to_terminal_us": {
+          "count": 7,
+          "min": 1823.6637115478516,
+          "p50": 1869.20166015625,
+          "p99": 1904.8261642456055,
+          "max": 1906.1565399169922
+        },
+        "source_first_packet_period_us": {
+          "count": 6,
+          "min": 99661.58866882324,
+          "p50": 100020.05100250244,
+          "p99": 100583.80365371704,
+          "max": 100593.09005737305
+        },
+        "first_wfs_packet_to_dm_us": {
+          "count": 7,
+          "min": 2562.7613067626953,
+          "p50": 2933.7406158447266,
+          "p99": 3290.3337478637695,
+          "max": 3304.4815063476562
+        },
+        "terminal_wfs_packet_to_dm_us": {
+          "count": 7,
+          "min": 656.6047668457031,
+          "p50": 1063.8236999511719,
+          "p99": 1409.9693298339844,
+          "max": 1420.4978942871094
+        },
+        "qualified": true,
+        "errors": []
+      },
+      "numerical-summary.json": {
+        "qualified": true,
+        "frames": 7,
+        "criterion": "abs <= 1e-6 OR abs/max(abs(actual),abs(expected),1) <= 1e-6; native microns",
+        "max_absolute_error_um": 2.682209014892578e-07,
+        "failed_values": 0,
+        "actual_values_at_limit": 0,
+        "expected_values_at_limit": 0,
+        "clipping_decision_mismatches": 0
+      },
+      "node-report.json": {
+        "applied_anti_windup_gain": 0.99,
+        "block_count": 224,
+        "boundary_layout": "row-major",
+        "callback_count": 224,
+        "callbacks_per_frame": 32,
+        "command_unit": "micron",
+        "controller_initial_state": "zero",
+        "feedback": {
+          "initial": "zero",
+          "input": "constraint-feedback",
+          "output": "controller-constraint-feedback",
+          "owner": "FilterGraphPipeWire.PreparedFeedbackBridge"
+        },
+        "feedback_bridge_failed": false,
+        "fifo_inputs": true,
+        "final_node_state": "NDARRAY_FILTER_STATE_STREAMING",
+        "fixture_directory": "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture",
+        "frame_count": null,
+        "frame_count_basis": "terminal commands require the external DM capture; callbacks count raw blocks",
+        "gain": -0.3,
+        "gc_diagnostic": {
+          "allocated_bytes": 4670464,
+          "collections": 0,
+          "pauses": 0,
+          "time_ns": 0
+        },
+        "gc_diagnostic_boundary": "after startup collection through connect, run and close; excludes report writing",
+        "graph_fixture": "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph-progressive-requal/fixtures/pipewire/rtc-classic-row-feedback.conf",
+        "graph_sha256": "e5d8ae5f9dec86089f704b120b84343334dd5ae079465e79570c50821ea55425",
+        "hidden_mode_gain": 0.0,
+        "julia_threads": 2,
+        "julia_version": "1.12.7",
+        "live_graph_configuration": "{\n    # Progressive 32-block REVOLT Classic in the calibration's native units.\n    # Load the prepared profile's parameter ports before processing frames.\n    # The host carries controller-constraint-feedback to constraint-feedback\n    # after each successful complete frame, with zero feedback at reset.\n    node.name = test-julia-rtc-classic-row-feedback\n    filter.graph = {\n        nodes = [\n            {\n                type = ndarray\n                name = pixel-calibration\n                label = pixel-calibration-row-u16-f32\n                config = {\n                    image_rows = 352\n                    image_columns = 352\n                    row_block_rows = 11\n                    initial_flat = null\n                    initial_background = null\n                }\n            }\n            {\n                type = ndarray\n                name = shack-hartmann\n                label = shack-hartmann-measurement-block-f32\n                config = {\n                    image_rows = 352\n                    image_columns = 352\n                    row_block_rows = 11\n                    subaperture_rows = 22\n                    subaperture_columns = 22\n                    subaperture_count = 188\n                    initial_subaperture_origins = null\n                    coordinate_scale = 1.0\n                    pixel_threshold = 20.0\n                    flux_threshold = 1000.0\n                    reference_slopes = null\n                    active = null\n                    measurements_schema = org.example.ao.measurement-block/1\n                    column_indices_schema = org.example.ao.reconstructor-column-indices/1\n                    measurement_count_schema = org.example.ao.measurement-block-count/1\n                }\n            }\n            {\n                type = ndarray\n                name = reconstruction\n                label = incremental-dense-reconstructor-f32\n                config = {\n                    measurement_count = 376\n                    measurement_block_capacity = 376\n                    blocks_per_sample = 32\n                    reconstructed_count = 221\n                    measurements_schema = org.example.ao.measurement-block/1\n                    column_indices_schema = org.example.ao.reconstructor-column-indices/1\n                    measurement_count_schema = org.example.ao.measurement-block-count/1\n                    reconstructor_schema = org.calculon.ao.shwfs-reconstructor/1\n                    initial_reconstructor = null\n                    reconstructed_schema = org.calculon.ao.controller-residual-error/1\n                }\n            }\n            {\n                type = ndarray\n                name = closed-loop-correction\n                label = closed-loop-correction-f32\n                config = { state_length = 221 hidden_mode_count = 1 }\n                props = {\n                    gain = -0.3\n                    pole = 0.99\n                    # CL-02: HEART's feedback order requires k_aw = pole.\n                    anti-windup-gain = 0.99\n                    hidden-mode-gain = 0.0\n                }\n            }\n            {\n                type = ndarray\n                name = controller-to-vdm\n                label = controller-to-vdm-f32\n                config = { controller_command_extent = 221 vdm_size = 221 }\n            }\n            {\n                type = ndarray\n                name = vdm-to-pdm\n                label = vdm-to-pdm-f32\n                config = {\n                    active_vdm_size = 221\n                    full_vdm_size = 277\n                    physical_actuator_extent = 277\n                }\n            }\n            {\n                type = ndarray\n                name = pdm-command\n                label = pdm-command-f32\n                config = {\n                    actuator_count = 277\n                    lower_limit = -0.8\n                    upper_limit = 0.8\n                    slew_limit = null\n                    slew_mode = independent\n                    initial_current = null\n                    quantization_origin = null\n                    quantization_step = null\n                    dither_seed = null\n                }\n            }\n            {\n                type = ndarray\n                name = pdm-feedback-to-vdm\n                label = pdm-feedback-to-vdm-f32\n                config = {\n                    active_vdm_size = 221\n                    full_vdm_size = 277\n                    physical_actuator_extent = 277\n                }\n            }\n            {\n                type = ndarray\n                name = vdm-feedback-to-controller\n                label = vdm-feedback-to-controller-f32\n                config = { controller_command_extent = 221 vdm_size = 221 }\n            }\n        ]\n        links = [\n            { output = \"pixel-calibration:calibrated\" input = \"shack-hartmann:row-block\" }\n            { output = \"shack-hartmann:measurements\" input = \"reconstruction:measurements\" }\n            { output = \"shack-hartmann:columns\" input = \"reconstruction:columns\" }\n            { output = \"shack-hartmann:count\" input = \"reconstruction:count\" }\n            { output = \"reconstruction:reconstructed\" input = \"closed-loop-correction:residual-error\" }\n            { output = \"closed-loop-correction:correction\" input = \"controller-to-vdm:controller-command\" }\n            { output = \"controller-to-vdm:vdm-command\" input = \"vdm-to-pdm:vdm-command\" }\n            { output = \"vdm-to-pdm:requested-pdm-command\" input = \"pdm-command:requested\" }\n            { output = \"pdm-command:constraint-feedback\" input = \"pdm-feedback-to-vdm:pdm-constraint-feedback\" }\n            { output = \"pdm-feedback-to-vdm:vdm-constraint-feedback\" input = \"vdm-feedback-to-controller:vdm-constraint-feedback\" }\n        ]\n        inputs = [\n            \"pixel-calibration:raw\"\n            \"closed-loop-correction:constraint-feedback\"\n            \"pixel-calibration:background\"\n            \"shack-hartmann:subaperture-origins\"\n            \"shack-hartmann:coordinates\"\n            \"shack-hartmann:reference-slopes\"\n            \"shack-hartmann:thresholds\"\n            \"shack-hartmann:active\"\n            \"reconstruction:reconstructor\"\n            \"closed-loop-correction:shape-to-hidden\"\n            \"closed-loop-correction:hidden-to-shape\"\n            \"controller-to-vdm:controller-to-vdm\"\n            \"vdm-to-pdm:active-to-full\"\n            \"vdm-to-pdm:vdm-to-pdm\"\n            \"pdm-feedback-to-vdm:full-to-active\"\n            \"pdm-feedback-to-vdm:pdm-to-vdm\"\n            \"vdm-feedback-to-controller:vdm-to-controller\"\n        ]\n        outputs = [\n            \"pdm-command:demanded\"\n            \"vdm-feedback-to-controller:controller-constraint-feedback\"\n        ]\n    }\n}\n",
+        "live_graph_sha256": "7f07395864f508fb405a64cfed67f7a16f40332a39d4cdee39e0dbd5d2a4c458",
+        "matrix_layout": "shared",
+        "mode": "row",
+        "name": "julia-revolt-classic-row",
+        "native_environment": {
+          "LD_LIBRARY_PATH": "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/src/pipewire:"
+        },
+        "node_reliable_requested": true,
+        "owner_start_warmup_metadata": "absent",
+        "parameter_ports": [
+          "background",
+          "subaperture-origins",
+          "coordinates",
+          "reference-slopes",
+          "thresholds",
+          "active",
+          "reconstructor",
+          "shape-to-hidden",
+          "hidden-to-shape",
+          "controller-to-vdm",
+          "active-to-full",
+          "vdm-to-pdm",
+          "full-to-active",
+          "pdm-to-vdm",
+          "vdm-to-controller"
+        ],
+        "parameter_sha256": {
+          "active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+          "active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+          "background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+          "calibrated_pixels.f32le": "1f98873b7a7209bf7b716384d16b7534f9561bfe1db4ed4bcff2d547b6f29737",
+          "controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+          "demanded_pdm_command.f32le": "0a7001484c05483eb23e6ee1a81f179dab398ed4188b908aae505b032718c008",
+          "dm_error.f32le": "bddd101f015d7cab79613713a3f0a14105ae85c9581499f800199fee8c155347",
+          "full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+          "pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+          "raw-frames.u16le": "1071336cb367f16ac030e5f0f80d8a978c0196088e6a48a9026371c170bf70cf",
+          "reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+          "reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+          "scalars.f32le": "efe6477371bc9a2f0e5240325af819aeaf1c988e8feb61790f34d82d0c29e1f2",
+          "shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+          "slopes.f32le": "2c750a5fb4cfd0f4cf25f39600eae1e7cc6a54201ac26aa2bbe672b239394710",
+          "subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+          "thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+          "vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+          "vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+          "vdm_command.f32le": "58e9ba4a81bb66edf22286a578e9b728f2e96e57895770e1300abe140c1c8fd6"
+        },
+        "pole": 0.99,
+        "prepared": true,
+        "prepared_profile": {
+          "clwc": {
+            "anti_windup_gain": 0.99,
+            "loop_gain": -0.3,
+            "pole": 0.99
+          },
+          "deformable_mirror": {
+            "controlled_vdm_size": 221,
+            "full_vdm_size": 277,
+            "pdm_size": 277
+          },
+          "detector": {
+            "frame_count": 7,
+            "frame_rate": [
+              10,
+              1
+            ],
+            "height": 352,
+            "width": 352
+          },
+          "pdm_limits": {
+            "lower": [
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8,
+              -0.8
+            ],
+            "upper": [
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8,
+              0.8
+            ]
+          },
+          "profile": {
+            "name": "REVOLT Classic simulated"
+          },
+          "reconstruction": {
+            "input": "slopes",
+            "output": "dm-error"
+          },
+          "schema_version": 1,
+          "shack_hartmann": {
+            "slope_layout": "interleaved",
+            "subaperture_count": 188,
+            "subaperture_height": 22,
+            "subaperture_origins": [
+              [
+                0,
+                132
+              ],
+              [
+                0,
+                154
+              ],
+              [
+                0,
+                176
+              ],
+              [
+                0,
+                198
+              ],
+              [
+                22,
+                88
+              ],
+              [
+                22,
+                110
+              ],
+              [
+                22,
+                132
+              ],
+              [
+                22,
+                154
+              ],
+              [
+                22,
+                176
+              ],
+              [
+                22,
+                198
+              ],
+              [
+                22,
+                220
+              ],
+              [
+                22,
+                242
+              ],
+              [
+                44,
+                66
+              ],
+              [
+                44,
+                88
+              ],
+              [
+                44,
+                110
+              ],
+              [
+                44,
+                132
+              ],
+              [
+                44,
+                154
+              ],
+              [
+                44,
+                176
+              ],
+              [
+                44,
+                198
+              ],
+              [
+                44,
+                220
+              ],
+              [
+                44,
+                242
+              ],
+              [
+                44,
+                264
+              ],
+              [
+                66,
+                44
+              ],
+              [
+                66,
+                66
+              ],
+              [
+                66,
+                88
+              ],
+              [
+                66,
+                110
+              ],
+              [
+                66,
+                132
+              ],
+              [
+                66,
+                154
+              ],
+              [
+                66,
+                176
+              ],
+              [
+                66,
+                198
+              ],
+              [
+                66,
+                220
+              ],
+              [
+                66,
+                242
+              ],
+              [
+                66,
+                264
+              ],
+              [
+                66,
+                286
+              ],
+              [
+                88,
+                22
+              ],
+              [
+                88,
+                44
+              ],
+              [
+                88,
+                66
+              ],
+              [
+                88,
+                88
+              ],
+              [
+                88,
+                110
+              ],
+              [
+                88,
+                132
+              ],
+              [
+                88,
+                154
+              ],
+              [
+                88,
+                176
+              ],
+              [
+                88,
+                198
+              ],
+              [
+                88,
+                220
+              ],
+              [
+                88,
+                242
+              ],
+              [
+                88,
+                264
+              ],
+              [
+                88,
+                286
+              ],
+              [
+                88,
+                308
+              ],
+              [
+                110,
+                22
+              ],
+              [
+                110,
+                44
+              ],
+              [
+                110,
+                66
+              ],
+              [
+                110,
+                88
+              ],
+              [
+                110,
+                110
+              ],
+              [
+                110,
+                132
+              ],
+              [
+                110,
+                154
+              ],
+              [
+                110,
+                176
+              ],
+              [
+                110,
+                198
+              ],
+              [
+                110,
+                220
+              ],
+              [
+                110,
+                242
+              ],
+              [
+                110,
+                264
+              ],
+              [
+                110,
+                286
+              ],
+              [
+                110,
+                308
+              ],
+              [
+                132,
+                0
+              ],
+              [
+                132,
+                22
+              ],
+              [
+                132,
+                44
+              ],
+              [
+                132,
+                66
+              ],
+              [
+                132,
+                88
+              ],
+              [
+                132,
+                110
+              ],
+              [
+                132,
+                132
+              ],
+              [
+                132,
+                154
+              ],
+              [
+                132,
+                176
+              ],
+              [
+                132,
+                198
+              ],
+              [
+                132,
+                220
+              ],
+              [
+                132,
+                242
+              ],
+              [
+                132,
+                264
+              ],
+              [
+                132,
+                286
+              ],
+              [
+                132,
+                308
+              ],
+              [
+                132,
+                330
+              ],
+              [
+                154,
+                0
+              ],
+              [
+                154,
+                22
+              ],
+              [
+                154,
+                44
+              ],
+              [
+                154,
+                66
+              ],
+              [
+                154,
+                88
+              ],
+              [
+                154,
+                110
+              ],
+              [
+                154,
+                132
+              ],
+              [
+                154,
+                154
+              ],
+              [
+                154,
+                176
+              ],
+              [
+                154,
+                198
+              ],
+              [
+                154,
+                220
+              ],
+              [
+                154,
+                242
+              ],
+              [
+                154,
+                264
+              ],
+              [
+                154,
+                286
+              ],
+              [
+                154,
+                308
+              ],
+              [
+                154,
+                330
+              ],
+              [
+                176,
+                0
+              ],
+              [
+                176,
+                22
+              ],
+              [
+                176,
+                44
+              ],
+              [
+                176,
+                66
+              ],
+              [
+                176,
+                88
+              ],
+              [
+                176,
+                110
+              ],
+              [
+                176,
+                132
+              ],
+              [
+                176,
+                154
+              ],
+              [
+                176,
+                176
+              ],
+              [
+                176,
+                198
+              ],
+              [
+                176,
+                220
+              ],
+              [
+                176,
+                242
+              ],
+              [
+                176,
+                264
+              ],
+              [
+                176,
+                286
+              ],
+              [
+                176,
+                308
+              ],
+              [
+                176,
+                330
+              ],
+              [
+                198,
+                0
+              ],
+              [
+                198,
+                22
+              ],
+              [
+                198,
+                44
+              ],
+              [
+                198,
+                66
+              ],
+              [
+                198,
+                88
+              ],
+              [
+                198,
+                110
+              ],
+              [
+                198,
+                132
+              ],
+              [
+                198,
+                154
+              ],
+              [
+                198,
+                176
+              ],
+              [
+                198,
+                198
+              ],
+              [
+                198,
+                220
+              ],
+              [
+                198,
+                242
+              ],
+              [
+                198,
+                264
+              ],
+              [
+                198,
+                286
+              ],
+              [
+                198,
+                308
+              ],
+              [
+                198,
+                330
+              ],
+              [
+                220,
+                22
+              ],
+              [
+                220,
+                44
+              ],
+              [
+                220,
+                66
+              ],
+              [
+                220,
+                88
+              ],
+              [
+                220,
+                110
+              ],
+              [
+                220,
+                132
+              ],
+              [
+                220,
+                154
+              ],
+              [
+                220,
+                176
+              ],
+              [
+                220,
+                198
+              ],
+              [
+                220,
+                220
+              ],
+              [
+                220,
+                242
+              ],
+              [
+                220,
+                264
+              ],
+              [
+                220,
+                286
+              ],
+              [
+                220,
+                308
+              ],
+              [
+                242,
+                22
+              ],
+              [
+                242,
+                44
+              ],
+              [
+                242,
+                66
+              ],
+              [
+                242,
+                88
+              ],
+              [
+                242,
+                110
+              ],
+              [
+                242,
+                132
+              ],
+              [
+                242,
+                154
+              ],
+              [
+                242,
+                176
+              ],
+              [
+                242,
+                198
+              ],
+              [
+                242,
+                220
+              ],
+              [
+                242,
+                242
+              ],
+              [
+                242,
+                264
+              ],
+              [
+                242,
+                286
+              ],
+              [
+                242,
+                308
+              ],
+              [
+                264,
+                44
+              ],
+              [
+                264,
+                66
+              ],
+              [
+                264,
+                88
+              ],
+              [
+                264,
+                110
+              ],
+              [
+                264,
+                132
+              ],
+              [
+                264,
+                154
+              ],
+              [
+                264,
+                176
+              ],
+              [
+                264,
+                198
+              ],
+              [
+                264,
+                220
+              ],
+              [
+                264,
+                242
+              ],
+              [
+                264,
+                264
+              ],
+              [
+                264,
+                286
+              ],
+              [
+                286,
+                66
+              ],
+              [
+                286,
+                88
+              ],
+              [
+                286,
+                110
+              ],
+              [
+                286,
+                132
+              ],
+              [
+                286,
+                154
+              ],
+              [
+                286,
+                176
+              ],
+              [
+                286,
+                198
+              ],
+              [
+                286,
+                220
+              ],
+              [
+                286,
+                242
+              ],
+              [
+                286,
+                264
+              ],
+              [
+                308,
+                88
+              ],
+              [
+                308,
+                110
+              ],
+              [
+                308,
+                132
+              ],
+              [
+                308,
+                154
+              ],
+              [
+                308,
+                176
+              ],
+              [
+                308,
+                198
+              ],
+              [
+                308,
+                220
+              ],
+              [
+                308,
+                242
+              ],
+              [
+                330,
+                132
+              ],
+              [
+                330,
+                154
+              ],
+              [
+                330,
+                176
+              ],
+              [
+                330,
+                198
+              ]
+            ],
+            "subaperture_width": 22
+          }
+        },
+        "prepared_profile_sha256": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4",
+        "public_data_inputs": [
+          "raw"
+        ],
+        "public_data_outputs": [
+          "demanded"
+        ],
+        "rate_hz": 10,
+        "remote": "pipewire-ao-0",
+        "requested_native_properties": "node.reliable = true",
+        "row_owner_start_warmup_limitation": "existing owner warmup returns the row calibration metadata-missing enum before sensing; the two explicit complete-frame array warmups do not qualify live borrowed-buffer allocation or GC",
+        "row_workers": 0,
+        "runtime": "developed Classic JFG row PipeWire",
+        "schema_version": 1,
+        "source_anti_windup_gain": 0.99,
+        "status": "stopped",
+        "stop_file": "/home/dgamroth/.cache/rtc-classic-jfg-row-short-r1-20260930/node.stop",
+        "stop_marker_observed": true,
+        "warmup_frames": 2
+      },
+      "daemon.log": "HEART_WFS_DIAG name=rtc-heart-wfs-row-source starts=1 stops=1 discarded_stopped=0 drained_start=0 received=224 rejected=0 blocks=224 frames=7 dropped=0 starvations=0\nHEART_DM_DIAG name=rtc-heart-std-dm-sink starts=1 stops=1 commands=7 rejected=0 datagrams=7 send_errors=0 first_seq=0 last_seq=6 have_seq=1\n",
+      "adapter.log": "CONNECT_ACCEPTED\nPREPARED\nADAPTER_CALLBACKS 7 MISSING_HEADERS 0\n"
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-fgn-row-short-fixed-r1-20260930",
+      "report.json": {
+        "role": "fgn",
+        "receiver_mode": "row-block",
+        "frames": 7,
+        "rate_hz": 10,
+        "readout_us": 2000,
+        "rows_per_packet": 11,
+        "qualified": true,
+        "scope": "short live transport and numerical gate; not a capacity or tail-latency result",
+        "sha256": {
+          "/home/dgamroth/workspaces/codex/heart/revolt-rtc/sim_wfs_data/classic_wfs.fits": "ac5d14eb90de51924af61ac12915833e8ef5c1a1fdde2237b628b49f65fc9aca",
+          "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so": "ebcc9295eba0e60f35422d5ce0761a23f91b1a8d56c97f65eb6330138f986ecd",
+          "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so": "db021461bfb05d41939e0db54e56620c3d7ae38e626763aee59110becd65f784",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator": "4930489f2655da4c33fdabc47ee96a7d051ea125e8492a8f1923c0ee0ed9580b",
+          "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4"
+        },
+        "errors": [],
+        "pipewire_provenance": {
+          "pipewire_mode": "installed-prefix",
+          "pipewire_daemon": "/home/dgamroth/.cache/rtc-classic-row-core-stage-20260930/usr/local/bin/pipewire-ao",
+          "pipewire_daemon_sha256": "562526499c26eca4dec345682c322bd4d73cbaedd024c70616ebb695776f9f22",
+          "ndarray_filter_chain": "/home/dgamroth/.cache/rtc-classic-row-core-stage-20260930/usr/local/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-ndarray-filter-chain.so",
+          "ndarray_filter_chain_sha256": "b542cb52348d32e16f032d3d1be8d61b64f6a1f30e3b33166e850c685d365bab",
+          "pipewire_support_spa": "/home/dgamroth/.cache/rtc-classic-row-core-stage-20260930/usr/local/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so",
+          "pipewire_support_spa_sha256": "c00708b68741f7254bb4e7a122d7265c6d8d2713fa55623662b70420f97e60c9",
+          "pipewire_client_library": "/home/dgamroth/.cache/rtc-classic-row-core-stage-20260930/usr/local/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so",
+          "pipewire_client_library_sha256": "3dab9af4f4115fad77c70350d634e2731d43851333a085573757fdbce8933c2c",
+          "pipewire_prefix": "/home/dgamroth/.cache/rtc-classic-row-core-stage-20260930/usr/local"
+        },
+        "source_command": [
+          "taskset",
+          "--cpu-list",
+          "14",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator",
+          "-file",
+          "input.fits",
+          "-tPort",
+          "6000",
+          "-period",
+          "0.1",
+          "-readout",
+          "2000",
+          "-lines",
+          "11",
+          "-numFrames",
+          "7"
+        ],
+        "process_returncodes": [
+          0,
+          0,
+          0
+        ],
+        "source_counters": {
+          "received": 224,
+          "rejected": 0,
+          "blocks": 224,
+          "frames": 7,
+          "dropped": 0,
+          "starvations": 0
+        }
+      },
+      "physical-summary.json": {
+        "fits": "/home/dgamroth/workspaces/codex/heart/revolt-rtc/sim_wfs_data/classic_wfs.fits",
+        "fits_width": 352,
+        "fits_height": 352,
+        "fits_frame_count": 7,
+        "requested_frames": 7,
+        "period_s": 0.1,
+        "readout_us": 2000.0,
+        "lines_per_datagram": 11,
+        "expected_wfs_packets": 224,
+        "expected_dm_commands": 7,
+        "captured_wfs_packets": 224,
+        "captured_wfs_frame_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "captured_dm_commands": 7,
+        "wfs_checksum_mode": "nop",
+        "wfs_payload_mismatch_packets": 0,
+        "dm_first_frame_id": 0,
+        "dm_last_frame_id": 6,
+        "dm_repeated_frame_ids": 0,
+        "dm_decreasing_frame_ids": 0,
+        "source_first_to_terminal_us": {
+          "count": 7,
+          "min": 1810.312271118164,
+          "p50": 1868.2479858398438,
+          "p99": 1882.2145462036133,
+          "max": 1882.314682006836
+        },
+        "source_first_packet_period_us": {
+          "count": 6,
+          "min": 99570.27435302734,
+          "p50": 100020.4086303711,
+          "p99": 100376.20067596436,
+          "max": 100391.38793945312
+        },
+        "first_wfs_packet_to_dm_us": {
+          "count": 7,
+          "min": 2012.491226196289,
+          "p50": 2268.3143615722656,
+          "p99": 2606.8973541259766,
+          "max": 2608.2992553710938
+        },
+        "terminal_wfs_packet_to_dm_us": {
+          "count": 7,
+          "min": 130.17654418945312,
+          "p50": 400.0663757324219,
+          "p99": 792.3650741577148,
+          "max": 797.9869842529297
+        },
+        "qualified": true,
+        "errors": []
+      },
+      "numerical-summary.json": {
+        "qualified": true,
+        "frames": 7,
+        "criterion": "abs <= 1e-6 OR abs/max(abs(actual),abs(expected),1) <= 1e-6; native microns",
+        "max_absolute_error_um": 1.1920928955078125e-07,
+        "failed_values": 0,
+        "actual_values_at_limit": 0,
+        "expected_values_at_limit": 0,
+        "clipping_decision_mismatches": 0
+      },
+      "daemon.log": "HEART_WFS_DIAG name=rtc-heart-wfs-row-source starts=1 stops=1 discarded_stopped=0 drained_start=0 received=224 rejected=0 blocks=224 frames=7 dropped=0 starvations=0\nHEART_DM_DIAG name=rtc-heart-std-dm-sink starts=1 stops=1 commands=7 rejected=0 datagrams=7 send_errors=0 first_seq=0 last_seq=6 have_seq=1\n",
+      "adapter.log": "CONNECT_ACCEPTED\nPREPARED\nADAPTER_CALLBACKS 7 MISSING_HEADERS 0\n"
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-fgn-row-release-short-r1-20260930",
+      "provenance": "retrospectively collected from preserved run artifacts after the run; not contemporaneously recorded in this document",
+      "report.json": {
+        "role": "fgn",
+        "receiver_mode": "row-block",
+        "frames": 7,
+        "rate_hz": 10,
+        "readout_us": 2000,
+        "rows_per_packet": 11,
+        "qualified": true,
+        "scope": "short live transport and numerical gate; not a capacity or tail-latency result",
+        "sha256": {
+          "/home/dgamroth/workspaces/codex/heart/revolt-rtc/sim_wfs_data/classic_wfs.fits": "ac5d14eb90de51924af61ac12915833e8ef5c1a1fdde2237b628b49f65fc9aca",
+          "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so": "ebcc9295eba0e60f35422d5ce0761a23f91b1a8d56c97f65eb6330138f986ecd",
+          "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so": "db021461bfb05d41939e0db54e56620c3d7ae38e626763aee59110becd65f784",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator": "4930489f2655da4c33fdabc47ee96a7d051ea125e8492a8f1923c0ee0ed9580b",
+          "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4"
+        },
+        "errors": [],
+        "pipewire_provenance": {
+          "pipewire_mode": "installed-prefix",
+          "pipewire_daemon": "/home/dgamroth/.cache/rtc-classic-row-core-release-stage-20260930/opt/pipewireao/bin/pipewire-ao",
+          "pipewire_daemon_sha256": "69873d8cdfc54d49a7ad16ee7c243cdf4f77eef895094eb445e4cb0d2b601783",
+          "ndarray_filter_chain": "/home/dgamroth/.cache/rtc-classic-row-core-release-stage-20260930/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-ndarray-filter-chain.so",
+          "ndarray_filter_chain_sha256": "461039dce0cd0d723afdd316afc5a80fb07e84731b53eb9fe37ddeeced252c02",
+          "pipewire_support_spa": "/home/dgamroth/.cache/rtc-classic-row-core-release-stage-20260930/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so",
+          "pipewire_support_spa_sha256": "49d108c51cd2fe0c6dad91fc507a7147d761a7ce2c77d2db3f5197e82aea902a",
+          "pipewire_client_library": "/home/dgamroth/.cache/rtc-classic-row-core-release-stage-20260930/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so",
+          "pipewire_client_library_sha256": "2514f1f329d6eaf8209ee41f5e07b2d31ad2e312549434e6c0020863d1045fc9",
+          "pipewire_prefix": "/home/dgamroth/.cache/rtc-classic-row-core-release-stage-20260930/opt/pipewireao"
+        },
+        "source_command": [
+          "taskset",
+          "--cpu-list",
+          "14",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator",
+          "-file",
+          "input.fits",
+          "-tPort",
+          "6000",
+          "-period",
+          "0.1",
+          "-readout",
+          "2000",
+          "-lines",
+          "11",
+          "-numFrames",
+          "7"
+        ],
+        "process_returncodes": [
+          0,
+          0,
+          0
+        ],
+        "source_counters": {
+          "received": 224,
+          "rejected": 0,
+          "blocks": 224,
+          "frames": 7,
+          "dropped": 0,
+          "starvations": 0
+        }
+      },
+      "physical-summary.json": {
+        "fits": "/home/dgamroth/workspaces/codex/heart/revolt-rtc/sim_wfs_data/classic_wfs.fits",
+        "fits_width": 352,
+        "fits_height": 352,
+        "fits_frame_count": 7,
+        "requested_frames": 7,
+        "period_s": 0.1,
+        "readout_us": 2000.0,
+        "lines_per_datagram": 11,
+        "expected_wfs_packets": 224,
+        "expected_dm_commands": 7,
+        "captured_wfs_packets": 224,
+        "captured_wfs_frame_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "captured_dm_commands": 7,
+        "wfs_checksum_mode": "nop",
+        "wfs_payload_mismatch_packets": 0,
+        "dm_first_frame_id": 0,
+        "dm_last_frame_id": 6,
+        "dm_repeated_frame_ids": 0,
+        "dm_decreasing_frame_ids": 0,
+        "source_first_to_terminal_us": {
+          "count": 7,
+          "min": 1865.6253814697266,
+          "p50": 1898.5271453857422,
+          "p99": 1907.486915588379,
+          "max": 1907.5870513916016
+        },
+        "source_first_packet_period_us": {
+          "count": 6,
+          "min": 99681.85424804688,
+          "p50": 100007.41481781006,
+          "p99": 100355.67283630371,
+          "max": 100373.50654602051
+        },
+        "first_wfs_packet_to_dm_us": {
+          "count": 7,
+          "min": 1975.2979278564453,
+          "p50": 1989.3646240234375,
+          "p99": 2669.696807861328,
+          "max": 2682.6858520507812
+        },
+        "terminal_wfs_packet_to_dm_us": {
+          "count": 7,
+          "min": 79.15496826171875,
+          "p50": 84.87701416015625,
+          "p99": 777.1778106689452,
+          "max": 788.4502410888672
+        },
+        "qualified": true,
+        "errors": []
+      },
+      "numerical-summary.json": {
+        "qualified": true,
+        "frames": 7,
+        "criterion": "abs <= 1e-6 OR abs/max(abs(actual),abs(expected),1) <= 1e-6; native microns",
+        "max_absolute_error_um": 1.1920928955078125e-07,
+        "failed_values": 0,
+        "actual_values_at_limit": 0,
+        "expected_values_at_limit": 0,
+        "clipping_decision_mismatches": 0
+      },
+      "daemon.log": "HEART_WFS_DIAG name=rtc-heart-wfs-row-source starts=1 stops=1 discarded_stopped=0 drained_start=0 received=224 rejected=0 blocks=224 frames=7 dropped=0 starvations=0\nHEART_DM_DIAG name=rtc-heart-std-dm-sink starts=1 stops=1 commands=7 rejected=0 datagrams=7 send_errors=0 first_seq=0 last_seq=6 have_seq=1\n"
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-jfg-row-release-short-r1-20260930",
+      "provenance": "retrospectively collected from preserved run artifacts after the run; not contemporaneously recorded in this document",
+      "report.json": {
+        "role": "jfg",
+        "receiver_mode": "row-block",
+        "frames": 7,
+        "rate_hz": 10,
+        "readout_us": 2000,
+        "rows_per_packet": 11,
+        "qualified": true,
+        "scope": "short live transport and numerical gate; not a capacity or tail-latency result",
+        "sha256": {
+          "/home/dgamroth/workspaces/codex/heart/revolt-rtc/sim_wfs_data/classic_wfs.fits": "ac5d14eb90de51924af61ac12915833e8ef5c1a1fdde2237b628b49f65fc9aca",
+          "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so": "ebcc9295eba0e60f35422d5ce0761a23f91b1a8d56c97f65eb6330138f986ecd",
+          "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so": "db021461bfb05d41939e0db54e56620c3d7ae38e626763aee59110becd65f784",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator": "4930489f2655da4c33fdabc47ee96a7d051ea125e8492a8f1923c0ee0ed9580b",
+          "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4"
+        },
+        "errors": [],
+        "pipewire_provenance": {
+          "pipewire_mode": "installed-prefix",
+          "pipewire_daemon": "/home/dgamroth/.cache/rtc-classic-row-core-release-stage-20260930/opt/pipewireao/bin/pipewire-ao",
+          "pipewire_daemon_sha256": "69873d8cdfc54d49a7ad16ee7c243cdf4f77eef895094eb445e4cb0d2b601783",
+          "ndarray_filter_chain": "/home/dgamroth/.cache/rtc-classic-row-core-release-stage-20260930/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-ndarray-filter-chain.so",
+          "ndarray_filter_chain_sha256": "461039dce0cd0d723afdd316afc5a80fb07e84731b53eb9fe37ddeeced252c02",
+          "pipewire_support_spa": "/home/dgamroth/.cache/rtc-classic-row-core-release-stage-20260930/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so",
+          "pipewire_support_spa_sha256": "49d108c51cd2fe0c6dad91fc507a7147d761a7ce2c77d2db3f5197e82aea902a",
+          "pipewire_client_library": "/home/dgamroth/.cache/rtc-classic-row-core-release-stage-20260930/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so",
+          "pipewire_client_library_sha256": "2514f1f329d6eaf8209ee41f5e07b2d31ad2e312549434e6c0020863d1045fc9",
+          "pipewire_prefix": "/home/dgamroth/.cache/rtc-classic-row-core-release-stage-20260930/opt/pipewireao"
+        },
+        "source_command": [
+          "taskset",
+          "--cpu-list",
+          "14",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator",
+          "-file",
+          "input.fits",
+          "-tPort",
+          "6000",
+          "-period",
+          "0.1",
+          "-readout",
+          "2000",
+          "-lines",
+          "11",
+          "-numFrames",
+          "7"
+        ],
+        "process_returncodes": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "source_counters": {
+          "received": 224,
+          "rejected": 0,
+          "blocks": 224,
+          "frames": 7,
+          "dropped": 0,
+          "starvations": 0
+        }
+      },
+      "physical-summary.json": {
+        "fits": "/home/dgamroth/workspaces/codex/heart/revolt-rtc/sim_wfs_data/classic_wfs.fits",
+        "fits_width": 352,
+        "fits_height": 352,
+        "fits_frame_count": 7,
+        "requested_frames": 7,
+        "period_s": 0.1,
+        "readout_us": 2000.0,
+        "lines_per_datagram": 11,
+        "expected_wfs_packets": 224,
+        "expected_dm_commands": 7,
+        "captured_wfs_packets": 224,
+        "captured_wfs_frame_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "captured_dm_commands": 7,
+        "wfs_checksum_mode": "nop",
+        "wfs_payload_mismatch_packets": 0,
+        "dm_first_frame_id": 0,
+        "dm_last_frame_id": 6,
+        "dm_repeated_frame_ids": 0,
+        "dm_decreasing_frame_ids": 0,
+        "source_first_to_terminal_us": {
+          "count": 7,
+          "min": 1808.4049224853516,
+          "p50": 1868.0095672607422,
+          "p99": 1878.9911270141602,
+          "max": 1879.6920776367188
+        },
+        "source_first_packet_period_us": {
+          "count": 6,
+          "min": 99452.73399353027,
+          "p50": 100048.54202270508,
+          "p99": 100397.51529693604,
+          "max": 100399.25575256348
+        },
+        "first_wfs_packet_to_dm_us": {
+          "count": 7,
+          "min": 2552.509307861328,
+          "p50": 2910.3755950927734,
+          "p99": 3520.798683166504,
+          "max": 3537.1780395507812
+        },
+        "terminal_wfs_packet_to_dm_us": {
+          "count": 7,
+          "min": 685.6918334960938,
+          "p50": 1045.4654693603516,
+          "p99": 1708.11653137207,
+          "max": 1728.7731170654297
+        },
+        "qualified": true,
+        "errors": []
+      },
+      "numerical-summary.json": {
+        "qualified": true,
+        "frames": 7,
+        "criterion": "abs <= 1e-6 OR abs/max(abs(actual),abs(expected),1) <= 1e-6; native microns",
+        "max_absolute_error_um": 2.682209014892578e-07,
+        "failed_values": 0,
+        "actual_values_at_limit": 0,
+        "expected_values_at_limit": 0,
+        "clipping_decision_mismatches": 0
+      },
+      "daemon.log": "HEART_WFS_DIAG name=rtc-heart-wfs-row-source starts=1 stops=1 discarded_stopped=0 drained_start=0 received=224 rejected=0 blocks=224 frames=7 dropped=0 starvations=0\nHEART_DM_DIAG name=rtc-heart-std-dm-sink starts=1 stops=1 commands=7 rejected=0 datagrams=7 send_errors=0 first_seq=0 last_seq=6 have_seq=1\n",
+      "node_report_summary": {
+        "name": "julia-revolt-classic-row",
+        "runtime": "developed Classic JFG row PipeWire",
+        "mode": "row",
+        "status": "stopped",
+        "row_workers": 0,
+        "block_count": 224,
+        "callback_count": 224,
+        "callbacks_per_frame": 32,
+        "warmup_frames": 2,
+        "owner_start_warmup_metadata": "absent",
+        "row_owner_start_warmup_limitation": "existing owner warmup returns the row calibration metadata-missing enum before sensing; the two explicit complete-frame array warmups do not qualify live borrowed-buffer allocation or GC",
+        "gc_diagnostic_boundary": "after startup collection through connect, run and close; excludes report writing"
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-fgn-row-opt-short-r1-20260930",
+      "provenance": "retrospectively collected from preserved run artifacts after the run; not contemporaneously recorded in this document",
+      "report.json": {
+        "role": "fgn",
+        "receiver_mode": "row-block",
+        "frames": 7,
+        "rate_hz": 10,
+        "readout_us": 2000,
+        "rows_per_packet": 11,
+        "qualified": true,
+        "scope": "short live transport and numerical gate; not a capacity or tail-latency result",
+        "sha256": {
+          "/home/dgamroth/workspaces/codex/heart/revolt-rtc/sim_wfs_data/classic_wfs.fits": "ac5d14eb90de51924af61ac12915833e8ef5c1a1fdde2237b628b49f65fc9aca",
+          "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so": "ebcc9295eba0e60f35422d5ce0761a23f91b1a8d56c97f65eb6330138f986ecd",
+          "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so": "db021461bfb05d41939e0db54e56620c3d7ae38e626763aee59110becd65f784",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator": "4930489f2655da4c33fdabc47ee96a7d051ea125e8492a8f1923c0ee0ed9580b",
+          "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4"
+        },
+        "parameter_sha256": {
+          "background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+          "subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+          "shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+          "reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+          "thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+          "active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+          "reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+          "controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+          "active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+          "vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+          "full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+          "pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+          "vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772"
+        },
+        "errors": [],
+        "pipewire_provenance": {
+          "pipewire_mode": "installed-prefix",
+          "pipewire_daemon": "/opt/pipewireao/bin/pipewire-ao",
+          "pipewire_daemon_sha256": "69873d8cdfc54d49a7ad16ee7c243cdf4f77eef895094eb445e4cb0d2b601783",
+          "ndarray_filter_chain": "/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-ndarray-filter-chain.so",
+          "ndarray_filter_chain_sha256": "461039dce0cd0d723afdd316afc5a80fb07e84731b53eb9fe37ddeeced252c02",
+          "pipewire_support_spa": "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so",
+          "pipewire_support_spa_sha256": "49d108c51cd2fe0c6dad91fc507a7147d761a7ce2c77d2db3f5197e82aea902a",
+          "pipewire_client_library": "/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so",
+          "pipewire_client_library_sha256": "2514f1f329d6eaf8209ee41f5e07b2d31ad2e312549434e6c0020863d1045fc9",
+          "pipewire_prefix": "/opt/pipewireao"
+        },
+        "daemon_configuration_sha256": "eb871894aedc5972c411d43a42175d98ad83ecd8ddc6dfd95cb70e5335e76dfb",
+        "resolved_graph_sha256": "5a74f4dfa7d0f58115a8265e47923155c366e068e136399a02bc30c527397f11",
+        "source_command": [
+          "taskset",
+          "--cpu-list",
+          "14",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator",
+          "-file",
+          "input.fits",
+          "-tPort",
+          "6000",
+          "-period",
+          "0.1",
+          "-readout",
+          "2000",
+          "-lines",
+          "11",
+          "-numFrames",
+          "7"
+        ],
+        "process_returncodes": [
+          0,
+          0,
+          0
+        ],
+        "source_counters": {
+          "received": 224,
+          "rejected": 0,
+          "blocks": 224,
+          "frames": 7,
+          "dropped": 0,
+          "starvations": 0
+        }
+      },
+      "physical-summary.json": {
+        "fits": "/home/dgamroth/workspaces/codex/heart/revolt-rtc/sim_wfs_data/classic_wfs.fits",
+        "fits_width": 352,
+        "fits_height": 352,
+        "fits_frame_count": 7,
+        "requested_frames": 7,
+        "period_s": 0.1,
+        "readout_us": 2000.0,
+        "lines_per_datagram": 11,
+        "expected_wfs_packets": 224,
+        "expected_dm_commands": 7,
+        "captured_wfs_packets": 224,
+        "captured_wfs_frame_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "captured_dm_commands": 7,
+        "wfs_checksum_mode": "nop",
+        "wfs_payload_mismatch_packets": 0,
+        "dm_first_frame_id": 0,
+        "dm_last_frame_id": 6,
+        "dm_repeated_frame_ids": 0,
+        "dm_decreasing_frame_ids": 0,
+        "source_first_to_terminal_us": {
+          "count": 7,
+          "min": 1801.2523651123047,
+          "p50": 1870.870590209961,
+          "p99": 1898.818016052246,
+          "max": 1899.71923828125
+        },
+        "source_first_packet_period_us": {
+          "count": 6,
+          "min": 99417.92488098145,
+          "p50": 99982.3808670044,
+          "p99": 100430.7508468628,
+          "max": 100447.8931427002
+        },
+        "first_wfs_packet_to_dm_us": {
+          "count": 7,
+          "min": 1968.1453704833984,
+          "p50": 2206.3255310058594,
+          "p99": 2469.2916870117188,
+          "max": 2479.7916412353516
+        },
+        "terminal_wfs_packet_to_dm_us": {
+          "count": 7,
+          "min": 84.63859558105469,
+          "p50": 366.44935607910156,
+          "p99": 598.5069274902343,
+          "max": 608.9210510253906
+        },
+        "qualified": true,
+        "errors": []
+      },
+      "numerical-summary.json": {
+        "qualified": true,
+        "frames": 7,
+        "criterion": "abs <= 1e-6 OR abs/max(abs(actual),abs(expected),1) <= 1e-6; native microns",
+        "max_absolute_error_um": 1.1920928955078125e-07,
+        "failed_values": 0,
+        "actual_values_at_limit": 0,
+        "expected_values_at_limit": 0,
+        "clipping_decision_mismatches": 0
+      },
+      "daemon.log": "HEART_WFS_DIAG name=rtc-heart-wfs-row-source starts=1 stops=1 discarded_stopped=0 drained_start=0 received=224 rejected=0 blocks=224 frames=7 dropped=0 starvations=0\nHEART_DM_DIAG name=rtc-heart-std-dm-sink starts=1 stops=1 commands=7 rejected=0 datagrams=7 send_errors=0 first_seq=0 last_seq=6 have_seq=1\n"
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-jfg-row-opt-short-r1-20260930",
+      "provenance": "retrospectively collected from preserved run artifacts after the run; not contemporaneously recorded in this document",
+      "report.json": {
+        "role": "jfg",
+        "receiver_mode": "row-block",
+        "frames": 7,
+        "rate_hz": 10,
+        "readout_us": 2000,
+        "rows_per_packet": 11,
+        "qualified": true,
+        "scope": "short live transport and numerical gate; not a capacity or tail-latency result",
+        "sha256": {
+          "/home/dgamroth/workspaces/codex/heart/revolt-rtc/sim_wfs_data/classic_wfs.fits": "ac5d14eb90de51924af61ac12915833e8ef5c1a1fdde2237b628b49f65fc9aca",
+          "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so": "ebcc9295eba0e60f35422d5ce0761a23f91b1a8d56c97f65eb6330138f986ecd",
+          "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so": "db021461bfb05d41939e0db54e56620c3d7ae38e626763aee59110becd65f784",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator": "4930489f2655da4c33fdabc47ee96a7d051ea125e8492a8f1923c0ee0ed9580b",
+          "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4"
+        },
+        "parameter_sha256": {
+          "background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+          "subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+          "shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+          "reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+          "thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+          "active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+          "reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+          "controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+          "active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+          "vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+          "full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+          "pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+          "vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772"
+        },
+        "errors": [],
+        "pipewire_provenance": {
+          "pipewire_mode": "installed-prefix",
+          "pipewire_daemon": "/opt/pipewireao/bin/pipewire-ao",
+          "pipewire_daemon_sha256": "69873d8cdfc54d49a7ad16ee7c243cdf4f77eef895094eb445e4cb0d2b601783",
+          "ndarray_filter_chain": "/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-ndarray-filter-chain.so",
+          "ndarray_filter_chain_sha256": "461039dce0cd0d723afdd316afc5a80fb07e84731b53eb9fe37ddeeced252c02",
+          "pipewire_support_spa": "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so",
+          "pipewire_support_spa_sha256": "49d108c51cd2fe0c6dad91fc507a7147d761a7ce2c77d2db3f5197e82aea902a",
+          "pipewire_client_library": "/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so",
+          "pipewire_client_library_sha256": "2514f1f329d6eaf8209ee41f5e07b2d31ad2e312549434e6c0020863d1045fc9",
+          "pipewire_prefix": "/opt/pipewireao"
+        },
+        "daemon_configuration_sha256": "69f8751179d6af5943a08177e76b51c8446455d42278ac67ff4ec26d422ab79a",
+        "source_command": [
+          "taskset",
+          "--cpu-list",
+          "14",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator",
+          "-file",
+          "input.fits",
+          "-tPort",
+          "6000",
+          "-period",
+          "0.1",
+          "-readout",
+          "2000",
+          "-lines",
+          "11",
+          "-numFrames",
+          "7"
+        ],
+        "process_returncodes": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "source_counters": {
+          "received": 224,
+          "rejected": 0,
+          "blocks": 224,
+          "frames": 7,
+          "dropped": 0,
+          "starvations": 0
+        }
+      },
+      "physical-summary.json": {
+        "fits": "/home/dgamroth/workspaces/codex/heart/revolt-rtc/sim_wfs_data/classic_wfs.fits",
+        "fits_width": 352,
+        "fits_height": 352,
+        "fits_frame_count": 7,
+        "requested_frames": 7,
+        "period_s": 0.1,
+        "readout_us": 2000.0,
+        "lines_per_datagram": 11,
+        "expected_wfs_packets": 224,
+        "expected_dm_commands": 7,
+        "captured_wfs_packets": 224,
+        "captured_wfs_frame_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "captured_dm_commands": 7,
+        "wfs_checksum_mode": "nop",
+        "wfs_payload_mismatch_packets": 0,
+        "dm_first_frame_id": 0,
+        "dm_last_frame_id": 6,
+        "dm_repeated_frame_ids": 0,
+        "dm_decreasing_frame_ids": 0,
+        "source_first_to_terminal_us": {
+          "count": 7,
+          "min": 1824.6173858642578,
+          "p50": 1883.7451934814453,
+          "p99": 1898.5462188720703,
+          "max": 1899.0039825439453
+        },
+        "source_first_packet_period_us": {
+          "count": 6,
+          "min": 99267.24433898926,
+          "p50": 100093.72234344482,
+          "p99": 100975.51345825195,
+          "max": 101013.4220123291
+        },
+        "first_wfs_packet_to_dm_us": {
+          "count": 7,
+          "min": 2421.140670776367,
+          "p50": 2813.8160705566406,
+          "p99": 3080.46817779541,
+          "max": 3082.5138092041016
+        },
+        "terminal_wfs_packet_to_dm_us": {
+          "count": 7,
+          "min": 529.7660827636719,
+          "p50": 914.8120880126953,
+          "p99": 1223.7167358398438,
+          "max": 1223.8025665283203
+        },
+        "qualified": true,
+        "errors": []
+      },
+      "numerical-summary.json": {
+        "qualified": true,
+        "frames": 7,
+        "criterion": "abs <= 1e-6 OR abs/max(abs(actual),abs(expected),1) <= 1e-6; native microns",
+        "max_absolute_error_um": 2.682209014892578e-07,
+        "failed_values": 0,
+        "actual_values_at_limit": 0,
+        "expected_values_at_limit": 0,
+        "clipping_decision_mismatches": 0
+      },
+      "daemon.log": "HEART_WFS_DIAG name=rtc-heart-wfs-row-source starts=1 stops=1 discarded_stopped=0 drained_start=0 received=224 rejected=0 blocks=224 frames=7 dropped=0 starvations=0\nHEART_DM_DIAG name=rtc-heart-std-dm-sink starts=1 stops=1 commands=7 rejected=0 datagrams=7 send_errors=0 first_seq=0 last_seq=6 have_seq=1\n",
+      "node_report_summary": {
+        "name": "julia-revolt-classic-row",
+        "runtime": "developed Classic JFG row PipeWire",
+        "mode": "row",
+        "status": "stopped",
+        "row_workers": 0,
+        "block_count": 224,
+        "callback_count": 224,
+        "callbacks_per_frame": 32,
+        "warmup_frames": 2,
+        "owner_start_warmup_metadata": "absent",
+        "row_owner_start_warmup_limitation": "existing owner warmup returns the row calibration metadata-missing enum before sensing; the two explicit complete-frame array warmups do not qualify live borrowed-buffer allocation or GC",
+        "gc_diagnostic_boundary": "after startup collection through connect, run and close; excludes report writing"
+      }
+    }
+  ],
+  "regressions": {
+    "/tmp/classic-row-buffers-reviewed-fail-before-20260930.log": "ninja: Entering directory `/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build'\n[1/20] Compiling C object src/pipewire/libpipewire-ao-0.3.so.0.1700.0.p/ndarray-filter.c.o\n[2/20] Linking target src/pipewire/libpipewire-ao-0.3.so.0.1700.0\n[3/20] Generating symbol file src/pipewire/libpipewire-ao-0.3.so.0.1700.0.p/libpipewire-ao-0.3.so.0.1700.0.symbols\n1/1 pw-test-ndarray-filter-buffers32 FAIL            5.07s   exit status 1\n>>> PIPEWIREAO_CONFIG_DIR=/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/src/pipewire/../daemon PIPEWIREAO_SPA_PLUGIN_DIR=/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/spa/plugins MESON_TEST_ITERATION=1 ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 MALLOC_PERTURB_=20 LD_LIBRARY_PATH=/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/spa/plugins/support:/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/src/modules:/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/src/pipewire PIPEWIREAO_MODULE_DIR=/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/src/pipewire/../modules /usr/bin/python3 /home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/../src/tests/test-ndarray-filter-remote.py /home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/src/daemon/pipewire-ao /home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/src/tools/pwao-link /home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/src/tests/pw-test-ndarray-filter-remote-filter /home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/src/tests/pw-test-ndarray-filter-remote-client --buffers32\n\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015 \u2700  \u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\nstderr:\nconnected ndarray retention test failed: timed out waiting for client to report 'STREAMING'\n--- daemon.log\n[W][3262664][03:47:16.740048] pw.context   | [       context.c:  548 pw_context_new()] 0x562bba6e3c90: can't load dbus library: support/libspa-dbus\n[E][3262664][03:47:16.765368] pw.context   | [       context.c:  983 pw_context_debug_port_params()] params Spa:Enum:ParamId:Buffers: 0:0 Invalid argument (input param)\n[E][3262664][03:47:16.765377] pw.context   | [       context.c: 1002 pw_context_debug_port_params()] Object: size 168, type Spa:Pod:Object:Param:Buffers (262148), id Spa:Enum:ParamId:Buffers (5)\n[E][3262664][03:47:16.765379] pw.context   | [       context.c: 1002 pw_context_debug_port_params()]   Prop: key Spa:Pod:Object:Param:Buffers:buffers (1), flags 00000000\n[E][3262664][03:47:16.765381] pw.context   | [       context.c: 1002 pw_context_debug_port_params()]     Choice: type Spa:Enum:Choice:Range, flags 00000000 28 4\n[E][3262664][03:47:16.765383] pw.context   | [       context.c: 1002 pw_context_debug_port_params()]       Int 4\n[E][3262664][03:47:16.765385] pw.context   | [       context.c: 1002 pw_context_debug_port_params()]       Int 2\n[E][3262664][03:47:16.765386] pw.context   | [       context.c: 1002 pw_context_debug_port_params()]       Int 16\n[E][3262664][03:47:16.765387] pw.context   | [       context.c: 1002 pw_context_debug_port_params()]   Prop: key Spa:Pod:Object:Param:Buffers:blocks (2), flags 00000000\n[E][3262664][03:47:16.765388] pw.context   | [       context.c: 1002 pw_context_debug_port_params()]     Int 1\n[E][3262664][03:47:16.765389] pw.context   | [       context.c: 1002 pw_context_debug_port_params()]   Prop: key Spa:Pod:Object:Param:Buffers:BlockInfo:size (3), flags 00000000\n[E][3262664][03:47:16.765391] pw.context   | [       context.c: 1002 pw_context_debug_port_params()]     Int 4\n[E][3262664][03:47:16.765392] pw.context   | [       context.c: 1002 pw_context_debug_port_params()]   Prop: key Spa:Pod:Object:Param:Buffers:BlockInfo:stride (4), flags 00000000\n[E][3262664][03:47:16.765393] pw.context   | [       context.c: 1002 pw_context_debug_port_params()]     Int 4\n[E][3262664][03:47:16.765394] pw.context   | [       context.c: 1002 pw_context_debug_port_params()]   Prop: key Spa:Pod:Object:Param:Buffers:BlockInfo:dataType (6), flags 00000000\n[E][3262664][03:47:16.765395] pw.context   | [       context.c: 1002 pw_context_debug_port_params()]     Choice: type Spa:Enum:Choice:Flags, flags 00000000 20 4\n[E][3262664][03:47:16.765397] pw.context   | [       context.c: 1002 pw_context_debug_port_params()]       Int 6\n[E][3262664][03:47:16.765398] pw.context   | [       context.c:  983 pw_context_debug_port_params()] params Spa:Enum:ParamId:Buffers: 1:0 Invalid argument (output param)\n[E][3262664][03:47:16.765400] pw.context   | [       context.c: 1002 pw_context_debug_port_params()] Object: size 144, type Spa:Pod:Object:Param:Buffers (262148), id Spa:Enum:ParamId:Buffers (5)\n[E][3262664][03:47:16.765402] pw.context   | [       context.c: 1002 pw_context_debug_port_params()]   Prop: key Spa:Pod:Object:Param:Buffers:buffers (1), flags 00000000\n[E][3262664][03:47:16.765403] pw.context   | [       context.c: 1002 pw_context_debug_port_params()]     Int 32\n[E][3262664][03:47:16.765404] pw.context   | [       context.c: 1002 pw_context_debug_port_params()]   Prop: key Spa:Pod:Object:Param:Buffers:blocks (2), flags 00000000\n[E][3262664][03:47:16.765405] pw.context   | [       context.c: 1002 pw_context_debug_port_params()]     Int 1\n[E][3262664][03:47:16.765407] pw.context   | [       context.c: 1002 pw_context_debug_port_params()]   Prop: key Spa:Pod:Object:Param:Buffers:BlockInfo:size (3), flags 00000000\n[E][3262664][03:47:16.765408] pw.context   | [       context.c: 1002 pw_context_debug_port_params()]     Int 4\n[E][3262664][03:47:16.765409] pw.context   | [       context.c: 1002 pw_context_debug_port_params()]   Prop: key Spa:Pod:Object:Param:Buffers:BlockInfo:stride (4), flags 00000000\n[E][3262664][03:47:16.765410] pw.context   | [       context.c: 1002 pw_context_debug_port_params()]     Int 4\n[E][3262664][03:47:16.765411] pw.context   | [       context.c: 1002 pw_context_debug_port_params()]   Prop: key Spa:Pod:Object:Param:Buffers:BlockInfo:dataType (6), flags 00000000\n[E][3262664][03:47:16.765416] pw.context   | [       context.c: 1002 pw_context_debug_port_params()]     Choice: type Spa:Enum:Choice:Flags, flags 00000000 20 4\n[E][3262664][03:47:16.765418] pw.context   | [       context.c: 1002 pw_context_debug_port_params()]       Int 2\n[E][3262664][03:47:16.765421] pw.link      | [     impl-link.c:  107 link_update_state()] (37.0.0 -> 34.0.0) allocating -> error error alloc buffers: Invalid argument (-22) (ready-ready)\n\n--- filter.log\nREADY\nPREPARED\n\n--- client.log\nREADY\n\n\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\n\n\nSummary of Failures:\n\n1/1 pw-test-ndarray-filter-buffers32 FAIL            5.07s   exit status 1\n\nOk:                 0   \nExpected Fail:      0   \nFail:               1   \nUnexpected Pass:    0   \nSkipped:            0   \nTimeout:            0   \n\nFull log written to /home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/meson-logs/testlog.txt\n",
+    "/tmp/classic-row-buffers-reviewed-pass-after-20260930.log": "ninja: Entering directory `/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build'\n[1/20] Compiling C object src/pipewire/libpipewire-ao-0.3.so.0.1700.0.p/ndarray-filter.c.o\n[2/20] Linking target src/pipewire/libpipewire-ao-0.3.so.0.1700.0\n[3/20] Generating symbol file src/pipewire/libpipewire-ao-0.3.so.0.1700.0.p/libpipewire-ao-0.3.so.0.1700.0.symbols\n1/3 pw-test-ndarray-filter-remote    OK              0.07s\n2/3 pw-test-ndarray-filter-fifo      OK              0.07s\n3/3 pw-test-ndarray-filter-buffers32 OK              0.07s\n\nOk:                 3   \nExpected Fail:      0   \nFail:               0   \nUnexpected Pass:    0   \nSkipped:            0   \nTimeout:            0   \n\nFull log written to /home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/meson-logs/testlog.txt\n",
+    "/tmp/classic-calibration-row-fail-before-20260930.log": "   Compiling calculon-algorithms v0.1.0 (/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-progressive-requal/crates/calculon-algorithms)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.18s\n     Running tests/pixel_calibration.rs (/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-copper-fullframe/target/debug/deps/pixel_calibration-957c08d599964ad8)\n\nrunning 2 tests\ntest row_calibration_consumes_pending_discontinuity_after_reset ... FAILED\ntest row_calibration_consumes_pending_discontinuity_after_plan_adoption ... FAILED\n\nfailures:\n\n---- row_calibration_consumes_pending_discontinuity_after_reset stdout ----\n\nthread 'row_calibration_consumes_pending_discontinuity_after_reset' (3264883) panicked at crates/calculon-algorithms/tests/pixel_calibration.rs:544:9:\nassertion `left == right` failed: reset=true, block=1\n  left: Complete { metadata: Some(SampleMetadata { sequence: 41, offset: 2, timestamp_nanoseconds: None, terminal: false, discontinuity: true, corrupted: false }) }\n right: Complete { metadata: Some(SampleMetadata { sequence: 41, offset: 2, timestamp_nanoseconds: None, terminal: false, discontinuity: false, corrupted: false }) }\n\n---- row_calibration_consumes_pending_discontinuity_after_plan_adoption stdout ----\n\nthread 'row_calibration_consumes_pending_discontinuity_after_plan_adoption' (3264882) panicked at crates/calculon-algorithms/tests/pixel_calibration.rs:544:9:\nassertion `left == right` failed: reset=false, block=1\n  left: Complete { metadata: Some(SampleMetadata { sequence: 41, offset: 2, timestamp_nanoseconds: None, terminal: false, discontinuity: true, corrupted: false }) }\n right: Complete { metadata: Some(SampleMetadata { sequence: 41, offset: 2, timestamp_nanoseconds: None, terminal: false, discontinuity: false, corrupted: false }) }\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    row_calibration_consumes_pending_discontinuity_after_plan_adoption\n    row_calibration_consumes_pending_discontinuity_after_reset\n\ntest result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.00s\n\nerror: test failed, to rerun pass `-p calculon-algorithms --test pixel_calibration`\n",
+    "/tmp/classic-calibration-readout-fail-before-20260930.log": "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.01s\n     Running tests/detector_readout_declaration.rs (/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-copper-fullframe/target/debug/deps/detector_readout_declaration-fb7e4c16cc6049e7)\n\nrunning 2 tests\ntest readout_calibration_consumes_pending_discontinuity_after_plan_adoption ... FAILED\ntest readout_calibration_consumes_pending_discontinuity_after_reset ... FAILED\n\nfailures:\n\n---- readout_calibration_consumes_pending_discontinuity_after_plan_adoption stdout ----\n\nthread 'readout_calibration_consumes_pending_discontinuity_after_plan_adoption' (3264894) panicked at crates/calculon-algorithms/tests/detector_readout_declaration.rs:245:9:\nassertion `left == right` failed: reset=false, ordinal=1\n  left: Complete { metadata: Some(SampleMetadata { sequence: 41, offset: 1, timestamp_nanoseconds: None, terminal: false, discontinuity: true, corrupted: false }) }\n right: Complete { metadata: Some(SampleMetadata { sequence: 41, offset: 1, timestamp_nanoseconds: None, terminal: false, discontinuity: false, corrupted: false }) }\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n---- readout_calibration_consumes_pending_discontinuity_after_reset stdout ----\n\nthread 'readout_calibration_consumes_pending_discontinuity_after_reset' (3264895) panicked at crates/calculon-algorithms/tests/detector_readout_declaration.rs:245:9:\nassertion `left == right` failed: reset=true, ordinal=1\n  left: Complete { metadata: Some(SampleMetadata { sequence: 41, offset: 1, timestamp_nanoseconds: None, terminal: false, discontinuity: true, corrupted: false }) }\n right: Complete { metadata: Some(SampleMetadata { sequence: 41, offset: 1, timestamp_nanoseconds: None, terminal: false, discontinuity: false, corrupted: false }) }\n\n\nfailures:\n    readout_calibration_consumes_pending_discontinuity_after_plan_adoption\n    readout_calibration_consumes_pending_discontinuity_after_reset\n\ntest result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s\n\nerror: test failed, to rerun pass `-p calculon-algorithms --test detector_readout_declaration`\n",
+    "/tmp/classic-calibration-pass-after-full-sequence0-20260930.log": "   Compiling calculon-algorithms v0.1.0 (/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-progressive-requal/crates/calculon-algorithms)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.22s\n     Running tests/detector_readout_declaration.rs (/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-copper-fullframe/target/debug/deps/detector_readout_declaration-fb7e4c16cc6049e7)\n\nrunning 4 tests\ntest readout_calibration_consumes_pending_discontinuity_after_reset ... ok\ntest calibration_and_assembly_declarations_preserve_rank_three_identity ... ok\ntest readout_calibration_consumes_pending_discontinuity_after_plan_adoption ... ok\ntest progressive_wfs_declarations_publish_only_at_terminal ... ok\n\ntest result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n     Running tests/pixel_calibration.rs (/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-copper-fullframe/target/debug/deps/pixel_calibration-957c08d599964ad8)\n\nrunning 16 tests\ntest complete_processing_follows_the_prepared_equation ... ok\ntest declaration_defaults_to_identity_calibration_planes ... ok\ntest declaration_preserves_mixed_elements_and_named_calibration_planes ... ok\ntest extent_and_sequence_errors_precede_mutation ... ok\ntest independent_windows_use_detector_calibration_indices ... ok\ntest declaration_rejects_overflow_and_initial_plane_mismatches ... ok\ntest native_parameter_transaction_is_failure_atomic ... ok\ntest preparation_requires_finite_equal_nonempty_arrays ... ok\ntest progressive_processing_reports_immutable_pixel_prefixes ... ok\ntest range_local_output_extent_is_checked_before_mutation ... ok\ntest range_local_output_preserves_the_published_prefix ... ok\ntest row_calibration_consumes_pending_discontinuity_after_plan_adoption ... ok\ntest row_calibration_consumes_pending_discontinuity_after_reset ... ok\ntest row_declaration_preserves_identity_rate_and_plan_change_discontinuity ... ok\ntest row_declaration_rejects_invalid_quantum_and_metadata ... ok\ntest selected_float_and_raw_representations_are_preserved ... ok\n\ntest result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n",
+    "/tmp/classic-row-core-all-ndarray-final-20260930.log": "ninja: Entering directory `/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build'\n[1/2] Compiling C object src/tests/pw-test-ndarray-filter-remote-client.p/test-ndarray-filter-remote-client.c.o\n[2/2] Linking target src/tests/pw-test-ndarray-filter-remote-client\n 1/16 spa-filter-graph-ndarray-c                  OK              0.05s\n 2/16 spa-filter-graph-ndarray-retained-c         OK              0.05s\n 3/16 spa-filter-graph-ndarray-rust               OK              0.05s\n 4/16 pw-test-ndarray-filter                      OK              0.05s\n 5/16 pw-test-ndarray-filter-admission            OK              0.04s\n 6/16 pw-test-ndarray-filter-publication          OK              0.04s\n 7/16 pw-test-ndarray-filter-chain-parameter      OK              0.04s\n 8/16 pw-test-ndarray-filter-chain-feedback       OK              0.02s\n 9/16 pw-test-ndarray-filter-remote               OK              0.07s\n10/16 pw-test-ndarray-filter-props                OK              0.06s\n11/16 pw-test-ndarray-filter-fifo                 OK              0.07s\n12/16 pw-test-ndarray-filter-parameter            OK              0.07s\n13/16 pw-test-ndarray-filter-buffers32            OK              0.07s\n14/16 pw-test-ndarray-filter-chain-teardown       OK              0.06s\n15/16 pw-test-ndarray-filter-chain-props          OK              0.10s\n16/16 pw-test-ndarray-filter-chain-buffer-removal OK              0.20s\n\nOk:                 16  \nExpected Fail:      0   \nFail:               0   \nUnexpected Pass:    0   \nSkipped:            0   \nTimeout:            0   \n\nFull log written to /home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/meson-logs/testlog.txt\n"
+  },
+  "row_success": {
+    "jfg": true,
+    "fgn": true
+  },
+  "array_row_comparison": {
+    "dm_error.f32le": {
+      "max_absolute_error": 2.086162567138672e-07,
+      "max_scaled_error": 2.086162567138672e-07,
+      "failed_values": 0
+    },
+    "vdm_command.f32le": {
+      "max_absolute_error": 1.7881393432617188e-07,
+      "max_scaled_error": 1.7881393432617188e-07,
+      "failed_values": 0
+    },
+    "demanded_pdm_command.f32le": {
+      "max_absolute_error": 2.682209014892578e-07,
+      "max_scaled_error": 2.682209014892578e-07,
+      "failed_values": 0
+    },
+    "controller_constraint_feedback": {
+      "nonzero_values": 0
+    },
+    "criterion": "abs <= 1e-6 OR abs / max(abs(actual), abs(expected), 1) <= 1e-6",
+    "scope": "first seven exported Rust frames from reset; no claim about long sequence"
+  },
+  "release_evidence": {
+    "provenance": "Retrospectively collected from cache artifacts, current repository HEADs, deployed files, and the preserved test log. Earlier attempt entries are retained as recorded in the original artifact; they are historical records.",
+    "commits": {
+      "pipewireao_core": "a4de38e0d7257d98e5c03c51f248f84e6a822c26",
+      "julia_filter_graph": "8b608e6226db680ee5690a387f17d1473f5aeef4",
+      "calculon_algorithms": "54d8b1847d7913f532e1d48ceba2429eb2499055",
+      "pipewireao_rtc_runner": "e7e266af728bb201b1bc03e9d42fc3c8d87b0596"
+    },
+    "fgn_bundle": {
+      "path": "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so",
+      "sha256": "ebcc9295eba0e60f35422d5ce0761a23f91b1a8d56c97f65eb6330138f986ecd"
+    },
+    "installed_pipewireao_prefix": "/opt/pipewireao",
+    "installed_pipewireao_files": {
+      "/opt/pipewireao/bin/pipewire-ao": "69873d8cdfc54d49a7ad16ee7c243cdf4f77eef895094eb445e4cb0d2b601783",
+      "/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-ndarray-filter-chain.so": "461039dce0cd0d723afdd316afc5a80fb07e84731b53eb9fe37ddeeced252c02",
+      "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so": "49d108c51cd2fe0c6dad91fc507a7147d761a7ce2c77d2db3f5197e82aea902a",
+      "/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so": "2514f1f329d6eaf8209ee41f5e07b2d31ad2e312549434e6c0020863d1045fc9"
+    },
+    "core_release_tests": {
+      "log": "/tmp/classic-row-core-release-tests-20260930.log",
+      "result": "16/16 passed; 0 failed, 0 skipped, 0 timeout",
+      "testlog": "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-row-buffers/build/meson-logs/testlog.txt"
+    },
+    "qualification_limit": "These short seven-frame runs establish functional transport and numerical behavior only. They do not establish clipping or long precision, sustained capacity, deadline, tail latency, or target-host qualification."
+  }
+}
