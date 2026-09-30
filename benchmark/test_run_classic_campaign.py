@@ -100,7 +100,7 @@ class CampaignTests(unittest.TestCase):
         self.assertEqual(c[c.index('--heart-plugin')+1],
                          '/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so')
         self.assertEqual(c[c.index('--heart-plugin-sha256')+1],
-                         'db021461bfb05d41939e0db54e56620c3d7ae38e626763aee59110becd65f784')
+                         'efaf3a810284a6a39b9c84fb433cf9669a638da14b41cd528b8a18cc593ce7d6')
 
     def test_commands_forward_selected_plugin_and_precomputed_digest(self):
         for path in ('fgn-frame','jfg-frame','fgn-row','jfg-row'):

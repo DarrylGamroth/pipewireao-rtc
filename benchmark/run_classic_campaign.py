@@ -21,7 +21,7 @@ WFS = struct.Struct('<4B8HIQII')
 DM = struct.Struct('<4BHHQII')
 PATHS = ('heart', 'fgn-frame', 'jfg-frame', 'fgn-row', 'jfg-row')
 DEFAULT_HEART_PLUGIN = Path('/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so')
-DEFAULT_HEART_PLUGIN_SHA256 = 'db021461bfb05d41939e0db54e56620c3d7ae38e626763aee59110becd65f784'
+DEFAULT_HEART_PLUGIN_SHA256 = 'efaf3a810284a6a39b9c84fb433cf9669a638da14b41cd528b8a18cc593ce7d6'
 
 
 def summarize(values):
