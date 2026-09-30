@@ -31,7 +31,13 @@ def main():
     parser.add_argument('--module-library', type=Path, required=True)
     parser.add_argument('--corpus', type=Path, required=True)
     parser.add_argument('--frames', type=int, default=63)
+    parser.add_argument('--role', choices=('fgn', 'jfg'), default='fgn')
+    parser.add_argument('--rate-hz', type=int, default=100)
+    parser.add_argument('--readout-us', type=int, default=2000)
+    parser.add_argument('--heart-plugin', type=Path)
     args = parser.parse_args()
+    if args.frames <= 0 or args.rate_hz <= 0 or args.readout_us <= 0:
+        parser.error('frames, rate-hz and readout-us must be positive')
     args.output = args.output.resolve()
     if args.output.exists():
         parser.error('output must be new')
@@ -61,17 +67,38 @@ def main():
                 trace.mkdir()
                 env['PW_NDARRAY_FILTER_TRACE_DIR'] = str(trace)
                 env['PW_FGN_PROCESS_TRACE_DIR'] = str(trace)
+                env['HEART_RTC_TRACE_DIR'] = str(trace)
+                if args.role == 'jfg':
+                    env['JULIA_RTC_TRACE_GC'] = '1'
                 return env
             result.pipewire_installation = installation
             result.make_environment = environment
         return result
-    cmd = command('fgn-row', args.corpus, args.output, 100, 2000, args.frames)
+    cmd = command(f'{args.role}-row', args.corpus, args.output,
+                  args.rate_hz, args.readout_us, args.frames,
+                  trace=args.frames * 32 if args.role == 'jfg' else 0)
+    heart_plugin = (args.heart_plugin or Path(cmd[cmd.index('--heart-plugin') + 1])).resolve(strict=True)
+    heart_digest = hashlib.sha256(heart_plugin.read_bytes()).hexdigest()
+    if args.heart_plugin is not None:
+        # The transport helper loads heart/libspa-heart from this directory.
+        if (heart_plugin.parent / 'libspa-heart.so').resolve(strict=True) != heart_plugin:
+            parser.error('HEART plugin directory must expose the selected file as libspa-heart.so')
+        cmd[cmd.index('--heart-plugin') + 1] = str(heart_plugin)
+        cmd[cmd.index('--heart-plugin-sha256') + 1] = heart_digest
     args.output.parent.mkdir(parents=True, exist_ok=True)
     (args.output.parent / (args.output.name + '.command.json')).write_text(json.dumps(cmd) + '\n')
     diagnostic = {'library': str(library),
                   'sha256': hashlib.sha256(library.read_bytes()).hexdigest(),
                   'module': str(module_library),
                   'module_sha256': hashlib.sha256(module_library.read_bytes()).hexdigest(),
+                  'heart_plugin': str(heart_plugin),
+                  'heart_plugin_sha256': heart_digest,
+                  'heart_plugin_override': args.heart_plugin is not None,
+                  'role': args.role,
+                  'rate_hz': args.rate_hz,
+                  'readout_us': args.readout_us,
+                  'frames': args.frames,
+                  'callback_trace_capacity': args.frames * 32 if args.role == 'jfg' else 0,
                   'source_sha256': {str(path.resolve()): hashlib.sha256(path.read_bytes()).hexdigest()
                       for path in (Path(__file__), Path(run_classic_live.__file__),
                                    Path(__file__).with_name('run_classic_campaign.py'))},
@@ -95,7 +122,7 @@ def main():
             (args.output / 'diagnostic-library.json').write_text(json.dumps(diagnostic, indent=2) + '\n')
             if (args.output / 'dm-packets.tsv').exists():
                 try:
-                    intervals(args.output, args.frames, 0, 100)
+                    intervals(args.output, args.frames, 0, args.rate_hz)
                 except ValueError as error:
                     (args.output / 'interval-error.json').write_text(json.dumps(str(error)) + '\n')
             archive_wire(args.output)
