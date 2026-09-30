@@ -1,0 +1,781 @@
+{
+  "schema_version": 1,
+  "scope": "failed wire delivery, valid bounded diagnostic attribution; no capacity or science acceptance claim",
+  "run_directory": "/home/dgamroth/.cache/rtc-classic-jfg-admission-trace63-250hz-20260930",
+  "run_qualified": false,
+  "physical_qualified": false,
+  "original_errors": [
+    "command failed (1): /usr/bin/python3 /home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph-progressive-requal/benchmark/heart/qualify_copper_aos_capture.py --fits /home/dgamroth/.cache/rtc-classic-corpus63-20260930/input.fits --frames 63 --period 0.004 --readout-us 2000 --lines 11 --wfs-packets /home/dgamroth/.cache/rtc-classic-jfg-admission-trace63-250hz-20260930/wfs-packets.tsv --dm-summary /home/dgamroth/.cache/rtc-classic-jfg-admission-trace63-250hz-20260930/dm-summary.json --dm-id-base 0 --summary /home/dgamroth/.cache/rtc-classic-jfg-admission-trace63-250hz-20260930/physical-summary.json\ncapture qualification failed; see /home/dgamroth/.cache/rtc-classic-jfg-admission-trace63-250hz-20260930/physical-summary.json\n"
+  ],
+  "source_counters": {
+    "received": 2016,
+    "rejected": 0,
+    "blocks": 1984,
+    "frames": 62,
+    "dropped": 1,
+    "starvations": 1
+  },
+  "process_returncodes": [
+    0,
+    0,
+    0,
+    0
+  ],
+  "trace_integrity": {
+    "source": {
+      "capacity": 262144,
+      "used": 7968,
+      "omitted": 0
+    },
+    "sink": {
+      "capacity": 262144,
+      "used": 65,
+      "omitted": 0
+    },
+    "native_science": {
+      "capacity": 65536,
+      "used": 7998,
+      "omitted": 0
+    },
+    "native_adapter": {
+      "capacity": 65536,
+      "used": 310,
+      "omitted": 0
+    },
+    "julia": {
+      "allocation_scope": "process-wide bytes allocated while each callback trace interval is active; includes concurrent Julia tasks and trace counter reads",
+      "boundary": "live GraphProcessCallback: _process_graph_buffers! and success counter; excludes property adoption, notification, and native C bridge",
+      "capacity": 2016,
+      "clock": "Julia time_ns monotonic nanoseconds",
+      "gc_counters": true,
+      "gc_initial_pause": 25,
+      "gc_initial_time_ns": 1569157251817072,
+      "gc_initial_total_time_ns": 610706302,
+      "omitted": 0,
+      "path": "/home/dgamroth/.cache/rtc-classic-jfg-admission-trace63-250hz-20260930/callback-trace.csv",
+      "records": 1984
+    },
+    "source_events": {
+      "R": 2016,
+      "P": 1984,
+      "N": 1984,
+      "Q": 1984
+    },
+    "native_events": {
+      "D": 1984,
+      "G": 1984,
+      "E": 1984,
+      "R": 1984,
+      "O": 62
+    }
+  },
+  "admission": {
+    "frame": 1,
+    "pool_buffers": 32,
+    "required_available": 32,
+    "available_at_first_receive": 31,
+    "outstanding_published": [
+      {
+        "event": "P",
+        "start_ns": 1569170884652111,
+        "end_ns": 0,
+        "frame": 0,
+        "ordinal": 32,
+        "offset": 341,
+        "buffer_id": 31,
+        "generation": 1,
+        "buffers": 32,
+        "result": 0,
+        "gap_before": 0
+      }
+    ],
+    "source_returned_before_first_receive": 31,
+    "source_frames_with_no_publication": [
+      1
+    ],
+    "source_receive_to_terminal_body_end_ns": 9878,
+    "source_receive_to_terminal_native_end_ns": 9988,
+    "source_receive_to_native_recycle_observation_ns": 10189,
+    "source_receive_to_source_return_observation_ns": 77926,
+    "native_recycle_to_source_return_observation_ns": 67737,
+    "timing_caveat": "R source timestamp is after recv and before admission; Q is immediately before return_buffer; native R is immediately before pw_filter_queue_buffer; these are observation boundaries, not exact ownership-transfer instructions"
+  },
+  "timeline": [
+    {
+      "event": "source_frame0_first_receive",
+      "monotonic_ns": 1569170881134053,
+      "relative_to_source_frame0_first_ns": 0,
+      "relative_to_source_frame1_first_ns": -3611052
+    },
+    {
+      "event": "source_frame0_first_publish",
+      "monotonic_ns": 1569170881199416,
+      "relative_to_source_frame0_first_ns": 65363,
+      "relative_to_source_frame1_first_ns": -3545689
+    },
+    {
+      "event": "source_frame0_first_ready_begin",
+      "monotonic_ns": 1569170882092598,
+      "relative_to_source_frame0_first_ns": 958545,
+      "relative_to_source_frame1_first_ns": -2652507
+    },
+    {
+      "event": "source_frame0_first_ready_end",
+      "monotonic_ns": 1569170882109289,
+      "relative_to_source_frame0_first_ns": 975236,
+      "relative_to_source_frame1_first_ns": -2635816
+    },
+    {
+      "event": "native_frame0_first_begin",
+      "monotonic_ns": 1569170882191423,
+      "relative_to_source_frame0_first_ns": 1057370,
+      "relative_to_source_frame1_first_ns": -2553682
+    },
+    {
+      "event": "julia_frame0_first_begin",
+      "monotonic_ns": 1569170882231408,
+      "relative_to_source_frame0_first_ns": 1097355,
+      "relative_to_source_frame1_first_ns": -2513697
+    },
+    {
+      "event": "julia_frame0_first_end",
+      "monotonic_ns": 1569170882265482,
+      "relative_to_source_frame0_first_ns": 1131429,
+      "relative_to_source_frame1_first_ns": -2479623
+    },
+    {
+      "event": "source_frame0_terminal_receive",
+      "monotonic_ns": 1569170882809000,
+      "relative_to_source_frame0_first_ns": 1674947,
+      "relative_to_source_frame1_first_ns": -1936105
+    },
+    {
+      "event": "source_frame0_penultimate_return_observation",
+      "monotonic_ns": 1569170884652030,
+      "relative_to_source_frame0_first_ns": 3517977,
+      "relative_to_source_frame1_first_ns": -93075
+    },
+    {
+      "event": "source_frame0_terminal_publish",
+      "monotonic_ns": 1569170884652111,
+      "relative_to_source_frame0_first_ns": 3518058,
+      "relative_to_source_frame1_first_ns": -92994
+    },
+    {
+      "event": "source_frame0_terminal_ready_begin",
+      "monotonic_ns": 1569170884652141,
+      "relative_to_source_frame0_first_ns": 3518088,
+      "relative_to_source_frame1_first_ns": -92964
+    },
+    {
+      "event": "source_frame0_terminal_ready_end",
+      "monotonic_ns": 1569170884653072,
+      "relative_to_source_frame0_first_ns": 3519019,
+      "relative_to_source_frame1_first_ns": -92033
+    },
+    {
+      "event": "native_frame0_terminal_begin",
+      "monotonic_ns": 1569170884656058,
+      "relative_to_source_frame0_first_ns": 3522005,
+      "relative_to_source_frame1_first_ns": -89047
+    },
+    {
+      "event": "julia_frame0_terminal_begin",
+      "monotonic_ns": 1569170884656148,
+      "relative_to_source_frame0_first_ns": 3522095,
+      "relative_to_source_frame1_first_ns": -88957
+    },
+    {
+      "event": "source_frame1_first_receive",
+      "monotonic_ns": 1569170884745105,
+      "relative_to_source_frame0_first_ns": 3611052,
+      "relative_to_source_frame1_first_ns": 0
+    },
+    {
+      "event": "julia_frame0_terminal_end",
+      "monotonic_ns": 1569170884754983,
+      "relative_to_source_frame0_first_ns": 3620930,
+      "relative_to_source_frame1_first_ns": 9878
+    },
+    {
+      "event": "native_frame0_terminal_end",
+      "monotonic_ns": 1569170884755093,
+      "relative_to_source_frame0_first_ns": 3621040,
+      "relative_to_source_frame1_first_ns": 9988
+    },
+    {
+      "event": "native_frame0_terminal_recycle_observation",
+      "monotonic_ns": 1569170884755294,
+      "relative_to_source_frame0_first_ns": 3621241,
+      "relative_to_source_frame1_first_ns": 10189
+    },
+    {
+      "event": "source_frame0_terminal_return_observation",
+      "monotonic_ns": 1569170884823031,
+      "relative_to_source_frame0_first_ns": 3688978,
+      "relative_to_source_frame1_first_ns": 77926
+    }
+  ],
+  "clock_model": {
+    "offset_low_ns": 1789232089873566176,
+    "offset_high_ns": 1789232089873567589,
+    "extra_margin_ns": 0,
+    "anchors": [
+      {
+        "name": "before_run",
+        "monotonic_before_ns": 1569115692149703,
+        "monotonic_after_ns": 1569115692151116,
+        "float_conversion_margin_ns": 0,
+        "offset_low_ns": 1789232089873566176,
+        "offset_high_ns": 1789232089873567589
+      },
+      {
+        "name": "after_run",
+        "monotonic_before_ns": 1569186160477855,
+        "monotonic_after_ns": 1569186160478726,
+        "float_conversion_margin_ns": 0,
+        "offset_low_ns": 1789232089873566216,
+        "offset_high_ns": 1789232089873567087
+      }
+    ],
+    "assumption": "realtime-minus-monotonic offset throughout replay remains within the hull of both endpoint brackets plus stated margins; unobserved interior clock excursions are not bounded by two anchors"
+  },
+  "packet_observations": {
+    "wfs0_first_epoch_ns": 1790801260754554627,
+    "wfs0_terminal_epoch_ns": 1790801260756367501,
+    "wfs1_first_epoch_ns": 1790801260758303035,
+    "dm0_epoch_ns": 1790801260758367706,
+    "source0_capture_to_receive_interval_ns": [
+      145602,
+      147015
+    ],
+    "source1_capture_to_receive_interval_ns": [
+      8246,
+      9659
+    ]
+  },
+  "gc": {
+    "scope": "process-wide bytes allocated while each callback trace interval is active; includes concurrent Julia tasks and trace counter reads",
+    "body_intervals_with_any_counter_change": 0,
+    "first_to_last_body_counter_changes": {
+      "gc_pause_start": 0,
+      "gc_total_time_start_ns": 0,
+      "gc_allocated_bytes_start": 0
+    },
+    "connect_run_close": {
+      "allocated_bytes": 4670624,
+      "collections": 0,
+      "pauses": 0,
+      "time_ns": 0
+    },
+    "initial_trace_counter_snapshot": {
+      "pause": 25,
+      "time_ns": 1569157251817072,
+      "gc_total_time_ns": 610706302
+    },
+    "first_body_counters": {
+      "gc_pause_start": 29,
+      "gc_total_time_start_ns": 810326146,
+      "gc_allocated_bytes_start": 3129273440
+    }
+  },
+  "per_frame_service_observations": [
+    {
+      "frame": 0,
+      "julia_body_sum_ns": 1027386,
+      "native_callback_sum_ns": 1086774,
+      "first_body_ns": 34074,
+      "terminal_body_ns": 98835
+    },
+    {
+      "frame": 2,
+      "julia_body_sum_ns": 811754,
+      "native_callback_sum_ns": 827015,
+      "first_body_ns": 28232,
+      "terminal_body_ns": 42320
+    },
+    {
+      "frame": 3,
+      "julia_body_sum_ns": 837950,
+      "native_callback_sum_ns": 850770,
+      "first_body_ns": 24796,
+      "terminal_body_ns": 36188
+    },
+    {
+      "frame": 4,
+      "julia_body_sum_ns": 902452,
+      "native_callback_sum_ns": 915614,
+      "first_body_ns": 7755,
+      "terminal_body_ns": 34084
+    },
+    {
+      "frame": 5,
+      "julia_body_sum_ns": 799570,
+      "native_callback_sum_ns": 813273,
+      "first_body_ns": 24295,
+      "terminal_body_ns": 36919
+    },
+    {
+      "frame": 6,
+      "julia_body_sum_ns": 900988,
+      "native_callback_sum_ns": 914697,
+      "first_body_ns": 24756,
+      "terminal_body_ns": 35476
+    },
+    {
+      "frame": 7,
+      "julia_body_sum_ns": 893118,
+      "native_callback_sum_ns": 910206,
+      "first_body_ns": 7744,
+      "terminal_body_ns": 34244
+    },
+    {
+      "frame": 8,
+      "julia_body_sum_ns": 592008,
+      "native_callback_sum_ns": 600983,
+      "first_body_ns": 14718,
+      "terminal_body_ns": 37580
+    },
+    {
+      "frame": 9,
+      "julia_body_sum_ns": 665131,
+      "native_callback_sum_ns": 676889,
+      "first_body_ns": 15168,
+      "terminal_body_ns": 36889
+    },
+    {
+      "frame": 10,
+      "julia_body_sum_ns": 720817,
+      "native_callback_sum_ns": 732532,
+      "first_body_ns": 7705,
+      "terminal_body_ns": 31940
+    },
+    {
+      "frame": 11,
+      "julia_body_sum_ns": 603018,
+      "native_callback_sum_ns": 612249,
+      "first_body_ns": 14357,
+      "terminal_body_ns": 37820
+    },
+    {
+      "frame": 12,
+      "julia_body_sum_ns": 846176,
+      "native_callback_sum_ns": 858877,
+      "first_body_ns": 25698,
+      "terminal_body_ns": 34584
+    },
+    {
+      "frame": 13,
+      "julia_body_sum_ns": 910354,
+      "native_callback_sum_ns": 924218,
+      "first_body_ns": 7434,
+      "terminal_body_ns": 31659
+    },
+    {
+      "frame": 14,
+      "julia_body_sum_ns": 845693,
+      "native_callback_sum_ns": 859264,
+      "first_body_ns": 23955,
+      "terminal_body_ns": 37300
+    },
+    {
+      "frame": 15,
+      "julia_body_sum_ns": 734757,
+      "native_callback_sum_ns": 747754,
+      "first_body_ns": 16200,
+      "terminal_body_ns": 41708
+    },
+    {
+      "frame": 16,
+      "julia_body_sum_ns": 900336,
+      "native_callback_sum_ns": 913468,
+      "first_body_ns": 7504,
+      "terminal_body_ns": 33272
+    },
+    {
+      "frame": 17,
+      "julia_body_sum_ns": 824886,
+      "native_callback_sum_ns": 838279,
+      "first_body_ns": 24015,
+      "terminal_body_ns": 37921
+    },
+    {
+      "frame": 18,
+      "julia_body_sum_ns": 840112,
+      "native_callback_sum_ns": 855472,
+      "first_body_ns": 27862,
+      "terminal_body_ns": 39223
+    },
+    {
+      "frame": 19,
+      "julia_body_sum_ns": 707924,
+      "native_callback_sum_ns": 726918,
+      "first_body_ns": 7474,
+      "terminal_body_ns": 34084
+    },
+    {
+      "frame": 20,
+      "julia_body_sum_ns": 819642,
+      "native_callback_sum_ns": 831852,
+      "first_body_ns": 24506,
+      "terminal_body_ns": 35356
+    },
+    {
+      "frame": 21,
+      "julia_body_sum_ns": 835042,
+      "native_callback_sum_ns": 849451,
+      "first_body_ns": 27922,
+      "terminal_body_ns": 34214
+    },
+    {
+      "frame": 22,
+      "julia_body_sum_ns": 910954,
+      "native_callback_sum_ns": 925144,
+      "first_body_ns": 7955,
+      "terminal_body_ns": 45104
+    },
+    {
+      "frame": 23,
+      "julia_body_sum_ns": 631536,
+      "native_callback_sum_ns": 642341,
+      "first_body_ns": 14106,
+      "terminal_body_ns": 53299
+    },
+    {
+      "frame": 24,
+      "julia_body_sum_ns": 849358,
+      "native_callback_sum_ns": 864478,
+      "first_body_ns": 28102,
+      "terminal_body_ns": 39764
+    },
+    {
+      "frame": 25,
+      "julia_body_sum_ns": 917187,
+      "native_callback_sum_ns": 931828,
+      "first_body_ns": 7464,
+      "terminal_body_ns": 32881
+    },
+    {
+      "frame": 26,
+      "julia_body_sum_ns": 826809,
+      "native_callback_sum_ns": 841537,
+      "first_body_ns": 24425,
+      "terminal_body_ns": 37941
+    },
+    {
+      "frame": 27,
+      "julia_body_sum_ns": 805998,
+      "native_callback_sum_ns": 820820,
+      "first_body_ns": 27902,
+      "terminal_body_ns": 34674
+    },
+    {
+      "frame": 28,
+      "julia_body_sum_ns": 907858,
+      "native_callback_sum_ns": 920882,
+      "first_body_ns": 7484,
+      "terminal_body_ns": 32772
+    },
+    {
+      "frame": 29,
+      "julia_body_sum_ns": 836124,
+      "native_callback_sum_ns": 849762,
+      "first_body_ns": 24286,
+      "terminal_body_ns": 39885
+    },
+    {
+      "frame": 30,
+      "julia_body_sum_ns": 728251,
+      "native_callback_sum_ns": 740957,
+      "first_body_ns": 18715,
+      "terminal_body_ns": 39293
+    },
+    {
+      "frame": 31,
+      "julia_body_sum_ns": 886852,
+      "native_callback_sum_ns": 900516,
+      "first_body_ns": 7575,
+      "terminal_body_ns": 33432
+    },
+    {
+      "frame": 32,
+      "julia_body_sum_ns": 601436,
+      "native_callback_sum_ns": 614301,
+      "first_body_ns": 17834,
+      "terminal_body_ns": 46247
+    },
+    {
+      "frame": 33,
+      "julia_body_sum_ns": 656102,
+      "native_callback_sum_ns": 665813,
+      "first_body_ns": 14908,
+      "terminal_body_ns": 39965
+    },
+    {
+      "frame": 34,
+      "julia_body_sum_ns": 634418,
+      "native_callback_sum_ns": 645861,
+      "first_body_ns": 7494,
+      "terminal_body_ns": 38503
+    },
+    {
+      "frame": 35,
+      "julia_body_sum_ns": 638747,
+      "native_callback_sum_ns": 650169,
+      "first_body_ns": 24326,
+      "terminal_body_ns": 33001
+    },
+    {
+      "frame": 36,
+      "julia_body_sum_ns": 690991,
+      "native_callback_sum_ns": 701037,
+      "first_body_ns": 14236,
+      "terminal_body_ns": 39514
+    },
+    {
+      "frame": 37,
+      "julia_body_sum_ns": 735586,
+      "native_callback_sum_ns": 748099,
+      "first_body_ns": 7394,
+      "terminal_body_ns": 34465
+    },
+    {
+      "frame": 38,
+      "julia_body_sum_ns": 594184,
+      "native_callback_sum_ns": 605004,
+      "first_body_ns": 14758,
+      "terminal_body_ns": 37982
+    },
+    {
+      "frame": 39,
+      "julia_body_sum_ns": 649316,
+      "native_callback_sum_ns": 659594,
+      "first_body_ns": 14127,
+      "terminal_body_ns": 35717
+    },
+    {
+      "frame": 40,
+      "julia_body_sum_ns": 630812,
+      "native_callback_sum_ns": 639521,
+      "first_body_ns": 7404,
+      "terminal_body_ns": 44002
+    },
+    {
+      "frame": 41,
+      "julia_body_sum_ns": 840277,
+      "native_callback_sum_ns": 854971,
+      "first_body_ns": 27822,
+      "terminal_body_ns": 40686
+    },
+    {
+      "frame": 42,
+      "julia_body_sum_ns": 856193,
+      "native_callback_sum_ns": 869902,
+      "first_body_ns": 24746,
+      "terminal_body_ns": 33663
+    },
+    {
+      "frame": 43,
+      "julia_body_sum_ns": 875686,
+      "native_callback_sum_ns": 890207,
+      "first_body_ns": 7514,
+      "terminal_body_ns": 33713
+    },
+    {
+      "frame": 44,
+      "julia_body_sum_ns": 802563,
+      "native_callback_sum_ns": 816641,
+      "first_body_ns": 24365,
+      "terminal_body_ns": 41598
+    },
+    {
+      "frame": 45,
+      "julia_body_sum_ns": 839646,
+      "native_callback_sum_ns": 853266,
+      "first_body_ns": 24406,
+      "terminal_body_ns": 32952
+    },
+    {
+      "frame": 46,
+      "julia_body_sum_ns": 873615,
+      "native_callback_sum_ns": 887807,
+      "first_body_ns": 7544,
+      "terminal_body_ns": 33082
+    },
+    {
+      "frame": 47,
+      "julia_body_sum_ns": 826908,
+      "native_callback_sum_ns": 839599,
+      "first_body_ns": 24105,
+      "terminal_body_ns": 38592
+    },
+    {
+      "frame": 48,
+      "julia_body_sum_ns": 813983,
+      "native_callback_sum_ns": 828909,
+      "first_body_ns": 27702,
+      "terminal_body_ns": 35627
+    },
+    {
+      "frame": 49,
+      "julia_body_sum_ns": 913509,
+      "native_callback_sum_ns": 929374,
+      "first_body_ns": 7875,
+      "terminal_body_ns": 36308
+    },
+    {
+      "frame": 50,
+      "julia_body_sum_ns": 837440,
+      "native_callback_sum_ns": 850674,
+      "first_body_ns": 24195,
+      "terminal_body_ns": 38422
+    },
+    {
+      "frame": 51,
+      "julia_body_sum_ns": 839993,
+      "native_callback_sum_ns": 854480,
+      "first_body_ns": 27903,
+      "terminal_body_ns": 37861
+    },
+    {
+      "frame": 52,
+      "julia_body_sum_ns": 759547,
+      "native_callback_sum_ns": 773719,
+      "first_body_ns": 7685,
+      "terminal_body_ns": 35506
+    },
+    {
+      "frame": 53,
+      "julia_body_sum_ns": 855060,
+      "native_callback_sum_ns": 869222,
+      "first_body_ns": 24546,
+      "terminal_body_ns": 41017
+    },
+    {
+      "frame": 54,
+      "julia_body_sum_ns": 688397,
+      "native_callback_sum_ns": 700981,
+      "first_body_ns": 27862,
+      "terminal_body_ns": 38572
+    },
+    {
+      "frame": 55,
+      "julia_body_sum_ns": 891229,
+      "native_callback_sum_ns": 906045,
+      "first_body_ns": 8626,
+      "terminal_body_ns": 35978
+    },
+    {
+      "frame": 56,
+      "julia_body_sum_ns": 855371,
+      "native_callback_sum_ns": 867833,
+      "first_body_ns": 24616,
+      "terminal_body_ns": 39604
+    },
+    {
+      "frame": 57,
+      "julia_body_sum_ns": 753684,
+      "native_callback_sum_ns": 766967,
+      "first_body_ns": 19907,
+      "terminal_body_ns": 47129
+    },
+    {
+      "frame": 58,
+      "julia_body_sum_ns": 872577,
+      "native_callback_sum_ns": 886210,
+      "first_body_ns": 7424,
+      "terminal_body_ns": 35115
+    },
+    {
+      "frame": 59,
+      "julia_body_sum_ns": 826750,
+      "native_callback_sum_ns": 840772,
+      "first_body_ns": 24035,
+      "terminal_body_ns": 37641
+    },
+    {
+      "frame": 60,
+      "julia_body_sum_ns": 716633,
+      "native_callback_sum_ns": 728008,
+      "first_body_ns": 18545,
+      "terminal_body_ns": 38983
+    },
+    {
+      "frame": 61,
+      "julia_body_sum_ns": 689911,
+      "native_callback_sum_ns": 713313,
+      "first_body_ns": 7765,
+      "terminal_body_ns": 35536
+    },
+    {
+      "frame": 62,
+      "julia_body_sum_ns": 824213,
+      "native_callback_sum_ns": 838289,
+      "first_body_ns": 24616,
+      "terminal_body_ns": 32671
+    }
+  ],
+  "headroom_arithmetic": [
+    {
+      "pool_buffers": 32,
+      "admission_if_same_one_slot_outstanding": false,
+      "tolerated_prior_unavailable": 0,
+      "extra_payload_bytes": 0
+    },
+    {
+      "pool_buffers": 33,
+      "admission_if_same_one_slot_outstanding": true,
+      "tolerated_prior_unavailable": 1,
+      "extra_payload_bytes": 7744
+    },
+    {
+      "pool_buffers": 34,
+      "admission_if_same_one_slot_outstanding": true,
+      "tolerated_prior_unavailable": 2,
+      "extra_payload_bytes": 15488
+    },
+    {
+      "pool_buffers": 64,
+      "admission_if_same_one_slot_outstanding": true,
+      "tolerated_prior_unavailable": 32,
+      "extra_payload_bytes": 247808
+    }
+  ],
+  "headroom_limit": "counterfactual admission arithmetic only; changing the pool can change subsequent scheduling and requires separate functional, ownership, loss, deadline and pacing qualification",
+  "source_revision": "83e3c7bfdd93ceaf0e8898ba7be2ebde1bb64f4d",
+  "heart_plugin_sha256": "080a8e7db589fa2e191ba6319c75496684070c6035bd8756aaa88f554e0e70a6",
+  "input_sha256": {
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-progressive-requal/benchmark/classic_wire.py": "fd5df2da977703c4dcf74c85c8a27368287c22a9924e32a623dd29421951e9e2",
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-progressive-requal/benchmark/analyze_classic_row_work.py": "530e41fb2365c79cb0d9c32333952b4093ce2dd562998aaef040e0c0070cbd88",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-trace63-250hz-20260930/report.json": "0eb009b218e5ecb752fae07b2ff17fe8a308a29ffa8c89df05d287a65ed1c90f",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-trace63-250hz-20260930/node-report.json": "8548f1b53b09fbe5dfd7296eeff7dd14a6c9021c9f9c4c5aab512b75a62c80b3",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-trace63-250hz-20260930/diagnostic-library.json": "c57ed93d51c44887c1313fb408a041776ebf65546b11da160a2155393327d4f3",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-trace63-250hz-20260930/physical-summary.json": "e9d734fe4071e29091dea32188a5df3759502488633cb4b96990c8fa9e2c9c34",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-trace63-250hz-20260930/native-ingress-trace/source-rtc-heart-wfs-row-source-3532017-1.csv": "f7dc60fbf797f528b978475e7846d5069b052524f629396cfa8190a04dd671d4",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-trace63-250hz-20260930/native-ingress-trace/sink-rtc-heart-std-dm-sink-3532017-2.csv": "5e9e0c75f5507018d723f4011c93c912d53b8b0d530ef1ab14cc7cef13660b12",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-trace63-250hz-20260930/native-ingress-trace/ndarray-filter-3532019-0.csv": "dcacf8a5e8044accb1421f062f85e4f2f372e5421ea374940e4727f2716d166e",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-trace63-250hz-20260930/native-ingress-trace/ndarray-filter-3532542-0.csv": "aa1ea42751982df2226f3934c566e49fa7872a583cd8b355c2ad5433076e6bea",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-trace63-250hz-20260930/callback-trace.csv": "e82e1e3f951671bcc06e6eca3d8e3979cd227f3c5fb8f583d0296634852bd767",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-trace63-250hz-20260930/wfs-packets.tsv.zst": "e412612e0e0ac54e867a9802c0ab55a39273ca8154cca1a62fcf2a8f692f21a7",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-trace63-250hz-20260930/dm-packets.tsv.zst": "28d13f8b4365a5d218313014f99d3576f01dc98a55bbe0c0ce812ad01ff15aef",
+    "/home/dgamroth/.cache/classic-heart-diagnostic-build-20260930.json": "171d3438fbcb68ddb662d69ef8d21c606657665e0b2f1c0f0e407f2072713019",
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart/build-classic-diagnostic-20260930/spa/plugins/heart/libspa-heart.so": "080a8e7db589fa2e191ba6319c75496684070c6035bd8756aaa88f554e0e70a6",
+    "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-fgn-trace/build-rtc-trace/src/pipewire/libpipewire-ao-0.3.so.0.1700.0": "194fbdba311b7fd92854e86d4ff7ccc242bf48c6d8054b4f8a4a9f341de1c148",
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart/spa/plugins/heart/source.c": "c46d50bf3d3045380368b2235edc5b7b1af0cf27a544ea72a4c03e991c4b53b8",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-trace63-250hz-20260930/analyze-admission.py": "952758b261ab540abcdc420896c374f72a88735860773574c05ae940aadff84b"
+  },
+  "analysis_script_sha256": "952758b261ab540abcdc420896c374f72a88735860773574c05ae940aadff84b",
+  "limitations": [
+    "No JIT attribution is made. Native entry precedes first Julia counter sample; startup compilation cannot be excluded from that unmeasured counter interval.",
+    "No GC or allocation-counter changes occur from first through last traced Julia body; counter scope is process-global and excludes startup/close/native allocation.",
+    "The 31 AVAILABLE slots at admission follow source control flow and 31 prior Q events; reserve_row_frame itself has no timestamp.",
+    "No normal-run latency or sustained capacity claim follows from instrumented timing."
+  ],
+  "first_frame_delay_breakdown": {
+    "first_publish_to_first_ready_ns": 893182,
+    "receives_before_first_ready": 20,
+    "first_native_begin_to_julia_begin_ns": 39985,
+    "first_body_ns": 34074,
+    "first_native_ns": 74289
+  }
+}
