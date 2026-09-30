@@ -759,6 +759,27 @@ installed three-way baseline passes (see [Copper evidence](../benchmark/COPPER.m
 controlled host-load repetitions, and a Classic fixed-arrival profile remain
 open. RTC-DEV-019 remains partial.
 
+## Classic four-gate characterization (2026-09-30)
+
+The separately requested Classic comparison now resolves numerical development
+acceptance, characterizes helper/layout and measured allocation boundaries,
+measures repeated packet→command latency and exact-delivery capacity, and
+qualifies the FITS/SPA stdWfs transport into all five selected RTC paths.
+[The comparison record](../benchmark/CLASSIC.md) reports the results and
+[the independent verification](CLASSIC_FOUR_GATE_VERIFICATION.md) records the
+claim boundaries. Original strict numerical failures and unsuccessful captures
+remain preserved. This is laboratory development evidence for the selected
+science chain; it does not promote the deferred physical-device service.
+
+All five paths pass three 1,029-frame windows at 250 Hz with exact delivery and
+no 4 ms period misses. The finite higher-rate bounds separate delivery from
+deadline: complete-frame FGN/JFG pass delivery at 1,250 Hz while missing that
+frame-period deadline. Row diagnostics establish completed SH sensing and MVM
+work during readout. The measured Julia callback bodies have zero steady-state
+allocation/GC counter increments; native transport and lifecycle work remain
+outside that boundary. See the linked evidence for layout, clock-model and
+numerical-policy details.
+
 ## Deferred capabilities
 
 The following topics are not active work. Their previous proposals are

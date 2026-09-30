@@ -170,5 +170,13 @@
         "preserved_branch": "codex/preserve-sdk-latest-hold-20260930"
       }
     }
-  ]
+  ],
+  "focused_classic_verification": {
+    "command": "taskset -c 14 python3 -m unittest discover -s benchmark -p 'test_*classic*.py'",
+    "tests": 155,
+    "result": "passed",
+    "log": "/home/dgamroth/.cache/classic-final-units-20260930.log",
+    "sha256": "16cec8e8dbc0a84db4bdb1c232aba274d627258c67d22cda46fcfdd3a0b0c77b",
+    "scope": "focused Python harness suites; earlier native/Julia/Rust evidence is separately indexed"
+  }
 }

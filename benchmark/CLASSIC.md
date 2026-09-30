@@ -1,6 +1,7 @@
 # REVOLT Classic comparison
 
-Date: 2026-09-30. Development comparison in progress.
+Date: 2026-09-30. The four-gate development comparison is complete;
+see the completion record and validation boundaries below.
 
 ## Common workload
 
@@ -158,19 +159,20 @@ not capacity or tail-latency qualification.
    failed third HEART attempt is retained alongside its successful replacement.
    Actual readout traces establish completed science work in HEART and derived
    lower bounds in both graph implementations. See [HEART readout evidence](CLASSIC_HEART_READOUT.md)
-   and [graph row-work evidence](CLASSIC_ROW_WORK.md). The higher-rate search
-   remains in progress.
+   and [graph row-work evidence](CLASSIC_ROW_WORK.md). The repeated rate search
+   is complete; see [the final capacity evidence](CLASSIC_CAPACITY.md).
 4. The same FITS cube now passes through the SPA stdWfs sender into all five
    RTC paths: 2,016 exact input packets and 63 ordered commands per path,
    accepted numerical checks, normal exits and zero source/sender errors.
    Readiness and Position acknowledgement corrections were necessary; the
-   zero-packet failures and independent review remain preserved. These results
-   use the recorded private candidate plugin pair, not an assertion that the
-   installed old pair works. See [SPA sender qualification](CLASSIC_SPA_SENDER.md).
+   zero-packet failures and independent review remain preserved. Fresh installed checks also pass from `/opt/pipewireao` with canonical main
+   Rust/Julia receiver roots. The two Julia dependency-startup failures are
+   retained alongside successful repeats after refreshing its ignored local
+   manifest. See [SPA sender qualification](CLASSIC_SPA_SENDER.md).
 
-## Repeated 100 Hz baseline
+## Original repeated 100 Hz baseline
 
-Each path has three independent process windows of 1,029 detector frames with
+Each path has three distinct process windows of 1,029 detector frames with
 2,000 µs requested readout. Latency runs use the documented CPU placement and
 uninstrumented deployed PipeWire core. The table gives the range of per-run
 percentiles after the first 100 frames (929 samples per run); exact delivery
@@ -188,11 +190,76 @@ or 10 ms period overruns.
 
 The [baseline evidence](data/classic_baseline_20260930.json) records exact
 per-window values, artifact hashes and the retained failed HEART attempt.
-These Classic results do not show an end-to-end advantage over HEART. Early
+These original 100 Hz results do not show an end-to-end advantage over HEART. Early
 scientific work is demonstrated, but does not establish a net latency benefit
-for the current row transport/executors at this workload and pacing. Different
-rates can change wake-up and service costs; the high-rate search measures them
-rather than extrapolating this table.
+for the current row transport/executors at this workload and pacing. The row
+entries above precede the source notification/headroom correction.
+The corrected-source 100 Hz row measurements are retained in
+[data/classic_row_baseline_fixed_20260930.json](data/classic_row_baseline_fixed_20260930.json);
+they also do not establish a net advantage over HEART at 100 Hz.
+
+## Final common 250 Hz comparison
+
+All five paths pass three distinct 1,029-frame windows with the same 2,000 µs
+nominal readout and selected science chain. Each path delivered all 3,087 DM
+commands, with no first-packet→DM interval exceeding its 4 ms frame period.
+The corrected release HEART SPA receiver is used for both graph row paths.
+HEART RTC/wfsSimulator are unchanged. The following ranges are per-window
+percentiles after the first 100 frames: 929 samples per window. Delivery and
+deadline checks include every frame, including startup.
+
+| RTC path | First packet → DM p50, µs | p99, µs | Terminal packet → DM p50, µs | p99, µs |
+| --- | ---: | ---: | ---: | ---: |
+| HEART progressive | 2,169–2,193 | 2,304–2,327 | 243–262 | 367–384 |
+| FGN complete frame | 2,179–2,188 | 2,436–2,654 | 253–272 | 499–720 |
+| JFG complete frame | 2,432–2,440 | 2,590–2,829 | 506–519 | 662–894 |
+| FGN rows | 1,982–2,061 | 2,091–2,682 | 54–122 | 171–760 |
+| JFG rows | 2,028–2,061 | 2,511–2,631 | 99–144 | 573–698 |
+
+[The common-rate evidence](data/classic_common250_20260930.json) retains exact
+per-window values, conditions, hashes and artifact locations. Rows reduce
+median residual latency and median first-packet latency at this operating point.
+Their tail advantage is inconsistent: Julia row p99 exceeds HEART in every
+window, and Rust row p99 varies from below to above HEART. These are packet
+capture measurements through command wire egress, not exposure→physical DM
+response or worst-case execution bounds.
+
+Readout-work diagnostics independently establish actual completed science.
+Unchanged HEART completed SH work before terminal receive in all 63 observed
+frames, with conservative prior-batch MVM bounds in 62 frames. The corrected
+Julia 250 Hz diagnostic establishes completed SH/MVM prefixes in all 63 frames:
+4–184 SH subapertures, median 166; 8–368 MVM columns, median 332, each updating
+221 controlled outputs. The separate Rust diagnostic establishes positive
+completed prefixes in 58/63 frames; zero bounds in the other five do not prove
+absence of work. Graph bounds are derived from synchronous successful callbacks
+and a documented clock-offset envelope, with a 10 µs sensitivity check.
+Instrumented runs are separate from these normal latency/capacity windows.
+See [the row-work method](CLASSIC_ROW_WORK.md).
+
+## Tested exact-delivery capacity
+
+| RTC path | Highest passing rate, Hz | First higher failing rate, Hz | Highest all-frame deadline-clean rate, Hz |
+| --- | ---: | ---: | ---: |
+| HEART progressive | 250 | 750 | 250 |
+| FGN complete frame | 1,250 | 1,500 | 250 |
+| JFG complete frame | 1,250 | 1,500 | 250 |
+| FGN rows | 500 | 750 | 250 |
+| JFG rows | 250 | 500 | 250 |
+
+Each passing rate requires three distinct eligible 1,029-frame windows, exact
+ordered delivery, selected numerical acceptance, normal child exits, requested
+RTC placement and achieved average source rate within ±1%. These are finite
+experimental bounds, not sustained hardware maxima. Readout decreases at higher
+rates to remain within 85% of the frame period. Full-frame 1,250 Hz windows
+were loss-free but missed the frame-period deadline; delivery is not timeliness.
+HEART at 500 Hz has only two eligible passing windows and one incomplete capture;
+it is neither a passing rate nor a confirmed RTC failure bound. Julia rows at
+500 Hz have two exact windows and one eligible dropped-command window.
+
+[The classifier record](CLASSIC_CAPACITY.md) preserves every exclusion, failed
+window and original strict numerical result. Losses are mostly early, but a
+later Rust row loss at frame 605 is also retained. The evidence does not identify
+all remaining high-rate loss mechanisms as JIT, GC or OS scheduling.
 
 ## Original gate obligations
 
@@ -209,3 +276,17 @@ rather than extrapolating this table.
    selected receiver/graph configurations under documented placement.
 4. Qualify `FITS source → SPA HEART stdWfs sink → UDP → each RTC` separately,
    as requested in [the progressive plan](PROGRESSIVE.md).
+
+## Delivery and verification
+
+Reviewed transport and tracing changes are merged to their owning main branches;
+normal HEART/FITS and clean two-factory ndarray plugins are deployed and qualified
+from `/opt/pipewireao`. The prior installed prototype plugin/header and unrelated
+SDK source edits remain preserved in rollback storage and a named WIP branch.
+Diagnostic builds were not deployed. HEART RTC/wfsSimulator binaries and science
+coefficients are unchanged. [The delivery record](data/classic_main_delivery_20260930.json)
+indexes tested source revisions, installed hashes, backups and user-fork pushes.
+The focused Classic harness suite passes 155 tests. The independent
+[four-gate review](../docs/CLASSIC_FOUR_GATE_VERIFICATION.md) accepts this development
+characterization at its documented arithmetic, allocation, clock and finite-window
+boundaries.

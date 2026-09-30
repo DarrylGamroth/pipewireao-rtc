@@ -34,7 +34,7 @@ it was also corrected. None establishes corruption of existing saved results.
 
 | ID | Severity / confidence | Finding | Disposition |
 | --- | --- | --- | --- |
-| FR-01 | P2 / high | Campaign intervals accepted backward or nonfinite packet times | Fixed in `6856d51`; saved earlier captures still require a timestamp audit |
+| FR-01 | P2 / high | Campaign intervals accepted backward or nonfinite packet times | Fixed in `6856d51`; final 85-window timestamp audit passes (see closure below) |
 | FR-02 | P2 / high | Sender cleanup exceptions skipped its report and could replace a primary replay exception | Fixed in `b892258`; mocked cleanup regressions pass |
 | FR-03 | P2 / high | Truncated WFS headers escaped the evidence reader as `struct.error` and aborted combined classification | Fixed by explicit header-length validation; same 15-test suite fails before and passes after |
 
@@ -260,3 +260,19 @@ The primary agent owns the subsequent complete classifier rerun. It separately
 reported that its timestamp audit covered 85 windows and passed; that audit
 was not independently rerun here and does not imply that every retained
 capture has complete or valid WFS packet content.
+
+## Final primary-agent closure
+
+The final classifier rerun completed after FR-03, preserving incomplete-capture
+exclusions. The selected final manifest contains 79 windows; the timestamp audit
+covers 85 including six historical old-source row windows. Every present stream
+is finite and nondecreasing (168 streams); two absent streams belong to the
+preserved pre-ingress HEART failure. Auditing timestamps does not turn incomplete
+WFS packet content into a valid pacing window.
+
+The full focused Classic suite passes 155 tests. Saved final artifacts and hashes
+are indexed in `benchmark/data/classic_capacity_final_20260930.json` and
+`benchmark/data/classic_timestamp_audit_20260930.json`; detailed capacity claims
+are in `benchmark/CLASSIC_CAPACITY.md`. The separate independent review at
+[CLASSIC_FOUR_GATE_VERIFICATION.md](CLASSIC_FOUR_GATE_VERIFICATION.md) adjudicates
+all four gates and records their validation boundaries.
