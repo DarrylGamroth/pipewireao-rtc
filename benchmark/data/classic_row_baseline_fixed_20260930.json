@@ -1,0 +1,3211 @@
+{
+  "host": {
+    "hostname": "rtc-devel",
+    "launcher_affinity": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "online_cpus": "0-15",
+    "python": "3.13.5 (main, Aug 10 2026, 12:06:59) [GCC 14.2.0]",
+    "uname": [
+      "Linux",
+      "rtc-devel",
+      "6.12.107+deb13-amd64",
+      "#1 SMP PREEMPT_DYNAMIC Debian 6.12.107-1 (2026-08-29)",
+      "x86_64",
+      ""
+    ]
+  },
+  "requested": {
+    "corpus": "/home/dgamroth/.cache/rtc-classic-corpus1029-20260930",
+    "frames": 1029,
+    "heart_plugin": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/build-classic-release-20260930/spa/plugins/heart/libspa-heart.so",
+    "layout": "shared",
+    "output": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930",
+    "paths": [
+      "fgn-row",
+      "jfg-row"
+    ],
+    "rates": [
+      100
+    ],
+    "readout_us": 2000,
+    "repeats": 3,
+    "trace": 0,
+    "workers": 0
+  },
+  "run_count": 6,
+  "runs": [
+    {
+      "all_frames_deadline_gate": {
+        "deadline_exceeded_count": 0,
+        "deadline_us": 10000.0,
+        "frames": 1029,
+        "max_us": 3534.414,
+        "metric": "first WFS packet to DM",
+        "passed": true
+      },
+      "arithmetic_acceptance": {
+        "actual_commands_f32le_sha256": "fc76c62e0fd4d4022ef52bbd26e2297511c04464f07d80a8e24d8799a6364cb2",
+        "analyzer_sha256": "b8781c9c530344b927f5860039cb1d210897de60eb3ef26e3b10467fca2a1913",
+        "application_accuracy": "not assessed: no application error budget supplied",
+        "arithmetic_consistency_passed": true,
+        "checks": {
+          "actual_vs_equation_reference": {
+            "failed_values": 0,
+            "maximum_bound": 0.007969493572696692,
+            "maximum_error": 3.5103768942779112e-06,
+            "maximum_error_to_bound_ratio": 0.0017948614334539282,
+            "passed": true
+          },
+          "cross_implementation": {
+            "failed_values": 0,
+            "maximum_bound": 0.015938987145393383,
+            "maximum_error": 1.2516975402832031e-06,
+            "maximum_error_to_bound_ratio": 0.0008547410190906064,
+            "passed": true
+          },
+          "expected_vs_equation_reference": {
+            "failed_values": 0,
+            "maximum_bound": 0.007969493572696692,
+            "maximum_error": 2.759299755683564e-06,
+            "maximum_error_to_bound_ratio": 0.0011512162510818253,
+            "passed": true
+          }
+        },
+        "clipping_decisions_ambiguous_under_bound": 21620,
+        "exact_model": null,
+        "exact_model_passed": null,
+        "expected_commands_f32le_sha256": "5320114db1773d1983f51ba102bdbd4e56398c54f8a250eaf6729a107858aa85",
+        "fixture_sha256": {
+          "active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+          "active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+          "background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+          "calibrated_pixels.f32le": "1f98873b7a7209bf7b716384d16b7534f9561bfe1db4ed4bcff2d547b6f29737",
+          "controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+          "full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+          "pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+          "raw-frames.u16le": "1071336cb367f16ac030e5f0f80d8a978c0196088e6a48a9026371c170bf70cf",
+          "reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+          "reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+          "scalars.f32le": "efe6477371bc9a2f0e5240325af819aeaf1c988e8feb61790f34d82d0c29e1f2",
+          "shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+          "subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+          "thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+          "vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+          "vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+        },
+        "frames": 1029,
+        "historical_1e_minus_6": {
+          "failed_values": 502,
+          "maximum_absolute_difference": 1.2516975402832031e-06,
+          "passed": false
+        },
+        "minimum_flux_threshold_margin": 2323706.8821629593,
+        "minimum_pixel_threshold_distance": 4688.47021484375,
+        "mode": "row",
+        "observed_clipping_classification_disagreements": 0,
+        "role": "fgn",
+        "scope": "wire arithmetic consistency; HEART additionally has an exact source model; no physical-accuracy qualification",
+        "within_command_limits": true
+      },
+      "artifact_files": {
+        "arithmetic-acceptance.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r1/arithmetic-acceptance.json",
+          "sha256": "f723eaa48f9d8761bc42c5cb3ace75ab4e19f9ee705e948072cdb68d09c21538",
+          "size_bytes": 3357
+        },
+        "dm-summary.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r1/dm-summary.json",
+          "sha256": "a9c80f19a3f9e2b2d9216af78509c35e232eeef23199942339722be0acb6a7b7",
+          "size_bytes": 390862
+        },
+        "latency-intervals.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r1/latency-intervals.json",
+          "sha256": "9f4faaeec626e19d590267e4d1bb33a726d466d316e6361ea1e478d39feabf78",
+          "size_bytes": 134108
+        },
+        "numerical-summary.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r1/numerical-summary.json",
+          "sha256": "56f3296d12b063c2c8666dee7a2b36d30372f15ba320653f4b9411ccd6f26890",
+          "size_bytes": 396
+        },
+        "physical-summary.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r1/physical-summary.json",
+          "sha256": "105bc3ff5fd686b68553f18d11852a747dbab2b1d727a3f84156e71e175851cb",
+          "size_bytes": 10537
+        },
+        "placement-after.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r1/placement-after.json",
+          "sha256": "29dee2f73dd25f8e650a3394c34f21aaba2ebf50f78f60dead004c7058c7d0be",
+          "size_bytes": 7349
+        },
+        "placement-before.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r1/placement-before.json",
+          "sha256": "d7cd80bfdf40432091e82cfb000a2b5bf8dd56c35908478eab238181ff14b468",
+          "size_bytes": 7347
+        },
+        "report.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r1/report.json",
+          "sha256": "98d0d623a6f218d3734fbbce6f5b2ef5360828a15bf38ab6b3cc5faaddbb48cf",
+          "size_bytes": 11059
+        },
+        "wire-archives.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r1/wire-archives.json",
+          "sha256": "6d95eb3dc023bf1a5cbcbb2f2d5e582799918d645ee97d8573dc6416775e3647",
+          "size_bytes": 714
+        }
+      },
+      "command": [
+        "/usr/bin/python3",
+        "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-progressive-requal/benchmark/run_classic_live.py",
+        "--fixture",
+        "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture",
+        "--cube",
+        "/home/dgamroth/.cache/rtc-classic-corpus1029-20260930/input.fits",
+        "--replay-corpus",
+        "/home/dgamroth/.cache/rtc-classic-corpus1029-20260930",
+        "--frames",
+        "1029",
+        "--output",
+        "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r1",
+        "--rate-hz",
+        "100",
+        "--readout-us",
+        "2000",
+        "--rtc-cpus",
+        "0,2,4,6,8,10,14",
+        "--source-cpus",
+        "12",
+        "--numerical-acceptance",
+        "source-arithmetic",
+        "--role",
+        "fgn",
+        "--mode",
+        "row",
+        "--plugin",
+        "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so",
+        "--heart-plugin",
+        "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/build-classic-release-20260930/spa/plugins/heart/libspa-heart.so",
+        "--heart-plugin-sha256",
+        "efaf3a810284a6a39b9c84fb433cf9669a638da14b41cd528b8a18cc593ce7d6",
+        "--wfs-simulator",
+        "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator",
+        "--lab-loop-cpu",
+        "0",
+        "--adapter-loop-cpu",
+        "4"
+      ],
+      "competing_process_snapshot_before": [
+        "    PID COMMAND         PSR %CPU",
+        "3550097 python3           8 55.5",
+        "3550096 python3           6  9.0",
+        "3421924 codex             2  4.2",
+        "3001258 julia             2  1.5",
+        "    883 tailscaled        3  0.8",
+        "2961261 codex            12  0.7",
+        "2049210 codex            11  0.4",
+        "3421553 sshd-session      4  0.4",
+        "    864 avahi-daemon      4  0.1",
+        "    136 kcompactd0        6  0.0",
+        "    153 kswapd0           2  0.0",
+        "     18 rcu_preempt      10  0.0",
+        "3540481 kworker/u64:0-e   1  0.0",
+        "3420982 codex             2  0.0",
+        "3503759 kworker/u64:1-e   1  0.0"
+      ],
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r1",
+      "errors": [],
+      "exact_wire_delivery": true,
+      "frames": 1029,
+      "latency": {
+        "achieved_source_rate_hz": 100.00074563785543,
+        "after_first_100": {
+          "first_to_dm_us": {
+            "count": 929,
+            "max": 3534.414,
+            "min": 1951.33,
+            "p50": 2419.553,
+            "p99": 3252.6320800000003
+          },
+          "readout_us": {
+            "count": 929,
+            "max": 1933.968,
+            "min": 1866.1309999999999,
+            "p50": 1912.9790000000003,
+            "p99": 1928.5316400000002
+          },
+          "terminal_to_dm_us": {
+            "count": 929,
+            "max": 1611.216,
+            "min": 52.929,
+            "p50": 502.678,
+            "p99": 1333.0920400000002
+          }
+        },
+        "all": {
+          "first_to_dm_us": {
+            "count": 1029,
+            "max": 3534.414,
+            "min": 1951.33,
+            "p50": 2423.191,
+            "p99": 3252.6320800000003
+          },
+          "readout_us": {
+            "count": 1029,
+            "max": 1933.968,
+            "min": 1799.6770000000001,
+            "p50": 1912.9790000000003,
+            "p99": 1928.0254799999998
+          },
+          "terminal_to_dm_us": {
+            "count": 1029,
+            "max": 1611.216,
+            "min": 52.648,
+            "p50": 508.097,
+            "p99": 1333.0920400000002
+          }
+        },
+        "deadline_exceeded_count": 0,
+        "source_period_us": {
+          "count": 1028,
+          "max": 11140.745,
+          "min": 8859.149,
+          "p50": 9999.896499999999,
+          "p99": 10813.50317
+        }
+      },
+      "path": "fgn-row",
+      "qualified_field": true,
+      "rate_hz": 100,
+      "readout_us": 2000,
+      "receiver_mode": "row-block",
+      "repeat": 1,
+      "report": {
+        "arithmetic_acceptance": {
+          "actual_commands_f32le_sha256": "fc76c62e0fd4d4022ef52bbd26e2297511c04464f07d80a8e24d8799a6364cb2",
+          "analyzer_sha256": "b8781c9c530344b927f5860039cb1d210897de60eb3ef26e3b10467fca2a1913",
+          "application_accuracy": "not assessed: no application error budget supplied",
+          "arithmetic_consistency_passed": true,
+          "checks": {
+            "actual_vs_equation_reference": {
+              "failed_values": 0,
+              "maximum_bound": 0.007969493572696692,
+              "maximum_error": 3.5103768942779112e-06,
+              "maximum_error_to_bound_ratio": 0.0017948614334539282,
+              "passed": true
+            },
+            "cross_implementation": {
+              "failed_values": 0,
+              "maximum_bound": 0.015938987145393383,
+              "maximum_error": 1.2516975402832031e-06,
+              "maximum_error_to_bound_ratio": 0.0008547410190906064,
+              "passed": true
+            },
+            "expected_vs_equation_reference": {
+              "failed_values": 0,
+              "maximum_bound": 0.007969493572696692,
+              "maximum_error": 2.759299755683564e-06,
+              "maximum_error_to_bound_ratio": 0.0011512162510818253,
+              "passed": true
+            }
+          },
+          "clipping_decisions_ambiguous_under_bound": 21620,
+          "exact_model": null,
+          "exact_model_passed": null,
+          "expected_commands_f32le_sha256": "5320114db1773d1983f51ba102bdbd4e56398c54f8a250eaf6729a107858aa85",
+          "fixture_sha256": {
+            "active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+            "active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+            "background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+            "calibrated_pixels.f32le": "1f98873b7a7209bf7b716384d16b7534f9561bfe1db4ed4bcff2d547b6f29737",
+            "controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+            "full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+            "pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+            "raw-frames.u16le": "1071336cb367f16ac030e5f0f80d8a978c0196088e6a48a9026371c170bf70cf",
+            "reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+            "reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+            "scalars.f32le": "efe6477371bc9a2f0e5240325af819aeaf1c988e8feb61790f34d82d0c29e1f2",
+            "shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+            "subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+            "thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+            "vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+            "vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+          },
+          "frames": 1029,
+          "historical_1e_minus_6": {
+            "failed_values": 502,
+            "maximum_absolute_difference": 1.2516975402832031e-06,
+            "passed": false
+          },
+          "minimum_flux_threshold_margin": 2323706.8821629593,
+          "minimum_pixel_threshold_distance": 4688.47021484375,
+          "mode": "row",
+          "observed_clipping_classification_disagreements": 0,
+          "role": "fgn",
+          "scope": "wire arithmetic consistency; HEART additionally has an exact source model; no physical-accuracy qualification",
+          "within_command_limits": true
+        },
+        "command_reference_sha256": "5320114db1773d1983f51ba102bdbd4e56398c54f8a250eaf6729a107858aa85",
+        "daemon_configuration_sha256": "6f9fb3b82d28f389acafb20175701af4403338f412bc18c948498278c819846b",
+        "errors": [],
+        "frames": 1029,
+        "matrix_layout": "shared",
+        "parameter_sha256": {
+          "active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+          "active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+          "background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+          "controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+          "full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+          "pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+          "reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+          "reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+          "shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+          "subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+          "thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+          "vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+          "vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+        },
+        "pipewire_provenance": {
+          "ndarray_filter_chain": "/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-ndarray-filter-chain.so",
+          "ndarray_filter_chain_sha256": "461039dce0cd0d723afdd316afc5a80fb07e84731b53eb9fe37ddeeced252c02",
+          "pipewire_client_library": "/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so",
+          "pipewire_client_library_sha256": "2514f1f329d6eaf8209ee41f5e07b2d31ad2e312549434e6c0020863d1045fc9",
+          "pipewire_daemon": "/opt/pipewireao/bin/pipewire-ao",
+          "pipewire_daemon_sha256": "69873d8cdfc54d49a7ad16ee7c243cdf4f77eef895094eb445e4cb0d2b601783",
+          "pipewire_mode": "installed-prefix",
+          "pipewire_prefix": "/opt/pipewireao",
+          "pipewire_support_spa": "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so",
+          "pipewire_support_spa_sha256": "49d108c51cd2fe0c6dad91fc507a7147d761a7ce2c77d2db3f5197e82aea902a"
+        },
+        "placement_request": {
+          "adapter_loop_cpu": 4,
+          "daemon_loop_cpu": 0,
+          "fifo_priority": 83,
+          "julia_pin_cpus": null,
+          "node_loop_cpu": null,
+          "rtc_cpus": "0,2,4,6,8,10,14",
+          "source_cpus": "12"
+        },
+        "process_returncodes": [
+          0,
+          0,
+          0
+        ],
+        "qualified": true,
+        "rate_hz": 100,
+        "readout_us": 2000,
+        "receiver_mode": "row-block",
+        "replay_corpus": {
+          "clipped_physical_values": 154532,
+          "comparison_criterion": "10\u207b\u2076 \u00b5m absolute or scaled relative (scale floor 1); this corpus does not change the existing gate",
+          "continued_capture_available_frames": 1024,
+          "cube": {
+            "dtype": "UInt16 via FITS BITPIX=16, BSCALE=1, BZERO=32768",
+            "file": "input.fits",
+            "sha256": "4aabcbbb56df887c908e91f313829e2c8dc157975fab2a43058d615ba7855f51",
+            "shape": [
+              1029,
+              352,
+              352
+            ]
+          },
+          "frames": 1029,
+          "kind": "bounded Classic repeated-frame clipping corpus",
+          "nonzero_controller_feedback_frames": 1020,
+          "oracles": {
+            "controller-constraint-feedback.f32le": {
+              "dtype": "Float32 little endian",
+              "initial_seven": "zero as independently confirmed in CLASSIC_PRECISION_REVIEW.md",
+              "quantity": "controller constraint feedback",
+              "sha256": "7b1205964d5109ae913500faf8a9e0da5c330099470470386fcd34100ba75ca3",
+              "shape": [
+                1029,
+                221
+              ],
+              "unit": "\u00b5m"
+            },
+            "demanded_pdm_command.f32le": {
+              "dtype": "Float32 little endian",
+              "quantity": "physical PDM command",
+              "sha256": "5320114db1773d1983f51ba102bdbd4e56398c54f8a250eaf6729a107858aa85",
+              "shape": [
+                1029,
+                277
+              ],
+              "unit": "\u00b5m"
+            },
+            "vdm_command.f32le": {
+              "dtype": "Float32 little endian",
+              "quantity": "prelimit controlled VDM command",
+              "sha256": "9299fcc99519c8ec078a3a2f5c03daa8554f04ad31eb83899273f2ff3fe4c309",
+              "shape": [
+                1029,
+                221
+              ],
+              "unit": "\u00b5m"
+            }
+          },
+          "order": "source frames 1..7 repeat; oracle frames 1..7 are initial capture, frames 8..N are the continued capture prefix, without state reset",
+          "original_cube_path": "/home/dgamroth/workspaces/codex/heart/revolt-rtc/sim_wfs_data/classic_wfs.fits",
+          "qualification": "captured Rust reference trajectory; no live receiver or physical-loop qualification",
+          "repetitions": 147,
+          "source_frames": 7,
+          "source_sha256": {
+            "demanded_pdm_command.f32le": "0a7001484c05483eb23e6ee1a81f179dab398ed4188b908aae505b032718c008",
+            "feedback-controller-constraint-feedback.f32le": "39429b4e1e88af0bbb77dbb14b3f21e0a7591e4a0b3f4378a4baf7e14174c1c6",
+            "feedback-demanded-pdm-command.f32le": "5c73e265d66cb9116db14d9961c85fb0326c198c2d4e655ff7bd98ccf92b9a44",
+            "feedback-vdm-command.f32le": "d9f94c2018a70d0ba6b263933d50e4344a7f3d7aa34680a3cbffa02fad84e32f",
+            "original_cube": "ac5d14eb90de51924af61ac12915833e8ef5c1a1fdde2237b628b49f65fc9aca",
+            "prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4",
+            "raw-frames.u16le": "1071336cb367f16ac030e5f0f80d8a978c0196088e6a48a9026371c170bf70cf",
+            "scalars.f32le": "efe6477371bc9a2f0e5240325af819aeaf1c988e8feb61790f34d82d0c29e1f2",
+            "vdm_command.f32le": "58e9ba4a81bb66edf22286a578e9b728f2e96e57895770e1300abe140c1c8fd6"
+          }
+        },
+        "resolved_graph_sha256": "b4dc2d6b86aef71d827e5066e22dcf44b0b37ca8e226d7b2f2fa331a6d01689d",
+        "role": "fgn",
+        "row_workers": 0,
+        "rows_per_packet": 11,
+        "scope": "live transport and numerical characterization; performance claims require repeated campaign",
+        "sha256": {
+          "/home/dgamroth/.cache/rtc-classic-corpus1029-20260930/input.fits": "4aabcbbb56df887c908e91f313829e2c8dc157975fab2a43058d615ba7855f51",
+          "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator": "4930489f2655da4c33fdabc47ee96a7d051ea125e8492a8f1923c0ee0ed9580b",
+          "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so": "ebcc9295eba0e60f35422d5ce0761a23f91b1a8d56c97f65eb6330138f986ecd",
+          "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/build-classic-release-20260930/spa/plugins/heart/libspa-heart.so": "efaf3a810284a6a39b9c84fb433cf9669a638da14b41cd528b8a18cc593ce7d6"
+        },
+        "source_command": [
+          "taskset",
+          "--cpu-list",
+          "12",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator",
+          "-file",
+          "input.fits",
+          "-tPort",
+          "6000",
+          "-period",
+          "0.01",
+          "-readout",
+          "2000",
+          "-lines",
+          "11",
+          "-numFrames",
+          "1029"
+        ],
+        "source_counters": {
+          "blocks": 32928,
+          "dropped": 0,
+          "frames": 1029,
+          "received": 32928,
+          "rejected": 0,
+          "starvations": 0
+        }
+      },
+      "reported_input_hashes": {
+        "/home/dgamroth/.cache/rtc-classic-corpus1029-20260930/input.fits": "4aabcbbb56df887c908e91f313829e2c8dc157975fab2a43058d615ba7855f51",
+        "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4",
+        "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator": "4930489f2655da4c33fdabc47ee96a7d051ea125e8492a8f1923c0ee0ed9580b",
+        "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so": "ebcc9295eba0e60f35422d5ce0761a23f91b1a8d56c97f65eb6330138f986ecd",
+        "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/build-classic-release-20260930/spa/plugins/heart/libspa-heart.so": "efaf3a810284a6a39b9c84fb433cf9669a638da14b41cd528b8a18cc593ce7d6"
+      },
+      "reported_parameter_hashes": {
+        "active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+        "active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+        "background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+        "controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+        "full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+        "pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+        "reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+        "reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+        "shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+        "subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+        "thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+        "vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+        "vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+      },
+      "reported_wire_archives": [
+        {
+          "archive": "wire.pcapng.zst",
+          "bytes": 260057480,
+          "compression": "zstd level3 window8MiB",
+          "file": "wire.pcapng",
+          "sha256_uncompressed": "47d7231940b0ca339e59d6f857c1d4ba04d7f624462a9fcfc93fe49c78ad2acd"
+        },
+        {
+          "archive": "wfs-packets.tsv.zst",
+          "bytes": 513512160,
+          "compression": "zstd level3 window8MiB",
+          "file": "wfs-packets.tsv",
+          "sha256_uncompressed": "1f3c1b91067648872db98813dcefe0ad0ffdc5ea30483fdd7ce92f4cbc4e056f"
+        },
+        {
+          "archive": "dm-packets.tsv.zst",
+          "bytes": 2357439,
+          "compression": "zstd level3 window8MiB",
+          "file": "dm-packets.tsv",
+          "sha256_uncompressed": "3d334269278b59efe405211834347a54197618edb043365c73242b5981d22c0f"
+        }
+      ],
+      "returncode": 0,
+      "scope": "live transport and numerical characterization; performance claims require repeated campaign"
+    },
+    {
+      "all_frames_deadline_gate": {
+        "deadline_exceeded_count": 0,
+        "deadline_us": 10000.0,
+        "frames": 1029,
+        "max_us": 3541.129,
+        "metric": "first WFS packet to DM",
+        "passed": true
+      },
+      "arithmetic_acceptance": {
+        "actual_commands_f32le_sha256": "a0151ae2e240a9533a2e856a875bdd65d10f5372d0080b49ee828c6c2d53467d",
+        "analyzer_sha256": "b8781c9c530344b927f5860039cb1d210897de60eb3ef26e3b10467fca2a1913",
+        "application_accuracy": "not assessed: no application error budget supplied",
+        "arithmetic_consistency_passed": true,
+        "checks": {
+          "actual_vs_equation_reference": {
+            "failed_values": 0,
+            "maximum_bound": 0.007969493572696692,
+            "maximum_error": 3.5103768942779112e-06,
+            "maximum_error_to_bound_ratio": 0.0016808959642418474,
+            "passed": true
+          },
+          "cross_implementation": {
+            "failed_values": 0,
+            "maximum_bound": 0.015938987145393383,
+            "maximum_error": 1.3113021850585938e-06,
+            "maximum_error_to_bound_ratio": 0.000797758284484566,
+            "passed": true
+          },
+          "expected_vs_equation_reference": {
+            "failed_values": 0,
+            "maximum_bound": 0.007969493572696692,
+            "maximum_error": 2.759299755683564e-06,
+            "maximum_error_to_bound_ratio": 0.0011512162510818253,
+            "passed": true
+          }
+        },
+        "clipping_decisions_ambiguous_under_bound": 21620,
+        "exact_model": null,
+        "exact_model_passed": null,
+        "expected_commands_f32le_sha256": "5320114db1773d1983f51ba102bdbd4e56398c54f8a250eaf6729a107858aa85",
+        "fixture_sha256": {
+          "active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+          "active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+          "background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+          "calibrated_pixels.f32le": "1f98873b7a7209bf7b716384d16b7534f9561bfe1db4ed4bcff2d547b6f29737",
+          "controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+          "full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+          "pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+          "raw-frames.u16le": "1071336cb367f16ac030e5f0f80d8a978c0196088e6a48a9026371c170bf70cf",
+          "reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+          "reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+          "scalars.f32le": "efe6477371bc9a2f0e5240325af819aeaf1c988e8feb61790f34d82d0c29e1f2",
+          "shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+          "subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+          "thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+          "vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+          "vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+        },
+        "frames": 1029,
+        "historical_1e_minus_6": {
+          "failed_values": 888,
+          "maximum_absolute_difference": 1.3113021850585938e-06,
+          "passed": false
+        },
+        "minimum_flux_threshold_margin": 2323706.8821629593,
+        "minimum_pixel_threshold_distance": 4688.47021484375,
+        "mode": "row",
+        "observed_clipping_classification_disagreements": 0,
+        "role": "jfg",
+        "scope": "wire arithmetic consistency; HEART additionally has an exact source model; no physical-accuracy qualification",
+        "within_command_limits": true
+      },
+      "artifact_files": {
+        "arithmetic-acceptance.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r1/arithmetic-acceptance.json",
+          "sha256": "a0b97d3431872f4086561857febd57c66a30b2eb48c5c6b901a7fb840db2cd49",
+          "size_bytes": 3356
+        },
+        "dm-summary.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r1/dm-summary.json",
+          "sha256": "b94327ebeb7fa02000cee41b4b08092ee97a84c492cfd68872b2249d843adb68",
+          "size_bytes": 390883
+        },
+        "latency-intervals.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r1/latency-intervals.json",
+          "sha256": "31822ebe5d8b1df9d5dc09efcad4d3a5fd1f33131a429d376218de3670464b3c",
+          "size_bytes": 134322
+        },
+        "numerical-summary.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r1/numerical-summary.json",
+          "sha256": "b0f19f49f214a7753d080f5aa32705b109d9ae306e5ab66544aef642b7c9b0ab",
+          "size_bytes": 396
+        },
+        "physical-summary.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r1/physical-summary.json",
+          "sha256": "e1ab2dd528ebf0bb525f1ff3a1a7039b1704a9342eaf3e83771a0950ff1b2e83",
+          "size_bytes": 10539
+        },
+        "placement-after.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r1/placement-after.json",
+          "sha256": "77f304d42d84fd489da251386c3e791539f66055f93fa046de88b8fe8719c1e4",
+          "size_bytes": 11545
+        },
+        "placement-before.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r1/placement-before.json",
+          "sha256": "0fee4e4a08e6798f934b3fa8d19fd84e2a2b84e5d94839ca8f603f335f03117f",
+          "size_bytes": 11542
+        },
+        "report.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r1/report.json",
+          "sha256": "50c463ec9509a48e36f1cc7be4bda9b852edf4523897b0cbf3fcc0cecb49f3e0",
+          "size_bytes": 11249
+        },
+        "wire-archives.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r1/wire-archives.json",
+          "sha256": "68fd4de243edf870506f70e4e8393fbd58bb8cd105b609d93dc1bd0145870cf4",
+          "size_bytes": 714
+        }
+      },
+      "command": [
+        "/usr/bin/python3",
+        "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-progressive-requal/benchmark/run_classic_live.py",
+        "--fixture",
+        "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture",
+        "--cube",
+        "/home/dgamroth/.cache/rtc-classic-corpus1029-20260930/input.fits",
+        "--replay-corpus",
+        "/home/dgamroth/.cache/rtc-classic-corpus1029-20260930",
+        "--frames",
+        "1029",
+        "--output",
+        "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r1",
+        "--rate-hz",
+        "100",
+        "--readout-us",
+        "2000",
+        "--rtc-cpus",
+        "0,2,4,6,8,10,14",
+        "--source-cpus",
+        "12",
+        "--numerical-acceptance",
+        "source-arithmetic",
+        "--role",
+        "jfg",
+        "--mode",
+        "row",
+        "--plugin",
+        "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so",
+        "--heart-plugin",
+        "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/build-classic-release-20260930/spa/plugins/heart/libspa-heart.so",
+        "--heart-plugin-sha256",
+        "efaf3a810284a6a39b9c84fb433cf9669a638da14b41cd528b8a18cc593ce7d6",
+        "--wfs-simulator",
+        "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator",
+        "--lab-loop-cpu",
+        "0",
+        "--adapter-loop-cpu",
+        "4",
+        "--node-loop-cpu",
+        "2",
+        "--julia-pin-cpus",
+        "2,6",
+        "--row-workers",
+        "0",
+        "--matrix-layout",
+        "shared"
+      ],
+      "competing_process_snapshot_before": [
+        "    PID COMMAND         PSR %CPU",
+        "3421924 codex             2  4.2",
+        "3550097 python3           6  2.1",
+        "3001258 julia            14  1.5",
+        "    883 tailscaled        3  0.8",
+        "2961261 codex            12  0.7",
+        "2049210 codex            11  0.4",
+        "3421553 sshd-session      4  0.4",
+        "    864 avahi-daemon     15  0.1",
+        "    136 kcompactd0        7  0.0",
+        "    153 kswapd0           6  0.0",
+        "     18 rcu_preempt       4  0.0",
+        "3540481 kworker/u64:0-e   1  0.0",
+        "3543763 kworker/u64:3-e  10  0.0",
+        "3420982 codex             2  0.0",
+        "3503759 kworker/u64:1-e  12  0.0"
+      ],
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r1",
+      "errors": [],
+      "exact_wire_delivery": true,
+      "frames": 1029,
+      "latency": {
+        "achieved_source_rate_hz": 100.00463990399305,
+        "after_first_100": {
+          "first_to_dm_us": {
+            "count": 929,
+            "max": 3288.448,
+            "min": 1985.566,
+            "p50": 2510.787,
+            "p99": 2970.1608
+          },
+          "readout_us": {
+            "count": 929,
+            "max": 1933.8690000000001,
+            "min": 1869.76,
+            "p50": 1912.4899999999998,
+            "p99": 1930.5341999999998
+          },
+          "terminal_to_dm_us": {
+            "count": 929,
+            "max": 1375.397,
+            "min": 74.339,
+            "p50": 594.65,
+            "p99": 1052.86076
+          }
+        },
+        "all": {
+          "first_to_dm_us": {
+            "count": 1029,
+            "max": 3541.129,
+            "min": 1985.245,
+            "p50": 2508.121,
+            "p99": 3012.6274000000008
+          },
+          "readout_us": {
+            "count": 1029,
+            "max": 1933.8690000000001,
+            "min": 1835.446,
+            "p50": 1912.449,
+            "p99": 1930.5341999999998
+          },
+          "terminal_to_dm_us": {
+            "count": 1029,
+            "max": 1705.683,
+            "min": 73.046,
+            "p50": 591.554,
+            "p99": 1101.0162400000008
+          }
+        },
+        "deadline_exceeded_count": 0,
+        "source_period_us": {
+          "count": 1028,
+          "max": 11083.596,
+          "min": 8916.022,
+          "p50": 9999.9735,
+          "p99": 10450.638030000002
+        }
+      },
+      "path": "jfg-row",
+      "qualified_field": true,
+      "rate_hz": 100,
+      "readout_us": 2000,
+      "receiver_mode": "row-block",
+      "repeat": 1,
+      "report": {
+        "arithmetic_acceptance": {
+          "actual_commands_f32le_sha256": "a0151ae2e240a9533a2e856a875bdd65d10f5372d0080b49ee828c6c2d53467d",
+          "analyzer_sha256": "b8781c9c530344b927f5860039cb1d210897de60eb3ef26e3b10467fca2a1913",
+          "application_accuracy": "not assessed: no application error budget supplied",
+          "arithmetic_consistency_passed": true,
+          "checks": {
+            "actual_vs_equation_reference": {
+              "failed_values": 0,
+              "maximum_bound": 0.007969493572696692,
+              "maximum_error": 3.5103768942779112e-06,
+              "maximum_error_to_bound_ratio": 0.0016808959642418474,
+              "passed": true
+            },
+            "cross_implementation": {
+              "failed_values": 0,
+              "maximum_bound": 0.015938987145393383,
+              "maximum_error": 1.3113021850585938e-06,
+              "maximum_error_to_bound_ratio": 0.000797758284484566,
+              "passed": true
+            },
+            "expected_vs_equation_reference": {
+              "failed_values": 0,
+              "maximum_bound": 0.007969493572696692,
+              "maximum_error": 2.759299755683564e-06,
+              "maximum_error_to_bound_ratio": 0.0011512162510818253,
+              "passed": true
+            }
+          },
+          "clipping_decisions_ambiguous_under_bound": 21620,
+          "exact_model": null,
+          "exact_model_passed": null,
+          "expected_commands_f32le_sha256": "5320114db1773d1983f51ba102bdbd4e56398c54f8a250eaf6729a107858aa85",
+          "fixture_sha256": {
+            "active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+            "active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+            "background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+            "calibrated_pixels.f32le": "1f98873b7a7209bf7b716384d16b7534f9561bfe1db4ed4bcff2d547b6f29737",
+            "controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+            "full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+            "pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+            "raw-frames.u16le": "1071336cb367f16ac030e5f0f80d8a978c0196088e6a48a9026371c170bf70cf",
+            "reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+            "reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+            "scalars.f32le": "efe6477371bc9a2f0e5240325af819aeaf1c988e8feb61790f34d82d0c29e1f2",
+            "shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+            "subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+            "thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+            "vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+            "vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+          },
+          "frames": 1029,
+          "historical_1e_minus_6": {
+            "failed_values": 888,
+            "maximum_absolute_difference": 1.3113021850585938e-06,
+            "passed": false
+          },
+          "minimum_flux_threshold_margin": 2323706.8821629593,
+          "minimum_pixel_threshold_distance": 4688.47021484375,
+          "mode": "row",
+          "observed_clipping_classification_disagreements": 0,
+          "role": "jfg",
+          "scope": "wire arithmetic consistency; HEART additionally has an exact source model; no physical-accuracy qualification",
+          "within_command_limits": true
+        },
+        "command_reference_sha256": "5320114db1773d1983f51ba102bdbd4e56398c54f8a250eaf6729a107858aa85",
+        "daemon_configuration_sha256": "a8d0be99ac15ee4caaa8b0f8ace780f684219b4fed173ca95f02c1741c101261",
+        "errors": [],
+        "final_constraint_feedback": {
+          "actual_nonzero_values": 158,
+          "boundary": "retained controller constraint feedback after owner shutdown",
+          "expected_nonzero_values": 158,
+          "max_absolute_error": 5.960464477539063e-08,
+          "qualified": true,
+          "unit": "micron"
+        },
+        "frames": 1029,
+        "matrix_layout": "shared",
+        "parameter_sha256": {
+          "active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+          "active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+          "background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+          "controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+          "full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+          "pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+          "reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+          "reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+          "shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+          "subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+          "thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+          "vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+          "vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+        },
+        "pipewire_provenance": {
+          "ndarray_filter_chain": "/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-ndarray-filter-chain.so",
+          "ndarray_filter_chain_sha256": "461039dce0cd0d723afdd316afc5a80fb07e84731b53eb9fe37ddeeced252c02",
+          "pipewire_client_library": "/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so",
+          "pipewire_client_library_sha256": "2514f1f329d6eaf8209ee41f5e07b2d31ad2e312549434e6c0020863d1045fc9",
+          "pipewire_daemon": "/opt/pipewireao/bin/pipewire-ao",
+          "pipewire_daemon_sha256": "69873d8cdfc54d49a7ad16ee7c243cdf4f77eef895094eb445e4cb0d2b601783",
+          "pipewire_mode": "installed-prefix",
+          "pipewire_prefix": "/opt/pipewireao",
+          "pipewire_support_spa": "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so",
+          "pipewire_support_spa_sha256": "49d108c51cd2fe0c6dad91fc507a7147d761a7ce2c77d2db3f5197e82aea902a"
+        },
+        "placement_request": {
+          "adapter_loop_cpu": 4,
+          "daemon_loop_cpu": 0,
+          "fifo_priority": 83,
+          "julia_pin_cpus": "2,6",
+          "node_loop_cpu": 2,
+          "rtc_cpus": "0,2,4,6,8,10,14",
+          "source_cpus": "12"
+        },
+        "process_returncodes": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "qualified": true,
+        "rate_hz": 100,
+        "readout_us": 2000,
+        "receiver_mode": "row-block",
+        "replay_corpus": {
+          "clipped_physical_values": 154532,
+          "comparison_criterion": "10\u207b\u2076 \u00b5m absolute or scaled relative (scale floor 1); this corpus does not change the existing gate",
+          "continued_capture_available_frames": 1024,
+          "cube": {
+            "dtype": "UInt16 via FITS BITPIX=16, BSCALE=1, BZERO=32768",
+            "file": "input.fits",
+            "sha256": "4aabcbbb56df887c908e91f313829e2c8dc157975fab2a43058d615ba7855f51",
+            "shape": [
+              1029,
+              352,
+              352
+            ]
+          },
+          "frames": 1029,
+          "kind": "bounded Classic repeated-frame clipping corpus",
+          "nonzero_controller_feedback_frames": 1020,
+          "oracles": {
+            "controller-constraint-feedback.f32le": {
+              "dtype": "Float32 little endian",
+              "initial_seven": "zero as independently confirmed in CLASSIC_PRECISION_REVIEW.md",
+              "quantity": "controller constraint feedback",
+              "sha256": "7b1205964d5109ae913500faf8a9e0da5c330099470470386fcd34100ba75ca3",
+              "shape": [
+                1029,
+                221
+              ],
+              "unit": "\u00b5m"
+            },
+            "demanded_pdm_command.f32le": {
+              "dtype": "Float32 little endian",
+              "quantity": "physical PDM command",
+              "sha256": "5320114db1773d1983f51ba102bdbd4e56398c54f8a250eaf6729a107858aa85",
+              "shape": [
+                1029,
+                277
+              ],
+              "unit": "\u00b5m"
+            },
+            "vdm_command.f32le": {
+              "dtype": "Float32 little endian",
+              "quantity": "prelimit controlled VDM command",
+              "sha256": "9299fcc99519c8ec078a3a2f5c03daa8554f04ad31eb83899273f2ff3fe4c309",
+              "shape": [
+                1029,
+                221
+              ],
+              "unit": "\u00b5m"
+            }
+          },
+          "order": "source frames 1..7 repeat; oracle frames 1..7 are initial capture, frames 8..N are the continued capture prefix, without state reset",
+          "original_cube_path": "/home/dgamroth/workspaces/codex/heart/revolt-rtc/sim_wfs_data/classic_wfs.fits",
+          "qualification": "captured Rust reference trajectory; no live receiver or physical-loop qualification",
+          "repetitions": 147,
+          "source_frames": 7,
+          "source_sha256": {
+            "demanded_pdm_command.f32le": "0a7001484c05483eb23e6ee1a81f179dab398ed4188b908aae505b032718c008",
+            "feedback-controller-constraint-feedback.f32le": "39429b4e1e88af0bbb77dbb14b3f21e0a7591e4a0b3f4378a4baf7e14174c1c6",
+            "feedback-demanded-pdm-command.f32le": "5c73e265d66cb9116db14d9961c85fb0326c198c2d4e655ff7bd98ccf92b9a44",
+            "feedback-vdm-command.f32le": "d9f94c2018a70d0ba6b263933d50e4344a7f3d7aa34680a3cbffa02fad84e32f",
+            "original_cube": "ac5d14eb90de51924af61ac12915833e8ef5c1a1fdde2237b628b49f65fc9aca",
+            "prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4",
+            "raw-frames.u16le": "1071336cb367f16ac030e5f0f80d8a978c0196088e6a48a9026371c170bf70cf",
+            "scalars.f32le": "efe6477371bc9a2f0e5240325af819aeaf1c988e8feb61790f34d82d0c29e1f2",
+            "vdm_command.f32le": "58e9ba4a81bb66edf22286a578e9b728f2e96e57895770e1300abe140c1c8fd6"
+          }
+        },
+        "role": "jfg",
+        "row_workers": 0,
+        "rows_per_packet": 11,
+        "scope": "live transport and numerical characterization; performance claims require repeated campaign",
+        "sha256": {
+          "/home/dgamroth/.cache/rtc-classic-corpus1029-20260930/input.fits": "4aabcbbb56df887c908e91f313829e2c8dc157975fab2a43058d615ba7855f51",
+          "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator": "4930489f2655da4c33fdabc47ee96a7d051ea125e8492a8f1923c0ee0ed9580b",
+          "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so": "ebcc9295eba0e60f35422d5ce0761a23f91b1a8d56c97f65eb6330138f986ecd",
+          "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/build-classic-release-20260930/spa/plugins/heart/libspa-heart.so": "efaf3a810284a6a39b9c84fb433cf9669a638da14b41cd528b8a18cc593ce7d6"
+        },
+        "source_command": [
+          "taskset",
+          "--cpu-list",
+          "12",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator",
+          "-file",
+          "input.fits",
+          "-tPort",
+          "6000",
+          "-period",
+          "0.01",
+          "-readout",
+          "2000",
+          "-lines",
+          "11",
+          "-numFrames",
+          "1029"
+        ],
+        "source_counters": {
+          "blocks": 32928,
+          "dropped": 0,
+          "frames": 1029,
+          "received": 32928,
+          "rejected": 0,
+          "starvations": 0
+        }
+      },
+      "reported_input_hashes": {
+        "/home/dgamroth/.cache/rtc-classic-corpus1029-20260930/input.fits": "4aabcbbb56df887c908e91f313829e2c8dc157975fab2a43058d615ba7855f51",
+        "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4",
+        "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator": "4930489f2655da4c33fdabc47ee96a7d051ea125e8492a8f1923c0ee0ed9580b",
+        "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so": "ebcc9295eba0e60f35422d5ce0761a23f91b1a8d56c97f65eb6330138f986ecd",
+        "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/build-classic-release-20260930/spa/plugins/heart/libspa-heart.so": "efaf3a810284a6a39b9c84fb433cf9669a638da14b41cd528b8a18cc593ce7d6"
+      },
+      "reported_parameter_hashes": {
+        "active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+        "active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+        "background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+        "controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+        "full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+        "pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+        "reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+        "reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+        "shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+        "subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+        "thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+        "vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+        "vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+      },
+      "reported_wire_archives": [
+        {
+          "archive": "wire.pcapng.zst",
+          "bytes": 260057480,
+          "compression": "zstd level3 window8MiB",
+          "file": "wire.pcapng",
+          "sha256_uncompressed": "d32ae887877a83b15ec1d295cd33c07dba24d84e455a7074950b782b167e138a"
+        },
+        {
+          "archive": "wfs-packets.tsv.zst",
+          "bytes": 513512160,
+          "compression": "zstd level3 window8MiB",
+          "file": "wfs-packets.tsv",
+          "sha256_uncompressed": "7d66c8fe5f6693bab7f49b612bb597d7763ba651b8679e706717295b94a471c7"
+        },
+        {
+          "archive": "dm-packets.tsv.zst",
+          "bytes": 2357439,
+          "compression": "zstd level3 window8MiB",
+          "file": "dm-packets.tsv",
+          "sha256_uncompressed": "756c491254aa80b30fe9f087fd0401cf7c404eb7fde4c28cdcfbf081092edd72"
+        }
+      ],
+      "returncode": 0,
+      "scope": "live transport and numerical characterization; performance claims require repeated campaign"
+    },
+    {
+      "all_frames_deadline_gate": {
+        "deadline_exceeded_count": 0,
+        "deadline_us": 10000.0,
+        "frames": 1029,
+        "max_us": 3283.13,
+        "metric": "first WFS packet to DM",
+        "passed": true
+      },
+      "arithmetic_acceptance": {
+        "actual_commands_f32le_sha256": "a0151ae2e240a9533a2e856a875bdd65d10f5372d0080b49ee828c6c2d53467d",
+        "analyzer_sha256": "b8781c9c530344b927f5860039cb1d210897de60eb3ef26e3b10467fca2a1913",
+        "application_accuracy": "not assessed: no application error budget supplied",
+        "arithmetic_consistency_passed": true,
+        "checks": {
+          "actual_vs_equation_reference": {
+            "failed_values": 0,
+            "maximum_bound": 0.007969493572696692,
+            "maximum_error": 3.5103768942779112e-06,
+            "maximum_error_to_bound_ratio": 0.0016808959642418474,
+            "passed": true
+          },
+          "cross_implementation": {
+            "failed_values": 0,
+            "maximum_bound": 0.015938987145393383,
+            "maximum_error": 1.3113021850585938e-06,
+            "maximum_error_to_bound_ratio": 0.000797758284484566,
+            "passed": true
+          },
+          "expected_vs_equation_reference": {
+            "failed_values": 0,
+            "maximum_bound": 0.007969493572696692,
+            "maximum_error": 2.759299755683564e-06,
+            "maximum_error_to_bound_ratio": 0.0011512162510818253,
+            "passed": true
+          }
+        },
+        "clipping_decisions_ambiguous_under_bound": 21620,
+        "exact_model": null,
+        "exact_model_passed": null,
+        "expected_commands_f32le_sha256": "5320114db1773d1983f51ba102bdbd4e56398c54f8a250eaf6729a107858aa85",
+        "fixture_sha256": {
+          "active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+          "active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+          "background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+          "calibrated_pixels.f32le": "1f98873b7a7209bf7b716384d16b7534f9561bfe1db4ed4bcff2d547b6f29737",
+          "controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+          "full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+          "pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+          "raw-frames.u16le": "1071336cb367f16ac030e5f0f80d8a978c0196088e6a48a9026371c170bf70cf",
+          "reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+          "reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+          "scalars.f32le": "efe6477371bc9a2f0e5240325af819aeaf1c988e8feb61790f34d82d0c29e1f2",
+          "shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+          "subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+          "thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+          "vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+          "vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+        },
+        "frames": 1029,
+        "historical_1e_minus_6": {
+          "failed_values": 888,
+          "maximum_absolute_difference": 1.3113021850585938e-06,
+          "passed": false
+        },
+        "minimum_flux_threshold_margin": 2323706.8821629593,
+        "minimum_pixel_threshold_distance": 4688.47021484375,
+        "mode": "row",
+        "observed_clipping_classification_disagreements": 0,
+        "role": "jfg",
+        "scope": "wire arithmetic consistency; HEART additionally has an exact source model; no physical-accuracy qualification",
+        "within_command_limits": true
+      },
+      "artifact_files": {
+        "arithmetic-acceptance.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r2/arithmetic-acceptance.json",
+          "sha256": "a0b97d3431872f4086561857febd57c66a30b2eb48c5c6b901a7fb840db2cd49",
+          "size_bytes": 3356
+        },
+        "dm-summary.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r2/dm-summary.json",
+          "sha256": "827a7cc20e54870f7a894f05d3a6f7fe666941bb0bfdd98cc9de6fbccad8546b",
+          "size_bytes": 390928
+        },
+        "latency-intervals.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r2/latency-intervals.json",
+          "sha256": "6a74aa2a9a1bf19f1e59a956854efe803c166d3ffbfe4ef38d80b5ffd8eee3f1",
+          "size_bytes": 134128
+        },
+        "numerical-summary.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r2/numerical-summary.json",
+          "sha256": "b0f19f49f214a7753d080f5aa32705b109d9ae306e5ab66544aef642b7c9b0ab",
+          "size_bytes": 396
+        },
+        "physical-summary.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r2/physical-summary.json",
+          "sha256": "b039e4997324d40e504bf9cbea989d3e52a16ac6dc766bd203a354bebf3ec69d",
+          "size_bytes": 10533
+        },
+        "placement-after.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r2/placement-after.json",
+          "sha256": "29f17838382acbab6412a1c3fdcebbcbe06e55c5ab4fb114373c171fd6fee283",
+          "size_bytes": 11545
+        },
+        "placement-before.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r2/placement-before.json",
+          "sha256": "8fcce7eb4ba005ed349a6e3b4fc8025c63a438489e819ece29ff3d2899f5dd57",
+          "size_bytes": 11542
+        },
+        "report.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r2/report.json",
+          "sha256": "50c463ec9509a48e36f1cc7be4bda9b852edf4523897b0cbf3fcc0cecb49f3e0",
+          "size_bytes": 11249
+        },
+        "wire-archives.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r2/wire-archives.json",
+          "sha256": "0e57aa5f2b2fa5c04faea51b605b3f20a198a9e2c0c6a27e77baca75bfbadf88",
+          "size_bytes": 714
+        }
+      },
+      "command": [
+        "/usr/bin/python3",
+        "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-progressive-requal/benchmark/run_classic_live.py",
+        "--fixture",
+        "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture",
+        "--cube",
+        "/home/dgamroth/.cache/rtc-classic-corpus1029-20260930/input.fits",
+        "--replay-corpus",
+        "/home/dgamroth/.cache/rtc-classic-corpus1029-20260930",
+        "--frames",
+        "1029",
+        "--output",
+        "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r2",
+        "--rate-hz",
+        "100",
+        "--readout-us",
+        "2000",
+        "--rtc-cpus",
+        "0,2,4,6,8,10,14",
+        "--source-cpus",
+        "12",
+        "--numerical-acceptance",
+        "source-arithmetic",
+        "--role",
+        "jfg",
+        "--mode",
+        "row",
+        "--plugin",
+        "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so",
+        "--heart-plugin",
+        "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/build-classic-release-20260930/spa/plugins/heart/libspa-heart.so",
+        "--heart-plugin-sha256",
+        "efaf3a810284a6a39b9c84fb433cf9669a638da14b41cd528b8a18cc593ce7d6",
+        "--wfs-simulator",
+        "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator",
+        "--lab-loop-cpu",
+        "0",
+        "--adapter-loop-cpu",
+        "4",
+        "--node-loop-cpu",
+        "2",
+        "--julia-pin-cpus",
+        "2,6",
+        "--row-workers",
+        "0",
+        "--matrix-layout",
+        "shared"
+      ],
+      "competing_process_snapshot_before": [
+        "    PID COMMAND         PSR %CPU",
+        "3551445 ps                2  100",
+        "3551422 gh                2 38.8",
+        "3421924 codex             2  4.2",
+        "3001258 julia             3  1.5",
+        "3550097 python3           7  1.2",
+        "    883 tailscaled        3  0.8",
+        "2961261 codex            12  0.7",
+        "2049210 codex            11  0.4",
+        "3421553 sshd-session     10  0.4",
+        "    864 avahi-daemon     15  0.1",
+        "    136 kcompactd0        0  0.0",
+        "    153 kswapd0           8  0.0",
+        "     18 rcu_preempt       2  0.0",
+        "3540481 kworker/u64:0-k   1  0.0",
+        "3543763 kworker/u64:3-e  12  0.0"
+      ],
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r2",
+      "errors": [],
+      "exact_wire_delivery": true,
+      "frames": 1029,
+      "latency": {
+        "achieved_source_rate_hz": 100.00402078422866,
+        "after_first_100": {
+          "first_to_dm_us": {
+            "count": 929,
+            "max": 3283.13,
+            "min": 1980.537,
+            "p50": 2484.92,
+            "p99": 3029.1865600000006
+          },
+          "readout_us": {
+            "count": 929,
+            "max": 1940.5530000000003,
+            "min": 1890.45,
+            "p50": 1912.06,
+            "p99": 1925.86688
+          },
+          "terminal_to_dm_us": {
+            "count": 929,
+            "max": 1364.428,
+            "min": 73.347,
+            "p50": 571.537,
+            "p99": 1113.4182000000005
+          }
+        },
+        "all": {
+          "first_to_dm_us": {
+            "count": 1029,
+            "max": 3283.13,
+            "min": 1980.537,
+            "p50": 2485.321,
+            "p99": 3038.3474400000005
+          },
+          "readout_us": {
+            "count": 1029,
+            "max": 1940.5530000000003,
+            "min": 1838.1720000000003,
+            "p50": 1912.05,
+            "p99": 1925.6357200000002
+          },
+          "terminal_to_dm_us": {
+            "count": 1029,
+            "max": 1412.918,
+            "min": 73.347,
+            "p50": 571.847,
+            "p99": 1119.65808
+          }
+        },
+        "deadline_exceeded_count": 0,
+        "source_period_us": {
+          "count": 1028,
+          "max": 11399.423,
+          "min": 8599.196,
+          "p50": 10000.015500000001,
+          "p99": 10607.18898
+        }
+      },
+      "path": "jfg-row",
+      "qualified_field": true,
+      "rate_hz": 100,
+      "readout_us": 2000,
+      "receiver_mode": "row-block",
+      "repeat": 2,
+      "report": {
+        "arithmetic_acceptance": {
+          "actual_commands_f32le_sha256": "a0151ae2e240a9533a2e856a875bdd65d10f5372d0080b49ee828c6c2d53467d",
+          "analyzer_sha256": "b8781c9c530344b927f5860039cb1d210897de60eb3ef26e3b10467fca2a1913",
+          "application_accuracy": "not assessed: no application error budget supplied",
+          "arithmetic_consistency_passed": true,
+          "checks": {
+            "actual_vs_equation_reference": {
+              "failed_values": 0,
+              "maximum_bound": 0.007969493572696692,
+              "maximum_error": 3.5103768942779112e-06,
+              "maximum_error_to_bound_ratio": 0.0016808959642418474,
+              "passed": true
+            },
+            "cross_implementation": {
+              "failed_values": 0,
+              "maximum_bound": 0.015938987145393383,
+              "maximum_error": 1.3113021850585938e-06,
+              "maximum_error_to_bound_ratio": 0.000797758284484566,
+              "passed": true
+            },
+            "expected_vs_equation_reference": {
+              "failed_values": 0,
+              "maximum_bound": 0.007969493572696692,
+              "maximum_error": 2.759299755683564e-06,
+              "maximum_error_to_bound_ratio": 0.0011512162510818253,
+              "passed": true
+            }
+          },
+          "clipping_decisions_ambiguous_under_bound": 21620,
+          "exact_model": null,
+          "exact_model_passed": null,
+          "expected_commands_f32le_sha256": "5320114db1773d1983f51ba102bdbd4e56398c54f8a250eaf6729a107858aa85",
+          "fixture_sha256": {
+            "active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+            "active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+            "background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+            "calibrated_pixels.f32le": "1f98873b7a7209bf7b716384d16b7534f9561bfe1db4ed4bcff2d547b6f29737",
+            "controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+            "full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+            "pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+            "raw-frames.u16le": "1071336cb367f16ac030e5f0f80d8a978c0196088e6a48a9026371c170bf70cf",
+            "reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+            "reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+            "scalars.f32le": "efe6477371bc9a2f0e5240325af819aeaf1c988e8feb61790f34d82d0c29e1f2",
+            "shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+            "subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+            "thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+            "vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+            "vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+          },
+          "frames": 1029,
+          "historical_1e_minus_6": {
+            "failed_values": 888,
+            "maximum_absolute_difference": 1.3113021850585938e-06,
+            "passed": false
+          },
+          "minimum_flux_threshold_margin": 2323706.8821629593,
+          "minimum_pixel_threshold_distance": 4688.47021484375,
+          "mode": "row",
+          "observed_clipping_classification_disagreements": 0,
+          "role": "jfg",
+          "scope": "wire arithmetic consistency; HEART additionally has an exact source model; no physical-accuracy qualification",
+          "within_command_limits": true
+        },
+        "command_reference_sha256": "5320114db1773d1983f51ba102bdbd4e56398c54f8a250eaf6729a107858aa85",
+        "daemon_configuration_sha256": "a8d0be99ac15ee4caaa8b0f8ace780f684219b4fed173ca95f02c1741c101261",
+        "errors": [],
+        "final_constraint_feedback": {
+          "actual_nonzero_values": 158,
+          "boundary": "retained controller constraint feedback after owner shutdown",
+          "expected_nonzero_values": 158,
+          "max_absolute_error": 5.960464477539063e-08,
+          "qualified": true,
+          "unit": "micron"
+        },
+        "frames": 1029,
+        "matrix_layout": "shared",
+        "parameter_sha256": {
+          "active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+          "active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+          "background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+          "controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+          "full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+          "pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+          "reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+          "reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+          "shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+          "subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+          "thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+          "vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+          "vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+        },
+        "pipewire_provenance": {
+          "ndarray_filter_chain": "/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-ndarray-filter-chain.so",
+          "ndarray_filter_chain_sha256": "461039dce0cd0d723afdd316afc5a80fb07e84731b53eb9fe37ddeeced252c02",
+          "pipewire_client_library": "/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so",
+          "pipewire_client_library_sha256": "2514f1f329d6eaf8209ee41f5e07b2d31ad2e312549434e6c0020863d1045fc9",
+          "pipewire_daemon": "/opt/pipewireao/bin/pipewire-ao",
+          "pipewire_daemon_sha256": "69873d8cdfc54d49a7ad16ee7c243cdf4f77eef895094eb445e4cb0d2b601783",
+          "pipewire_mode": "installed-prefix",
+          "pipewire_prefix": "/opt/pipewireao",
+          "pipewire_support_spa": "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so",
+          "pipewire_support_spa_sha256": "49d108c51cd2fe0c6dad91fc507a7147d761a7ce2c77d2db3f5197e82aea902a"
+        },
+        "placement_request": {
+          "adapter_loop_cpu": 4,
+          "daemon_loop_cpu": 0,
+          "fifo_priority": 83,
+          "julia_pin_cpus": "2,6",
+          "node_loop_cpu": 2,
+          "rtc_cpus": "0,2,4,6,8,10,14",
+          "source_cpus": "12"
+        },
+        "process_returncodes": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "qualified": true,
+        "rate_hz": 100,
+        "readout_us": 2000,
+        "receiver_mode": "row-block",
+        "replay_corpus": {
+          "clipped_physical_values": 154532,
+          "comparison_criterion": "10\u207b\u2076 \u00b5m absolute or scaled relative (scale floor 1); this corpus does not change the existing gate",
+          "continued_capture_available_frames": 1024,
+          "cube": {
+            "dtype": "UInt16 via FITS BITPIX=16, BSCALE=1, BZERO=32768",
+            "file": "input.fits",
+            "sha256": "4aabcbbb56df887c908e91f313829e2c8dc157975fab2a43058d615ba7855f51",
+            "shape": [
+              1029,
+              352,
+              352
+            ]
+          },
+          "frames": 1029,
+          "kind": "bounded Classic repeated-frame clipping corpus",
+          "nonzero_controller_feedback_frames": 1020,
+          "oracles": {
+            "controller-constraint-feedback.f32le": {
+              "dtype": "Float32 little endian",
+              "initial_seven": "zero as independently confirmed in CLASSIC_PRECISION_REVIEW.md",
+              "quantity": "controller constraint feedback",
+              "sha256": "7b1205964d5109ae913500faf8a9e0da5c330099470470386fcd34100ba75ca3",
+              "shape": [
+                1029,
+                221
+              ],
+              "unit": "\u00b5m"
+            },
+            "demanded_pdm_command.f32le": {
+              "dtype": "Float32 little endian",
+              "quantity": "physical PDM command",
+              "sha256": "5320114db1773d1983f51ba102bdbd4e56398c54f8a250eaf6729a107858aa85",
+              "shape": [
+                1029,
+                277
+              ],
+              "unit": "\u00b5m"
+            },
+            "vdm_command.f32le": {
+              "dtype": "Float32 little endian",
+              "quantity": "prelimit controlled VDM command",
+              "sha256": "9299fcc99519c8ec078a3a2f5c03daa8554f04ad31eb83899273f2ff3fe4c309",
+              "shape": [
+                1029,
+                221
+              ],
+              "unit": "\u00b5m"
+            }
+          },
+          "order": "source frames 1..7 repeat; oracle frames 1..7 are initial capture, frames 8..N are the continued capture prefix, without state reset",
+          "original_cube_path": "/home/dgamroth/workspaces/codex/heart/revolt-rtc/sim_wfs_data/classic_wfs.fits",
+          "qualification": "captured Rust reference trajectory; no live receiver or physical-loop qualification",
+          "repetitions": 147,
+          "source_frames": 7,
+          "source_sha256": {
+            "demanded_pdm_command.f32le": "0a7001484c05483eb23e6ee1a81f179dab398ed4188b908aae505b032718c008",
+            "feedback-controller-constraint-feedback.f32le": "39429b4e1e88af0bbb77dbb14b3f21e0a7591e4a0b3f4378a4baf7e14174c1c6",
+            "feedback-demanded-pdm-command.f32le": "5c73e265d66cb9116db14d9961c85fb0326c198c2d4e655ff7bd98ccf92b9a44",
+            "feedback-vdm-command.f32le": "d9f94c2018a70d0ba6b263933d50e4344a7f3d7aa34680a3cbffa02fad84e32f",
+            "original_cube": "ac5d14eb90de51924af61ac12915833e8ef5c1a1fdde2237b628b49f65fc9aca",
+            "prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4",
+            "raw-frames.u16le": "1071336cb367f16ac030e5f0f80d8a978c0196088e6a48a9026371c170bf70cf",
+            "scalars.f32le": "efe6477371bc9a2f0e5240325af819aeaf1c988e8feb61790f34d82d0c29e1f2",
+            "vdm_command.f32le": "58e9ba4a81bb66edf22286a578e9b728f2e96e57895770e1300abe140c1c8fd6"
+          }
+        },
+        "role": "jfg",
+        "row_workers": 0,
+        "rows_per_packet": 11,
+        "scope": "live transport and numerical characterization; performance claims require repeated campaign",
+        "sha256": {
+          "/home/dgamroth/.cache/rtc-classic-corpus1029-20260930/input.fits": "4aabcbbb56df887c908e91f313829e2c8dc157975fab2a43058d615ba7855f51",
+          "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator": "4930489f2655da4c33fdabc47ee96a7d051ea125e8492a8f1923c0ee0ed9580b",
+          "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so": "ebcc9295eba0e60f35422d5ce0761a23f91b1a8d56c97f65eb6330138f986ecd",
+          "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/build-classic-release-20260930/spa/plugins/heart/libspa-heart.so": "efaf3a810284a6a39b9c84fb433cf9669a638da14b41cd528b8a18cc593ce7d6"
+        },
+        "source_command": [
+          "taskset",
+          "--cpu-list",
+          "12",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator",
+          "-file",
+          "input.fits",
+          "-tPort",
+          "6000",
+          "-period",
+          "0.01",
+          "-readout",
+          "2000",
+          "-lines",
+          "11",
+          "-numFrames",
+          "1029"
+        ],
+        "source_counters": {
+          "blocks": 32928,
+          "dropped": 0,
+          "frames": 1029,
+          "received": 32928,
+          "rejected": 0,
+          "starvations": 0
+        }
+      },
+      "reported_input_hashes": {
+        "/home/dgamroth/.cache/rtc-classic-corpus1029-20260930/input.fits": "4aabcbbb56df887c908e91f313829e2c8dc157975fab2a43058d615ba7855f51",
+        "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4",
+        "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator": "4930489f2655da4c33fdabc47ee96a7d051ea125e8492a8f1923c0ee0ed9580b",
+        "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so": "ebcc9295eba0e60f35422d5ce0761a23f91b1a8d56c97f65eb6330138f986ecd",
+        "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/build-classic-release-20260930/spa/plugins/heart/libspa-heart.so": "efaf3a810284a6a39b9c84fb433cf9669a638da14b41cd528b8a18cc593ce7d6"
+      },
+      "reported_parameter_hashes": {
+        "active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+        "active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+        "background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+        "controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+        "full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+        "pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+        "reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+        "reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+        "shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+        "subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+        "thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+        "vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+        "vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+      },
+      "reported_wire_archives": [
+        {
+          "archive": "wire.pcapng.zst",
+          "bytes": 260057480,
+          "compression": "zstd level3 window8MiB",
+          "file": "wire.pcapng",
+          "sha256_uncompressed": "fd673ccee49078be48aaa9ea890de24ae8927ae5acca11c00bbf9c3e623d20b7"
+        },
+        {
+          "archive": "wfs-packets.tsv.zst",
+          "bytes": 513512160,
+          "compression": "zstd level3 window8MiB",
+          "file": "wfs-packets.tsv",
+          "sha256_uncompressed": "3eaa8cf986b41395c0caea854fe66bdd7e08f00324e00964d9e594ed5d161498"
+        },
+        {
+          "archive": "dm-packets.tsv.zst",
+          "bytes": 2357439,
+          "compression": "zstd level3 window8MiB",
+          "file": "dm-packets.tsv",
+          "sha256_uncompressed": "4dd0eaac8ee54ed5a8e79de2bf8e03a504c553520cb98d2affd7183ef18713ca"
+        }
+      ],
+      "returncode": 0,
+      "scope": "live transport and numerical characterization; performance claims require repeated campaign"
+    },
+    {
+      "all_frames_deadline_gate": {
+        "deadline_exceeded_count": 0,
+        "deadline_us": 10000.0,
+        "frames": 1029,
+        "max_us": 3410.829,
+        "metric": "first WFS packet to DM",
+        "passed": true
+      },
+      "arithmetic_acceptance": {
+        "actual_commands_f32le_sha256": "fc76c62e0fd4d4022ef52bbd26e2297511c04464f07d80a8e24d8799a6364cb2",
+        "analyzer_sha256": "b8781c9c530344b927f5860039cb1d210897de60eb3ef26e3b10467fca2a1913",
+        "application_accuracy": "not assessed: no application error budget supplied",
+        "arithmetic_consistency_passed": true,
+        "checks": {
+          "actual_vs_equation_reference": {
+            "failed_values": 0,
+            "maximum_bound": 0.007969493572696692,
+            "maximum_error": 3.5103768942779112e-06,
+            "maximum_error_to_bound_ratio": 0.0017948614334539282,
+            "passed": true
+          },
+          "cross_implementation": {
+            "failed_values": 0,
+            "maximum_bound": 0.015938987145393383,
+            "maximum_error": 1.2516975402832031e-06,
+            "maximum_error_to_bound_ratio": 0.0008547410190906064,
+            "passed": true
+          },
+          "expected_vs_equation_reference": {
+            "failed_values": 0,
+            "maximum_bound": 0.007969493572696692,
+            "maximum_error": 2.759299755683564e-06,
+            "maximum_error_to_bound_ratio": 0.0011512162510818253,
+            "passed": true
+          }
+        },
+        "clipping_decisions_ambiguous_under_bound": 21620,
+        "exact_model": null,
+        "exact_model_passed": null,
+        "expected_commands_f32le_sha256": "5320114db1773d1983f51ba102bdbd4e56398c54f8a250eaf6729a107858aa85",
+        "fixture_sha256": {
+          "active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+          "active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+          "background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+          "calibrated_pixels.f32le": "1f98873b7a7209bf7b716384d16b7534f9561bfe1db4ed4bcff2d547b6f29737",
+          "controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+          "full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+          "pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+          "raw-frames.u16le": "1071336cb367f16ac030e5f0f80d8a978c0196088e6a48a9026371c170bf70cf",
+          "reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+          "reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+          "scalars.f32le": "efe6477371bc9a2f0e5240325af819aeaf1c988e8feb61790f34d82d0c29e1f2",
+          "shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+          "subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+          "thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+          "vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+          "vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+        },
+        "frames": 1029,
+        "historical_1e_minus_6": {
+          "failed_values": 502,
+          "maximum_absolute_difference": 1.2516975402832031e-06,
+          "passed": false
+        },
+        "minimum_flux_threshold_margin": 2323706.8821629593,
+        "minimum_pixel_threshold_distance": 4688.47021484375,
+        "mode": "row",
+        "observed_clipping_classification_disagreements": 0,
+        "role": "fgn",
+        "scope": "wire arithmetic consistency; HEART additionally has an exact source model; no physical-accuracy qualification",
+        "within_command_limits": true
+      },
+      "artifact_files": {
+        "arithmetic-acceptance.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r2/arithmetic-acceptance.json",
+          "sha256": "f723eaa48f9d8761bc42c5cb3ace75ab4e19f9ee705e948072cdb68d09c21538",
+          "size_bytes": 3357
+        },
+        "dm-summary.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r2/dm-summary.json",
+          "sha256": "4e0e429b09569cb40bf17c681d147b204a42fd0d34caa1b7ebe79189df4d6c2d",
+          "size_bytes": 390884
+        },
+        "latency-intervals.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r2/latency-intervals.json",
+          "sha256": "55a39f965f8e5ebb06718f3669df509804087dea644e53e4f92c9cf8bb010889",
+          "size_bytes": 133973
+        },
+        "numerical-summary.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r2/numerical-summary.json",
+          "sha256": "56f3296d12b063c2c8666dee7a2b36d30372f15ba320653f4b9411ccd6f26890",
+          "size_bytes": 396
+        },
+        "physical-summary.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r2/physical-summary.json",
+          "sha256": "231c35d7d8b3e330a98bb5d9aa67eb9a7ebc309119976fdb3eb370b12d9c22f1",
+          "size_bytes": 10537
+        },
+        "placement-after.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r2/placement-after.json",
+          "sha256": "cefd5b33e4b939b20ef191699dc05d8f7f8c3fa4134b44f56738acf989d2bed1",
+          "size_bytes": 7349
+        },
+        "placement-before.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r2/placement-before.json",
+          "sha256": "ef06dc256ba1e93cd219933fce664a4936fbb6bc6f3e679ea104bc74d9de0fd1",
+          "size_bytes": 7347
+        },
+        "report.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r2/report.json",
+          "sha256": "98d0d623a6f218d3734fbbce6f5b2ef5360828a15bf38ab6b3cc5faaddbb48cf",
+          "size_bytes": 11059
+        },
+        "wire-archives.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r2/wire-archives.json",
+          "sha256": "782025ce1bf1f6df90e1c7068aef38f99ce3994a12d59f5a0bdc13b38567388c",
+          "size_bytes": 714
+        }
+      },
+      "command": [
+        "/usr/bin/python3",
+        "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-progressive-requal/benchmark/run_classic_live.py",
+        "--fixture",
+        "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture",
+        "--cube",
+        "/home/dgamroth/.cache/rtc-classic-corpus1029-20260930/input.fits",
+        "--replay-corpus",
+        "/home/dgamroth/.cache/rtc-classic-corpus1029-20260930",
+        "--frames",
+        "1029",
+        "--output",
+        "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r2",
+        "--rate-hz",
+        "100",
+        "--readout-us",
+        "2000",
+        "--rtc-cpus",
+        "0,2,4,6,8,10,14",
+        "--source-cpus",
+        "12",
+        "--numerical-acceptance",
+        "source-arithmetic",
+        "--role",
+        "fgn",
+        "--mode",
+        "row",
+        "--plugin",
+        "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so",
+        "--heart-plugin",
+        "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/build-classic-release-20260930/spa/plugins/heart/libspa-heart.so",
+        "--heart-plugin-sha256",
+        "efaf3a810284a6a39b9c84fb433cf9669a638da14b41cd528b8a18cc593ce7d6",
+        "--wfs-simulator",
+        "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator",
+        "--lab-loop-cpu",
+        "0",
+        "--adapter-loop-cpu",
+        "4"
+      ],
+      "competing_process_snapshot_before": [
+        "    PID COMMAND         PSR %CPU",
+        "3552307 ps                2  100",
+        "3421924 codex             2  4.2",
+        "3001258 julia             5  1.5",
+        "3550097 python3           7  1.1",
+        "    883 tailscaled        3  0.8",
+        "2961261 codex            12  0.7",
+        "2049210 codex            11  0.4",
+        "3421553 sshd-session      4  0.4",
+        "    864 avahi-daemon     15  0.1",
+        "    136 kcompactd0        8  0.0",
+        "    153 kswapd0           2  0.0",
+        "     18 rcu_preempt       6  0.0",
+        "3543763 kworker/u64:3-e   8  0.0",
+        "3540481 kworker/u64:0-e   1  0.0",
+        "3420982 codex             2  0.0"
+      ],
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r2",
+      "errors": [],
+      "exact_wire_delivery": true,
+      "frames": 1029,
+      "latency": {
+        "achieved_source_rate_hz": 99.9981991861264,
+        "after_first_100": {
+          "first_to_dm_us": {
+            "count": 929,
+            "max": 3398.076,
+            "min": 1958.777,
+            "p50": 2407.185,
+            "p99": 3099.056840000002
+          },
+          "readout_us": {
+            "count": 929,
+            "max": 1941.9560000000001,
+            "min": 1866.946,
+            "p50": 1913.5829999999999,
+            "p99": 1930.531
+          },
+          "terminal_to_dm_us": {
+            "count": 929,
+            "max": 1477.449,
+            "min": 53.149,
+            "p50": 492.81,
+            "p99": 1190.7598400000022
+          }
+        },
+        "all": {
+          "first_to_dm_us": {
+            "count": 1029,
+            "max": 3410.829,
+            "min": 1955.832,
+            "p50": 2409.789,
+            "p99": 3149.9789200000005
+          },
+          "readout_us": {
+            "count": 1029,
+            "max": 1941.9560000000001,
+            "min": 1856.6470000000002,
+            "p50": 1913.1930000000002,
+            "p99": 1930.45552
+          },
+          "terminal_to_dm_us": {
+            "count": 1029,
+            "max": 1488.039,
+            "min": 53.149,
+            "p50": 496.176,
+            "p99": 1232.21224
+          }
+        },
+        "deadline_exceeded_count": 0,
+        "source_period_us": {
+          "count": 1028,
+          "max": 12398.152,
+          "min": 7217.307,
+          "p50": 9999.8675,
+          "p99": 10744.02363
+        }
+      },
+      "path": "fgn-row",
+      "qualified_field": true,
+      "rate_hz": 100,
+      "readout_us": 2000,
+      "receiver_mode": "row-block",
+      "repeat": 2,
+      "report": {
+        "arithmetic_acceptance": {
+          "actual_commands_f32le_sha256": "fc76c62e0fd4d4022ef52bbd26e2297511c04464f07d80a8e24d8799a6364cb2",
+          "analyzer_sha256": "b8781c9c530344b927f5860039cb1d210897de60eb3ef26e3b10467fca2a1913",
+          "application_accuracy": "not assessed: no application error budget supplied",
+          "arithmetic_consistency_passed": true,
+          "checks": {
+            "actual_vs_equation_reference": {
+              "failed_values": 0,
+              "maximum_bound": 0.007969493572696692,
+              "maximum_error": 3.5103768942779112e-06,
+              "maximum_error_to_bound_ratio": 0.0017948614334539282,
+              "passed": true
+            },
+            "cross_implementation": {
+              "failed_values": 0,
+              "maximum_bound": 0.015938987145393383,
+              "maximum_error": 1.2516975402832031e-06,
+              "maximum_error_to_bound_ratio": 0.0008547410190906064,
+              "passed": true
+            },
+            "expected_vs_equation_reference": {
+              "failed_values": 0,
+              "maximum_bound": 0.007969493572696692,
+              "maximum_error": 2.759299755683564e-06,
+              "maximum_error_to_bound_ratio": 0.0011512162510818253,
+              "passed": true
+            }
+          },
+          "clipping_decisions_ambiguous_under_bound": 21620,
+          "exact_model": null,
+          "exact_model_passed": null,
+          "expected_commands_f32le_sha256": "5320114db1773d1983f51ba102bdbd4e56398c54f8a250eaf6729a107858aa85",
+          "fixture_sha256": {
+            "active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+            "active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+            "background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+            "calibrated_pixels.f32le": "1f98873b7a7209bf7b716384d16b7534f9561bfe1db4ed4bcff2d547b6f29737",
+            "controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+            "full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+            "pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+            "raw-frames.u16le": "1071336cb367f16ac030e5f0f80d8a978c0196088e6a48a9026371c170bf70cf",
+            "reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+            "reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+            "scalars.f32le": "efe6477371bc9a2f0e5240325af819aeaf1c988e8feb61790f34d82d0c29e1f2",
+            "shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+            "subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+            "thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+            "vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+            "vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+          },
+          "frames": 1029,
+          "historical_1e_minus_6": {
+            "failed_values": 502,
+            "maximum_absolute_difference": 1.2516975402832031e-06,
+            "passed": false
+          },
+          "minimum_flux_threshold_margin": 2323706.8821629593,
+          "minimum_pixel_threshold_distance": 4688.47021484375,
+          "mode": "row",
+          "observed_clipping_classification_disagreements": 0,
+          "role": "fgn",
+          "scope": "wire arithmetic consistency; HEART additionally has an exact source model; no physical-accuracy qualification",
+          "within_command_limits": true
+        },
+        "command_reference_sha256": "5320114db1773d1983f51ba102bdbd4e56398c54f8a250eaf6729a107858aa85",
+        "daemon_configuration_sha256": "6f9fb3b82d28f389acafb20175701af4403338f412bc18c948498278c819846b",
+        "errors": [],
+        "frames": 1029,
+        "matrix_layout": "shared",
+        "parameter_sha256": {
+          "active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+          "active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+          "background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+          "controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+          "full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+          "pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+          "reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+          "reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+          "shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+          "subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+          "thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+          "vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+          "vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+        },
+        "pipewire_provenance": {
+          "ndarray_filter_chain": "/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-ndarray-filter-chain.so",
+          "ndarray_filter_chain_sha256": "461039dce0cd0d723afdd316afc5a80fb07e84731b53eb9fe37ddeeced252c02",
+          "pipewire_client_library": "/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so",
+          "pipewire_client_library_sha256": "2514f1f329d6eaf8209ee41f5e07b2d31ad2e312549434e6c0020863d1045fc9",
+          "pipewire_daemon": "/opt/pipewireao/bin/pipewire-ao",
+          "pipewire_daemon_sha256": "69873d8cdfc54d49a7ad16ee7c243cdf4f77eef895094eb445e4cb0d2b601783",
+          "pipewire_mode": "installed-prefix",
+          "pipewire_prefix": "/opt/pipewireao",
+          "pipewire_support_spa": "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so",
+          "pipewire_support_spa_sha256": "49d108c51cd2fe0c6dad91fc507a7147d761a7ce2c77d2db3f5197e82aea902a"
+        },
+        "placement_request": {
+          "adapter_loop_cpu": 4,
+          "daemon_loop_cpu": 0,
+          "fifo_priority": 83,
+          "julia_pin_cpus": null,
+          "node_loop_cpu": null,
+          "rtc_cpus": "0,2,4,6,8,10,14",
+          "source_cpus": "12"
+        },
+        "process_returncodes": [
+          0,
+          0,
+          0
+        ],
+        "qualified": true,
+        "rate_hz": 100,
+        "readout_us": 2000,
+        "receiver_mode": "row-block",
+        "replay_corpus": {
+          "clipped_physical_values": 154532,
+          "comparison_criterion": "10\u207b\u2076 \u00b5m absolute or scaled relative (scale floor 1); this corpus does not change the existing gate",
+          "continued_capture_available_frames": 1024,
+          "cube": {
+            "dtype": "UInt16 via FITS BITPIX=16, BSCALE=1, BZERO=32768",
+            "file": "input.fits",
+            "sha256": "4aabcbbb56df887c908e91f313829e2c8dc157975fab2a43058d615ba7855f51",
+            "shape": [
+              1029,
+              352,
+              352
+            ]
+          },
+          "frames": 1029,
+          "kind": "bounded Classic repeated-frame clipping corpus",
+          "nonzero_controller_feedback_frames": 1020,
+          "oracles": {
+            "controller-constraint-feedback.f32le": {
+              "dtype": "Float32 little endian",
+              "initial_seven": "zero as independently confirmed in CLASSIC_PRECISION_REVIEW.md",
+              "quantity": "controller constraint feedback",
+              "sha256": "7b1205964d5109ae913500faf8a9e0da5c330099470470386fcd34100ba75ca3",
+              "shape": [
+                1029,
+                221
+              ],
+              "unit": "\u00b5m"
+            },
+            "demanded_pdm_command.f32le": {
+              "dtype": "Float32 little endian",
+              "quantity": "physical PDM command",
+              "sha256": "5320114db1773d1983f51ba102bdbd4e56398c54f8a250eaf6729a107858aa85",
+              "shape": [
+                1029,
+                277
+              ],
+              "unit": "\u00b5m"
+            },
+            "vdm_command.f32le": {
+              "dtype": "Float32 little endian",
+              "quantity": "prelimit controlled VDM command",
+              "sha256": "9299fcc99519c8ec078a3a2f5c03daa8554f04ad31eb83899273f2ff3fe4c309",
+              "shape": [
+                1029,
+                221
+              ],
+              "unit": "\u00b5m"
+            }
+          },
+          "order": "source frames 1..7 repeat; oracle frames 1..7 are initial capture, frames 8..N are the continued capture prefix, without state reset",
+          "original_cube_path": "/home/dgamroth/workspaces/codex/heart/revolt-rtc/sim_wfs_data/classic_wfs.fits",
+          "qualification": "captured Rust reference trajectory; no live receiver or physical-loop qualification",
+          "repetitions": 147,
+          "source_frames": 7,
+          "source_sha256": {
+            "demanded_pdm_command.f32le": "0a7001484c05483eb23e6ee1a81f179dab398ed4188b908aae505b032718c008",
+            "feedback-controller-constraint-feedback.f32le": "39429b4e1e88af0bbb77dbb14b3f21e0a7591e4a0b3f4378a4baf7e14174c1c6",
+            "feedback-demanded-pdm-command.f32le": "5c73e265d66cb9116db14d9961c85fb0326c198c2d4e655ff7bd98ccf92b9a44",
+            "feedback-vdm-command.f32le": "d9f94c2018a70d0ba6b263933d50e4344a7f3d7aa34680a3cbffa02fad84e32f",
+            "original_cube": "ac5d14eb90de51924af61ac12915833e8ef5c1a1fdde2237b628b49f65fc9aca",
+            "prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4",
+            "raw-frames.u16le": "1071336cb367f16ac030e5f0f80d8a978c0196088e6a48a9026371c170bf70cf",
+            "scalars.f32le": "efe6477371bc9a2f0e5240325af819aeaf1c988e8feb61790f34d82d0c29e1f2",
+            "vdm_command.f32le": "58e9ba4a81bb66edf22286a578e9b728f2e96e57895770e1300abe140c1c8fd6"
+          }
+        },
+        "resolved_graph_sha256": "b4dc2d6b86aef71d827e5066e22dcf44b0b37ca8e226d7b2f2fa331a6d01689d",
+        "role": "fgn",
+        "row_workers": 0,
+        "rows_per_packet": 11,
+        "scope": "live transport and numerical characterization; performance claims require repeated campaign",
+        "sha256": {
+          "/home/dgamroth/.cache/rtc-classic-corpus1029-20260930/input.fits": "4aabcbbb56df887c908e91f313829e2c8dc157975fab2a43058d615ba7855f51",
+          "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator": "4930489f2655da4c33fdabc47ee96a7d051ea125e8492a8f1923c0ee0ed9580b",
+          "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so": "ebcc9295eba0e60f35422d5ce0761a23f91b1a8d56c97f65eb6330138f986ecd",
+          "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/build-classic-release-20260930/spa/plugins/heart/libspa-heart.so": "efaf3a810284a6a39b9c84fb433cf9669a638da14b41cd528b8a18cc593ce7d6"
+        },
+        "source_command": [
+          "taskset",
+          "--cpu-list",
+          "12",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator",
+          "-file",
+          "input.fits",
+          "-tPort",
+          "6000",
+          "-period",
+          "0.01",
+          "-readout",
+          "2000",
+          "-lines",
+          "11",
+          "-numFrames",
+          "1029"
+        ],
+        "source_counters": {
+          "blocks": 32928,
+          "dropped": 0,
+          "frames": 1029,
+          "received": 32928,
+          "rejected": 0,
+          "starvations": 0
+        }
+      },
+      "reported_input_hashes": {
+        "/home/dgamroth/.cache/rtc-classic-corpus1029-20260930/input.fits": "4aabcbbb56df887c908e91f313829e2c8dc157975fab2a43058d615ba7855f51",
+        "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4",
+        "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator": "4930489f2655da4c33fdabc47ee96a7d051ea125e8492a8f1923c0ee0ed9580b",
+        "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so": "ebcc9295eba0e60f35422d5ce0761a23f91b1a8d56c97f65eb6330138f986ecd",
+        "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/build-classic-release-20260930/spa/plugins/heart/libspa-heart.so": "efaf3a810284a6a39b9c84fb433cf9669a638da14b41cd528b8a18cc593ce7d6"
+      },
+      "reported_parameter_hashes": {
+        "active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+        "active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+        "background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+        "controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+        "full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+        "pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+        "reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+        "reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+        "shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+        "subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+        "thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+        "vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+        "vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+      },
+      "reported_wire_archives": [
+        {
+          "archive": "wire.pcapng.zst",
+          "bytes": 260057480,
+          "compression": "zstd level3 window8MiB",
+          "file": "wire.pcapng",
+          "sha256_uncompressed": "cf583d65ece5469ee8f9d9e7a257f76d99de0003ef2cdccb6ee5ff17a0f954e2"
+        },
+        {
+          "archive": "wfs-packets.tsv.zst",
+          "bytes": 513512160,
+          "compression": "zstd level3 window8MiB",
+          "file": "wfs-packets.tsv",
+          "sha256_uncompressed": "07232c8fef830f76b0abe88818d19788d186540621c97cad3057bdb8d58f0fb1"
+        },
+        {
+          "archive": "dm-packets.tsv.zst",
+          "bytes": 2357439,
+          "compression": "zstd level3 window8MiB",
+          "file": "dm-packets.tsv",
+          "sha256_uncompressed": "126958d65502c77099e93af7456fb3553252815d0683ea07318138041dd425e8"
+        }
+      ],
+      "returncode": 0,
+      "scope": "live transport and numerical characterization; performance claims require repeated campaign"
+    },
+    {
+      "all_frames_deadline_gate": {
+        "deadline_exceeded_count": 0,
+        "deadline_us": 10000.0,
+        "frames": 1029,
+        "max_us": 3797.131,
+        "metric": "first WFS packet to DM",
+        "passed": true
+      },
+      "arithmetic_acceptance": {
+        "actual_commands_f32le_sha256": "fc76c62e0fd4d4022ef52bbd26e2297511c04464f07d80a8e24d8799a6364cb2",
+        "analyzer_sha256": "b8781c9c530344b927f5860039cb1d210897de60eb3ef26e3b10467fca2a1913",
+        "application_accuracy": "not assessed: no application error budget supplied",
+        "arithmetic_consistency_passed": true,
+        "checks": {
+          "actual_vs_equation_reference": {
+            "failed_values": 0,
+            "maximum_bound": 0.007969493572696692,
+            "maximum_error": 3.5103768942779112e-06,
+            "maximum_error_to_bound_ratio": 0.0017948614334539282,
+            "passed": true
+          },
+          "cross_implementation": {
+            "failed_values": 0,
+            "maximum_bound": 0.015938987145393383,
+            "maximum_error": 1.2516975402832031e-06,
+            "maximum_error_to_bound_ratio": 0.0008547410190906064,
+            "passed": true
+          },
+          "expected_vs_equation_reference": {
+            "failed_values": 0,
+            "maximum_bound": 0.007969493572696692,
+            "maximum_error": 2.759299755683564e-06,
+            "maximum_error_to_bound_ratio": 0.0011512162510818253,
+            "passed": true
+          }
+        },
+        "clipping_decisions_ambiguous_under_bound": 21620,
+        "exact_model": null,
+        "exact_model_passed": null,
+        "expected_commands_f32le_sha256": "5320114db1773d1983f51ba102bdbd4e56398c54f8a250eaf6729a107858aa85",
+        "fixture_sha256": {
+          "active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+          "active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+          "background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+          "calibrated_pixels.f32le": "1f98873b7a7209bf7b716384d16b7534f9561bfe1db4ed4bcff2d547b6f29737",
+          "controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+          "full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+          "pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+          "raw-frames.u16le": "1071336cb367f16ac030e5f0f80d8a978c0196088e6a48a9026371c170bf70cf",
+          "reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+          "reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+          "scalars.f32le": "efe6477371bc9a2f0e5240325af819aeaf1c988e8feb61790f34d82d0c29e1f2",
+          "shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+          "subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+          "thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+          "vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+          "vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+        },
+        "frames": 1029,
+        "historical_1e_minus_6": {
+          "failed_values": 502,
+          "maximum_absolute_difference": 1.2516975402832031e-06,
+          "passed": false
+        },
+        "minimum_flux_threshold_margin": 2323706.8821629593,
+        "minimum_pixel_threshold_distance": 4688.47021484375,
+        "mode": "row",
+        "observed_clipping_classification_disagreements": 0,
+        "role": "fgn",
+        "scope": "wire arithmetic consistency; HEART additionally has an exact source model; no physical-accuracy qualification",
+        "within_command_limits": true
+      },
+      "artifact_files": {
+        "arithmetic-acceptance.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r3/arithmetic-acceptance.json",
+          "sha256": "f723eaa48f9d8761bc42c5cb3ace75ab4e19f9ee705e948072cdb68d09c21538",
+          "size_bytes": 3357
+        },
+        "dm-summary.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r3/dm-summary.json",
+          "sha256": "dd058976a00141d338efea4b85fa4811c7c40a9d2797c182a85fbe7b0ba41415",
+          "size_bytes": 390910
+        },
+        "latency-intervals.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r3/latency-intervals.json",
+          "sha256": "a0ee9b1389cbdf125654ef85e890b4c0f3a2f37e4de9052a290c2e36f1c294b4",
+          "size_bytes": 133778
+        },
+        "numerical-summary.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r3/numerical-summary.json",
+          "sha256": "56f3296d12b063c2c8666dee7a2b36d30372f15ba320653f4b9411ccd6f26890",
+          "size_bytes": 396
+        },
+        "physical-summary.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r3/physical-summary.json",
+          "sha256": "26abfc352f0162e39d6bdf21970f2ddf0640e8e206576399f1db97433e686343",
+          "size_bytes": 10539
+        },
+        "placement-after.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r3/placement-after.json",
+          "sha256": "de8a528d04d74ec47d21a3a5df380235a8c3a10d505ce93fee0537eee0f51a53",
+          "size_bytes": 7349
+        },
+        "placement-before.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r3/placement-before.json",
+          "sha256": "42d58bb51af8bf28031ea791e62590a0192c3f7624b46f33d103b47f41fda0ea",
+          "size_bytes": 7347
+        },
+        "report.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r3/report.json",
+          "sha256": "98d0d623a6f218d3734fbbce6f5b2ef5360828a15bf38ab6b3cc5faaddbb48cf",
+          "size_bytes": 11059
+        },
+        "wire-archives.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r3/wire-archives.json",
+          "sha256": "3e830b5004857db595ded3d7e135d3f91acf0006107a197b6a37e340bfb7e549",
+          "size_bytes": 714
+        }
+      },
+      "command": [
+        "/usr/bin/python3",
+        "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-progressive-requal/benchmark/run_classic_live.py",
+        "--fixture",
+        "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture",
+        "--cube",
+        "/home/dgamroth/.cache/rtc-classic-corpus1029-20260930/input.fits",
+        "--replay-corpus",
+        "/home/dgamroth/.cache/rtc-classic-corpus1029-20260930",
+        "--frames",
+        "1029",
+        "--output",
+        "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r3",
+        "--rate-hz",
+        "100",
+        "--readout-us",
+        "2000",
+        "--rtc-cpus",
+        "0,2,4,6,8,10,14",
+        "--source-cpus",
+        "12",
+        "--numerical-acceptance",
+        "source-arithmetic",
+        "--role",
+        "fgn",
+        "--mode",
+        "row",
+        "--plugin",
+        "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so",
+        "--heart-plugin",
+        "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/build-classic-release-20260930/spa/plugins/heart/libspa-heart.so",
+        "--heart-plugin-sha256",
+        "efaf3a810284a6a39b9c84fb433cf9669a638da14b41cd528b8a18cc593ce7d6",
+        "--wfs-simulator",
+        "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator",
+        "--lab-loop-cpu",
+        "0",
+        "--adapter-loop-cpu",
+        "4"
+      ],
+      "competing_process_snapshot_before": [
+        "    PID COMMAND         PSR %CPU",
+        "3421924 codex             2  4.2",
+        "3001258 julia             0  1.5",
+        "3550097 python3           7  1.2",
+        "    883 tailscaled        3  0.8",
+        "2961261 codex            12  0.7",
+        "2049210 codex            11  0.4",
+        "3421553 sshd-session      4  0.4",
+        "    864 avahi-daemon      2  0.1",
+        "    136 kcompactd0        2  0.0",
+        "    153 kswapd0           2  0.0",
+        "     18 rcu_preempt       2  0.0",
+        "3543763 kworker/u64:3-e   8  0.0",
+        "3540481 kworker/u64:0-e   1  0.0",
+        "3420982 codex             2  0.0",
+        "3420730 sshd-session     15  0.0"
+      ],
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r3",
+      "errors": [],
+      "exact_wire_delivery": true,
+      "frames": 1029,
+      "latency": {
+        "achieved_source_rate_hz": 100.0011064616588,
+        "after_first_100": {
+          "first_to_dm_us": {
+            "count": 929,
+            "max": 3797.131,
+            "min": 1955.873,
+            "p50": 2351.452,
+            "p99": 3151.4436400000004
+          },
+          "readout_us": {
+            "count": 929,
+            "max": 1937.078,
+            "min": 1870.4830000000002,
+            "p50": 1912.802,
+            "p99": 1930.597
+          },
+          "terminal_to_dm_us": {
+            "count": 929,
+            "max": 1863.2,
+            "min": 52.367,
+            "p50": 437.447,
+            "p99": 1229.2324400000005
+          }
+        },
+        "all": {
+          "first_to_dm_us": {
+            "count": 1029,
+            "max": 3797.131,
+            "min": 1955.873,
+            "p50": 2362.652,
+            "p99": 3253.34672
+          },
+          "readout_us": {
+            "count": 1029,
+            "max": 1937.078,
+            "min": 1865.975,
+            "p50": 1912.6720000000003,
+            "p99": 1930.1456399999997
+          },
+          "terminal_to_dm_us": {
+            "count": 1029,
+            "max": 1863.2,
+            "min": 52.367,
+            "p50": 442.927,
+            "p99": 1334.4594000000002
+          }
+        },
+        "deadline_exceeded_count": 0,
+        "source_period_us": {
+          "count": 1028,
+          "max": 10791.584,
+          "min": 9166.358,
+          "p50": 10000.121500000001,
+          "p99": 10692.61966
+        }
+      },
+      "path": "fgn-row",
+      "qualified_field": true,
+      "rate_hz": 100,
+      "readout_us": 2000,
+      "receiver_mode": "row-block",
+      "repeat": 3,
+      "report": {
+        "arithmetic_acceptance": {
+          "actual_commands_f32le_sha256": "fc76c62e0fd4d4022ef52bbd26e2297511c04464f07d80a8e24d8799a6364cb2",
+          "analyzer_sha256": "b8781c9c530344b927f5860039cb1d210897de60eb3ef26e3b10467fca2a1913",
+          "application_accuracy": "not assessed: no application error budget supplied",
+          "arithmetic_consistency_passed": true,
+          "checks": {
+            "actual_vs_equation_reference": {
+              "failed_values": 0,
+              "maximum_bound": 0.007969493572696692,
+              "maximum_error": 3.5103768942779112e-06,
+              "maximum_error_to_bound_ratio": 0.0017948614334539282,
+              "passed": true
+            },
+            "cross_implementation": {
+              "failed_values": 0,
+              "maximum_bound": 0.015938987145393383,
+              "maximum_error": 1.2516975402832031e-06,
+              "maximum_error_to_bound_ratio": 0.0008547410190906064,
+              "passed": true
+            },
+            "expected_vs_equation_reference": {
+              "failed_values": 0,
+              "maximum_bound": 0.007969493572696692,
+              "maximum_error": 2.759299755683564e-06,
+              "maximum_error_to_bound_ratio": 0.0011512162510818253,
+              "passed": true
+            }
+          },
+          "clipping_decisions_ambiguous_under_bound": 21620,
+          "exact_model": null,
+          "exact_model_passed": null,
+          "expected_commands_f32le_sha256": "5320114db1773d1983f51ba102bdbd4e56398c54f8a250eaf6729a107858aa85",
+          "fixture_sha256": {
+            "active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+            "active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+            "background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+            "calibrated_pixels.f32le": "1f98873b7a7209bf7b716384d16b7534f9561bfe1db4ed4bcff2d547b6f29737",
+            "controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+            "full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+            "pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+            "raw-frames.u16le": "1071336cb367f16ac030e5f0f80d8a978c0196088e6a48a9026371c170bf70cf",
+            "reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+            "reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+            "scalars.f32le": "efe6477371bc9a2f0e5240325af819aeaf1c988e8feb61790f34d82d0c29e1f2",
+            "shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+            "subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+            "thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+            "vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+            "vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+          },
+          "frames": 1029,
+          "historical_1e_minus_6": {
+            "failed_values": 502,
+            "maximum_absolute_difference": 1.2516975402832031e-06,
+            "passed": false
+          },
+          "minimum_flux_threshold_margin": 2323706.8821629593,
+          "minimum_pixel_threshold_distance": 4688.47021484375,
+          "mode": "row",
+          "observed_clipping_classification_disagreements": 0,
+          "role": "fgn",
+          "scope": "wire arithmetic consistency; HEART additionally has an exact source model; no physical-accuracy qualification",
+          "within_command_limits": true
+        },
+        "command_reference_sha256": "5320114db1773d1983f51ba102bdbd4e56398c54f8a250eaf6729a107858aa85",
+        "daemon_configuration_sha256": "6f9fb3b82d28f389acafb20175701af4403338f412bc18c948498278c819846b",
+        "errors": [],
+        "frames": 1029,
+        "matrix_layout": "shared",
+        "parameter_sha256": {
+          "active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+          "active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+          "background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+          "controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+          "full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+          "pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+          "reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+          "reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+          "shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+          "subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+          "thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+          "vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+          "vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+        },
+        "pipewire_provenance": {
+          "ndarray_filter_chain": "/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-ndarray-filter-chain.so",
+          "ndarray_filter_chain_sha256": "461039dce0cd0d723afdd316afc5a80fb07e84731b53eb9fe37ddeeced252c02",
+          "pipewire_client_library": "/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so",
+          "pipewire_client_library_sha256": "2514f1f329d6eaf8209ee41f5e07b2d31ad2e312549434e6c0020863d1045fc9",
+          "pipewire_daemon": "/opt/pipewireao/bin/pipewire-ao",
+          "pipewire_daemon_sha256": "69873d8cdfc54d49a7ad16ee7c243cdf4f77eef895094eb445e4cb0d2b601783",
+          "pipewire_mode": "installed-prefix",
+          "pipewire_prefix": "/opt/pipewireao",
+          "pipewire_support_spa": "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so",
+          "pipewire_support_spa_sha256": "49d108c51cd2fe0c6dad91fc507a7147d761a7ce2c77d2db3f5197e82aea902a"
+        },
+        "placement_request": {
+          "adapter_loop_cpu": 4,
+          "daemon_loop_cpu": 0,
+          "fifo_priority": 83,
+          "julia_pin_cpus": null,
+          "node_loop_cpu": null,
+          "rtc_cpus": "0,2,4,6,8,10,14",
+          "source_cpus": "12"
+        },
+        "process_returncodes": [
+          0,
+          0,
+          0
+        ],
+        "qualified": true,
+        "rate_hz": 100,
+        "readout_us": 2000,
+        "receiver_mode": "row-block",
+        "replay_corpus": {
+          "clipped_physical_values": 154532,
+          "comparison_criterion": "10\u207b\u2076 \u00b5m absolute or scaled relative (scale floor 1); this corpus does not change the existing gate",
+          "continued_capture_available_frames": 1024,
+          "cube": {
+            "dtype": "UInt16 via FITS BITPIX=16, BSCALE=1, BZERO=32768",
+            "file": "input.fits",
+            "sha256": "4aabcbbb56df887c908e91f313829e2c8dc157975fab2a43058d615ba7855f51",
+            "shape": [
+              1029,
+              352,
+              352
+            ]
+          },
+          "frames": 1029,
+          "kind": "bounded Classic repeated-frame clipping corpus",
+          "nonzero_controller_feedback_frames": 1020,
+          "oracles": {
+            "controller-constraint-feedback.f32le": {
+              "dtype": "Float32 little endian",
+              "initial_seven": "zero as independently confirmed in CLASSIC_PRECISION_REVIEW.md",
+              "quantity": "controller constraint feedback",
+              "sha256": "7b1205964d5109ae913500faf8a9e0da5c330099470470386fcd34100ba75ca3",
+              "shape": [
+                1029,
+                221
+              ],
+              "unit": "\u00b5m"
+            },
+            "demanded_pdm_command.f32le": {
+              "dtype": "Float32 little endian",
+              "quantity": "physical PDM command",
+              "sha256": "5320114db1773d1983f51ba102bdbd4e56398c54f8a250eaf6729a107858aa85",
+              "shape": [
+                1029,
+                277
+              ],
+              "unit": "\u00b5m"
+            },
+            "vdm_command.f32le": {
+              "dtype": "Float32 little endian",
+              "quantity": "prelimit controlled VDM command",
+              "sha256": "9299fcc99519c8ec078a3a2f5c03daa8554f04ad31eb83899273f2ff3fe4c309",
+              "shape": [
+                1029,
+                221
+              ],
+              "unit": "\u00b5m"
+            }
+          },
+          "order": "source frames 1..7 repeat; oracle frames 1..7 are initial capture, frames 8..N are the continued capture prefix, without state reset",
+          "original_cube_path": "/home/dgamroth/workspaces/codex/heart/revolt-rtc/sim_wfs_data/classic_wfs.fits",
+          "qualification": "captured Rust reference trajectory; no live receiver or physical-loop qualification",
+          "repetitions": 147,
+          "source_frames": 7,
+          "source_sha256": {
+            "demanded_pdm_command.f32le": "0a7001484c05483eb23e6ee1a81f179dab398ed4188b908aae505b032718c008",
+            "feedback-controller-constraint-feedback.f32le": "39429b4e1e88af0bbb77dbb14b3f21e0a7591e4a0b3f4378a4baf7e14174c1c6",
+            "feedback-demanded-pdm-command.f32le": "5c73e265d66cb9116db14d9961c85fb0326c198c2d4e655ff7bd98ccf92b9a44",
+            "feedback-vdm-command.f32le": "d9f94c2018a70d0ba6b263933d50e4344a7f3d7aa34680a3cbffa02fad84e32f",
+            "original_cube": "ac5d14eb90de51924af61ac12915833e8ef5c1a1fdde2237b628b49f65fc9aca",
+            "prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4",
+            "raw-frames.u16le": "1071336cb367f16ac030e5f0f80d8a978c0196088e6a48a9026371c170bf70cf",
+            "scalars.f32le": "efe6477371bc9a2f0e5240325af819aeaf1c988e8feb61790f34d82d0c29e1f2",
+            "vdm_command.f32le": "58e9ba4a81bb66edf22286a578e9b728f2e96e57895770e1300abe140c1c8fd6"
+          }
+        },
+        "resolved_graph_sha256": "b4dc2d6b86aef71d827e5066e22dcf44b0b37ca8e226d7b2f2fa331a6d01689d",
+        "role": "fgn",
+        "row_workers": 0,
+        "rows_per_packet": 11,
+        "scope": "live transport and numerical characterization; performance claims require repeated campaign",
+        "sha256": {
+          "/home/dgamroth/.cache/rtc-classic-corpus1029-20260930/input.fits": "4aabcbbb56df887c908e91f313829e2c8dc157975fab2a43058d615ba7855f51",
+          "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator": "4930489f2655da4c33fdabc47ee96a7d051ea125e8492a8f1923c0ee0ed9580b",
+          "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so": "ebcc9295eba0e60f35422d5ce0761a23f91b1a8d56c97f65eb6330138f986ecd",
+          "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/build-classic-release-20260930/spa/plugins/heart/libspa-heart.so": "efaf3a810284a6a39b9c84fb433cf9669a638da14b41cd528b8a18cc593ce7d6"
+        },
+        "source_command": [
+          "taskset",
+          "--cpu-list",
+          "12",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator",
+          "-file",
+          "input.fits",
+          "-tPort",
+          "6000",
+          "-period",
+          "0.01",
+          "-readout",
+          "2000",
+          "-lines",
+          "11",
+          "-numFrames",
+          "1029"
+        ],
+        "source_counters": {
+          "blocks": 32928,
+          "dropped": 0,
+          "frames": 1029,
+          "received": 32928,
+          "rejected": 0,
+          "starvations": 0
+        }
+      },
+      "reported_input_hashes": {
+        "/home/dgamroth/.cache/rtc-classic-corpus1029-20260930/input.fits": "4aabcbbb56df887c908e91f313829e2c8dc157975fab2a43058d615ba7855f51",
+        "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4",
+        "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator": "4930489f2655da4c33fdabc47ee96a7d051ea125e8492a8f1923c0ee0ed9580b",
+        "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so": "ebcc9295eba0e60f35422d5ce0761a23f91b1a8d56c97f65eb6330138f986ecd",
+        "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/build-classic-release-20260930/spa/plugins/heart/libspa-heart.so": "efaf3a810284a6a39b9c84fb433cf9669a638da14b41cd528b8a18cc593ce7d6"
+      },
+      "reported_parameter_hashes": {
+        "active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+        "active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+        "background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+        "controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+        "full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+        "pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+        "reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+        "reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+        "shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+        "subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+        "thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+        "vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+        "vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+      },
+      "reported_wire_archives": [
+        {
+          "archive": "wire.pcapng.zst",
+          "bytes": 260057480,
+          "compression": "zstd level3 window8MiB",
+          "file": "wire.pcapng",
+          "sha256_uncompressed": "2b0b06f069cf09653a8e47f8d88284a8b0840971365ad92aeafa52c4961d4dee"
+        },
+        {
+          "archive": "wfs-packets.tsv.zst",
+          "bytes": 513512160,
+          "compression": "zstd level3 window8MiB",
+          "file": "wfs-packets.tsv",
+          "sha256_uncompressed": "e7e08430453af8adbceba82b5fe45081cbfa11427a05bb7e14fca35a153271de"
+        },
+        {
+          "archive": "dm-packets.tsv.zst",
+          "bytes": 2357439,
+          "compression": "zstd level3 window8MiB",
+          "file": "dm-packets.tsv",
+          "sha256_uncompressed": "60f6d78f9857815345deed578a53e70aa18d1dab870339cac19ce3355fcbda64"
+        }
+      ],
+      "returncode": 0,
+      "scope": "live transport and numerical characterization; performance claims require repeated campaign"
+    },
+    {
+      "all_frames_deadline_gate": {
+        "deadline_exceeded_count": 0,
+        "deadline_us": 10000.0,
+        "frames": 1029,
+        "max_us": 3823.752,
+        "metric": "first WFS packet to DM",
+        "passed": true
+      },
+      "arithmetic_acceptance": {
+        "actual_commands_f32le_sha256": "a0151ae2e240a9533a2e856a875bdd65d10f5372d0080b49ee828c6c2d53467d",
+        "analyzer_sha256": "b8781c9c530344b927f5860039cb1d210897de60eb3ef26e3b10467fca2a1913",
+        "application_accuracy": "not assessed: no application error budget supplied",
+        "arithmetic_consistency_passed": true,
+        "checks": {
+          "actual_vs_equation_reference": {
+            "failed_values": 0,
+            "maximum_bound": 0.007969493572696692,
+            "maximum_error": 3.5103768942779112e-06,
+            "maximum_error_to_bound_ratio": 0.0016808959642418474,
+            "passed": true
+          },
+          "cross_implementation": {
+            "failed_values": 0,
+            "maximum_bound": 0.015938987145393383,
+            "maximum_error": 1.3113021850585938e-06,
+            "maximum_error_to_bound_ratio": 0.000797758284484566,
+            "passed": true
+          },
+          "expected_vs_equation_reference": {
+            "failed_values": 0,
+            "maximum_bound": 0.007969493572696692,
+            "maximum_error": 2.759299755683564e-06,
+            "maximum_error_to_bound_ratio": 0.0011512162510818253,
+            "passed": true
+          }
+        },
+        "clipping_decisions_ambiguous_under_bound": 21620,
+        "exact_model": null,
+        "exact_model_passed": null,
+        "expected_commands_f32le_sha256": "5320114db1773d1983f51ba102bdbd4e56398c54f8a250eaf6729a107858aa85",
+        "fixture_sha256": {
+          "active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+          "active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+          "background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+          "calibrated_pixels.f32le": "1f98873b7a7209bf7b716384d16b7534f9561bfe1db4ed4bcff2d547b6f29737",
+          "controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+          "full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+          "pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+          "raw-frames.u16le": "1071336cb367f16ac030e5f0f80d8a978c0196088e6a48a9026371c170bf70cf",
+          "reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+          "reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+          "scalars.f32le": "efe6477371bc9a2f0e5240325af819aeaf1c988e8feb61790f34d82d0c29e1f2",
+          "shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+          "subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+          "thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+          "vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+          "vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+        },
+        "frames": 1029,
+        "historical_1e_minus_6": {
+          "failed_values": 888,
+          "maximum_absolute_difference": 1.3113021850585938e-06,
+          "passed": false
+        },
+        "minimum_flux_threshold_margin": 2323706.8821629593,
+        "minimum_pixel_threshold_distance": 4688.47021484375,
+        "mode": "row",
+        "observed_clipping_classification_disagreements": 0,
+        "role": "jfg",
+        "scope": "wire arithmetic consistency; HEART additionally has an exact source model; no physical-accuracy qualification",
+        "within_command_limits": true
+      },
+      "artifact_files": {
+        "arithmetic-acceptance.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r3/arithmetic-acceptance.json",
+          "sha256": "a0b97d3431872f4086561857febd57c66a30b2eb48c5c6b901a7fb840db2cd49",
+          "size_bytes": 3356
+        },
+        "dm-summary.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r3/dm-summary.json",
+          "sha256": "fc7b50813a8d87f3770f04bdbd85257e50065e69ed67fe2a21fe130de8f665ba",
+          "size_bytes": 390910
+        },
+        "latency-intervals.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r3/latency-intervals.json",
+          "sha256": "79454b6c38c2af7d4bae00d1c984110be13d286ad2bd85e8aff61d57e480c162",
+          "size_bytes": 134448
+        },
+        "numerical-summary.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r3/numerical-summary.json",
+          "sha256": "b0f19f49f214a7753d080f5aa32705b109d9ae306e5ab66544aef642b7c9b0ab",
+          "size_bytes": 396
+        },
+        "physical-summary.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r3/physical-summary.json",
+          "sha256": "54db3633e3f25ca3a73f3db615f32ef4135d7c845dc57cf7b5c9101638f58850",
+          "size_bytes": 10538
+        },
+        "placement-after.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r3/placement-after.json",
+          "sha256": "c914f8d08be3ba1f09051b1e6bd6a43901e54b7b08a0e249de2f50be0b8735df",
+          "size_bytes": 11545
+        },
+        "placement-before.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r3/placement-before.json",
+          "sha256": "ef4b193fcca5552198c17f23ee9a24fa245a71a9e6325a1fdb2cb46283181712",
+          "size_bytes": 11542
+        },
+        "report.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r3/report.json",
+          "sha256": "50c463ec9509a48e36f1cc7be4bda9b852edf4523897b0cbf3fcc0cecb49f3e0",
+          "size_bytes": 11249
+        },
+        "wire-archives.json": {
+          "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r3/wire-archives.json",
+          "sha256": "bef81bba6371dee4c27793f459e984f81deb2b6072b4e89c6c43534ddc3b4696",
+          "size_bytes": 714
+        }
+      },
+      "command": [
+        "/usr/bin/python3",
+        "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-progressive-requal/benchmark/run_classic_live.py",
+        "--fixture",
+        "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture",
+        "--cube",
+        "/home/dgamroth/.cache/rtc-classic-corpus1029-20260930/input.fits",
+        "--replay-corpus",
+        "/home/dgamroth/.cache/rtc-classic-corpus1029-20260930",
+        "--frames",
+        "1029",
+        "--output",
+        "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r3",
+        "--rate-hz",
+        "100",
+        "--readout-us",
+        "2000",
+        "--rtc-cpus",
+        "0,2,4,6,8,10,14",
+        "--source-cpus",
+        "12",
+        "--numerical-acceptance",
+        "source-arithmetic",
+        "--role",
+        "jfg",
+        "--mode",
+        "row",
+        "--plugin",
+        "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so",
+        "--heart-plugin",
+        "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/build-classic-release-20260930/spa/plugins/heart/libspa-heart.so",
+        "--heart-plugin-sha256",
+        "efaf3a810284a6a39b9c84fb433cf9669a638da14b41cd528b8a18cc593ce7d6",
+        "--wfs-simulator",
+        "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator",
+        "--lab-loop-cpu",
+        "0",
+        "--adapter-loop-cpu",
+        "4",
+        "--node-loop-cpu",
+        "2",
+        "--julia-pin-cpus",
+        "2,6",
+        "--row-workers",
+        "0",
+        "--matrix-layout",
+        "shared"
+      ],
+      "competing_process_snapshot_before": [
+        "    PID COMMAND         PSR %CPU",
+        "3421924 codex             2  4.2",
+        "3001258 julia             2  1.5",
+        "3550097 python3           4  1.3",
+        "    883 tailscaled        3  0.8",
+        "2961261 codex            12  0.7",
+        "2049210 codex            11  0.4",
+        "3421553 sshd-session      2  0.4",
+        "    864 avahi-daemon     14  0.1",
+        "    136 kcompactd0        2  0.0",
+        "    153 kswapd0           2  0.0",
+        "     18 rcu_preempt      10  0.0",
+        "3543763 kworker/u64:3-e  10  0.0",
+        "3540481 kworker/u64:0-e   6  0.0",
+        "3420982 codex             2  0.0",
+        "3420730 sshd-session     15  0.0"
+      ],
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r3",
+      "errors": [],
+      "exact_wire_delivery": true,
+      "frames": 1029,
+      "latency": {
+        "achieved_source_rate_hz": 100.00239536866057,
+        "after_first_100": {
+          "first_to_dm_us": {
+            "count": 929,
+            "max": 3823.752,
+            "min": 1984.187,
+            "p50": 2496.573,
+            "p99": 3087.1656
+          },
+          "readout_us": {
+            "count": 929,
+            "max": 1938.851,
+            "min": 1885.272,
+            "p50": 1912.553,
+            "p99": 1927.7898
+          },
+          "terminal_to_dm_us": {
+            "count": 929,
+            "max": 1905.98,
+            "min": 73.908,
+            "p50": 583.47,
+            "p99": 1174.4774800000005
+          }
+        },
+        "all": {
+          "first_to_dm_us": {
+            "count": 1029,
+            "max": 3823.752,
+            "min": 1984.187,
+            "p50": 2489.831,
+            "p99": 3103.2706400000006
+          },
+          "readout_us": {
+            "count": 1029,
+            "max": 1938.851,
+            "min": 1811.1630000000002,
+            "p50": 1912.443,
+            "p99": 1928.6624400000003
+          },
+          "terminal_to_dm_us": {
+            "count": 1029,
+            "max": 1905.98,
+            "min": 73.217,
+            "p50": 577.579,
+            "p99": 1194.4311200000004
+          }
+        },
+        "deadline_exceeded_count": 0,
+        "source_period_us": {
+          "count": 1028,
+          "max": 10902.556,
+          "min": 9107.312,
+          "p50": 10000.025000000001,
+          "p99": 10476.02472
+        }
+      },
+      "path": "jfg-row",
+      "qualified_field": true,
+      "rate_hz": 100,
+      "readout_us": 2000,
+      "receiver_mode": "row-block",
+      "repeat": 3,
+      "report": {
+        "arithmetic_acceptance": {
+          "actual_commands_f32le_sha256": "a0151ae2e240a9533a2e856a875bdd65d10f5372d0080b49ee828c6c2d53467d",
+          "analyzer_sha256": "b8781c9c530344b927f5860039cb1d210897de60eb3ef26e3b10467fca2a1913",
+          "application_accuracy": "not assessed: no application error budget supplied",
+          "arithmetic_consistency_passed": true,
+          "checks": {
+            "actual_vs_equation_reference": {
+              "failed_values": 0,
+              "maximum_bound": 0.007969493572696692,
+              "maximum_error": 3.5103768942779112e-06,
+              "maximum_error_to_bound_ratio": 0.0016808959642418474,
+              "passed": true
+            },
+            "cross_implementation": {
+              "failed_values": 0,
+              "maximum_bound": 0.015938987145393383,
+              "maximum_error": 1.3113021850585938e-06,
+              "maximum_error_to_bound_ratio": 0.000797758284484566,
+              "passed": true
+            },
+            "expected_vs_equation_reference": {
+              "failed_values": 0,
+              "maximum_bound": 0.007969493572696692,
+              "maximum_error": 2.759299755683564e-06,
+              "maximum_error_to_bound_ratio": 0.0011512162510818253,
+              "passed": true
+            }
+          },
+          "clipping_decisions_ambiguous_under_bound": 21620,
+          "exact_model": null,
+          "exact_model_passed": null,
+          "expected_commands_f32le_sha256": "5320114db1773d1983f51ba102bdbd4e56398c54f8a250eaf6729a107858aa85",
+          "fixture_sha256": {
+            "active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+            "active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+            "background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+            "calibrated_pixels.f32le": "1f98873b7a7209bf7b716384d16b7534f9561bfe1db4ed4bcff2d547b6f29737",
+            "controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+            "full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+            "pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+            "raw-frames.u16le": "1071336cb367f16ac030e5f0f80d8a978c0196088e6a48a9026371c170bf70cf",
+            "reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+            "reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+            "scalars.f32le": "efe6477371bc9a2f0e5240325af819aeaf1c988e8feb61790f34d82d0c29e1f2",
+            "shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+            "subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+            "thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+            "vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+            "vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+          },
+          "frames": 1029,
+          "historical_1e_minus_6": {
+            "failed_values": 888,
+            "maximum_absolute_difference": 1.3113021850585938e-06,
+            "passed": false
+          },
+          "minimum_flux_threshold_margin": 2323706.8821629593,
+          "minimum_pixel_threshold_distance": 4688.47021484375,
+          "mode": "row",
+          "observed_clipping_classification_disagreements": 0,
+          "role": "jfg",
+          "scope": "wire arithmetic consistency; HEART additionally has an exact source model; no physical-accuracy qualification",
+          "within_command_limits": true
+        },
+        "command_reference_sha256": "5320114db1773d1983f51ba102bdbd4e56398c54f8a250eaf6729a107858aa85",
+        "daemon_configuration_sha256": "a8d0be99ac15ee4caaa8b0f8ace780f684219b4fed173ca95f02c1741c101261",
+        "errors": [],
+        "final_constraint_feedback": {
+          "actual_nonzero_values": 158,
+          "boundary": "retained controller constraint feedback after owner shutdown",
+          "expected_nonzero_values": 158,
+          "max_absolute_error": 5.960464477539063e-08,
+          "qualified": true,
+          "unit": "micron"
+        },
+        "frames": 1029,
+        "matrix_layout": "shared",
+        "parameter_sha256": {
+          "active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+          "active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+          "background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+          "controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+          "full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+          "pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+          "reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+          "reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+          "shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+          "subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+          "thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+          "vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+          "vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+        },
+        "pipewire_provenance": {
+          "ndarray_filter_chain": "/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-ndarray-filter-chain.so",
+          "ndarray_filter_chain_sha256": "461039dce0cd0d723afdd316afc5a80fb07e84731b53eb9fe37ddeeced252c02",
+          "pipewire_client_library": "/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so",
+          "pipewire_client_library_sha256": "2514f1f329d6eaf8209ee41f5e07b2d31ad2e312549434e6c0020863d1045fc9",
+          "pipewire_daemon": "/opt/pipewireao/bin/pipewire-ao",
+          "pipewire_daemon_sha256": "69873d8cdfc54d49a7ad16ee7c243cdf4f77eef895094eb445e4cb0d2b601783",
+          "pipewire_mode": "installed-prefix",
+          "pipewire_prefix": "/opt/pipewireao",
+          "pipewire_support_spa": "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so",
+          "pipewire_support_spa_sha256": "49d108c51cd2fe0c6dad91fc507a7147d761a7ce2c77d2db3f5197e82aea902a"
+        },
+        "placement_request": {
+          "adapter_loop_cpu": 4,
+          "daemon_loop_cpu": 0,
+          "fifo_priority": 83,
+          "julia_pin_cpus": "2,6",
+          "node_loop_cpu": 2,
+          "rtc_cpus": "0,2,4,6,8,10,14",
+          "source_cpus": "12"
+        },
+        "process_returncodes": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "qualified": true,
+        "rate_hz": 100,
+        "readout_us": 2000,
+        "receiver_mode": "row-block",
+        "replay_corpus": {
+          "clipped_physical_values": 154532,
+          "comparison_criterion": "10\u207b\u2076 \u00b5m absolute or scaled relative (scale floor 1); this corpus does not change the existing gate",
+          "continued_capture_available_frames": 1024,
+          "cube": {
+            "dtype": "UInt16 via FITS BITPIX=16, BSCALE=1, BZERO=32768",
+            "file": "input.fits",
+            "sha256": "4aabcbbb56df887c908e91f313829e2c8dc157975fab2a43058d615ba7855f51",
+            "shape": [
+              1029,
+              352,
+              352
+            ]
+          },
+          "frames": 1029,
+          "kind": "bounded Classic repeated-frame clipping corpus",
+          "nonzero_controller_feedback_frames": 1020,
+          "oracles": {
+            "controller-constraint-feedback.f32le": {
+              "dtype": "Float32 little endian",
+              "initial_seven": "zero as independently confirmed in CLASSIC_PRECISION_REVIEW.md",
+              "quantity": "controller constraint feedback",
+              "sha256": "7b1205964d5109ae913500faf8a9e0da5c330099470470386fcd34100ba75ca3",
+              "shape": [
+                1029,
+                221
+              ],
+              "unit": "\u00b5m"
+            },
+            "demanded_pdm_command.f32le": {
+              "dtype": "Float32 little endian",
+              "quantity": "physical PDM command",
+              "sha256": "5320114db1773d1983f51ba102bdbd4e56398c54f8a250eaf6729a107858aa85",
+              "shape": [
+                1029,
+                277
+              ],
+              "unit": "\u00b5m"
+            },
+            "vdm_command.f32le": {
+              "dtype": "Float32 little endian",
+              "quantity": "prelimit controlled VDM command",
+              "sha256": "9299fcc99519c8ec078a3a2f5c03daa8554f04ad31eb83899273f2ff3fe4c309",
+              "shape": [
+                1029,
+                221
+              ],
+              "unit": "\u00b5m"
+            }
+          },
+          "order": "source frames 1..7 repeat; oracle frames 1..7 are initial capture, frames 8..N are the continued capture prefix, without state reset",
+          "original_cube_path": "/home/dgamroth/workspaces/codex/heart/revolt-rtc/sim_wfs_data/classic_wfs.fits",
+          "qualification": "captured Rust reference trajectory; no live receiver or physical-loop qualification",
+          "repetitions": 147,
+          "source_frames": 7,
+          "source_sha256": {
+            "demanded_pdm_command.f32le": "0a7001484c05483eb23e6ee1a81f179dab398ed4188b908aae505b032718c008",
+            "feedback-controller-constraint-feedback.f32le": "39429b4e1e88af0bbb77dbb14b3f21e0a7591e4a0b3f4378a4baf7e14174c1c6",
+            "feedback-demanded-pdm-command.f32le": "5c73e265d66cb9116db14d9961c85fb0326c198c2d4e655ff7bd98ccf92b9a44",
+            "feedback-vdm-command.f32le": "d9f94c2018a70d0ba6b263933d50e4344a7f3d7aa34680a3cbffa02fad84e32f",
+            "original_cube": "ac5d14eb90de51924af61ac12915833e8ef5c1a1fdde2237b628b49f65fc9aca",
+            "prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4",
+            "raw-frames.u16le": "1071336cb367f16ac030e5f0f80d8a978c0196088e6a48a9026371c170bf70cf",
+            "scalars.f32le": "efe6477371bc9a2f0e5240325af819aeaf1c988e8feb61790f34d82d0c29e1f2",
+            "vdm_command.f32le": "58e9ba4a81bb66edf22286a578e9b728f2e96e57895770e1300abe140c1c8fd6"
+          }
+        },
+        "role": "jfg",
+        "row_workers": 0,
+        "rows_per_packet": 11,
+        "scope": "live transport and numerical characterization; performance claims require repeated campaign",
+        "sha256": {
+          "/home/dgamroth/.cache/rtc-classic-corpus1029-20260930/input.fits": "4aabcbbb56df887c908e91f313829e2c8dc157975fab2a43058d615ba7855f51",
+          "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator": "4930489f2655da4c33fdabc47ee96a7d051ea125e8492a8f1923c0ee0ed9580b",
+          "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so": "ebcc9295eba0e60f35422d5ce0761a23f91b1a8d56c97f65eb6330138f986ecd",
+          "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/build-classic-release-20260930/spa/plugins/heart/libspa-heart.so": "efaf3a810284a6a39b9c84fb433cf9669a638da14b41cd528b8a18cc593ce7d6"
+        },
+        "source_command": [
+          "taskset",
+          "--cpu-list",
+          "12",
+          "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator",
+          "-file",
+          "input.fits",
+          "-tPort",
+          "6000",
+          "-period",
+          "0.01",
+          "-readout",
+          "2000",
+          "-lines",
+          "11",
+          "-numFrames",
+          "1029"
+        ],
+        "source_counters": {
+          "blocks": 32928,
+          "dropped": 0,
+          "frames": 1029,
+          "received": 32928,
+          "rejected": 0,
+          "starvations": 0
+        }
+      },
+      "reported_input_hashes": {
+        "/home/dgamroth/.cache/rtc-classic-corpus1029-20260930/input.fits": "4aabcbbb56df887c908e91f313829e2c8dc157975fab2a43058d615ba7855f51",
+        "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4",
+        "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator": "4930489f2655da4c33fdabc47ee96a7d051ea125e8492a8f1923c0ee0ed9580b",
+        "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so": "ebcc9295eba0e60f35422d5ce0761a23f91b1a8d56c97f65eb6330138f986ecd",
+        "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/build-classic-release-20260930/spa/plugins/heart/libspa-heart.so": "efaf3a810284a6a39b9c84fb433cf9669a638da14b41cd528b8a18cc593ce7d6"
+      },
+      "reported_parameter_hashes": {
+        "active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+        "active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+        "background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+        "controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+        "full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+        "pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+        "reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+        "reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+        "shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+        "subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+        "thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+        "vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+        "vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+      },
+      "reported_wire_archives": [
+        {
+          "archive": "wire.pcapng.zst",
+          "bytes": 260057480,
+          "compression": "zstd level3 window8MiB",
+          "file": "wire.pcapng",
+          "sha256_uncompressed": "e5b8f3184798020ab3ec5fc308fbf17e992196c735be22b7eb375a94c795c9f9"
+        },
+        {
+          "archive": "wfs-packets.tsv.zst",
+          "bytes": 513512160,
+          "compression": "zstd level3 window8MiB",
+          "file": "wfs-packets.tsv",
+          "sha256_uncompressed": "5302569d70d94fc5b607688b9fa8f091cc2fd56437a1719650306193ed2a86ed"
+        },
+        {
+          "archive": "dm-packets.tsv.zst",
+          "bytes": 2357439,
+          "compression": "zstd level3 window8MiB",
+          "file": "dm-packets.tsv",
+          "sha256_uncompressed": "1c1f2800a35dccebb829860634f557162419be7d9255da6faaf8b4bbc13a4eed"
+        }
+      ],
+      "returncode": 0,
+      "scope": "live transport and numerical characterization; performance claims require repeated campaign"
+    }
+  ],
+  "schema": "classic-row-fixed-baseline-summary-v1",
+  "scope": "finite-window open-loop characterization; strict numerical failures retained separately; no physical-loop qualification",
+  "source_manifest": {
+    "path": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/manifest.json",
+    "sha256": "ae63b99f053ce687b245a14840ffb64d21c41736cd42f78376361067b5496185",
+    "size_bytes": 102494
+  },
+  "source_revisions": {
+    "JuliaFilterGraph-progressive-requal": {
+      "revision": "6f1da393f9bd7153ed95b8811ccf32ebce6342a6",
+      "status": "?? benchmark/heart/__pycache__/\n"
+    },
+    "calculon-algorithms-main-copper": {
+      "revision": "54d8b1847d7913f532e1d48ceba2429eb2499055",
+      "status": ""
+    },
+    "pipewire": {
+      "revision": "a4de38e0d7257d98e5c03c51f248f84e6a822c26",
+      "status": ""
+    },
+    "pipewireao-rtc-progressive-requal": {
+      "revision": "b8922587bd2864fc2aeb19c67ea51a7353dc6263",
+      "status": "?? benchmark/profiles/ryzen-6800h-copper-streaming-mvm.cpu\n?? benchmark/profiles/ryzen-6800h-copper-streaming-mvm.json\n?? benchmark/summarize_copper_capacity.py\n"
+    }
+  }
+}

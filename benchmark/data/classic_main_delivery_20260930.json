@@ -1,0 +1,174 @@
+{
+  "schema": "classic-main-delivery-provenance-v1",
+  "scope": "Saved deployment, tested-main push, and SDK preservation evidence; no new deployment or push performed during packaging.",
+  "sources": [
+    {
+      "artifact": {
+        "path": "/home/dgamroth/.cache/classic-main-deployment-backup-20260930/deployment.json",
+        "sha256": "34b7247a7cf982075e70895c2a01f79861f3cf2f76d225bec722cd0c501820fe",
+        "size_bytes": 2959
+      },
+      "evidence": {
+        "files": [
+          {
+            "backup": "/home/dgamroth/.cache/classic-main-deployment-backup-20260930/lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so",
+            "candidate_sha256": "efaf3a810284a6a39b9c84fb433cf9669a638da14b41cd528b8a18cc593ce7d6",
+            "installed_sha256": "efaf3a810284a6a39b9c84fb433cf9669a638da14b41cd528b8a18cc593ce7d6",
+            "previous_sha256": "db021461bfb05d41939e0db54e56620c3d7ae38e626763aee59110becd65f784",
+            "source": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/build-classic-release-20260930/spa/plugins/heart/libspa-heart.so",
+            "target": "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so"
+          },
+          {
+            "backup": "/home/dgamroth/.cache/classic-main-deployment-backup-20260930/lib/x86_64-linux-gnu/spa-ao-0.2/fits/libspa-fits.so",
+            "candidate_sha256": "947ba07a07f5da0e8c60b408455933689e3cc7a7cc1ca8dbf8c358c9ac3f8a41",
+            "installed_sha256": "947ba07a07f5da0e8c60b408455933689e3cc7a7cc1ca8dbf8c358c9ac3f8a41",
+            "previous_sha256": "a320f6ba94e82e4e4aa5cd9c67df3bf28ec773508acc26250a9c5669538812f3",
+            "source": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-fits-classic-graph-io/build/spa/plugins/fits/libspa-fits.so",
+            "target": "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/fits/libspa-fits.so"
+          },
+          {
+            "backup": "/home/dgamroth/.cache/classic-main-deployment-backup-20260930/lib/x86_64-linux-gnu/spa-ao-0.2/ndarray/libspa-ndarray.so",
+            "candidate_sha256": "153839f352590a992655f327ef892c1dff3595ab9fbe80f183ed2aeb7ec6458c",
+            "installed_sha256": "153839f352590a992655f327ef892c1dff3595ab9fbe80f183ed2aeb7ec6458c",
+            "previous_sha256": "f364269a4e1275b9ab14979eea735a667ba743bee07d9107d8e1404ecfebab69",
+            "source": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugins-core-classic-clean/evidence/libspa-ndarray-clean.so",
+            "target": "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/ndarray/libspa-ndarray.so"
+          },
+          {
+            "backup": "/home/dgamroth/.cache/classic-main-deployment-backup-20260930/include/pipewireao-plugins-0.1/pipewireao-plugins/ndarray.h",
+            "candidate_sha256": "43af5a1230605680e329b08712b2a0c70a4514292476e7d67ea4b43e0e63d9d6",
+            "installed_sha256": "43af5a1230605680e329b08712b2a0c70a4514292476e7d67ea4b43e0e63d9d6",
+            "previous_sha256": "08f1c20500b87200032e92fc6e2611886499fedb1d6cca5d9d598cf63c5be159",
+            "source": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugins-core-main/include/pipewireao-plugins/ndarray.h",
+            "target": "/opt/pipewireao/include/pipewireao-plugins-0.1/pipewireao-plugins/ndarray.h"
+          }
+        ],
+        "scope": "Deploy exact qualified normal HEART/FITS and clean two-factory SDK; previous three-factory prototype DSO/header preserved in rollback backup and source WIP; installed PipeWire core/module unchanged and diagnostic builds not deployed",
+        "time_ns": 1790806246772555080
+      }
+    },
+    {
+      "artifact": {
+        "path": "/home/dgamroth/.cache/classic-tested-main-push-20260930.json",
+        "sha256": "8eec922cfdda69d816ba0ca6077b8457bbc7fc25c3a826c5e5edb586574786f7",
+        "size_bytes": 3228
+      },
+      "evidence": {
+        "post_push_verification": "git -C <repo> ls-remote <remote> refs/heads/<branch>",
+        "pushes": [
+          {
+            "command": "git -C JuliaFilterGraph.jl push origin main:main",
+            "hash": "6f1da393f9bd7153ed95b8811ccf32ebce6342a6",
+            "post_push_remote_hash": "6f1da393f9bd7153ed95b8811ccf32ebce6342a6",
+            "pre_push_remote": "1d91a589709ec9d28a194593ca387fbfc7f41fb3",
+            "push_url": "git@github.com:DarrylGamroth/JuliaFilterGraph.jl.git",
+            "ref": "refs/heads/main",
+            "remote": "origin",
+            "remote_ancestor_of_local": true,
+            "repo": "JuliaFilterGraph.jl",
+            "result": "success: 1d91a58..6f1da39 main -> main"
+          },
+          {
+            "command": "git -C pipewireao-spa-plugin-heart push origin main:main",
+            "hash": "10388618bbf8493612cb1d852ccc0e018faa3c87",
+            "post_push_remote_hash": "10388618bbf8493612cb1d852ccc0e018faa3c87",
+            "pre_push_remote": "83e3c7bfdd93ceaf0e8898ba7be2ebde1bb64f4d",
+            "push_url": "git@github.com:DarrylGamroth/pipewireao-spa-plugin-heart.git",
+            "ref": "refs/heads/main",
+            "remote": "origin",
+            "remote_ancestor_of_local": true,
+            "repo": "pipewireao-spa-plugin-heart",
+            "result": "success: 83e3c7b..1038861 main -> main"
+          },
+          {
+            "command": "git -C pipewireao-spa-plugin-fits push origin main:main",
+            "hash": "288bbeb70651ff84c9c47b010401e4129d833994",
+            "post_push_remote_hash": "288bbeb70651ff84c9c47b010401e4129d833994",
+            "pre_push_remote": "db4b8917e4887db60c049ca3a8974f0e96c9514d",
+            "push_url": "git@github.com:DarrylGamroth/pipewireao-spa-plugin-fits.git",
+            "ref": "refs/heads/main",
+            "remote": "origin",
+            "remote_ancestor_of_local": true,
+            "repo": "pipewireao-spa-plugin-fits",
+            "result": "success: db4b891..288bbeb main -> main"
+          },
+          {
+            "command": "git -C pipewireao-spa-plugins-core-main push origin main:main",
+            "hash": "34c7a0429f36fd467af5e12a98ae7bb339b680b3",
+            "post_push_remote_hash": "34c7a0429f36fd467af5e12a98ae7bb339b680b3",
+            "pre_push_remote": "ac82518cc876cb6fce8baf55fc6875f8fba0f71f",
+            "push_url": "git@github.com:DarrylGamroth/pipewireao-spa-plugins-core.git",
+            "ref": "refs/heads/main",
+            "remote": "origin",
+            "remote_ancestor_of_local": true,
+            "repo": "pipewireao-spa-plugins-core-main",
+            "result": "success: ac82518..34c7a04 main -> main"
+          },
+          {
+            "command": "git -C pipewire push ao master:master",
+            "hash": "9464907e1ae1592210dd43699d8eccd277346189",
+            "post_push_remote_hash": "9464907e1ae1592210dd43699d8eccd277346189",
+            "pre_push_remote": "a4de38e0d7257d98e5c03c51f248f84e6a822c26",
+            "push_url": "git@github.com:DarrylGamroth/PipeWireAO.git",
+            "ref": "refs/heads/master",
+            "remote": "ao",
+            "remote_ancestor_of_local": true,
+            "repo": "pipewire",
+            "result": "success: a4de38e0d..9464907e1 master -> master"
+          }
+        ],
+        "recorded_at_utc": "2026-09-30T21:30:25.456862+00:00",
+        "remote_read_command": "git -C <repo> fetch --no-tags <remote> refs/heads/<branch>; compare FETCH_HEAD ancestry before push",
+        "scope": "Normal fast-forward pushes of root-authorized tested branches to verified DarrylGamroth GitHub forks only. No RTC push."
+      }
+    },
+    {
+      "artifact": {
+        "path": "/home/dgamroth/.cache/classic-sdk-main-preservation-20260930.json",
+        "sha256": "96dbc78369057ea1d2dbdfa5e9e56e92546b8b0b156fbffea910349cc27fb4b2",
+        "size_bytes": 4352
+      },
+      "evidence": {
+        "clean_main_head": "34c7a0429f36fd467af5e12a98ae7bb339b680b3",
+        "clean_main_worktree": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugins-core-main",
+        "dirty_file_hashes_after": {
+          "crates/ndarray-spa-plugin/src/config.rs": "f4f515d18ccc601c9a86c633ca656e8fb460d886c00f69732011cc367d2fd092",
+          "crates/ndarray-spa-plugin/src/frame_assembly.rs": "cb4e226678780692565074f08b88f0045da1c7653b22a5a810a4a7e9b505a508",
+          "crates/ndarray-spa-plugin/src/latest_hold.rs": "98bc7b1184d6081a0f0959c93f0bdcab91ef516905875be64047891e9c94c61d",
+          "crates/ndarray-spa-plugin/src/lib.rs": "be3ae6d95c1b7a422460f94850ed4d28e14f73908638180b87ff9f47a5e11a89",
+          "crates/pipewireao-spa-node/src/buffer.rs": "b9cf7304e4cc1f341762397579edb4424c889cb39784d70d7b0f846a45c07570",
+          "crates/pipewireao-spa-node/src/factory.rs": "ae868857486b48672818d6d840464de146b0b388dd9ae69567024b633fee8d14",
+          "crates/pipewireao-spa-node/src/lib.rs": "3bf189361502aede6c870606eab2206b97e907e7cda83687e26ccad957357e19",
+          "crates/pipewireao-spa-node/src/pod.rs": "e3e71e01ac598a2ccd17f43b91768b80165601ac58897ea19a222e3e4e84452b",
+          "crates/pipewireao-spa-node/src/port.rs": "8f6d4f2751558e3883ca68dce8a55265a48d8a8af512485f9421fe59050e0363",
+          "include/pipewireao-plugins/ndarray.h": "08f1c20500b87200032e92fc6e2611886499fedb1d6cca5d9d598cf63c5be159",
+          "spa/plugins/ndarray/meson.build": "929691b3851a6cc151882c2f3220baf85149e304f6755e1df553d07d40130c1e",
+          "spa/plugins/ndarray/test-frame-assembly.c": "74bc2719c7235a4adc17284a508297e37685e3172fcce128bec312091b7ef855",
+          "spa/plugins/ndarray/test-latest-hold-factory.c": "5d343ea99ee4b5ed566a3330895548e614117ece9aabebe01e664dfcfd104975",
+          "spa/plugins/ndarray/test-latest-hold.c": "14979ec3234ed59c8feb550a99c52fc8096e51cda3f97c3806b9311e48a97fb8"
+        },
+        "dirty_file_hashes_before": {
+          "crates/ndarray-spa-plugin/src/config.rs": "f4f515d18ccc601c9a86c633ca656e8fb460d886c00f69732011cc367d2fd092",
+          "crates/ndarray-spa-plugin/src/frame_assembly.rs": "cb4e226678780692565074f08b88f0045da1c7653b22a5a810a4a7e9b505a508",
+          "crates/ndarray-spa-plugin/src/latest_hold.rs": "98bc7b1184d6081a0f0959c93f0bdcab91ef516905875be64047891e9c94c61d",
+          "crates/ndarray-spa-plugin/src/lib.rs": "be3ae6d95c1b7a422460f94850ed4d28e14f73908638180b87ff9f47a5e11a89",
+          "crates/pipewireao-spa-node/src/buffer.rs": "b9cf7304e4cc1f341762397579edb4424c889cb39784d70d7b0f846a45c07570",
+          "crates/pipewireao-spa-node/src/factory.rs": "ae868857486b48672818d6d840464de146b0b388dd9ae69567024b633fee8d14",
+          "crates/pipewireao-spa-node/src/lib.rs": "3bf189361502aede6c870606eab2206b97e907e7cda83687e26ccad957357e19",
+          "crates/pipewireao-spa-node/src/pod.rs": "e3e71e01ac598a2ccd17f43b91768b80165601ac58897ea19a222e3e4e84452b",
+          "crates/pipewireao-spa-node/src/port.rs": "8f6d4f2751558e3883ca68dce8a55265a48d8a8af512485f9421fe59050e0363",
+          "include/pipewireao-plugins/ndarray.h": "08f1c20500b87200032e92fc6e2611886499fedb1d6cca5d9d598cf63c5be159",
+          "spa/plugins/ndarray/meson.build": "929691b3851a6cc151882c2f3220baf85149e304f6755e1df553d07d40130c1e",
+          "spa/plugins/ndarray/test-frame-assembly.c": "74bc2719c7235a4adc17284a508297e37685e3172fcce128bec312091b7ef855",
+          "spa/plugins/ndarray/test-latest-hold-factory.c": "5d343ea99ee4b5ed566a3330895548e614117ece9aabebe01e664dfcfd104975",
+          "spa/plugins/ndarray/test-latest-hold.c": "14979ec3234ed59c8feb550a99c52fc8096e51cda3f97c3806b9311e48a97fb8"
+        },
+        "identical": true,
+        "original": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugins-core",
+        "original_head": "ac82518cc876cb6fce8baf55fc6875f8fba0f71f",
+        "original_status": " M crates/ndarray-spa-plugin/src/config.rs\n M crates/ndarray-spa-plugin/src/frame_assembly.rs\n M crates/ndarray-spa-plugin/src/lib.rs\n M crates/pipewireao-spa-node/src/buffer.rs\n M crates/pipewireao-spa-node/src/factory.rs\n M crates/pipewireao-spa-node/src/lib.rs\n M crates/pipewireao-spa-node/src/pod.rs\n M crates/pipewireao-spa-node/src/port.rs\n M include/pipewireao-plugins/ndarray.h\n M spa/plugins/ndarray/meson.build\n M spa/plugins/ndarray/test-frame-assembly.c\n?? crates/ndarray-spa-plugin/src/latest_hold.rs\n?? spa/plugins/ndarray/test-latest-hold-factory.c\n?? spa/plugins/ndarray/test-latest-hold.c\n",
+        "preserved_branch": "codex/preserve-sdk-latest-hold-20260930"
+      }
+    }
+  ]
+}

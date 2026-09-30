@@ -1,0 +1,2131 @@
+{
+  "all_present_streams_passed": true,
+  "audited_window_count": 85,
+  "elapsed_seconds": 38.33018964389339,
+  "runs": [
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/heart-100hz-r1",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/manifest.json",
+      "manifest_sha256": "92fe2bd36dc3100fa62f7dac824428a2f37cab37a29f5b1121f977c49994e2c2",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/heart-100hz-r1/dm-packets.tsv.zst",
+          "archive_sha256": "f7989ae72fc2bf33b342d01ce128e8b3fc3d7662fa960c996200e166d4114aa3",
+          "first": "1790793913.288252947",
+          "invalid_ordinals": [],
+          "last": "1790793923.567707720",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/heart-100hz-r1/wfs-packets.tsv.zst",
+          "archive_sha256": "d6f99bb0cc0e4cd3136cd5470c454482dab8af1d2271210e8c18d89ee9a10964",
+          "first": "1790793913.285638890",
+          "invalid_ordinals": [],
+          "last": "1790793923.567468884",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/fgn-frame-100hz-r1",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/manifest.json",
+      "manifest_sha256": "92fe2bd36dc3100fa62f7dac824428a2f37cab37a29f5b1121f977c49994e2c2",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/fgn-frame-100hz-r1/dm-packets.tsv.zst",
+          "archive_sha256": "569359e2e09e8f6c2fe24d0bc0e12f3a456e58ace4ee5bf1942b278e3bc5b7c9",
+          "first": "1790793965.077246911",
+          "invalid_ordinals": [],
+          "last": "1790793975.356867564",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/fgn-frame-100hz-r1/wfs-packets.tsv.zst",
+          "archive_sha256": "efc7578719dd96ef56d8ccff1339cce9bbf83b11ac8c5855a319f11920ed68ac",
+          "first": "1790793965.074744673",
+          "invalid_ordinals": [],
+          "last": "1790793975.356628718",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/jfg-frame-100hz-r1",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/manifest.json",
+      "manifest_sha256": "92fe2bd36dc3100fa62f7dac824428a2f37cab37a29f5b1121f977c49994e2c2",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/jfg-frame-100hz-r1/dm-packets.tsv.zst",
+          "archive_sha256": "dceb266738bb63ce22615f1d787717bff1b65a9006159bd9c5cd558c75565e2a",
+          "first": "1790794074.836175815",
+          "invalid_ordinals": [],
+          "last": "1790794085.116045422",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/jfg-frame-100hz-r1/wfs-packets.tsv.zst",
+          "archive_sha256": "cbd27822a16a9bac2589420f63d50b63dda5f9c87e226ea52ee8e4c0a0e07c0e",
+          "first": "1790794074.833536712",
+          "invalid_ordinals": [],
+          "last": "1790794085.115611090",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/fgn-row-100hz-r1",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/manifest.json",
+      "manifest_sha256": "92fe2bd36dc3100fa62f7dac824428a2f37cab37a29f5b1121f977c49994e2c2",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/fgn-row-100hz-r1/dm-packets.tsv.zst",
+          "archive_sha256": "c8aa24033bb0b54b1dd12eeafb0ac8865429ce11da87805ec66c366f1dc2d636",
+          "first": "1790794138.271392358",
+          "invalid_ordinals": [],
+          "last": "1790794148.550947958",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/fgn-row-100hz-r1/wfs-packets.tsv.zst",
+          "archive_sha256": "70d29443ce53b2a6af37aa4d8143a27ba4e4e98f1e63936d5f0b7cc5fcff2a8c",
+          "first": "1790794138.268870324",
+          "invalid_ordinals": [],
+          "last": "1790794148.550208024",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/jfg-row-100hz-r1",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/manifest.json",
+      "manifest_sha256": "92fe2bd36dc3100fa62f7dac824428a2f37cab37a29f5b1121f977c49994e2c2",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/jfg-row-100hz-r1/dm-packets.tsv.zst",
+          "archive_sha256": "65f2953e3e7b3b74e6838a8d833e1e7866782c4b8dbcd51039f4a52a1529bc2a",
+          "first": "1790794251.022134297",
+          "invalid_ordinals": [],
+          "last": "1790794261.300368194",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/jfg-row-100hz-r1/wfs-packets.tsv.zst",
+          "archive_sha256": "eff4c3506d3f6d8cd33714fcc65b41644eb85f37d8ff7a0b4361cdfac7ad2ed1",
+          "first": "1790794251.018051555",
+          "invalid_ordinals": [],
+          "last": "1790794261.299482929",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/jfg-row-100hz-r2",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/manifest.json",
+      "manifest_sha256": "92fe2bd36dc3100fa62f7dac824428a2f37cab37a29f5b1121f977c49994e2c2",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/jfg-row-100hz-r2/dm-packets.tsv.zst",
+          "archive_sha256": "62cd0f77d5e087adbd0579413296a0bcbd5f1cd00a9447f49aee0f158f845ec1",
+          "first": "1790794366.251659647",
+          "invalid_ordinals": [],
+          "last": "1790794376.530077097",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/jfg-row-100hz-r2/wfs-packets.tsv.zst",
+          "archive_sha256": "58328d4dad6dc5af41799aee52ed13a1f88c4fc8e006ad7eb9d0bcde2fb9a92c",
+          "first": "1790794366.248233363",
+          "invalid_ordinals": [],
+          "last": "1790794376.529651902",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/fgn-row-100hz-r2",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/manifest.json",
+      "manifest_sha256": "92fe2bd36dc3100fa62f7dac824428a2f37cab37a29f5b1121f977c49994e2c2",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/fgn-row-100hz-r2/dm-packets.tsv.zst",
+          "archive_sha256": "879de9d11aedd1aaa8926343e3b23feecbc3e826644a77d2a8679f03090b71f3",
+          "first": "1790794429.246204066",
+          "invalid_ordinals": [],
+          "last": "1790794439.525427793",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/fgn-row-100hz-r2/wfs-packets.tsv.zst",
+          "archive_sha256": "aaceb15eff8b0009ba88ea3046699bed1404f833ef069494920ddd9a32da9ee3",
+          "first": "1790794429.243647246",
+          "invalid_ordinals": [],
+          "last": "1790794439.525070405",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/jfg-frame-100hz-r2",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/manifest.json",
+      "manifest_sha256": "92fe2bd36dc3100fa62f7dac824428a2f37cab37a29f5b1121f977c49994e2c2",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/jfg-frame-100hz-r2/dm-packets.tsv.zst",
+          "archive_sha256": "dba12070a0299555979093061ca9b64a59f22122fdd3e650bd76129409e2b368",
+          "first": "1790794540.097435692",
+          "invalid_ordinals": [],
+          "last": "1790794550.377673973",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/jfg-frame-100hz-r2/wfs-packets.tsv.zst",
+          "archive_sha256": "ffc457ae5498fed8126bcd76cb7d9351db3c35456d108480092d9a7e8e678e3a",
+          "first": "1790794540.094786049",
+          "invalid_ordinals": [],
+          "last": "1790794550.377024509",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/fgn-frame-100hz-r2",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/manifest.json",
+      "manifest_sha256": "92fe2bd36dc3100fa62f7dac824428a2f37cab37a29f5b1121f977c49994e2c2",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/fgn-frame-100hz-r2/dm-packets.tsv.zst",
+          "archive_sha256": "f39ef15086105b2cd4674cf5809cd3352bddd6ad083eddae627382e37c1654f0",
+          "first": "1790794603.730006115",
+          "invalid_ordinals": [],
+          "last": "1790794614.009621641",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/fgn-frame-100hz-r2/wfs-packets.tsv.zst",
+          "archive_sha256": "805314a094b8fe32faf4e56e5847c00f3acc0bac159601dbec3bce049fa963fa",
+          "first": "1790794603.727699493",
+          "invalid_ordinals": [],
+          "last": "1790794614.009095618",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/heart-100hz-r2",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/manifest.json",
+      "manifest_sha256": "92fe2bd36dc3100fa62f7dac824428a2f37cab37a29f5b1121f977c49994e2c2",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/heart-100hz-r2/dm-packets.tsv.zst",
+          "archive_sha256": "64630beef3edbaa63554791c9da8e0a08a0f7eb525c6fb8f55179a89a5daa40e",
+          "first": "1790794663.403264600",
+          "invalid_ordinals": [],
+          "last": "1790794673.682899362",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/heart-100hz-r2/wfs-packets.tsv.zst",
+          "archive_sha256": "07d6d18046e994a11e4806a2ae385eca5716723f7b74a3c49ad243ec9eec9433",
+          "first": "1790794663.400802267",
+          "invalid_ordinals": [],
+          "last": "1790794673.682713644",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/heart-100hz-r3",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/manifest.json",
+      "manifest_sha256": "92fe2bd36dc3100fa62f7dac824428a2f37cab37a29f5b1121f977c49994e2c2",
+      "streams": {
+        "dm": {
+          "expected": "pre-ingress or capture failure retained",
+          "status": "absent"
+        },
+        "wfs": {
+          "expected": "pre-ingress or capture failure retained",
+          "status": "absent"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/fgn-frame-100hz-r3",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/manifest.json",
+      "manifest_sha256": "92fe2bd36dc3100fa62f7dac824428a2f37cab37a29f5b1121f977c49994e2c2",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/fgn-frame-100hz-r3/dm-packets.tsv.zst",
+          "archive_sha256": "b69d8f24c6f519c5cfacef30b17a69353548139114720044268c8e4d90f5ec23",
+          "first": "1790794716.087851413",
+          "invalid_ordinals": [],
+          "last": "1790794726.367500591",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/fgn-frame-100hz-r3/wfs-packets.tsv.zst",
+          "archive_sha256": "a1e45d094706e611f1c47403ab409948cce32b366cfd2e8739292cf0b9188b52",
+          "first": "1790794716.085630061",
+          "invalid_ordinals": [],
+          "last": "1790794726.367027006",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/jfg-frame-100hz-r3",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/manifest.json",
+      "manifest_sha256": "92fe2bd36dc3100fa62f7dac824428a2f37cab37a29f5b1121f977c49994e2c2",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/jfg-frame-100hz-r3/dm-packets.tsv.zst",
+          "archive_sha256": "3a391028d2e7a5364a18b1397a26edae03af5432ba15eec4c11e0db2eb6a70dd",
+          "first": "1790794826.144766162",
+          "invalid_ordinals": [],
+          "last": "1790794836.424721434",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/jfg-frame-100hz-r3/wfs-packets.tsv.zst",
+          "archive_sha256": "02dd34ff071c83d7a9e6aeecbef45d8f55974704fd58b6cef75a503466b33698",
+          "first": "1790794826.142157846",
+          "invalid_ordinals": [],
+          "last": "1790794836.424089963",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/fgn-row-100hz-r3",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/manifest.json",
+      "manifest_sha256": "92fe2bd36dc3100fa62f7dac824428a2f37cab37a29f5b1121f977c49994e2c2",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/fgn-row-100hz-r3/dm-packets.tsv.zst",
+          "archive_sha256": "c035c9c4c8041ed641b026456ed0a7ce10fefe22a8009ae3b56593a979c94f0c",
+          "first": "1790794889.462000658",
+          "invalid_ordinals": [],
+          "last": "1790794899.741374241",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/fgn-row-100hz-r3/wfs-packets.tsv.zst",
+          "archive_sha256": "584ef27a1eb5d5a44bd0238c7dea12ccfb04e964c6345242f5ec04ec739329f7",
+          "first": "1790794889.459069959",
+          "invalid_ordinals": [],
+          "last": "1790794899.740844861",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/jfg-row-100hz-r3",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/manifest.json",
+      "manifest_sha256": "92fe2bd36dc3100fa62f7dac824428a2f37cab37a29f5b1121f977c49994e2c2",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/jfg-row-100hz-r3/dm-packets.tsv.zst",
+          "archive_sha256": "f5c2e5fb9443a115eb41b86baf2648aef89729a46130b1b6f8b2ac792e299bcd",
+          "first": "1790795002.090134418",
+          "invalid_ordinals": [],
+          "last": "1790795012.369319724",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline3x1029-20260930/jfg-row-100hz-r3/wfs-packets.tsv.zst",
+          "archive_sha256": "844bc7260ccac049749b7504fd71e25b27064a166ba5f124cbb21e56598c6719",
+          "first": "1790795002.086997530",
+          "invalid_ordinals": [],
+          "last": "1790795012.368835611",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-baseline-heart-replacement1029-20260930/heart-100hz-r1",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-baseline-heart-replacement1029-20260930/manifest.json",
+      "manifest_sha256": "5f2ed1accfec1775f75ca5c16d01afbe6748b9a4058632cb9f42cf058aeadd73",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline-heart-replacement1029-20260930/heart-100hz-r1/dm-packets.tsv.zst",
+          "archive_sha256": "7e596dc3267058c5643ba4736a48dc71463028aa1b707508d698ea82c6798a00",
+          "first": "1790799022.482925647",
+          "invalid_ordinals": [],
+          "last": "1790799032.761505573",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-baseline-heart-replacement1029-20260930/heart-100hz-r1/wfs-packets.tsv.zst",
+          "archive_sha256": "c8bd515af5996b45cc5258b6cdafb5381653a7dc7e58e570984ec3c51a64fa49",
+          "first": "1790799022.479971717",
+          "invalid_ordinals": [],
+          "last": "1790799032.761171869",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/heart-1000hz-r1",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/manifest.json",
+      "manifest_sha256": "41ff9ba490ebd464cdc5a198f4ffc00bfddd2b886af492d65a328274dd39c407",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/heart-1000hz-r1/dm-packets.tsv.zst",
+          "archive_sha256": "66193d0cfaa61c8eccd30998868a1386dc96f8ba643763bcd8b88bac65b536b6",
+          "first": "1790799811.775833684",
+          "invalid_ordinals": [],
+          "last": "1790799812.803140746",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/heart-1000hz-r1/wfs-packets.tsv.zst",
+          "archive_sha256": "6869c0567b152261e042bc730fb89ea09c3ea050fa70f07a71a41b13ffc5134b",
+          "first": "1790799811.774194228",
+          "invalid_ordinals": [],
+          "last": "1790799812.802972281",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/fgn-frame-1000hz-r1",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/manifest.json",
+      "manifest_sha256": "41ff9ba490ebd464cdc5a198f4ffc00bfddd2b886af492d65a328274dd39c407",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/fgn-frame-1000hz-r1/dm-packets.tsv.zst",
+          "archive_sha256": "a9d0a8cbd15deeaaa24b12509b8f716a6d1efe8d0d63db091c53c8560ee3e0c9",
+          "first": "1790799837.112516218",
+          "invalid_ordinals": [],
+          "last": "1790799838.139035519",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/fgn-frame-1000hz-r1/wfs-packets.tsv.zst",
+          "archive_sha256": "888c19c1cedd86bb07bf9330ab304c563f52cab36cdfcef322d7faed304c5229",
+          "first": "1790799837.110133282",
+          "invalid_ordinals": [],
+          "last": "1790799838.138848179",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/jfg-frame-1000hz-r1",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/manifest.json",
+      "manifest_sha256": "41ff9ba490ebd464cdc5a198f4ffc00bfddd2b886af492d65a328274dd39c407",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/jfg-frame-1000hz-r1/dm-packets.tsv.zst",
+          "archive_sha256": "4e4828e09598d3e52500caaed2d1deb6b93b62015218beb84a82e42e4e73f1ab",
+          "first": "1790799921.061273976",
+          "invalid_ordinals": [],
+          "last": "1790799922.087750931",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/jfg-frame-1000hz-r1/wfs-packets.tsv.zst",
+          "archive_sha256": "4070421b06e27f2bfb1fd43528f02b5640f527f635c02fcbd70e73adbec866fe",
+          "first": "1790799921.058695252",
+          "invalid_ordinals": [],
+          "last": "1790799922.087423689",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/jfg-frame-1000hz-r2",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/manifest.json",
+      "manifest_sha256": "41ff9ba490ebd464cdc5a198f4ffc00bfddd2b886af492d65a328274dd39c407",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/jfg-frame-1000hz-r2/dm-packets.tsv.zst",
+          "archive_sha256": "5db87f9d946f60397d2c7d38b5139e6d3b1f70c13a181867429079feec1ff766",
+          "first": "1790800007.520547068",
+          "invalid_ordinals": [],
+          "last": "1790800008.546455457",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/jfg-frame-1000hz-r2/wfs-packets.tsv.zst",
+          "archive_sha256": "0b8c5bddea65b78e29c88e2bba5a399290c57ccf585d4f1a5bb5076f0b7493d1",
+          "first": "1790800007.517896311",
+          "invalid_ordinals": [],
+          "last": "1790800008.545942317",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/fgn-frame-1000hz-r2",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/manifest.json",
+      "manifest_sha256": "41ff9ba490ebd464cdc5a198f4ffc00bfddd2b886af492d65a328274dd39c407",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/fgn-frame-1000hz-r2/dm-packets.tsv.zst",
+          "archive_sha256": "ac9b93e64119883653e0c5e7cadcfe40ad1a0ef7d111287fcdedbbaab36b86cc",
+          "first": "1790800043.575781964",
+          "invalid_ordinals": [],
+          "last": "1790800044.601929321",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/fgn-frame-1000hz-r2/wfs-packets.tsv.zst",
+          "archive_sha256": "173ee28d8571be3c7832b4f6bee8d86130980b791cdd843322f8e74e40ecdad0",
+          "first": "1790800043.573791381",
+          "invalid_ordinals": [],
+          "last": "1790800044.601711924",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/heart-1000hz-r2",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/manifest.json",
+      "manifest_sha256": "41ff9ba490ebd464cdc5a198f4ffc00bfddd2b886af492d65a328274dd39c407",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/heart-1000hz-r2/dm-packets.tsv.zst",
+          "archive_sha256": "9eb4fdc05d1727e5ab487c72da42a53933ce8901f070ad231630c764dc202e12",
+          "first": "1790800076.460940007",
+          "invalid_ordinals": [],
+          "last": "1790800077.487947409",
+          "packets": 1027,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/heart-1000hz-r2/wfs-packets.tsv.zst",
+          "archive_sha256": "1b72cfceeefa1f7093880e979c6dbffa2b1823feb397380860bef1d34a2c0130",
+          "first": "1790800076.459710026",
+          "invalid_ordinals": [],
+          "last": "1790800077.487823016",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/heart-1000hz-r3",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/manifest.json",
+      "manifest_sha256": "41ff9ba490ebd464cdc5a198f4ffc00bfddd2b886af492d65a328274dd39c407",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/heart-1000hz-r3/dm-packets.tsv.zst",
+          "archive_sha256": "a015cc2d0e9f237d1a42ad92aceaa7e29d442ec92b01075e3cf1de9ff8a96005",
+          "first": "1790800101.039966131",
+          "invalid_ordinals": [],
+          "last": "1790800102.067440870",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/heart-1000hz-r3/wfs-packets.tsv.zst",
+          "archive_sha256": "4e9bc8031a0652c31ed9528a14a8a50564ac4772c72cf023f6320499cf5de6ba",
+          "first": "1790800101.038530736",
+          "invalid_ordinals": [],
+          "last": "1790800102.067257376",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/fgn-frame-1000hz-r3",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/manifest.json",
+      "manifest_sha256": "41ff9ba490ebd464cdc5a198f4ffc00bfddd2b886af492d65a328274dd39c407",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/fgn-frame-1000hz-r3/dm-packets.tsv.zst",
+          "archive_sha256": "95c653e9c2406c46560496fe7a78102e86958db8a469bc3d9380d9403bf62f62",
+          "first": "1790800125.837499957",
+          "invalid_ordinals": [],
+          "last": "1790800126.864026315",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/fgn-frame-1000hz-r3/wfs-packets.tsv.zst",
+          "archive_sha256": "61be9dc4dc61de792c74370c848768360c9ccb87e0df47f104731307e874a51f",
+          "first": "1790800125.835028645",
+          "invalid_ordinals": [],
+          "last": "1790800126.863806514",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/jfg-frame-1000hz-r3",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/manifest.json",
+      "manifest_sha256": "41ff9ba490ebd464cdc5a198f4ffc00bfddd2b886af492d65a328274dd39c407",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/jfg-frame-1000hz-r3/dm-packets.tsv.zst",
+          "archive_sha256": "eb8cda7790be195757a2cc86e4588c1e496827d2fe0b73df926819d786346600",
+          "first": "1790800209.952351968",
+          "invalid_ordinals": [],
+          "last": "1790800210.979644195",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/jfg-frame-1000hz-r3/wfs-packets.tsv.zst",
+          "archive_sha256": "07fabbfa3f826edbfc984d9ad7824c2fc43074eb636847f3ba14fb5803342c9b",
+          "first": "1790800209.950516435",
+          "invalid_ordinals": [],
+          "last": "1790800210.979240280",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/heart-1500hz-r1",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/manifest.json",
+      "manifest_sha256": "41ff9ba490ebd464cdc5a198f4ffc00bfddd2b886af492d65a328274dd39c407",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/heart-1500hz-r1/dm-packets.tsv.zst",
+          "archive_sha256": "9d9ccf26f89d2bea71ce3e06dcfc71322d0a1a8e103af5c01fc8b08649aa6f6a",
+          "first": "1790800245.305192344",
+          "invalid_ordinals": [],
+          "last": "1790800245.988570991",
+          "packets": 1028,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/heart-1500hz-r1/wfs-packets.tsv.zst",
+          "archive_sha256": "096f8d75d1dcd71d9cc542dbc76f332eeb71ff0458f10661a3d3b9f54d5169d2",
+          "first": "1790800245.302585729",
+          "invalid_ordinals": [],
+          "last": "1790800245.988426160",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/fgn-frame-1500hz-r1",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/manifest.json",
+      "manifest_sha256": "41ff9ba490ebd464cdc5a198f4ffc00bfddd2b886af492d65a328274dd39c407",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/fgn-frame-1500hz-r1/dm-packets.tsv.zst",
+          "archive_sha256": "192471836d3f0353252953b64085d9c83ce1aae4e0b2bc8828492b8bfd017d8b",
+          "first": "1790800269.616523445",
+          "invalid_ordinals": [],
+          "last": "1790800270.299468356",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/fgn-frame-1500hz-r1/wfs-packets.tsv.zst",
+          "archive_sha256": "4861fd256dac16f1979d0ebec7baa00cfecdae74524069143334f8489e41f550",
+          "first": "1790800269.613500651",
+          "invalid_ordinals": [],
+          "last": "1790800270.299278241",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/jfg-frame-1500hz-r1",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/manifest.json",
+      "manifest_sha256": "41ff9ba490ebd464cdc5a198f4ffc00bfddd2b886af492d65a328274dd39c407",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/jfg-frame-1500hz-r1/dm-packets.tsv.zst",
+          "archive_sha256": "35ff26590a24f359a838b47f0d5cc1992951b46f107f1d0a33580b5b1fe9b09f",
+          "first": "1790800353.314685040",
+          "invalid_ordinals": [],
+          "last": "1790800353.997611335",
+          "packets": 1028,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/jfg-frame-1500hz-r1/wfs-packets.tsv.zst",
+          "archive_sha256": "93ea37884d7e5a09eef67c870621cb4c56545aa6e221bb7d0508ddedf2cfb594",
+          "first": "1790800353.311643831",
+          "invalid_ordinals": [],
+          "last": "1790800353.997394930",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/jfg-frame-1500hz-r2",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/manifest.json",
+      "manifest_sha256": "41ff9ba490ebd464cdc5a198f4ffc00bfddd2b886af492d65a328274dd39c407",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/jfg-frame-1500hz-r2/dm-packets.tsv.zst",
+          "archive_sha256": "68baec012d3936186d947aa6af7d351297029af30461db241da2e27329325c8f",
+          "first": "1790800440.231711240",
+          "invalid_ordinals": [],
+          "last": "1790800440.915764519",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/jfg-frame-1500hz-r2/wfs-packets.tsv.zst",
+          "archive_sha256": "af46f15f168be376953ffa53e6cca731541695e918c4969b333a4fb18a77ac90",
+          "first": "1790800440.229726127",
+          "invalid_ordinals": [],
+          "last": "1790800440.915543055",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/fgn-frame-1500hz-r2",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/manifest.json",
+      "manifest_sha256": "41ff9ba490ebd464cdc5a198f4ffc00bfddd2b886af492d65a328274dd39c407",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/fgn-frame-1500hz-r2/dm-packets.tsv.zst",
+          "archive_sha256": "9b36fc9b81e8eb4f7b2fd213a0b2fb79ad3eb64fd36807aec9852599bdb29e4b",
+          "first": "1790800476.048518079",
+          "invalid_ordinals": [],
+          "last": "1790800476.732562978",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/fgn-frame-1500hz-r2/wfs-packets.tsv.zst",
+          "archive_sha256": "24872138a05b0db4d3e23c19979e061eb4a4690324535274b794d09c1317b11c",
+          "first": "1790800476.046550148",
+          "invalid_ordinals": [],
+          "last": "1790800476.732373213",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/heart-1500hz-r2",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/manifest.json",
+      "manifest_sha256": "41ff9ba490ebd464cdc5a198f4ffc00bfddd2b886af492d65a328274dd39c407",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/heart-1500hz-r2/dm-packets.tsv.zst",
+          "archive_sha256": "9f358c48d4dc7edf6cffaa894c35373e338af83b81828e3fd66eace2bde429b6",
+          "first": "1790800508.520380713",
+          "invalid_ordinals": [],
+          "last": "1790800509.205027222",
+          "packets": 1026,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/heart-1500hz-r2/wfs-packets.tsv.zst",
+          "archive_sha256": "f4a51b55659803dda29813987b89fb0a52a1bc2e9559f4722d8349b885a5dad3",
+          "first": "1790800508.519117820",
+          "invalid_ordinals": [],
+          "last": "1790800509.204944898",
+          "packets": 32874,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/heart-1500hz-r3",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/manifest.json",
+      "manifest_sha256": "41ff9ba490ebd464cdc5a198f4ffc00bfddd2b886af492d65a328274dd39c407",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/heart-1500hz-r3/dm-packets.tsv.zst",
+          "archive_sha256": "2b256d80764a5904b625536e9a67fa3e2f326b54f7586d291b4711b3f9cb3889",
+          "first": "1790800531.811092734",
+          "invalid_ordinals": [],
+          "last": "1790800532.495329250",
+          "packets": 1025,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/heart-1500hz-r3/wfs-packets.tsv.zst",
+          "archive_sha256": "9c02a8283ae31f074bc0744ead8fb037e039bf41d193352910f410b20ee7b4e6",
+          "first": "1790800531.809362868",
+          "invalid_ordinals": [],
+          "last": "1790800532.495181493",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/fgn-frame-1500hz-r3",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/manifest.json",
+      "manifest_sha256": "41ff9ba490ebd464cdc5a198f4ffc00bfddd2b886af492d65a328274dd39c407",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/fgn-frame-1500hz-r3/dm-packets.tsv.zst",
+          "archive_sha256": "e81fa7685f70bd2e6388bf2b108356c07fe1998ea9404c3230d3a12bd4e6ed11",
+          "first": "1790800556.073262344",
+          "invalid_ordinals": [],
+          "last": "1790800556.755627603",
+          "packets": 1028,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/fgn-frame-1500hz-r3/wfs-packets.tsv.zst",
+          "archive_sha256": "92b7f672dda8c277738e9de74e13b2367dff17d705d64a5e94d775621bc90206",
+          "first": "1790800556.069698146",
+          "invalid_ordinals": [],
+          "last": "1790800556.755438729",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/jfg-frame-1500hz-r3",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/manifest.json",
+      "manifest_sha256": "41ff9ba490ebd464cdc5a198f4ffc00bfddd2b886af492d65a328274dd39c407",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/jfg-frame-1500hz-r3/dm-packets.tsv.zst",
+          "archive_sha256": "77fd38ee2169ab99497341e8a89f85d70666cbfc1d8dafaef89ccf09531ca965",
+          "first": "1790800639.525695292",
+          "invalid_ordinals": [],
+          "last": "1790800640.209570827",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-capacity-frame1029-20260930/jfg-frame-1500hz-r3/wfs-packets.tsv.zst",
+          "archive_sha256": "160c2fce045a5c0957c536fd59a81bb0526e3d573cfe327d6fe8932386e3a6b8",
+          "first": "1790800639.523533599",
+          "invalid_ordinals": [],
+          "last": "1790800640.209351417",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r1",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/manifest.json",
+      "manifest_sha256": "ae63b99f053ce687b245a14840ffb64d21c41736cd42f78376361067b5496185",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r1/dm-packets.tsv.zst",
+          "archive_sha256": "cbcfda3f4b561e5e8bdbd1b2bd84354c5f7ea9a197e5fcc1dcce44372679c1dd",
+          "first": "1790803300.584959115",
+          "invalid_ordinals": [],
+          "last": "1790803310.864586212",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r1/wfs-packets.tsv.zst",
+          "archive_sha256": "0867896b9edf35edf5a125539e5fb6d8e410c75c91bd0b48a0d68e1f677e9b13",
+          "first": "1790803300.582213293",
+          "invalid_ordinals": [],
+          "last": "1790803310.864058818",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r1",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/manifest.json",
+      "manifest_sha256": "ae63b99f053ce687b245a14840ffb64d21c41736cd42f78376361067b5496185",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r1/dm-packets.tsv.zst",
+          "archive_sha256": "12f9b3196188a88d8404c6528ee0958d21b6422c96e9ed6d4c2a73573afd038c",
+          "first": "1790803396.228723588",
+          "invalid_ordinals": [],
+          "last": "1790803406.507174197",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r1/wfs-packets.tsv.zst",
+          "archive_sha256": "2a3a1db0c46bb5ae8b7ba85a01f6fbcc83682f54a6cc88465e20d8a51ce47f70",
+          "first": "1790803396.225182459",
+          "invalid_ordinals": [],
+          "last": "1790803406.506617658",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r2",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/manifest.json",
+      "manifest_sha256": "ae63b99f053ce687b245a14840ffb64d21c41736cd42f78376361067b5496185",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r2/dm-packets.tsv.zst",
+          "archive_sha256": "0cfe36df1c50c38e68dc10edcb5aaf1f70916325ffda293324616be9e43e3fee",
+          "first": "1790803494.964168682",
+          "invalid_ordinals": [],
+          "last": "1790803505.242852756",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r2/wfs-packets.tsv.zst",
+          "archive_sha256": "f611a7c961de4bf5a977c3b4653d358a4b6a3906cd4c5a76278221384d1f2e01",
+          "first": "1790803494.960917592",
+          "invalid_ordinals": [],
+          "last": "1790803505.242416442",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r2",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/manifest.json",
+      "manifest_sha256": "ae63b99f053ce687b245a14840ffb64d21c41736cd42f78376361067b5496185",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r2/dm-packets.tsv.zst",
+          "archive_sha256": "e50e6e1c8e30bad2d80d56ef1c4963d197aec2102456c0a85f17955a24f6edbc",
+          "first": "1790803541.415534135",
+          "invalid_ordinals": [],
+          "last": "1790803551.696061982",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r2/wfs-packets.tsv.zst",
+          "archive_sha256": "71c5fdbd21c8af01da1583569b7856aa8bd803da38761d631493da789168c728",
+          "first": "1790803541.413578303",
+          "invalid_ordinals": [],
+          "last": "1790803551.695672856",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r3",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/manifest.json",
+      "manifest_sha256": "ae63b99f053ce687b245a14840ffb64d21c41736cd42f78376361067b5496185",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r3/dm-packets.tsv.zst",
+          "archive_sha256": "d47105615cd37e67df4cb7fea18972d9c266dbc78f4d4b7ead636d32b43e2f13",
+          "first": "1790803584.289444829",
+          "invalid_ordinals": [],
+          "last": "1790803594.568316491",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/fgn-row-100hz-r3/wfs-packets.tsv.zst",
+          "archive_sha256": "326d1e6db9241d859aacd028cb5d3f527d8579799f383be19860c36f78d314ef",
+          "first": "1790803584.286397568",
+          "invalid_ordinals": [],
+          "last": "1790803594.568196787",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r3",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/manifest.json",
+      "manifest_sha256": "ae63b99f053ce687b245a14840ffb64d21c41736cd42f78376361067b5496185",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r3/dm-packets.tsv.zst",
+          "archive_sha256": "d0344c625ccce4ec71eb4869f2f994601a2fe6e9b98f523426ed4925dd94a032",
+          "first": "1790803679.997703235",
+          "invalid_ordinals": [],
+          "last": "1790803690.276261575",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-baseline1029-20260930/jfg-row-100hz-r3/wfs-packets.tsv.zst",
+          "archive_sha256": "d8499e9fe92bd9ccc6fd0cc419d19a74567ca79589fd3691e0da89a4ae6590c0",
+          "first": "1790803679.994208868",
+          "invalid_ordinals": [],
+          "last": "1790803690.275894559",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/fgn-row-500hz-r1",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/manifest.json",
+      "manifest_sha256": "0040d47daeb9cc14cceb1fc520c2dd2cfd2c9b4967cf52332281b5299e0657ea",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/fgn-row-500hz-r1/dm-packets.tsv.zst",
+          "archive_sha256": "7844dccc4777b7953a0d42af48c83adc325c787235ace18740901b326f6a134f",
+          "first": "1790803725.897974408",
+          "invalid_ordinals": [],
+          "last": "1790803727.952603574",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/fgn-row-500hz-r1/wfs-packets.tsv.zst",
+          "archive_sha256": "769c184ec4ed919c6cdef1e84e57aad0f93bb5a28f85a3ae5bfab8237ddc8869",
+          "first": "1790803725.895895094",
+          "invalid_ordinals": [],
+          "last": "1790803727.952554352",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/jfg-row-500hz-r1",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/manifest.json",
+      "manifest_sha256": "0040d47daeb9cc14cceb1fc520c2dd2cfd2c9b4967cf52332281b5299e0657ea",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/jfg-row-500hz-r1/dm-packets.tsv.zst",
+          "archive_sha256": "ce563abae72f0fa8de1a0f9e7694a5e8282014f268a8a5339f8d9fc6ce8aff8a",
+          "first": "1790803813.062418299",
+          "invalid_ordinals": [],
+          "last": "1790803815.120208142",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/jfg-row-500hz-r1/wfs-packets.tsv.zst",
+          "archive_sha256": "c811e7daeadd3cdf721529c24e577baff97beb2816b1f240175cb1e67daf84ab",
+          "first": "1790803813.058648545",
+          "invalid_ordinals": [],
+          "last": "1790803815.120142600",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/jfg-row-500hz-r2",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/manifest.json",
+      "manifest_sha256": "0040d47daeb9cc14cceb1fc520c2dd2cfd2c9b4967cf52332281b5299e0657ea",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/jfg-row-500hz-r2/dm-packets.tsv.zst",
+          "archive_sha256": "8bf2c9364e6ed5881a307dfb2f35084f1cfc889be46e4557f70640cb61d415c1",
+          "first": "1790803903.586615029",
+          "invalid_ordinals": [],
+          "last": "1790803905.640072949",
+          "packets": 1028,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/jfg-row-500hz-r2/wfs-packets.tsv.zst",
+          "archive_sha256": "7bb3d87a92f4494f09b3d53110df3a3b9f8777ce2656e2f0396f1c67f59d45dd",
+          "first": "1790803903.582516920",
+          "invalid_ordinals": [],
+          "last": "1790803905.639996907",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/fgn-row-500hz-r2",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/manifest.json",
+      "manifest_sha256": "0040d47daeb9cc14cceb1fc520c2dd2cfd2c9b4967cf52332281b5299e0657ea",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/fgn-row-500hz-r2/dm-packets.tsv.zst",
+          "archive_sha256": "04d444356d65a8caa0445efc433b2769757144c4b706bd8a9834c947248ed7e4",
+          "first": "1790803940.999569739",
+          "invalid_ordinals": [],
+          "last": "1790803943.054670451",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/fgn-row-500hz-r2/wfs-packets.tsv.zst",
+          "archive_sha256": "7fd1fe494d0f5daca7aafa59a4c0b1f110005c291c4b668b9098f96e977a523d",
+          "first": "1790803940.997134688",
+          "invalid_ordinals": [],
+          "last": "1790803943.054618884",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/fgn-row-500hz-r3",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/manifest.json",
+      "manifest_sha256": "0040d47daeb9cc14cceb1fc520c2dd2cfd2c9b4967cf52332281b5299e0657ea",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/fgn-row-500hz-r3/dm-packets.tsv.zst",
+          "archive_sha256": "14a3b0c405f089d337e99ac67690aa4714a72004c228c4fe1b4703e1c4e8a312",
+          "first": "1790803975.599956823",
+          "invalid_ordinals": [],
+          "last": "1790803977.654533740",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/fgn-row-500hz-r3/wfs-packets.tsv.zst",
+          "archive_sha256": "15b9dcaae8ce57a4a2b6ea1400f4e36e0f4d996062c1a9ff6e1b2ae125a89f51",
+          "first": "1790803975.597658818",
+          "invalid_ordinals": [],
+          "last": "1790803977.654483866",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/jfg-row-500hz-r3",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/manifest.json",
+      "manifest_sha256": "0040d47daeb9cc14cceb1fc520c2dd2cfd2c9b4967cf52332281b5299e0657ea",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/jfg-row-500hz-r3/dm-packets.tsv.zst",
+          "archive_sha256": "978c843125f8f4b8d5ab875b622e758ddd32ee340d3618943660eaa7aa8ef070",
+          "first": "1790804063.010308265",
+          "invalid_ordinals": [],
+          "last": "1790804065.065057222",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/jfg-row-500hz-r3/wfs-packets.tsv.zst",
+          "archive_sha256": "057b83bc5fb5b4bd89defc4752c9291b37d66f1f036f6e88ac4427984d59a08c",
+          "first": "1790804063.007625601",
+          "invalid_ordinals": [],
+          "last": "1790804065.064985378",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/fgn-row-750hz-r1",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/manifest.json",
+      "manifest_sha256": "0040d47daeb9cc14cceb1fc520c2dd2cfd2c9b4967cf52332281b5299e0657ea",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/fgn-row-750hz-r1/dm-packets.tsv.zst",
+          "archive_sha256": "8f0bee2ed9c34e584e4c4a6096491c3f0a5b1a40b3a6ad322d054901a6f0e696",
+          "first": "1790804100.744015402",
+          "invalid_ordinals": [],
+          "last": "1790804102.112508285",
+          "packets": 1028,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/fgn-row-750hz-r1/wfs-packets.tsv.zst",
+          "archive_sha256": "14175dd42a5dc6b0da4b6990d1fc3ee7a7d4d7318071e2566c1c642ca1bd58ed",
+          "first": "1790804100.740740732",
+          "invalid_ordinals": [],
+          "last": "1790804102.112458512",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/jfg-row-750hz-r1",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/manifest.json",
+      "manifest_sha256": "0040d47daeb9cc14cceb1fc520c2dd2cfd2c9b4967cf52332281b5299e0657ea",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/jfg-row-750hz-r1/dm-packets.tsv.zst",
+          "archive_sha256": "b71be8c9a061ee69557a8dd1f20bbc635dc8ed4b3738df6d44dd091eb40298ff",
+          "first": "1790804187.116439890",
+          "invalid_ordinals": [],
+          "last": "1790804188.484589992",
+          "packets": 1028,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/jfg-row-750hz-r1/wfs-packets.tsv.zst",
+          "archive_sha256": "17b72b57161e5b81b2d653ed001b1e2d23caefbcb0da51fdba1ee408699e785b",
+          "first": "1790804187.113689188",
+          "invalid_ordinals": [],
+          "last": "1790804188.484527646",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/jfg-row-750hz-r2",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/manifest.json",
+      "manifest_sha256": "0040d47daeb9cc14cceb1fc520c2dd2cfd2c9b4967cf52332281b5299e0657ea",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/jfg-row-750hz-r2/dm-packets.tsv.zst",
+          "archive_sha256": "d9c4e981ed9d2b90b872ae9676e1cc3b477d12e59d3bec564ba28ebffeb7f11f",
+          "first": "1790804276.588992887",
+          "invalid_ordinals": [],
+          "last": "1790804277.956544405",
+          "packets": 1027,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/jfg-row-750hz-r2/wfs-packets.tsv.zst",
+          "archive_sha256": "7a587382335cb27b126902de443094514ea02a364152896db966fc11395aea38",
+          "first": "1790804276.585038794",
+          "invalid_ordinals": [],
+          "last": "1790804277.956481918",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/fgn-row-750hz-r2",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/manifest.json",
+      "manifest_sha256": "0040d47daeb9cc14cceb1fc520c2dd2cfd2c9b4967cf52332281b5299e0657ea",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/fgn-row-750hz-r2/dm-packets.tsv.zst",
+          "archive_sha256": "3c0fa3946b521f57d838b5392d451e9cb7154564aeb20783e04d230ece2987f0",
+          "first": "1790804313.220933383",
+          "invalid_ordinals": [],
+          "last": "1790804314.589875023",
+          "packets": 1028,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/fgn-row-750hz-r2/wfs-packets.tsv.zst",
+          "archive_sha256": "7737bf4379c2c58a3be110f8847de5e21a55189289b45e8d51b45a9e40de9d78",
+          "first": "1790804313.218110165",
+          "invalid_ordinals": [],
+          "last": "1790804314.589827805",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/fgn-row-750hz-r3",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/manifest.json",
+      "manifest_sha256": "0040d47daeb9cc14cceb1fc520c2dd2cfd2c9b4967cf52332281b5299e0657ea",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/fgn-row-750hz-r3/dm-packets.tsv.zst",
+          "archive_sha256": "44e43fca82bc246ad48016f7e229b47d162f14d94beb97bdac0ef5eeb72be6e6",
+          "first": "1790804346.659368019",
+          "invalid_ordinals": [],
+          "last": "1790804348.028049968",
+          "packets": 1028,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/fgn-row-750hz-r3/wfs-packets.tsv.zst",
+          "archive_sha256": "9db5c6e049d8100951a8779745632173f9311ae8b09702083363535b36e46319",
+          "first": "1790804346.656402986",
+          "invalid_ordinals": [],
+          "last": "1790804348.028003021",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/jfg-row-750hz-r3",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/manifest.json",
+      "manifest_sha256": "0040d47daeb9cc14cceb1fc520c2dd2cfd2c9b4967cf52332281b5299e0657ea",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/jfg-row-750hz-r3/dm-packets.tsv.zst",
+          "archive_sha256": "5d6059c89ba734d9734d003f1cccf9e3f594c12f14f090a577b408851af3282d",
+          "first": "1790804433.439171133",
+          "invalid_ordinals": [],
+          "last": "1790804434.807578743",
+          "packets": 1028,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/jfg-row-750hz-r3/wfs-packets.tsv.zst",
+          "archive_sha256": "be27cbf1016286674bb499a60c8e469ef26bfbcedd8b2051c9d9a6d8c9206517",
+          "first": "1790804433.436023107",
+          "invalid_ordinals": [],
+          "last": "1790804434.807509915",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/fgn-row-1000hz-r1",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/manifest.json",
+      "manifest_sha256": "0040d47daeb9cc14cceb1fc520c2dd2cfd2c9b4967cf52332281b5299e0657ea",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/fgn-row-1000hz-r1/dm-packets.tsv.zst",
+          "archive_sha256": "f2e1640e9e3b0a2f63f54e3da6daf7d4504bd647f9a0ce67e3ada9184b5710b1",
+          "first": "1790804470.247939768",
+          "invalid_ordinals": [],
+          "last": "1790804471.273916987",
+          "packets": 1027,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/fgn-row-1000hz-r1/wfs-packets.tsv.zst",
+          "archive_sha256": "f82aed0cf021a4df0ee9e9ac7829cee038a10fa072f7555d67c2a7afe14a995e",
+          "first": "1790804470.245021652",
+          "invalid_ordinals": [],
+          "last": "1790804471.273801531",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/jfg-row-1000hz-r1",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/manifest.json",
+      "manifest_sha256": "0040d47daeb9cc14cceb1fc520c2dd2cfd2c9b4967cf52332281b5299e0657ea",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/jfg-row-1000hz-r1/dm-packets.tsv.zst",
+          "archive_sha256": "6eef822e2e9b9d966ae5384367d3f8e0e8d570679704e80b5654b44c9477e6f6",
+          "first": "1790804556.213047973",
+          "invalid_ordinals": [],
+          "last": "1790804557.237369149",
+          "packets": 1026,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/jfg-row-1000hz-r1/wfs-packets.tsv.zst",
+          "archive_sha256": "74b77130cfaffdc19487a3f6ec2efef4603363e57fa60939862fd50a4da3a047",
+          "first": "1790804556.209171816",
+          "invalid_ordinals": [],
+          "last": "1790804557.237251579",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/jfg-row-1000hz-r2",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/manifest.json",
+      "manifest_sha256": "0040d47daeb9cc14cceb1fc520c2dd2cfd2c9b4967cf52332281b5299e0657ea",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/jfg-row-1000hz-r2/dm-packets.tsv.zst",
+          "archive_sha256": "e273e4f146c699f0209349746cee9cceabe0ad43b57c17dec9c17aa6fc14b7af",
+          "first": "1790804645.345544129",
+          "invalid_ordinals": [],
+          "last": "1790804646.371064541",
+          "packets": 1026,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/jfg-row-1000hz-r2/wfs-packets.tsv.zst",
+          "archive_sha256": "a5e649554d045b17089435036c99b5c58709bce99bd33f3690de51b7faa16949",
+          "first": "1790804645.342215756",
+          "invalid_ordinals": [],
+          "last": "1790804646.370994229",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/fgn-row-1000hz-r2",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/manifest.json",
+      "manifest_sha256": "0040d47daeb9cc14cceb1fc520c2dd2cfd2c9b4967cf52332281b5299e0657ea",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/fgn-row-1000hz-r2/dm-packets.tsv.zst",
+          "archive_sha256": "9935093388927443b2cb672cfd090e8ee7c7376b795155420fa4b2af436e48f5",
+          "first": "1790804681.732630986",
+          "invalid_ordinals": [],
+          "last": "1790804682.758606030",
+          "packets": 1028,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/fgn-row-1000hz-r2/wfs-packets.tsv.zst",
+          "archive_sha256": "58e363852e6d52691abdd928d83f71b73c002870736b8cba3fa51c2154303cfc",
+          "first": "1790804681.729728218",
+          "invalid_ordinals": [],
+          "last": "1790804682.758509309",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/fgn-row-1000hz-r3",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/manifest.json",
+      "manifest_sha256": "0040d47daeb9cc14cceb1fc520c2dd2cfd2c9b4967cf52332281b5299e0657ea",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/fgn-row-1000hz-r3/dm-packets.tsv.zst",
+          "archive_sha256": "8eb0e94f3bc28bf74dc5c088536fd55257c5a0b3be5ae7245d3a2eca0c6190e4",
+          "first": "1790804714.949340845",
+          "invalid_ordinals": [],
+          "last": "1790804715.976039632",
+          "packets": 1027,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/fgn-row-1000hz-r3/wfs-packets.tsv.zst",
+          "archive_sha256": "12b62396f09ffc715da8af8d423e1cb84789fa1886f314bd8e9c0ecc9c1ae238",
+          "first": "1790804714.946562259",
+          "invalid_ordinals": [],
+          "last": "1790804715.975339883",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/jfg-row-1000hz-r3",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/manifest.json",
+      "manifest_sha256": "0040d47daeb9cc14cceb1fc520c2dd2cfd2c9b4967cf52332281b5299e0657ea",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/jfg-row-1000hz-r3/dm-packets.tsv.zst",
+          "archive_sha256": "fbb534b87cc8e4ff496ad2febd387434571a88fd79afb0e9cc0640d5e83460e8",
+          "first": "1790804800.620454185",
+          "invalid_ordinals": [],
+          "last": "1790804801.645399848",
+          "packets": 1027,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-row-fixed-capacity1029-20260930/jfg-row-1000hz-r3/wfs-packets.tsv.zst",
+          "archive_sha256": "f64f823d9e7a0bc80a8244f5251eff9da8dcf81effe98e231f2963e7a6352ef3",
+          "first": "1790804800.617098931",
+          "invalid_ordinals": [],
+          "last": "1790804801.645295363",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-frame-refine1029-20260930/fgn-frame-1250hz-r1",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-frame-refine1029-20260930/manifest.json",
+      "manifest_sha256": "459588c8671fb48cbfed566ad5936151c5210bcb83038034283fdfffa65fa422",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-frame-refine1029-20260930/fgn-frame-1250hz-r1/dm-packets.tsv.zst",
+          "archive_sha256": "651139cfd44a5050a2c95b05fc48f9c45dd19371998fe192fb2850c8c0bd8f88",
+          "first": "1790804836.866628792",
+          "invalid_ordinals": [],
+          "last": "1790804837.686548106",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-frame-refine1029-20260930/fgn-frame-1250hz-r1/wfs-packets.tsv.zst",
+          "archive_sha256": "8b9ce6c5ecd6958031c9319a0e4e82964aaeae6f3945c794b0169debb1d1164a",
+          "first": "1790804836.863429640",
+          "invalid_ordinals": [],
+          "last": "1790804837.686358151",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-frame-refine1029-20260930/jfg-frame-1250hz-r1",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-frame-refine1029-20260930/manifest.json",
+      "manifest_sha256": "459588c8671fb48cbfed566ad5936151c5210bcb83038034283fdfffa65fa422",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-frame-refine1029-20260930/jfg-frame-1250hz-r1/dm-packets.tsv.zst",
+          "archive_sha256": "a37757990b90dd29c20ca49f87583667f05c0679598f5c0ed69dbb8f34692d0d",
+          "first": "1790804920.430540630",
+          "invalid_ordinals": [],
+          "last": "1790804921.251228809",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-frame-refine1029-20260930/jfg-frame-1250hz-r1/wfs-packets.tsv.zst",
+          "archive_sha256": "6cc09fbce480b31bd9c6fd45641366dd6722fbbe47e115d9a246165d47806b84",
+          "first": "1790804920.428064871",
+          "invalid_ordinals": [],
+          "last": "1790804921.250993378",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-frame-refine1029-20260930/jfg-frame-1250hz-r2",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-frame-refine1029-20260930/manifest.json",
+      "manifest_sha256": "459588c8671fb48cbfed566ad5936151c5210bcb83038034283fdfffa65fa422",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-frame-refine1029-20260930/jfg-frame-1250hz-r2/dm-packets.tsv.zst",
+          "archive_sha256": "b3bc57e85670d0b64a22f411a41f6493620070c2a04a3d8f4c21cb0d53089e58",
+          "first": "1790805006.776329234",
+          "invalid_ordinals": [],
+          "last": "1790805007.596656022",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-frame-refine1029-20260930/jfg-frame-1250hz-r2/wfs-packets.tsv.zst",
+          "archive_sha256": "1be2a685108ee7f4594e43c94ba1c03ad45b704df9c1f46f2a3fcd65f15bae8d",
+          "first": "1790805006.774225110",
+          "invalid_ordinals": [],
+          "last": "1790805007.596438395",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-frame-refine1029-20260930/fgn-frame-1250hz-r2",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-frame-refine1029-20260930/manifest.json",
+      "manifest_sha256": "459588c8671fb48cbfed566ad5936151c5210bcb83038034283fdfffa65fa422",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-frame-refine1029-20260930/fgn-frame-1250hz-r2/dm-packets.tsv.zst",
+          "archive_sha256": "a7a001b122f3ae6bca30af167f9a46ab04ffc0150a6dad42c47c40b5ccf0ba08",
+          "first": "1790805042.665457343",
+          "invalid_ordinals": [],
+          "last": "1790805043.485428884",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-frame-refine1029-20260930/fgn-frame-1250hz-r2/wfs-packets.tsv.zst",
+          "archive_sha256": "b8ad18bb6400b049ebc21376b5fe7f4a42b190f8e4e8891709f99c7d7d9d41ed",
+          "first": "1790805042.662310829",
+          "invalid_ordinals": [],
+          "last": "1790805043.485241404",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-frame-refine1029-20260930/fgn-frame-1250hz-r3",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-frame-refine1029-20260930/manifest.json",
+      "manifest_sha256": "459588c8671fb48cbfed566ad5936151c5210bcb83038034283fdfffa65fa422",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-frame-refine1029-20260930/fgn-frame-1250hz-r3/dm-packets.tsv.zst",
+          "archive_sha256": "bcf67d0c02a512ee067aba81c6b26f3d26ccb7c2104505fd5d34cd4a2e824f15",
+          "first": "1790805075.677084382",
+          "invalid_ordinals": [],
+          "last": "1790805076.498445770",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-frame-refine1029-20260930/fgn-frame-1250hz-r3/wfs-packets.tsv.zst",
+          "archive_sha256": "558aaf50c05686ef105afdd3525c91424713ed8c548f997d3a8fcf89362d86f0",
+          "first": "1790805075.675262415",
+          "invalid_ordinals": [],
+          "last": "1790805076.498255474",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-frame-refine1029-20260930/jfg-frame-1250hz-r3",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-frame-refine1029-20260930/manifest.json",
+      "manifest_sha256": "459588c8671fb48cbfed566ad5936151c5210bcb83038034283fdfffa65fa422",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-frame-refine1029-20260930/jfg-frame-1250hz-r3/dm-packets.tsv.zst",
+          "archive_sha256": "72efb149afe0493a436f7e8e7af3e38edf85062099c316159a3956847148d6dc",
+          "first": "1790805159.410003740",
+          "invalid_ordinals": [],
+          "last": "1790805160.230183979",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-frame-refine1029-20260930/jfg-frame-1250hz-r3/wfs-packets.tsv.zst",
+          "archive_sha256": "b5b64941db7696331bb53ee9c43ed7651ca19c991de16710db5e9062a0b43226",
+          "first": "1790805159.406973965",
+          "invalid_ordinals": [],
+          "last": "1790805160.229966281",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-heart-refine1029-20260930/heart-500hz-r1",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-heart-refine1029-20260930/manifest.json",
+      "manifest_sha256": "796c0b579fa8acfe7ab1f4c8a9729b88b075497fe9f203384e939237342429bc",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-heart-refine1029-20260930/heart-500hz-r1/dm-packets.tsv.zst",
+          "archive_sha256": "3629e435c56c4575e9e6a08e4a7f5fb2cb48ff0660d0d86c80b7804cdfdb9208",
+          "first": "1790805194.675079805",
+          "invalid_ordinals": [],
+          "last": "1790805196.729520284",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-heart-refine1029-20260930/heart-500hz-r1/wfs-packets.tsv.zst",
+          "archive_sha256": "442bf719afb52dc231ba929b48d628ae95c938372963072222843c06f29b61e5",
+          "first": "1790805194.672369368",
+          "invalid_ordinals": [],
+          "last": "1790805196.729278151",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-heart-refine1029-20260930/heart-500hz-r2",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-heart-refine1029-20260930/manifest.json",
+      "manifest_sha256": "796c0b579fa8acfe7ab1f4c8a9729b88b075497fe9f203384e939237342429bc",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-heart-refine1029-20260930/heart-500hz-r2/dm-packets.tsv.zst",
+          "archive_sha256": "58563e7a0d20d01913da9cf5c2207b05f61ec792f2835ae3c3f6a3e2c5d33fae",
+          "first": "1790805220.297047329",
+          "invalid_ordinals": [],
+          "last": "1790805222.351521020",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-heart-refine1029-20260930/heart-500hz-r2/wfs-packets.tsv.zst",
+          "archive_sha256": "afd93591bf67c7594e908a3b0286113db685ca2e098d15c8d7d935d163857575",
+          "first": "1790805220.294171652",
+          "invalid_ordinals": [],
+          "last": "1790805222.351322859",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-heart-refine1029-20260930/heart-500hz-r3",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-heart-refine1029-20260930/manifest.json",
+      "manifest_sha256": "796c0b579fa8acfe7ab1f4c8a9729b88b075497fe9f203384e939237342429bc",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-heart-refine1029-20260930/heart-500hz-r3/dm-packets.tsv.zst",
+          "archive_sha256": "babc436d595c383423b37dccc0b949640eed9335f8f1d76bec7828c6b1ec69cf",
+          "first": "1790805228.110032202",
+          "invalid_ordinals": [],
+          "last": "1790805230.164662590",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-heart-refine1029-20260930/heart-500hz-r3/wfs-packets.tsv.zst",
+          "archive_sha256": "786e2baae77a7bd3e38c1e8c01f8a01e2606518413609b9ffac920fbeae68300",
+          "first": "1790805228.107518083",
+          "invalid_ordinals": [],
+          "last": "1790805230.164417692",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-heart-refine1029-20260930/heart-750hz-r1",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-heart-refine1029-20260930/manifest.json",
+      "manifest_sha256": "796c0b579fa8acfe7ab1f4c8a9729b88b075497fe9f203384e939237342429bc",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-heart-refine1029-20260930/heart-750hz-r1/dm-packets.tsv.zst",
+          "archive_sha256": "5472a62d7744c8036c32cb2d89024cde23fc0dc428c2cf3c265a6030b3be40be",
+          "first": "1790805253.608085278",
+          "invalid_ordinals": [],
+          "last": "1790805254.976715047",
+          "packets": 1028,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-heart-refine1029-20260930/heart-750hz-r1/wfs-packets.tsv.zst",
+          "archive_sha256": "a3374745badc45f3098c4c4e4b4e63ec8cb958cb22119628cbb8d86306a11fe6",
+          "first": "1790805253.605296354",
+          "invalid_ordinals": [],
+          "last": "1790805254.976528758",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-heart-refine1029-20260930/heart-750hz-r2",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-heart-refine1029-20260930/manifest.json",
+      "manifest_sha256": "796c0b579fa8acfe7ab1f4c8a9729b88b075497fe9f203384e939237342429bc",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-heart-refine1029-20260930/heart-750hz-r2/dm-packets.tsv.zst",
+          "archive_sha256": "4730cbd3883bcf3efc16878bb135e61d785c4c1abaead381702e0bbdec06da24",
+          "first": "1790805277.563357589",
+          "invalid_ordinals": [],
+          "last": "1790805278.931808208",
+          "packets": 1028,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-heart-refine1029-20260930/heart-750hz-r2/wfs-packets.tsv.zst",
+          "archive_sha256": "5622f46f6dee6394ad25ac5c6832c21170ff7d5f151b6dcdf453d43b1810a250",
+          "first": "1790805277.560380924",
+          "invalid_ordinals": [],
+          "last": "1790805278.931605408",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-heart-refine1029-20260930/heart-750hz-r3",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-heart-refine1029-20260930/manifest.json",
+      "manifest_sha256": "796c0b579fa8acfe7ab1f4c8a9729b88b075497fe9f203384e939237342429bc",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-heart-refine1029-20260930/heart-750hz-r3/dm-packets.tsv.zst",
+          "archive_sha256": "78451ff4f20e86918a4932e9a12c331eb145f1524f0f3e1e73ec90574c7675fd",
+          "first": "1790805301.587557195",
+          "invalid_ordinals": [],
+          "last": "1790805302.957805271",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-heart-refine1029-20260930/heart-750hz-r3/wfs-packets.tsv.zst",
+          "archive_sha256": "2de9487f3061926dd56a87fdd3b8d24449630dac3d6f279df657120ab0b90500",
+          "first": "1790805301.586056665",
+          "invalid_ordinals": [],
+          "last": "1790805302.957620234",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/heart-250hz-r1",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/manifest.json",
+      "manifest_sha256": "c4ea19b125ee7cc11dfa255a009e8f8c7b2c552ffa668f47fdaa4f7ad0ebad27",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/heart-250hz-r1/dm-packets.tsv.zst",
+          "archive_sha256": "8b43b77f8875fa5ffd5a5e78df1f77cbfc5a7332a2a83a3f98fa073eecd66722",
+          "first": "1790805325.651202203",
+          "invalid_ordinals": [],
+          "last": "1790805329.761917309",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/heart-250hz-r1/wfs-packets.tsv.zst",
+          "archive_sha256": "6501689999f0bcf562168ccc6455eaed31f3199d65e982d50656232aaf8ece98",
+          "first": "1790805325.648119090",
+          "invalid_ordinals": [],
+          "last": "1790805329.761618289",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/fgn-frame-250hz-r1",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/manifest.json",
+      "manifest_sha256": "c4ea19b125ee7cc11dfa255a009e8f8c7b2c552ffa668f47fdaa4f7ad0ebad27",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/fgn-frame-250hz-r1/dm-packets.tsv.zst",
+          "archive_sha256": "f8ca2d6b5d36c24ca4302c9f165e7c7e642ebf3a0be7915b14ade3581553e5f9",
+          "first": "1790805354.161275257",
+          "invalid_ordinals": [],
+          "last": "1790805358.273030886",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/fgn-frame-250hz-r1/wfs-packets.tsv.zst",
+          "archive_sha256": "5c85fa25067661e58c63a357ff8ef0dc23cb9901039bc3e1c1d1caaca0e8bf44",
+          "first": "1790805354.159001279",
+          "invalid_ordinals": [],
+          "last": "1790805358.272809181",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/jfg-frame-250hz-r1",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/manifest.json",
+      "manifest_sha256": "c4ea19b125ee7cc11dfa255a009e8f8c7b2c552ffa668f47fdaa4f7ad0ebad27",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/jfg-frame-250hz-r1/dm-packets.tsv.zst",
+          "archive_sha256": "8e5356b295449a496268b1967e13812cd29a0f6eb751d6bc474fad18b0403d7e",
+          "first": "1790805441.401000245",
+          "invalid_ordinals": [],
+          "last": "1790805445.512441398",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/jfg-frame-250hz-r1/wfs-packets.tsv.zst",
+          "archive_sha256": "c470dbde4c7593f8d63ade691b3a4d866397310105c200c9fbf17849d7c0aa26",
+          "first": "1790805441.398354912",
+          "invalid_ordinals": [],
+          "last": "1790805445.511900164",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/fgn-row-250hz-r1",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/manifest.json",
+      "manifest_sha256": "c4ea19b125ee7cc11dfa255a009e8f8c7b2c552ffa668f47fdaa4f7ad0ebad27",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/fgn-row-250hz-r1/dm-packets.tsv.zst",
+          "archive_sha256": "297b9e4e4a24eee61df39c31a56a414a0d0706621e1b9194d67c4b4492401e9d",
+          "first": "1790805480.624926753",
+          "invalid_ordinals": [],
+          "last": "1790805484.735955300",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/fgn-row-250hz-r1/wfs-packets.tsv.zst",
+          "archive_sha256": "8272d628e78a56fbd6a9cf86e3ae3b99d33e053ca654a82dc80e0d234a3c60c7",
+          "first": "1790805480.622223653",
+          "invalid_ordinals": [],
+          "last": "1790805484.735892463",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/jfg-row-250hz-r1",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/manifest.json",
+      "manifest_sha256": "c4ea19b125ee7cc11dfa255a009e8f8c7b2c552ffa668f47fdaa4f7ad0ebad27",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/jfg-row-250hz-r1/dm-packets.tsv.zst",
+          "archive_sha256": "313315790f65a25ace88c4dbb7509eecb8bd45c935fd22ed8be84f8affdf100a",
+          "first": "1790805569.745189921",
+          "invalid_ordinals": [],
+          "last": "1790805573.855894711",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/jfg-row-250hz-r1/wfs-packets.tsv.zst",
+          "archive_sha256": "a4a5777b14223d3cfd8e0cb050e1ae7a3af5eccea911e47b1d2b9763eefe61c0",
+          "first": "1790805569.742128380",
+          "invalid_ordinals": [],
+          "last": "1790805573.855824800",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/jfg-row-250hz-r2",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/manifest.json",
+      "manifest_sha256": "c4ea19b125ee7cc11dfa255a009e8f8c7b2c552ffa668f47fdaa4f7ad0ebad27",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/jfg-row-250hz-r2/dm-packets.tsv.zst",
+          "archive_sha256": "6a8bfb00af10ec6ac9c662e2f366bc73d3a77bb0fabfe1088285b9fac0ae53ed",
+          "first": "1790805661.920617600",
+          "invalid_ordinals": [],
+          "last": "1790805666.034512882",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/jfg-row-250hz-r2/wfs-packets.tsv.zst",
+          "archive_sha256": "5b561e81b53129f1fd78c7716eebc933436194dd805436221cfaa020f346cd3d",
+          "first": "1790805661.916848626",
+          "invalid_ordinals": [],
+          "last": "1790805666.034240232",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/fgn-row-250hz-r2",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/manifest.json",
+      "manifest_sha256": "c4ea19b125ee7cc11dfa255a009e8f8c7b2c552ffa668f47fdaa4f7ad0ebad27",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/fgn-row-250hz-r2/dm-packets.tsv.zst",
+          "archive_sha256": "a4ba026de5aaee225de60c1c6a7c1df6d14ab3df337f1d1ecb1b145c6abd0b01",
+          "first": "1790805701.491251342",
+          "invalid_ordinals": [],
+          "last": "1790805705.601959672",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/fgn-row-250hz-r2/wfs-packets.tsv.zst",
+          "archive_sha256": "733b78bb52ecc75a748c5d8d8b056042c8ca978c6a36afcdf6826dc6f31fe0f4",
+          "first": "1790805701.488124379",
+          "invalid_ordinals": [],
+          "last": "1790805705.601522694",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/jfg-frame-250hz-r2",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/manifest.json",
+      "manifest_sha256": "c4ea19b125ee7cc11dfa255a009e8f8c7b2c552ffa668f47fdaa4f7ad0ebad27",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/jfg-frame-250hz-r2/dm-packets.tsv.zst",
+          "archive_sha256": "42ecde777bd588669f98ebf0e31e58ab6582c449b1cf40e898ba0ff9807f80ec",
+          "first": "1790805788.259709289",
+          "invalid_ordinals": [],
+          "last": "1790805792.370993703",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/jfg-frame-250hz-r2/wfs-packets.tsv.zst",
+          "archive_sha256": "b0862fc1ef0a825bd68f9d1e9a50880b990541f21215527964c66d169ae3933d",
+          "first": "1790805788.257103492",
+          "invalid_ordinals": [],
+          "last": "1790805792.370498446",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/fgn-frame-250hz-r2",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/manifest.json",
+      "manifest_sha256": "c4ea19b125ee7cc11dfa255a009e8f8c7b2c552ffa668f47fdaa4f7ad0ebad27",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/fgn-frame-250hz-r2/dm-packets.tsv.zst",
+          "archive_sha256": "9dde954bf7180a56664fe0b4ee9687cf5ff4d91d168bcf25d2ff79647a62069e",
+          "first": "1790805827.243855344",
+          "invalid_ordinals": [],
+          "last": "1790805831.359091359",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/fgn-frame-250hz-r2/wfs-packets.tsv.zst",
+          "archive_sha256": "64805cd380f59fc378bd352b542864975c91120d482a011832794f618950d887",
+          "first": "1790805827.241473947",
+          "invalid_ordinals": [],
+          "last": "1790805831.358866227",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/heart-250hz-r2",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/manifest.json",
+      "manifest_sha256": "c4ea19b125ee7cc11dfa255a009e8f8c7b2c552ffa668f47fdaa4f7ad0ebad27",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/heart-250hz-r2/dm-packets.tsv.zst",
+          "archive_sha256": "5605087144afe32355a358c84ed6f798a989f4930599956f110dd17a86b319ed",
+          "first": "1790805862.892944180",
+          "invalid_ordinals": [],
+          "last": "1790805867.003452100",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/heart-250hz-r2/wfs-packets.tsv.zst",
+          "archive_sha256": "f088702dd5dc263646595720bf52ee3f4506364fd4ea16620953a39de0e22084",
+          "first": "1790805862.889899943",
+          "invalid_ordinals": [],
+          "last": "1790805867.003212992",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/heart-250hz-r3",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/manifest.json",
+      "manifest_sha256": "c4ea19b125ee7cc11dfa255a009e8f8c7b2c552ffa668f47fdaa4f7ad0ebad27",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/heart-250hz-r3/dm-packets.tsv.zst",
+          "archive_sha256": "2e963976bc603c7240b4fa0ae642ea9ed4a7344ee83cbcda393a9e48730459b7",
+          "first": "1790805890.176821470",
+          "invalid_ordinals": [],
+          "last": "1790805894.287546496",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/heart-250hz-r3/wfs-packets.tsv.zst",
+          "archive_sha256": "c109287b168b33a2d6aea6baa1aa587e742d20b6bb6ce67c730a1d57e2004b85",
+          "first": "1790805890.173858235",
+          "invalid_ordinals": [],
+          "last": "1790805894.287306938",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/fgn-frame-250hz-r3",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/manifest.json",
+      "manifest_sha256": "c4ea19b125ee7cc11dfa255a009e8f8c7b2c552ffa668f47fdaa4f7ad0ebad27",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/fgn-frame-250hz-r3/dm-packets.tsv.zst",
+          "archive_sha256": "e37240ece080503a3f937277e24476fd0b9f432d91420e9b1318f44dc8272514",
+          "first": "1790805918.555438798",
+          "invalid_ordinals": [],
+          "last": "1790805922.667046068",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/fgn-frame-250hz-r3/wfs-packets.tsv.zst",
+          "archive_sha256": "9aa04a825f96ae6557e1a2db2d5c7956a27a268252197f5550053bb5c03e2a83",
+          "first": "1790805918.553151668",
+          "invalid_ordinals": [],
+          "last": "1790805922.666584644",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/jfg-frame-250hz-r3",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/manifest.json",
+      "manifest_sha256": "c4ea19b125ee7cc11dfa255a009e8f8c7b2c552ffa668f47fdaa4f7ad0ebad27",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/jfg-frame-250hz-r3/dm-packets.tsv.zst",
+          "archive_sha256": "efda73956350646de367311f6331dab39b62a37bb93f3d60cca289a471f08706",
+          "first": "1790806005.472532319",
+          "invalid_ordinals": [],
+          "last": "1790806009.583673013",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/jfg-frame-250hz-r3/wfs-packets.tsv.zst",
+          "archive_sha256": "c060798b3f292f57eec485edac189a7cc33b389e6233b76c04ac9198829adc91",
+          "first": "1790806005.469813001",
+          "invalid_ordinals": [],
+          "last": "1790806009.583056440",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/fgn-row-250hz-r3",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/manifest.json",
+      "manifest_sha256": "c4ea19b125ee7cc11dfa255a009e8f8c7b2c552ffa668f47fdaa4f7ad0ebad27",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/fgn-row-250hz-r3/dm-packets.tsv.zst",
+          "archive_sha256": "a1e1aeda9b5800a3058d09c7188ec3f4bd7628212d1c5bcdac7a0590d390d084",
+          "first": "1790806044.534807189",
+          "invalid_ordinals": [],
+          "last": "1790806048.645607978",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/fgn-row-250hz-r3/wfs-packets.tsv.zst",
+          "archive_sha256": "b91d564795dbe55c5a03b0d0d5b764ae261f9f058a503e54673a84aa680c3858",
+          "first": "1790806044.532147713",
+          "invalid_ordinals": [],
+          "last": "1790806048.645547204",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    },
+    {
+      "directory": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/jfg-row-250hz-r3",
+      "manifest": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/manifest.json",
+      "manifest_sha256": "c4ea19b125ee7cc11dfa255a009e8f8c7b2c552ffa668f47fdaa4f7ad0ebad27",
+      "streams": {
+        "dm": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/jfg-row-250hz-r3/dm-packets.tsv.zst",
+          "archive_sha256": "006fc87031d1050eba915f918238458d2fb4b0d9900d74caeeb52ee28fe85243",
+          "first": "1790806133.975412810",
+          "invalid_ordinals": [],
+          "last": "1790806138.085336826",
+          "packets": 1029,
+          "status": "passed"
+        },
+        "wfs": {
+          "archive": "/home/dgamroth/.cache/rtc-classic-common250-1029-20260930/jfg-row-250hz-r3/wfs-packets.tsv.zst",
+          "archive_sha256": "abce420911231d3b7288fd0e164b72fa2368785124e341eb5b63c2fae0cdae38",
+          "first": "1790806133.971821640",
+          "invalid_ordinals": [],
+          "last": "1790806138.085262396",
+          "packets": 32928,
+          "status": "passed"
+        }
+      }
+    }
+  ],
+  "schema": "classic-timestamp-audit-summary-v1",
+  "scope": "finite nondecreasing packet timestamps; no clock-rate or unobserved interior-offset guarantee",
+  "script_sha256": "b9f07ce15b9544a8194523bd1c5c95c01968693590160e9dd174eb67a2c2d35d",
+  "selection_note": "Capacity selection has 79 runs; this timestamp audit has 85 audited windows, including 6 historical old-row runs. The additional six are timestamp evidence only and are not capacity-selected.",
+  "source_artifact": {
+    "path": "/home/dgamroth/.cache/classic-campaign-timestamp-audit-20260930.json",
+    "sha256": "6dc4529ee841043c839c20d5d45df38a77c8cc1568f2ba7fda27aa633b6ead51",
+    "size_bytes": 99421
+  }
+}
