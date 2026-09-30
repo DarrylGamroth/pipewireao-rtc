@@ -1,7 +1,7 @@
 # Classic integration review
 
 Date: 2026-09-30. This is a source and evidence-contract review, followed by
-two explicitly authorized harness fixes. It does not qualify pending capacity
+explicitly authorized harness fixes. It does not qualify pending capacity
 runs, new production deployments, or physical application accuracy.
 
 ## Scope and revisions
@@ -29,12 +29,14 @@ Earlier source/arithmetic analyses remain the detailed basis for those helpers.
 ## Disposition
 
 Two confirmed harness defects were found and corrected after primary-agent
-adjudication. Neither establishes corruption of existing saved results.
+adjudication. A later combined-classifier execution exposed FR-03 below;
+it was also corrected. None establishes corruption of existing saved results.
 
 | ID | Severity / confidence | Finding | Disposition |
 | --- | --- | --- | --- |
 | FR-01 | P2 / high | Campaign intervals accepted backward or nonfinite packet times | Fixed in `6856d51`; saved earlier captures still require a timestamp audit |
 | FR-02 | P2 / high | Sender cleanup exceptions skipped its report and could replace a primary replay exception | Fixed in `b892258`; mocked cleanup regressions pass |
+| FR-03 | P2 / high | Truncated WFS headers escaped the evidence reader as `struct.error` and aborted combined classification | Fixed by explicit header-length validation; same 15-test suite fails before and passes after |
 
 No additional confirmed source blocker was found within the reviewed scope.
 The fixes require primary-agent integration review. Historical cached interval
@@ -210,3 +212,51 @@ Logs are retained under `~/.cache/classic-final-review-20260930/`:
 | `spa-sender-cleanup-same-suite-after.log` | `ce260cec0813a18bf562d84755786f5ba666fa2a8effe40c3f0b1f468aa22832` |
 | `run_sender_cleanup_tests.py` | `07f86b35c1b53966ebe123206d5d9fa46fc1778128a47aa40f17d651e169acec` |
 | `run_classic_spa_sender_before.py` | `e14238ffb0340c9a7a6d974d2a71b0dea0845e74278079c6643d5f565b20feae` |
+
+## Follow-up FR-03 — malformed retained evidence must not abort classification
+
+**Observed:** After the initial integration review, the primary agent's final
+combined classification aborted on an old failed capture. The retained traceback
+in `~/.cache/classic-final-analysis-step2-20260930.log` ends at
+`source_pacing_from_packets` with `struct.error: unpack requires a buffer of
+40 bytes`. Its SHA-256 is
+`99b45ec5ff8c816a2276c92c8641f5def5faa37480b86590d687b822f1b109f7`.
+The earlier review did not detect this exceptional input path.
+
+**Confirmed source cause:** `classic_capacity.py` decoded the available
+hexadecimal header bytes and passed them directly to `WFS.unpack`.
+`load_run_evidence` catches expected input exceptions, including `ValueError`,
+but `struct.error` is a different exception. A truncated or empty packet header
+therefore aborted the complete manifest analysis instead of recording that
+window's unavailable source pacing. This did not turn failed delivery into a
+pass; it prevented classification from completing.
+
+**Correction:** Validate that the decoded header has exactly `WFS.size`
+(40) bytes before unpacking. A short header raises `ValueError` identifying
+the truncated WFS header, packet ordinal, actual size and required size.
+The existing reader records it in `read_errors.source_pacing`. With no valid
+source-rate evidence, that window is excluded from both capacity contracts;
+its original delivery failure and launcher status remain visible. No generic
+exception catch or acceptance-criteria relaxation was added.
+
+**Same-suite verification:** On CPU 14, the focused capacity suite ran 15 tests
+before and after this fix. Before: six errors in 0.014 s, all the expected
+uncaught `struct.error` cases. After: all 15 passed in 0.013 s. Regressions use
+0-, 1- and 39-byte headers, both directly and through `load_run_evidence` plus
+`classify_window`; they check recorded read errors, unknown source pacing,
+excluded delivery/deadline status and preserved failed wire delivery. The
+existing corrupt-Zstandard rejection test still emits its expected decoder
+diagnostic and passes.
+
+Logs under `~/.cache/classic-final-review-20260930/`:
+
+| File | SHA-256 |
+| --- | --- |
+| `capacity-truncated-header-before.log` | `58a91ba9b8d76ab1bb0a50f56eb4d9fe8d3c73e11bd2d0e7183f39d0c4c2980a` |
+| `capacity-truncated-header-after.log` | `814560f8f533e023c197108bb9f1a5c68542cd64a843acd4f8f53345dedcd934` |
+
+No build, live replay, UDP traffic or saved-capture modification was performed.
+The primary agent owns the subsequent complete classifier rerun. It separately
+reported that its timestamp audit covered 85 windows and passed; that audit
+was not independently rerun here and does not imply that every retained
+capture has complete or valid WFS packet content.

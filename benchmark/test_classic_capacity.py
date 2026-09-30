@@ -6,7 +6,7 @@ import subprocess
 import unittest
 from pathlib import Path
 
-from classic_capacity import WFS, classify_manifest, classify_window, source_pacing_from_packets
+from classic_capacity import WFS, classify_manifest, classify_window, load_run_evidence, source_pacing_from_packets
 
 
 def sample(rate=100, repeat=1, path="fgn-row"):
@@ -165,6 +165,37 @@ class CapacityTests(unittest.TestCase):
             path.write_text("".join(lines[:-1]))
             with self.assertRaises(ValueError):
                 source_pacing_from_packets(directory, 2)
+
+    def test_empty_and_truncated_wfs_headers_are_input_errors(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "wfs-packets.tsv"
+            for packet in ("", "00", "00" * (WFS.size - 1)):
+                with self.subTest(header_bytes=len(packet) // 2):
+                    path.write_text(f"100.000000\t0\t{packet}\n")
+                    with self.assertRaisesRegex(ValueError, "truncated WFS header"):
+                        source_pacing_from_packets(directory, 2)
+
+    def test_truncated_header_is_retained_as_excluded_window_read_error(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "wfs-packets.tsv"
+            for packet in ("", "00", "00" * (WFS.size - 1)):
+                with self.subTest(header_bytes=len(packet) // 2):
+                    path.write_text(f"100.000000\t0\t{packet}\n")
+                    run, evidence = sample()
+                    run.update(directory=directory, latency={}, returncode=1,
+                               exact_wire_delivery=False)
+                    run["report"]["qualified"] = False
+                    evidence.pop("source_pacing")
+                    loaded = load_run_evidence(run, {})
+                    self.assertNotIn("source_pacing", loaded)
+                    self.assertIn("truncated WFS header", loaded["read_errors"]["source_pacing"])
+                    evidence.update(loaded)
+                    result = classify_window(run, {}, evidence)
+                    self.assertEqual(result["delivery_status"], "excluded")
+                    self.assertEqual(result["deadline_status"], "excluded")
+                    self.assertFalse(result["gates"]["exact_wire_delivery"]["passed"])
+                    self.assertIsNone(result["gates"]["source_pacing"]["passed"])
+                    self.assertEqual(result["evidence_read_errors"], loaded["read_errors"])
 
 
     @unittest.skipUnless(shutil.which("zstd"), "zstd executable unavailable")

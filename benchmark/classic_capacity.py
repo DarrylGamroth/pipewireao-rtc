@@ -56,7 +56,11 @@ def source_pacing_from_packets(directory, frames):
     with open_evidence(path, "rt") as source:
         for ordinal, line in enumerate(source):
             timestamp, _, packet = line.rstrip("\n").split("\t")
-            decoded = WFS.unpack(bytes.fromhex(packet[:WFS.size * 2]))
+            header = bytes.fromhex(packet[:WFS.size * 2])
+            if len(header) != WFS.size:
+                raise ValueError(f"truncated WFS header at packet {ordinal + 1}: "
+                                 f"{len(header)} bytes, expected {WFS.size}")
+            decoded = WFS.unpack(header)
             expected = (ordinal // 32, ordinal % 32 + 1, 32)
             if (decoded[-2], decoded[10], decoded[11]) != expected:
                 raise ValueError("WFS frame/packet order differs from complete Classic ingress")
