@@ -89,9 +89,13 @@ class RowWorkTests(unittest.TestCase):
             path = Path(directory) / 'trace.csv'
             write_callbacks(path, callbacks())
             self.assertEqual(len(read_callbacks(path, 1, 'fgn')), 32)
-            for mutation in ('result', 'offset', 'order', 'sentinel', 'overlap', 'short', 'omitted'):
+            rows = callbacks(); rows[0]['result'] = 1
+            write_callbacks(path, rows)
+            self.assertEqual(read_callbacks(path, 1, 'fgn')[0]['result'], 1)
+            for mutation in ('result', 'unknown_flags', 'offset', 'order', 'sentinel', 'overlap', 'short', 'omitted'):
                 rows = callbacks()
                 if mutation == 'result': rows[5]['result'] = -5
+                if mutation == 'unknown_flags': rows[5]['result'] = 2
                 if mutation == 'offset': rows[5]['offset'] = 0
                 if mutation == 'order': rows[5], rows[6] = rows[6], rows[5]
                 if mutation == 'sentinel': rows[5]['sequence'] = 2**64 - 1

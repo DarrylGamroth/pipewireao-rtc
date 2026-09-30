@@ -127,7 +127,9 @@ def read_callbacks(path, frames, role, declared=None):
                     'trace sequence/offset order is missing, duplicated, invalid or rearranged')
             require(0 < item['start_ns'] <= item['end_ns'] and previous_end <= item['start_ns'],
                     'trace timestamps are invalid or callbacks overlap')
-            require(role != 'fgn' or item['result'] == 0, 'FGN graph call failed or changed properties')
+            # spa_fgn_process_result: NONE=0, PROPS_CHANGED=1; neither proves
+            # a science output was produced. Complete-stream gates remain required.
+            require(role != 'fgn' or item['result'] in (0, 1), 'FGN graph call failed or returned unknown flags')
             callbacks.append(item)
             previous_end = item['end_ns']
     require(len(callbacks) == used, 'trace CSV is truncated')

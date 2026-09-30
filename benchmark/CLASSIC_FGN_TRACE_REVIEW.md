@@ -76,6 +76,12 @@ nonnegative graph result therefore does not establish whole-cycle or wire
 success. Start/end bracket the call and include instrumentation setup around
 it; their difference is not isolated graph self-time.
 
+The public `spa_fgn_process_result` declaration at
+`spa/include/spa/filter-graph/filter-graph-ndarray.h:223` defines successful
+NONE=0 and PROPS_CHANGED=1. Negative values are errors; unknown flag bits fail
+the reviewed analysis. Deferred output is indicated by size zero, so neither
+success flag alone proves completed science output.
+
 A complete diagnostic report requires:
 
 1. The expected invocation count and exact `(sequence, offset)` order.

@@ -13,7 +13,10 @@ and command bytes. It requires:
 - Complete, ordered frames: 32 WFS packets and 32 graph calls per frame, offsets
   0, 11, …, 341; no duplicate, missing, sentinel or rearranged identities.
 - Zero trace omissions, consistent CSV/report counts, serial valid timestamps,
-  and C graph result exactly 0. Failed runs, missing science evidence, clipping
+  and C graph results containing only documented success flags (0 or 1).
+  `SPA_FGN_PROCESS_RESULT_PROPS_CHANGED = 1` reports changed properties;
+  it does not establish an output or indicate failure. Failed runs, missing
+  science evidence, clipping
   disagreement and abnormal child exits cannot supply a count.
 - The reviewed 352 × 352 detector, 188 active subapertures of 22 × 22 pixels,
   unchanged ascending ROI order and 221 controlled output coordinates.
@@ -143,8 +146,45 @@ Output: `derived-row-work.json` in the same directory.
 | --- | --- |
 | Callback trace | `17c402ef654b13ec31dc355fef73538d0a21bdab44b3b5226bb9166eedb9e0dd` |
 | Node report | `2b2bf2a86a80b4dfab6f4e264807f0881b9a1f338d6aef1d1291aeab857a507c` |
-| Analyzer | `635823f075849d39f72d72babe47b5fc850859a3ba0c82c02d57aa89ef186240` |
-| Result JSON | `6ffb536105f840f356d9ceb7a26ade1013657ea61adc80f16263143cdbe16e13` |
+| Analyzer | `530e41fb2365c79cb0d9c32333952b4093ce2dd562998aaef040e0c0070cbd88` |
+| Result JSON | `11af00ae355ab59e21f5c03dd5358dcd454de6eebd0a419820d7fb6d985fa152` |
+
+## Saved FGN result
+
+Input directory: `~/.cache/rtc-classic-fgn-graph-trace63-20260930`.
+All 63 frames and 2,016 graph calls were included. The complete packet/output
+and science checks passed, with all child exits 0. The macro-enabled private
+module from trace commit `9464907e1` records actual FGN graph processing;
+the earlier ingress-only trace observed the DM adapter and is not used here.
+
+| Clock margin beyond endpoint hull | Frames with positive lower bound | SH subaperture lower-bound range | MVM column lower-bound range |
+| --- | --- | --- | --- |
+| 0 ns | 58 / 63 | 0–184 | 0–368 |
+| 10,000 ns | 58 / 63 | 0–184 | 0–368 |
+
+Frames 8, 11, 17, 35 and 62 have zero completed-work lower bounds. This does
+not establish absence of early science work. Frame 0 establishes 12 SH
+subapertures and 24 MVM columns. The added 10 µs reduces individual SH bounds
+for frames 3 (78→62), 31 (110→94), 36 (166→154), 53 (154→140) and 61
+(176→166); unchanged aggregate ranges do not mean unchanged per-frame evidence.
+The default offset hull is [1789232089873566036, 1789232089873567248] ns,
+width 1,212 ns.
+
+The first parser required result 0. Inspection of the public declaration
+`spa/include/spa/filter-graph/filter-graph-ndarray.h:223` established that both
+0 (NONE) and 1 (PROPS_CHANGED) are success flags. The parser now accepts both,
+with explicit success-flag and unknown-flag tests. Deferred output is represented
+by size zero, not a distinct graph-process return value; all stream, configuration
+and per-frame output gates remain necessary.
+
+Output: `derived-row-work.json` in the FGN input directory.
+
+| Artifact | SHA-256 |
+| --- | --- |
+| `native-ingress-trace/fgn-process-3503653-0.csv` | `b455befbf6bc8e7d880343751f612866b6ed7006dcf45e868b9e6061133ad322` |
+| Private graph module | `29da924ba2b0303d778cb5d4f0bb6c962b29052a02466b1a027111866d302bf4` |
+| Private PipeWire client library | `194fbdba311b7fd92854e86d4ff7ccc242bf48c6d8054b4f8a4a9f341de1c148` |
+| Result JSON | `fce04f947ab5fd09f68c71a04d909dbe39e327cd8fc6a80823cfaed39e44c6dd` |
 
 ## Reproduction and coverage
 
@@ -155,11 +195,13 @@ taskset -c 14 python3 benchmark/analyze_classic_row_work.py \
   --output ~/.cache/rtc-classic-allocation-trace63-20260930/jfg-row-100hz-r1/derived-row-work.json
 ```
 
+The same command accepts the FGN input directory above and writes its output
+there; no live process is started by this analyzer.
+
 Nine focused offline tests cover clock hulls and rounding, strict boundaries,
 sensitivity, cumulative units, causality, trace corruption/omissions, helper
-exclusion, active masks and exact packet parsing. The saved JFG analysis passes.
-FGN parsing and count logic are covered synthetically; a real FGN science trace
-must pass the same evidence gates before any FGN observation is added here.
+exclusion, active masks and exact packet parsing. Both saved JFG and FGN analyses pass the evidence gates. The FGN result
+demonstrates positive within-readout bounds in 58 frames, not all 63.
 
 This supports the conditional within-readout science-work part of the Classic
 qualification. It does not establish pure kernel service time, whole-stack
