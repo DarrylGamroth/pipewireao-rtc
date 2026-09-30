@@ -1,0 +1,508 @@
+{
+  "scope": "Installed sender plugins and canonical main receiver roots; sequential functional wire/selected arithmetic qualification; no latency/capacity/hardware claim",
+  "installed_all_five_selected_policy_passed": true,
+  "manifest": "/home/dgamroth/.cache/rtc-classic-spa-installed-five-paths63-20260930/manifest.json",
+  "manifest_sha256": "f75abd47fa1362ef71936355053dc63b5a058a0d3c6bb77486047ae72f33cf4e",
+  "configuration": {
+    "frames": 63,
+    "rate_hz": 100,
+    "readout_us": 2000,
+    "rows_per_packet": 11,
+    "trace": 0,
+    "workers": 0,
+    "layout": "shared",
+    "numerical_acceptance": "source-arithmetic",
+    "sender": "spa",
+    "sender_spa_directory_override": false
+  },
+  "installed_plugins": {
+    "heart": {
+      "path": "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so",
+      "sha256": "efaf3a810284a6a39b9c84fb433cf9669a638da14b41cd528b8a18cc593ce7d6"
+    },
+    "fits": {
+      "path": "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/fits/libspa-fits.so",
+      "sha256": "947ba07a07f5da0e8c60b408455933689e3cc7a7cc1ca8dbf8c358c9ac3f8a41"
+    },
+    "ndarray": {
+      "path": "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/ndarray/libspa-ndarray.so",
+      "sha256": "153839f352590a992655f327ef892c1dff3595ab9fbe80f183ed2aeb7ec6458c"
+    }
+  },
+  "ndarray_factory_count": 2,
+  "deployment_proof": {
+    "path": "/home/dgamroth/.cache/classic-main-deployment-backup-20260930/deployment.json",
+    "sha256": "34b7247a7cf982075e70895c2a01f79861f3cf2f76d225bec722cd0c501820fe"
+  },
+  "receiver_roots": {
+    "fgn": {
+      "path": "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper",
+      "revision": "54d8b1847d7913f532e1d48ceba2429eb2499055",
+      "status": ""
+    },
+    "jfg": {
+      "path": "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph.jl",
+      "revision": "6f1da393f9bd7153ed95b8811ccf32ebce6342a6",
+      "status": "?? benchmark/__pycache__/\n?? benchmark/heart/__pycache__/\n?? gmon.out\n"
+    }
+  },
+  "harness_sha256": {
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-progressive-requal/benchmark/run_classic_campaign.py": "4a3d94ea86765224d14b8a494ff9a03393ba97a8e336d94ca3139a8fd0abac39",
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-progressive-requal/benchmark/run_classic_live.py": "3db912f58025a62894a5af1fa1ca55f45cb947e4245aeda3166b867b9dca43eb",
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-progressive-requal/benchmark/run_classic_heart_live.py": "b21f9576c12a1fe5ef7d4171ad6e8fb5ba861917a47ef275a435cc4fb3a421dc",
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-progressive-requal/benchmark/run_classic_spa_sender.py": "7020e6d1d8133f7b1950f682b24c694a13aafa0c72ea19c3da47b3ac406f3811"
+  },
+  "environment_provisioning": {
+    "provisioning": {
+      "root": "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph.jl",
+      "before": {
+        "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph.jl/benchmark/Project.toml": "08fe340cf14d6fab257ac113be622476cf51ecfec286d02f5827178f6f89630e",
+        "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph.jl/benchmark/Manifest.toml": "59405813bba4cbf0ef457bb9af7c30d22d9ce839110d5192be253e1656e5dcb3"
+      },
+      "git_status_before": "?? benchmark/__pycache__/\n?? benchmark/heart/__pycache__/\n?? gmon.out\n",
+      "command": [
+        "taskset",
+        "-c",
+        "14",
+        "julia",
+        "--startup-file=no",
+        "--project=/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph.jl/benchmark",
+        "-e",
+        "using Pkg; Pkg.resolve(); Pkg.instantiate()"
+      ],
+      "exit_code": 0,
+      "env_override": {
+        "JULIA_PKG_PRECOMPILE_AUTO": "0"
+      },
+      "after": {
+        "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph.jl/benchmark/Project.toml": "08fe340cf14d6fab257ac113be622476cf51ecfec286d02f5827178f6f89630e",
+        "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph.jl/benchmark/Manifest.toml": "b7930647838bbe502c001aa0fb9dea28b69c48c888ed29df2c861cda477af0d4"
+      },
+      "git_status_after": "?? benchmark/__pycache__/\n?? benchmark/heart/__pycache__/\n?? gmon.out\n",
+      "tracked_project_unchanged": true
+    },
+    "cold-imports": {
+      "command": [
+        "taskset",
+        "-c",
+        "14",
+        "julia",
+        "--startup-file=no",
+        "--project=/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph.jl/benchmark",
+        "-e",
+        "using FilterGraphAlgorithms, JuliaFilterGraph, FilterGraphPipeWire, PipeWireAO; println(\"IMPORTS_OK\")"
+      ],
+      "exit_code": 0,
+      "log": "/home/dgamroth/.cache/rtc-classic-installed-julia-environment-20260930/cold-imports.log",
+      "manifest_sha256": "b7930647838bbe502c001aa0fb9dea28b69c48c888ed29df2c861cda477af0d4",
+      "project_sha256": "08fe340cf14d6fab257ac113be622476cf51ecfec286d02f5827178f6f89630e"
+    },
+    "cache": "/home/dgamroth/.cache/rtc-classic-installed-julia-environment-20260930"
+  },
+  "selected_results": {
+    "all_five_selected_policy_passed": true,
+    "summary": [
+      {
+        "path": "heart",
+        "functional_qualified": true,
+        "wfs_packets": 2016,
+        "dm_commands": 63,
+        "ordered_wfs_ids": "0..62",
+        "dm_first_frame_id": 1,
+        "dm_last_frame_id": 63,
+        "payload_mismatch_packets": 0,
+        "receiver_counters": null,
+        "process_returncodes": [
+          0,
+          0,
+          0
+        ],
+        "source_arithmetic_consistency": true,
+        "heart_exact_source_model": {
+          "values": 17451,
+          "unequal_bits": 0,
+          "max_absolute_difference": 0.0
+        },
+        "heart_final_clips": 76,
+        "final_constraint_feedback": null,
+        "sender_counters": {
+          "frames_sent": 63,
+          "frames_rejected": 0,
+          "datagrams_sent": 2016,
+          "send_errors": 0
+        },
+        "broad_report_qualified": false
+      },
+      {
+        "path": "fgn-frame",
+        "functional_qualified": true,
+        "wfs_packets": 2016,
+        "dm_commands": 63,
+        "ordered_wfs_ids": "0..62",
+        "dm_first_frame_id": 0,
+        "dm_last_frame_id": 62,
+        "payload_mismatch_packets": 0,
+        "receiver_counters": {
+          "received": 2016,
+          "rejected": 0,
+          "blocks": 0,
+          "frames": 63,
+          "dropped": 0,
+          "starvations": 0
+        },
+        "process_returncodes": [
+          0,
+          0,
+          0
+        ],
+        "source_arithmetic_consistency": true,
+        "heart_exact_source_model": null,
+        "heart_final_clips": null,
+        "final_constraint_feedback": null,
+        "sender_counters": {
+          "frames_sent": 63,
+          "frames_rejected": 0,
+          "datagrams_sent": 2016,
+          "send_errors": 0
+        },
+        "broad_report_qualified": true
+      },
+      {
+        "path": "fgn-row",
+        "functional_qualified": true,
+        "wfs_packets": 2016,
+        "dm_commands": 63,
+        "ordered_wfs_ids": "0..62",
+        "dm_first_frame_id": 0,
+        "dm_last_frame_id": 62,
+        "payload_mismatch_packets": 0,
+        "receiver_counters": {
+          "received": 2016,
+          "rejected": 0,
+          "blocks": 2016,
+          "frames": 63,
+          "dropped": 0,
+          "starvations": 0
+        },
+        "process_returncodes": [
+          0,
+          0,
+          0
+        ],
+        "source_arithmetic_consistency": true,
+        "heart_exact_source_model": null,
+        "heart_final_clips": null,
+        "final_constraint_feedback": null,
+        "sender_counters": {
+          "frames_sent": 63,
+          "frames_rejected": 0,
+          "datagrams_sent": 2016,
+          "send_errors": 0
+        },
+        "broad_report_qualified": true
+      },
+      {
+        "path": "jfg-frame",
+        "functional_qualified": true,
+        "wfs_packets": 2016,
+        "dm_commands": 63,
+        "ordered_wfs_ids": "0..62",
+        "dm_first_frame_id": 0,
+        "dm_last_frame_id": 62,
+        "payload_mismatch_packets": 0,
+        "receiver_counters": {
+          "received": 2016,
+          "rejected": 0,
+          "blocks": 0,
+          "frames": 63,
+          "dropped": 0,
+          "starvations": 0
+        },
+        "process_returncodes": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "source_arithmetic_consistency": true,
+        "heart_exact_source_model": null,
+        "heart_final_clips": null,
+        "final_constraint_feedback": {
+          "unit": "micron",
+          "max_absolute_error": 1.1920928955078125e-07,
+          "actual_nonzero_values": 74,
+          "expected_nonzero_values": 74,
+          "qualified": true,
+          "boundary": "retained controller constraint feedback after owner shutdown"
+        },
+        "sender_counters": {
+          "frames_sent": 63,
+          "frames_rejected": 0,
+          "datagrams_sent": 2016,
+          "send_errors": 0
+        },
+        "broad_report_qualified": true
+      },
+      {
+        "path": "jfg-row",
+        "functional_qualified": true,
+        "wfs_packets": 2016,
+        "dm_commands": 63,
+        "ordered_wfs_ids": "0..62",
+        "dm_first_frame_id": 0,
+        "dm_last_frame_id": 62,
+        "payload_mismatch_packets": 0,
+        "receiver_counters": {
+          "received": 2016,
+          "rejected": 0,
+          "blocks": 2016,
+          "frames": 63,
+          "dropped": 0,
+          "starvations": 0
+        },
+        "process_returncodes": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "source_arithmetic_consistency": true,
+        "heart_exact_source_model": null,
+        "heart_final_clips": null,
+        "final_constraint_feedback": {
+          "unit": "micron",
+          "max_absolute_error": 2.384185791015625e-07,
+          "actual_nonzero_values": 74,
+          "expected_nonzero_values": 74,
+          "qualified": true,
+          "boundary": "retained controller constraint feedback after owner shutdown"
+        },
+        "sender_counters": {
+          "frames_sent": 63,
+          "frames_rejected": 0,
+          "datagrams_sent": 2016,
+          "send_errors": 0
+        },
+        "broad_report_qualified": true
+      }
+    ],
+    "heart_legacy_note": "Broad qualified remains false due historical strict comparison and unavailable effective-initial-state readback; functional_wire, exact source arithmetic and clips pass.",
+    "fgn_feedback_note": "FGN harness does not expose a separate final-constraint-feedback comparison; not newly claimed.",
+    "timing_capacity_hardware_claim": false,
+    "installed_functional_claim": true
+  },
+  "selected_artifacts": [
+    {
+      "path": "heart",
+      "attempt": 1,
+      "directory": "/home/dgamroth/.cache/rtc-classic-spa-installed-five-paths63-20260930/heart",
+      "artifact_sha256": {
+        "report.json": "40a48a77f16f78cf36782d0bff77c00f35be4ac0ab472cef4641c3c036795bdf",
+        "physical-summary.json": "c897df68b6c94a9c243ce6f90281e680d3c90cff418cce4d43b91cd9028d15c9",
+        "wire-archives.json": "d07b2871a906473189a1928acd408b9a3b2b7aba87505003715cb338946d4a01"
+      },
+      "wire_archives": [
+        {
+          "file": "wire.pcapng",
+          "sha256_uncompressed": "b3b485b88db896de1d06d1c3b10012f4c793da2c92cd4071c7ed4e15941ca455",
+          "bytes": 15922232,
+          "archive": "wire.pcapng.zst",
+          "compression": "zstd level3 window8MiB"
+        },
+        {
+          "file": "wfs-packets.tsv",
+          "sha256_uncompressed": "f97d4ca6f498d798070494ca75e1b3d363b4e083ebec472909ab2fec1b9cfb39",
+          "bytes": 31439520,
+          "archive": "wfs-packets.tsv.zst",
+          "compression": "zstd level3 window8MiB"
+        },
+        {
+          "file": "dm-packets.tsv",
+          "sha256_uncompressed": "0a70ddde5f508b67af66a6b3cab177012defb1576f149c242be7549d3f76ca75",
+          "bytes": 144333,
+          "archive": "dm-packets.tsv.zst",
+          "compression": "zstd level3 window8MiB"
+        }
+      ]
+    },
+    {
+      "path": "fgn-frame",
+      "attempt": 1,
+      "directory": "/home/dgamroth/.cache/rtc-classic-spa-installed-five-paths63-20260930/fgn-frame",
+      "artifact_sha256": {
+        "report.json": "c3397db26e3077f51b4161f451f7430ff32b8f1f32e9da8180adc2a397b67ac4",
+        "physical-summary.json": "05326447a943bd2e5b9dd014bced593897ee1f7a4c4efbae7189eb0a74faff03",
+        "wire-archives.json": "ec155109c0ec7d74af9c47b92b1ee451df4f333c099a6ddf5bf80636a6e5838b"
+      },
+      "wire_archives": [
+        {
+          "file": "wire.pcapng",
+          "sha256_uncompressed": "13272a316dac767f9ea350b9058e5274917baee665c5bb49214cc808cc406fa5",
+          "bytes": 15922232,
+          "archive": "wire.pcapng.zst",
+          "compression": "zstd level3 window8MiB"
+        },
+        {
+          "file": "wfs-packets.tsv",
+          "sha256_uncompressed": "5e31ffeeec1d6e49f1b8274caa195eeb911bd0910e2050396e8e4505c92f66e7",
+          "bytes": 31439520,
+          "archive": "wfs-packets.tsv.zst",
+          "compression": "zstd level3 window8MiB"
+        },
+        {
+          "file": "dm-packets.tsv",
+          "sha256_uncompressed": "6c6186da194f3d5aab64f6f506b1145b8ba960c1e15c3140c7b045095162a2a1",
+          "bytes": 144333,
+          "archive": "dm-packets.tsv.zst",
+          "compression": "zstd level3 window8MiB"
+        }
+      ]
+    },
+    {
+      "path": "fgn-row",
+      "attempt": 1,
+      "directory": "/home/dgamroth/.cache/rtc-classic-spa-installed-five-paths63-20260930/fgn-row",
+      "artifact_sha256": {
+        "report.json": "285940b975949d7a4e205e2b3e6dd582753b9a8f58fa380b36cf6a43d0255098",
+        "physical-summary.json": "5cb08fefa56baae3edd40caf363f33425f8a8b7f824256b460f8c889f99d42c8",
+        "wire-archives.json": "3484839f1d211aaf70ab5ddcaebcd0d9e3b36ed316351d9c26bd5b5a6c5f4e3b"
+      },
+      "wire_archives": [
+        {
+          "file": "wire.pcapng",
+          "sha256_uncompressed": "0bd8720fbd5ccd96742720af7787bf03801a81c118c9a0b97007a571fbb69784",
+          "bytes": 15922232,
+          "archive": "wire.pcapng.zst",
+          "compression": "zstd level3 window8MiB"
+        },
+        {
+          "file": "wfs-packets.tsv",
+          "sha256_uncompressed": "5f57d3b365711686f7abf2271ed614342ec9981561758066257fcef087ba81fd",
+          "bytes": 31439520,
+          "archive": "wfs-packets.tsv.zst",
+          "compression": "zstd level3 window8MiB"
+        },
+        {
+          "file": "dm-packets.tsv",
+          "sha256_uncompressed": "2f5600176356a8a0fffcc9bdd1366a37bfcb7020b021bada376787839f00b4f1",
+          "bytes": 144333,
+          "archive": "dm-packets.tsv.zst",
+          "compression": "zstd level3 window8MiB"
+        }
+      ]
+    },
+    {
+      "path": "jfg-frame",
+      "attempt": 2,
+      "directory": "/home/dgamroth/.cache/rtc-classic-spa-installed-five-paths63-20260930/jfg-frame-r2",
+      "artifact_sha256": {
+        "report.json": "433d62de01b7a8ef36b698c898b5e4a9747641c1889b36ba9da4df1db6365ebd",
+        "physical-summary.json": "1b6574fc25b1de7bc25e02602fcfb96a60417641be7bc51d22f93686a6beb7d1",
+        "wire-archives.json": "c4d58f03e727ba8b1df67ab0a4910de64f3157d60c7f78c9aa671aaf2e6c3285"
+      },
+      "wire_archives": [
+        {
+          "file": "wire.pcapng",
+          "sha256_uncompressed": "b4a9f47a5971038374204c131135786f616ceb9ed80946bfab1b6e2939b82ff6",
+          "bytes": 15922232,
+          "archive": "wire.pcapng.zst",
+          "compression": "zstd level3 window8MiB"
+        },
+        {
+          "file": "wfs-packets.tsv",
+          "sha256_uncompressed": "9209effd948ec4084efcc7e54a63345adfaa4702fd53a0454c117ee49bff7367",
+          "bytes": 31439520,
+          "archive": "wfs-packets.tsv.zst",
+          "compression": "zstd level3 window8MiB"
+        },
+        {
+          "file": "dm-packets.tsv",
+          "sha256_uncompressed": "34ac204c989b19c01a64876017eb5fbd77aa3416b4933615e674081d52393c84",
+          "bytes": 144333,
+          "archive": "dm-packets.tsv.zst",
+          "compression": "zstd level3 window8MiB"
+        }
+      ]
+    },
+    {
+      "path": "jfg-row",
+      "attempt": 2,
+      "directory": "/home/dgamroth/.cache/rtc-classic-spa-installed-five-paths63-20260930/jfg-row-r2",
+      "artifact_sha256": {
+        "report.json": "fffe919d5c4e523356f4a470c7c370a7b18a41c115035198ba1c9b080bfcca3b",
+        "physical-summary.json": "5fe5af1d64f03175b79273241604fd23ec65c2e2947fcb42211743ff25c9d833",
+        "wire-archives.json": "2ac9cbd259443bf67b351986aedeeb9e4f102a894ee27596e73e9d2298addfa7"
+      },
+      "wire_archives": [
+        {
+          "file": "wire.pcapng",
+          "sha256_uncompressed": "bc7110e99d8e4b27478f160f27c1e7ad02120ab4d66917f511f37a98cd46f9cd",
+          "bytes": 15922232,
+          "archive": "wire.pcapng.zst",
+          "compression": "zstd level3 window8MiB"
+        },
+        {
+          "file": "wfs-packets.tsv",
+          "sha256_uncompressed": "3ef032c02b35e067ae55b64d008ac9c7e0f112e0c00b073a5cbb4d0c04258bdd",
+          "bytes": 31439520,
+          "archive": "wfs-packets.tsv.zst",
+          "compression": "zstd level3 window8MiB"
+        },
+        {
+          "file": "dm-packets.tsv",
+          "sha256_uncompressed": "3bf3e27be23d918cdb8c9f611f070f80ce4620da39ee3be504996d5786a370f5",
+          "bytes": 144333,
+          "archive": "dm-packets.tsv.zst",
+          "compression": "zstd level3 window8MiB"
+        }
+      ]
+    }
+  ],
+  "retained_failed_attempts": [
+    {
+      "path": "jfg-frame",
+      "attempt": 1,
+      "directory": "/home/dgamroth/.cache/rtc-classic-spa-installed-five-paths63-20260930/jfg-frame",
+      "returncode": 1,
+      "failure_phase": "before ingress: canonical benchmark manifest missing FilterGraphPipeWire",
+      "report_sha256": "62bb7045cec0b2f7f64191f524ca89c9c2c43292156779df2555178fdcb304ab",
+      "node_log_sha256": "c59afa911a98af7d1636afcd6675ac807ac002f5c2e8e6484d2b5c14dd8e5d55"
+    },
+    {
+      "path": "jfg-row",
+      "attempt": 1,
+      "directory": "/home/dgamroth/.cache/rtc-classic-spa-installed-five-paths63-20260930/jfg-row",
+      "returncode": 1,
+      "failure_phase": "before ingress: canonical benchmark manifest missing FilterGraphPipeWire",
+      "report_sha256": "5e3857dca232c066d0c70e0ac01f781a45553c9aba2602d32f35e740868391fe",
+      "node_log_sha256": "85c77df142abebf7806a49cfb01f62328cd5acb3086c20091269f7cc844e6d9f"
+    }
+  ],
+  "prior_evidence": {
+    "clean_private": "/home/dgamroth/.cache/rtc-classic-spa-clean-five-paths63-20260930/manifest.json",
+    "snapshot_private": "/home/dgamroth/.cache/rtc-classic-spa-five-paths63-20260930/manifest.json",
+    "historical_failed_heart": "/home/dgamroth/.cache/rtc-classic-spa-five-paths63-20260930/heart",
+    "preserved": true
+  },
+  "validator": {
+    "file": "/home/dgamroth/.cache/check-classic-spa-installed-five-20260930.py",
+    "sha256": "cc444aa25afe795a7b343a687a39d0b4c419b0da08e7942763195546fe92d7cc",
+    "exit_code": 0
+  },
+  "cleanup_observation": {
+    "command": [
+      "ss",
+      "-ulnp",
+      "sport = :6000"
+    ],
+    "exit_code": 0,
+    "output": "State Recv-Q Send-Q Local Address:Port Peer Address:PortProcess\n",
+    "scope": "After all selected live runs; no UDP6000 listener remains. Each owned source report cleanup says daemon stopped/runtime removed."
+  },
+  "installed_core_observed_after": {
+    "/opt/pipewireao/bin/pipewire-ao": "69873d8cdfc54d49a7ad16ee7c243cdf4f77eef895094eb445e4cb0d2b601783",
+    "/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0": "2514f1f329d6eaf8209ee41f5e07b2d31ad2e312549434e6c0020863d1045fc9",
+    "/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-scheduler-v1.so": "ee62d9b1b2a0a69e6446dea191ee7e510088dae770e2121b186e2b6143da6048"
+  },
+  "installed_core_provenance_note": "Installed normal core/module was not modified by this qualification. source_revisions.pipewire records the current source checkout, not an assertion that its HEAD built the installed library."
+}

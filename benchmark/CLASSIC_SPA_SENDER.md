@@ -1,13 +1,12 @@
 # Classic installed SPA sender
 
-Status: the helper and private plugin candidates passed seven-frame exact-byte
-source qualification and the all-five 63-frame receiver comparison at 100 Hz.
-The installed FITS and ndarray plugins still need the owner fixes below;
-longer source qualification remains pending. Private functional validation can resolve an
-installation with its `spa_library_directory` set to
-`/home/dgamroth/.cache/rtc-classic-spa-private-plugins-20260930`. That directory
-contains frozen candidate FITS/ndarray DSOs and the unchanged installed HEART
-plugin.
+Status: the deployed `/opt/pipewireao` sender plugins passed all five existing
+Classic receiver paths with the 63-frame corpus at 100 Hz and 2,000 µs readout.
+The installed functional transport gate is closed. The clean private pair also
+has seven-frame exact-byte source qualification. Longer source runs, pacing
+deadlines, latency, capacity, and hardware timing are separate qualifications.
+The sections below retain the startup investigation and private candidate
+history; the installed closure and evidence index are at the end.
 
 `run_classic_spa_sender.py` replaces only the replay sender in a Classic live
 comparison. Its isolated source core loads installed factories from
@@ -292,3 +291,65 @@ preserved separately. The clean pair, rather than the earlier binary's result,
 now establishes the clean backport's functional transport gate. No latency,
 capacity, hardware, deployment, main update or push is claimed. Existing local
 SDK changes and deployed factory-set intent remain unchanged.
+
+## Installed sender closure (2026-09-30)
+
+The same 63-frame corpus passed sequentially through HEART, FGN frame, FGN row,
+JFG frame, and JFG row using the installed sender directory, with no
+`--sender-spa-directory` override. Exact commands, script hashes, reports,
+physical summaries, and Zstandard archives with raw capture hashes are retained
+in `/home/dgamroth/.cache/rtc-classic-spa-installed-five-paths63-20260930/manifest.json`.
+The compact repository index is
+[classic_spa_installed_qualification_20260930.json](data/classic_spa_installed_qualification_20260930.json).
+
+The actual installed plugin SHA-256 values are:
+
+- FITS: `947ba07a07f5da0e8c60b408455933689e3cc7a7cc1ca8dbf8c358c9ac3f8a41`;
+- clean two-factory ndarray: `153839f352590a992655f327ef892c1dff3595ab9fbe80f183ed2aeb7ec6458c`;
+- normal HEART: `efaf3a810284a6a39b9c84fb433cf9669a638da14b41cd528b8a18cc593ce7d6`.
+
+Deployment backups and before/after hashes are retained in
+`/home/dgamroth/.cache/classic-main-deployment-backup-20260930/deployment.json`.
+This qualification changed no plugin, core, scientific implementation, harness,
+main branch, or installation. Receiver commands explicitly selected canonical
+FGN main `54d8b1847d7913f532e1d48ceba2429eb2499055` at
+`/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper` and JFG
+main `6f1da393f9bd7153ed95b8811ccf32ebce6342a6` at
+`/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph.jl`.
+
+Every selected run captured exactly 2,016 WFS packets and 63 DM commands, with
+complete ordered WFS IDs 0–62 and zero UInt16 pixel mismatches. Sender counters
+were exactly 63 frames and 2,016 datagrams, with zero rejection/send errors.
+FGN/JFG receiver counters were 63 frames, zero rejection/drop/starvation, and
+2,016 blocks in row mode or zero blocks in frame mode. All owned sender daemons
+and receiver children exited normally: three process statuses for HEART/FGN
+and four for JFG. UDP 6000 had no remaining listener after cleanup. HEART DM
+IDs were 1–63; FGN/JFG DM IDs were 0–62, with no repetitions or decreases.
+
+All selected source-arithmetic consistency and command-limit checks passed.
+HEART's exact source model matched all 17,451 Float32 command values bit for
+bit; final clipped-actuator counts were 76/76. JFG final constraint feedback
+passed with 74/74 nonzero values and maximum errors 1.19 × 10⁻⁷ µm (frame) and
+2.38 × 10⁻⁷ µm (row). HEART's broad legacy `qualified=false` and unavailable
+initial-state readback remain retained; FGN still has no separate final-feedback
+comparison. These limits do not change the selected functional acceptance.
+
+Initial installed JFG frame/row attempts failed before ingress because the
+canonical benchmark's ignored manifest omitted `FilterGraphPipeWire`. Their
+reports and logs remain in the original `jfg-frame` and `jfg-row` directories.
+The authorized environment provisioning backed up the ignored manifest, then
+ran `Pkg.resolve(); Pkg.instantiate()` against the existing public Project
+sources on CPU 14. It returned zero and left the tracked Project unchanged
+(SHA-256 `08fe340cf14d6fab257ac113be622476cf51ecfec286d02f5827178f6f89630e`).
+Manifest SHA-256 changed from
+`59405813bba4cbf0ef457bb9af7c30d22d9ce839110d5192be253e1656e5dcb3` to
+`b7930647838bbe502c001aa0fb9dea28b69c48c888ed29df2c861cda477af0d4`.
+Cold imports returned zero before fresh `jfg-frame-r2` and `jfg-row-r2` runs.
+Exact commands, backups, hashes, and logs are retained at
+`/home/dgamroth/.cache/rtc-classic-installed-julia-environment-20260930` and
+embedded in the final manifest/index. Historical failures remain unselected,
+with no overwrite or retroactive pass.
+
+The validation checker returned zero for all five selected results. This closes
+installed functional transport and selected numerical consistency only; it
+does not qualify pacing deadlines, latency, capacity, or physical operation.
