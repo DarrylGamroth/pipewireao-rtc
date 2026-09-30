@@ -106,9 +106,11 @@ is unrelated to the changes.
 
 FITS evidence is under its candidate worktree's `evidence/` directory:
 `fail-before.txt` shows the positive Position assertion failing with the old DSO.
-The C pass-after logs are empty because successful tests are silent. An empty log
-alone does not establish exit status; the implementing worker was asked to retain
-explicit commands and successful exit codes from those completed executions.
+The C pass-after logs are empty because successful tests are silent. The reviewer
+subsequently inspected `evidence/verification.json` in both owner worktrees:
+these retain exact commands and exit status 0 for the completed C tests, including
+the final frozen private ndarray DSO. The provenance request is resolved; no
+additional test was run by this reviewer during the capacity window.
 
 The reviewer inspected `report.json` and `udp-summary.json` in:
 
