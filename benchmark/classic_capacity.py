@@ -16,16 +16,15 @@ from __future__ import annotations
 import argparse
 from collections import defaultdict
 from decimal import Decimal
-import gzip
 import hashlib
 import json
-import lzma
 import math
 from pathlib import Path
 import re
 import struct
 
 from classic_placement import check_loop
+from classic_wire import open_evidence
 
 WFS = struct.Struct("<4B8HIQII")
 
@@ -50,18 +49,11 @@ def option(command, name, default=None):
 def source_pacing_from_packets(directory, frames):
     """Recover achieved WFS rate even when missing DM packets prevent latency analysis."""
     directory = Path(directory)
-    choices = [(directory / "wfs-packets.tsv", open),
-               (directory / "wfs-packets.tsv.xz", lzma.open),
-               (directory / "wfs-packets.tsv.gz", gzip.open)]
-    for path, opener in choices:
-        if path.is_file():
-            break
-    else:
-        raise ValueError("no WFS packet timestamps available")
+    path = directory / "wfs-packets.tsv"
     first = []
     previous = None
     count = 0
-    with opener(path, "rt") as source:
+    with open_evidence(path, "rt") as source:
         for ordinal, line in enumerate(source):
             timestamp, _, packet = line.rstrip("\n").split("\t")
             decoded = WFS.unpack(bytes.fromhex(packet[:WFS.size * 2]))

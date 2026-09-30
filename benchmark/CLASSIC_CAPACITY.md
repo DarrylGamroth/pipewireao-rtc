@@ -64,6 +64,8 @@ HEART has two passing windows and an excluded pre-ingress TCP port-guard failure
 it therefore has insufficient eligible repetitions. No tested failure upper
 bound is established. This preserves the original failed HEART attempt.
 The JSON records manifest, classifier and input artifact SHA-256 hashes.
-Twelve synthetic tests cover repetition, missing evidence, pacing boundaries,
+Thirteen synthetic tests cover repetition, missing evidence, pacing boundaries,
 underdrive, independent delivery/deadline outcomes, failure bounds, numerical
-policy, HEART exact-model enforcement, child exits, placement and missing DM.
+policy, HEART exact-model enforcement, child exits, placement, missing DM, and
+complete/corrupt/incomplete Zstandard evidence. The shared `classic_wire` reader
+retains plain, XZ and gzip compatibility and checks Zstandard decoder exit status.

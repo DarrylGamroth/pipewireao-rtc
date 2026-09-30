@@ -1,6 +1,8 @@
 """Synthetic finite-window classification checks; no live runner or benchmark."""
 import copy
 import tempfile
+import shutil
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -163,6 +165,29 @@ class CapacityTests(unittest.TestCase):
             path.write_text("".join(lines[:-1]))
             with self.assertRaises(ValueError):
                 source_pacing_from_packets(directory, 2)
+
+
+    @unittest.skipUnless(shutil.which("zstd"), "zstd executable unavailable")
+    def test_zstd_complete_corrupt_and_incomplete_packet_evidence(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "wfs-packets.tsv.zst"
+            lines = []
+            for frame in range(2):
+                for packet in range(1, 33):
+                    fields = [0] * 16
+                    fields[10], fields[11], fields[-2] = packet, 32, frame
+                    stamp = 100 + frame * .01 + (packet - 1) * .00005
+                    lines.append(f"{stamp:.8f}\t0\t{WFS.pack(*fields).hex()}\n")
+            def compressed(content):
+                return subprocess.run(["zstd", "-q", "-c"], input=content.encode(),
+                                      stdout=subprocess.PIPE, check=True).stdout
+            complete = compressed("".join(lines))
+            path.write_bytes(complete)
+            self.assertEqual(source_pacing_from_packets(directory, 2)["achieved_source_rate_hz"], 100)
+            for content in (complete[:-2], b"not a zstd frame", compressed("".join(lines[:-1]))):
+                path.write_bytes(content)
+                with self.assertRaises(ValueError):
+                    source_pacing_from_packets(directory, 2)
 
 
 if __name__ == "__main__":
