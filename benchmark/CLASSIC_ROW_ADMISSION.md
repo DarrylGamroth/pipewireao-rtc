@@ -210,3 +210,117 @@ The saved analysis script is hashed in the JSON. The analysis completed on CPU
 14 in under 0.1 seconds, using only saved files. Its assertions check the
 observed identities and lifecycle invariants; no production test or live
 experiment is represented as having been performed by this analysis.
+
+## Reviewed remediation and saved successful check
+
+The source fixes are isolated in the dedicated HEART worktree
+`pipewireao-spa-plugin-heart-row-admission`, branch
+`codex/classic-row-admission`, based on clean `83e3c7bf`. Main and `/opt`
+remain unchanged. Two separate commits implement the reviewed changes:
+
+- `9f3c321`: after a newly published `HAVE_DATA`, leave the nonblocking socket
+  receive loop and issue the existing single ready notification. The unchanged
+  IN/ERR/HUP registration is level triggered, so unread packets remain eligible
+  for the next callback. When an older row is in flight, receiving can still
+  queue subsequent rows; this is not a global one-packet callback limit.
+- `10388618`: prefer `min(64, max(8, 2 × row blocks per frame))` row buffers.
+  The original one-frame minimum and maximum of 64 remain negotiable; complete
+  frames still prefer 8. Validated row counts are at most 64, so doubling is at
+  most 128 before clamping. Counts above 32 receive bounded partial overlap,
+  rather than storage for two complete frames.
+
+**Software verification:** The burst regression queues two row datagrams before
+one socket callback and samples the receive counter inside its first ready
+call. The old source observes 2 and fails; the patched source observes 1,
+leaves the second datagram readable, consumes it on the next callback, and
+retains the exact row IDs, bytes, terminal marker and return behavior. The
+buffer regression fails on the old Classic default of 32 and passes with
+64/minimum 32. Actual parameter filtering and fixation also select 32 for a
+consumer capped at 32. Full-frame default 8, small row profiles, and clamped
+33-/64-block profiles pass. Independent source review found no remaining
+blocker. Fresh normal and diagnostic O3 builds each pass all five transport
+unit tests on CPU 14; candidate source/build/header and test-log hashes are
+retained in the new evidence JSON. The diagnostic unit run did not export CSV
+because its requested directory had not been created; its functional tests
+passed. Complete diagnostic export is verified in the live check below.
+
+**Observed live check:** The primary agent ran the saved 63-frame JFG row check
+at 250 Hz, 2,000 µs readout, workers 0 and shared matrix layout:
+`~/.cache/rtc-classic-jfg-admission-fixed63-250hz-20260930`. Its actual pool is
+64. WFS delivery is 2,016 exact ordered packets; source publication, native
+science and Julia each identify all 2,016 rows. Sink, adapter and captured DM
+commands identify frames 0–62 exactly once in order. Source rejected, dropped
+and starvation counters are all zero. All four child exits are 0. Wire
+arithmetic consistency, command limits, the historical 10⁻⁶ µm comparison and
+retained controller feedback checks pass; the maximum command difference from
+the captured reference is 4.76837158203125 × 10⁻⁷ µm. Calibration and scientific
+graph/configuration hashes and coefficients match the failed diagnostic.
+
+Every native trace has `used = parsed rows` and zero omissions. Source
+R/P/N/Q each count 2,016; each P/Q/N tuple has the same buffer ID and generation.
+Repeated buffer use increments generation exactly, without overlapping loans.
+Native D/G/E/R each count 2,016 and output O counts 63. Every native process
+interval contains its corresponding Julia body. Both before/after placement
+snapshots show daemon, adapter and science loops on CPUs 0/4/2 with FIFO 83;
+Julia default threads are pinned to 2/6. The source command records CPU 12.
+
+### Notification and headroom observations
+
+| Instrumented observation | Saved failed run | Saved successful run |
+| --- | ---: | ---: |
+| Actual row pool | 32 | 64 |
+| First-frame P→N | 893.182 µs | 0.270 µs |
+| Frame 0 receives before first N | 20 | 1 |
+| Published rows / DM commands | 1,984 / 62 | 2,016 / 63 |
+| Dropped frames / starvations | 1 / 1 | 0 / 0 |
+
+Across all 63 successful first-row publications, P→N is median 0.060 µs,
+nearest-rank p95 0.130 µs and maximum 0.270 µs. Across all 2,016 rows, it is
+median 0.060 µs, p95 0.110 µs and maximum 1.172 µs. Per-frame values are retained
+in [data/classic_row_admission_fixed_20260930.json](data/classic_row_admission_fixed_20260930.json).
+These are same-host monotonic observation intervals around instrumented code;
+they include scheduling and are not a normal latency baseline.
+
+From complete ordered prior-frame receives and serialized source Q records,
+at least 63 buffers are AVAILABLE before each new frame reservation in this
+successful check. This accounts for queued rows as well as published rows:
+`available = 64 − (32 × prior frames − prior source returns)`. The reservation
+instruction itself is not timestamped. This check demonstrates sufficient
+headroom for its observed ownership timeline; it does not establish sustained
+capacity or guarantee a rate under different scheduling.
+
+All 2,016 Julia body intervals show zero change in process-global allocation
+bytes, GC pause count and total GC time. Those counters are also unchanged
+from the first body start to the last body end. This excludes counted Julia
+allocation/GC in that span, not native allocation or startup/property/close
+work. Both fixes were present together in this live check: the isolated unit
+tests distinguish their software behaviors, while this check verifies their
+combined delivery and arithmetic result. Repeated normal runs remain the
+separate performance evidence.
+
+### Candidate provenance and reproduction
+
+The successful source DSO has SHA-256
+`f30d9e6d8dedde4f5ea473b86b5498dd8dcb38c662fba5455a83ca686cbce93e`.
+The frozen normal candidate has SHA-256
+`efaf3a810284a6a39b9c84fb433cf9669a638da14b41cd528b8a18cc593ce7d6`.
+Build commands, compiler flags, installed header hashes, source hashes, isolated
+fail-before/pass-after logs, private core/module identities and saved run inputs
+are retained in the new JSON. The original failed JSON and raw artifacts remain
+unchanged.
+
+From the RTC repository root, reproduce this read-only analysis with:
+
+```sh
+taskset -c 14 python3 \
+  ~/.cache/rtc-classic-jfg-admission-fixed63-250hz-20260930/analyze-admission-fixed.py
+```
+
+The saved script and its input helper are hashed in the evidence JSON. The
+recorded campaign-source hash matches commit `82c80663`; a later timestamp
+validation commit changed the current file. Both hashes and that historical
+match are retained. The wrapper and live-runner hashes still match their
+recorded sources. The analysis checks delivery, identities, buffer generations, interval ordering,
+source/library/calibration provenance, placement snapshots, arithmetic gates,
+process exits and GC counters. It uses only saved files and makes no new live,
+normal-latency, capacity or physical-accuracy claim.

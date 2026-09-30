@@ -1,0 +1,1356 @@
+{
+  "schema_version": 1,
+  "scope": "successful instrumented63-frame remediation check; no normal latency or sustained capacity claim",
+  "run_directory": "/home/dgamroth/.cache/rtc-classic-jfg-admission-fixed63-250hz-20260930",
+  "run_qualified": true,
+  "physical_qualified": true,
+  "source_counters": {
+    "received": 2016,
+    "rejected": 0,
+    "blocks": 2016,
+    "frames": 63,
+    "dropped": 0,
+    "starvations": 0
+  },
+  "process_returncodes": [
+    0,
+    0,
+    0,
+    0
+  ],
+  "trace_integrity": {
+    "source": {
+      "capacity": 262144,
+      "used": 8064,
+      "omitted": 0
+    },
+    "sink": {
+      "capacity": 262144,
+      "used": 66,
+      "omitted": 0
+    },
+    "native_science": {
+      "capacity": 65536,
+      "used": 8127,
+      "omitted": 0
+    },
+    "native_adapter": {
+      "capacity": 65536,
+      "used": 315,
+      "omitted": 0
+    },
+    "julia": {
+      "allocation_scope": "process-wide bytes allocated while each callback trace interval is active; includes concurrent Julia tasks and trace counter reads",
+      "boundary": "live GraphProcessCallback: _process_graph_buffers! and success counter; excludes property adoption, notification, and native C bridge",
+      "capacity": 2016,
+      "clock": "Julia time_ns monotonic nanoseconds",
+      "gc_counters": true,
+      "gc_initial_pause": 25,
+      "gc_initial_time_ns": 1570635940428460,
+      "gc_initial_total_time_ns": 556092614,
+      "omitted": 0,
+      "path": "/home/dgamroth/.cache/rtc-classic-jfg-admission-fixed63-250hz-20260930/callback-trace.csv",
+      "records": 2016
+    },
+    "source_events": {
+      "R": 2016,
+      "P": 2016,
+      "N": 2016,
+      "Q": 2016
+    },
+    "native_events": {
+      "D": 2016,
+      "G": 2016,
+      "E": 2016,
+      "R": 2016,
+      "O": 63
+    }
+  },
+  "actual_pool_buffers": 64,
+  "source_revision": "10388618bbf8493612cb1d852ccc0e018faa3c87",
+  "source_commits": [
+    "10388618bbf8493612cb1d852ccc0e018faa3c87 Prefer two frames of bounded row buffer headroom",
+    "9f3c321580775546a5dd4c749101bef2de0497ec Notify row publication before draining later packets"
+  ],
+  "heart_plugin_sha256": "f30d9e6d8dedde4f5ea473b86b5498dd8dcb38c662fba5455a83ca686cbce93e",
+  "harness_sources": {
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-progressive-requal/benchmark/run_classic_ingress_trace.py": {
+      "recorded_sha256": "cfc56f2168dc2710a4f0c99f15e98a4affdd67c8e2857e451cf4314b4bc1ff86",
+      "current_sha256": "cfc56f2168dc2710a4f0c99f15e98a4affdd67c8e2857e451cf4314b4bc1ff86",
+      "current_matches": true
+    },
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-progressive-requal/benchmark/run_classic_live.py": {
+      "recorded_sha256": "3db912f58025a62894a5af1fa1ca55f45cb947e4245aeda3166b867b9dca43eb",
+      "current_sha256": "3db912f58025a62894a5af1fa1ca55f45cb947e4245aeda3166b867b9dca43eb",
+      "current_matches": true
+    },
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-progressive-requal/benchmark/run_classic_campaign.py": {
+      "recorded_sha256": "77d6c897027ae5581f080cc1bc810483cf68ac55287530ad7218ad992e6445f6",
+      "current_sha256": "94781bb56e0237ea222078e41a43aa1854ab89beb6137200aa4013cb5f310910",
+      "current_matches": false,
+      "recorded_source_git_revision": "82c80663f570c786b0680ad62518fa0de9d15fc7"
+    }
+  },
+  "science_unchanged_keys": [
+    "parameter_sha256",
+    "prepared_profile_sha256",
+    "graph_sha256",
+    "gain",
+    "pole",
+    "source_anti_windup_gain",
+    "hidden_mode_gain",
+    "applied_anti_windup_gain",
+    "row_workers",
+    "matrix_layout"
+  ],
+  "parameter_sha256": {
+    "background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+    "subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+    "shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+    "reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+    "thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+    "active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+    "reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+    "controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+    "active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+    "vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+    "full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+    "pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+    "vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772"
+  },
+  "arithmetic": {
+    "scope": "wire arithmetic consistency; HEART additionally has an exact source model; no physical-accuracy qualification",
+    "exact_model": null,
+    "exact_model_passed": null,
+    "role": "jfg",
+    "mode": "row",
+    "frames": 63,
+    "actual_commands_f32le_sha256": "8c950c8fe2db85b4fa5ad2bc95e733c790bb9270fc624c28c65787c35b227f70",
+    "expected_commands_f32le_sha256": "dd5d8b5bf3b1506538839aa2d637cbda20ff94646bbb190c20c69bf6c8c34fdf",
+    "arithmetic_consistency_passed": true,
+    "historical_1e_minus_6": {
+      "passed": true,
+      "failed_values": 0,
+      "maximum_absolute_difference": 4.76837158203125e-07
+    },
+    "checks": {
+      "actual_vs_equation_reference": {
+        "passed": true,
+        "failed_values": 0,
+        "maximum_error": 1.1184751750881183e-06,
+        "maximum_bound": 0.0037493908409982576,
+        "maximum_error_to_bound_ratio": 0.0016808959642418474
+      },
+      "expected_vs_equation_reference": {
+        "passed": true,
+        "failed_values": 0,
+        "maximum_error": 1.0943637245297566e-06,
+        "maximum_bound": 0.0037493908409982576,
+        "maximum_error_to_bound_ratio": 0.0011512162510818253
+      },
+      "cross_implementation": {
+        "passed": true,
+        "failed_values": 0,
+        "maximum_error": 4.76837158203125e-07,
+        "maximum_bound": 0.007498781681996515,
+        "maximum_error_to_bound_ratio": 0.000797758284484566
+      }
+    },
+    "within_command_limits": true,
+    "minimum_flux_threshold_margin": 2323706.8821629593,
+    "minimum_pixel_threshold_distance": 4688.47021484375,
+    "clipping_decisions_ambiguous_under_bound": 15,
+    "observed_clipping_classification_disagreements": 0,
+    "application_accuracy": "not assessed: no application error budget supplied",
+    "analyzer_sha256": "b8781c9c530344b927f5860039cb1d210897de60eb3ef26e3b10467fca2a1913",
+    "fixture_sha256": {
+      "active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+      "active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+      "background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+      "calibrated_pixels.f32le": "1f98873b7a7209bf7b716384d16b7534f9561bfe1db4ed4bcff2d547b6f29737",
+      "controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+      "full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+      "pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+      "raw-frames.u16le": "1071336cb367f16ac030e5f0f80d8a978c0196088e6a48a9026371c170bf70cf",
+      "reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+      "reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+      "scalars.f32le": "efe6477371bc9a2f0e5240325af819aeaf1c988e8feb61790f34d82d0c29e1f2",
+      "shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+      "subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+      "thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+      "vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+      "vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+    }
+  },
+  "final_constraint_feedback": {
+    "unit": "micron",
+    "max_absolute_error": 2.384185791015625e-07,
+    "actual_nonzero_values": 74,
+    "expected_nonzero_values": 74,
+    "qualified": true,
+    "boundary": "retained controller constraint feedback after owner shutdown"
+  },
+  "placements": {
+    "placement-before.json": {
+      "daemon": {
+        "tid": 3543705,
+        "name": "rtc-data-loop",
+        "state": "S (sleeping)",
+        "affinity": [
+          0
+        ],
+        "affinity_list": "0",
+        "scheduler": {
+          "policy": "fifo",
+          "priority": 83,
+          "reset_on_fork": true
+        }
+      },
+      "adapter": {
+        "tid": 3544295,
+        "name": "data-loop.0",
+        "state": "S (sleeping)",
+        "affinity": [
+          4
+        ],
+        "affinity_list": "4",
+        "scheduler": {
+          "policy": "fifo",
+          "priority": 83,
+          "reset_on_fork": true
+        }
+      },
+      "node": {
+        "tid": 3544265,
+        "name": "data-loop.0",
+        "state": "S (sleeping)",
+        "affinity": [
+          2
+        ],
+        "affinity_list": "2",
+        "scheduler": {
+          "policy": "fifo",
+          "priority": 83,
+          "reset_on_fork": true
+        }
+      }
+    },
+    "placement-after.json": {
+      "daemon": {
+        "tid": 3543705,
+        "name": "rtc-data-loop",
+        "state": "S (sleeping)",
+        "affinity": [
+          0
+        ],
+        "affinity_list": "0",
+        "scheduler": {
+          "policy": "fifo",
+          "priority": 83,
+          "reset_on_fork": true
+        }
+      },
+      "adapter": {
+        "tid": 3544295,
+        "name": "data-loop.0",
+        "state": "S (sleeping)",
+        "affinity": [
+          4
+        ],
+        "affinity_list": "4",
+        "scheduler": {
+          "policy": "fifo",
+          "priority": 83,
+          "reset_on_fork": true
+        }
+      },
+      "node": {
+        "tid": 3544265,
+        "name": "data-loop.0",
+        "state": "S (sleeping)",
+        "affinity": [
+          2
+        ],
+        "affinity_list": "2",
+        "scheduler": {
+          "policy": "fifo",
+          "priority": 83,
+          "reset_on_fork": true
+        }
+      }
+    }
+  },
+  "julia_default_thread_affinity": [
+    {
+      "allowed_cpus": [
+        2
+      ],
+      "thread_id": 1
+    },
+    {
+      "allowed_cpus": [
+        6
+      ],
+      "thread_id": 2
+    }
+  ],
+  "gc": {
+    "scope": "process-wide bytes allocated while each callback trace interval is active; includes concurrent Julia tasks and trace counter reads",
+    "body_intervals_with_any_counter_change": 0,
+    "first_to_last_body_counter_changes": {
+      "gc_pause_start": 0,
+      "gc_total_time_start_ns": 0,
+      "gc_allocated_bytes_start": 0
+    },
+    "connect_run_close": {
+      "allocated_bytes": 4670432,
+      "collections": 0,
+      "pauses": 0,
+      "time_ns": 0
+    }
+  },
+  "notification_observations": {
+    "all_row_publish_to_ready_ns": {
+      "count": 2016,
+      "minimum_ns": 30,
+      "median_ns": 60.0,
+      "p95_nearest_rank_ns": 110,
+      "maximum_ns": 1172
+    },
+    "first_row_publish_to_ready_ns": {
+      "count": 63,
+      "minimum_ns": 30,
+      "median_ns": 60,
+      "p95_nearest_rank_ns": 130,
+      "maximum_ns": 270
+    },
+    "first_frame": {
+      "frame": 0,
+      "first_receive_to_first_publish_ns": 59001,
+      "first_publish_to_first_ready_ns": 270,
+      "first_receive_to_first_ready_ns": 59271,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 1139059,
+      "native_callback_sum_ns": 1190102
+    }
+  },
+  "per_frame_observations": [
+    {
+      "frame": 0,
+      "first_receive_to_first_publish_ns": 59001,
+      "first_publish_to_first_ready_ns": 270,
+      "first_receive_to_first_ready_ns": 59271,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 1139059,
+      "native_callback_sum_ns": 1190102
+    },
+    {
+      "frame": 1,
+      "first_receive_to_first_publish_ns": 70131,
+      "first_publish_to_first_ready_ns": 40,
+      "first_receive_to_first_ready_ns": 70171,
+      "receives_this_frame_before_first_ready": 2,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 1,
+      "available_before_new_frame_reservation": 63,
+      "julia_body_sum_ns": 424353,
+      "native_callback_sum_ns": 434148
+    },
+    {
+      "frame": 2,
+      "first_receive_to_first_publish_ns": 10410,
+      "first_publish_to_first_ready_ns": 100,
+      "first_receive_to_first_ready_ns": 10510,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 1081341,
+      "native_callback_sum_ns": 1097822
+    },
+    {
+      "frame": 3,
+      "first_receive_to_first_publish_ns": 33072,
+      "first_publish_to_first_ready_ns": 160,
+      "first_receive_to_first_ready_ns": 33232,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 756664,
+      "native_callback_sum_ns": 773059
+    },
+    {
+      "frame": 4,
+      "first_receive_to_first_publish_ns": 19616,
+      "first_publish_to_first_ready_ns": 120,
+      "first_receive_to_first_ready_ns": 19736,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 566313,
+      "native_callback_sum_ns": 575266
+    },
+    {
+      "frame": 5,
+      "first_receive_to_first_publish_ns": 9929,
+      "first_publish_to_first_ready_ns": 40,
+      "first_receive_to_first_ready_ns": 9969,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 682373,
+      "native_callback_sum_ns": 693164
+    },
+    {
+      "frame": 6,
+      "first_receive_to_first_publish_ns": 33032,
+      "first_publish_to_first_ready_ns": 110,
+      "first_receive_to_first_ready_ns": 33142,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 589509,
+      "native_callback_sum_ns": 601405
+    },
+    {
+      "frame": 7,
+      "first_receive_to_first_publish_ns": 18895,
+      "first_publish_to_first_ready_ns": 71,
+      "first_receive_to_first_ready_ns": 18966,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 708995,
+      "native_callback_sum_ns": 720231
+    },
+    {
+      "frame": 8,
+      "first_receive_to_first_publish_ns": 10109,
+      "first_publish_to_first_ready_ns": 30,
+      "first_receive_to_first_ready_ns": 10139,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 652230,
+      "native_callback_sum_ns": 661850
+    },
+    {
+      "frame": 9,
+      "first_receive_to_first_publish_ns": 19106,
+      "first_publish_to_first_ready_ns": 70,
+      "first_receive_to_first_ready_ns": 19176,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 914048,
+      "native_callback_sum_ns": 928680
+    },
+    {
+      "frame": 10,
+      "first_receive_to_first_publish_ns": 19066,
+      "first_publish_to_first_ready_ns": 60,
+      "first_receive_to_first_ready_ns": 19126,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 781259,
+      "native_callback_sum_ns": 794407
+    },
+    {
+      "frame": 11,
+      "first_receive_to_first_publish_ns": 9919,
+      "first_publish_to_first_ready_ns": 40,
+      "first_receive_to_first_ready_ns": 9959,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 1154591,
+      "native_callback_sum_ns": 1172564
+    },
+    {
+      "frame": 12,
+      "first_receive_to_first_publish_ns": 19136,
+      "first_publish_to_first_ready_ns": 60,
+      "first_receive_to_first_ready_ns": 19196,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 908037,
+      "native_callback_sum_ns": 921327
+    },
+    {
+      "frame": 13,
+      "first_receive_to_first_publish_ns": 18945,
+      "first_publish_to_first_ready_ns": 60,
+      "first_receive_to_first_ready_ns": 19005,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 774927,
+      "native_callback_sum_ns": 789577
+    },
+    {
+      "frame": 14,
+      "first_receive_to_first_publish_ns": 10059,
+      "first_publish_to_first_ready_ns": 30,
+      "first_receive_to_first_ready_ns": 10089,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 1056855,
+      "native_callback_sum_ns": 1073410
+    },
+    {
+      "frame": 15,
+      "first_receive_to_first_publish_ns": 19015,
+      "first_publish_to_first_ready_ns": 60,
+      "first_receive_to_first_ready_ns": 19075,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 906913,
+      "native_callback_sum_ns": 920262
+    },
+    {
+      "frame": 16,
+      "first_receive_to_first_publish_ns": 19145,
+      "first_publish_to_first_ready_ns": 61,
+      "first_receive_to_first_ready_ns": 19206,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 778066,
+      "native_callback_sum_ns": 789814
+    },
+    {
+      "frame": 17,
+      "first_receive_to_first_publish_ns": 10069,
+      "first_publish_to_first_ready_ns": 40,
+      "first_receive_to_first_ready_ns": 10109,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 1003289,
+      "native_callback_sum_ns": 1020703
+    },
+    {
+      "frame": 18,
+      "first_receive_to_first_publish_ns": 19186,
+      "first_publish_to_first_ready_ns": 60,
+      "first_receive_to_first_ready_ns": 19246,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 910371,
+      "native_callback_sum_ns": 924458
+    },
+    {
+      "frame": 19,
+      "first_receive_to_first_publish_ns": 18886,
+      "first_publish_to_first_ready_ns": 60,
+      "first_receive_to_first_ready_ns": 18946,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 856883,
+      "native_callback_sum_ns": 869429
+    },
+    {
+      "frame": 20,
+      "first_receive_to_first_publish_ns": 19918,
+      "first_publish_to_first_ready_ns": 70,
+      "first_receive_to_first_ready_ns": 19988,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 1139310,
+      "native_callback_sum_ns": 1156885
+    },
+    {
+      "frame": 21,
+      "first_receive_to_first_publish_ns": 33052,
+      "first_publish_to_first_ready_ns": 110,
+      "first_receive_to_first_ready_ns": 33162,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 708306,
+      "native_callback_sum_ns": 727012
+    },
+    {
+      "frame": 22,
+      "first_receive_to_first_publish_ns": 19226,
+      "first_publish_to_first_ready_ns": 60,
+      "first_receive_to_first_ready_ns": 19286,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 780891,
+      "native_callback_sum_ns": 792559
+    },
+    {
+      "frame": 23,
+      "first_receive_to_first_publish_ns": 19867,
+      "first_publish_to_first_ready_ns": 60,
+      "first_receive_to_first_ready_ns": 19927,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 920391,
+      "native_callback_sum_ns": 942771
+    },
+    {
+      "frame": 24,
+      "first_receive_to_first_publish_ns": 19146,
+      "first_publish_to_first_ready_ns": 130,
+      "first_receive_to_first_ready_ns": 19276,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 916926,
+      "native_callback_sum_ns": 932102
+    },
+    {
+      "frame": 25,
+      "first_receive_to_first_publish_ns": 18886,
+      "first_publish_to_first_ready_ns": 70,
+      "first_receive_to_first_ready_ns": 18956,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 806372,
+      "native_callback_sum_ns": 819386
+    },
+    {
+      "frame": 26,
+      "first_receive_to_first_publish_ns": 10760,
+      "first_publish_to_first_ready_ns": 40,
+      "first_receive_to_first_ready_ns": 10800,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 1145029,
+      "native_callback_sum_ns": 1163075
+    },
+    {
+      "frame": 27,
+      "first_receive_to_first_publish_ns": 18935,
+      "first_publish_to_first_ready_ns": 61,
+      "first_receive_to_first_ready_ns": 18996,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 914609,
+      "native_callback_sum_ns": 928287
+    },
+    {
+      "frame": 28,
+      "first_receive_to_first_publish_ns": 19056,
+      "first_publish_to_first_ready_ns": 60,
+      "first_receive_to_first_ready_ns": 19116,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 775912,
+      "native_callback_sum_ns": 788588
+    },
+    {
+      "frame": 29,
+      "first_receive_to_first_publish_ns": 9899,
+      "first_publish_to_first_ready_ns": 30,
+      "first_receive_to_first_ready_ns": 9929,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 1004067,
+      "native_callback_sum_ns": 1020695
+    },
+    {
+      "frame": 30,
+      "first_receive_to_first_publish_ns": 19466,
+      "first_publish_to_first_ready_ns": 60,
+      "first_receive_to_first_ready_ns": 19526,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 1052559,
+      "native_callback_sum_ns": 1068663
+    },
+    {
+      "frame": 31,
+      "first_receive_to_first_publish_ns": 18905,
+      "first_publish_to_first_ready_ns": 70,
+      "first_receive_to_first_ready_ns": 18975,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 764672,
+      "native_callback_sum_ns": 777627
+    },
+    {
+      "frame": 32,
+      "first_receive_to_first_publish_ns": 19937,
+      "first_publish_to_first_ready_ns": 60,
+      "first_receive_to_first_ready_ns": 19997,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 1269217,
+      "native_callback_sum_ns": 1287931
+    },
+    {
+      "frame": 33,
+      "first_receive_to_first_publish_ns": 18966,
+      "first_publish_to_first_ready_ns": 60,
+      "first_receive_to_first_ready_ns": 19026,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 905181,
+      "native_callback_sum_ns": 919503
+    },
+    {
+      "frame": 34,
+      "first_receive_to_first_publish_ns": 20348,
+      "first_publish_to_first_ready_ns": 60,
+      "first_receive_to_first_ready_ns": 20408,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 780734,
+      "native_callback_sum_ns": 791640
+    },
+    {
+      "frame": 35,
+      "first_receive_to_first_publish_ns": 10279,
+      "first_publish_to_first_ready_ns": 30,
+      "first_receive_to_first_ready_ns": 10309,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 857244,
+      "native_callback_sum_ns": 878116
+    },
+    {
+      "frame": 36,
+      "first_receive_to_first_publish_ns": 19006,
+      "first_publish_to_first_ready_ns": 60,
+      "first_receive_to_first_ready_ns": 19066,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 952403,
+      "native_callback_sum_ns": 967730
+    },
+    {
+      "frame": 37,
+      "first_receive_to_first_publish_ns": 18895,
+      "first_publish_to_first_ready_ns": 60,
+      "first_receive_to_first_ready_ns": 18955,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 761524,
+      "native_callback_sum_ns": 776302
+    },
+    {
+      "frame": 38,
+      "first_receive_to_first_publish_ns": 10119,
+      "first_publish_to_first_ready_ns": 41,
+      "first_receive_to_first_ready_ns": 10160,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 1000874,
+      "native_callback_sum_ns": 1016724
+    },
+    {
+      "frame": 39,
+      "first_receive_to_first_publish_ns": 18916,
+      "first_publish_to_first_ready_ns": 60,
+      "first_receive_to_first_ready_ns": 18976,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 1020832,
+      "native_callback_sum_ns": 1037122
+    },
+    {
+      "frame": 40,
+      "first_receive_to_first_publish_ns": 33052,
+      "first_publish_to_first_ready_ns": 120,
+      "first_receive_to_first_ready_ns": 33172,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 813711,
+      "native_callback_sum_ns": 831484
+    },
+    {
+      "frame": 41,
+      "first_receive_to_first_publish_ns": 9909,
+      "first_publish_to_first_ready_ns": 30,
+      "first_receive_to_first_ready_ns": 9939,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 1024306,
+      "native_callback_sum_ns": 1042620
+    },
+    {
+      "frame": 42,
+      "first_receive_to_first_publish_ns": 10460,
+      "first_publish_to_first_ready_ns": 30,
+      "first_receive_to_first_ready_ns": 10490,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 652019,
+      "native_callback_sum_ns": 663609
+    },
+    {
+      "frame": 43,
+      "first_receive_to_first_publish_ns": 19065,
+      "first_publish_to_first_ready_ns": 61,
+      "first_receive_to_first_ready_ns": 19126,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 1100831,
+      "native_callback_sum_ns": 1120750
+    },
+    {
+      "frame": 44,
+      "first_receive_to_first_publish_ns": 10409,
+      "first_publish_to_first_ready_ns": 30,
+      "first_receive_to_first_ready_ns": 10439,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 917960,
+      "native_callback_sum_ns": 935178
+    },
+    {
+      "frame": 45,
+      "first_receive_to_first_publish_ns": 18906,
+      "first_publish_to_first_ready_ns": 120,
+      "first_receive_to_first_ready_ns": 19026,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 1045575,
+      "native_callback_sum_ns": 1063151
+    },
+    {
+      "frame": 46,
+      "first_receive_to_first_publish_ns": 33012,
+      "first_publish_to_first_ready_ns": 110,
+      "first_receive_to_first_ready_ns": 33122,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 830942,
+      "native_callback_sum_ns": 847094
+    },
+    {
+      "frame": 47,
+      "first_receive_to_first_publish_ns": 9899,
+      "first_publish_to_first_ready_ns": 30,
+      "first_receive_to_first_ready_ns": 9929,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 1019595,
+      "native_callback_sum_ns": 1036210
+    },
+    {
+      "frame": 48,
+      "first_receive_to_first_publish_ns": 33082,
+      "first_publish_to_first_ready_ns": 160,
+      "first_receive_to_first_ready_ns": 33242,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 710469,
+      "native_callback_sum_ns": 726051
+    },
+    {
+      "frame": 49,
+      "first_receive_to_first_publish_ns": 19186,
+      "first_publish_to_first_ready_ns": 60,
+      "first_receive_to_first_ready_ns": 19246,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 767594,
+      "native_callback_sum_ns": 781092
+    },
+    {
+      "frame": 50,
+      "first_receive_to_first_publish_ns": 19797,
+      "first_publish_to_first_ready_ns": 60,
+      "first_receive_to_first_ready_ns": 19857,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 1151112,
+      "native_callback_sum_ns": 1169780
+    },
+    {
+      "frame": 51,
+      "first_receive_to_first_publish_ns": 10169,
+      "first_publish_to_first_ready_ns": 30,
+      "first_receive_to_first_ready_ns": 10199,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 637494,
+      "native_callback_sum_ns": 648184
+    },
+    {
+      "frame": 52,
+      "first_receive_to_first_publish_ns": 19136,
+      "first_publish_to_first_ready_ns": 60,
+      "first_receive_to_first_ready_ns": 19196,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 796591,
+      "native_callback_sum_ns": 809525
+    },
+    {
+      "frame": 53,
+      "first_receive_to_first_publish_ns": 19827,
+      "first_publish_to_first_ready_ns": 70,
+      "first_receive_to_first_ready_ns": 19897,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 1005233,
+      "native_callback_sum_ns": 1021753
+    },
+    {
+      "frame": 54,
+      "first_receive_to_first_publish_ns": 19035,
+      "first_publish_to_first_ready_ns": 61,
+      "first_receive_to_first_ready_ns": 19096,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 1065260,
+      "native_callback_sum_ns": 1081604
+    },
+    {
+      "frame": 55,
+      "first_receive_to_first_publish_ns": 18885,
+      "first_publish_to_first_ready_ns": 60,
+      "first_receive_to_first_ready_ns": 18945,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 783416,
+      "native_callback_sum_ns": 796550
+    },
+    {
+      "frame": 56,
+      "first_receive_to_first_publish_ns": 19907,
+      "first_publish_to_first_ready_ns": 70,
+      "first_receive_to_first_ready_ns": 19977,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 1151438,
+      "native_callback_sum_ns": 1169236
+    },
+    {
+      "frame": 57,
+      "first_receive_to_first_publish_ns": 18896,
+      "first_publish_to_first_ready_ns": 70,
+      "first_receive_to_first_ready_ns": 18966,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 922537,
+      "native_callback_sum_ns": 937149
+    },
+    {
+      "frame": 58,
+      "first_receive_to_first_publish_ns": 19636,
+      "first_publish_to_first_ready_ns": 61,
+      "first_receive_to_first_ready_ns": 19697,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 785997,
+      "native_callback_sum_ns": 799423
+    },
+    {
+      "frame": 59,
+      "first_receive_to_first_publish_ns": 9999,
+      "first_publish_to_first_ready_ns": 40,
+      "first_receive_to_first_ready_ns": 10039,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 796903,
+      "native_callback_sum_ns": 810070
+    },
+    {
+      "frame": 60,
+      "first_receive_to_first_publish_ns": 18996,
+      "first_publish_to_first_ready_ns": 70,
+      "first_receive_to_first_ready_ns": 19066,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 1087337,
+      "native_callback_sum_ns": 1103963
+    },
+    {
+      "frame": 61,
+      "first_receive_to_first_publish_ns": 33031,
+      "first_publish_to_first_ready_ns": 111,
+      "first_receive_to_first_ready_ns": 33142,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 823345,
+      "native_callback_sum_ns": 843258
+    },
+    {
+      "frame": 62,
+      "first_receive_to_first_publish_ns": 10300,
+      "first_publish_to_first_ready_ns": 30,
+      "first_receive_to_first_ready_ns": 10330,
+      "receives_this_frame_before_first_ready": 1,
+      "prior_frame_rows_not_yet_returned_at_first_receive": 0,
+      "available_before_new_frame_reservation": 64,
+      "julia_body_sum_ns": 1059020,
+      "native_callback_sum_ns": 1077127
+    }
+  ],
+  "software_validation": {
+    "date": "2026-09-30",
+    "worktree": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission",
+    "branch": "codex/classic-row-admission",
+    "base_revision": "83e3c7bfdd93ceaf0e8898ba7be2ebde1bb64f4d",
+    "revision": "10388618bbf8493612cb1d852ccc0e018faa3c87",
+    "commits": [
+      "10388618bbf8493612cb1d852ccc0e018faa3c87 Prefer two frames of bounded row buffer headroom",
+      "9f3c321580775546a5dd4c749101bef2de0497ec Notify row publication before draining later packets"
+    ],
+    "status": "clean",
+    "changed_files": [
+      "spa/plugins/heart/source.c",
+      "spa/plugins/heart/test-source.c"
+    ],
+    "source_sha256": {
+      ".gitignore": "d1d8293048218cfad48d825130f797b42c377f8948b32ebcff9cd83417e91cbb",
+      "LICENSE": "4b63ac81b97e7ffe88412722f784707e2e30e315467a9220f43d0a4176d8a531",
+      "README.md": "e750caca0353a8575aff0fb0867bb63f1620afe0ee9c50e69d23fa85a7b4b79d",
+      "docs/REVIEW.md": "9663e262a9a1a78daf94095519e341010ec75d43ddc9e50ebdeffbc63ba45a87",
+      "docs/copper-startup-diagnostics-20260926.md": "a1ca8f10a29b2884e09eada8f04a044861eb5e4f2214394398cd65ad689a8fab",
+      "docs/fullframe-buffer-delivery-20260929.md": "968a6dc264996403d8635b2d55f039ee2b27bc1e25b02530ca485d82a3407e92",
+      "docs/protocol-baseline.md": "413fdcae51df7359cbdd874959aadeeb415e55b3468fed8f57dd36d223c81ec5",
+      "docs/review/ready-retry-evidence/fail-before.log": "82be771e7837ba42099e1462d647ff155775736aebc0d199903581f953500bad",
+      "docs/review/ready-retry-evidence/trace-validation.log": "ee768c464bd322d73d1f7587afaf06d6054721a2c012c4b755f9045525584eed",
+      "docs/review/ready-retry-evidence/validation.json": "198d5e2d0ab59f9a2650fa8690c28f0791c10d19b50cbabe048b9db3e830101e",
+      "docs/row-block-output-20260925.md": "e3dbb04345eb8a7ef453db2133bd5d530d2228c74010ca839166c106eecfb17c",
+      "docs/std-dm-protocol-baseline.md": "19cacc2a545161e3cf5fee5b99f741ac3b154f4f17530ed94774e573125cb43b",
+      "docs/std-dm-review.md": "a02cae113a77dce2cd876ea73f80d3952e3f3a761d45df6d7527252fd64a1834",
+      "docs/std-wfs-sink-review.md": "b03ad77f0f168402f0ab670c1062d9c4c8e0fc40a3fc2437bf4d101703b75ca8",
+      "include/pipewireao-plugins/heart.h": "0349297651179ca7f76b9e2aeeb85b6b9ac707037d34c7b8d149cb6b7740d7b5",
+      "meson.build": "2775a6c14d9fc04ad95a3edc3a8fd8ee2adc2b6d3675a3acb3343c4ee5280a78",
+      "meson_options.txt": "357a551b19c50a72ea77690609009e939224470c200f584c8ff0b5dd74d5a593",
+      "pipewireao-spa-plugin-heart-0.1.pc.in": "35f76b2712203c22c7ea925aacfb6ecf91dd2700df2c6601d86119f8398acb2c",
+      "spa/plugins/heart/dm-protocol.c": "c8c391c75396cbfd30e11a22d5240e857bf7e98c7d52d0754d8c55b509c948de",
+      "spa/plugins/heart/dm-protocol.h": "61a7d817e7e8c5e655cbf95cf045d45178ab3ea83cd48873be8143f1dfefd64e",
+      "spa/plugins/heart/dm-source.c": "52c25a3dcb362735abe7a108cd097ca3751e4298258380ad8fea9ff7d8cb1842",
+      "spa/plugins/heart/heart.h": "3c45b29685bae020f98eafbf9873d99041b3ca75fadd426e8cf201b53a314cbb",
+      "spa/plugins/heart/meson.build": "74d94754cbdab1a876367dd8de9d2ef792b9be5687ee13dd960c348e6823b648",
+      "spa/plugins/heart/plugin.c": "580ebddaea9aca4b94ece1ae73ac2fb954d9194174ff7391862f02ba4429054d",
+      "spa/plugins/heart/protocol.c": "87fe9009e9d4f58894292ff50c10d0e135db19dab2b360299554b83f5c5a0e8c",
+      "spa/plugins/heart/protocol.h": "85c9d7a98167964e51ee363b43d32cb938c1f293355ed778fa2097fb491b6e5c",
+      "spa/plugins/heart/rtc-trace.c": "62ad86e4c54d8f31317b6956a1c7d08e521bc5c8588db0a6258ef74771f2bb16",
+      "spa/plugins/heart/rtc-trace.h": "5be875fda9bc605176f1b0920d814703bbacc949a6e146b2542363d9f25fb70c",
+      "spa/plugins/heart/sink.c": "99c8005d77ac1909d19f78943b187ced41b01ed9a38c84f99df9af7bddaf30d3",
+      "spa/plugins/heart/source.c": "0669176f7190f351b9f5024814e55e0ed2cd58b701026d14f46e8509558c0e1c",
+      "spa/plugins/heart/test-dm-protocol.c": "9eaa9ec986e2bac043a95c4c376db2117459077d78c025c8c39aa4a36cb8dd77",
+      "spa/plugins/heart/test-protocol.c": "9b715fff179c4c78666e0bbba11a7cc9a65cdec4269ab5314ca981e27fd2b296",
+      "spa/plugins/heart/test-sink.c": "2627c659ada7638a02db77759ab2d0627e01085b6d049b7ca1ef6ffacf0d5b41",
+      "spa/plugins/heart/test-source.c": "33905940c6b440f15ed6d2e1cdefb4f2612129d672fabf06640a3a6d7f6baee7",
+      "spa/plugins/heart/test-wfs-sink.c": "b060bca976bf1df62668511fe9e3b0a7df6b05e67505105ddea5999cda7bc063",
+      "spa/plugins/heart/wfs-sink.c": "4b905ca6563a8f4768e2651f78a6e916c17e6142c6125ee966baf82b64ddaff7",
+      "spa/plugins/heart/wire.c": "099c457fde670008747a50856274ba081f6d54ef15315749d7531d5baacb4aba",
+      "spa/plugins/heart/wire.h": "a8439c6373b9ee0b47b3dd8cbfbdff572c2cb9180a731bb3cf2c5805288fb7d0"
+    },
+    "original_main_status": "",
+    "cpu": 14,
+    "jobs": 1,
+    "live_runs": false,
+    "shared_campaign_ports_used": false,
+    "opt_writes": false,
+    "science_changes": false,
+    "independent_review": {
+      "reviewer": "/root/classic_acceptance",
+      "early_ready": "no blocker; POLLIN test strengthening applied",
+      "preference": "no blocker; profile blocks<=64 bounds doubling<=128; original min/max compatibility and full-frame8 retained"
+    },
+    "pkgconfig": {
+      "libspa-ao-0.2": {
+        "version": "0.2",
+        "pc_directory": "/opt/pipewireao/lib/x86_64-linux-gnu/pkgconfig",
+        "cflags": "-I/opt/pipewireao/include/spa-ao-0.2 -D_REENTRANT -fno-strict-aliasing -fno-strict-overflow"
+      },
+      "libpipewire-ao-0.3": {
+        "version": "1.7.0",
+        "pc_directory": "/opt/pipewireao/lib/x86_64-linux-gnu/pkgconfig",
+        "cflags": "-I/opt/pipewireao/include/pipewire-ao-0.3 -I/opt/pipewireao/include/spa-ao-0.2 -D_REENTRANT -fno-strict-aliasing -fno-strict-overflow"
+      }
+    },
+    "pkgconfig_sha256": {
+      "/opt/pipewireao/lib/x86_64-linux-gnu/pkgconfig/libspa-ao-0.2.pc": "24882ae98930a233ee722e9e61af8d4092935601a6647f510afbf6bd131c4ca2",
+      "/opt/pipewireao/lib/x86_64-linux-gnu/pkgconfig/libpipewire-ao-0.3.pc": "8ce1d07173471cf6dbb1122d5dc8d3b7cccdcddd3e63d6feb95fba9bfff2125d"
+    },
+    "used_installed_header_sha256": {
+      "/opt/pipewireao/include/spa-ao-0.2/spa/buffer/buffer.h": "14a18a1bd0f499b78cc54217161867da06ffab33f488af5a5d0acb35daafe0da",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/buffer/meta.h": "b2d8c50170378aaea9af85e45122f80bfbf6fd0380941060d114eb3ab316da74",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/monitor/device.h": "fd25f90ff95ded0d0eb398680c3551d43e0a79624ecdc58c1f077a1f6f09fb77",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/node/command.h": "6f85bdd798425e780be666b621c33f15aa0c0e568d646de1749786d9dd5f51a4",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/node/event.h": "572e47d09d9418df364c55ea220371a8488c7d0c4f57ccae59e6d41d7fcc7017",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/node/io.h": "3b93148d386d077b6b76593455df202d342dcb50e4c0184ec3510bfd2722cdd0",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/node/keys.h": "f4ece0e39d5ab56e58b75724108b39d10aa6ac7eb03bd21f3bec9f3778d02178",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/node/node.h": "f440b78521f63eb61652906471e2c2a47d567064a3e290d41c73cfc64abfd5fd",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/node/utils.h": "c21aa7af115aea0ccfd99c6a566a5f528fc797e5ea258f36a0cd842ec3f9bce0",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/param/buffers.h": "294ab47475f5161ed7391db639acd4642e5b85315487c86cc166c81f5071074c",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/param/format-utils.h": "2b9e6bef23b8232ebebf4b560374abc5a48f9dc2fad1089848a6321007366315",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/param/format.h": "9f72233983e5b1c0b4477ff8d80857b9c29100328531622d30b9d744a988a7e3",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/param/ndarray-utils.h": "c50c604802da85ce0867afd4b0fbe49d1a02fbd6c18e69f06b9fdca0a0fc8659",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/param/ndarray.h": "7fba1bc3ed53646ac3ddde07f7409e2589046d89e32ed83a4f480bca8b663c12",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/param/param.h": "760fbfe692ce17cf41061bb02205fdd6ffe35dcd87e0ce88a71d390e65eb603d",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/param/port-config.h": "d2d92a7f6258653500324427fec50a71b79b2bb5f890d80f55e2f63a57ca6206",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/param/profile.h": "695de275bd9b6b21741fe5488b80ffc2c665d169638179d69584f6f7d998ee9f",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/param/props.h": "35f8af4e5f26bc89367ed506332842891b8a822ae9747e2878439d2891152e80",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/param/route.h": "8a5dc942459140a0b1631fb593a264f5c9f6b91b9e38fc9a6ae5df86e55006b6",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/pod/body.h": "52cf6317a22f28840164ae9de167b35e7321d025b42c8aeaadfd68955d6d623d",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/pod/builder.h": "f6b6ac1581f70e448d6bdb26c9fe623e0630ded45423f4fce896c77e92fad7aa",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/pod/command.h": "0fb87c225417a34b41c29140996c45d3d61fc923263e31794ba8a51b0dbfa7f4",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/pod/compare.h": "947295cd7dd4625ec90a84f4b64f7ed387456adf300a233396dfcb7207651a88",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/pod/dynamic.h": "db228419eb2f53034214e0b01cc017678c9c402f1d777d2821dd9b1ff08c3f13",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/pod/event.h": "f2cd930119aaaffdd5777bb633ab64ed3bdbceb22e936f451a4443c9f2b5061b",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/pod/filter.h": "38afe9dd082643a9a8d1dd344ca32efa2cb7d34714e613d829940ac5edb75ce9",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/pod/iter.h": "73af7a94af921f4aed1e46fa423ce8e7e64807083277f7a730fd6a06c32f83be",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/pod/parser.h": "237c99ba5ab641dbf5d897fc1715a00f016f3954d0c356d880aa021d992afad5",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/pod/pod.h": "c7849f6bbcb343e52f0105a18d3db82248b17d9660f6215a422386b6ac9dadb3",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/pod/vararg.h": "1f3d1b396f61272ebbacbdb3b897b134407529c0586e08ca34be3f35699b05b8",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/support/log.h": "7a13eafcbe6018f2b6cd471e8c088c1b4c14ea0635018ab729c9fba5874dfde0",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/support/loop.h": "88bc3b3a6fbec373e15cf863c5997897ea3e077b0b19d9b71cba0e0fb6b812b0",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/support/plugin.h": "96ce7797e67d0a6d7f8a771bc9a2a33ad1cc48158974d58e3b7d485c518d140b",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/support/system.h": "82e173185ad2ef2e7dc6e9e549a1c449fcb2eaa189efcef2cbc4c883a0e4b850",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/utils/atomic.h": "e91b6303b2a7f8a689ef088a12ebdbd10ed378aa911f017994721b27de989773",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/utils/cleanup.h": "e377bc00f3a0f211f97f12b4d9dbdde9be42e7f2392fd5a461bf53c93b69f4d8",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/utils/defs.h": "ffc7e8a49105d31b62681dc0a0cffaff72c072cafee14bece607bc861a1b9ece",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/utils/dict.h": "a36b37d65ea1c6b364e05ecf9dfa7b180b8666406b44591a664adf113bf73f5e",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/utils/hook.h": "e91f89790372319933a4ca5cc852ba9612bf0d08751cd1ebda1c895db2b1eb2a",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/utils/keys.h": "62ca666248eb33e5da803fb6a5855e21178707bb24657af1debaf17bd34e0419",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/utils/list.h": "72ef0f15716952de2e3533f8751e7a18eb6d6f56d21595c71bc98b6200aaddfc",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/utils/result.h": "023dd471a92b64a8d22b8e41cf90706365a5b4da837467038bd390870677de49",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/utils/string.h": "40684af8cb2ac77903e0a26c775afe78397bd82e314e4199f2b3cfdd002c04f7",
+      "/opt/pipewireao/include/spa-ao-0.2/spa/utils/type.h": "1de788d694a42c672fb08785c354b909558aa2d25186253de57cc9fc9d477475"
+    },
+    "compiler": "cc (Debian 14.2.0-19) 14.2.0",
+    "builds": {
+      "normal": {
+        "directory": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/build-classic-release-20260930",
+        "options": {
+          "buildtype": "release",
+          "debug": false,
+          "optimization": "3",
+          "c_args": [],
+          "prefix": "/home/dgamroth/.cache/heart-row-admission-prefix",
+          "tests": "enabled"
+        },
+        "dso": {
+          "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/build-classic-release-20260930/spa/plugins/heart/libspa-heart.so",
+          "sha256": "efaf3a810284a6a39b9c84fb433cf9669a638da14b41cd528b8a18cc593ce7d6",
+          "bytes": 354072
+        },
+        "compile_commands_sha256": "eef73ce24abfea96aae334fde03ec225a0440450f893f4e3398fb0bb3c8aea79",
+        "source_compile_command": {
+          "directory": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/build-classic-release-20260930",
+          "command": "cc -Ispa/plugins/heart/libspa-heart.so.p -Ispa/plugins/heart -I../spa/plugins/heart -I../include -I/opt/pipewireao/include/spa-ao-0.2 -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -Wall -Winvalid-pch -Wextra -Wpedantic -Werror -std=c11 -O3 -D_GNU_SOURCE -fPIC -pthread -D_REENTRANT -fno-strict-aliasing -fno-strict-overflow -isystem/opt/pipewireao/include/spa-ao-0.2 -Wno-pedantic -MD -MQ spa/plugins/heart/libspa-heart.so.p/source.c.o -MF spa/plugins/heart/libspa-heart.so.p/source.c.o.d -o spa/plugins/heart/libspa-heart.so.p/source.c.o -c ../spa/plugins/heart/source.c",
+          "file": "../spa/plugins/heart/source.c",
+          "output": "spa/plugins/heart/libspa-heart.so.p/source.c.o"
+        },
+        "tests": {
+          "passed": 5,
+          "failed": 0,
+          "log": "/home/dgamroth/.cache/heart-row-admission-final-release-tests.log",
+          "sha256": "a62593378c1b6c0e4b03fc88a72b531a1ef8b48f93499cbe403918f61bff29b5",
+          "native_testlog": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/build-classic-release-20260930/meson-logs/testlog.txt",
+          "native_testlog_sha256": "4ac4391e9403d02d07f53079d82f5cf453c06b5d2189a9c309988e29c4718abc"
+        },
+        "source_test_binary_sha256": "4819a618ab2745b1e9b5db4952eaa8be5753babe76449519a59173d6df9da752",
+        "commands": [
+          "PKG_CONFIG_PATH=/opt/pipewireao/lib/x86_64-linux-gnu/pkgconfig taskset -c 14 meson setup build-classic-release-20260930 --buildtype=release -Dtests=enabled --prefix=/home/dgamroth/.cache/heart-row-admission-prefix",
+          "taskset -c 14 ninja -C build-classic-release-20260930 -j1",
+          "taskset -c 14 meson test -C build-classic-release-20260930 --no-rebuild --num-processes 1 --print-errorlogs"
+        ]
+      },
+      "macro": {
+        "directory": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/build-classic-diagnostic-20260930",
+        "options": {
+          "buildtype": "release",
+          "debug": false,
+          "optimization": "3",
+          "c_args": [
+            "-DHEART_ENABLE_DIAGNOSTIC_TRACE"
+          ],
+          "prefix": "/home/dgamroth/.cache/heart-row-admission-prefix",
+          "tests": "enabled"
+        },
+        "dso": {
+          "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/build-classic-diagnostic-20260930/spa/plugins/heart/libspa-heart.so",
+          "sha256": "f30d9e6d8dedde4f5ea473b86b5498dd8dcb38c662fba5455a83ca686cbce93e",
+          "bytes": 358680
+        },
+        "compile_commands_sha256": "0b0bae3609b21dd9de19fa0ba833ba4e2b259dbb7e72b2d106688bd039ece99c",
+        "source_compile_command": {
+          "directory": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/build-classic-diagnostic-20260930",
+          "command": "cc -Ispa/plugins/heart/libspa-heart.so.p -Ispa/plugins/heart -I../spa/plugins/heart -I../include -I/opt/pipewireao/include/spa-ao-0.2 -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -Wall -Winvalid-pch -Wextra -Wpedantic -Werror -std=c11 -O3 -D_GNU_SOURCE -DHEART_ENABLE_DIAGNOSTIC_TRACE -fPIC -pthread -D_REENTRANT -fno-strict-aliasing -fno-strict-overflow -isystem/opt/pipewireao/include/spa-ao-0.2 -Wno-pedantic -MD -MQ spa/plugins/heart/libspa-heart.so.p/source.c.o -MF spa/plugins/heart/libspa-heart.so.p/source.c.o.d -o spa/plugins/heart/libspa-heart.so.p/source.c.o -c ../spa/plugins/heart/source.c",
+          "file": "../spa/plugins/heart/source.c",
+          "output": "spa/plugins/heart/libspa-heart.so.p/source.c.o"
+        },
+        "tests": {
+          "passed": 5,
+          "failed": 0,
+          "log": "/home/dgamroth/.cache/heart-row-admission-final-macro-tests.log",
+          "sha256": "6d992f69e5251b05307de36d261e32605b3913da68ddd05c1f2e3d2af5116e30",
+          "native_testlog": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/build-classic-diagnostic-20260930/meson-logs/testlog.txt",
+          "native_testlog_sha256": "bcb2a4883bae5212135047cbb897d9c802955ae8e96f41018efeb203f510fbda"
+        },
+        "source_test_binary_sha256": "4819a618ab2745b1e9b5db4952eaa8be5753babe76449519a59173d6df9da752",
+        "commands": [
+          "PKG_CONFIG_PATH=/opt/pipewireao/lib/x86_64-linux-gnu/pkgconfig taskset -c 14 meson setup build-classic-diagnostic-20260930 --buildtype=release -Dc_args=-DHEART_ENABLE_DIAGNOSTIC_TRACE -Dtests=enabled --prefix=/home/dgamroth/.cache/heart-row-admission-prefix",
+          "taskset -c 14 ninja -C build-classic-diagnostic-20260930 -j1",
+          "HEART_RTC_TRACE_DIR=/home/dgamroth/.cache/heart-row-admission-unit-traces-final taskset -c 14 meson test -C build-classic-diagnostic-20260930 --no-rebuild --num-processes 1 --print-errorlogs"
+        ]
+      }
+    },
+    "fail_before": {
+      "burst": {
+        "path": "/home/dgamroth/.cache/heart-row-admission-burst-before.log",
+        "sha256": "345b2f8918f1ca5307ca2e5983e28e7f276ee049a7aac5a3c78cf26004c4c38d",
+        "observation": "First ready observes received2 and fails expected1; patched observes1 and next callback consumes second packet with exact bytes/IDs"
+      },
+      "pool": {
+        "path": "/home/dgamroth/.cache/heart-row-admission-pool-classic-before.log",
+        "sha256": "5149c7a8c5c90750d1a23e6d517c73d81d60272922d083730c5f2808d5f5b523",
+        "observation": "Same final test binary with preserved base83e3 macro DSO observes preferred32/min32/max64 for exact352x352/11 profile; patched observes64/min32/max64",
+        "base_dso": {
+          "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart/build-classic-diagnostic-20260930/spa/plugins/heart/libspa-heart.so",
+          "sha256": "080a8e7db589fa2e191ba6319c75496684070c6035bd8756aaa88f554e0e70a6",
+          "bytes": 358672
+        }
+      }
+    },
+    "scope": [
+      "Early return only after newly published HAVE_DATA; no global one-datagram callback bound while another row is held",
+      "No recursive per-packet ready calls; existing single ready notification and release/retry callbacks retained",
+      "Row default min(64,max(8,2*blocks)); original one-frame minimum and maximum64 retained; full-frame default8 unchanged",
+      "Blocks>32 provide bounded partial overlap; no two-full-frame claim",
+      "Software unit evidence only; actual negotiated pool, live exact delivery and capacity remain primary-agent validation"
+    ],
+    "unit_trace_export": {
+      "collected": false,
+      "reason": "Requested final unit trace directory was not created beforehand; trace init did not produce CSV. Macro-compiled functional transport tests passed. No diagnostic record-count or omitted-count claim from these unit runs. Root live diagnostic uses an existing directory."
+    },
+    "logs": {
+      "/home/dgamroth/.cache/heart-row-admission-pool-final-build.log": "c8028186517889f29d65cedc4fdbad1a5b7b9d1ea2ea9c736e5b49e1427a97d5",
+      "/home/dgamroth/.cache/heart-row-admission-burst-final.log": "7db22d22778bf3ebe495f332398da648542235269fa74526e4dedd3566c32fd5",
+      "/home/dgamroth/.cache/heart-row-admission-pool-classic-before.log": "5149c7a8c5c90750d1a23e6d517c73d81d60272922d083730c5f2808d5f5b523",
+      "/home/dgamroth/.cache/heart-row-admission-final-release-tests.log": "a62593378c1b6c0e4b03fc88a72b531a1ef8b48f93499cbe403918f61bff29b5",
+      "/home/dgamroth/.cache/heart-row-admission-burst-after.log": "7db22d22778bf3ebe495f332398da648542235269fa74526e4dedd3566c32fd5",
+      "/home/dgamroth/.cache/heart-row-admission-final-release-build.log": "c8028186517889f29d65cedc4fdbad1a5b7b9d1ea2ea9c736e5b49e1427a97d5",
+      "/home/dgamroth/.cache/heart-row-admission-pool-before-build.log": "c8028186517889f29d65cedc4fdbad1a5b7b9d1ea2ea9c736e5b49e1427a97d5",
+      "/home/dgamroth/.cache/heart-row-admission-burst-after-build.log": "bd5ca6c1a49b4140c7841c0c58205e9687b49c732c0963fbfdd49b919e6244c5",
+      "/home/dgamroth/.cache/heart-row-admission-pool-after-build.log": "bd5ca6c1a49b4140c7841c0c58205e9687b49c732c0963fbfdd49b919e6244c5",
+      "/home/dgamroth/.cache/heart-row-admission-burst-before.log": "345b2f8918f1ca5307ca2e5983e28e7f276ee049a7aac5a3c78cf26004c4c38d",
+      "/home/dgamroth/.cache/heart-row-admission-final-macro-build.log": "b4ed761e966c22d16e01e89370ed12939c52c1ae3853fbab314abfeafcd79bf6",
+      "/home/dgamroth/.cache/heart-row-admission-release-build.log": "18bbb436d3d7e2a79925dbaf0747c9ba43071f2be74d584cb50e3ed44550f693",
+      "/home/dgamroth/.cache/heart-row-admission-pool-before.log": "4c2b99fb415773804f07e251da7eed0fa4bbdd1982736b4d5a87e34a173f2f6e",
+      "/home/dgamroth/.cache/heart-row-admission-burst-final-build.log": "c8028186517889f29d65cedc4fdbad1a5b7b9d1ea2ea9c736e5b49e1427a97d5",
+      "/home/dgamroth/.cache/heart-row-admission-release-setup.log": "6be7b2adb982f8398afbe4796820a914d2959676f982df64dbac21931070c534",
+      "/home/dgamroth/.cache/heart-row-admission-pool-after.log": "7db22d22778bf3ebe495f332398da648542235269fa74526e4dedd3566c32fd5",
+      "/home/dgamroth/.cache/heart-row-admission-final-macro-tests.log": "6d992f69e5251b05307de36d261e32605b3913da68ddd05c1f2e3d2af5116e30",
+      "/home/dgamroth/.cache/heart-row-admission-burst-macro-after.log": "511d4626bc8e94221915c4a47bea5d3d390018650ab7b5945e81571c0935b893",
+      "/home/dgamroth/.cache/heart-row-admission-diagnostic-setup.log": "7d4a95df9ae528f5d4af42dea325cc3593877039f6439084c3bcfd0fe9754c58",
+      "/home/dgamroth/.cache/heart-row-admission-diagnostic-build.log": "f9084d130f943ec522c3c514b8fe1610598b5c6fb2ec8f6b437fdff2154e020f",
+      "/home/dgamroth/.cache/heart-row-admission-pool-final.log": "7db22d22778bf3ebe495f332398da648542235269fa74526e4dedd3566c32fd5"
+    }
+  },
+  "analysis_script_sha256": "d0a2f38aa98562a4dcdd5ba92a45bc967c8a39f131d642d702a5a99e83bf772c",
+  "input_sha256": {
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-progressive-requal/benchmark/classic_wire.py": "fd5df2da977703c4dcf74c85c8a27368287c22a9924e32a623dd29421951e9e2",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-fixed63-250hz-20260930/report.json": "656a76e09a0e7d9d4586cca6748ba56233cabf039ea74ed2fd691279613a2504",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-fixed63-250hz-20260930/node-report.json": "ea8f7c3eef026d318a168364f1f3f32bb87091137b896aa8c26b78cf0ef9d8fd",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-fixed63-250hz-20260930/diagnostic-library.json": "a4253a5d06507736c175bc998a82e0aa5742e0a7d8c2f75313808fbd01315230",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-fixed63-250hz-20260930/physical-summary.json": "4b80c16d765a2d9c19081bc25a0390df9008042489787e2aa7ba6658ebe7b715",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-fixed63-250hz-20260930/dm-summary.json": "68f8778e9781c66a426d15431eaa7c8f74ccf484a16704d39629244c7605372a",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-fixed63-250hz-20260930/arithmetic-acceptance.json": "171b6311d13a4c8789369dd5b6e93d92ed7419eb036b464752133ea9ad3f03d4",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-fixed63-250hz-20260930/numerical-summary.json": "79d10bda9721af33148f273a97e358e5db8451f9e81e882709cc976785404b47",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-fixed63-250hz-20260930/dm-wire-um.f32": "8c950c8fe2db85b4fa5ad2bc95e733c790bb9270fc624c28c65787c35b227f70",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-fixed63-250hz-20260930/native-ingress-trace/source-rtc-heart-wfs-row-source-3543704-1.csv": "eb6e6fde75fb6deae6c5b7a96704038b22f68a9eadec6e3f9baaa8e1b4b2f773",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-fixed63-250hz-20260930/native-ingress-trace/sink-rtc-heart-std-dm-sink-3543704-2.csv": "5646501f3d5b7ea985dbf7e11a7df1ac5ac7b9843480402ab28d8a0a19bd2bdd",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-fixed63-250hz-20260930/native-ingress-trace/ndarray-filter-3543706-0.csv": "8b84f0eb68648bd66142922b4c0e83be167ae3437bc0ad652a04bf0ebca7c239",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-fixed63-250hz-20260930/native-ingress-trace/ndarray-filter-3544267-0.csv": "99bf017f98478e127c5fee5cd0f31e8fd63d1b4ba89639edfebf9f509f44f80e",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-fixed63-250hz-20260930/callback-trace.csv": "9bf2a090df9864f25b74a9a0bb299b594a44cb2ee77343efbb7140972264ee32",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-fixed63-250hz-20260930/adapter-sequences.csv": "eab0310c4e63882f53273204d301ff916ead3bca4381bfd418ce9bb24cd2990d",
+    "/home/dgamroth/.cache/classic-heart-row-admission-candidate-20260930.json": "cdd05a787cec45629c5ddd3f39888100155361b8dc9488f224f47132666bcaf1",
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/build-classic-diagnostic-20260930/spa/plugins/heart/libspa-heart.so": "f30d9e6d8dedde4f5ea473b86b5498dd8dcb38c662fba5455a83ca686cbce93e",
+    "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-fgn-trace/build-rtc-trace/src/pipewire/libpipewire-ao-0.3.so.0.1700.0": "194fbdba311b7fd92854e86d4ff7ccc242bf48c6d8054b4f8a4a9f341de1c148",
+    "/home/dgamroth/workspaces/codex/pipewire/pipewire-classic-fgn-trace/build-rtc-trace/src/modules/libpipewire-module-ndarray-filter-chain.so": "29da924ba2b0303d778cb5d4f0bb6c962b29052a02466b1a027111866d302bf4",
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart-row-admission/spa/plugins/heart/source.c": "0669176f7190f351b9f5024814e55e0ed2cd58b701026d14f46e8509558c0e1c",
+    "/home/dgamroth/.cache/rtc-classic-corpus63-20260930/input.fits": "b92a23d7a78817ead08dcd1c1110833818abbde95ba931884ab7e197c200a174",
+    "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so": "ebcc9295eba0e60f35422d5ce0761a23f91b1a8d56c97f65eb6330138f986ecd",
+    "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator": "4930489f2655da4c33fdabc47ee96a7d051ea125e8492a8f1923c0ee0ed9580b",
+    "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4",
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-progressive-requal/benchmark/run_classic_ingress_trace.py": "cfc56f2168dc2710a4f0c99f15e98a4affdd67c8e2857e451cf4314b4bc1ff86",
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-progressive-requal/benchmark/run_classic_live.py": "3db912f58025a62894a5af1fa1ca55f45cb947e4245aeda3166b867b9dca43eb",
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-progressive-requal/benchmark/run_classic_campaign.py": "94781bb56e0237ea222078e41a43aa1854ab89beb6137200aa4013cb5f310910",
+    "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+    "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+    "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+    "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+    "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+    "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+    "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+    "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+    "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+    "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+    "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+    "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+    "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+    "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/calibrated_pixels.f32le": "1f98873b7a7209bf7b716384d16b7534f9561bfe1db4ed4bcff2d547b6f29737",
+    "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/raw-frames.u16le": "1071336cb367f16ac030e5f0f80d8a978c0196088e6a48a9026371c170bf70cf",
+    "/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture/scalars.f32le": "efe6477371bc9a2f0e5240325af819aeaf1c988e8feb61790f34d82d0c29e1f2",
+    "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph-progressive-requal/fixtures/pipewire/rtc-classic-row-feedback.conf": "e5d8ae5f9dec86089f704b120b84343334dd5ae079465e79570c50821ea55425",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-fixed63-250hz-20260930/placement-before.json": "f37a2b8d0da7766e6034f454bb6826817441949d88ac9a36d399dae1b2073afd",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-fixed63-250hz-20260930/placement-after.json": "8ee65944f1495873c3a8b5d8105fab9a4de31b74a271ba6a9f6dca3111ddbf69",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-fixed63-250hz-20260930/wfs-packets.tsv.zst": "62ab2b9395c80e97174e87796beb9b81d2ac2ce5e35fd1db230524b4077799b1",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-fixed63-250hz-20260930/dm-packets.tsv.zst": "da7b4b193a0e75495f77b4cf5dc22eda60b926c68a9c1474ce206bac762aaff5",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-fixed63-250hz-20260930/dumpcap.log": "2102c06524e3b01361bb705810405815a8c1076453879e5f136b2c3805615b22",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-fixed63-250hz-20260930/config/fgn-copper-live.conf": "d71175777e963c271a809d96402fab089563ae699ca89522bebee7734dae70b1",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-fixed63-250hz-20260930/thread-map-before-replay.txt": "8096eb6aed1c1185bf26f07945542aef94094e29b4adac78eeeda242cef53347",
+    "/home/dgamroth/.cache/rtc-classic-jfg-admission-fixed63-250hz-20260930/analyze-admission-fixed.py": "d0a2f38aa98562a4dcdd5ba92a45bc967c8a39f131d642d702a5a99e83bf772c"
+  },
+  "limitations": [
+    "Both source changes were applied together in this live run; unit tests isolate ready timing and buffer preference, while live run verifies their combined result.",
+    "Notification elapsed measurements use same-host monotonic boundaries, include scheduling and instrumentation, and do not establish normal latency or sustained capacity.",
+    "Availability derivation uses complete ordered prior-frame receives and source Q records on its serialized loop; reserve_row_frame itself is not timestamped.",
+    "Julia counters are process-global and exclude native allocations, property adoption, startup and close.",
+    "Breaking after a newly published HAVE_DATA does not limit callbacks that receive rows while an older row remains in flight."
+  ]
+}
