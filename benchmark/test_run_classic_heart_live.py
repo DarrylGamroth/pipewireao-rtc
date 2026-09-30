@@ -199,6 +199,16 @@ class RunnerTests(unittest.TestCase):
             self.addCleanup(context.stop)
         return args, processes, actions, environments
 
+    def test_mocked_secondary_telemetry_uses_public_client(self) -> None:
+        args, processes, actions, environments = self.setup_mocked_run()
+        args.telemetry_python = Path('/usr/bin/python3')
+        report = RUNNER.run(args)
+        self.assertTrue(report['functional_wire_qualified'], report['errors'])
+        commands = [record for record in report['commands'] if record['log'] == 'telemetry.log']
+        self.assertEqual(len(commands), 1)
+        self.assertIn(str(RUNNER.ROOT / 'benchmark/classic_heart_telemetry.py'), commands[0]['argv'])
+        self.assertTrue((args.output / 'telemetry.stop').exists())
+
     def test_mocked_success_records_flag_readback_and_unverified_initial_state(self) -> None:
         args, processes, actions, environments = self.setup_mocked_run()
         report = RUNNER.run(args)

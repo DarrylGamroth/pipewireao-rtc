@@ -135,7 +135,29 @@ The diagnostic run also failed shutdown with a loop-monitor socket error; it
 is preserved as a failed run. No numerical criterion has been relaxed. The reported short captures are functional checks,
 not capacity or tail-latency qualification.
 
-## Remaining gates
+## Four-gate completion record
+
+1. Numerical analysis is resolved for the CPU comparison: see
+   [source-derived arithmetic acceptance](CLASSIC_NUMERICAL_ACCEPTANCE.md).
+   HEART's complete model reproduces all 285,033 values in the new 1,029-frame
+   wire capture bit for bit. The original 10⁻⁶ cross-implementation failures
+   remain failures under that historical criterion. This establishes the
+   selected equations and Float32 arithmetic behavior, not an application
+   physical accuracy budget. Longer campaigns select this documented policy
+   explicitly; their strict comparison files remain present.
+2. Helper characterization has passed 18 array cases (0/1/2 workers,
+   shared/sharded matrices, three repetitions). Live callback allocation and
+   readout timing are still being collected.
+3. Long pilot captures now attest exact 1,029-frame delivery for HEART,
+   FGN complete frame, FGN rows, JFG complete frame, and JFG rows. They are
+   retained as pilots: the repeated placement-controlled series and capacity
+   search are not complete.
+4. SPA sender qualification has exposed premature Start in the generic
+   video-view adapter. The source-only zero-packet failures are preserved.
+   A targeted readiness correction is being validated before receiver tests.
+
+## Original gate obligations
+
 
 1. Resolve numerical acceptance for the observed HEART extrapolation and
    long-sequence precision differences before reporting scientific equivalence.

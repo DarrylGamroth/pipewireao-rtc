@@ -70,7 +70,7 @@ def archive_wire(directory):
         if not source.is_file():continue
         digest=hashlib.sha256()
         target=source.with_suffix(source.suffix+'.xz')
-        with source.open('rb') as reader,lzma.open(target,'xb',preset=6) as writer:
+        with source.open('rb') as reader,lzma.open(target,'xb',filters=[{'id':lzma.FILTER_LZMA2,'preset':1,'dict_size':8*1024*1024}]) as writer:
             while data:=reader.read(1024*1024):
                 digest.update(data);writer.write(data)
         records.append({'file':name,'sha256_uncompressed':digest.hexdigest(),'bytes':source.stat().st_size,'archive':target.name})
