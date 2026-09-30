@@ -9,6 +9,58 @@ import run_classic_campaign as campaign
 from run_classic_campaign import intervals, WFS, DM, command, archive_wire, summarize
 
 class CampaignTests(unittest.TestCase):
+    def write_timestamp_fixture(self, directory, *, kind=None, ordinal=0, timestamp=None,
+                                equal=False):
+        for packet_kind, count in (('wfs', 96), ('dm', 3)):
+            rows = []
+            for index in range(count):
+                if packet_kind == 'wfs':
+                    frame, packet = divmod(index, 32)
+                    header = WFS.pack(0,0,0,0,352,352,0,0,0,0,packet+1,32,0,0,frame,0)
+                    nanoseconds = frame * 10_000_000 + (0 if equal else packet * 10_000)
+                else:
+                    header = DM.pack(0,0,1,1,0,0,0,index,0)
+                    nanoseconds = index * 10_000_000 + 500_000
+                value = f'1.{nanoseconds:09d}'
+                if packet_kind == kind and index == ordinal:
+                    value = timestamp
+                rows.append(f'{value}\t0\t{header.hex()}\n')
+            (directory / f'{packet_kind}-packets.tsv').write_text(''.join(rows))
+
+    def test_rejects_backward_packet_timestamps(self):
+        cases = [('wfs', 1, '0.999000000'),  # first row after a clock reversal
+                 ('wfs', 31, '0.999000000'), # terminal before first
+                 ('dm', 0, '1.020500000')]  # both DM times still follow their WFS
+        with tempfile.TemporaryDirectory() as temp:
+            directory = Path(temp)
+            for kind, ordinal, timestamp in cases:
+                with self.subTest(kind=kind, ordinal=ordinal):
+                    self.write_timestamp_fixture(directory, kind=kind, ordinal=ordinal,
+                                                 timestamp=timestamp)
+                    with self.assertRaisesRegex(ValueError, 'timestamp'):
+                        intervals(directory, 3, 0, 100)
+                    self.assertFalse((directory / 'latency-intervals.json').exists())
+
+    def test_rejects_nonfinite_packet_timestamps(self):
+        with tempfile.TemporaryDirectory() as temp:
+            directory = Path(temp)
+            for kind in ('wfs', 'dm'):
+                for timestamp in ('NaN', 'Infinity', '-Infinity'):
+                    with self.subTest(kind=kind, timestamp=timestamp):
+                        self.write_timestamp_fixture(directory, kind=kind, ordinal=1,
+                                                     timestamp=timestamp)
+                        with self.assertRaisesRegex(ValueError, 'timestamp'):
+                            intervals(directory, 3, 0, 100)
+                        self.assertFalse((directory / 'latency-intervals.json').exists())
+
+    def test_equal_packet_timestamps_are_valid(self):
+        with tempfile.TemporaryDirectory() as temp:
+            directory = Path(temp)
+            self.write_timestamp_fixture(directory, equal=True)
+            result = intervals(directory, 3, 0, 100)
+            self.assertEqual(result['all']['readout_us']['max'], 0)
+            self.assertEqual(result['achieved_source_rate_hz'], 100)
+
     def test_packet_boundaries_exact_decimal(self):
         with tempfile.TemporaryDirectory() as temp:
             directory=Path(temp)

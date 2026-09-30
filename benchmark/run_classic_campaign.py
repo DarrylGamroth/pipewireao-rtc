@@ -43,7 +43,10 @@ def intervals(directory: Path, frames: int, dm_base: int, rate: int):
                 expected=(ordinal//32,ordinal%32+1,32) if kind=='wfs' else (ordinal+dm_base,1,1)
                 observed=(decoded[-2],decoded[10],decoded[11]) if kind=='wfs' else (decoded[-2],decoded[2],decoded[3])
                 if observed != expected:raise ValueError(f'{kind} packet identity/order {observed} != {expected}')
-                result.append(Decimal(timestamp))
+                now = Decimal(timestamp)
+                if not now.is_finite() or (result and now < result[-1]):
+                    raise ValueError(f'{kind} packet timestamp is nonfinite or moves backward at ordinal {ordinal}')
+                result.append(now)
         if len(result)!=count:raise ValueError(f'{kind} count {len(result)} != {count}')
         times.append(result)
     wfs,dm=times
