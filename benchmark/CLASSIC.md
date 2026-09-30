@@ -97,10 +97,49 @@ That trajectory nevertheless fails the existing 10⁻⁶ µm cross-implementatio
 comparison by reaching 1.25 × 10⁻⁶ µm. The criterion has not been relaxed.
 See [the precision review](CLASSIC_PRECISION_REVIEW.md).
 
+## Live clipping gate (2026-09-30)
+
+The original seven detector frames were repeated four times without resetting
+controller state. Gains, matrices, thresholds, and ±0.8 µm command limits are
+unchanged. All five selected paths delivered 896 WFS packets and 28 ordered DM
+commands. All outputs contain 168 clipped values, with identical clipping
+decisions and 7,588 unclipped reference values.
+
+| RTC path | Maximum command difference, µm | Existing 10⁻⁶ numerical gate |
+| --- | ---: | --- |
+| FGN complete frame | 5.96 × 10⁻⁸ | Pass |
+| JFG complete frame | 4.17 × 10⁻⁷ | Pass |
+| FGN row block | 2.98 × 10⁻⁷ | Pass |
+| JFG row block | 4.17 × 10⁻⁷ | Pass |
+| HEART progressive | 1.31 × 10⁻⁶ | Fail: two unclipped extrapolated values |
+
+JFG's post-stop retained feedback has 15 nonzero final values in both modes;
+maximum difference is zero for complete-frame mode and 5.96 × 10⁻⁸ µm for row
+mode. HEART's public final clipping count is 15, matching the reference.
+These final-state checks do not by themselves attest every intermediate
+feedback update. FGN has no live internal feedback snapshot in this harness.
+The separate 28-frame JFG row array replay records prelimit commands and
+feedback throughout, with maximum differences 2.98 × 10⁻⁷ µm each, 19 frames
+with nonzero feedback, and zero warmed steady-frame allocations.
+
+[The clipping evidence](data/classic_clipping_20260930.json) preserves each gate
+and its artifacts, including the failed HEART result. [The independent HEART
+review](CLASSIC_HEART_CLIPPING_REVIEW.md) localizes both failures to extrapolated
+physical rows, each combining 221 controlled coordinates. Existing HEART
+circular-buffer dumps were captured after replay with its public client. An
+independent Float32 model reproduces every downstream captured value from
+HEART's gradients, using fused multiply-add and sequential sparse projection.
+Gradient differences are the earliest observed disagreement; the two wire
+failures combine propagated controller differences with projection rounding.
+The diagnostic run also failed shutdown with a loop-monitor socket error; it
+is preserved as a failed run. No numerical criterion has been relaxed. The reported short captures are functional checks,
+not capacity or tail-latency qualification.
+
 ## Remaining gates
 
-1. Exercise live nonzero clipping feedback and preserve the long-sequence
-   precision evidence before reporting scientific equivalence.
+1. Resolve numerical acceptance for the observed HEART extrapolation and
+   long-sequence precision differences before reporting scientific equivalence.
+   The live clipping checks above preserve the original failed gate.
 2. Characterize helper layouts and live allocation boundaries after the
    successful release-deployment checks for both short Classic row graphs.
    The 32-buffer negotiation correction is implemented and tested as described

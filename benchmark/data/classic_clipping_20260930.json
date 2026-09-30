@@ -1,0 +1,417 @@
+{
+  "date": "2026-09-30",
+  "scope": "28-frame clipping and retained-feedback functional/numerical gate; no 3-way equivalence or capacity claim",
+  "provenance": "Retrospectively summarized from the listed preserved cache artifacts. Report files are unchanged.",
+  "corpus": {
+    "original_cube_path": "/home/dgamroth/workspaces/codex/heart/revolt-rtc/sim_wfs_data/classic_wfs.fits",
+    "original_cube_sha256": "ac5d14eb90de51924af61ac12915833e8ef5c1a1fdde2237b628b49f65fc9aca",
+    "repeated_28_frame_cube_sha256_r1_and_r2": "09f81afe6d7ea6c427f495c613dd8d4c2bcf07aa9881d7adbfdab6d86ea91c98",
+    "repeated_cube_sha256_matches_r1_r2": true,
+    "frames": 28,
+    "expected_wfs_packets": 896,
+    "expected_dm_commands": 28,
+    "clipped_actuator_values": 168,
+    "unclipped_expected_values": 7588,
+    "manifest_paths": [
+      "/home/dgamroth/.cache/rtc-classic-clipping-corpus28-20260930/manifest.json",
+      "/home/dgamroth/.cache/rtc-classic-clipping-corpus28-r2-20260930/manifest.json"
+    ],
+    "qualification_note": "The FGN frame run used original-corpus metadata before the helper guard final schema. The report is preserved as historical; repeated-cube bytes and oracle bytes match the R2 corpus."
+  },
+  "runs": {
+    "fgn_frame": {
+      "run_directory": "/home/dgamroth/.cache/rtc-classic-fgn-frame-clipping28-r1-20260930",
+      "provenance": "retrospectively collected from preserved run artifacts",
+      "artifact_sha256": {
+        "report.json": "5a6e92b37b6d480657f516144be3ac2bc9f54dba54216a8184887b62cc5c318b",
+        "physical-summary.json": "e94f45ce0655086ebc99c82f7b5c0922911cff62944364221a23942d8789f5da",
+        "numerical-summary.json": "b35ee39e365ce32ef0daa964d4f0361251f0d5bf2ae2f13fc2bfd56f472031d7"
+      },
+      "role": "fgn",
+      "receiver_mode": "complete-frame",
+      "qualified": true,
+      "frames": 28,
+      "packet_and_command_counts": {
+        "expected_packets": 896,
+        "captured_packets": 896,
+        "expected_dm_commands": 28,
+        "captured_dm_commands": 28,
+        "dm_frame_id_first": 0,
+        "dm_frame_id_last": 27,
+        "payload_mismatch_packets": 0
+      },
+      "physical_qualified": true,
+      "numerical": {
+        "qualified": true,
+        "max_absolute_error_um": 5.960464477539063e-08,
+        "failed_values": 0,
+        "actual_values_at_limit": 168,
+        "expected_values_at_limit": 168,
+        "unclipped_expected_values": 7588,
+        "failed_unclipped_values": 0,
+        "clipping_decision_mismatches": 0
+      },
+      "process_returncodes": [
+        0,
+        0,
+        0
+      ],
+      "source_counters": {
+        "received": 896,
+        "rejected": 0,
+        "blocks": 0,
+        "frames": 28,
+        "dropped": 0,
+        "starvations": 0
+      },
+      "reported_errors": []
+    },
+    "jfg_frame": {
+      "run_directory": "/home/dgamroth/.cache/rtc-classic-jfg-frame-clipping28-r1-20260930",
+      "provenance": "retrospectively collected from preserved run artifacts",
+      "artifact_sha256": {
+        "report.json": "03cdf21507a1c4bad716010542303e1b8598b15e4c6d005a5420ec977702c37a",
+        "physical-summary.json": "32fb2c0b4b3ec0abe69666e82d2feb881789b2f0222881dd3f509f050ac30a93",
+        "numerical-summary.json": "9d8774f6cff376a1ad63ed174013ebf5cad4699e57be9f23a89d4c331c5880e9"
+      },
+      "role": "jfg",
+      "receiver_mode": "complete-frame",
+      "qualified": true,
+      "frames": 28,
+      "packet_and_command_counts": {
+        "expected_packets": 896,
+        "captured_packets": 896,
+        "expected_dm_commands": 28,
+        "captured_dm_commands": 28,
+        "dm_frame_id_first": 0,
+        "dm_frame_id_last": 27,
+        "payload_mismatch_packets": 0
+      },
+      "physical_qualified": true,
+      "numerical": {
+        "qualified": true,
+        "max_absolute_error_um": 4.172325134277344e-07,
+        "failed_values": 0,
+        "actual_values_at_limit": 168,
+        "expected_values_at_limit": 168,
+        "unclipped_expected_values": 7588,
+        "failed_unclipped_values": 0,
+        "clipping_decision_mismatches": 0
+      },
+      "process_returncodes": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "source_counters": {
+        "received": 896,
+        "rejected": 0,
+        "blocks": 0,
+        "frames": 28,
+        "dropped": 0,
+        "starvations": 0
+      },
+      "reported_errors": [],
+      "final_feedback": {
+        "artifact": "/home/dgamroth/.cache/rtc-classic-jfg-frame-clipping28-r1-20260930/node-report.json",
+        "nonzero_values": 15,
+        "boundary": "retained controller constraint feedback after owner shutdown"
+      }
+    },
+    "heart_progressive": {
+      "run_directory": "/home/dgamroth/.cache/rtc-classic-heart-progressive-clipping28-r1-20260930",
+      "provenance": "retrospectively collected from preserved run artifacts",
+      "artifact_sha256": {
+        "report.json": "b3854c17a69fefdf6db1291d465d7805c63f709882655f1391fca86dbcb2a116",
+        "physical-summary.json": "58e4afe984925b0ae50d8bf8b0352d5768bf2fbeef8e92d4e8fc184782f1e575",
+        "numerical-summary.json": "07c39de27bc1adf40a14f72de3cd754f9b95f11f1ddc6e9fc6256db8fe5dfb5c"
+      },
+      "role": "heart",
+      "receiver_mode": "ordinary progressive stdWfs UDP",
+      "qualified": false,
+      "frames": 28,
+      "packet_and_command_counts": {
+        "expected_packets": 896,
+        "captured_packets": 896,
+        "expected_dm_commands": 28,
+        "captured_dm_commands": 28,
+        "dm_frame_id_first": 1,
+        "dm_frame_id_last": 28,
+        "payload_mismatch_packets": 0
+      },
+      "physical_qualified": true,
+      "numerical": {
+        "qualified": false,
+        "max_absolute_error_um": 1.3113021850585938e-06,
+        "failed_values": 2,
+        "actual_values_at_limit": 168,
+        "expected_values_at_limit": 168,
+        "unclipped_expected_values": 7588,
+        "failed_unclipped_values": 2,
+        "clipping_decision_mismatches": 0
+      },
+      "process_returncodes": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "source_counters": {
+        "reported": false,
+        "physical_captured_wfs_packets": 896,
+        "physical_capture_source": "physical-summary.json"
+      },
+      "reported_errors": [
+        "physical commands differ from the direct reference; see numerical-summary.json"
+      ],
+      "command_errors": 0,
+      "process_errors": 0,
+      "effective_initial_state_verified": false,
+      "effective_initial_state_note": "controller internal zero-state readback is unavailable in this runner",
+      "final_clipped_actuators": 15,
+      "final_expected_clipped_actuators": 15
+    },
+    "fgn_row": {
+      "run_directory": "/home/dgamroth/.cache/rtc-classic-fgn-row-clipping28-r1-20260930",
+      "provenance": "retrospectively collected from preserved run artifacts",
+      "artifact_sha256": {
+        "report.json": "cdc36265ce188549747ed37128bf20e1cd0f7566fc445ebde69f179a7b9e2a37",
+        "physical-summary.json": "9d8cfe6a7dfb6ca839c2c508d6e094b83beacb3326ff49ef70546ac80f622dc7",
+        "numerical-summary.json": "b876bcace05ea78cddb8103136baed5afa5c94c1258ce87a28c699c5b7553492"
+      },
+      "role": "fgn",
+      "receiver_mode": "row-block",
+      "qualified": true,
+      "frames": 28,
+      "packet_and_command_counts": {
+        "expected_packets": 896,
+        "captured_packets": 896,
+        "expected_dm_commands": 28,
+        "captured_dm_commands": 28,
+        "dm_frame_id_first": 0,
+        "dm_frame_id_last": 27,
+        "payload_mismatch_packets": 0
+      },
+      "physical_qualified": true,
+      "numerical": {
+        "qualified": true,
+        "max_absolute_error_um": 2.980232238769531e-07,
+        "failed_values": 0,
+        "actual_values_at_limit": 168,
+        "expected_values_at_limit": 168,
+        "unclipped_expected_values": 7588,
+        "failed_unclipped_values": 0,
+        "clipping_decision_mismatches": 0
+      },
+      "process_returncodes": [
+        0,
+        0,
+        0
+      ],
+      "source_counters": {
+        "received": 896,
+        "rejected": 0,
+        "blocks": 896,
+        "frames": 28,
+        "dropped": 0,
+        "starvations": 0
+      },
+      "reported_errors": []
+    },
+    "jfg_row": {
+      "run_directory": "/home/dgamroth/.cache/rtc-classic-jfg-row-clipping28-r1-20260930",
+      "provenance": "retrospectively collected from preserved run artifacts",
+      "artifact_sha256": {
+        "report.json": "a7f5cc9217067360efe2049dc7672f56d6ec6380d47f492411a3fa38452197af",
+        "physical-summary.json": "3378fce256eae818ab3900769c9216b8692db889a18df203d3479bf6f069d0ba",
+        "numerical-summary.json": "9d8774f6cff376a1ad63ed174013ebf5cad4699e57be9f23a89d4c331c5880e9"
+      },
+      "role": "jfg",
+      "receiver_mode": "row-block",
+      "qualified": true,
+      "frames": 28,
+      "packet_and_command_counts": {
+        "expected_packets": 896,
+        "captured_packets": 896,
+        "expected_dm_commands": 28,
+        "captured_dm_commands": 28,
+        "dm_frame_id_first": 0,
+        "dm_frame_id_last": 27,
+        "payload_mismatch_packets": 0
+      },
+      "physical_qualified": true,
+      "numerical": {
+        "qualified": true,
+        "max_absolute_error_um": 4.172325134277344e-07,
+        "failed_values": 0,
+        "actual_values_at_limit": 168,
+        "expected_values_at_limit": 168,
+        "unclipped_expected_values": 7588,
+        "failed_unclipped_values": 0,
+        "clipping_decision_mismatches": 0
+      },
+      "process_returncodes": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "source_counters": {
+        "received": 896,
+        "rejected": 0,
+        "blocks": 896,
+        "frames": 28,
+        "dropped": 0,
+        "starvations": 0
+      },
+      "reported_errors": [],
+      "final_feedback": {
+        "artifact": "/home/dgamroth/.cache/rtc-classic-jfg-row-clipping28-r1-20260930/node-report.json",
+        "nonzero_values": 15,
+        "boundary": "retained controller constraint feedback after owner shutdown"
+      },
+      "callbacks": {
+        "count": 896,
+        "per_frame": 32,
+        "row_blocks": 896
+      }
+    }
+  },
+  "direct_jfg_row_array_28": {
+    "report_path": "/home/dgamroth/.cache/rtc-classic-jfg-row-clipping-array28-r1-20260930/report.json",
+    "report_sha256": "974f56ca6fc620c20bf5c3c49197fe58e0783dfc65a5bd835586b905f40b602a",
+    "frames": 28,
+    "callbacks_per_frame": 32,
+    "steady_frame_allocation_bytes": 0,
+    "feedback_nonzero_frames": 19,
+    "prelimit_feedback_numeric_comparison": {
+      "max_absolute_error_um": 2.980232238769531e-07,
+      "measurement_provenance": "separately measured summary; no persisted comparison-report artifact identified"
+    },
+    "boundary_comparison": {
+      "path": "/home/dgamroth/.cache/rtc-classic-jfg-row-clipping-array28-r1-20260930/numerical-boundaries-summary.json",
+      "sha256": "a29a9f757ef2a49f9ca6e3251b8fe078a9d0d020b562f44f84e20a718fc7af1f",
+      "qualified": true,
+      "max_errors_um": {
+        "vdm_command.f32le": 2.980232238769531e-07,
+        "demanded_pdm_command.f32le": 4.172325134277344e-07,
+        "controller_constraint_feedback.f32le": 2.980232238769531e-07
+      }
+    }
+  },
+  "interpretation": "Each FGN/JFG frame and row run individually passed its transport and numerical gate. HEART captured 896 packets and 28 commands with matching clipped-actuator count, but its numerical gate failed 2 unclipped values (max absolute error 1.3113021850585938e-6); internal controller initial state remains unverified. These observations do not establish three-way equivalence, sustained capacity, or timing qualification.",
+  "heart_boundary_diagnostic": {
+    "run_directory": "/home/dgamroth/.cache/rtc-classic-heart-progressive-clipping28-boundaries-r1-20260930",
+    "provenance": "retrospective; original reports retained unchanged",
+    "report_sha256": "f3f9ef4c924a94ca6725542e8858d468bb294c7cb8deded76b66c6a777f72c59",
+    "analysis_sha256": "4bfc8cc735e240089373f8d1e1e27b5cda0fbc0374d3cac7c3fb5dea2d43ae59",
+    "qualified": false,
+    "errors": [
+      "scao.log: process exited with 1",
+      "physical commands differ from the direct reference; see numerical-summary.json"
+    ],
+    "dump_count": 5,
+    "dump_acknowledged_success": true,
+    "analysis_scope": "offline numerical evidence; does not qualify a failed run or identify machine instructions",
+    "model_matches": {
+      "command_buffer_vs_wire": {
+        "values": 7756,
+        "unequal_bits": 0,
+        "max_absolute_difference": 0.0
+      },
+      "fmaf_pair_reconstruction": {
+        "values": 6188,
+        "unequal_bits": 0,
+        "max_absolute_difference": 0.0
+      },
+      "gain_multiplication": {
+        "values": 7756,
+        "unequal_bits": 0,
+        "max_absolute_difference": 0.0
+      },
+      "fmaf_controller": {
+        "values": 7756,
+        "unequal_bits": 0,
+        "max_absolute_difference": 0.0
+      },
+      "complete_model_from_captured_gradients": {
+        "values": 7756,
+        "unequal_bits": 0,
+        "max_absolute_difference": 0.0
+      }
+    },
+    "gradient_vs_rust": {
+      "values": 10528,
+      "unequal_bits": 8104,
+      "max_absolute_difference": 3.5762786865234375e-06
+    },
+    "wire_gate": {
+      "qualified": false,
+      "failed_values": [
+        {
+          "frame_index": 16,
+          "physical_coordinate": 2,
+          "heart": -0.5260058641433716,
+          "rust": -0.5260048508644104,
+          "difference": -1.0132789611816406e-06,
+          "controlled": false,
+          "projected_controller_difference_float64": -4.130985572503576e-07,
+          "heart_projection_rounding_vs_float64": -5.442045406534035e-07,
+          "rust_projection_rounding_vs_float64": 5.597586327787951e-08
+        },
+        {
+          "frame_index": 19,
+          "physical_coordinate": 3,
+          "heart": -0.678273618221283,
+          "rust": -0.678274929523468,
+          "difference": 1.3113021850585938e-06,
+          "controlled": false,
+          "projected_controller_difference_float64": 9.109461429623877e-07,
+          "heart_projection_rounding_vs_float64": 2.293643202033735e-07,
+          "rust_projection_rounding_vs_float64": -1.7099172189283252e-07
+        }
+      ],
+      "max_absolute_error_um": 1.3113021850585938e-06,
+      "criterion": "abs <= 1e-6 OR abs/max(abs(actual),abs(expected),1) <= 1e-6; native microns"
+    }
+  }
+}

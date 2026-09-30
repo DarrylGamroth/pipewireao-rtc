@@ -33,6 +33,17 @@ class ReplaceOnceTests(unittest.TestCase):
 
 
 class CompareCommandsTests(unittest.TestCase):
+    def test_explicit_continuous_reference_extent(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            actual, expected = root / "actual", root / "expected"
+            np.zeros(28 * 277, dtype="<f4").tofile(actual)
+            np.zeros(28 * 277, dtype="<f4").tofile(expected)
+            self.assertTrue(RUNNER.compare_commands(
+                actual, expected, 28, reference_frames=28)["qualified"])
+            with self.assertRaises(ValueError):
+                RUNNER.compare_commands(actual, expected, 28)
+
     @staticmethod
     def compare(root: Path, actual: np.ndarray, expected: np.ndarray,
                 frames: int = 1) -> dict:
@@ -180,6 +191,16 @@ class ArgumentValidationTests(unittest.TestCase):
                 with self.assertRaises(SystemExit):
                     RUNNER.arguments()
 
+    def test_continuous_replay_requires_explicit_corpus(self) -> None:
+        with patch.object(sys, "argv", self.BASE_ARGS + ["--frames", "28"]), patch("sys.stderr"):
+            with self.assertRaises(SystemExit):
+                RUNNER.arguments()
+        with patch.object(sys, "argv", self.BASE_ARGS + ["--frames", "28", "--replay-corpus", "corpus"]):
+            self.assertEqual(RUNNER.arguments().frames, 28)
+        with patch.object(sys, "argv", self.BASE_ARGS + ["--frames", "29", "--replay-corpus", "corpus"]), patch("sys.stderr"):
+            with self.assertRaises(SystemExit):
+                RUNNER.arguments()
+
     def test_rejects_nondivisor_row_quantum(self) -> None:
         with patch.object(sys, "argv", self.BASE_ARGS + ["--rows-per-packet", "23"]):
             with self.assertRaises(SystemExit):
@@ -223,6 +244,29 @@ class CleanupTests(unittest.TestCase):
         RUNNER.cleanup_replay(Mock(), [], [(process, Mock())], report)
         self.assertTrue(report["qualified"])
         self.assertEqual(report["process_returncodes"], [0])
+
+
+
+class FeedbackSnapshotTests(unittest.TestCase):
+    def test_final_nonzero_feedback_and_invalid_snapshots(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / 'feedback'
+            expected = np.zeros((28, 221), dtype='<f4')
+            expected[-1, 0] = 0.125
+            expected.tofile(path)
+            snapshot = {'unit': 'micron', 'values': expected[-1].tolist(), 'boundary': 'stopped owner'}
+            report = RUNNER.compare_feedback_snapshot(snapshot, path, 28)
+            self.assertTrue(report['qualified'])
+            self.assertEqual(report['actual_nonzero_values'], 1)
+            self.assertEqual(report['expected_nonzero_values'], 1)
+            snapshot['values'][0] = 0
+            self.assertFalse(RUNNER.compare_feedback_snapshot(snapshot, path, 28)['qualified'])
+            for invalid in (None, {'unit': 'metre'}, {'unit': 'micron', 'values': [0]},
+                            {'unit': 'micron', 'values': [float('nan')] * 221}):
+                with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                    RUNNER.compare_feedback_snapshot(invalid, path, 28)
+            with self.assertRaises(ValueError):
+                RUNNER.compare_feedback_snapshot(snapshot, path, 29)
 
 
 if __name__ == "__main__":

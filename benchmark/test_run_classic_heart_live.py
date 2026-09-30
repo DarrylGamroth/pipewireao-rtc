@@ -37,6 +37,14 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(args.source_config, args.calibration_root / "config/classic_config_sim.yaml")
         self.assertEqual(args.frames * (352 // args.rows_per_packet), 224)
 
+    def test_continuous_replay_requires_explicit_corpus(self) -> None:
+        with patch("sys.stderr"), self.assertRaises(SystemExit):
+            RUNNER.arguments(self.options + ["--frames", "28"])
+        args = RUNNER.arguments(self.options + ["--frames", "28", "--replay-corpus", "corpus"])
+        self.assertEqual((args.frames, args.replay_corpus), (28, Path("corpus")))
+        with patch("sys.stderr"), self.assertRaises(SystemExit):
+            RUNNER.arguments(self.options + ["--frames", "29", "--replay-corpus", "corpus"])
+
     def test_rejects_illegal_frame_rate_packet_extent_and_map_pair(self) -> None:
         for options in (["--frames", "8"], ["--rate-hz", "0"], ["--rows-per-packet", "22"],
                         ["--rows-per-packet", "3"], ["--readout-us", "95000"],
@@ -54,6 +62,24 @@ class RunnerTests(unittest.TestCase):
         self.assertTrue(RUNNER.acknowledged(0, "ack<0><ACCEPTED><>, status<0><SUCCESS><>"))
         self.assertFalse(RUNNER.acknowledged(0, "ack<0><ACCEPTED><>, status<1><WARNING><>"))
         self.assertFalse(RUNNER.acknowledged(1, "ack<0><ACCEPTED><>, status<0><SUCCESS><>"))
+
+    def test_clipping_counter_requires_one_dm_zero_entry(self) -> None:
+        line = "pdmNumActsClipped               : [  0] : 12\n"
+        self.assertEqual(RUNNER.parse_clipping_count(line), 12)
+        for text in ("", line + line, line.replace("[  0]", "[  1]")):
+            with self.subTest(text=text), self.assertRaises(ValueError):
+                RUNNER.parse_clipping_count(text)
+
+    def test_boundary_dump_uses_existing_client_and_new_file(self) -> None:
+        path = self.root / "cbClUnclipped0.fits"
+        command = RUNNER.boundary_dump_command(Path("client"), "cbClUnclipped0", path)
+        self.assertIn("DUMP_BUFFER", command)
+        self.assertEqual(command[-4:], ["-configDumpBufferInterval", "0", "-configDumpBufferFile", str(path)])
+        with self.assertRaises(ValueError):
+            RUNNER.boundary_dump_command(Path("client"), "unknown", path)
+        path.touch()
+        with self.assertRaises(ValueError):
+            RUNNER.boundary_dump_command(Path("client"), "cbClUnclipped0", path)
 
     def test_command_failures_and_timeouts_retain_status_and_output(self) -> None:
         report = {"commands": []}
@@ -193,6 +219,50 @@ class RunnerTests(unittest.TestCase):
         self.assertTrue(all(env["HRT_MEMORY_HUGEPAGES"] == "0" for env in environments))
         self.assertLess(actions.index(("stop", "dumpcap.log")), actions.index(("control", "SHUTDOWN")))
         self.assertEqual(json.loads((args.output / "report.json").read_text()), report)
+
+    def mocked_corpus_run(self, clipping_count: int):
+        args, processes, actions, _ = self.setup_mocked_run()
+        args.frames = 28
+        args.replay_corpus = self.root / "corpus"
+        args.replay_corpus.mkdir()
+        expected = np.zeros((28, 277), dtype="<f4")
+        expected[-1, :15] = 0.8
+        expected.tofile(args.replay_corpus / "demanded_pdm_command.f32le")
+        original_execute = RUNNER.subprocess.run.side_effect
+
+        def execute(argv, **kwargs):
+            result = original_execute(argv, **kwargs)
+            if Path(argv[0]).name == "hrtGmsPrint" and "CLWFC" in argv:
+                result.stdout += f"pdmNumActsClipped : [  0] : {clipping_count}\n"
+            if "decode_std_dm_packets.py" in " ".join(argv):
+                Path(argv[argv.index("--vectors") + 1]).write_bytes(expected.tobytes())
+            if "--dm-id-base" in argv:
+                Path(argv[argv.index("--summary") + 1]).write_text(json.dumps({
+                    "qualified": True, "captured_wfs_packets": 896,
+                    "captured_wfs_frame_ids": list(range(28)), "captured_dm_commands": 28,
+                    "dm_first_frame_id": 1, "dm_last_frame_id": 28}))
+            return result
+
+        with patch.object(RUNNER.subprocess, "run", side_effect=execute), patch(
+                "classic_replay_corpus.validate_replay_corpus", return_value={"frames": 28}):
+            return RUNNER.run(args), processes, actions
+
+    def test_mocked_corpus_attests_final_clip_count_and_preserves_state_limit(self) -> None:
+        report, processes, actions = self.mocked_corpus_run(15)
+        self.assertTrue(report["functional_wire_qualified"])
+        self.assertFalse(report["qualified"])
+        self.assertEqual(report["final_clipped_actuators"], 15)
+        self.assertEqual(report["final_expected_clipped_actuators"], 15)
+        self.assertEqual(report["numerical"]["frames"], 28)
+        self.assertTrue(all(process.returncode == 0 for process, _ in processes))
+        self.assertLess(actions.index(("stop", "dumpcap.log")), actions.index(("control", "SHUTDOWN")))
+
+    def test_mocked_corpus_rejects_wrong_final_clip_count(self) -> None:
+        report, processes, _ = self.mocked_corpus_run(14)
+        self.assertFalse(report["functional_wire_qualified"])
+        self.assertTrue(report["numerical"]["qualified"])
+        self.assertIn("HEART final clipping counter differs from reference", report["errors"])
+        self.assertTrue(all(process.returncode == 0 for process, _ in processes))
 
     def test_snapshot_parser_rejects_missing_duplicate_wrong_flags_and_identity(self) -> None:
         valid = "GMS SECTION: gms.closedLoopWfc (CLWFC)\nownerTag : WCC.clwc\nblockState : RUNNING (3)\nenableR0L0 : 0\n"

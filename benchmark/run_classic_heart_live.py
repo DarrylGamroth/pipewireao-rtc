@@ -28,6 +28,7 @@ from run_classic_live import WORKSPACE, compare_commands, load_script
 
 
 GMS_SECTIONS = {"clwcBlock": "CLWFC", "tfcBlock": "TFC"}
+BOUNDARY_BUFFERS = ("cbHoGrad0", "cbHoVect0", "cbDmErr0", "cbClUnclipped0", "cbDmCmd0")
 PORTS = (5000, 5001, 5002, 5003, 5004, 5005, 5006, 5007,
          5100, 5101, 5102, 5103, 5104, 5105, 5106, 5107, 5108, 5109, 6000, 6100,
          6200, 6201, 6202, 6300, 6301)
@@ -40,6 +41,10 @@ def arguments(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--source-config", type=Path,
                         help="default: calibration-root/config/classic_config_sim.yaml")
     parser.add_argument("--frames", type=int, default=7)
+    parser.add_argument("--replay-corpus", type=Path,
+                        help="validated repeated FITS and continuous controller references")
+    parser.add_argument("--dump-boundaries", action="store_true",
+                        help="dump existing HEART circular buffers after capture, before shutdown")
     parser.add_argument("--rate-hz", type=int, default=10)
     parser.add_argument("--readout-us", type=int, default=2000)
     parser.add_argument("--rows-per-packet", type=int, default=11)
@@ -50,8 +55,10 @@ def arguments(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--fgn-root", type=Path, default=WORKSPACE / "calculon-algorithms-progressive-requal")
     parser.add_argument("--jfg-root", type=Path, default=WORKSPACE / "JuliaFilterGraph-progressive-requal")
     args = parser.parse_args(argv)
-    if not 1 <= args.frames <= 7:
-        parser.error("short Classic wire check requires 1..7 corpus frames")
+    if not 1 <= args.frames <= (28 if args.replay_corpus else 7):
+        parser.error("Classic gate requires 1..7 frames, or at most 28 with --replay-corpus")
+    if args.replay_corpus and args.frames % 7:
+        parser.error("--replay-corpus requires 7, 14, 21, or 28 frames")
     if args.rate_hz < 1 or args.readout_us < 1 or args.readout_us * args.rate_hz >= 950000:
         parser.error("readout must be positive and below 95% of the frame period")
     if args.rows_per_packet < 1 or 352 % args.rows_per_packet:
@@ -114,6 +121,16 @@ def acknowledged(returncode: int | None, text: str) -> bool:
             and "status<0><SUCCESS>" in text)
 
 
+def boundary_dump_command(client: Path, buffer: str, destination: Path) -> list[str]:
+    if buffer not in BOUNDARY_BUFFERS or destination.suffix != ".fits" or destination.exists():
+        raise ValueError("boundary dump requires a supported buffer and new FITS destination")
+    # Zero requests every retained bucket. The implementation interprets a
+    # nonzero interval as buckets, despite the legacy client's seconds label.
+    return heart_command(client, "DUMP_BUFFER") + [
+        "-circularBufferName", buffer, "-configDumpBufferInterval", "0",
+        "-configDumpBufferFile", str(destination.resolve())]
+
+
 def parse_gms_snapshot(text: str, section: str, expected: dict[str, int]) -> dict:
     """Validate existing hrtGmsPrint scalar output; fail closed on ambiguity."""
     owners = {"CLWFC": "WCC.clwc", "TFC": "WCC.tfc"}
@@ -162,6 +179,14 @@ def parse_gms_mode(text: str) -> dict:
             values[field] = matches[0]
     return {"section": "CMDHANDLER", "values": values,
             "verified": not errors, "errors": errors}
+
+
+def parse_clipping_count(text: str) -> int:
+    matches = re.findall(r"^\s*pdmNumActsClipped\s*:\s*\[\s*0\]\s*:\s*(\d+)\s*$",
+                         text, re.MULTILINE)
+    if len(matches) != 1:
+        raise ValueError("expected one HEART DM0 clipping count")
+    return int(matches[0])
 
 
 class CommandLog:
@@ -219,6 +244,11 @@ def validate_fixture(args, helper, qualifier) -> None:
         raise ValueError("prepared fixture does not use the selected HEART comparison controller")
     if (args.fixture / "demanded_pdm_command.f32le").stat().st_size != 7 * 277 * 4:
         raise ValueError("direct command reference must contain seven 277-element vectors")
+    if args.replay_corpus:
+        from classic_replay_corpus import validate_replay_corpus
+        validate_replay_corpus(args.replay_corpus.resolve(), args.fixture.resolve(),
+                              args.cube.resolve(), args.frames)
+        return
     pixels = helper.primary_image(args.cube, axes=(352, 352, 7), bitpix=16)
     exported = np.fromfile(args.fixture / "raw-frames.u16le", dtype="<u2")
     if not np.array_equal(pixels.ravel(), exported):
@@ -260,6 +290,8 @@ def run(args: argparse.Namespace) -> dict:
             "HRT_DEFER_WFS_INGRESS": "0", "HRT_MEMORY_HUGEPAGES": "0"},
         "placement": {"rtc_cpus": args.rtc_cpus, "source_cpus": args.source_cpus},
     }
+    expected_commands = ((args.replay_corpus / "demanded_pdm_command.f32le")
+                         if args.replay_corpus else args.fixture / "demanded_pdm_command.f32le")
     recorder = CommandLog(directory, env, runtime, report)
     helper = None
     processes = []
@@ -308,6 +340,8 @@ def run(args: argparse.Namespace) -> dict:
             record, text = recorder.run([str(gms_print), "-host", "host", "-section", section, "-k", "0"],
                                         log_name, required=False)
             parsed = parse_gms_snapshot(text, section, flags)
+            if args.replay_corpus and phase == "post-replay" and section == "CLWFC":
+                report["final_clipped_actuators"] = parse_clipping_count(text)
             parsed.update(phase=phase, log=log_name)
             if record["status"] != "success":
                 parsed["errors"].append(f"hrtGmsPrint command status: {record['status']}")
@@ -343,8 +377,15 @@ def run(args: argparse.Namespace) -> dict:
         if (directory / "physical-summary.json").is_file():
             report["physical"] = json.loads((directory / "physical-summary.json").read_text())
         numerical = compare_commands(directory / "dm-wire-um.f32",
-                                     args.fixture / "demanded_pdm_command.f32le", args.frames)
+                                     expected_commands, args.frames,
+                                     reference_frames=expected_commands.stat().st_size // (277 * 4))
         report["numerical"] = numerical
+        if args.replay_corpus:
+            expected = np.fromfile(expected_commands, dtype="<f4").reshape(-1, 277)[args.frames - 1]
+            expected_clips = int(np.count_nonzero(np.abs(expected) >= np.float32(0.8)))
+            report["final_expected_clipped_actuators"] = expected_clips
+            if report.get("final_clipped_actuators") != expected_clips:
+                raise RuntimeError("HEART final clipping counter differs from reference")
         (directory / "numerical-summary.json").write_text(json.dumps(numerical, indent=2) + "\n")
         if packet_record["returncode"] != 0 or not report.get("physical", {}).get("qualified"):
             raise RuntimeError("physical packet check failed; see physical-summary.json and qualify-packets.log")
@@ -384,6 +425,11 @@ def run(args: argparse.Namespace) -> dict:
                 if not cpus <= os.sched_getaffinity(0):
                     raise ValueError(f"{name} exceeds available process CPUs")
         validate_fixture(args, helper, qualifier)
+        if args.replay_corpus:
+            from classic_replay_corpus import validate_replay_corpus
+            report["replay_corpus"] = validate_replay_corpus(
+                args.replay_corpus.resolve(), args.fixture.resolve(), args.cube.resolve(), args.frames)
+        report["sha256"][str(expected_commands.resolve())] = helper.sha256_file(expected_commands)
         guard_ports()
         preparation = write_config(args.source_config, args.calibration_root,
                                    1 / args.rate_hz, runtime / "config/classic_matched.yaml")
@@ -446,6 +492,19 @@ def run(args: argparse.Namespace) -> dict:
         capture.send_signal(signal.SIGINT)
         helper.stop(capture, capture_stream)
         snapshot_flags("post-replay")
+        if args.dump_boundaries:
+            report["boundary_dumps"] = []
+            for buffer in BOUNDARY_BUFFERS:
+                destination = directory / f"{buffer}.fits"
+                record, text = recorder.run(boundary_dump_command(client, buffer, destination),
+                                            f"dump-{buffer}.log")
+                record["heart_acknowledged"] = acknowledged(record["returncode"], text)
+                if not record["heart_acknowledged"] or not destination.is_file():
+                    raise RuntimeError(f"HEART {buffer} dump did not report SUCCESS and create its file")
+                report["boundary_dumps"].append({
+                    "buffer": buffer, "file": str(destination),
+                    "sha256": helper.sha256_file(destination),
+                    "scope": "post-capture diagnostic; shape, finiteness and frame alignment require separate validation"})
         shutdown_attempted = True
         control("SHUTDOWN", "cmd-shutdown.log")
         helper.stop(rtc, rtc_stream)

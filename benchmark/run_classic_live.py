@@ -82,10 +82,12 @@ def cleanup_replay(helper, stop_files, processes, report):
         report["qualified"] = False
 
 
-def compare_commands(actual_path: Path, expected_path: Path, frames: int) -> dict:
+def compare_commands(actual_path: Path, expected_path: Path, frames: int,
+                     *, reference_frames: int = 7) -> dict:
     actual = np.fromfile(actual_path, dtype="<f4")
     expected = np.fromfile(expected_path, dtype="<f4")
-    if actual.size != frames * 277 or expected.size != 7 * 277:
+    if (not 1 <= frames <= reference_frames or actual.size != frames * 277
+            or expected.size != reference_frames * 277):
         raise ValueError("command recordings do not have the declared frame extents")
     expected = expected[:frames * 277]
     if not np.all(np.isfinite(actual)) or not np.all(np.isfinite(expected)):
@@ -101,9 +103,29 @@ def compare_commands(actual_path: Path, expected_path: Path, frames: int) -> dic
         "failed_values": int(np.count_nonzero(failures)),
         "actual_values_at_limit": int(np.count_nonzero(np.abs(actual) >= limit)),
         "expected_values_at_limit": int(np.count_nonzero(np.abs(expected) >= limit)),
+        "unclipped_expected_values": int(np.count_nonzero(np.abs(expected) < limit)),
+        "failed_unclipped_values": int(np.count_nonzero(failures & (np.abs(expected) < limit))),
         "clipping_decision_mismatches": int(np.count_nonzero(
             (np.abs(actual) >= limit) != (np.abs(expected) >= limit))),
     }
+
+
+def compare_feedback_snapshot(snapshot: dict | None, expected_path: Path, frames: int) -> dict:
+    if not isinstance(snapshot, dict) or snapshot.get("unit") != "micron":
+        raise ValueError("Julia owner omitted final constraint feedback snapshot")
+    actual = np.asarray(snapshot.get("values"), dtype=np.float32)
+    reference = np.fromfile(expected_path, dtype="<f4")
+    if reference.size % 221 or not 1 <= frames <= reference.size // 221:
+        raise ValueError("invalid constraint feedback reference extent")
+    expected = reference.reshape(-1, 221)[frames - 1]
+    if actual.shape != (221,) or not np.all(np.isfinite(actual)) or not np.all(np.isfinite(expected)):
+        raise ValueError("invalid final Julia constraint feedback")
+    error = np.abs(actual.astype(np.float64) - expected.astype(np.float64))
+    return {"unit": "micron", "max_absolute_error": float(error.max()),
+            "actual_nonzero_values": int(np.count_nonzero(actual)),
+            "expected_nonzero_values": int(np.count_nonzero(expected)),
+            "qualified": bool(np.all(error <= 1e-6)),
+            "boundary": snapshot.get("boundary")}
 
 
 def source_counters(log: str) -> dict | None:
@@ -239,6 +261,8 @@ def arguments():
     parser.add_argument("--cube", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--frames", type=int, default=7)
+    parser.add_argument("--replay-corpus", type=Path,
+                        help="validated repeated FITS and continuous controller references")
     parser.add_argument("--rate-hz", type=int, default=10)
     parser.add_argument("--readout-us", type=int, default=2000)
     parser.add_argument("--rows-per-packet", type=int, default=11)
@@ -254,8 +278,10 @@ def arguments():
     parser.add_argument("--rtc-cpus")
     parser.add_argument("--source-cpus")
     args = parser.parse_args()
-    if not 1 <= args.frames <= 7:
-        parser.error("initial Classic transport gate requires 1..7 corpus frames")
+    if not 1 <= args.frames <= (28 if args.replay_corpus else 7):
+        parser.error("Classic gate requires 1..7 frames, or at most 28 with --replay-corpus")
+    if args.replay_corpus and args.frames % 7:
+        parser.error("--replay-corpus requires 7, 14, 21, or 28 frames")
     if args.rate_hz < 1 or args.readout_us < 1 or args.readout_us * args.rate_hz >= 950000:
         parser.error("readout must be positive and below 95% of the frame period")
     if args.rows_per_packet < 1 or 352 % args.rows_per_packet:
@@ -273,6 +299,14 @@ def main():
     helper = load_script("classic_live_transport", args.fgn_root / "scripts/run_fgn_copper_fullframe_live.py")
     qualifier = load_script("classic_graph_qualifier", args.fgn_root / "scripts/qualify_fgn_revolt_classic.py")
     directory, fixture, cube = args.output.resolve(), args.fixture.resolve(), args.cube.resolve()
+    expected_commands = fixture / "demanded_pdm_command.f32le"
+    reference_frames = 7
+    corpus_manifest = None
+    if args.replay_corpus:
+        from classic_replay_corpus import validate_replay_corpus
+        corpus_manifest = validate_replay_corpus(args.replay_corpus.resolve(), fixture, cube, args.frames)
+        expected_commands = args.replay_corpus.resolve() / "demanded_pdm_command.f32le"
+        reference_frames = expected_commands.stat().st_size // (277 * 4)
     if directory.exists():
         raise ValueError(f"output already exists: {directory}")
     helper.verify_abi7(args.plugin)
@@ -299,6 +333,8 @@ def main():
         "parameter_sha256": {name: helper.sha256_file(fixture / name)
                              for _, name, _ in PARAMETERS},
         "errors": [],
+        "replay_corpus": corpus_manifest,
+        "command_reference_sha256": helper.sha256_file(expected_commands),
         "pipewire_provenance": helper.pipewire_provenance(
             installation, installation.module_directory / "libpipewire-module-ndarray-filter-chain.so"),
     }
@@ -367,7 +403,8 @@ def main():
         scripts = args.jfg_root / "benchmark/heart"
         helper.command([sys.executable, str(scripts / "decode_std_dm_packets.py"), str(directory / "dm-packets.tsv"), "--vectors", str(directory / "dm-wire-um.f32"), "--summary", str(directory / "dm-summary.json")], env)
         helper.command([sys.executable, str(scripts / "qualify_copper_aos_capture.py"), "--fits", str(cube), "--frames", str(args.frames), "--period", repr(1 / args.rate_hz), "--readout-us", str(args.readout_us), "--lines", str(args.rows_per_packet), "--wfs-packets", str(directory / "wfs-packets.tsv"), "--dm-summary", str(directory / "dm-summary.json"), "--dm-id-base", "0", "--summary", str(directory / "physical-summary.json")], env)
-        numerical = compare_commands(directory / "dm-wire-um.f32", fixture / "demanded_pdm_command.f32le", args.frames)
+        numerical = compare_commands(directory / "dm-wire-um.f32", expected_commands,
+                                     args.frames, reference_frames=reference_frames)
         (directory / "numerical-summary.json").write_text(json.dumps(numerical, indent=2) + "\n")
         if not numerical["qualified"] or numerical["clipping_decision_mismatches"]:
             raise RuntimeError("physical command comparison failed; see numerical-summary.json")
@@ -383,6 +420,12 @@ def main():
                 if args.role == "jfg":
                     node_report = json.loads((directory / "node-report.json").read_text())
                     validate_node_report(node_report, args.mode, args.frames)
+                    if args.replay_corpus:
+                        report["final_constraint_feedback"] = compare_feedback_snapshot(
+                            node_report.get("final_constraint_feedback"),
+                            args.replay_corpus / "controller-constraint-feedback.f32le", args.frames)
+                        if not report["final_constraint_feedback"]["qualified"]:
+                            raise RuntimeError("final Julia constraint feedback differs from reference")
                 if any(process.returncode != 0 for process, _ in processes):
                     raise RuntimeError("a replay process exited unsuccessfully")
             except Exception as error:
