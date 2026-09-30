@@ -1,10 +1,14 @@
 """Transport-only regressions for the Classic installed-SPA sender helper."""
 
 import importlib.util
+import io
+import json
 from pathlib import Path
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
+from unittest.mock import Mock, patch
 
 import numpy as np
 
@@ -43,6 +47,70 @@ def packets(payload, frames=1):
 
 
 class ClassicSpaSenderTests(unittest.TestCase):
+    def exercise_cleanup(self, *, replay_error=None, stop_error=None, remove_error=None):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / 'input.fits'
+            cube(source)
+            client = root / 'client.conf'
+            client.write_text('')
+            installation = SimpleNamespace(client_conf=client, module_directory=root,
+                spa_library_directory=root, library_directory=root, daemon=root / 'daemon',
+                working_directory=root, tool=lambda name: root / name)
+            daemon = Mock(returncode=0)
+            daemon.poll.return_value = None
+            helper = Mock()
+            helper.placed.side_effect = lambda argv, cpus: argv
+            helper.sha256_file.return_value = 'fixture-digest'
+            helper.start.return_value = (daemon, io.StringIO())
+            helper.stop.side_effect = stop_error
+            def command(argv, env):
+                if replay_error is not None:
+                    raise replay_error
+                if Path(argv[0]).name == 'pwao-dump':
+                    return json.dumps([{'id': 1, 'info': {'props': {'node.name': SENDER.SINK}}}])
+                return 'Long 1\nLong 0\nLong 32\nLong 0\n'
+            helper.command.side_effect = command
+            original_rmtree = SENDER.shutil.rmtree
+            caught = None
+            with patch.dict(SENDER.os.environ, {'XDG_RUNTIME_DIR': str(root)}), \
+                    patch.object(SENDER.shutil, 'rmtree', side_effect=remove_error,
+                                 wraps=None if remove_error else original_rmtree):
+                try:
+                    SENDER.run_sender(helper=helper, installation=installation,
+                                      directory=root / 'run', cube=source, frames=1)
+                except Exception as error:
+                    caught = error
+            report = json.loads((root / 'run/report.json').read_text())
+            helper.stop.assert_called_once()
+            return report, caught
+
+    def test_normal_cleanup_state_is_recorded(self):
+        report, error = self.exercise_cleanup()
+        self.assertIsNone(error)
+        self.assertTrue(report['qualified'])
+        self.assertEqual(report['cleanup'], {'daemon': 'stopped', 'runtime': 'removed'})
+        self.assertEqual(report['process_returncode'], 0)
+
+    def test_cleanup_failures_preserve_sender_report_and_cannot_pass(self):
+        for failure in ('stop_error', 'remove_error'):
+            with self.subTest(failure=failure):
+                report, error = self.exercise_cleanup(**{failure: OSError('cleanup fault')})
+                self.assertIsInstance(error, RuntimeError)
+                self.assertFalse(report['qualified'])
+                self.assertTrue(any('cleanup fault' in item for item in report['errors']))
+                self.assertEqual(report['cleanup']['daemon' if failure == 'stop_error' else 'runtime'], 'failed')
+
+    def test_cleanup_failures_preserve_primary_replay_exception(self):
+        primary = RuntimeError('primary replay fault')
+        report, error = self.exercise_cleanup(replay_error=primary,
+            stop_error=OSError('stop fault'), remove_error=OSError('remove fault'))
+        self.assertIs(error, primary)
+        self.assertFalse(report['qualified'])
+        self.assertEqual(report['cleanup'], {'daemon': 'failed', 'runtime': 'failed'})
+        self.assertEqual(report['errors'], ['primary replay fault',
+            'sender daemon cleanup failed: stop fault', 'sender runtime cleanup failed: remove fault'])
+
     def test_config_uses_installed_transport_factories_and_native_raw_pacing(self):
         config = SENDER.sender_config(Path('/cube "quoted".fits'), 100, 2000)
         for expected in ("api.fits.source", "api.ndarray.video-view", "api.heart.std-wfs.sink",

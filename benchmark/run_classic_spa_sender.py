@@ -227,16 +227,36 @@ def run_sender(*, helper, installation, directory: Path, cube: Path, frames: int
         report["errors"].append(str(error))
         raise
     finally:
+        primary_error = sys.exception()
+        report["cleanup"] = {"daemon": "not_started", "runtime": "pending"}
         if daemon is not None:
-            if daemon.poll() is None:
-                daemon.send_signal(signal.SIGTERM)
-            helper.stop(daemon, stream)
-            report["process_returncode"] = daemon.returncode
-            if daemon.returncode != 0:
+            try:
+                if daemon.poll() is None:
+                    daemon.send_signal(signal.SIGTERM)
+                helper.stop(daemon, stream)
+                report["cleanup"]["daemon"] = "stopped"
+            except Exception as error:
+                report["cleanup"]["daemon"] = "failed"
                 report["qualified"] = False
-                report["errors"].append(f"sender daemon return code: {daemon.returncode}")
-        shutil.rmtree(runtime)
-        (directory / "report.json").write_text(json.dumps(report, indent=2) + "\n")
+                report["errors"].append(f"sender daemon cleanup failed: {error}")
+            finally:
+                report["process_returncode"] = daemon.returncode
+                if daemon.returncode != 0:
+                    report["qualified"] = False
+                    report["errors"].append(f"sender daemon return code: {daemon.returncode}")
+        try:
+            shutil.rmtree(runtime)
+            report["cleanup"]["runtime"] = "removed"
+        except Exception as error:
+            report["cleanup"]["runtime"] = "failed"
+            report["qualified"] = False
+            report["errors"].append(f"sender runtime cleanup failed: {error}")
+        try:
+            (directory / "report.json").write_text(json.dumps(report, indent=2) + "\n")
+        except Exception as error:
+            if primary_error is None:
+                raise
+            print(f"sender report failed after replay failure: {error}", file=sys.stderr)
     if not report["qualified"]:
         raise RuntimeError("sender cleanup failed; see report.json")
     return report
