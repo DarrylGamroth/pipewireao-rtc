@@ -161,6 +161,18 @@ def record_live_update_timing(report: dict, latency: dict) -> None:
     report["live_update_timing_qualified"] = not latency["over_frame_period_sequences"]
 
 
+def qualify_live_update_timing(report: dict, trace_directory: Path,
+                               command_csv: Path, frames: int, rate_hz: int,
+                               enabled: bool) -> None:
+    """Require complete diagnostic traces only when timing was requested."""
+    if enabled:
+        record_live_update_timing(report, live_command_latency(
+            trace_directory, command_csv, frames, rate_hz))
+    else:
+        report["live_command_latency"] = None
+        report["live_update_timing_qualified"] = None
+
+
 def measured_control_cycle_vectors(values: np.ndarray, frames: int,
                                    extent: int) -> np.ndarray:
     half = frames // 2
@@ -482,6 +494,8 @@ def main() -> None:
                         help="two replay phases with source end, reset, property and reconstructor updates")
     parser.add_argument("--live-updates", action="store_true",
                         help="replace reconstructor and gain/pole during one continuous replay")
+    parser.add_argument("--live-update-timing", action="store_true",
+                        help="require diagnostic source tracing to measure live-update latency")
     parser.add_argument("--live-update-failure-hold-seconds", type=float, default=0,
                         help="diagnostic only: hold processes alive after matrix adoption timeout")
     parser.add_argument("--frames", type=int, default=16)
@@ -500,6 +514,8 @@ def main() -> None:
         parser.error("--live-update-failure-hold-seconds must be finite and nonnegative")
     if args.live_update_failure_hold_seconds and not args.live_updates:
         parser.error("--live-update-failure-hold-seconds requires --live-updates")
+    if args.live_update_timing and not args.live_updates:
+        parser.error("--live-update-timing requires --live-updates")
     script_started_ns = time.monotonic_ns()
     if not 1 <= args.frames <= 1024:
         parser.error("--frames must be in 1..1024")
@@ -600,7 +616,7 @@ def main() -> None:
     create_output_directory(output, args.julia_trace_compile)
     env = make_environment(output, heart, args.rate_hz, installation,
                            loop_cpu, loop_priority)
-    if args.live_updates:
+    if args.live_update_timing:
         trace_directory = output / "live-source-trace"
         trace_directory.mkdir()
         env["HEART_RTC_TRACE_DIR"] = str(trace_directory)
@@ -678,7 +694,8 @@ def main() -> None:
               "cube": str(cube), "qualified": False,
               "delivery_qualified": False, "schedule_qualified": False,
               "wire_qualified": False if args.wire_capture else None,
-              "live_update_timing_qualified": False if args.live_updates else None,
+              "live_update_timing_requested": args.live_update_timing,
+              "live_update_timing_qualified": False if args.live_update_timing else None,
               "numerical_comparison": "not_evaluated" if args.reference_vectors is not None
               else "not_requested"}
     profile_sha256 = sha256_file(args.placement_profile) if profile is not None else None
@@ -1161,11 +1178,12 @@ def main() -> None:
                 f"repeated={repeated} unexpected={unexpected}"
             )
         if args.live_updates:
-            stop(daemon, daemon_log)
-            processes.remove((daemon, daemon_log, None))
-            record_live_update_timing(report, live_command_latency(
+            if args.live_update_timing:
+                stop(daemon, daemon_log)
+                processes.remove((daemon, daemon_log, None))
+            qualify_live_update_timing(report,
                 output / "live-source-trace", output / "demanded.csv",
-                args.frames, args.rate_hz))
+                args.frames, args.rate_hz, args.live_update_timing)
         if args.equivalence_observations:
             report["equivalence_outputs"] = {}
             for name, _, extent, schema in EQUIVALENCE_OUTPUTS:

@@ -147,6 +147,32 @@ class WireLatencyQualificationTests(unittest.TestCase):
                 self.assertTrue(report["qualified"])
                 self.assertTrue(report["schedule_qualified"])
 
+    def test_unrequested_live_timing_does_not_require_source_trace(self) -> None:
+        report = {"qualified": False}
+        with patch.object(RUNNER, "live_command_latency") as measure:
+            RUNNER.qualify_live_update_timing(
+                report, Path("absent-traces"), Path("commands.csv"), 1024, 474, False)
+        measure.assert_not_called()
+        self.assertIsNone(report["live_command_latency"])
+        self.assertIsNone(report["live_update_timing_qualified"])
+        self.assertFalse(report["qualified"])
+
+    def test_requested_live_timing_still_rejects_absent_source_trace(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(RuntimeError, "absent or ambiguous"):
+                RUNNER.qualify_live_update_timing(
+                    {}, Path(directory), Path(directory) / "commands.csv", 1024, 474, True)
+
+    def test_requested_live_timing_records_measurement(self) -> None:
+        report = {"qualified": False}
+        latency = {"over_frame_period_sequences": []}
+        with patch.object(RUNNER, "live_command_latency", return_value=latency):
+            RUNNER.qualify_live_update_timing(
+                report, Path("traces"), Path("commands.csv"), 1024, 474, True)
+        self.assertIs(report["live_command_latency"], latency)
+        self.assertTrue(report["live_update_timing_qualified"])
+        self.assertFalse(report["qualified"])
+
     def test_live_latency_matches_source_identity_and_rejects_missing_or_early_commands(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
