@@ -93,6 +93,8 @@ class GatedWfsTests(unittest.TestCase):
                 self.assertFalse(json.loads(report.read_text())["qualified"])
             self.assertEqual(len(started), 1)
             self.assertIsNotNone(started[0].poll())
+            self.assertTrue(started[0].stdin.closed)
+            self.assertTrue(started[0].stdout.closed)
         finally:
             signal.signal(signal.SIGTERM, previous_term)
             signal.signal(signal.SIGINT, previous_int)

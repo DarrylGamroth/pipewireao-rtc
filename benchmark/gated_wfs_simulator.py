@@ -10,6 +10,7 @@ outside the RTC processing graph.
 
 from __future__ import annotations
 
+from contextlib import ExitStack
 from decimal import Decimal, InvalidOperation
 import hashlib
 import json
@@ -148,13 +149,19 @@ def main(argv: list[str]) -> int:
     pacer: subprocess.Popen[str] | None = None
 
     def stop_child(child: subprocess.Popen[str] | None) -> None:
-        if child is not None and child.poll() is None:
-            child.terminate()
-            try:
-                child.wait(timeout=3)
-            except subprocess.TimeoutExpired:
-                child.kill()
-                child.wait()
+        if child is None:
+            return
+        with ExitStack() as pipes:
+            for stream in (child.stdin, child.stdout, child.stderr):
+                if stream is not None:
+                    pipes.callback(stream.close)
+            if child.poll() is None:
+                child.terminate()
+                try:
+                    child.wait(timeout=3)
+                except subprocess.TimeoutExpired:
+                    child.kill()
+                    child.wait()
 
     cleanup_started = False
     cancellation_seen = False
