@@ -1,0 +1,946 @@
+{
+  "scope": "finite software characterization; repeated passes do not repair retained HEART startup failures",
+  "manifest": "/home/dgamroth/.cache/rtc-copper-progressive-ready-1024x3-20260930/manifest.json",
+  "qualified": true,
+  "mode": "row",
+  "frames_per_trial": 1024,
+  "repeats_per_implementation": 3,
+  "total_ordered_dm_commands": 9216,
+  "frame_rate_hz": 474,
+  "readout_us": 2000,
+  "fits_sha256": "880e46b8e45c848a8c2df74e5591731ea161ac7009a02ad29e2fc79f6fd06abf",
+  "binary_sha256": {
+    "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph-progressive-requal/benchmark/data/revolt-copper-aos-openloop-1024f-u16.fits": "880e46b8e45c848a8c2df74e5591731ea161ac7009a02ad29e2fc79f6fd06abf",
+    "/opt/pipewireao/bin/pipewire-ao": "e8b2a6d19a3de46a89cadfd0f3f715be3803949011a3ed7a16adef5d3d08f54d",
+    "/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-ndarray-filter-chain.so": "ab1f518828877e8f67c227766171b20e8a26129f7ba08247dea4752d13cb2621",
+    "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so": "db021461bfb05d41939e0db54e56620c3d7ae38e626763aee59110becd65f784",
+    "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/template/bin/scaoTemplate": "1c0862686dc79d127033845a12d32a0d12ac4ccc24a28396f69d0233b16ef9d1",
+    "../JuliaFilterGraph-progressive-requal/benchmark/heart/run_copper_aos_matched.sh": "12536561797d7f0cfa81da3f6a971844a39f875f5885ef91cc45d1fbd41bfa08",
+    "../JuliaFilterGraph-progressive-requal/benchmark/heart/compare_command_vectors.py": "6ad69db7ad2039583fc1c777f02bddb0fd371cab2e3f48c6bae692755f9d19a3",
+    "../JuliaFilterGraph-progressive-requal/benchmark/heart/qualify_copper_aos_capture.py": "d72c6ce78c551f1d0b46d64b8dae2fb6c979dd9ac970f713f4d98a6cee759868",
+    "../JuliaFilterGraph-progressive-requal/benchmark/heart/copper_config_aos_matched.yaml": "560bdcff3f8a5828f393e4a3f6bd86e7cbcdf0f2f4a8beed87c4de61c40a67ca",
+    "../JuliaFilterGraph-progressive-requal/scripts/pipewire_harness.jl": "9e025cdafba2d1ade54254a9c2e1ba16a71b130ee77f7f7f12e4226a4219d891",
+    "../calculon-algorithms-progressive-requal/scripts/run_fgn_copper_row_live.py": "bd13d785b14acbb70b3d63e026984d10550c7daa1e7ca8e8b84f1f0ede6ea83b",
+    "../calculon-algorithms-progressive-requal/scripts/run_fgn_copper_fullframe_live.py": "b946b3cc982773ab00da4bf96ac56fe50ac1f1af0501fff33c117342999bfebd",
+    "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-copper-fullframe/target/release/libcalculon_fgn_bundle.so": "51d842aff4175ac30042d9bcfee193538cb4be3a75c2d69f79a9293cbd4b4cc6",
+    "../JuliaFilterGraph-progressive-requal/benchmark/run_shared_copper_fits.jl": "1fa6c4041801ec88b4a4b6ee7dafea365de43d7d1357288973e4e6a58fec507d",
+    "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison/source/testServer/bin/wfsSimulator": "4930489f2655da4c33fdabc47ee96a7d051ea125e8492a8f1923c0ee0ed9580b",
+    "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph.jl/benchmark/heart/affinity/ryzen-6800h.cpu": "cd6c56997f69786b30f6d46620b2fcaee5401c6e5c801e2cd7a569cbcdf4e345",
+    "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph.jl/benchmark/heart/affinity/ryzen-6800h.threads": "c654a6827748d09557fdb2fd5753e265d3de2022b4e03de44e03cee03d3b00e7",
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-progressive-requal/benchmark/run_copper_baseline.py": "ddbde257a0a8b0dc38d8b65d05ecdf3757e455aa77bc22557913dd62982924b3",
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-progressive-requal/benchmark/gated_wfs_simulator.py": "67494564e33aa839a827895386abda1d059f57b076fbf4cc415fdcc2cf78a119",
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-progressive-requal/benchmark/wfs_sync_pacer.c": "ffbbe82f3d1ad16c3b24602525a98e4f6ed13a278c965aa3da280b14ade04db4",
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-progressive-requal/benchmark/lab_placement.py": "dd22469d005a60cd0e500f06e3ed845ae5b93c34744223e5cd68b13a3b2844e5",
+    "/home/dgamroth/.cache/rtc-copper-progressive-ready-1024x3-20260930/wfs-sync-pacer": "e11495b4a09d8aac17dc55163e9ab01771a66b7fa3a8d6447bf1f7b7ae4b01ac"
+  },
+  "heart_plugin_sha256": "db021461bfb05d41939e0db54e56620c3d7ae38e626763aee59110becd65f784",
+  "strict_placement_profile_sha256": "4f560cc45234ae426f64c25fb398404cb1bf6490cf3087107a812b2c41b1fccf",
+  "command_topology": "single-command-link",
+  "clipping_feedback": true,
+  "command_limit_um": 0.8,
+  "runs": [
+    {
+      "index": 1,
+      "latency_phases": {
+        "heart": {
+          "first_frame": {
+            "first_wfs_packet_to_dm_us": 2429.733,
+            "terminal_wfs_packet_to_dm_us": 1516.014,
+            "first_to_terminal_wfs_us": 913.719
+          },
+          "frames_2_through_10": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 1280.865,
+              "p50": 1315.841,
+              "p99": 1397.92812,
+              "max": 1398.655
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 285.875,
+              "p50": 320.4,
+              "p99": 426.75532,
+              "max": 427.459
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 9,
+              "min": 970.906,
+              "p50": 995.231,
+              "p99": 995.67432,
+              "max": 995.692
+            }
+          },
+          "frames_101_onward": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 1156.652,
+              "p50": 1304.454,
+              "p99": 1653.3866999999998,
+              "max": 1710.999
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 161.091,
+              "p50": 309.098,
+              "p99": 665.3167199999999,
+              "max": 718.393
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 924,
+              "min": 945.057,
+              "p50": 994.4195,
+              "p99": 1022.3353299999998,
+              "max": 1064.059
+            }
+          },
+          "all_frames": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 1156.652,
+              "p50": 1304.099,
+              "p99": 1653.3866999999998,
+              "max": 2429.733
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 161.091,
+              "p50": 309.098,
+              "p99": 665.3167199999999,
+              "max": 1516.014
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 1024,
+              "min": 913.719,
+              "p50": 994.4695,
+              "p99": 1019.9983799999999,
+              "max": 1064.059
+            }
+          }
+        },
+        "fgn": {
+          "first_frame": {
+            "first_wfs_packet_to_dm_us": 1353.33,
+            "terminal_wfs_packet_to_dm_us": 392.744,
+            "first_to_terminal_wfs_us": 960.586
+          },
+          "frames_2_through_10": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 1132.387,
+              "p50": 1231.592,
+              "p99": 1460.26584,
+              "max": 1475.378
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 136.986,
+              "p50": 236.893,
+              "p99": 456.66524,
+              "max": 471.101
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 9,
+              "min": 968.692,
+              "p50": 995.732,
+              "p99": 1003.99252,
+              "max": 1004.277
+            }
+          },
+          "frames_101_onward": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 1097.231,
+              "p50": 1205.995,
+              "p99": 1309.36374,
+              "max": 1357.949
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 101.61,
+              "p50": 209.3665,
+              "p99": 279.944,
+              "max": 357.479
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 924,
+              "min": 971.557,
+              "p50": 995.842,
+              "p99": 1050.39715,
+              "max": 1074.829
+            }
+          },
+          "all_frames": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 1097.231,
+              "p50": 1206.176,
+              "p99": 1309.90907,
+              "max": 1475.378
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 101.61,
+              "p50": 209.4515,
+              "p99": 280.86017,
+              "max": 471.101
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 1024,
+              "min": 960.586,
+              "p50": 995.8265,
+              "p99": 1048.42507,
+              "max": 1074.829
+            }
+          }
+        },
+        "jfg": {
+          "first_frame": {
+            "first_wfs_packet_to_dm_us": 1518.92,
+            "terminal_wfs_packet_to_dm_us": 612.045,
+            "first_to_terminal_wfs_us": 906.875
+          },
+          "frames_2_through_10": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 1183.262,
+              "p50": 1358.971,
+              "p99": 1538.4680799999999,
+              "max": 1551.05
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 188.793,
+              "p50": 384.99,
+              "p99": 583.53156,
+              "max": 597.117
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 9,
+              "min": 953.933,
+              "p50": 977.438,
+              "p99": 996.3362,
+              "max": 996.353
+            }
+          },
+          "frames_101_onward": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 1121.086,
+              "p50": 1217.6765,
+              "p99": 1318.79387,
+              "max": 1357.028
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 140.102,
+              "p50": 217.306,
+              "p99": 302.63667,
+              "max": 346.458
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 924,
+              "min": 978.039,
+              "p50": 995.907,
+              "p99": 1048.1888099999999,
+              "max": 1082.404
+            }
+          },
+          "all_frames": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 1121.086,
+              "p50": 1217.917,
+              "p99": 1343.14031,
+              "max": 1551.05
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 140.102,
+              "p50": 217.662,
+              "p99": 328.63124999999957,
+              "max": 612.045
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 1024,
+              "min": 906.875,
+              "p50": 995.882,
+              "p99": 1046.5161899999998,
+              "max": 1082.404
+            }
+          }
+        }
+      },
+      "comparisons": {
+        "heart_to_jfg": {
+          "heart_commands": 1024,
+          "julia_commands": 1024,
+          "matched_commands": 1024,
+          "heart_only_frames": [],
+          "julia_only_frames": [],
+          "actuators": 277,
+          "heart_frame_id_offset": -1,
+          "heart_output_limit": {
+            "maximum_absolute_um": 0.27198049426078796,
+            "elements_at_or_above_limit": 0,
+            "frames_at_or_above_limit": 0,
+            "all_outputs_strictly_inside_limit": true
+          },
+          "julia_output_limit": {
+            "maximum_absolute_um": 0.27198049426078796,
+            "elements_at_or_above_limit": 0,
+            "frames_at_or_above_limit": 0,
+            "all_outputs_strictly_inside_limit": true
+          },
+          "frame_id_matched": {
+            "max_absolute_um": 4.563480615615845e-08,
+            "rms_um": 6.385834473601664e-09
+          }
+        },
+        "fgn_to_jfg": {
+          "heart_commands": 1024,
+          "julia_commands": 1024,
+          "matched_commands": 1024,
+          "heart_only_frames": [],
+          "julia_only_frames": [],
+          "actuators": 277,
+          "heart_frame_id_offset": 0,
+          "heart_output_limit": {
+            "maximum_absolute_um": 0.27198052406311035,
+            "elements_at_or_above_limit": 0,
+            "frames_at_or_above_limit": 0,
+            "all_outputs_strictly_inside_limit": true
+          },
+          "julia_output_limit": {
+            "maximum_absolute_um": 0.27198049426078796,
+            "elements_at_or_above_limit": 0,
+            "frames_at_or_above_limit": 0,
+            "all_outputs_strictly_inside_limit": true
+          },
+          "frame_id_matched": {
+            "max_absolute_um": 2.9802322387695312e-08,
+            "rms_um": 3.3361052117860942e-09
+          }
+        }
+      },
+      "fgn_numeric_parity": {
+        "fullframe_parity_max_absolute_error_um": 3.725290298461914e-08,
+        "clipped_actuators": 0
+      },
+      "runner_reports": {
+        "heart": "/home/dgamroth/.cache/rtc-copper-progressive-ready-1024x3-20260930/run-001/heart/qualification.json",
+        "fgn": "/home/dgamroth/.cache/rtc-copper-progressive-ready-1024x3-20260930/run-001/fgn/report.json",
+        "jfg": "/home/dgamroth/.cache/rtc-copper-progressive-ready-1024x3-20260930/run-001/jfg.json"
+      },
+      "source_gates": {
+        "heart": "/home/dgamroth/.cache/rtc-copper-progressive-ready-1024x3-20260930/run-001/heart/wfs-gate.json",
+        "fgn": "/home/dgamroth/.cache/rtc-copper-progressive-ready-1024x3-20260930/run-001/fgn/wfs-gate.json",
+        "jfg": "/home/dgamroth/.cache/rtc-copper-progressive-ready-1024x3-20260930/run-001/jfg-wfs-gate.json"
+      }
+    },
+    {
+      "index": 2,
+      "latency_phases": {
+        "heart": {
+          "first_frame": {
+            "first_wfs_packet_to_dm_us": 2646.829,
+            "terminal_wfs_packet_to_dm_us": 1732.309,
+            "first_to_terminal_wfs_us": 914.52
+          },
+          "frames_2_through_10": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 1276.116,
+              "p50": 1331.078,
+              "p99": 1395.02864,
+              "max": 1395.148
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 262.36,
+              "p50": 336.388,
+              "p99": 422.51944,
+              "max": 422.65
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 9,
+              "min": 951.129,
+              "p50": 995.02,
+              "p99": 1012.42152,
+              "max": 1013.756
+            }
+          },
+          "frames_101_onward": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 1171.02,
+              "p50": 1303.612,
+              "p99": 1647.6010299999998,
+              "max": 1679.5
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 181.168,
+              "p50": 308.7525,
+              "p99": 654.8925999999999,
+              "max": 680.292
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 924,
+              "min": 942.592,
+              "p50": 994.865,
+              "p99": 1040.41322,
+              "max": 1065.122
+            }
+          },
+          "all_frames": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 1171.02,
+              "p50": 1304.2635,
+              "p99": 1654.2355599999999,
+              "max": 2646.829
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 181.168,
+              "p50": 309.8795,
+              "p99": 654.8925999999999,
+              "max": 1732.309
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 1024,
+              "min": 914.52,
+              "p50": 994.78,
+              "p99": 1040.41322,
+              "max": 1065.122
+            }
+          }
+        },
+        "fgn": {
+          "first_frame": {
+            "first_wfs_packet_to_dm_us": 1268.492,
+            "terminal_wfs_packet_to_dm_us": 276.557,
+            "first_to_terminal_wfs_us": 991.935
+          },
+          "frames_2_through_10": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 1139.771,
+              "p50": 1214.32,
+              "p99": 1285.64916,
+              "max": 1289.651
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 142.346,
+              "p50": 218.428,
+              "p99": 260.22624,
+              "max": 261.188
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 9,
+              "min": 978.44,
+              "p50": 995.902,
+              "p99": 1037.2502,
+              "max": 1040.485
+            }
+          },
+          "frames_101_onward": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 1089.867,
+              "p50": 1195.681,
+              "p99": 1301.57627,
+              "max": 1343.522
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 97.412,
+              "p50": 199.423,
+              "p99": 280.12953999999996,
+              "max": 315.069
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 924,
+              "min": 973.931,
+              "p50": 995.932,
+              "p99": 1051.80717,
+              "max": 1089.847
+            }
+          },
+          "all_frames": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 1089.867,
+              "p50": 1197.1235,
+              "p99": 1301.57627,
+              "max": 1343.522
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 97.412,
+              "p50": 200.184,
+              "p99": 280.12953999999996,
+              "max": 315.069
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 1024,
+              "min": 973.931,
+              "p50": 995.912,
+              "p99": 1053.09971,
+              "max": 1089.847
+            }
+          }
+        },
+        "jfg": {
+          "first_frame": {
+            "first_wfs_packet_to_dm_us": 1468.917,
+            "terminal_wfs_packet_to_dm_us": 545.891,
+            "first_to_terminal_wfs_us": 923.026
+          },
+          "frames_2_through_10": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 1178.414,
+              "p50": 1216.605,
+              "p99": 1496.16108,
+              "max": 1505.755
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 169.317,
+              "p50": 222.015,
+              "p99": 523.50056,
+              "max": 533.056
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 9,
+              "min": 972.218,
+              "p50": 996.313,
+              "p99": 1013.79728,
+              "max": 1014.206
+            }
+          },
+          "frames_101_onward": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 1120.705,
+              "p50": 1219.024,
+              "p99": 1333.12701,
+              "max": 1415.897
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 124.613,
+              "p50": 221.95,
+              "p99": 307.91774,
+              "max": 420.065
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 924,
+              "min": 977.658,
+              "p50": 995.872,
+              "p99": 1047.97447,
+              "max": 1069.439
+            }
+          },
+          "all_frames": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 1120.705,
+              "p50": 1220.7675,
+              "p99": 1402.60538,
+              "max": 1671.666
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 124.613,
+              "p50": 224.67,
+              "p99": 417.0232,
+              "max": 640.117
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 1024,
+              "min": 923.026,
+              "p50": 995.842,
+              "p99": 1047.45131,
+              "max": 1069.439
+            }
+          }
+        }
+      },
+      "comparisons": {
+        "heart_to_jfg": {
+          "heart_commands": 1024,
+          "julia_commands": 1024,
+          "matched_commands": 1024,
+          "heart_only_frames": [],
+          "julia_only_frames": [],
+          "actuators": 277,
+          "heart_frame_id_offset": -1,
+          "heart_output_limit": {
+            "maximum_absolute_um": 0.27198049426078796,
+            "elements_at_or_above_limit": 0,
+            "frames_at_or_above_limit": 0,
+            "all_outputs_strictly_inside_limit": true
+          },
+          "julia_output_limit": {
+            "maximum_absolute_um": 0.27198049426078796,
+            "elements_at_or_above_limit": 0,
+            "frames_at_or_above_limit": 0,
+            "all_outputs_strictly_inside_limit": true
+          },
+          "frame_id_matched": {
+            "max_absolute_um": 4.563480615615845e-08,
+            "rms_um": 6.385834473601664e-09
+          }
+        },
+        "fgn_to_jfg": {
+          "heart_commands": 1024,
+          "julia_commands": 1024,
+          "matched_commands": 1024,
+          "heart_only_frames": [],
+          "julia_only_frames": [],
+          "actuators": 277,
+          "heart_frame_id_offset": 0,
+          "heart_output_limit": {
+            "maximum_absolute_um": 0.27198052406311035,
+            "elements_at_or_above_limit": 0,
+            "frames_at_or_above_limit": 0,
+            "all_outputs_strictly_inside_limit": true
+          },
+          "julia_output_limit": {
+            "maximum_absolute_um": 0.27198049426078796,
+            "elements_at_or_above_limit": 0,
+            "frames_at_or_above_limit": 0,
+            "all_outputs_strictly_inside_limit": true
+          },
+          "frame_id_matched": {
+            "max_absolute_um": 2.9802322387695312e-08,
+            "rms_um": 3.3361052117860942e-09
+          }
+        }
+      },
+      "fgn_numeric_parity": {
+        "fullframe_parity_max_absolute_error_um": 3.725290298461914e-08,
+        "clipped_actuators": 0
+      },
+      "runner_reports": {
+        "heart": "/home/dgamroth/.cache/rtc-copper-progressive-ready-1024x3-20260930/run-002/heart/qualification.json",
+        "fgn": "/home/dgamroth/.cache/rtc-copper-progressive-ready-1024x3-20260930/run-002/fgn/report.json",
+        "jfg": "/home/dgamroth/.cache/rtc-copper-progressive-ready-1024x3-20260930/run-002/jfg.json"
+      },
+      "source_gates": {
+        "heart": "/home/dgamroth/.cache/rtc-copper-progressive-ready-1024x3-20260930/run-002/heart/wfs-gate.json",
+        "fgn": "/home/dgamroth/.cache/rtc-copper-progressive-ready-1024x3-20260930/run-002/fgn/wfs-gate.json",
+        "jfg": "/home/dgamroth/.cache/rtc-copper-progressive-ready-1024x3-20260930/run-002/jfg-wfs-gate.json"
+      }
+    },
+    {
+      "index": 3,
+      "latency_phases": {
+        "heart": {
+          "first_frame": {
+            "first_wfs_packet_to_dm_us": 3055.173,
+            "terminal_wfs_packet_to_dm_us": 2135.503,
+            "first_to_terminal_wfs_us": 919.67
+          },
+          "frames_2_through_10": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 1298.197,
+              "p50": 1313.165,
+              "p99": 1580.56464,
+              "max": 1594.502
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 297.677,
+              "p50": 317.583,
+              "p99": 603.53712,
+              "max": 617.024
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 9,
+              "min": 971.847,
+              "p50": 994.8,
+              "p99": 1000.13376,
+              "max": 1000.52
+            }
+          },
+          "frames_101_onward": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 1158.406,
+              "p50": 1282.122,
+              "p99": 1616.2448299999999,
+              "max": 1694.528
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 163.707,
+              "p50": 286.3655,
+              "p99": 626.43498,
+              "max": 694.488
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 924,
+              "min": 938.485,
+              "p50": 995.3505,
+              "p99": 1034.94619,
+              "max": 1067.035
+            }
+          },
+          "all_frames": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 1158.406,
+              "p50": 1286.2745,
+              "p99": 1645.1454499999998,
+              "max": 3055.173
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 163.707,
+              "p50": 288.4495,
+              "p99": 632.03137,
+              "max": 2135.503
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 1024,
+              "min": 919.67,
+              "p50": 995.301,
+              "p99": 1035.31281,
+              "max": 1067.035
+            }
+          }
+        },
+        "fgn": {
+          "first_frame": {
+            "first_wfs_packet_to_dm_us": 1387.955,
+            "terminal_wfs_packet_to_dm_us": 471.081,
+            "first_to_terminal_wfs_us": 916.874
+          },
+          "frames_2_through_10": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 1191.958,
+              "p50": 1230.701,
+              "p99": 1432.5848,
+              "max": 1440.684
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 196.858,
+              "p50": 254.516,
+              "p99": 440.08688,
+              "max": 446.244
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 9,
+              "min": 967.449,
+              "p50": 994.91,
+              "p99": 996.0216,
+              "max": 996.032
+            }
+          },
+          "frames_101_onward": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 1113.472,
+              "p50": 1217.847,
+              "p99": 1336.11135,
+              "max": 1365.492
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 117.76,
+              "p50": 217.5365,
+              "p99": 309.49593999999996,
+              "max": 370.172
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 924,
+              "min": 977.638,
+              "p50": 995.887,
+              "p99": 1053.81089,
+              "max": 1073.747
+            }
+          },
+          "all_frames": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 1113.472,
+              "p50": 1218.518,
+              "p99": 1342.08418,
+              "max": 1440.684
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 117.76,
+              "p50": 218.6385,
+              "p99": 344.31497999999976,
+              "max": 471.081
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 1024,
+              "min": 916.874,
+              "p50": 995.902,
+              "p99": 1052.02911,
+              "max": 1073.747
+            }
+          }
+        },
+        "jfg": {
+          "first_frame": {
+            "first_wfs_packet_to_dm_us": 1580.084,
+            "terminal_wfs_packet_to_dm_us": 632.132,
+            "first_to_terminal_wfs_us": 947.952
+          },
+          "frames_2_through_10": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 1169.767,
+              "p50": 1248.774,
+              "p99": 1487.42724,
+              "max": 1490.287
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 173.334,
+              "p50": 252.462,
+              "p99": 484.39904,
+              "max": 486.6
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 9,
+              "min": 970.845,
+              "p50": 996.433,
+              "p99": 1007.52064,
+              "max": 1007.854
+            }
+          },
+          "frames_101_onward": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 1110.295,
+              "p50": 1217.7265,
+              "p99": 1332.21618,
+              "max": 1354.121
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 108.222,
+              "p50": 218.523,
+              "p99": 308.6533,
+              "max": 327.803
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 924,
+              "min": 978.289,
+              "p50": 995.731,
+              "p99": 1052.64248,
+              "max": 1066.764
+            }
+          },
+          "all_frames": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 1110.295,
+              "p50": 1218.2325,
+              "p99": 1334.59244,
+              "max": 1580.084
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 108.222,
+              "p50": 219.696,
+              "p99": 312.89854999999994,
+              "max": 632.132
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 1024,
+              "min": 947.952,
+              "p50": 995.7315,
+              "p99": 1052.88191,
+              "max": 1066.764
+            }
+          }
+        }
+      },
+      "comparisons": {
+        "heart_to_jfg": {
+          "heart_commands": 1024,
+          "julia_commands": 1024,
+          "matched_commands": 1024,
+          "heart_only_frames": [],
+          "julia_only_frames": [],
+          "actuators": 277,
+          "heart_frame_id_offset": -1,
+          "heart_output_limit": {
+            "maximum_absolute_um": 0.27198049426078796,
+            "elements_at_or_above_limit": 0,
+            "frames_at_or_above_limit": 0,
+            "all_outputs_strictly_inside_limit": true
+          },
+          "julia_output_limit": {
+            "maximum_absolute_um": 0.27198049426078796,
+            "elements_at_or_above_limit": 0,
+            "frames_at_or_above_limit": 0,
+            "all_outputs_strictly_inside_limit": true
+          },
+          "frame_id_matched": {
+            "max_absolute_um": 4.563480615615845e-08,
+            "rms_um": 6.389674887330484e-09
+          }
+        },
+        "fgn_to_jfg": {
+          "heart_commands": 1024,
+          "julia_commands": 1024,
+          "matched_commands": 1024,
+          "heart_only_frames": [],
+          "julia_only_frames": [],
+          "actuators": 277,
+          "heart_frame_id_offset": 0,
+          "heart_output_limit": {
+            "maximum_absolute_um": 0.27198052406311035,
+            "elements_at_or_above_limit": 0,
+            "frames_at_or_above_limit": 0,
+            "all_outputs_strictly_inside_limit": true
+          },
+          "julia_output_limit": {
+            "maximum_absolute_um": 0.27198049426078796,
+            "elements_at_or_above_limit": 0,
+            "frames_at_or_above_limit": 0,
+            "all_outputs_strictly_inside_limit": true
+          },
+          "frame_id_matched": {
+            "max_absolute_um": 2.9802322387695312e-08,
+            "rms_um": 3.3361052117860942e-09
+          }
+        }
+      },
+      "fgn_numeric_parity": {
+        "fullframe_parity_max_absolute_error_um": 3.725290298461914e-08,
+        "clipped_actuators": 0
+      },
+      "runner_reports": {
+        "heart": "/home/dgamroth/.cache/rtc-copper-progressive-ready-1024x3-20260930/run-003/heart/qualification.json",
+        "fgn": "/home/dgamroth/.cache/rtc-copper-progressive-ready-1024x3-20260930/run-003/fgn/report.json",
+        "jfg": "/home/dgamroth/.cache/rtc-copper-progressive-ready-1024x3-20260930/run-003/jfg.json"
+      },
+      "source_gates": {
+        "heart": "/home/dgamroth/.cache/rtc-copper-progressive-ready-1024x3-20260930/run-003/heart/wfs-gate.json",
+        "fgn": "/home/dgamroth/.cache/rtc-copper-progressive-ready-1024x3-20260930/run-003/fgn/wfs-gate.json",
+        "jfg": "/home/dgamroth/.cache/rtc-copper-progressive-ready-1024x3-20260930/run-003/jfg-wfs-gate.json"
+      }
+    }
+  ],
+  "limitations": [
+    "HEART startup delivery failure reproduced separately; retained in PROGRESSIVE_REVIEW.md",
+    "HEART executable contains active -pg instrumentation",
+    "Full-frame HEART deferred ingress includes a producer/consumer handshake",
+    "Host not isolated; fixed sequential run order; no worst-case latency claim"
+  ]
+}

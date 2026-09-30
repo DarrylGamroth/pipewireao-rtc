@@ -1,0 +1,882 @@
+{
+  "scope": "finite rate characterization; shorter readout, startup included, failures retained",
+  "maximum_loss_free_rate_not_established": true,
+  "attempts": [
+    {
+      "manifest": "/home/dgamroth/.cache/rtc-copper-progressive-rate1000-20260930/manifest.json",
+      "rate_hz": 1000,
+      "readout_us": 900,
+      "fits_sha256": "880e46b8e45c848a8c2df74e5591731ea161ac7009a02ad29e2fc79f6fd06abf",
+      "three_way_qualified": false,
+      "runner_returncodes": {
+        "heart": 1
+      },
+      "heart": {
+        "qualified": false,
+        "input_packets": 2048,
+        "payload_mismatch_packets": 0,
+        "output_commands": 1021,
+        "expected_commands": 1024,
+        "missing_ids": [
+          2,
+          3,
+          4
+        ],
+        "repeated_ids": 0,
+        "decreasing_ids": 0,
+        "physical_report": "/home/dgamroth/.cache/rtc-copper-progressive-rate1000-20260930/run-001/heart/qualification.json"
+      }
+    },
+    {
+      "manifest": "/home/dgamroth/.cache/rtc-copper-progressive-rate1000-r2-20260930/manifest.json",
+      "rate_hz": 1000,
+      "readout_us": 900,
+      "fits_sha256": "880e46b8e45c848a8c2df74e5591731ea161ac7009a02ad29e2fc79f6fd06abf",
+      "three_way_qualified": false,
+      "runner_returncodes": {
+        "heart": 1,
+        "fgn": 0,
+        "jfg": 0
+      },
+      "heart": {
+        "qualified": false,
+        "input_packets": 2048,
+        "payload_mismatch_packets": 0,
+        "output_commands": 1022,
+        "expected_commands": 1024,
+        "missing_ids": [
+          2,
+          3,
+          4
+        ],
+        "repeated_ids": 1,
+        "decreasing_ids": 0,
+        "physical_report": "/home/dgamroth/.cache/rtc-copper-progressive-rate1000-r2-20260930/run-001/heart/qualification.json"
+      },
+      "fgn": {
+        "qualified": true,
+        "input_packets": 2048,
+        "payload_mismatch_packets": 0,
+        "output_commands": 1024,
+        "expected_commands": 1024,
+        "missing_ids": [],
+        "repeated_ids": 0,
+        "decreasing_ids": 0,
+        "physical_report": "/home/dgamroth/.cache/rtc-copper-progressive-rate1000-r2-20260930/run-001/fgn/physical-summary.json",
+        "source_counters": {
+          "datagrams_received": 2048,
+          "datagrams_rejected": 0,
+          "frames_published": 1024,
+          "frames_dropped": 0,
+          "buffer_starvations": 0,
+          "blocks_published": 2048
+        },
+        "numeric_parity": {
+          "fullframe_parity_max_absolute_error_um": 3.725290298461914e-08,
+          "clipped_actuators": 0
+        },
+        "latency_phases": {
+          "first_frame": {
+            "first_wfs_packet_to_dm_us": 876.932,
+            "terminal_wfs_packet_to_dm_us": 478.987,
+            "first_to_terminal_wfs_us": 397.945
+          },
+          "frames_2_through_10": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 560.058,
+              "p50": 593.552,
+              "p99": 921.42584,
+              "max": 937.996
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 115.857,
+              "p50": 147.657,
+              "p99": 487.69072,
+              "max": 505.246
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 9,
+              "min": 432.75,
+              "p50": 444.883,
+              "p99": 445.85252,
+              "max": 445.895
+            }
+          },
+          "frames_101_onward": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 544.739,
+              "p50": 558.485,
+              "p99": 640.83204,
+              "max": 675.114
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 95.179,
+              "p50": 109.054,
+              "p99": 191.46147,
+              "max": 225.833
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 924,
+              "min": 442.198,
+              "p50": 449.542,
+              "p99": 451.0227,
+              "max": 453.308
+            }
+          },
+          "all_frames": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 538.057,
+              "p50": 558.6755,
+              "p99": 643.2202,
+              "max": 937.996
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 95.179,
+              "p50": 109.3095,
+              "p99": 194.86613999999997,
+              "max": 505.246
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 1024,
+              "min": 397.945,
+              "p50": 449.471,
+              "p99": 451.00557,
+              "max": 453.308
+            }
+          }
+        }
+      },
+      "jfg": {
+        "qualified": true,
+        "input_packets": 2048,
+        "payload_mismatch_packets": 0,
+        "output_commands": 1024,
+        "expected_commands": 1024,
+        "missing_ids": [],
+        "repeated_ids": 0,
+        "decreasing_ids": 0,
+        "physical_report": "/home/dgamroth/.cache/rtc-copper-progressive-rate1000-r2-20260930/run-001/jfg-physical.json",
+        "latency_phases": {
+          "first_frame": {
+            "first_wfs_packet_to_dm_us": 821.838,
+            "terminal_wfs_packet_to_dm_us": 431.608,
+            "first_to_terminal_wfs_us": 390.23
+          },
+          "frames_2_through_10": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 559.648,
+              "p50": 567.822,
+              "p99": 832.32292,
+              "max": 853.347
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 113.904,
+              "p50": 122.859,
+              "p99": 383.40848,
+              "max": 404.136
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 9,
+              "min": 444.322,
+              "p50": 445.744,
+              "p99": 449.09556,
+              "max": 449.211
+            }
+          },
+          "frames_101_onward": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 550.981,
+              "p50": 558.495,
+              "p99": 652.87421,
+              "max": 673.07
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 100.929,
+              "p50": 108.698,
+              "p99": 201.88044,
+              "max": 224.38
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 924,
+              "min": 440.635,
+              "p50": 449.562,
+              "p99": 451.37327,
+              "max": 466.844
+            }
+          },
+          "all_frames": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 550.981,
+              "p50": 558.881,
+              "p99": 653.6047,
+              "max": 853.347
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 100.929,
+              "p50": 109.1945,
+              "p99": 203.3494,
+              "max": 431.608
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 1024,
+              "min": 390.23,
+              "p50": 449.521,
+              "p99": 451.37327,
+              "max": 467.064
+            }
+          }
+        }
+      },
+      "fgn_to_jfg": {
+        "heart_commands": 1024,
+        "julia_commands": 1024,
+        "matched_commands": 1024,
+        "heart_only_frames": [],
+        "julia_only_frames": [],
+        "actuators": 277,
+        "heart_frame_id_offset": 0,
+        "heart_output_limit": {
+          "maximum_absolute_um": 0.27198052406311035,
+          "elements_at_or_above_limit": 0,
+          "frames_at_or_above_limit": 0,
+          "all_outputs_strictly_inside_limit": true
+        },
+        "julia_output_limit": {
+          "maximum_absolute_um": 0.27198049426078796,
+          "elements_at_or_above_limit": 0,
+          "frames_at_or_above_limit": 0,
+          "all_outputs_strictly_inside_limit": true
+        },
+        "frame_id_matched": {
+          "max_absolute_um": 2.9802322387695312e-08,
+          "rms_um": 3.3361052117860942e-09
+        }
+      }
+    },
+    {
+      "manifest": "/home/dgamroth/.cache/rtc-copper-progressive-rate1500-20260930/manifest.json",
+      "rate_hz": 1500,
+      "readout_us": 600,
+      "fits_sha256": "880e46b8e45c848a8c2df74e5591731ea161ac7009a02ad29e2fc79f6fd06abf",
+      "three_way_qualified": false,
+      "runner_returncodes": {
+        "heart": 1,
+        "fgn": 0,
+        "jfg": 0
+      },
+      "heart": {
+        "qualified": false,
+        "input_packets": 2048,
+        "payload_mismatch_packets": 0,
+        "output_commands": 1021,
+        "expected_commands": 1024,
+        "missing_ids": [
+          2,
+          3,
+          4
+        ],
+        "repeated_ids": 0,
+        "decreasing_ids": 0,
+        "physical_report": "/home/dgamroth/.cache/rtc-copper-progressive-rate1500-20260930/run-001/heart/qualification.json"
+      },
+      "fgn": {
+        "qualified": true,
+        "input_packets": 2048,
+        "payload_mismatch_packets": 0,
+        "output_commands": 1024,
+        "expected_commands": 1024,
+        "missing_ids": [],
+        "repeated_ids": 0,
+        "decreasing_ids": 0,
+        "physical_report": "/home/dgamroth/.cache/rtc-copper-progressive-rate1500-20260930/run-001/fgn/physical-summary.json",
+        "source_counters": {
+          "datagrams_received": 2048,
+          "datagrams_rejected": 0,
+          "frames_published": 1024,
+          "frames_dropped": 0,
+          "buffer_starvations": 0,
+          "blocks_published": 2048
+        },
+        "numeric_parity": {
+          "fullframe_parity_max_absolute_error_um": 3.725290298461914e-08,
+          "clipped_actuators": 0
+        },
+        "latency_phases": {
+          "first_frame": {
+            "first_wfs_packet_to_dm_us": 590.154,
+            "terminal_wfs_packet_to_dm_us": 335.838,
+            "first_to_terminal_wfs_us": 254.316
+          },
+          "frames_2_through_10": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 400.58,
+              "p50": 421.017,
+              "p99": 681.12628,
+              "max": 697.775
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 104.826,
+              "p50": 125.194,
+              "p99": 382.75032,
+              "max": 398.846
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 9,
+              "min": 292.016,
+              "p50": 295.754,
+              "p99": 298.74708,
+              "max": 298.929
+            }
+          },
+          "frames_101_onward": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 393.276,
+              "p50": 397.649,
+              "p99": 411.30417,
+              "max": 417.522
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 94.858,
+              "p50": 98.018,
+              "p99": 111.21956999999999,
+              "max": 118.061
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 924,
+              "min": 297.426,
+              "p50": 299.5305,
+              "p99": 303.1209,
+              "max": 304.59
+            }
+          },
+          "all_frames": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 391.643,
+              "p50": 397.794,
+              "p99": 417.25910999999996,
+              "max": 697.775
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 94.056,
+              "p50": 98.144,
+              "p99": 118.1764,
+              "max": 398.846
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 1024,
+              "min": 254.316,
+              "p50": 299.52,
+              "p99": 303.1209,
+              "max": 304.59
+            }
+          }
+        }
+      },
+      "jfg": {
+        "qualified": true,
+        "input_packets": 2048,
+        "payload_mismatch_packets": 0,
+        "output_commands": 1024,
+        "expected_commands": 1024,
+        "missing_ids": [],
+        "repeated_ids": 0,
+        "decreasing_ids": 0,
+        "physical_report": "/home/dgamroth/.cache/rtc-copper-progressive-rate1500-20260930/run-001/jfg-physical.json",
+        "latency_phases": {
+          "first_frame": {
+            "first_wfs_packet_to_dm_us": 1202.168,
+            "terminal_wfs_packet_to_dm_us": 941.23,
+            "first_to_terminal_wfs_us": 260.938
+          },
+          "frames_2_through_10": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 410.167,
+              "p50": 459.289,
+              "p99": 1063.80208,
+              "max": 1090.75
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 115.155,
+              "p50": 161.081,
+              "p99": 768.4399999999999,
+              "max": 795.408
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 9,
+              "min": 295.012,
+              "p50": 295.834,
+              "p99": 298.04848,
+              "max": 298.208
+            }
+          },
+          "frames_101_onward": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 398.445,
+              "p50": 406.385,
+              "p99": 425.7145,
+              "max": 434.543
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 99.817,
+              "p50": 106.765,
+              "p99": 126.23687,
+              "max": 134.151
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 924,
+              "min": 294.391,
+              "p50": 299.57,
+              "p99": 301.17537,
+              "max": 304.57
+            }
+          },
+          "all_frames": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 398.445,
+              "p50": 406.27,
+              "p99": 433.75501999999994,
+              "max": 1202.168
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 99.817,
+              "p50": 106.6945,
+              "p99": 131.99910999999997,
+              "max": 941.23
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 1024,
+              "min": 260.938,
+              "p50": 299.55,
+              "p99": 301.17537,
+              "max": 308.367
+            }
+          }
+        }
+      },
+      "fgn_to_jfg": {
+        "heart_commands": 1024,
+        "julia_commands": 1024,
+        "matched_commands": 1024,
+        "heart_only_frames": [],
+        "julia_only_frames": [],
+        "actuators": 277,
+        "heart_frame_id_offset": 0,
+        "heart_output_limit": {
+          "maximum_absolute_um": 0.27198052406311035,
+          "elements_at_or_above_limit": 0,
+          "frames_at_or_above_limit": 0,
+          "all_outputs_strictly_inside_limit": true
+        },
+        "julia_output_limit": {
+          "maximum_absolute_um": 0.27198049426078796,
+          "elements_at_or_above_limit": 0,
+          "frames_at_or_above_limit": 0,
+          "all_outputs_strictly_inside_limit": true
+        },
+        "frame_id_matched": {
+          "max_absolute_um": 2.9802322387695312e-08,
+          "rms_um": 3.3361052117860942e-09
+        }
+      }
+    },
+    {
+      "manifest": "/home/dgamroth/.cache/rtc-copper-progressive-rate2000-20260930/manifest.json",
+      "rate_hz": 2000,
+      "readout_us": 450,
+      "fits_sha256": "880e46b8e45c848a8c2df74e5591731ea161ac7009a02ad29e2fc79f6fd06abf",
+      "three_way_qualified": false,
+      "runner_returncodes": {
+        "heart": 1,
+        "fgn": 0,
+        "jfg": 0
+      },
+      "heart": {
+        "qualified": false,
+        "input_packets": 2048,
+        "payload_mismatch_packets": 0,
+        "output_commands": 1018,
+        "expected_commands": 1024,
+        "missing_ids": [
+          1,
+          3,
+          4,
+          5,
+          6,
+          7,
+          9
+        ],
+        "repeated_ids": 1,
+        "decreasing_ids": 0,
+        "physical_report": "/home/dgamroth/.cache/rtc-copper-progressive-rate2000-20260930/run-001/heart/qualification.json"
+      },
+      "fgn": {
+        "qualified": true,
+        "input_packets": 2048,
+        "payload_mismatch_packets": 0,
+        "output_commands": 1024,
+        "expected_commands": 1024,
+        "missing_ids": [],
+        "repeated_ids": 0,
+        "decreasing_ids": 0,
+        "physical_report": "/home/dgamroth/.cache/rtc-copper-progressive-rate2000-20260930/run-001/fgn/physical-summary.json",
+        "source_counters": {
+          "datagrams_received": 2048,
+          "datagrams_rejected": 0,
+          "frames_published": 1024,
+          "frames_dropped": 0,
+          "buffer_starvations": 0,
+          "blocks_published": 2048
+        },
+        "numeric_parity": {
+          "fullframe_parity_max_absolute_error_um": 3.725290298461914e-08,
+          "clipped_actuators": 0
+        },
+        "latency_phases": {
+          "first_frame": {
+            "first_wfs_packet_to_dm_us": 757.296,
+            "terminal_wfs_packet_to_dm_us": 569.525,
+            "first_to_terminal_wfs_us": 187.771
+          },
+          "frames_2_through_10": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 329.637,
+              "p50": 364.923,
+              "p99": 852.78376,
+              "max": 860.58
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 109.725,
+              "p50": 137.037,
+              "p99": 627.27936,
+              "max": 634.618
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 9,
+              "min": 219.912,
+              "p50": 220.342,
+              "p99": 235.05068,
+              "max": 235.841
+            }
+          },
+          "frames_101_onward": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 318.336,
+              "p50": 321.0655,
+              "p99": 336.06363,
+              "max": 340.106
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 94.937,
+              "p50": 96.491,
+              "p99": 111.5089,
+              "max": 115.216
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 924,
+              "min": 220.793,
+              "p50": 224.31,
+              "p99": 225.8828,
+              "max": 230.701
+            }
+          },
+          "all_frames": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 318.336,
+              "p50": 321.16,
+              "p99": 337.89986999999996,
+              "max": 860.58
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 94.937,
+              "p50": 96.656,
+              "p99": 113.40666999999999,
+              "max": 634.618
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 1024,
+              "min": 187.771,
+              "p50": 224.299,
+              "p99": 226.03207,
+              "max": 235.841
+            }
+          }
+        }
+      },
+      "jfg": {
+        "qualified": true,
+        "input_packets": 2048,
+        "payload_mismatch_packets": 0,
+        "output_commands": 1024,
+        "expected_commands": 1024,
+        "missing_ids": [],
+        "repeated_ids": 0,
+        "decreasing_ids": 0,
+        "physical_report": "/home/dgamroth/.cache/rtc-copper-progressive-rate2000-20260930/run-001/jfg-physical.json",
+        "latency_phases": {
+          "first_frame": {
+            "first_wfs_packet_to_dm_us": 884.114,
+            "terminal_wfs_packet_to_dm_us": 702.354,
+            "first_to_terminal_wfs_us": 181.76
+          },
+          "frames_2_through_10": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 341.619,
+              "p50": 365.934,
+              "p99": 899.86964,
+              "max": 912.607
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 121.648,
+              "p50": 144.029,
+              "p99": 679.72812,
+              "max": 692.415
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 9,
+              "min": 219.23,
+              "p50": 220.192,
+              "p99": 222.71644,
+              "max": 222.787
+            }
+          },
+          "frames_101_onward": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 325.859,
+              "p50": 332.2415,
+              "p99": 352.2875,
+              "max": 383.417
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 924,
+              "min": 101.93,
+              "p50": 107.351,
+              "p99": 127.4481,
+              "max": 157.575
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 924,
+              "min": 220.412,
+              "p50": 224.57,
+              "p99": 226.08769999999998,
+              "max": 228.678
+            }
+          },
+          "all_frames": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 325.859,
+              "p50": 332.2915,
+              "p99": 356.5487,
+              "max": 912.607
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 1024,
+              "min": 101.93,
+              "p50": 107.521,
+              "p99": 132.91554,
+              "max": 702.354
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 1024,
+              "min": 181.76,
+              "p50": 224.54,
+              "p99": 226.10357,
+              "max": 228.678
+            }
+          }
+        }
+      },
+      "fgn_to_jfg": {
+        "heart_commands": 1024,
+        "julia_commands": 1024,
+        "matched_commands": 1024,
+        "heart_only_frames": [],
+        "julia_only_frames": [],
+        "actuators": 277,
+        "heart_frame_id_offset": 0,
+        "heart_output_limit": {
+          "maximum_absolute_um": 0.27198052406311035,
+          "elements_at_or_above_limit": 0,
+          "frames_at_or_above_limit": 0,
+          "all_outputs_strictly_inside_limit": true
+        },
+        "julia_output_limit": {
+          "maximum_absolute_um": 0.27198049426078796,
+          "elements_at_or_above_limit": 0,
+          "frames_at_or_above_limit": 0,
+          "all_outputs_strictly_inside_limit": true
+        },
+        "frame_id_matched": {
+          "max_absolute_um": 2.9802322387695312e-08,
+          "rms_um": 3.3361052117860942e-09
+        }
+      }
+    },
+    {
+      "manifest": "/home/dgamroth/.cache/rtc-copper-progressive-rate2500-20260930/manifest.json",
+      "rate_hz": 2500,
+      "readout_us": 360,
+      "fits_sha256": "880e46b8e45c848a8c2df74e5591731ea161ac7009a02ad29e2fc79f6fd06abf",
+      "three_way_qualified": false,
+      "runner_returncodes": {
+        "heart": 1,
+        "fgn": 1,
+        "jfg": 1
+      },
+      "heart": {
+        "qualified": false,
+        "input_packets": 2048,
+        "payload_mismatch_packets": 0,
+        "output_commands": 1019,
+        "expected_commands": 1024,
+        "missing_ids": [
+          1,
+          3,
+          4,
+          5,
+          6
+        ],
+        "repeated_ids": 0,
+        "decreasing_ids": 0,
+        "physical_report": "/home/dgamroth/.cache/rtc-copper-progressive-rate2500-20260930/run-001/heart/qualification.json"
+      },
+      "fgn": {
+        "qualified": false,
+        "input_packets": 2048,
+        "payload_mismatch_packets": 0,
+        "output_commands": 1023,
+        "expected_commands": 1024,
+        "missing_ids": [
+          2
+        ],
+        "repeated_ids": 0,
+        "decreasing_ids": 0,
+        "physical_report": "/home/dgamroth/.cache/rtc-copper-progressive-rate2500-20260930/run-001/fgn/physical-summary.json",
+        "source_counters": {
+          "datagrams_received": 2048,
+          "datagrams_rejected": 0,
+          "frames_published": 1023,
+          "frames_dropped": 1,
+          "buffer_starvations": 1,
+          "blocks_published": 2046
+        },
+        "numeric_parity": null
+      },
+      "jfg": {
+        "qualified": false,
+        "input_packets": 2048,
+        "payload_mismatch_packets": 0,
+        "output_commands": 1023,
+        "expected_commands": 1024,
+        "missing_ids": [
+          2
+        ],
+        "repeated_ids": 0,
+        "decreasing_ids": 0,
+        "physical_report": "/home/dgamroth/.cache/rtc-copper-progressive-rate2500-20260930/run-001/jfg-physical.json"
+      }
+    },
+    {
+      "manifest": "/home/dgamroth/.cache/rtc-copper-progressive-rate3000-20260930/manifest.json",
+      "rate_hz": 3000,
+      "readout_us": 300,
+      "fits_sha256": "880e46b8e45c848a8c2df74e5591731ea161ac7009a02ad29e2fc79f6fd06abf",
+      "three_way_qualified": false,
+      "runner_returncodes": {
+        "heart": 1,
+        "fgn": 1,
+        "jfg": 1
+      },
+      "heart": {
+        "qualified": false,
+        "input_packets": 2048,
+        "payload_mismatch_packets": 0,
+        "output_commands": 1017,
+        "expected_commands": 1024,
+        "missing_ids": [
+          1,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "repeated_ids": 1,
+        "decreasing_ids": 0,
+        "physical_report": "/home/dgamroth/.cache/rtc-copper-progressive-rate3000-20260930/run-001/heart/qualification.json"
+      },
+      "fgn": {
+        "qualified": false,
+        "input_packets": 2048,
+        "payload_mismatch_packets": 0,
+        "output_commands": 1022,
+        "expected_commands": 1024,
+        "missing_ids": [
+          2,
+          4
+        ],
+        "repeated_ids": 0,
+        "decreasing_ids": 0,
+        "physical_report": "/home/dgamroth/.cache/rtc-copper-progressive-rate3000-20260930/run-001/fgn/physical-summary.json",
+        "source_counters": {
+          "datagrams_received": 2048,
+          "datagrams_rejected": 0,
+          "frames_published": 1022,
+          "frames_dropped": 2,
+          "buffer_starvations": 2,
+          "blocks_published": 2044
+        },
+        "numeric_parity": null
+      },
+      "jfg": {
+        "qualified": false,
+        "input_packets": 2048,
+        "payload_mismatch_packets": 0,
+        "output_commands": 1022,
+        "expected_commands": 1024,
+        "missing_ids": [
+          2,
+          3
+        ],
+        "repeated_ids": 0,
+        "decreasing_ids": 0,
+        "physical_report": "/home/dgamroth/.cache/rtc-copper-progressive-rate3000-20260930/run-001/jfg-physical.json"
+      }
+    }
+  ]
+}

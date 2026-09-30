@@ -1,0 +1,114 @@
+{
+  "core_revision": "d130d3afac6e81519dad019629c7ba245e6de34c",
+  "jll_version": "1.7.0+18",
+  "jll_revision": "e58cb81efdf1f9817a7c208e444fd47407de0f51",
+  "jll_tree": "9a17e22b82cb9243381813de00fba404365c5a6d",
+  "recipe_revision": "b72cbf0c9",
+  "products": [
+    {
+      "path": "/home/dgamroth/workspaces/codex/pipewire/Yggdrasil-PipeWire/P/PipeWireAO/products/PipeWireAO-logs.v1.7.0.aarch64-linux-gnu.tar.gz",
+      "bytes": 30440,
+      "sha256": "7ebfd072dd1accdfe486a0a33a6f4467a49dcc45514fff4bed1f55b6e504ea14"
+    },
+    {
+      "path": "/home/dgamroth/workspaces/codex/pipewire/Yggdrasil-PipeWire/P/PipeWireAO/products/PipeWireAO-logs.v1.7.0.x86_64-linux-gnu-march+avx2.tar.gz",
+      "bytes": 29665,
+      "sha256": "aab1ed30cdec2f8173d5778fff9381337c24ac6c85c6e5675b20ff7bbd46bfe7"
+    },
+    {
+      "path": "/home/dgamroth/workspaces/codex/pipewire/Yggdrasil-PipeWire/P/PipeWireAO/products/PipeWireAO-logs.v1.7.0.x86_64-linux-gnu-march+avx512.tar.gz",
+      "bytes": 29791,
+      "sha256": "54bd7f00d9b6620697454446607592bfed7d46a8b9525c54336be7b994f8df9d"
+    },
+    {
+      "path": "/home/dgamroth/workspaces/codex/pipewire/Yggdrasil-PipeWire/P/PipeWireAO/products/PipeWireAO-logs.v1.7.0.x86_64-linux-gnu-march+x86_64.tar.gz",
+      "bytes": 30801,
+      "sha256": "2d9b7a0b6a5d2f1452b3299fd1e2976d22e6c25fc5c4f06e0ae0654521b2f19e"
+    },
+    {
+      "path": "/home/dgamroth/workspaces/codex/pipewire/Yggdrasil-PipeWire/P/PipeWireAO/products/PipeWireAO-logs.v1.7.0.x86_64-linux-gnu.tar.gz",
+      "bytes": 29969,
+      "sha256": "eb9b7bf1536e074fdab0d91bd487509b9e4f58c8c65733ab0643cd2310a90cdb"
+    },
+    {
+      "path": "/home/dgamroth/workspaces/codex/pipewire/Yggdrasil-PipeWire/P/PipeWireAO/products/PipeWireAO.v1.7.0.aarch64-linux-gnu.tar.gz",
+      "bytes": 3455785,
+      "sha256": "15036130892a2f8de2fff1f9f0f2f8ec20772b03321e82be4a997cd03cd56e6c"
+    },
+    {
+      "path": "/home/dgamroth/workspaces/codex/pipewire/Yggdrasil-PipeWire/P/PipeWireAO/products/PipeWireAO.v1.7.0.x86_64-linux-gnu-march+avx2.tar.gz",
+      "bytes": 3613960,
+      "sha256": "e0da2761d292a73a34ffc7ae19b2364d357eaa2e48f23a3e604da2877b69af22"
+    },
+    {
+      "path": "/home/dgamroth/workspaces/codex/pipewire/Yggdrasil-PipeWire/P/PipeWireAO/products/PipeWireAO.v1.7.0.x86_64-linux-gnu-march+avx512.tar.gz",
+      "bytes": 3609583,
+      "sha256": "29499f560e4da4be894666140b8637da2eee72530f6b5f14355a0d9ce62278b5"
+    },
+    {
+      "path": "/home/dgamroth/workspaces/codex/pipewire/Yggdrasil-PipeWire/P/PipeWireAO/products/PipeWireAO.v1.7.0.x86_64-linux-gnu-march+x86_64.tar.gz",
+      "bytes": 3606402,
+      "sha256": "40b85c18717658c42b17f19c4b4064ca98921052641a2d918bc8562e2259a565"
+    },
+    {
+      "path": "/home/dgamroth/workspaces/codex/pipewire/Yggdrasil-PipeWire/P/PipeWireAO/products/PipeWireAO.v1.7.0.x86_64-linux-gnu.tar.gz",
+      "bytes": 3606402,
+      "sha256": "40b85c18717658c42b17f19c4b4064ca98921052641a2d918bc8562e2259a565"
+    }
+  ],
+  "selectors": [
+    {
+      "triplet": "aarch64-linux-gnu",
+      "selected_sha1": "5824a728130e0a7403d8e66cb9ec0dae00246447",
+      "expected_sha1": "5824a728130e0a7403d8e66cb9ec0dae00246447",
+      "qualified": true
+    },
+    {
+      "triplet": "x86_64-linux-gnu",
+      "selected_sha1": "8c1a3e9d3261ba839cf16f22202bbafdc9c38921",
+      "expected_sha1": "8c1a3e9d3261ba839cf16f22202bbafdc9c38921",
+      "qualified": true
+    },
+    {
+      "triplet": "x86_64-linux-gnu-march+avx2",
+      "selected_sha1": "8c1a3e9d3261ba839cf16f22202bbafdc9c38921",
+      "expected_sha1": "8c1a3e9d3261ba839cf16f22202bbafdc9c38921",
+      "qualified": true
+    },
+    {
+      "triplet": "x86_64-linux-gnu-march+avx512",
+      "selected_sha1": "adaeb7f0db79cc3a6928440c0cd6d688013356b2",
+      "expected_sha1": "adaeb7f0db79cc3a6928440c0cd6d688013356b2",
+      "qualified": true
+    },
+    {
+      "triplet": "x86_64-linux-gnu-march+x86_64",
+      "selected_sha1": "6c4b02fea37ad118afdaa4433db7d876b06dbc8d",
+      "expected_sha1": "6c4b02fea37ad118afdaa4433db7d876b06dbc8d",
+      "qualified": true
+    }
+  ],
+  "foreign_arch_execution": false,
+  "avx512_execution": false,
+  "heart_plugin_included": false,
+  "logs": [
+    {
+      "path": "/home/dgamroth/.cache/pipewireao-jll-build18-cached-source-20260929.log",
+      "sha256": "9b87a26da0fa45e175695fa316ef6512d72186fc6e8b45cd9184fc18a31faec4"
+    },
+    {
+      "path": "/home/dgamroth/.cache/pipewireao-jll-build18-isolated-generation-20260929.log",
+      "sha256": "84f656ca4435aaeb3a7d8eb7794c155e9b9387249887fdb12fab03468f3dda34"
+    },
+    {
+      "path": "/home/dgamroth/.cache/pipewireao-jll-build18-host-check-20260929.log",
+      "sha256": "1250f75eb2ee128d9dc17835ef61101c1e43ee1bf548b3f54921e3b8c6a0d18a"
+    },
+    {
+      "path": "/home/dgamroth/.cache/pipewireao-jll-build18-binding-tests-20260929.log",
+      "sha256": "a218635dfab4f95880f7b41b102b46cbf63a97da8668b9440a9135a1126717ec"
+    }
+  ],
+  "published_release": "https://github.com/DarrylGamroth/PipeWireAO_jll.jl/releases/tag/PipeWireAO-v1.7.0%2B18",
+  "upstream_yggdrasil_pushed": false
+}

@@ -1,0 +1,767 @@
+{
+  "scope": "startup diagnostic; not representative tail characterization",
+  "runs": [
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-progressive-ready-short-20260930",
+      "qualified": false,
+      "error": "heart runner failed; see /home/dgamroth/.cache/rtc-copper-progressive-ready-short-20260930/run-001/heart.runner.log",
+      "frames": 32,
+      "heart_qualification": {
+        "fits": "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph-progressive-requal/benchmark/data/revolt-copper-aos-openloop-1024f-u16.fits",
+        "fits_width": 64,
+        "fits_height": 64,
+        "fits_frame_count": 1024,
+        "requested_frames": 32,
+        "period_s": 0.002109704641350211,
+        "readout_us": 2000.0,
+        "lines_per_datagram": 32,
+        "expected_wfs_packets": 64,
+        "expected_dm_commands": 32,
+        "captured_wfs_packets": 64,
+        "captured_wfs_frame_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31
+        ],
+        "captured_dm_commands": 31,
+        "wfs_checksum_mode": "nop",
+        "wfs_payload_mismatch_packets": 0,
+        "dm_first_frame_id": 1,
+        "dm_last_frame_id": 32,
+        "dm_repeated_frame_ids": 1,
+        "dm_decreasing_frame_ids": 0,
+        "source_first_to_terminal_us": {
+          "count": 32,
+          "min": 957.7274322509766,
+          "p50": 995.635986328125,
+          "p99": 1006.4554214477539,
+          "max": 1006.6032409667969
+        },
+        "source_first_packet_period_us": {
+          "count": 31,
+          "min": 1343.9655303955078,
+          "p50": 2109.2891693115234,
+          "p99": 2824.711799621582,
+          "max": 2825.498580932617
+        },
+        "first_wfs_packet_to_dm_us": null,
+        "terminal_wfs_packet_to_dm_us": null,
+        "qualified": false,
+        "errors": [
+          "DM commands: expected 32, captured 31",
+          "DM frame IDs: expected 1..32, captured [1, 1, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]"
+        ]
+      },
+      "manifest_keys": [
+        "profile",
+        "qualification_scope",
+        "rtc_dev_019_qualified",
+        "mode",
+        "repeats",
+        "frames",
+        "frame_rate_hz",
+        "readout_us",
+        "clipping_feedback",
+        "source_clock",
+        "source_gate_scope",
+        "gated_pacer_build",
+        "jfg_graph_warmup",
+        "command_topology",
+        "heart_plugin",
+        "heart_plugin_sha256",
+        "jfg_pipewireao_julia_root",
+        "configure_all_loops",
+        "verify_placement",
+        "strict_placement_profile",
+        "strict_placement_profile_sha256",
+        "command_limit_um",
+        "fits",
+        "fits_sha256",
+        "host",
+        "source_revisions",
+        "source_archives",
+        "inherited_runtime_environment",
+        "revolt_config_sha256",
+        "binary_sha256",
+        "runs",
+        "qualified",
+        "error",
+        "output_paths"
+      ],
+      "runner_log": "\tnot a dynamic executable\ncapture qualification failed; see /home/dgamroth/.cache/rtc-copper-progressive-ready-short-20260930/run-001/heart/qualification.json\n"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-progressive-ready-short-r2-20260930",
+      "qualified": false,
+      "error": "fgn runner failed; see /home/dgamroth/.cache/rtc-copper-progressive-ready-short-r2-20260930/run-001/fgn.runner.log",
+      "frames": 32,
+      "heart_qualification": {
+        "fits": "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph-progressive-requal/benchmark/data/revolt-copper-aos-openloop-1024f-u16.fits",
+        "fits_width": 64,
+        "fits_height": 64,
+        "fits_frame_count": 1024,
+        "requested_frames": 32,
+        "period_s": 0.002109704641350211,
+        "readout_us": 2000.0,
+        "lines_per_datagram": 32,
+        "expected_wfs_packets": 64,
+        "expected_dm_commands": 32,
+        "captured_wfs_packets": 64,
+        "captured_wfs_frame_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31
+        ],
+        "captured_dm_commands": 32,
+        "wfs_checksum_mode": "nop",
+        "wfs_payload_mismatch_packets": 0,
+        "dm_first_frame_id": 1,
+        "dm_last_frame_id": 32,
+        "dm_repeated_frame_ids": 0,
+        "dm_decreasing_frame_ids": 0,
+        "source_first_to_terminal_us": {
+          "count": 32,
+          "min": 935.5545043945312,
+          "p50": 989.4371032714844,
+          "p99": 1042.7284240722656,
+          "max": 1058.1016540527344
+        },
+        "source_first_packet_period_us": {
+          "count": 31,
+          "min": 1268.148422241211,
+          "p50": 2108.8123321533203,
+          "p99": 2941.5130615234375,
+          "max": 2958.536148071289
+        },
+        "first_wfs_packet_to_dm_us": {
+          "count": 32,
+          "min": 1219.2726135253906,
+          "p50": 1301.0501861572266,
+          "p99": 2180.9720993042,
+          "max": 2396.3451385498047
+        },
+        "terminal_wfs_packet_to_dm_us": {
+          "count": 32,
+          "min": 239.84909057617188,
+          "p50": 305.41419982910156,
+          "p99": 1209.3496322631845,
+          "max": 1460.7906341552734
+        },
+        "qualified": true,
+        "errors": []
+      },
+      "manifest_keys": [
+        "profile",
+        "qualification_scope",
+        "rtc_dev_019_qualified",
+        "mode",
+        "repeats",
+        "frames",
+        "frame_rate_hz",
+        "readout_us",
+        "clipping_feedback",
+        "source_clock",
+        "source_gate_scope",
+        "gated_pacer_build",
+        "jfg_graph_warmup",
+        "command_topology",
+        "heart_plugin",
+        "heart_plugin_sha256",
+        "jfg_pipewireao_julia_root",
+        "configure_all_loops",
+        "verify_placement",
+        "strict_placement_profile",
+        "strict_placement_profile_sha256",
+        "command_limit_um",
+        "fits",
+        "fits_sha256",
+        "host",
+        "source_revisions",
+        "source_archives",
+        "inherited_runtime_environment",
+        "revolt_config_sha256",
+        "binary_sha256",
+        "runs",
+        "qualified",
+        "error",
+        "output_paths"
+      ],
+      "runner_log": "Traceback (most recent call last):\n  File \"/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-progressive-requal/../calculon-algorithms-progressive-requal/scripts/run_fgn_copper_row_live.py\", line 415, in <module>\n    main()\n    ~~~~^^\n  File \"/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-progressive-requal/../calculon-algorithms-progressive-requal/scripts/run_fgn_copper_row_live.py\", line 258, in main\n    live.verify_heart_plugin(heart)\n    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-progressive-requal/scripts/run_fgn_copper_fullframe_live.py\", line 305, in verify_heart_plugin\n    raise RuntimeError(f\"unexpected HEART DSO SHA-256: {digest}; \"\n                       f\"expected {', '.join(expected_heart_hashes(expected_sha256))}\")\nRuntimeError: unexpected HEART DSO SHA-256: db021461bfb05d41939e0db54e56620c3d7ae38e626763aee59110becd65f784; expected 0e4ce08efcf3337778f5cc0dc3a72af56adf81d53dab2a9072e985f8bd1f3724, 98d76eae5bea12805e21a96859ef0786c02f3ad94c5b08aa8abfa94b7fb90214, 04a355029e49e065f9ee883b37c79f0018fbd255b81a8b915749de8aafe5487c, 12714aa3334b907f492eccac5f1e468c9d3f21f24d2d2253b22fd3a3dcc89a11\n"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-progressive-ready-short-r3-20260930",
+      "qualified": true,
+      "error": null,
+      "frames": 32,
+      "heart_qualification": {
+        "fits": "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph-progressive-requal/benchmark/data/revolt-copper-aos-openloop-1024f-u16.fits",
+        "fits_width": 64,
+        "fits_height": 64,
+        "fits_frame_count": 1024,
+        "requested_frames": 32,
+        "period_s": 0.002109704641350211,
+        "readout_us": 2000.0,
+        "lines_per_datagram": 32,
+        "expected_wfs_packets": 64,
+        "expected_dm_commands": 32,
+        "captured_wfs_packets": 64,
+        "captured_wfs_frame_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31
+        ],
+        "captured_dm_commands": 32,
+        "wfs_checksum_mode": "nop",
+        "wfs_payload_mismatch_packets": 0,
+        "dm_first_frame_id": 1,
+        "dm_last_frame_id": 32,
+        "dm_repeated_frame_ids": 0,
+        "dm_decreasing_frame_ids": 0,
+        "source_first_to_terminal_us": {
+          "count": 32,
+          "min": 916.2425994873047,
+          "p50": 992.894172668457,
+          "p99": 1006.624698638916,
+          "max": 1011.1331939697266
+        },
+        "source_first_packet_period_us": {
+          "count": 31,
+          "min": 1105.0701141357422,
+          "p50": 2109.7660064697266,
+          "p99": 3092.2412872314453,
+          "max": 3106.832504272461
+        },
+        "first_wfs_packet_to_dm_us": {
+          "count": 32,
+          "min": 1218.557357788086,
+          "p50": 1313.2095336914062,
+          "p99": 2448.604106903078,
+          "max": 2821.9223022460938
+        },
+        "terminal_wfs_packet_to_dm_us": {
+          "count": 32,
+          "min": 232.21969604492188,
+          "p50": 317.45433807373047,
+          "p99": 1511.2233161926285,
+          "max": 1905.679702758789
+        },
+        "qualified": true,
+        "errors": []
+      },
+      "qualification": {
+        "heart": {
+          "fits": "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph-progressive-requal/benchmark/data/revolt-copper-aos-openloop-1024f-u16.fits",
+          "fits_width": 64,
+          "fits_height": 64,
+          "fits_frame_count": 1024,
+          "requested_frames": 32,
+          "period_s": 0.002109704641350211,
+          "readout_us": 2000.0,
+          "lines_per_datagram": 32,
+          "expected_wfs_packets": 64,
+          "expected_dm_commands": 32,
+          "captured_wfs_packets": 64,
+          "captured_wfs_frame_ids": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31
+          ],
+          "captured_dm_commands": 32,
+          "wfs_checksum_mode": "nop",
+          "wfs_payload_mismatch_packets": 0,
+          "dm_first_frame_id": 1,
+          "dm_last_frame_id": 32,
+          "dm_repeated_frame_ids": 0,
+          "dm_decreasing_frame_ids": 0,
+          "source_first_to_terminal_us": {
+            "count": 32,
+            "min": 916.2425994873047,
+            "p50": 992.894172668457,
+            "p99": 1006.624698638916,
+            "max": 1011.1331939697266
+          },
+          "source_first_packet_period_us": {
+            "count": 31,
+            "min": 1105.0701141357422,
+            "p50": 2109.7660064697266,
+            "p99": 3092.2412872314453,
+            "max": 3106.832504272461
+          },
+          "first_wfs_packet_to_dm_us": {
+            "count": 32,
+            "min": 1218.557357788086,
+            "p50": 1313.2095336914062,
+            "p99": 2448.604106903078,
+            "max": 2821.9223022460938
+          },
+          "terminal_wfs_packet_to_dm_us": {
+            "count": 32,
+            "min": 232.21969604492188,
+            "p50": 317.45433807373047,
+            "p99": 1511.2233161926285,
+            "max": 1905.679702758789
+          },
+          "qualified": true,
+          "errors": []
+        },
+        "fgn": {
+          "fits": "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph-progressive-requal/benchmark/data/revolt-copper-aos-openloop-1024f-u16.fits",
+          "fits_width": 64,
+          "fits_height": 64,
+          "fits_frame_count": 1024,
+          "requested_frames": 32,
+          "period_s": 0.002109704641350211,
+          "readout_us": 2000.0,
+          "lines_per_datagram": 32,
+          "expected_wfs_packets": 64,
+          "expected_dm_commands": 32,
+          "captured_wfs_packets": 64,
+          "captured_wfs_frame_ids": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31
+          ],
+          "captured_dm_commands": 32,
+          "wfs_checksum_mode": "nop",
+          "wfs_payload_mismatch_packets": 0,
+          "dm_first_frame_id": 0,
+          "dm_last_frame_id": 31,
+          "dm_repeated_frame_ids": 0,
+          "dm_decreasing_frame_ids": 0,
+          "source_first_to_terminal_us": {
+            "count": 32,
+            "min": 961.3037109375,
+            "p50": 995.635986328125,
+            "p99": 1006.4315795898438,
+            "max": 1007.3184967041016
+          },
+          "source_first_packet_period_us": {
+            "count": 31,
+            "min": 991.8212890625,
+            "p50": 2110.2428436279297,
+            "p99": 3161.382675170898,
+            "max": 3272.533416748047
+          },
+          "first_wfs_packet_to_dm_us": {
+            "count": 32,
+            "min": 1130.1040649414062,
+            "p50": 1216.1731719970703,
+            "p99": 1451.2872695922854,
+            "max": 1503.4675598144531
+          },
+          "terminal_wfs_packet_to_dm_us": {
+            "count": 32,
+            "min": 134.46807861328125,
+            "p50": 220.29876708984375,
+            "p99": 452.7640342712404,
+            "max": 496.14906311035156
+          },
+          "qualified": true,
+          "errors": []
+        },
+        "jfg": {
+          "fits": "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph-progressive-requal/benchmark/data/revolt-copper-aos-openloop-1024f-u16.fits",
+          "fits_width": 64,
+          "fits_height": 64,
+          "fits_frame_count": 1024,
+          "requested_frames": 32,
+          "period_s": 0.002109704641350211,
+          "readout_us": 2000.0,
+          "lines_per_datagram": 32,
+          "expected_wfs_packets": 64,
+          "expected_dm_commands": 32,
+          "captured_wfs_packets": 64,
+          "captured_wfs_frame_ids": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31
+          ],
+          "captured_dm_commands": 32,
+          "wfs_checksum_mode": "nop",
+          "wfs_payload_mismatch_packets": 0,
+          "dm_first_frame_id": 0,
+          "dm_last_frame_id": 31,
+          "dm_repeated_frame_ids": 0,
+          "dm_decreasing_frame_ids": 0,
+          "source_first_to_terminal_us": {
+            "count": 32,
+            "min": 906.9442749023438,
+            "p50": 995.8744049072266,
+            "p99": 1037.6882553100586,
+            "max": 1037.8360748291016
+          },
+          "source_first_packet_period_us": {
+            "count": 31,
+            "min": 1215.6963348388672,
+            "p50": 2109.7660064697266,
+            "p99": 2904.033660888672,
+            "max": 3002.8820037841797
+          },
+          "first_wfs_packet_to_dm_us": {
+            "count": 32,
+            "min": 1108.1695556640625,
+            "p50": 1203.6561965942383,
+            "p99": 1531.1241149902346,
+            "max": 1582.8609466552734
+          },
+          "terminal_wfs_packet_to_dm_us": {
+            "count": 32,
+            "min": 112.29515075683594,
+            "p50": 206.7089080810547,
+            "p99": 526.5474319458009,
+            "max": 545.0248718261719
+          },
+          "qualified": true,
+          "errors": []
+        },
+        "comparisons": {
+          "heart_to_jfg": "/home/dgamroth/.cache/rtc-copper-progressive-ready-short-r3-20260930/run-001/heart_to_jfg.json",
+          "fgn_to_jfg": "/home/dgamroth/.cache/rtc-copper-progressive-ready-short-r3-20260930/run-001/fgn_to_jfg.json"
+        }
+      },
+      "latency_phases": {
+        "heart": {
+          "first_frame": {
+            "first_wfs_packet_to_dm_us": 2821.886,
+            "terminal_wfs_packet_to_dm_us": 1905.753,
+            "first_to_terminal_wfs_us": 916.133
+          },
+          "frames_2_through_10": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 1249.006,
+              "p50": 1308.077,
+              "p99": 1602.80092,
+              "max": 1617.595
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 265.036,
+              "p50": 312.164,
+              "p99": 619.44912,
+              "max": 633.194
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 9,
+              "min": 971.286,
+              "p50": 991.654,
+              "p99": 996.237,
+              "max": 996.253
+            }
+          },
+          "frames_101_onward": null,
+          "all_frames": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 32,
+              "min": 1218.559,
+              "p50": 1313.1905,
+              "p99": 2448.5557900000017,
+              "max": 2821.886
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 32,
+              "min": 232.244,
+              "p50": 317.4835,
+              "p99": 1511.2597100000016,
+              "max": 1905.753
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 32,
+              "min": 916.133,
+              "p50": 992.841,
+              "p99": 1006.66183,
+              "max": 1011.221
+            }
+          }
+        },
+        "fgn": {
+          "first_frame": {
+            "first_wfs_packet_to_dm_us": 1314.108,
+            "terminal_wfs_packet_to_dm_us": 352.9,
+            "first_to_terminal_wfs_us": 961.208
+          },
+          "frames_2_through_10": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 1167.453,
+              "p50": 1294.11,
+              "p99": 1334.561,
+              "max": 1335.207
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 173.505,
+              "p50": 308.938,
+              "p99": 354.5116,
+              "max": 355.746
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 9,
+              "min": 967.489,
+              "p50": 995.291,
+              "p99": 996.08928,
+              "max": 996.102
+            }
+          },
+          "frames_101_onward": null,
+          "all_frames": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 32,
+              "min": 1130.063,
+              "p50": 1216.2545,
+              "p99": 1451.1642600000002,
+              "max": 1503.261
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 32,
+              "min": 134.501,
+              "p50": 220.362,
+              "p99": 452.6172900000002,
+              "max": 495.937
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 32,
+              "min": 961.208,
+              "p50": 995.592,
+              "p99": 1006.45414,
+              "max": 1007.324
+            }
+          }
+        },
+        "jfg": {
+          "first_frame": {
+            "first_wfs_packet_to_dm_us": 1392.303,
+            "terminal_wfs_packet_to_dm_us": 485.498,
+            "first_to_terminal_wfs_us": 906.805
+          },
+          "frames_2_through_10": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 1160.701,
+              "p50": 1249.617,
+              "p99": 1569.5490399999999,
+              "max": 1582.91
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 9,
+              "min": 164.488,
+              "p50": 253.164,
+              "p99": 537.88292,
+              "max": 544.989
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 9,
+              "min": 959.735,
+              "p50": 996.213,
+              "p99": 1034.7006,
+              "max": 1037.921
+            }
+          },
+          "frames_101_onward": null,
+          "all_frames": {
+            "first_wfs_packet_to_dm_us": {
+              "count": 32,
+              "min": 1108.293,
+              "p50": 1203.6865,
+              "p99": 1531.1362800000002,
+              "max": 1582.91
+            },
+            "terminal_wfs_packet_to_dm_us": {
+              "count": 32,
+              "min": 112.47,
+              "p50": 206.717,
+              "p99": 526.5467900000001,
+              "max": 544.989
+            },
+            "first_to_terminal_wfs_us": {
+              "count": 32,
+              "min": 906.805,
+              "p50": 995.823,
+              "p99": 1037.74709,
+              "max": 1037.921
+            }
+          }
+        }
+      },
+      "runner_reports": {
+        "heart": "/home/dgamroth/.cache/rtc-copper-progressive-ready-short-r3-20260930/run-001/heart/qualification.json",
+        "fgn": "/home/dgamroth/.cache/rtc-copper-progressive-ready-short-r3-20260930/run-001/fgn/report.json",
+        "jfg": "/home/dgamroth/.cache/rtc-copper-progressive-ready-short-r3-20260930/run-001/jfg.json"
+      }
+    }
+  ]
+}

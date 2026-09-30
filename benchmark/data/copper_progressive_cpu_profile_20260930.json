@@ -1,0 +1,320 @@
+{
+  "scope": "diagnostic profile only; not normal latency baseline",
+  "command": [
+    "python3",
+    "benchmark/run_copper_baseline.py",
+    "--mode",
+    "row",
+    "--repeats",
+    "1",
+    "--frames",
+    "1024",
+    "--single-command-link",
+    "--gated-source",
+    "--verify-placement",
+    "--strict-placement-profile",
+    "benchmark/profiles/ryzen-6800h-copper-all-loops.json",
+    "--configure-all-loops",
+    "--jfg-root",
+    "../JuliaFilterGraph-progressive-requal",
+    "--fgn-root",
+    "../calculon-algorithms-progressive-requal",
+    "--output-dir",
+    "/home/dgamroth/.cache/rtc-copper-progressive-cpu-profile-20260930/replay"
+  ],
+  "env_overrides": {
+    "ENABLE_JITPROFILING": "1"
+  },
+  "runner_returncode": 0,
+  "roles": {
+    "heart": {
+      "pids": [
+        "3169053"
+      ],
+      "placement_files": [
+        "heart/heart-placement-before-ingress.json"
+      ],
+      "attached_monotonic_ns": 1521668702735522,
+      "collection_delay_after_placement_seconds": 0.25,
+      "commands": {
+        "stat": [
+          "perf",
+          "stat",
+          "-x,",
+          "-o",
+          "/home/dgamroth/.cache/rtc-copper-progressive-cpu-profile-20260930/heart.stat.csv",
+          "-e",
+          "cycles:u,instructions:u,task-clock,context-switches,cpu-migrations,minor-faults,major-faults",
+          "-p",
+          "3169053",
+          "--",
+          "sleep",
+          "1.6"
+        ],
+        "record": [
+          "perf",
+          "record",
+          "-e",
+          "cycles:u",
+          "-F",
+          "199",
+          "--call-graph",
+          "dwarf,8192",
+          "-k",
+          "1",
+          "-o",
+          "/home/dgamroth/.cache/rtc-copper-progressive-cpu-profile-20260930/heart.perf.data",
+          "-p",
+          "3169053",
+          "--",
+          "sleep",
+          "1.6"
+        ]
+      },
+      "returncodes": {
+        "stat": 0,
+        "record": 0
+      },
+      "counters": {
+        "cycles:u": {
+          "count": 6256275073.0,
+          "unit": "",
+          "running_percent": 100.0
+        },
+        "instructions:u": {
+          "count": 4907767876.0,
+          "unit": "",
+          "running_percent": 100.0
+        },
+        "task-clock": {
+          "count": 1802.45,
+          "unit": "msec",
+          "running_percent": 100.0
+        },
+        "context-switches": {
+          "count": 8518.0,
+          "unit": "",
+          "running_percent": 100.0
+        },
+        "cpu-migrations": {
+          "count": 0.0,
+          "unit": "",
+          "running_percent": 100.0
+        },
+        "minor-faults": {
+          "count": 12.0,
+          "unit": "",
+          "running_percent": 100.0
+        },
+        "major-faults": {
+          "count": 0.0,
+          "unit": "",
+          "running_percent": 100.0
+        }
+      },
+      "ipc": 0.7844552579186123,
+      "cpu_cores_average": 1.124,
+      "sample_count": 419,
+      "lost_samples": 0,
+      "report_path": "/home/dgamroth/.cache/rtc-copper-progressive-cpu-profile-20260930/heart.report.txt"
+    },
+    "fgn": {
+      "pids": [
+        "3169271",
+        "3169275"
+      ],
+      "placement_files": [
+        "fgn/placement-pre-ingress-daemon.json",
+        "fgn/placement-pre-ingress-adapter.json"
+      ],
+      "attached_monotonic_ns": 1521676691742173,
+      "collection_delay_after_placement_seconds": 0.25,
+      "commands": {
+        "stat": [
+          "perf",
+          "stat",
+          "-x,",
+          "-o",
+          "/home/dgamroth/.cache/rtc-copper-progressive-cpu-profile-20260930/fgn.stat.csv",
+          "-e",
+          "cycles:u,instructions:u,task-clock,context-switches,cpu-migrations,minor-faults,major-faults",
+          "-p",
+          "3169271,3169275",
+          "--",
+          "sleep",
+          "1.6"
+        ],
+        "record": [
+          "perf",
+          "record",
+          "-e",
+          "cycles:u",
+          "-F",
+          "199",
+          "--call-graph",
+          "dwarf,8192",
+          "-k",
+          "1",
+          "-o",
+          "/home/dgamroth/.cache/rtc-copper-progressive-cpu-profile-20260930/fgn.perf.data",
+          "-p",
+          "3169271,3169275",
+          "--",
+          "sleep",
+          "1.6"
+        ]
+      },
+      "returncodes": {
+        "stat": 0,
+        "record": 0
+      },
+      "counters": {
+        "cycles:u": {
+          "count": 472979222.0,
+          "unit": "",
+          "running_percent": 100.0
+        },
+        "instructions:u": {
+          "count": 1298481874.0,
+          "unit": "",
+          "running_percent": 100.0
+        },
+        "task-clock": {
+          "count": 257.87,
+          "unit": "msec",
+          "running_percent": 100.0
+        },
+        "context-switches": {
+          "count": 4717.0,
+          "unit": "",
+          "running_percent": 100.0
+        },
+        "cpu-migrations": {
+          "count": 3.0,
+          "unit": "",
+          "running_percent": 100.0
+        },
+        "minor-faults": {
+          "count": 0.0,
+          "unit": "",
+          "running_percent": 100.0
+        },
+        "major-faults": {
+          "count": 0.0,
+          "unit": "",
+          "running_percent": 100.0
+        }
+      },
+      "ipc": 2.7453254045903943,
+      "cpu_cores_average": 0.161,
+      "sample_count": 72,
+      "lost_samples": 0,
+      "report_path": "/home/dgamroth/.cache/rtc-copper-progressive-cpu-profile-20260930/fgn.report.txt"
+    },
+    "jfg": {
+      "pids": [
+        "3169597",
+        "3169595",
+        "3169934"
+      ],
+      "placement_files": [
+        "jfg-island-before-ingress-placement.json",
+        "jfg-daemon-before-ingress-placement.json",
+        "jfg-adapter-before-ingress-placement.json"
+      ],
+      "attached_monotonic_ns": 1521740854448046,
+      "collection_delay_after_placement_seconds": 0.25,
+      "commands": {
+        "stat": [
+          "perf",
+          "stat",
+          "-x,",
+          "-o",
+          "/home/dgamroth/.cache/rtc-copper-progressive-cpu-profile-20260930/jfg.stat.csv",
+          "-e",
+          "cycles:u,instructions:u,task-clock,context-switches,cpu-migrations,minor-faults,major-faults",
+          "-p",
+          "3169597,3169595,3169934",
+          "--",
+          "sleep",
+          "1.6"
+        ],
+        "record": [
+          "perf",
+          "record",
+          "-e",
+          "cycles:u",
+          "-F",
+          "199",
+          "--call-graph",
+          "dwarf,8192",
+          "-k",
+          "1",
+          "-o",
+          "/home/dgamroth/.cache/rtc-copper-progressive-cpu-profile-20260930/jfg.perf.data",
+          "-p",
+          "3169597,3169595,3169934",
+          "--",
+          "sleep",
+          "1.6"
+        ]
+      },
+      "returncodes": {
+        "stat": 0,
+        "record": 0
+      },
+      "counters": {
+        "cycles:u": {
+          "count": 534732794.0,
+          "unit": "",
+          "running_percent": 100.0
+        },
+        "instructions:u": {
+          "count": 1294700198.0,
+          "unit": "",
+          "running_percent": 100.0
+        },
+        "task-clock": {
+          "count": 292.3,
+          "unit": "msec",
+          "running_percent": 100.0
+        },
+        "context-switches": {
+          "count": 7348.0,
+          "unit": "",
+          "running_percent": 100.0
+        },
+        "cpu-migrations": {
+          "count": 4.0,
+          "unit": "",
+          "running_percent": 100.0
+        },
+        "minor-faults": {
+          "count": 0.0,
+          "unit": "",
+          "running_percent": 100.0
+        },
+        "major-faults": {
+          "count": 0.0,
+          "unit": "",
+          "running_percent": 100.0
+        }
+      },
+      "ipc": 2.421209644381751,
+      "cpu_cores_average": 0.182,
+      "sample_count": 60,
+      "lost_samples": 0,
+      "report_path": "/home/dgamroth/.cache/rtc-copper-progressive-cpu-profile-20260930/jfg.report.txt"
+    }
+  },
+  "diagnostic_replay_qualified": true,
+  "profile_limitations": [
+    "The requested observation is 1.6 seconds at 199 Hz: only 60 JFG, 72 FGN, and 419 HEART samples, so rankings are approximate.",
+    "HEART contains active -pg instrumentation; its sampled cost does not establish performance of an optimized build without instrumentation.",
+    "Attached process groups include graphs, transport, adapters, and control threads; process-wide migrations do not imply migration of pinned data loops.",
+    "Attachment starts 250 ms after the last pre-ingress placement file; the interval is not aligned to an exact frame count.",
+    "No cache or TLB events were collected; these counters do not establish cache or TLB bottlenecks.",
+    "Kernel frames remain unresolved despite cycles:u; source attribution is limited.",
+    "JIT symbols were injected successfully; sampling and JIT instrumentation distinguish this experiment from the normal latency baseline."
+  ]
+}

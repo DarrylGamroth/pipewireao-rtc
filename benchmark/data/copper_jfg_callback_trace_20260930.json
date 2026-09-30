@@ -1,0 +1,87 @@
+{
+  "scope": "separate bounded callback diagnostic; clock mapping assumes continuous clock offset between two measured anchors",
+  "qualified": true,
+  "frames": 1024,
+  "report": "/home/dgamroth/.cache/rtc-copper-jfg-callback-trace-20260930/jfg.json",
+  "trace": "/home/dgamroth/.cache/rtc-copper-jfg-callback-trace-20260930/trace/julia-graph-callbacks.csv",
+  "clock_pairs": [
+    {
+      "phase": "before",
+      "monotonic_before_ns": "1522744124897662",
+      "realtime_ns": "1790754833998464000",
+      "monotonic_after_ns": "1522744124898504"
+    },
+    {
+      "phase": "after",
+      "monotonic_before_ns": "1522746380571031",
+      "realtime_ns": "1790754836254137088",
+      "monotonic_after_ns": "1522746380572514"
+    }
+  ],
+  "clock_offset_drift_ns": -601.5,
+  "gc_pause_delta_during_callbacks": 0,
+  "first_callbacks_complete_before_terminal_packet": 1024,
+  "metrics": {
+    "first_block_callback_us": {
+      "count": 1024,
+      "min": 43.01,
+      "p50": 85.6655,
+      "p99": 102.3182,
+      "max": 212.438
+    },
+    "terminal_callback_us": {
+      "count": 1024,
+      "min": 70.672,
+      "p50": 125.144,
+      "p99": 169.91000999999997,
+      "max": 294.721
+    },
+    "first_callback_end_before_terminal_packet_us": {
+      "count": 1024,
+      "min": 428.224273481776,
+      "p50": 888.62155187895,
+      "p99": 942.6944606276948,
+      "max": 961.872657000948
+    },
+    "terminal_packet_to_graph_start_us": {
+      "count": 1024,
+      "min": 14.615470932911,
+      "p50": 21.430551092258,
+      "p99": 58.839150007656734,
+      "max": 168.363933872849
+    },
+    "terminal_graph_end_to_dm_us": {
+      "count": 1024,
+      "min": 18.918213814163,
+      "p50": 61.4011861566945,
+      "p99": 128.41034971034762,
+      "max": 198.762637559617
+    }
+  },
+  "interpretation": "Each first row callback processes available upper-pupil pixels and accumulates their 1800 reconstructor columns before the terminal packet. The worker-only early_frames counter does not measure this serial path. Callback spans include graph bookkeeping; no per-node split was recorded.",
+  "normal_to_traced_comparison": {
+    "heart_commands": 1024,
+    "julia_commands": 1024,
+    "matched_commands": 1024,
+    "heart_only_frames": [],
+    "julia_only_frames": [],
+    "actuators": 277,
+    "heart_frame_id_offset": 0,
+    "heart_output_limit": {
+      "maximum_absolute_um": 0.27198049426078796,
+      "elements_at_or_above_limit": 0,
+      "frames_at_or_above_limit": 0,
+      "all_outputs_strictly_inside_limit": true
+    },
+    "julia_output_limit": {
+      "maximum_absolute_um": 0.27198049426078796,
+      "elements_at_or_above_limit": 0,
+      "frames_at_or_above_limit": 0,
+      "all_outputs_strictly_inside_limit": true
+    },
+    "frame_id_matched": {
+      "max_absolute_um": 0.0,
+      "rms_um": 0.0
+    }
+  }
+}
