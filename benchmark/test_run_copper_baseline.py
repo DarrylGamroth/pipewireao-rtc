@@ -27,6 +27,77 @@ REPORT_SPEC.loader.exec_module(REPORT)
 
 
 class CapturePhaseTests(unittest.TestCase):
+    def test_source_timing_accepts_defaults_and_value_below_95_percent(self) -> None:
+        RUNNER.validate_source_timing(474, 2000)
+        RUNNER.validate_source_timing(10_000, 94)
+
+    def test_source_timing_rejects_out_of_range_rate_and_readout_at_or_above_95_percent(self) -> None:
+        for rate_hz in (0, 10_001):
+            with self.subTest(rate_hz=rate_hz), self.assertRaisesRegex(
+                    ValueError, "--rate-hz must be in 1..10000"):
+                RUNNER.validate_source_timing(rate_hz, 1)
+        with self.assertRaisesRegex(ValueError, "--readout-us must be positive"):
+            RUNNER.validate_source_timing(1, 0)
+        for readout_us in (95, 96):
+            with self.subTest(readout_us=readout_us), self.assertRaisesRegex(
+                    ValueError, "less than 95% of the frame period"):
+                RUNNER.validate_source_timing(10_000, readout_us)
+
+    def test_collect_all_runs_remaining_runners_and_records_failure(self) -> None:
+        names = ("heart", "fgn", "jfg")
+        returned = {
+            "heart": {"returncode": 1, "combined_output": "heart.log"},
+            "fgn": {"returncode": 0, "combined_output": "fgn.log"},
+            "jfg": {"returncode": 0, "combined_output": "jfg.log"},
+        }
+        invoked: list[str] = []
+        recorded: dict[str, dict] = {}
+
+        def execute(name: str) -> dict:
+            invoked.append(name)
+            return returned[name]
+
+        with self.assertRaisesRegex(RuntimeError, "heart runner failed"):
+            RUNNER.execute_runners(names, execute, recorded, collect_all=True)
+        self.assertEqual(invoked, list(names))
+        self.assertEqual(recorded, returned)
+
+    def test_runner_execution_remains_fail_fast_by_default(self) -> None:
+        names = ("heart", "fgn", "jfg")
+        invoked: list[str] = []
+        recorded: dict[str, dict] = {}
+
+        def execute(name: str) -> dict:
+            invoked.append(name)
+            return {"returncode": 1, "combined_output": "heart.log"}
+
+        with self.assertRaisesRegex(RuntimeError, "heart runner failed"):
+            RUNNER.execute_runners(names, execute, recorded, collect_all=False)
+        self.assertEqual(invoked, ["heart"])
+        self.assertEqual(set(recorded), {"heart"})
+
+    def test_heart_config_template_override_is_optional_and_resolved(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            default_template = root / "benchmark/heart/copper_config_aos_matched.yaml"
+            default_template.parent.mkdir(parents=True)
+            default_template.write_text("default")
+            override = root / "custom.yaml"
+            override.write_text("custom")
+
+            self.assertEqual(RUNNER.resolve_heart_config_template(root, None),
+                             default_template.resolve())
+            resolved = RUNNER.resolve_heart_config_template(root, override)
+            self.assertEqual(resolved, override.resolve())
+            self.assertEqual(RUNNER.heart_config_template_args(None), [])
+            self.assertEqual(RUNNER.heart_config_template_args(resolved),
+                             ["--config-template", str(resolved)])
+
+    def test_heart_config_template_override_must_be_readable_file(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            with self.assertRaisesRegex(ValueError, "not a readable file"):
+                RUNNER.resolve_heart_config_template(Path(temporary), Path(temporary) / "missing.yaml")
+
     def test_pinned_data_loop_requires_named_single_cpu_fifo_rule(self) -> None:
         profile = {"roles": {"island": {"cpus": "0,2", "required_thread_placements": [
             {"name": "data-loop.0", "policy": "fifo:83", "cpus": "0", "count": 1},
@@ -67,6 +138,34 @@ class CapturePhaseTests(unittest.TestCase):
         with patch.object(RUNNER, "json_file", side_effect=[report, physical]):
             with self.assertRaisesRegex(RuntimeError, "observer report"):
                 RUNNER.require_fgn(Path("run"), 3, "daemon", "module")
+
+    def test_single_command_link_flags_are_passed_for_row_mode_runners(self) -> None:
+        commands = {"fgn": ["run_fgn_copper_row_live.py"],
+                    "jfg": ["run_shared_copper_fits.jl", "--ingress-mode", "progressive"]}
+        RUNNER.add_single_command_link_flags(commands, True)
+        self.assertEqual(commands["fgn"][-1], "--single-command-link")
+        self.assertEqual(commands["jfg"][-2:], ["--single-command-link", "true"])
+
+    def test_jfg_single_link_report_still_requires_exact_physical_qualification(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            physical_path = root / "physical.json"
+            report_path = root / "report.json"
+            physical_path.write_text(json.dumps({"qualified": True}))
+            report_path.write_text(json.dumps({
+                "requested_frames": 3, "std_wfs_packet_count": 6,
+                "std_dm_packet_count": 3,
+                "qualification": {"passed": True},
+                "physical_summary": str(physical_path),
+                "command_topology": {"mode": "single-command-link"},
+            }))
+            report, physical = RUNNER.require_jfg(report_path, 3)
+            self.assertEqual(report["command_topology"]["mode"], "single-command-link")
+            self.assertIs(physical["qualified"], True)
+            report["std_dm_packet_count"] = 2
+            report_path.write_text(json.dumps(report))
+            with self.assertRaisesRegex(RuntimeError, "exact WFS and DM delivery"):
+                RUNNER.require_jfg(report_path, 3)
 
     @staticmethod
     def write_packets(path: Path, times: list[Decimal], *, kind: str,

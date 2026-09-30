@@ -21,7 +21,7 @@ import shutil
 import struct
 import subprocess
 import sys
-from typing import Any
+from typing import Any, Callable
 
 from lab_placement import LaunchError, parse_cpu_list, parse_thread_policy, read_thread_profile
 
@@ -185,6 +185,48 @@ def require_jfg(report_path: Path, frames: int) -> tuple[dict[str, Any], dict[st
     return report, physical
 
 
+def add_single_command_link_flags(commands: dict[str, list[str]], enabled: bool) -> None:
+    if enabled:
+        commands["fgn"].append("--single-command-link")
+        commands["jfg"].extend(("--single-command-link", "true"))
+
+
+def validate_source_timing(rate_hz: int, readout_us: int) -> None:
+    """Match wfsSimulator's strict readoutTime < 0.95 * framePeriod limit."""
+    if not 1 <= rate_hz <= 10_000:
+        raise ValueError("--rate-hz must be in 1..10000")
+    if readout_us <= 0:
+        raise ValueError("--readout-us must be positive")
+    if readout_us * rate_hz * 100 >= 95_000_000:
+        raise ValueError("--readout-us must be less than 95% of the frame period")
+
+
+def execute_runners(names: tuple[str, ...], execute: Callable[[str], dict[str, Any]],
+                    results: dict[str, dict[str, Any]], *, collect_all: bool) -> None:
+    failures: list[str] = []
+    for name in names:
+        result = execute(name)
+        results[name] = result
+        if result["returncode"] != 0:
+            failure = f"{name} runner failed; see {result['combined_output']}"
+            if not collect_all:
+                raise RuntimeError(failure)
+            failures.append(failure)
+    if failures:
+        raise RuntimeError("; ".join(failures))
+
+
+def resolve_heart_config_template(jfg_root: Path, override: Path | None) -> Path:
+    template = (override or jfg_root / "benchmark/heart/copper_config_aos_matched.yaml").resolve()
+    if not template.is_file() or not os.access(template, os.R_OK):
+        raise ValueError(f"HEART configuration template is not a readable file: {template}")
+    return template
+
+
+def heart_config_template_args(template: Path | None) -> list[str]:
+    return [] if template is None else ["--config-template", str(template)]
+
+
 def paths_under(directory: Path) -> list[str]:
     return [str(path) for path in sorted(directory.rglob("*")) if path.is_file() or path.is_symlink()]
 
@@ -302,10 +344,19 @@ def main() -> None:
     parser.add_argument("--mode", choices=("row", "fullframe"), default="row",
                         help="FGN ingress mode; row is the selected baseline")
     parser.add_argument("--single-command-link", action="store_true",
-                        help="complete-frame command chain without an observer branch")
+                        help="one DM command link without an observer branch")
+    parser.add_argument("--collect-all-runners", action="store_true",
+                        help="run remaining systems after a runner fails; comparison stays unqualified")
     parser.add_argument("--heart-plugin", type=Path,
                         help="explicit HEART SPA plugin override for transport qualification")
+    parser.add_argument("--heart-config-template", type=Path,
+                        help="optional HEART YAML template override for the HEART runner")
     parser.add_argument("--frames", type=int, default=1024)
+    parser.add_argument("--rate-hz", type=int, default=474,
+                        help="source frame rate in Hz (default: 474)")
+    parser.add_argument("--readout-us", type=int, default=2000,
+                        help="source readout in microseconds; must be <95%% of frame period "
+                             "(default: 2000)")
     parser.add_argument("--jfg-graph-warmup", choices=("offline", "none"), default="offline",
                         help="recorded JFG first-use policy (default: offline)")
     parser.add_argument("--gated-source", action="store_true",
@@ -339,15 +390,22 @@ def main() -> None:
         parser.error("--frames must be in 1..1024")
     if args.repeats < 1:
         parser.error("--repeats must be positive")
+    try:
+        validate_source_timing(args.rate_hz, args.readout_us)
+    except ValueError as error:
+        parser.error(str(error))
     if args.gated_source and args.strict_placement_profile is None:
         parser.error("--gated-source requires --strict-placement-profile")
     if args.configure_all_loops and args.strict_placement_profile is None:
         parser.error("--configure-all-loops requires --strict-placement-profile")
 
-    if args.single_command_link and args.mode != "fullframe":
-        parser.error("--single-command-link requires --mode fullframe")
     heart_plugin = (args.heart_plugin or args.pipewire_prefix /
                     "lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so").resolve()
+    try:
+        heart_config_template = resolve_heart_config_template(
+            args.jfg_root, args.heart_config_template)
+    except ValueError as error:
+        parser.error(str(error))
     output = args.output_dir.resolve()
     if output.exists():
         parser.error(f"--output-dir already exists: {output}")
@@ -366,7 +424,7 @@ def main() -> None:
                 args.jfg_root / "benchmark/heart/run_copper_aos_matched.sh",
                 args.jfg_root / "benchmark/heart/compare_command_vectors.py",
                 args.jfg_root / "benchmark/heart/qualify_copper_aos_capture.py",
-                args.jfg_root / "benchmark/heart/copper_config_aos_matched.yaml",
+                heart_config_template,
                 args.jfg_root / "scripts/pipewire_harness.jl",
                 args.fgn_root / "scripts/run_fgn_copper_row_live.py",
                 args.fgn_root / "scripts/run_fgn_copper_fullframe_live.py",
@@ -462,7 +520,8 @@ def main() -> None:
         "qualification_scope": "exact delivery, numerical parity, broad process envelopes",
         "rtc_dev_019_qualified": False,
         "mode": args.mode, "repeats": args.repeats, "frames": args.frames,
-        "frame_rate_hz": 474, "readout_us": 2000, "clipping_feedback": True,
+        "frame_rate_hz": args.rate_hz, "readout_us": args.readout_us,
+        "clipping_feedback": True,
         "source_clock": "gated-posix-semaphore" if args.gated_source else "wfsSimulator-timer",
         "source_gate_scope": ("pre-release source/pacer/wrapper thread placement and exact trigger count; "
                               "trigger lateness is observed without an acceptance bound"
@@ -472,6 +531,8 @@ def main() -> None:
         "command_topology": "single-command-link" if args.single_command_link else "observer-and-adapter",
         "heart_plugin": str(heart_plugin),
         "heart_plugin_sha256": sha256(heart_plugin),
+        "heart_config_template": {"path": str(heart_config_template),
+                                   "sha256": sha256(heart_config_template)},
         "jfg_pipewireao_julia_root": str(binding) if binding is not None else None,
         "configure_all_loops": args.configure_all_loops,
         "verify_placement": args.verify_placement,
@@ -518,7 +579,7 @@ def main() -> None:
             run.mkdir()
             heart_dir, fgn_dir = run / "heart", run / "fgn"
             jfg_report = run / "jfg.json"
-            period = repr(1.0 / 474)
+            period = repr(1.0 / args.rate_hz)
             heart_mode = "progressive" if args.mode == "row" else "deferred"
             jfg_mode = "progressive" if args.mode == "row" else "frame"
             jfg_env = {"JULIA_RTC_DAEMON_CPUS": args.rtc_cpus, "JULIA_RTC_ISLAND_CPUS": args.rtc_cpus,
@@ -563,16 +624,19 @@ def main() -> None:
                     })
             commands = {
                 "heart": [str(args.jfg_root / "benchmark/heart/run_copper_aos_matched.sh"),
-                          "--frames", str(args.frames), "--period", period, "--readout-us", "2000",
+                          "--frames", str(args.frames), "--period", period,
+                          "--readout-us", str(args.readout_us),
                           "--command-limit-um", "0.8", "--output", str(heart_dir), "--fits", str(cube),
                           "--heart-root", str(args.heart_root), "--revolt-config", str(args.revolt_config_dir),
                           "--wfs-simulator", str(source_executable),
+                          *heart_config_template_args(args.heart_config_template),
                           "--cpu-map", str(args.heart_cpu_map), "--thread-map", str(args.heart_thread_map),
                           "--source-core", args.source_core, "--source-rt-priority", args.source_rt_priority,
                           "--ingress-mode", heart_mode],
                 "fgn": [sys.executable, str(fgn_runner),
-                        "--output-dir", str(fgn_dir), "--frames", str(args.frames), "--rate-hz", "474",
-                        "--readout-us", "2000", "--clipping-feedback", "--command-limit-um", "0.8",
+                        "--output-dir", str(fgn_dir), "--frames", str(args.frames),
+                        "--rate-hz", str(args.rate_hz), "--readout-us", str(args.readout_us),
+                        "--clipping-feedback", "--command-limit-um", "0.8",
                         "--pipewire-prefix", str(args.pipewire_prefix),
                         "--rtc-cpus", args.rtc_cpus, "--source-cpu", args.source_core,
                         "--source-rt-priority", args.source_rt_priority,
@@ -586,18 +650,16 @@ def main() -> None:
                         "--revolt-config-dir", str(args.revolt_config_dir), "--pixel-source", "heart-wfs",
                         "--heart-plugin", str(heart_plugin),
                         "--wfs-simulator", str(source_executable), "--frames", str(args.frames),
-                        "--frame-rate-hz", "474", "--readout-us", "2000", "--clipping-feedback", "true",
+                        "--frame-rate-hz", str(args.rate_hz), "--readout-us", str(args.readout_us),
+                        "--clipping-feedback", "true",
                         "--command-limit-um", "0.8", "--ingress-mode", jfg_mode,
                         "--graph-warmup", args.jfg_graph_warmup,
                         "--island-threads", "2", "--cpu-workers", "0",
                         "--std-wfs-port", "65310", "--std-dm-port", "65311",
                         "--output", str(jfg_report)],
             }
-            if args.single_command_link:
-                commands["fgn"].append("--single-command-link")
-                commands["jfg"].extend(("--single-command-link", "true"))
-            if args.heart_plugin is not None:
-                commands["fgn"].extend(("--heart-plugin-sha256", sha256(heart_plugin)))
+            add_single_command_link_flags(commands, args.single_command_link)
+            commands["fgn"].extend(("--heart-plugin-sha256", sha256(heart_plugin)))
             if args.verify_placement:
                 commands["fgn"].extend(("--placement-verify", str(verifier)))
             if binding is not None:
@@ -613,13 +675,15 @@ def main() -> None:
                                             f"--{prefix}-loop-rt-priority", str(priority)))
             record: dict[str, Any] = {"index": index, "commands": {}}
             manifest["runs"].append(record)
-            for name in ("heart", "fgn", "jfg"):
-                result = command_record(commands[name],
-                                        args.jfg_root if name in ("heart", "jfg") else args.fgn_root,
-                                        run / f"{name}.runner.log",
-                                        jfg_env if name == "jfg" else heart_env if name == "heart" else fgn_env)
-                record["commands"][name] = result
-                require_exact(result["returncode"] == 0, f"{name} runner failed; see {result['combined_output']}")
+            def execute_runner(name: str) -> dict[str, Any]:
+                return command_record(
+                    commands[name],
+                    args.jfg_root if name in ("heart", "jfg") else args.fgn_root,
+                    run / f"{name}.runner.log",
+                    jfg_env if name == "jfg" else heart_env if name == "heart" else fgn_env)
+
+            execute_runners(("heart", "fgn", "jfg"), execute_runner, record["commands"],
+                            collect_all=args.collect_all_runners)
             heart = require_heart(heart_dir, args.frames)
             fgn = require_fgn(fgn_dir, args.frames,
                               sha256(native_daemon), sha256(native_module))
