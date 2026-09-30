@@ -8107,13 +8107,19 @@
       },
       "worktree": "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph-all-client-loops"
     },
-    "interpretation": "First-Start compatibility and startup cleanup passed 44 assertions; connected closed-loop abort proof passed. Connected row-abort proof fails identically with the prior committed launcher. Source verification confirms its terminal-frame discontinuity assertion conflicts with existing per-node commit semantics; this is a stale proof expectation, not a confirmed algorithm defect. Historical artifact classification is preserved. Progressive qualification remains deferred."
+    "interpretation": "First-Start compatibility and startup cleanup passed 44 assertions; connected closed-loop abort proof passed. Connected row-abort proof fails identically with the prior committed launcher. Source verification confirms its terminal-frame discontinuity assertion conflicts with existing per-node commit semantics; this is a stale proof expectation, not a confirmed algorithm defect. Historical artifact classification is preserved. Progressive qualification remains deferred.",
+    "subsequent_correction": {
+      "commit": "129402a",
+      "result": "Connected --abort proof passed after checking committed upstream terminal state instead of rollback.",
+      "log": "/home/dgamroth/.cache/jfg-connected-row-abort-per-node-20260929.log",
+      "scientific_algorithm_change": false
+    }
   },
   "completed_run_cache_cleanup": {
     "record": "/home/dgamroth/.cache/rtc-copper-completed-cache-cleanup-20260929.json",
-    "sha256": "256ad164514336cb81623f6abf08bf6ba421e2b708fcb31406ff84571ab37d97",
-    "compiled_cache_directories_removed": 55,
-    "recorded_bytes": 1669325998,
+    "sha256": "c65ed3da1a1493751f4defdc3b184519ad7bbd0da3b8957ded98e2018ae77006",
+    "compiled_cache_directories_removed": 60,
+    "recorded_bytes": 1740818106,
     "scope": "Only completed-run Julia compiled caches removed by root. Reports, logs, runtime binaries, traces, fixtures, and results retained; Rust caches preserved."
   }
 }

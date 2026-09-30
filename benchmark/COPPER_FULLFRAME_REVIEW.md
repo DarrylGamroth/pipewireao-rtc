@@ -456,8 +456,8 @@ its three-repeat qualification, delivering 9,216 commands across the three
 controllers. Report paths, comparisons, and phase statistics are in the
 [merged baseline evidence](data/copper_merged_fullframe_baseline_20260929.json).
 Progressive qualification remains deferred.
-Completed-run Julia compiled-cache cleanup removed 55 directories
-(1,669,325,998 recorded bytes), with its record retained
+Completed-run Julia compiled-cache cleanup removed 60 directories
+(1,740,818,106 recorded bytes), with its record retained
 at `~/.cache/rtc-copper-completed-cache-cleanup-20260929.json`; reports, logs,
 binaries, traces, inputs, and Rust caches were preserved.
 
