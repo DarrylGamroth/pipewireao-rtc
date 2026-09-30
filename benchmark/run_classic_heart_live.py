@@ -45,6 +45,7 @@ def arguments(argv: list[str] | None = None) -> argparse.Namespace:
                         help="validated repeated FITS and continuous controller references")
     parser.add_argument("--dump-boundaries", action="store_true",
                         help="dump existing HEART circular buffers after capture, before shutdown")
+    parser.add_argument("--numerical-acceptance", choices=("strict", "source-arithmetic"), default="strict")
     parser.add_argument("--rate-hz", type=int, default=10)
     parser.add_argument("--readout-us", type=int, default=2000)
     parser.add_argument("--rows-per-packet", type=int, default=11)
@@ -52,13 +53,16 @@ def arguments(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--source-cpus")
     parser.add_argument("--cpu-map", type=Path)
     parser.add_argument("--thread-map", type=Path)
+    parser.add_argument("--telemetry-python", type=Path,
+                        help="interpreter with Astropy for unchanged HEART secondary telemetry clients")
+    parser.add_argument("--dao-root", type=Path, default=WORKSPACE.parent / "heart/daoinsw")
     parser.add_argument("--fgn-root", type=Path, default=WORKSPACE / "calculon-algorithms-progressive-requal")
     parser.add_argument("--jfg-root", type=Path, default=WORKSPACE / "JuliaFilterGraph-progressive-requal")
     args = parser.parse_args(argv)
-    if not 1 <= args.frames <= (28 if args.replay_corpus else 7):
-        parser.error("Classic gate requires 1..7 frames, or at most 28 with --replay-corpus")
+    if not 1 <= args.frames <= (1029 if args.replay_corpus else 7):
+        parser.error("Classic gate requires 1..7 frames, or at most 1029 with --replay-corpus")
     if args.replay_corpus and args.frames % 7:
-        parser.error("--replay-corpus requires 7, 14, 21, or 28 frames")
+        parser.error("--replay-corpus requires a multiple of seven frames")
     if args.rate_hz < 1 or args.readout_us < 1 or args.readout_us * args.rate_hz >= 950000:
         parser.error("readout must be positive and below 95% of the frame period")
     if args.rows_per_packet < 1 or 352 % args.rows_per_packet:
@@ -296,6 +300,7 @@ def run(args: argparse.Namespace) -> dict:
     helper = None
     processes = []
     rtc = None
+    telemetry_stop = None
     shutdown_attempted = False
     client = args.heart_root.resolve() / "source/template/bin/scaoTemplateCmdClient"
     gms_print = args.heart_root.resolve() / "source/aoTypes/bin/hrtGmsPrint"
@@ -389,9 +394,16 @@ def run(args: argparse.Namespace) -> dict:
         (directory / "numerical-summary.json").write_text(json.dumps(numerical, indent=2) + "\n")
         if packet_record["returncode"] != 0 or not report.get("physical", {}).get("qualified"):
             raise RuntimeError("physical packet check failed; see physical-summary.json and qualify-packets.log")
-        if (not numerical["qualified"] or numerical["max_absolute_error_um"] > 1e-6
-                or numerical["clipping_decision_mismatches"]):
-            raise RuntimeError("physical commands differ from the direct reference; see numerical-summary.json")
+        numerical_passed = numerical["qualified"]
+        if args.numerical_acceptance == "source-arithmetic":
+            from classic_numerical_acceptance import acceptance_for_wire
+            acceptance = acceptance_for_wire(args.fixture, np.fromfile(expected_commands, dtype="<f4").reshape(-1, 277)[:args.frames],
+                                             directory / "dm-wire-um.f32", args.frames, "heart", "row")
+            (directory / "arithmetic-acceptance.json").write_text(json.dumps(acceptance, indent=2) + "\n")
+            report["arithmetic_acceptance"] = acceptance
+            numerical_passed = acceptance["arithmetic_consistency_passed"] and acceptance["exact_model_passed"]
+        if not numerical_passed or numerical["clipping_decision_mismatches"]:
+            raise RuntimeError("physical commands differ from the accepted arithmetic model; see numerical-summary.json")
         report["functional_wire_qualified"] = not report["errors"]
         # Effective flags and internal initial state are separate obligations.
         report["qualified"] = (report["functional_wire_qualified"] and report["effective_flags_verified"]
@@ -472,8 +484,19 @@ def run(args: argparse.Namespace) -> dict:
                 report["requested_flags"].append(request)
                 if not request["acknowledged"]:
                     report["flag_warnings"].append(f"{section}.{field}: command not acknowledged as SUCCESS; see {log_name}")
+        if args.telemetry_python:
+            telemetry_stop = directory / "telemetry.stop"
+            telemetry_ready = directory / "telemetry.ready"
+            telemetry, telemetry_stream = start(helper.placed([
+                str(args.telemetry_python), str(ROOT / "benchmark/classic_heart_telemetry.py"),
+                "--heart-root", str(args.heart_root), "--dao-root", str(args.dao_root),
+                "--ready", str(telemetry_ready), "--stop", str(telemetry_stop),
+                "--report", str(directory / "telemetry-report.json")], "14"), "telemetry.log")
+            helper.wait_for("secondary telemetry clients", lambda: telemetry_ready.exists(), 30)
         control("CORRECT", "cmd-correct.log")
         snapshot_flags("pre-ingress")
+        from classic_placement import record_placement
+        record_placement(directory, "before", [("heart", rtc)], args)
         helper.capture_thread_map(directory / "thread-map-before-replay.txt", [("HEART", rtc)])
         capture, capture_stream = start(
             ["dumpcap", "-p", "-i", "any", "-f", "udp port 6000 or udp port 6100",
@@ -491,6 +514,7 @@ def run(args: argparse.Namespace) -> dict:
         # Stop capture before shutdown can emit a zero/flat command.
         capture.send_signal(signal.SIGINT)
         helper.stop(capture, capture_stream)
+        record_placement(directory, "after", [("heart", rtc)], args)
         snapshot_flags("post-replay")
         if args.dump_boundaries:
             report["boundary_dumps"] = []
@@ -525,6 +549,8 @@ def run(args: argparse.Namespace) -> dict:
                 control("SHUTDOWN", "cmd-shutdown-finally.log", required=False)
             except Exception as error:
                 report["errors"].append(f"shutdown failed: {error}")
+        if telemetry_stop is not None:
+            telemetry_stop.touch(exist_ok=True)
         for process, stream, record in reversed(processes):
             try:
                 helper.stop(process, stream)

@@ -114,8 +114,14 @@ class CorpusTests(unittest.TestCase):
                     CORPUS.create_corpus(self.source, self.fixture, self.output)
                 self.assertFalse(self.output.exists())
 
+    def test_largest_corpus_retains_captured_reference_limit(self) -> None:
+        manifest = CORPUS.create_corpus(self.source, self.fixture, self.output, CORPUS.MAX_REPETITIONS)
+        self.assertEqual(manifest['frames'], 1029)
+        self.assertEqual((self.output / 'demanded_pdm_command.f32le').stat().st_size, 1029 * 277 * 4)
+        self.assertEqual(CORPUS.validate_replay_corpus(self.output, self.fixture, self.output / 'input.fits', 1029), manifest)
+
     def test_rejects_bad_repetitions_and_reference_extent_or_finiteness(self) -> None:
-        for value in (0, 5, 1.5, True):
+        for value in (0, CORPUS.MAX_REPETITIONS + 1, 1.5, True):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 CORPUS.create_corpus(self.source, self.fixture, self.output, value)
         reference = self.fixture / "feedback-vdm-command.f32le"

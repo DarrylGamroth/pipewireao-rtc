@@ -1,0 +1,17 @@
+# Measurement-only placement for the 8-core Ryzen 7 6800H host.
+# SMT siblings are adjacent CPU numbers; active stages use distinct cores.
+HOP0.wfs.w = { 0 }
+HOP0.proc.w = { 2 }
+HOP0.recon.w = { 4 }
+WCC.tfc.w = { 6 }
+WCC.clwc.w = { 8 }
+WCC.dm0.w = { 10 }
+HOP0.wfs.pxStat = { 14 }
+HOP0.proc.gOpt = { 14 }
+WCC.clwc.pdm0 = { 14 }
+HOP0 = { 0, 2, 4 }
+WCC = { 6, 8, 10 }
+CMDS = { 14 }
+TELM = { 14 }
+MON = { 14 }
+DEFAULT = -1

@@ -24,7 +24,7 @@ BLOCK = 2880
 CARD = 80
 WIDTH = HEIGHT = 352
 SOURCE_FRAMES = 7
-MAX_REPETITIONS = 4  # The current clipping corpus is at most 28 frames.
+MAX_REPETITIONS = (SOURCE_FRAMES + 1024) // SOURCE_FRAMES  # 1,029 captured frames.
 CONTINUED_FRAMES = 1024
 ORACLES = (
     ("demanded_pdm_command.f32le", "feedback-demanded-pdm-command.f32le", 277,
@@ -184,7 +184,7 @@ def _build_corpus(source: Path, fixture: Path, repetitions: int) -> tuple[dict, 
 
 
 def create_corpus(source: Path, fixture: Path, output: Path,
-                  repetitions: int = MAX_REPETITIONS) -> dict:
+                  repetitions: int = 4) -> dict:
     """Create the corpus in a new directory after validating every input."""
     if output.exists() or output.is_symlink():
         raise ValueError(f"output already exists: {output}")
@@ -227,7 +227,7 @@ def main() -> None:
     parser.add_argument("--cube", type=Path, required=True, help="original seven-frame Classic FITS cube")
     parser.add_argument("--fixture", type=Path, required=True, help="prepared Classic fixture directory")
     parser.add_argument("--output", type=Path, required=True, help="new corpus directory")
-    parser.add_argument("--repetitions", type=int, default=MAX_REPETITIONS)
+    parser.add_argument("--repetitions", type=int, default=4)
     args = parser.parse_args()
     result = create_corpus(args.cube, args.fixture, args.output, args.repetitions)
     print(json.dumps({"cube": result["cube"], "frames": result["frames"]}, ensure_ascii=False))

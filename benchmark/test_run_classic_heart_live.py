@@ -188,7 +188,7 @@ class RunnerTests(unittest.TestCase):
                     "captured_dm_commands": 7, "dm_first_frame_id": 1, "dm_last_frame_id": 7}))
             return SimpleNamespace(returncode=0, stdout="mock success")
 
-        patches = [patch.object(RUNNER, "load_helpers", return_value=(helper, SimpleNamespace())),
+        patches = [patch("classic_placement.record_placement"), patch.object(RUNNER, "load_helpers", return_value=(helper, SimpleNamespace())),
                    patch.object(RUNNER, "validate_fixture"), patch.object(RUNNER, "guard_ports"),
                    patch.object(RUNNER, "write_config", return_value=preparation),
                    patch.object(RUNNER.shutil, "which", return_value=str(paths[0])),

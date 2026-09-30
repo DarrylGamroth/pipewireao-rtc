@@ -263,6 +263,7 @@ def arguments():
     parser.add_argument("--frames", type=int, default=7)
     parser.add_argument("--replay-corpus", type=Path,
                         help="validated repeated FITS and continuous controller references")
+    parser.add_argument("--numerical-acceptance", choices=("strict", "source-arithmetic"), default="strict")
     parser.add_argument("--rate-hz", type=int, default=10)
     parser.add_argument("--readout-us", type=int, default=2000)
     parser.add_argument("--rows-per-packet", type=int, default=11)
@@ -277,11 +278,24 @@ def arguments():
     parser.add_argument("--wfs-simulator", type=Path, required=True)
     parser.add_argument("--rtc-cpus")
     parser.add_argument("--source-cpus")
+    parser.add_argument("--lab-loop-cpu", type=int)
+    parser.add_argument("--lab-loop-rt-priority", type=int, default=83)
+    parser.add_argument("--adapter-loop-cpu", type=int)
+    parser.add_argument("--node-loop-cpu", type=int)
+    parser.add_argument("--julia-pin-cpus")
+    parser.add_argument("--row-workers", type=int, default=0)
+    parser.add_argument("--matrix-layout", choices=("shared", "sharded"), default="shared")
+    parser.add_argument("--trace-callbacks", type=int, default=0)
+    parser.add_argument("--callback-trace", type=Path)
     args = parser.parse_args()
-    if not 1 <= args.frames <= (28 if args.replay_corpus else 7):
-        parser.error("Classic gate requires 1..7 frames, or at most 28 with --replay-corpus")
+    if not 1 <= args.frames <= (1029 if args.replay_corpus else 7):
+        parser.error("Classic gate requires 1..7 frames, or at most 1029 with --replay-corpus")
     if args.replay_corpus and args.frames % 7:
-        parser.error("--replay-corpus requires 7, 14, 21, or 28 frames")
+        parser.error("--replay-corpus requires a multiple of seven frames")
+    if args.row_workers < 0 or args.trace_callbacks < 0:
+        parser.error("worker and trace capacities must be nonnegative")
+    if args.lab_loop_cpu is not None and not 1 <= args.lab_loop_rt_priority <= 99:
+        parser.error("loop priority must be in 1..99")
     if args.rate_hz < 1 or args.readout_us < 1 or args.readout_us * args.rate_hz >= 950000:
         parser.error("readout must be positive and below 95% of the frame period")
     if args.rows_per_packet < 1 or 352 % args.rows_per_packet:
@@ -315,18 +329,35 @@ def main():
         args.pipewire_root, args.pipewire_prefix or
         (None if args.pipewire_root else Path("/opt/pipewireao")))
     directory.mkdir(parents=True)
-    env = helper.make_environment(directory, args.heart_plugin.resolve(), args.rate_hz, installation)
+    env = helper.make_environment(directory, args.heart_plugin.resolve(), args.rate_hz, installation,
+                                  args.lab_loop_cpu, args.lab_loop_rt_priority if args.lab_loop_cpu is not None else None)
     env["HEART_RTC_DIAG"] = "1"
     helper.use_native_julia_libraries(directory, installation, env)
     config = directory / "config/fgn-copper-live.conf"
     config.write_text(configure_source(config.read_text(), args.mode))
     # Only one DM consumer. The feedback ports are host-local, not PipeWire links.
     adapter_env = helper.reliable_adapter_environment(env)
+    if args.adapter_loop_cpu is not None:
+        adapter_env, _ = helper.private_client_environment(
+            adapter_env, directory, installation, "adapter",
+            helper.ClientDataLoopRequest((args.adapter_loop_cpu,), args.lab_loop_rt_priority))
+    node_env = helper.reliable_adapter_environment(env)
+    if args.node_loop_cpu is not None:
+        node_env, _ = helper.private_client_environment(
+            node_env, directory, installation, "node",
+            helper.ClientDataLoopRequest((args.node_loop_cpu,), args.lab_loop_rt_priority))
+    if args.julia_pin_cpus:
+        node_env["JULIA_RTC_PIN_CPUS"] = args.julia_pin_cpus
     report = {
         "role": args.role, "receiver_mode": "row-block" if args.mode == "row" else "complete-frame", "frames": args.frames,
         "rate_hz": args.rate_hz, "readout_us": args.readout_us,
         "rows_per_packet": args.rows_per_packet, "qualified": False,
-        "scope": "short live transport and numerical gate; not a capacity or tail-latency result",
+        "scope": "live transport and numerical characterization; performance claims require repeated campaign",
+        "placement_request": {"rtc_cpus": args.rtc_cpus, "source_cpus": args.source_cpus,
+                              "daemon_loop_cpu": args.lab_loop_cpu, "adapter_loop_cpu": args.adapter_loop_cpu,
+                              "node_loop_cpu": args.node_loop_cpu, "fifo_priority": args.lab_loop_rt_priority,
+                              "julia_pin_cpus": args.julia_pin_cpus},
+        "row_workers": args.row_workers, "matrix_layout": args.matrix_layout,
         "sha256": {str(path): helper.sha256_file(path) for path in
                    (cube, args.plugin, args.heart_plugin, args.wfs_simulator,
                     fixture / "prepared-profile.toml")},
@@ -361,13 +392,16 @@ def main():
             node_stop = directory / "node.stop"
             stop_files.append(node_stop)
             node, log = helper.start(helper.placed([
-                "julia", "--startup-file=no", f"--project={args.jfg_root / 'benchmark'}", "--threads=2",
+                "julia", "--startup-file=no", f"--project={args.jfg_root / 'benchmark'}", f"--threads={args.row_workers + 2},0",
                 str(args.jfg_root / "benchmark/run_classic_pipewire_node.jl"),
                 "--fixture", str(fixture), "--remote", helper.REMOTE,
                 "--rate-hz", str(args.rate_hz), "--stop-file", str(node_stop),
-                "--mode", args.mode,
+                "--mode", args.mode, "--row-workers", str(args.row_workers),
+                "--matrix-layout", args.matrix_layout,
+                *(["--trace-callbacks", str(args.trace_callbacks), "--callback-trace",
+                   str(args.callback_trace or directory / "callback-trace.csv")] if args.trace_callbacks else []),
                 "--report", str(directory / "node-report.json"),
-            ], args.rtc_cpus), adapter_env, directory / "node.log")
+            ], args.rtc_cpus), node_env, directory / "node.log")
             processes.append((node, log))
             helper.wait_text(directory / "node.log", "CONNECT_ACCEPTED", 90, node)
         adapter_stop = directory / "adapter.stop"
@@ -388,7 +422,12 @@ def main():
         if args.role == "jfg":
             helper.wait_text(directory / "node.log", "PREPARED", 60, node)
         (directory / "graph-before-replay.json").write_text(helper.command([str(installation.tool("pwao-dump")), "-r", helper.REMOTE], env))
-        helper.capture_thread_map(directory / "thread-map-before-replay.txt", [(args.role, daemon), ("DM adapter", adapter)])
+        placement_processes = [("daemon", daemon), ("adapter", adapter)]
+        if args.role == "jfg":
+            placement_processes.append(("node", node))
+        from classic_placement import record_placement
+        record_placement(directory, "before", placement_processes, args)
+        helper.capture_thread_map(directory / "thread-map-before-replay.txt", placement_processes)
         capture, log = helper.start(["dumpcap", "-p", "-i", "any", "-f", "udp port 6000 or udp port 6100", "-w", str(directory / "wire.pcapng")], env, directory / "dumpcap.log")
         processes.append((capture, log))
         helper.wait_text(directory / "dumpcap.log", "Capturing on", 30, capture)
@@ -397,6 +436,7 @@ def main():
         report["source_command"] = source
         (directory / "wfs-simulator.log").write_text(helper.command(source, env, cwd=directory, timeout=args.frames / args.rate_hz + 30))
         time.sleep(0.5)
+        record_placement(directory, "after", placement_processes, args)
         helper.stop(capture, log)
         for port, name in ((6000, "wfs-packets.tsv"), (6100, "dm-packets.tsv")):
             (directory / name).write_text(helper.command(["tshark", "-r", str(directory / "wire.pcapng"), "-Y", f"udp.port=={port}", "-T", "fields", "-e", "frame.time_epoch", "-e", "udp.length", "-e", "data.data"], env))
@@ -406,7 +446,15 @@ def main():
         numerical = compare_commands(directory / "dm-wire-um.f32", expected_commands,
                                      args.frames, reference_frames=reference_frames)
         (directory / "numerical-summary.json").write_text(json.dumps(numerical, indent=2) + "\n")
-        if not numerical["qualified"] or numerical["clipping_decision_mismatches"]:
+        numerical_passed = numerical["qualified"]
+        if args.numerical_acceptance == "source-arithmetic":
+            from classic_numerical_acceptance import acceptance_for_wire
+            acceptance = acceptance_for_wire(fixture, np.fromfile(expected_commands, dtype="<f4").reshape(-1, 277)[:args.frames],
+                                             directory / "dm-wire-um.f32", args.frames, args.role, args.mode)
+            (directory / "arithmetic-acceptance.json").write_text(json.dumps(acceptance, indent=2) + "\n")
+            report["arithmetic_acceptance"] = acceptance
+            numerical_passed = acceptance["arithmetic_consistency_passed"]
+        if not numerical_passed or numerical["clipping_decision_mismatches"]:
             raise RuntimeError("physical command comparison failed; see numerical-summary.json")
         report["qualified"] = True
     except Exception as error:
