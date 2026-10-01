@@ -113,15 +113,17 @@ These are functional development replays, not latency benchmarks.
 
 The RTC runner also accepts an opt-in per-role placement contract. The
 [native](profiles/ryzen-6800h-rtc-copper-native.json) and
-[Julia](profiles/ryzen-6800h-rtc-copper-julia.json) examples describe this
-workstation's CPU set, expected thread counts, FIFO83 data loop, and FIFO20
-pixel sender. They are separate because the RTC has one additional parameter
-thread when it owns the native graph. Before starting the sender, the runner
-checks that every requested CPU and scheduler policy is available, generates
-an explicit eventfd/FIFO83/CPU 0 daemon data loop with
-`mem.mlock-all=false`, and verifies each live daemon, observer, RTC, and
-optional Julia-island and Standard-DM-adapter thread against the selected
-profile. It verifies them
+[Julia](profiles/ryzen-6800h-rtc-copper-julia.json) profiles describe the
+revised CPU0-free workstation layout: the daemon data loop uses CPU 2, the JFG
+island loop uses CPU 4 with Julia pins 4 and 6, the Standard-DM adapter uses
+CPU 8, the observer uses CPU 14, and the pixel sender uses CPU 12. Processing
+processes are limited to CPUs 2, 4, 6, 8, 10, and 14. They are separate because
+the RTC has one additional parameter thread when it owns the native graph.
+Before starting the sender, the runner checks that every requested CPU and
+scheduler policy is available, generates an explicit eventfd/FIFO83/CPU 2
+daemon data loop with `mem.mlock-all=false`, and verifies each live daemon,
+observer, RTC, and optional Julia-island and Standard-DM-adapter thread against
+the selected profile. It verifies them
 again after replay. The Julia owner receives `JULIA_RTC_PIN_CPUS` through its
 maintained ThreadPinning interface. A changed or unavailable thread layout
 fails the run; the JSON records name the failed process and thread.
@@ -132,8 +134,12 @@ page-backing record is unavailable. The mapping page-size total is an
 observation of the kernel's VMA report; `AnonHugePages` and hugetlb fields
 are kept separately because a VMA page-size label alone does not establish
 the exact backing of every resident page.
-One 16-frame strict wire replay per controller passed from clean launcher
-revision `1623a2b` on 2026-09-29. Both before-ingress and after-replay
+Historical note: the retained 2026-09-29 placement captures and results in
+this document used the original layout with daemon loop CPU 0 and Julia pins
+0 and 2. The profiles and commands below describe the revised layout; those
+prior captures do not qualify it. One 16-frame strict wire replay per
+controller passed from clean launcher revision `1623a2b` on 2026-09-29. Both
+before-ingress and after-replay
 snapshots were complete for every inspected process. The raw reports are
 `~/.cache/rtc-copper-native-pagebacking-final-16-20260929/report.json` and
 `~/.cache/rtc-copper-julia-pagebacking-final-16-20260929/report.json`.
@@ -141,6 +147,8 @@ These short runs validate the recording path, not the memory behavior of a
 long replay.
 
 ```sh
+# Current commands use daemon CPU 2, JFG island CPU 4, Julia pins 4 and 6,
+# adapter CPU 8, observer CPU 14, and source CPU 12.
 python3 benchmark/run_copper_rtc.py \
   --output-dir /path/to/new/native-strict \
   --controller native --frames 1024 \
@@ -151,7 +159,7 @@ python3 benchmark/run_copper_rtc.py \
   --output-dir /path/to/new/julia-strict \
   --controller julia --frames 1024 \
   --placement-profile benchmark/profiles/ryzen-6800h-rtc-copper-julia.json \
-  --julia-pin-cpus 0,2 \
+  --julia-pin-cpus 4,6 \
   --reference-vectors /path/to/matched/fgn/demanded-um.f32
 ```
 
@@ -175,7 +183,7 @@ python3 benchmark/run_copper_rtc.py \
   --output-dir /path/to/new/julia-wire \
   --controller julia --frames 1024 --wire-capture \
   --placement-profile benchmark/profiles/ryzen-6800h-rtc-copper-julia.json \
-  --julia-pin-cpus 0,2 \
+  --julia-pin-cpus 4,6 \
   --reference-vectors /path/to/matched/fgn/demanded-um.f32
 ```
 
@@ -606,7 +614,7 @@ at `~/.cache/rtc-copper-client-loop-main-row-1024-20260929/manifest.json`.
 ## Explicit PipeWireAO loops for the Copper laboratory profile
 
 The opt-in [all-loop Ryzen profile](profiles/ryzen-6800h-copper-all-loops.json)
-adds a named CPU 0 / FIFO83 JFG daemon loop to the earlier strict profile.
+adds a named CPU 2 / FIFO83 JFG daemon loop to the earlier strict profile.
 With `--configure-all-loops`, the launcher derives both daemon and all
 observer/adapter client masks and FIFO priorities from that file. The FGN and
 JFG runners render private PipeWireAO configurations with eventfd idle and

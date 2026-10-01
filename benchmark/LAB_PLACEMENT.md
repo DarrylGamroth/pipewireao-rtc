@@ -53,9 +53,10 @@ is still alive.
 
 ## Strict Copper thread profile
 
-`run_copper_baseline.py --verify-placement --strict-placement-profile
-benchmark/profiles/ryzen-6800h-copper.json` passes the profile to each runner's
-existing pre-ingress and post-replay `verify` call. The verifier checks each
+`run_copper_baseline.py --verify-placement --configure-all-loops
+--strict-placement-profile benchmark/profiles/ryzen-6800h-copper.json` passes
+the profile to each runner's existing pre-ingress and post-replay `verify`
+call. The verifier checks each
 role's exact process CPU envelope, leader policy, policy counts, placement
 counts, and any declared exact thread names. A missing role or a mismatch
 returns a failed report before the runner starts its pixel source. The profile
@@ -63,18 +64,31 @@ path and SHA-256 are recorded with the run. A new machine or CPU layout needs
 its own reviewed profile; changing `--rtc-cpus` alone cannot silently relax
 this one.
 
-The Ryzen profile requires a named FIFO83 `rtc-data-loop` pinned to CPU 0 in
+The current Ryzen profiles reserve logical CPUs 0 and 1 for the operating
+system. They use the process envelope `2,4,6,8,10,14`, with source CPU 12,
+observer CPU 14, daemon loop CPU 2, JFG island loop CPU 4, Julia pins `4,6`,
+and Standard-DM adapter loop CPU 8. HEART uses WFS/proc/reconstructor/TFC/
+CLWC/DM workers on `2,4,6,8,8,10`; TFC and CLWC share CPU 8. Auxiliary HEART
+work uses CPU 14.
+
+The Ryzen profile requires a named FIFO83 `rtc-data-loop` pinned to CPU 2 in
 the FGN daemon, the named HEART stage workers on their declared cores, and
 the JFG `data-loop.0` plus its pinned Julia and control threads. Earlier
 broad-envelope replays observed no FIFO thread in the FGN daemon, so those
 replays do not meet this profile. The profile also checks the observer and
-adapter data-loop names, although their declared affinity masks remain broad.
+adapter data-loop names; current profiles pin the observer to CPU 14 and
+adapter loop to CPU 8.
 Thread names establish which configured threads received a placement; they
 do not by themselves trace individual algorithm calls. For this Copper
 configuration, FGN invokes its Algorithm synchronously on the graph owner
 loop, and the JFG PipeWire callback invokes `process!` directly. The selected
 JFG configuration has zero progressive CPU workers; no separate Julia MVM
 shard task is asserted by this profile.
+
+Historical placement note: the captures and numeric results below were
+recorded with the original layout, including CPU 0 for the daemon loop and
+CPUs 0 and 2 for the Julia pins. The current profiles use the revised CPU0-free
+layout; earlier records do not qualify it.
 
 The [named-thread evidence](data/copper_named_thread_evidence_20260929.json)
 reapplies the stronger name, policy, and affinity checks to 128 retained
@@ -93,7 +107,7 @@ for other machines.
 
 With a strict profile, the Copper launcher also derives the JFG island's
 explicit PipeWireAO client-loop CPU and FIFO priority from its named
-`data-loop.0` rule. The island receives a private client configuration with
+`data-loop.0` rule (CPU 4 in the current profile). The island receives a private client configuration with
 eventfd idle and `mem.mlock-all=false`; the JFG report records its path and
 hash. Two gated 16-frame three-way replays verified the resulting CPU 0 /
 FIFO83 loop before ingress and after replay. The

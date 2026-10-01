@@ -41,7 +41,7 @@ and trigger CSVs in the run output:
 ```sh
 python3 benchmark/run_copper_baseline.py \
   --gated-source --mode row --repeats 1 --frames 1024 \
-  --verify-placement \
+  --verify-placement --configure-all-loops \
   --strict-placement-profile benchmark/profiles/ryzen-6800h-copper.json \
   --output-dir /path/to/new/gated-row
 ```
@@ -50,6 +50,11 @@ Use `--mode fullframe` with a different output directory for complete-frame
 ingress. All three RTCs receive the same FITS cube and nominal trigger
 schedule in each mode. The existing packet qualifier still compares every
 WFS payload with the FITS source and verifies every Standard-DM packet.
+
+The current profile reserves CPUs 0 and 1, pins the daemon loop to CPU 2, the
+JFG island loop to CPU 4, adapter loop to CPU 8, observer to CPU 14, and source
+to CPU 12. The retained 2026-09-29 results below used the original CPU0 layout;
+their packet and numerical results do not qualify this revised placement.
 
 ## Retained 1,024-frame comparison, 2026-09-29
 

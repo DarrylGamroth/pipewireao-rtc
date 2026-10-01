@@ -7,6 +7,11 @@ The subsequent [scheduler and idle investigation](CLASSIC_PLATFORM.md)
 records the repeated 100/250 Hz comparison with matched effective CPU latency
 requests, complete diagnostic handoffs, and work completed during readout.
 
+The [merged-science follow-up](CLASSIC_MERGED_LIVE.md) retains the later
+baseline/capacity investigation, live-update qualification, and fresh comparison
+with CPUs 0 and 1 excluded. Its revised placement results are a separate series;
+the original results below remain historical evidence.
+
 ## Common workload
 
 The comparison uses the original seven-frame 352 × 352 Classic FITS cube,
