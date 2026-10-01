@@ -253,8 +253,8 @@ is implemented in this laboratory increment.
 
 Three finite windows per condition establish the observed comparison, not a
 rare-tail guarantee, maximum capacity, hard deadline bound, physical-loop
-validation, or a universal host tuning prescription. The next useful Julia
-profile is the terminal science body under the matched zero request. Further
+validation, or a universal host tuning prescription. The subsequent [terminal projection investigation](CLASSIC_PROJECTIONS.md)
+profiles and improves the Julia science body under the matched zero request. Further
 source investigation should attribute the remaining FGN R → P elapsed time
 before changing transport behavior.
 

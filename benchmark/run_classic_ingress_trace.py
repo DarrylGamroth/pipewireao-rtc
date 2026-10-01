@@ -35,6 +35,7 @@ def main():
     parser.add_argument('--rate-hz', type=int, default=100)
     parser.add_argument('--readout-us', type=int, default=2000)
     parser.add_argument('--heart-plugin', type=Path)
+    parser.add_argument('--jfg-root', type=Path, default=run_classic_live.WORKSPACE/'JuliaFilterGraph.jl')
     parser.add_argument('--ingress-ready-file', type=Path)
     parser.add_argument('--ingress-release-file', type=Path)
     parser.add_argument('--ingress-done-file', type=Path)
@@ -81,7 +82,7 @@ def main():
                   args.rate_hz, args.readout_us, args.frames,
                   trace=args.frames * 32 if args.role == 'jfg' else 0)
     cmd += ['--fgn-root', str(run_classic_live.WORKSPACE / 'calculon-algorithms-main-copper'),
-            '--jfg-root', str(run_classic_live.WORKSPACE / 'JuliaFilterGraph.jl')]
+            '--jfg-root', str(args.jfg_root.resolve(strict=True))]
     if args.ingress_ready_file is not None or args.ingress_release_file is not None:
         if args.ingress_ready_file is None or args.ingress_release_file is None:
             parser.error('ingress ready/release files must be supplied together')

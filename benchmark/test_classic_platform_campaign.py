@@ -92,6 +92,16 @@ class CampaignCommandTests(unittest.TestCase):
                                        "--ingress-release-file", str(release),
                                        "--ingress-done-file", str(ready.parent / "ingress.done")])
 
+    def test_explicit_julia_checkout_is_forwarded_in_normal_and_diagnostic_modes(self):
+        for diagnostic in (False, True):
+            args = self.args(diagnostic=diagnostic)
+            args.jfg_root = Path("candidate-julia")
+            with self.subTest(diagnostic=diagnostic), \
+                    patch.object(platform_campaign.campaign, "command", return_value=["runner"]):
+                command = platform_campaign.run_command(
+                    "jfg-row", Path("run"), args, Path("ready"), Path("release"))
+            self.assertEqual(command[command.index("--jfg-root") + 1], "candidate-julia")
+
     def test_fgn_diagnostic_uses_trace_runner_and_forwards_barrier_pair(self):
         with tempfile.TemporaryDirectory() as temp:
             directory, ready, release = (Path(temp) / name for name in
