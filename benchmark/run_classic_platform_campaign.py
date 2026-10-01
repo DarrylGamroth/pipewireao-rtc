@@ -21,6 +21,21 @@ EVENTS = ('sched:sched_switch', 'sched:sched_wakeup', 'sched:sched_wakeup_new',
           'sched:sched_migrate_task', 'power:cpu_idle')
 
 
+def validate_adapter_loop_cpu(parser, cpu, diagnostic):
+    """Validate an optional adapter affinity against receiver launcher CPUs."""
+    if cpu is None:
+        return
+    if diagnostic:
+        parser.error('--adapter-loop-cpu cannot be combined with --diagnostic; diagnostic placement remains fixed')
+    if cpu < 2:
+        parser.error('--adapter-loop-cpu must exclude reserved CPUs 0 and 1')
+    # The orchestrator may itself be pinned to CPU 14; receiver launch uses
+    # taskset -c 2-15, so validate against that envelope and host CPU count.
+    receiver_cpus = range(2, min(16, os.cpu_count() or 0))
+    if cpu not in receiver_cpus:
+        parser.error(f'--adapter-loop-cpu {cpu} is outside receiver CPU envelope 2-{min(15, (os.cpu_count() or 1) - 1)}')
+
+
 def snapshot():
     result = {'monotonic_ns': time.monotonic_ns(), 'realtime_ns': time.time_ns(),
               'cpus': {}, 'effective_cpu_latency_us': effective_cpu_latency()}
@@ -109,9 +124,12 @@ def run_command(path, directory, args, ready, release):
                 / 'target/release/libcalculon_fgn_bundle.so')
         command += ['--fgn-root', str(getattr(args, 'fgn_root', WORKSPACE/'calculon-algorithms-main-copper')),
                     '--jfg-root', str(getattr(args, 'jfg_root', WORKSPACE/'JuliaFilterGraph.jl'))]
+        adapter_cpu = getattr(args, 'adapter_loop_cpu', None)
+        if adapter_cpu is not None and path != 'heart':
+            command[command.index('--adapter-loop-cpu') + 1] = str(adapter_cpu)
     # The orchestrator runs on housekeeping CPU 14. Receiver admission must see
     # the host envelope before its own role-specific placement is applied.
-    return ['taskset', '-c', '0-15', *command,
+    return ['taskset', '-c', '2-15', *command,
             '--ingress-ready-file', str(ready), '--ingress-release-file', str(release),
             '--ingress-done-file', str(ready.parent/'ingress.done')]
 
@@ -151,6 +169,29 @@ def cleanup_case_group(process, record):
         raise RuntimeError('case group cleanup failed; stop the campaign')
 
 
+def read_case_reports(record, directory, path):
+    """Retain delivery failure even when it prevents numerical validation."""
+    for name in ('report.json', 'physical-summary.json'):
+        record[name] = json.loads((directory/name).read_text())
+    record['exact_wire_delivery'] = record['physical-summary.json']['qualified']
+    arithmetic_file = directory/'arithmetic-acceptance.json'
+    if arithmetic_file.is_file():
+        arithmetic = json.loads(arithmetic_file.read_text())
+        record['arithmetic-acceptance.json'] = arithmetic
+        record['science_passed'] = arithmetic['arithmetic_consistency_passed']
+        if path == 'heart':
+            record['science_passed'] &= arithmetic['exact_model_passed']
+        record['science_report_status'] = 'present'
+    else:
+        record['science_passed'] = None
+        record['science_report_status'] = 'missing; numerical acceptance unassessed'
+    report = record['report.json']
+    child_codes = ([item['returncode'] for item in report['commands'] if item.get('kind') == 'process']
+                   if path == 'heart' else report['process_returncodes'])
+    record['normal_child_exit'] = bool(child_codes) and all(code == 0 for code in child_codes)
+    record['functional_passed'] = report.get('functional_wire_qualified', report.get('qualified'))
+
+
 class PerfCapture:
     """Start disabled; require perf's acknowledgement before releasing pixels."""
     def __init__(self, directory):
@@ -165,7 +206,7 @@ class PerfCapture:
         for event in EVENTS:
             self.command += ['-e', event]
             if event == 'power:cpu_idle':
-                self.command += ['--filter', 'cpu_id == 0 || cpu_id == 2 || cpu_id == 4']
+                self.command += ['--filter', 'cpu_id == 2 || cpu_id == 4 || cpu_id == 6 || cpu_id == 8 || cpu_id == 10']
         try:
             self.process = subprocess.Popen(self.command, stdout=self.log, stderr=self.log,
                                             pass_fds=(self.control_read, self.ack_write))
@@ -290,17 +331,7 @@ def run_case(path, case, args):
                                stdout=events, stderr=errors, check=True)
             record['perf_decoded'] = True
         record['cpu_latency_request'] = request_record
-        for name in ('report.json', 'physical-summary.json', 'arithmetic-acceptance.json'):
-            record[name] = json.loads((directory/name).read_text())
-        record['exact_wire_delivery'] = record['physical-summary.json']['qualified']
-        record['science_passed'] = record['arithmetic-acceptance.json']['arithmetic_consistency_passed']
-        if path == 'heart':
-            record['science_passed'] &= record['arithmetic-acceptance.json']['exact_model_passed']
-        report = record['report.json']
-        child_codes = ([item['returncode'] for item in report['commands'] if item.get('kind') == 'process']
-                       if path == 'heart' else report['process_returncodes'])
-        record['normal_child_exit'] = bool(child_codes) and all(code == 0 for code in child_codes)
-        record['functional_passed'] = report.get('functional_wire_qualified', report['qualified'])
+        read_case_reports(record, directory, path)
         if (not record['errors'] and record['returncode'] == 0 and record['exact_wire_delivery']
                 and record['science_passed'] and record['normal_child_exit'] and record['functional_passed']):
             if args.current_latency is None and any(record[phase]['effective_cpu_latency_us'] == 0
@@ -351,6 +382,8 @@ def main():
     parser.add_argument('--frames', type=int, default=1029)
     parser.add_argument('--readout-us', type=int, default=2000)
     parser.add_argument('--diagnostic', action='store_true')
+    parser.add_argument('--adapter-loop-cpu', type=int,
+                        help='pin FGN/JFG adapter data-loop.0 to this available CPU; this is a separate thread sharing a CPU, not a shared data-loop')
     trace_root = WORKSPACE/'pipewire-classic-fgn-trace/build-rtc-trace/src'
     parser.add_argument('--trace-library-directory', type=Path, default=trace_root/'pipewire')
     parser.add_argument('--trace-module', type=Path, default=trace_root/'modules/libpipewire-module-ndarray-filter-chain.so')
@@ -360,6 +393,7 @@ def main():
     parser.add_argument('--jfg-root', type=Path, default=WORKSPACE/'JuliaFilterGraph.jl',
                         help='Julia source checkout to execute and record')
     args = parser.parse_args()
+    validate_adapter_loop_cpu(parser, args.adapter_loop_cpu, args.diagnostic)
     args.jfg_root = args.jfg_root.resolve(strict=True)
     args.fgn_root = args.fgn_root.resolve(strict=True)
     if not 1 <= args.frames <= 1029 or args.frames % 7 or args.repeats < 1:

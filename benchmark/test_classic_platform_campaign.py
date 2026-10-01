@@ -85,7 +85,7 @@ class CampaignCommandTests(unittest.TestCase):
                     "heart", directory, self.args(), ready, release)
 
         base.assert_called_once_with("heart", Path("corpus"), directory, 250, 2000, 21)
-        self.assertEqual(result[:3], ["taskset", "-c", "0-15"])
+        self.assertEqual(result[:3], ["taskset", "-c", "2-15"])
         self.assertIn(str(platform_campaign.WORKSPACE / "calculon-algorithms-main-copper"), result)
         self.assertIn(str(platform_campaign.WORKSPACE / "JuliaFilterGraph.jl"), result)
         self.assertEqual(result[-6:], ["--ingress-ready-file", str(ready),
@@ -122,7 +122,7 @@ class CampaignCommandTests(unittest.TestCase):
                     "fgn-row", directory, self.args(diagnostic=True), ready, release)
 
         base.assert_not_called()
-        self.assertEqual(result[:3], ["taskset", "-c", "0-15"])
+        self.assertEqual(result[:3], ["taskset", "-c", "2-15"])
         self.assertEqual(result[3], platform_campaign.sys.executable)
         self.assertEqual(result[4], str(platform_campaign.ROOT / "benchmark/run_classic_ingress_trace.py"))
         self.assertIn("fgn", result)

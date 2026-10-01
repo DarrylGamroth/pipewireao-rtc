@@ -55,25 +55,32 @@ def source_pacing_from_packets(directory, frames):
     count = 0
     with open_evidence(path, "rt") as source:
         for ordinal, line in enumerate(source):
-            timestamp, _, packet = line.rstrip("\n").split("\t")
-            header = bytes.fromhex(packet[:WFS.size * 2])
-            if len(header) != WFS.size:
+            timestamp, udp_length, packet = line.rstrip("\n").split("\t")
+            raw = bytes.fromhex(packet)
+            if len(raw) < WFS.size:
                 raise ValueError(f"truncated WFS header at packet {ordinal + 1}: "
-                                 f"{len(header)} bytes, expected {WFS.size}")
-            decoded = WFS.unpack(header)
-            expected = (ordinal // 32, ordinal % 32 + 1, 32)
-            if (decoded[-2], decoded[10], decoded[11]) != expected:
-                raise ValueError("WFS frame/packet order differs from complete Classic ingress")
-            now = Decimal(timestamp)
-            if not now.is_finite() or (previous is not None and now < previous):
-                raise ValueError("WFS packet times are nonfinite or move backward")
+                                 f"{len(raw)} bytes, expected at least {WFS.size}")
+            decoded = WFS.unpack_from(raw)
+            _, _, bits, _, data_bytes, pixels, width, rows, _, _, sequence, datagrams, raster, _, frame, _ = decoded
+            expected_frame, packet_index = divmod(ordinal, 32)
+            if (frame, sequence, datagrams, raster) != (
+                    expected_frame, packet_index + 1, 32, packet_index * 11 * 352):
+                raise ValueError("WFS frame/row packet order differs from complete Classic ingress")
+            if ((bits, width, rows, pixels, data_bytes) != (16, 352, 11, 3872, 7744)
+                    or int(udp_length) != WFS.size + data_bytes + 8
+                    or len(raw) != WFS.size + data_bytes):
+                raise ValueError("WFS geometry/length differs from Classic")
+            now = Decimal(timestamp) * 1_000_000_000
+            if (not now.is_finite() or now != now.to_integral_value()
+                    or (previous is not None and now < previous)):
+                raise ValueError("WFS packet times are nonfinite, subnanosecond or out of order")
             if ordinal % 32 == 0:
                 first.append(now)
             previous = now
             count += 1
     if frames < 2 or count != frames * 32 or len(first) != frames or first[-1] <= first[0]:
         raise ValueError("incomplete or zero-duration WFS window")
-    return {"achieved_source_rate_hz": float(Decimal(frames - 1) / (first[-1] - first[0])),
+    return {"achieved_source_rate_hz": float(Decimal(frames - 1) * 1_000_000_000 / (first[-1] - first[0])),
             "complete_source_window": True, "source": str(path)}
 
 
@@ -226,8 +233,24 @@ def classify_window(run, requested, evidence, pacing_tolerance=0.01):
               "tolerance_fraction": pacing_tolerance, "source": source.get("source")}
     science, historical = numerical_gates(run, evidence)
     exits, placement = normal_exit_gate(run), placement_gate(run, evidence)
+    physical_evidence = evidence.get("physical", report.get("physical", {}))
+    if not isinstance(physical_evidence, dict):
+        physical_evidence = {}
+    physical_errors = physical_evidence.get("errors")
+    mismatch_packets = physical_evidence.get("wfs_payload_mismatch_packets")
+    if (not isinstance(physical_errors, list)
+            or not isinstance(mismatch_packets, int) or isinstance(mismatch_packets, bool)
+            or mismatch_packets < 0):
+        source_pixels = gate(None, "physical WFS pixel attestation is missing or malformed")
+    elif mismatch_packets != 0 or any(
+            isinstance(error, str) and (error.startswith("WFS ") or
+                                        "WFS packets have pixel payloads differing from FITS" in error)
+            for error in physical_errors):
+        source_pixels = gate(False, "physical WFS pixel attestation reports a source-side error")
+    else:
+        source_pixels = gate(True, "physical WFS payloads match the FITS source")
     exact = run.get("exact_wire_delivery")
-    physical = evidence.get("physical", report.get("physical", {})).get("qualified")
+    physical = physical_evidence.get("qualified")
     if physical is not None and exact is not None and physical != exact:
         exact_gate = gate(None, "campaign and physical artifact disagree")
     else:
@@ -250,9 +273,10 @@ def classify_window(run, requested, evidence, pacing_tolerance=0.01):
     operational = report.get("functional_wire_qualified") if run.get("path") == "heart" else report.get("qualified")
     gates = {"exact_wire_delivery": exact_gate, "science_acceptance": science,
              "normal_child_exit": exits, "rtc_placement": placement, "source_pacing": pacing,
+             "source_pixel_attestation": source_pixels,
              "first_to_dm_deadline": deadline_gate,
              "runner_functional_gate": gate(operational, "selected runner functional result; HEART's separate initial-state/full qualification remains unchanged")}
-    prerequisites = (pacing_passed, exits["passed"], placement["passed"])
+    prerequisites = (pacing_passed, exits["passed"], placement["passed"], source_pixels["passed"])
     def contract_status(required):
         if any(value is not True for value in prerequisites):
             return "excluded"

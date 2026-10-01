@@ -99,7 +99,7 @@ class CampaignTests(unittest.TestCase):
             self.assertEqual(intervals(directory, 3, 0, 100), expected)
     def test_command_records_defined_placement(self):
         c=command('jfg-row',Path('/corpus'),Path('/out'),100,2000,1029,100,2,'sharded')
-        self.assertIn('--julia-pin-cpus',c);self.assertIn('2,6,8,10',c)
+        self.assertIn('--julia-pin-cpus',c);self.assertIn('4,14,6,10',c)
         self.assertIn('source-arithmetic',c)
 
     def test_command_default_keeps_frozen_plugin_without_reading_files(self):

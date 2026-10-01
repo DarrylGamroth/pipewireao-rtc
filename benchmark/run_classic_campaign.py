@@ -98,7 +98,7 @@ def command(path, corpus, output, rate, readout, frames, trace=0, workers=0, lay
     fixture=Path('/home/dgamroth/.cache/rtc-classic-matched-arrays-20260930/fixture')
     common=['--fixture',str(fixture),'--cube',str(corpus/'input.fits'),'--replay-corpus',str(corpus),
             '--frames',str(frames),'--output',str(output),'--rate-hz',str(rate),'--readout-us',str(readout),
-            '--rtc-cpus','0,2,4,6,8,10,14','--source-cpus','12','--numerical-acceptance','source-arithmetic']
+            '--rtc-cpus','2,4,6,8,10,14','--source-cpus','12','--numerical-acceptance','source-arithmetic']
     if path=='heart':
         return [sys.executable,str(ROOT/'benchmark/run_classic_heart_live.py'),*common,
                 '--heart-root',str(WORKSPACE.parent/'heart/heart-copper-comparison'),
@@ -119,9 +119,9 @@ def command(path, corpus, output, rate, readout, frames, trace=0, workers=0, lay
             '--heart-plugin',str(heart_plugin),
             '--heart-plugin-sha256',heart_plugin_sha256,
             '--wfs-simulator',str(WORKSPACE.parent/'heart/heart-copper-comparison/source/testServer/bin/wfsSimulator'),
-            '--lab-loop-cpu','0','--adapter-loop-cpu','4']
+            '--lab-loop-cpu','2','--adapter-loop-cpu','8']
     if role=='jfg':
-        result+=['--node-loop-cpu','2','--julia-pin-cpus',','.join(map(str,[2,6,8,10][:workers+2])),
+        result+=['--node-loop-cpu','4','--julia-pin-cpus',','.join(map(str,[4,14,6,10][:workers+2])),
                  '--row-workers',str(workers),'--matrix-layout',layout]
         if trace:result+=['--trace-callbacks',str(trace)]
     return result

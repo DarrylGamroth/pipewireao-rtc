@@ -9,6 +9,36 @@ from pathlib import Path
 from classic_capacity import WFS, classify_manifest, classify_window, load_run_evidence, source_pacing_from_packets
 
 
+def classic_packet_line(frame, packet, stamp, *, mutate=None, truncate=False, header_only=False):
+    """Build a complete zero-valued Classic WFS packet for source-only checks."""
+    fields = [0] * 16
+    fields[2], fields[4:8] = 16, [7744, 3872, 352, 11]
+    fields[10], fields[11] = packet, 32
+    fields[12], fields[14] = (packet - 1) * 11 * 352, frame
+    if mutate:
+        mutate(fields)
+    if header_only:
+        fields[2], fields[4:8] = 0, [0, 0, 0, 0]
+    raw = WFS.pack(*fields) + (b"" if header_only else bytes(7744))
+    if truncate:
+        raw = raw[:-1]
+    udp_length = 0 if header_only else WFS.size + 7744 + 8
+    return f"{stamp:.8f}\t{udp_length}\t{raw.hex()}\n"
+
+
+def classic_packet_window(*, bad_packet=None, mutate=None, truncate=False, header_only=False):
+    lines = []
+    for frame in range(2):
+        for packet in range(1, 33):
+            stamp = 100 + frame * .01 + (packet - 1) * .00005
+            if (frame, packet) == bad_packet:
+                lines.append(classic_packet_line(frame, packet, stamp, mutate=mutate,
+                                                 truncate=truncate, header_only=header_only))
+            else:
+                lines.append(classic_packet_line(frame, packet, stamp))
+    return lines
+
+
 def sample(rate=100, repeat=1, path="fgn-row"):
     directory = f"/synthetic/{path}-{rate}-{repeat}"
     report = {"frames": 63, "qualified": True, "functional_wire_qualified": True,
@@ -28,7 +58,8 @@ def sample(rate=100, repeat=1, path="fgn-row"):
     evidence = {"numerical": {"qualified": False, "failed_values": 2, "max_absolute_error_um": 1.3e-6,
                                "clipping_decision_mismatches": 0},
                 "placement_before": placements, "placement_after": copy.deepcopy(placements),
-                "source_pacing": {"achieved_source_rate_hz": rate, "complete_source_window": True}}
+                "source_pacing": {"achieved_source_rate_hz": rate, "complete_source_window": True},
+                "physical": {"qualified": True, "errors": [], "wfs_payload_mismatch_packets": 0}}
     if path == "heart":
         evidence["heart_cpu_map"] = "HOP0.proc.w = { 2 }\n"
         evidence["placement_before"] = {"heart": snapshot("HOP0.proc.w", 2, 15)}
@@ -145,6 +176,7 @@ class CapacityTests(unittest.TestCase):
         run["exact_wire_delivery"] = False
         run["returncode"] = 1
         run["latency"] = {}
+        evidence["physical"]["qualified"] = False
         result = classify_window(run, {}, evidence)
         self.assertEqual(result["status"], "failed")
         self.assertTrue(result["gates"]["normal_child_exit"]["passed"])
@@ -152,19 +184,68 @@ class CapacityTests(unittest.TestCase):
     def test_source_rate_can_be_measured_when_no_dm_was_delivered(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "wfs-packets.tsv"
-            lines = []
-            for frame in range(2):
-                for packet in range(1, 33):
-                    fields = [0] * 16
-                    fields[10], fields[11], fields[-2] = packet, 32, frame
-                    stamp = 100 + frame * .01 + (packet - 1) * .00005
-                    lines.append(f"{stamp:.8f}\t0\t{WFS.pack(*fields).hex()}\n")
+            lines = classic_packet_window()
             path.write_text("".join(lines))
             result = source_pacing_from_packets(directory, 2)
             self.assertEqual(result["achieved_source_rate_hz"], 100)
             path.write_text("".join(lines[:-1]))
             with self.assertRaises(ValueError):
                 source_pacing_from_packets(directory, 2)
+
+    def test_invalid_classic_source_packets_remain_excluded_window_errors(self):
+        corruptions = {
+            "header-only": {"header_only": True},
+            "geometry": {"mutate": lambda fields: fields.__setitem__(6, 351)},
+            "truncated-payload": {"truncate": True},
+            "udp-length": {"udp_delta": 1},
+            "raster": {"mutate": lambda fields: fields.__setitem__(12, 1)},
+        }
+        for name, corruption in corruptions.items():
+            with self.subTest(kind=name), tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / "wfs-packets.tsv"
+                lines = classic_packet_window(
+                    bad_packet=(0, 8), mutate=corruption.get("mutate"),
+                    truncate=corruption.get("truncate", False),
+                    header_only=corruption.get("header_only", False))
+                if "udp_delta" in corruption:
+                    fields = lines[7].rstrip("\n").split("\t")
+                    fields[1] = str(int(fields[1]) + corruption["udp_delta"])
+                    lines[7] = "\t".join(fields) + "\n"
+                path.write_text("".join(lines))
+                with self.assertRaises(ValueError):
+                    source_pacing_from_packets(directory, 2)
+
+                run, evidence = sample()
+                run.update(directory=directory, latency={}, returncode=1,
+                           exact_wire_delivery=False)
+                run["report"]["qualified"] = False
+                evidence.pop("source_pacing")
+                loaded = load_run_evidence(run, {})
+                self.assertNotIn("source_pacing", loaded)
+                self.assertIn("source_pacing", loaded["read_errors"])
+                evidence.update(loaded)
+                result = classify_window(run, {}, evidence)
+                self.assertEqual(result["delivery_status"], "excluded")
+                self.assertEqual(result["deadline_status"], "excluded")
+                self.assertIsNone(result["gates"]["source_pacing"]["passed"])
+
+    def test_source_pixel_attestation_is_required_and_source_only(self):
+        run, evidence = sample()
+        evidence.pop("physical")
+        result = classify_window(run, {}, evidence)
+        self.assertEqual(result["status"], "excluded")
+        self.assertIsNone(result["gates"]["source_pixel_attestation"]["passed"])
+
+        run, evidence = sample()
+        evidence["physical"]["wfs_payload_mismatch_packets"] = 1
+        result = classify_window(run, {}, evidence)
+        self.assertEqual(result["status"], "excluded")
+        self.assertFalse(result["gates"]["source_pixel_attestation"]["passed"])
+
+        run, evidence = sample()
+        evidence["physical"].update(qualified=False,
+                                    errors=["DM commands: expected 7, captured 6"])
+        self.assertTrue(classify_window(run, {}, evidence)["gates"]["source_pixel_attestation"]["passed"])
 
     def test_empty_and_truncated_wfs_headers_are_input_errors(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -202,13 +283,7 @@ class CapacityTests(unittest.TestCase):
     def test_zstd_complete_corrupt_and_incomplete_packet_evidence(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "wfs-packets.tsv.zst"
-            lines = []
-            for frame in range(2):
-                for packet in range(1, 33):
-                    fields = [0] * 16
-                    fields[10], fields[11], fields[-2] = packet, 32, frame
-                    stamp = 100 + frame * .01 + (packet - 1) * .00005
-                    lines.append(f"{stamp:.8f}\t0\t{WFS.pack(*fields).hex()}\n")
+            lines = classic_packet_window()
             def compressed(content):
                 return subprocess.run(["zstd", "-q", "-c"], input=content.encode(),
                                       stdout=subprocess.PIPE, check=True).stdout

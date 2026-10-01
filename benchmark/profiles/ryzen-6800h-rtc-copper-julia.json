@@ -2,16 +2,23 @@
   "schema_version": 1,
   "roles": {
     "adapter": {
-      "cpus": "0,2,4,6,8,10,14",
+      "cpus": "8",
       "leader_policy": "other",
       "required_policy_counts": {
         "other": 6,
         "fifo:83": 1
       },
-      "required_thread_placements": []
+      "required_thread_placements": [
+        {
+          "policy": "fifo:83",
+          "cpus": "8",
+          "name": "data-loop.0",
+          "count": 1
+        }
+      ]
     },
     "daemon": {
-      "cpus": "0,2,4,6,8,10,14",
+      "cpus": "2,4,6,8,10,14",
       "leader_policy": "other",
       "required_policy_counts": {
         "other": 1,
@@ -20,13 +27,13 @@
       "required_thread_placements": [
         {
           "policy": "fifo:83",
-          "cpus": "0",
+          "cpus": "2",
           "count": 1
         }
       ]
     },
     "island": {
-      "cpus": "0,2,4,6,8,10,14",
+      "cpus": "2,4,6,8,10,14",
       "leader_policy": "other",
       "required_policy_counts": {
         "other": 6,
@@ -35,23 +42,23 @@
       "required_thread_placements": [
         {
           "policy": "fifo:83",
-          "cpus": "0",
+          "cpus": "4",
           "count": 1
         },
         {
           "policy": "other",
-          "cpus": "0",
+          "cpus": "4",
           "count": 2
         },
         {
           "policy": "other",
-          "cpus": "2",
+          "cpus": "6",
           "count": 1
         }
       ]
     },
     "observer": {
-      "cpus": "0-15",
+      "cpus": "14",
       "leader_policy": "other",
       "required_policy_counts": {
         "other": 1,
@@ -60,7 +67,7 @@
       "required_thread_placements": []
     },
     "rtc": {
-      "cpus": "0,2,4,6,8,10,14",
+      "cpus": "2,4,6,8,10,14",
       "leader_policy": "other",
       "required_policy_counts": {
         "other": 2

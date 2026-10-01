@@ -35,6 +35,11 @@ HEART = Path("/home/dgamroth/workspaces/codex/heart/heart-copper-comparison")
 CUBE = JFG / "benchmark/data/revolt-copper-aos-openloop-1024f-u16.fits"
 EXPECTED_CUBE_SHA256 = "880e46b8e45c848a8c2df74e5591731ea161ac7009a02ad29e2fc79f6fd06abf"
 VECTOR_TOLERANCE_UM = 1e-6
+DEFAULT_RTC_CPUS = "2,4,6,8,10,14"
+DEFAULT_JULIA_PIN_CPUS = "4,6"
+DEFAULT_OBSERVER_CPUS = "14"
+DEFAULT_HEART_CPU_MAP = ROOT / "benchmark/profiles/ryzen-6800h-classic.cpu"
+DEFAULT_HEART_THREAD_MAP = ROOT / "benchmark/profiles/ryzen-6800h-classic.threads"
 
 
 def pinned_data_loop(profile: dict, role: str, name: str) -> tuple[int, int]:
@@ -60,6 +65,40 @@ def required_data_loop(profile: dict, role: str, name: str) -> tuple[set[int], i
 
 def comma_cpu_list(cpus: set[int]) -> str:
     return ",".join(str(cpu) for cpu in sorted(cpus))
+
+
+def fgn_launch_command(argv: list[str], observer_cpus: str = DEFAULT_OBSERVER_CPUS) -> list[str]:
+    """Start the FGN parent on housekeeping CPUs so inherited observer affinity is safe."""
+    return ["taskset", "--cpu-list", observer_cpus, *argv]
+
+
+def require_strict_all_loops(parser: argparse.ArgumentParser, profile: Path | None,
+                             configure_all_loops: bool) -> None:
+    if profile is not None and not configure_all_loops:
+        parser.error("--strict-placement-profile requires --configure-all-loops")
+
+
+def observer_environment(profile: dict | None) -> str:
+    return profile["roles"]["observer"]["cpus"] if profile is not None else DEFAULT_OBSERVER_CPUS
+
+
+def configure_all_loop_requests(fgn_command: list[str] | None,
+                                jfg_environment: dict[str, str] | None,
+                                loops: dict[str, tuple[set[int], int]]) -> None:
+    if fgn_command is not None:
+        for role, prefix in (("fgn-command-observer", "observer"),
+                             ("julia-heart-std-dm-command-adapter", "adapter")):
+            cpus, priority = loops[role]
+            fgn_command.extend((f"--{prefix}-loop-cpus", comma_cpu_list(cpus),
+                                f"--{prefix}-loop-rt-priority", str(priority)))
+    if jfg_environment is not None:
+        for role, prefix in (("daemon", "JULIA_RTC_LAB_DAEMON_LOOP"),
+                             ("observer", "JULIA_RTC_LAB_OBSERVER_LOOP"),
+                             ("adapter", "JULIA_RTC_LAB_ADAPTER_LOOP")):
+            cpus, priority = loops[role]
+            suffix = "CPU" if role == "daemon" else "CPUS"
+            jfg_environment[f"{prefix}_{suffix}"] = comma_cpu_list(cpus)
+            jfg_environment[f"{prefix}_RT_PRIORITY"] = str(priority)
 
 
 def sha256(path: Path) -> str:
@@ -372,18 +411,18 @@ def main() -> None:
     parser.add_argument("--jfg-root", type=Path, default=JFG)
     parser.add_argument("--jfg-pipewireao-julia-root", type=Path,
                         help="opt in to a local PipeWireAO.jl binding for the JFG island")
-    parser.add_argument("--heart-cpu-map", type=Path, default=JFG / "benchmark/heart/affinity/ryzen-6800h.cpu")
-    parser.add_argument("--heart-thread-map", type=Path, default=JFG / "benchmark/heart/affinity/ryzen-6800h.threads")
+    parser.add_argument("--heart-cpu-map", type=Path, default=DEFAULT_HEART_CPU_MAP)
+    parser.add_argument("--heart-thread-map", type=Path, default=DEFAULT_HEART_THREAD_MAP)
     parser.add_argument("--source-core", default="12")
     parser.add_argument("--source-rt-priority", default="20")
-    parser.add_argument("--rtc-cpus", default="0,2,4,6,8,10,14")
+    parser.add_argument("--rtc-cpus", default=DEFAULT_RTC_CPUS)
     parser.add_argument("--verify-placement", action="store_true",
                         help="verify declared process envelopes before ingress and after replay")
     parser.add_argument("--strict-placement-profile", type=Path,
                         help="host-specific thread profile enforced by every pre-ingress verifier")
     parser.add_argument("--configure-all-loops", action="store_true",
                         help="request explicit daemon and client loops from the strict profile")
-    parser.add_argument("--julia-pin-cpus", default="0,2",
+    parser.add_argument("--julia-pin-cpus", default=DEFAULT_JULIA_PIN_CPUS,
                         help="CPU list for the two Julia island threads when verifying placement")
     args = parser.parse_args()
     if not 1 <= args.frames <= 1024:
@@ -398,6 +437,7 @@ def main() -> None:
         parser.error("--gated-source requires --strict-placement-profile")
     if args.configure_all_loops and args.strict_placement_profile is None:
         parser.error("--configure-all-loops requires --strict-placement-profile")
+    require_strict_all_loops(parser, args.strict_placement_profile, args.configure_all_loops)
 
     heart_plugin = (args.heart_plugin or args.pipewire_prefix /
                     "lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so").resolve()
@@ -452,6 +492,7 @@ def main() -> None:
     fgn_loop: tuple[int, int] | None = None
     jfg_loop: tuple[int, int] | None = None
     all_loops: dict[str, tuple[set[int], int]] = {}
+    profile = None
     if args.strict_placement_profile is not None:
         if not args.verify_placement:
             parser.error("--strict-placement-profile requires --verify-placement")
@@ -584,16 +625,15 @@ def main() -> None:
             jfg_mode = "progressive" if args.mode == "row" else "frame"
             jfg_env = {"JULIA_RTC_DAEMON_CPUS": args.rtc_cpus, "JULIA_RTC_ISLAND_CPUS": args.rtc_cpus,
                        "JULIA_RTC_ADAPTER_CPUS": args.rtc_cpus, "JULIA_RTC_SIMULATOR_CPUS": args.source_core,
-                       "JULIA_RTC_SIMULATOR_RT_PRIORITY": args.source_rt_priority}
+                       "JULIA_RTC_SIMULATOR_RT_PRIORITY": args.source_rt_priority,
+                       "JULIA_RTC_OBSERVER_CPUS": observer_environment(profile)}
             heart_env: dict[str, str] = {}
             fgn_env: dict[str, str] = {}
             if args.verify_placement:
                 heart_env = {"PIPEWIREAO_RTC_PLACEMENT_VERIFY": str(verifier),
                              "PIPEWIREAO_RTC_HEART_CPUS": args.rtc_cpus}
                 jfg_env.update({"JULIA_RTC_PLACEMENT_VERIFY": str(verifier),
-                                "JULIA_RTC_PIN_CPUS": args.julia_pin_cpus,
-                                "JULIA_RTC_OBSERVER_CPUS": ",".join(
-                                    str(cpu) for cpu in sorted(os.sched_getaffinity(0)))})
+                                "JULIA_RTC_PIN_CPUS": args.julia_pin_cpus})
             if thread_profile is not None:
                 for environment in (heart_env, fgn_env, jfg_env):
                     environment["PIPEWIREAO_RTC_THREAD_PROFILE"] = str(thread_profile)
@@ -601,13 +641,7 @@ def main() -> None:
                 jfg_env["JULIA_RTC_LAB_CLIENT_LOOP_CPU"] = str(jfg_loop[0])
                 jfg_env["JULIA_RTC_LAB_CLIENT_LOOP_RT_PRIORITY"] = str(jfg_loop[1])
                 if args.configure_all_loops:
-                    for role, prefix in (("daemon", "JULIA_RTC_LAB_DAEMON_LOOP"),
-                                         ("observer", "JULIA_RTC_LAB_OBSERVER_LOOP"),
-                                         ("adapter", "JULIA_RTC_LAB_ADAPTER_LOOP")):
-                        cpus, priority = all_loops[role]
-                        suffix = "CPU" if role == "daemon" else "CPUS"
-                        jfg_env[f"{prefix}_{suffix}"] = comma_cpu_list(cpus)
-                        jfg_env[f"{prefix}_RT_PRIORITY"] = str(priority)
+                    configure_all_loop_requests(None, jfg_env, all_loops)
             if args.gated_source:
                 assert pacer_binary is not None
                 for environment, report_path in (
@@ -668,11 +702,10 @@ def main() -> None:
                 commands["fgn"].extend(("--lab-loop-cpu", str(fgn_loop[0]),
                                         "--lab-loop-rt-priority", str(fgn_loop[1])))
             if args.configure_all_loops:
-                for role, prefix in (("fgn-command-observer", "observer"),
-                                     ("julia-heart-std-dm-command-adapter", "adapter")):
-                    cpus, priority = all_loops[role]
-                    commands["fgn"].extend((f"--{prefix}-loop-cpus", comma_cpu_list(cpus),
-                                            f"--{prefix}-loop-rt-priority", str(priority)))
+                configure_all_loop_requests(commands["fgn"], None, all_loops)
+            commands["fgn"] = fgn_launch_command(
+                commands["fgn"], profile["roles"]["fgn-command-observer"]["cpus"]
+                if profile is not None else DEFAULT_OBSERVER_CPUS)
             record: dict[str, Any] = {"index": index, "commands": {}}
             manifest["runs"].append(record)
             def execute_runner(name: str) -> dict[str, Any]:
