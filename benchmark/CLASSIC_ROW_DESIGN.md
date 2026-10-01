@@ -1,5 +1,12 @@
 # Classic row execution design
 
+Current Rust graph update (2026-10-01): the FGN Classic row graph now uses
+separate `shack-hartmann-measurement-block-f32` and
+`incremental-dense-reconstructor-f32` nodes, matching JFG's decomposition.
+It has nine nodes; the original eight-node fused measurements below describe
+the earlier qualification. See [the composed graph qualification](CLASSIC_COMPOSED_ROW.md)
+for current implementation and validation evidence.
+
 Date: 2026-09-30. Status: source-grounded implementation plan. No row graph,
 buffer remediation, build, or live row qualification is delivered by this
 document. The first matched full-frame HEART functional gate precedes row work.

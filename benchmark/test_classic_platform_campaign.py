@@ -102,6 +102,17 @@ class CampaignCommandTests(unittest.TestCase):
                     "jfg-row", Path("run"), args, Path("ready"), Path("release"))
             self.assertEqual(command[command.index("--jfg-root") + 1], "candidate-julia")
 
+    def test_explicit_fgn_checkout_selects_matching_plugin_and_generator(self):
+        args = self.args()
+        args.fgn_root = Path("candidate-fgn")
+        with patch.object(platform_campaign.campaign, "command",
+                          return_value=["runner", "--plugin", "old-plugin"]):
+            command = platform_campaign.run_command(
+                "fgn-row", Path("run"), args, Path("ready"), Path("release"))
+        self.assertEqual(command[command.index("--fgn-root") + 1], "candidate-fgn")
+        self.assertEqual(command[command.index("--plugin") + 1],
+                         "candidate-fgn/target/release/libcalculon_fgn_bundle.so")
+
     def test_fgn_diagnostic_uses_trace_runner_and_forwards_barrier_pair(self):
         with tempfile.TemporaryDirectory() as temp:
             directory, ready, release = (Path(temp) / name for name in

@@ -268,8 +268,6 @@ def install_graph(helper, qualifier, directory: Path, fixture: Path,
             raise ValueError(f"invalid prepared parameter extent: {parameter}")
         if name in ("subaperture-origins.u32le", "active-subapertures.u8"):
             continue
-        if mode == "row":
-            port = port.replace("shack-hartmann:", "reconstruction:")
         startup.append(
             f"            {helper.spa_quote('pipewireao.startup-parameter.' + port)}"
             f" = {helper.spa_quote(str(parameter))}"

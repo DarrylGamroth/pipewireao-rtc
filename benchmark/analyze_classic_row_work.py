@@ -209,9 +209,11 @@ def validate_graph(directory, fixture, run, node, evidence):
     require(daemon.count('filter.graph = ') == 1 and body in daemon,
             'FGN deployed graph differs from saved generated graph')
     require(re.search(r'inputs\s*=\s*\[\s*"pixel-calibration:raw"', graph) is not None
-            and 'workers = { helpers = 0 }' in graph and 'label = shwfs-row-reconstructor-f32' in graph,
+            and 'workers = { helpers = 0 }' in graph
+            and 'label = shack-hartmann-measurement-block-f32' in graph
+            and 'label = incremental-dense-reconstructor-f32' in graph,
             'FGN synchronous raw-input row composition missing')
-    return {'algorithm_path': 'fused Rust SH row reconstruction with synchronous ordered column accumulation',
+    return {'algorithm_path': 'split Rust SH measurement block then synchronous incremental dense reconstruction',
             'graph_sha256': digest(graph.encode()), 'recorded_algorithm_binary': str(plugin),
             'recorded_algorithm_binary_sha256': run['sha256'][str(plugin)]}
 

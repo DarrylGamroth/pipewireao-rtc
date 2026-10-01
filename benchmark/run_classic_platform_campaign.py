@@ -49,8 +49,8 @@ def snapshot():
     return result
 
 
-def source_revisions(jfg_root=None):
-    roots = [ROOT, jfg_root or WORKSPACE/'JuliaFilterGraph.jl', WORKSPACE/'calculon-algorithms-main-copper',
+def source_revisions(jfg_root=None, fgn_root=None):
+    roots = [ROOT, jfg_root or WORKSPACE/'JuliaFilterGraph.jl', fgn_root or WORKSPACE/'calculon-algorithms-main-copper',
              WORKSPACE/'pipewire', WORKSPACE/'pipewireao-spa-plugin-heart',
              WORKSPACE.parent/'heart/heart-copper-comparison', WORKSPACE.parent/'heart/revolt-rtc']
     return {str(root): {
@@ -103,7 +103,11 @@ def run_command(path, directory, args, ready, release):
     else:
         command = campaign.command(path, args.corpus, directory, args.current_rate,
                                    args.readout_us, args.frames)
-        command += ['--fgn-root', str(WORKSPACE/'calculon-algorithms-main-copper'),
+        if path.startswith('fgn-'):
+            command[command.index('--plugin') + 1] = str(
+                getattr(args, 'fgn_root', WORKSPACE/'calculon-algorithms-main-copper')
+                / 'target/release/libcalculon_fgn_bundle.so')
+        command += ['--fgn-root', str(getattr(args, 'fgn_root', WORKSPACE/'calculon-algorithms-main-copper')),
                     '--jfg-root', str(getattr(args, 'jfg_root', WORKSPACE/'JuliaFilterGraph.jl'))]
     # The orchestrator runs on housekeeping CPU 14. Receiver admission must see
     # the host envelope before its own role-specific placement is applied.
@@ -351,10 +355,13 @@ def main():
     parser.add_argument('--trace-library-directory', type=Path, default=trace_root/'pipewire')
     parser.add_argument('--trace-module', type=Path, default=trace_root/'modules/libpipewire-module-ndarray-filter-chain.so')
     parser.add_argument('--trace-heart-plugin', type=Path, default=WORKSPACE/'pipewireao-spa-plugin-heart-row-admission/build-classic-diagnostic-20260930/spa/plugins/heart/libspa-heart.so')
+    parser.add_argument('--fgn-root', type=Path, default=WORKSPACE/'calculon-algorithms-main-copper',
+                        help='FGN checkout whose prepared graph generator is used')
     parser.add_argument('--jfg-root', type=Path, default=WORKSPACE/'JuliaFilterGraph.jl',
                         help='Julia source checkout to execute and record')
     args = parser.parse_args()
     args.jfg_root = args.jfg_root.resolve(strict=True)
+    args.fgn_root = args.fgn_root.resolve(strict=True)
     if not 1 <= args.frames <= 1029 or args.frames % 7 or args.repeats < 1:
         parser.error('frames must be a multiple of seven through 1029; repeats must be positive')
     if any(rate < 1 or rate*args.readout_us >= 950000 for rate in args.rates):
@@ -368,7 +375,7 @@ def main():
                 'requested': {key:str(value) if isinstance(value,Path) else value for key,value in vars(args).items()},
                 'initial_platform': snapshot(), 'runs': [],
                 'excluded_conditions': ['HEART/off: unchanged hrtTemplate requests zero CPU latency itself'],
-                'source_revisions': source_revisions(args.jfg_root),
+                'source_revisions': source_revisions(args.jfg_root, args.fgn_root),
                 'harness_revision': subprocess.check_output(['git','-C',str(ROOT),'rev-parse','HEAD'],text=True).strip(),
                 'harness_sha256': {str(path):hashlib.sha256(path.read_bytes()).hexdigest()
                     for path in (Path(__file__), ROOT/'benchmark/classic_platform.py',
