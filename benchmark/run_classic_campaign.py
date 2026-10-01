@@ -14,6 +14,7 @@ import sys
 
 import numpy as np
 from lab_placement import host_record
+from classic_wire import open_evidence
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKSPACE = ROOT.parent
@@ -36,7 +37,7 @@ def intervals(directory: Path, frames: int, dm_base: int, rate: int):
     times = []
     for kind, header, count in [('wfs',WFS,frames*32),('dm',DM,frames)]:
         result=[]
-        with (directory/f'{kind}-packets.tsv').open() as source:
+        with open_evidence(directory/f'{kind}-packets.tsv') as source:
             for ordinal,line in enumerate(source):
                 timestamp,_,packet=line.rstrip('\n').split('\t')
                 decoded=header.unpack(bytes.fromhex(packet[:header.size*2]))

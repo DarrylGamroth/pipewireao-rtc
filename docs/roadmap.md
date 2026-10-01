@@ -780,6 +780,16 @@ allocation/GC counter increments; native transport and lifecycle work remain
 outside that boundary. See the linked evidence for layout, clock-model and
 numerical-policy details.
 
+The follow-up [Classic platform campaign](../benchmark/CLASSIC_PLATFORM.md)
+passes all 30 normal replay windows with exact delivery and no observed
+frame-period deadline misses. The common zero CPU latency request reduces
+FGN/JFG tail latency and rate dependence; unchanged HEART already makes this
+request when its device access succeeds. Ten separate diagnostic windows
+locate the large off-condition delay before row publication and confirm
+substantial completed SH/MVM work during readout. These finite laboratory
+results do not add operational systemd units, core isolation, physical-device
+qualification or a hard latency bound.
+
 ## Deferred capabilities
 
 The following topics are not active work. Their previous proposals are

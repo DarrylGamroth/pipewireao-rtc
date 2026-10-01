@@ -1,0 +1,12 @@
+[Unit]
+Description=Grant RTC group access to selected perf trace event metadata
+Requires=sys-kernel-tracing.mount
+After=sys-kernel-tracing.mount
+ConditionPathIsMountPoint=/sys/kernel/tracing
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/rtc-trace-access
+
+[Install]
+WantedBy=multi-user.target

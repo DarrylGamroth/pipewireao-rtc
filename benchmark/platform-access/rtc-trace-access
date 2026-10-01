@@ -1,0 +1,22 @@
+#!/bin/sh
+# Grant the rtc group only the metadata needed by the selected perf events.
+set -eu
+trace_root=/sys/kernel/tracing
+[ -d "$trace_root/events" ] || exit 1
+for directory in "$trace_root" "$trace_root/events" "$trace_root/events/sched" "$trace_root/events/power"; do
+    chgrp rtc "$directory"
+    chmod g+rx "$directory"
+done
+chgrp rtc "$trace_root/available_events"
+chmod g+r "$trace_root/available_events"
+for name in header_page header_event; do
+    chgrp rtc "$trace_root/events/$name"
+    chmod g+r "$trace_root/events/$name"
+done
+for event in sched/sched_switch sched/sched_wakeup sched/sched_wakeup_new sched/sched_migrate_task power/cpu_idle power/cpu_frequency; do
+    directory="$trace_root/events/$event"
+    [ -d "$directory" ] || continue
+    chgrp rtc "$directory" "$directory/id" "$directory/format"
+    chmod g+rx "$directory"
+    chmod g+r "$directory/id" "$directory/format"
+done

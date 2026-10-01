@@ -24,7 +24,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from prepare_classic_heart_config import write_config
-from run_classic_live import ROOT, WORKSPACE, compare_commands, load_script, wait_capture_ready, replay_spa_source
+from run_classic_live import ROOT, WORKSPACE, compare_commands, load_script, wait_capture_ready, replay_spa_source, wait_for_ingress_release
 
 
 GMS_SECTIONS = {"clwcBlock": "CLWFC", "tfcBlock": "TFC"}
@@ -52,6 +52,9 @@ def arguments(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--sender", choices=("wfs-simulator", "spa"), default="wfs-simulator")
     parser.add_argument("--sender-spa-directory", type=Path,
                         help="private source plugin directory for SPA sender qualification")
+    parser.add_argument("--ingress-ready-file", type=Path)
+    parser.add_argument("--ingress-release-file", type=Path)
+    parser.add_argument("--ingress-done-file", type=Path)
     parser.add_argument("--rtc-cpus")
     parser.add_argument("--source-cpus")
     parser.add_argument("--cpu-map", type=Path)
@@ -62,6 +65,8 @@ def arguments(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--fgn-root", type=Path, default=WORKSPACE / "calculon-algorithms-progressive-requal")
     parser.add_argument("--jfg-root", type=Path, default=WORKSPACE / "JuliaFilterGraph-progressive-requal")
     args = parser.parse_args(argv)
+    if (args.ingress_ready_file is None) != (args.ingress_release_file is None):
+        parser.error("ingress ready/release files must be supplied together")
     if not 1 <= args.frames <= (1029 if args.replay_corpus else 7):
         parser.error("Classic gate requires 1..7 frames, or at most 1029 with --replay-corpus")
     if args.replay_corpus and args.frames % 7:
@@ -509,6 +514,7 @@ def run(args: argparse.Namespace) -> dict:
             ["dumpcap", "-p", "-i", "any", "-f", "udp port 6000 or udp port 6100",
              "-w", str(directory / "wire.pcapng")], "dumpcap.log")
         wait_capture_ready(helper, directory, capture)
+        wait_for_ingress_release(helper, args, [("heart", rtc)])
         source = helper.placed([str(simulator), "-file", "input.fits", "-tPort", "6000",
                                 "-period", repr(1 / args.rate_hz), "-readout", str(args.readout_us),
                                 "-lines", str(args.rows_per_packet), "-numFrames", str(args.frames)], args.source_cpus)
@@ -525,6 +531,8 @@ def run(args: argparse.Namespace) -> dict:
         # Stop capture before shutdown can emit a zero/flat command.
         capture.send_signal(signal.SIGINT)
         helper.stop(capture, capture_stream)
+        from run_classic_live import mark_ingress_done
+        mark_ingress_done(args)
         record_placement(directory, "after", [("heart", rtc)], args)
         snapshot_flags("post-replay")
         if args.dump_boundaries:

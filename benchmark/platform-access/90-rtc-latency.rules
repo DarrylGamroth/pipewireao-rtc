@@ -1,0 +1,1 @@
+SUBSYSTEM=="misc", KERNEL=="cpu_dma_latency", GROUP="rtc", MODE="0660"

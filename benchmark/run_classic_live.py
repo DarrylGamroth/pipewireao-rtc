@@ -56,6 +56,26 @@ def wait_capture_ready(helper, directory: Path, capture) -> None:
                      f"File: {directory / 'wire.pcapng'}", 30, capture)
 
 
+def wait_for_ingress_release(helper, args, processes) -> None:
+    """Optional laboratory barrier after preparation and before source launch."""
+    if args.ingress_ready_file is None:
+        return
+    import time
+    record = {"phase": "prepared; no pixels sent", "monotonic_ns": time.monotonic_ns(),
+              "processes": [{"role": role, "pid": process.pid}
+                            for role, process in processes]}
+    with args.ingress_ready_file.open("x") as output:
+        json.dump(record, output)
+        output.write("\n")
+    helper.wait_for("laboratory ingress release", args.ingress_release_file.is_file, 30)
+
+
+def mark_ingress_done(args) -> None:
+    """Mark the end of the laboratory wire capture, before validation work."""
+    if args.ingress_done_file is not None:
+        args.ingress_done_file.touch(exist_ok=False)
+
+
 def replay_spa_source(helper, installation, args, directory: Path, cube: Path) -> dict:
     from run_classic_spa_sender import run_sender
     if args.sender_spa_directory is not None:
@@ -302,6 +322,9 @@ def arguments():
     parser.add_argument("--sender", choices=("wfs-simulator", "spa"), default="wfs-simulator")
     parser.add_argument("--sender-spa-directory", type=Path,
                         help="private source plugin directory for SPA sender qualification")
+    parser.add_argument("--ingress-ready-file", type=Path)
+    parser.add_argument("--ingress-release-file", type=Path)
+    parser.add_argument("--ingress-done-file", type=Path)
     parser.add_argument("--rtc-cpus")
     parser.add_argument("--source-cpus")
     parser.add_argument("--lab-loop-cpu", type=int)
@@ -314,6 +337,8 @@ def arguments():
     parser.add_argument("--trace-callbacks", type=int, default=0)
     parser.add_argument("--callback-trace", type=Path)
     args = parser.parse_args()
+    if (args.ingress_ready_file is None) != (args.ingress_release_file is None):
+        parser.error("ingress ready/release files must be supplied together")
     if not 1 <= args.frames <= (1029 if args.replay_corpus else 7):
         parser.error("Classic gate requires 1..7 frames, or at most 1029 with --replay-corpus")
     if args.replay_corpus and args.frames % 7:
@@ -457,6 +482,7 @@ def main():
         capture, log = helper.start(["dumpcap", "-p", "-i", "any", "-f", "udp port 6000 or udp port 6100", "-w", str(directory / "wire.pcapng")], env, directory / "dumpcap.log")
         processes.append((capture, log))
         wait_capture_ready(helper, directory, capture)
+        wait_for_ingress_release(helper, args, placement_processes)
         (directory / "input.fits").symlink_to(cube)
         source = helper.placed([str(args.wfs_simulator.resolve()), "-file", "input.fits", "-tPort", "6000", "-period", repr(1 / args.rate_hz), "-readout", str(args.readout_us), "-lines", str(args.rows_per_packet), "-numFrames", str(args.frames)], args.source_cpus)
         report["source_command"] = source
@@ -468,6 +494,7 @@ def main():
         time.sleep(0.5)
         record_placement(directory, "after", placement_processes, args)
         helper.stop(capture, log)
+        mark_ingress_done(args)
         for port, name in ((6000, "wfs-packets.tsv"), (6100, "dm-packets.tsv")):
             (directory / name).write_text(helper.command(["tshark", "-r", str(directory / "wire.pcapng"), "-Y", f"udp.port=={port}", "-T", "fields", "-e", "frame.time_epoch", "-e", "udp.length", "-e", "data.data"], env))
         scripts = args.jfg_root / "benchmark/heart"

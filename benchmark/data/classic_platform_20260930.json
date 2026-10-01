@@ -1,0 +1,3402 @@
+{
+  "schema": "classic-platform-evidence/1",
+  "date": "2026-09-30",
+  "scope": "finite laboratory software packet-ingress to UDP-command characterization; no physical camera/DM or hard real-time claim",
+  "method": "../CLASSIC_PLATFORM.md",
+  "normal": {
+    "manifest": {
+      "path": "/home/dgamroth/.cache/rtc-classic-platform-normal1029-20260930/manifest.json",
+      "sha256": "6d8ab496a5e61591bf91373aa98220653806912113ae654187bede6faf15f44a"
+    },
+    "summary": {
+      "path": "/home/dgamroth/.cache/rtc-classic-platform-normal1029-20260930/summary.json",
+      "sha256": "9d52aaccadaa4c59e0898047e12ffa72d54f34f48bb6378e07d45d068de806e7"
+    },
+    "source_revisions": {
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-platform-latency": {
+        "head": "f8dbb47930f8d24fa7711509bac557fe9d867077",
+        "status": " M benchmark/run_classic_campaign.py\n M benchmark/run_classic_heart_live.py\n M benchmark/run_classic_ingress_trace.py\n M benchmark/run_classic_live.py\n M benchmark/test_run_classic_campaign.py\n?? benchmark/CLASSIC_PLATFORM.md\n?? benchmark/classic_platform.py\n?? benchmark/platform-access/\n?? benchmark/run_classic_platform_campaign.py\n?? benchmark/test_classic_ingress_barrier.py\n?? benchmark/test_classic_platform.py\n?? benchmark/test_classic_platform_campaign.py\n"
+      },
+      "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph.jl": {
+        "head": "6f1da393f9bd7153ed95b8811ccf32ebce6342a6",
+        "status": "?? benchmark/__pycache__/\n?? benchmark/heart/__pycache__/\n?? gmon.out\n"
+      },
+      "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper": {
+        "head": "54d8b1847d7913f532e1d48ceba2429eb2499055",
+        "status": ""
+      },
+      "/home/dgamroth/workspaces/codex/pipewire/pipewire": {
+        "head": "9464907e1ae1592210dd43699d8eccd277346189",
+        "status": ""
+      },
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-heart": {
+        "head": "10388618bbf8493612cb1d852ccc0e018faa3c87",
+        "status": ""
+      },
+      "/home/dgamroth/workspaces/codex/heart/heart-copper-comparison": {
+        "head": "6a5c06b11a8b934effeb6328a73a70895b2af94a",
+        "status": "?? benchmarks/src/__pycache__/\n?? doc/subdirs_gen.txt\n?? source/aoTypes/test/coverage/scripts/hrtApiCli_testInputs_gen.py\n?? source/python/heart/api/commands.py\n?? source/python/heart/api/hrtApiCommandCatalog.json\n"
+      },
+      "/home/dgamroth/workspaces/codex/heart/revolt-rtc": {
+        "head": "b4fbe26f6a3d2372235ea54d6e0f1b67b41675b9",
+        "status": ""
+      }
+    },
+    "executed_harness_sha256": {
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-platform-latency/benchmark/run_classic_platform_campaign.py": "97efb1bde61159d95bcce2e22121f9a094119620bd8f1dd154358f046637e88b",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-platform-latency/benchmark/classic_platform.py": "8c19f307839e771cc90ca67996c1da005e0d1941b6afa450da7c713201652afb",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-platform-latency/benchmark/run_classic_campaign.py": "7933e9b628c64e1cc94a5a486db7b815865dad194a78d2ea1d87f9d2a8ad5206",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-platform-latency/benchmark/run_classic_live.py": "2dcbc8fadc87c22a8d5c9ba5eb78597ecbefea1553adb234711dfd1bfcc11f0f",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-platform-latency/benchmark/run_classic_heart_live.py": "1975dd36b838fbcf4d9ec359e550ed6b15a4dd55c3ce9372525c163460bd9fd7",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-platform-latency/benchmark/run_classic_ingress_trace.py": "172df3ab0f5572607855b2cb129c1d51b7e12b849df8496bed3c3ddaa3e83b4b"
+    },
+    "groups": [
+      {
+        "path": "fgn-row",
+        "rate_hz": 100,
+        "mode": "latency0",
+        "diagnostic": false,
+        "counts": {
+          "cases": 3,
+          "passed": 3,
+          "failed": 0
+        },
+        "percentile_ranges_across_per_window_values": {
+          "all": {
+            "terminal_to_dm_us": {
+              "p50": {
+                "min": 62.447,
+                "max": 63.188,
+                "windows": 3
+              },
+              "p99": {
+                "min": 72.15660000000001,
+                "max": 80.39472,
+                "windows": 3
+              }
+            },
+            "first_to_dm_us": {
+              "p50": {
+                "min": 1997.966,
+                "max": 1999.126,
+                "windows": 3
+              },
+              "p99": {
+                "min": 2007.24384,
+                "max": 2014.9996,
+                "windows": 3
+              }
+            }
+          },
+          "after_first_100": {
+            "terminal_to_dm_us": {
+              "p50": {
+                "min": 62.447,
+                "max": 63.258,
+                "windows": 3
+              },
+              "p99": {
+                "min": 72.15660000000001,
+                "max": 80.39472,
+                "windows": 3
+              }
+            },
+            "first_to_dm_us": {
+              "p50": {
+                "min": 1997.957,
+                "max": 1999.207,
+                "windows": 3
+              },
+              "p99": {
+                "min": 2007.21304,
+                "max": 2015.1368,
+                "windows": 3
+              }
+            }
+          }
+        },
+        "achieved_source_rate_hz": {
+          "min": 100.00037807535936,
+          "max": 100.00060631690575,
+          "windows": 3
+        },
+        "all_frame_deadline_counts": {
+          "windows": 3,
+          "frames": 3087,
+          "exceeded": 0
+        },
+        "gate_assertions": {
+          "exact_wire_delivery": {
+            "passed": 3,
+            "failed": 0,
+            "unknown": 0
+          },
+          "science_passed": {
+            "passed": 3,
+            "failed": 0,
+            "unknown": 0
+          }
+        }
+      },
+      {
+        "path": "fgn-row",
+        "rate_hz": 100,
+        "mode": "off",
+        "diagnostic": false,
+        "counts": {
+          "cases": 3,
+          "passed": 3,
+          "failed": 0
+        },
+        "percentile_ranges_across_per_window_values": {
+          "all": {
+            "terminal_to_dm_us": {
+              "p50": {
+                "min": 413.693,
+                "max": 486.079,
+                "windows": 3
+              },
+              "p99": {
+                "min": 1290.65504,
+                "max": 1412.2349200000003,
+                "windows": 3
+              }
+            },
+            "first_to_dm_us": {
+              "p50": {
+                "min": 2324.514,
+                "max": 2398.004,
+                "windows": 3
+              },
+              "p99": {
+                "min": 3207.70272,
+                "max": 3330.1792,
+                "windows": 3
+              }
+            }
+          },
+          "after_first_100": {
+            "terminal_to_dm_us": {
+              "p50": {
+                "min": 411.068,
+                "max": 480.879,
+                "windows": 3
+              },
+              "p99": {
+                "min": 1290.65504,
+                "max": 1412.2349200000003,
+                "windows": 3
+              }
+            },
+            "first_to_dm_us": {
+              "p50": {
+                "min": 2322.13,
+                "max": 2393.927,
+                "windows": 3
+              },
+              "p99": {
+                "min": 3207.70272,
+                "max": 3336.2626400000004,
+                "windows": 3
+              }
+            }
+          }
+        },
+        "achieved_source_rate_hz": {
+          "min": 100.00128907303711,
+          "max": 100.0102333136369,
+          "windows": 3
+        },
+        "all_frame_deadline_counts": {
+          "windows": 3,
+          "frames": 3087,
+          "exceeded": 0
+        },
+        "gate_assertions": {
+          "exact_wire_delivery": {
+            "passed": 3,
+            "failed": 0,
+            "unknown": 0
+          },
+          "science_passed": {
+            "passed": 3,
+            "failed": 0,
+            "unknown": 0
+          }
+        }
+      },
+      {
+        "path": "fgn-row",
+        "rate_hz": 250,
+        "mode": "latency0",
+        "diagnostic": false,
+        "counts": {
+          "cases": 3,
+          "passed": 3,
+          "failed": 0
+        },
+        "percentile_ranges_across_per_window_values": {
+          "all": {
+            "terminal_to_dm_us": {
+              "p50": {
+                "min": 61.976,
+                "max": 63.699,
+                "windows": 3
+              },
+              "p99": {
+                "min": 67.70792000000002,
+                "max": 76.17312,
+                "windows": 3
+              }
+            },
+            "first_to_dm_us": {
+              "p50": {
+                "min": 1998.137,
+                "max": 2000.08,
+                "windows": 3
+              },
+              "p99": {
+                "min": 2003.60952,
+                "max": 2012.26932,
+                "windows": 3
+              }
+            }
+          },
+          "after_first_100": {
+            "terminal_to_dm_us": {
+              "p50": {
+                "min": 61.936,
+                "max": 63.749,
+                "windows": 3
+              },
+              "p99": {
+                "min": 66.87396000000005,
+                "max": 76.17312,
+                "windows": 3
+              }
+            },
+            "first_to_dm_us": {
+              "p50": {
+                "min": 1998.116,
+                "max": 2000.12,
+                "windows": 3
+              },
+              "p99": {
+                "min": 2002.93544,
+                "max": 2012.26932,
+                "windows": 3
+              }
+            }
+          }
+        },
+        "achieved_source_rate_hz": {
+          "min": 250.00242329683553,
+          "max": 250.00314200203687,
+          "windows": 3
+        },
+        "all_frame_deadline_counts": {
+          "windows": 3,
+          "frames": 3087,
+          "exceeded": 0
+        },
+        "gate_assertions": {
+          "exact_wire_delivery": {
+            "passed": 3,
+            "failed": 0,
+            "unknown": 0
+          },
+          "science_passed": {
+            "passed": 3,
+            "failed": 0,
+            "unknown": 0
+          }
+        }
+      },
+      {
+        "path": "fgn-row",
+        "rate_hz": 250,
+        "mode": "off",
+        "diagnostic": false,
+        "counts": {
+          "cases": 3,
+          "passed": 3,
+          "failed": 0
+        },
+        "percentile_ranges_across_per_window_values": {
+          "all": {
+            "terminal_to_dm_us": {
+              "p50": {
+                "min": 55.233,
+                "max": 144.761,
+                "windows": 3
+              },
+              "p99": {
+                "min": 231.29632000000038,
+                "max": 998.3394000000001,
+                "windows": 3
+              }
+            },
+            "first_to_dm_us": {
+              "p50": {
+                "min": 1984.882,
+                "max": 2077.173,
+                "windows": 3
+              },
+              "p99": {
+                "min": 2161.73388,
+                "max": 2912.4092,
+                "windows": 3
+              }
+            }
+          },
+          "after_first_100": {
+            "terminal_to_dm_us": {
+              "p50": {
+                "min": 55.233,
+                "max": 213.599,
+                "windows": 3
+              },
+              "p99": {
+                "min": 143.2496000000003,
+                "max": 999.21672,
+                "windows": 3
+              }
+            },
+            "first_to_dm_us": {
+              "p50": {
+                "min": 1984.812,
+                "max": 2134.47,
+                "windows": 3
+              },
+              "p99": {
+                "min": 2073.62256,
+                "max": 2916.1531600000003,
+                "windows": 3
+              }
+            }
+          }
+        },
+        "achieved_source_rate_hz": {
+          "min": 250.00855695630008,
+          "max": 250.02959281429446,
+          "windows": 3
+        },
+        "all_frame_deadline_counts": {
+          "windows": 3,
+          "frames": 3087,
+          "exceeded": 0
+        },
+        "gate_assertions": {
+          "exact_wire_delivery": {
+            "passed": 3,
+            "failed": 0,
+            "unknown": 0
+          },
+          "science_passed": {
+            "passed": 3,
+            "failed": 0,
+            "unknown": 0
+          }
+        }
+      },
+      {
+        "path": "heart",
+        "rate_hz": 100,
+        "mode": "latency0",
+        "diagnostic": false,
+        "counts": {
+          "cases": 3,
+          "passed": 3,
+          "failed": 0
+        },
+        "percentile_ranges_across_per_window_values": {
+          "all": {
+            "terminal_to_dm_us": {
+              "p50": {
+                "min": 85.399,
+                "max": 86.211,
+                "windows": 3
+              },
+              "p99": {
+                "min": 102.60812000000001,
+                "max": 109.22272000000001,
+                "windows": 3
+              }
+            },
+            "first_to_dm_us": {
+              "p50": {
+                "min": 2021.01,
+                "max": 2022.091,
+                "windows": 3
+              },
+              "p99": {
+                "min": 2038.10192,
+                "max": 2043.2723600000002,
+                "windows": 3
+              }
+            }
+          },
+          "after_first_100": {
+            "terminal_to_dm_us": {
+              "p50": {
+                "min": 85.389,
+                "max": 86.231,
+                "windows": 3
+              },
+              "p99": {
+                "min": 100.9878,
+                "max": 109.22272000000001,
+                "windows": 3
+              }
+            },
+            "first_to_dm_us": {
+              "p50": {
+                "min": 2020.999,
+                "max": 2022.102,
+                "windows": 3
+              },
+              "p99": {
+                "min": 2036.574,
+                "max": 2043.2723600000002,
+                "windows": 3
+              }
+            }
+          }
+        },
+        "achieved_source_rate_hz": {
+          "min": 100.00036346435607,
+          "max": 100.00079242845837,
+          "windows": 3
+        },
+        "all_frame_deadline_counts": {
+          "windows": 3,
+          "frames": 3087,
+          "exceeded": 0
+        },
+        "gate_assertions": {
+          "exact_wire_delivery": {
+            "passed": 3,
+            "failed": 0,
+            "unknown": 0
+          },
+          "science_passed": {
+            "passed": 3,
+            "failed": 0,
+            "unknown": 0
+          }
+        }
+      },
+      {
+        "path": "heart",
+        "rate_hz": 250,
+        "mode": "latency0",
+        "diagnostic": false,
+        "counts": {
+          "cases": 3,
+          "passed": 3,
+          "failed": 0
+        },
+        "percentile_ranges_across_per_window_values": {
+          "all": {
+            "terminal_to_dm_us": {
+              "p50": {
+                "min": 84.268,
+                "max": 84.869,
+                "windows": 3
+              },
+              "p99": {
+                "min": 94.62548000000001,
+                "max": 141.5576,
+                "windows": 3
+              }
+            },
+            "first_to_dm_us": {
+              "p50": {
+                "min": 2020.168,
+                "max": 2020.698,
+                "windows": 3
+              },
+              "p99": {
+                "min": 2030.3969200000001,
+                "max": 2077.7542399999998,
+                "windows": 3
+              }
+            }
+          },
+          "after_first_100": {
+            "terminal_to_dm_us": {
+              "p50": {
+                "min": 84.237,
+                "max": 84.809,
+                "windows": 3
+              },
+              "p99": {
+                "min": 92.00032,
+                "max": 141.5576,
+                "windows": 3
+              }
+            },
+            "first_to_dm_us": {
+              "p50": {
+                "min": 2020.117,
+                "max": 2020.607,
+                "windows": 3
+              },
+              "p99": {
+                "min": 2028.1682,
+                "max": 2077.7542399999998,
+                "windows": 3
+              }
+            }
+          }
+        },
+        "achieved_source_rate_hz": {
+          "min": 250.00242262804827,
+          "max": 250.00335327941312,
+          "windows": 3
+        },
+        "all_frame_deadline_counts": {
+          "windows": 3,
+          "frames": 3087,
+          "exceeded": 0
+        },
+        "gate_assertions": {
+          "exact_wire_delivery": {
+            "passed": 3,
+            "failed": 0,
+            "unknown": 0
+          },
+          "science_passed": {
+            "passed": 3,
+            "failed": 0,
+            "unknown": 0
+          }
+        }
+      },
+      {
+        "path": "jfg-row",
+        "rate_hz": 100,
+        "mode": "latency0",
+        "diagnostic": false,
+        "counts": {
+          "cases": 3,
+          "passed": 3,
+          "failed": 0
+        },
+        "percentile_ranges_across_per_window_values": {
+          "all": {
+            "terminal_to_dm_us": {
+              "p50": {
+                "min": 80.27,
+                "max": 87.243,
+                "windows": 3
+              },
+              "p99": {
+                "min": 103.25800000000015,
+                "max": 189.73444000000032,
+                "windows": 3
+              }
+            },
+            "first_to_dm_us": {
+              "p50": {
+                "min": 2015.609,
+                "max": 2022.791,
+                "windows": 3
+              },
+              "p99": {
+                "min": 2038.1558800000003,
+                "max": 2116.35316,
+                "windows": 3
+              }
+            }
+          },
+          "after_first_100": {
+            "terminal_to_dm_us": {
+              "p50": {
+                "min": 80.33,
+                "max": 87.464,
+                "windows": 3
+              },
+              "p99": {
+                "min": 103.25800000000015,
+                "max": 189.73444000000032,
+                "windows": 3
+              }
+            },
+            "first_to_dm_us": {
+              "p50": {
+                "min": 2015.619,
+                "max": 2023.153,
+                "windows": 3
+              },
+              "p99": {
+                "min": 2038.1558800000003,
+                "max": 2116.35316,
+                "windows": 3
+              }
+            }
+          }
+        },
+        "achieved_source_rate_hz": {
+          "min": 100.00040429151778,
+          "max": 100.00076926661805,
+          "windows": 3
+        },
+        "all_frame_deadline_counts": {
+          "windows": 3,
+          "frames": 3087,
+          "exceeded": 0
+        },
+        "gate_assertions": {
+          "exact_wire_delivery": {
+            "passed": 3,
+            "failed": 0,
+            "unknown": 0
+          },
+          "science_passed": {
+            "passed": 3,
+            "failed": 0,
+            "unknown": 0
+          }
+        }
+      },
+      {
+        "path": "jfg-row",
+        "rate_hz": 100,
+        "mode": "off",
+        "diagnostic": false,
+        "counts": {
+          "cases": 3,
+          "passed": 3,
+          "failed": 0
+        },
+        "percentile_ranges_across_per_window_values": {
+          "all": {
+            "terminal_to_dm_us": {
+              "p50": {
+                "min": 571.949,
+                "max": 581.428,
+                "windows": 3
+              },
+              "p99": {
+                "min": 1100.9832400000003,
+                "max": 1187.9702800000002,
+                "windows": 3
+              }
+            },
+            "first_to_dm_us": {
+              "p50": {
+                "min": 2488.634,
+                "max": 2495.055,
+                "windows": 3
+              },
+              "p99": {
+                "min": 3018.41312,
+                "max": 3113.21236,
+                "windows": 3
+              }
+            }
+          },
+          "after_first_100": {
+            "terminal_to_dm_us": {
+              "p50": {
+                "min": 571.949,
+                "max": 581.217,
+                "windows": 3
+              },
+              "p99": {
+                "min": 1092.43152,
+                "max": 1158.53284,
+                "windows": 3
+              }
+            },
+            "first_to_dm_us": {
+              "p50": {
+                "min": 2489.063,
+                "max": 2495.307,
+                "windows": 3
+              },
+              "p99": {
+                "min": 3011.00896,
+                "max": 3080.43764,
+                "windows": 3
+              }
+            }
+          }
+        },
+        "achieved_source_rate_hz": {
+          "min": 100.00040547829782,
+          "max": 100.00942127662597,
+          "windows": 3
+        },
+        "all_frame_deadline_counts": {
+          "windows": 3,
+          "frames": 3087,
+          "exceeded": 0
+        },
+        "gate_assertions": {
+          "exact_wire_delivery": {
+            "passed": 3,
+            "failed": 0,
+            "unknown": 0
+          },
+          "science_passed": {
+            "passed": 3,
+            "failed": 0,
+            "unknown": 0
+          }
+        }
+      },
+      {
+        "path": "jfg-row",
+        "rate_hz": 250,
+        "mode": "latency0",
+        "diagnostic": false,
+        "counts": {
+          "cases": 3,
+          "passed": 3,
+          "failed": 0
+        },
+        "percentile_ranges_across_per_window_values": {
+          "all": {
+            "terminal_to_dm_us": {
+              "p50": {
+                "min": 79.849,
+                "max": 85.911,
+                "windows": 3
+              },
+              "p99": {
+                "min": 121.85188000000005,
+                "max": 150.24112,
+                "windows": 3
+              }
+            },
+            "first_to_dm_us": {
+              "p50": {
+                "min": 2015.95,
+                "max": 2021.61,
+                "windows": 3
+              },
+              "p99": {
+                "min": 2056.1804,
+                "max": 2084.90404,
+                "windows": 3
+              }
+            }
+          },
+          "after_first_100": {
+            "terminal_to_dm_us": {
+              "p50": {
+                "min": 79.93,
+                "max": 85.911,
+                "windows": 3
+              },
+              "p99": {
+                "min": 121.85188000000005,
+                "max": 149.33968000000007,
+                "windows": 3
+              }
+            },
+            "first_to_dm_us": {
+              "p50": {
+                "min": 2015.98,
+                "max": 2021.61,
+                "windows": 3
+              },
+              "p99": {
+                "min": 2056.1804,
+                "max": 2084.01444,
+                "windows": 3
+              }
+            }
+          }
+        },
+        "achieved_source_rate_hz": {
+          "min": 250.0018351910008,
+          "max": 250.00422581316028,
+          "windows": 3
+        },
+        "all_frame_deadline_counts": {
+          "windows": 3,
+          "frames": 3087,
+          "exceeded": 0
+        },
+        "gate_assertions": {
+          "exact_wire_delivery": {
+            "passed": 3,
+            "failed": 0,
+            "unknown": 0
+          },
+          "science_passed": {
+            "passed": 3,
+            "failed": 0,
+            "unknown": 0
+          }
+        }
+      },
+      {
+        "path": "jfg-row",
+        "rate_hz": 250,
+        "mode": "off",
+        "diagnostic": false,
+        "counts": {
+          "cases": 3,
+          "passed": 3,
+          "failed": 0
+        },
+        "percentile_ranges_across_per_window_values": {
+          "all": {
+            "terminal_to_dm_us": {
+              "p50": {
+                "min": 104.545,
+                "max": 145.472,
+                "windows": 3
+              },
+              "p99": {
+                "min": 503.2384000000001,
+                "max": 738.28312,
+                "windows": 3
+              }
+            },
+            "first_to_dm_us": {
+              "p50": {
+                "min": 2021.951,
+                "max": 2064.831,
+                "windows": 3
+              },
+              "p99": {
+                "min": 2436.80672,
+                "max": 2676.9628,
+                "windows": 3
+              }
+            }
+          },
+          "after_first_100": {
+            "terminal_to_dm_us": {
+              "p50": {
+                "min": 104.145,
+                "max": 149.188,
+                "windows": 3
+              },
+              "p99": {
+                "min": 499.21892,
+                "max": 738.28312,
+                "windows": 3
+              }
+            },
+            "first_to_dm_us": {
+              "p50": {
+                "min": 2021.12,
+                "max": 2069.859,
+                "windows": 3
+              },
+              "p99": {
+                "min": 2434.72268,
+                "max": 2676.9628,
+                "windows": 3
+              }
+            }
+          }
+        },
+        "achieved_source_rate_hz": {
+          "min": 250.03286941100512,
+          "max": 250.03589985290114,
+          "windows": 3
+        },
+        "all_frame_deadline_counts": {
+          "windows": 3,
+          "frames": 3087,
+          "exceeded": 0
+        },
+        "gate_assertions": {
+          "exact_wire_delivery": {
+            "passed": 3,
+            "failed": 0,
+            "unknown": 0
+          },
+          "science_passed": {
+            "passed": 3,
+            "failed": 0,
+            "unknown": 0
+          }
+        }
+      }
+    ]
+  },
+  "diagnostic": {
+    "manifest": {
+      "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/manifest.json",
+      "sha256": "676655f9f0f5b92c33ac8359eb4f906104174c2d3ea97bdb2057414a4c6a064d"
+    },
+    "cases": [
+      {
+        "name": "fgn-row-100hz-latency0-r1",
+        "path": "fgn-row",
+        "rate_hz": 100,
+        "mode": "latency0",
+        "frames": 252,
+        "comparison_qualified": true,
+        "qualified_trace": true,
+        "qualified_callbacks": true,
+        "perf": {
+          "event_counts": {
+            "sched:sched_wakeup": 31289,
+            "sched:sched_switch": 62327,
+            "sched:sched_migrate_task": 99,
+            "power:cpu_idle": 1216788,
+            "sched:sched_wakeup_new": 57
+          },
+          "parse_errors": [],
+          "loss_records": [],
+          "complete": true
+        },
+        "evidence": {
+          "result.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/fgn-row-100hz-latency0-r1/result.json",
+            "sha256": "1b6e6c0b2df9b5c502a9a8fede8333ae50e7c69c9b1d1d24a3b8d0d0db705a7f"
+          },
+          "scheduler-analysis.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/fgn-row-100hz-latency0-r1/scheduler-analysis.json",
+            "sha256": "4759aacba2ebac027e8733b2c66312c2e8ac21888fbc29eacad6c84614cd861a"
+          },
+          "handoff-analysis.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/fgn-row-100hz-latency0-r1/handoff-analysis.json",
+            "sha256": "3d4a4d36eae3548fe314c037e0d58df954d17bcdf2dea8b0067fab367a8affdf"
+          },
+          "row-work.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/fgn-row-100hz-latency0-r1/row-work.json",
+            "sha256": "a8d35e3425553ed8b5d72cb4ec1bb254ef7f22396ac26ef03a9491f90950bf79"
+          }
+        },
+        "handoff_qualified": true,
+        "terminal_handoff": {
+          "body_end_to_sink_start_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 13.566,
+            "max": 40.947,
+            "p99": 14.3568
+          },
+          "body_wall_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 23.404,
+            "max": 41.428,
+            "p99": 26.814890000000005
+          },
+          "publication_to_body_start_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 2.465,
+            "max": 3.868,
+            "p99": 2.9093000000000004
+          },
+          "receive_to_publication_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 13.6355,
+            "max": 17.894,
+            "p99": 14.851470000000013
+          },
+          "sink_command_bracket_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 16.942,
+            "max": 39.454,
+            "p99": 20.169190000000004
+          },
+          "terminal_receive_to_sink_end_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 69.8965,
+            "max": 142.518,
+            "p99": 76.92658999999999
+          }
+        },
+        "terminal_after_first_100": {
+          "body_end_to_sink_start_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 13.5755,
+            "max": 16.27,
+            "p99": 14.310900000000002
+          },
+          "body_wall_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 23.384,
+            "max": 35.667,
+            "p99": 26.161070000000016
+          },
+          "publication_to_body_start_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 2.484,
+            "max": 3.868,
+            "p99": 2.9146900000000007
+          },
+          "receive_to_publication_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 13.636,
+            "max": 16.0,
+            "p99": 14.0456
+          },
+          "sink_command_bracket_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 16.942,
+            "max": 26.41,
+            "p99": 20.169190000000004
+          },
+          "terminal_receive_to_sink_end_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 69.841,
+            "max": 98.215,
+            "p99": 75.78215000000003
+          }
+        },
+        "gc": null,
+        "completed_prefix": {
+          "frames_with_positive_science_work_lower_bound": 252,
+          "subaperture_lower_bound_range": {
+            "min": 184,
+            "max": 184
+          },
+          "matrix_column_lower_bound_range": {
+            "min": 368,
+            "max": 368
+          }
+        },
+        "clock_model": {
+          "offset_low_ns": 1789232089873566155,
+          "offset_high_ns": 1789232089873567047,
+          "extra_margin_ns": 0,
+          "anchors": [
+            {
+              "name": "before_run",
+              "monotonic_before_ns": 1581281507699966,
+              "monotonic_after_ns": 1581281507700688,
+              "float_conversion_margin_ns": 0,
+              "offset_low_ns": 1789232089873566155,
+              "offset_high_ns": 1789232089873566877
+            },
+            {
+              "name": "after_run",
+              "monotonic_before_ns": 1581302507282826,
+              "monotonic_after_ns": 1581302507283688,
+              "float_conversion_margin_ns": 0,
+              "offset_low_ns": 1789232089873566185,
+              "offset_high_ns": 1789232089873567047
+            }
+          ],
+          "assumption": "realtime-minus-monotonic offset throughout replay remains within the hull of both endpoint brackets plus stated margins; unobserved interior clock excursions are not bounded by two anchors"
+        },
+        "graph": {
+          "algorithm_path": "fused Rust SH row reconstruction with synchronous ordered column accumulation",
+          "graph_sha256": "b4dc2d6b86aef71d827e5066e22dcf44b0b37ca8e226d7b2f2fa331a6d01689d",
+          "recorded_algorithm_binary": "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so",
+          "recorded_algorithm_binary_sha256": "ebcc9295eba0e60f35422d5ce0761a23f91b1a8d56c97f65eb6330138f986ecd"
+        },
+        "callback_summary": {
+          "role": "daemon",
+          "name": "rtc-data-loop",
+          "tid": 3634736,
+          "excluded_count": 0,
+          "outside_window_count": 0,
+          "wall": {
+            "count": 8064,
+            "unit": "us",
+            "p50": 7.6395,
+            "max": 41.428,
+            "p99": 23.565
+          },
+          "off_cpu": {
+            "count": 8064,
+            "unit": "us",
+            "p50": 0.0,
+            "max": 0.0,
+            "p99": 0.0
+          },
+          "wall_minus_off_cpu": {
+            "count": 8064,
+            "unit": "us",
+            "p50": 7.6395,
+            "max": 41.428,
+            "p99": 23.565
+          },
+          "boundary": "wall minus scheduler off CPU includes execution, interrupts, trace overhead and unobserved effects; it is not isolated science self time"
+        }
+      },
+      {
+        "name": "fgn-row-100hz-off-r1",
+        "path": "fgn-row",
+        "rate_hz": 100,
+        "mode": "off",
+        "frames": 252,
+        "comparison_qualified": true,
+        "qualified_trace": true,
+        "qualified_callbacks": true,
+        "perf": {
+          "event_counts": {
+            "sched:sched_wakeup": 21637,
+            "sched:sched_switch": 43054,
+            "sched:sched_migrate_task": 243,
+            "power:cpu_idle": 28910,
+            "sched:sched_wakeup_new": 67
+          },
+          "parse_errors": [],
+          "loss_records": [],
+          "complete": true
+        },
+        "evidence": {
+          "result.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/fgn-row-100hz-off-r1/result.json",
+            "sha256": "03421d594f8e56c5446f6d721e9788394702020574c3f81a3965a31e748db892"
+          },
+          "scheduler-analysis.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/fgn-row-100hz-off-r1/scheduler-analysis.json",
+            "sha256": "35b221538ba0acd9f7fa29d5cde09d520ea9cee6c0b4c500f1c0cab4881dfcd4"
+          },
+          "handoff-analysis.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/fgn-row-100hz-off-r1/handoff-analysis.json",
+            "sha256": "ee0d4ed315b1c1e1ed07ebc679ea362e6fac8e03bb9d04909432ea2db97ef25a"
+          },
+          "row-work.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/fgn-row-100hz-off-r1/row-work.json",
+            "sha256": "8339ee8567a1669c1cb4f3eece9296d54e83ff584373f3b883125871b0c62a6b"
+          }
+        },
+        "handoff_qualified": true,
+        "terminal_handoff": {
+          "body_end_to_sink_start_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 19.8475,
+            "max": 49.413,
+            "p99": 27.70416000000002
+          },
+          "body_wall_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 19.161,
+            "max": 38.773,
+            "p99": 36.57915000000002
+          },
+          "publication_to_body_start_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 1.883,
+            "max": 11.061,
+            "p99": 4.357390000000006
+          },
+          "receive_to_publication_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 479.6555,
+            "max": 1589.526,
+            "p99": 1394.6330300000002
+          },
+          "sink_command_bracket_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 18.565,
+            "max": 33.884,
+            "p99": 29.547990000000002
+          },
+          "terminal_receive_to_sink_end_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 542.97,
+            "max": 1650.67,
+            "p99": 1451.1666800000005
+          }
+        },
+        "terminal_after_first_100": {
+          "body_end_to_sink_start_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 19.877,
+            "max": 32.321,
+            "p99": 27.05544000000003
+          },
+          "body_wall_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 19.136,
+            "max": 38.773,
+            "p99": 36.775150000000025
+          },
+          "publication_to_body_start_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 1.8785,
+            "max": 11.061,
+            "p99": 4.357390000000006
+          },
+          "receive_to_publication_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 421.437,
+            "max": 1589.526,
+            "p99": 1347.292790000001
+          },
+          "sink_command_bracket_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 17.7135,
+            "max": 29.676,
+            "p99": 28.43109000000001
+          },
+          "terminal_receive_to_sink_end_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 474.041,
+            "max": 1650.67,
+            "p99": 1407.735590000001
+          }
+        },
+        "gc": null,
+        "completed_prefix": {
+          "frames_with_positive_science_work_lower_bound": 242,
+          "subaperture_lower_bound_range": {
+            "min": 0,
+            "max": 184
+          },
+          "matrix_column_lower_bound_range": {
+            "min": 0,
+            "max": 368
+          }
+        },
+        "clock_model": {
+          "offset_low_ns": 1789232089873566136,
+          "offset_high_ns": 1789232089873567117,
+          "extra_margin_ns": 0,
+          "anchors": [
+            {
+              "name": "before_run",
+              "monotonic_before_ns": 1581305656043103,
+              "monotonic_after_ns": 1581305656043915,
+              "float_conversion_margin_ns": 0,
+              "offset_low_ns": 1789232089873566145,
+              "offset_high_ns": 1789232089873566957
+            },
+            {
+              "name": "after_run",
+              "monotonic_before_ns": 1581326275838145,
+              "monotonic_after_ns": 1581326275839126,
+              "float_conversion_margin_ns": 0,
+              "offset_low_ns": 1789232089873566136,
+              "offset_high_ns": 1789232089873567117
+            }
+          ],
+          "assumption": "realtime-minus-monotonic offset throughout replay remains within the hull of both endpoint brackets plus stated margins; unobserved interior clock excursions are not bounded by two anchors"
+        },
+        "graph": {
+          "algorithm_path": "fused Rust SH row reconstruction with synchronous ordered column accumulation",
+          "graph_sha256": "b4dc2d6b86aef71d827e5066e22dcf44b0b37ca8e226d7b2f2fa331a6d01689d",
+          "recorded_algorithm_binary": "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so",
+          "recorded_algorithm_binary_sha256": "ebcc9295eba0e60f35422d5ce0761a23f91b1a8d56c97f65eb6330138f986ecd"
+        },
+        "callback_summary": {
+          "role": "daemon",
+          "name": "rtc-data-loop",
+          "tid": 3634947,
+          "excluded_count": 0,
+          "outside_window_count": 0,
+          "wall": {
+            "count": 8064,
+            "unit": "us",
+            "p50": 10.049,
+            "max": 79.93,
+            "p99": 41.119099999999996
+          },
+          "off_cpu": {
+            "count": 8064,
+            "unit": "us",
+            "p50": 0.0,
+            "max": 0.0,
+            "p99": 0.0
+          },
+          "wall_minus_off_cpu": {
+            "count": 8064,
+            "unit": "us",
+            "p50": 10.049,
+            "max": 79.93,
+            "p99": 41.119099999999996
+          },
+          "boundary": "wall minus scheduler off CPU includes execution, interrupts, trace overhead and unobserved effects; it is not isolated science self time"
+        }
+      },
+      {
+        "name": "fgn-row-250hz-latency0-r1",
+        "path": "fgn-row",
+        "rate_hz": 250,
+        "mode": "latency0",
+        "frames": 252,
+        "comparison_qualified": true,
+        "qualified_trace": true,
+        "qualified_callbacks": true,
+        "perf": {
+          "event_counts": {
+            "sched:sched_wakeup": 31261,
+            "sched:sched_switch": 62244,
+            "sched:sched_migrate_task": 160,
+            "power:cpu_idle": 995568,
+            "sched:sched_wakeup_new": 46
+          },
+          "parse_errors": [],
+          "loss_records": [],
+          "complete": true
+        },
+        "evidence": {
+          "result.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/fgn-row-250hz-latency0-r1/result.json",
+            "sha256": "8495a343f50a50653b484632bb8fab7ed038327d65380431de1eb65c1c8bf941"
+          },
+          "scheduler-analysis.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/fgn-row-250hz-latency0-r1/scheduler-analysis.json",
+            "sha256": "1f9efc7b7336296bb528eb13fecb2ae404794fce605922ca90d416a276c00ae2"
+          },
+          "handoff-analysis.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/fgn-row-250hz-latency0-r1/handoff-analysis.json",
+            "sha256": "d407e7f1962a4fb01e8550d5d2e3deffbd18cf487cc646d1f6556785d3c5ae2a"
+          },
+          "row-work.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/fgn-row-250hz-latency0-r1/row-work.json",
+            "sha256": "203c55192a10f61618fb60edfadc8ab9be3fa92d780e0b7209e19d1d4a145fa7"
+          }
+        },
+        "handoff_qualified": true,
+        "terminal_handoff": {
+          "body_end_to_sink_start_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 13.355,
+            "max": 42.83,
+            "p99": 14.4368
+          },
+          "body_wall_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 23.835,
+            "max": 41.087,
+            "p99": 26.197
+          },
+          "publication_to_body_start_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 2.485,
+            "max": 3.055,
+            "p99": 2.9703900000000005
+          },
+          "receive_to_publication_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 13.776,
+            "max": 17.543,
+            "p99": 14.63749
+          },
+          "sink_command_bracket_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 16.881,
+            "max": 40.046,
+            "p99": 21.80854000000003
+          },
+          "terminal_receive_to_sink_end_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 70.337,
+            "max": 144.291,
+            "p99": 78.02779000000001
+          }
+        },
+        "terminal_after_first_100": {
+          "body_end_to_sink_start_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 13.455,
+            "max": 14.447,
+            "p99": 14.4015
+          },
+          "body_wall_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 23.844,
+            "max": 30.036,
+            "p99": 25.802690000000005
+          },
+          "publication_to_body_start_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 2.495,
+            "max": 3.055,
+            "p99": 2.976
+          },
+          "receive_to_publication_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 13.816,
+            "max": 14.638,
+            "p99": 14.63241
+          },
+          "sink_command_bracket_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 16.8615,
+            "max": 23.975,
+            "p99": 21.80854000000003
+          },
+          "terminal_receive_to_sink_end_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 70.547,
+            "max": 84.598,
+            "p99": 76.75075000000002
+          }
+        },
+        "gc": null,
+        "completed_prefix": {
+          "frames_with_positive_science_work_lower_bound": 252,
+          "subaperture_lower_bound_range": {
+            "min": 184,
+            "max": 184
+          },
+          "matrix_column_lower_bound_range": {
+            "min": 368,
+            "max": 368
+          }
+        },
+        "clock_model": {
+          "offset_low_ns": 1789232089873566156,
+          "offset_high_ns": 1789232089873567178,
+          "extra_margin_ns": 0,
+          "anchors": [
+            {
+              "name": "before_run",
+              "monotonic_before_ns": 1581497101125354,
+              "monotonic_after_ns": 1581497101126366,
+              "float_conversion_margin_ns": 0,
+              "offset_low_ns": 1789232089873566166,
+              "offset_high_ns": 1789232089873567178
+            },
+            {
+              "name": "after_run",
+              "monotonic_before_ns": 1581516854073015,
+              "monotonic_after_ns": 1581516854073846,
+              "float_conversion_margin_ns": 0,
+              "offset_low_ns": 1789232089873566156,
+              "offset_high_ns": 1789232089873566987
+            }
+          ],
+          "assumption": "realtime-minus-monotonic offset throughout replay remains within the hull of both endpoint brackets plus stated margins; unobserved interior clock excursions are not bounded by two anchors"
+        },
+        "graph": {
+          "algorithm_path": "fused Rust SH row reconstruction with synchronous ordered column accumulation",
+          "graph_sha256": "e952daf68b0df45ccad6784487ac2b8f1bf13683ede9142224f649347d1b5a14",
+          "recorded_algorithm_binary": "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so",
+          "recorded_algorithm_binary_sha256": "ebcc9295eba0e60f35422d5ce0761a23f91b1a8d56c97f65eb6330138f986ecd"
+        },
+        "callback_summary": {
+          "role": "daemon",
+          "name": "rtc-data-loop",
+          "tid": 3636932,
+          "excluded_count": 0,
+          "outside_window_count": 0,
+          "wall": {
+            "count": 8064,
+            "unit": "us",
+            "p50": 7.494,
+            "max": 41.087,
+            "p99": 24.035
+          },
+          "off_cpu": {
+            "count": 8064,
+            "unit": "us",
+            "p50": 0.0,
+            "max": 0.0,
+            "p99": 0.0
+          },
+          "wall_minus_off_cpu": {
+            "count": 8064,
+            "unit": "us",
+            "p50": 7.494,
+            "max": 41.087,
+            "p99": 24.035
+          },
+          "boundary": "wall minus scheduler off CPU includes execution, interrupts, trace overhead and unobserved effects; it is not isolated science self time"
+        }
+      },
+      {
+        "name": "fgn-row-250hz-off-r1",
+        "path": "fgn-row",
+        "rate_hz": 250,
+        "mode": "off",
+        "frames": 252,
+        "comparison_qualified": true,
+        "qualified_trace": true,
+        "qualified_callbacks": true,
+        "perf": {
+          "event_counts": {
+            "sched:sched_wakeup": 22804,
+            "sched:sched_switch": 45550,
+            "sched:sched_migrate_task": 260,
+            "power:cpu_idle": 33174,
+            "sched:sched_wakeup_new": 55
+          },
+          "parse_errors": [],
+          "loss_records": [],
+          "complete": true
+        },
+        "evidence": {
+          "result.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/fgn-row-250hz-off-r1/result.json",
+            "sha256": "da11f67120f8615d0e3cecbdd8820fb755c130c06dc9787e992fb55e1c799fc8"
+          },
+          "scheduler-analysis.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/fgn-row-250hz-off-r1/scheduler-analysis.json",
+            "sha256": "83e5c3931a9bec7261b80dc5c089abf828b871289a1f5a9791354d2a810a180c"
+          },
+          "handoff-analysis.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/fgn-row-250hz-off-r1/handoff-analysis.json",
+            "sha256": "61f424c832a84a2569929bd9cb06a65cbce1fd79322c5e17e614b6304d369a22"
+          },
+          "row-work.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/fgn-row-250hz-off-r1/row-work.json",
+            "sha256": "889e8ad4481bfae697281865f85526ae3652a824224a564a4bc202703ce17251"
+          }
+        },
+        "handoff_qualified": true,
+        "terminal_handoff": {
+          "body_end_to_sink_start_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 16.045,
+            "max": 44.423,
+            "p99": 36.1713
+          },
+          "body_wall_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 20.93,
+            "max": 55.895,
+            "p99": 52.71479000000001
+          },
+          "publication_to_body_start_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 2.455,
+            "max": 8.406,
+            "p99": 6.9777000000000005
+          },
+          "receive_to_publication_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 20.263,
+            "max": 1227.352,
+            "p99": 754.5663499999999
+          },
+          "sink_command_bracket_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 13.9715,
+            "max": 31.058,
+            "p99": 29.26229
+          },
+          "terminal_receive_to_sink_end_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 118.4325,
+            "max": 1327.981,
+            "p99": 802.05115
+          }
+        },
+        "terminal_after_first_100": {
+          "body_end_to_sink_start_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 16.02,
+            "max": 44.423,
+            "p99": 36.02629
+          },
+          "body_wall_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 20.9195,
+            "max": 55.895,
+            "p99": 53.80727000000001
+          },
+          "publication_to_body_start_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 2.4745,
+            "max": 8.406,
+            "p99": 7.091490000000001
+          },
+          "receive_to_publication_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 20.253,
+            "max": 771.407,
+            "p99": 750.88427
+          },
+          "sink_command_bracket_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 13.941,
+            "max": 29.555,
+            "p99": 29.133599999999998
+          },
+          "terminal_receive_to_sink_end_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 116.699,
+            "max": 821.982,
+            "p99": 799.3946900000001
+          }
+        },
+        "gc": null,
+        "completed_prefix": {
+          "frames_with_positive_science_work_lower_bound": 252,
+          "subaperture_lower_bound_range": {
+            "min": 22,
+            "max": 184
+          },
+          "matrix_column_lower_bound_range": {
+            "min": 44,
+            "max": 368
+          }
+        },
+        "clock_model": {
+          "offset_low_ns": 1789232089873565925,
+          "offset_high_ns": 1789232089873567308,
+          "extra_margin_ns": 0,
+          "anchors": [
+            {
+              "name": "before_run",
+              "monotonic_before_ns": 1581519679160995,
+              "monotonic_after_ns": 1581519679161496,
+              "float_conversion_margin_ns": 0,
+              "offset_low_ns": 1789232089873566156,
+              "offset_high_ns": 1789232089873566657
+            },
+            {
+              "name": "after_run",
+              "monotonic_before_ns": 1581538776433268,
+              "monotonic_after_ns": 1581538776434651,
+              "float_conversion_margin_ns": 0,
+              "offset_low_ns": 1789232089873565925,
+              "offset_high_ns": 1789232089873567308
+            }
+          ],
+          "assumption": "realtime-minus-monotonic offset throughout replay remains within the hull of both endpoint brackets plus stated margins; unobserved interior clock excursions are not bounded by two anchors"
+        },
+        "graph": {
+          "algorithm_path": "fused Rust SH row reconstruction with synchronous ordered column accumulation",
+          "graph_sha256": "e952daf68b0df45ccad6784487ac2b8f1bf13683ede9142224f649347d1b5a14",
+          "recorded_algorithm_binary": "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/target/release/libcalculon_fgn_bundle.so",
+          "recorded_algorithm_binary_sha256": "ebcc9295eba0e60f35422d5ce0761a23f91b1a8d56c97f65eb6330138f986ecd"
+        },
+        "callback_summary": {
+          "role": "daemon",
+          "name": "rtc-data-loop",
+          "tid": 3637138,
+          "excluded_count": 0,
+          "outside_window_count": 0,
+          "wall": {
+            "count": 8064,
+            "unit": "us",
+            "p50": 8.9515,
+            "max": 78.708,
+            "p99": 45.037269999999985
+          },
+          "off_cpu": {
+            "count": 8064,
+            "unit": "us",
+            "p50": 0.0,
+            "max": 0.0,
+            "p99": 0.0
+          },
+          "wall_minus_off_cpu": {
+            "count": 8064,
+            "unit": "us",
+            "p50": 8.9515,
+            "max": 78.708,
+            "p99": 45.037269999999985
+          },
+          "boundary": "wall minus scheduler off CPU includes execution, interrupts, trace overhead and unobserved effects; it is not isolated science self time"
+        }
+      },
+      {
+        "name": "heart-100hz-latency0-r1",
+        "path": "heart",
+        "rate_hz": 100,
+        "mode": "latency0",
+        "frames": 252,
+        "comparison_qualified": true,
+        "qualified_trace": true,
+        "qualified_callbacks": false,
+        "perf": {
+          "event_counts": {
+            "sched:sched_wakeup": 14115,
+            "sched:sched_switch": 27639,
+            "sched:sched_migrate_task": 81,
+            "power:cpu_idle": 436548,
+            "sched:sched_wakeup_new": 20
+          },
+          "parse_errors": [],
+          "loss_records": [],
+          "complete": true
+        },
+        "evidence": {
+          "result.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/heart-100hz-latency0-r1/result.json",
+            "sha256": "d6fe2e965265f36f78210e292aac46b69dbcda090bd4dc3f7691dc8b51f54a86"
+          },
+          "scheduler-analysis.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/heart-100hz-latency0-r1/scheduler-analysis.json",
+            "sha256": "16c0f8e6ea6c2a42ee124ac83d0e96028b778a3443d0b677e5f873bb68d7c44a"
+          }
+        }
+      },
+      {
+        "name": "heart-250hz-latency0-r1",
+        "path": "heart",
+        "rate_hz": 250,
+        "mode": "latency0",
+        "frames": 252,
+        "comparison_qualified": true,
+        "qualified_trace": true,
+        "qualified_callbacks": false,
+        "perf": {
+          "event_counts": {
+            "sched:sched_wakeup": 12877,
+            "sched:sched_switch": 25125,
+            "sched:sched_migrate_task": 64,
+            "power:cpu_idle": 210310,
+            "sched:sched_wakeup_new": 4
+          },
+          "parse_errors": [],
+          "loss_records": [],
+          "complete": true
+        },
+        "evidence": {
+          "result.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/heart-250hz-latency0-r1/result.json",
+            "sha256": "fcc56389ce99369b0c7954ff66c1422e670aa191b214592d12d6aec1bca41130"
+          },
+          "scheduler-analysis.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/heart-250hz-latency0-r1/scheduler-analysis.json",
+            "sha256": "686ea79dc2a305ad9826a9ea9a70c06081dccc9f6b6e661a3666c18fc7767c6d"
+          }
+        }
+      },
+      {
+        "name": "jfg-row-100hz-latency0-r1",
+        "path": "jfg-row",
+        "rate_hz": 100,
+        "mode": "latency0",
+        "frames": 252,
+        "comparison_qualified": true,
+        "qualified_trace": true,
+        "qualified_callbacks": true,
+        "perf": {
+          "event_counts": {
+            "sched:sched_wakeup": 41658,
+            "sched:sched_switch": 83083,
+            "sched:sched_migrate_task": 292,
+            "power:cpu_idle": 1228624,
+            "sched:sched_wakeup_new": 63
+          },
+          "parse_errors": [],
+          "loss_records": [],
+          "complete": true
+        },
+        "evidence": {
+          "result.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/jfg-row-100hz-latency0-r1/result.json",
+            "sha256": "f2db55bab494e99a5af2a8f6c65203c641491a9866d55f9b94ec41907b1e1d8e"
+          },
+          "scheduler-analysis.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/jfg-row-100hz-latency0-r1/scheduler-analysis.json",
+            "sha256": "b7908e4993c11efdaf561aad97a2de687d96f5c4b3e532f7d286a6ed90e60de4"
+          },
+          "handoff-analysis.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/jfg-row-100hz-latency0-r1/handoff-analysis.json",
+            "sha256": "4a90d6e8cac0dc33fca509935faf96212f37b66710561fd675a40caf6402a39e"
+          },
+          "row-work.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/jfg-row-100hz-latency0-r1/row-work.json",
+            "sha256": "5648090fa9e9bba58bd8642bdf431b598f1f2194f6ed32203ab046a9f2b2d9d9"
+          }
+        },
+        "handoff_qualified": true,
+        "terminal_handoff": {
+          "body_end_to_sink_start_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 9.5025,
+            "max": 35.547,
+            "p99": 15.812090000000007
+          },
+          "body_wall_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 54.6275,
+            "max": 140.273,
+            "p99": 87.93760000000005
+          },
+          "native_input_ready_to_body_start_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 0.18,
+            "max": 0.481,
+            "p99": 0.421
+          },
+          "publication_to_body_start_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 6.7675,
+            "max": 104.897,
+            "p99": 10.815190000000001
+          },
+          "publication_to_native_input_ready_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 6.587,
+            "max": 104.616,
+            "p99": 10.489600000000001
+          },
+          "receive_to_publication_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 13.8105,
+            "max": 198.353,
+            "p99": 18.386300000000055
+          },
+          "sink_command_bracket_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 16.2105,
+            "max": 39.253,
+            "p99": 21.13734000000003
+          },
+          "terminal_receive_to_sink_end_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 101.5305,
+            "max": 419.758,
+            "p99": 155.99793000000017
+          }
+        },
+        "terminal_after_first_100": {
+          "body_end_to_sink_start_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 9.4875,
+            "max": 17.102,
+            "p99": 15.760580000000008
+          },
+          "body_wall_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 55.449,
+            "max": 94.017,
+            "p99": 87.93760000000005
+          },
+          "native_input_ready_to_body_start_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 0.18,
+            "max": 0.421,
+            "p99": 0.4057000000000003
+          },
+          "publication_to_body_start_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 6.7725,
+            "max": 104.897,
+            "p99": 10.860400000000002
+          },
+          "publication_to_native_input_ready_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 6.587,
+            "max": 104.616,
+            "p99": 10.5345
+          },
+          "receive_to_publication_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 13.806,
+            "max": 55.795,
+            "p99": 17.86457000000006
+          },
+          "sink_command_bracket_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 16.22,
+            "max": 26.019,
+            "p99": 19.234890000000004
+          },
+          "terminal_receive_to_sink_end_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 102.2315,
+            "max": 199.715,
+            "p99": 155.99793000000017
+          }
+        },
+        "gc": {
+          "all_rows": {
+            "gc_pause_delta": {
+              "callbacks_changed": 0,
+              "sum_delta": 0,
+              "max_delta": 0
+            },
+            "gc_total_time_delta_ns": {
+              "callbacks_changed": 0,
+              "sum_delta": 0,
+              "max_delta": 0
+            },
+            "gc_allocated_bytes_delta": {
+              "callbacks_changed": 0,
+              "sum_delta": 0,
+              "max_delta": 0
+            }
+          },
+          "terminal_rows": {
+            "gc_pause_delta": {
+              "callbacks_changed": 0,
+              "sum_delta": 0,
+              "max_delta": 0
+            },
+            "gc_total_time_delta_ns": {
+              "callbacks_changed": 0,
+              "sum_delta": 0,
+              "max_delta": 0
+            },
+            "gc_allocated_bytes_delta": {
+              "callbacks_changed": 0,
+              "sum_delta": 0,
+              "max_delta": 0
+            }
+          },
+          "scope": "process-wide Julia counter changes during callback bodies, including concurrent Julia tasks and diagnostic counter reads; sums do not measure isolated algorithm allocation or GC attribution"
+        },
+        "completed_prefix": {
+          "frames_with_positive_science_work_lower_bound": 252,
+          "subaperture_lower_bound_range": {
+            "min": 166,
+            "max": 184
+          },
+          "matrix_column_lower_bound_range": {
+            "min": 332,
+            "max": 368
+          }
+        },
+        "clock_model": {
+          "offset_low_ns": 1789232089873565057,
+          "offset_high_ns": 1789232089873566321,
+          "extra_margin_ns": 0,
+          "anchors": [
+            {
+              "name": "before_connect",
+              "monotonic_before_ns": 1581458372806838,
+              "monotonic_after_ns": 1581458372807559,
+              "float_conversion_margin_ns": 248,
+              "offset_low_ns": 1789232089873565057,
+              "offset_high_ns": 1789232089873566274
+            },
+            {
+              "name": "after_close",
+              "monotonic_before_ns": 1581474546353031,
+              "monotonic_after_ns": 1581474546353732,
+              "float_conversion_margin_ns": 248,
+              "offset_low_ns": 1789232089873565124,
+              "offset_high_ns": 1789232089873566321
+            }
+          ],
+          "assumption": "realtime-minus-monotonic offset throughout replay remains within the hull of both endpoint brackets plus stated margins; unobserved interior clock excursions are not bounded by two anchors"
+        },
+        "graph": {
+          "algorithm_path": "split SH measurement block then synchronous incremental dense reconstruction",
+          "graph_sha256": "7f07395864f508fb405a64cfed67f7a16f40332a39d4cdee39e0dbd5d2a4c458"
+        },
+        "callback_summary": {
+          "role": "node",
+          "name": "data-loop.0",
+          "tid": 3636455,
+          "excluded_count": 0,
+          "outside_window_count": 0,
+          "wall": {
+            "count": 8064,
+            "unit": "us",
+            "p50": 16.11,
+            "max": 140.273,
+            "p99": 56.1598
+          },
+          "off_cpu": {
+            "count": 8064,
+            "unit": "us",
+            "p50": 0.0,
+            "max": 0.0,
+            "p99": 0.0
+          },
+          "wall_minus_off_cpu": {
+            "count": 8064,
+            "unit": "us",
+            "p50": 16.11,
+            "max": 140.273,
+            "p99": 56.1598
+          },
+          "boundary": "wall minus scheduler off CPU includes execution, interrupts, trace overhead and unobserved effects; it is not isolated science self time"
+        }
+      },
+      {
+        "name": "jfg-row-100hz-off-r1",
+        "path": "jfg-row",
+        "rate_hz": 100,
+        "mode": "off",
+        "frames": 252,
+        "comparison_qualified": true,
+        "qualified_trace": true,
+        "qualified_callbacks": true,
+        "perf": {
+          "event_counts": {
+            "sched:sched_wakeup": 36457,
+            "sched:sched_switch": 72594,
+            "sched:sched_migrate_task": 230,
+            "power:cpu_idle": 59546,
+            "sched:sched_wakeup_new": 57
+          },
+          "parse_errors": [],
+          "loss_records": [],
+          "complete": true
+        },
+        "evidence": {
+          "result.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/jfg-row-100hz-off-r1/result.json",
+            "sha256": "5f9e76e166c22598a709fce4af672baa590808204e605c9b9cb49a8228662e88"
+          },
+          "scheduler-analysis.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/jfg-row-100hz-off-r1/scheduler-analysis.json",
+            "sha256": "94802fd6cb4a6a7a6bf59d6ca334ff6f6ec2c6fcaee220194d80f502b8ba30aa"
+          },
+          "handoff-analysis.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/jfg-row-100hz-off-r1/handoff-analysis.json",
+            "sha256": "81fc4223f819a3be37432cc15897685d642e70d353804926ab65d9878443e629"
+          },
+          "row-work.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/jfg-row-100hz-off-r1/row-work.json",
+            "sha256": "20f676c31f3b6f215f32fea8dd7ddeab562ac4f54e4cb97c990e4226da2dd03f"
+          }
+        },
+        "handoff_qualified": true,
+        "terminal_handoff": {
+          "body_end_to_sink_start_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 12.814,
+            "max": 32.381,
+            "p99": 26.965690000000006
+          },
+          "body_wall_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 40.877,
+            "max": 103.114,
+            "p99": 91.10834000000013
+          },
+          "native_input_ready_to_body_start_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 0.1,
+            "max": 0.541,
+            "p99": 0.4608000000000002
+          },
+          "publication_to_body_start_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 5.6455,
+            "max": 18.746,
+            "p99": 10.32829000000001
+          },
+          "publication_to_native_input_ready_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 5.501,
+            "max": 18.595,
+            "p99": 10.06248000000001
+          },
+          "receive_to_publication_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 703.1195,
+            "max": 2004.633,
+            "p99": 1310.4186900000013
+          },
+          "sink_command_bracket_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 13.295,
+            "max": 32.481,
+            "p99": 27.162700000000005
+          },
+          "terminal_receive_to_sink_end_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 781.307,
+            "max": 2092.349,
+            "p99": 1384.5868500000013
+          }
+        },
+        "terminal_after_first_100": {
+          "body_end_to_sink_start_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 12.864,
+            "max": 30.066,
+            "p99": 26.965690000000006
+          },
+          "body_wall_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 40.631,
+            "max": 103.114,
+            "p99": 88.83425000000017
+          },
+          "native_input_ready_to_body_start_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 0.101,
+            "max": 0.511,
+            "p99": 0.4608000000000002
+          },
+          "publication_to_body_start_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 5.6555,
+            "max": 10.9,
+            "p99": 8.409160000000014
+          },
+          "publication_to_native_input_ready_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 5.5,
+            "max": 10.65,
+            "p99": 8.075060000000015
+          },
+          "receive_to_publication_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 732.651,
+            "max": 2004.633,
+            "p99": 1199.2878100000007
+          },
+          "sink_command_bracket_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 13.29,
+            "max": 27.331,
+            "p99": 24.093490000000052
+          },
+          "terminal_receive_to_sink_end_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 814.329,
+            "max": 2086.247,
+            "p99": 1277.2527000000007
+          }
+        },
+        "gc": {
+          "all_rows": {
+            "gc_pause_delta": {
+              "callbacks_changed": 0,
+              "sum_delta": 0,
+              "max_delta": 0
+            },
+            "gc_total_time_delta_ns": {
+              "callbacks_changed": 0,
+              "sum_delta": 0,
+              "max_delta": 0
+            },
+            "gc_allocated_bytes_delta": {
+              "callbacks_changed": 0,
+              "sum_delta": 0,
+              "max_delta": 0
+            }
+          },
+          "terminal_rows": {
+            "gc_pause_delta": {
+              "callbacks_changed": 0,
+              "sum_delta": 0,
+              "max_delta": 0
+            },
+            "gc_total_time_delta_ns": {
+              "callbacks_changed": 0,
+              "sum_delta": 0,
+              "max_delta": 0
+            },
+            "gc_allocated_bytes_delta": {
+              "callbacks_changed": 0,
+              "sum_delta": 0,
+              "max_delta": 0
+            }
+          },
+          "scope": "process-wide Julia counter changes during callback bodies, including concurrent Julia tasks and diagnostic counter reads; sums do not measure isolated algorithm allocation or GC attribution"
+        },
+        "completed_prefix": {
+          "frames_with_positive_science_work_lower_bound": 251,
+          "subaperture_lower_bound_range": {
+            "min": 0,
+            "max": 184
+          },
+          "matrix_column_lower_bound_range": {
+            "min": 0,
+            "max": 368
+          }
+        },
+        "clock_model": {
+          "offset_low_ns": 1789232089873564960,
+          "offset_high_ns": 1789232089873566341,
+          "extra_margin_ns": 0,
+          "anchors": [
+            {
+              "name": "before_connect",
+              "monotonic_before_ns": 1581380168778099,
+              "monotonic_after_ns": 1581380168778800,
+              "float_conversion_margin_ns": 248,
+              "offset_low_ns": 1789232089873565144,
+              "offset_high_ns": 1789232089873566341
+            },
+            {
+              "name": "after_close",
+              "monotonic_before_ns": 1581395982862183,
+              "monotonic_after_ns": 1581395982862824,
+              "float_conversion_margin_ns": 248,
+              "offset_low_ns": 1789232089873564960,
+              "offset_high_ns": 1789232089873566097
+            }
+          ],
+          "assumption": "realtime-minus-monotonic offset throughout replay remains within the hull of both endpoint brackets plus stated margins; unobserved interior clock excursions are not bounded by two anchors"
+        },
+        "graph": {
+          "algorithm_path": "split SH measurement block then synchronous incremental dense reconstruction",
+          "graph_sha256": "7f07395864f508fb405a64cfed67f7a16f40332a39d4cdee39e0dbd5d2a4c458"
+        },
+        "callback_summary": {
+          "role": "node",
+          "name": "data-loop.0",
+          "tid": 3635689,
+          "excluded_count": 0,
+          "outside_window_count": 0,
+          "wall": {
+            "count": 8064,
+            "unit": "us",
+            "p50": 16.752,
+            "max": 103.114,
+            "p99": 53.616899999999994
+          },
+          "off_cpu": {
+            "count": 8064,
+            "unit": "us",
+            "p50": 0.0,
+            "max": 0.0,
+            "p99": 0.0
+          },
+          "wall_minus_off_cpu": {
+            "count": 8064,
+            "unit": "us",
+            "p50": 16.752,
+            "max": 103.114,
+            "p99": 53.616899999999994
+          },
+          "boundary": "wall minus scheduler off CPU includes execution, interrupts, trace overhead and unobserved effects; it is not isolated science self time"
+        }
+      },
+      {
+        "name": "jfg-row-250hz-latency0-r1",
+        "path": "jfg-row",
+        "rate_hz": 250,
+        "mode": "latency0",
+        "frames": 252,
+        "comparison_qualified": true,
+        "qualified_trace": true,
+        "qualified_callbacks": true,
+        "perf": {
+          "event_counts": {
+            "sched:sched_wakeup": 39218,
+            "sched:sched_switch": 78199,
+            "sched:sched_migrate_task": 248,
+            "power:cpu_idle": 1007418,
+            "sched:sched_wakeup_new": 59
+          },
+          "parse_errors": [],
+          "loss_records": [],
+          "complete": true
+        },
+        "evidence": {
+          "result.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/jfg-row-250hz-latency0-r1/result.json",
+            "sha256": "155461548ddd967463ff2de4cdad3995c657730f701fa6a27d5e60f359654128"
+          },
+          "scheduler-analysis.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/jfg-row-250hz-latency0-r1/scheduler-analysis.json",
+            "sha256": "986b2d9e010906f1e4fbf42677face7b9259f0d3972ff3eab6cc81173bda3a9c"
+          },
+          "handoff-analysis.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/jfg-row-250hz-latency0-r1/handoff-analysis.json",
+            "sha256": "6e74cf074faeb81b0ef42da8d79ab5161d702011d33b5018fa7fdd3e736c8a3a"
+          },
+          "row-work.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/jfg-row-250hz-latency0-r1/row-work.json",
+            "sha256": "ba330f700b62d63a14905533d775a91c42ab063c717324a05bc9e1c0d8434a3e"
+          }
+        },
+        "handoff_qualified": true,
+        "terminal_handoff": {
+          "body_end_to_sink_start_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 9.4325,
+            "max": 35.707,
+            "p99": 19.387590000000003
+          },
+          "body_wall_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 44.734,
+            "max": 141.285,
+            "p99": 106.72992000000004
+          },
+          "native_input_ready_to_body_start_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 0.141,
+            "max": 0.491,
+            "p99": 0.37049
+          },
+          "publication_to_body_start_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 6.7025,
+            "max": 8.846,
+            "p99": 8.5401
+          },
+          "publication_to_native_input_ready_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 6.552,
+            "max": 8.505,
+            "p99": 8.293690000000002
+          },
+          "receive_to_publication_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 13.796,
+            "max": 197.501,
+            "p99": 21.327200000000005
+          },
+          "sink_command_bracket_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 16.0,
+            "max": 39.143,
+            "p99": 24.104970000000012
+          },
+          "terminal_receive_to_sink_end_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 91.0155,
+            "max": 420.178,
+            "p99": 172.80010000000004
+          }
+        },
+        "terminal_after_first_100": {
+          "body_end_to_sink_start_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 9.4275,
+            "max": 20.388,
+            "p99": 18.60848000000001
+          },
+          "body_wall_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 44.6085,
+            "max": 111.99,
+            "p99": 106.72992000000004
+          },
+          "native_input_ready_to_body_start_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 0.15,
+            "max": 0.481,
+            "p99": 0.37049
+          },
+          "publication_to_body_start_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 6.708,
+            "max": 8.846,
+            "p99": 8.549900000000001
+          },
+          "publication_to_native_input_ready_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 6.552,
+            "max": 8.505,
+            "p99": 8.293690000000002
+          },
+          "receive_to_publication_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 13.796,
+            "max": 21.61,
+            "p99": 21.327200000000005
+          },
+          "sink_command_bracket_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 16.015,
+            "max": 26.691,
+            "p99": 24.104970000000012
+          },
+          "terminal_receive_to_sink_end_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 91.0055,
+            "max": 178.444,
+            "p99": 172.80010000000004
+          }
+        },
+        "gc": {
+          "all_rows": {
+            "gc_pause_delta": {
+              "callbacks_changed": 0,
+              "sum_delta": 0,
+              "max_delta": 0
+            },
+            "gc_total_time_delta_ns": {
+              "callbacks_changed": 0,
+              "sum_delta": 0,
+              "max_delta": 0
+            },
+            "gc_allocated_bytes_delta": {
+              "callbacks_changed": 0,
+              "sum_delta": 0,
+              "max_delta": 0
+            }
+          },
+          "terminal_rows": {
+            "gc_pause_delta": {
+              "callbacks_changed": 0,
+              "sum_delta": 0,
+              "max_delta": 0
+            },
+            "gc_total_time_delta_ns": {
+              "callbacks_changed": 0,
+              "sum_delta": 0,
+              "max_delta": 0
+            },
+            "gc_allocated_bytes_delta": {
+              "callbacks_changed": 0,
+              "sum_delta": 0,
+              "max_delta": 0
+            }
+          },
+          "scope": "process-wide Julia counter changes during callback bodies, including concurrent Julia tasks and diagnostic counter reads; sums do not measure isolated algorithm allocation or GC attribution"
+        },
+        "completed_prefix": {
+          "frames_with_positive_science_work_lower_bound": 252,
+          "subaperture_lower_bound_range": {
+            "min": 166,
+            "max": 184
+          },
+          "matrix_column_lower_bound_range": {
+            "min": 332,
+            "max": 368
+          }
+        },
+        "clock_model": {
+          "offset_low_ns": 1789232089873564823,
+          "offset_high_ns": 1789232089873566790,
+          "extra_margin_ns": 0,
+          "anchors": [
+            {
+              "name": "before_connect",
+              "monotonic_before_ns": 1581669202487069,
+              "monotonic_after_ns": 1581669202487921,
+              "float_conversion_margin_ns": 248,
+              "offset_low_ns": 1789232089873564823,
+              "offset_high_ns": 1789232089873566171
+            },
+            {
+              "name": "after_close",
+              "monotonic_before_ns": 1581684166748338,
+              "monotonic_after_ns": 1581684166748959,
+              "float_conversion_margin_ns": 248,
+              "offset_low_ns": 1789232089873565673,
+              "offset_high_ns": 1789232089873566790
+            }
+          ],
+          "assumption": "realtime-minus-monotonic offset throughout replay remains within the hull of both endpoint brackets plus stated margins; unobserved interior clock excursions are not bounded by two anchors"
+        },
+        "graph": {
+          "algorithm_path": "split SH measurement block then synchronous incremental dense reconstruction",
+          "graph_sha256": "7f07395864f508fb405a64cfed67f7a16f40332a39d4cdee39e0dbd5d2a4c458"
+        },
+        "callback_summary": {
+          "role": "node",
+          "name": "data-loop.0",
+          "tid": 3638558,
+          "excluded_count": 0,
+          "outside_window_count": 0,
+          "wall": {
+            "count": 8064,
+            "unit": "us",
+            "p50": 16.261,
+            "max": 141.285,
+            "p99": 46.567
+          },
+          "off_cpu": {
+            "count": 8064,
+            "unit": "us",
+            "p50": 0.0,
+            "max": 0.0,
+            "p99": 0.0
+          },
+          "wall_minus_off_cpu": {
+            "count": 8064,
+            "unit": "us",
+            "p50": 16.261,
+            "max": 141.285,
+            "p99": 46.567
+          },
+          "boundary": "wall minus scheduler off CPU includes execution, interrupts, trace overhead and unobserved effects; it is not isolated science self time"
+        }
+      },
+      {
+        "name": "jfg-row-250hz-off-r1",
+        "path": "jfg-row",
+        "rate_hz": 250,
+        "mode": "off",
+        "frames": 252,
+        "comparison_qualified": true,
+        "qualified_trace": true,
+        "qualified_callbacks": true,
+        "perf": {
+          "event_counts": {
+            "sched:sched_wakeup": 35064,
+            "sched:sched_switch": 69881,
+            "sched:sched_migrate_task": 260,
+            "power:cpu_idle": 59334,
+            "sched:sched_wakeup_new": 39
+          },
+          "parse_errors": [],
+          "loss_records": [],
+          "complete": true
+        },
+        "evidence": {
+          "result.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/jfg-row-250hz-off-r1/result.json",
+            "sha256": "29b6bc31cc1b964253e6c2b510aaefe24e50e86fbf5118061c3c72a51a44400e"
+          },
+          "scheduler-analysis.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/jfg-row-250hz-off-r1/scheduler-analysis.json",
+            "sha256": "ea269ae76a2368004e09f7f54bce39f957831e8110f43ee24c2dcdfa027f18a4"
+          },
+          "handoff-analysis.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/jfg-row-250hz-off-r1/handoff-analysis.json",
+            "sha256": "7530ce721039dc422d74777945b883adea967b69f3684f4edeb069749858ceef"
+          },
+          "row-work.json": {
+            "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/jfg-row-250hz-off-r1/row-work.json",
+            "sha256": "4378f6e0db927d12e888b1e6ab1c42016a3a2cf1929aa22348a5e36915e389a7"
+          }
+        },
+        "handoff_qualified": true,
+        "terminal_handoff": {
+          "body_end_to_sink_start_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 12.523,
+            "max": 32.912,
+            "p99": 20.886280000000006
+          },
+          "body_wall_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 34.505,
+            "max": 96.661,
+            "p99": 76.73596000000002
+          },
+          "native_input_ready_to_body_start_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 0.1,
+            "max": 1.333,
+            "p99": 0.5908000000000002
+          },
+          "publication_to_body_start_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 5.691,
+            "max": 30.527,
+            "p99": 15.747390000000047
+          },
+          "publication_to_native_input_ready_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 5.56,
+            "max": 29.646,
+            "p99": 14.946320000000037
+          },
+          "receive_to_publication_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 291.507,
+            "max": 1947.162,
+            "p99": 735.9368100000006
+          },
+          "sink_command_bracket_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 12.4335,
+            "max": 33.092,
+            "p99": 19.540490000000005
+          },
+          "terminal_receive_to_sink_end_ns": {
+            "count": 252,
+            "unit": "us",
+            "p50": 352.2705,
+            "max": 2115.798,
+            "p99": 825.4840500000008
+          }
+        },
+        "terminal_after_first_100": {
+          "body_end_to_sink_start_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 8.561,
+            "max": 24.326,
+            "p99": 20.65168000000001
+          },
+          "body_wall_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 34.49,
+            "max": 77.656,
+            "p99": 75.28998000000001
+          },
+          "native_input_ready_to_body_start_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 0.1,
+            "max": 1.333,
+            "p99": 0.48521000000000025
+          },
+          "publication_to_body_start_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 5.68,
+            "max": 18.405,
+            "p99": 12.913500000000006
+          },
+          "publication_to_native_input_ready_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 5.54,
+            "max": 17.072,
+            "p99": 12.658690000000004
+          },
+          "receive_to_publication_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 324.153,
+            "max": 771.056,
+            "p99": 683.3872200000004
+          },
+          "sink_command_bracket_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 12.293,
+            "max": 19.246,
+            "p99": 15.508799999999999
+          },
+          "terminal_receive_to_sink_end_ns": {
+            "count": 152,
+            "unit": "us",
+            "p50": 390.3125,
+            "max": 877.406,
+            "p99": 755.1868900000004
+          }
+        },
+        "gc": {
+          "all_rows": {
+            "gc_pause_delta": {
+              "callbacks_changed": 0,
+              "sum_delta": 0,
+              "max_delta": 0
+            },
+            "gc_total_time_delta_ns": {
+              "callbacks_changed": 0,
+              "sum_delta": 0,
+              "max_delta": 0
+            },
+            "gc_allocated_bytes_delta": {
+              "callbacks_changed": 0,
+              "sum_delta": 0,
+              "max_delta": 0
+            }
+          },
+          "terminal_rows": {
+            "gc_pause_delta": {
+              "callbacks_changed": 0,
+              "sum_delta": 0,
+              "max_delta": 0
+            },
+            "gc_total_time_delta_ns": {
+              "callbacks_changed": 0,
+              "sum_delta": 0,
+              "max_delta": 0
+            },
+            "gc_allocated_bytes_delta": {
+              "callbacks_changed": 0,
+              "sum_delta": 0,
+              "max_delta": 0
+            }
+          },
+          "scope": "process-wide Julia counter changes during callback bodies, including concurrent Julia tasks and diagnostic counter reads; sums do not measure isolated algorithm allocation or GC attribution"
+        },
+        "completed_prefix": {
+          "frames_with_positive_science_work_lower_bound": 252,
+          "subaperture_lower_bound_range": {
+            "min": 12,
+            "max": 184
+          },
+          "matrix_column_lower_bound_range": {
+            "min": 24,
+            "max": 368
+          }
+        },
+        "clock_model": {
+          "offset_low_ns": 1789232089873565504,
+          "offset_high_ns": 1789232089873567173,
+          "extra_margin_ns": 0,
+          "anchors": [
+            {
+              "name": "before_connect",
+              "monotonic_before_ns": 1581592791131493,
+              "monotonic_after_ns": 1581592791132104,
+              "float_conversion_margin_ns": 248,
+              "offset_low_ns": 1789232089873565504,
+              "offset_high_ns": 1789232089873566611
+            },
+            {
+              "name": "after_close",
+              "monotonic_before_ns": 1581607056576307,
+              "monotonic_after_ns": 1581607056577038,
+              "float_conversion_margin_ns": 248,
+              "offset_low_ns": 1789232089873565946,
+              "offset_high_ns": 1789232089873567173
+            }
+          ],
+          "assumption": "realtime-minus-monotonic offset throughout replay remains within the hull of both endpoint brackets plus stated margins; unobserved interior clock excursions are not bounded by two anchors"
+        },
+        "graph": {
+          "algorithm_path": "split SH measurement block then synchronous incremental dense reconstruction",
+          "graph_sha256": "7f07395864f508fb405a64cfed67f7a16f40332a39d4cdee39e0dbd5d2a4c458"
+        },
+        "callback_summary": {
+          "role": "node",
+          "name": "data-loop.0",
+          "tid": 3637862,
+          "excluded_count": 0,
+          "outside_window_count": 0,
+          "wall": {
+            "count": 8064,
+            "unit": "us",
+            "p50": 17.763,
+            "max": 96.661,
+            "p99": 55.361869999999996
+          },
+          "off_cpu": {
+            "count": 8064,
+            "unit": "us",
+            "p50": 0.0,
+            "max": 6.913,
+            "p99": 0.0
+          },
+          "wall_minus_off_cpu": {
+            "count": 8064,
+            "unit": "us",
+            "p50": 17.763,
+            "max": 96.661,
+            "p99": 55.361869999999996
+          },
+          "boundary": "wall minus scheduler off CPU includes execution, interrupts, trace overhead and unobserved effects; it is not isolated science self time"
+        }
+      }
+    ],
+    "terminal_publication_scheduler": {
+      "scope": "offline terminal source post-recv R to publication P versus attested CPU0 source-loop scheduler events",
+      "limits": [
+        "Wall minus off CPU includes assembler/decoder work, other queued-row processing, kernel/interrupt work and diagnostic overhead; it is not isolated source self time.",
+        "Off CPU overlap is exact only inside known scheduler intervals and observed trace bounds. Censored intervals are retained in per-frame evidence.",
+        "This interval begins after recv; it does not measure socket wake or idle exit before R."
+      ],
+      "source_boundary": {
+        "receive": "spa/plugins/heart/source.c: on_socket records receive_ns immediately after recv returns; trace_receive stamps R with that timestamp",
+        "publication": "spa/plugins/heart/source.c: publish_next_buffer sets HAVE_DATA and then stamps P",
+        "thread": "prepared daemon PID, placement-before role daemon/name rtc-data-loop, unique TID affinity=[0]"
+      },
+      "sha256": {
+        "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/analyze_terminal_publication_scheduler.py": "98617d1fb1ef3c320a2e6a5185cb2393ef191f1734b58c4580326478a5c24c32",
+        "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-platform-latency/benchmark/analyze_classic_scheduler.py": "913439b134e44c28508e3b4bf79c74aae3f131d9354bc68061152556591ecf14",
+        "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/fgn-row-100hz-latency0-r1/handoff-analysis.json": "3d4a4d36eae3548fe314c037e0d58df954d17bcdf2dea8b0067fab367a8affdf",
+        "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/fgn-row-100hz-latency0-r1/scheduler-analysis.json": "4759aacba2ebac027e8733b2c66312c2e8ac21888fbc29eacad6c84614cd861a",
+        "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/fgn-row-100hz-latency0-r1/run/placement-before.json": "a1b3f3eb98adcdb2ec3621d48a9cd8fa10563ed16505ed300702f316b7266628",
+        "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/fgn-row-100hz-off-r1/handoff-analysis.json": "ee0d4ed315b1c1e1ed07ebc679ea362e6fac8e03bb9d04909432ea2db97ef25a",
+        "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/fgn-row-100hz-off-r1/scheduler-analysis.json": "35b221538ba0acd9f7fa29d5cde09d520ea9cee6c0b4c500f1c0cab4881dfcd4",
+        "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/fgn-row-100hz-off-r1/run/placement-before.json": "49fd2f653114cb43d283139f11fae60231ac9dcc1fce2c0d5f91ffb53f450f23",
+        "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/fgn-row-250hz-latency0-r1/handoff-analysis.json": "d407e7f1962a4fb01e8550d5d2e3deffbd18cf487cc646d1f6556785d3c5ae2a",
+        "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/fgn-row-250hz-latency0-r1/scheduler-analysis.json": "1f9efc7b7336296bb528eb13fecb2ae404794fce605922ca90d416a276c00ae2",
+        "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/fgn-row-250hz-latency0-r1/run/placement-before.json": "22e8f874bb06470a0748e993a0d6549979528f94b031990bc72ab886d6bf8e9e",
+        "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/fgn-row-250hz-off-r1/handoff-analysis.json": "61f424c832a84a2569929bd9cb06a65cbce1fd79322c5e17e614b6304d369a22",
+        "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/fgn-row-250hz-off-r1/scheduler-analysis.json": "83e5c3931a9bec7261b80dc5c089abf828b871289a1f5a9791354d2a810a180c",
+        "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/fgn-row-250hz-off-r1/run/placement-before.json": "cc209c0823cdc1b8181e51c1ddc0269b194559ed0ecac8353954c2a4db6b5704",
+        "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/jfg-row-100hz-latency0-r1/handoff-analysis.json": "4a90d6e8cac0dc33fca509935faf96212f37b66710561fd675a40caf6402a39e",
+        "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/jfg-row-100hz-latency0-r1/scheduler-analysis.json": "b7908e4993c11efdaf561aad97a2de687d96f5c4b3e532f7d286a6ed90e60de4",
+        "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/jfg-row-100hz-latency0-r1/run/placement-before.json": "14d50ed2a8df7dda05cf532f6d66f128ae13431d2a166426e5f8ca944e9f48b0",
+        "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/jfg-row-100hz-off-r1/handoff-analysis.json": "81fc4223f819a3be37432cc15897685d642e70d353804926ab65d9878443e629",
+        "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/jfg-row-100hz-off-r1/scheduler-analysis.json": "94802fd6cb4a6a7a6bf59d6ca334ff6f6ec2c6fcaee220194d80f502b8ba30aa",
+        "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/jfg-row-100hz-off-r1/run/placement-before.json": "34b2130de397392af0fd6fdc81d939c4ac570e04fefe0022649d0c563fb8fe7e",
+        "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/jfg-row-250hz-latency0-r1/handoff-analysis.json": "6e74cf074faeb81b0ef42da8d79ab5161d702011d33b5018fa7fdd3e736c8a3a",
+        "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/jfg-row-250hz-latency0-r1/scheduler-analysis.json": "986b2d9e010906f1e4fbf42677face7b9259f0d3972ff3eab6cc81173bda3a9c",
+        "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/jfg-row-250hz-latency0-r1/run/placement-before.json": "32c707b19cf643db5b721f95ed826b715872058aa082cf4dc5f8c6600152683e",
+        "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/jfg-row-250hz-off-r1/handoff-analysis.json": "7530ce721039dc422d74777945b883adea967b69f3684f4edeb069749858ceef",
+        "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/jfg-row-250hz-off-r1/scheduler-analysis.json": "ea269ae76a2368004e09f7f54bce39f957831e8110f43ee24c2dcdfa027f18a4",
+        "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/jfg-row-250hz-off-r1/run/placement-before.json": "5cee2f6362bec607ef168d250edaef4d78176e6205d1804cf33263373ca74caa"
+      },
+      "evidence": {
+        "path": "/home/dgamroth/.cache/rtc-classic-platform-diagnostic252-final-20260930/terminal-publication-scheduler.json",
+        "sha256": "9a3652f96066600295e0b1e7846ebbba5babad67bc30b76de7524dd7fca76886"
+      },
+      "runs": [
+        {
+          "case": "fgn-row-100hz-latency0-r1",
+          "source_pid": 3634734,
+          "source_tid": 3634736,
+          "qualified": true,
+          "terminal_frames": 252,
+          "frames_with_off_cpu": 0,
+          "all": {
+            "wall_ns": {
+              "count": 252,
+              "unit": "us",
+              "p50": 13.6355,
+              "max": 17.894,
+              "p99": 14.851470000000013
+            },
+            "off_cpu_ns": {
+              "count": 252,
+              "unit": "us",
+              "p50": 0.0,
+              "max": 0.0,
+              "p99": 0.0
+            },
+            "wall_minus_off_cpu_ns": {
+              "count": 252,
+              "unit": "us",
+              "p50": 13.6355,
+              "max": 17.894,
+              "p99": 14.851470000000013
+            }
+          },
+          "after_first_100": {
+            "wall_ns": {
+              "count": 152,
+              "unit": "us",
+              "p50": 13.636,
+              "max": 16.0,
+              "p99": 14.0456
+            },
+            "off_cpu_ns": {
+              "count": 152,
+              "unit": "us",
+              "p50": 0.0,
+              "max": 0.0,
+              "p99": 0.0
+            },
+            "wall_minus_off_cpu_ns": {
+              "count": 152,
+              "unit": "us",
+              "p50": 13.636,
+              "max": 16.0,
+              "p99": 14.0456
+            }
+          },
+          "sum_wall_ns": 3452345,
+          "sum_off_cpu_ns": 0
+        },
+        {
+          "case": "fgn-row-100hz-off-r1",
+          "source_pid": 3634945,
+          "source_tid": 3634947,
+          "qualified": true,
+          "terminal_frames": 252,
+          "frames_with_off_cpu": 217,
+          "all": {
+            "wall_ns": {
+              "count": 252,
+              "unit": "us",
+              "p50": 479.6555,
+              "max": 1589.526,
+              "p99": 1394.6330300000002
+            },
+            "off_cpu_ns": {
+              "count": 252,
+              "unit": "us",
+              "p50": 87.3135,
+              "max": 587.587,
+              "p99": 499.0611300000001
+            },
+            "wall_minus_off_cpu_ns": {
+              "count": 252,
+              "unit": "us",
+              "p50": 371.307,
+              "max": 1117.563,
+              "p99": 1015.60187
+            }
+          },
+          "after_first_100": {
+            "wall_ns": {
+              "count": 152,
+              "unit": "us",
+              "p50": 421.437,
+              "max": 1589.526,
+              "p99": 1347.292790000001
+            },
+            "off_cpu_ns": {
+              "count": 152,
+              "unit": "us",
+              "p50": 78.1155,
+              "max": 547.159,
+              "p99": 445.4958300000011
+            },
+            "wall_minus_off_cpu_ns": {
+              "count": 152,
+              "unit": "us",
+              "p50": 350.224,
+              "max": 1085.142,
+              "p99": 1015.60187
+            }
+          },
+          "sum_wall_ns": 127279049,
+          "sum_off_cpu_ns": 27173183
+        },
+        {
+          "case": "fgn-row-250hz-latency0-r1",
+          "source_pid": 3636930,
+          "source_tid": 3636932,
+          "qualified": true,
+          "terminal_frames": 252,
+          "frames_with_off_cpu": 0,
+          "all": {
+            "wall_ns": {
+              "count": 252,
+              "unit": "us",
+              "p50": 13.776,
+              "max": 17.543,
+              "p99": 14.63749
+            },
+            "off_cpu_ns": {
+              "count": 252,
+              "unit": "us",
+              "p50": 0.0,
+              "max": 0.0,
+              "p99": 0.0
+            },
+            "wall_minus_off_cpu_ns": {
+              "count": 252,
+              "unit": "us",
+              "p50": 13.776,
+              "max": 17.543,
+              "p99": 14.63749
+            }
+          },
+          "after_first_100": {
+            "wall_ns": {
+              "count": 152,
+              "unit": "us",
+              "p50": 13.816,
+              "max": 14.638,
+              "p99": 14.63241
+            },
+            "off_cpu_ns": {
+              "count": 152,
+              "unit": "us",
+              "p50": 0.0,
+              "max": 0.0,
+              "p99": 0.0
+            },
+            "wall_minus_off_cpu_ns": {
+              "count": 152,
+              "unit": "us",
+              "p50": 13.816,
+              "max": 14.638,
+              "p99": 14.63241
+            }
+          },
+          "sum_wall_ns": 3501526,
+          "sum_off_cpu_ns": 0
+        },
+        {
+          "case": "fgn-row-250hz-off-r1",
+          "source_pid": 3637136,
+          "source_tid": 3637138,
+          "qualified": true,
+          "terminal_frames": 252,
+          "frames_with_off_cpu": 85,
+          "all": {
+            "wall_ns": {
+              "count": 252,
+              "unit": "us",
+              "p50": 20.263,
+              "max": 1227.352,
+              "p99": 754.5663499999999
+            },
+            "off_cpu_ns": {
+              "count": 252,
+              "unit": "us",
+              "p50": 0.0,
+              "max": 344.798,
+              "p99": 143.80318000000008
+            },
+            "wall_minus_off_cpu_ns": {
+              "count": 252,
+              "unit": "us",
+              "p50": 20.263,
+              "max": 882.554,
+              "p99": 635.79641
+            }
+          },
+          "after_first_100": {
+            "wall_ns": {
+              "count": 152,
+              "unit": "us",
+              "p50": 20.253,
+              "max": 771.407,
+              "p99": 750.88427
+            },
+            "off_cpu_ns": {
+              "count": 152,
+              "unit": "us",
+              "p50": 0.0,
+              "max": 147.976,
+              "p99": 136.15137000000004
+            },
+            "wall_minus_off_cpu_ns": {
+              "count": 152,
+              "unit": "us",
+              "p50": 20.253,
+              "max": 667.167,
+              "p99": 635.79641
+            }
+          },
+          "sum_wall_ns": 46374276,
+          "sum_off_cpu_ns": 7794888
+        },
+        {
+          "case": "jfg-row-100hz-latency0-r1",
+          "source_pid": 3635901,
+          "source_tid": 3635902,
+          "qualified": true,
+          "terminal_frames": 252,
+          "frames_with_off_cpu": 2,
+          "all": {
+            "wall_ns": {
+              "count": 252,
+              "unit": "us",
+              "p50": 13.8105,
+              "max": 198.353,
+              "p99": 18.386300000000055
+            },
+            "off_cpu_ns": {
+              "count": 252,
+              "unit": "us",
+              "p50": 0.0,
+              "max": 132.67,
+              "p99": 0.0
+            },
+            "wall_minus_off_cpu_ns": {
+              "count": 252,
+              "unit": "us",
+              "p50": 13.8105,
+              "max": 65.683,
+              "p99": 18.386300000000055
+            }
+          },
+          "after_first_100": {
+            "wall_ns": {
+              "count": 152,
+              "unit": "us",
+              "p50": 13.806,
+              "max": 55.795,
+              "p99": 17.86457000000006
+            },
+            "off_cpu_ns": {
+              "count": 152,
+              "unit": "us",
+              "p50": 0.0,
+              "max": 22.593,
+              "p99": 0.0
+            },
+            "wall_minus_off_cpu_ns": {
+              "count": 152,
+              "unit": "us",
+              "p50": 13.806,
+              "max": 33.202,
+              "p99": 17.86457000000006
+            }
+          },
+          "sum_wall_ns": 3727400,
+          "sum_off_cpu_ns": 155263
+        },
+        {
+          "case": "jfg-row-100hz-off-r1",
+          "source_pid": 3635159,
+          "source_tid": 3635160,
+          "qualified": true,
+          "terminal_frames": 252,
+          "frames_with_off_cpu": 246,
+          "all": {
+            "wall_ns": {
+              "count": 252,
+              "unit": "us",
+              "p50": 703.1195,
+              "max": 2004.633,
+              "p99": 1310.4186900000013
+            },
+            "off_cpu_ns": {
+              "count": 252,
+              "unit": "us",
+              "p50": 458.2465,
+              "max": 1481.992,
+              "p99": 969.2807000000017
+            },
+            "wall_minus_off_cpu_ns": {
+              "count": 252,
+              "unit": "us",
+              "p50": 209.1065,
+              "max": 549.903,
+              "p99": 417.8028800000004
+            }
+          },
+          "after_first_100": {
+            "wall_ns": {
+              "count": 152,
+              "unit": "us",
+              "p50": 732.651,
+              "max": 2004.633,
+              "p99": 1199.2878100000007
+            },
+            "off_cpu_ns": {
+              "count": 152,
+              "unit": "us",
+              "p50": 478.1095,
+              "max": 1454.73,
+              "p99": 853.1179400000004
+            },
+            "wall_minus_off_cpu_ns": {
+              "count": 152,
+              "unit": "us",
+              "p50": 218.47,
+              "max": 549.903,
+              "p99": 423.8421300000005
+            }
+          },
+          "sum_wall_ns": 169794065,
+          "sum_off_cpu_ns": 113821877
+        },
+        {
+          "case": "jfg-row-250hz-latency0-r1",
+          "source_pid": 3638071,
+          "source_tid": 3638072,
+          "qualified": true,
+          "terminal_frames": 252,
+          "frames_with_off_cpu": 1,
+          "all": {
+            "wall_ns": {
+              "count": 252,
+              "unit": "us",
+              "p50": 13.796,
+              "max": 197.501,
+              "p99": 21.327200000000005
+            },
+            "off_cpu_ns": {
+              "count": 252,
+              "unit": "us",
+              "p50": 0.0,
+              "max": 131.798,
+              "p99": 0.0
+            },
+            "wall_minus_off_cpu_ns": {
+              "count": 252,
+              "unit": "us",
+              "p50": 13.796,
+              "max": 65.703,
+              "p99": 21.327200000000005
+            }
+          },
+          "after_first_100": {
+            "wall_ns": {
+              "count": 152,
+              "unit": "us",
+              "p50": 13.796,
+              "max": 21.61,
+              "p99": 21.327200000000005
+            },
+            "off_cpu_ns": {
+              "count": 152,
+              "unit": "us",
+              "p50": 0.0,
+              "max": 0.0,
+              "p99": 0.0
+            },
+            "wall_minus_off_cpu_ns": {
+              "count": 152,
+              "unit": "us",
+              "p50": 13.796,
+              "max": 21.61,
+              "p99": 21.327200000000005
+            }
+          },
+          "sum_wall_ns": 3731007,
+          "sum_off_cpu_ns": 131798
+        },
+        {
+          "case": "jfg-row-250hz-off-r1",
+          "source_pid": 3637334,
+          "source_tid": 3637335,
+          "qualified": true,
+          "terminal_frames": 252,
+          "frames_with_off_cpu": 199,
+          "all": {
+            "wall_ns": {
+              "count": 252,
+              "unit": "us",
+              "p50": 291.507,
+              "max": 1947.162,
+              "p99": 735.9368100000006
+            },
+            "off_cpu_ns": {
+              "count": 252,
+              "unit": "us",
+              "p50": 184.911,
+              "max": 1528.627,
+              "p99": 554.5860900000005
+            },
+            "wall_minus_off_cpu_ns": {
+              "count": 252,
+              "unit": "us",
+              "p50": 102.7165,
+              "max": 418.535,
+              "p99": 233.61273000000008
+            }
+          },
+          "after_first_100": {
+            "wall_ns": {
+              "count": 152,
+              "unit": "us",
+              "p50": 324.153,
+              "max": 771.056,
+              "p99": 683.3872200000004
+            },
+            "off_cpu_ns": {
+              "count": 152,
+              "unit": "us",
+              "p50": 208.512,
+              "max": 578.526,
+              "p99": 518.3933400000003
+            },
+            "wall_minus_off_cpu_ns": {
+              "count": 152,
+              "unit": "us",
+              "p50": 107.691,
+              "max": 238.956,
+              "p99": 227.72114000000002
+            }
+          },
+          "sum_wall_ns": 70121234,
+          "sum_off_cpu_ns": 44532041
+        }
+      ]
+    },
+    "gc_counter_attestation": {
+      "scope": "installed Julia1.12.7 callback GC counter interpretation",
+      "observed": [
+        "graph_node.jl callback start/end record Base.gc_num snapshots and Base.gc_total_bytes(stats).",
+        "Base/timing.jl computes gc_total_bytes as allocd + deferred_alloc + total_allocd.",
+        "Installed ijl_gc_num copies global GC counters and calls combine_thread_gc_counts; that helper walks jl_all_tls_states and adds current per-thread counters."
+      ],
+      "derived": "Allocation bytes use live process-wide Julia GC allocation accounting, including current per-thread counters; they are not a total updated only at GC cycles.",
+      "limits": [
+        "Snapshots collect different threads sequentially; they are not an atomic simultaneous process-wide snapshot.",
+        "GC-aware allocation accounting is not a record of all native/external malloc activity and does not isolate the callback thread.",
+        "Counters are read just inside callback timestamp endpoints; zero recorded deltas do not establish allocation freedom for excluded native entry/exit or every instant outside those reads."
+      ],
+      "sha256": {
+        "/home/dgamroth/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/lib/julia/libjulia-internal.so.1.12.7": "e36f5186f293ebc66ee8a5ebf0ee29cd6bf5e72ccf091f5a58ab44b59fdf52c5",
+        "/home/dgamroth/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/base/timing.jl": "c054684a576117fe1454a972bad0c7e0033a316e6b466125fb298332e309b462",
+        "/home/dgamroth/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/include/julia/gc-tls-common.h": "f82efd75ede8c19be5ebbbecf647ca4e8a9501baec12de8c6d969160f43e1f34",
+        "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph.jl/julia/FilterGraphPipeWire/src/graph_node.jl": "322bef4688afd3900237cd577161e033263293a1b71a325050003413e8b38aac"
+      },
+      "disassembly": {
+        "ijl_gc_num": {
+          "command": [
+            "objdump",
+            "-d",
+            "--no-show-raw-insn",
+            "--disassemble=ijl_gc_num",
+            "/home/dgamroth/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/lib/julia/libjulia-internal.so.1.12.7"
+          ],
+          "output": "\n/home/dgamroth/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/lib/julia/libjulia-internal.so.1.12.7:     file format elf64-x86-64\n\n\nDisassembly of section .init:\n\nDisassembly of section .plt:\n\nDisassembly of section .plt.got:\n\nDisassembly of section .text:\n\n0000000000111ac0 <ijl_gc_num>:\n  111ac0:\tpush   %rbp\n  111ac1:\tmov    %rdi,%r11\n  111ac4:\txor    %esi,%esi\n  111ac6:\tmov    %rsp,%rbp\n  111ac9:\tsub    $0xe0,%rsp\n  111ad0:\tlea    0x3200a9(%rip),%rax        # 431b80 <gc_num>\n  111ad7:\tlea    -0xe0(%rbp),%rdi\n  111ade:\tmovdqu (%rax),%xmm0\n  111ae2:\tmovdqu 0x10(%rax),%xmm1\n  111ae7:\tmovdqu 0x20(%rax),%xmm2\n  111aec:\tmovdqu 0x30(%rax),%xmm3\n  111af1:\tmovdqu 0x40(%rax),%xmm4\n  111af6:\tmovdqu 0x50(%rax),%xmm5\n  111afb:\tmovaps %xmm0,-0xe0(%rbp)\n  111b02:\tmovdqu 0x60(%rax),%xmm6\n  111b07:\tmovdqu 0x70(%rax),%xmm7\n  111b0c:\tmovaps %xmm1,-0xd0(%rbp)\n  111b13:\tmovdqu 0x80(%rax),%xmm0\n  111b1b:\tmovdqu 0x90(%rax),%xmm1\n  111b23:\tmovaps %xmm2,-0xc0(%rbp)\n  111b2a:\tmovaps %xmm3,-0xb0(%rbp)\n  111b31:\tmovdqu 0xa0(%rax),%xmm2\n  111b39:\tmovdqu 0xb0(%rax),%xmm3\n  111b41:\tmovaps %xmm4,-0xa0(%rbp)\n  111b48:\tmovdqu 0xc0(%rax),%xmm4\n  111b50:\tmovaps %xmm5,-0x90(%rbp)\n  111b57:\tmovdqu 0xd0(%rax),%xmm5\n  111b5f:\tmovaps %xmm6,-0x80(%rbp)\n  111b63:\tmovaps %xmm7,-0x70(%rbp)\n  111b67:\tmovaps %xmm0,-0x60(%rbp)\n  111b6b:\tmovaps %xmm1,-0x50(%rbp)\n  111b6f:\tmovaps %xmm2,-0x40(%rbp)\n  111b73:\tmovaps %xmm3,-0x30(%rbp)\n  111b77:\tmovaps %xmm4,-0x20(%rbp)\n  111b7b:\tmovaps %xmm5,-0x10(%rbp)\n  111b7f:\tcall   106080 <combine_thread_gc_counts>\n  111b84:\tmovdqa -0xe0(%rbp),%xmm6\n  111b8c:\tmovdqa -0xd0(%rbp),%xmm7\n  111b94:\tmovdqa -0xc0(%rbp),%xmm0\n  111b9c:\tmovdqa -0x80(%rbp),%xmm4\n  111ba1:\tmov    %r11,%rax\n  111ba4:\tmovdqa -0xb0(%rbp),%xmm1\n  111bac:\tmovdqa -0x70(%rbp),%xmm5\n  111bb1:\tmovups %xmm6,(%r11)\n  111bb5:\tmovdqa -0xa0(%rbp),%xmm2\n  111bbd:\tmovdqa -0x60(%rbp),%xmm6\n  111bc2:\tmovups %xmm7,0x10(%r11)\n  111bc7:\tmovdqa -0x90(%rbp),%xmm3\n  111bcf:\tmovdqa -0x50(%rbp),%xmm7\n  111bd4:\tmovups %xmm0,0x20(%r11)\n  111bd9:\tmovups %xmm1,0x30(%r11)\n  111bde:\tmovdqa -0x40(%rbp),%xmm0\n  111be3:\tmovdqa -0x30(%rbp),%xmm1\n  111be8:\tmovups %xmm2,0x40(%r11)\n  111bed:\tmovdqa -0x20(%rbp),%xmm2\n  111bf2:\tmovups %xmm3,0x50(%r11)\n  111bf7:\tmovdqa -0x10(%rbp),%xmm3\n  111bfc:\tmovups %xmm4,0x60(%r11)\n  111c01:\tmovups %xmm5,0x70(%r11)\n  111c06:\tmovups %xmm6,0x80(%r11)\n  111c0e:\tmovups %xmm7,0x90(%r11)\n  111c16:\tmovups %xmm0,0xa0(%r11)\n  111c1e:\tmovups %xmm1,0xb0(%r11)\n  111c26:\tmovups %xmm2,0xc0(%r11)\n  111c2e:\tmovups %xmm3,0xd0(%r11)\n  111c36:\tleave\n  111c37:\tret\n\nDisassembly of section .fini:\n"
+        },
+        "combine_thread_gc_counts": {
+          "command": [
+            "objdump",
+            "-d",
+            "--no-show-raw-insn",
+            "--disassemble=combine_thread_gc_counts",
+            "/home/dgamroth/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/lib/julia/libjulia-internal.so.1.12.7"
+          ],
+          "output": "\n/home/dgamroth/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/lib/julia/libjulia-internal.so.1.12.7:     file format elf64-x86-64\n\n\nDisassembly of section .init:\n\nDisassembly of section .plt:\n\nDisassembly of section .plt.got:\n\nDisassembly of section .text:\n\n0000000000106080 <combine_thread_gc_counts>:\n  106080:\tmov    0x25e251(%rip),%rax        # 3642d8 <jl_n_threads@JL_LIBJULIA_1.12>\n  106087:\tmov    (%rax),%edx\n  106089:\tlea    0x28da88(%rip),%rax        # 393b18 <jl_all_tls_states>\n  106090:\tmov    (%rax),%rax\n  106093:\ttest   %edx,%edx\n  106095:\tjle    106166 <combine_thread_gc_counts+0xe6>\n  10609b:\tlea    -0x1(%rdx),%ecx\n  10609e:\tlea    0x8(%rax),%rdx\n  1060a2:\tlea    (%rdx,%rcx,8),%r8\n  1060a6:\tjmp    1060c0 <combine_thread_gc_counts+0x40>\n  1060a8:\tnopl   0x0(%rax,%rax,1)\n  1060b0:\tmov    %rdx,%rax\n  1060b3:\tcmp    %r8,%rdx\n  1060b6:\tje     106166 <combine_thread_gc_counts+0xe6>\n  1060bc:\tadd    $0x8,%rdx\n  1060c0:\tmov    (%rax),%rax\n  1060c3:\ttest   %rax,%rax\n  1060c6:\tje     1060b0 <combine_thread_gc_counts+0x30>\n  1060c8:\tmov    0xec0(%rax),%r9\n  1060cf:\tlea    0x32baaa(%rip),%r10        # 431b80 <gc_num>\n  1060d6:\tmov    (%rdi),%rcx\n  1060d9:\tadd    0x50(%r10),%rcx\n  1060dd:\tadd    %r9,%rcx\n  1060e0:\tmov    %rcx,(%rdi)\n  1060e3:\tmov    0xed0(%rax),%rcx\n  1060ea:\tadd    %rcx,0x18(%rdi)\n  1060ee:\tmov    0xed8(%rax),%rcx\n  1060f5:\tadd    %rcx,0x20(%rdi)\n  1060f9:\tmov    0xee0(%rax),%rcx\n  106100:\tadd    %rcx,0x28(%rdi)\n  106104:\tmov    0xee8(%rax),%rcx\n  10610b:\tadd    %rcx,0x30(%rdi)\n  10610f:\tmov    0xef0(%rax),%rcx\n  106116:\tadd    %rcx,0x10(%rdi)\n  10611a:\ttest   %esi,%esi\n  10611c:\tje     1060b0 <combine_thread_gc_counts+0x30>\n  10611e:\tmov    0xef8(%rax),%rcx\n  106125:\tmov    0xef0(%rax),%r9\n  10612c:\tadd    %r9,0x52c2d5(%rip)        # 632408 <freed_in_runtime>\n  106133:\tmov    0x52c136(%rip),%r9        # 632270 <gc_heap_stats+0x10>\n  10613a:\tadd    %r9,%rcx\n  10613d:\tmov    %rcx,0x52c12c(%rip)        # 632270 <gc_heap_stats+0x10>\n  106144:\tmovq   $0x0,0xef8(%rax)\n  10614f:\tmovq   $0x0,0xef0(%rax)\n  10615a:\tmov    %rdx,%rax\n  10615d:\tcmp    %r8,%rdx\n  106160:\tjne    1060bc <combine_thread_gc_counts+0x3c>\n  106166:\tret\n\nDisassembly of section .fini:\n"
+        }
+      }
+    }
+  },
+  "validation": {
+    "classic_tests": 216,
+    "status": "pass",
+    "log": {
+      "path": "/home/dgamroth/.cache/classic-platform-final-units3-20260930.log",
+      "sha256": "52899dbb6a6eb3f06d81723681bbd55b085626fa067393485e61bed042720cdf"
+    },
+    "shell_syntax": "pass",
+    "diff_whitespace": "pass",
+    "roadmap_mermaid": "rendered"
+  },
+  "limitations": [
+    "HEART/off excluded: unchanged HEART intrinsically requests zero CPU latency.",
+    "Percentile ranges are ranges of three per-window percentiles, not pooled percentiles or confidence intervals.",
+    "Host-wide QoS intervention does not identify every mechanism within source receive-to-publication delay.",
+    "Diagnostic intervals include instrumentation and differ from normal packet-wire intervals.",
+    "Completed scientific prefixes depend on reviewed fixed graphs and endpoint clock-envelope assumptions.",
+    "Existing numerical acceptance policies and original strict failures remain separate from bitwise equivalence claims."
+  ]
+}

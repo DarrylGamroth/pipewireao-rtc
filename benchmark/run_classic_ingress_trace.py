@@ -35,6 +35,9 @@ def main():
     parser.add_argument('--rate-hz', type=int, default=100)
     parser.add_argument('--readout-us', type=int, default=2000)
     parser.add_argument('--heart-plugin', type=Path)
+    parser.add_argument('--ingress-ready-file', type=Path)
+    parser.add_argument('--ingress-release-file', type=Path)
+    parser.add_argument('--ingress-done-file', type=Path)
     args = parser.parse_args()
     if args.frames <= 0 or args.rate_hz <= 0 or args.readout_us <= 0:
         parser.error('frames, rate-hz and readout-us must be positive')
@@ -77,6 +80,15 @@ def main():
     cmd = command(f'{args.role}-row', args.corpus, args.output,
                   args.rate_hz, args.readout_us, args.frames,
                   trace=args.frames * 32 if args.role == 'jfg' else 0)
+    cmd += ['--fgn-root', str(run_classic_live.WORKSPACE / 'calculon-algorithms-main-copper'),
+            '--jfg-root', str(run_classic_live.WORKSPACE / 'JuliaFilterGraph.jl')]
+    if args.ingress_ready_file is not None or args.ingress_release_file is not None:
+        if args.ingress_ready_file is None or args.ingress_release_file is None:
+            parser.error('ingress ready/release files must be supplied together')
+        cmd += ['--ingress-ready-file', str(args.ingress_ready_file),
+                '--ingress-release-file', str(args.ingress_release_file)]
+    if args.ingress_done_file is not None:
+        cmd += ['--ingress-done-file', str(args.ingress_done_file)]
     heart_plugin = (args.heart_plugin or Path(cmd[cmd.index('--heart-plugin') + 1])).resolve(strict=True)
     heart_digest = hashlib.sha256(heart_plugin.read_bytes()).hexdigest()
     if args.heart_plugin is not None:

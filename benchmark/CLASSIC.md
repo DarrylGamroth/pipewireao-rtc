@@ -3,6 +3,10 @@
 Date: 2026-09-30. The four-gate development comparison is complete;
 see the completion record and validation boundaries below.
 
+The subsequent [scheduler and idle investigation](CLASSIC_PLATFORM.md)
+records the repeated 100/250 Hz comparison with matched effective CPU latency
+requests, complete diagnostic handoffs, and work completed during readout.
+
 ## Common workload
 
 The comparison uses the original seven-frame 352 × 352 Classic FITS cube,
