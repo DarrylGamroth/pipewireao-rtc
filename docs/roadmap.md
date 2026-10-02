@@ -829,6 +829,34 @@ existing external endpoint contracts. Do not substitute the older HIL science
 fixture for the matched Classic controller. No further capacity or latency
 campaign is selected for this deployment increment.
 
+## Selected AOS/HIL increment (2026-10-01)
+
+Baseline: RTC `1bc5eaa`, AOS `d30db3f`, Classic plant `e0fbdab`, Copper plant
+`cb840cd`, adapter `e0f78f6`. Dirty parent science checkouts are preserved;
+separate task checkouts supply committed sources. RTC-ARCH-021 and
+RTC-DEV-024 through RTC-DEV-026 select complete-frame simulator deployment.
+The existing small HIL fixtures remain historical reference evidence and do
+not substitute for the maintained extrapolation/limiter/feedback controllers.
+
+| Requirement | Allocation | Verification | State |
+| --- | --- | --- | --- |
+| RTC-DEV-024 | installed exporter, unchanged science, AOS plant and transport adapter | four CPU compositions, relocation, encoding/order/units and correlated finite outputs | partial: functional profiles pass; Classic exact replay localization pending |
+| RTC-DEV-025 | source-owner protocol, supervised control, owner reset | quiet admission, pause/start/reset, rejection, timeout/death and cleanup | demonstrated for the selected installed and user-service profiles |
+| RTC-DEV-026 | optional backend environments, AOS preparation, paced single-writer owner | CPU and available GPU checks; explicit unsupported-device failures and cadence boundaries | demonstrated for documented backend/device combinations; no hard-rate claim |
+
+Evidence and exact limits are recorded in
+[HIL_DEPLOYMENT_VALIDATION.md](HIL_DEPLOYMENT_VALIDATION.md), the
+[evidence summary](HIL_DEPLOYMENT_EVIDENCE.json), and the independent
+[review](HIL_DEPLOYMENT_REVIEW.md). The original exact-replay failure remains
+retained; no numerical tolerance or science coefficient was changed.
+
+Implementation order is transport encoding/units and reset, held simulator
+owner, source-supervised deployment controls, installed exporter, then focused
+live checks. No new HEART benchmark or capacity campaign is selected. Scientific
+convergence with the provisional plant is a separate calibration acceptance
+question; retain any failed or unestablished oracle rather than relabelling
+functional command exchange as scientific equivalence.
+
 ## Deferred capabilities
 
 The following topics are not active work. Their previous proposals are

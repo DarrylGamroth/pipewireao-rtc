@@ -11,7 +11,7 @@ declared session without introducing another graph-authoring format.
 | Document | Authority |
 | --- | --- |
 | [Development architecture](architecture.md) | RTCW composition, scientist boundary, external-node substitution, laboratory placement, and the selected deployment package |
-| [Development operating contract](operations.md) | RTC-DEV-001 through RTC-DEV-023: lifecycle, composition, updates, equivalence, placement, installed profiles, bounded control and user-service operation |
+| [Development operating contract](operations.md) | RTC-DEV-001 through RTC-DEV-026: lifecycle, composition, updates, equivalence, placement, installed profiles, bounded control and user-service operation |
 | [Development roadmap](roadmap.md) | Dependency-ordered implementation, completion evidence, performance characterization, and deferred capability triggers |
 
 These three files are the complete RTC-level implementation baseline. An
@@ -24,6 +24,11 @@ requirements below govern implementation.
 
 [Deployment validation](DEPLOYMENT_VALIDATION.md) records the completed
 recorded-input increment and its functional qualification limits.
+
+[AOS/HIL deployment](HIL_DEPLOYMENT_VALIDATION.md) gives export, launch and
+control instructions and separates backend preparation from installed live
+qualification. [HIL review](HIL_DEPLOYMENT_REVIEW.md) tracks confirmed defects
+and remaining acceptance evidence.
 
 ## Inactive design archive
 

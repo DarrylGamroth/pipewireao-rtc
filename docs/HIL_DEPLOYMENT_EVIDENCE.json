@@ -1,0 +1,1981 @@
+{
+  "date": "2026-10-02",
+  "scope": "installed non-actuating complete-frame functional deployment, not scientific convergence or hard real time",
+  "requirements": [
+    "RTC-DEV-024",
+    "RTC-DEV-025",
+    "RTC-DEV-026"
+  ],
+  "rtc_baseline": "1bc5eaa154cfb43f9df289da4ad0f6118b816a53",
+  "native": {
+    "artifacts": [
+      {
+        "path": "/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0",
+        "sha256": "02220ec0d27016c5eed5947eeeafb87b4b9844686a797a2aebefda75a132d1d7",
+        "build_id": "4adf7719dcabf62a959e96f17c29966f12c65114",
+        "trace_environment_string": false
+      },
+      {
+        "path": "/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-ndarray-filter-chain.so",
+        "sha256": "ebcc06b2537c97d1d0199f0cf64b4dae3c9d5126247b428d31eb776bd279f76e",
+        "build_id": "5a32534c70b69bb6f0dd845181cba3e35846fce5",
+        "trace_environment_string": false
+      }
+    ],
+    "diagnostic_trace_compiled": false,
+    "source_revision": "7e17c0fa2690b06884e456ef34a221cb813d30e5"
+  },
+  "environment": {
+    "host": "rtc-devel",
+    "kernel": "6.12.107+deb13-amd64",
+    "machine": "x86_64",
+    "julia": "julia version 1.12.7"
+  },
+  "cpu_profiles": {
+    "classic-fgn": {
+      "record": "/home/dgamroth/.cache/rtc-aos-hil-20261001/evidence/final-v3-classic-fgn-cpu/result.json",
+      "record_sha256": "2c8adece1c65d3693a1fb259052b5f93c329a1e6987591b3b9b91a98ea8a890c",
+      "passed": true,
+      "batches": {
+        "batch-1": {
+          "backend": "cpu",
+          "requested_rate_hz": 10,
+          "achieved_cycle_rate_hz": 5.69674507594557,
+          "model_period_ns": 100000000,
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "missed_wall_periods": 5,
+          "nonzero_command_components": 0,
+          "command_components_at_limit": 0,
+          "max_abs_command_um": 0.0,
+          "frame_sha256": "e5edc87c7fb901c60191cfbe6503be17087cf096c52998e21e366fede53c7813",
+          "command_sha256": "b2b7b570b50f0c083b186e03d32d04a676357bba5749a7e01405463da9d13e27"
+        },
+        "batch-2": {
+          "backend": "cpu",
+          "requested_rate_hz": 10,
+          "achieved_cycle_rate_hz": 10.005830664350269,
+          "model_period_ns": 100000000,
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "missed_wall_periods": 0,
+          "nonzero_command_components": 0,
+          "command_components_at_limit": 0,
+          "max_abs_command_um": 0.0,
+          "frame_sha256": "e5edc87c7fb901c60191cfbe6503be17087cf096c52998e21e366fede53c7813",
+          "command_sha256": "b2b7b570b50f0c083b186e03d32d04a676357bba5749a7e01405463da9d13e27"
+        }
+      },
+      "exit_codes": {
+        "core": 0,
+        "simulator": 0,
+        "rtc": 0
+      },
+      "cleanup_signals": [
+        {
+          "pid": 314734,
+          "role": "core",
+          "signal": 15
+        }
+      ],
+      "native_revision": "7e17c0fa2690b06884e456ef34a221cb813d30e5",
+      "native_library_sha256": "02220ec0d27016c5eed5947eeeafb87b4b9844686a797a2aebefda75a132d1d7",
+      "placement": {
+        "core": {
+          "pid": 314734,
+          "threads": [
+            {
+              "tid": 314734,
+              "name": "pipewire-ao",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 314735,
+              "name": "rtc-data-loop",
+              "cpus": [
+                2
+              ],
+              "policy": 1,
+              "priority": 83
+            }
+          ],
+          "locked_bytes": 0
+        },
+        "simulator": {
+          "pid": 314751,
+          "threads": [
+            {
+              "tid": 314751,
+              "name": "julia",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 314756,
+              "name": "iou-sqp-314751",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 314757,
+              "name": "julia",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 315096,
+              "name": "AdaptiveOpticsS",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            }
+          ],
+          "locked_bytes": 507904
+        },
+        "rtc": {
+          "pid": 315098,
+          "threads": [
+            {
+              "tid": 315098,
+              "name": "pipewireao-rtc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 315099,
+              "name": "ndarray-paramet",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 315100,
+              "name": "rtc-data-loop",
+              "cpus": [
+                2
+              ],
+              "policy": 1,
+              "priority": 83
+            },
+            {
+              "tid": 315101,
+              "name": "rtc-control-soc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            }
+          ],
+          "locked_bytes": 1851392
+        }
+      }
+    },
+    "classic-jfg": {
+      "record": "/home/dgamroth/.cache/rtc-aos-hil-20261001/evidence/final-v3-classic-jfg-cpu/result.json",
+      "record_sha256": "2b66c419fa37ee0204969339eb93a909eb9b9def3b0505e91132910fdaf924b6",
+      "passed": true,
+      "batches": {
+        "batch-1": {
+          "backend": "cpu",
+          "requested_rate_hz": 10,
+          "achieved_cycle_rate_hz": 5.955360712386918,
+          "model_period_ns": 100000000,
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "missed_wall_periods": 5,
+          "nonzero_command_components": 0,
+          "command_components_at_limit": 0,
+          "max_abs_command_um": 0.0,
+          "frame_sha256": "27c4401b52271e7083087630e9d199b2c1deb30f00f9bbcd9530bd727bb8986c",
+          "command_sha256": "b2b7b570b50f0c083b186e03d32d04a676357bba5749a7e01405463da9d13e27"
+        },
+        "batch-2": {
+          "backend": "cpu",
+          "requested_rate_hz": 10,
+          "achieved_cycle_rate_hz": 10.010432104873237,
+          "model_period_ns": 100000000,
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "missed_wall_periods": 0,
+          "nonzero_command_components": 0,
+          "command_components_at_limit": 0,
+          "max_abs_command_um": 0.0,
+          "frame_sha256": "27c4401b52271e7083087630e9d199b2c1deb30f00f9bbcd9530bd727bb8986c",
+          "command_sha256": "b2b7b570b50f0c083b186e03d32d04a676357bba5749a7e01405463da9d13e27"
+        }
+      },
+      "exit_codes": {
+        "core": 0,
+        "julia": 0,
+        "simulator": 0,
+        "rtc": 0
+      },
+      "cleanup_signals": [
+        {
+          "pid": 315152,
+          "role": "core",
+          "signal": 15
+        }
+      ],
+      "native_revision": "7e17c0fa2690b06884e456ef34a221cb813d30e5",
+      "native_library_sha256": "02220ec0d27016c5eed5947eeeafb87b4b9844686a797a2aebefda75a132d1d7",
+      "placement": {
+        "core": {
+          "pid": 315152,
+          "threads": [
+            {
+              "tid": 315152,
+              "name": "pipewire-ao",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 315153,
+              "name": "rtc-data-loop",
+              "cpus": [
+                2
+              ],
+              "policy": 1,
+              "priority": 83
+            }
+          ],
+          "locked_bytes": 0
+        },
+        "julia": {
+          "pid": 315154,
+          "threads": [
+            {
+              "tid": 315154,
+              "name": "julia",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 315159,
+              "name": "iou-sqp-315154",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 315160,
+              "name": "julia",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 315161,
+              "name": "julia",
+              "cpus": [
+                10
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 315162,
+              "name": "julia",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 315401,
+              "name": "ndarray-filter-",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 315473,
+              "name": "julia-data-loop",
+              "cpus": [
+                4
+              ],
+              "policy": 1,
+              "priority": 83
+            }
+          ],
+          "locked_bytes": 1179648
+        },
+        "simulator": {
+          "pid": 315474,
+          "threads": [
+            {
+              "tid": 315474,
+              "name": "julia",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 315479,
+              "name": "iou-sqp-315474",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 315480,
+              "name": "julia",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 315743,
+              "name": "AdaptiveOpticsS",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            }
+          ],
+          "locked_bytes": 507904
+        },
+        "rtc": {
+          "pid": 315745,
+          "threads": [
+            {
+              "tid": 315745,
+              "name": "pipewireao-rtc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 315746,
+              "name": "rtc-control-soc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            }
+          ],
+          "locked_bytes": 671744
+        }
+      }
+    },
+    "copper-fgn": {
+      "record": "/home/dgamroth/.cache/rtc-aos-hil-20261001/evidence/final-v3-copper-fgn-cpu/result.json",
+      "record_sha256": "f28c5b452be0715254e06ac5d200f48549d76b685521f0dd70711154e04072e1",
+      "passed": true,
+      "batches": {
+        "batch-1": {
+          "backend": "cpu",
+          "requested_rate_hz": 10,
+          "achieved_cycle_rate_hz": 2.647944454252774,
+          "model_period_ns": 100000000,
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "missed_wall_periods": 38,
+          "nonzero_command_components": 4432,
+          "command_components_at_limit": 0,
+          "max_abs_command_um": 0.26691416,
+          "frame_sha256": "708b669f2c57ac787c966311dd84dd5ac6cc41a7d27139044e357b612523a732",
+          "command_sha256": "9eb5870e8f465381b01b28ae42846ae1e3618d55c59271ab1535eafd89fe3a5d"
+        },
+        "batch-2": {
+          "backend": "cpu",
+          "requested_rate_hz": 10,
+          "achieved_cycle_rate_hz": 3.3330747593189716,
+          "model_period_ns": 100000000,
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "missed_wall_periods": 32,
+          "nonzero_command_components": 4432,
+          "command_components_at_limit": 0,
+          "max_abs_command_um": 0.26691416,
+          "frame_sha256": "708b669f2c57ac787c966311dd84dd5ac6cc41a7d27139044e357b612523a732",
+          "command_sha256": "9eb5870e8f465381b01b28ae42846ae1e3618d55c59271ab1535eafd89fe3a5d"
+        }
+      },
+      "exit_codes": {
+        "core": 0,
+        "simulator": 0,
+        "rtc": 0
+      },
+      "cleanup_signals": [
+        {
+          "pid": 315800,
+          "role": "core",
+          "signal": 15
+        }
+      ],
+      "native_revision": "7e17c0fa2690b06884e456ef34a221cb813d30e5",
+      "native_library_sha256": "02220ec0d27016c5eed5947eeeafb87b4b9844686a797a2aebefda75a132d1d7",
+      "placement": {
+        "core": {
+          "pid": 315800,
+          "threads": [
+            {
+              "tid": 315800,
+              "name": "pipewire-ao",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 315801,
+              "name": "rtc-data-loop",
+              "cpus": [
+                2
+              ],
+              "policy": 1,
+              "priority": 83
+            }
+          ],
+          "locked_bytes": 0
+        },
+        "simulator": {
+          "pid": 315803,
+          "threads": [
+            {
+              "tid": 315803,
+              "name": "julia",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 315808,
+              "name": "iou-sqp-315803",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 315809,
+              "name": "julia",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 316111,
+              "name": "AdaptiveOpticsS",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            }
+          ],
+          "locked_bytes": 28672
+        },
+        "rtc": {
+          "pid": 316113,
+          "threads": [
+            {
+              "tid": 316113,
+              "name": "pipewireao-rtc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 316114,
+              "name": "ndarray-paramet",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 316115,
+              "name": "rtc-data-loop",
+              "cpus": [
+                2
+              ],
+              "policy": 1,
+              "priority": 83
+            },
+            {
+              "tid": 316116,
+              "name": "rtc-control-soc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            }
+          ],
+          "locked_bytes": 14610432
+        }
+      }
+    },
+    "copper-jfg": {
+      "record": "/home/dgamroth/.cache/rtc-aos-hil-20261001/evidence/final-v3-copper-jfg-cpu/result.json",
+      "record_sha256": "fc262a9eba2bdedf041f1066062af0dc8170f6863c3c24897d5313092fbc5c7c",
+      "passed": true,
+      "batches": {
+        "batch-1": {
+          "backend": "cpu",
+          "requested_rate_hz": 10,
+          "achieved_cycle_rate_hz": 2.6440865962989073,
+          "model_period_ns": 100000000,
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "missed_wall_periods": 38,
+          "nonzero_command_components": 4432,
+          "command_components_at_limit": 0,
+          "max_abs_command_um": 0.26691416,
+          "frame_sha256": "708b669f2c57ac787c966311dd84dd5ac6cc41a7d27139044e357b612523a732",
+          "command_sha256": "a2d7dbde71493ede9594ba8d82db252030d5e9dc590be40ef7dd9e8b1b37e32e"
+        },
+        "batch-2": {
+          "backend": "cpu",
+          "requested_rate_hz": 10,
+          "achieved_cycle_rate_hz": 3.2630472839600104,
+          "model_period_ns": 100000000,
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "missed_wall_periods": 33,
+          "nonzero_command_components": 4432,
+          "command_components_at_limit": 0,
+          "max_abs_command_um": 0.26691416,
+          "frame_sha256": "708b669f2c57ac787c966311dd84dd5ac6cc41a7d27139044e357b612523a732",
+          "command_sha256": "a2d7dbde71493ede9594ba8d82db252030d5e9dc590be40ef7dd9e8b1b37e32e"
+        }
+      },
+      "exit_codes": {
+        "core": 0,
+        "julia": 0,
+        "simulator": 0,
+        "rtc": 0
+      },
+      "cleanup_signals": [
+        {
+          "pid": 316259,
+          "role": "core",
+          "signal": 15
+        }
+      ],
+      "native_revision": "7e17c0fa2690b06884e456ef34a221cb813d30e5",
+      "native_library_sha256": "02220ec0d27016c5eed5947eeeafb87b4b9844686a797a2aebefda75a132d1d7",
+      "placement": {
+        "core": {
+          "pid": 316259,
+          "threads": [
+            {
+              "tid": 316259,
+              "name": "pipewire-ao",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 316260,
+              "name": "rtc-data-loop",
+              "cpus": [
+                2
+              ],
+              "policy": 1,
+              "priority": 83
+            }
+          ],
+          "locked_bytes": 0
+        },
+        "julia": {
+          "pid": 316261,
+          "threads": [
+            {
+              "tid": 316261,
+              "name": "julia",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 316266,
+              "name": "iou-sqp-316261",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 316267,
+              "name": "julia",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 316268,
+              "name": "julia",
+              "cpus": [
+                10
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 316269,
+              "name": "julia",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 316484,
+              "name": "ndarray-filter-",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 316539,
+              "name": "julia-data-loop",
+              "cpus": [
+                4
+              ],
+              "policy": 1,
+              "priority": 83
+            }
+          ],
+          "locked_bytes": 7319552
+        },
+        "simulator": {
+          "pid": 316540,
+          "threads": [
+            {
+              "tid": 316540,
+              "name": "julia",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 316545,
+              "name": "iou-sqp-316540",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 316546,
+              "name": "julia",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 316846,
+              "name": "AdaptiveOpticsS",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            }
+          ],
+          "locked_bytes": 28672
+        },
+        "rtc": {
+          "pid": 316863,
+          "threads": [
+            {
+              "tid": 316863,
+              "name": "pipewireao-rtc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 316864,
+              "name": "rtc-control-soc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            }
+          ],
+          "locked_bytes": 7290880
+        }
+      }
+    }
+  },
+  "gpu_profiles": {
+    "cuda10": {
+      "record": "/home/dgamroth/.cache/rtc-aos-hil-20261001/evidence/final-copper-fgn-cuda/result.json",
+      "record_sha256": "ac93b285f20b7f8d5454c42bcb8011e38f29a22e6b8ca1f0c17b5cfec45b3fd5",
+      "passed": true,
+      "batches": {
+        "batch-1": {
+          "backend": "cuda",
+          "requested_rate_hz": 10,
+          "achieved_cycle_rate_hz": 5.672460504211763,
+          "model_period_ns": 100000000,
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "missed_wall_periods": 6,
+          "nonzero_command_components": 4432,
+          "command_components_at_limit": 0,
+          "max_abs_command_um": 0.2669157,
+          "frame_sha256": "10ff3216a8c416284ddec7159736248835dc10a3c1d46cc577a2beaa3e06f683",
+          "command_sha256": "bef905859ed08088fc07294d07b0f89f00e8cc87387e861c083d2bdf40a0a06b"
+        },
+        "batch-2": {
+          "backend": "cuda",
+          "requested_rate_hz": 10,
+          "achieved_cycle_rate_hz": 9.999926573872477,
+          "model_period_ns": 100000000,
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "missed_wall_periods": 0,
+          "nonzero_command_components": 4432,
+          "command_components_at_limit": 0,
+          "max_abs_command_um": 0.2669157,
+          "frame_sha256": "10ff3216a8c416284ddec7159736248835dc10a3c1d46cc577a2beaa3e06f683",
+          "command_sha256": "bef905859ed08088fc07294d07b0f89f00e8cc87387e861c083d2bdf40a0a06b"
+        }
+      },
+      "exit_codes": {
+        "core": 0,
+        "simulator": 0,
+        "rtc": 0
+      },
+      "cleanup_signals": [
+        {
+          "pid": 298420,
+          "role": "core",
+          "signal": 15
+        }
+      ],
+      "native_revision": "5017892d44c6f724e1f18d68cd2aad762914c93b",
+      "native_library_sha256": "7ac46b9847fdef6710e7e5ce8ec5b3b32673c3df9a7fef85c16864d1f1d6b825",
+      "placement": {
+        "core": {
+          "pid": 298420,
+          "threads": [
+            {
+              "tid": 298420,
+              "name": "pipewire-ao",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 298421,
+              "name": "rtc-data-loop",
+              "cpus": [
+                2
+              ],
+              "policy": 1,
+              "priority": 83
+            }
+          ],
+          "locked_bytes": 0
+        },
+        "simulator": {
+          "pid": 298422,
+          "threads": [
+            {
+              "tid": 298422,
+              "name": "julia",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 298427,
+              "name": "iou-sqp-298422",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 298428,
+              "name": "julia",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 298684,
+              "name": "cuda00005400017",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 298816,
+              "name": "julia",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 298817,
+              "name": "cuda-EvtHandlr",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 298818,
+              "name": "julia",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 298978,
+              "name": "julia",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 299136,
+              "name": "AdaptiveOpticsS",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            }
+          ],
+          "locked_bytes": 28672
+        },
+        "rtc": {
+          "pid": 299138,
+          "threads": [
+            {
+              "tid": 299138,
+              "name": "pipewireao-rtc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 299139,
+              "name": "ndarray-paramet",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 299140,
+              "name": "rtc-data-loop",
+              "cpus": [
+                2
+              ],
+              "policy": 1,
+              "priority": 83
+            },
+            {
+              "tid": 299141,
+              "name": "rtc-control-soc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            }
+          ],
+          "locked_bytes": 14610432
+        }
+      }
+    },
+    "amdgpu10": {
+      "record": "/home/dgamroth/.cache/rtc-aos-hil-20261001/evidence/final-copper-fgn-amdgpu-v3/result.json",
+      "record_sha256": "346045f96f18a73060e13829331ca4baa42a31773e07de34080977becc9c0832",
+      "passed": true,
+      "batches": {
+        "batch-1": {
+          "backend": "amdgpu",
+          "requested_rate_hz": 10,
+          "achieved_cycle_rate_hz": 5.06746489490806,
+          "model_period_ns": 100000000,
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "missed_wall_periods": 6,
+          "nonzero_command_components": 4432,
+          "command_components_at_limit": 0,
+          "max_abs_command_um": 0.2669157,
+          "frame_sha256": "7756c7706c2e1f12eb8af64b0854a93b376191cdb5defbbaee4b5deff1232829",
+          "command_sha256": "248dc9ac5c07c80dbde6b70e8af16f6eb4f6d9ef133edfad0211b35727e3026e"
+        },
+        "batch-2": {
+          "backend": "amdgpu",
+          "requested_rate_hz": 10,
+          "achieved_cycle_rate_hz": 10.037625960612347,
+          "model_period_ns": 100000000,
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "missed_wall_periods": 0,
+          "nonzero_command_components": 4432,
+          "command_components_at_limit": 0,
+          "max_abs_command_um": 0.2669157,
+          "frame_sha256": "7756c7706c2e1f12eb8af64b0854a93b376191cdb5defbbaee4b5deff1232829",
+          "command_sha256": "248dc9ac5c07c80dbde6b70e8af16f6eb4f6d9ef133edfad0211b35727e3026e"
+        }
+      },
+      "exit_codes": {
+        "core": 0,
+        "simulator": 0,
+        "rtc": 0
+      },
+      "cleanup_signals": [
+        {
+          "pid": 306097,
+          "role": "core",
+          "signal": 15
+        }
+      ],
+      "native_revision": "5017892d44c6f724e1f18d68cd2aad762914c93b",
+      "native_library_sha256": "7ac46b9847fdef6710e7e5ce8ec5b3b32673c3df9a7fef85c16864d1f1d6b825",
+      "placement": {
+        "core": {
+          "pid": 306097,
+          "threads": [
+            {
+              "tid": 306097,
+              "name": "pipewire-ao",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 306098,
+              "name": "rtc-data-loop",
+              "cpus": [
+                2
+              ],
+              "policy": 1,
+              "priority": 83
+            }
+          ],
+          "locked_bytes": 0
+        },
+        "simulator": {
+          "pid": 306099,
+          "threads": [
+            {
+              "tid": 306099,
+              "name": "julia",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 306104,
+              "name": "iou-sqp-306099",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 306105,
+              "name": "julia",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 306131,
+              "name": "julia",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 306132,
+              "name": "julia",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 306216,
+              "name": "julia",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 306566,
+              "name": "AdaptiveOpticsS",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            }
+          ],
+          "locked_bytes": 28672
+        },
+        "rtc": {
+          "pid": 306583,
+          "threads": [
+            {
+              "tid": 306583,
+              "name": "pipewireao-rtc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 306584,
+              "name": "ndarray-paramet",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 306585,
+              "name": "rtc-data-loop",
+              "cpus": [
+                2
+              ],
+              "policy": 1,
+              "priority": 83
+            },
+            {
+              "tid": 306586,
+              "name": "rtc-control-soc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            }
+          ],
+          "locked_bytes": 14610432
+        }
+      }
+    },
+    "cuda100": {
+      "record": "/home/dgamroth/.cache/rtc-aos-hil-20261001/evidence/final-copper-fgn-cuda100/result.json",
+      "record_sha256": "6809f07d9cf479ec0c24824f74d6abf5aad893c02fde8feb7ab646b73b0812b7",
+      "passed": true,
+      "batches": {
+        "batch-1": {
+          "backend": "cuda",
+          "requested_rate_hz": 100,
+          "achieved_cycle_rate_hz": 10.201678096473781,
+          "model_period_ns": 10000000,
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "missed_wall_periods": 83,
+          "nonzero_command_components": 4432,
+          "command_components_at_limit": 0,
+          "max_abs_command_um": 0.26691416,
+          "frame_sha256": "4068da9881d3026b6f75e1ee05030657319a443921c0753fdeced37cc98f93d9",
+          "command_sha256": "110996df3f0929e9b3305689bdb2e1fb0eeee046a58f81d5ca9adccabc69d25a"
+        },
+        "batch-2": {
+          "backend": "cuda",
+          "requested_rate_hz": 100,
+          "achieved_cycle_rate_hz": 44.636983261265186,
+          "model_period_ns": 10000000,
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "missed_wall_periods": 19,
+          "nonzero_command_components": 4432,
+          "command_components_at_limit": 0,
+          "max_abs_command_um": 0.26691416,
+          "frame_sha256": "4068da9881d3026b6f75e1ee05030657319a443921c0753fdeced37cc98f93d9",
+          "command_sha256": "110996df3f0929e9b3305689bdb2e1fb0eeee046a58f81d5ca9adccabc69d25a"
+        }
+      },
+      "exit_codes": {
+        "core": 0,
+        "simulator": 0,
+        "rtc": 0
+      },
+      "cleanup_signals": [
+        {
+          "pid": 306877,
+          "role": "core",
+          "signal": 15
+        }
+      ],
+      "native_revision": "5017892d44c6f724e1f18d68cd2aad762914c93b",
+      "native_library_sha256": "7ac46b9847fdef6710e7e5ce8ec5b3b32673c3df9a7fef85c16864d1f1d6b825",
+      "placement": {
+        "core": {
+          "pid": 306877,
+          "threads": [
+            {
+              "tid": 306877,
+              "name": "pipewire-ao",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 306878,
+              "name": "rtc-data-loop",
+              "cpus": [
+                2
+              ],
+              "policy": 1,
+              "priority": 83
+            }
+          ],
+          "locked_bytes": 0
+        },
+        "simulator": {
+          "pid": 306879,
+          "threads": [
+            {
+              "tid": 306879,
+              "name": "julia",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 306884,
+              "name": "iou-sqp-306879",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 306885,
+              "name": "julia",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 307075,
+              "name": "cuda00005400017",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 307256,
+              "name": "julia",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 307257,
+              "name": "cuda-EvtHandlr",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 307262,
+              "name": "julia",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 307384,
+              "name": "julia",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 307554,
+              "name": "AdaptiveOpticsS",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            }
+          ],
+          "locked_bytes": 28672
+        },
+        "rtc": {
+          "pid": 307556,
+          "threads": [
+            {
+              "tid": 307556,
+              "name": "pipewireao-rtc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 307557,
+              "name": "ndarray-paramet",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 307558,
+              "name": "rtc-data-loop",
+              "cpus": [
+                2
+              ],
+              "policy": 1,
+              "priority": 83
+            },
+            {
+              "tid": 307559,
+              "name": "rtc-control-soc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            }
+          ],
+          "locked_bytes": 14610432
+        }
+      }
+    }
+  },
+  "user_units": {
+    "fgn": {
+      "record": "/home/dgamroth/.cache/rtc-aos-hil-20261001/evidence/user-v3-copper-fgn-cpu/result.json",
+      "record_sha256": "c2b3158c1c4c092d52332b2ab6ef299808f7f5c3c634cad9ccd93cbcc1c479dc",
+      "passed": true,
+      "nominal_exit": {
+        "Result": "success",
+        "ExecMainStatus": "0",
+        "ActiveState": "inactive",
+        "SubState": "dead",
+        "InvocationID": ""
+      },
+      "owner_failure_exit": {
+        "Result": "exit-code",
+        "ExecMainStatus": "1",
+        "ActiveState": "failed",
+        "SubState": "failed",
+        "InvocationID": "5ff46de1b04445e780353862c2b92d75"
+      },
+      "all_owned_pids_gone": true,
+      "final_unit": {
+        "Result": "success",
+        "ExecMainStatus": "0",
+        "ActiveState": "inactive",
+        "SubState": "dead",
+        "InvocationID": ""
+      },
+      "failure_diagnostics": "native external dependency loss followed by required RTC exit",
+      "native_revision": "7e17c0fa2690b06884e456ef34a221cb813d30e5",
+      "native_library_sha256": "02220ec0d27016c5eed5947eeeafb87b4b9844686a797a2aebefda75a132d1d7"
+    },
+    "jfg": {
+      "record": "/home/dgamroth/.cache/rtc-aos-hil-20261001/evidence/user-v3-copper-jfg-cpu/result.json",
+      "record_sha256": "1ad3cb3bd91d6bbbd8276bc5f42c91e52dfc95524b7085b3eafd25bb97268f79",
+      "passed": true,
+      "nominal_exit": {
+        "Result": "success",
+        "ExecMainStatus": "0",
+        "ActiveState": "inactive",
+        "SubState": "dead",
+        "InvocationID": ""
+      },
+      "owner_failure_exit": {
+        "Result": "exit-code",
+        "ExecMainStatus": "1",
+        "ActiveState": "failed",
+        "SubState": "failed",
+        "InvocationID": "12ef01cd41494bcdb3280bb464bed93c"
+      },
+      "all_owned_pids_gone": true,
+      "final_unit": {
+        "Result": "success",
+        "ExecMainStatus": "0",
+        "ActiveState": "inactive",
+        "SubState": "dead",
+        "InvocationID": ""
+      },
+      "failure_diagnostics": "native external dependency loss followed by required RTC exit",
+      "native_revision": "7e17c0fa2690b06884e456ef34a221cb813d30e5",
+      "native_library_sha256": "02220ec0d27016c5eed5947eeeafb87b4b9844686a797a2aebefda75a132d1d7"
+    }
+  },
+  "science_preservation": [
+    {
+      "profile": "revolt-classic-fgn-hil-cpu",
+      "all_declared_artifacts_verified": 223,
+      "unchanged_artifact_count": 15,
+      "unchanged_artifact_map_sha256": "72f256ea48e372b438d8b669aa6b2fde1c4a4dfd239b035c24392fd940a3fc09",
+      "calibration_hashes": {
+        "calibration/active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+        "calibration/background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+        "calibration/controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+        "calibration/full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+        "calibration/pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+        "calibration/prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4",
+        "calibration/reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+        "calibration/reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+        "calibration/shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+        "calibration/thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+        "calibration/vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+        "calibration/vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+      },
+      "provenance_preserved": [
+        "algorithms_generator_sha256",
+        "algorithms_revision",
+        "construction_parameters",
+        "engine",
+        "exporter_sha256",
+        "generator",
+        "mode",
+        "parameter_initialization",
+        "parameters",
+        "prepared_profile",
+        "prepared_profile_sha256",
+        "profile",
+        "rtc_revision"
+      ]
+    },
+    {
+      "profile": "revolt-classic-jfg-hil-cpu",
+      "all_declared_artifacts_verified": 354,
+      "unchanged_artifact_count": 143,
+      "unchanged_artifact_map_sha256": "786e36ae1b7bbd40d6fef540aecbe3d940dae375881fcfa58b0727648b8f164c",
+      "calibration_hashes": {
+        "calibration/active-subapertures.u8": "c6a7c831d41c9d526a606ec1e76ebd81d1cc97ffc3e76dd0610ff7d103ddab97",
+        "calibration/active-to-full-vdm.f32le": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81",
+        "calibration/background.f32le": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+        "calibration/controller-to-vdm.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+        "calibration/full-to-active-vdm.f32le": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa",
+        "calibration/hidden-to-shape.f32le": "6ca83adefc47fc9ab71637c150b95b33083e61e507dff2ee5f2692aa27e1453e",
+        "calibration/pdm-to-vdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136",
+        "calibration/prepared-profile.toml": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4",
+        "calibration/reconstructor.f32le": "6b6426af33e5ba1a38808cf738a024485d4b1553c00a820e7d821dd6743b67bc",
+        "calibration/reference-slopes.f32le": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+        "calibration/shack-hartmann-coordinates.f32le": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315",
+        "calibration/shape-to-hidden.f32le": "6ca83adefc47fc9ab71637c150b95b33083e61e507dff2ee5f2692aa27e1453e",
+        "calibration/subaperture-origins.u32le": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279",
+        "calibration/thresholds.f32le": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752",
+        "calibration/vdm-to-controller.f32le": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772",
+        "calibration/vdm-to-pdm.f32le": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+      },
+      "provenance_preserved": [
+        "algorithms_generator_sha256",
+        "algorithms_revision",
+        "engine",
+        "exporter_sha256",
+        "generator",
+        "jfg_revision",
+        "julia_version",
+        "mode",
+        "parameter_initialization",
+        "parameters",
+        "prepared_profile",
+        "prepared_profile_sha256",
+        "profile",
+        "rtc_revision"
+      ]
+    },
+    {
+      "profile": "revolt-copper-fgn-hil-cpu",
+      "all_declared_artifacts_verified": 217,
+      "unchanged_artifact_count": 11,
+      "unchanged_artifact_map_sha256": "3f9436ebd4f77798adffd785cec36fc9cde952ad9a8859862318ce0e17c278f8",
+      "calibration_hashes": {
+        "calibration/parameter-active-to-full.f32": "9d9fe9d8cd3311ade1604497cb88edf7872699935d79c972703b6ef828986e6f",
+        "calibration/parameter-controller-to-vdm.f32": "9d9fe9d8cd3311ade1604497cb88edf7872699935d79c972703b6ef828986e6f",
+        "calibration/parameter-full-to-active.f32": "9d9fe9d8cd3311ade1604497cb88edf7872699935d79c972703b6ef828986e6f",
+        "calibration/parameter-pdm-to-vdm.f32": "05fd64b56ca512946a07991ed547478fcf29558c7574ee0160e3f04957a07f55",
+        "calibration/parameter-reconstructor.f32": "1f46e372f50f64d27ee1fa5883861031a257341923b74d1081b9dcd8a7f7b370",
+        "calibration/parameter-system-flat.f32": "a6445b11ad0e9cda3b4c0043b361f258f0319a0fb7ceeff49a2dcb1b9b761feb",
+        "calibration/parameter-vdm-to-controller.f32": "9d9fe9d8cd3311ade1604497cb88edf7872699935d79c972703b6ef828986e6f",
+        "calibration/parameter-vdm-to-pdm.f32": "19d2e6ef5f5eb43e535a6076fca5a2ac2cb835b8c746c05876d6fa25f43fcd92"
+      },
+      "provenance_preserved": [
+        "algorithms_generator_sha256",
+        "algorithms_revision",
+        "construction_parameters",
+        "engine",
+        "exporter_sha256",
+        "generator",
+        "mode",
+        "parameter_initialization",
+        "parameter_metadata",
+        "parameters",
+        "profile",
+        "rtc_revision",
+        "source_calibration"
+      ]
+    },
+    {
+      "profile": "revolt-copper-jfg-hil-cpu",
+      "all_declared_artifacts_verified": 346,
+      "unchanged_artifact_count": 137,
+      "unchanged_artifact_map_sha256": "cbbb70d3c53b6a7587cf295a4df5bf76d5d4d20c63029f2af52ebd7efafad552",
+      "calibration_hashes": {
+        "calibration/hidden-to-shape.f32le": "dca67435629d486cac458300c323b247b68ed22541e3169dbaa0ec0412d595e6",
+        "calibration/parameter-active-to-full.f32": "9d9fe9d8cd3311ade1604497cb88edf7872699935d79c972703b6ef828986e6f",
+        "calibration/parameter-controller-to-vdm.f32": "9d9fe9d8cd3311ade1604497cb88edf7872699935d79c972703b6ef828986e6f",
+        "calibration/parameter-full-to-active.f32": "9d9fe9d8cd3311ade1604497cb88edf7872699935d79c972703b6ef828986e6f",
+        "calibration/parameter-pdm-to-vdm.f32": "05fd64b56ca512946a07991ed547478fcf29558c7574ee0160e3f04957a07f55",
+        "calibration/parameter-reconstructor.f32": "1f46e372f50f64d27ee1fa5883861031a257341923b74d1081b9dcd8a7f7b370",
+        "calibration/parameter-system-flat.f32": "a6445b11ad0e9cda3b4c0043b361f258f0319a0fb7ceeff49a2dcb1b9b761feb",
+        "calibration/parameter-vdm-to-controller.f32": "9d9fe9d8cd3311ade1604497cb88edf7872699935d79c972703b6ef828986e6f",
+        "calibration/parameter-vdm-to-pdm.f32": "19d2e6ef5f5eb43e535a6076fca5a2ac2cb835b8c746c05876d6fa25f43fcd92",
+        "calibration/shape-to-hidden.f32le": "dca67435629d486cac458300c323b247b68ed22541e3169dbaa0ec0412d595e6"
+      },
+      "provenance_preserved": [
+        "algorithms_generator_sha256",
+        "algorithms_revision",
+        "engine",
+        "exporter_sha256",
+        "generator",
+        "jfg_revision",
+        "julia_version",
+        "mode",
+        "parameter_initialization",
+        "parameter_metadata",
+        "parameters",
+        "profile",
+        "rtc_revision",
+        "source_calibration"
+      ]
+    }
+  ],
+  "rtc_source_sha256": {
+    "deployment/deploy.py": "16189f7a9220b7d6c80726cd9db32b491a663a954a8c5de193a00f77ee11f8f5",
+    "deployment/export_hil.py": "3490aa377b9097a072f45408b68d9a40125cb7bac610f58251db202d5915616e",
+    "deployment/check_hil.py": "64a91c3e2b868933d9536aa7b99f2d9ae1b97595447f19b26cdc8bce109e9273",
+    "deployment/hil/simulator.jl": "bdedc919894a01821614c6eb3989ef4cb42d7754953d4f24f4a3fd377936cfac",
+    "deployment/hil/owner_protocol.jl": "3c2b3890f28e2be3ba90beb50843c79185e3a688f8b61e74a7b00a0f34bdfc84",
+    "deployment/pipewireao-rtc@.service.in": "5f35a100c0fee5d6d1f194d016fcd6cd9bb4395d85a324be857c36ebde8c3591"
+  },
+  "related_revisions": {
+    "AdaptiveOpticsSim": "d30db3f",
+    "REVOLTClassicSim": "e0fbdab",
+    "REVOLTCopperSim": "cb840cd",
+    "AdaptiveOpticsSimPipeWireHIL": "6adb85a9e96bed12a0f9084a0550e7d9f2230d71",
+    "PipeWireAO_jl": "dc9ece8b6fd2a3f9ed0cbc14746150bd966a2e8e",
+    "PipeWireAO_version": "0.6.12",
+    "native": "7e17c0fa2690b06884e456ef34a221cb813d30e5"
+  },
+  "limits": [
+    "Classic commands are all zero; transport success is not proof of nonzero response",
+    "Provisional Gaussian plant is not calibrated to measured RTC matrices; convergence unqualified",
+    "CUDA100 preserves 10ms model steps but achieved only44.63698Hz",
+    "GPU live transport checked for Copper FGN only; both plants have direct device preparation checks",
+    "Native buffer reserve=3 is source/test-derived; no live negotiated-pool count claimed",
+    "Selected /opt native prefix has fixes; no new JLL artifact release claimed",
+    "Julia finalizer context warnings retained in injected-owner-death journals; nominal exits are clean",
+    "Classic JFG exact plant replay failed by one ADC code in one of1,982,464samples; original failed tests retained and no tolerance changed"
+  ],
+  "oracles": {
+    "copper_jfg": {
+      "passed": true,
+      "profile": "copper",
+      "backend": "cpu",
+      "frames": 16,
+      "commands": 16,
+      "compared_pixels": 65536,
+      "mismatch_count": 0,
+      "maximum_abs_adc_difference": 0,
+      "frame_mismatch_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "mismatch_samples": [],
+      "recorded_report": "/home/dgamroth/.cache/rtc-aos-hil-20261001/evidence/final-v3-copper-jfg-cpu/batch-1/simulator-result.json",
+      "recorded_report_sha256": "674360ef87aa960c2f721257079dbd0921fdc599122782d3102ef3fe1ae9acba",
+      "graph": "/home/dgamroth/.cache/rtc-aos-hil-20261001/evidence/direct-final-v3/copper-jfg/plant.toml",
+      "graph_sha256": "faf5ece9d6adb85974b6bb3a1ded390a1bc54dc508d237c7ea210e2950dacd3e",
+      "frame_sha256": "708b669f2c57ac787c966311dd84dd5ac6cc41a7d27139044e357b612523a732",
+      "direct_encoded_frame_sha256": "708b669f2c57ac787c966311dd84dd5ac6cc41a7d27139044e357b612523a732",
+      "direct_frames_file": "/home/dgamroth/.cache/rtc-aos-hil-20261001/evidence/direct-final-v3/copper-jfg/direct.frames.u16le",
+      "command_sha256": "a2d7dbde71493ede9594ba8d82db252030d5e9dc590be40ef7dd9e8b1b37e32e",
+      "nonzero_command_components": 4432,
+      "command_components_at_limit": 0,
+      "model_period_ns": 100000000,
+      "model_timestamps_ns": [
+        0,
+        100000000,
+        200000000,
+        300000000,
+        400000000,
+        500000000,
+        600000000,
+        700000000,
+        800000000,
+        900000000,
+        1000000000,
+        1100000000,
+        1200000000,
+        1300000000,
+        1400000000,
+        1500000000
+      ],
+      "environment_manifest_sha256": "18ebcdd3883ee8e8d9a1766a1ac722dbb6b98275f47afe38214ebcaa9d268c2e",
+      "program_sha256": "e3120487de8083ac08771cfca3204dd2138a10f10325d4244ed118e2fae71c70",
+      "scope": "Independent direct public plant replay with exact installed environment/config and recorded Float32 metre OPD commands; no algorithm changes, physical/convergence claim or independent wire-scaling qualification."
+    },
+    "classic_jfg_cpu12": {
+      "passed": false,
+      "profile": "classic",
+      "backend": "cpu",
+      "frames": 16,
+      "commands": 16,
+      "compared_pixels": 1982464,
+      "mismatch_count": 1,
+      "maximum_abs_adc_difference": 1,
+      "frame_mismatch_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      "mismatch_samples": [
+        {
+          "sequence": 13,
+          "row": 209,
+          "column": 144,
+          "direct_float32": 217.0,
+          "direct_float32_bits": "43590000",
+          "direct_uint16": 217,
+          "recorded_uint16": 216
+        }
+      ],
+      "recorded_report": "/home/dgamroth/.cache/rtc-aos-hil-20261001/evidence/final-v3-classic-jfg-cpu/batch-1/simulator-result.json",
+      "recorded_report_sha256": "631372199071d5cf65c2e28dd192247647b7d7eb58a6b0cd955bc3673a5394b1",
+      "graph": "/home/dgamroth/.cache/rtc-aos-hil-20261001/evidence/direct-final-v3/classic-jfg/plant.toml",
+      "graph_sha256": "cade180923ffe2858b3b5316f1bd8ee9542f907cdcdabae77453e752191f4354",
+      "frame_sha256": "27c4401b52271e7083087630e9d199b2c1deb30f00f9bbcd9530bd727bb8986c",
+      "direct_encoded_frame_sha256": "e5edc87c7fb901c60191cfbe6503be17087cf096c52998e21e366fede53c7813",
+      "direct_frames_file": "/home/dgamroth/.cache/rtc-aos-hil-20261001/evidence/direct-final-v3/classic-jfg/direct.frames.u16le",
+      "command_sha256": "b2b7b570b50f0c083b186e03d32d04a676357bba5749a7e01405463da9d13e27",
+      "nonzero_command_components": 0,
+      "command_components_at_limit": 0,
+      "model_period_ns": 100000000,
+      "model_timestamps_ns": [
+        0,
+        100000000,
+        200000000,
+        300000000,
+        400000000,
+        500000000,
+        600000000,
+        700000000,
+        800000000,
+        900000000,
+        1000000000,
+        1100000000,
+        1200000000,
+        1300000000,
+        1400000000,
+        1500000000
+      ],
+      "environment_manifest_sha256": "fdc219189b196a5ca21ee848cf3a4d372371e4b008c9f924c78eafcf0f87f00b",
+      "program_sha256": "e3120487de8083ac08771cfca3204dd2138a10f10325d4244ed118e2fae71c70",
+      "scope": "Independent direct public plant replay with exact installed environment/config and recorded Float32 metre OPD commands; no algorithm changes, physical/convergence claim or independent wire-scaling qualification."
+    },
+    "classic_jfg_cpu6": {
+      "passed": false,
+      "profile": "classic",
+      "backend": "cpu",
+      "frames": 16,
+      "commands": 16,
+      "compared_pixels": 1982464,
+      "mismatch_count": 1,
+      "maximum_abs_adc_difference": 1,
+      "frame_mismatch_counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      "mismatch_samples": [
+        {
+          "sequence": 13,
+          "row": 209,
+          "column": 144,
+          "direct_float32": 217.0,
+          "direct_float32_bits": "43590000",
+          "direct_uint16": 217,
+          "recorded_uint16": 216
+        }
+      ],
+      "recorded_report": "/home/dgamroth/.cache/rtc-aos-hil-20261001/evidence/final-v3-classic-jfg-cpu/batch-1/simulator-result.json",
+      "recorded_report_sha256": "631372199071d5cf65c2e28dd192247647b7d7eb58a6b0cd955bc3673a5394b1",
+      "graph": "/home/dgamroth/.cache/rtc-aos-hil-20261001/evidence/direct-final-v3/classic-jfg-cpu6/plant.toml",
+      "graph_sha256": "cade180923ffe2858b3b5316f1bd8ee9542f907cdcdabae77453e752191f4354",
+      "frame_sha256": "27c4401b52271e7083087630e9d199b2c1deb30f00f9bbcd9530bd727bb8986c",
+      "direct_encoded_frame_sha256": "e5edc87c7fb901c60191cfbe6503be17087cf096c52998e21e366fede53c7813",
+      "direct_frames_file": "/home/dgamroth/.cache/rtc-aos-hil-20261001/evidence/direct-final-v3/classic-jfg-cpu6/direct.frames.u16le",
+      "command_sha256": "b2b7b570b50f0c083b186e03d32d04a676357bba5749a7e01405463da9d13e27",
+      "nonzero_command_components": 0,
+      "command_components_at_limit": 0,
+      "model_period_ns": 100000000,
+      "model_timestamps_ns": [
+        0,
+        100000000,
+        200000000,
+        300000000,
+        400000000,
+        500000000,
+        600000000,
+        700000000,
+        800000000,
+        900000000,
+        1000000000,
+        1100000000,
+        1200000000,
+        1300000000,
+        1400000000,
+        1500000000
+      ],
+      "environment_manifest_sha256": "fdc219189b196a5ca21ee848cf3a4d372371e4b008c9f924c78eafcf0f87f00b",
+      "program_sha256": "e3120487de8083ac08771cfca3204dd2138a10f10325d4244ed118e2fae71c70",
+      "scope": "Independent direct public plant replay with exact installed environment/config and recorded Float32 metre OPD commands; no algorithm changes, physical/convergence claim or independent wire-scaling qualification."
+    }
+  },
+  "copper_fgn_jfg_command_comparison": {
+    "scope": "Read-only IEEEFloat32 byte/numeric comparison of final-v3 CopperFGN and CopperJFG command captures; no bitwise equivalence or convergence claim",
+    "batches": {
+      "batch-1": {
+        "components": 4432,
+        "byte_mismatch_count": 430,
+        "component_bit_mismatch_count": 427,
+        "component_numeric_mismatch_count": 427,
+        "max_abs_delta_metres_opd": 2.842170943040401e-14,
+        "max_abs_delta_micrometres_opd": 2.8421709430404007e-08,
+        "max_float32_ulp_distance": 4,
+        "maximum_delta_at": {
+          "sequence": 2,
+          "actuator": 260,
+          "fgn_metres": -2.668619458745525e-07,
+          "jfg_metres": -2.668619742962619e-07,
+          "fgn_bits": "b48f453a",
+          "jfg_bits": "b48f453b",
+          "ulp_distance": 1
+        },
+        "traces": {
+          "fgn": {
+            "file": "/home/dgamroth/.cache/rtc-aos-hil-20261001/evidence/final-v3-copper-fgn-cpu/batch-1/simulator-result.commands.f32le",
+            "sha256": "9eb5870e8f465381b01b28ae42846ae1e3618d55c59271ab1535eafd89fe3a5d",
+            "recorded_units": "metre OPD",
+            "transport_units": "micrometre OPD",
+            "transport_to_plant_scale": 1e-06,
+            "nonzero_components": 4432,
+            "max_abs_metres_opd": 2.6691415655477613e-07,
+            "max_abs_micrometres_opd": 0.2669141565547761,
+            "declared_limit_micrometres_opd": 0.8,
+            "declared_limit_tolerance_micrometres_opd": 4.7683716e-07,
+            "components_at_limit_reported": 0,
+            "all_values_finite": true,
+            "all_values_within_declared_limit": true
+          },
+          "jfg": {
+            "file": "/home/dgamroth/.cache/rtc-aos-hil-20261001/evidence/final-v3-copper-jfg-cpu/batch-1/simulator-result.commands.f32le",
+            "sha256": "a2d7dbde71493ede9594ba8d82db252030d5e9dc590be40ef7dd9e8b1b37e32e",
+            "recorded_units": "metre OPD",
+            "transport_units": "micrometre OPD",
+            "transport_to_plant_scale": 1e-06,
+            "nonzero_components": 4432,
+            "max_abs_metres_opd": 2.6691415655477613e-07,
+            "max_abs_micrometres_opd": 0.2669141565547761,
+            "declared_limit_micrometres_opd": 0.8,
+            "declared_limit_tolerance_micrometres_opd": 4.7683716e-07,
+            "components_at_limit_reported": 0,
+            "all_values_finite": true,
+            "all_values_within_declared_limit": true
+          }
+        }
+      },
+      "batch-2": {
+        "components": 4432,
+        "byte_mismatch_count": 430,
+        "component_bit_mismatch_count": 427,
+        "component_numeric_mismatch_count": 427,
+        "max_abs_delta_metres_opd": 2.842170943040401e-14,
+        "max_abs_delta_micrometres_opd": 2.8421709430404007e-08,
+        "max_float32_ulp_distance": 4,
+        "maximum_delta_at": {
+          "sequence": 2,
+          "actuator": 260,
+          "fgn_metres": -2.668619458745525e-07,
+          "jfg_metres": -2.668619742962619e-07,
+          "fgn_bits": "b48f453a",
+          "jfg_bits": "b48f453b",
+          "ulp_distance": 1
+        },
+        "traces": {
+          "fgn": {
+            "file": "/home/dgamroth/.cache/rtc-aos-hil-20261001/evidence/final-v3-copper-fgn-cpu/batch-2/simulator-result.commands.f32le",
+            "sha256": "9eb5870e8f465381b01b28ae42846ae1e3618d55c59271ab1535eafd89fe3a5d",
+            "recorded_units": "metre OPD",
+            "transport_units": "micrometre OPD",
+            "transport_to_plant_scale": 1e-06,
+            "nonzero_components": 4432,
+            "max_abs_metres_opd": 2.6691415655477613e-07,
+            "max_abs_micrometres_opd": 0.2669141565547761,
+            "declared_limit_micrometres_opd": 0.8,
+            "declared_limit_tolerance_micrometres_opd": 4.7683716e-07,
+            "components_at_limit_reported": 0,
+            "all_values_finite": true,
+            "all_values_within_declared_limit": true
+          },
+          "jfg": {
+            "file": "/home/dgamroth/.cache/rtc-aos-hil-20261001/evidence/final-v3-copper-jfg-cpu/batch-2/simulator-result.commands.f32le",
+            "sha256": "a2d7dbde71493ede9594ba8d82db252030d5e9dc590be40ef7dd9e8b1b37e32e",
+            "recorded_units": "metre OPD",
+            "transport_units": "micrometre OPD",
+            "transport_to_plant_scale": 1e-06,
+            "nonzero_components": 4432,
+            "max_abs_metres_opd": 2.6691415655477613e-07,
+            "max_abs_micrometres_opd": 0.2669141565547761,
+            "declared_limit_micrometres_opd": 0.8,
+            "declared_limit_tolerance_micrometres_opd": 4.7683716e-07,
+            "components_at_limit_reported": 0,
+            "all_values_finite": true,
+            "all_values_within_declared_limit": true
+          }
+        }
+      }
+    }
+  },
+  "requirement_status": {
+    "RTC-DEV-024": "functional composition demonstrated; direct Classic JFG oracle partial pending localization",
+    "RTC-DEV-025": "demonstrated for four installed CPU profiles and Copper FGN/JFG user units; bounded failure/control software checks",
+    "RTC-DEV-026": "demonstrated on CPU and listed available CUDA/AMDGPU combinations; no unlisted device or hard-rate qualification"
+  },
+  "classic_diagnostic": {
+    "record": "/home/dgamroth/.cache/rtc-aos-hil-20261001/evidence/diagnostic-classic-jfg-adc/result.json",
+    "record_sha256": "3ae1413904fdc64118880bd1fb1ef2522198d33f0b386d686354f1dd7ab156b2",
+    "passed": true,
+    "production_science_unchanged": true,
+    "instrumented_no_rate_claim": true,
+    "sequence13": {
+      "row": 209,
+      "column": 144,
+      "photon_rate": 644185.5625,
+      "pre_integer_adc": 217.1523895263672,
+      "detector_uint16": 217,
+      "graph_float32_adc": 217.0,
+      "recorder_uint16": 217
+    },
+    "frame_sha256": "e5edc87c7fb901c60191cfbe6503be17087cf096c52998e21e366fede53c7813",
+    "original216_not_reproduced": true,
+    "disposition": "Does not localize original failed capture; RTC-DEV-024/HIL010 remain partial/open",
+    "next_measurement": "Retain preinteger detector value, photon rate, RNG state and FFT plans if216 recurs; preserve original exact failures."
+  },
+  "implementation_commit": "13a7839",
+  "verification": {
+    "python_deployment_tests": {
+      "tests": 76,
+      "skipped": 1,
+      "result": "passed"
+    },
+    "independent_scoped_python_tests": {
+      "tests": 58,
+      "result": "passed"
+    },
+    "adapter_focused_assertions": {
+      "assertions": 184,
+      "result": "passed"
+    },
+    "owner_protocol_assertions": {
+      "assertions": 69,
+      "result": "passed"
+    },
+    "owner_report_and_period_assertions": {
+      "assertions": 14,
+      "result": "passed"
+    },
+    "native_focused_tests": {
+      "tests_per_build": 7,
+      "builds": [
+        "debug",
+        "release"
+      ],
+      "result": "passed",
+      "idle_output_regression_failed_against_original_source": true
+    },
+    "thread_loop_gc_regressions": "old source bounded children timed out; corrected source exited0; full PipeWireAO package tests passed",
+    "rust_formatting": "passed; no Rust source changes in increment",
+    "documentation": "local links, whitespace, final newlines,98unique requirement definitions and3Mermaid documents passed"
+  },
+  "publication": {
+    "rtc_implementation": "13a7839",
+    "native": "7e17c0fa2690b06884e456ef34a221cb813d30e5 mergedmaster andpushedownao/master",
+    "PipeWireAO_jl": "0.6.12 source/tag/ownregistry pushed",
+    "adapter": "6adb85a merged localmain; repository has no configured remote",
+    "upstream_gitlab_yggdrasil": "no writes"
+  }
+}

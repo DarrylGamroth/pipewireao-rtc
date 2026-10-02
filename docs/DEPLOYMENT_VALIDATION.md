@@ -130,7 +130,11 @@ new HEART numerical equivalence, worst-case timing, or maximum delivery rate.
 The earlier characterization remains separate; no new latency/capacity campaign
 was run for this deployment increment.
 
-## Next increment
+## Subsequent AOS/HIL increment
+
+The subsequent implementation and its qualification evidence are recorded in
+[HIL_DEPLOYMENT_VALIDATION.md](HIL_DEPLOYMENT_VALIDATION.md). The scope recorded
+at this historical validation cut was:
 
 Create the AOS/HIL graph using AdaptiveOpticsSim.jl and the appropriate
 AdaptiveOpticsSimPipeWireHIL.jl adapter. Establish detector/DM units, schemas and
