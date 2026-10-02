@@ -710,3 +710,59 @@ deployment and timing/physical-system qualification.
 Verification intent: a relocated installed package works without source-tree
 paths; user-unit syntax and effective environment match foreground; bounded
 status and controls function; missing prerequisites fail with useful diagnostics.
+
+### RTC-DEV-024 — Installed complete-frame AOS/HIL composition
+
+The deployment MUST provide Classic and Copper complete-frame profiles with
+either FGN or JFG using the maintained calibrated science chains from
+RTC-DEV-020. It MUST substitute the external simulated WFS and command pair
+without changing reconstructor, projections, controller coefficients, limits or
+feedback. Export MUST retain hashes and source provenance for science, model,
+adapter and resolved Julia environment. Installed execution MUST be independent
+of source worktrees and evidence caches. The WFS contract MUST declare row-major
+UInt16 ADC codes and the command contract MUST declare ordered HSDM277 Float32
+micrometre OPD demands, converted explicitly to metre OPD for the model.
+
+Verification intent: inspect unchanged science hashes, export/relocate/load all
+four CPU compositions, check every frame/command identity and finite command,
+and validate encoding, order and unit conversion against a direct oracle.
+
+### RTC-DEV-025 — Acknowledged simulator admission and controls
+
+The source owner MUST warm and reset before reporting prepared, connect held,
+and publish no frame before explicit release following effective placement and
+RTC Running acknowledgement. One frame and same-sequence command MAY be in
+flight. Pause MUST acknowledge only after outstanding adoption. The supervisor
+MUST pause before session/group stop and shutdown, start the graph before
+resuming the source, and reset the held model only with the stopped RTC. A
+reset MUST change acquisition generation and clear sequence/timing state.
+
+Control files and the coordinating socket MUST use current-instance ownership,
+finite sizes, positive request identities, matching acknowledgements and finite
+waits. Malformed/stale controls MUST preserve state. Timeout/disconnect outcomes
+MUST remain unknown without automatic retry. Required-owner death or unconfirmed
+source control MUST fail the deployment and revoke ingress before consumer
+cleanup. Both foreground and user-service paths MUST use this same behavior.
+
+Verification intent: silence before admission, delayed/malformed acknowledgements,
+stop/restart state preservation, stopped reset, invalid-request survival,
+dependency failure, finite completion and ownership-safe cleanup.
+
+### RTC-DEV-026 — Explicit simulator backend and cadence
+
+The simulator MUST select CPU, CUDA or AMDGPU explicitly during preparation.
+A selected unavailable backend MUST fail before source admission; it MUST NOT
+silently fall back. AOS MUST complete and stage device work outside transport
+callbacks. Backend packages MUST remain optional to CPU deployment.
+
+The profile MUST declare wall pacing, model period and exposure, require a
+positive period and exposure no longer than that period, and report achieved
+cadence and missed wall periods. It MUST preserve one model step per accepted
+command exchange and MUST NOT produce catch-up bursts or silently skip model
+sequences. Preparation/warm/reset costs MUST precede admission. Hardware results
+MUST identify the tested backend/device; CPU checks alone do not qualify GPUs.
+
+Verification intent: CPU functional exchange, explicit unsupported-device rejection,
+selected GPU execution where available, model/command causality, pacing and
+missed-period boundary tests. These are functional simulation checks, not a
+hard real-time rate or maximum-throughput qualification.

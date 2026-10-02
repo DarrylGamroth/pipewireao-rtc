@@ -1,0 +1,20 @@
+[deps]
+AdaptiveOpticsSim = "002fb5eb-ad68-44a0-adbe-b299bfc2febc"
+AdaptiveOpticsSimPipeWireHIL = "355e2bce-7765-4934-ac1c-873e1c98ec3d"
+JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
+PipeWireAO = "5d815c25-fdf3-4508-8205-db8be38ea5d0"
+REVOLTClassicSim = "c09822aa-3d1e-4a1e-903c-d4d0f13badd1"
+REVOLTCopperSim = "1e096dfd-8d59-466f-967d-e58cf577fca9"
+SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
+TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
+
+[compat]
+AdaptiveOpticsSim = "0.1"
+AdaptiveOpticsSimPipeWireHIL = "0.1"
+JSON3 = "1"
+PipeWireAO = "0.6.12"
+REVOLTClassicSim = "0.1"
+REVOLTCopperSim = "0.1"
+SHA = "0.7"
+TOML = "1"
+julia = "1.12"

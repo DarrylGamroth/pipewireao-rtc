@@ -4,7 +4,7 @@ Description=PipeWireAO RTC deployment %i
 [Service]
 Type=notify
 NotifyAccess=main
-ExecStart=@LAUNCHER@ run --pipewire-prefix @PIPEWIRE_PREFIX@ --deployment %h/.config/pipewireao-rtc/%i/deployment.conf --fits %h/.config/pipewireao-rtc/%i/input.fits --runtime %t/pipewireao-rtc-%i
+ExecStart=@LAUNCHER@ run --pipewire-prefix @PIPEWIRE_PREFIX@ --deployment %h/.config/pipewireao-rtc/%i/deployment.conf@FITS_ARGUMENT@ --runtime %t/pipewireao-rtc-%i
 RuntimeDirectory=pipewireao-rtc-%i
 RuntimeDirectoryMode=0700
 UMask=0077

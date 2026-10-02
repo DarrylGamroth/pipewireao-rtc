@@ -3,8 +3,10 @@
 This package supervises a private PipeWireAO core, the Rust lifecycle owner,
 and optional external scientific owners. It delegates scientific processing,
 row scheduling and buffer ownership to FGN or JuliaFilterGraph. Current REVOLT
-profiles use a non-actuating command discard sink. Physical device authority and
-the AOS/HIL graph are subsequent work.
+recorded profiles use a non-actuating command discard sink. The optional
+[AOS/HIL deployment](../docs/HIL_DEPLOYMENT_VALIDATION.md) substitutes a prepared
+simulated detector and command sink, using CPU, CUDA or AMDGPU independently of
+the science owner. Physical device authority remains deferred.
 
 ## Build and export
 
@@ -157,6 +159,12 @@ session to Ready. A fresh deployment replays from the beginning; session resume
 is not a promise to seek a file. Use `systemctl --user stop` or SIGTERM for
 supervisor shutdown. The Rust `quit` command alone closes its owner and is
 reported as a required-process exit by the supervisor.
+
+For an AOS/HIL source-owner profile, the public coordinating endpoint also
+supports `quit`: it acknowledges source pause before native shutdown and
+releases the owned deployment. A completed HIL batch stays held until stopped
+reset rather than automatically returning the RTC to Ready. These profiles
+require no FITS argument.
 
 Parameter files are little-endian row-major and must exactly match a declared
 parameter port, schema and byte length. Replacement while an initial value is

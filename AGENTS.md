@@ -17,7 +17,10 @@ The selected deployment increment adds installed Classic/Copper native and
 external Julia profiles, a bounded local control interface, and foreground and
 systemd user-service launchers. It delegates full-frame and row-block execution
 to the graph owners. Read RTC-ARCH-020 and RTC-DEV-020 through RTC-DEV-023 before
-changing deployment code. AOS/HIL deployment integration follows this increment.
+changing deployment code. The selected AOS/HIL increment is RTC-ARCH-021 and
+RTC-DEV-024 through RTC-DEV-026: installed complete-frame Classic/Copper science
+with an explicitly selected CPU, CUDA or AMDGPU simulator. Keep its functional
+deployment checks separate from scientific convergence and rate qualification.
 
 Physical devices, correction authority, durable recording, remote access,
 RTC-owned progressive scheduling, and target-host qualification are not active

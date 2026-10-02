@@ -27,6 +27,14 @@ Physical devices, correction authority,
 recording, in-process Julia graph execution, remote operation, progressive
 scheduling, and real-time qualification are deliberately deferred.
 
+## Installed deployment
+
+The [deployment guide](deployment/README.md) covers recorded Classic/Copper
+profiles. The [AOS/HIL guide](docs/HIL_DEPLOYMENT_VALIDATION.md) covers the same
+complete-frame FGN/JFG science graphs connected to an externally owned
+simulator with explicit CPU, CUDA or AMDGPU execution. Foreground and systemd
+user-service launchers use the same admission and controls.
+
 ## Run the development fixture
 
 Build-tree paths are explicit; the runner does not install into or admit system

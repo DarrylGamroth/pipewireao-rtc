@@ -407,6 +407,41 @@ reports actual access, limits and affinity; the graph libraries configure their
 own workers. Maintained host layouts exclude CPUs 0 and 1. No launcher changes
 host power states, IRQ policy, RT runtime allowance or unrelated services.
 
+## Selected AOS/HIL deployment
+
+This is decision **RTC-ARCH-021**: extend the installed non-actuating deployment
+with an externally owned AdaptiveOpticsSim plant through
+AdaptiveOpticsSimPipeWireHIL. The maintained complete-frame Classic and Copper
+science chains remain unchanged, including extrapolation, limits and clipping
+feedback. A simulator backend is selected independently of the RTC graph owner.
+CPU, CUDA and AMDGPU select explicit AOS execution targets; an unavailable
+selected device fails preparation rather than falling back to CPU.
+
+The simulator alone owns model time, seeded optical/detector state and one
+frame/command exchange. AOS stages completed GPU products to host before the
+transport callback and copies an accepted command back to its exact execution
+target. PipeWire callbacks do not execute optics or GPU synchronization. The
+transport adapter declares UInt16 ADC encoding and a fixed conversion from the
+RTC's micrometre OPD command to the plant's metre OPD command. HSDM277 order is
+preserved. These transfers and encoding changes are explicit, not zero-copy.
+
+An optional source-owner declaration selects a prepared application with a
+bounded, acknowledged pause/resume/reset interface. The supervisor releases
+that source only after stopped-session admission and acknowledged RTC start.
+The source completes its outstanding command before acknowledging pause; stop
+and reset then reach the RTC owner. A local supervisor endpoint coordinates
+these deployment actions and forwards scientific commands to the existing
+single Rust dispatcher. It adds no data scheduler or second scientific parser.
+Unconfirmed source control fails the owned deployment; mutations are not retried.
+
+Wall pacing and model time are distinct. The installed plant graph uses the
+selected model period and its declared exposure. Missed wall periods are
+reported, never hidden by bursts or skipped model/command sequences. A finite
+qualification batch retains its bounded output and remains held until reset or
+shutdown. The provisional instrument influence models and existing measured
+RTC calibration do not imply scientific closed-loop convergence; that needs a
+separately validated calibration and plant oracle.
+
 ## Authoritative lower contracts
 
 This repository does not duplicate the data-plane contracts:

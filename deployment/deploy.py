@@ -26,6 +26,9 @@ from placement import DeploymentError, cpu_set, credentials, snapshot
 
 MAX_CONFIG_BYTES = 16 * 1024 * 1024
 MAX_REPLY_BYTES = 64 * 1024
+MAX_REQUEST_BYTES = 16 * 1024
+SOURCE_TIMEOUT = 8
+BROKER_IO_TIMEOUT = 1
 REQUIRED_KEYS = {"version", "name", "session", "core", "client", "placement",
                  "owners", "environment", "artifacts", "cpu-latency-us"}
 
@@ -70,7 +73,7 @@ def decode(path: Path, prefix: Path) -> dict:
 
 def profile(path: Path, prefix: Path) -> dict:
     value = decode(path, prefix)
-    if (not isinstance(value, dict) or set(value) != REQUIRED_KEYS
+    if (not isinstance(value, dict) or set(value) not in (REQUIRED_KEYS, REQUIRED_KEYS | {"source-owner"})
             or type(value["version"]) is not int or value["version"] != 1):
         raise DeploymentError("expected version 1 deployment with the documented fields")
     if not isinstance(value["name"], str) or not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,39}", value["name"]):
@@ -79,10 +82,15 @@ def profile(path: Path, prefix: Path) -> dict:
         raise DeploymentError("deployment permits at most four external owners")
     roles = {"core", "rtc"}
     validate_environment(value["environment"], "deployment")
+    source_role = value.get("source-owner")
+    if "source-owner" in value and (not isinstance(source_role, str) or not source_role):
+        raise DeploymentError("source-owner must name an existing external owner")
     markers = set()
     for owner in value["owners"]:
-        if not isinstance(owner, dict) or set(owner) != {
-                "role", "argv", "environment", "prepared", "connect", "connected", "quit"}:
+        fields = {"role", "argv", "environment", "prepared", "connect", "connected", "quit"}
+        if isinstance(owner, dict) and source_role is not None and owner.get("role") == source_role:
+            fields |= {"control-request", "control-reply"}
+        if not isinstance(owner, dict) or set(owner) != fields:
             raise DeploymentError("external owner fields do not match the deployment contract")
         if (not isinstance(owner["role"], str) or owner["role"] in roles
                 or not re.fullmatch(r"[a-z][a-z0-9-]{0,31}", owner["role"])):
@@ -94,16 +102,26 @@ def profile(path: Path, prefix: Path) -> dict:
                 or not owner["argv"][0]):
             raise DeploymentError("owner argv must be a nonempty bounded string list")
         validate_environment(owner["environment"], f"owner {owner['role']}")
-        for key in ("prepared", "connect", "connected", "quit"):
+        marker_keys = ("prepared", "connect", "connected", "quit")
+        if owner["role"] == source_role:
+            marker_keys += ("control-request", "control-reply")
+        for key in marker_keys:
             if (not isinstance(owner[key], str) or owner[key] in (".", "..")
                     or not re.fullmatch(r"[a-zA-Z0-9_.-]{1,64}", owner[key])):
                 raise DeploymentError(f"owner {key} must be a marker basename")
-        names = {owner[key] for key in ("prepared", "connect", "connected", "quit")}
-        if len(names) != 4 or names & markers:
+        names = {owner[key] for key in marker_keys}
+        if len(names) != len(marker_keys) or names & markers:
             raise DeploymentError("owner markers must be distinct")
         markers.update(names)
-    if markers & (roles | {"control.sock", "native-prefix", "julia-depot"}):
+    if source_role is not None and source_role not in {owner["role"] for owner in value["owners"]}:
+        raise DeploymentError("source-owner must name an existing external owner")
+    if markers & (roles | {"control.sock", "native-control.sock", "native-prefix", "julia-depot"}):
         raise DeploymentError("owner markers conflict with deployment runtime paths")
+    if source_role is not None:
+        source = next(owner for owner in value["owners"] if owner["role"] == source_role)
+        staging = Path(source["control-request"]).with_suffix(".new").name
+        if staging in markers or staging in roles | {"control.sock", "native-control.sock", "native-prefix", "julia-depot"}:
+            raise DeploymentError("source request staging path conflicts with runtime paths")
     if not isinstance(value["placement"], dict) or set(value["placement"]) != roles:
         raise DeploymentError("each owned process requires an explicit placement contract")
     for role, placement in value["placement"].items():
@@ -180,18 +198,22 @@ def substitute(value: str, bindings: dict[str, str], *, quoted: bool = False) ->
     return value
 
 
-def control(path: Path, argv: list[str], timeout: float = 8) -> dict:
+def control(path: Path, argv: list[str], timeout: float = 8, *, request_id=None,
+            allow_rejection: bool = False, check=None) -> dict:
     if not isinstance(argv, list) or not all(isinstance(arg, str) for arg in argv):
         raise DeploymentError("control argv must be a string list")
     if not math.isfinite(timeout) or timeout <= 0:
         raise DeploymentError("control timeout must be finite and positive")
     deadline = time.monotonic() + timeout
-    request_id = uuid.uuid4().hex
-    payload = json.dumps({"version": 1, "id": request_id, "argv": argv}).encode() + b"\n"
+    request_id = uuid.uuid4().hex if request_id is None else request_id
+    payload = json.dumps({"version": 1, "id": request_id, "argv": argv},
+                         ensure_ascii=False, separators=(",", ":")).encode() + b"\n"
     if len(payload) > 16 * 1024 or len(argv) > 128:
         raise DeploymentError("control request exceeds protocol limits")
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as client:
         def remaining() -> None:
+            if check is not None:
+                check()
             budget = deadline - time.monotonic()
             if budget <= 0:
                 raise TimeoutError("control deadline expired")
@@ -217,11 +239,50 @@ def control(path: Path, argv: list[str], timeout: float = 8) -> dict:
         except OSError as error:
             raise DeploymentError(f"control transport failed; mutation outcome may be unknown: {error}") from error
     reply = json.loads(data)
-    if not isinstance(reply, dict) or reply.get("version") != 1 or reply.get("id") != request_id:
+    if (not isinstance(reply, dict) or type(reply.get("version")) is not int
+            or reply.get("version") != 1 or reply.get("id") != request_id
+            or type(reply.get("ok")) is not bool):
         raise DeploymentError("control reply does not match request identity")
-    if not reply.get("ok"):
+    if not reply.get("ok") and not allow_rejection:
         raise DeploymentError(f"control rejected: {reply.get('error')}")
     return reply
+
+
+def validate_source_reply(payload: bytes) -> dict:
+    if len(payload) > MAX_REPLY_BYTES:
+        raise DeploymentError("source reply exceeds 64 KiB")
+    reply = json.loads(payload)
+    keys = {"version", "id", "operation", "state", "sequence", "completed", "ok", "error"}
+    if (not isinstance(reply, dict) or set(reply) != keys
+            or type(reply["version"]) is not int or reply["version"] != 1
+            or type(reply["id"]) is not int or reply["id"] <= 0
+            or reply["operation"] not in ("resume", "pause", "reset", "status")
+            or reply["state"] not in ("running", "paused")
+            or type(reply["sequence"]) is not int or reply["sequence"] < 0
+            or type(reply["completed"]) is not bool
+            or type(reply["ok"]) is not bool
+            or not (reply["error"] is None or isinstance(reply["error"], str))
+            or (reply["ok"] and reply["error"] is not None)):
+        raise DeploymentError("invalid source control reply")
+    return reply
+
+
+def validate_control_request(payload: bytes) -> dict:
+    if len(payload) > MAX_REQUEST_BYTES:
+        raise DeploymentError("control request exceeds 16 KiB")
+    request = json.loads(payload)
+    if (not isinstance(request, dict) or set(request) != {"version", "id", "argv"}
+            or type(request["version"]) is not int or request["version"] != 1
+            or not isinstance(request["id"], str) or not 1 <= len(request["id"].encode()) <= 128
+            or not isinstance(request["argv"], list) or len(request["argv"]) > 128
+            or not all(isinstance(arg, str) for arg in request["argv"])):
+        raise DeploymentError("invalid version 1 control request")
+    return request
+
+
+def control_error(request_id, field: str, message: str) -> dict:
+    return {"version": 1, "id": request_id, "session_id": None, "state": None,
+            "result": None, "ok": False, "error": {"field": field, "message": message}}
 
 
 def notify(message: str) -> None:
@@ -253,6 +314,15 @@ class Deployment:
         self.runtime: Path | None = None
         self.latency_fd: int | None = None
         self.socket: Path | None = None
+        self.native_socket: Path | None = None
+        self.broker: socket.socket | None = None
+        self.source_owner = next((owner for owner in self.spec["owners"]
+                                  if owner["role"] == self.spec.get("source-owner")), None)
+        self.source_id = 0
+        self.source_state: str | None = None
+        self.source_failed = False
+        self.native_shutdown = False
+        self.state_path: Path | None = None
         self.record = {"version": 1, "name": self.spec["name"], "phase": "preflight",
                        "pid": os.getpid(), "admitted": False, "processes": {}, "error": None}
 
@@ -264,11 +334,13 @@ class Deployment:
         priority = max(contract["rt-priority"] for contract in self.spec["placement"].values())
         locked = max(contract["locked-bytes"] for contract in self.spec["placement"].values())
         rights = credentials(priority, locked, self.spec["cpu-latency-us"])
-        if not self.args.fits.is_file():
+        if self.source_owner is None and (self.args.fits is None or not self.args.fits.is_file()):
             raise DeploymentError(f"recorded FITS source is missing: {self.args.fits}")
-        for label, path in (("RTC", self.package / "bin/pipewireao-rtc"),
-                            ("FITS plugin", self.paths["spa"] / "fits/libspa-fits.so"),
-                            ("discard plugin", self.paths["spa"] / "discard/libspa-pipewireao-discard.so")):
+        dependencies = [("RTC", self.package / "bin/pipewireao-rtc")]
+        if self.source_owner is None:
+            dependencies += [("FITS plugin", self.paths["spa"] / "fits/libspa-fits.so"),
+                             ("discard plugin", self.paths["spa"] / "discard/libspa-pipewireao-discard.so")]
+        for label, path in dependencies:
             if not path.is_file():
                 raise DeploymentError(f"missing {label}: {path}")
         return rights
@@ -283,8 +355,9 @@ class Deployment:
                     "PIPEWIREAO_SPA_PLUGIN_DIR": str(self.paths["spa"]),
                     "PIPEWIREAO_FITS_PLUGIN": str(self.paths["spa"] / "fits/libspa-fits.so"),
                     "PIPEWIREAO_DISCARD_PLUGIN": str(self.paths["spa"] / "discard/libspa-pipewireao-discard.so"),
-                    "PIPEWIREAO_RTC_FITS_PATH": str(self.args.fits.resolve()),
                     "PIPEWIREAO_REMOTE": bindings["REMOTE"], "PIPEWIRE_REMOTE": bindings["REMOTE"]})
+        if self.source_owner is None:
+            env["PIPEWIREAO_RTC_FITS_PATH"] = str(self.args.fits.resolve())
         env.update({key: substitute(value, bindings) for key, value in self.spec["environment"].items()})
         if self.spec["owners"]:
             # An ordinary JLL artifact override selects the same installed
@@ -323,8 +396,11 @@ class Deployment:
     def check(self) -> None:
         if self.stopping:
             raise InterruptedError("deployment stop requested")
+        self.check_processes()
+
+    def check_processes(self, ignore_roles=()) -> None:
         for role, process in self.processes:
-            if process.poll() is not None:
+            if role not in ignore_roles and process.poll() is not None:
                 raise DeploymentError(f"required {role} exited with status {process.returncode}")
 
     def wait(self, predicate, stage: str, timeout: float = 90) -> None:
@@ -336,6 +412,170 @@ class Deployment:
             if time.monotonic() >= deadline:
                 raise DeploymentError(f"timed out waiting for {stage}")
             time.sleep(0.05)
+
+    def source_control(self, operation: str, *, initial: bool = False,
+                       shutdown: bool = False, allow_rejection: bool = False) -> dict:
+        """One acknowledged owner operation; frame completion remains owner-owned."""
+        if operation not in ("resume", "pause", "reset", "status") or self.source_owner is None:
+            raise DeploymentError("invalid source control operation")
+        self.source_id += 1
+        request = {"version": 1, "id": self.source_id, "operation": operation}
+        deadline = time.monotonic() + SOURCE_TIMEOUT
+        try:
+            atomic_record(self.runtime / self.source_owner["control-request"], request)
+            reply_path = self.runtime / self.source_owner["control-reply"]
+            while True:
+                self.check_processes() if shutdown else self.check()
+                if time.monotonic() >= deadline:
+                    raise DeploymentError(f"source {operation} ACK timed out")
+                try:
+                    # Do not follow an owner-created alias outside this instance.
+                    fd = os.open(reply_path, os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW)
+                except FileNotFoundError:
+                    time.sleep(0.05)
+                    continue
+                with os.fdopen(fd, "rb") as source:
+                    info = os.fstat(source.fileno())
+                    if not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid():
+                        raise DeploymentError("source reply must be an owner-owned regular file")
+                    payload = source.read(MAX_REPLY_BYTES + 1)
+                reply = validate_source_reply(payload)
+                if reply["id"] < self.source_id:
+                    time.sleep(0.05)
+                    continue
+                if reply["id"] != self.source_id or reply["operation"] != operation:
+                    raise DeploymentError("source ACK does not match request identity/operation")
+                expected = ("running" if operation == "resume" else "paused"
+                            if operation != "status" else reply["state"])
+                if not reply["ok"] and allow_rejection:
+                    self.source_state = reply["state"]
+                    self.record["source"] = reply
+                    return reply
+                if not reply["ok"] or reply["state"] != expected:
+                    raise DeploymentError(f"source {operation} rejected: {reply['error']}")
+                if (initial or operation == "reset") and reply["sequence"] != 0:
+                    raise DeploymentError("source admission/reset requires sequence zero")
+                if time.monotonic() >= deadline:
+                    raise DeploymentError(f"source {operation} ACK timed out")
+                self.source_state = reply["state"]
+                self.record["source"] = reply
+                return reply
+        except (DeploymentError, OSError, ValueError) as error:
+            self.source_failed = True
+            self.record.update({"phase": "failed", "admitted": False})
+            if self.record["error"] is None:
+                self.record["error"] = str(error)
+            else:
+                self.record.setdefault("cleanup_errors", []).append(str(error))
+            if self.state_path is not None:
+                atomic_record(self.state_path, self.record)
+            raise DeploymentError(f"source coordination failed: {error}") from error
+
+    def open_broker(self) -> None:
+        # The fresh instance path must not replace any pre-existing object.
+        if self.socket.exists() or self.socket.is_symlink():
+            raise DeploymentError("public control path already exists")
+        self.broker = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self.broker.bind(str(self.socket))
+        self.socket.chmod(0o600)
+        self.broker.listen(1)
+        self.broker.settimeout(0.1)
+
+    def native_control(self, argv: list[str], request_id=None) -> dict:
+        check = (lambda: self.check_processes(ignore_roles=("rtc",))) if argv in (["quit"], ["exit"]) else self.check
+        return control(self.native_socket, argv, request_id=request_id,
+                       allow_rejection=True, check=check)
+
+    def coordinate(self, argv: list[str], request_id: str) -> dict:
+        # Exact arities avoid changing source admission for malformed commands.
+        stopping = argv in (["session-stop"], ["source-ended"], ["quit"], ["exit"]) or (len(argv) == 2 and argv[0] == "stop")
+        starting = argv == ["session-start"] or (len(argv) == 2 and argv[0] == "start")
+        resetting = argv == ["reset"]
+        if not (stopping or starting or resetting):
+            return self.native_control(argv, request_id)
+        observed = self.native_control(["status"])
+        # Native control decides legal states and group names. A reset outside
+        # Ready must reach that executor without any owner operation.
+        if not observed["ok"] or (resetting and observed["state"] != "Ready"):
+            return self.native_control(argv, request_id)
+        source = self.source_control("status")
+        if starting and source["completed"]:
+            reply = dict(observed)
+            reply.update({"id": request_id, "ok": False, "result": None,
+                          "error": {"field": "source.state",
+                                    "message": "finite source completed; reset before start"}})
+            return reply
+        was_running = source["state"] == "running"
+        if stopping:
+            source = self.source_control("pause")
+        try:
+            reply = self.native_control(argv, request_id)
+        except (DeploymentError, OSError, ValueError) as error:
+            self.source_failed = True
+            self.record.update({"phase": "failed", "admitted": False, "error": str(error)})
+            if self.state_path is not None:
+                atomic_record(self.state_path, self.record)
+            raise
+        if reply["ok"]:
+            if starting and reply["state"] == "Running":
+                resumed = self.source_control("resume", allow_rejection=True)
+                if not resumed["ok"]:
+                    reply = dict(reply)
+                    reply.update({"ok": False, "error": {"field": "source.state",
+                        "message": resumed["error"] or "source rejected resume"},
+                        "result": {"native": reply.get("result"), "source": resumed}})
+            elif resetting:
+                self.source_control("reset")
+            if argv in (["quit"], ["exit"]):
+                self.native_shutdown = True
+                self.stopping = True
+        elif stopping and was_running and not source["completed"]:
+            self.source_control("resume")
+        return reply
+
+    def serve_control(self) -> None:
+        try:
+            client, _ = self.broker.accept()
+        except TimeoutError:
+            return
+        failure = None
+        request_id = None
+        with client:
+            deadline = time.monotonic() + BROKER_IO_TIMEOUT
+            data = bytearray()
+            try:
+                while b"\n" not in data:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise DeploymentError("control inbound deadline expired")
+                    client.settimeout(remaining)
+                    block = client.recv(min(4096, MAX_REQUEST_BYTES + 1 - len(data)))
+                    if not block:
+                        raise DeploymentError("control client disconnected before request")
+                    data.extend(block)
+                    if len(data) > MAX_REQUEST_BYTES:
+                        raise DeploymentError("control request exceeds 16 KiB")
+                request = validate_control_request(data)
+                request_id = request["id"]
+            except (DeploymentError, ValueError, OSError) as error:
+                reply = control_error(request_id, "protocol.request", str(error))
+            else:
+                try:
+                    reply = self.coordinate(request["argv"], request_id)
+                except (DeploymentError, ValueError, OSError) as error:
+                    reply = control_error(request_id, "control.outcome", str(error))
+                    failure = error
+            payload = json.dumps(reply).encode() + b"\n"
+            if len(payload) > MAX_REPLY_BYTES:
+                payload = json.dumps(control_error(request_id, "protocol.reply", "reply exceeds 64 KiB")).encode() + b"\n"
+            try:
+                client.settimeout(BROKER_IO_TIMEOUT)
+                client.sendall(payload)
+            except OSError:
+                # The accepted operation is never replayed on disconnect.
+                pass
+        if failure is not None:
+            raise failure
 
     def run(self) -> None:
         self.record["credentials"] = self.preflight()
@@ -352,16 +592,27 @@ class Deployment:
                 fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError as error:
                 raise DeploymentError("deployment runtime is already owned by another launcher") from error
+            self.state_path = base / "state.json"
             self.runtime = Path(tempfile.mkdtemp(prefix="run-", dir=base))
+            primary_error = None
             try:
                 self.socket = self.runtime / "control.sock"
-                if len(os.fsencode(self.socket)) >= 108:
+                self.native_socket = (self.runtime / "native-control.sock"
+                                      if self.source_owner else self.socket)
+                if len(os.fsencode(self.native_socket)) >= 108:
                     raise DeploymentError("runtime path is too long for a Unix control socket")
                 bindings = {"PACKAGE": str(self.package), "PREFIX": str(self.args.pipewire_prefix.resolve()),
-                            "RUNTIME": str(self.runtime), "REMOTE": "rtc-" + uuid.uuid4().hex[:12],
-                            "FITS": str(self.args.fits.resolve())}
+                            "RUNTIME": str(self.runtime), "REMOTE": "rtc-" + uuid.uuid4().hex[:12]}
+                if self.source_owner is None:
+                    bindings["FITS"] = str(self.args.fits.resolve())
                 self.record.update({"instance": self.runtime.name, "socket": str(self.socket),
-                                    "remote": bindings["REMOTE"], "fits_sha256": digest(self.args.fits)})
+                                    "remote": bindings["REMOTE"]})
+                if self.source_owner:
+                    self.record.update({"source-owner": self.source_owner["role"],
+                                        "control_operation_bound_seconds": 40,
+                                        "control_client_timeout_seconds": 48})
+                else:
+                    self.record["fits_sha256"] = digest(self.args.fits)
                 self.prepare_julia_override()
                 for role in self.spec["placement"]:
                     directory = self.runtime / role
@@ -393,12 +644,14 @@ class Deployment:
                     self.wait(lambda: (self.runtime / owner["prepared"]).is_file(), f"{role} preparation")
                     (self.runtime / owner["connect"]).touch(exist_ok=False)
                     self.wait(lambda: (self.runtime / owner["connected"]).is_file(), f"{role} connection")
+                if self.source_owner:
+                    self.source_control("pause", initial=True)
                 self.spawn("rtc", [str(self.package / "bin/pipewireao-rtc"),
                                    "--config", str(self.runtime / "rtc/session.conf"),
                                    "--remote", bindings["REMOTE"], "--start-paused",
-                                   "--control-socket", str(self.socket)], self.environment("rtc", bindings))
-                self.wait(lambda: self.socket.is_socket(), "RTC control endpoint")
-                ready = control(self.socket, ["status"])
+                                   "--control-socket", str(self.native_socket)], self.environment("rtc", bindings))
+                self.wait(lambda: self.native_socket.is_socket(), "RTC control endpoint")
+                ready = control(self.native_socket, ["status"])
                 if ready["state"] != "Ready":
                     raise DeploymentError(f"RTC admission requires Ready, observed {ready['state']}")
                 before = {}
@@ -407,26 +660,50 @@ class Deployment:
                 self.check()
                 self.record.update({"phase": "prepared", "placement": before, "ready": ready})
                 atomic_record(base / "state.json", self.record)
-                started = control(self.socket, ["session-start"])
+                started = control(self.native_socket, ["session-start"])
                 if started["state"] != "Running":
                     raise DeploymentError("RTC did not admit session start")
+                if self.source_owner:
+                    self.source_control("resume")
+                    self.open_broker()
                 self.record.update({"phase": "running", "admitted": True, "start": started})
                 atomic_record(base / "state.json", self.record)
                 print(f"DEPLOYMENT_READY name={self.spec['name']} socket={self.socket}", flush=True)
                 notify("READY=1\nSTATUS=RTC admitted; local control available")
                 while not self.stopping:
                     self.check()
-                    time.sleep(0.1)
+                    if self.source_owner:
+                        self.serve_control()
+                    else:
+                        time.sleep(0.1)
             except InterruptedError:
                 pass
             except BaseException as error:
-                self.record["error"] = str(error)
+                primary_error = error
+                self.record.update({"phase": "failed", "error": str(error), "admitted": False})
+                atomic_record(base / "state.json", self.record)
                 raise
             finally:
                 try:
                     self.stop()
+                except BaseException as error:
+                    cleanup_errors = self.record.setdefault("cleanup_errors", [])
+                    if not any(previous in str(error) for previous in cleanup_errors):
+                        cleanup_errors.append(str(error))
+                    if self.record["error"] is None:
+                        self.record["error"] = str(error)
+                        raise
+                    if primary_error is not None:
+                        cleanup_note = f"cleanup also failed: {error}"
+                        if hasattr(primary_error, "add_note"):
+                            primary_error.add_note(cleanup_note)
+                        else:
+                            primary_error.args = (f"{primary_error}; {cleanup_note}",)
                 finally:
-                    self.record.update({"phase": "stopped", "admitted": False})
+                    if self.broker is not None:
+                        self.broker.close()
+                    self.record.update({"phase": "failed" if self.record["error"] else "stopped",
+                                        "admitted": False})
                     try:
                         atomic_record(base / "state.json", self.record)
                     finally:
@@ -440,6 +717,9 @@ class Deployment:
             notify("STOPPING=1\nSTATUS=Stopping RTC deployment")
         except OSError as error:
             errors.append(error)
+        if self.source_owner:
+            self.stop_source_deployment(errors)
+            return
         ingress_stopped = False
         if self.socket is not None and self.socket.is_socket():
             try:
@@ -493,6 +773,67 @@ class Deployment:
         if errors:
             raise DeploymentError(f"deployment cleanup failed: {errors[0]}") from errors[0]
 
+    def stop_source_deployment(self, errors: list) -> None:
+        """Revoke external ingress before any consumer teardown, even on failure."""
+        source_started = any(role == self.source_owner["role"] for role, _ in self.processes)
+        paused = self.native_shutdown and self.source_state == "paused"
+        if source_started and not self.source_failed and not paused:
+            try:
+                self.source_control("pause", shutdown=True)
+                paused = True
+            except (DeploymentError, OSError, ValueError) as error:
+                errors.append(error)
+        revoked = paused
+        if not paused:
+            # An unconfirmed pause cannot authorize a graceful consumer quit.
+            # Kill both the application source and its private transport first.
+            revoked = True
+            for role, process in self.processes:
+                if role in (self.source_owner["role"], "core"):
+                    try:
+                        self.wait_owned_process(process, 0)
+                    except (OSError, subprocess.SubprocessError) as error:
+                        revoked = False
+                        errors.append(error)
+        if revoked and self.native_socket is not None and self.native_socket.is_socket():
+            try:
+                observed = control(self.native_socket, ["status"], timeout=8)
+                if observed["state"] == "Running":
+                    control(self.native_socket, ["session-stop"], timeout=8)
+            except (OSError, DeploymentError, ValueError):
+                pass
+            try:
+                control(self.native_socket, ["quit"], timeout=8)
+            except (OSError, DeploymentError, ValueError):
+                pass
+        for role, process in self.processes:
+            if role == "rtc":
+                try:
+                    self.wait_owned_process(process, 8)
+                except (OSError, subprocess.SubprocessError) as error:
+                    errors.append(error)
+        # Source is paused or forcibly terminated; consumer markers are safe.
+        if self.runtime and revoked:
+            for owner in self.spec["owners"]:
+                try:
+                    (self.runtime / owner["quit"]).touch(exist_ok=True)
+                except OSError as error:
+                    errors.append(error)
+        for role, process in reversed(self.processes):
+            try:
+                self.wait_owned_process(process, 8 if revoked and role not in ("core", "rtc") else 0)
+            except (OSError, subprocess.SubprocessError) as error:
+                errors.append(error)
+        if self.latency_fd is not None:
+            try:
+                os.close(self.latency_fd)
+            except OSError as error:
+                errors.append(error)
+            finally:
+                self.latency_fd = None
+        if errors:
+            raise DeploymentError(f"deployment cleanup failed: {errors[0]}") from errors[0]
+
     @staticmethod
     def wait_owned_process(process, grace: float) -> None:
         try:
@@ -534,6 +875,8 @@ def install(args) -> None:
     spec = profile(destination / "deployment.conf", args.pipewire_prefix)
     cpus = sorted({cpu for contract in spec["placement"].values() for cpu in contract["cpus"]})
     unit = unit.replace("@CPUS@", " ".join(map(str, cpus)))
+    unit = unit.replace("@FITS_ARGUMENT@", "" if "source-owner" in spec else
+                        " --fits %h/.config/pipewireao-rtc/%i/input.fits")
     output = destination / "systemd/pipewireao-rtc@.service"
     output.parent.mkdir(exist_ok=True)
     output.write_text(unit)
@@ -547,7 +890,7 @@ def parser() -> argparse.ArgumentParser:
         command = commands.add_parser(name)
         command.add_argument("--deployment", type=Path, required=True)
         command.add_argument("--pipewire-prefix", type=Path, default=Path("/opt/pipewireao"))
-        command.add_argument("--fits", type=Path, required=True)
+        command.add_argument("--fits", type=Path)
         command.add_argument("--runtime", type=Path,
                              default=Path(os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}"))
                              / "pipewireao-rtc")
@@ -571,7 +914,8 @@ def main() -> int:
             if not state.get("admitted"):
                 raise DeploymentError("deployment is not admitted; inspect state.json for startup error")
             argv = args.argv[1:] if args.argv[:1] == ["--"] else args.argv
-            print(json.dumps(control(Path(state["socket"]), argv)))
+            print(json.dumps(control(Path(state["socket"]), argv,
+                                     timeout=48 if "source-owner" in state else 8)))
         else:
             deployment = Deployment(args)
             if args.command == "preflight":
@@ -583,6 +927,9 @@ def main() -> int:
         return 0
     except (DeploymentError, OSError, ValueError, subprocess.SubprocessError) as error:
         print(f"pipewireao-rtc-deploy: {error}", file=sys.stderr)
+        notes = getattr(error, "__notes__", ())
+        for note in notes[:8]:
+            print(f"pipewireao-rtc-deploy: {note[:1024]}", file=sys.stderr)
         return 1
 
 
