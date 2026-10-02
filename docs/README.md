@@ -11,7 +11,7 @@ declared session without introducing another graph-authoring format.
 | Document | Authority |
 | --- | --- |
 | [Development architecture](architecture.md) | RTCW composition, scientist boundary, external-node substitution, laboratory placement, and the selected deployment package |
-| [Development operating contract](operations.md) | RTC-DEV-001 through RTC-DEV-028: lifecycle, composition, updates, equivalence, placement, installed profiles, simulated calibration, bounded control and user-service operation |
+| [Development operating contract](operations.md) | RTC-DEV-001 through RTC-DEV-029: lifecycle, composition, updates, equivalence, placement, installed profiles, simulated calibration, bounded control and user-service operation |
 | [Development roadmap](roadmap.md) | Dependency-ordered implementation, completion evidence, performance characterization, and deferred capability triggers |
 
 These three files are the complete RTC-level implementation baseline. An

@@ -470,6 +470,62 @@ HEART calibration offsets come from the simulated plant under RTC-DEV-027.
 Measured matrices remain hybrid calibration. Configuration preparation and
 external lifecycle integration do not authorize changes to HEART source.
 
+## Instrument calibration through deployed endpoints
+
+This is decision **RTC-ARCH-023**: AOS calibration uses the operational
+instrument procedure. The calibration coordinator requests a DM figure through
+the deployed RTC command path, acquires detector frames through the configured
+source/transport, and collects the deployed WFS estimator's measurements.
+AOS supplies the simulated detector and DM endpoints; its internal optical
+fields, known influence functions and direct command-buffer writes are not
+inputs to the operational calibration calculation. Physical endpoints may
+later replace the simulated endpoints without changing probe generation,
+response association or matrix estimation. This decision authorizes the
+non-actuating simulation workflow, not physical device operation.
+
+The proposed acquisition path is:
+
+```mermaid
+flowchart LR
+    Coordinator["Calibration coordinator"]
+    Command["RTC DM command output"]
+    Plant["AOS DM and detector"]
+    Transport["Operational detector transport"]
+    Wfs["Deployed WFS processing"]
+    Responses["Associated response batches"]
+    Aoc["AdaptiveOpticsCalibration"]
+    Coordinator -->|probe request| Command
+    Command -->|normal DM transport| Plant
+    Plant --> Transport
+    Transport --> Wfs
+    Wfs --> Responses
+    Responses --> Aoc
+    Aoc -->|interaction matrix and reconstructor| Coordinator
+```
+
+The coordinator owns preparation, settling/averaging rules, frame association
+and artifact provenance outside frame callbacks. AdaptiveOpticsCalibration
+owns probe-basis construction and response-to-matrix mathematics. Existing
+scientific algorithms and graph owners own command emission and WFS processing;
+the RTC runner remains the lifecycle/control plane. AOS retains its normal
+configured detector noise and ADC behavior. Ideal noiseless physics remains
+an explicitly separate diagnostic oracle.
+
+Each RTC is calibrated with the same declared procedure and instrument
+conditions. A shared numerical artifact is adopted only after measurement
+contracts and responses agree at declared tolerances; calibration does not
+force unequal estimators to produce identical arrays. CPU/CUDA/AMDGPU choice
+changes the simulated endpoint implementation, not the calibration algorithm.
+Acquisition can run slower than the instrument rate while retaining the
+selected exposure, model-time and settling semantics. Such a run does not
+qualify wall cadence or physical mirror dynamics. The current lockstep HIL
+adapter requires a frame before its matching correction command; it does not
+yet provide held-acquisition probe adoption. The next increment must establish
+that endpoint behavior and exposure association before claiming operational
+calibration support. RTC-DEV-029 selects this calibration-specific acquisition
+contract; ordinary lockstep sessions and the RTC-DEV-027 offset fixture remain
+unchanged.
+
 ## Authoritative lower contracts
 
 This repository does not duplicate the data-plane contracts:

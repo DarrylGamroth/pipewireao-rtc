@@ -29,6 +29,11 @@ the SPA Standard WFS sink and Standard DM source. External-RTC sessions own
 links and lifecycle without loading an FGN/JFG processing graph. CPU finite
 exchange checks precede GPU or paced-readout characterization.
 
+RTC-ARCH-023 and RTC-DEV-029 select operational interaction calibration through
+the deployed DM/WFS paths, initially against AOS. Reuse AdaptiveOpticsCalibration
+and retain normal detector acquisition; ideal direct-physics helpers are
+diagnostic references. Physical endpoint operation remains deferred.
+
 Physical devices, correction authority, durable recording, remote access,
 RTC-owned progressive scheduling, and target-host qualification are not active
 scope. Their former proposals are preserved

@@ -833,3 +833,68 @@ finite bounded commands, simulated calibration provenance, pause/reset/restart,
 unexpected child death and cleanup. CPU qualification MUST precede any added
 GPU or paced-readout claim. Finite exchanges MUST NOT establish convergence,
 maximum frame rate, physical actuation or algorithmic equivalence.
+
+## RTC-DEV-029 — Operational interaction calibration
+
+This requirement applies to explicitly selected operational-calibration
+sessions. Existing installed finite exchange profiles retain RTC-DEV-025,
+RTC-DEV-026 and RTC-DEV-027 unchanged. For the new calibration session only,
+this requirement replaces RTC-DEV-027's independent/noiseless offset acquisition
+with operational detector/WFS acquisition. Existing offset exports remain
+historical fixture capability and MUST NOT be relabeled as operational
+interaction calibration.
+
+Calibration acquisition extends the RTC-DEV-025/026 lockstep contract: one
+adopted probe MAY remain held across several settling and measurement exposures,
+without requiring a new correction command for every frame. Frames MUST retain
+unique acquisition identities and advance the simulated model by one declared
+step per generated exposure. Probe adoption, settling and response association
+MUST remain explicit. This exception MUST NOT change ordinary closed-loop
+frame/command causality or authorize skipped frame identities or catch-up bursts.
+
+The selected AOS calibration workflow MUST issue each probe through the
+configured RTC DM command output and its normal transport. The simulator MUST
+adopt the received command before generating exposures accepted for that probe.
+Production acquisition MUST NOT obtain responses from hidden optical arrays or
+apply probes by directly mutating an AOS command buffer. The same acquisition
+procedure and numerical estimator MUST be usable with future physical
+endpoints; actual device operation remains outside this increment.
+
+A calibration run MUST declare command units, actuator order, reference figure,
+probe basis/amplitudes, WFS representation and measurement order, detector
+settings, exposure, settling rule and averaging count. It MUST acquire
+backgrounds/references through the declared detector/WFS processing path. Normal
+configured detector noise and ADC encoding MUST remain active unless a separate
+ideal diagnostic run is explicitly selected. Command clipping or failed probe
+adoption MUST be detected; changed probe amplitudes MUST NOT be hidden.
+
+Each response MUST be associated with an adopted probe and exposures following
+the declared settling rule. Stale, incomplete, duplicate or unrelated frames
+MUST NOT enter the accepted response batch. Calibration MUST select explicit
+ownership of DM commands and hold ordinary closed-loop integration during
+probing. Completion or abort MUST request restoration of the declared reference
+figure and report whether restoration was acknowledged. Partial measurements
+MUST NOT replace the active calibration.
+
+The acquisition contract MUST declare finite deadlines for probe adoption,
+settling, response collection and reference restoration, and the disposition
+of a timeout or interrupted run. If command adoption is unknown or reference
+restoration is unconfirmed, the session MUST retain calibration command
+ownership and the integration hold, or enter a fault state that prevents
+ordinary loop resumption. Normal operation MUST NOT resume with an unknown DM
+figure.
+
+AdaptiveOpticsCalibration MUST form the interaction matrix and selected
+reconstructor from accepted measured responses. Export MUST record probe and
+response identities, units/order, settings, numerical policy, model/endpoint
+identity and artifact hashes. Shared artifacts for HEART, FGN and JFG MUST
+require compatible measurement/command conventions and declared response
+agreement. Invalid measurements and unobservable directions MUST remain visible.
+
+Verification intent: Classic first, then Copper; confirm probes traverse the
+ordinary DM transport, measure with each deployed WFS frontend, compare
+independent interaction calibrations and reconstructed outputs, and demonstrate
+closed-loop correction with simulation-derived artifacts. Exercise rejected
+probe/frame association and interrupted calibration without replacing active
+artifacts. Backend/rate checks remain distinct from calibration correctness;
+HEART interfaces require observed support without source modifications.

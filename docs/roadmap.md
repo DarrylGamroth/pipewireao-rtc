@@ -902,6 +902,69 @@ physical OPD/displacement meaning and delayed-packet generation fencing remain
 unqualified. RTC-DEV-028 therefore has finite functional evidence, not full
 physical or scientific qualification.
 
+## Selected operational calibration (2026-10-02)
+
+RTC-ARCH-023 and RTC-DEV-029 select the same calibration procedure for AOS as
+for an instrument: issue DM probes, settle, acquire and average detector/WFS
+responses, then estimate the interaction matrix and reconstructor. This is
+planned work; the installed profiles still retain measured reconstructors.
+Existing noiseless REVOLT/pyRTC calibration helpers provide diagnostic
+reference code, not acceptance of the deployed HEART/FGN/JFG acquisition path.
+
+Deliver in dependency order:
+
+1. Freeze the shared probe/response contract: physical versus virtual command
+   basis, units/order, detector/exposure settings, settling, averaging and
+   command/frame association. Define finite acquisition/restoration deadlines
+   and abort behavior, retaining command ownership and integration hold or
+   faulting the session if reference restoration is unconfirmed.
+   Inventory each owner's public command emission
+   and WFS readback surfaces. HEART's legacy `CALIB_INTER` handler in
+   `source/template/src/hrtTemplateCmds.c` returns `Not yet implemented`;
+   a declared API name alone is not support. Determine usable unchanged-HEART
+   interfaces before selecting an acquisition adapter. Implemented pieces
+   include legacy `DM_SHAPE` file application and WFS averaging (SH gradients
+   or PWFS pixels); their support in the selected runner, output units, clipping
+   and exposure association need live verification. Generated modern `DM_APPLY`
+   declarations do not establish an implemented executor.
+   The current AOS PipeWire adapter permits one frame followed by one matching
+   correction command. Operational calibration needs DM probe adoption while
+   acquisition is held, then accepted exposures after settling. Establish that
+   endpoint contract explicitly; do not bypass transport or fake an exchange
+   to satisfy the existing loop. RTC-DEV-029 explicitly selects held-probe,
+   multiple-exposure acquisition and supersedes the fixture offset method for
+   this new mode; existing finite lockstep deployments retain their contract.
+2. Implement ordinary endpoint acquisition for Classic. Route probes through
+   DM command output/transport and acquire measurements from each deployed WFS
+   frontend, with normal detector noise and ADC encoding. Keep the coordinator
+   outside processing callbacks and reuse AdaptiveOpticsCalibration.
+3. Export and compare the measured interaction matrix/reconstructor under the
+   configured command basis and numerical inverse policy. Adopt common arrays
+   only after response agreement; retain failed measurements and rank evidence.
+   Verify correction and clipping feedback before rate characterization.
+4. Repeat for Copper's deployed four-pupil pixel representation and stateful
+   normalization. The existing pyRTC signal representation differs and its
+   matrix cannot be substituted into the current 3600-measurement graph.
+5. Qualify simulator backends and achievable wall rates separately. The 2000 µs
+   HEART sink setting is a sender readout budget, not a GPU frame-service bound.
+   Its current timer spacing is budget divided by packet count, with packet 1
+   sent immediately. The lockstep adapter currently simulates, transfers,
+   receives and adopts a command serially. A 1 kHz Classic deployment also
+   requires extending the present 500 Hz cadence limit and fitting exposure,
+   readout and exchange work within the selected period.
+
+Completion evidence: accepted probes and exposure associations, same operational
+procedure for the simulated endpoint, measured matrices and artifact provenance
+for all three owners, known noise/linearity/rank limits, and demonstrated
+closed-loop correction. No physical hardware, maximum rate or scientific
+convergence claim follows from the existing finite transport checks.
+
+Plan validation (2026-10-02): independent architecture review resolved the
+fixture/operational acquisition scope and held-probe contract conflicts, and
+added bounded abort/restoration behavior. Local links, requirement identities,
+whitespace/newlines and all changed Mermaid documents passed checks. This is
+documentation evidence; operational calibration is not yet implemented.
+
 ## Deferred capabilities
 
 The following topics are not active work. Their previous proposals are
