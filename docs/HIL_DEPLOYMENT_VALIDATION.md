@@ -230,6 +230,3 @@ and HIL010 remains open. The next discriminating observation is the detector's
 pre-conversion value, photon rate, RNG state and FFT plans when the 216 sample
 recurs. Existing failed replay and diagnostic artifacts are retained. No
 speculative production change is justified by the present evidence.
-
-
-

@@ -1977,5 +1977,221 @@
     "PipeWireAO_jl": "0.6.12 source/tag/ownregistry pushed",
     "adapter": "6adb85a merged localmain; repository has no configured remote",
     "upstream_gitlab_yggdrasil": "no writes"
+  },
+  "source_package_audit": {
+    "AdaptiveOpticsSim": {
+      "revision": "d30db3f78d7fad77d0d5e9212b3eee1a34d86244",
+      "version": "0.1.0",
+      "dirty": false,
+      "runtime_code_sha256": "9a9f10c5b3519b88fdcdeea778f740a7a0f02a2c6aa917d813833491cb8b28fd",
+      "runtime_code_files": 166
+    },
+    "REVOLTClassicSim": {
+      "revision": "e0fbdab9a5483d92fa6df5539019624d40b84f1e",
+      "version": "0.1.0",
+      "dirty": false,
+      "runtime_code_sha256": "8dc881fed492e6885aada11906e3498db8c02afb7ac416127494f84b2d84b392",
+      "runtime_code_files": 9
+    },
+    "REVOLTCopperSim": {
+      "revision": "cb840cd076ce20a4229bfe82dc1d390f7a1c4f55",
+      "version": "0.1.0",
+      "dirty": false,
+      "runtime_code_sha256": "12aa1dfe83f067307c460a59063509ea6074ed7470b8927b12dde25c6dfbedc2",
+      "runtime_code_files": 7
+    },
+    "AdaptiveOpticsSimPipeWireHIL": {
+      "revision": "6adb85a9e96bed12a0f9084a0550e7d9f2230d71",
+      "version": "0.1.0",
+      "dirty": false,
+      "runtime_code_sha256": "60a70715c8375adcd971879f8bde2bf034130d20ddcc5639be9eedccf5c40b04",
+      "runtime_code_files": 5
+    },
+    "PipeWireAO": {
+      "revision": "dc9ece8b6fd2a3f9ed0cbc14746150bd966a2e8e",
+      "version": "0.6.12",
+      "dirty": false,
+      "runtime_code_sha256": "671697367f4ce64d9d1bbe93e14d36d302c4b92ce02dc74f42eb502a2a31adbe",
+      "runtime_code_files": 18
+    }
+  },
+  "backend_audit": {
+    "record": "/home/dgamroth/.cache/rtc-aos-hil-20261001/backend-evidence-summary.json",
+    "sha256": "8a319166d934a0e002ff0f042a4e07b613adc6f9e1d7cce5b2a6d0ef5af8bee2",
+    "scope": "Canonical SHA256 of sorted relative-file-path:SHA256 JSON mapping for Project.toml,src,ext,graphs; excludes commit metadata/docs/tests",
+    "gpu": {
+      "cuda10": {
+        "passed": true,
+        "required_controls_present": true,
+        "exit_codes": {
+          "core": 0,
+          "simulator": 0,
+          "rtc": 0
+        },
+        "owner_signal_free": true,
+        "target": {
+          "type": "AdaptiveOpticsSim.Backends.AcceleratorComputeDevice{AdaptiveOpticsSim.Backends.CUDABackend, Int64}",
+          "backend": "AdaptiveOpticsSim.Backends.CUDABackend",
+          "device_identifier": 0
+        },
+        "requested_rate_hz": 10,
+        "achieved_second_batch_rate_hz": 9.999926573872477,
+        "second_batch_missed_wall_periods": 0,
+        "frames_and_commands_each_batch": 16,
+        "nonzero_command_components": 4432,
+        "command_components_at_limit": 0,
+        "max_abs_command_um": 0.2669157,
+        "result": {
+          "file": "evidence/final-copper-fgn-cuda/result.json",
+          "sha256": "ac93b285f20b7f8d5454c42bcb8011e38f29a22e6b8ca1f0c17b5cfec45b3fd5"
+        },
+        "versions": {
+          "AdaptiveOpticsSim": "0.1.0",
+          "AdaptiveOpticsSimPipeWireHIL": "0.1.0",
+          "REVOLTCopperSim": "0.1.0",
+          "PipeWireAO": "0.6.12",
+          "CUDA": "6.4.1"
+        },
+        "manifest": {
+          "file": "/home/dgamroth/.config/pipewireao-rtc/revolt-copper-fgn-hil-cuda/hil/Manifest.toml",
+          "sha256": "4da5f64228d59819cd2761ab6e64ae514a71d3c95d3d702ff53ac1de6468f6c9"
+        },
+        "export_provenance": {
+          "file": "/home/dgamroth/.config/pipewireao-rtc/revolt-copper-fgn-hil-cuda/provenance.json",
+          "sha256": "e7e52257a133da2b562de333f3f114796a786c130c8e81f67139204365d938f2"
+        },
+        "runtime_snapshot_code_equals_current_source": true,
+        "owner_environment": {
+          "OPENBLAS_NUM_THREADS": "1",
+          "JULIA_NUM_THREADS": "1,0"
+        },
+        "raw_reports": {
+          "batch-1": {
+            "file": "evidence/final-copper-fgn-cuda/batch-1/simulator-result.json",
+            "sha256": "c0e40832a6fd0e78c84409baff7944955ca16d74ba9ec3948b860ea5efe07ca2"
+          },
+          "batch-2": {
+            "file": "evidence/final-copper-fgn-cuda/batch-2/simulator-result.json",
+            "sha256": "33071d96538b83352b32ff7a703ca849e7e9a0ca857e61ea9dd505a26d4b7de0"
+          }
+        },
+        "raw_file_hashes_verified": true
+      },
+      "cuda100": {
+        "passed": true,
+        "required_controls_present": true,
+        "exit_codes": {
+          "core": 0,
+          "simulator": 0,
+          "rtc": 0
+        },
+        "owner_signal_free": true,
+        "target": {
+          "type": "AdaptiveOpticsSim.Backends.AcceleratorComputeDevice{AdaptiveOpticsSim.Backends.CUDABackend, Int64}",
+          "backend": "AdaptiveOpticsSim.Backends.CUDABackend",
+          "device_identifier": 0
+        },
+        "requested_rate_hz": 100,
+        "achieved_second_batch_rate_hz": 44.636983261265186,
+        "second_batch_missed_wall_periods": 19,
+        "frames_and_commands_each_batch": 16,
+        "nonzero_command_components": 4432,
+        "command_components_at_limit": 0,
+        "max_abs_command_um": 0.26691416,
+        "result": {
+          "file": "evidence/final-copper-fgn-cuda100/result.json",
+          "sha256": "6809f07d9cf479ec0c24824f74d6abf5aad893c02fde8feb7ab646b73b0812b7"
+        },
+        "versions": {
+          "AdaptiveOpticsSim": "0.1.0",
+          "AdaptiveOpticsSimPipeWireHIL": "0.1.0",
+          "REVOLTCopperSim": "0.1.0",
+          "PipeWireAO": "0.6.12",
+          "CUDA": "6.4.1"
+        },
+        "manifest": {
+          "file": "/home/dgamroth/.config/pipewireao-rtc/revolt-copper-fgn-hil-cuda100/hil/Manifest.toml",
+          "sha256": "4da5f64228d59819cd2761ab6e64ae514a71d3c95d3d702ff53ac1de6468f6c9"
+        },
+        "export_provenance": {
+          "file": "/home/dgamroth/.config/pipewireao-rtc/revolt-copper-fgn-hil-cuda100/provenance.json",
+          "sha256": "a0bdff51c73dc3326fe2ea8588ddf04a37fb15c8cce6d9eda3ed59f9fed912d9"
+        },
+        "runtime_snapshot_code_equals_current_source": true,
+        "owner_environment": {
+          "OPENBLAS_NUM_THREADS": "1",
+          "JULIA_NUM_THREADS": "1,0"
+        },
+        "raw_reports": {
+          "batch-1": {
+            "file": "evidence/final-copper-fgn-cuda100/batch-1/simulator-result.json",
+            "sha256": "5817b8ee17a73245b368a2541bb655fb454447f3ad19586eb6d0a58a08e62262"
+          },
+          "batch-2": {
+            "file": "evidence/final-copper-fgn-cuda100/batch-2/simulator-result.json",
+            "sha256": "e018a2e8da6bf0667b2df8295d36edb263e87296d90bf5eb17e423ed3d52d8b6"
+          }
+        },
+        "raw_file_hashes_verified": true
+      },
+      "amdgpu10": {
+        "passed": true,
+        "required_controls_present": true,
+        "exit_codes": {
+          "core": 0,
+          "simulator": 0,
+          "rtc": 0
+        },
+        "owner_signal_free": true,
+        "target": {
+          "type": "AdaptiveOpticsSim.Backends.AcceleratorComputeDevice{AdaptiveOpticsSim.Backends.AMDGPUBackend, Int64}",
+          "backend": "AdaptiveOpticsSim.Backends.AMDGPUBackend",
+          "device_identifier": 1
+        },
+        "requested_rate_hz": 10,
+        "achieved_second_batch_rate_hz": 10.037625960612347,
+        "second_batch_missed_wall_periods": 0,
+        "frames_and_commands_each_batch": 16,
+        "nonzero_command_components": 4432,
+        "command_components_at_limit": 0,
+        "max_abs_command_um": 0.2669157,
+        "result": {
+          "file": "evidence/final-copper-fgn-amdgpu-v3/result.json",
+          "sha256": "346045f96f18a73060e13829331ca4baa42a31773e07de34080977becc9c0832"
+        },
+        "versions": {
+          "AdaptiveOpticsSim": "0.1.0",
+          "AdaptiveOpticsSimPipeWireHIL": "0.1.0",
+          "REVOLTCopperSim": "0.1.0",
+          "PipeWireAO": "0.6.12",
+          "AMDGPU": "2.8.0"
+        },
+        "manifest": {
+          "file": "/home/dgamroth/.config/pipewireao-rtc/revolt-copper-fgn-hil-amdgpu/hil/Manifest.toml",
+          "sha256": "c261b28fd55ddfea8b0093376f753ab078f7a76cb7c22524fbc0b8c517d73a99"
+        },
+        "export_provenance": {
+          "file": "/home/dgamroth/.config/pipewireao-rtc/revolt-copper-fgn-hil-amdgpu/provenance.json",
+          "sha256": "6105d25b91d985ba99b5c87f5f687c5c6aed5b75a14240848c0075c613751f0d"
+        },
+        "runtime_snapshot_code_equals_current_source": true,
+        "owner_environment": {
+          "OPENBLAS_NUM_THREADS": "1",
+          "JULIA_NUM_THREADS": "1,0",
+          "HSA_OVERRIDE_CPU_AFFINITY_DEBUG": "0"
+        },
+        "raw_reports": {
+          "batch-1": {
+            "file": "evidence/final-copper-fgn-amdgpu-v3/batch-1/simulator-result.json",
+            "sha256": "db9b166e270daa6cf370a0b9c8d1cca3bd015f5af8056d7fa009bbe101969057"
+          },
+          "batch-2": {
+            "file": "evidence/final-copper-fgn-amdgpu-v3/batch-2/simulator-result.json",
+            "sha256": "136c835d53850b787a16be8c8fcc63ce0c8fb210c288ae751312004d9713f794"
+          }
+        },
+        "raw_file_hashes_verified": true
+      }
+    }
   }
 }
