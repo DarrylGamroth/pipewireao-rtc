@@ -1,0 +1,20 @@
+[Unit]
+Description=PipeWireAO RTC deployment %i
+
+[Service]
+Type=notify
+NotifyAccess=main
+ExecStart=@LAUNCHER@ run --pipewire-prefix @PIPEWIRE_PREFIX@ --deployment %h/.config/pipewireao-rtc/%i/deployment.conf --fits %h/.config/pipewireao-rtc/%i/input.fits --runtime %t/pipewireao-rtc-%i
+RuntimeDirectory=pipewireao-rtc-%i
+RuntimeDirectoryMode=0700
+UMask=0077
+LimitRTPRIO=95
+LimitMEMLOCK=4294967296
+CPUAffinity=@CPUS@
+KillMode=mixed
+TimeoutStartSec=600
+TimeoutStopSec=180
+Restart=no
+
+[Install]
+WantedBy=default.target

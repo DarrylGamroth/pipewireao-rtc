@@ -1,8 +1,8 @@
 # PipeWireAO development RTC architecture
 
-Status: active development baseline; implementation underway
+Status: active development and non-actuating deployment baseline; implementation underway
 
-Review date: 2026-09-04
+Review date: 2026-10-01
 
 ## Decision
 
@@ -158,11 +158,10 @@ The following are not part of the active baseline:
   fencing;
 - durable recording, audit, run reconstruction, or scientific FITS export;
 - row-block, region-block, fixed-worker, or multi-batch scheduling;
-- runner-hosted Julia graph execution or Julia process management;
+- runner-hosted Julia graph execution;
 - remote control, a web gateway, or WebRTC preview;
-- WirePlumber-specific application logic or generated service-manager units;
-- CPU affinity, real-time scheduling, NUMA placement, or strict-island
-  admission; and
+- WirePlumber-specific application logic, host-wide scheduling changes,
+  NUMA policy, or strict-island qualification; and
 - operational, safety, deadline, tail-latency, or target-host qualification
   claims.
 
@@ -341,6 +340,9 @@ The runner, PipeWire daemon, and optional observer are separate ordinary
 processes. The baseline does not prescribe systemd units, affinity, scheduler
 classes, or one process per graph operation.
 
+The selected deployment extension below supplies an optional process launcher
+and user units without changing that ordinary development invocation.
+
 ## Laboratory deployment profile
 
 This is decision **RTC-ARCH-019**: add an opt-in laboratory deployment profile
@@ -366,6 +368,45 @@ comparison profile, not physical correction authority, a hard real-time
 guarantee, or an unattended service. It does not change C-state, CPU latency
 request, huge-page, or host RT-runtime settings by default.
 
+## Selected deployment package
+
+This is decision **RTC-ARCH-020**: promote a non-actuating deployment package
+that starts different existing RTC graphs through the same foreground command
+and systemd user unit. This deliberately extends the former service and Julia
+process-management exclusions. It does not select the archived physical RTC
+architecture. AdaptiveOpticsSim and AdaptiveOpticsSimPipeWireHIL deployment
+graphs follow completion of this increment.
+
+The Rust runner retains the sole Statig dispatcher. A companion launcher owns
+the private core, optional external scientific owner, startup admission and
+owned-process cleanup. Scientific packages export standard PipeWire graph
+configurations and typed calibration artifacts. A deployment description may
+declare process arguments, environment, readiness and placement; it must not
+describe or reinterpret scientific operations. Runtime execution must not
+depend on benchmark scripts, temporary evidence directories or git worktrees.
+
+Startup loads the stopped session, prepares and warms owners without consuming
+recorded science input, verifies effective thread placement and requested
+resource rights, then explicitly starts the session. An external source must
+provide its own hold/release interface; graph READY alone cannot gate it.
+Required-dependency loss fails the whole deployment and revokes ingress. An
+explicit restart rebuilds and revalidates all owned processes; no mutation or
+RUNNING state is replayed automatically.
+
+The local Unix control endpoint and console share one typed command executor.
+Reader/preparation/writer work stays outside the sole owner. Requests, clients,
+queues, parameter bytes and reply sizes have finite bounds. Replies distinguish
+submission, requested generation and observed active generation. Existing
+blocking effects may hold the dispatcher for up to their documented five-second
+deadline; health and stop must not claim a shorter bound. A client timeout or
+disconnect has an unknown mutation outcome until generations are observed.
+
+Systemd manages deployment processes, not scientific workers. User units cannot
+grant missing user-manager groups or raise inherited hard limits. Preflight
+reports actual access, limits and affinity; the graph libraries configure their
+own workers. Maintained host layouts exclude CPUs 0 and 1. No launcher changes
+host power states, IRQ policy, RT runtime allowance or unrelated services.
+
 ## Authoritative lower contracts
 
 This repository does not duplicate the data-plane contracts:
@@ -378,8 +419,9 @@ This repository does not duplicate the data-plane contracts:
 - Algorithm declarations own scientific ports, schemas, shapes, and
   reference behavior.
 
-Row-block and progressive-processing documents remain valid PipeWireAO design
-inputs, but they are not selected by this complete-frame RTC baseline.
+The deployment increment selects existing full-frame and row-block transport
+and execution interfaces. Their ownership remains entirely with PipeWireAO and
+the scientific graph owners.
 
 ## Claim boundary
 

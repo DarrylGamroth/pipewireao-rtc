@@ -192,3 +192,9 @@ mechanisms do not belong in this repository.
 Start with the [document index](docs/README.md). The main entry point is the
 [development architecture](docs/architecture.md). The former full-RTC proposal
 is preserved as an [inactive design archive](docs/archive/full-rtc/README.md).
+
+## Installed deployment
+
+[Recorded-input deployment](deployment/README.md) describes profile export,
+installation, foreground and systemd user launch, placement and local control
+for Classic/Copper FGN and JuliaFilterGraph owners.

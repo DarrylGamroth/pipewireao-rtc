@@ -1,5 +1,5 @@
 use super::{
-    DevelopmentConfig, EndpointFactory, ExecutionGroupSpec, GraphFactory, LinkSpec,
+    DevelopmentConfig, EndpointFactory, ExecutionGroupSpec, ExecutionMode, GraphFactory, LinkSpec,
     ObjectRealization, ObjectRole, ObjectSpec, PortDirection, PortSpec, RunControl,
     ScientificDiagnostic, FITS_SOURCE_FACTORY, GRAPH_FACTORY, LATEST_HOLD_FACTORY,
     PARAMETER_SOURCE_FACTORY, SIMULATED_SOURCE_FACTORY, SINK_FACTORY,
@@ -43,11 +43,16 @@ pub(super) fn development_config(text: &str) -> Result<DevelopmentConfig, Scient
     }
 
     expect_literal(required(profile, "profile")?, "profile", "development")?;
-    expect_literal(
-        required(execution, "execution")?,
-        "execution",
-        "complete-frame",
-    )?;
+    let execution = match scalar(required(execution, "execution")?, "execution")?.as_str() {
+        "complete-frame" => ExecutionMode::CompleteFrame,
+        "row-block" => ExecutionMode::RowBlock,
+        value => {
+            return Err(ScientificDiagnostic::new(
+                "execution",
+                format!("expected complete-frame or row-block, got {value:?}"),
+            ))
+        }
+    };
     expect_literal(required(authority, "authority")?, "authority", "none")?;
     expect_literal(
         required(claim, "claim")?,
@@ -56,6 +61,7 @@ pub(super) fn development_config(text: &str) -> Result<DevelopmentConfig, Scient
     )?;
 
     Ok(DevelopmentConfig {
+        execution,
         rate: scalar(required(rate, "rate")?, "rate")?,
         sources: endpoint_array(required(sources, "sources")?, ObjectRole::Source, "sources")?,
         graphs: graph_array(required(graphs, "graphs")?)?,
@@ -458,7 +464,11 @@ fn string_map(
     let mut values = BTreeMap::new();
     while let Some((name, token)) = object.next()? {
         let item_field = format!("{field}.{name}");
-        let value = scalar_or_array(token, &item_field)?;
+        let value = if name == "node.loop.name" || name == "api.fits.profile" {
+            scalar(token, &item_field)?
+        } else {
+            scalar_or_array(token, &item_field)?
+        };
         if values.insert(name, value).is_some() {
             return duplicate_field(&item_field);
         }

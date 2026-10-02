@@ -1,0 +1,44 @@
+context.properties = {
+    core.daemon = true
+    core.name = "@REMOTE@"
+    library.use-fallback = false
+    default.clock.min-quantum = 1
+    default.clock.quantum-floor = 1
+    mem.mlock-all = false
+    context.data-loops = [
+        { loop.name = rtc-data-loop thread.name = rtc-data-loop
+          loop.class = [ data.rt ] loop.idle = eventfd
+          loop.rt-prio = 83 thread.affinity = [ 2 ] }
+        { loop.name = source-loop thread.name = source-loop
+          loop.class = [ data.rt ] loop.idle = eventfd
+          loop.rt-prio = 83 thread.affinity = [ 12 ] }
+        { loop.name = sink-loop thread.name = sink-loop
+          loop.class = [ data.rt ] loop.idle = eventfd
+          loop.rt-prio = 83 thread.affinity = [ 8 ] }
+    ]
+}
+context.spa-libs = {
+    support.* = support/libspa-support
+    api.fits.source = fits/libspa-fits
+    api.pipewireao.discard = discard/libspa-pipewireao-discard
+    api.ndarray.* = ndarray/libspa-ndarray
+}
+context.modules = [
+    { name = libpipewire-module-rt
+      args = { rt.prio = 83 rtportal.enabled = false rtkit.enabled = false } }
+    { name = libpipewire-module-scheduler-v1 }
+    { name = libpipewire-module-protocol-native }
+    { name = libpipewire-module-spa-node-factory }
+    { name = libpipewire-module-client-node }
+    { name = libpipewire-module-metadata }
+    { name = libpipewire-module-access }
+    { name = libpipewire-module-link-factory args = { allow.link.passive = true } }
+]
+context.objects = [
+    { factory = spa-node-factory
+      args = { factory.name = support.node.driver
+               node.name = PipeWireAO-RTC-Dummy-Driver
+               node.group = pipewireao-rtc-dummy
+               node.sync-group = sync.pipewireao-rtc-dummy
+               node.loop.name = rtc-data-loop priority.driver = 200000 } }
+]

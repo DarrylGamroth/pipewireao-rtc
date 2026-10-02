@@ -617,3 +617,96 @@ pixel source for HEART, FGN, and JFG; reject an unavailable CPU, failed RT or
 memory-lock request, and an unplaced new thread before ingress; inspect the
 effective per-thread policy; then compare at least three independently
 qualified complete-frame and progressive replays at the same offered load.
+
+## Selected deployment package contract
+
+### RTC-DEV-020 — Installed scientific profiles
+
+The package MUST provide Classic and Copper configurations for FGN and JFG in
+full-frame and row-block modes. Each profile MUST name its exact scientific
+input/output contracts, calibration artifacts and owner dependencies. Export
+MUST use the maintained scientific generators; the runner MUST NOT implement
+scientific operations. The matched Classic controller is the 221-coordinate
+controller with 277-command extrapolation and clipping feedback, not the older
+277-by-376 HIL integrator fixture. Installed runtime paths MUST NOT require a
+benchmark cache, a temporary replay directory or an experimental worktree.
+Installation MUST NOT implicitly enable or start a service. An unresolved
+dependency MUST be reported rather than described as a deployable profile.
+
+Verification intent: export and load all eight combinations; retain exact
+graph/calibration hashes and scientific-owner provenance. Reuse the accepted
+direct numerical checks as focused regression evidence, not a new benchmark.
+
+Live parameter publishers are declared by validated passive links to typed graph
+parameter inputs. Initial file submissions in the session's `parameters` map
+are optional. A profile that omits them MUST prepare the scientific owner's
+initial calibrated values before ingress. Maintained exported profiles preload
+those values and retain live-update routes without duplicate startup submission.
+Exact-delivery replay MUST keep calibration fixed; adoption checks MUST account
+for the owner's documented abandonment of an in-flight progressive publication
+unit and verify recovery and fresh active generations separately.
+
+### RTC-DEV-021 — Admission and coherent lifecycle
+
+The launcher MUST prepare the private core, scientific owners and stopped RTC
+session before ingress. It MUST verify exact READY topology and requested
+effective per-thread affinity, scheduler and memory/QoS prerequisites before
+explicit start/source release. Readiness markers MUST belong to the current
+launch instance; stale markers MUST NOT admit ingress. An external source MUST
+remain held until release and MUST stop when admission is revoked. A source
+without a hold contract MUST be rejected for deployment admission.
+
+Failure or loss of any required owned process MUST revoke admission and stop
+the deployment. Restart MUST recreate and revalidate the dependent set, without
+automatically replaying operator mutations. Shutdown MUST stop ingress before
+unloading consumers and terminate only owned processes with finite deadlines.
+The deployment MUST support both foreground and systemd user-unit operation
+through the same commands/configuration. User units MUST NOT elevate the whole
+control or Julia process to FIFO or assume unavailable inherited rights.
+
+Verification intent: delayed owner, wrong contract, bad placement/rights,
+stale marker, partial launch failure, dependency death and repeated restart;
+source silence before admission and clean shutdown in both launch modes.
+
+### RTC-DEV-022 — Bounded local control
+
+The console and private Unix endpoint MUST use one typed command executor on
+the sole lifecycle owner. Socket I/O and parameter-file preparation MUST run
+outside that owner. The endpoint MUST admit at most one prepared request at a
+time, limit a request to 16 KiB and 128 fields, a parameter payload to 512 MiB,
+and a reply to 64 KiB. Parameter dimensions/type/byte length MUST be checked
+before reading the payload. Client read/write deadlines MUST be finite.
+Malformed commands MUST reject the request without terminating a healthy
+session. The endpoint MUST restrict access to the owning user and MUST NOT
+unlink arbitrary pre-existing path objects.
+
+Commands MUST cover session/group start and stop, reset, scalar transactions,
+declared ndarray parameter replacement, property/parameter generation queries,
+status and shutdown. Responses MUST include request identity, lifecycle state
+and success/rejection. Submission MUST NOT be represented as active adoption.
+A client disconnect MUST NOT cause an automatic retry or imply rollback.
+Status freshness and existing effect deadlines MUST be documented; an effect
+may retain the dispatcher for up to five seconds. Unsupported observations
+MUST remain unknown. Hot-path logging MUST NOT be introduced for health.
+
+Verification intent: oversized input/file, dimension overflow, flood/slow
+client/disconnect, operator rejection, stopped submission, running adoption,
+unknown timeout outcome and required-object monitoring between commands.
+
+### RTC-DEV-023 — Deployment controls and documentation
+
+One documented command MUST start either selected REVOLT system from recorded
+FITS input against an explicitly selected PipeWireAO prefix, normally
+`/opt/pipewireao`. The package MUST provide install, preflight, foreground
+launch, user-unit start/stop and local control instructions. Configuration MUST
+permit other existing RTC graphs without changing scientist algorithms.
+Maintained host profiles MUST exclude CPUs 0 and 1. Preflight MUST distinguish
+account group membership from effective process/user-manager credentials and
+report missing dependencies, RT rights and locking/QoS access before ingress.
+No command may change host-wide power, IRQ, RT-runtime or unrelated-service
+policy implicitly. Validation records MUST distinguish installation, functional
+deployment and timing/physical-system qualification.
+
+Verification intent: a relocated installed package works without source-tree
+paths; user-unit syntax and effective environment match foreground; bounded
+status and controls function; missing prerequisites fail with useful diagnostics.

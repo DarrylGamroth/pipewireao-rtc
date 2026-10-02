@@ -790,6 +790,38 @@ substantial completed SH/MVM work during readout. These finite laboratory
 results do not add operational systemd units, core isolation, physical-device
 qualification or a hard latency bound.
 
+## Selected next increment: deployment package (2026-10-01)
+
+RTC-ARCH-020 and RTC-DEV-020 through RTC-DEV-023 promote the bounded deployment
+package requested after the Classic/Copper characterization. The implementation
+order is:
+
+1. A stopped-start option and shared bounded local control on the Rust owner.
+2. Installed standard scientific configurations/calibrations and one foreground
+   profile with explicit preparation, placement admission and cleanup.
+3. The same launcher in systemd user units, with effective-rights preflight and
+   coherent dependency failure/restart semantics.
+4. Complete Classic/Copper × FGN/JFG × full-frame/row-block profile coverage and
+   documented local controls, with focused functional regression evidence.
+
+The independent [deployment review](DEPLOYMENT_REVIEW.md) identifies prerequisites
+DEP-001 through DEP-006. The selected disposition accepts all six as gaps to
+close for this increment. Existing five-second effect deadlines are retained
+and documented; asynchronous adoption is a later design option, not an implied
+100 ms control-response guarantee.
+
+| Requirement | Implementation | Validation |
+| --- | --- | --- |
+| RTC-DEV-020 | implemented | final installed replay matrix underway |
+| RTC-DEV-021 | implemented | foreground and native/Julia user-service checks passed; final package replay underway |
+| RTC-DEV-022 | implemented | bounded protocol, operator rejection and live adoption checks passed |
+| RTC-DEV-023 | implemented | installation, relocation and instructions checked; final evidence record underway |
+
+After these four items, construct the live AOS/HIL deployment graph through the
+existing external endpoint contracts. Do not substitute the older HIL science
+fixture for the matched Classic controller. No further capacity or latency
+campaign is selected for this deployment increment.
+
 ## Deferred capabilities
 
 The following topics are not active work. Their previous proposals are
@@ -800,10 +832,8 @@ sequestered so they do not expand the implementation by accident.
 | Physical camera service | [camera sessions](archive/full-rtc/camera-sessions.md) | A named camera is selected after the development gate |
 | Physical DM and correction authority | [scientific command contract](archive/full-rtc/scientific-data-and-command-contracts.md) | A named non-actuating simulation has first validated the command path |
 | Recording and reconstruction | [audit](archive/full-rtc/audit-and-reconstruction.md) and [operations](archive/full-rtc/operations.md) | A concrete stream-retention and recovery need is selected |
-| Row-block and worker execution | [time and performance](archive/full-rtc/time-and-performance.md) | Complete-frame correctness is established and a camera-readout latency target exists |
-| Julia execution service | [full operations](archive/full-rtc/operations.md) | Native execution and the scientist declaration boundary are stable |
 | Remote GUI and WebAssembly | [full operations](archive/full-rtc/operations.md) | A concrete remote-operations use case exists |
-| Operational lifecycle and service supervision | [full architecture](archive/full-rtc/architecture.md) and [operations](archive/full-rtc/operations.md) | A physical service or unattended deployment is selected |
+| Physical operational lifecycle and authority | [full architecture](archive/full-rtc/architecture.md) and [operations](archive/full-rtc/operations.md) | A named physical service and its authority contract are selected |
 | Target-host qualification | [time and performance](archive/full-rtc/time-and-performance.md) | An exact physical topology, offered load, deadline, and host are named |
 
 Promotion is one capability at a time. The archived text must be reviewed

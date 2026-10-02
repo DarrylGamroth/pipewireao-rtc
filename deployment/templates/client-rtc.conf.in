@@ -1,0 +1,18 @@
+context.properties = {
+    log.level = 0
+    library.use-fallback = false
+    mem.mlock-all = false
+    context.data-loops = [
+        { loop.name = rtc-data-loop thread.name = rtc-data-loop
+          loop.class = [ data.rt ] loop.idle = eventfd
+          loop.rt-prio = 83 thread.affinity = [ 2 ] }
+    ]
+}
+context.spa-libs = { support.* = support/libspa-support }
+context.modules = [
+    { name = libpipewire-module-rt
+      args = { rt.prio = 83 rtportal.enabled = false rtkit.enabled = false } }
+    { name = libpipewire-module-protocol-native }
+    { name = libpipewire-module-client-node }
+    { name = libpipewire-module-spa-node-factory }
+]

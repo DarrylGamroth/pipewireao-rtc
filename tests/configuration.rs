@@ -563,20 +563,6 @@ fn revolt_copper_preserves_raw_detector_and_demanded_command_contracts() {
 
 #[test]
 fn runtime_parameter_routes_reject_missing_or_misidentified_scientific_inputs() {
-    let parameter_block = concat!(
-        "    parameters = {\n",
-        "        \"pipewireao-rtc-revolt-controller:reconstruct:reconstructor\" = ",
-        "\"${PIPEWIREAO_RTC_PARAMETER_REVOLT}\"\n",
-        "    }\n"
-    );
-    let missing_initial = replace_once(REVOLT_NATIVE, parameter_block, "    parameters = {}\n");
-    assert_eq!(
-        DevelopmentConfig::parse(&missing_initial)
-            .expect_err("runtime parameter source without an initial value")
-            .field(),
-        "parameters"
-    );
-
     for (before, after, field) in [
         (
             "pipewireao-rtc-revolt-controller:reconstruct:reconstructor\" =",
@@ -608,6 +594,130 @@ fn runtime_parameter_routes_reject_missing_or_misidentified_scientific_inputs() 
         let error = DevelopmentConfig::parse(&mutation).expect_err("invalid parameter route");
         assert_eq!(error.field(), field, "configuration mutation: {after}");
     }
+}
+
+#[test]
+fn runtime_parameter_routes_accept_optional_initial_values() {
+    for document in [REVOLT_NATIVE, REVOLT_JULIA, COPPER_NATIVE, COPPER_JULIA] {
+        let mut config = DevelopmentConfig::parse(document).unwrap();
+        config.parameters.clear();
+        config
+            .validate()
+            .expect("preloaded owner with live-update-only parameter source");
+        assert!(config.parameters.is_empty());
+    }
+    let mut config = DevelopmentConfig::parse(REVOLT_NATIVE).unwrap();
+    let mut source = config.sources[1].clone();
+    source.node_name = "second-runtime-parameter".to_owned();
+    let mut input = config.graphs[0].ports[1].clone();
+    input.name = "reconstruct:second-reconstructor".to_owned();
+    config.graphs[0].ports.push(input.clone());
+    config.links.push(pipewireao_rtc::LinkSpec {
+        output: format!("{}:{}", source.node_name, source.ports[0].name),
+        input: format!("{}:{}", config.graphs[0].node_name, input.name),
+        passive: true,
+    });
+    config.sources.push(source);
+    config
+        .validate()
+        .expect("one initial value among two declared runtime routes");
+    config.parameters.clear();
+    config
+        .validate()
+        .expect("both declared routes support later replacement without initial files");
+}
+
+#[test]
+fn runtime_parameter_links_are_validated_even_without_initial_values() {
+    let mut baseline = DevelopmentConfig::parse(REVOLT_NATIVE).unwrap();
+    baseline.parameters.clear();
+    baseline
+        .validate()
+        .expect("valid live-update-only parameter route");
+    let parameter_link = baseline
+        .links
+        .iter()
+        .position(|link| {
+            link.output
+                == format!(
+                    "{}:{}",
+                    baseline.sources[1].node_name, baseline.sources[1].ports[0].name
+                )
+        })
+        .unwrap();
+    let cases = [
+        "unlinked",
+        "duplicate",
+        "fanout",
+        "two-publishers",
+        "wrong-graph",
+        "wrong-port",
+        "data-input",
+        "non-passive",
+        "wrong-type",
+        "wrong-shape",
+        "wrong-schema",
+    ];
+    for case in cases {
+        let mut config = baseline.clone();
+        match case {
+            "unlinked" => {
+                config.links.remove(parameter_link);
+            }
+            "duplicate" => config.links.push(config.links[parameter_link].clone()),
+            "fanout" => {
+                let mut input = config.graphs[0].ports[1].clone();
+                input.name = "reconstruct:other".to_owned();
+                config.links.push(pipewireao_rtc::LinkSpec {
+                    input: format!("{}:{}", config.graphs[0].node_name, input.name),
+                    ..config.links[parameter_link].clone()
+                });
+                config.graphs[0].ports.push(input);
+            }
+            "two-publishers" => {
+                let mut source = config.sources[1].clone();
+                source.node_name = "second-runtime-parameter".to_owned();
+                config.links.push(pipewireao_rtc::LinkSpec {
+                    output: format!("{}:{}", source.node_name, source.ports[0].name),
+                    ..config.links[parameter_link].clone()
+                });
+                config.sources.push(source);
+            }
+            "wrong-graph" => {
+                config.links[parameter_link].input = "missing:reconstruct:reconstructor".to_owned();
+            }
+            "wrong-port" => {
+                config.links[parameter_link].input =
+                    "pipewireao-rtc-revolt-controller:missing".to_owned();
+            }
+            "data-input" => {
+                config.links[parameter_link].input =
+                    "pipewireao-rtc-revolt-controller:measure:image".to_owned();
+            }
+            "non-passive" => config.links[parameter_link].passive = false,
+            "wrong-type" => config.sources[1].ports[0].element_type = "F64_LE".to_owned(),
+            "wrong-shape" => config.sources[1].ports[0].shape[0] -= 1,
+            "wrong-schema" => config.sources[1].ports[0].schema = "org.calculon.wrong/1".to_owned(),
+            _ => unreachable!(),
+        }
+        config
+            .validate()
+            .expect_err(&format!("invalid live-update-only route: {case}"));
+    }
+}
+
+#[test]
+fn runtime_parameter_passive_route_supports_an_ungrouped_application_graph() {
+    let mut config = DevelopmentConfig::parse(REVOLT_JULIA).unwrap();
+    config.parameters.clear();
+    config.graphs[0].realization = ObjectRealization::External {
+        run_control: RunControl::Application,
+    };
+    config.execution_groups.clear();
+    config.links[1].passive = false;
+    config
+        .validate()
+        .expect("passive parameter route does not acquire graph run-control authority");
 }
 
 #[test]
@@ -833,12 +943,12 @@ fn object_port_and_file_fields_report_scientific_names() {
         ),
         (
             "element-type = F32_LE shape = [ 2 ] schema = org.calculon.ao.docrime-excitation/1",
-            "element-type = U16_LE shape = [ 2 ] schema = org.calculon.ao.docrime-excitation/1",
+            "element-type = F64_LE shape = [ 2 ] schema = org.calculon.ao.docrime-excitation/1",
             "sources[0].ports.output.element-type",
         ),
         (
             "shape = [ 2 ] schema = org.calculon.ao.docrime-excitation/1",
-            "shape = [ 3 ] schema = org.calculon.ao.docrime-excitation/1",
+            "shape = [ 0 ] schema = org.calculon.ao.docrime-excitation/1",
             "sources[0].ports.output.shape",
         ),
     ];
@@ -869,8 +979,13 @@ fn fits_factory_arguments_are_validated_field_by_field() {
         ),
         (
             "api.fits.output-mode = frame",
-            "api.fits.output-mode = row-block",
+            "api.fits.output-mode = progressive",
             "sources[0].args.api.fits.output-mode",
+        ),
+        (
+            "api.fits.output-mode = frame",
+            "api.fits.output-mode = row-block",
+            "sources[0].args.api.fits.sample-rank",
         ),
     ];
     for (before, after, field) in cases {
@@ -894,6 +1009,16 @@ fn session_rate_is_validated_and_must_match_fits_sources() {
 #[test]
 fn links_validate_ports_directions_shapes_schemas_and_producers() {
     let cases = [
+        (
+            "element-type = F32_LE shape = [ 2 ] schema = org.calculon.ao.docrime-excitation/1",
+            "element-type = U16_LE shape = [ 2 ] schema = org.calculon.ao.docrime-excitation/1",
+            "links[0].element-type",
+        ),
+        (
+            "shape = [ 2 ] schema = org.calculon.ao.docrime-excitation/1",
+            "shape = [ 3 ] schema = org.calculon.ao.docrime-excitation/1",
+            "links[0].shape",
+        ),
         (
             "output = \"pipewireao-rtc-source:output\"",
             "output = \"pipewireao-rtc-source:missing\"",
@@ -970,4 +1095,276 @@ fn runner_does_not_extend_or_reinterpret_pipewire_spa_json_syntax() {
     )
     .expect_err("runner-specific include syntax must not be accepted");
     assert!(error.message().contains("relaxed SPA-JSON"));
+}
+
+fn fits_science_config(height: u32, width: u32, rows: Option<u32>) -> String {
+    let schema = if rows.is_some() {
+        "org.calculon.ao.raw-pixel-row-block/1"
+    } else {
+        "org.calculon.ao.raw-pixels/1"
+    };
+    let shape = format!("[ {} {width} ]", rows.unwrap_or(height));
+    let block_rate = format!("{}/1", 1000 * height / rows.unwrap_or(height));
+    let mut document = MINIMAL
+        .replace("api.fits.sample-rank = 1", "api.fits.sample-rank = 2")
+        .replace("org.calculon.ao.docrime-excitation/1", schema)
+        .replace(
+            &format!("element-type = F32_LE shape = [ 2 ] schema = {schema}"),
+            &format!("element-type = U16_LE shape = {shape} schema = {schema} rate = {block_rate}"),
+        )
+        .replace(
+            "shape = [ 2 ] schema = org.calculon.ao.controller-command/1",
+            "shape = [ 277 ] schema = org.calculon.ao.controller-command/1",
+        );
+    if let Some(rows) = rows {
+        document = document
+            .replace("execution = complete-frame", "execution = row-block")
+            .replace(
+                "api.fits.output-mode = frame",
+                &format!("api.fits.output-mode = row-block\n                api.fits.row-block-rows = {rows}\n                api.fits.simulated-readout-time-ns = 800000\n                api.fits.profile = recorded-science"),
+            );
+    }
+    document
+}
+
+#[test]
+fn recorded_fits_science_frames_and_row_blocks_are_admitted() {
+    for (height, width, rows) in [
+        (352, 352, None),
+        (64, 64, None),
+        (352, 352, Some(11)),
+        (64, 64, Some(32)),
+    ] {
+        let config = DevelopmentConfig::parse(&fits_science_config(height, width, rows))
+            .expect("maintained recorded FITS transport");
+        assert_eq!(config.sources[0].ports[0].element_type, "U16_LE");
+        assert_eq!(
+            config.sources[0].ports[0].shape,
+            [rows.unwrap_or(height), width]
+        );
+        assert_eq!(config.sinks[0].ports[0].shape, [277]);
+        assert_eq!(
+            format!("{:?}", config.execution),
+            if rows.is_some() {
+                "RowBlock"
+            } else {
+                "CompleteFrame"
+            }
+        );
+    }
+}
+
+#[test]
+fn recorded_fits_rank_one_and_f32_images_accept_authored_shapes() {
+    let rank_one = MINIMAL.replace(
+        "shape = [ 2 ] schema = org.calculon.ao.docrime-excitation/1",
+        "shape = [ 17 ] schema = org.calculon.ao.docrime-excitation/1",
+    );
+    DevelopmentConfig::parse(&rank_one).expect("rank-one recorded F32 sample");
+    let image = fits_science_config(64, 64, None).replace("U16_LE", "F32_LE");
+    DevelopmentConfig::parse(&image).expect("rank-two recorded F32 sample");
+}
+
+#[test]
+fn recorded_fits_row_arguments_reject_invalid_rank_rows_readout_and_metadata() {
+    let row = fits_science_config(352, 352, Some(11));
+    let cases = [
+        (
+            "api.fits.sample-rank = 2",
+            "api.fits.sample-rank = 1",
+            "api.fits.sample-rank",
+        ),
+        (
+            "api.fits.sample-rank = 2",
+            "api.fits.sample-rank = 3",
+            "api.fits.sample-rank",
+        ),
+        (
+            "api.fits.row-block-rows = 11",
+            "api.fits.row-block-rows = 0",
+            "api.fits.row-block-rows",
+        ),
+        (
+            "api.fits.row-block-rows = 11",
+            "api.fits.row-block-rows = -1",
+            "api.fits.row-block-rows",
+        ),
+        (
+            "api.fits.row-block-rows = 11",
+            "api.fits.row-block-rows = 1.5",
+            "api.fits.row-block-rows",
+        ),
+        (
+            "api.fits.row-block-rows = 11",
+            "api.fits.row-block-rows = 12",
+            "api.fits.row-block-rows",
+        ),
+        (
+            "api.fits.row-block-rows = 11",
+            "",
+            "api.fits.row-block-rows",
+        ),
+    ];
+    for (before, after, field) in cases {
+        let error = DevelopmentConfig::parse(&replace_once(&row, before, after))
+            .expect_err("invalid row arguments");
+        assert!(error.field().contains(field), "{error}");
+    }
+}
+
+#[test]
+fn recorded_fits_row_arguments_reject_invalid_readout_and_metadata() {
+    let row = fits_science_config(352, 352, Some(11));
+    let cases = [
+        (
+            "api.fits.simulated-readout-time-ns = 800000",
+            "api.fits.simulated-readout-time-ns = 0",
+            "api.fits.simulated-readout-time-ns",
+        ),
+        (
+            "api.fits.simulated-readout-time-ns = 800000",
+            "api.fits.simulated-readout-time-ns = 1000000",
+            "api.fits.simulated-readout-time-ns",
+        ),
+        (
+            "api.fits.simulated-readout-time-ns = 800000",
+            "api.fits.simulated-readout-time-ns = 18446744073709551615",
+            "api.fits.simulated-readout-time-ns",
+        ),
+        (
+            "api.fits.simulated-readout-time-ns = 800000",
+            "api.fits.simulated-readout-time-ns = 18446744073709551616",
+            "api.fits.simulated-readout-time-ns",
+        ),
+        (
+            "api.fits.simulated-readout-time-ns = 800000",
+            "api.fits.simulated-readout-time-ns = 12.5",
+            "api.fits.simulated-readout-time-ns",
+        ),
+        (
+            "api.fits.simulated-readout-time-ns = 800000",
+            "",
+            "api.fits.simulated-readout-time-ns",
+        ),
+        (
+            "api.fits.profile = recorded-science",
+            "",
+            "api.fits.profile",
+        ),
+        (
+            "api.fits.profile = recorded-science",
+            "api.fits.profile = \"\"",
+            "api.fits.profile",
+        ),
+        (
+            "org.calculon.ao.raw-pixel-row-block/1",
+            "org.calculon.ao.wrong/1",
+            "api.fits.schema",
+        ),
+    ];
+    for (before, after, field) in cases {
+        let error = DevelopmentConfig::parse(&replace_once(&row, before, after))
+            .expect_err("invalid row argument");
+        assert_eq!(
+            error.field(),
+            format!("sources[0].args.{field}"),
+            "mutation {after:?}"
+        );
+    }
+    for (before, after, field) in [
+        ("shape = [ 11 352 ]", "shape = [ 11 352 1 ]", "shape"),
+        (
+            "element-type = U16_LE",
+            "element-type = F64_LE",
+            "element-type",
+        ),
+    ] {
+        let error = DevelopmentConfig::parse(&replace_once(&row, before, after))
+            .expect_err("invalid row port");
+        assert_eq!(error.field(), format!("sources[0].ports.output.{field}"));
+    }
+}
+
+#[test]
+fn recorded_fits_file_mmap_prefault_and_loop_placement_stay_explicit() {
+    let image = fits_science_config(64, 64, None);
+    let prefault = image
+        .replace("api.fits.io-mode = file", "api.fits.io-mode = mmap")
+        .replace("api.fits.prefault = false", "api.fits.prefault = true")
+        .replace(
+            "api.fits.hdu = 1",
+            "api.fits.hdu = 1 node.loop.name = science-loop",
+        )
+        .replace(
+            "node.name = pipewireao-rtc-sink",
+            "node.name = pipewireao-rtc-sink args = { node.loop.name = science-loop }",
+        );
+    let config = DevelopmentConfig::parse(&prefault)
+        .expect("recorded mmap with explicit prefault and loop placement");
+    assert_eq!(
+        config.sources[0].arguments["node.loop.name"],
+        "science-loop"
+    );
+    assert_eq!(config.sinks[0].arguments["node.loop.name"], "science-loop");
+    for (before, after, field) in [
+        (
+            "api.fits.prefault = false",
+            "api.fits.prefault = true",
+            "sources[0].args.api.fits.prefault",
+        ),
+        (
+            "api.fits.prefault = false",
+            "api.fits.prefault = yes",
+            "sources[0].args.api.fits.prefault",
+        ),
+        (
+            "api.fits.prefault = false",
+            "",
+            "sources[0].args.api.fits.prefault",
+        ),
+        (
+            "api.fits.io-mode = file",
+            "api.fits.io-mode = preload",
+            "sources[0].args.api.fits.io-mode",
+        ),
+        (
+            "api.fits.readiness = timerfd",
+            "api.fits.readiness = poll",
+            "sources[0].args.api.fits.readiness",
+        ),
+        (
+            "api.fits.hdu = 1",
+            "api.fits.hdu = 1 node.driver = true",
+            "sources[0].args.node.driver",
+        ),
+        (
+            "api.fits.hdu = 1",
+            "api.fits.hdu = 1 node.loop.name = \"\"",
+            "sources[0].args.node.loop.name",
+        ),
+        (
+            "api.fits.hdu = 1",
+            "api.fits.hdu = 1 node.loop.name = [ science-loop ]",
+            "sources[0].args.node.loop.name",
+        ),
+        (
+            "api.fits.output-mode = frame",
+            "api.fits.output-mode = frame api.fits.row-block-rows = 1",
+            "sources[0].args.api.fits.row-block-rows",
+        ),
+        (
+            "api.fits.output-mode = frame",
+            "api.fits.output-mode = frame api.fits.simulated-readout-time-ns = 1",
+            "sources[0].args.api.fits.simulated-readout-time-ns",
+        ),
+        (
+            "node.name = pipewireao-rtc-sink",
+            "node.name = pipewireao-rtc-sink args = { node.driver = true }",
+            "sinks[0].args.node.driver",
+        ),
+    ] {
+        let error = DevelopmentConfig::parse(&replace_once(&image, before, after))
+            .expect_err("unsupported endpoint argument");
+        assert_eq!(error.field(), field, "mutation {after:?}");
+    }
 }

@@ -8,7 +8,7 @@ mod live;
 mod runner;
 
 pub use config::{
-    DevelopmentConfig, EndpointFactory, ExecutionGroupSpec, GraphFactory, LinkSpec,
+    DevelopmentConfig, EndpointFactory, ExecutionGroupSpec, ExecutionMode, GraphFactory, LinkSpec,
     ObjectRealization, ObjectRole, ObjectSpec, PortDirection, PortSpec, RunControl,
     ScientificDiagnostic,
 };

@@ -13,7 +13,9 @@ use pw::spa::param::format::{ElementType, NdArrayFormat, NdArrayLayout};
 use pw::spa::param::Parameters;
 use pw::spa::pod::deserialize::PodDeserializer;
 use pw::spa::pod::serialize::PodSerializer;
-use pw::spa::pod::{Object as PodObject, Property as PodProperty, PropertyFlags, Value};
+use pw::spa::pod::{
+    ChoiceValue, Object as PodObject, Property as PodProperty, PropertyFlags, Value,
+};
 use pw::spa::utils::{Fraction, Id, SpaTypes};
 use pw::types::ObjectType;
 use std::cell::{Cell, RefCell};
@@ -102,7 +104,7 @@ fn link_admission_key(
 }
 
 type GraphPropertyEvents = Rc<RefCell<Vec<Result<BTreeMap<String, ScalarValue>, String>>>>;
-type GraphPropertyInfoEvents = Rc<RefCell<Vec<Result<(String, bool), String>>>>;
+type GraphPropertyInfoEvents = Rc<RefCell<Vec<Result<(String, bool, Value), String>>>>;
 
 fn graph_reached_requested_state(
     graph: &ControlledGraph,
@@ -820,18 +822,27 @@ impl LiveGraphAdapter {
             })
             .collect();
         self.parameter_routes = config
-            .parameters
-            .keys()
-            .map(|input| {
-                let (graph, parameter) = split_endpoint(input).expect("validated parameter input");
+            .sources
+            .iter()
+            .filter(|source| {
+                matches!(
+                    source.realization,
+                    ObjectRealization::Factory(EndpointFactory::RuntimeParameterSource)
+                )
+            })
+            .map(|source| {
+                let output = format!("{}:{}", source.node_name, source.ports[0].name);
                 let link = config
                     .links
                     .iter()
-                    .find(|link| link.input == *input)
+                    .find(|link| link.output == output)
                     .expect("validated parameter link");
-                let (source, _) =
-                    split_endpoint(&link.output).expect("validated parameter source output");
-                ((graph.to_owned(), parameter.to_owned()), source.to_owned())
+                let (graph, parameter) =
+                    split_endpoint(&link.input).expect("validated parameter input");
+                (
+                    (graph.to_owned(), parameter.to_owned()),
+                    source.node_name.clone(),
+                )
             })
             .collect();
         self.expected_objects = config.owned_object_count();
@@ -954,7 +965,7 @@ impl LiveGraphAdapter {
             &start_order,
             token,
             RunState::Running,
-            "start complete-frame session",
+            "start scientific session",
         )?;
         let mut latest_hold_start_order = self.latest_hold_order.clone();
         latest_hold_start_order.reverse();
@@ -963,7 +974,7 @@ impl LiveGraphAdapter {
             LatestHoldCommand::Start,
             "start latest/hold nodes",
         )?;
-        self.wait_for_links_active("start complete-frame session")?;
+        self.wait_for_links_active("start scientific session")?;
         self.trigger_pending_parameters()?;
         self.status.running = true;
         self.status.discarded_by_sink = if self.has_external_source {
@@ -989,7 +1000,7 @@ impl LiveGraphAdapter {
                 &graph_order,
                 token,
                 RunState::Stopped,
-                "stop complete-frame session",
+                "stop scientific session",
             )?;
             self.status.discarded_by_sink = self.wait_for_discard_quiescence()?;
             self.status.discarded_buffers = self.status.discarded_by_sink.values().sum();
@@ -1154,27 +1165,43 @@ impl LiveGraphAdapter {
         ))
     }
 
+    /// Checks a property transaction before entering the lifecycle.
+    ///
+    /// # Errors
+    /// Returns a diagnostic for an unrealized graph, undeclared or read-only
+    /// property, incompatible scalar type, or malformed qualified name.
+    pub fn validate_property_update(
+        &self,
+        graph_name: &str,
+        values: &BTreeMap<String, ScalarValue>,
+    ) -> Result<(), ScientificDiagnostic> {
+        let graph = self.controlled_graph(graph_name)?;
+        if values.is_empty()
+            || values.keys().any(|name| {
+                !matches!(name.split_once(':'), Some((node, property))
+                    if !node.is_empty() && !property.is_empty())
+            })
+        {
+            return Err(ScientificDiagnostic::new(
+                format!("graph {graph_name}.properties"),
+                "property update requires at least one qualified node:property name",
+            ));
+        }
+        validate_property_declarations(graph_name, values, &graph.property_info.borrow())
+    }
+
     fn update_properties(
         &mut self,
         graph_name: &str,
         values: &BTreeMap<String, ScalarValue>,
     ) -> Result<PropertyUpdateOutcome, ScientificDiagnostic> {
+        self.validate_property_update(graph_name, values)?;
         let affected_nodes = values
             .keys()
             .filter_map(|name| name.split_once(':').map(|(node, _)| node.to_owned()))
             .collect::<BTreeSet<_>>();
         let running = self.status.running;
-        let graph = self
-            .controlled_graphs
-            .iter()
-            .find(|graph| graph.name == graph_name)
-            .ok_or_else(|| {
-                ScientificDiagnostic::new(
-                    format!("graph {graph_name}.properties"),
-                    "graph is not realized under RTC control",
-                )
-            })?;
-        validate_property_declarations(graph_name, values, &graph.property_info.borrow())?;
+        let graph = self.controlled_graph(graph_name)?;
         let baseline_generations = if running {
             let baseline = latest_property_snapshot(graph)?;
             affected_nodes
@@ -1293,12 +1320,33 @@ impl LiveGraphAdapter {
         Ok(())
     }
 
-    fn update_parameter(
-        &mut self,
+    /// Check a declared parameter replacement before entering the lifecycle.
+    /// A pending value is an operator rejection, not a session failure.
+    ///
+    /// # Errors
+    /// Returns a diagnostic for an undeclared/incompatible target or a busy publisher.
+    pub fn validate_parameter_update(
+        &self,
         graph_name: &str,
         parameter_name: &str,
         value: &NdArrayParameterValue,
     ) -> Result<(), ScientificDiagnostic> {
+        let publisher = self.parameter_publisher_for_value(graph_name, parameter_name, value)?;
+        if publisher.state.borrow().pending.is_some() {
+            return Err(ScientificDiagnostic::new(
+                format!("graph {graph_name}.ports.{parameter_name}"),
+                "a parameter value is already pending; retry only after observing publication",
+            ));
+        }
+        Ok(())
+    }
+
+    fn parameter_publisher_for_value(
+        &self,
+        graph_name: &str,
+        parameter_name: &str,
+        value: &NdArrayParameterValue,
+    ) -> Result<&ParameterPublisher, ScientificDiagnostic> {
         let target = (graph_name.to_owned(), parameter_name.to_owned());
         let source_name = self.parameter_routes.get(&target).ok_or_else(|| {
             ScientificDiagnostic::new(
@@ -1355,6 +1403,16 @@ impl LiveGraphAdapter {
                 ),
             ));
         }
+        Ok(publisher)
+    }
+
+    fn update_parameter(
+        &mut self,
+        graph_name: &str,
+        parameter_name: &str,
+        value: &NdArrayParameterValue,
+    ) -> Result<(), ScientificDiagnostic> {
+        let publisher = self.parameter_publisher_for_value(graph_name, parameter_name, value)?;
         {
             let mut state = publisher.state.borrow_mut();
             state.queue_payload(&value.bytes).map_err(|message| {
@@ -2158,7 +2216,7 @@ impl LiveGraphAdapter {
                 ),
             ));
         }
-        let properties = [
+        let mut properties = [
             (
                 "factory.name",
                 match sink.realization {
@@ -2178,6 +2236,11 @@ impl LiveGraphAdapter {
         ]
         .into_iter()
         .collect::<PropertiesBox>();
+        // Endpoint admission permits only the public loop-placement property.
+        // The daemon remains responsible for applying that loop's policy.
+        for (name, value) in &sink.arguments {
+            properties.insert(name.as_str(), value.as_str());
+        }
         let node = self
             .core
             .create_object::<pw::node::Node>(SPA_NODE_FACTORY, &properties)
@@ -2798,20 +2861,8 @@ impl LiveGraphAdapter {
             u32::MAX,
         );
         self.roundtrip(&field)?;
-        let mut formats = formats.borrow_mut();
-        if formats.len() != 1 {
-            return Err(ScientificDiagnostic::new(
-                field,
-                format!(
-                    "expected exactly one configured EnumFormat, observed {}",
-                    formats.len()
-                ),
-            ));
-        }
-        formats
-            .pop()
-            .expect("one format was observed")
-            .map_err(|message| ScientificDiagnostic::new(field, message))
+        let observed = formats.borrow_mut().drain(..).collect();
+        select_ndarray_format(observed, &field)
     }
 
     fn create_link(
@@ -3126,6 +3177,38 @@ fn fractions_equivalent(left: Fraction, right: Fraction) -> bool {
     u64::from(left.num) * u64::from(right.denom) == u64::from(right.num) * u64::from(left.denom)
 }
 
+/// Ports may offer unrelated media alternatives (e.g. FITS also offers video).
+/// Retain exactly one ndarray declaration or the discard sink's wildcard;
+/// the caller then validates its complete scientific contract.
+fn select_ndarray_format(
+    formats: Vec<Result<PodObject, String>>,
+    field: &str,
+) -> Result<PodObject, ScientificDiagnostic> {
+    let mut candidates = Vec::new();
+    for format in formats {
+        let object = format.map_err(|message| ScientificDiagnostic::new(field, message))?;
+        validate_format_object(&object, ObjectRole::Source, "output")
+            .map_err(|error| ScientificDiagnostic::new(field, error.message().to_owned()))?;
+        let ndarray = object.properties.iter().any(|property| {
+            property.key == pw::spa::sys::SPA_FORMAT_mediaSubtype
+                && property.value == Value::Id(Id(pw::spa::sys::SPA_MEDIA_SUBTYPE_ndarray))
+        });
+        if object.properties.is_empty() || ndarray {
+            candidates.push(object);
+        }
+    }
+    if candidates.len() != 1 {
+        return Err(ScientificDiagnostic::new(
+            field,
+            format!(
+                "expected exactly one ndarray or wildcard EnumFormat, observed {}",
+                candidates.len()
+            ),
+        ));
+    }
+    Ok(candidates.pop().expect("one matching format was observed"))
+}
+
 fn validate_ndarray_port(
     object: &PodObject,
     role: ObjectRole,
@@ -3411,7 +3494,7 @@ fn iterate_callbacks(
     Ok(())
 }
 
-fn parse_property_info(pod: &pw::spa::pod::Pod) -> Result<(String, bool), String> {
+fn parse_property_info(pod: &pw::spa::pod::Pod) -> Result<(String, bool, Value), String> {
     let (_, value) = PodDeserializer::deserialize_from::<Value>(pod.as_bytes())
         .map_err(|error| format!("cannot decode SPA_PARAM_PropInfo: {error:?}"))?;
     let Value::Object(object) = value else {
@@ -3436,13 +3519,42 @@ fn parse_property_info(pod: &pw::spa::pod::Pod) -> Result<(String, bool), String
         .iter()
         .find(|property| property.key == pw::spa::sys::SPA_PROP_INFO_type)
         .ok_or_else(|| format!("scientific property {name:?} has no type declaration"))?;
-    Ok((name, !type_property.flags.contains(PropertyFlags::READONLY)))
+    Ok((
+        name,
+        !type_property.flags.contains(PropertyFlags::READONLY),
+        type_property.value.clone(),
+    ))
+}
+
+fn property_type_accepts(declared: &Value, value: &ScalarValue) -> bool {
+    matches!(
+        (declared, value),
+        (
+            Value::Bool(_) | Value::Choice(ChoiceValue::Bool(_)),
+            ScalarValue::Bool(_)
+        ) | (
+            Value::Int(_) | Value::Choice(ChoiceValue::Int(_)),
+            ScalarValue::Int(_)
+        ) | (
+            Value::Long(_) | Value::Choice(ChoiceValue::Long(_)),
+            ScalarValue::Long(_)
+        ) | (
+            Value::Float(_) | Value::Choice(ChoiceValue::Float(_)),
+            ScalarValue::Float(_)
+        ) | (
+            Value::Double(_) | Value::Choice(ChoiceValue::Double(_)),
+            ScalarValue::Double(_)
+        ) | (
+            Value::Id(_) | Value::Choice(ChoiceValue::Id(_)),
+            ScalarValue::Id(_)
+        ) | (Value::String(_), ScalarValue::String(_))
+    )
 }
 
 fn validate_property_declarations(
     graph_name: &str,
     values: &BTreeMap<String, ScalarValue>,
-    declarations: &[Result<(String, bool), String>],
+    declarations: &[Result<(String, bool, Value), String>],
 ) -> Result<(), ScientificDiagnostic> {
     for declaration in declarations {
         if let Err(error) = declaration {
@@ -3452,14 +3564,23 @@ fn validate_property_declarations(
             ));
         }
     }
-    for name in values.keys() {
+    for (name, value) in values {
         let declared = declarations
             .iter()
             .filter_map(|declaration| declaration.as_ref().ok())
-            .find(|(declared_name, _)| declared_name == name);
+            .find(|(declared_name, _, _)| declared_name == name);
         match declared {
-            Some((_, true)) => {}
-            Some((_, false)) => {
+            Some((_, true, declared_type)) => {
+                if !property_type_accepts(declared_type, value) {
+                    return Err(ScientificDiagnostic::new(
+                        format!("graph {graph_name}.properties.{name}"),
+                        format!(
+                            "value {value:?} does not match declared SPA type {declared_type:?}"
+                        ),
+                    ));
+                }
+            }
+            Some((_, false, _)) => {
                 return Err(ScientificDiagnostic::new(
                     format!("graph {graph_name}.properties.{name}"),
                     "property is read-only",
@@ -3474,6 +3595,95 @@ fn validate_property_declarations(
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod property_validation_tests {
+    use super::*;
+    use pw::spa::utils::{Choice, ChoiceEnum, ChoiceFlags};
+
+    #[test]
+    fn property_admission_requires_the_declared_scalar_type() {
+        let types = [
+            Value::Bool(false),
+            Value::Int(0),
+            Value::Long(0),
+            Value::Float(0.0),
+            Value::Double(0.0),
+            Value::Id(Id(0)),
+            Value::String(String::new()),
+        ];
+        let values = [
+            ScalarValue::Bool(true),
+            ScalarValue::Int(1),
+            ScalarValue::Long(1),
+            ScalarValue::float(0.2),
+            ScalarValue::double(0.2),
+            ScalarValue::Id(1),
+            ScalarValue::String("value".to_owned()),
+        ];
+        for (index, declared) in types.iter().enumerate() {
+            let declarations = [Ok(("node:value".to_owned(), true, declared.clone()))];
+            for (value_index, value) in values.iter().enumerate() {
+                let transaction = BTreeMap::from([("node:value".to_owned(), value.clone())]);
+                assert_eq!(
+                    validate_property_declarations("graph", &transaction, &declarations).is_ok(),
+                    index == value_index,
+                    "declared {declared:?}, submitted {value:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn property_info_preserves_choice_type_and_read_only_flag() {
+        let declared_type = Value::Choice(ChoiceValue::Float(Choice(
+            ChoiceFlags::empty(),
+            ChoiceEnum::Range {
+                default: 0.5,
+                min: -1.0,
+                max: 1.0,
+            },
+        )));
+        for writable in [false, true] {
+            let mut type_property =
+                PodProperty::new(pw::spa::sys::SPA_PROP_INFO_type, declared_type.clone());
+            if !writable {
+                type_property.flags = PropertyFlags::READONLY;
+            }
+            let value = Value::Object(PodObject {
+                type_: SpaTypes::ObjectParamPropInfo.as_raw(),
+                id: pw::spa::param::ParamType::PropInfo.as_raw(),
+                properties: vec![
+                    PodProperty::new(
+                        pw::spa::sys::SPA_PROP_INFO_name,
+                        Value::String("node:gain".to_owned()),
+                    ),
+                    type_property,
+                ],
+            });
+            let bytes = PodSerializer::serialize(Cursor::new(Vec::new()), &value)
+                .unwrap()
+                .0
+                .into_inner();
+            let declaration =
+                parse_property_info(pw::spa::pod::Pod::from_bytes(&bytes).unwrap()).unwrap();
+            assert_eq!(
+                declaration,
+                ("node:gain".to_owned(), writable, declared_type.clone())
+            );
+            let declarations = [Ok(declaration)];
+            let valid = BTreeMap::from([("node:gain".to_owned(), ScalarValue::float(0.2))]);
+            assert_eq!(
+                validate_property_declarations("graph", &valid, &declarations).is_ok(),
+                writable
+            );
+            let wrong_type = BTreeMap::from([("node:gain".to_owned(), ScalarValue::Int(1))]);
+            assert!(validate_property_declarations("graph", &wrong_type, &declarations).is_err());
+            let unknown = BTreeMap::from([("node:unknown".to_owned(), ScalarValue::float(0.2))]);
+            assert!(validate_property_declarations("graph", &unknown, &declarations).is_err());
+        }
+    }
 }
 
 fn parse_property_snapshot(
@@ -3813,6 +4023,48 @@ mod callback_wait_tests {
     use std::rc::Rc;
     use std::sync::Arc;
     use std::time::{Duration, Instant};
+
+    fn format(subtype: u32) -> super::PodObject {
+        super::PodObject {
+            type_: pipewire::spa::utils::SpaTypes::ObjectParamFormat.as_raw(),
+            id: pipewire::spa::param::ParamType::EnumFormat.as_raw(),
+            properties: vec![super::PodProperty::new(
+                pipewire::spa::sys::SPA_FORMAT_mediaSubtype,
+                super::Value::Id(pipewire::spa::utils::Id(subtype)),
+            )],
+        }
+    }
+
+    #[test]
+    fn ndarray_format_allows_unrelated_video_alternative() {
+        let ndarray = format(pipewire::spa::sys::SPA_MEDIA_SUBTYPE_ndarray);
+        let video = format(pipewire::spa::sys::SPA_MEDIA_SUBTYPE_raw);
+        assert_eq!(
+            super::select_ndarray_format(vec![Ok(video), Ok(ndarray.clone())], "source.format")
+                .unwrap(),
+            ndarray
+        );
+    }
+
+    #[test]
+    fn ndarray_format_rejects_missing_duplicate_and_malformed_offers() {
+        let ndarray = format(pipewire::spa::sys::SPA_MEDIA_SUBTYPE_ndarray);
+        assert!(super::select_ndarray_format(
+            vec![Ok(format(pipewire::spa::sys::SPA_MEDIA_SUBTYPE_raw))],
+            "format"
+        )
+        .is_err());
+        assert!(
+            super::select_ndarray_format(vec![Ok(ndarray.clone()), Ok(ndarray)], "format").is_err()
+        );
+        assert!(super::select_ndarray_format(vec![Err("invalid pod".into())], "format").is_err());
+        let mut wildcard = format(0);
+        wildcard.properties.clear();
+        assert_eq!(
+            super::select_ndarray_format(vec![Ok(wildcard.clone())], "sink.format").unwrap(),
+            wildcard
+        );
+    }
 
     #[test]
     fn parameter_pending_publication_and_retry_share_payload() {

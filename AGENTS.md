@@ -13,9 +13,15 @@ adding another graph-authoring format, scheduler, or ownership lifecycle.
 Runtime implementation is underway and remains incomplete. Documentation is
 not implementation or qualification evidence.
 
-Physical devices, correction authority, durable recording, Julia execution,
-remote access, progressive scheduling, operational supervision, and target-
-host qualification are not active scope. Their former proposals are preserved
+The selected deployment increment adds installed Classic/Copper native and
+external Julia profiles, a bounded local control interface, and foreground and
+systemd user-service launchers. It delegates full-frame and row-block execution
+to the graph owners. Read RTC-ARCH-020 and RTC-DEV-020 through RTC-DEV-023 before
+changing deployment code. AOS/HIL deployment integration follows this increment.
+
+Physical devices, correction authority, durable recording, remote access,
+RTC-owned progressive scheduling, and target-host qualification are not active
+scope. Their former proposals are preserved
 under `docs/archive/full-rtc/` as inactive design input. Do not load, cite, or
 implement that archive unless the user explicitly asks to promote one deferred
 capability. Never reactivate the archive wholesale.
@@ -33,8 +39,9 @@ Before making changes, read `docs/README.md` and the relevant active document:
   and progressive execution.
 - Scientific Algorithm packages own transport-neutral implementations and
   portable declarations.
-- This repository owns only development configuration, exact graph
-  realization, basic runner lifecycle, diagnostics, and system-level tests.
+- This repository owns development configuration, exact graph realization,
+  runner lifecycle, deployment process supervision, diagnostics, and
+  system-level tests. External Julia processes execute their own graphs.
 - Device-plugin repositories own camera, deformable-mirror, file-source, and
   other adapters.
 - `pipewireao-gui` and command-line tools are ordinary optional observers.
@@ -64,10 +71,9 @@ worktree changes.
   central adapter-registry entries.
 - Keep the scientific implementation directly testable with ordinary arrays
   and usable by a non-PipeWire graph executor.
-- The active baseline is complete-frame and non-actuating. Do not scaffold
-  physical authority, recording, Julia services, row-block scheduling,
-  service-manager policy, or qualification infrastructure in anticipation of
-  later work.
+- Deployment profiles remain non-actuating. The selected user-service and
+  external-owner management support existing full-frame and row-block graphs;
+  they do not introduce an RTC data scheduler or physical authority.
 - Add implementation only in the dependency order in `docs/roadmap.md` unless
   the user explicitly changes that order.
 

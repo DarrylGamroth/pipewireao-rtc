@@ -69,6 +69,7 @@ impl ObjectRole {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum EndpointFactory {
     SimulatedCompleteFrameSource,
+    /// Recorded FITS source; output-mode selects complete frames or row blocks.
     FitsCompleteFrameSource,
     RuntimeParameterSource,
     FormatAgnosticDiscardSink,
@@ -186,6 +187,13 @@ pub struct LinkSpec {
     pub passive: bool,
 }
 
+/// Transport mode declared by the session; graph owners execute this mode.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ExecutionMode {
+    CompleteFrame,
+    RowBlock,
+}
+
 /// Named session nodes that start and stop as one processing unit.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ExecutionGroupSpec {
@@ -196,12 +204,15 @@ pub struct ExecutionGroupSpec {
 /// Resolved, development-only session loaded from relaxed SPA-JSON.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DevelopmentConfig {
+    pub execution: ExecutionMode,
     pub rate: String,
     pub sources: Vec<ObjectSpec<EndpointFactory>>,
     pub graphs: Vec<ObjectSpec<GraphFactory>>,
     pub sinks: Vec<ObjectSpec<EndpointFactory>>,
     pub execution_groups: Vec<ExecutionGroupSpec>,
     pub properties: BTreeMap<String, String>,
+    /// Optional initial submissions for runtime parameter routes declared by links.
+    /// Omitted values require initialization by the graph owner.
     pub parameters: BTreeMap<String, String>,
     pub observations: Vec<String>,
     pub links: Vec<LinkSpec>,
@@ -236,7 +247,7 @@ impl DevelopmentConfig {
         Ok(config)
     }
 
-    /// Validates the complete-frame, non-actuating session contract.
+    /// Validates the non-actuating session contract.
     ///
     /// # Errors
     ///
@@ -246,7 +257,7 @@ impl DevelopmentConfig {
         if self.sources.is_empty() {
             return Err(ScientificDiagnostic::new(
                 "sources",
-                "at least one complete-frame source is required",
+                "at least one source is required",
             ));
         }
         if self.graphs.is_empty() {
@@ -268,7 +279,15 @@ impl DevelopmentConfig {
             validate_source(source, &field)?;
             if let Some(rate) = source.arguments.get("api.fits.rate") {
                 let port_rate = source.ports[0].rate.as_deref().unwrap_or(&self.rate);
-                if !rates_equivalent(rate, port_rate) {
+                // A row-block source's declared port cadence is its block rate.
+                // FITS header negotiation validates the full frame and block count.
+                if source
+                    .arguments
+                    .get("api.fits.output-mode")
+                    .map(String::as_str)
+                    != Some("row-block")
+                    && !rates_equivalent(rate, port_rate)
+                {
                     return Err(ScientificDiagnostic::new(
                         format!("{field}.args.api.fits.rate"),
                         format!(
@@ -738,11 +757,11 @@ fn validate_source(
     validate_ports(field, &source.ports, &[PortDirection::Output])?;
     match source.realization {
         ObjectRealization::Factory(EndpointFactory::FitsCompleteFrameSource) => {
-            validate_exact_shape(&source.ports[0], field, &[2])?;
-            if source.ports[0].element_type != "F32_LE" {
+            reject_parameter_ports(field, &source.ports)?;
+            if !(1..=2).contains(&source.ports[0].shape.len()) {
                 return Err(ScientificDiagnostic::new(
-                    format!("{field}.ports.{}.element-type", source.ports[0].name),
-                    "the maintained FITS source publishes F32_LE frames",
+                    format!("{field}.ports.{}.shape", source.ports[0].name),
+                    "recorded FITS samples require rank one or two",
                 ));
             }
             validate_required_module(field, source.module.as_deref(), SPA_NODE_FACTORY_MODULE)?;
@@ -818,16 +837,64 @@ fn validate_parameter_routes(config: &DevelopmentConfig) -> Result<(), Scientifi
             )
         })
         .collect::<Vec<_>>();
-    if parameter_sources.len() != config.parameters.len() {
-        return Err(ScientificDiagnostic::new(
-            "parameters",
-            format!(
-                "expected one initial value for each of {} runtime parameter source(s), got {}",
-                parameter_sources.len(),
-                config.parameters.len()
-            ),
-        ));
+    validate_initial_parameters(config, &parameter_sources)?;
+    let mut targets = BTreeSet::new();
+    for (source_index, source) in config.sources.iter().enumerate().filter(|(_, source)| {
+        matches!(
+            source.realization,
+            ObjectRealization::Factory(EndpointFactory::RuntimeParameterSource)
+        )
+    }) {
+        let output = format!("{}:{}", source.node_name, source.ports[0].name);
+        let mut links = config
+            .links
+            .iter()
+            .enumerate()
+            .filter(|(_, link)| link.output == output);
+        let route_error = || {
+            ScientificDiagnostic::new(
+                format!("sources[{source_index}]"),
+                format!("runtime parameter output {output:?} requires exactly one declared link"),
+            )
+        };
+        let (link_index, link) = links.next().ok_or_else(route_error)?;
+        if links.next().is_some() {
+            return Err(route_error());
+        }
+        if !link.passive {
+            return Err(ScientificDiagnostic::new(
+                format!("links[{link_index}].passive"),
+                "runtime parameter links must be passive",
+            ));
+        }
+        let target = config.graphs.iter().find_map(|graph| {
+            graph
+                .ports
+                .iter()
+                .find(|port| format!("{}:{}", graph.node_name, port.name) == link.input)
+        });
+        if !target.is_some_and(|port| port.direction == PortDirection::Input && port.parameter) {
+            return Err(ScientificDiagnostic::new(
+                format!("links[{link_index}].input"),
+                "runtime parameter target must be a declared graph parameter input",
+            ));
+        }
+        if !targets.insert(&link.input) {
+            return Err(ScientificDiagnostic::new(
+                format!("links[{link_index}].input"),
+                "graph parameter input has more than one runtime publisher",
+            ));
+        }
     }
+    // General link admission checks the declared type, shape and schema even
+    // when this route has no initial file.
+    Ok(())
+}
+
+fn validate_initial_parameters(
+    config: &DevelopmentConfig,
+    parameter_sources: &[&ObjectSpec<EndpointFactory>],
+) -> Result<(), ScientificDiagnostic> {
     for (input, path) in &config.parameters {
         let graph_port = config
             .graphs
@@ -1072,12 +1139,12 @@ fn validate_latest_hold_arguments(
     Ok(())
 }
 
-fn required_argument<'a>(
-    graph: &'a ObjectSpec<GraphFactory>,
+fn required_argument<'a, F>(
+    object: &'a ObjectSpec<F>,
     field: &str,
     name: &str,
 ) -> Result<&'a str, ScientificDiagnostic> {
-    graph
+    object
         .arguments
         .get(name)
         .map(String::as_str)
@@ -1112,7 +1179,6 @@ fn validate_sink(
     reject_parameter_ports(field, &sink.ports)?;
     match sink.realization {
         ObjectRealization::Factory(EndpointFactory::FormatAgnosticDiscardSink) => {
-            validate_exact_shape(&sink.ports[0], field, &[2])?;
             validate_required_module(field, sink.module.as_deref(), SPA_NODE_FACTORY_MODULE)?;
             validate_exact_reference(
                 &format!("{field}.plugin.path"),
@@ -1120,14 +1186,17 @@ fn validate_sink(
                 "${PIPEWIREAO_DISCARD_PLUGIN}",
             )?;
             reject_configuration_path(field, sink.configuration_path.as_deref())?;
-            if sink.arguments.is_empty() {
-                Ok(())
-            } else {
-                Err(ScientificDiagnostic::new(
-                    format!("{field}.args"),
-                    "the format-agnostic discard sink takes no fixture arguments",
-                ))
+            if let Some(name) = sink
+                .arguments
+                .keys()
+                .find(|name| name.as_str() != "node.loop.name")
+            {
+                return Err(ScientificDiagnostic::new(
+                    format!("{field}.args.{name}"),
+                    "discard sink only admits node.loop.name for thread placement",
+                ));
             }
+            validate_optional_string_argument(sink, field, "node.loop.name")
         }
         ObjectRealization::External {
             run_control: RunControl::Application,
@@ -1330,6 +1399,22 @@ fn validate_port_declarations(field: &str, ports: &[PortSpec]) -> Result<(), Sci
     Ok(())
 }
 
+fn validate_optional_string_argument<F>(
+    object: &ObjectSpec<F>,
+    field: &str,
+    name: &str,
+) -> Result<(), ScientificDiagnostic> {
+    if let Some(value) = object.arguments.get(name) {
+        if value.trim().is_empty() || value.contains('\0') {
+            return Err(ScientificDiagnostic::new(
+                format!("{field}.args.{name}"),
+                "argument must be a non-empty string without NUL",
+            ));
+        }
+    }
+    Ok(())
+}
+
 fn validate_fits_arguments(
     source: &ObjectSpec<EndpointFactory>,
     field: &str,
@@ -1337,17 +1422,26 @@ fn validate_fits_arguments(
     let source_port = &source.ports[0];
     let expected = [
         ("api.fits.hdu", "1"),
-        ("api.fits.io-mode", "file"),
-        ("api.fits.output-mode", "frame"),
-        ("api.fits.prefault", "false"),
         ("api.fits.readiness", "timerfd"),
-        ("api.fits.sample-rank", "1"),
         ("api.fits.schema", source_port.schema.as_str()),
     ];
     let expected_names = expected
         .iter()
         .map(|(name, _)| *name)
-        .chain(["api.fits.loop", "api.fits.path", "api.fits.rate"])
+        .chain([
+            "api.fits.io-mode",
+            "api.fits.output-mode",
+            "api.fits.layout",
+            "api.fits.prefault",
+            "api.fits.sample-rank",
+            "api.fits.loop",
+            "api.fits.path",
+            "api.fits.rate",
+            "api.fits.row-block-rows",
+            "api.fits.simulated-readout-time-ns",
+            "api.fits.profile",
+            "node.loop.name",
+        ])
         .collect::<BTreeSet<_>>();
     if let Some(name) = source
         .arguments
@@ -1356,72 +1450,158 @@ fn validate_fits_arguments(
     {
         return Err(ScientificDiagnostic::new(
             format!("{field}.args.{name}"),
-            "factory argument is not admitted for this fixture",
+            "factory argument is not admitted for this recorded source",
         ));
     }
     for (name, expected_value) in expected {
-        match source.arguments.get(name) {
-            Some(value) if value == expected_value => {}
-            Some(value) => {
-                return Err(ScientificDiagnostic::new(
-                    format!("{field}.args.{name}"),
-                    format!("expected {expected_value:?}, got {value:?}"),
-                ));
-            }
-            None => {
-                return Err(ScientificDiagnostic::new(
-                    format!("{field}.args.{name}"),
-                    "required factory argument is missing",
-                ));
-            }
-        }
-    }
-    match source.arguments.get("api.fits.loop").map(String::as_str) {
-        Some("true" | "false") => {}
-        Some(value) => {
+        let value = required_argument(source, field, name)?;
+        if value != expected_value {
             return Err(ScientificDiagnostic::new(
-                format!("{field}.args.api.fits.loop"),
-                format!("expected \"true\" or \"false\", got {value:?}"),
-            ));
-        }
-        None => {
-            return Err(ScientificDiagnostic::new(
-                format!("{field}.args.api.fits.loop"),
-                "required factory argument is missing",
+                format!("{field}.args.{name}"),
+                format!("expected {expected_value:?}, got {value:?}"),
             ));
         }
     }
-    let rate = source.arguments.get("api.fits.rate").ok_or_else(|| {
-        ScientificDiagnostic::new(
-            format!("{field}.args.api.fits.rate"),
-            "required factory argument is missing",
-        )
-    })?;
-    let Some((numerator, denominator)) = rate.split_once('/') else {
+    for (name, values) in [
+        ("api.fits.io-mode", &["file", "mmap"][..]),
+        ("api.fits.output-mode", &["frame", "row-block"][..]),
+        ("api.fits.prefault", &["true", "false"][..]),
+        ("api.fits.loop", &["true", "false"][..]),
+    ] {
+        let value = required_argument(source, field, name)?;
+        if !values.contains(&value) {
+            return Err(ScientificDiagnostic::new(
+                format!("{field}.args.{name}"),
+                format!("expected one of {values:?}, got {value:?}"),
+            ));
+        }
+    }
+    if source.arguments["api.fits.prefault"] == "true"
+        && source.arguments["api.fits.io-mode"] != "mmap"
+    {
         return Err(ScientificDiagnostic::new(
-            format!("{field}.args.api.fits.rate"),
-            "complete-frame rate must use positive numerator/denominator syntax",
-        ));
-    };
-    let parsed_rate = numerator
-        .parse::<u32>()
-        .ok()
-        .zip(denominator.parse::<u32>().ok());
-    if !parsed_rate.is_some_and(|(numerator, denominator)| {
-        numerator > 0
-            && denominator > 0
-            && u64::from(numerator) <= 1_000_000_000_u64 * u64::from(denominator)
-    }) {
-        return Err(ScientificDiagnostic::new(
-            format!("{field}.args.api.fits.rate"),
-            "complete-frame rate must use positive u32 numerator/denominator values",
+            format!("{field}.args.api.fits.prefault"),
+            "prefault = true requires io-mode = mmap in the maintained FITS plugin",
         ));
     }
+    let rank = required_argument(source, field, "api.fits.sample-rank")?;
+    if rank != source_port.shape.len().to_string() {
+        return Err(ScientificDiagnostic::new(
+            format!("{field}.args.api.fits.sample-rank"),
+            "sample rank must match the declared rank-one or rank-two port shape",
+        ));
+    }
+    let (numerator, denominator) = validate_fits_rate(source, field)?;
+    if let Some(layout) = source.arguments.get("api.fits.layout") {
+        if layout != "row-major" {
+            return Err(ScientificDiagnostic::new(
+                format!("{field}.args.api.fits.layout"),
+                "RTC recorded sources require row-major layout",
+            ));
+        }
+    }
+    if source.arguments["api.fits.output-mode"] == "row-block" {
+        validate_fits_row_arguments(source, field, rank, numerator, denominator)?;
+    } else {
+        for name in [
+            "api.fits.row-block-rows",
+            "api.fits.simulated-readout-time-ns",
+        ] {
+            if source.arguments.contains_key(name) {
+                return Err(ScientificDiagnostic::new(
+                    format!("{field}.args.{name}"),
+                    "row-block arguments require output-mode = row-block",
+                ));
+            }
+        }
+    }
+    validate_fits_identity(source, field)
+}
+
+fn validate_fits_identity(
+    source: &ObjectSpec<EndpointFactory>,
+    field: &str,
+) -> Result<(), ScientificDiagnostic> {
+    validate_optional_string_argument(source, field, "api.fits.profile")?;
+    validate_optional_string_argument(source, field, "node.loop.name")?;
     validate_configuration_reference(
         &format!("{field}.args.api.fits.path"),
         source.arguments.get("api.fits.path").map(String::as_str),
         "PIPEWIREAO_RTC_FITS_PATH",
     )
+}
+
+fn validate_fits_rate(
+    source: &ObjectSpec<EndpointFactory>,
+    field: &str,
+) -> Result<(u32, u32), ScientificDiagnostic> {
+    let rate = required_argument(source, field, "api.fits.rate")?;
+    let (numerator, denominator) = parse_rate(rate).map_err(|message| {
+        ScientificDiagnostic::new(format!("{field}.args.api.fits.rate"), message)
+    })?;
+    if u64::from(numerator) > 1_000_000_000_u64 * u64::from(denominator) {
+        return Err(ScientificDiagnostic::new(
+            format!("{field}.args.api.fits.rate"),
+            "FITS frame period must be at least one nanosecond",
+        ));
+    }
+    Ok((numerator, denominator))
+}
+
+fn validate_fits_row_arguments(
+    source: &ObjectSpec<EndpointFactory>,
+    field: &str,
+    rank: &str,
+    numerator: u32,
+    denominator: u32,
+) -> Result<(), ScientificDiagnostic> {
+    let source_port = &source.ports[0];
+    if rank != "2" {
+        return Err(ScientificDiagnostic::new(
+            format!("{field}.args.api.fits.sample-rank"),
+            "row-block output requires rank-two samples",
+        ));
+    }
+    let rows = positive_fits_integer(source, field, "api.fits.row-block-rows")?;
+    if rows != u64::from(source_port.shape[0]) {
+        return Err(ScientificDiagnostic::new(
+            format!("{field}.args.api.fits.row-block-rows"),
+            "row-block rows must match the first declared block dimension",
+        ));
+    }
+    let readout = positive_fits_integer(source, field, "api.fits.simulated-readout-time-ns")?;
+    if u128::from(readout) * u128::from(numerator) >= 1_000_000_000_u128 * u128::from(denominator) {
+        return Err(ScientificDiagnostic::new(
+            format!("{field}.args.api.fits.simulated-readout-time-ns"),
+            "simulated readout must be shorter than the FITS frame period",
+        ));
+    }
+    required_argument(source, field, "api.fits.profile")?;
+    if source_port.schema != "org.calculon.ao.raw-pixel-row-block/1" {
+        return Err(ScientificDiagnostic::new(
+            format!("{field}.args.api.fits.schema"),
+            "the maintained FITS row-block source requires org.calculon.ao.raw-pixel-row-block/1",
+        ));
+    }
+    Ok(())
+}
+
+fn positive_fits_integer(
+    source: &ObjectSpec<EndpointFactory>,
+    field: &str,
+    name: &str,
+) -> Result<u64, ScientificDiagnostic> {
+    let value = required_argument(source, field, name)?;
+    value
+        .parse::<u64>()
+        .ok()
+        .filter(|parsed| *parsed > 0 && value.bytes().all(|byte| byte.is_ascii_digit()))
+        .ok_or_else(|| {
+            ScientificDiagnostic::new(
+                format!("{field}.args.{name}"),
+                "argument must be a positive decimal integer within u64 range",
+            )
+        })
 }
 
 fn validate_observations(config: &DevelopmentConfig) -> Result<(), ScientificDiagnostic> {
@@ -1643,8 +1823,15 @@ fn validate_links(config: &DevelopmentConfig) -> Result<(), ScientificDiagnostic
             }
         }
         let enters_group_from_session_node = output_group.is_none() && input_group.is_some();
-        if link.passive != enters_group_from_session_node {
-            let expected = enters_group_from_session_node;
+        let runtime_parameter = config.sources.iter().any(|source| {
+            source.node_name == output_node
+                && matches!(
+                    source.realization,
+                    ObjectRealization::Factory(EndpointFactory::RuntimeParameterSource)
+                )
+        });
+        let expected = enters_group_from_session_node || runtime_parameter;
+        if link.passive != expected {
             return Err(ScientificDiagnostic::new(
                 format!("{field}.passive"),
                 format!("link.passive must be {expected} for this execution-group boundary"),

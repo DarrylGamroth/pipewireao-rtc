@@ -10,13 +10,17 @@ declared session without introducing another graph-authoring format.
 
 | Document | Authority |
 | --- | --- |
-| [Development architecture](architecture.md) | Scope, component boundary, configuration choice, scientist boundary, exclusions, RTCW composition, selective run control, external-node substitution, and the REVOLT Classic simulated-plant boundary |
-| [Development operating contract](operations.md) | RTC-DEV-001 through RTC-DEV-019, Statig lifecycle, multi-composite sessions, selective run control, external nodes, updates, observation, diagnostics, equivalence, and laboratory placement |
+| [Development architecture](architecture.md) | RTCW composition, scientist boundary, external-node substitution, laboratory placement, and the selected deployment package |
+| [Development operating contract](operations.md) | RTC-DEV-001 through RTC-DEV-023: lifecycle, composition, updates, equivalence, placement, installed profiles, bounded control and user-service operation |
 | [Development roadmap](roadmap.md) | Dependency-ordered implementation, completion evidence, performance characterization, and deferred capability triggers |
 
 These three files are the complete RTC-level implementation baseline. An
 implementation task should not load the archive unless it is explicitly
 promoting a deferred capability.
+
+[Deployment review](DEPLOYMENT_REVIEW.md) records the independent review and
+implementation prerequisites. It is evidence and design input; the active
+requirements below govern implementation.
 
 ## Inactive design archive
 

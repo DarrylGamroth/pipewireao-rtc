@@ -1,35 +1,46 @@
+mod control;
+mod control_socket;
+
+use crate::control::{state_name, Command, ControlError, ControlErrorResponse, ControlResponse};
+use crate::control_socket::ControlSocketServer;
 use pipewireao_rtc::{
-    ConfigurationInput, LifecycleEvent, LifecycleState, LiveGraphAdapter, NdArrayParameterValue,
-    Runner, ScalarValue, ScientificDiagnostic,
+    ConfigurationInput, LifecycleEvent, LifecycleState, LiveGraphAdapter, Runner,
+    ScientificDiagnostic,
 };
 use std::cell::RefCell;
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::VecDeque;
+use std::io::{self, Read, Write};
 use std::path::PathBuf;
 use std::rc::Rc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{mpsc, Arc};
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+
+#[derive(Debug)]
+pub(crate) enum ControlInput {
+    Request {
+        id: Option<String>,
+        command: Result<Command, ControlError>,
+        reply: mpsc::SyncSender<ControlResponse>,
+    },
+    End,
+}
 
 struct Arguments {
     config: PathBuf,
     remote: String,
     hold: bool,
-}
-
-#[derive(Debug)]
-enum ControlInput {
-    Line(String),
-    Parameter {
-        graph: String,
-        parameter: String,
-        value: NdArrayParameterValue,
-    },
-    PreparationFailed(ScientificDiagnostic),
-    End,
-    Failed(String),
+    start_paused: bool,
+    control_socket: Option<PathBuf>,
 }
 
 fn main() {
-    if let Err(error) = run() {
+    let result = if std::env::args().nth(1).as_deref() == Some("control") {
+        run_client()
+    } else {
+        run()
+    };
+    if let Err(error) = result {
         eprintln!("pipewireao-rtc: {error}");
         std::process::exit(1);
     }
@@ -37,6 +48,8 @@ fn main() {
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     let arguments = parse_arguments()?;
+    let socket_mode = arguments.control_socket.is_some();
+    let session_id = session_id();
     let adapter = LiveGraphAdapter::connect(arguments.remote)?;
     let mut runner = Runner::new(adapter);
 
@@ -45,19 +58,35 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         LifecycleEvent::Load(ConfigurationInput::File(arguments.config)),
         LifecycleState::Ready,
     )?;
-    println!("READY {:?}", runner.executor().status());
+    if !socket_mode {
+        println!("READY {:?}", runner.executor().status());
+    }
 
-    require_state(&mut runner, LifecycleEvent::Start, LifecycleState::Running)?;
-    println!("RUNNING {:?}", runner.executor().status());
-    let control_result = if arguments.hold {
-        control_session(&mut runner)
+    if !arguments.start_paused {
+        require_state(&mut runner, LifecycleEvent::Start, LifecycleState::Running)?;
+        if !socket_mode {
+            println!("RUNNING {:?}", runner.executor().status());
+        }
+    }
+
+    let mut control_socket = None;
+    let control_result = if arguments.hold || arguments.start_paused || socket_mode {
+        control_session(
+            &mut runner,
+            arguments.control_socket.as_deref(),
+            &session_id,
+            &mut control_socket,
+        )
     } else {
         Ok(())
     };
 
+    if let Some(socket) = &control_socket {
+        socket.shutdown();
+    }
     let stop_result = if runner.state() == LifecycleState::Running {
         let result = require_state(&mut runner, LifecycleEvent::Stop, LifecycleState::Ready);
-        if result.is_ok() {
+        if result.is_ok() && !socket_mode {
             println!("READY {:?}", runner.executor().status());
         }
         result
@@ -68,66 +97,93 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         Ok(())
     } else {
         let result = require_state(&mut runner, LifecycleEvent::Unload, LifecycleState::Offline);
-        if result.is_ok() {
+        if result.is_ok() && !socket_mode {
             println!("OFFLINE {:?}", runner.executor().status());
         }
         result
     };
 
+    drop(control_socket);
     unload_result?;
     stop_result?;
     control_result?;
     Ok(())
 }
 
-#[allow(clippy::too_many_lines)]
-fn control_session(runner: &mut Runner<LiveGraphAdapter>) -> Result<(), ScientificDiagnostic> {
-    println!(
-        "Commands: groups, status, properties GRAPH, property-generation GRAPH NODE, \
-         parameter-generation GRAPH NODE, stop GROUP, start GROUP, session-stop, \
-         session-start, source-ended, reset, properties-set GRAPH \
-         NODE:PROPERTY TYPE VALUE [NODE:PROPERTY TYPE VALUE ...], \
-         property GRAPH NODE:PROPERTY TYPE VALUE, \
-         parameter GRAPH PORT ELEMENT_TYPE DIMS SCHEMA PATH, quit"
-    );
+fn run_client() -> Result<(), Box<dyn std::error::Error>> {
+    let mut arguments = std::env::args().skip(2);
+    let mut socket = None;
+    loop {
+        match arguments.next().as_deref() {
+            Some("--socket") => {
+                socket = Some(PathBuf::from(arguments.next().ok_or_else(|| {
+                    ScientificDiagnostic::new("command", "control --socket requires a path")
+                })?));
+            }
+            Some("--") => break,
+            Some(argument) => {
+                return Err(ScientificDiagnostic::new(
+                    "command",
+                    format!("unexpected control client option {argument:?}"),
+                )
+                .into())
+            }
+            None => {
+                return Err(ScientificDiagnostic::new(
+                    "command",
+                    "usage: pipewireao-rtc control --socket PATH -- COMMAND [ARG ...]",
+                )
+                .into())
+            }
+        }
+    }
+    let socket = socket
+        .ok_or_else(|| ScientificDiagnostic::new("command", "control --socket PATH is required"))?;
+    let argv = arguments.collect::<Vec<_>>();
+    let id = session_id();
+    let response = control_socket::send_request(&socket, argv, &id)?;
+    println!("{}", serde_json::to_string(&response)?);
+    if !response.ok {
+        return Err(format!("remote control rejected: {:?}", response.error).into());
+    }
+    Ok(())
+}
+
+fn control_session(
+    runner: &mut Runner<LiveGraphAdapter>,
+    socket_path: Option<&std::path::Path>,
+    session: &str,
+    socket: &mut Option<ControlSocketServer>,
+) -> Result<(), ScientificDiagnostic> {
     let main_loop = runner.executor().main_loop();
     let inputs = Rc::new(RefCell::new(VecDeque::new()));
     let queued_inputs = Rc::clone(&inputs);
     let (sender, receiver) = pipewire::channel::channel();
-    // Dispatch outside this callback: runner effects may synchronize with the
-    // core and dispatch this loop again while the channel lock is held.
+    // Dispatch stays outside PipeWire channel callbacks: effects may roundtrip
+    // this loop while the same callback queue is being pumped.
     let _receiver = receiver.attach(main_loop.loop_(), move |input| {
         queued_inputs.borrow_mut().push_back(input);
     });
-    // Keep the sole acknowledgement sender on the owner. A queued PipeWire
-    // input must not retain it: PipeWire senders keep their native queue alive.
-    let (parameter_dispatched, parameter_received) = mpsc::sync_channel(1);
-    std::thread::spawn(move || loop {
-        let mut input = String::new();
-        match std::io::stdin().read_line(&mut input) {
-            Ok(0) => {
-                let _ = sender.send(ControlInput::End);
-                return;
-            }
-            Ok(_) => {
-                if !send_prepared_control_input(
-                    input,
-                    |path| std::fs::read(path),
-                    |input| sender.send(input).is_ok(),
-                    &parameter_received,
-                ) {
-                    return;
-                }
-            }
-            Err(error) => {
-                let _ = sender.send(ControlInput::Failed(error.to_string()));
-                return;
-            }
-        }
-    });
-    print_prompt()?;
+
+    *socket = match socket_path {
+        Some(path) => Some(
+            ControlSocketServer::bind(path, sender.clone(), session.to_owned())
+                .map_err(|error| ScientificDiagnostic::new("control socket", error.to_string()))?,
+        ),
+        None => None,
+    };
+    let stopping = Arc::new(AtomicBool::new(false));
+    signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&stopping))
+        .map_err(|error| ScientificDiagnostic::new("SIGTERM", error.to_string()))?;
+    if socket_path.is_none() {
+        spawn_console_reader(sender);
+    }
+
     let mut monitor_deadline = Instant::now() + Duration::from_millis(100);
     loop {
+        if stopping.load(Ordering::Acquire) {
+            return Ok(());
+        }
         let input = next_control_input(main_loop.loop_(), &inputs, &mut monitor_deadline, || {
             let state = runner.poll_required_objects().map_err(|error| {
                 ScientificDiagnostic::new("lifecycle dispatcher", error.to_string())
@@ -142,178 +198,138 @@ fn control_session(runner: &mut Runner<LiveGraphAdapter>) -> Result<(), Scientif
             }
             Ok(())
         })?;
-        let input = match input {
-            Some(ControlInput::Line(input)) => input,
-            Some(ControlInput::Parameter {
-                graph,
-                parameter,
-                value,
-            }) => {
-                dispatch_control(
-                    runner,
-                    LifecycleEvent::UpdateParameter {
-                        graph,
-                        parameter,
-                        value,
-                    },
-                )?;
-                // Capacity one makes acknowledgement nonblocking on the owner.
-                // An error or session exit drops the sender and releases the reader.
-                let _ = parameter_dispatched.try_send(());
-                print_prompt()?;
-                continue;
+        if stopping.load(Ordering::Acquire) {
+            return Ok(());
+        }
+        let Some(input) = input else {
+            continue;
+        };
+        match input {
+            ControlInput::Request { id, command, reply } => {
+                let (response, shutdown) = execute_request(runner, id, command, session);
+                // An abandoned or timed-out client must never stall the sole
+                // lifecycle owner while it returns a response.
+                let _ = reply.try_send(response);
+                if shutdown {
+                    return Ok(());
+                }
             }
-            Some(ControlInput::PreparationFailed(error)) => return Err(error),
-            Some(ControlInput::End) => return Ok(()),
-            Some(ControlInput::Failed(error)) => {
-                return Err(ScientificDiagnostic::new(
-                    "command",
-                    format!("cannot read control command: {error}"),
+            ControlInput::End => return Ok(()),
+        }
+    }
+}
+
+fn execute_request(
+    runner: &mut Runner<LiveGraphAdapter>,
+    id: Option<String>,
+    command: Result<Command, ControlError>,
+    session: &str,
+) -> (ControlResponse, bool) {
+    let (ok, result, error, shutdown) = match command {
+        Err(error) => (false, None, Some(error), false),
+        Ok(command) => match command.execute(runner) {
+            Ok(execution) => (true, Some(execution.result), None, execution.shutdown),
+            Err(error) => (false, None, Some(error), false),
+        },
+    };
+    (
+        ControlResponse {
+            version: 1,
+            id,
+            session_id: Some(session.to_owned()),
+            state: Some(state_name(runner.state()).to_owned()),
+            result,
+            ok,
+            error: error.map(|error| ControlErrorResponse {
+                field: error.field,
+                message: error.message,
+            }),
+        },
+        shutdown,
+    )
+}
+
+fn spawn_console_reader(sender: pipewire::channel::Sender<ControlInput>) {
+    std::thread::Builder::new()
+        .name("rtc-console-reader".to_owned())
+        .spawn(move || {
+            let stdin = io::stdin();
+            let mut input = stdin.lock();
+            loop {
+                print_prompt();
+                let command = match read_console_line(&mut input) {
+                    Ok(Some(line)) => {
+                        let words = line
+                            .split_whitespace()
+                            .map(str::to_owned)
+                            .collect::<Vec<_>>();
+                        control::parse(&words).and_then(control::prepare)
+                    }
+                    Ok(None) => {
+                        let _ = sender.send(ControlInput::End);
+                        return;
+                    }
+                    Err(error) => Err(ControlError::new("command.line", error.to_string())),
+                };
+                let (reply, response) = mpsc::sync_channel(1);
+                if sender
+                    .send(ControlInput::Request {
+                        id: None,
+                        command,
+                        reply,
+                    })
+                    .is_err()
+                {
+                    return;
+                }
+                let Ok(response) = response.recv() else {
+                    return;
+                };
+                match serde_json::to_string(&response) {
+                    Ok(json) => println!("{json}"),
+                    Err(error) => eprintln!("cannot format control response: {error}"),
+                }
+                if response
+                    .result
+                    .as_ref()
+                    .and_then(|result| result.get("shutdown"))
+                    .and_then(serde_json::Value::as_bool)
+                    == Some(true)
+                {
+                    return;
+                }
+            }
+        })
+        .expect("spawn console reader");
+}
+
+fn print_prompt() {
+    print!("pipewireao-rtc> ");
+    let _ = io::stdout().flush();
+}
+
+fn read_console_line<R: Read>(reader: &mut R) -> io::Result<Option<String>> {
+    let mut bytes = Vec::with_capacity(256);
+    let mut byte = [0_u8; 1];
+    loop {
+        match reader.read(&mut byte)? {
+            0 if bytes.is_empty() => return Ok(None),
+            0 => break,
+            _ if byte[0] == b'\n' => break,
+            _ if bytes.len() == control::MAX_REQUEST_BYTES - 1 => {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "console command exceeds 16384 bytes",
                 ));
             }
-            None => continue,
-        };
-        let fields = input.split_whitespace().collect::<Vec<_>>();
-        match fields.as_slice() {
-            [] => {}
-            ["quit" | "exit"] => return Ok(()),
-            ["groups"] => println!("{:?}", runner.execution_group_states()),
-            ["status"] => {
-                let counters = runner.executor_mut().observe_discarded_buffers()?;
-                println!("{:?} discarded={counters:?}", runner.executor().status());
-            }
-            ["properties", graph] => println!(
-                "PROPERTIES {graph} {:?}",
-                runner.executor().observe_properties(graph)?
-            ),
-            ["property-generation", graph, node] => println!(
-                "PROPERTY_GENERATION {graph} {node} {:?}",
-                runner.executor().observe_property_generation(graph, node)?
-            ),
-            ["parameter-generation", graph, node] => println!(
-                "PARAMETER_GENERATION {graph} {node} {:?}",
-                runner
-                    .executor()
-                    .observe_parameter_generation(graph, node)?
-            ),
-            ["stop", name] => dispatch_group(
-                runner,
-                LifecycleEvent::StopExecutionGroup((*name).to_owned()),
-            )?,
-            ["start", name] => dispatch_group(
-                runner,
-                LifecycleEvent::StartExecutionGroup((*name).to_owned()),
-            )?,
-            ["session-stop"] => {
-                dispatch_state_control(runner, LifecycleEvent::Stop, LifecycleState::Ready)?;
-            }
-            ["session-start"] => {
-                dispatch_state_control(runner, LifecycleEvent::Start, LifecycleState::Running)?;
-            }
-            ["source-ended"] => {
-                dispatch_ready_control(runner, LifecycleEvent::FiniteSourceCompleted)?;
-            }
-            ["reset"] => dispatch_ready_control(runner, LifecycleEvent::Reset)?,
-            ["property", graph, name, value_type, value] => dispatch_control(
-                runner,
-                LifecycleEvent::UpdateProperties {
-                    graph: (*graph).to_owned(),
-                    values: BTreeMap::from([(
-                        (*name).to_owned(),
-                        parse_scalar(value_type, value)?,
-                    )]),
-                },
-            )?,
-            ["properties-set", graph, values @ ..]
-                if !values.is_empty() && values.len() % 3 == 0 =>
-            {
-                let mut properties = BTreeMap::new();
-                for fields in values.chunks_exact(3) {
-                    if properties
-                        .insert(fields[0].to_owned(), parse_scalar(fields[1], fields[2])?)
-                        .is_some()
-                    {
-                        return Err(ScientificDiagnostic::new(
-                            "command properties-set",
-                            format!("duplicate property {:?}", fields[0]),
-                        ));
-                    }
-                }
-                dispatch_control(
-                    runner,
-                    LifecycleEvent::UpdateProperties {
-                        graph: (*graph).to_owned(),
-                        values: properties,
-                    },
-                )?;
-            }
-            _ => eprintln!(
-                "expected groups, status, properties GRAPH, property-generation GRAPH NODE, \
-                 parameter-generation GRAPH NODE, stop GROUP, start GROUP, session-stop, \
-                 session-start, source-ended, reset, properties-set GRAPH \
-                 NODE:PROPERTY TYPE VALUE [NODE:PROPERTY TYPE VALUE ...], \
-                 property GRAPH NODE:PROPERTY TYPE VALUE, \
-                 parameter GRAPH PORT ELEMENT_TYPE DIMS SCHEMA PATH, or quit"
-            ),
+            _ => bytes.push(byte[0]),
         }
-        print_prompt()?;
     }
+    String::from_utf8(bytes)
+        .map(Some)
+        .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))
 }
 
-/// Prepares file-backed parameters on the stdin reader, preserving command order.
-/// Payload errors precede dimension errors, as in the owner-thread command path.
-fn prepare_control_input(
-    input: String,
-    read_payload: impl FnOnce(&str) -> std::io::Result<Vec<u8>>,
-) -> ControlInput {
-    let fields = input.split_whitespace().collect::<Vec<_>>();
-    let ["parameter", graph, parameter, element_type, dimensions, schema, path] = fields.as_slice()
-    else {
-        return ControlInput::Line(input);
-    };
-    let value = read_payload(path)
-        .map_err(|error| {
-            ScientificDiagnostic::new(
-                "command parameter payload",
-                format!("cannot read {path:?}: {error}"),
-            )
-        })
-        .and_then(|bytes| {
-            Ok(NdArrayParameterValue {
-                element_type: (*element_type).to_owned(),
-                shape: parse_dimensions(dimensions)?,
-                schema: (*schema).to_owned(),
-                bytes: Arc::new(bytes),
-            })
-        });
-    match value {
-        Ok(value) => ControlInput::Parameter {
-            graph: (*graph).to_owned(),
-            parameter: (*parameter).to_owned(),
-            value,
-        },
-        Err(error) => ControlInput::PreparationFailed(error),
-    }
-}
-
-/// The reader waits for each parameter dispatch before reading another command.
-/// This bounds prepared parameters awaiting dispatch to one; the owner never waits for stdin.
-fn send_prepared_control_input(
-    input: String,
-    read_payload: impl FnOnce(&str) -> std::io::Result<Vec<u8>>,
-    send: impl FnOnce(ControlInput) -> bool,
-    dispatched: &mpsc::Receiver<()>,
-) -> bool {
-    let input = prepare_control_input(input, read_payload);
-    let parameter = matches!(input, ControlInput::Parameter { .. });
-    if !send(input) {
-        return false;
-    }
-    !parameter || dispatched.recv().is_ok()
-}
-
-/// Pumps owner-thread callbacks, then monitors and takes one queued command.
-/// No queue borrow spans monitoring or command execution, which can roundtrip.
 fn next_control_input(
     loop_: &pipewire::loop_::Loop,
     inputs: &RefCell<VecDeque<ControlInput>>,
@@ -327,164 +343,19 @@ fn next_control_input(
     };
     let result = loop_.iterate(pipewire::loop_::Timeout::Finite(timeout));
     if result < 0 {
-        let error = std::io::Error::from_raw_os_error(-result);
-        if error.kind() != std::io::ErrorKind::Interrupted {
+        let error = io::Error::from_raw_os_error(-result);
+        if error.kind() != io::ErrorKind::Interrupted {
             return Err(ScientificDiagnostic::new(
                 "PipeWire main loop",
                 format!("iteration failed: {error}"),
             ));
         }
     }
-    // Check the deadline even during a command flood. MainLoop::quit() from
-    // a synchronization callback must not skip queued commands or monitoring.
     if Instant::now() >= *monitor_deadline {
         monitor()?;
         *monitor_deadline = Instant::now() + Duration::from_millis(100);
     }
     Ok(inputs.borrow_mut().pop_front())
-}
-
-fn parse_dimensions(value: &str) -> Result<Vec<u32>, ScientificDiagnostic> {
-    let dimensions = value
-        .split('x')
-        .map(|dimension| {
-            dimension.parse::<u32>().map_err(|error| {
-                ScientificDiagnostic::new(
-                    "command parameter dimensions",
-                    format!("invalid dimension {dimension:?} in {value:?}: {error}"),
-                )
-            })
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    if dimensions.is_empty() || dimensions.contains(&0) {
-        return Err(ScientificDiagnostic::new(
-            "command parameter dimensions",
-            format!("expected nonzero dimensions joined by 'x', got {value:?}"),
-        ));
-    }
-    Ok(dimensions)
-}
-
-fn parse_scalar(value_type: &str, value: &str) -> Result<ScalarValue, ScientificDiagnostic> {
-    let invalid = |message: String| ScientificDiagnostic::new("command property value", message);
-    match value_type {
-        "bool" => value
-            .parse()
-            .map(ScalarValue::Bool)
-            .map_err(|error| invalid(format!("invalid bool {value:?}: {error}"))),
-        "int" => value
-            .parse()
-            .map(ScalarValue::Int)
-            .map_err(|error| invalid(format!("invalid int {value:?}: {error}"))),
-        "long" => value
-            .parse()
-            .map(ScalarValue::Long)
-            .map_err(|error| invalid(format!("invalid long {value:?}: {error}"))),
-        "float" => value
-            .parse()
-            .map(ScalarValue::float)
-            .map_err(|error| invalid(format!("invalid float {value:?}: {error}"))),
-        "double" => value
-            .parse()
-            .map(ScalarValue::double)
-            .map_err(|error| invalid(format!("invalid double {value:?}: {error}"))),
-        "id" => value
-            .parse()
-            .map(ScalarValue::Id)
-            .map_err(|error| invalid(format!("invalid id {value:?}: {error}"))),
-        "string" => Ok(ScalarValue::String(value.to_owned())),
-        _ => Err(ScientificDiagnostic::new(
-            "command property type",
-            format!("expected bool, int, long, float, double, id, or string; got {value_type:?}"),
-        )),
-    }
-}
-
-fn dispatch_ready_control(
-    runner: &mut Runner<LiveGraphAdapter>,
-    event: LifecycleEvent,
-) -> Result<(), ScientificDiagnostic> {
-    dispatch_state_control(runner, event, LifecycleState::Ready)
-}
-
-fn dispatch_state_control(
-    runner: &mut Runner<LiveGraphAdapter>,
-    event: LifecycleEvent,
-    expected: LifecycleState,
-) -> Result<(), ScientificDiagnostic> {
-    match runner.dispatch(event) {
-        Ok(state) if state == expected => {
-            let label = match state {
-                LifecycleState::Ready => "READY",
-                LifecycleState::Running => "RUNNING",
-                _ => unreachable!("session control expects READY or RUNNING"),
-            };
-            println!("{label} {:?}", runner.executor().status());
-            Ok(())
-        }
-        Ok(state) => Err(runner.diagnostic().cloned().unwrap_or_else(|| {
-            ScientificDiagnostic::new(
-                "runtime control",
-                format!("expected {expected:?}, reached {state:?}"),
-            )
-        })),
-        Err(error) => {
-            eprintln!("runtime control rejected: {error}");
-            Ok(())
-        }
-    }
-}
-
-fn dispatch_control(
-    runner: &mut Runner<LiveGraphAdapter>,
-    event: LifecycleEvent,
-) -> Result<(), ScientificDiagnostic> {
-    let before = runner.state();
-    match runner.dispatch(event) {
-        Ok(state) if state == before => {
-            println!("{state:?} {:?}", runner.executor().status());
-            Ok(())
-        }
-        Ok(state) => Err(runner.diagnostic().cloned().unwrap_or_else(|| {
-            ScientificDiagnostic::new(
-                "runtime control",
-                format!("expected {before:?}, reached {state:?}"),
-            )
-        })),
-        Err(error) => {
-            eprintln!("runtime control rejected: {error}");
-            Ok(())
-        }
-    }
-}
-
-fn print_prompt() -> Result<(), ScientificDiagnostic> {
-    print!("pipewireao-rtc> ");
-    std::io::Write::flush(&mut std::io::stdout()).map_err(|error| {
-        ScientificDiagnostic::new("command", format!("cannot flush prompt: {error}"))
-    })
-}
-
-fn dispatch_group(
-    runner: &mut Runner<LiveGraphAdapter>,
-    event: LifecycleEvent,
-) -> Result<(), ScientificDiagnostic> {
-    match runner.dispatch(event) {
-        Ok(LifecycleState::Running) => {
-            println!("RUNNING {:?}", runner.executor().status());
-            Ok(())
-        }
-        Ok(state) => Err(runner.diagnostic().cloned().unwrap_or_else(|| {
-            ScientificDiagnostic::new(
-                "execution-group control",
-                format!("expected Running, reached {state:?}"),
-            )
-        })),
-        Err(error) => {
-            eprintln!("execution-group control rejected: {error}");
-            Ok(())
-        }
-    }
 }
 
 fn require_state(
@@ -514,6 +385,8 @@ fn parse_arguments() -> Result<Arguments, ScientificDiagnostic> {
     let mut config = None;
     let mut remote = String::from("pipewire-ao-0");
     let mut hold = false;
+    let mut start_paused = false;
+    let mut control_socket = None;
     let mut arguments = std::env::args().skip(1);
     while let Some(argument) = arguments.next() {
         match argument.as_str() {
@@ -528,10 +401,18 @@ fn parse_arguments() -> Result<Arguments, ScientificDiagnostic> {
                 })?;
             }
             "--hold" => hold = true,
+            "--start-paused" => start_paused = true,
+            "--control-socket" => {
+                control_socket = Some(PathBuf::from(arguments.next().ok_or_else(|| {
+                    ScientificDiagnostic::new("command", "--control-socket requires a path")
+                })?));
+            }
             "--help" | "-h" => {
                 println!(
-                    "Usage: pipewireao-rtc --config PATH [--remote CORE] [--hold]\n\
-                     Loads, starts, stops, and unloads one non-actuating complete-frame session."
+                    "Usage: pipewireao-rtc --config PATH [--remote CORE] [--hold] [--start-paused] [--control-socket PATH]\n\
+                     Loads, starts, stops, and unloads one non-actuating complete-frame session.\n\
+                     --start-paused loads to READY without starting; socket mode does not read stdin.\n\
+                     Client: pipewireao-rtc control --socket PATH -- COMMAND [ARG ...]"
                 );
                 std::process::exit(0);
             }
@@ -548,28 +429,35 @@ fn parse_arguments() -> Result<Arguments, ScientificDiagnostic> {
             .ok_or_else(|| ScientificDiagnostic::new("command", "--config PATH is required"))?,
         remote,
         hold,
+        start_paused,
+        control_socket,
     })
+}
+
+fn session_id() -> String {
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |duration| duration.as_nanos());
+    format!("{}-{nanos:032x}", std::process::id())
 }
 
 #[cfg(test)]
 mod tests {
-    use super::parse_dimensions;
-
-    use super::{
-        next_control_input, prepare_control_input, send_prepared_control_input, ControlInput,
-    };
+    use super::next_control_input;
+    use crate::{Command, ControlInput, ControlResponse};
     use std::cell::{Cell, RefCell};
     use std::collections::VecDeque;
     use std::rc::Rc;
+    use std::sync::mpsc;
     use std::time::{Duration, Instant};
 
     #[test]
-    fn owner_loop_services_timer_without_control_input_and_monitors_on_deadline() {
+    fn owner_loop_services_timer_without_control_input_and_monitors_deadline() {
         let main_loop = pipewire::main_loop::MainLoopRc::new(None).unwrap();
         let ticks = Rc::new(Cell::new(0));
-        let observed_ticks = Rc::clone(&ticks);
+        let timer_ticks = Rc::clone(&ticks);
         let timer = main_loop.loop_().add_timer(move |_| {
-            observed_ticks.set(observed_ticks.get() + 1);
+            timer_ticks.set(timer_ticks.get() + 1);
         });
         timer
             .update_timer(
@@ -579,7 +467,7 @@ mod tests {
             .into_result()
             .unwrap();
         let inputs = RefCell::new(VecDeque::new());
-        let mut deadline = Instant::now() + Duration::from_millis(30);
+        let mut deadline = Instant::now() + Duration::from_millis(20);
         let mut monitors = 0;
         while monitors == 0 {
             assert!(
@@ -604,46 +492,48 @@ mod tests {
         let _receiver = receiver.attach(main_loop.loop_(), move |input| {
             queued.borrow_mut().push_back(input);
         });
-        let sender_thread = std::thread::spawn(move || {
+        let worker = std::thread::spawn(move || {
             std::thread::sleep(Duration::from_millis(10));
             sender.send(ControlInput::End).unwrap();
         });
         let mut deadline = Instant::now() + Duration::from_secs(2);
-        let started = Instant::now();
+        let start = Instant::now();
         let input = next_control_input(main_loop.loop_(), &inputs, &mut deadline, || {
-            panic!("control channel did not wake before the monitor deadline")
+            panic!("control channel did not wake before monitor deadline")
         })
         .unwrap();
         assert!(matches!(input, Some(ControlInput::End)));
-        assert!(started.elapsed() < Duration::from_secs(1));
-        sender_thread.join().unwrap();
+        assert!(start.elapsed() < Duration::from_secs(1));
+        worker.join().unwrap();
     }
 
     #[test]
     fn owner_loop_checks_monitor_during_queued_command_flood() {
         let main_loop = pipewire::main_loop::MainLoopRc::new(None).unwrap();
         let inputs = RefCell::new(VecDeque::from([
-            ControlInput::Line("first".to_owned()),
-            ControlInput::Line("second".to_owned()),
-            ControlInput::Failed("stdin failure".to_owned()),
+            ControlInput::End,
+            ControlInput::End,
+            ControlInput::End,
         ]));
         let mut deadline = Instant::now();
         let mut monitors = 0;
-        for expected_remaining in (0..3).rev() {
+        for remaining in (0..3).rev() {
             deadline = deadline.min(Instant::now());
-            let input = next_control_input(main_loop.loop_(), &inputs, &mut deadline, || {
-                monitors += 1;
-                Ok(())
-            })
-            .unwrap();
-            assert!(input.is_some());
-            assert_eq!(inputs.borrow().len(), expected_remaining);
+            assert!(
+                next_control_input(main_loop.loop_(), &inputs, &mut deadline, || {
+                    monitors += 1;
+                    Ok(())
+                })
+                .unwrap()
+                .is_some()
+            );
+            assert_eq!(inputs.borrow().len(), remaining);
         }
         assert_eq!(monitors, 3);
     }
 
     #[test]
-    fn owner_loop_monitor_can_roundtrip_without_reentrant_command_dispatch() {
+    fn owner_monitor_roundtrips_without_reentrant_command_dispatch() {
         let main_loop = pipewire::main_loop::MainLoopRc::new(None).unwrap();
         let inputs = Rc::new(RefCell::new(VecDeque::new()));
         let queued = Rc::clone(&inputs);
@@ -657,252 +547,46 @@ mod tests {
             callback_loop.quit();
             callback_active.set(false);
         });
-        sender.send(ControlInput::Line("first".to_owned())).unwrap();
+        sender.send(ControlInput::End).unwrap();
         let mut deadline = Instant::now();
-        let first = next_control_input(main_loop.loop_(), &inputs, &mut deadline, || {
-            assert!(!in_callback.get());
-            // Model a synchronous effect dispatching the same loop again.
-            // Sending would deadlock if monitoring ran inside channel callback.
-            sender
-                .send(ControlInput::Line("second".to_owned()))
-                .unwrap();
-            main_loop.loop_().iterate(pipewire::loop_::Timeout::None);
-            Ok(())
-        })
-        .unwrap();
-        assert!(matches!(first, Some(ControlInput::Line(line)) if line == "first"));
+        assert!(
+            next_control_input(main_loop.loop_(), &inputs, &mut deadline, || {
+                assert!(!in_callback.get());
+                sender.send(ControlInput::End).unwrap();
+                main_loop.loop_().iterate(pipewire::loop_::Timeout::None);
+                Ok(())
+            })
+            .unwrap()
+            .is_some()
+        );
         assert_eq!(inputs.borrow().len(), 1);
-        let second =
-            next_control_input(main_loop.loop_(), &inputs, &mut deadline, || Ok(())).unwrap();
-        assert!(matches!(second, Some(ControlInput::Line(line)) if line == "second"));
+        assert!(
+            next_control_input(main_loop.loop_(), &inputs, &mut deadline, || Ok(()))
+                .unwrap()
+                .is_some()
+        );
     }
 
     #[test]
-    fn prepared_parameter_moves_payload_and_preserves_preparation_errors() {
-        let bytes = vec![1, 2, 3, 4];
-        let storage = bytes.as_ptr();
-        let input = prepare_control_input(
-            "parameter graph port F32_LE 1 schema payload".to_owned(),
-            |path| {
-                assert_eq!(path, "payload");
-                Ok(bytes)
-            },
-        );
-        let ControlInput::Parameter {
-            graph,
-            parameter,
-            value,
-            ..
-        } = input
-        else {
-            panic!("expected prepared parameter");
-        };
-        assert_eq!(graph, "graph");
-        assert_eq!(parameter, "port");
-        assert_eq!(
-            value.bytes.as_ptr(),
-            storage,
-            "preparation copied the payload"
-        );
-        assert_eq!(value.shape, [1]);
-        assert_eq!(value.schema, "schema");
-        assert_eq!(value.element_type, "F32_LE");
-        let invalid = "parameter graph port F32_LE invalid schema payload";
-        for (read, expected_field) in [
-            (
-                Err(std::io::Error::from(std::io::ErrorKind::NotFound)),
-                "command parameter payload",
-            ),
-            (Ok(vec![0; 4]), "command parameter dimensions"),
-        ] {
-            let ControlInput::PreparationFailed(error) =
-                prepare_control_input(invalid.to_owned(), |_| read)
-            else {
-                panic!("expected preparation error");
-            };
-            assert_eq!(error.field(), expected_field);
-        }
-        let malformed = "parameter graph port";
-        assert!(matches!(prepare_control_input(malformed.to_owned(), |_| {
-            panic!("malformed command must not read a payload")
-        }), ControlInput::Line(line) if line == malformed));
-    }
-
-    #[test]
-    fn owner_callbacks_and_monitor_progress_while_reader_prepares_in_order() {
+    fn request_queue_roundtrip_never_dispatches_in_pipewire_callback() {
         let main_loop = pipewire::main_loop::MainLoopRc::new(None).unwrap();
         let inputs = Rc::new(RefCell::new(VecDeque::new()));
         let queued = Rc::clone(&inputs);
+        let (reply, _receiver) = mpsc::sync_channel::<ControlResponse>(1);
         let (sender, receiver) = pipewire::channel::channel();
-        let _receiver = receiver.attach(main_loop.loop_(), move |input| {
+        let _attached = receiver.attach(main_loop.loop_(), move |input| {
             queued.borrow_mut().push_back(input);
         });
-        let (parameter_dispatched, parameter_received) = std::sync::mpsc::sync_channel(1);
-        let (loading, loaded) = std::sync::mpsc::channel();
-        let (release, released) = std::sync::mpsc::channel();
-        let reader = std::thread::spawn(move || {
-            sender
-                .send(prepare_control_input(
-                    "status".to_owned(),
-                    |_| unreachable!(),
-                ))
-                .unwrap();
-            assert!(send_prepared_control_input(
-                "parameter graph port F32_LE 1 schema payload".to_owned(),
-                |_| {
-                    loading.send(()).unwrap();
-                    released.recv().unwrap();
-                    Ok(vec![0; 4])
-                },
-                |input| sender.send(input).is_ok(),
-                &parameter_received,
-            ));
-            sender
-                .send(prepare_control_input(
-                    "parameter graph port F32_LE 0 schema payload".to_owned(),
-                    |_| Ok(vec![0; 4]),
-                ))
-                .unwrap();
-            sender.send(ControlInput::End).unwrap();
-        });
-        loaded.recv_timeout(Duration::from_secs(1)).unwrap();
-        let ticks = Rc::new(Cell::new(0));
-        let observed_ticks = Rc::clone(&ticks);
-        let timer = main_loop.loop_().add_timer(move |_| {
-            observed_ticks.set(observed_ticks.get() + 1);
-        });
-        timer
-            .update_timer(
-                Some(Duration::from_millis(2)),
-                Some(Duration::from_millis(2)),
-            )
-            .into_result()
+        sender
+            .send(ControlInput::Request {
+                id: Some("one".to_owned()),
+                command: Ok(Command::Status),
+                reply,
+            })
             .unwrap();
-        let mut deadline = Instant::now() + Duration::from_millis(10);
-        let mut monitors = 0;
-        let limit = Instant::now() + Duration::from_secs(1);
-        let mut observed = Vec::new();
-        while (ticks.get() < 3 || monitors == 0) && Instant::now() < limit {
-            if let Some(input) =
-                next_control_input(main_loop.loop_(), &inputs, &mut deadline, || {
-                    monitors += 1;
-                    Ok(())
-                })
-                .unwrap()
-            {
-                observed.push(input);
-            }
-        }
-        release.send(()).unwrap();
-        assert!(
-            ticks.get() >= 3,
-            "reader preparation stalled owner callbacks"
-        );
-        assert!(
-            monitors > 0,
-            "reader preparation stalled required-object monitoring"
-        );
-        while observed.len() < 4 && Instant::now() < limit {
-            if let Some(input) =
-                next_control_input(main_loop.loop_(), &inputs, &mut deadline, || Ok(())).unwrap()
-            {
-                if matches!(&input, ControlInput::Parameter { .. }) {
-                    parameter_dispatched.try_send(()).unwrap();
-                }
-                observed.push(input);
-            }
-        }
-        reader.join().unwrap();
-        assert_eq!(observed.len(), 4);
-        assert!(matches!(&observed[0], ControlInput::Line(line) if line == "status"));
-        assert!(matches!(&observed[1], ControlInput::Parameter { .. }));
-        assert!(
-            matches!(&observed[2], ControlInput::PreparationFailed(error)
-            if error.field() == "command parameter dimensions")
-        );
-        assert!(matches!(&observed[3], ControlInput::End));
-    }
-
-    #[test]
-    fn parameter_flood_prepares_one_payload_at_a_time_until_dispatch() {
-        let (sender, receiver) = std::sync::mpsc::channel();
-        let (acknowledge, dispatched) = std::sync::mpsc::sync_channel(1);
-        let prepared = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
-        let reader_prepared = std::sync::Arc::clone(&prepared);
-        let reader = std::thread::spawn(move || {
-            for _ in 0..32 {
-                assert!(send_prepared_control_input(
-                    "parameter graph port F32_LE 1 schema payload".to_owned(),
-                    |_| {
-                        reader_prepared.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                        Ok(vec![0; 4])
-                    },
-                    |input| sender.send(input).is_ok(),
-                    &dispatched,
-                ));
-            }
-        });
-        for ordinal in 1..=32 {
-            let input = receiver.recv_timeout(Duration::from_secs(1)).unwrap();
-            assert!(matches!(input, ControlInput::Parameter { .. }));
-            assert_eq!(prepared.load(std::sync::atomic::Ordering::SeqCst), ordinal);
-            assert!(matches!(
-                receiver.try_recv(),
-                Err(std::sync::mpsc::TryRecvError::Empty)
-            ));
-            acknowledge.try_send(()).unwrap();
-        }
-        reader.join().unwrap();
-    }
-
-    #[test]
-    fn session_exit_releases_reader_with_parameter_in_undrained_pipewire_queue() {
-        let main_loop = pipewire::main_loop::MainLoopRc::new(None).unwrap();
-        let (sender, receiver) = pipewire::channel::channel();
-        let attached = receiver.attach(main_loop.loop_(), |_| {
-            panic!("shutdown test must leave the native queue undrained")
-        });
-        let (acknowledge, dispatched) = std::sync::mpsc::sync_channel(1);
-        let (sent, queued) = std::sync::mpsc::channel();
-        let (finished, completion) = std::sync::mpsc::channel();
-        let reader = std::thread::spawn(move || {
-            let result = send_prepared_control_input(
-                "parameter graph port F32_LE 1 schema payload".to_owned(),
-                |_| Ok(vec![0; 4]),
-                |input| {
-                    let result = sender.send(input).is_ok();
-                    sent.send(()).unwrap();
-                    result
-                },
-                &dispatched,
-            );
-            finished.send(result).unwrap();
-        });
-        queued.recv_timeout(Duration::from_secs(1)).unwrap();
-        drop(attached);
-        // The acknowledgement sender belongs to the owner, never to an input
-        // retained in PipeWire's sender-owned native queue.
-        drop(acknowledge);
-        assert!(!completion.recv_timeout(Duration::from_secs(1)).unwrap());
-        reader.join().unwrap();
-        let (acknowledge, dispatched) = std::sync::mpsc::sync_channel(1);
-        assert!(
-            !send_prepared_control_input(
-                "parameter graph port F32_LE 1 schema payload".to_owned(),
-                |_| Ok(vec![0; 4]),
-                |_| false,
-                &dispatched,
-            ),
-            "failed send must not wait for acknowledgement"
-        );
-        drop(acknowledge);
-    }
-
-    #[test]
-    fn parameter_dimensions_use_explicit_scientific_shape_order() {
-        assert_eq!(parse_dimensions("277x376").unwrap(), [277, 376]);
-        assert!(parse_dimensions("277x0").is_err());
-        assert!(parse_dimensions("277,376").is_err());
-        assert!(parse_dimensions("").is_err());
+        let mut deadline = Instant::now();
+        let input =
+            next_control_input(main_loop.loop_(), &inputs, &mut deadline, || Ok(())).unwrap();
+        assert!(matches!(input, Some(ControlInput::Request { id: Some(id), .. }) if id == "one"));
     }
 }
