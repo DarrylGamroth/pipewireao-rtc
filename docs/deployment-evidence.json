@@ -1,0 +1,1008 @@
+{
+  "date": "2026-10-01",
+  "scope": "Recorded-input non-actuating deployment; functional checks only",
+  "runtime_source_revision": "50dc370",
+  "runtime_binary_sha256": "1a32b6f6b86e81fb942c87de7f8f870a42ccbef4ed27ad208fce9a9db985f78c",
+  "jfg_revision": "116cdb4",
+  "fits_revision": "8c862cb",
+  "fits_plugin_sha256": "3f3fb042201afb2cf646fd76a468103d8f57609e0630eef065b332fe03e14e2a",
+  "plugin_headers_revision": "655b352",
+  "algorithms_revision": "518a578",
+  "fgn_bundle_sha256": "462af3d4d9b66a902b8c2cd19acf795114206acb0850f94356fe1a7f0077268c",
+  "raw_evidence_directory": "/home/dgamroth/.cache/rtc-deployment-functional-20261001",
+  "profiles": [
+    {
+      "name": "revolt-classic-fgn-frame",
+      "expected_commands": 7,
+      "observed_commands": 7,
+      "immutable_replay": false,
+      "held_before_admission": true,
+      "shutdown_clean": true,
+      "fits_sha256": "ac5d14eb90de51924af61ac12915833e8ef5c1a1fdde2237b628b49f65fc9aca",
+      "deployment_sha256": "b06c4d44202baea6803cc25be53b562a0d5f110766154abf9ad2a09a73c5683d",
+      "provenance_sha256": "ca21db22088e1db4febeae385e8398ac680a19caec804074e603de954b311338",
+      "raw_record_sha256": "a8889f90f0c278fe04b607b5fa8b299c0f464e2fc6ec09d0e2206ce50697085b",
+      "frame_rate": "10/1",
+      "readout_ns": null,
+      "placement": {
+        "core": {
+          "locked_bytes": 0,
+          "threads": [
+            {
+              "name": "pipewire-ao",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "rtc-data-loop",
+              "cpus": [
+                2
+              ],
+              "policy": 1,
+              "priority": 83
+            },
+            {
+              "name": "source-loop",
+              "cpus": [
+                12
+              ],
+              "policy": 1,
+              "priority": 83
+            },
+            {
+              "name": "sink-loop",
+              "cpus": [
+                8
+              ],
+              "policy": 1,
+              "priority": 83
+            }
+          ]
+        },
+        "rtc": {
+          "locked_bytes": 2355200,
+          "threads": [
+            {
+              "name": "pipewireao-rtc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "ndarray-paramet",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "rtc-data-loop",
+              "cpus": [
+                2
+              ],
+              "policy": 1,
+              "priority": 83
+            },
+            {
+              "name": "rtc-control-soc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "revolt-classic-fgn-row",
+      "expected_commands": 7,
+      "observed_commands": 7,
+      "immutable_replay": true,
+      "held_before_admission": true,
+      "shutdown_clean": true,
+      "fits_sha256": "ac5d14eb90de51924af61ac12915833e8ef5c1a1fdde2237b628b49f65fc9aca",
+      "deployment_sha256": "bb692934c8a27fad6fcd6ccf32941b0ced4856255e692ad0b4a3afb39db417d6",
+      "provenance_sha256": "905505cb32de0b2d7481e37d61870ebc6f6c32010d53e3c271f9bc4e70b8645f",
+      "raw_record_sha256": "b05246ab04c7b34f78a2797a4a56047b5a8f0d94d3c3655646318672b2b39bfe",
+      "frame_rate": "10/1",
+      "readout_ns": 2000000,
+      "placement": {
+        "core": {
+          "locked_bytes": 0,
+          "threads": [
+            {
+              "name": "pipewire-ao",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "rtc-data-loop",
+              "cpus": [
+                2
+              ],
+              "policy": 1,
+              "priority": 83
+            },
+            {
+              "name": "source-loop",
+              "cpus": [
+                12
+              ],
+              "policy": 1,
+              "priority": 83
+            },
+            {
+              "name": "sink-loop",
+              "cpus": [
+                8
+              ],
+              "policy": 1,
+              "priority": 83
+            }
+          ]
+        },
+        "rtc": {
+          "locked_bytes": 1392640,
+          "threads": [
+            {
+              "name": "pipewireao-rtc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "ndarray-paramet",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "rtc-data-loop",
+              "cpus": [
+                2
+              ],
+              "policy": 1,
+              "priority": 83
+            },
+            {
+              "name": "rtc-control-soc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "revolt-classic-jfg-frame",
+      "expected_commands": 7,
+      "observed_commands": 7,
+      "immutable_replay": false,
+      "held_before_admission": true,
+      "shutdown_clean": true,
+      "fits_sha256": "ac5d14eb90de51924af61ac12915833e8ef5c1a1fdde2237b628b49f65fc9aca",
+      "deployment_sha256": "19297ad5a6c58b8c55e98fd4251648185a57ecd4ce05b989f01286921ce47abe",
+      "provenance_sha256": "35d1d67f1e343d5ae582d82c8c3f6b9fc55286d5ed10133aa615092a0274adeb",
+      "raw_record_sha256": "cb0b101068100e8ed78898c703efc7960b0bc6d9d44874b46540085518f742fa",
+      "frame_rate": "10/1",
+      "readout_ns": null,
+      "placement": {
+        "core": {
+          "locked_bytes": 0,
+          "threads": [
+            {
+              "name": "pipewire-ao",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "rtc-data-loop",
+              "cpus": [
+                2
+              ],
+              "policy": 1,
+              "priority": 83
+            },
+            {
+              "name": "source-loop",
+              "cpus": [
+                12
+              ],
+              "policy": 1,
+              "priority": 83
+            },
+            {
+              "name": "sink-loop",
+              "cpus": [
+                8
+              ],
+              "policy": 1,
+              "priority": 83
+            }
+          ]
+        },
+        "julia": {
+          "locked_bytes": 1683456,
+          "threads": [
+            {
+              "name": "julia",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "iou-sqp-123220",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "julia",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "julia",
+              "cpus": [
+                10
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "julia",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "ndarray-filter-",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "julia-data-loop",
+              "cpus": [
+                4
+              ],
+              "policy": 1,
+              "priority": 83
+            }
+          ]
+        },
+        "rtc": {
+          "locked_bytes": 671744,
+          "threads": [
+            {
+              "name": "pipewireao-rtc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "rtc-control-soc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "revolt-classic-jfg-row",
+      "expected_commands": 7,
+      "observed_commands": 7,
+      "immutable_replay": true,
+      "held_before_admission": true,
+      "shutdown_clean": true,
+      "fits_sha256": "ac5d14eb90de51924af61ac12915833e8ef5c1a1fdde2237b628b49f65fc9aca",
+      "deployment_sha256": "5c0aca2d4bf54e5a86b39692d038f4dce049f0509385e4952274fb27509838d3",
+      "provenance_sha256": "75a9b36fc216251301a9d949165409c663bd40146e414714b0dc617dcf9fd37a",
+      "raw_record_sha256": "d2163aebd7bde58fc395a4891fabeaa520454b9e4397485ab84f0cfceb8ef897",
+      "frame_rate": "10/1",
+      "readout_ns": 2000000,
+      "placement": {
+        "core": {
+          "locked_bytes": 0,
+          "threads": [
+            {
+              "name": "pipewire-ao",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "rtc-data-loop",
+              "cpus": [
+                2
+              ],
+              "policy": 1,
+              "priority": 83
+            },
+            {
+              "name": "source-loop",
+              "cpus": [
+                12
+              ],
+              "policy": 1,
+              "priority": 83
+            },
+            {
+              "name": "sink-loop",
+              "cpus": [
+                8
+              ],
+              "policy": 1,
+              "priority": 83
+            }
+          ]
+        },
+        "julia": {
+          "locked_bytes": 720896,
+          "threads": [
+            {
+              "name": "julia",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "iou-sqp-123544",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "julia",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "julia",
+              "cpus": [
+                10
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "julia",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "ndarray-filter-",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "julia-data-loop",
+              "cpus": [
+                4
+              ],
+              "policy": 1,
+              "priority": 83
+            }
+          ]
+        },
+        "rtc": {
+          "locked_bytes": 671744,
+          "threads": [
+            {
+              "name": "pipewireao-rtc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "rtc-control-soc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "revolt-copper-fgn-frame",
+      "expected_commands": 4,
+      "observed_commands": 4,
+      "immutable_replay": false,
+      "held_before_admission": true,
+      "shutdown_clean": true,
+      "fits_sha256": "deb6ce3cab512a2de61d742b24de89fa9803312369660d6b46d288da16dafdd8",
+      "deployment_sha256": "5df486cf05fc6313ad47d2c3bc8eb645a1fe7f73250e66197067b2f022999c12",
+      "provenance_sha256": "5ba17b070bc31c25a7369c4a1bfad33ddf9de81861636f2112cf9e63f4526a43",
+      "raw_record_sha256": "145d7542c2d5e374470cfb853b47b02356154367f8273413f8ad3ac79c806d8b",
+      "frame_rate": "10/1",
+      "readout_ns": null,
+      "placement": {
+        "core": {
+          "locked_bytes": 0,
+          "threads": [
+            {
+              "name": "pipewire-ao",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "rtc-data-loop",
+              "cpus": [
+                2
+              ],
+              "policy": 1,
+              "priority": 83
+            },
+            {
+              "name": "source-loop",
+              "cpus": [
+                12
+              ],
+              "policy": 1,
+              "priority": 83
+            },
+            {
+              "name": "sink-loop",
+              "cpus": [
+                8
+              ],
+              "policy": 1,
+              "priority": 83
+            }
+          ]
+        },
+        "rtc": {
+          "locked_bytes": 14635008,
+          "threads": [
+            {
+              "name": "pipewireao-rtc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "ndarray-paramet",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "rtc-data-loop",
+              "cpus": [
+                2
+              ],
+              "policy": 1,
+              "priority": 83
+            },
+            {
+              "name": "rtc-control-soc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "revolt-copper-fgn-row",
+      "expected_commands": 4,
+      "observed_commands": 4,
+      "immutable_replay": true,
+      "held_before_admission": true,
+      "shutdown_clean": true,
+      "fits_sha256": "deb6ce3cab512a2de61d742b24de89fa9803312369660d6b46d288da16dafdd8",
+      "deployment_sha256": "b2b324783ec11413e32476af22018b6637fb91917150b75e54a5d2e86bd9b9b1",
+      "provenance_sha256": "e078be7151b1e7196601255410ee6588091a49ac4040d2e9fd7f0893959ad1f3",
+      "raw_record_sha256": "1df474e3bf4a174243c6d93f837a36206339a9a669438deac6283935088917f4",
+      "frame_rate": "10/1",
+      "readout_ns": 2000000,
+      "placement": {
+        "core": {
+          "locked_bytes": 0,
+          "threads": [
+            {
+              "name": "pipewire-ao",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "rtc-data-loop",
+              "cpus": [
+                2
+              ],
+              "policy": 1,
+              "priority": 83
+            },
+            {
+              "name": "source-loop",
+              "cpus": [
+                12
+              ],
+              "policy": 1,
+              "priority": 83
+            },
+            {
+              "name": "sink-loop",
+              "cpus": [
+                8
+              ],
+              "policy": 1,
+              "priority": 83
+            }
+          ]
+        },
+        "rtc": {
+          "locked_bytes": 14618624,
+          "threads": [
+            {
+              "name": "pipewireao-rtc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "ndarray-paramet",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "rtc-data-loop",
+              "cpus": [
+                2
+              ],
+              "policy": 1,
+              "priority": 83
+            },
+            {
+              "name": "rtc-control-soc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "revolt-copper-jfg-frame",
+      "expected_commands": 4,
+      "observed_commands": 4,
+      "immutable_replay": false,
+      "held_before_admission": true,
+      "shutdown_clean": true,
+      "fits_sha256": "deb6ce3cab512a2de61d742b24de89fa9803312369660d6b46d288da16dafdd8",
+      "deployment_sha256": "c3c07c1399b32809dc78a7e38da67bc41ab64c56da29ea255f660f946dab39e0",
+      "provenance_sha256": "67606dac692b8605f2aa40f8ffda3cc915a28bec0ea2091425fc7e0f7a8a5747",
+      "raw_record_sha256": "d69068a09e3bf0a8dc7a0152f310b97dd2b65af3c31927fa104b04ee8bc17418",
+      "frame_rate": "10/1",
+      "readout_ns": null,
+      "placement": {
+        "core": {
+          "locked_bytes": 0,
+          "threads": [
+            {
+              "name": "pipewire-ao",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "rtc-data-loop",
+              "cpus": [
+                2
+              ],
+              "policy": 1,
+              "priority": 83
+            },
+            {
+              "name": "source-loop",
+              "cpus": [
+                12
+              ],
+              "policy": 1,
+              "priority": 83
+            },
+            {
+              "name": "sink-loop",
+              "cpus": [
+                8
+              ],
+              "policy": 1,
+              "priority": 83
+            }
+          ]
+        },
+        "julia": {
+          "locked_bytes": 7344128,
+          "threads": [
+            {
+              "name": "julia",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "iou-sqp-123896",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "julia",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "julia",
+              "cpus": [
+                10
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "julia",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "ndarray-filter-",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "julia-data-loop",
+              "cpus": [
+                4
+              ],
+              "policy": 1,
+              "priority": 83
+            }
+          ]
+        },
+        "rtc": {
+          "locked_bytes": 7290880,
+          "threads": [
+            {
+              "name": "pipewireao-rtc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "rtc-control-soc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "revolt-copper-jfg-row",
+      "expected_commands": 4,
+      "observed_commands": 4,
+      "immutable_replay": true,
+      "held_before_admission": true,
+      "shutdown_clean": true,
+      "fits_sha256": "deb6ce3cab512a2de61d742b24de89fa9803312369660d6b46d288da16dafdd8",
+      "deployment_sha256": "96ff034c1fb8b3dc6cd058623848a5309dc914ea91e7fc3ad9476e5d812d7253",
+      "provenance_sha256": "5ab32e7cd6c15ae7080472c8aadb9f337ad58ef5d92956e4cb4b3f3d052a0a78",
+      "raw_record_sha256": "8be24e4e437b0efb3c1c1a94f7ffb04c402646321ec7d0ae41563d50c0ca1a81",
+      "frame_rate": "10/1",
+      "readout_ns": 2000000,
+      "placement": {
+        "core": {
+          "locked_bytes": 0,
+          "threads": [
+            {
+              "name": "pipewire-ao",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "rtc-data-loop",
+              "cpus": [
+                2
+              ],
+              "policy": 1,
+              "priority": 83
+            },
+            {
+              "name": "source-loop",
+              "cpus": [
+                12
+              ],
+              "policy": 1,
+              "priority": 83
+            },
+            {
+              "name": "sink-loop",
+              "cpus": [
+                8
+              ],
+              "policy": 1,
+              "priority": 83
+            }
+          ]
+        },
+        "julia": {
+          "locked_bytes": 7327744,
+          "threads": [
+            {
+              "name": "julia",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "iou-sqp-124203",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "julia",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "julia",
+              "cpus": [
+                10
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "julia",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "ndarray-filter-",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "julia-data-loop",
+              "cpus": [
+                4
+              ],
+              "policy": 1,
+              "priority": 83
+            }
+          ]
+        },
+        "rtc": {
+          "locked_bytes": 7290880,
+          "threads": [
+            {
+              "name": "pipewireao-rtc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "name": "rtc-control-soc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "controls": [
+    {
+      "name": "classic-fgn-controls",
+      "passed": true,
+      "raw_record_sha256": "e787ac35e09a09191f50afa13fa494fdf2b9663de0ab5fd4d37a99307597f4c1"
+    },
+    {
+      "name": "classic-jfg-row-controls",
+      "passed": true,
+      "raw_record_sha256": "8a2332705bc5055d259078a972c5cd994e382f9a37945dbddfec64956474d3a3"
+    }
+  ],
+  "systemd": {
+    "raw_record_sha256": "05514a6b21d6719cfd9828c9701ddb7393c49517b37fbea13012e66a82b353aa",
+    "checks": [
+      {
+        "name": "revolt-copper-fgn-frame",
+        "fault_case": false,
+        "commands": 4,
+        "cleanup_exact": true,
+        "instance": "run-ltjh5ls1",
+        "result": "success"
+      },
+      {
+        "name": "revolt-copper-fgn-frame",
+        "fault_case": false,
+        "commands": 4,
+        "cleanup_exact": true,
+        "instance": "run-5fx53keg",
+        "result": "success"
+      },
+      {
+        "name": "revolt-copper-fgn-frame",
+        "fault_case": true,
+        "commands": 4,
+        "cleanup_exact": true,
+        "instance": "run-y8cdmflm",
+        "result": "exit-code"
+      },
+      {
+        "name": "revolt-copper-jfg-frame",
+        "fault_case": false,
+        "commands": 4,
+        "cleanup_exact": true,
+        "instance": "run-rjqqoe6i",
+        "result": "success"
+      }
+    ]
+  },
+  "verification": {
+    "rust_passed": 89,
+    "rust_ignored": 3,
+    "python_passed": 38,
+    "julia_deployment_checks": 77,
+    "julia_preparation_checks": 24,
+    "julia_calibrated_reset_assertions": 332,
+    "julia_calibrated_reset_maximum_difference": 0,
+    "fits_test_suites": 3,
+    "shared_image_frame_suite": 1
+  },
+  "classic_native_row_identity": {
+    "without_initial_submission": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "with_duplicate_initial_submission": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "source_blocks_in_each_run": 224,
+    "same_runtime_and_scientific_artifacts": true
+  },
+  "native_live_replacement_recovery": {
+    "frame": {
+      "generation": 2,
+      "commands_before": 4,
+      "commands_after": 5
+    },
+    "row": {
+      "generation": 2,
+      "commands_before": 2,
+      "commands_after": 3
+    }
+  }
+}

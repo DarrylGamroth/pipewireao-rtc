@@ -44,38 +44,22 @@ fn runtime_parameter_route_without_initial_file_supports_later_replacement() {
             .unwrap(),
         LifecycleState::Ready
     );
-    assert_eq!(
-        runner
-            .executor_mut()
-            .observe_discarded_buffers()
-            .unwrap()
-            .values()
-            .sum::<u64>(),
-        0
-    );
+    assert_eq!(discarded_buffers(runner.executor_mut()), 0);
     runner
         .executor()
         .validate_parameter_update(&graph_name, &port.name, &value)
         .expect("route exists without a queued initial value");
-    let before = runner
-        .executor()
-        .observe_parameter_generation(&graph_name, &parameter_node)
-        .unwrap();
     assert_eq!(
         runner.dispatch(LifecycleEvent::Start).unwrap(),
         LifecycleState::Running,
         "preloaded owner start: {:?}",
         runner.diagnostic()
     );
-    assert!(
-        runner
-            .executor_mut()
-            .observe_discarded_buffers()
-            .unwrap()
-            .values()
-            .sum::<u64>()
-            > 0
-    );
+    assert!(discarded_buffers(runner.executor_mut()) > 0);
+    let before = runner
+        .executor()
+        .observe_parameter_generation(&graph_name, &parameter_node)
+        .unwrap();
     assert_eq!(
         runner
             .dispatch(LifecycleEvent::UpdateParameter {
@@ -88,12 +72,13 @@ fn runtime_parameter_route_without_initial_file_supports_later_replacement() {
         "live replacement: {:?}",
         runner.diagnostic()
     );
-    await_parameter_adoption(
+    let adopted = await_parameter_adoption(
         runner.executor(),
         &graph_name,
         &parameter_node,
         before.requested,
     );
+    await_output_progress(runner.executor_mut(), &graph_name, &parameter_node, adopted);
     assert!(runner.diagnostic().is_none());
     assert_eq!(
         runner.dispatch(LifecycleEvent::Stop).unwrap(),
@@ -105,16 +90,47 @@ fn runtime_parameter_route_without_initial_file_supports_later_replacement() {
     );
 }
 
-fn await_parameter_adoption(adapter: &LiveGraphAdapter, graph: &str, node: &str, previous: i64) {
+fn await_parameter_adoption(
+    adapter: &LiveGraphAdapter,
+    graph: &str,
+    node: &str,
+    previous: i64,
+) -> i64 {
     let deadline = Instant::now() + Duration::from_secs(5);
     loop {
         let observed = adapter.observe_parameter_generation(graph, node).unwrap();
         if observed.requested > previous && observed.active == observed.requested {
-            break;
+            return observed.active;
         }
         assert!(
             Instant::now() < deadline,
             "later parameter was not published and adopted: {observed:?}"
+        );
+        std::thread::sleep(Duration::from_millis(10));
+    }
+}
+
+fn discarded_buffers(adapter: &mut LiveGraphAdapter) -> u64 {
+    adapter.observe_discarded_buffers().unwrap().values().sum()
+}
+
+fn await_output_progress(adapter: &mut LiveGraphAdapter, graph: &str, node: &str, adopted: i64) {
+    let before = discarded_buffers(adapter);
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        let observed = adapter.observe_parameter_generation(graph, node).unwrap();
+        assert_eq!(observed.requested, adopted, "submitted generation changed");
+        assert_eq!(observed.active, adopted, "adopted generation changed");
+        let current = discarded_buffers(adapter);
+        if current > before {
+            eprintln!(
+                "{graph}:{node}: generation {adopted} active; output count {before} -> {current}"
+            );
+            return;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "output did not advance after parameter adoption: {observed:?}, count {current}"
         );
         std::thread::sleep(Duration::from_millis(10));
     }

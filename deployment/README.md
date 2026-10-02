@@ -214,7 +214,8 @@ python3 deployment/check_profile.py \
   --frames 7 --output /absolute/functional-result.json
 python3 deployment/check_properties.py \
   --deployment "$package/deployment.conf" --fits "$package/input.fits" \
-  --node closed-loop-correction --output /absolute/control-result.json
+  --node closed-loop-correction --gain -0.3 --pole 0.99 \
+  --output /absolute/control-result.json
 ```
 
 The profile check holds the source stopped before admission, checks exact

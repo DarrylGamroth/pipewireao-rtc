@@ -22,6 +22,9 @@ promoting a deferred capability.
 implementation prerequisites. It is evidence and design input; the active
 requirements below govern implementation.
 
+[Deployment validation](DEPLOYMENT_VALIDATION.md) records the completed
+recorded-input increment and its functional qualification limits.
+
 ## Inactive design archive
 
 The [archived full-RTC design](archive/full-rtc/README.md) preserves prior work

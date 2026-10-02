@@ -812,10 +812,17 @@ and documented; asynchronous adoption is a later design option, not an implied
 
 | Requirement | Implementation | Validation |
 | --- | --- | --- |
-| RTC-DEV-020 | implemented | final installed replay matrix underway |
-| RTC-DEV-021 | implemented | foreground and native/Julia user-service checks passed; final package replay underway |
-| RTC-DEV-022 | implemented | bounded protocol, operator rejection and live adoption checks passed |
-| RTC-DEV-023 | implemented | installation, relocation and instructions checked; final evidence record underway |
+| RTC-DEV-020 | implemented | all eight installed profile command-count checks passed |
+| RTC-DEV-021 | implemented | foreground, native/Julia user service, fresh restart and dependency-failure cleanup passed |
+| RTC-DEV-022 | implemented | bounded protocol, operator rejection, live adoption and subsequent output progress passed |
+| RTC-DEV-023 | implemented | export, relocation, installation, preflight, controls and documentation checked |
+
+[Deployment validation](DEPLOYMENT_VALIDATION.md) and its
+[artifact/placement record](deployment-evidence.json) retain the evidence.
+Row replay keeps calibration fixed; a progressive parameter transaction can
+abandon an in-flight unit, so mutation/adoption recovery is qualified separately.
+The recorded-input, non-actuating increment is complete. Physical devices,
+exclusive core isolation and hard timing guarantees remain outside this claim.
 
 After these four items, construct the live AOS/HIL deployment graph through the
 existing external endpoint contracts. Do not substitute the older HIL science
