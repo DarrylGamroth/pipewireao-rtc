@@ -1,5 +1,6 @@
 //! Non-actuating `PipeWireAO` development runner.
 
+pub mod calibration;
 mod config;
 mod ffi;
 mod lifecycle;

@@ -1,0 +1,99 @@
+{
+  "baseline": "e82879dc20723fef1b0229ae7df6ed7f3887c3ce",
+  "date": "2026-10-02",
+  "scope": "RTC-DEV-029 completion-driven coordinator slice; no deployed endpoint or scientific calibration qualification",
+  "implementation_state": "partial",
+  "environment": {
+    "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+    "features": [
+      "default",
+      "live"
+    ],
+    "pkg_config_path": "/opt/pipewireao/lib/x86_64-linux-gnu/pkgconfig",
+    "target_directory": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc/target"
+  },
+  "artifact_sha256": {
+    "src/calibration.rs": "48bdd0c5937f757e255c41b57b3a1f57737aad9c157e8b58a62bab151bd4cde8",
+    "tests/calibration.rs": "1af7d24f9c0d3dd6fad3bf4a8e2e254cefcf9659b9c56066be8307d460778c31"
+  },
+  "checks": [
+    {
+      "command": "cargo test --test calibration",
+      "passed": 19,
+      "failed": 0
+    },
+    {
+      "command": "cargo test --workspace",
+      "passed": 79,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "command": "cargo test --workspace --features live",
+      "passed": 115,
+      "failed": 0,
+      "ignored": 3,
+      "ignore_reason": "requires sibling artifacts/private live core; not executed in this coordinator slice"
+    },
+    {
+      "command": "cargo clippy --workspace --all-targets --features live -- -D warnings",
+      "exit_code": 0
+    },
+    {
+      "command": "cargo fmt --all -- --check",
+      "exit_code": 0
+    }
+  ],
+  "fault_reproduction": {
+    "source_sha256": "48bdd0c5937f757e255c41b57b3a1f57737aad9c157e8b58a62bab151bd4cde8",
+    "tests_sha256": "1af7d24f9c0d3dd6fad3bf4a8e2e254cefcf9659b9c56066be8307d460778c31",
+    "method": "isolated reproductions of reviewed defects; original coordinator unaffected",
+    "results": [
+      {
+        "variant": "capacity-before",
+        "test": "overlapping_overflowing_and_oversized_capacity_batches_are_rejected",
+        "exit_code": 101,
+        "expected_success": false
+      },
+      {
+        "variant": "capacity-before",
+        "test": "oversized_plan_probe_spare_capacity_is_rejected_without_touching_spare_storage",
+        "exit_code": 101,
+        "expected_success": false
+      },
+      {
+        "variant": "restoration-before",
+        "test": "synchronous_recovery_errors_fault_before_returning_and_keep_hold",
+        "exit_code": 101,
+        "expected_success": false
+      },
+      {
+        "variant": "corrected",
+        "test": "all",
+        "exit_code": 0,
+        "expected_success": true
+      }
+    ]
+  },
+  "review": {
+    "reviewer": "Astra",
+    "findings": [
+      "CAL-R1",
+      "CAL-R2",
+      "CAL-R3",
+      "CAL-R4"
+    ],
+    "disposition": "resolved by source/test review; operational adapter compliance remains unverified",
+    "final_result": "no blocking findings"
+  },
+  "known_warning": "Existing proc-macro-error2 2.0.1 future-incompatibility warning",
+  "evidence_cache": "/home/dgamroth/.cache/rtc-event-calibration-20261002",
+  "remaining": [
+    "held-probe/multiple-exposure AOS adapter",
+    "FGN/JFG integration-hold, probe output and WFS response batch adapters",
+    "unchanged HEART command/WFS interface qualification",
+    "operational background/reference acquisition",
+    "AdaptiveOpticsCalibration matrix/reconstructor generation and export",
+    "Classic/Copper scientific correction and backend/rate qualification"
+  ]
+}

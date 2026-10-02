@@ -884,6 +884,23 @@ ownership and the integration hold, or enter a fault state that prevents
 ordinary loop resumption. Normal operation MUST NOT resume with an unknown DM
 figure.
 
+Calibration progress MUST be driven by correlated completion events: exclusive
+command ownership/integration hold established, probe adopted, settling rule
+satisfied, response batch completed, reference restored, and ownership released.
+An acknowledgement of submission MUST NOT stand in for adoption or settling.
+Accepted exposure starts MUST follow the settling boundary; queued earlier
+exposures MUST be rejected. Each completion MUST identify the current run and
+request. Wrong, duplicate or late completions MUST NOT advance acquisition.
+
+Settling MUST use the endpoint's declared completion/readback, model-time rule
+or discarded-exposure count. AOS's instantaneous DM MAY complete immediately
+after adoption; a physical write completion MUST NOT imply mechanical settling.
+A synchronous caller MAY await these same events outside processing callbacks;
+the event-serving context MUST remain able to run. Arbitrary sleeps MUST NOT
+establish successful completion. Restoration MUST fence outstanding probe and
+acquisition work before confirming the reference figure, so a late operation
+cannot invalidate restoration.
+
 AdaptiveOpticsCalibration MUST form the interaction matrix and selected
 reconstructor from accepted measured responses. Export MUST record probe and
 response identities, units/order, settings, numerical policy, model/endpoint

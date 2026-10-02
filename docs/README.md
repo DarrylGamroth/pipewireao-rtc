@@ -35,6 +35,10 @@ CPU bridge checks, packet-level evidence and remaining physical/scientific
 limits. [HEART HIL review](HEART_HIL_REVIEW.md) records independent findings;
 the [evidence summary](HEART_HIL_EVIDENCE.json) preserves measured artifact identities.
 
+[Calibration coordinator review](CALIBRATION_COORDINATOR_REVIEW.md) records the
+completion-event acquisition core, independent findings and remaining endpoint
+integration gates. It does not establish operational calibration support.
+
 ## Inactive design archive
 
 The [archived full-RTC design](archive/full-rtc/README.md) preserves prior work

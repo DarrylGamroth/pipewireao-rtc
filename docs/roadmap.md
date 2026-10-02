@@ -965,6 +965,45 @@ added bounded abort/restoration behavior. Local links, requirement identities,
 whitespace/newlines and all changed Mermaid documents passed checks. This is
 documentation evidence; operational calibration is not yet implemented.
 
+### Completion-driven coordinator delivery
+
+Baseline: `e82879d`, RTC-ARCH-023 and RTC-DEV-029. The selected implementation
+uses one serialized calibration owner outside frame callbacks and one pending
+effect. Endpoint adapters report correlated facts; a synchronous driver awaits
+the same completions. Numerical probing/inversion remains owned by
+AdaptiveOpticsCalibration. Existing closed-loop deployment remains unchanged.
+
+| RTC-DEV-029 obligation | Allocation / verification | State / remaining gate |
+| --- | --- | --- |
+| Hold ordinary integration and command ownership | Coordinator hold/release effects; rejection and failure tests | Core implemented; deployed owner controls missing |
+| Adopt probes, then establish settling | Correlated adoption and settling completions; applied-command, deadline and cursor checks | Core implemented; held-probe AOS adapter missing |
+| Associate post-settling WFS exposures | Bounded completed batches with acquisition generation, sequence and exposure intervals; stale/duplicate/early-frame rejection | Core implemented; graph WFS batch readback missing |
+| Abort, restore and prevent unsafe resumption | Fenced restoration and release completions; cancellation/timeouts/failure tests | Core implemented; endpoint fencing and deployment fault integration missing |
+| Synchronous usage | Blocking endpoint driver sharing the event coordinator; no sleep-based success | Core implemented; requires independent event-serving context |
+| Background/reference acquisition, AOC matrices and exports | Operational detector/WFS adapters and calibration client | Missing; no operational matrix claim |
+| Classic/Copper, HEART/FGN/JFG, CPU/CUDA/AMDGPU | Live endpoint qualification and numerical/correction checks | Missing; coordinator tests do not qualify endpoints |
+
+Implemented acquisition core: [calibration module](../src/calibration.rs),
+[focused tests](../tests/calibration.rs) and
+[independent review](CALIBRATION_COORDINATOR_REVIEW.md). The core has no installed
+calibration command or operational endpoint adapters. Thus RTC-DEV-029 remains
+partial: synthetic completions establish coordinator behavior, not endpoint
+compliance, scientific calibration or closed-loop correction.
+
+Coordinator verification (2026-10-02): 19 focused tests, 79 default workspace
+tests and 115 live-feature workspace tests passed; three environment-dependent
+live tests remained ignored. Formatting and live-feature all-target Clippy with
+`-D warnings` passed. The existing `proc-macro-error2` future-incompatibility
+warning remains. Independent source/test review found no blocking findings.
+Isolated fault reproductions for spare-capacity accounting and retained
+restoration status failed the regression tests; corrected source passed the
+same tests. These were temporary source variants, not historical release runs.
+Changed Mermaid documents, local links, whitespace/newlines and requirement
+identities passed documentation checks. Exact checks, source/test hashes,
+limitations and remaining gates are recorded in the
+[evidence summary](CALIBRATION_COORDINATOR_EVIDENCE.json). No runtime or test
+change was made to HEART, FGN, JFG or the AOS adapter in this slice.
+
 ## Deferred capabilities
 
 The following topics are not active work. Their previous proposals are

@@ -35,6 +35,21 @@ complete-frame FGN/JFG science graphs connected to an externally owned
 simulator with explicit CPU, CUDA or AMDGPU execution. Foreground and systemd
 user-service launchers use the same admission and controls.
 
+## Calibration coordination
+
+The library's `calibration` module provides a completion-driven acquisition
+coordinator and `acquire_calibration` synchronous wrapper. Both require an
+operational `CalibrationEndpoint`; the wrapper waits for the same correlated
+adoption, settling, response, restoration and release events. It runs outside
+frame callbacks. Responses become available through `responses()` only after
+successful restoration and ownership release; a faulted result prohibits normal
+resumption and invokes the endpoint's fault handler.
+
+This is the acquisition core, not an installed calibration command. AOS and
+HEART/FGN/JFG endpoint integration, interaction-matrix estimation and operational
+qualification remain pending. See the [review and limits](docs/CALIBRATION_COORDINATOR_REVIEW.md)
+and [delivery gates](docs/roadmap.md#completion-driven-coordinator-delivery).
+
 ## Run the development fixture
 
 Build-tree paths are explicit; the runner does not install into or admit system
