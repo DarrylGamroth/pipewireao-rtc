@@ -11,7 +11,7 @@ declared session without introducing another graph-authoring format.
 | Document | Authority |
 | --- | --- |
 | [Development architecture](architecture.md) | RTCW composition, scientist boundary, external-node substitution, laboratory placement, and the selected deployment package |
-| [Development operating contract](operations.md) | RTC-DEV-001 through RTC-DEV-027: lifecycle, composition, updates, equivalence, placement, installed profiles, simulated calibration, bounded control and user-service operation |
+| [Development operating contract](operations.md) | RTC-DEV-001 through RTC-DEV-028: lifecycle, composition, updates, equivalence, placement, installed profiles, simulated calibration, bounded control and user-service operation |
 | [Development roadmap](roadmap.md) | Dependency-ordered implementation, completion evidence, performance characterization, and deferred capability triggers |
 
 These three files are the complete RTC-level implementation baseline. An
@@ -29,6 +29,11 @@ recorded-input increment and its functional qualification limits.
 control instructions and separates backend preparation from installed live
 qualification. [HIL review](HIL_DEPLOYMENT_REVIEW.md) tracks confirmed defects
 and remaining acceptance evidence.
+
+[HEART HIL validation](HEART_HIL_VALIDATION.md) records the installed Classic/Copper
+CPU bridge checks, packet-level evidence and remaining physical/scientific
+limits. [HEART HIL review](HEART_HIL_REVIEW.md) records independent findings;
+the [evidence summary](HEART_HIL_EVIDENCE.json) preserves measured artifact identities.
 
 ## Inactive design archive
 

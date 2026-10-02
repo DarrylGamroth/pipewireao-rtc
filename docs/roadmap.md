@@ -875,6 +875,33 @@ The original zero-command observations remain historical failed scientific
 response evidence. Do not attribute a maximum Classic GPU rate to the earlier
 requested 10 Hz CPU deployment checks or Copper GPU measurements.
 
+## Selected HEART HIL bridge (2026-10-02)
+
+Baseline: RTC `7b5bc3c`, existing installed simulated-offset profiles and
+native HEART. RTC-ARCH-022 and RTC-DEV-028 select a
+third scientific owner through the two existing UDP bridge factories.
+
+| Obligation | Allocation | Acceptance evidence | State |
+| --- | --- | --- | --- |
+| Explicit external session and exact transport contracts | Rust config parser and existing runner | positive/negative parser tests, installed private-core admission with two exact links | implemented / finite checks passed |
+| Simulated offsets and explicit command conventions | HEART exporter and existing calibration artifacts | offset FITS hashes, native config readers, exact pixel/order/conversion capture checks | implemented / physical OPD interpretation unqualified |
+| Held native owner and paired reset | supervisor, HEART owner wrapper, simulator control | 32 exchanges per profile, pause/reset/restart, rejection and owned child-death fault/cleanup | implemented / finite checks passed |
+| Installed CPU Classic/Copper path | portable deployment and existing SPA plugins | installed exports, 32 exact identities/commands per profile, 27 native threads and six scientific workers, cleanup | implemented / CPU finite checks passed |
+
+The [validation record](HEART_HIL_VALIDATION.md),
+[independent review](HEART_HIL_REVIEW.md) and
+[evidence summary](HEART_HIL_EVIDENCE.json) describe the demonstrated finite CPU
+path. Copper requires the demonstrated 2000 µs sender interval: the zero-interval
+run timed out before its first command. Its mechanism and minimum safe interval
+remain unresolved. This compatibility setting does not qualify physical camera
+readout or progressive overlap.
+
+GPU simulation, latency/rate characterization, scientific convergence and
+HIL010 remain separate gates. Unit conversion and actuator order are verified;
+physical OPD/displacement meaning and delayed-packet generation fencing remain
+unqualified. RTC-DEV-028 therefore has finite functional evidence, not full
+physical or scientific qualification.
+
 ## Deferred capabilities
 
 The following topics are not active work. Their previous proposals are

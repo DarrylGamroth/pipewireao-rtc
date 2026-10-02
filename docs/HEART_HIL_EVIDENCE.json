@@ -1,0 +1,940 @@
+{
+  "schema": "pipewireao-rtc.heart-hil-evidence/1",
+  "date": "2026-10-02",
+  "scope": "non-actuating finite Classic/Copper CPU AOS-to-unchanged-HEART exchanges; not timing, scientific or physical qualification",
+  "rtc_baseline": "7b5bc3c8bdbcc990b958769dfd59552c5f0858e6",
+  "plugin_commit": "9aeea5334d03874dcfffc6bc29c8187f2774705a",
+  "adapter_commit": "277d822979f7709abb55769c76291937868f3e0b",
+  "reviewed_source_sha256": {
+    "src/config.rs": "83fe7bb3903fb8076545ee3a41e3644780b8cf1b38b939da82c25cbc98075552",
+    "src/config/decode.rs": "1b7826ab5f54f70e4f20eb87cf9c68244bf75e84e339f08f82f67f9ddcfcd265",
+    "deployment/export_heart_hil.py": "f90bf49860cd41ff42868d536d8bab0cea3b7702d7609b76619a9a7d4b4624a3",
+    "deployment/deploy.py": "681e623b75bd7f9197ae223c55813f226abf3fc17ba4fa126dae5ae61fec6f53",
+    "deployment/hil/heart_owner.py": "ff01b178568131c857cff6a0a30b65fa70bee30d9bedee6b6fc5ce6c71de9370",
+    "deployment/hil/simulator.jl": "ed553e7abc220793b63637c7131785274d8fbdab204f840c9e6d2615f4455ac1",
+    "deployment/hil/owner_protocol.jl": "77e9e934099486b6a2b6bf09af21752cf63e9976a73fea986685c1d6caf56d06",
+    "deployment/check_hil.py": "6088e187ff118651c15b840ffc13c5d19ae9b9f1516cf7acc22b0a3b8cef8d4c",
+    "deployment/check_heart_wire.py": "cd6007d84aec30a28949a763b6506ebaa4af0c954e1de9ac41835f84f3fdf5be",
+    "deployment/check_heart_failure.py": "58a431e58176390b31745a9e502c23de4604e559d0f72dd2fa43f29058b3995f"
+  },
+  "checks": [
+    {
+      "instrument": "classic",
+      "classification": "observed finite software deployment",
+      "deployment": {
+        "path": "/home/dgamroth/.config/pipewireao-rtc/revolt-classic-heart-hil-cpu/deployment.conf",
+        "sha256": "f840dcc84e17db0a267ca511b5070288fec84ed2a682518f24c9267d04f0e268"
+      },
+      "provenance": {
+        "path": "/home/dgamroth/.config/pipewireao-rtc/revolt-classic-heart-hil-cpu/provenance.json",
+        "sha256": "f74ed64cf02d17a1f665e8ace95c1551730efde920aa09bb4fad7384e2ddf7d8"
+      },
+      "verified_package_artifacts": 349,
+      "readout_us": 0,
+      "packet_rows": 11,
+      "result": {
+        "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/evidence/classic-final/result.json",
+        "sha256": "78a2f5f5a8b7ccbbaa8367b40894b26bf2a4ec87188b6076200fd438fa9dad01"
+      },
+      "wire_result": {
+        "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/evidence/classic-final/wire-result.json",
+        "sha256": "9e9d502a53f923694fc0c93146598b49f8821aafa80928c847b4f96482f0fb81"
+      },
+      "pcapng": {
+        "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/classic-final.pcapng",
+        "sha256": "61e8108c88c92ee4b054e4aba2fe24ba8fe84a285a4b91d0b2183f81e2ecd4ea"
+      },
+      "packet_fields": {
+        "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/classic-final-packets.tsv",
+        "sha256": "c5425297367205bc5fbf1de194312368a1cfdcc20f18980426385f136b4c22d0"
+      },
+      "batches": [
+        {
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "sequences": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "max_abs_command_um": 0.079423636,
+          "nonzero_command_components": 4432,
+          "command_components_at_limit": 0,
+          "requested_rate_hz": 10,
+          "achieved_cycle_rate_hz": 5.445497228232109
+        },
+        {
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "sequences": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "max_abs_command_um": 0.079423636,
+          "nonzero_command_components": 4432,
+          "command_components_at_limit": 0,
+          "requested_rate_hz": 10,
+          "achieved_cycle_rate_hz": 9.999650598875208
+        }
+      ],
+      "native_generations": [
+        {
+          "generation": 1,
+          "child_pid": 604275,
+          "placement_validated": true,
+          "placement_declaration": {
+            "cpus": [
+              3,
+              4,
+              6,
+              8,
+              10,
+              14
+            ],
+            "allowed_priorities": [
+              5,
+              10,
+              15,
+              20
+            ],
+            "workers": [
+              {
+                "name": "HOP0.wfs.w",
+                "cpus": [
+                  4
+                ],
+                "policy": 1,
+                "priority": 15
+              },
+              {
+                "name": "HOP0.proc.w",
+                "cpus": [
+                  6
+                ],
+                "policy": 1,
+                "priority": 15
+              },
+              {
+                "name": "HOP0.recon.w",
+                "cpus": [
+                  8
+                ],
+                "policy": 1,
+                "priority": 15
+              },
+              {
+                "name": "WCC.tfc.w",
+                "cpus": [
+                  10
+                ],
+                "policy": 1,
+                "priority": 15
+              },
+              {
+                "name": "WCC.clwc.w",
+                "cpus": [
+                  10
+                ],
+                "policy": 1,
+                "priority": 15
+              },
+              {
+                "name": "WCC.dm0.w",
+                "cpus": [
+                  14
+                ],
+                "policy": 1,
+                "priority": 15
+              }
+            ]
+          },
+          "flag_verification": "command SUCCESS acknowledgements only; no effective readback",
+          "native_thread_count": 27,
+          "observed_workers": [
+            {
+              "name": "HOP0.wfs.w",
+              "cpus": [
+                4
+              ],
+              "policy": 1,
+              "priority": 15
+            },
+            {
+              "name": "HOP0.proc.w",
+              "cpus": [
+                6
+              ],
+              "policy": 1,
+              "priority": 15
+            },
+            {
+              "name": "HOP0.recon.w",
+              "cpus": [
+                8
+              ],
+              "policy": 1,
+              "priority": 15
+            },
+            {
+              "name": "WCC.tfc.w",
+              "cpus": [
+                10
+              ],
+              "policy": 1,
+              "priority": 15
+            },
+            {
+              "name": "WCC.clwc.w",
+              "cpus": [
+                10
+              ],
+              "policy": 1,
+              "priority": 15
+            },
+            {
+              "name": "WCC.dm0.w",
+              "cpus": [
+                14
+              ],
+              "policy": 1,
+              "priority": 15
+            }
+          ],
+          "all_threads_cpu_envelope_validated": true
+        },
+        {
+          "generation": 2,
+          "child_pid": 604757,
+          "placement_validated": true,
+          "placement_declaration": {
+            "cpus": [
+              3,
+              4,
+              6,
+              8,
+              10,
+              14
+            ],
+            "allowed_priorities": [
+              5,
+              10,
+              15,
+              20
+            ],
+            "workers": [
+              {
+                "name": "HOP0.wfs.w",
+                "cpus": [
+                  4
+                ],
+                "policy": 1,
+                "priority": 15
+              },
+              {
+                "name": "HOP0.proc.w",
+                "cpus": [
+                  6
+                ],
+                "policy": 1,
+                "priority": 15
+              },
+              {
+                "name": "HOP0.recon.w",
+                "cpus": [
+                  8
+                ],
+                "policy": 1,
+                "priority": 15
+              },
+              {
+                "name": "WCC.tfc.w",
+                "cpus": [
+                  10
+                ],
+                "policy": 1,
+                "priority": 15
+              },
+              {
+                "name": "WCC.clwc.w",
+                "cpus": [
+                  10
+                ],
+                "policy": 1,
+                "priority": 15
+              },
+              {
+                "name": "WCC.dm0.w",
+                "cpus": [
+                  14
+                ],
+                "policy": 1,
+                "priority": 15
+              }
+            ]
+          },
+          "flag_verification": "command SUCCESS acknowledgements only; no effective readback",
+          "native_thread_count": 27,
+          "observed_workers": [
+            {
+              "name": "HOP0.wfs.w",
+              "cpus": [
+                4
+              ],
+              "policy": 1,
+              "priority": 15
+            },
+            {
+              "name": "HOP0.proc.w",
+              "cpus": [
+                6
+              ],
+              "policy": 1,
+              "priority": 15
+            },
+            {
+              "name": "HOP0.recon.w",
+              "cpus": [
+                8
+              ],
+              "policy": 1,
+              "priority": 15
+            },
+            {
+              "name": "WCC.tfc.w",
+              "cpus": [
+                10
+              ],
+              "policy": 1,
+              "priority": 15
+            },
+            {
+              "name": "WCC.clwc.w",
+              "cpus": [
+                10
+              ],
+              "policy": 1,
+              "priority": 15
+            },
+            {
+              "name": "WCC.dm0.w",
+              "cpus": [
+                14
+              ],
+              "policy": 1,
+              "priority": 15
+            }
+          ],
+          "all_threads_cpu_envelope_validated": true
+        }
+      ],
+      "wire": {
+        "passed": true,
+        "wfs_frames": 32,
+        "dm_commands": 32,
+        "wire_micrometre_to_plant_metre_conversion": "exact Float32 match",
+        "actuator_order": "all 277 coordinates match without permutation",
+        "detector_shape": [
+          352,
+          352
+        ],
+        "detector_roi": {
+          "row": 0,
+          "column": 0
+        },
+        "out_of_exchange_commands": [
+          {
+            "capture_realtime_ns": 1790972918324956940,
+            "id": 16,
+            "payload_equals_last_accepted": true
+          },
+          {
+            "capture_realtime_ns": 1790972923437574236,
+            "id": 16,
+            "payload_equals_last_accepted": true
+          }
+        ],
+        "packet_fields_sha256": "c5425297367205bc5fbf1de194312368a1cfdcc20f18980426385f136b4c22d0",
+        "physical_opd_displacement_convention": "unqualified",
+        "network_generation_fence": "not provided by stdDM"
+      },
+      "exit_codes": {
+        "core": 0,
+        "heart": 0,
+        "simulator": 0,
+        "rtc": 0
+      }
+    },
+    {
+      "instrument": "copper",
+      "classification": "observed finite software deployment",
+      "deployment": {
+        "path": "/home/dgamroth/.config/pipewireao-rtc/revolt-copper-heart-hil-cpu/deployment.conf",
+        "sha256": "b0b4f58a7ace77164f7c2397d9b4014681503bc70a54a9a5336eb035cd4ac960"
+      },
+      "provenance": {
+        "path": "/home/dgamroth/.config/pipewireao-rtc/revolt-copper-heart-hil-cpu/provenance.json",
+        "sha256": "58c13ba35173e219cbce0850d5be30cf7d0b19e80830fe58418ff5e0aa40bd24"
+      },
+      "verified_package_artifacts": 342,
+      "readout_us": 2000,
+      "packet_rows": 32,
+      "result": {
+        "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/evidence/copper-final/result.json",
+        "sha256": "0888a36192579688b9a6de092b067f44d20f0105891411456b0f27d8aa060d11"
+      },
+      "wire_result": {
+        "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/evidence/copper-final/wire-result.json",
+        "sha256": "7007e26d739cbd72ade4c1550a2cb7859e874754e67d1ba4868a0b9bd459a7aa"
+      },
+      "pcapng": {
+        "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/copper-final.pcapng",
+        "sha256": "0b96d02934836ce5c8c290eff5afd3f8fe16901fbc120294e146e49bbe131612"
+      },
+      "packet_fields": {
+        "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/copper-final-packets.tsv",
+        "sha256": "be800229b7f84e76a67d13c37c88401b98c59464de5ce64f0ba8d746db1548c9"
+      },
+      "batches": [
+        {
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "sequences": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "max_abs_command_um": 0.0028858127,
+          "nonzero_command_components": 4155,
+          "command_components_at_limit": 0,
+          "requested_rate_hz": 10,
+          "achieved_cycle_rate_hz": 2.6498217652505898
+        },
+        {
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "sequences": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "max_abs_command_um": 0.0028858127,
+          "nonzero_command_components": 4155,
+          "command_components_at_limit": 0,
+          "requested_rate_hz": 10,
+          "achieved_cycle_rate_hz": 3.332905812617
+        }
+      ],
+      "native_generations": [
+        {
+          "generation": 1,
+          "child_pid": 606814,
+          "placement_validated": true,
+          "placement_declaration": {
+            "cpus": [
+              3,
+              4,
+              6,
+              8,
+              10,
+              14
+            ],
+            "allowed_priorities": [
+              5,
+              10,
+              15,
+              20
+            ],
+            "workers": [
+              {
+                "name": "HOP0.wfs.w",
+                "cpus": [
+                  4
+                ],
+                "policy": 1,
+                "priority": 15
+              },
+              {
+                "name": "HOP0.proc.w",
+                "cpus": [
+                  6
+                ],
+                "policy": 1,
+                "priority": 15
+              },
+              {
+                "name": "HOP0.recon.w",
+                "cpus": [
+                  8
+                ],
+                "policy": 1,
+                "priority": 15
+              },
+              {
+                "name": "WCC.tfc.w",
+                "cpus": [
+                  10
+                ],
+                "policy": 1,
+                "priority": 15
+              },
+              {
+                "name": "WCC.clwc.w",
+                "cpus": [
+                  10
+                ],
+                "policy": 1,
+                "priority": 15
+              },
+              {
+                "name": "WCC.dm0.w",
+                "cpus": [
+                  14
+                ],
+                "policy": 1,
+                "priority": 15
+              }
+            ]
+          },
+          "flag_verification": "command SUCCESS acknowledgements only; no effective readback",
+          "native_thread_count": 27,
+          "observed_workers": [
+            {
+              "name": "HOP0.wfs.w",
+              "cpus": [
+                4
+              ],
+              "policy": 1,
+              "priority": 15
+            },
+            {
+              "name": "HOP0.proc.w",
+              "cpus": [
+                6
+              ],
+              "policy": 1,
+              "priority": 15
+            },
+            {
+              "name": "HOP0.recon.w",
+              "cpus": [
+                8
+              ],
+              "policy": 1,
+              "priority": 15
+            },
+            {
+              "name": "WCC.tfc.w",
+              "cpus": [
+                10
+              ],
+              "policy": 1,
+              "priority": 15
+            },
+            {
+              "name": "WCC.clwc.w",
+              "cpus": [
+                10
+              ],
+              "policy": 1,
+              "priority": 15
+            },
+            {
+              "name": "WCC.dm0.w",
+              "cpus": [
+                14
+              ],
+              "policy": 1,
+              "priority": 15
+            }
+          ],
+          "all_threads_cpu_envelope_validated": true
+        },
+        {
+          "generation": 2,
+          "child_pid": 607293,
+          "placement_validated": true,
+          "placement_declaration": {
+            "cpus": [
+              3,
+              4,
+              6,
+              8,
+              10,
+              14
+            ],
+            "allowed_priorities": [
+              5,
+              10,
+              15,
+              20
+            ],
+            "workers": [
+              {
+                "name": "HOP0.wfs.w",
+                "cpus": [
+                  4
+                ],
+                "policy": 1,
+                "priority": 15
+              },
+              {
+                "name": "HOP0.proc.w",
+                "cpus": [
+                  6
+                ],
+                "policy": 1,
+                "priority": 15
+              },
+              {
+                "name": "HOP0.recon.w",
+                "cpus": [
+                  8
+                ],
+                "policy": 1,
+                "priority": 15
+              },
+              {
+                "name": "WCC.tfc.w",
+                "cpus": [
+                  10
+                ],
+                "policy": 1,
+                "priority": 15
+              },
+              {
+                "name": "WCC.clwc.w",
+                "cpus": [
+                  10
+                ],
+                "policy": 1,
+                "priority": 15
+              },
+              {
+                "name": "WCC.dm0.w",
+                "cpus": [
+                  14
+                ],
+                "policy": 1,
+                "priority": 15
+              }
+            ]
+          },
+          "flag_verification": "command SUCCESS acknowledgements only; no effective readback",
+          "native_thread_count": 27,
+          "observed_workers": [
+            {
+              "name": "HOP0.wfs.w",
+              "cpus": [
+                4
+              ],
+              "policy": 1,
+              "priority": 15
+            },
+            {
+              "name": "HOP0.proc.w",
+              "cpus": [
+                6
+              ],
+              "policy": 1,
+              "priority": 15
+            },
+            {
+              "name": "HOP0.recon.w",
+              "cpus": [
+                8
+              ],
+              "policy": 1,
+              "priority": 15
+            },
+            {
+              "name": "WCC.tfc.w",
+              "cpus": [
+                10
+              ],
+              "policy": 1,
+              "priority": 15
+            },
+            {
+              "name": "WCC.clwc.w",
+              "cpus": [
+                10
+              ],
+              "policy": 1,
+              "priority": 15
+            },
+            {
+              "name": "WCC.dm0.w",
+              "cpus": [
+                14
+              ],
+              "policy": 1,
+              "priority": 15
+            }
+          ],
+          "all_threads_cpu_envelope_validated": true
+        }
+      ],
+      "wire": {
+        "passed": true,
+        "wfs_frames": 32,
+        "dm_commands": 32,
+        "wire_micrometre_to_plant_metre_conversion": "exact Float32 match",
+        "actuator_order": "all 277 coordinates match without permutation",
+        "detector_shape": [
+          64,
+          64
+        ],
+        "detector_roi": {
+          "row": 844,
+          "column": 1044
+        },
+        "out_of_exchange_commands": [
+          {
+            "capture_realtime_ns": 1790973272452659559,
+            "id": 16,
+            "payload_equals_last_accepted": true
+          },
+          {
+            "capture_realtime_ns": 1790973279756375761,
+            "id": 16,
+            "payload_equals_last_accepted": true
+          }
+        ],
+        "packet_fields_sha256": "be800229b7f84e76a67d13c37c88401b98c59464de5ce64f0ba8d746db1548c9",
+        "physical_opd_displacement_convention": "unqualified",
+        "network_generation_fence": "not provided by stdDM"
+      },
+      "exit_codes": {
+        "core": 0,
+        "heart": 0,
+        "simulator": 0,
+        "rtc": 0
+      }
+    }
+  ],
+  "child_death": {
+    "result": {
+      "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/evidence/heart-child-death.json",
+      "sha256": "91d2fd6f5d2e56784491c96a8056c774e8fb7e1a1531b8ac81f08cbf1906f3e0"
+    },
+    "passed": true,
+    "observed_error": "required heart exited with status 1",
+    "source_held_sequence": 0,
+    "exit_codes": {
+      "core": 0,
+      "heart": 1,
+      "simulator": -15,
+      "rtc": -9
+    },
+    "classification": "injected fault with forced cleanup; not normal graceful shutdown"
+  },
+  "copper_zero_readout": {
+    "result": {
+      "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/evidence/copper-cpu-02/result.json",
+      "sha256": "cab779b8e37055346d580e8007174af44ab407da2e072e33fcf6d999003ed354"
+    },
+    "log": {
+      "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/check-copper-02.log",
+      "sha256": "b204d514809c74e84afe4bd8424cb88f963ced96a28853d43c90eb10d7c49f1f"
+    },
+    "pcapng": {
+      "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/copper-cpu-02.pcapng",
+      "sha256": "a0b97414c78a93c481d41b5251e9e7fce2514b0f5703ae68dcbdb361bf924cd6"
+    },
+    "passed": false,
+    "observation": "two valid WFS packets sent; no command before first exchange timeout; 2000us fixture passed",
+    "cause": "unresolved",
+    "minimum_safe_interval": "not established"
+  },
+  "existing_scientific_transport_regression": {
+    "result": {
+      "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/evidence/copper-fgn-regression/result.json",
+      "sha256": "1b4c93f83c0f385b287c8d8184735eb8d1946f1569ea4d59d7ec856eaef57142"
+    },
+    "passed": true,
+    "scope": "existing installed Copper FGN profile with changed supervisor; old adapter snapshot"
+  },
+  "software_check_logs": [
+    {
+      "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/python-tests-final.log",
+      "sha256": "c49b97a7ea9bbeaab0c57d64a24e87cf9c0c914649a55bdebe9642795d23bdcd"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/julia-protocol-tests.log",
+      "sha256": "37611482e48a268f8a707e5dec5aa11fde33cb9e73f388c49826da349dc99503"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/julia-simulator-tests.log",
+      "sha256": "b18decb9604108b7bd7523c948a39cd17bb2cb47d227e2dd945b11b57631bf6b"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/rust-default-tests-final.log",
+      "sha256": "c85f5083da28ae318d6a27312b6c708295c3d6e77c3aa4928ba2b333688d5598"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/rust-live-tests.log",
+      "sha256": "581b56d9a8cc51e30ef8fa440cb3cb9636c5ebb60d158d52fbb8ef6abb707a8d"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/rust-live-clippy.log",
+      "sha256": "df62d50e84c4fde38e4cf340d73cc899609980e6716445411f03d1d3153cbd59"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/adapter-heart-stride-fail-before.log",
+      "sha256": "e6e6c634bd14f517a2bcadbd2f0aacfbe80998c3c05be1ddcdddca568a16de79"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/adapter-heart-stride-pass-after.log",
+      "sha256": "e4bdfcb030bca0bc9c2ae4b2eb03df0784508fc19b88aba77a2a704168a6bf87"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/adapter-heart-stride-summary.json",
+      "sha256": "b27a9c1029328301f56c5dcae8c403849b84a1877add52f6da6e099d6fc91365"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/plugin-build-testlog.txt",
+      "sha256": "e8f0ff77e1e6c15776d93edbcc9756d80980e7172443c5cf4cf90dd19171e70e"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/plugin-build-asan-testlog.txt",
+      "sha256": "c0e4fdf50e5f3e8503b4775577dadeb9194423e189b7cd4f47f02ba564420023"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/dm-metadata-fail-before-final.log",
+      "sha256": "c473dac933bc4c7442c825cdcdf6246d0e6a88c525e946411f85e67ead71b01a"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/dm-metadata-pass-after.log",
+      "sha256": "d9cc5abf531bd96e650471de0ce655869af0cdb282d87697e95e14861a66ca71"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/wfs-acquisition-fail-before.log",
+      "sha256": "7902356d9e1ac7cd96db6f60421a50268a60876c17e02d14144e13802fc690bc"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/wfs-acquisition-pass-after.log",
+      "sha256": "e8f0ff77e1e6c15776d93edbcc9756d80980e7172443c5cf4cf90dd19171e70e"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/rust-default-clippy-final.log",
+      "sha256": "fbebe5318c99904f3e09e959c181b1dec99db606912396cd19055a266b570e0d"
+    }
+  ],
+  "user_reported_copper_detector": {
+    "model": "Andor iXon3 DU860",
+    "horizontal_readout_mhz": 10,
+    "digitization_bits": 14,
+    "vertical_shift_us": 0.45,
+    "preamp_gain": 4.6,
+    "em_gain": 2,
+    "confidence": "user-reported; speed/gain values tentative; not hardware readback",
+    "applied_to_accepted_fixture": false,
+    "missing": "per-camera electrons/ADU and read-noise calibration for selected readout/preamp, acquisition/crop/transfer timing"
+  },
+  "limitations": [
+    "numerical OPD interpretation is provisional; physical displacement/OPD factor, sign and registration unqualified",
+    "stdDM carries no acquisition generation; arbitrarily delayed prior-generation packets are not fenced",
+    "Copper packet pacing mechanism and minimum safe interval unresolved",
+    "requested 10Hz is not achieved-rate/deadline evidence",
+    "hybrid recorded matrices and thresholds; HIL010 and convergence remain unresolved",
+    "CPU checks do not qualify CUDA/AMDGPU simulation"
+  ],
+  "rtc_implementation_commit": "5b50414",
+  "systemd_checks": [
+    {
+      "instrument": "classic",
+      "result": {
+        "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/evidence/classic-systemd/result.json",
+        "sha256": "468cf7f95aa3ef787a319f20a26c40038b75d76f28e82f0b9ff64c3c293536a4"
+      },
+      "journal": {
+        "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/evidence/classic-systemd/journal.log",
+        "sha256": "7eba6520d1be1f9b62a04d83d4620c95506e88760a31d4b9401739208f9c0abc"
+      },
+      "passed": true,
+      "completed_commands": [
+        16,
+        16
+      ],
+      "systemd_final": "Result=success\nExecMainStatus=0\nActiveState=inactive\nSubState=dead\n",
+      "capture_comparison": "canonical foreground checks provide wire equality; this service run checks lifecycle and reports only"
+    },
+    {
+      "instrument": "copper",
+      "result": {
+        "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/evidence/copper-systemd-02/result.json",
+        "sha256": "dce6470dbd0dd3cbe7721b36ae7748df50e086d09d84d9b1764db3c86e5c9c00"
+      },
+      "journal": {
+        "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/evidence/copper-systemd-02/journal.log",
+        "sha256": "8c1f4f27a2422de57b44a24ae45c2290a9f9d6a5fede3fab98745995cec5dc93"
+      },
+      "passed": true,
+      "completed_commands": [
+        16,
+        16
+      ],
+      "systemd_final": "Result=success\nExecMainStatus=0\nActiveState=inactive\nSubState=dead\n",
+      "capture_comparison": "canonical foreground checks provide wire equality; this service run checks lifecycle and reports only"
+    }
+  ],
+  "smoke_driver_failure": {
+    "path": "/home/dgamroth/.cache/rtc-heart-hil-20261002/evidence/copper-systemd/result.json",
+    "sha256": "9ddab0271d32dff7ab078593eed0837147467530ffcb471331f6366c355f3394",
+    "classification": "driver issued duplicate start after automatic service admission; RTC correctly rejected start in Running; cleanup succeeded",
+    "passed": false
+  }
+}
