@@ -192,6 +192,8 @@ pub struct LinkSpec {
 pub enum ExecutionMode {
     CompleteFrame,
     RowBlock,
+    /// Links application-owned endpoints for an externally executed RTC.
+    ExternalRtc,
 }
 
 /// Named session nodes that start and stop as one processing unit.
@@ -260,7 +262,9 @@ impl DevelopmentConfig {
                 "at least one source is required",
             ));
         }
-        if self.graphs.is_empty() {
+        if self.execution == ExecutionMode::ExternalRtc {
+            validate_external_rtc(self)?;
+        } else if self.graphs.is_empty() {
             return Err(ScientificDiagnostic::new(
                 "graphs",
                 "at least one processing graph is required",
@@ -568,6 +572,54 @@ impl DevelopmentConfig {
         });
         links
     }
+}
+
+fn validate_external_rtc(config: &DevelopmentConfig) -> Result<(), ScientificDiagnostic> {
+    if !config.graphs.is_empty() {
+        return Err(ScientificDiagnostic::new(
+            "graphs",
+            "external-rtc transport sessions must not declare processing graphs",
+        ));
+    }
+    for (field, empty) in [
+        ("execution-groups", config.execution_groups.is_empty()),
+        ("properties", config.properties.is_empty()),
+        ("parameters", config.parameters.is_empty()),
+        ("observations", config.observations.is_empty()),
+    ] {
+        if !empty {
+            return Err(ScientificDiagnostic::new(
+                field,
+                "external-rtc transport sessions require this field to be empty",
+            ));
+        }
+    }
+    for (collection, endpoints) in [("sources", &config.sources), ("sinks", &config.sinks)] {
+        for (index, endpoint) in endpoints.iter().enumerate() {
+            let field = format!("{collection}[{index}]");
+            match endpoint.realization {
+                ObjectRealization::External {
+                    run_control: RunControl::Application,
+                } => {}
+                ObjectRealization::External {
+                    run_control: RunControl::Session,
+                } => {
+                    return Err(ScientificDiagnostic::new(
+                        format!("{field}.run-control"),
+                        "external-rtc endpoint run control must remain application-owned",
+                    ));
+                }
+                ObjectRealization::Factory(_) => {
+                    return Err(ScientificDiagnostic::new(
+                        format!("{field}.ownership"),
+                        "external-rtc endpoints must be externally owned",
+                    ));
+                }
+            }
+            reject_parameter_ports(&field, &endpoint.ports)?;
+        }
+    }
+    Ok(())
 }
 
 fn validate_rate(field: &str, rate: &str) -> Result<(), ScientificDiagnostic> {
@@ -1803,7 +1855,8 @@ fn validate_links(config: &DevelopmentConfig) -> Result<(), ScientificDiagnostic
         }
         let admitted_roles = matches!(output.role, ObjectRole::Source | ObjectRole::Graph)
             && matches!(input.role, ObjectRole::Graph | ObjectRole::Sink)
-            && !(output.role == ObjectRole::Source && input.role == ObjectRole::Sink);
+            && (config.execution == ExecutionMode::ExternalRtc
+                || !(output.role == ObjectRole::Source && input.role == ObjectRole::Sink));
         if !admitted_roles {
             return Err(ScientificDiagnostic::new(
                 field,

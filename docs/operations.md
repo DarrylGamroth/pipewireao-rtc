@@ -799,3 +799,37 @@ dark ADC acquisition and reference generation, matching offsets for both graph
 owners, successful installed exchange and unchanged plant/matrix/controller
 configuration. Keep invalid reference measurements and unresolved scientific
 acceptance visible.
+
+## RTC-DEV-028 — External HEART simulation deployment
+
+The selected non-actuating HEART HIL deployment MUST use the maintained SPA
+Standard WFS sink and Standard DM source on a private PipeWire core, an
+unchanged supervised HEART executable, and the installed AOS plant. A session
+with `execution = external-rtc` MUST have no processing graphs, execution
+groups, property/parameter submissions or observations. Its endpoints MUST be
+application-controlled external nodes with exact port contracts. Only this
+mode MAY contain direct source-to-sink links; existing modes retain their graph
+requirements and link restrictions.
+
+Export MUST validate and record native executable, plugin, plant, calibration
+and configuration identities. Simulated dark/reference/static offsets MUST be
+supplied to HEART through its existing configuration interface. Measured
+reconstructors, controller laws and projections MUST be identified separately
+from simulation-generated offsets. The ndarray/UDP bridge MUST preserve frame
+correlation and explicit actuator ordering. Unit conversion and the mirror
+OPD/displacement convention MUST be verified before a live qualification claim.
+
+Admission MUST keep the simulator paused until HEART, bridge endpoints and
+required threads are ready. Pause MUST finish the outstanding exchange before
+stopping publication. A stopped reset MUST reset both simulator and HEART
+controller/sequence state before a new frame is published. Child exit, command
+rejection and bounded exchange/control timeout MUST fault the deployment.
+Shutdown MUST reap owned children and preserve unrelated processes and objects.
+The deployment MUST exclude CPUs 0/1 and record actual HEART worker placement.
+
+Verification intent: focused parser and lifecycle rejection tests; installed
+finite exchanges through both UDP legs for Classic and Copper; matched IDs,
+finite bounded commands, simulated calibration provenance, pause/reset/restart,
+unexpected child death and cleanup. CPU qualification MUST precede any added
+GPU or paced-readout claim. Finite exchanges MUST NOT establish convergence,
+maximum frame rate, physical actuation or algorithmic equivalence.

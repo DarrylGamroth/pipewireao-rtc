@@ -58,3 +58,25 @@ end
         @test_throws ArgumentError warm_report_writer!(options, science, recorder, state)
     end
 end
+
+@testset "HEART units and bounded reset acknowledgement" begin
+    @test transport_contract((;)).command_scale == 1.0f-6
+    heart = transport_contract((; transport=:heart))
+    @test heart.command_scale == 1.0f0
+    @test heart.frame_schema == "org.heart.std-wfs.raw-pixels/1"
+    @test heart.command_schema == "org.heart.std-dm.actuator-command/1"
+    @test heart.command_units == "metre OPD"
+    mktempdir() do root
+        options = (; transport=:heart, controller_request=joinpath(root,"request"),
+            controller_reply=joinpath(root,"reply"), quit_request=joinpath(root,"quit"))
+        Protocol.write_json_atomic(options.controller_reply,
+            (; version=1,id=7,operation="reset",ok=true,state="paused",sequence=0))
+        @test reset_controller!(options,7;timeout_seconds=0.1) === nothing
+        Protocol.write_json_atomic(options.controller_reply,
+            (; version=1,id=7,operation="reset",ok=false,state="paused",sequence=0))
+        @test_throws ErrorException reset_controller!(options,7;timeout_seconds=0.1)
+        @test_throws ErrorException reset_controller!(options,8;timeout_seconds=0.01)
+        touch(options.quit_request)
+        @test_throws ErrorException reset_controller!(options,9;timeout_seconds=0.1)
+    end
+end

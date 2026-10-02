@@ -46,10 +46,11 @@ pub(super) fn development_config(text: &str) -> Result<DevelopmentConfig, Scient
     let execution = match scalar(required(execution, "execution")?, "execution")?.as_str() {
         "complete-frame" => ExecutionMode::CompleteFrame,
         "row-block" => ExecutionMode::RowBlock,
+        "external-rtc" => ExecutionMode::ExternalRtc,
         value => {
             return Err(ScientificDiagnostic::new(
                 "execution",
-                format!("expected complete-frame or row-block, got {value:?}"),
+                format!("expected complete-frame, row-block, or external-rtc, got {value:?}"),
             ))
         }
     };
@@ -63,9 +64,19 @@ pub(super) fn development_config(text: &str) -> Result<DevelopmentConfig, Scient
     Ok(DevelopmentConfig {
         execution,
         rate: scalar(required(rate, "rate")?, "rate")?,
-        sources: endpoint_array(required(sources, "sources")?, ObjectRole::Source, "sources")?,
+        sources: endpoint_array(
+            required(sources, "sources")?,
+            ObjectRole::Source,
+            "sources",
+            execution,
+        )?,
         graphs: graph_array(required(graphs, "graphs")?)?,
-        sinks: endpoint_array(required(sinks, "sinks")?, ObjectRole::Sink, "sinks")?,
+        sinks: endpoint_array(
+            required(sinks, "sinks")?,
+            ObjectRole::Sink,
+            "sinks",
+            execution,
+        )?,
         execution_groups: execution_group_array(required(execution_groups, "execution-groups")?)?,
         properties: string_map(required(properties, "properties")?, "properties")?,
         parameters: string_map(required(parameters, "parameters")?, "parameters")?,
@@ -104,6 +115,7 @@ fn endpoint(
     token: Token<'_>,
     role: ObjectRole,
     field: &str,
+    execution: ExecutionMode,
 ) -> Result<ObjectSpec<EndpointFactory>, ScientificDiagnostic> {
     let object = object_spec(token, field)?;
     let realization = match object.ownership.as_deref() {
@@ -114,7 +126,10 @@ fn endpoint(
                     "external endpoint must not declare a runner-created factory",
                 ));
             }
-            if object.run_control.is_some() {
+            if object.run_control.is_some()
+                && !(execution == ExecutionMode::ExternalRtc
+                    && object.run_control.as_deref() == Some("application"))
+            {
                 return Err(ScientificDiagnostic::new(
                     format!("{field}.run-control"),
                     "external source and sink run control remains application-owned",
@@ -242,12 +257,13 @@ fn endpoint_array(
     token: Token<'_>,
     role: ObjectRole,
     field: &str,
+    execution: ExecutionMode,
 ) -> Result<Vec<ObjectSpec<EndpointFactory>>, ScientificDiagnostic> {
     let mut array = Array::token(token, field)?;
     let mut objects = Vec::new();
     while let Some(token) = array.next()? {
         let item_field = format!("{field}[{}]", objects.len());
-        objects.push(endpoint(token, role, &item_field)?);
+        objects.push(endpoint(token, role, &item_field, execution)?);
     }
     Ok(objects)
 }

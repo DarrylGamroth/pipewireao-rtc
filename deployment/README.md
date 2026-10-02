@@ -166,6 +166,75 @@ releases the owned deployment. A completed HIL batch stays held until stopped
 reset rather than automatically returning the RTC to Ready. These profiles
 require no FITS argument.
 
+### HEART with the simulated plant
+
+The HEART profile connects `AOS → SPA stdWfs sink → UDP → HEART → UDP → SPA
+stdDM source → AOS`. HEART retains its existing progressive packet handler;
+the simulator publishes a complete ADC frame to the WFS sink. The Rust runner
+uses `execution = external-rtc` and manages the two exact links. HEART executes
+the scientific controller in a supervised native child.
+
+Build the live runner, install the HEART SPA plugin, and prepare a CPU FGN HIL
+base with simulation-derived offsets. Export and install to new directories:
+
+```sh
+python3 deployment/export_heart_hil.py \
+  --base-package /absolute/revolt-classic-fgn-hil-cpu \
+  --output /absolute/new-heart-package \
+  --heart-root /absolute/built-heart \
+  --heart-source-config /absolute/revolt-rtc/config/classic_config_sim.yaml \
+  --calibration-root /absolute/revolt-rtc \
+  --adapter-root /absolute/AdaptiveOpticsSimPipeWireHIL.jl
+
+python3 deployment/deploy.py install \
+  --package /absolute/new-heart-package \
+  --destination "$HOME/.config/pipewireao-rtc/revolt-classic-heart-hil-cpu"
+
+python3 deployment/check_hil.py \
+  --deployment "$HOME/.config/pipewireao-rtc/revolt-classic-heart-hil-cpu/deployment.conf" \
+  --runtime "$XDG_RUNTIME_DIR/heart-classic-check" \
+  --output /absolute/new-check-evidence
+```
+
+For Copper, select the corresponding Copper CPU HIL base and maintained
+matched Copper HEART YAML. The exporter retains the template's detector ROI,
+matrix, projection, masks and thresholds while replacing detector background,
+Classic reference slopes and DM static offsets with simulated values. Native
+executables, calibration and the resolved plant environment are snapshotted;
+HEART is built separately and runs on the host. TCP control port 5001 and UDP
+ports 6000/6100 must be free. Run these profiles sequentially on this host.
+The adapter must include the packed-frame chunk-stride correction. The optional
+`--adapter-root` snapshots compatible sources into the base's resolved
+environment; its dependency declaration must match exactly.
+
+The selected sender defaults to burst packets for Classic and a 2 ms readout
+interval for Copper. Copper's zero-readout trial sent both packets but timed
+out waiting for its first command; the 2 ms setting passed the finite checks.
+This establishes a compatibility dependence, not its root cause or a minimum
+safe readout interval. `--readout-us` permits explicit characterization settings.
+
+The SPA DM source converts wire micrometres to ndarray metres exactly once.
+The plant takes those metre values with scale 1. The interpretation as OPD is
+the matched numerical fixture convention; the protocol does not establish
+physical mirror displacement versus OPD or an optical factor of two.
+
+Pause finishes the outstanding exchange. Reset is accepted only when stopped;
+it stops simulator streams, restarts the owned HEART controller, and resets
+the plant before publication resumes. Reset deadlines are nested: 12 seconds
+for the native owner, 14 seconds for the simulator, and 16 seconds for the
+supervisor. Shutdown closes the simulator command stream before HEART's
+shutdown can resend its last held command.
+
+The stdDM frame counter is local to HEART. The selected private-loopback
+fixture correlates counters from a fresh native child; stdDM carries no
+generation identifier. A stopped reset is not a fence against arbitrarily
+delayed packets from a previous native generation. These checks establish
+finite deployment behavior, not scientific equivalence, convergence or rate.
+
+Copper uses the AOS EMCCD acquisition node. The current fixture selects gain
+1, excess-noise factor 1 and zero clock-induced charge. Photon and readout
+noise are enabled; nontrivial electron multiplication remains unqualified.
+
 Parameter files are little-endian row-major and must exactly match a declared
 parameter port, schema and byte length. Replacement while an initial value is
 still pending rejects without faulting the healthy session. Submission and

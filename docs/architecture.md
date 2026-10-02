@@ -450,6 +450,26 @@ instrument influence models and hybrid calibration do not imply scientific
 closed-loop convergence; that needs a separately validated interaction
 calibration and plant oracle.
 
+## HEART simulation bridge
+
+This is decision **RTC-ARCH-022**: compose an unchanged external HEART RTC
+with the installed AOS plant through the maintained SPA Standard WFS sink and
+Standard DM source. An explicit `external-rtc` session owns only the PipeWire
+links between external simulation and bridge endpoints. It has no FGN/JFG
+processing graph or scientific substitute for HEART. The private core owns the
+SPA bridge nodes; a supervised application owns HEART's native process and
+control client. Simulation algorithms and GPU execution remain outside native
+callbacks. The initial profile is non-actuating and finite, completion-paced.
+
+HEART retains its ordinary progressive stdWfs receiver. The SPA sink packetizes
+complete simulated ADC frames; optional packet pacing models transport readout,
+not progressive optical detector generation. Received DM arrays require an
+explicit actuator-order and OPD/displacement convention. Wire micrometres are
+converted once by the SPA source; the simulation boundary receives metres.
+HEART calibration offsets come from the simulated plant under RTC-DEV-027.
+Measured matrices remain hybrid calibration. Configuration preparation and
+external lifecycle integration do not authorize changes to HEART source.
+
 ## Authoritative lower contracts
 
 This repository does not duplicate the data-plane contracts:

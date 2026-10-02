@@ -420,12 +420,12 @@ class Deployment:
             raise DeploymentError("invalid source control operation")
         self.source_id += 1
         request = {"version": 1, "id": self.source_id, "operation": operation}
-        deadline = time.monotonic() + SOURCE_TIMEOUT
+        deadline = time.monotonic() + (16 if operation == "reset" else SOURCE_TIMEOUT)
         try:
             atomic_record(self.runtime / self.source_owner["control-request"], request)
             reply_path = self.runtime / self.source_owner["control-reply"]
             while True:
-                self.check_processes() if shutdown else self.check()
+                self.check_processes(ignore_roles=("rtc",)) if shutdown else self.check()
                 if time.monotonic() >= deadline:
                     raise DeploymentError(f"source {operation} ACK timed out")
                 try:
@@ -812,16 +812,39 @@ class Deployment:
                     self.wait_owned_process(process, 8)
                 except (OSError, subprocess.SubprocessError) as error:
                     errors.append(error)
-        # Source is paused or forcibly terminated; consumer markers are safe.
+        # Close the source command stream before a consumer shutdown can emit
+        # an unsolicited flat/zero command (for example HEART SHUTDOWN).
+        source_closed = not source_started
         if self.runtime and revoked:
-            for owner in self.spec["owners"]:
-                try:
-                    (self.runtime / owner["quit"]).touch(exist_ok=True)
-                except OSError as error:
-                    errors.append(error)
+            try:
+                (self.runtime / self.source_owner["quit"]).touch(exist_ok=True)
+                for role, process in self.processes:
+                    if role == self.source_owner["role"]:
+                        self.wait_owned_process(process, 8)
+                source_closed = True
+            except (OSError, subprocess.SubprocessError) as error:
+                errors.append(error)
+            if source_closed:
+                for owner in self.spec["owners"]:
+                    if owner is self.source_owner:
+                        continue
+                    try:
+                        (self.runtime / owner["quit"]).touch(exist_ok=True)
+                    except OSError as error:
+                        errors.append(error)
+            else:
+                # A failed stream closure cannot authorize consumer shutdown.
+                # Revoke the private transport and source before forcing other
+                # owners down; do not send their graceful quit markers.
+                for role, process in self.processes:
+                    if role in ("core", self.source_owner["role"]):
+                        try:
+                            self.wait_owned_process(process, 0)
+                        except (OSError, subprocess.SubprocessError) as error:
+                            errors.append(error)
         for role, process in reversed(self.processes):
             try:
-                self.wait_owned_process(process, 8 if revoked and role not in ("core", "rtc") else 0)
+                self.wait_owned_process(process, 8 if revoked and source_closed and role not in ("core", "rtc") else 0)
             except (OSError, subprocess.SubprocessError) as error:
                 errors.append(error)
         if self.latency_fd is not None:

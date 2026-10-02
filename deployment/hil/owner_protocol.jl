@@ -12,8 +12,8 @@ const REQUIRED_OPTIONS = (
 
 """Parse the complete-frame simulator command line without loading a plant."""
 function parse_options(arguments)
-    values = Dict("backend" => "cpu", "frames" => "16")
-    allowed = Set((REQUIRED_OPTIONS..., "backend", "frames"))
+    values = Dict("backend" => "cpu", "frames" => "16", "transport" => "scientific")
+    allowed = Set((REQUIRED_OPTIONS..., "backend", "frames", "transport", "controller-request", "controller-reply"))
     seen = Set{String}()
     iseven(length(arguments)) || throw(ArgumentError("each option requires one value"))
     for index in 1:2:length(arguments)
@@ -32,6 +32,12 @@ function parse_options(arguments)
     end
     values["profile"] in ("classic", "copper") || throw(ArgumentError("--profile must be classic or copper"))
     values["backend"] in ("cpu", "cuda", "amdgpu") || throw(ArgumentError("--backend must be cpu, cuda or amdgpu"))
+    values["transport"] in ("scientific", "heart") || throw(ArgumentError("--transport must be scientific or heart"))
+    controller_keys = ("controller-request", "controller-reply")
+    present = count(key -> haskey(values, key), controller_keys)
+    expected = values["transport"] == "heart" ? 2 : 0
+    present == expected || throw(ArgumentError("HEART requires both controller paths; scientific transport permits neither"))
+    controller_paths = present == 0 ? (nothing, nothing) : Tuple(abspath(values[key]) for key in controller_keys)
     rate = parse_positive_integer(values["rate"], "--rate", 500)
     frames = parse_positive_integer(values["frames"], "--frames", 256)
     period = rounded_period(rate)
@@ -40,10 +46,12 @@ function parse_options(arguments)
         "prepared-event", "connect-request", "connect-reply", "quit-request",
         "control-request", "control-reply", "output",
     )]
+    append!(paths, [path for path in controller_paths if path !== nothing])
     length(unique(paths)) == length(paths) || throw(ArgumentError("marker, control and output paths must differ"))
     abspath(values["graph"]) in paths && throw(ArgumentError("plant graph must differ from marker, control and output paths"))
     return (
         profile=Symbol(values["profile"]), backend=Symbol(values["backend"]),
+        transport=Symbol(values["transport"]), controller_request=controller_paths[1], controller_reply=controller_paths[2],
         graph=abspath(values["graph"]), rate=rate, period_ns=UInt64(period),
         exposure_ns=UInt64(exposure), frames=frames, remote=values["remote"],
         prepared_event=paths[1], connect_request=paths[2], connect_reply=paths[3],

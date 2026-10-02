@@ -23,8 +23,15 @@ def validate_report(report: dict, expected: int) -> None:
     period = report["model_period_ns"]
     assert report["model_timestamps_ns"] == list(range(0, expected * period, period))
     assert 0 < report["exposure_ns"] <= period
-    assert report["command"]["transport_to_plant_scale"] == 1e-6 or abs(
-        report["command"]["transport_to_plant_scale"] - 1e-6) < 1e-13
+    transport = report.get("transport", "scientific")
+    assert transport in ("scientific", "heart")
+    scale = 1.0 if transport == "heart" else 1e-6
+    assert abs(report["command"]["transport_to_plant_scale"] - scale) < (1e-13 if scale < 1 else 1e-7)
+    if "transport" in report:
+        expected_contract = (("org.heart.std-wfs.raw-pixels/1", "org.heart.std-dm.actuator-command/1", "metre OPD")
+                    if transport == "heart" else
+                    ("org.calculon.ao.raw-detector-pixels/1", "org.calculon.ao.demanded-pdm-command/1", "micrometre OPD"))
+        assert (report["frame"]["schema"], report["command"]["schema"], report["command"]["transport_units"]) == expected_contract
     assert report["command"]["recorded_units"] == "metre OPD"
     assert report["frame"]["layout"] == "ROW_MAJOR"
     assert report["frame"]["element_type"] == "U16_LE"
@@ -52,6 +59,7 @@ def qualify(args) -> dict:
         raise deploy.DeploymentError("qualification requires an AOS/HIL source-owner profile")
     target = json.loads((runner.package / "provenance.json").read_text())["hil"]["frames"]
     original_control, original_check = deploy.control, runner.check
+    original_stop = getattr(runner, "stop", None)
     original_killpg = deploy.os.killpg
     began, iteration, admission_checked = None, 1, False
     checking = False
@@ -115,6 +123,13 @@ def qualify(args) -> dict:
             return
         report = json.loads((runner.runtime / "simulator-result.json").read_text())
         validate_report(report, target)
+        if report.get("transport") == "heart":
+            heart_status = json.loads((runner.runtime / "heart/native/heart-owner-status.json").read_text())
+            assert heart_status["placement_validated"] and heart_status["child_returncode"] is None
+            assert heart_status["generation"] == iteration
+            evidence["checks"][f"heart-generation-{iteration}"] = heart_status
+            for log in (runner.runtime / "heart/native").glob("*.log"):
+                shutil.copy2(log, output / log.name)
         destination = output / f"batch-{iteration}"
         destination.mkdir()
         for name in ("simulator-result.json", "simulator-result.frames.u16le", "simulator-result.commands.f32le"):
@@ -133,7 +148,9 @@ def qualify(args) -> dict:
             evidence["checks"]["completed_start_rejected"] = operator(["session-start"], rejected=True)
             evidence["checks"]["invalid_request"] = operator(["not-a-command"], rejected=True)
             assert operator(["status"])["state"] == "Ready"
+            reset_began = time.time_ns()
             evidence["checks"]["reset"] = operator(["reset"])
+            evidence["checks"]["reset_interval_realtime_ns"] = [reset_began, time.time_ns()]
             reset = runner.source_control("status")
             assert reset["state"] == "paused" and reset["sequence"] == 0 and not reset["completed"]
             evidence["checks"]["reset_source"] = reset
@@ -141,6 +158,7 @@ def qualify(args) -> dict:
             iteration = 2
             began = time.monotonic()
         else:
+            evidence["checks"]["shutdown_begin_realtime_ns"] = time.time_ns()
             evidence["checks"]["quit"] = operator(["quit"])
             evidence["placement"] = runner.record["placement"]
             runner.stopping = True
@@ -156,9 +174,28 @@ def qualify(args) -> dict:
         finally:
             checking = False
 
+    def stop():
+        # Reap first so native stdio is flushed, then retain diagnostics before
+        # the supervisor removes its owned runtime. Copy failure cannot bypass
+        # owned process cleanup.
+        try:
+            original_stop()
+        finally:
+            if runner.runtime is not None:
+                native = runner.runtime / "heart/native"
+                if native.is_dir():
+                    for log in native.glob("*.log"):
+                        shutil.copy2(log, output / log.name)
+                    status = native / "heart-owner-status.json"
+                    if status.is_file():
+                        shutil.copy2(status, output / status.name)
+
     deploy.control, runner.check, deploy.os.killpg = call, check, track_signal
+    if original_stop is not None:
+        runner.stop = stop
     try:
         runner.run()
+        evidence["checks"]["shutdown_end_realtime_ns"] = time.time_ns()
         required = {"held_before_admission", "batch-1", "batch-2",
                     "reset_while_running", "stop", "completed_start_rejected",
                     "invalid_request", "reset", "reset_source", "restart", "quit",

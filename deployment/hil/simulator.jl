@@ -16,6 +16,39 @@ const RAW_SCHEMA = "org.calculon.ao.raw-detector-pixels/1"
 const COMMAND_SCHEMA = "org.calculon.ao.demanded-pdm-command/1"
 const COMMAND_TO_METRES = 1.0f-6
 
+function transport_contract(options)
+    if get(options, :transport, :scientific) === :heart
+        return (; frame_schema="org.heart.std-wfs.raw-pixels/1",
+            command_schema="org.heart.std-dm.actuator-command/1",
+            command_scale=1.0f0, command_units="metre OPD")
+    end
+    return (; frame_schema=RAW_SCHEMA, command_schema=COMMAND_SCHEMA,
+        command_scale=COMMAND_TO_METRES, command_units="micrometre OPD")
+end
+
+function reset_controller!(options, request_id; timeout_seconds=14)
+    get(options, :transport, :scientific) === :heart || return nothing
+    Protocol.write_json_atomic(options.controller_request,
+        (; version=1, id=request_id, operation="reset"))
+    deadline = time_ns() + UInt64(round(Int, timeout_seconds * 1e9))
+    while time_ns() < deadline
+        isfile(options.quit_request) && error("shutdown requested while resetting HEART")
+        if isfile(options.controller_reply)
+            payload = read(options.controller_reply)
+            length(payload) <= Protocol.MAX_REPLY_BYTES || error("HEART reset reply exceeds bound")
+            reply = Protocol.JSON3.read(payload)
+            if get(reply, :id, nothing) == request_id
+                get(reply, :version, nothing) == 1 && get(reply, :operation, nothing) == "reset" &&
+                    get(reply, :ok, false) === true && get(reply, :sequence, nothing) == 0 &&
+                    get(reply, :state, nothing) == "paused" || error("HEART reset failed: $reply")
+                return nothing
+            end
+        end
+        sleep(0.005)
+    end
+    error("HEART reset acknowledgement timed out")
+end
+
 function load_plant(profile)
     if profile === :classic
         return @eval begin
@@ -189,6 +222,7 @@ function write_binary_atomic(path, values)
 end
 
 function write_report(options, science, recorder, state; failure=nothing)
+    transport = transport_contract(options)
     count = recorder.count
     prefix = endswith(options.output, ".json") ? options.output[1:end-5] : options.output
     frame_path = prefix * ".frames.u16le"
@@ -224,11 +258,12 @@ function write_report(options, science, recorder, state; failure=nothing)
         max_abs_command_um=max_abs_command_um, command_limit_um=0.8f0,
         command_limit_tolerance_um=8 * eps(0.8f0), command_components_at_limit=components_at_limit,
         nonzero_command_components=nonzero_components,
-        frame=(schema=RAW_SCHEMA, element_type="U16_LE", layout="ROW_MAJOR",
+        transport=String(get(options, :transport, :scientific)),
+        frame=(schema=transport.frame_schema, element_type="U16_LE", layout="ROW_MAJOR",
                shape=collect(size(hil_frame_buffer(science.boundary))), file=frame_path,
                sha256=frame_hash, units="raw detector ADC code", encoding="nearest ties to even"),
-        command=(schema=COMMAND_SCHEMA, transport_element_type="F32_LE", shape=[277],
-                 transport_units="micrometre OPD", plant_units="metre OPD", transport_to_plant_scale=COMMAND_TO_METRES,
+        command=(schema=transport.command_schema, transport_element_type="F32_LE", shape=[277],
+                 transport_units=transport.command_units, plant_units="metre OPD", transport_to_plant_scale=transport.command_scale,
                  recorded_units="metre OPD", recorded_element_type="F32_LE", file=command_path,
                  sha256=command_hash, layout="frame followed by 277 actuator values"),
         qualification="software complete-frame characterization against a provisional plant model; scientific convergence, hardware frame rate and physical validation not established",
@@ -273,11 +308,12 @@ function run_owner(options, plant, target)
     println("SIMULATOR_PREPARED sequence=0")
     flush(stdout)
     wait_for_connect(options) || return nothing
+    transport = transport_contract(options)
     configuration = PipeWireHILConfiguration(
         remote=options.remote, frame_node_name="simulator-wfs", command_node_name="simulator-command",
-        frame_schema=RAW_SCHEMA, command_schema=COMMAND_SCHEMA,
+        frame_schema=transport.frame_schema, command_schema=transport.command_schema,
         rate=SPA.Fraction(UInt32(options.rate), UInt32(1)), exposure_duration_ns=options.exposure_ns,
-        frame_encoding=:uint16, command_scale=COMMAND_TO_METRES,
+        frame_encoding=:uint16, command_scale=transport.command_scale,
     )
     println("SIMULATOR_CONNECTING remote=$(options.remote)")
     flush(stdout)
@@ -299,8 +335,12 @@ function run_owner(options, plant, target)
                 if payload != last_payload
                     last_payload = payload
                     reply = Protocol.control!(state, payload, time_ns(), options.period_ns, () -> begin
+                        heart = get(options, :transport, :scientific) === :heart
+                        heart && stop!(pipewire)
+                        reset_controller!(options, state.last_request_id)
                         reset_pipewire_hil!(pipewire, science.driver)
                         reset_recorder!(recorder)
+                        heart && start!(pipewire)
                     end)
                     if reply.ok && reply.operation in ("pause", "reset")
                         write_report(options, science, recorder, state)

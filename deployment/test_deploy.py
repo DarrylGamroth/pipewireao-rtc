@@ -653,6 +653,63 @@ class SourceDeploymentTests(unittest.TestCase):
             else:
                 self.assertLess(events.index("pause"), events.index("session-stop"))
 
+    def test_shutdown_pause_can_ack_after_lifecycle_process_exit(self):
+        deployment = self.source_deployment()
+        expected = self.ack(deployment)
+        with patch.object(deployment, "check_processes") as check_processes, \
+                patch.object(deployment, "check") as check:
+            self.assertEqual(deployment.source_control("pause", shutdown=True), expected)
+        check_processes.assert_called_once_with(ignore_roles=("rtc",))
+        check.assert_not_called()
+
+    def test_source_stream_closes_before_other_owner_quit(self):
+        deployment = self.source_deployment()
+        deployment.native_shutdown = True
+        deployment.source_state = "paused"
+        deployment.spec["owners"].append({"role": "heart", "quit": "heart.quit"})
+        source, heart = MagicMock(), MagicMock()
+        deployment.processes = [("heart", heart), ("science", source)]
+        events = []
+
+        def wait(process, grace):
+            if process is source:
+                self.assertTrue((self.directory / "quit").exists())
+                if "source-end" not in events:
+                    self.assertFalse((self.directory / "heart.quit").exists())
+                events.append("source-end")
+            else:
+                self.assertTrue((self.directory / "heart.quit").exists())
+                events.append("heart-end")
+
+        with patch.object(deploy, "notify"), \
+                patch.object(Path, "is_socket", return_value=False), \
+                patch.object(deployment, "wait_owned_process", side_effect=wait):
+            deployment.stop()
+        self.assertLess(events.index("source-end"), events.index("heart-end"))
+
+    def test_failed_source_close_withholds_consumer_quit_and_revokes_transport(self):
+        deployment = self.source_deployment()
+        deployment.native_shutdown = True
+        deployment.source_state = "paused"
+        deployment.spec["owners"].append({"role": "heart", "quit": "heart.quit"})
+        core, source, heart = MagicMock(), MagicMock(), MagicMock()
+        deployment.processes = [("core", core), ("science", source), ("heart", heart)]
+        events = []
+
+        def wait(process, grace):
+            if process is source and grace == 8:
+                raise OSError("unconfirmed source closure")
+            self.assertFalse((self.directory / "heart.quit").exists())
+            events.append("core" if process is core else "source" if process is source else "heart")
+
+        with patch.object(deploy, "notify"), \
+                patch.object(Path, "is_socket", return_value=False), \
+                patch.object(deployment, "wait_owned_process", side_effect=wait):
+            with self.assertRaisesRegex(deploy.DeploymentError, "cleanup failed"):
+                deployment.stop()
+        self.assertLess(events.index("core"), events.index("heart"))
+        self.assertLess(events.index("source"), events.index("heart"))
+
     def test_partial_launch_source_cleanup_finishes_after_marker_error(self):
         deployment = self.source_deployment()
         deployment.runtime = self.directory / "missing"

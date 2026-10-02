@@ -8,7 +8,7 @@ import sys
 import tempfile
 from types import SimpleNamespace
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import check_hil
 from check_hil import validate_report
@@ -57,6 +57,20 @@ class HILEvidenceTests(unittest.TestCase):
                 with self.assertRaises(AssertionError):
                     validate_report(report, 2)
 
+    def test_heart_schema_and_unit_pair(self):
+        report = copy.deepcopy(self.report)
+        report["transport"] = "heart"
+        report["frame"]["schema"] = "org.heart.std-wfs.raw-pixels/1"
+        report["command"].update(schema="org.heart.std-dm.actuator-command/1",
+                                 transport_units="metre OPD", transport_to_plant_scale=1.0)
+        validate_report(report, 2)
+        for key,value in (("transport_to_plant_scale",1e-6),("transport_units","micrometre OPD"),
+                          ("schema","org.calculon.ao.demanded-pdm-command/1")):
+            bad = copy.deepcopy(report)
+            bad["command"][key] = value
+            with self.assertRaises(AssertionError):
+                validate_report(bad,2)
+
     def test_corrupt_payload_rejects(self):
         Path(self.report["frame"]["file"]).write_bytes(bytes(15))
         with self.assertRaises(AssertionError):
@@ -81,6 +95,23 @@ class HILEvidenceTests(unittest.TestCase):
         with patch.object(check_hil.deploy, "Deployment", return_value=runner):
             with self.assertRaisesRegex(AssertionError, "before all checks"):
                 check_hil.qualify(args)
+
+    def test_diagnostic_copy_failure_still_stops_owned_processes(self):
+        root = Path(self.temporary.name)
+        (root / "provenance.json").write_text('{"hil":{"frames":2}}')
+        native = root / "runtime/heart/native"
+        native.mkdir(parents=True)
+        (native / "heart.log").write_text("diagnostic")
+        stop = MagicMock()
+        runner = SimpleNamespace(source_owner={}, package=root, runtime=root / "runtime",
+                                 record={"admitted": False}, check=lambda: None, stop=stop)
+        runner.run = lambda: runner.stop()
+        args = SimpleNamespace(deployment=root / "deployment.conf", output=root / "evidence")
+        with patch.object(check_hil.deploy, "Deployment", return_value=runner), \
+                patch.object(check_hil.shutil, "copy2", side_effect=OSError("disk full")):
+            with self.assertRaisesRegex(OSError, "disk full"):
+                check_hil.qualify(args)
+        stop.assert_called_once_with()
 
 
 if __name__ == "__main__":

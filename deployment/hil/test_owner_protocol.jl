@@ -111,3 +111,21 @@ end
         @test JSON3.read(read(path, String)).id == 10
     end
 end
+
+@testset "explicit HEART transport and paired controller paths" begin
+    mktempdir() do root
+        arguments = options_arguments(root)
+        @test Protocol.parse_options(arguments).transport === :scientific
+        heart = [arguments; "--transport"; "heart"; "--controller-request"; joinpath(root,"heart.request");
+            "--controller-reply"; joinpath(root,"heart.reply")]
+        @test Protocol.parse_options(heart).transport === :heart
+        @test Protocol.parse_options(heart).controller_request == joinpath(root,"heart.request")
+        @test_throws ArgumentError Protocol.parse_options([arguments; "--transport"; "heart"])
+        @test_throws ArgumentError Protocol.parse_options([arguments; "--transport"; "invalid"])
+        @test_throws ArgumentError Protocol.parse_options([arguments; "--controller-request"; "x"])
+        @test_throws ArgumentError Protocol.parse_options([arguments; "--controller-request"; "x"; "--controller-reply"; "y"])
+        bad = copy(heart)
+        bad[findfirst(==("--controller-reply"),bad)+1] = joinpath(root,"request.json")
+        @test_throws ArgumentError Protocol.parse_options(bad)
+    end
+end

@@ -24,6 +24,10 @@ deployment checks separate from scientific convergence and rate qualification.
 HIL detector backgrounds, Classic reference slopes and Copper PDM flat offsets
 must come from the simulated plant; retaining measured matrices remains an
 explicitly hybrid calibration.
+RTC-ARCH-022 and RTC-DEV-028 add an unchanged supervised HEART owner through
+the SPA Standard WFS sink and Standard DM source. External-RTC sessions own
+links and lifecycle without loading an FGN/JFG processing graph. CPU finite
+exchange checks precede GPU or paced-readout characterization.
 
 Physical devices, correction authority, durable recording, remote access,
 RTC-owned progressive scheduling, and target-host qualification are not active
