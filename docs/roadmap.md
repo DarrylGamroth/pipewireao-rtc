@@ -857,6 +857,24 @@ convergence with the provisional plant is a separate calibration acceptance
 question; retain any failed or unestablished oracle rather than relabelling
 functional command exchange as scientific equivalence.
 
+### Simulated offset correction (2026-10-02)
+
+Baseline: RTC `b950c8b`, recorded complete-frame science and unchanged installed
+plant models. The user selected simulation-derived bias and offsets after
+Classic's recorded background rejected all simulated subapertures. This
+correction implements RTC-DEV-027 within RTC-ARCH-021. It replaces detector
+backgrounds, Classic reference slopes and Copper's additive PDM flat while
+retaining recorded reconstructors, projections, controller coefficients,
+thresholds and masks. The deployment remains hybrid and convergence unqualified.
+
+| Requirement | Allocation | Verification | State |
+| --- | --- | --- | --- |
+| RTC-DEV-027 | cold detector/reference acquisition and exporter bindings | independent ADC darks, identical FGN/JFG artifacts, invalid-flat diagnostics, installed finite exchange | demonstrated for four CPU profiles and three Copper FGN GPU profiles; no rate or convergence claim |
+
+The original zero-command observations remain historical failed scientific
+response evidence. Do not attribute a maximum Classic GPU rate to the earlier
+requested 10 Hz CPU deployment checks or Copper GPU measurements.
+
 ## Deferred capabilities
 
 The following topics are not active work. Their previous proposals are

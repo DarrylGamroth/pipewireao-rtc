@@ -1,0 +1,1135 @@
+{
+  "date": "2026-10-02",
+  "requirement": "RTC-DEV-027",
+  "rtc_baseline": "b950c8bc97b7518037a065237fed2cebfd2d56db",
+  "cache_root": "/home/dgamroth/.cache/rtc-hil-calibration-20261002",
+  "source_sha256": {
+    "deployment/export_hil.py": "4eb039d0e77501d7548ab368fb80ae6ade9344b773c52c1061aadca79033d26f",
+    "deployment/hil/calibrate_detector.jl": "1fd91b3ff71549e48ae671f83e57aba31b5d4dc91163f5fafbbfbd7645cdfae1",
+    "deployment/hil/test_calibrate_detector.jl": "bd8654d179ccfcb8a00d3b8472a783b46e706a48dc0038b0e91b2aef32bfde38"
+  },
+  "software_verification": {
+    "python_tests_run": 79,
+    "python_tests_skipped": 1,
+    "julia_assertions_passed": 57,
+    "independent_exporter_tests_passed": 10,
+    "independent_review": "HIL_DEPLOYMENT_REVIEW.md"
+  },
+  "calibration": {
+    "classic": {
+      "background_average_adc_range": [
+        0.40234375,
+        0.93359375
+      ],
+      "limitations": [
+        "finite noisy dark estimate",
+        "provisional plant; no convergence claim",
+        "reconstructor, projections, controller coefficients and thresholds are unchanged"
+      ],
+      "standard_deviation_convention": "population, divisor dark_frames",
+      "model_sha256": "cade180923ffe2858b3b5316f1bd8ee9542f907cdcdabae77453e752191f4354",
+      "target": "CPU HostComputeDevice",
+      "version": 1,
+      "background_population_std_adc_range": [
+        0.6844637321187571,
+        1.2633805329724497
+      ],
+      "independent_detector_owner": true,
+      "acquisition_sequence": 256,
+      "dark_detector_config_preserved": true,
+      "dark_incident_photon_rate": 0,
+      "rng_reset_between_samples": false,
+      "detector_config": {
+        "quantum_efficiency": 0.27,
+        "full_well_e": 94000.0,
+        "bits": 12,
+        "binning": 1,
+        "photon_noise": true,
+        "readout_noise_e": 2.33,
+        "frame_schema": "org.revolt.classic.shwfs-frame.f32/1",
+        "pixel_scale_arcsec": 0.697,
+        "row_readout_noise_e": 0.0,
+        "photon_rate_schema": "org.revolt.classic.shwfs-photon-rate.f32/1",
+        "readout_noise": true,
+        "wavelength_m": 8e-07,
+        "dark_current_e_per_pixel_s": 0.96,
+        "column_readout_noise_e": 0.0,
+        "rng_seed": 0,
+        "rows": 352,
+        "exposure_duration_s": 0.001896,
+        "columns": 352,
+        "gain": 15.848931924611133
+      },
+      "adc_encoding": "UInt16 nearest ties-to-even before averaging",
+      "electronic_bias_configured": false,
+      "profile": "classic",
+      "dark_frames": 256,
+      "rng_seed": 0,
+      "production_rng_consumed": false,
+      "specification_sha256": "e08adf436f4873b786e4d5b767e3fc1e313cb017d223623f9a569d9af9b2a41c",
+      "electronic_bias_model": "unconfigured; zero additive electronic bias",
+      "flat_diagnostics": {
+        "flat_policy": "zero OPD, zero PDM command, noiseless installed detector; simulated dark subtracted",
+        "invalid_active_subapertures_zero_based": [
+          69,
+          70,
+          84,
+          85,
+          86,
+          87,
+          100,
+          101,
+          102,
+          103,
+          117,
+          118
+        ],
+        "all_active_subapertures_valid": false,
+        "valid_count": 176,
+        "reference_order": "pair-interleaved x,y in descriptor subaperture order",
+        "estimator": "FilterGraphAlgorithms.ShackHartmannImageF32",
+        "invalid_subapertures_zero_based": [
+          69,
+          70,
+          84,
+          85,
+          86,
+          87,
+          100,
+          101,
+          102,
+          103,
+          117,
+          118
+        ],
+        "invalid_reference_policy": "estimator returns zero; offsets are not calibrated for invalid subapertures",
+        "reference_residual_max_abs": 0.0
+      }
+    },
+    "copper": {
+      "background_average_adc_range": [
+        0.27734375,
+        0.6015625
+      ],
+      "limitations": [
+        "finite noisy dark estimate",
+        "provisional plant; no convergence claim",
+        "reconstructor, projections, controller coefficients and thresholds are unchanged"
+      ],
+      "standard_deviation_convention": "population, divisor dark_frames",
+      "model_sha256": "faf5ece9d6adb85974b6bb3a1ded390a1bc54dc508d237c7ea210e2950dacd3e",
+      "target": "CPU HostComputeDevice",
+      "version": 1,
+      "background_population_std_adc_range": [
+        0.5235978066091735,
+        0.8051045642492656
+      ],
+      "independent_detector_owner": true,
+      "acquisition_sequence": 256,
+      "dark_detector_config_preserved": true,
+      "dark_incident_photon_rate": 0,
+      "rng_reset_between_samples": false,
+      "detector_config": {
+        "quantum_efficiency": 0.95,
+        "clock_induced_charge_e_per_pixel_frame": 0.0,
+        "full_well_e": 16000.0,
+        "bits": 14,
+        "excess_noise_factor": 1.0,
+        "binning": 1,
+        "photon_noise": true,
+        "readout_noise_e": 1.0,
+        "frame_schema": "org.revolt.copper.pwfs-frame.f32/1",
+        "normalized_pupil_sampling": 0.03333333333333333,
+        "photon_rate_schema": "org.revolt.copper.pwfs-photon-rate.f32/1",
+        "readout_noise": true,
+        "wavelength_m": 5.5e-07,
+        "dark_current_e_per_pixel_s": 20.0,
+        "rng_seed": 0,
+        "rows": 64,
+        "exposure_duration_s": 0.002,
+        "columns": 64,
+        "gain": 1.0
+      },
+      "adc_encoding": "UInt16 nearest ties-to-even before averaging",
+      "electronic_bias_configured": false,
+      "profile": "copper",
+      "dark_frames": 256,
+      "rng_seed": 0,
+      "production_rng_consumed": false,
+      "specification_sha256": "1d598606d0f43ae25c50709f169c0ed726f5a8fe56d7042ab8f9becf3769dba0",
+      "electronic_bias_model": "unconfigured; zero additive electronic bias"
+    }
+  },
+  "profiles": [
+    {
+      "name": "revolt-classic-fgn-hil-cpu",
+      "canonical_installation": "/home/dgamroth/.config/pipewireao-rtc/revolt-classic-fgn-hil-cpu",
+      "previous_installation": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/previous-installed/revolt-classic-fgn-hil-cpu",
+      "live_report": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/classic-fgn-final/result.json",
+      "live_report_sha256": "d632149b5d845b1bd66b2457edce213a9b4d47b64abf3065034a867b72b9c962",
+      "engine": "fgn",
+      "backend": "cpu",
+      "model_sha256": "cade180923ffe2858b3b5316f1bd8ee9542f907cdcdabae77453e752191f4354",
+      "production_model_unchanged": true,
+      "calibration_report_sha256": "af9f4c452cc573fb66b64ae49718bd1348ea6393a5d51314060e7dd69051c0d3",
+      "generated_artifacts": {
+        "optical_flat": {
+          "units": "ADC",
+          "name": "optical_flat",
+          "shape": [
+            352,
+            352
+          ],
+          "sha256": "be4c6b4ecc9203e8d7511ba3dc4a4486927937773f6a2bb41f40898dae798803",
+          "layout": "ROW_MAJOR",
+          "element_type": "F32_LE",
+          "path": "../calibration/simulated-optical-flat.f32le"
+        },
+        "reference_slopes": {
+          "units": "detector coordinate",
+          "name": "reference_slopes",
+          "shape": [
+            188,
+            2
+          ],
+          "sha256": "60f790df2493ffb7c1ac9ae1b0f6804cd8306ad4286a4fc5f48c88e970249717",
+          "layout": "ROW_MAJOR",
+          "element_type": "F32_LE",
+          "path": "../calibration/reference-slopes.f32le"
+        },
+        "background": {
+          "units": "ADC",
+          "name": "background",
+          "shape": [
+            352,
+            352
+          ],
+          "sha256": "8db203a6f98937bceec80fa18bb62c335a1a1fdc100a91661c67b76cf593aee1",
+          "layout": "ROW_MAJOR",
+          "element_type": "F32_LE",
+          "path": "../calibration/background.f32le"
+        }
+      },
+      "replaced_artifact_sha256": {
+        "background": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+        "reference_slopes": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+        "optical_flat": null
+      },
+      "source_revisions": {
+        "aos_revision": "d30db3f78d7fad77d0d5e9212b3eee1a34d86244",
+        "plant_revision": "e0fbdab9a5483d92fa6df5539019624d40b84f1e",
+        "adapter_revision": "6adb85a9e96bed12a0f9084a0550e7d9f2230d71",
+        "pipewireao_jl_revision": "dc9ece8b6fd2a3f9ed0cbc14746150bd966a2e8e",
+        "calibration_algorithms_revision": "116cdb4b34b8d2293bf8b27761f6e8aedb5ed4f1"
+      },
+      "passed": true,
+      "exit_codes": {
+        "core": 0,
+        "simulator": 0,
+        "rtc": 0
+      },
+      "batches": [
+        {
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "sequences": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "nonzero_command_components": 4432,
+          "command_components_at_limit": 0,
+          "max_abs_command_um": 0.07942363,
+          "requested_rate_hz": 10,
+          "achieved_cycle_rate_hz": 5.700262477934227,
+          "missed_wall_periods": 5,
+          "payloads": {
+            "frame": {
+              "file": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/classic-fgn-final/batch-1/simulator-result.frames.u16le",
+              "sha256": "553ebdf1073d184b70c1b3235581ff683a24208f0028085229224bd47a343d78"
+            },
+            "command": {
+              "file": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/classic-fgn-final/batch-1/simulator-result.commands.f32le",
+              "sha256": "06d1224cc08380fc9e88a1b7552c0d5cebf18a2aabdbfe19b4e6fe80686e1a1e"
+            }
+          }
+        },
+        {
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "sequences": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "nonzero_command_components": 4432,
+          "command_components_at_limit": 0,
+          "max_abs_command_um": 0.07942363,
+          "requested_rate_hz": 10,
+          "achieved_cycle_rate_hz": 9.986170585090766,
+          "missed_wall_periods": 0,
+          "payloads": {
+            "frame": {
+              "file": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/classic-fgn-final/batch-2/simulator-result.frames.u16le",
+              "sha256": "553ebdf1073d184b70c1b3235581ff683a24208f0028085229224bd47a343d78"
+            },
+            "command": {
+              "file": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/classic-fgn-final/batch-2/simulator-result.commands.f32le",
+              "sha256": "06d1224cc08380fc9e88a1b7552c0d5cebf18a2aabdbfe19b4e6fe80686e1a1e"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "revolt-classic-jfg-hil-cpu",
+      "canonical_installation": "/home/dgamroth/.config/pipewireao-rtc/revolt-classic-jfg-hil-cpu",
+      "previous_installation": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/previous-installed/revolt-classic-jfg-hil-cpu",
+      "live_report": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/classic-jfg-final/result.json",
+      "live_report_sha256": "63b9fa1d652f2bee3e518020c9ba134c598448af085be4c5b4a6080fc919ed17",
+      "engine": "jfg",
+      "backend": "cpu",
+      "model_sha256": "cade180923ffe2858b3b5316f1bd8ee9542f907cdcdabae77453e752191f4354",
+      "production_model_unchanged": true,
+      "calibration_report_sha256": "af9f4c452cc573fb66b64ae49718bd1348ea6393a5d51314060e7dd69051c0d3",
+      "generated_artifacts": {
+        "optical_flat": {
+          "units": "ADC",
+          "name": "optical_flat",
+          "shape": [
+            352,
+            352
+          ],
+          "sha256": "be4c6b4ecc9203e8d7511ba3dc4a4486927937773f6a2bb41f40898dae798803",
+          "layout": "ROW_MAJOR",
+          "element_type": "F32_LE",
+          "path": "../calibration/simulated-optical-flat.f32le"
+        },
+        "reference_slopes": {
+          "units": "detector coordinate",
+          "name": "reference_slopes",
+          "shape": [
+            188,
+            2
+          ],
+          "sha256": "60f790df2493ffb7c1ac9ae1b0f6804cd8306ad4286a4fc5f48c88e970249717",
+          "layout": "ROW_MAJOR",
+          "element_type": "F32_LE",
+          "path": "../calibration/reference-slopes.f32le"
+        },
+        "background": {
+          "units": "ADC",
+          "name": "background",
+          "shape": [
+            352,
+            352
+          ],
+          "sha256": "8db203a6f98937bceec80fa18bb62c335a1a1fdc100a91661c67b76cf593aee1",
+          "layout": "ROW_MAJOR",
+          "element_type": "F32_LE",
+          "path": "../calibration/background.f32le"
+        }
+      },
+      "replaced_artifact_sha256": {
+        "background": "4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d",
+        "reference_slopes": "ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536",
+        "optical_flat": null
+      },
+      "source_revisions": {
+        "aos_revision": "d30db3f78d7fad77d0d5e9212b3eee1a34d86244",
+        "plant_revision": "e0fbdab9a5483d92fa6df5539019624d40b84f1e",
+        "adapter_revision": "6adb85a9e96bed12a0f9084a0550e7d9f2230d71",
+        "pipewireao_jl_revision": "dc9ece8b6fd2a3f9ed0cbc14746150bd966a2e8e",
+        "calibration_algorithms_revision": "116cdb4b34b8d2293bf8b27761f6e8aedb5ed4f1"
+      },
+      "passed": true,
+      "exit_codes": {
+        "core": 0,
+        "julia": 0,
+        "simulator": 0,
+        "rtc": 0
+      },
+      "batches": [
+        {
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "sequences": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "nonzero_command_components": 4432,
+          "command_components_at_limit": 0,
+          "max_abs_command_um": 0.07942363,
+          "requested_rate_hz": 10,
+          "achieved_cycle_rate_hz": 5.686199896380834,
+          "missed_wall_periods": 6,
+          "payloads": {
+            "frame": {
+              "file": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/classic-jfg-final/batch-1/simulator-result.frames.u16le",
+              "sha256": "553ebdf1073d184b70c1b3235581ff683a24208f0028085229224bd47a343d78"
+            },
+            "command": {
+              "file": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/classic-jfg-final/batch-1/simulator-result.commands.f32le",
+              "sha256": "4ea9bd84ac4012e1249b5280e9a237428e2ebf7f3a0b99cb8540f4595fab541f"
+            }
+          }
+        },
+        {
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "sequences": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "nonzero_command_components": 4432,
+          "command_components_at_limit": 0,
+          "max_abs_command_um": 0.07942363,
+          "requested_rate_hz": 10,
+          "achieved_cycle_rate_hz": 9.985272648145918,
+          "missed_wall_periods": 0,
+          "payloads": {
+            "frame": {
+              "file": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/classic-jfg-final/batch-2/simulator-result.frames.u16le",
+              "sha256": "553ebdf1073d184b70c1b3235581ff683a24208f0028085229224bd47a343d78"
+            },
+            "command": {
+              "file": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/classic-jfg-final/batch-2/simulator-result.commands.f32le",
+              "sha256": "4ea9bd84ac4012e1249b5280e9a237428e2ebf7f3a0b99cb8540f4595fab541f"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "revolt-copper-fgn-hil-cpu",
+      "canonical_installation": "/home/dgamroth/.config/pipewireao-rtc/revolt-copper-fgn-hil-cpu",
+      "previous_installation": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/previous-installed/revolt-copper-fgn-hil-cpu",
+      "live_report": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/copper-fgn-final/result.json",
+      "live_report_sha256": "d8ff90f5d477f8bfad7753cb2e9f901e5d8b592aab8b317d913943c9b7e01a96",
+      "engine": "fgn",
+      "backend": "cpu",
+      "model_sha256": "faf5ece9d6adb85974b6bb3a1ded390a1bc54dc508d237c7ea210e2950dacd3e",
+      "production_model_unchanged": true,
+      "calibration_report_sha256": "92c811d1a4cfa76aaca897e0335a2c298bbbd84783d8a9a41a8c87443e65d946",
+      "generated_artifacts": {
+        "system_flat": {
+          "units": "micrometre OPD",
+          "name": "system_flat",
+          "shape": [
+            277
+          ],
+          "sha256": "b61465acf0031e6a4cc34a66d568bd1735668abf591a6badb1f5f5bc20bf9919",
+          "layout": "ROW_MAJOR",
+          "element_type": "F32_LE",
+          "path": "../calibration/parameter-system-flat.f32"
+        },
+        "background": {
+          "units": "ADC",
+          "name": "background",
+          "shape": [
+            64,
+            64
+          ],
+          "sha256": "7ae9d82f5a04d881edb80be0558164dbd953b1d3c833f7470b7813755a29765a",
+          "layout": "ROW_MAJOR",
+          "element_type": "F32_LE",
+          "path": "../calibration/parameter-background.f32"
+        }
+      },
+      "replaced_artifact_sha256": {
+        "background": null,
+        "system_flat": "a6445b11ad0e9cda3b4c0043b361f258f0319a0fb7ceeff49a2dcb1b9b761feb"
+      },
+      "source_revisions": {
+        "aos_revision": "d30db3f78d7fad77d0d5e9212b3eee1a34d86244",
+        "plant_revision": "cb840cd076ce20a4229bfe82dc1d390f7a1c4f55",
+        "adapter_revision": "6adb85a9e96bed12a0f9084a0550e7d9f2230d71",
+        "pipewireao_jl_revision": "dc9ece8b6fd2a3f9ed0cbc14746150bd966a2e8e",
+        "calibration_algorithms_revision": "116cdb4b34b8d2293bf8b27761f6e8aedb5ed4f1"
+      },
+      "passed": true,
+      "exit_codes": {
+        "core": 0,
+        "simulator": 0,
+        "rtc": 0
+      },
+      "batches": [
+        {
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "sequences": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "nonzero_command_components": 4155,
+          "command_components_at_limit": 0,
+          "max_abs_command_um": 0.0028858103,
+          "requested_rate_hz": 10,
+          "achieved_cycle_rate_hz": 2.643823880752838,
+          "missed_wall_periods": 38,
+          "payloads": {
+            "frame": {
+              "file": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/copper-fgn-final/batch-1/simulator-result.frames.u16le",
+              "sha256": "9207698b76b9bf78be8bf461636542a60f8f9ea0478baa892ff4dc218e0675f2"
+            },
+            "command": {
+              "file": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/copper-fgn-final/batch-1/simulator-result.commands.f32le",
+              "sha256": "3f70e9ab0caf6a4ae99ca1ce4cadc758953a49b56a64443c793f6f0c4ec6e750"
+            }
+          }
+        },
+        {
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "sequences": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "nonzero_command_components": 4155,
+          "command_components_at_limit": 0,
+          "max_abs_command_um": 0.0028858103,
+          "requested_rate_hz": 10,
+          "achieved_cycle_rate_hz": 3.346625955372439,
+          "missed_wall_periods": 32,
+          "payloads": {
+            "frame": {
+              "file": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/copper-fgn-final/batch-2/simulator-result.frames.u16le",
+              "sha256": "9207698b76b9bf78be8bf461636542a60f8f9ea0478baa892ff4dc218e0675f2"
+            },
+            "command": {
+              "file": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/copper-fgn-final/batch-2/simulator-result.commands.f32le",
+              "sha256": "3f70e9ab0caf6a4ae99ca1ce4cadc758953a49b56a64443c793f6f0c4ec6e750"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "revolt-copper-jfg-hil-cpu",
+      "canonical_installation": "/home/dgamroth/.config/pipewireao-rtc/revolt-copper-jfg-hil-cpu",
+      "previous_installation": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/previous-installed/revolt-copper-jfg-hil-cpu",
+      "live_report": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/copper-jfg-final/result.json",
+      "live_report_sha256": "ea719a0d1f993ee2d06afea473cc62dc9b57ffb10fc86feb6f56245856d87acf",
+      "engine": "jfg",
+      "backend": "cpu",
+      "model_sha256": "faf5ece9d6adb85974b6bb3a1ded390a1bc54dc508d237c7ea210e2950dacd3e",
+      "production_model_unchanged": true,
+      "calibration_report_sha256": "92c811d1a4cfa76aaca897e0335a2c298bbbd84783d8a9a41a8c87443e65d946",
+      "generated_artifacts": {
+        "system_flat": {
+          "units": "micrometre OPD",
+          "name": "system_flat",
+          "shape": [
+            277
+          ],
+          "sha256": "b61465acf0031e6a4cc34a66d568bd1735668abf591a6badb1f5f5bc20bf9919",
+          "layout": "ROW_MAJOR",
+          "element_type": "F32_LE",
+          "path": "../calibration/parameter-system-flat.f32"
+        },
+        "background": {
+          "units": "ADC",
+          "name": "background",
+          "shape": [
+            64,
+            64
+          ],
+          "sha256": "7ae9d82f5a04d881edb80be0558164dbd953b1d3c833f7470b7813755a29765a",
+          "layout": "ROW_MAJOR",
+          "element_type": "F32_LE",
+          "path": "../calibration/parameter-background.f32"
+        }
+      },
+      "replaced_artifact_sha256": {
+        "background": null,
+        "system_flat": "a6445b11ad0e9cda3b4c0043b361f258f0319a0fb7ceeff49a2dcb1b9b761feb"
+      },
+      "source_revisions": {
+        "aos_revision": "d30db3f78d7fad77d0d5e9212b3eee1a34d86244",
+        "plant_revision": "cb840cd076ce20a4229bfe82dc1d390f7a1c4f55",
+        "adapter_revision": "6adb85a9e96bed12a0f9084a0550e7d9f2230d71",
+        "pipewireao_jl_revision": "dc9ece8b6fd2a3f9ed0cbc14746150bd966a2e8e",
+        "calibration_algorithms_revision": "116cdb4b34b8d2293bf8b27761f6e8aedb5ed4f1"
+      },
+      "passed": true,
+      "exit_codes": {
+        "core": 0,
+        "julia": 0,
+        "simulator": 0,
+        "rtc": 0
+      },
+      "batches": [
+        {
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "sequences": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "nonzero_command_components": 4155,
+          "command_components_at_limit": 0,
+          "max_abs_command_um": 0.0028858106,
+          "requested_rate_hz": 10,
+          "achieved_cycle_rate_hz": 2.6079120893391985,
+          "missed_wall_periods": 40,
+          "payloads": {
+            "frame": {
+              "file": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/copper-jfg-final/batch-1/simulator-result.frames.u16le",
+              "sha256": "9207698b76b9bf78be8bf461636542a60f8f9ea0478baa892ff4dc218e0675f2"
+            },
+            "command": {
+              "file": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/copper-jfg-final/batch-1/simulator-result.commands.f32le",
+              "sha256": "1affdef3ad3ab92e2b7d659edaad63e42a725c79f7b860c5f693df7e0e8e8256"
+            }
+          }
+        },
+        {
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "sequences": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "nonzero_command_components": 4155,
+          "command_components_at_limit": 0,
+          "max_abs_command_um": 0.0028858106,
+          "requested_rate_hz": 10,
+          "achieved_cycle_rate_hz": 3.3331576729611614,
+          "missed_wall_periods": 32,
+          "payloads": {
+            "frame": {
+              "file": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/copper-jfg-final/batch-2/simulator-result.frames.u16le",
+              "sha256": "9207698b76b9bf78be8bf461636542a60f8f9ea0478baa892ff4dc218e0675f2"
+            },
+            "command": {
+              "file": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/copper-jfg-final/batch-2/simulator-result.commands.f32le",
+              "sha256": "1affdef3ad3ab92e2b7d659edaad63e42a725c79f7b860c5f693df7e0e8e8256"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "revolt-copper-fgn-hil-cuda",
+      "canonical_installation": "/home/dgamroth/.config/pipewireao-rtc/revolt-copper-fgn-hil-cuda",
+      "previous_installation": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/previous-installed/revolt-copper-fgn-hil-cuda",
+      "live_report": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/copper-fgn-cuda-final/result.json",
+      "live_report_sha256": "cd0a8dfc79c814bd2a75dd8346f081bd70304eeb93f14157e6f50300d9792787",
+      "engine": "fgn",
+      "backend": "cuda",
+      "model_sha256": "faf5ece9d6adb85974b6bb3a1ded390a1bc54dc508d237c7ea210e2950dacd3e",
+      "production_model_unchanged": true,
+      "calibration_report_sha256": "92c811d1a4cfa76aaca897e0335a2c298bbbd84783d8a9a41a8c87443e65d946",
+      "generated_artifacts": {
+        "system_flat": {
+          "units": "micrometre OPD",
+          "name": "system_flat",
+          "shape": [
+            277
+          ],
+          "sha256": "b61465acf0031e6a4cc34a66d568bd1735668abf591a6badb1f5f5bc20bf9919",
+          "layout": "ROW_MAJOR",
+          "element_type": "F32_LE",
+          "path": "../calibration/parameter-system-flat.f32"
+        },
+        "background": {
+          "units": "ADC",
+          "name": "background",
+          "shape": [
+            64,
+            64
+          ],
+          "sha256": "7ae9d82f5a04d881edb80be0558164dbd953b1d3c833f7470b7813755a29765a",
+          "layout": "ROW_MAJOR",
+          "element_type": "F32_LE",
+          "path": "../calibration/parameter-background.f32"
+        }
+      },
+      "replaced_artifact_sha256": {
+        "background": null,
+        "system_flat": "a6445b11ad0e9cda3b4c0043b361f258f0319a0fb7ceeff49a2dcb1b9b761feb"
+      },
+      "source_revisions": {
+        "aos_revision": "d30db3f78d7fad77d0d5e9212b3eee1a34d86244",
+        "plant_revision": "cb840cd076ce20a4229bfe82dc1d390f7a1c4f55",
+        "adapter_revision": "6adb85a9e96bed12a0f9084a0550e7d9f2230d71",
+        "pipewireao_jl_revision": "dc9ece8b6fd2a3f9ed0cbc14746150bd966a2e8e",
+        "calibration_algorithms_revision": "116cdb4b34b8d2293bf8b27761f6e8aedb5ed4f1"
+      },
+      "passed": true,
+      "exit_codes": {
+        "core": 0,
+        "simulator": 0,
+        "rtc": 0
+      },
+      "batches": [
+        {
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "sequences": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "nonzero_command_components": 4155,
+          "command_components_at_limit": 0,
+          "max_abs_command_um": 0.0026394736,
+          "requested_rate_hz": 10,
+          "achieved_cycle_rate_hz": 5.687824625883629,
+          "missed_wall_periods": 6,
+          "payloads": {
+            "frame": {
+              "file": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/copper-fgn-cuda-final/batch-1/simulator-result.frames.u16le",
+              "sha256": "4eff5c4acbf6e54599ce08b5b5c3f4fd9c73dd87e40867e06ed8e6683019dbf1"
+            },
+            "command": {
+              "file": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/copper-fgn-cuda-final/batch-1/simulator-result.commands.f32le",
+              "sha256": "1d65adfe0ec5255de620aa8e2d047480c94647bf88858bf569f835153699498a"
+            }
+          }
+        },
+        {
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "sequences": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "nonzero_command_components": 4155,
+          "command_components_at_limit": 0,
+          "max_abs_command_um": 0.0026394736,
+          "requested_rate_hz": 10,
+          "achieved_cycle_rate_hz": 10.026725769625067,
+          "missed_wall_periods": 0,
+          "payloads": {
+            "frame": {
+              "file": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/copper-fgn-cuda-final/batch-2/simulator-result.frames.u16le",
+              "sha256": "4eff5c4acbf6e54599ce08b5b5c3f4fd9c73dd87e40867e06ed8e6683019dbf1"
+            },
+            "command": {
+              "file": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/copper-fgn-cuda-final/batch-2/simulator-result.commands.f32le",
+              "sha256": "1d65adfe0ec5255de620aa8e2d047480c94647bf88858bf569f835153699498a"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "revolt-copper-fgn-hil-amdgpu",
+      "canonical_installation": "/home/dgamroth/.config/pipewireao-rtc/revolt-copper-fgn-hil-amdgpu",
+      "previous_installation": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/previous-installed/revolt-copper-fgn-hil-amdgpu",
+      "live_report": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/copper-fgn-amdgpu-final/result.json",
+      "live_report_sha256": "678be43f73679dfcd555bc54d665f0f88f50d6c2540393f0c90848e0ff6c7233",
+      "engine": "fgn",
+      "backend": "amdgpu",
+      "model_sha256": "faf5ece9d6adb85974b6bb3a1ded390a1bc54dc508d237c7ea210e2950dacd3e",
+      "production_model_unchanged": true,
+      "calibration_report_sha256": "92c811d1a4cfa76aaca897e0335a2c298bbbd84783d8a9a41a8c87443e65d946",
+      "generated_artifacts": {
+        "system_flat": {
+          "units": "micrometre OPD",
+          "name": "system_flat",
+          "shape": [
+            277
+          ],
+          "sha256": "b61465acf0031e6a4cc34a66d568bd1735668abf591a6badb1f5f5bc20bf9919",
+          "layout": "ROW_MAJOR",
+          "element_type": "F32_LE",
+          "path": "../calibration/parameter-system-flat.f32"
+        },
+        "background": {
+          "units": "ADC",
+          "name": "background",
+          "shape": [
+            64,
+            64
+          ],
+          "sha256": "7ae9d82f5a04d881edb80be0558164dbd953b1d3c833f7470b7813755a29765a",
+          "layout": "ROW_MAJOR",
+          "element_type": "F32_LE",
+          "path": "../calibration/parameter-background.f32"
+        }
+      },
+      "replaced_artifact_sha256": {
+        "background": null,
+        "system_flat": "a6445b11ad0e9cda3b4c0043b361f258f0319a0fb7ceeff49a2dcb1b9b761feb"
+      },
+      "source_revisions": {
+        "aos_revision": "d30db3f78d7fad77d0d5e9212b3eee1a34d86244",
+        "plant_revision": "cb840cd076ce20a4229bfe82dc1d390f7a1c4f55",
+        "adapter_revision": "6adb85a9e96bed12a0f9084a0550e7d9f2230d71",
+        "pipewireao_jl_revision": "dc9ece8b6fd2a3f9ed0cbc14746150bd966a2e8e",
+        "calibration_algorithms_revision": "116cdb4b34b8d2293bf8b27761f6e8aedb5ed4f1"
+      },
+      "passed": true,
+      "exit_codes": {
+        "core": 0,
+        "simulator": 0,
+        "rtc": 0
+      },
+      "batches": [
+        {
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "sequences": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "nonzero_command_components": 4155,
+          "command_components_at_limit": 0,
+          "max_abs_command_um": 0.0026394827,
+          "requested_rate_hz": 10,
+          "achieved_cycle_rate_hz": 5.660020798538827,
+          "missed_wall_periods": 9,
+          "payloads": {
+            "frame": {
+              "file": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/copper-fgn-amdgpu-final/batch-1/simulator-result.frames.u16le",
+              "sha256": "8457f6afc8e38014c3e419ffb0ebf8fbdf2db2369f162b90661d05e00e533311"
+            },
+            "command": {
+              "file": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/copper-fgn-amdgpu-final/batch-1/simulator-result.commands.f32le",
+              "sha256": "77a2a75c08fe816ae8a989ed10c00859d872cee9929b90c2db7a9510be66ce90"
+            }
+          }
+        },
+        {
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "sequences": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "nonzero_command_components": 4155,
+          "command_components_at_limit": 0,
+          "max_abs_command_um": 0.0026394827,
+          "requested_rate_hz": 10,
+          "achieved_cycle_rate_hz": 9.999366020195588,
+          "missed_wall_periods": 0,
+          "payloads": {
+            "frame": {
+              "file": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/copper-fgn-amdgpu-final/batch-2/simulator-result.frames.u16le",
+              "sha256": "8457f6afc8e38014c3e419ffb0ebf8fbdf2db2369f162b90661d05e00e533311"
+            },
+            "command": {
+              "file": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/copper-fgn-amdgpu-final/batch-2/simulator-result.commands.f32le",
+              "sha256": "77a2a75c08fe816ae8a989ed10c00859d872cee9929b90c2db7a9510be66ce90"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "revolt-copper-fgn-hil-cuda100",
+      "canonical_installation": "/home/dgamroth/.config/pipewireao-rtc/revolt-copper-fgn-hil-cuda100",
+      "previous_installation": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/previous-installed/revolt-copper-fgn-hil-cuda100",
+      "live_report": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/copper-fgn-cuda100-final/result.json",
+      "live_report_sha256": "2bd358706b5f01fa836d8f7c678abd501d8f75735bb656d8709b02b599abb10d",
+      "engine": "fgn",
+      "backend": "cuda",
+      "model_sha256": "d535136ff25d0851a16f92f23e78c32444ca5f4cd0765d2946b17bb2e7696824",
+      "production_model_unchanged": true,
+      "calibration_report_sha256": "d12932f8eb589b1e767f9a9debe4af5558e9167b8f56255c8546ee7b0c73b3dc",
+      "generated_artifacts": {
+        "system_flat": {
+          "units": "micrometre OPD",
+          "name": "system_flat",
+          "shape": [
+            277
+          ],
+          "sha256": "b61465acf0031e6a4cc34a66d568bd1735668abf591a6badb1f5f5bc20bf9919",
+          "layout": "ROW_MAJOR",
+          "element_type": "F32_LE",
+          "path": "../calibration/parameter-system-flat.f32"
+        },
+        "background": {
+          "units": "ADC",
+          "name": "background",
+          "shape": [
+            64,
+            64
+          ],
+          "sha256": "7ae9d82f5a04d881edb80be0558164dbd953b1d3c833f7470b7813755a29765a",
+          "layout": "ROW_MAJOR",
+          "element_type": "F32_LE",
+          "path": "../calibration/parameter-background.f32"
+        }
+      },
+      "replaced_artifact_sha256": {
+        "background": null,
+        "system_flat": "a6445b11ad0e9cda3b4c0043b361f258f0319a0fb7ceeff49a2dcb1b9b761feb"
+      },
+      "source_revisions": {
+        "aos_revision": "d30db3f78d7fad77d0d5e9212b3eee1a34d86244",
+        "plant_revision": "cb840cd076ce20a4229bfe82dc1d390f7a1c4f55",
+        "adapter_revision": "6adb85a9e96bed12a0f9084a0550e7d9f2230d71",
+        "pipewireao_jl_revision": "dc9ece8b6fd2a3f9ed0cbc14746150bd966a2e8e",
+        "calibration_algorithms_revision": "116cdb4b34b8d2293bf8b27761f6e8aedb5ed4f1"
+      },
+      "passed": true,
+      "exit_codes": {
+        "core": 0,
+        "simulator": 0,
+        "rtc": 0
+      },
+      "batches": [
+        {
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "sequences": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "nonzero_command_components": 4155,
+          "command_components_at_limit": 0,
+          "max_abs_command_um": 0.002189408,
+          "requested_rate_hz": 100,
+          "achieved_cycle_rate_hz": 10.68706140246569,
+          "missed_wall_periods": 108,
+          "payloads": {
+            "frame": {
+              "file": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/copper-fgn-cuda100-final/batch-1/simulator-result.frames.u16le",
+              "sha256": "f82397df48443fa537b0a0a130768483166362df6108a4b9cc7c187d114a3aef"
+            },
+            "command": {
+              "file": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/copper-fgn-cuda100-final/batch-1/simulator-result.commands.f32le",
+              "sha256": "3a957f856f8b0ce1cf5f347edc48aa658a2ab56d85e5a933b2ef53c8cbdb86a2"
+            }
+          }
+        },
+        {
+          "completed_frames": 16,
+          "completed_commands": 16,
+          "sequences": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "nonzero_command_components": 4155,
+          "command_components_at_limit": 0,
+          "max_abs_command_um": 0.002189408,
+          "requested_rate_hz": 100,
+          "achieved_cycle_rate_hz": 46.874540775983334,
+          "missed_wall_periods": 18,
+          "payloads": {
+            "frame": {
+              "file": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/copper-fgn-cuda100-final/batch-2/simulator-result.frames.u16le",
+              "sha256": "f82397df48443fa537b0a0a130768483166362df6108a4b9cc7c187d114a3aef"
+            },
+            "command": {
+              "file": "/home/dgamroth/.cache/rtc-hil-calibration-20261002/evidence/copper-fgn-cuda100-final/batch-2/simulator-result.commands.f32le",
+              "sha256": "3a957f856f8b0ce1cf5f347edc48aa658a2ab56d85e5a933b2ef53c8cbdb86a2"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "observations": {
+    "profiles": 7,
+    "batches": 14,
+    "complete_exchanges": 224,
+    "all_exit_codes_zero": true,
+    "all_command_clipping_counts_zero": true
+  },
+  "limitations": [
+    "Software functional deployment checks, not hardware validation or maximum-rate benchmarks.",
+    "Recorded reconstructors, projections, controller coefficients, masks and thresholds retained: hybrid calibration; scientific convergence unqualified.",
+    "Classic 12 active subapertures invalid on calibration flat; their references remain explicitly uncalibrated.",
+    "HIL010 historical one-ADC replay mismatch remains open.",
+    "Cold detector calibration uses an independent CPU owner even for GPU simulator profiles.",
+    "No Classic GPU or JFG GPU live coverage added.",
+    "CUDA100 preserved 100 Hz model step but achieved only the documented lower wall cadence."
+  ]
+}

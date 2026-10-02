@@ -1,15 +1,16 @@
 # Installed AOS/HIL deployment
 
 This document records implementation and qualification evidence for
-RTC-DEV-024 through RTC-DEV-026. The operating requirements remain in
+RTC-DEV-024 through RTC-DEV-027. The operating requirements remain in
 [operations.md](operations.md). The independent findings and their dispositions
 are in [HIL_DEPLOYMENT_REVIEW.md](HIL_DEPLOYMENT_REVIEW.md).
 
 ## Composition
 
-An installed complete-frame Classic or Copper profile retains its measured
-calibration, reconstructor, projections, extrapolation, controller, command
-limits and clipping feedback. The HIL exporter substitutes an AOS detector
+An installed complete-frame Classic or Copper profile retains its recorded
+reconstructor and projections, extrapolation, controller, command limits and
+clipping feedback. HIL detector and static reference offsets come from the
+simulated plant; the remaining calibration is hybrid. The HIL exporter substitutes an AOS detector
 source and simulated command sink for the recorded source and discard sink.
 FGN and JFG remain the scientific graph owners. The supervisor coordinates
 admission and controls; it does not schedule scientific processing.
@@ -38,6 +39,7 @@ python3 deployment/export_hil.py \
   --plant-root /absolute/REVOLTCopperSim.jl \
   --adapter-root /absolute/AdaptiveOpticsSimPipeWireHIL.jl \
   --pipewireao-jl-root /absolute/PipeWireAO.jl \
+  --calibration-algorithms-root /absolute/JuliaFilterGraph.jl/julia/FilterGraphAlgorithms \
   --backend cuda --rate-hz 10 --frames 16
 
 python3 deployment/deploy.py install \
@@ -61,6 +63,44 @@ leave at least the model's exposure duration per period. These CLI bounds are
 not throughput claims. Achieved publication cadence and missed wall periods
 are reported. An overloaded simulation keeps every model/command sequence and
 waits for a future wall deadline rather than producing catch-up bursts.
+
+## Simulated calibration offsets
+
+Export acquires 256 dark exposures by default (`--dark-frames`, range 1–4096)
+from a separate CPU detector graph with zero photon input. It retains the
+installed detector's exposure, gain, dark current, noise, bit depth and full
+well. Each frame passes through transport-equivalent UInt16 rounding before
+averaging in ADC units. The independent calibration RNG advances between dark
+exposures; preparation does not consume the production RNG.
+
+This background is an estimate of the quantized and clipped detector pedestal,
+including noise. It is not a model of an electronic bias. The maintained
+models configure no additive electronic bias or pixel response variation, so
+the electronic bias is zero and the detector gain flat is unity. Recorded
+camera backgrounds are not inserted into the simulation.
+
+Classic's optical reference is acquired from the installed zero-OPD,
+zero-command optics with detector noise and dark charge disabled. The public
+FilterGraphAlgorithms pixel-calibration and Shack-Hartmann operations then
+apply the simulated background, existing coordinates, thresholds, active mask
+and subaperture order. Their centroids replace the recorded reference slopes.
+The optical ADC flat is retained separately; it is not the dark background.
+Invalid reference subapertures are listed rather than masked or made valid by
+threshold tuning. The noiseless-reference convention does not establish zero
+expected noisy centroid error after nonlinear clipping and thresholding.
+
+Copper's simulated PDM has no static figure. Its additive system-flat command
+is therefore 277 zeros in micrometres OPD, replacing the recorded mirror flat.
+Both FGN and JFG load the generated background; JFG's Copper graph explicitly
+exposes the new background parameter to its owner.
+
+`hil/calibration-input.json`, `hil/calibration-result.json` and `provenance.json`
+record model identity, detector configuration, sample/RNG information, artifact
+units/layout/hashes and replaced artifact hashes. The original recorded-input
+profiles are untouched. Reconstructors and projections remain recorded and
+require simulated interaction calibration before a scientific convergence
+claim. The offset correction addresses HIL011; it does not close HIL010's
+historical exact-replay investigation.
 
 ## Launch and control
 
@@ -146,7 +186,7 @@ functional qualification, not a latency benchmark.
   causality; it is not an independent wire trace or a calibration/convergence
   qualification.
 
-## Installed GPU observations
+## Historical installed GPU observations (before offset correction)
 
 Each run completed 16 exchanges, stopped reset, and another 16 exchanges,
 with finite nonzero Copper commands, no limiter hits and graceful owner exits.
@@ -165,7 +205,7 @@ These short functional checks do not qualify maximum throughput or hard real
 time. Installed Classic GPU transport and JFG GPU transport are not covered by
 these runs; both plants have direct device-preparation evidence.
 
-## Installed CPU and user-service observations
+## Historical installed CPU and user-service observations (before offset correction)
 
 All four installed CPU profiles passed quiet admission, mid-batch pause and
 resume, 16 exchanges, stopped reset, a second 16 exchanges, rejected-request
@@ -202,7 +242,7 @@ The selected `/opt/pipewireao` prefix contains both corrections. A fresh JLL
 artifact containing those native corrections has not been released by this
 increment; installed profiles explicitly select the prefix.
 
-## Numerical observations still under investigation
+## Historical numerical observations still under investigation
 
 Copper JFG also matches all 65,536 pixels in direct replay with its own recorded
 commands. The final Copper FGN and JFG detector products are byte-identical;
@@ -222,7 +262,7 @@ Original science files were unchanged; diagnostics used preallocated scalar
 storage outside callbacks. That run did not reproduce the earlier 216 and
 therefore does not localize the original difference. Different observed FFT
 plan descriptions alone do not establish its cause. No algorithm or acceptance
-tolerance was changed. All Classic returned commands remain zero.
+tolerance was changed. All Classic returned commands in those historical runs remain zero.
 
 Functional deployment success does not establish bitwise plant or graph
 equivalence. RTC-DEV-024 remains partial at its direct-oracle acceptance gate,
@@ -230,3 +270,59 @@ and HIL010 remains open. The next discriminating observation is the detector's
 pre-conversion value, photon rate, RNG state and FFT plans when the 216 sample
 recurs. Existing failed replay and diagnostic artifacts are retained. No
 speculative production change is justified by the present evidence.
+
+## Corrected simulated-offset checks (2026-10-02)
+
+RTC-DEV-027 corrects the recorded-offset mismatch without modifying the
+production plant models or injecting a measured camera pedestal. Classic's
+simulated background spans 0.40234375–0.93359375 ADC; Copper's spans
+0.27734375–0.6015625 ADC. Both use 256 independent simulated dark acquisitions.
+Classic's simulated optical flat supplies its reference centroids. Copper's
+simulated mirror has no configured static figure, so its additive PDM flat is
+zero. FGN and JFG receive byte-identical generated offsets for each instrument.
+
+The public Classic estimator on the same simulated flat rejects all 188
+subapertures with the old recorded offsets. With simulated offsets, 176 are
+valid and their recentered residual is exactly zero. The 12 invalid active
+subapertures remain explicit diagnostics; their references are uncalibrated.
+Masks, thresholds and estimator behavior were retained.
+
+All seven relocated packages passed admission, pause/resume, 16 exchanges,
+stopped reset, another 16 exchanges, rejection handling and clean shutdown.
+The table describes the second batch's finite commands; these are functional
+checks, not latency or maximum-rate measurements.
+
+| Plant / graph / simulator | Nonzero components / 16 commands | Maximum magnitude (µm OPD) | Clipped components |
+| --- | ---: | ---: | ---: |
+| Classic / FGN / CPU | 4,432 | 0.07942363 | 0 |
+| Classic / JFG / CPU | 4,432 | 0.07942363 | 0 |
+| Copper / FGN / CPU | 4,155 | 0.0028858103 | 0 |
+| Copper / JFG / CPU | 4,155 | 0.0028858106 | 0 |
+| Copper / FGN / CUDA, requested 10 Hz | 4,155 | 0.0026394736 | 0 |
+| Copper / FGN / AMDGPU, requested 10 Hz | 4,155 | 0.0026394827 | 0 |
+| Copper / FGN / CUDA, requested 100 Hz | 4,155 | 0.002189408 | 0 |
+
+Copper's first command after reset is zero: its previous-frame normalization
+gain starts at zero. The remaining 15 commands have 277 nonzero components each.
+The earlier recorded flat made the first command nonzero despite that
+initialization. No command was lost in these checks.
+
+The CUDA100 second batch achieved 46.87454 Hz with 18 missed wall periods;
+its 10 ms model step and exact exchanges were preserved. This does not establish
+100 Hz wall operation. No Classic GPU or JFG GPU transport qualification is
+added. Production simulation backend selection remains independent of the CPU
+owner used for cold offset acquisition.
+
+The [calibration evidence](HIL_CALIBRATION_EVIDENCE.json) records exact source,
+model, generated-offset and payload hashes, 79 Python tests (one skipped),
+57 Julia assertions, and all 14 live batches (224 complete exchanges).
+The [independent review](HIL_DEPLOYMENT_REVIEW.md) closes HIL011 for these seven
+profiles. All seven canonical installations under `~/.config/pipewireao-rtc`
+now contain the tested offsets. Artifact and unchanged-model verification was
+repeated after installation; their previous packages remain under
+`~/.cache/rtc-hil-calibration-20261002/previous-installed`.
+
+Measured reconstructors and projections remain in use, so these packages are
+hybrid calibration deployments. Scientific convergence remains unqualified,
+and the historical HIL010 replay difference remains open. No controller
+coefficient, science tolerance or host tuning was changed by this correction.

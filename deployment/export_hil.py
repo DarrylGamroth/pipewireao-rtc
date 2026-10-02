@@ -5,11 +5,13 @@ from __future__ import annotations
 
 import argparse
 import copy
+from dataclasses import asdict
 import json
 from pathlib import Path
 import re
 import shutil
 import subprocess
+import struct
 import sys
 import tempfile
 import tomllib
@@ -113,7 +115,7 @@ def environment(package: Path, plant: str, backend: str) -> None:
         compat["AMDGPU"] = "2.7"
     text = "[deps]\n" + "".join(f'{name} = {json.dumps(uuid)}\n' for name, uuid in sorted(dependencies.items()))
     text += "\n[sources]\n" + "".join(f'{name} = {{path = "packages/{name}"}}\n' for name in
-                                       ("AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL", "PipeWireAO", plant))
+                                       ("AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL", "PipeWireAO", "FilterGraphAlgorithms", plant))
     text += "\n[compat]\n" + "".join(f'{name} = {json.dumps(version)}\n' for name, version in sorted(compat.items()))
     (package / "hil/Project.toml").write_text(text)
 
@@ -140,17 +142,138 @@ def simulator_environment(backend: str) -> dict[str, str]:
     return value
 
 
+def calibration_inputs(package: Path, provenance: dict, prefix: Path) -> dict:
+    """Describe the existing RTC estimator without importing instrument offsets."""
+    instrument = provenance["profile"]
+    parameters = {item["name"]: item for item in provenance["parameters"]}
+
+    def artifact(name: str, units: str) -> dict:
+        item = parameters[name]
+        return {"path": "../calibration/" + item["file"], "shape": list(item["shape"]),
+                "element_type": item["element_type"], "layout": "ROW_MAJOR", "units": units}
+
+    background = (artifact("background", "ADC") if instrument == "classic" else
+                  {"path": "../calibration/parameter-background.f32", "shape": [64, 64],
+                   "element_type": "F32_LE", "layout": "ROW_MAJOR", "units": "ADC"})
+    result = {"version": 1, "profile": instrument, "artifacts": {"background": background}}
+    if instrument == "copper":
+        result["artifacts"]["system_flat"] = artifact("system-flat", "micrometre OPD")
+        return result
+    graph = deploy.decode(package / "graphs/graph.conf.in", prefix)["filter.graph"]
+    nodes = [node for node in graph["nodes"] if node.get("label") == "shack-hartmann-image-f32"]
+    if len(nodes) != 1:
+        raise ValueError("Classic calibration requires one complete-image Shack-Hartmann estimator")
+    config = nodes[0]["config"]
+    active = config.get("active")
+    if active is None:
+        values = (package / "calibration" / parameters["active"]["file"]).read_bytes()
+        if any(value > 1 for value in values):
+            raise ValueError("Classic active mask requires zero/one bytes")
+        active = [bool(value) for value in values]
+    origins = config.get("initial_subaperture_origins")
+    if origins is None:
+        path = package / "calibration" / parameters["subaperture-origins"]["file"]
+        origins = [list(pair) for pair in struct.iter_unpack("<II", path.read_bytes())]
+    if origins != provenance["prepared_profile"]["subaperture_origins"]:
+        raise ValueError("Classic estimator origins differ from prepared profile")
+    result["artifacts"]["reference_slopes"] = artifact("reference-slopes", "detector coordinate")
+    result["artifacts"]["optical_flat"] = {
+        "path": "../calibration/simulated-optical-flat.f32le", "shape": background["shape"],
+        "element_type": "F32_LE", "layout": "ROW_MAJOR", "units": "ADC"}
+    result["shack_hartmann"] = {
+        "detector_height": config["image_rows"], "detector_width": config["image_columns"],
+        "subaperture_height": config["subaperture_rows"], "subaperture_width": config["subaperture_columns"],
+        "subaperture_origins": origins,
+        "coordinates": artifact("coordinates", "detector coordinate"),
+        "thresholds": artifact("thresholds", "ADC"), "active": active,
+    }
+    return result
+
+
+def adopt_simulated_calibration(package: Path, specification: dict, provenance: dict,
+                               inputs: dict, result: dict) -> None:
+    """Validate generated offsets and bind the same arrays in either graph owner."""
+    if (result.get("version") != 1 or result.get("profile") != provenance["profile"] or
+            result.get("model_sha256") != science.sha256(package / "hil/plant.toml")):
+        raise ValueError("simulated calibration does not describe the installed plant")
+    if set(result.get("artifacts", {})) != set(inputs["artifacts"]):
+        raise ValueError("simulated calibration artifact set differs from the request")
+    for name, descriptor in inputs["artifacts"].items():
+        actual = result["artifacts"][name]
+        if any(actual.get(key) != value for key, value in descriptor.items()):
+            raise ValueError(f"simulated calibration descriptor differs for {name}")
+        path = (package / "hil" / descriptor["path"]).resolve()
+        if path.parent != (package / "calibration").resolve():
+            raise ValueError("simulated calibration must remain in package calibration directory")
+        parameter = science.Parameter(name, "", descriptor["element_type"], tuple(descriptor["shape"]), path.name)
+        science.validate_parameter(path.parent, parameter)
+        if science.sha256(path) != actual.get("sha256"):
+            raise ValueError(f"simulated calibration hash differs for {name}")
+    if provenance["profile"] == "copper":
+        parameter = science.Parameter("background", "calibrate:background", "F32_LE", (64, 64),
+                                      "parameter-background.f32")
+        if any(item["name"] == "background" for item in provenance["parameters"]):
+            raise ValueError("Copper base has a background parameter; inspect its initialization")
+        provenance["parameters"].append(asdict(parameter))
+        if provenance["engine"] == "fgn":
+            graph = package / "graphs/graph.conf.in"
+            text = graph.read_text()
+            if text.count("    filter.graph =") != 1:
+                raise ValueError("Copper graph requires one filter.graph declaration")
+            initialization = ('    "pipewireao.startup-parameter.calibrate:background" = '
+                              '"@PACKAGE@/calibration/parameter-background.f32"\n')
+            graph.write_text(text.replace("    filter.graph =", initialization + "    filter.graph =", 1))
+        else:
+            graph = package / "graphs/graph.conf.in"
+            text = graph.read_text()
+            declaration = '"calibrate:raw"\n'
+            if text.count(declaration) != 1:
+                raise ValueError("Copper Julia graph requires one raw input declaration")
+            graph.write_text(text.replace(declaration,
+                                          declaration + '            "calibrate:background"\n', 1))
+            owner = next(owner for owner in specification["owners"] if owner["role"] == "julia")
+            owner["argv"] += ["--parameter", "background", "Float32", "64,64",
+                              "@PACKAGE@/calibration/parameter-background.f32"]
+
+
+def simulated_calibration(package: Path, specification: dict, provenance: dict,
+                          prefix: Path, executable: str, dark_frames: int) -> dict:
+    inputs = calibration_inputs(package, provenance, prefix)
+    input_path, result_path = package / "hil/calibration-input.json", package / "hil/calibration-result.json"
+    science.write_json(input_path, inputs)
+    original = {name: science.sha256(package / "hil" / item["path"])
+                if (package / "hil" / item["path"]).is_file() else None
+                for name, item in inputs["artifacts"].items()}
+    subprocess.run([executable, "--startup-file=no", "--threads=1,0", f"--project={package / 'hil'}",
+                    str(package / "hil/calibrate_detector.jl"), "--graph", str(package / "hil/plant.toml"),
+                    "--profile", provenance["profile"], "--specification", str(input_path),
+                    "--output", str(result_path), "--dark-frames", str(dark_frames)],
+                   check=True, timeout=1800)
+    result = json.loads(result_path.read_text())
+    if result.get("dark_frames") != dark_frames:
+        raise ValueError("simulated calibration dark count differs from the request")
+    adopt_simulated_calibration(package, specification, provenance, inputs, result)
+    return {"source": "simulated detector and zero-command plant", "report": "hil/calibration-result.json",
+            "report_sha256": science.sha256(result_path), "replaced_artifact_sha256": original,
+            "artifacts": result["artifacts"],
+            "retained_calibration": "recorded reconstructor and projections; hybrid, convergence unqualified"}
+
+
 def export_hil(args) -> Path:
     output = args.output.resolve()
     if output.exists():
         raise ValueError("export output must be new")
     if not 1 <= args.rate_hz <= 500 or not 1 <= args.frames <= 256:
         raise ValueError("rate must be 1..500 Hz and finite batch 1..256 frames")
+    if not 1 <= args.dark_frames <= 4096:
+        raise ValueError("dark calibration must use 1..4096 exposures")
     base = args.base_package.resolve()
     specification = deploy.profile(base / "deployment.conf", args.pipewire_prefix)
     provenance = json.loads((base / "provenance.json").read_text())
     if provenance.get("mode") != "frame" or provenance.get("profile") not in ("classic", "copper"):
         raise ValueError("base must be a maintained Classic/Copper complete-frame package")
+    if "hil" in provenance:
+        raise ValueError("base must be a recorded-input package, not a previous HIL export")
     instrument = provenance["profile"]
     plant = "REVOLTClassicSim" if instrument == "classic" else "REVOLTCopperSim"
     model_source = args.plant_root / "graphs" / f"revolt_{instrument}_hil_grid_gaussian.toml"
@@ -181,13 +304,16 @@ def export_hil(args) -> Path:
                 shutil.copy2(path, package / "hil" / path.name)
         for name, path in (("AdaptiveOpticsSim", args.aos_root),
                            ("AdaptiveOpticsSimPipeWireHIL", args.adapter_root),
-                           ("PipeWireAO", args.pipewireao_jl_root), (plant, args.plant_root)):
+                           ("PipeWireAO", args.pipewireao_jl_root),
+                           ("FilterGraphAlgorithms", args.calibration_algorithms_root), (plant, args.plant_root)):
             copy_package(path.resolve(), package / "hil/packages" / name)
         (package / "hil/plant.toml").write_text(model)
         environment(package, plant, args.backend)
         executable = str(Path(shutil.which("julia") or "missing-julia").resolve())
         subprocess.run([executable, "--startup-file=no", "--threads=1,0", f"--project={package / 'hil'}",
                         "-e", "using Pkg; Pkg.instantiate(; update_registry=false, allow_autoprecomp=false)"], check=True, timeout=1800)
+        calibration = simulated_calibration(package, specification, provenance, args.pipewire_prefix,
+                                            executable, args.dark_frames)
         if args.backend != "cpu":
             backend_package = "CUDA" if args.backend == "cuda" else "AMDGPU"
             # Optional backend compilation belongs to package preparation, not
@@ -231,6 +357,8 @@ def export_hil(args) -> Path:
                               "adapter_revision": science.revision(args.adapter_root), "original_model_sha256": science.sha256(model_source),
                               "pipewireao_jl_revision": science.revision(args.pipewireao_jl_root),
                               "base_deployment_sha256": science.sha256(base / "deployment.conf"),
+                              "calibration_algorithms_revision": science.revision(args.calibration_algorithms_root),
+                              "simulated_calibration": calibration,
                               "scientific_convergence": "not established by deployment exchange"}
         provenance["runtime_requires"] = ["selected PipeWireAO prefix", "Julia resolved HIL environment", "selected simulator device"]
         science.write_json(package / "provenance.json", provenance)
@@ -244,11 +372,13 @@ def export_hil(args) -> Path:
 
 def arguments(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ("output", "base-package", "aos-root", "plant-root", "adapter-root", "pipewireao-jl-root"):
+    for name in ("output", "base-package", "aos-root", "plant-root", "adapter-root", "pipewireao-jl-root",
+                 "calibration-algorithms-root"):
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--backend", choices=("cpu", "cuda", "amdgpu"), default="cpu")
     parser.add_argument("--rate-hz", type=int, default=10)
     parser.add_argument("--frames", type=int, default=16)
+    parser.add_argument("--dark-frames", type=int, default=256)
     parser.add_argument("--pipewire-prefix", type=Path, default=Path("/opt/pipewireao"))
     return parser.parse_args(argv)
 

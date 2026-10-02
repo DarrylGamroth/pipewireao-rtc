@@ -1,17 +1,94 @@
 """Installed HIL transformation preserves the calibrated science contract."""
 
 import copy
+import hashlib
+import struct
 import tempfile
 import tomllib
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 import export
 import export_hil
 
 
 class HILExportTests(unittest.TestCase):
+    def test_simulated_offsets_describe_same_classic_estimator_for_both_owners(self):
+        for engine in ("fgn", "jfg"):
+            with self.subTest(engine=engine), tempfile.TemporaryDirectory() as directory:
+                package = Path(directory)
+                (package / "calibration").mkdir()
+                parameters = [export.asdict(value) for value in export.classic_parameters()]
+                origins = [[0, 132], [0, 154]]
+                (package / "calibration/subaperture-origins.u32le").write_bytes(
+                    b"".join(struct.pack("<II", *pair) for pair in origins))
+                (package / "calibration/active-subapertures.u8").write_bytes(bytes([1, 0]))
+                config = {"image_rows": 352, "image_columns": 352,
+                          "subaperture_rows": 22, "subaperture_columns": 22,
+                          "initial_subaperture_origins": origins if engine == "fgn" else None,
+                          "active": [True, False] if engine == "fgn" else None}
+                graph = {"filter.graph": {"nodes": [{"label": "shack-hartmann-image-f32", "config": config}]}}
+                provenance = {"profile": "classic", "engine": engine, "parameters": parameters,
+                              "prepared_profile": {"subaperture_origins": origins}}
+                before = copy.deepcopy(provenance)
+                with patch.object(export_hil.deploy, "decode", return_value=graph):
+                    value = export_hil.calibration_inputs(package, provenance, Path("/opt/pipewireao"))
+                self.assertEqual(provenance, before)
+                self.assertEqual(value["shack_hartmann"]["subaperture_origins"], origins)
+                self.assertEqual(value["shack_hartmann"]["active"], [True, False])
+                self.assertEqual(value["artifacts"]["background"]["path"], "../calibration/background.f32le")
+                self.assertEqual(value["artifacts"]["reference_slopes"]["shape"], [188, 2])
+                self.assertEqual(value["shack_hartmann"]["coordinates"]["layout"], "ROW_MAJOR")
+
+    def test_copper_simulated_background_reaches_native_and_julia_graphs(self):
+        for engine in ("fgn", "jfg"):
+            with self.subTest(engine=engine), tempfile.TemporaryDirectory() as directory:
+                package = Path(directory)
+                for name in ("hil", "graphs", "calibration"):
+                    (package / name).mkdir()
+                (package / "hil/plant.toml").write_text("simulation-only-model\n")
+                (package / "graphs/graph.conf.in").write_text(
+                    '{\n    filter.graph = { inputs = [\n            "calibrate:raw"\n] }\n}\n')
+                provenance = {"profile": "copper", "engine": engine, "parameters": [{
+                    "name": "system-flat", "endpoint": "system-flat:system-flat", "element_type": "F32_LE",
+                    "shape": [277], "file": "parameter-system-flat.f32", "schema": ""}]}
+                specification = {"owners": [{"role": "julia", "argv": ["julia", "run_island.jl"]}]}
+                inputs = export_hil.calibration_inputs(package, provenance, Path("/opt/pipewireao"))
+                self.assertEqual(set(inputs["artifacts"]), {"background", "system_flat"})
+                result = {"version": 1, "profile": "copper", "model_sha256": export.sha256(package / "hil/plant.toml"),
+                          "artifacts": {}}
+                for name, descriptor in inputs["artifacts"].items():
+                    values = bytes(4 * (4096 if name == "background" else 277))
+                    (package / "hil" / descriptor["path"]).write_bytes(values)
+                    result["artifacts"][name] = {**descriptor, "sha256": hashlib.sha256(values).hexdigest()}
+                export_hil.adopt_simulated_calibration(package, specification, provenance, inputs, result)
+                background = next(item for item in provenance["parameters"] if item["name"] == "background")
+                self.assertEqual(background["file"], "parameter-background.f32")
+                text = (package / "graphs/graph.conf.in").read_text()
+                if engine == "fgn":
+                    self.assertIn('"pipewireao.startup-parameter.calibrate:background"', text)
+                else:
+                    self.assertIn('"calibrate:background"', text)
+                    self.assertEqual(specification["owners"][0]["argv"][-5:], [
+                        "--parameter", "background", "Float32", "64,64", "@PACKAGE@/calibration/parameter-background.f32"])
+                with self.assertRaisesRegex(ValueError, "hash differs"):
+                    result["artifacts"]["background"]["sha256"] = "0" * 64
+                    export_hil.adopt_simulated_calibration(package, specification, provenance, inputs, result)
+
+    def test_simulated_calibration_rejects_wrong_model_before_binding(self):
+        with tempfile.TemporaryDirectory() as directory:
+            package = Path(directory)
+            (package / "hil").mkdir()
+            (package / "hil/plant.toml").write_text("installed-model\n")
+            specification, provenance = {"owners": []}, {"profile": "classic"}
+            before = copy.deepcopy(specification)
+            with self.assertRaisesRegex(ValueError, "installed plant"):
+                export_hil.adopt_simulated_calibration(package, specification, provenance,
+                                                      {"artifacts": {}}, {"version": 1, "profile": "classic"})
+            self.assertEqual(specification, before)
+
     def test_amdgpu_helpers_inherit_deployment_affinity(self):
         for backend in ("cpu", "cuda", "amdgpu"):
             value = export_hil.simulator_environment(backend)
@@ -85,6 +162,7 @@ class HILExportTests(unittest.TestCase):
                     value = tomllib.loads((root / "hil/Project.toml").read_text())
                     self.assertEqual(value["sources"][plant]["path"], f"packages/{plant}")
                     self.assertEqual(value["sources"]["PipeWireAO"]["path"], "packages/PipeWireAO")
+                    self.assertEqual(value["sources"]["FilterGraphAlgorithms"]["path"], "packages/FilterGraphAlgorithms")
                     other = "REVOLTCopperSim" if plant == "REVOLTClassicSim" else "REVOLTClassicSim"
                     self.assertNotIn(other, value["deps"])
                     self.assertEqual("CUDA" in value["deps"], backend == "cuda")

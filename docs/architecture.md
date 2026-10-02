@@ -412,8 +412,10 @@ host power states, IRQ policy, RT runtime allowance or unrelated services.
 This is decision **RTC-ARCH-021**: extend the installed non-actuating deployment
 with an externally owned AdaptiveOpticsSim plant through
 AdaptiveOpticsSimPipeWireHIL. The maintained complete-frame Classic and Copper
-science chains remain unchanged, including extrapolation, limits and clipping
-feedback. A simulator backend is selected independently of the RTC graph owner.
+science topology remains unchanged, including extrapolation, limits and clipping
+feedback. Detector backgrounds, Classic sensing references and Copper's PDM
+flat follow the simulated plant as specified by RTC-DEV-027. A simulator backend
+is selected independently of the RTC graph owner.
 CPU, CUDA and AMDGPU select explicit AOS execution targets; an unavailable
 selected device fails preparation rather than falling back to CPU.
 
@@ -438,9 +440,15 @@ Wall pacing and model time are distinct. The installed plant graph uses the
 selected model period and its declared exposure. Missed wall periods are
 reported, never hidden by bursts or skipped model/command sequences. A finite
 qualification batch retains its bounded output and remains held until reset or
-shutdown. The provisional instrument influence models and existing measured
-RTC calibration do not imply scientific closed-loop convergence; that needs a
-separately validated calibration and plant oracle.
+shutdown. Simulated offsets are separate from recorded-input calibration: an
+independent detector owner acquires dark ADC frames, Classic's RTC estimator
+measures the simulated optical flat, and Copper's zero-command model defines
+its PDM flat. No recorded camera pedestal or mirror offset is inserted into the
+plant to accommodate a recorded calibration. The remaining measured
+reconstructors and projections make this a hybrid calibration. The provisional
+instrument influence models and hybrid calibration do not imply scientific
+closed-loop convergence; that needs a separately validated interaction
+calibration and plant oracle.
 
 ## Authoritative lower contracts
 

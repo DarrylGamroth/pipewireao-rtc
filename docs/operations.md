@@ -717,13 +717,16 @@ The deployment MUST provide Classic and Copper complete-frame profiles with
 either FGN or JFG using the maintained calibrated science chains from
 RTC-DEV-020. It MUST substitute the external simulated WFS and command pair
 without changing reconstructor, projections, controller coefficients, limits or
-feedback. Export MUST retain hashes and source provenance for science, model,
-adapter and resolved Julia environment. Installed execution MUST be independent
+feedback. Detector and static reference offsets MUST follow RTC-DEV-027 instead
+of retaining recorded instrument offsets. Export MUST retain hashes and source
+provenance for science, model, adapter and resolved Julia environment. Installed
+execution MUST be independent
 of source worktrees and evidence caches. The WFS contract MUST declare row-major
 UInt16 ADC codes and the command contract MUST declare ordered HSDM277 Float32
 micrometre OPD demands, converted explicitly to metre OPD for the model.
 
-Verification intent: inspect unchanged science hashes, export/relocate/load all
+Verification intent: inspect unchanged matrix/controller hashes and declared
+simulation-derived offset hashes, export/relocate/load all
 four CPU compositions, check every frame/command identity and finite command,
 and validate encoding, order and unit conversion against a direct oracle.
 
@@ -766,3 +769,33 @@ Verification intent: CPU functional exchange, explicit unsupported-device reject
 selected GPU execution where available, model/command causality, pacing and
 missed-period boundary tests. These are functional simulation checks, not a
 hard real-time rate or maximum-throughput qualification.
+
+### RTC-DEV-027 — Simulation-derived calibration offsets
+
+An installed AOS/HIL export MUST acquire its detector background from an
+independent zero-photon detector owner using the installed plant's exposure,
+gain, dark current, read noise and ADC settings. It MUST average the same
+nearest-ties-to-even UInt16 ADC codes used by transport and MUST NOT consume or
+reset the production detector RNG. Recorded camera backgrounds or static
+instrument offsets MUST NOT be inserted into the simulation to reproduce
+recorded calibration artifacts.
+
+Classic reference slopes MUST be the existing RTC estimator's response to the
+installed simulated zero-OPD, zero-command optical flat, with noiseless detector
+acquisition, the simulated background, and the declared coordinates,
+subaperture order, pixel thresholds, flux thresholds and active mask. Invalid
+flat measurements MUST be reported; masks and thresholds MUST NOT be adjusted
+implicitly. Copper's additive PDM system flat MUST follow its simulated static
+figure; the selected zero-figure model therefore requires zero commands.
+
+Both FGN and JFG MUST adopt the generated background and offsets. Export MUST
+record artifact hashes, model identity, ADC units/layout, sample count and RNG
+ownership. Recorded-input profiles MUST remain unaffected. Retained measured
+reconstructors or projections MUST be identified as hybrid calibration and
+MUST NOT establish a scientific convergence claim from finite command exchange.
+
+Verification intent: demonstrate the original low-flux rejection, simulated
+dark ADC acquisition and reference generation, matching offsets for both graph
+owners, successful installed exchange and unchanged plant/matrix/controller
+configuration. Keep invalid reference measurements and unresolved scientific
+acceptance visible.

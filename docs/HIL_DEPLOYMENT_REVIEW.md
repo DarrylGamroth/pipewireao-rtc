@@ -881,3 +881,217 @@ The review has not established an additional scheduler, hidden accelerator
 fallback, or scientific convergence defect. Unmeasured backend combinations
 and the Classic JFG reproducibility difference remain unqualified rather than
 being promoted to established root causes.
+
+## Simulated calibration correction review (2026-10-02)
+
+Review worktree: `pipewireao-rtc-hil-calibration`, branch
+`fix/hil-simulated-detector-calibration-20261002`, baseline `b950c8b`.
+The worktree was clean at the initial review. The user now explicitly requires
+simulated detector bias/offset calibration instead of measured instrument
+bias/offsets. Earlier preservation of every recorded calibration payload was
+therefore insufficient for the simulated instrument. This review covers that
+correction; it does not reopen transport or throughput qualification.
+
+### HIL011 — HIL consumes measured instrument offsets absent from the plant
+
+- Severity: high for scientific interpretation and useful simulated response.
+  Confidence: high in the confirmed provenance mismatch; numerical response
+  consequences require the retained before/after algorithm evidence.
+- Classification: confirmed calibration/source mismatch.
+- Affected code: baseline `deployment/export_hil.py:export_hil` copies the
+  recorded package and changes the device composition without replacing its
+  calibration offsets. Classic loads measured background and reference slopes;
+  Copper loads the measured PDM system-flat despite the model lacking that
+  static physical figure.
+- Independent evidence: installed recorded Classic background contains
+  123,904 nonzero Float32 values in [229.7080078125, 297.7380065917969] ADC
+  codes, SHA-256 `4ff7e0030d6d684d0719b1da5849b2b542762406559cbce2acf3069fdb6c4c8d`.
+  Its 376 reference-slope values are all nonzero, SHA-256
+  `ef247a7329c0fafe6e598609b81c6ede0a9ba8421893be00709dc093d7502536`.
+  Copper's 277 measured system-flat values are all nonzero, spanning
+  [-0.26691415905952454, 0.21296775341033936] µm OPD, SHA-256
+  `a6445b11ad0e9cda3b4c0043b361f258f0319a0fb7ceeff49a2dcb1b9b761feb`.
+  The plant detector declaration has gain, dark current, readout/photon noise
+  and ADC clipping but no matching measured electronic pedestal. These are
+  offsets from another instrument realization, not calibration of this plant.
+- Analysis: subtracting an unrelated pedestal changes per-pixel threshold
+  selection and total SH flux, potentially invalidating measurements. Loading
+  a physical system-flat into a model without that static figure adds an
+  unrelated command. Earlier all-zero Classic commands or nonzero Copper
+  commands cannot establish useful atmospheric correction under this mismatch.
+- Proposed correction: derive the detector background as the mean of 256
+  independently simulated zero-photon, production-detector wire-code frames;
+  derive Classic reference centroids from the declared zero-OPD/zero-DM
+  noiseless optical flat using the same calibration and SH estimator;
+  replace Copper system-flat with 277 zeros. Preserve the recorded geometric
+  layout, thresholds, masks, reconstructor, projections and controller terms,
+  and explicitly label the result a hybrid calibration without convergence
+  qualification. Keep calibration RNG/lifecycle independent of production.
+- Required validation: both FGN and JFG must actually load the generated
+  arrays, agree on byte order/shape/indexing, and retain matching hashes.
+  Copper JFG currently does not expose `calibrate:background`, so its loader
+  path needs an explicit supported binding. The Classic reference must use
+  the same pixel subtraction, thresholding, coordinates and sign as runtime.
+  Preserve invalid-flat indices and diagnostics without changing thresholds
+  or masks. Check background sample count/seed, detector configuration and
+  gain/exposure/noise/ADC preservation; verify all other calibration payloads
+  and production plant bytes remain unchanged. Record finite-sample pedestal
+  uncertainty and distinguish the noiseless reference convention from an
+  unbiased estimate of noisy, clipped, thresholded centroid expectation.
+- Disposition: corrected and independently verified for the four final installed
+  CPU compositions described below. Generated offset provenance, owner
+  bindings, preserved production science, focused software tests and live
+  exchange are supported. This closes HIL011's demonstrated offset mismatch;
+  it does not close HIL010, calibrate the remaining measured interaction model,
+  validate the 12 invalid reference subapertures, or qualify GPU reruns/rates.
+  No production code was changed by the reviewer.
+
+### HIL011 independent correction verification
+
+Reviewed frozen source:
+
+| File | SHA-256 |
+| --- | --- |
+| `deployment/hil/calibrate_detector.jl` | `1fd91b3ff71549e48ae671f83e57aba31b5d4dc91163f5fafbbfbd7645cdfae1` |
+| `deployment/export_hil.py` | `4eb039d0e77501d7548ab368fb80ae6ade9344b773c52c1061aadca79033d26f` |
+
+The detector-only graph uses the installed production detector definition
+unchanged with zero incident photons. It has its own prepared owner and RNG;
+256 successive acquisitions advance that RNG without resetting or preparing
+the production graph. The script encodes each detector output to UInt16 with
+nearest, ties-to-even rounding, then uses Float64 Welford accumulation before
+writing Float32 row-major mean values. Exposure, gain, dark current, noise,
+ADC bit depth and full well are retained for the dark acquisition.
+
+The flat graph removes atmosphere input, supplies zero uncompensated OPD and
+zero PDM demand, and reuses the installed PDM/OPD-composition/sensor nodes. Its
+separate detector disables noise and dark charge only for this reference
+acquisition. Runtime plant files remain unchanged. Public pixel calibration
+subtracts the simulated background; public `ShackHartmannImageF32` adopts the
+existing coordinate and threshold arrays and active mask. Reference sign is
+consistent with centroid minus reference, and serialization is pair-interleaved
+X/Y in subaperture order.
+
+The reviewer independently validated all four relocated package manifests and
+calibration report/input/model hashes under
+`~/.cache/rtc-hil-calibration-20261002/installed/{classic,copper}-{fgn,jfg}-final`.
+For each instrument, FGN and JFG offsets and retained optical-flat bytes match
+exactly:
+
+| Artifact | SHA-256 |
+| --- | --- |
+| Classic background | `8db203a6f98937bceec80fa18bb62c335a1a1fdc100a91661c67b76cf593aee1` |
+| Classic reference slopes | `60f790df2493ffb7c1ac9ae1b0f6804cd8306ad4286a4fc5f48c88e970249717` |
+| Classic optical flat | `be4c6b4ecc9203e8d7511ba3dc4a4486927937773f6a2bb41f40898dae798803` |
+| Copper background | `7ae9d82f5a04d881edb80be0558164dbd953b1d3c833f7470b7813755a29765a` |
+| Copper zero system-flat | `b61465acf0031e6a4cc34a66d568bd1735668abf591a6badb1f5f5bc20bf9919` |
+
+Classic background mean ranges from 0.40234375 to 0.93359375 ADC codes; finite
+window population standard deviation ranges from 0.6844637321 to 1.263380533.
+Copper mean ranges from 0.27734375 to 0.6015625, with standard deviation
+0.5235978066 to 0.8051045642. These describe a finite noisy calibration sample,
+not an electronic pedestal model or a confidence interval for the mean. The
+report states the population divisor and sample count. Noiseless-flat centering
+does not establish zero expected noisy centroids under clipping/thresholding.
+
+Classic FGN binds replacement files through its existing startup parameters;
+Classic JFG adopts them through its existing public startup parameter loader.
+Copper FGN gains a `calibrate:background` startup binding. Copper JFG gains
+both the graph's external background parameter and matching typed startup argv.
+The JFG loader validates its parameter name/type/shape, converts little-endian
+row-major files to ordinary logical Julia arrays and calls public
+`replace_parameters!` before admission. The generated background therefore
+reaches the graph in both owners. Copper's existing system-flat loader now
+reads 277 zero values.
+
+Every original calibration file was compared against its recorded package.
+Only Classic background/reference and Copper system-flat changed; Copper's
+background and Classic's optical flat are new artifacts. All reconstructor,
+projection, controller mapping, threshold, coordinate, active-mask and hidden
+mode files present in the original packages are unchanged. Decoded graph nodes
+and links are unchanged, including controller coefficients/limits. Classic's
+full decoded science graph is unchanged; Copper's new JFG input and native
+startup binding are the intended additions. Each final `plant.toml` exactly
+matches the previous installed HIL file. All 166 AOS files, 9 Classic or 7
+Copper files and 5 adapter files in each snapshot match the previous installed
+snapshot. For each JFG package, the 99 calibration FGA source/extension files
+also match the runtime FGA snapshot.
+
+Independent verification results:
+
+- 57 focused Julia checks passed, including the optional installed optical-flat
+  check; 10 Python exporter tests passed. Cold package precompilation emitted
+  loaded-version notices; test processes completed with exit zero. These are
+  software checks, not hardware or cadence validation.
+- A separate cache script, `independent-flat-reference.jl`, reads the actual
+  retained offset/flat files and invokes the public pixel and SH operations
+  directly. The generated reference yields exactly zero residual, 176 valid
+  measurements and invalid active indices (zero-based)
+  `69,70,84,85,86,87,100,101,102,103,117,118`. Every active entry remains true;
+  all pixel/flux thresholds remain 20/1000. Flux range is [0, 2841.371].
+- The same flat through those public operations with the original recorded
+  background/reference yields zero valid measurements and maximum flux
+  277.00195, below 1000. This establishes a direct before/after calibration
+  effect without changing the input pixels, mask or thresholds.
+- Independently revalidated all eight retained final live batch reports with
+  the unchanged evidence validator. Each composition completes 16 + reset + 16,
+  all processes exit zero and only the owned private core receives TERM.
+  Classic has 4,432 nonzero command components per batch and maximum
+  0.07942363 µm OPD in either owner. Copper has 4,155 nonzero components
+  (one zero frame, then 15 nonzero frames), with maxima 0.0028858103 and
+  0.0028858106 µm OPD for FGN/JFG respectively. No component clips. These are
+  finite functional observations and do not establish convergence.
+
+Reviewer cache artifacts are `independent-calibration-review.json`,
+`independent-source-preservation.json`, `independent-final-live-review.json`,
+`independent-calibration-tests.log` and `independent-flat-reference.log` under
+`~/.cache/rtc-hil-calibration-20261002`. Live reports remain under
+`evidence/{classic,copper}-{fgn,jfg}-final/result.json`; their exact hashes are
+recorded in the reviewer live summary. The earlier offset-mismatched evidence
+remains historical evidence and must not be presented as corrected calibration.
+RTC-DEV-027 is supported for the four corrected CPU profiles. GPU offset
+refreshes and any later numerical-replay acceptance require their own evidence.
+
+### HIL011 bounded GPU and canonical-install verification
+
+The reviewer subsequently validated the three regenerated Copper FGN GPU
+profiles: `copper-fgn-cuda-final`, `copper-fgn-amdgpu-final` and
+`copper-fgn-cuda100-final`. Each has two retained 16-frame/16-command batches,
+matching sequences 1–16, mandatory control checks, zero process exit codes,
+core-only cleanup signals and zero clipped command components. All six raw
+payload/report pairs pass the unchanged public evidence validator. Actual
+backend reports identify CUDA device 0 or AMDGPU device 1 as selected.
+
+Their backgrounds and zero system-flat payloads exactly match the CPU Copper
+hashes above. Both native startup bindings point to those generated files.
+Calibration reports correctly identify the independent CPU calibration owner;
+this is not represented as GPU dark acquisition. The declared 100 ms or 10 ms
+model period is retained. The CUDA100 run's observed second-batch cadence is
+46.87454 Hz with 18 missed wall periods, so these results do not establish
+100 Hz wall operation, maximum throughput, hard real time or convergence.
+No Classic GPU or JFG GPU coverage is added by these runs.
+
+Exact aggregate evidence hashes:
+
+| GPU report | SHA-256 |
+| --- | --- |
+| Copper FGN CUDA | `cd0a8dfc79c814bd2a75dd8346f081bd70304eeb93f14157e6f50300d9792787` |
+| Copper FGN AMDGPU | `678be43f73679dfcd555bc54d665f0f88f50d6c2540393f0c90848e0ff6c7233` |
+| Copper FGN CUDA100 | `2bd358706b5f01fa836d8f7c678abd501d8f75735bb656d8709b02b599abb10d` |
+
+`independent-gpu-calibration-review.json` retains the per-batch observations
+under `~/.cache/rtc-hil-calibration-20261002`. Independent validation of all
+seven entries in `canonical-installation.json` confirms their canonical
+`~/.config/pipewireao-rtc` packages pass artifact validation, all 16 generated
+artifact hashes match the reviewed values, every production `plant.toml`
+matches its preserved previous package, and all seven previous packages remain
+under `previous-installed`. The live qualification ran the relocated reviewed
+packages; the canonical copies have separate artifact/model verification.
+
+Final HIL011 scope: corrected and verified for four CPU profiles and these
+three existing Copper FGN GPU profiles. Independent checks comprise 57 Julia
+assertions, 10 exporter tests, the separate public-estimator before/after probe,
+and 14 retained live batches across seven profiles (224 complete exchanges).
+HIL010, the 12 invalid Classic flat measurements and scientific convergence
+remain unresolved or unqualified as stated above. No implementation defect
+was found in this bounded correction review.
