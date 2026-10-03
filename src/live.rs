@@ -65,6 +65,7 @@ struct ControlledGraph {
     reset_events: Rc<RefCell<Vec<Result<ResetControlStatus, String>>>>,
     property_events: GraphPropertyEvents,
     property_info: GraphPropertyInfoEvents,
+    advertised_params: GraphAdvertisedParams,
 }
 
 struct LatestHoldNode {
@@ -105,6 +106,72 @@ fn link_admission_key(
 
 type GraphPropertyEvents = Rc<RefCell<Vec<Result<BTreeMap<String, ScalarValue>, String>>>>;
 type GraphPropertyInfoEvents = Rc<RefCell<Vec<Result<(String, bool, Value), String>>>>;
+type GraphAdvertisedParams =
+    Rc<RefCell<Option<Vec<(pw::spa::param::ParamType, pw::spa::param::ParamInfoFlags)>>>>;
+
+fn graph_param_subscription_ids(
+    advertised: Option<&[(pw::spa::param::ParamType, pw::spa::param::ParamInfoFlags)]>,
+) -> Result<Vec<pw::spa::param::ParamType>, &'static str> {
+    let Some(advertised) = advertised else {
+        return Err("owner did not publish initial NodeInfo parameter capabilities");
+    };
+    let mut ids = vec![pw::spa::param::ParamType::Props];
+    if advertised.iter().any(|(id, flags)| {
+        *id == pw::spa::param::ParamType::PropInfo
+            && flags.contains(pw::spa::param::ParamInfoFlags::READ)
+    }) {
+        ids.push(pw::spa::param::ParamType::PropInfo);
+    }
+    Ok(ids)
+}
+
+#[cfg(test)]
+mod graph_param_subscription_tests {
+    use super::*;
+    use pw::spa::param::{ParamInfoFlags, ParamType};
+
+    #[test]
+    fn props_remain_mandatory_and_prop_info_requires_read_capability() {
+        assert_eq!(
+            graph_param_subscription_ids(None).unwrap_err(),
+            "owner did not publish initial NodeInfo parameter capabilities"
+        );
+        assert_eq!(
+            graph_param_subscription_ids(Some(&[])).unwrap(),
+            [ParamType::Props]
+        );
+        assert_eq!(
+            graph_param_subscription_ids(Some(&[(ParamType::Props, ParamInfoFlags::empty())]))
+                .unwrap(),
+            [ParamType::Props]
+        );
+        for flags in [
+            ParamInfoFlags::empty(),
+            ParamInfoFlags::SERIAL,
+            ParamInfoFlags::WRITE,
+        ] {
+            assert_eq!(
+                graph_param_subscription_ids(Some(&[(ParamType::PropInfo, flags)])).unwrap(),
+                [ParamType::Props]
+            );
+        }
+        assert_eq!(
+            graph_param_subscription_ids(Some(&[(
+                ParamType::PropInfo,
+                ParamInfoFlags::READ | ParamInfoFlags::SERIAL,
+            )]))
+            .unwrap(),
+            [ParamType::Props, ParamType::PropInfo],
+        );
+        assert_eq!(
+            graph_param_subscription_ids(Some(&[
+                (ParamType::PropInfo, ParamInfoFlags::READWRITE,)
+            ]))
+            .unwrap(),
+            [ParamType::Props, ParamType::PropInfo],
+        );
+    }
+}
 
 fn graph_reached_requested_state(
     graph: &ControlledGraph,
@@ -1469,8 +1536,27 @@ impl LiveGraphAdapter {
             let observed_properties = Rc::clone(&property_events);
             let property_info = Rc::new(RefCell::new(Vec::new()));
             let observed_property_info = Rc::clone(&property_info);
+            let advertised_params = Rc::new(RefCell::new(None));
+            let observed_params = Rc::clone(&advertised_params);
+            let observed_initial_info = Rc::new(Cell::new(false));
+            let initial_info = Rc::clone(&observed_initial_info);
             let listener = node
                 .add_listener_local()
+                .info(move |info| {
+                    let first_info = !initial_info.replace(true);
+                    if first_info
+                        || info
+                            .change_mask()
+                            .contains(pw::node::NodeChangeMask::PARAMS)
+                    {
+                        *observed_params.borrow_mut() = Some(
+                            info.params()
+                                .iter()
+                                .map(|param| (param.id(), param.flags()))
+                                .collect(),
+                        );
+                    }
+                })
                 .param(move |_sequence, param_type, _index, _next, param| {
                     if param_type == pw::spa::param::ParamType::PropInfo {
                         if let Some(pod) = param {
@@ -1508,10 +1594,6 @@ impl LiveGraphAdapter {
                     }
                 })
                 .register();
-            node.subscribe_params(&[
-                pw::spa::param::ParamType::Props,
-                pw::spa::param::ParamType::PropInfo,
-            ]);
             self.controlled_graphs.push(ControlledGraph {
                 name: node_name.clone(),
                 global_id: global.id,
@@ -1521,7 +1603,16 @@ impl LiveGraphAdapter {
                 reset_events,
                 property_events,
                 property_info,
+                advertised_params,
             });
+        }
+        self.roundtrip("processing graph parameter capability discovery")?;
+        for graph in &self.controlled_graphs {
+            let ids = graph_param_subscription_ids(graph.advertised_params.borrow().as_deref())
+                .map_err(|error| {
+                    ScientificDiagnostic::new(format!("graph {}.params", graph.name), error)
+                })?;
+            graph.proxy.subscribe_params(&ids);
         }
         self.roundtrip("processing graph run-control discovery")?;
         for graph in &self.controlled_graphs {

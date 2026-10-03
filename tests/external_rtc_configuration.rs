@@ -201,7 +201,7 @@ fn build_external_raw_receipt() -> DevelopmentConfig {
     let mut config = DevelopmentConfig::parse(AOS_HIL).expect("AOS HIL configuration");
     let source = &config.sources[0];
     let mut port = source.ports[0].clone();
-    port.name = "input_1".to_owned();
+    "input_1".clone_into(&mut port.name);
     port.direction = PortDirection::Input;
     let sink = pipewireao_rtc::ObjectSpec {
         realization: ObjectRealization::External {
@@ -211,7 +211,7 @@ fn build_external_raw_receipt() -> DevelopmentConfig {
         node_name: "raw-receipt".to_owned(),
         plugin_path: None,
         configuration_path: None,
-        arguments: Default::default(),
+        arguments: std::collections::BTreeMap::default(),
         ports: vec![port],
     };
     let source_endpoint = format!("{}:{}", source.node_name, source.ports[0].name);
