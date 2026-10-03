@@ -693,3 +693,93 @@ Once that evidence is interpreted, the221-column controller-modal branch can
 address representation efficiency on the same controller task, and the64-mode
 spatial branch can characterize its explicitly limited span. Neither must be
 acquired now to resolve the initial full-span Hadamard/zonal question.
+
+## MCR-10 — Actual full physical Hadamard/zonal cohort
+
+**Disposition:** independent integration and descriptive numerical audit passes.
+No estimator winner, new inverse, controller replacement, universal linearity,
+equal-energy advantage or cadence qualification follows from this result.
+
+Cache: `~/.cache/rtc-calibration-quality-20261003/method-cohort`.
+Frozen pre-acquisition policy SHA-256:
+`142549f176135fb9d6405b96c1569fdf164e61ea034dc6d5b921ba6b5c15cf74`.
+Frozen analyzer SHA-256:
+`e38bd7110c08b72271fc69ff4888b67f3da0476106f3852baa66498162c82c5a`.
+Actual `comparison.json` SHA-256:
+`75428573a1ae0aee04ab9d0a03f3d4e4d19505de98c3ffb92a879bcda89a0c60`.
+
+The source review confirmed complete public-AOC physical estimation,
+chronological receipt validation before inverse permutation, true spectral
+`opnorm(S*(D1-D2)*B,2)/sqrt(2)`, actual Float32 held-out commands and the original
+signed-pair response equation. The analyzer's40 focused tests were reported
+passed by its owner before freezing. The primary agent then executed it
+successfully against all four completed cases. This reviewer independently
+recomputed the recorded data using NumPy on CPU5; no RTC run or source edit was
+performed.
+
+### Independent data and representation checks
+
+- Each case's20 sealed files and381-file package matches both the recorded
+  hashes and exact package file set. Input recipe/method hashes match the
+  frozen cohort policy; CLI, stage and candidate payload hashes match.
+- Both Hadamard cycles contain1024 signed batches,8192 accepted exposures,
+  final accepted sequence9216 and restoration sequence9217. Each zonal cycle
+  contains554 signed batches,8864 accepted exposures, final accepted sequence
+  9418 and restoration sequence9419. Exposure identities are unique and
+  chronological within each domain/generation, with valid fixed1,896,000ns
+  duration and nonoverlapping intervals. All four restore, release and cleanly
+  stop with launcher exit0.
+- Total accepted exposure count is34112; total model exposures are37272.
+  Settling and reference cost are separate from accepted command energy.
+- An independent Float32 recurrence reconstructs **every candidate byte**:
+  zonal signed differences with the declared reciprocal amplitude; Hadamard
+  sum over all512 non-DC Sylvester sign rows and the declared complete-cycle
+  normalization. Chronological rows are first restored to canonical order.
+  This independently confirms physical376×277 ROW_MAJOR F32 representation,
+  beyond the analyzer's public-AOC re-estimation check.
+- Exact startup arrays, graphs, five top-level HIL preparation/association
+  helpers, six packaged scientific source trees and selected configuration
+  files match across the four cohort packages, both N64 baseline packages and
+  the retained held-out package. Plant and adopted detector configurations
+  match after removing only the declared detector RNG seed. The selectable
+  analysis client version is separately provenanced; no blanket assertion that
+  every file in old and new packages is identical is made.
+- Every case, family-mean and baseline forward score independently reproduces
+  within1.43×10⁻¹⁴ absolute difference using the same actual physical vectors,
+  selected368 rows and `z=(response_plus−response_minus)/2`. Bracketing nulls
+  remain diagnostics and are not newly subtracted from those frozen contrasts.
+
+### Observed finite-corpus results
+
+| Quantity | Zonal0.04,N16 | Hadamard0.01,N8 |
+| --- | ---: | ---: |
+| Empirical spectral repeat/order scale | 3.9600248694 | 0.9845044085 |
+| Relative physical Frobenius disagreement | 0.4827075718 | 0.1234340550 |
+| Mean-matrix sparse residual RMS, pair1/2 (pixel) | 0.0026283 / 0.0025658 | 0.0018008 / 0.0018003 |
+| Mean-matrix mixed residual RMS, pair1/2 (pixel) | 0.0288339 / 0.0288118 | 0.0089013 / 0.0088930 |
+| Accepted squared command energy per sweep (µm² OPD·exposures) | 14.1823993660 | 226.9183898560 |
+| Acquisition time, sweep1/2 (s) | 146.7623 / 146.5071 | 156.8668 / 154.3806 |
+
+The spectral scale has units pixel/µm OPD in the declared controller composition.
+It is a two-realization repeat/order discrepancy, not a confidence bound or pure
+noise standard deviation. The ratio is close to the ideal homogeneous-noise
+prediction of a fourfold standard-deviation reduction at these amplitudes and
+averaging counts; agreement with that model does not prove it accounts for all
+bias or all directions. The actual Hadamard integrated squared command energy
+is16 times zonal. Its acquisition takes longer here despite fewer accepted
+exposures; the result is not a frame-rate benchmark or proof of the timing cause.
+
+Hadamard's measured family mean has lower error on both sparse/mixed groups and
+both retained pair realizations in this specific previously observed corpus.
+This is a supported descriptive improvement under different amplitudes, energies
+and pattern families. It does not establish equal-energy estimator superiority,
+an untouched new locked test, negligible nonlinear bias across512 patterns,
+physical full rank or an accepted reconstructor. The previous N64 mean remains
+a noisy finite-amplitude comparator, not truth. No numerical policy was retuned
+and no new inverse was selected by this comparison.
+
+The recorded comparison can inform the next explicitly declared
+controller-modal/full-controller and spatial/partial-span experiments under
+MCR-2/MCR-3. Their distinct representation claims, actual command energy and
+fresh selection/test boundaries remain required; these observations do not
+remove those conditions.

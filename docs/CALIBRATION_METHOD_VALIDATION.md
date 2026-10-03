@@ -97,3 +97,82 @@ used descriptively; any tuning or scientific method/reconstructor selection
 requires a fresh frozen test corpus. No winner is selected from the pilot or
 candidate completion alone. Full controller-modal and partial spatial sweeps
 follow interpretation of this smaller full-span comparison.
+
+## Complete physical comparison results
+
+All four maintained owner runs completed exact accepted-frame counts,
+restoration, release, public shutdown and launcher exit 0. Their terminal source
+sequences equal the declared 9,217/9,419 total model exposures. Normal selected-
+ROI validity and positive flux are enforced by the deployed acquisition owner;
+no invalid WFS response was accepted. All matrices are 376×277 physical products.
+
+Independent analysis checked each 20-file preparation seal and 381-file package
+set, exact input arrays, graphs, five HIL helper scripts and six package source
+trees. Only declared detector seed, amplitude, averaging count and order differ.
+Each candidate was independently decoded from chronological responses, including
+the complete 512-row Hadamard cycle, and reproduced byte for byte.
+
+| Per-family result | Zonal, 0.04/N16 | Hadamard, 0.01/N8 |
+| --- | ---: | ---: |
+| Relative physical repeat Frobenius discrepancy | 0.48271 | 0.12343 |
+| Empirical controller spectral discrepancy, pixel/µm OPD | 3.96002 | 0.98450 |
+| Acquisition, repeat 1 / 2 | 146.762 / 146.507 s | 156.867 / 154.381 s |
+| Accepted signed command energy per sweep, µm² OPD × exposures | 14.1823994 | 226.918390 |
+| Cold AOC estimation, repeat 1 / 2 | 117.672 / 117.928 ms | 190.067 / 246.921 ms |
+
+The spectral quantity is `opnorm(S (D₁−D₂) B, 2) / √2`, with the exact existing
+controller map B. It is an empirical repeat/order scale, not an unbiased noise
+estimate or confidence interval. Matrix differences use independent detector
+seeds and reversed chronology. The observed Hadamard/zonal discrepancy ratio
+is close to the ideal model's one-quarter prediction. This association does not
+establish that the model captures every noise or nonlinear contribution.
+
+Both two-sweep means were scored against the **same previously acquired** 16
+held-out physical commands and their two balanced signed-pair observations.
+Chronological receipts, actual Float32 commands, bracketing references and
+source bindings were checked. Before/after references are separately diagnosed;
+like the original frozen score, they are not subtracted from signed-pair
+contrasts. The matrix predicts each actual physical demand. No reconstructor,
+method setting or controller property was selected from these scores.
+
+| Mean-matrix held-out residual RMS | Zonal, repeat 1 / 2 | Hadamard, repeat 1 / 2 |
+| --- | ---: | ---: |
+| Sparse controller directions | 0.002628 / 0.002566 pixel | 0.001801 / 0.001800 pixel |
+| Dense mixed controller directions | 0.028834 / 0.028812 pixel | 0.008901 / 0.008893 pixel |
+
+The mixed subgroup's squared error relative to zero prediction was about
+0.0570 for zonal and 0.00544 for Hadamard. Independent recomputation reproduced
+all case, family and baseline scores within 1.43×10⁻¹⁴ and both spectral norms.
+These measurements support lower repeat discrepancy and better finite-corpus
+prediction under the declared Hadamard settings. They do not establish
+intrinsic algorithm superiority at equal energy, complete-pattern linearity,
+statistical confidence or physical acceptance. Hadamard uses 16× energy and
+has longer observed acquisition despite fewer accepted exposures. The cause
+of that timing difference has not been profiled. Cold estimation includes
+compilation and is not a warmed numerical benchmark.
+
+The previous full N64 zonal baseline remains a noisy comparator, with its
+separate qualified inverse/correction gate. No active inverse was replaced.
+The comparison source/test and result hashes are preserved in the evidence
+ledger. The exploratory comparison script remains a cache artifact; selectable
+acquisition and candidate reduction are maintained production entry points.
+
+## Next directional comparison, declared before acquisition
+
+The next four methods are frozen in `directional-cohort-inputs`: two
+controller-modal 221-coordinate runs at 0.04/N16 and two spatial 64-mode runs
+at 0.01/N16, with independent seeds and opposite signed-row order. They total
+18,240 accepted exposures and 19,384 model exposures. The modal basis is the
+existing controller→physical map B, normalized by column peak; all peaks here
+are one. Its actual Float32 representation differs from B by at most
+4.49666×10⁻⁸ in normalized command coordinates. The spatial sampled basis has
+rank 64 at the declared relative tolerance 10⁻¹⁰ and condition number 5.13353.
+
+Controller-modal G has shape 376×221 and can be composed into the complete
+declared controller response with its recorded representation residual.
+Spatial G has shape 376×64 and measures only that span. It will be compared
+against fresh frozen sparse/mixed combinations inside that span, including
+Float32 representation residuals; it will not be labelled a full physical D.
+All eight fresh spatial directions and their 48-batch acquisition plan were
+frozen before the first directional candidate was acquired. No inverse or
+scientific method winner is accepted by this declaration.

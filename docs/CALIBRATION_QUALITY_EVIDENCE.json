@@ -191,6 +191,16 @@
       "sha256": "67285f96ccf53af12547cfa73f9d416a1a300d2507fa68667cef940e583c12ce"
     },
     {
+      "bytes": 27328,
+      "path": "~/.cache/rtc-calibration-quality-20261003/analyze-method-cohort.jl",
+      "sha256": "e38bd7110c08b72271fc69ff4888b67f3da0476106f3852baa66498162c82c5a"
+    },
+    {
+      "bytes": 85,
+      "path": "~/.cache/rtc-calibration-quality-20261003/analyze-method-cohort.log",
+      "sha256": "beb6abbfa2166effcb848a0c5caab6101f04d347704f0879430d102d854aafef"
+    },
+    {
       "bytes": 3415,
       "path": "~/.cache/rtc-calibration-quality-20261003/correction-fgn-analysis.log",
       "sha256": "cd29178898ef957e3be11bac8735d162b14485fecc9d019e821af1bf723487c2"
@@ -936,6 +946,11 @@
       "sha256": "47757f3075ff57f356354884cef90858a6d48e27bdaa8a6eb5cf1f1b2ec40e10"
     },
     {
+      "bytes": 2064,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort-analysis-validation.json",
+      "sha256": "d75f5fd79f231c74f45a387a3b86182a5d9303c7c9282aa5ada2134ed892157b"
+    },
+    {
       "bytes": 101,
       "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort-inputs/hadamard-1-method.json",
       "sha256": "597835fdbb6309cb6c68d9843f95958eb31e90bb06f3b0508b74eb9fd8f8c81b"
@@ -979,6 +994,571 @@
       "bytes": 9562,
       "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort-inputs/zonal-2-recipe.json",
       "sha256": "0e4ab39cf7164ac81c4dc0e1d009183a148810ea8ceb4b99597d6a4bd303cb6b"
+    },
+    {
+      "bytes": 720,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort-test-final.log",
+      "sha256": "b9b3c6cc9cd19e65a9144cf867664e119d9824a9e85f174f7b553fdef19b4af9"
+    },
+    {
+      "bytes": 1302,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort-test-initial.log",
+      "sha256": "a4643ec751b7b04089a0e13c5e8f37bab778764ee1fd13fde857ce943b319e0c"
+    },
+    {
+      "bytes": 720,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort-test-second.log",
+      "sha256": "63c545a85fe6a67e361de12c721a35b44c83f1712eecaf1986788d67e2c84ba9"
+    },
+    {
+      "bytes": 1702,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/cohort-result.json",
+      "sha256": "4ddf39a5a4d51c8407e2d4ec6fa548600b5d393e850ae20c4f55a3119a4f1bd2"
+    },
+    {
+      "bytes": 123473,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/comparison.json",
+      "sha256": "75428573a1ae0aee04ab9d0a03f3d4e4d19505de98c3ffb92a879bcda89a0c60"
+    },
+    {
+      "bytes": 99,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1.log",
+      "sha256": "4d32c7fc0d166259154caa915d5275e07dd9f8e7329e1f4717f8c3ae04c8458b"
+    },
+    {
+      "bytes": 62111,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/base-identity.json",
+      "sha256": "ef4966dfecb38cb37f6e9e8ff74c3bee6bb9188dd039b5fb90ed9979e60493b1"
+    },
+    {
+      "bytes": 416608,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/candidate-response.f32le",
+      "sha256": "7d91b842f8c0c4844be972d22933eb56cf3cf2fb2089045692fa9dbe1be9b42f"
+    },
+    {
+      "bytes": 839775,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/candidate-response.json",
+      "sha256": "8a969ae483b95908aed84af37ca385f3f718bc4338f0edb731279dc7aad544c7"
+    },
+    {
+      "bytes": 4123,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/canonical-order.json",
+      "sha256": "16bfa0bcc7168b012269e9ddef010b702f384425aa8155aef8b7036923791459"
+    },
+    {
+      "bytes": 1563496,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/canonical-plan.json",
+      "sha256": "2a1e81ce4794615068088f3f9cd92e217acb8f1ab508ccf03acdde9d378b6347"
+    },
+    {
+      "bytes": 4641,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/evidence/deployment.log",
+      "sha256": "55b3da444218c4689c0cd086006a5505a4f2cb962b82150791c3f908fe5f1bed"
+    },
+    {
+      "bytes": 8814146,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/evidence/rtc-calibrate.json",
+      "sha256": "af3c3f06aef4a90ed28368605d9380771b3d813de3d937403e63975855ad8d1d"
+    },
+    {
+      "bytes": 0,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/evidence/rtc-calibrate.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 13993,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/evidence/stage-result.json",
+      "sha256": "b352c0820f9effb5b889aa358a3ed510f22204df9e90fd564830d886acd4d9c7"
+    },
+    {
+      "bytes": 101,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/input-method.json",
+      "sha256": "597835fdbb6309cb6c68d9843f95958eb31e90bb06f3b0508b74eb9fd8f8c81b"
+    },
+    {
+      "bytes": 9561,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/input-recipe.json",
+      "sha256": "46e3bbee33e0a013207e46b18fcac2fd653ffa6d89962ab1ec8eabfe88889d24"
+    },
+    {
+      "bytes": 1563496,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/interaction-plan.json",
+      "sha256": "2a1e81ce4794615068088f3f9cd92e217acb8f1ab508ccf03acdde9d378b6347"
+    },
+    {
+      "bytes": 56853,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/method-base/deployment.conf",
+      "sha256": "5411db2c53430a599726aa295eea76bc9bc7e5cb407515815177a19d7ad3ebdc"
+    },
+    {
+      "bytes": 103700,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/method-base/provenance.json",
+      "sha256": "e689fba223952d1de1befa12fd37149f8bbe467d8bea24b8c99eee7cc8ff4bfd"
+    },
+    {
+      "bytes": 2145246,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/method-result.json",
+      "sha256": "20ddbb281d768aeecd0943a883af574bff505be502dac87d3cbddc40a392e470"
+    },
+    {
+      "bytes": 101,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/method.json",
+      "sha256": "597835fdbb6309cb6c68d9843f95958eb31e90bb06f3b0508b74eb9fd8f8c81b"
+    },
+    {
+      "bytes": 32802,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/orchestration-sources/calibration_campaign.py",
+      "sha256": "d9174ea14a5e007db58ceed0c0e0ed79a89a2d8a96a4e2567411e50f17460cc2"
+    },
+    {
+      "bytes": 10917,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/orchestration-sources/calibration_method.py",
+      "sha256": "169c7adf0232e3e096f41d3ec4bd6726a579b1fcd06dd6a4a794220a08fd2465"
+    },
+    {
+      "bytes": 30110,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/orchestration-sources/export_calibration.py",
+      "sha256": "7b811325aa897fbbefb0f6b5e24a5020d0e2d726759605ac86c421e8bf190b0e"
+    },
+    {
+      "bytes": 55499,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/orchestration-sources/export_hil.py",
+      "sha256": "89c4c3488cd200133ad3d6f2558a1f2221093e70f0dd7238a4e22e367b1d8d58"
+    },
+    {
+      "bytes": 56444,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/package/deployment.conf",
+      "sha256": "43279406bd84c95a3bc6dfbd1bfb9a7473609f0187e5eeb969b5434cdf1b562d"
+    },
+    {
+      "bytes": 169283,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/package/provenance.json",
+      "sha256": "abe87b7bae388a077080d82a051763dc855ceb31961e04a383a096080b0ba584"
+    },
+    {
+      "bytes": 782800,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/preparation.json",
+      "sha256": "5dd9e629a8bf69e0178b39c0932879a957cca411e7bde9609455962f855a46bb"
+    },
+    {
+      "bytes": 55520,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/prepared-identity.json",
+      "sha256": "15d75382ae2bdc8bcbdcb5dd3bdfddd65c9bb9b282b045f84eac4a8c07d52615"
+    },
+    {
+      "bytes": 6673,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/prepared-specification.json",
+      "sha256": "f3b7784fcd4cd6a62be58ede4d0755bd8b916cb6e7a8dc159d273933458e5c02"
+    },
+    {
+      "bytes": 13993,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/recipe.json",
+      "sha256": "7e65f8f4eed341b417a9e4382f0661a073e04d389f6897676b4a229d38ae523e"
+    },
+    {
+      "bytes": 99,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2.log",
+      "sha256": "5325331268856f4a94ef1d917af35a12580742c638dcdf7769efdb80a351997e"
+    },
+    {
+      "bytes": 62111,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/base-identity.json",
+      "sha256": "980a9d8b341f4682e9b4507210d81abc77dfc752743721eafa2954931892555f"
+    },
+    {
+      "bytes": 416608,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/candidate-response.f32le",
+      "sha256": "e353545ad254fdce15ac7a5d43c051e06b7f1fe5b52df33bc8849b7411eb4a54"
+    },
+    {
+      "bytes": 839775,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/candidate-response.json",
+      "sha256": "0eca1167c78c23f96ea0e43b0e91ee38bf2e66462ed57f6b9f15c1587c7f9e77"
+    },
+    {
+      "bytes": 4123,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/canonical-order.json",
+      "sha256": "d4188b8c6661b2172d82049d99aeaeb65085bd9cdbeae113cb1cdc024adaa779"
+    },
+    {
+      "bytes": 1563496,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/canonical-plan.json",
+      "sha256": "9d70dc9a5c7fceb977399e81935b23a484cb10a45bea1aa95899b0c209189023"
+    },
+    {
+      "bytes": 4642,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/evidence/deployment.log",
+      "sha256": "a7ef7786aa89294b7ac4e9f1cbbb7b36ee5b3ba44660ebbfbc405a44bc3bb5fb"
+    },
+    {
+      "bytes": 8814675,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/evidence/rtc-calibrate.json",
+      "sha256": "62e78b7d76a22a5e0c77d7e4ffece61fb4933b21fe3fc9b481923ce3b0069094"
+    },
+    {
+      "bytes": 0,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/evidence/rtc-calibrate.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 13995,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/evidence/stage-result.json",
+      "sha256": "9008e097668caaad6620e2d9648dedc9a6b7b18b2def1d21d636d88bbf8b9e13"
+    },
+    {
+      "bytes": 101,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/input-method.json",
+      "sha256": "a9a8fb2ff60a1f1bf4105ede981befd7a2c26bc760949ee2b98fefbb2827d9d4"
+    },
+    {
+      "bytes": 9561,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/input-recipe.json",
+      "sha256": "03e9db24200e6550f54128cc2dd73d4a9c30a3a71c6d6d9ae8630111a6aff2e9"
+    },
+    {
+      "bytes": 1563496,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/interaction-plan.json",
+      "sha256": "7da9ba6a1c0873c2a1bda2c39f1e07a635e92fec7ee28526d2c488243f6243a1"
+    },
+    {
+      "bytes": 56853,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/method-base/deployment.conf",
+      "sha256": "f6662b6dcfc02e381908dc58b7f37fb473494084f46545c03c19ab682c550708"
+    },
+    {
+      "bytes": 103700,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/method-base/provenance.json",
+      "sha256": "3412a87e985b8e5ef357f83a057bb97096b5c3f994a3591b4844f39eb6809b08"
+    },
+    {
+      "bytes": 2145248,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/method-result.json",
+      "sha256": "4ba34f908df8da8611374f4f99867cbc7ed8e9e331e2b56f983528f8b164398a"
+    },
+    {
+      "bytes": 101,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/method.json",
+      "sha256": "a9a8fb2ff60a1f1bf4105ede981befd7a2c26bc760949ee2b98fefbb2827d9d4"
+    },
+    {
+      "bytes": 32802,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/orchestration-sources/calibration_campaign.py",
+      "sha256": "d9174ea14a5e007db58ceed0c0e0ed79a89a2d8a96a4e2567411e50f17460cc2"
+    },
+    {
+      "bytes": 10917,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/orchestration-sources/calibration_method.py",
+      "sha256": "169c7adf0232e3e096f41d3ec4bd6726a579b1fcd06dd6a4a794220a08fd2465"
+    },
+    {
+      "bytes": 30110,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/orchestration-sources/export_calibration.py",
+      "sha256": "7b811325aa897fbbefb0f6b5e24a5020d0e2d726759605ac86c421e8bf190b0e"
+    },
+    {
+      "bytes": 55499,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/orchestration-sources/export_hil.py",
+      "sha256": "89c4c3488cd200133ad3d6f2558a1f2221093e70f0dd7238a4e22e367b1d8d58"
+    },
+    {
+      "bytes": 56444,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/package/deployment.conf",
+      "sha256": "f0bf9f3001e45cb57d7d8b01d05630a33c57944f60273fc0e0be4120912a04c0"
+    },
+    {
+      "bytes": 169283,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/package/provenance.json",
+      "sha256": "ef1f12b377e969d2b4d510f7d2fdd9ac2ecf03e544daab63bd3ff56c3d03f59f"
+    },
+    {
+      "bytes": 782800,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/preparation.json",
+      "sha256": "3cf9597c8fb45caf5058d68e0a494be99ab3a2da69d1e66e2bec9089796e3f19"
+    },
+    {
+      "bytes": 55520,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/prepared-identity.json",
+      "sha256": "17f668e1f2864a386f1fca0072bed7d76060ad003658aa8c75df040f5e935eb4"
+    },
+    {
+      "bytes": 6673,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/prepared-specification.json",
+      "sha256": "06ea5ffa6afc6d567a7cfcc764c255e9156bb35ddaae801a219781c808ea4cfb"
+    },
+    {
+      "bytes": 13993,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/recipe.json",
+      "sha256": "40999cb64ff87f83954f8668eaabc0222c14eea141cdf0c83589db5ec11217f5"
+    },
+    {
+      "bytes": 96,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1.log",
+      "sha256": "4ca366344ed1582da2556bff92544f4fc62273ae17ae692f9409359af5b1c69b"
+    },
+    {
+      "bytes": 62111,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/base-identity.json",
+      "sha256": "c3ce1de95e4ba1a1924eb9c08d0821de0a7e52aed1777d29799d2fdf53ec47f0"
+    },
+    {
+      "bytes": 416608,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/candidate-response.f32le",
+      "sha256": "ebcccaed8268d40b2a5558dc4ce8472e1732eee04b77a291878b029ab7195854"
+    },
+    {
+      "bytes": 365002,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/candidate-response.json",
+      "sha256": "5b5758e2d105440d1bbcfe638140204c1fa6726774bb154895c245396d77cd0a"
+    },
+    {
+      "bytes": 2218,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/canonical-order.json",
+      "sha256": "16985966e5aaf20fb320c4f0e5b4e0ff76b0d5c42473704a0adea9beaf4d13cd"
+    },
+    {
+      "bytes": 617156,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/canonical-plan.json",
+      "sha256": "5ba2ecd761b753105349dd1f1644dbae56d0167dde8cf29e2e31bc199095e2c1"
+    },
+    {
+      "bytes": 4639,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/evidence/deployment.log",
+      "sha256": "ffa6357adfb63bebd2c1962ed6b0c4752b6a8146e9d158d8b63ddd97ab9add2d"
+    },
+    {
+      "bytes": 5320424,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/evidence/rtc-calibrate.json",
+      "sha256": "f1957399e61ebad957709bfbe3f8a09aaa4a8043421a6baf238b9468da965d03"
+    },
+    {
+      "bytes": 0,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/evidence/rtc-calibrate.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 13984,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/evidence/stage-result.json",
+      "sha256": "36536baa7dd25a18318deddc8f0916844334654ff8d2696f5fe86c65c6a09b48"
+    },
+    {
+      "bytes": 98,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/input-method.json",
+      "sha256": "af27eff6551d95849c8158f8936a1f81855c0d1eae7088e110a716333004a7ec"
+    },
+    {
+      "bytes": 9562,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/input-recipe.json",
+      "sha256": "6f65ce66de2e897921b3dd911a1138ad7e1e0d2da2174158ad3da9760af1fc69"
+    },
+    {
+      "bytes": 617156,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/interaction-plan.json",
+      "sha256": "5ba2ecd761b753105349dd1f1644dbae56d0167dde8cf29e2e31bc199095e2c1"
+    },
+    {
+      "bytes": 56853,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/method-base/deployment.conf",
+      "sha256": "ada265d3589c3b19f000f5dc1e5093f73b2fb6eb0863ac68b82c662521a71d12"
+    },
+    {
+      "bytes": 103424,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/method-base/provenance.json",
+      "sha256": "fd4115e63428f7226b00996eef3163d2927c1d356aa58cd6d07cb93928383417"
+    },
+    {
+      "bytes": 1081319,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/method-result.json",
+      "sha256": "426d6a68016b2d6f1e3c38404df9e343981af4fdb4a5a6b2dc0e2965b25ab68e"
+    },
+    {
+      "bytes": 98,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/method.json",
+      "sha256": "af27eff6551d95849c8158f8936a1f81855c0d1eae7088e110a716333004a7ec"
+    },
+    {
+      "bytes": 32802,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/orchestration-sources/calibration_campaign.py",
+      "sha256": "d9174ea14a5e007db58ceed0c0e0ed79a89a2d8a96a4e2567411e50f17460cc2"
+    },
+    {
+      "bytes": 10917,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/orchestration-sources/calibration_method.py",
+      "sha256": "169c7adf0232e3e096f41d3ec4bd6726a579b1fcd06dd6a4a794220a08fd2465"
+    },
+    {
+      "bytes": 30110,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/orchestration-sources/export_calibration.py",
+      "sha256": "7b811325aa897fbbefb0f6b5e24a5020d0e2d726759605ac86c421e8bf190b0e"
+    },
+    {
+      "bytes": 55499,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/orchestration-sources/export_hil.py",
+      "sha256": "89c4c3488cd200133ad3d6f2558a1f2221093e70f0dd7238a4e22e367b1d8d58"
+    },
+    {
+      "bytes": 56444,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/package/deployment.conf",
+      "sha256": "2865b4a6a1a19ba15d29953832af4a8bc6142caab95246d7c689377f44244a88"
+    },
+    {
+      "bytes": 169007,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/package/provenance.json",
+      "sha256": "f85ec0be8c91967a9a79bbb4eacf1debe973fce008825d5e77fd7157473d1bb2"
+    },
+    {
+      "bytes": 309932,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/preparation.json",
+      "sha256": "9a2d7bc3d046e96fbd05aa6428e093b0bfcd1cb54561c7aa780c9bc59da07d1b"
+    },
+    {
+      "bytes": 55520,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/prepared-identity.json",
+      "sha256": "1175acd7426c1b8c7f6110cb95329bf43203274cf3d2009b33ff4c62c0f591bc"
+    },
+    {
+      "bytes": 6394,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/prepared-specification.json",
+      "sha256": "e8179bf4458de912d09ff043f2f9d811a5145f8aab9404ca2486655507d41f6b"
+    },
+    {
+      "bytes": 13717,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/recipe.json",
+      "sha256": "e942299ebb8edd3f239d1c89fc54bda906ce60811dad9b230f8209173bcdd085"
+    },
+    {
+      "bytes": 96,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2.log",
+      "sha256": "bce8bf9556c1f8ffe656132f57cdd6f78c6f1ff1d16ad8a22897ab78594b48d3"
+    },
+    {
+      "bytes": 62111,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/base-identity.json",
+      "sha256": "d7157f58b2ff18571cbaaebe9ec672246bde550fbf8956f6d4e8cb6f00c16647"
+    },
+    {
+      "bytes": 416608,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/candidate-response.f32le",
+      "sha256": "7e0b333d0891567b95b8493e7c4fc03f93da2a213520450585b40be908485f67"
+    },
+    {
+      "bytes": 365002,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/candidate-response.json",
+      "sha256": "31d4a91a6cfd2bfc758e3eceda986c020753d5f8c011fa2fc09d7620faa63be3"
+    },
+    {
+      "bytes": 2218,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/canonical-order.json",
+      "sha256": "551d1adf28737dface3ba890089b1af3f0180a335c7ea65e031f90ddfb8c8617"
+    },
+    {
+      "bytes": 617156,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/canonical-plan.json",
+      "sha256": "9263e9f051e64dc0206fb3eca4a9b4e49d770c5a54e30194e662ee49041dfea4"
+    },
+    {
+      "bytes": 4639,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/evidence/deployment.log",
+      "sha256": "a3765363b8d65ac860de43652827918843479688e0f668bec0cb742871ee43e8"
+    },
+    {
+      "bytes": 5321383,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/evidence/rtc-calibrate.json",
+      "sha256": "10c6db94e96fa5eec05b7986da81440893ce6c63394d55d77eff95597e5fc098"
+    },
+    {
+      "bytes": 0,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/evidence/rtc-calibrate.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 13983,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/evidence/stage-result.json",
+      "sha256": "01834ea62527c26be8c9c8b23e548db6b5f8be3ae716cd9e22cf15a08da3606e"
+    },
+    {
+      "bytes": 98,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/input-method.json",
+      "sha256": "1113963bd4327274e92de7b174f855a4ea97770906c399d38abba4d0c64fd37e"
+    },
+    {
+      "bytes": 9562,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/input-recipe.json",
+      "sha256": "0e4ab39cf7164ac81c4dc0e1d009183a148810ea8ceb4b99597d6a4bd303cb6b"
+    },
+    {
+      "bytes": 617156,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/interaction-plan.json",
+      "sha256": "4077308e4cc3e0fac051e63d916a6e1a0efe931db1cc5f07c4d89dca09deedad"
+    },
+    {
+      "bytes": 56853,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/method-base/deployment.conf",
+      "sha256": "4b7629d7d12ee7782fcf80f7bd67e885d5bbda323adaee1e82aa9fd3d2bcd68b"
+    },
+    {
+      "bytes": 103424,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/method-base/provenance.json",
+      "sha256": "729f53354a857dfd28acf34098b11d4fd61abd1e1addb257cbbb67b466a090f5"
+    },
+    {
+      "bytes": 1081318,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/method-result.json",
+      "sha256": "ef8921d71d11b9302c952acbc5992c815947f5921717e4b00a13a149dd13d6b3"
+    },
+    {
+      "bytes": 98,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/method.json",
+      "sha256": "1113963bd4327274e92de7b174f855a4ea97770906c399d38abba4d0c64fd37e"
+    },
+    {
+      "bytes": 32802,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/orchestration-sources/calibration_campaign.py",
+      "sha256": "d9174ea14a5e007db58ceed0c0e0ed79a89a2d8a96a4e2567411e50f17460cc2"
+    },
+    {
+      "bytes": 10917,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/orchestration-sources/calibration_method.py",
+      "sha256": "169c7adf0232e3e096f41d3ec4bd6726a579b1fcd06dd6a4a794220a08fd2465"
+    },
+    {
+      "bytes": 30110,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/orchestration-sources/export_calibration.py",
+      "sha256": "7b811325aa897fbbefb0f6b5e24a5020d0e2d726759605ac86c421e8bf190b0e"
+    },
+    {
+      "bytes": 55499,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/orchestration-sources/export_hil.py",
+      "sha256": "89c4c3488cd200133ad3d6f2558a1f2221093e70f0dd7238a4e22e367b1d8d58"
+    },
+    {
+      "bytes": 56444,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/package/deployment.conf",
+      "sha256": "1a16500f4e0e375a0485be1e8a5805a729574961d95aa9894115ddb556ffb010"
+    },
+    {
+      "bytes": 169007,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/package/provenance.json",
+      "sha256": "0935353f9713b35cdd8ac83f645d2c31e409b9e5f23ccf8958c08c724a191aec"
+    },
+    {
+      "bytes": 309932,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/preparation.json",
+      "sha256": "997c0863e2e1c2dcd6f8603bb80b3cd6bc0b151b0c69a557589c9d547ae9585f"
+    },
+    {
+      "bytes": 55520,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/prepared-identity.json",
+      "sha256": "0f9b62f1df371ba14d4db1b2c671b8b98674e190b97a7a4ed46521c69f57a625"
+    },
+    {
+      "bytes": 6394,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/prepared-specification.json",
+      "sha256": "decfd87446ebc4716f1cc775a27e6c2078d38c6ff80e5de5256314511c3fdbd8"
+    },
+    {
+      "bytes": 13717,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/recipe.json",
+      "sha256": "4cdedb73c9e4ac5a9a0ddb2be59f93a6ecf9894cb2c0abfdfc57c21102ec8874"
     },
     {
       "bytes": 2824,
@@ -1226,6 +1806,16 @@
       "sha256": "57afa4373d2b5256887434d396638cae72d499f1ca918a7fde77334476e70a36"
     },
     {
+      "bytes": 816,
+      "path": "~/.cache/rtc-calibration-quality-20261003/run-method-cohort.log",
+      "sha256": "bdac68d6030e7d83550f4dad4eb8decf8d22a2082126f30612e62151e055157a"
+    },
+    {
+      "bytes": 1979,
+      "path": "~/.cache/rtc-calibration-quality-20261003/run-method-cohort.py",
+      "sha256": "01b08377cab90cc3fe970b8192524a7973d892afd5f420c0b2f4bada5969a350"
+    },
+    {
       "bytes": 8519,
       "path": "~/.cache/rtc-calibration-quality-20261003/score-heldout.jl",
       "sha256": "a3606aadf34e9786e6d7fd04a6bab7a8b57be48500ecd7d868258d5cce949b30"
@@ -1234,6 +1824,11 @@
       "bytes": 1341,
       "path": "~/.cache/rtc-calibration-quality-20261003/test-composition.jl",
       "sha256": "97d9cdd6405a41bf5f66ae7ec3df437d26d96ce0c6be23fbb7d3c3d860a8a719"
+    },
+    {
+      "bytes": 6887,
+      "path": "~/.cache/rtc-calibration-quality-20261003/test-method-cohort-analysis.jl",
+      "sha256": "55d3762ed895ac586fb991c8b0b03f1d1a7f0e02d40b3b19da1464c245b3d82c"
     },
     {
       "bytes": 24003,
@@ -1486,6 +2081,135 @@
       "~/.cache/rtc-calibration-quality-20261003/method-cohort-inputs/zonal-2-method.json",
       "~/.cache/rtc-calibration-quality-20261003/method-cohort-inputs/zonal-2-recipe.json"
     ],
+    "method_cohort_hadamard-1_complete_case_and_package_binding": [
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/method.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/preparation.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/interaction-plan.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/canonical-plan.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/canonical-order.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/base-identity.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/prepared-identity.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/prepared-specification.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/input-method.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/input-recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/candidate-response.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/candidate-response.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/method-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/evidence/stage-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/evidence/rtc-calibrate.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/evidence/rtc-calibrate.stderr",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/evidence/deployment.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/method-base/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/method-base/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/package/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/package/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/orchestration-sources/calibration_method.py",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/orchestration-sources/export_hil.py",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/orchestration-sources/export_calibration.py",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1/orchestration-sources/calibration_campaign.py"
+    ],
+    "method_cohort_hadamard-2_complete_case_and_package_binding": [
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/method.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/preparation.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/interaction-plan.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/canonical-plan.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/canonical-order.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/base-identity.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/prepared-identity.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/prepared-specification.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/input-method.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/input-recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/candidate-response.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/candidate-response.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/method-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/evidence/stage-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/evidence/rtc-calibrate.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/evidence/rtc-calibrate.stderr",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/evidence/deployment.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/method-base/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/method-base/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/package/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/package/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/orchestration-sources/calibration_method.py",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/orchestration-sources/export_hil.py",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/orchestration-sources/export_calibration.py",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2/orchestration-sources/calibration_campaign.py"
+    ],
+    "method_cohort_shared_result_runner_analysis_and_validation": [
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/cohort-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/comparison.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-1.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/hadamard-2.log",
+      "~/.cache/rtc-calibration-quality-20261003/run-method-cohort.py",
+      "~/.cache/rtc-calibration-quality-20261003/run-method-cohort.log",
+      "~/.cache/rtc-calibration-quality-20261003/analyze-method-cohort.jl",
+      "~/.cache/rtc-calibration-quality-20261003/analyze-method-cohort.log",
+      "~/.cache/rtc-calibration-quality-20261003/test-method-cohort-analysis.jl",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort-analysis-validation.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort-test-initial.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort-test-second.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort-test-final.log"
+    ],
+    "method_cohort_zonal-1_complete_case_and_package_binding": [
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/method.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/preparation.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/interaction-plan.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/canonical-plan.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/canonical-order.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/base-identity.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/prepared-identity.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/prepared-specification.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/input-method.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/input-recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/candidate-response.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/candidate-response.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/method-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/evidence/stage-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/evidence/rtc-calibrate.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/evidence/rtc-calibrate.stderr",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/evidence/deployment.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/method-base/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/method-base/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/package/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/package/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/orchestration-sources/calibration_method.py",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/orchestration-sources/export_hil.py",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/orchestration-sources/export_calibration.py",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-1/orchestration-sources/calibration_campaign.py"
+    ],
+    "method_cohort_zonal-2_complete_case_and_package_binding": [
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/method.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/preparation.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/interaction-plan.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/canonical-plan.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/canonical-order.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/base-identity.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/prepared-identity.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/prepared-specification.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/input-method.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/input-recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/candidate-response.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/candidate-response.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/method-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/evidence/stage-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/evidence/rtc-calibrate.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/evidence/rtc-calibrate.stderr",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/evidence/deployment.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/method-base/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/method-base/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/package/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/package/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/orchestration-sources/calibration_method.py",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/orchestration-sources/export_hil.py",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/orchestration-sources/export_calibration.py",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/orchestration-sources/calibration_campaign.py"
+    ],
     "method_smoke_reverse_v2_complete_and_prior_prelaunch_failure": [
       "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/method-result.json",
       "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/candidate-response.json",
@@ -1537,7 +2261,7 @@
       "~/.cache/rtc-calibration-quality-20261003/verify-correction-array.jl"
     ]
   },
-  "inventory_time_utc": "2026-10-03T20:37:12Z",
+  "inventory_time_utc": "2026-10-03T20:54:32Z",
   "method": "SHA-256 over file bytes; no RTC/Julia process, score computation, or source-tree modification",
   "missing_or_absent": [
     {
@@ -1572,7 +2296,7 @@
     "cache": "/home/dgamroth/.cache/rtc-calibration-quality-20261003",
     "rtc": {
       "repository": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality",
-      "revision": "f8a12c7576702a5f024c5ad5e5e99e461670d1ed",
+      "revision": "2e0d26dc850210fe396b8d805f5747c95f93b6c8",
       "working_tree": "contains active source changes; listed paths hash exact current contents"
     }
   }
