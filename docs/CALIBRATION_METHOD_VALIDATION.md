@@ -243,10 +243,12 @@ spatial sine/cosine families. Their matrices, precision/order discrepancies,
 command energy, forward predictions and stage timings are recorded. Startup
 and cold estimation include compilation; no wall-rate qualification follows.
 
-The previously qualified 186-mode baseline inverse remains unchanged. A new
-method/reconstructor decision needs fresh frozen common validation and locked
-controller-response corpora, followed by correction checks at unchanged
-settings. Existing controller tests have already been examined descriptively.
-The 64-mode spatial candidate cannot serve as a complete 221-coordinate
-controller matrix without a separately declared representation policy.
-Copper, unchanged HEART and accelerator calibration remain unqualified.
+The subsequent [fresh frozen method selection](CALIBRATION_METHOD_SELECTION.md)
+compares ten declared inverses on new common controller responses. It selects a
+206-mode Hadamard-derived inverse, passes a separate selected-only locked test,
+and demonstrates correction through FGN and JFG at unchanged settings. The
+186-mode baseline and its qualified packages remain preserved; only explicitly
+staged comparison packages adopt the new inverse. The 64-mode spatial candidate
+cannot serve as a complete 221-coordinate controller matrix without a separately
+declared representation policy. Copper, unchanged HEART and accelerator
+operational calibration remain unqualified.

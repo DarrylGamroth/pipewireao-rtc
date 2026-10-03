@@ -239,6 +239,10 @@ receipt/lifecycle invariants and all finite forward scores. Hadamard settings
 showed lower repeat discrepancy and forward residuals than the declared zonal
 settings, while using 16× integrated command energy. Controller-modal reduced
 acquisition cost; spatial measured only a 64-mode span. See
-[method measurements](CALIBRATION_METHOD_VALIDATION.md). No new inverse was
-selected. Fresh common controller validation/locked test, replacement correction
-checks, Copper, unchanged HEART and accelerator qualification remain.
+[method measurements](CALIBRATION_METHOD_VALIDATION.md). The subsequent
+[fresh method selection](CALIBRATION_METHOD_SELECTION.md) freezes ten inverses,
+selects the 206-mode Hadamard candidate on new common validation responses, and
+passes its selected-only locked test and deployed FGN/JFG correction checks.
+Original baseline packages remain preserved; only staged comparison packages
+adopt the new inverse. Copper, unchanged HEART, accelerator calibration and
+wall-cadence qualification remain open.

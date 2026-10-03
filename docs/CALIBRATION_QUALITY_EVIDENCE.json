@@ -1,6 +1,11 @@
 {
   "files": [
     {
+      "bytes": 924,
+      "path": "/home/dgamroth/.cache/rtc-calibration-quality-20261003/directional-cohort-test-primary.log",
+      "sha256": "db2fa059dce5a130ca66893fa061a7b29a284347400e26f49d553058c0bbc007"
+    },
+    {
       "bytes": 1277,
       "path": "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/Manifest.toml",
       "sha256": "cf7ea8e3437650af81bcfc190e5fe6273723242e04d363dedbb3a3318f2be85f"
@@ -209,6 +214,46 @@
       "bytes": 85,
       "path": "~/.cache/rtc-calibration-quality-20261003/analyze-method-cohort.log",
       "sha256": "beb6abbfa2166effcb848a0c5caab6101f04d347704f0879430d102d854aafef"
+    },
+    {
+      "bytes": 4534,
+      "path": "~/.cache/rtc-calibration-quality-20261003/analyze-method-selection-fgn-correction.log",
+      "sha256": "9b46f6cc03e868c1c86ebfce1058dc6af643ba9329dc71900019d61520e486d5"
+    },
+    {
+      "bytes": 4534,
+      "path": "~/.cache/rtc-calibration-quality-20261003/analyze-method-selection-jfg-correction.log",
+      "sha256": "d6791ecea2a76582545a44f637e5bab3d2a304880d030daaecac2df15463d957"
+    },
+    {
+      "bytes": 33887,
+      "path": "~/.cache/rtc-calibration-quality-20261003/analyze-method-selection.jl",
+      "sha256": "5aaf18ecafb9228cdeffb34796f9575b2e0c8ed922a7618cf85584db68760122"
+    },
+    {
+      "bytes": 4694,
+      "path": "~/.cache/rtc-calibration-quality-20261003/check-method-selection-fgn-correction-conf.log",
+      "sha256": "0578d8b8be282a8058a5c883bbaa530d7f0e1f96b5199d06a08a81c0ccc9124d"
+    },
+    {
+      "bytes": 1517,
+      "path": "~/.cache/rtc-calibration-quality-20261003/check-method-selection-fgn-correction-file.log",
+      "sha256": "28be12ffff0e1c03890e6be73596438d576193a94bed18d7c13aa94a2858d204"
+    },
+    {
+      "bytes": 1958,
+      "path": "~/.cache/rtc-calibration-quality-20261003/check-method-selection-fgn-correction.log",
+      "sha256": "7d68f5194e7f25008e9aae55424c3872bbb17015c294ff29f75fcf5bb3fd278e"
+    },
+    {
+      "bytes": 6351,
+      "path": "~/.cache/rtc-calibration-quality-20261003/check-method-selection-jfg-correction-conf.log",
+      "sha256": "13562ac296af0eaf2c6763e47c6f2db37e6c93cecc268991eb9f5090187f62cc"
+    },
+    {
+      "bytes": 1330,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction-fgn-analysis-v2.log",
+      "sha256": "b07f99c1bd7f18d9152ebc266adaddc3f7d4969a21d0adedd92941daffce6c80"
     },
     {
       "bytes": 3415,
@@ -1581,6 +1626,11 @@
       "sha256": "53adac1c46dcdca974a36b2aa65afe37f75e93c16c5fce95a7e966c9aa9df894"
     },
     {
+      "bytes": 220,
+      "path": "~/.cache/rtc-calibration-quality-20261003/heldout-lockedtest.log",
+      "sha256": "458cb99e8d8b6349a42169b24160a9f0eb91951091fe50fe2181db8c8224aeea"
+    },
+    {
       "bytes": 85740,
       "path": "~/.cache/rtc-calibration-quality-20261003/heldout-lockedtest/directions.json",
       "sha256": "70800d04367688a3fcc2efc12566cf7693d3343a33a540eccfe8d3d5711d6f28"
@@ -1626,6 +1676,11 @@
       "sha256": "1b98b5369aefebd3e52ff69b5a050cfef743263f04c3d64dfd90f3e3c0672467"
     },
     {
+      "bytes": 218,
+      "path": "~/.cache/rtc-calibration-quality-20261003/heldout-validation.log",
+      "sha256": "f586d7e1b7c80fb3bbe3b721fa7cd6dba2c8b4eaeaeefecd2082ebbaa32a3c51"
+    },
+    {
       "bytes": 43101,
       "path": "~/.cache/rtc-calibration-quality-20261003/heldout-validation/directions.json",
       "sha256": "9e6a4f3da0d18898fe270d31d4f989a9719affccca2a03283ef326e3a2bba949"
@@ -1669,6 +1724,11 @@
       "bytes": 13994,
       "path": "~/.cache/rtc-calibration-quality-20261003/heldout-validation/recipe.json",
       "sha256": "47757f3075ff57f356354884cef90858a6d48e27bdaa8a6eb5cf1f1b2ec40e10"
+    },
+    {
+      "bytes": 100,
+      "path": "~/.cache/rtc-calibration-quality-20261003/locked-method-selection-analysis.log",
+      "sha256": "6b8c7b03b411e37a1083c53f82f2a30cca5c139208ad378e379eef4dde14d997"
     },
     {
       "bytes": 2064,
@@ -2316,6 +2376,1021 @@
       "sha256": "178b93672e1da2ce4af3070300ece894da5a5cdef7438acc3689a65c966c0eba"
     },
     {
+      "bytes": 2042,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis-map-fix-validation.json",
+      "sha256": "38689c52204c4db3ec9ada352bcc9455e66399e4c92828fd32afc61a26e1d16a"
+    },
+    {
+      "bytes": 2915,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis-validation.json",
+      "sha256": "0490504fee6887f5a8fc36fa9a1922b273a84b36fa193cc3469d13cb0f96c21e"
+    },
+    {
+      "bytes": 489736,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/actual-modal-basis.f64le",
+      "sha256": "b70712834e6acc649bce674682ca34aff62f518ffa7d7416431878ea6bbcdded"
+    },
+    {
+      "bytes": 332384,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/baseline-fixed-186.f32le",
+      "sha256": "987a9560ace009c1184b1930e20f78dcfa94edeefeba3023af7677060338b138"
+    },
+    {
+      "bytes": 833216,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/baseline-forward.f64le",
+      "sha256": "0c738fe544d55648c34fc2443424c62cd74fa2a65fec42874082dba9a3cacdcb"
+    },
+    {
+      "bytes": 332384,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/controller-modal-1.f32le",
+      "sha256": "7a59417bd0bd9ba04e4f4153aa54e6972a15f12d8640135fc42b2524137039bf"
+    },
+    {
+      "bytes": 332384,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/controller-modal-2.f32le",
+      "sha256": "4c46e32b5ef76d45e5a15d62fbb8a6d121d6daa51f584abed5146b4b1499295f"
+    },
+    {
+      "bytes": 332384,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/controller-modal-4.f32le",
+      "sha256": "84de7fe8507ff122efc87a17591eb39b7ec746bd8327a149376025fed6158f7a"
+    },
+    {
+      "bytes": 664768,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/controller-modal-forward.f64le",
+      "sha256": "410e647948156dbba0e3977f1bd0d1879343d9273593432eb8726cecc0a6fcbe"
+    },
+    {
+      "bytes": 332384,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/hadamard-1.f32le",
+      "sha256": "bb9aa68345a3402445b65a350e796b212e048453bf917245cee7f36efa015813"
+    },
+    {
+      "bytes": 332384,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/hadamard-2.f32le",
+      "sha256": "7131f848bd4d3351bfac14550832aaa48151dd58ac1d76558d2e9ffe5a1827b0"
+    },
+    {
+      "bytes": 332384,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/hadamard-4.f32le",
+      "sha256": "1abb16e9cb95a9d0cb0e7ab602bde79885136446ef7ad9b01d8713b5b29fee84"
+    },
+    {
+      "bytes": 833216,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/hadamard-forward.f64le",
+      "sha256": "4c9d472f10d992361ff0fc44976ddd496e24fd9189af9c3697924d73b3eb2d5a"
+    },
+    {
+      "bytes": 8855,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/locked-scores.json",
+      "sha256": "f6aacf9a17d6428768f771e0f152cb1be73048a67b654cd96ea20fd34bdd2017"
+    },
+    {
+      "bytes": 390728,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/modal-coordinate-map.f64le",
+      "sha256": "3cbb748ef169d8979210f8dd527352ff7ef3f08488b0aeca8d1f9e802d806d09"
+    },
+    {
+      "bytes": 489736,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/physical-command-map.f64le",
+      "sha256": "17e026b6e8e1d34d3d96fc16f598e6c0c691e682ae1c9aac2cff759f5f9fb202"
+    },
+    {
+      "bytes": 558866,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/preparation.json",
+      "sha256": "8249e964ec5e1be5844294316ac19b83e67204e90bb14664c67dca06ddcf0c08"
+    },
+    {
+      "bytes": 12353,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/selection.json",
+      "sha256": "234154a17c93f390fa9ea09c8e6138fced40cef005150a17c2e5f063c571400a"
+    },
+    {
+      "bytes": 21989,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/validation-scores.json",
+      "sha256": "2c54da5d061593e6ef277954470b8b8562194ac94c8f8f3d979619577f5cef9b"
+    },
+    {
+      "bytes": 332384,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/zonal-1.f32le",
+      "sha256": "0247551bbac30c915c086af903b29641b787be1c110a31deb02979e2d579cc7d"
+    },
+    {
+      "bytes": 332384,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/zonal-2.f32le",
+      "sha256": "ab63e4ab7e55e6c0dd03eae74431a0d56a32732fb78ed5ec90e3e0c4c46b637b"
+    },
+    {
+      "bytes": 332384,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/zonal-4.f32le",
+      "sha256": "84de7fe8507ff122efc87a17591eb39b7ec746bd8327a149376025fed6158f7a"
+    },
+    {
+      "bytes": 833216,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/zonal-forward.f64le",
+      "sha256": "c893cbb4fa7dc4fcb76243a1e6d0c3a45160f216f6ccd2ac5719cfb1817f3045"
+    },
+    {
+      "bytes": 7065,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-context.json",
+      "sha256": "217a8865aaaaa005d54d9456076a92800fe39f4cd10098147d60f3559ffb4c1b"
+    },
+    {
+      "bytes": 1498,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/candidate-acceptance.json",
+      "sha256": "e0633383b1186ac4027464c06b1db4bec711469eccbb952378218231e49b3ca4"
+    },
+    {
+      "bytes": 244868,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/calibration/active-to-full-vdm.f32le",
+      "sha256": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81"
+    },
+    {
+      "bytes": 495616,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/calibration/background.f32le",
+      "sha256": "914044dfcf902a3361a8da6921f91e3086f7880cb430293d2bc7743c6df428ad"
+    },
+    {
+      "bytes": 195364,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/calibration/controller-to-vdm.f32le",
+      "sha256": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772"
+    },
+    {
+      "bytes": 244868,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/calibration/full-to-active-vdm.f32le",
+      "sha256": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa"
+    },
+    {
+      "bytes": 306916,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/calibration/pdm-to-vdm.f32le",
+      "sha256": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+    },
+    {
+      "bytes": 10764,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/calibration/prepared-profile.toml",
+      "sha256": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4"
+    },
+    {
+      "bytes": 332384,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/calibration/reconstructor.f32le",
+      "sha256": "bb9aa68345a3402445b65a350e796b212e048453bf917245cee7f36efa015813"
+    },
+    {
+      "bytes": 1504,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/calibration/reference-slopes.f32le",
+      "sha256": "4786782913a4699359fd095dd1952152669b03ff8132ddcd739852c7f17cf4ba"
+    },
+    {
+      "bytes": 3872,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/calibration/shack-hartmann-coordinates.f32le",
+      "sha256": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315"
+    },
+    {
+      "bytes": 1504,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/calibration/thresholds.f32le",
+      "sha256": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752"
+    },
+    {
+      "bytes": 195364,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/calibration/vdm-to-controller.f32le",
+      "sha256": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772"
+    },
+    {
+      "bytes": 306916,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/calibration/vdm-to-pdm.f32le",
+      "sha256": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+    },
+    {
+      "bytes": 3359,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/deployment.conf",
+      "sha256": "969f1a5580f88f463b1e9cc668d4c1de9bb00d2b56f161665c809056a18035c0"
+    },
+    {
+      "bytes": 11510,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/graphs/graph.conf.in",
+      "sha256": "1e21ba30dcab3b75cc939c9714c69d364c608f1b740344c7ca544cb846e63417"
+    },
+    {
+      "bytes": 20288,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/provenance.json",
+      "sha256": "ab585384db15c38e0d39b05ca7b1cbf5afba58e3ab53fe702f0d4291d7f7f69f"
+    },
+    {
+      "bytes": 290337,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-correction-analysis.json",
+      "sha256": "50b3a84f4fa9407a3dec8b301854f3298a2a7346c540c58e8536de70a50a85f7"
+    },
+    {
+      "bytes": 63438848,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-correction-analysis.json.replayed.frames.u16le",
+      "sha256": "0e9a41f003dfd0a97a54b318374210bccfd31dcab9b987c848e1df97e2654338"
+    },
+    {
+      "bytes": 283648,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-evidence/batch-1/simulator-result.commands.f32le",
+      "sha256": "6aafe58a428f1dc79f84d151ce04e5c147cfece335e312b1442f0ee269ca89b5"
+    },
+    {
+      "bytes": 63438848,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-evidence/batch-1/simulator-result.frames.u16le",
+      "sha256": "0e9a41f003dfd0a97a54b318374210bccfd31dcab9b987c848e1df97e2654338"
+    },
+    {
+      "bytes": 150854,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-evidence/batch-1/simulator-result.json",
+      "sha256": "74ad7a9c1ed6adc04e43d6c344ebd5e77e11f91ee0628b45496969b023883dd6"
+    },
+    {
+      "bytes": 283648,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-evidence/batch-2/simulator-result.commands.f32le",
+      "sha256": "6aafe58a428f1dc79f84d151ce04e5c147cfece335e312b1442f0ee269ca89b5"
+    },
+    {
+      "bytes": 63438848,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-evidence/batch-2/simulator-result.frames.u16le",
+      "sha256": "0e9a41f003dfd0a97a54b318374210bccfd31dcab9b987c848e1df97e2654338"
+    },
+    {
+      "bytes": 150851,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-evidence/batch-2/simulator-result.json",
+      "sha256": "482fbb0281ed22da0b7b06710059b87d8c6d57af303ac24a50a468dc29b54838"
+    },
+    {
+      "bytes": 344579,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-evidence/result.json",
+      "sha256": "fdb7ac99d2bb193495c268a93718645b6dc082994dc49efac958239ba79f85bc"
+    },
+    {
+      "bytes": 188,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/calibration/active-subapertures.u8",
+      "sha256": "04090c0ed1a3808cd3b8ad03503008eb4915bab3c5eedbc856b14cc8db543697"
+    },
+    {
+      "bytes": 244868,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/calibration/active-to-full-vdm.f32le",
+      "sha256": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81"
+    },
+    {
+      "bytes": 495616,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/calibration/background.f32le",
+      "sha256": "914044dfcf902a3361a8da6921f91e3086f7880cb430293d2bc7743c6df428ad"
+    },
+    {
+      "bytes": 195364,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/calibration/controller-to-vdm.f32le",
+      "sha256": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772"
+    },
+    {
+      "bytes": 244868,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/calibration/full-to-active-vdm.f32le",
+      "sha256": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa"
+    },
+    {
+      "bytes": 306916,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/calibration/pdm-to-vdm.f32le",
+      "sha256": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+    },
+    {
+      "bytes": 10764,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/calibration/prepared-profile.toml",
+      "sha256": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4"
+    },
+    {
+      "bytes": 332384,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/calibration/reconstructor.f32le",
+      "sha256": "bb9aa68345a3402445b65a350e796b212e048453bf917245cee7f36efa015813"
+    },
+    {
+      "bytes": 1504,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/calibration/reference-slopes.f32le",
+      "sha256": "4786782913a4699359fd095dd1952152669b03ff8132ddcd739852c7f17cf4ba"
+    },
+    {
+      "bytes": 3872,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/calibration/shack-hartmann-coordinates.f32le",
+      "sha256": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315"
+    },
+    {
+      "bytes": 1504,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/calibration/thresholds.f32le",
+      "sha256": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752"
+    },
+    {
+      "bytes": 195364,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/calibration/vdm-to-controller.f32le",
+      "sha256": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772"
+    },
+    {
+      "bytes": 306916,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/calibration/vdm-to-pdm.f32le",
+      "sha256": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+    },
+    {
+      "bytes": 56904,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/deployment.conf",
+      "sha256": "0796f92c56bbdf4a3ee147d73d481202a845dd3af069b04f8c64d9939d1dbddf"
+    },
+    {
+      "bytes": 10392,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/graphs/graph.conf.in",
+      "sha256": "ff09ca5d22a51a5276cc41d61adb7f3d09e0a84cde8481068b9e1a81e1734cdd"
+    },
+    {
+      "bytes": 17926,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/hil/Manifest.toml",
+      "sha256": "366fedeb3bcb96d3da4ecb2ae66b2d79ec9cb3ae24c5837d8e29bf9e3d1bd239"
+    },
+    {
+      "bytes": 1140,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/hil/Project.toml",
+      "sha256": "a0a12559d18b48162e7a9ffa27a5358f4126aa115117b6d061b7c5248e2adf33"
+    },
+    {
+      "bytes": 1035,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/hil/packages/AdaptiveOpticsCalibration/Project.toml",
+      "sha256": "5b2278a95a0396df80726d6a1e0556714763bca339400df6194e368e5c1e9dff"
+    },
+    {
+      "bytes": 2528,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/hil/packages/AdaptiveOpticsSim/Project.toml",
+      "sha256": "068649bf27003791415e00a41ab8ae218510bce8f15a8c5ace6384927a4fb8a3"
+    },
+    {
+      "bytes": 657,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/hil/packages/AdaptiveOpticsSimPipeWireHIL/Project.toml",
+      "sha256": "7a09b7b7d3a9670aa98f3752e49f675024b8eab980947fb45c5337054fec9334"
+    },
+    {
+      "bytes": 871,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/hil/packages/FilterGraphAlgorithms/Project.toml",
+      "sha256": "bcfab0921b194910475f35951ab2ef39f390dd58a0de28ca93648b2a8e3db355"
+    },
+    {
+      "bytes": 480,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/hil/packages/PipeWireAO/Project.toml",
+      "sha256": "95dbf0256422074b82e8be1232bda1f238af40dac1f67fcf6fb6d66b99d88c2a"
+    },
+    {
+      "bytes": 809,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/hil/packages/REVOLTClassicSim/Project.toml",
+      "sha256": "2c0db18d666829d088f293b0adc68af06547b98a85896009cb7f1b905250c365"
+    },
+    {
+      "bytes": 51184,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/provenance.json",
+      "sha256": "a3092125d76bcc2ba094eb687cbe6013d69d2c7da769661f49ab34d4bb90f7be"
+    },
+    {
+      "bytes": 188,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/active-subapertures.u8",
+      "sha256": "04090c0ed1a3808cd3b8ad03503008eb4915bab3c5eedbc856b14cc8db543697"
+    },
+    {
+      "bytes": 244868,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/active-to-full-vdm.f32le",
+      "sha256": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81"
+    },
+    {
+      "bytes": 495616,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/background.f32le",
+      "sha256": "914044dfcf902a3361a8da6921f91e3086f7880cb430293d2bc7743c6df428ad"
+    },
+    {
+      "bytes": 195364,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/controller-to-vdm.f32le",
+      "sha256": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772"
+    },
+    {
+      "bytes": 244868,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/full-to-active-vdm.f32le",
+      "sha256": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa"
+    },
+    {
+      "bytes": 884,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/hidden-to-shape.f32le",
+      "sha256": "6ca83adefc47fc9ab71637c150b95b33083e61e507dff2ee5f2692aa27e1453e"
+    },
+    {
+      "bytes": 306916,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/pdm-to-vdm.f32le",
+      "sha256": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+    },
+    {
+      "bytes": 10764,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/prepared-profile.toml",
+      "sha256": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4"
+    },
+    {
+      "bytes": 332384,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/reconstructor.f32le",
+      "sha256": "bb9aa68345a3402445b65a350e796b212e048453bf917245cee7f36efa015813"
+    },
+    {
+      "bytes": 1504,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/reference-slopes.f32le",
+      "sha256": "4786782913a4699359fd095dd1952152669b03ff8132ddcd739852c7f17cf4ba"
+    },
+    {
+      "bytes": 3872,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/shack-hartmann-coordinates.f32le",
+      "sha256": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315"
+    },
+    {
+      "bytes": 884,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/shape-to-hidden.f32le",
+      "sha256": "6ca83adefc47fc9ab71637c150b95b33083e61e507dff2ee5f2692aa27e1453e"
+    },
+    {
+      "bytes": 1504,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/subaperture-origins.u32le",
+      "sha256": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279"
+    },
+    {
+      "bytes": 1504,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/thresholds.f32le",
+      "sha256": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752"
+    },
+    {
+      "bytes": 195364,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/vdm-to-controller.f32le",
+      "sha256": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772"
+    },
+    {
+      "bytes": 306916,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/vdm-to-pdm.f32le",
+      "sha256": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+    },
+    {
+      "bytes": 26394,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/deployment.conf",
+      "sha256": "122601aec1c3bb521106ae40bedd57089f1b0e5d40251036a756f6340bd9a207"
+    },
+    {
+      "bytes": 5798,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/graphs/graph.conf.in",
+      "sha256": "2b118652c52dd8d6b8052c20c8a2cbb7ed90d639c3b1d8d55f097d05d7b996b2"
+    },
+    {
+      "bytes": 13854,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/jfg/deployment/Manifest.toml",
+      "sha256": "ba3b172da279e41f1888f7d08e1ccd166393b2b3b255e4b2decc2f54f8e4cf94"
+    },
+    {
+      "bytes": 647,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/jfg/deployment/Project.toml",
+      "sha256": "266ff93855c665105128b1acf69518abf1934a9ef568907d480a771b78b10110"
+    },
+    {
+      "bytes": 3102,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/jfg/julia/FilterGraphAlgorithms/Manifest.toml",
+      "sha256": "ebca7f6b7a23fb373dd1a71689b2f57f10664ea70095ab7217fc7a0beec40918"
+    },
+    {
+      "bytes": 871,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/jfg/julia/FilterGraphAlgorithms/Project.toml",
+      "sha256": "bcfab0921b194910475f35951ab2ef39f390dd58a0de28ca93648b2a8e3db355"
+    },
+    {
+      "bytes": 4698,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/jfg/julia/FilterGraphPipeWire/Manifest.toml",
+      "sha256": "ded56470dd257dae7b273f282e2abf367f15f47290cd906b5c63075ce82032c5"
+    },
+    {
+      "bytes": 594,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/jfg/julia/FilterGraphPipeWire/Project.toml",
+      "sha256": "8f5e0c5dacd37200aba5cbc83f53018d5b2144eb2469c1f7c963a9f2fbc694ec"
+    },
+    {
+      "bytes": 3630,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/jfg/julia/JuliaFilterGraph/Manifest.toml",
+      "sha256": "c1efee68ac3892f1b73eab4488025a183996cadd309502dc3cad539d3e0e058d"
+    },
+    {
+      "bytes": 808,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/jfg/julia/JuliaFilterGraph/Project.toml",
+      "sha256": "34c4ff98f3ce87f4baab613713093b4493f1a3c52fc43a6710ffd98d3fc93c7b"
+    },
+    {
+      "bytes": 20255,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/provenance.json",
+      "sha256": "38b387a6a23cbbf4a38c70276974cf4d3a4761f584df6742a51bc603b0de749b"
+    },
+    {
+      "bytes": 290555,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-correction-analysis.json",
+      "sha256": "ad320245fbf6a2c0a740e56edf7ce0be56ca6562c756f39b5f804afe35a024a2"
+    },
+    {
+      "bytes": 63438848,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-correction-analysis.json.replayed.frames.u16le",
+      "sha256": "3a098a2d7a7a93b89bf008594e403514bbdec9b40311fe0c145e0a56c554e83f"
+    },
+    {
+      "bytes": 283648,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-evidence/batch-1/simulator-result.commands.f32le",
+      "sha256": "49ee9ae441819b4e17f6c8e0fddabbf402336722e5b113bda0f1c92a4a5717e2"
+    },
+    {
+      "bytes": 63438848,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-evidence/batch-1/simulator-result.frames.u16le",
+      "sha256": "3764cbc43f06d00da2a03494c023692ec0adca375c53762bdda52d5115d2c385"
+    },
+    {
+      "bytes": 150853,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-evidence/batch-1/simulator-result.json",
+      "sha256": "304cff93f01d2de3bdac9c88a3d25cb2c0eee51639b6332d843742ba5a8f2829"
+    },
+    {
+      "bytes": 283648,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-evidence/batch-2/simulator-result.commands.f32le",
+      "sha256": "49ee9ae441819b4e17f6c8e0fddabbf402336722e5b113bda0f1c92a4a5717e2"
+    },
+    {
+      "bytes": 63438848,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-evidence/batch-2/simulator-result.frames.u16le",
+      "sha256": "3764cbc43f06d00da2a03494c023692ec0adca375c53762bdda52d5115d2c385"
+    },
+    {
+      "bytes": 150851,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-evidence/batch-2/simulator-result.json",
+      "sha256": "9ee217b635885d4a3dc8f290a38a4e62f985d67d5640fd552cce5499bb6d3eaa"
+    },
+    {
+      "bytes": 346660,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-evidence/result.json",
+      "sha256": "58fe87a7e48d16b4c029e3636803ca6085b2a3085ee1b7b8550f37611d9ec389"
+    },
+    {
+      "bytes": 188,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/active-subapertures.u8",
+      "sha256": "04090c0ed1a3808cd3b8ad03503008eb4915bab3c5eedbc856b14cc8db543697"
+    },
+    {
+      "bytes": 244868,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/active-to-full-vdm.f32le",
+      "sha256": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81"
+    },
+    {
+      "bytes": 495616,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/background.f32le",
+      "sha256": "914044dfcf902a3361a8da6921f91e3086f7880cb430293d2bc7743c6df428ad"
+    },
+    {
+      "bytes": 195364,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/controller-to-vdm.f32le",
+      "sha256": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772"
+    },
+    {
+      "bytes": 244868,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/full-to-active-vdm.f32le",
+      "sha256": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa"
+    },
+    {
+      "bytes": 884,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/hidden-to-shape.f32le",
+      "sha256": "6ca83adefc47fc9ab71637c150b95b33083e61e507dff2ee5f2692aa27e1453e"
+    },
+    {
+      "bytes": 306916,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/pdm-to-vdm.f32le",
+      "sha256": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+    },
+    {
+      "bytes": 10764,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/prepared-profile.toml",
+      "sha256": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4"
+    },
+    {
+      "bytes": 332384,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/reconstructor.f32le",
+      "sha256": "bb9aa68345a3402445b65a350e796b212e048453bf917245cee7f36efa015813"
+    },
+    {
+      "bytes": 1504,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/reference-slopes.f32le",
+      "sha256": "4786782913a4699359fd095dd1952152669b03ff8132ddcd739852c7f17cf4ba"
+    },
+    {
+      "bytes": 3872,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/shack-hartmann-coordinates.f32le",
+      "sha256": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315"
+    },
+    {
+      "bytes": 884,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/shape-to-hidden.f32le",
+      "sha256": "6ca83adefc47fc9ab71637c150b95b33083e61e507dff2ee5f2692aa27e1453e"
+    },
+    {
+      "bytes": 1504,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/subaperture-origins.u32le",
+      "sha256": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279"
+    },
+    {
+      "bytes": 1504,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/thresholds.f32le",
+      "sha256": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752"
+    },
+    {
+      "bytes": 195364,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/vdm-to-controller.f32le",
+      "sha256": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772"
+    },
+    {
+      "bytes": 306916,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/vdm-to-pdm.f32le",
+      "sha256": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+    },
+    {
+      "bytes": 79678,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/deployment.conf",
+      "sha256": "e11cea107048ddbee142d4a0497fc331725e0f6386960e2e74008391e403ca76"
+    },
+    {
+      "bytes": 6228,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/graphs/graph.conf.in",
+      "sha256": "20d145aea23bc00d19099c750a8acc668963736b59f87afe99c7823097b75f31"
+    },
+    {
+      "bytes": 17926,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/hil/Manifest.toml",
+      "sha256": "366fedeb3bcb96d3da4ecb2ae66b2d79ec9cb3ae24c5837d8e29bf9e3d1bd239"
+    },
+    {
+      "bytes": 1140,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/hil/Project.toml",
+      "sha256": "a0a12559d18b48162e7a9ffa27a5358f4126aa115117b6d061b7c5248e2adf33"
+    },
+    {
+      "bytes": 1035,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/hil/packages/AdaptiveOpticsCalibration/Project.toml",
+      "sha256": "5b2278a95a0396df80726d6a1e0556714763bca339400df6194e368e5c1e9dff"
+    },
+    {
+      "bytes": 2528,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/hil/packages/AdaptiveOpticsSim/Project.toml",
+      "sha256": "068649bf27003791415e00a41ab8ae218510bce8f15a8c5ace6384927a4fb8a3"
+    },
+    {
+      "bytes": 657,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/hil/packages/AdaptiveOpticsSimPipeWireHIL/Project.toml",
+      "sha256": "7a09b7b7d3a9670aa98f3752e49f675024b8eab980947fb45c5337054fec9334"
+    },
+    {
+      "bytes": 871,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/hil/packages/FilterGraphAlgorithms/Project.toml",
+      "sha256": "bcfab0921b194910475f35951ab2ef39f390dd58a0de28ca93648b2a8e3db355"
+    },
+    {
+      "bytes": 480,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/hil/packages/PipeWireAO/Project.toml",
+      "sha256": "95dbf0256422074b82e8be1232bda1f238af40dac1f67fcf6fb6d66b99d88c2a"
+    },
+    {
+      "bytes": 809,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/hil/packages/REVOLTClassicSim/Project.toml",
+      "sha256": "2c0db18d666829d088f293b0adc68af06547b98a85896009cb7f1b905250c365"
+    },
+    {
+      "bytes": 13834,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/jfg/deployment/Manifest.toml",
+      "sha256": "81881d4c43f15c8ee69e00f31fec48a3391abf13b28a46e3b3cf2f873830a306"
+    },
+    {
+      "bytes": 701,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/jfg/deployment/Project.toml",
+      "sha256": "6ed946d4d3819af3a330a4b60b292903c51e017423d91292ef39c13d15727913"
+    },
+    {
+      "bytes": 3102,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/jfg/julia/FilterGraphAlgorithms/Manifest.toml",
+      "sha256": "ebca7f6b7a23fb373dd1a71689b2f57f10664ea70095ab7217fc7a0beec40918"
+    },
+    {
+      "bytes": 871,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/jfg/julia/FilterGraphAlgorithms/Project.toml",
+      "sha256": "bcfab0921b194910475f35951ab2ef39f390dd58a0de28ca93648b2a8e3db355"
+    },
+    {
+      "bytes": 4698,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/jfg/julia/FilterGraphPipeWire/Manifest.toml",
+      "sha256": "ded56470dd257dae7b273f282e2abf367f15f47290cd906b5c63075ce82032c5"
+    },
+    {
+      "bytes": 594,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/jfg/julia/FilterGraphPipeWire/Project.toml",
+      "sha256": "8f5e0c5dacd37200aba5cbc83f53018d5b2144eb2469c1f7c963a9f2fbc694ec"
+    },
+    {
+      "bytes": 3630,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/jfg/julia/JuliaFilterGraph/Manifest.toml",
+      "sha256": "c1efee68ac3892f1b73eab4488025a183996cadd309502dc3cad539d3e0e058d"
+    },
+    {
+      "bytes": 808,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/jfg/julia/JuliaFilterGraph/Project.toml",
+      "sha256": "34c4ff98f3ce87f4baab613713093b4493f1a3c52fc43a6710ffd98d3fc93c7b"
+    },
+    {
+      "bytes": 51947,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/provenance.json",
+      "sha256": "3164f8bf58f8d6351334acdf62e9173102cff70127f1820aac48ccc16b3b7a6b"
+    },
+    {
+      "bytes": 188,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/active-subapertures.u8",
+      "sha256": "04090c0ed1a3808cd3b8ad03503008eb4915bab3c5eedbc856b14cc8db543697"
+    },
+    {
+      "bytes": 244868,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/active-to-full-vdm.f32le",
+      "sha256": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81"
+    },
+    {
+      "bytes": 495616,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/background.f32le",
+      "sha256": "914044dfcf902a3361a8da6921f91e3086f7880cb430293d2bc7743c6df428ad"
+    },
+    {
+      "bytes": 195364,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/controller-to-vdm.f32le",
+      "sha256": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772"
+    },
+    {
+      "bytes": 244868,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/full-to-active-vdm.f32le",
+      "sha256": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa"
+    },
+    {
+      "bytes": 884,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/hidden-to-shape.f32le",
+      "sha256": "6ca83adefc47fc9ab71637c150b95b33083e61e507dff2ee5f2692aa27e1453e"
+    },
+    {
+      "bytes": 306916,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/pdm-to-vdm.f32le",
+      "sha256": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+    },
+    {
+      "bytes": 10764,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/prepared-profile.toml",
+      "sha256": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4"
+    },
+    {
+      "bytes": 332384,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/reconstructor.f32le",
+      "sha256": "bb9aa68345a3402445b65a350e796b212e048453bf917245cee7f36efa015813"
+    },
+    {
+      "bytes": 1504,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/reference-slopes.f32le",
+      "sha256": "4786782913a4699359fd095dd1952152669b03ff8132ddcd739852c7f17cf4ba"
+    },
+    {
+      "bytes": 3872,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/shack-hartmann-coordinates.f32le",
+      "sha256": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315"
+    },
+    {
+      "bytes": 884,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/shape-to-hidden.f32le",
+      "sha256": "6ca83adefc47fc9ab71637c150b95b33083e61e507dff2ee5f2692aa27e1453e"
+    },
+    {
+      "bytes": 495616,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/simulated-optical-flat.f32le",
+      "sha256": "be4c6b4ecc9203e8d7511ba3dc4a4486927937773f6a2bb41f40898dae798803"
+    },
+    {
+      "bytes": 1504,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/subaperture-origins.u32le",
+      "sha256": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279"
+    },
+    {
+      "bytes": 1504,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/thresholds.f32le",
+      "sha256": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752"
+    },
+    {
+      "bytes": 195364,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/vdm-to-controller.f32le",
+      "sha256": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772"
+    },
+    {
+      "bytes": 306916,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/vdm-to-pdm.f32le",
+      "sha256": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+    },
+    {
+      "bytes": 185609,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/shared-adc-array/array-comparison.json",
+      "sha256": "4b0a3090e2e3d41bcaec2e228ca6ec41b953f9326cc54ae6d55a22feb759ac27"
+    },
+    {
+      "bytes": 152355,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/shared-adc-array/array-comparison.toml",
+      "sha256": "b1c22f82029f4c574a4a9c3239ef745e9de4cf79204743f593615b8e3ab26813"
+    },
+    {
+      "bytes": 6298,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/shared-adc-array/diagnostic-graph.conf",
+      "sha256": "e170ad4e3bf4a97d64a2a33bf152695325ba5acb4b60de7a21d90df70e53a0e2"
+    },
+    {
+      "bytes": 12713,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/shared-adc-array/input-metadata.toml",
+      "sha256": "9fd80aba832b92da1af77b20330431b965bb2efb4b9acfde314e60ff998fb2a8"
+    },
+    {
+      "bytes": 283648,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/shared-adc-array/predicted.commands.f32le",
+      "sha256": "e59d62c1e21023d966ede24933e1c8fd64e961bda91af5d1460a6caafd635819"
+    },
+    {
+      "bytes": 762,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-correction/candidate-acceptance.json",
+      "sha256": "a91d14a2650c6cf6777864e317dcf66e7f3af8d34f114558c21da0bc080817fc"
+    },
+    {
+      "bytes": 4878,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-final-policy.json",
+      "sha256": "e47642d30ff2210dbec424852783526ffc3b93d0e3fb482c48f4b9f6ba8667e5"
+    },
+    {
+      "bytes": 611,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-locked-launch.json",
+      "sha256": "e26e9e1977f29903cebf15809d5f4b35aabaff75a6b286193d7001e4bdc475ec"
+    },
+    {
+      "bytes": 56853,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/base/deployment.conf",
+      "sha256": "3d3b595c1f1f4a3c6f0bf7cf69990d472e82f44b0cdab6412bbb5d0cfc9e0adc"
+    },
+    {
+      "bytes": 103701,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/base/provenance.json",
+      "sha256": "5285fa69f7152c36856667fccc004f15afcc1e0d8ec62b769aa46b1ffea5a439"
+    },
+    {
+      "bytes": 86958,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/directions.json",
+      "sha256": "72ab8cea9b88091a661cd2f3a20ac5922011efa03c4bac5b04f4b1df6794e6ac"
+    },
+    {
+      "bytes": 4652,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/evidence/deployment.log",
+      "sha256": "90fd4245b89cdc9bb0cfa26d826671eb95bbf282f82c5cd89e7d1695aa0c5422"
+    },
+    {
+      "bytes": 1351882,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/evidence/rtc-calibrate.json",
+      "sha256": "cf743cbb6fd62c02bf2f42a13b6ed2ea08e668cab2cc36ce6391b868281b32c9"
+    },
+    {
+      "bytes": 0,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/evidence/rtc-calibrate.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 14023,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/evidence/stage-result.json",
+      "sha256": "d96329fddf49e59cef9690218575ab88528a5d83bee18fcf83f4e272ede8b1bf"
+    },
+    {
+      "bytes": 201461,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/interaction-plan.json",
+      "sha256": "73ab6caa5575cd8cfed73574673c667623fba7f29d6d6f5361c9cf36c8822317"
+    },
+    {
+      "bytes": 56444,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/package/deployment.conf",
+      "sha256": "e0f4514233ca2af234b10b8f8bbab664395a43eb76634f0acbb934f430a7742d"
+    },
+    {
+      "bytes": 169284,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/package/provenance.json",
+      "sha256": "7ce755f43c52b5d8cd1a866db88b24a1bd96ff8acedd68ff7140988a2b12a583"
+    },
+    {
+      "bytes": 1051,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/policy.json",
+      "sha256": "71b8f04c771111d80104906b42ed405ee759f836d2cc7c2f355b9f258e49bbf7"
+    },
+    {
+      "bytes": 5020,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/probe-labels.json",
+      "sha256": "c47b76a066f1fa0da37ac43b3e3c8a0baf22bc25c9bf8622a1587f0fed5c2308"
+    },
+    {
+      "bytes": 13994,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/recipe.json",
+      "sha256": "4e1b992b9e32b275a4908ae03ec31f48774a44ca4ec0a300bdea56106806d6a9"
+    },
+    {
+      "bytes": 1557,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-preparation-policy.json",
+      "sha256": "9f6f80d01f42f47874d398f8d5dfdf2a53c4c4963bd86e8c00170eb19f396e64"
+    },
+    {
+      "bytes": 766,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-spectral-screen.json",
+      "sha256": "c12455c71f298a7a91f159e5631fb4720fd43147eaa2b79837df65733e3c56da"
+    },
+    {
+      "bytes": 1438,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-test-expanded.log",
+      "sha256": "b937c8bf1c236498dafe7d3a8083bdec4967a045d6cf137dbb87a9a428456c8a"
+    },
+    {
+      "bytes": 1606,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-test-final.log",
+      "sha256": "f16b301f2461b095573469260a5339623b88deea299bb09f419e25f90e04ceef"
+    },
+    {
+      "bytes": 1096,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-test-initial.log",
+      "sha256": "16c84cf72bd3624a830ee3d0ad5bc7a547e9df53b31ffc986dbb7883b3b6a4e5"
+    },
+    {
+      "bytes": 1788,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-test-map-fix.log",
+      "sha256": "66c99ef6ad660c11cbe26aef26c13516c83f4e10e84b6f21c3c1723b85afea71"
+    },
+    {
+      "bytes": 1788,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-test-primary-map-fix.log",
+      "sha256": "88c96aeeb2a2191b96f3b4bb7b49ae8cdf2aa088d83bda59365fb0b5dc07a0d7"
+    },
+    {
+      "bytes": 1606,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-test-primary.log",
+      "sha256": "18d98e5c584faaecfd77f7934a5c1e0423fe65db3359e1e0437833743acc0dc4"
+    },
+    {
+      "bytes": 56853,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/base/deployment.conf",
+      "sha256": "d66aff7923c0c9dc464e7437af903321bb71520a8747ec965210f9357d579388"
+    },
+    {
+      "bytes": 103701,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/base/provenance.json",
+      "sha256": "b67d226fe93a08086c7b9c366bd922f83903a0f10a5bc034aa53036b5bc6ef2e"
+    },
+    {
+      "bytes": 42136,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/directions.json",
+      "sha256": "fc5945fdcea2a835a01a718041daab54968af6bb66b3372f7aae9023d0217bc0"
+    },
+    {
+      "bytes": 4651,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/evidence/deployment.log",
+      "sha256": "4b4f26ca0f41d6b458e493ff2925a9e6976ae16edd215aaeffb71d22e1d1a8ad"
+    },
+    {
+      "bytes": 674992,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/evidence/rtc-calibrate.json",
+      "sha256": "0f37d72f2a4a2796c747ca976b5ecaef806cf1213f680e48fc0025463cb2861f"
+    },
+    {
+      "bytes": 0,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/evidence/rtc-calibrate.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 14025,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/evidence/stage-result.json",
+      "sha256": "5f6a7e808700664da25023e6409e8042da3bece61438294cf2c5e1d7e6ff12a8"
+    },
+    {
+      "bytes": 98265,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/interaction-plan.json",
+      "sha256": "05a6dc22b2aa03de737f23738389ae754341e4b724a9dae9569cd00a52e09030"
+    },
+    {
+      "bytes": 56444,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/package/deployment.conf",
+      "sha256": "86928b31bd77f58422f7e122b075716fd7eb0ff1b693dc8a72a3e5dcfe3ab428"
+    },
+    {
+      "bytes": 169284,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/package/provenance.json",
+      "sha256": "9e9f6684c67e2558c1b9d78215a01a82fc04fe5a28a80cc905b94dbf9926eede"
+    },
+    {
+      "bytes": 1050,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/policy.json",
+      "sha256": "5eef9f56a005673c8607968779c30470fceb70efb4f419e6b0c180ac41a57aaf"
+    },
+    {
+      "bytes": 2490,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/probe-labels.json",
+      "sha256": "4590d609873338805c40bc6aa27738f380ef79d2495ac1de1846cab491cbb569"
+    },
+    {
+      "bytes": 13994,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/recipe.json",
+      "sha256": "f6efc37ced887e5487cc4f92d660d188ad68d190d17a5fb9000c3b684f818000"
+    },
+    {
       "bytes": 7422,
       "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-inputs/method.json",
       "sha256": "9e5fcd45f07b935d895ccf5b89d8b4fb2e28bc8bed6e5140e41242775cc33627"
@@ -2516,6 +3591,41 @@
       "sha256": "cd8904ce2b9d4bcd4b9ad4badb259aac8c629b4d68c582c67ec931780379e5fb"
     },
     {
+      "bytes": 98,
+      "path": "~/.cache/rtc-calibration-quality-20261003/prepare-method-selection-analysis-map-fix.log",
+      "sha256": "da3a8d67fb70b997caa193b217911f92cef15ae715f65f335dd9b9e36503833b"
+    },
+    {
+      "bytes": 1452,
+      "path": "~/.cache/rtc-calibration-quality-20261003/prepare-method-selection-analysis.log",
+      "sha256": "2137a57bf7f8296b7de045c5545d41274a511365dd53212f6051ca83ec07550e"
+    },
+    {
+      "bytes": 4556,
+      "path": "~/.cache/rtc-calibration-quality-20261003/prepare-method-selection-correction-v1.py",
+      "sha256": "a401e1ac1cbb4ec02681e9ad39bc0e1f856a06438e2dbc32d31a665941d34de7"
+    },
+    {
+      "bytes": 9353,
+      "path": "~/.cache/rtc-calibration-quality-20261003/prepare-method-selection-correction-v2.log",
+      "sha256": "121a867626adcb1a5e7c1d96c42960827e1d298e649ff78db891c55c9409b512"
+    },
+    {
+      "bytes": 5189,
+      "path": "~/.cache/rtc-calibration-quality-20261003/prepare-method-selection-correction.log",
+      "sha256": "a874e104c2ca9217769fa4e5b60c7dd1aa28c53f205366e00397310735c36674"
+    },
+    {
+      "bytes": 5113,
+      "path": "~/.cache/rtc-calibration-quality-20261003/prepare-method-selection-correction.py",
+      "sha256": "884d6c6d733a362926672177610a3c55d51ad79a1072c980bed35a5fdcba570c"
+    },
+    {
+      "bytes": 4238,
+      "path": "~/.cache/rtc-calibration-quality-20261003/prepare-method-selection-heldout.jl",
+      "sha256": "86d6cf726bad8b462bf6b6ed02b0406cdd67d0a8f21f0f3e1340285ad8a415fe"
+    },
+    {
       "bytes": 2990,
       "path": "~/.cache/rtc-calibration-quality-20261003/prepare-spatial-heldout.jl",
       "sha256": "f5aef7b736b07ed0cad75d2d5f37a0ab37726c8b25b230a4fa2bc4dc594cf17e"
@@ -2569,6 +3679,21 @@
       "bytes": 1979,
       "path": "~/.cache/rtc-calibration-quality-20261003/run-method-cohort.py",
       "sha256": "01b08377cab90cc3fe970b8192524a7973d892afd5f420c0b2f4bada5969a350"
+    },
+    {
+      "bytes": 4968,
+      "path": "~/.cache/rtc-calibration-quality-20261003/run-method-selection-heldout.py",
+      "sha256": "87bf2e37b1daf22f9fb9d05a9018a548fc1928ca859d87282f60ffa56a56c614"
+    },
+    {
+      "bytes": 219,
+      "path": "~/.cache/rtc-calibration-quality-20261003/run-method-selection-lockedtest.log",
+      "sha256": "47c7a19ec9c6f417d62029651e254c261430506b11cc6f5700d43e91b823d5b5"
+    },
+    {
+      "bytes": 218,
+      "path": "~/.cache/rtc-calibration-quality-20261003/run-method-selection-validation.log",
+      "sha256": "6b2fd86f924172e294a4508f49396f42a8de27fe85a42befe2ba66ec4e4c66f7"
     },
     {
       "bytes": 190,
@@ -2666,14 +3791,29 @@
       "sha256": "55d3762ed895ac586fb991c8b0b03f1d1a7f0e02d40b3b19da1464c245b3d82c"
     },
     {
+      "bytes": 17929,
+      "path": "~/.cache/rtc-calibration-quality-20261003/test-method-selection.jl",
+      "sha256": "8d78220374d4dc3d63b35b6900f03d375e71a20df26246239c7a5529acd0bf9b"
+    },
+    {
+      "bytes": 107,
+      "path": "~/.cache/rtc-calibration-quality-20261003/test-run-method-selection-heldout.log",
+      "sha256": "3a1c4cd02a1576f2aafd89a805ce14566da40f26587c010179bb2611fcfbc795"
+    },
+    {
+      "bytes": 4162,
+      "path": "~/.cache/rtc-calibration-quality-20261003/test-run-method-selection-heldout.py",
+      "sha256": "04571bf103daa98d3ada4d0f2f281f64f274acae17e0525613c854c06a8d9d9e"
+    },
+    {
+      "bytes": 104,
+      "path": "~/.cache/rtc-calibration-quality-20261003/validate-method-selection-analysis.log",
+      "sha256": "aad1a378ad419e7cac0238b94ec3d9aa14f759061e1092b12526810d7461498b"
+    },
+    {
       "bytes": 24003,
       "path": "~/.cache/rtc-calibration-quality-20261003/verify-correction-array.jl",
       "sha256": "cb6f586eb9b15ed13254bf898b9b141dccdf4d93caf750f0f75122547794513c"
-    },
-    {
-      "bytes": 924,
-      "path": "/home/dgamroth/.cache/rtc-calibration-quality-20261003/directional-cohort-test-primary.log",
-      "sha256": "db2fa059dce5a130ca66893fa061a7b29a284347400e26f49d553058c0bbc007"
     }
   ],
   "groups": {
@@ -3212,6 +4352,267 @@
       "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/orchestration-sources/export_calibration.py",
       "~/.cache/rtc-calibration-quality-20261003/method-cohort/zonal-2/orchestration-sources/calibration_campaign.py"
     ],
+    "method_selection_completed_validation_locked_and_analysis_results": [
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/validation-scores.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/selection.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/locked-scores.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-locked-launch.json",
+      "~/.cache/rtc-calibration-quality-20261003/run-method-selection-validation.log",
+      "~/.cache/rtc-calibration-quality-20261003/run-method-selection-lockedtest.log",
+      "~/.cache/rtc-calibration-quality-20261003/heldout-validation.log",
+      "~/.cache/rtc-calibration-quality-20261003/heldout-lockedtest.log",
+      "~/.cache/rtc-calibration-quality-20261003/validate-method-selection-analysis.log",
+      "~/.cache/rtc-calibration-quality-20261003/locked-method-selection-analysis.log"
+    ],
+    "method_selection_correction_fgn_jfg_analysis_reports_and_adc_replays": [
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-correction-analysis.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-correction-analysis.json.replayed.frames.u16le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-correction-analysis.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-correction-analysis.json.replayed.frames.u16le"
+    ],
+    "method_selection_correction_fgn_jfg_capture_batches": [
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-evidence/result.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-evidence/batch-1/simulator-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-evidence/batch-1/simulator-result.frames.u16le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-evidence/batch-1/simulator-result.commands.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-evidence/batch-2/simulator-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-evidence/batch-2/simulator-result.frames.u16le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-evidence/batch-2/simulator-result.commands.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-evidence/result.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-evidence/batch-1/simulator-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-evidence/batch-1/simulator-result.frames.u16le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-evidence/batch-1/simulator-result.commands.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-evidence/batch-2/simulator-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-evidence/batch-2/simulator-result.frames.u16le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-evidence/batch-2/simulator-result.commands.f32le"
+    ],
+    "method_selection_correction_fgn_jfg_compact_package_provenance": [
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/graphs/graph.conf.in",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/calibration/active-to-full-vdm.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/calibration/background.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/calibration/controller-to-vdm.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/calibration/full-to-active-vdm.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/calibration/pdm-to-vdm.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/calibration/prepared-profile.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/calibration/reconstructor.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/calibration/reference-slopes.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/calibration/shack-hartmann-coordinates.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/calibration/thresholds.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/calibration/vdm-to-controller.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-base/calibration/vdm-to-pdm.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/graphs/graph.conf.in",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/calibration/active-subapertures.u8",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/calibration/active-to-full-vdm.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/calibration/background.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/calibration/controller-to-vdm.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/calibration/full-to-active-vdm.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/calibration/pdm-to-vdm.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/calibration/prepared-profile.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/calibration/reconstructor.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/calibration/reference-slopes.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/calibration/shack-hartmann-coordinates.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/calibration/thresholds.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/calibration/vdm-to-controller.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/calibration/vdm-to-pdm.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/hil/Project.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/hil/packages/AdaptiveOpticsCalibration/Project.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/hil/packages/AdaptiveOpticsSim/Project.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/hil/packages/AdaptiveOpticsSimPipeWireHIL/Project.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/hil/packages/FilterGraphAlgorithms/Project.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/hil/packages/PipeWireAO/Project.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/hil/packages/REVOLTClassicSim/Project.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/fgn-hil/hil/Manifest.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/graphs/graph.conf.in",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/active-subapertures.u8",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/active-to-full-vdm.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/background.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/controller-to-vdm.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/full-to-active-vdm.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/hidden-to-shape.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/pdm-to-vdm.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/prepared-profile.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/reconstructor.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/reference-slopes.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/shack-hartmann-coordinates.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/shape-to-hidden.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/subaperture-origins.u32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/thresholds.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/vdm-to-controller.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/calibration/vdm-to-pdm.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/jfg/deployment/Project.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/jfg/julia/FilterGraphAlgorithms/Project.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/jfg/julia/FilterGraphPipeWire/Project.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/jfg/julia/JuliaFilterGraph/Project.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/jfg/deployment/Manifest.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/jfg/julia/FilterGraphAlgorithms/Manifest.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/jfg/julia/FilterGraphPipeWire/Manifest.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-base/jfg/julia/JuliaFilterGraph/Manifest.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/graphs/graph.conf.in",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/active-subapertures.u8",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/active-to-full-vdm.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/background.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/controller-to-vdm.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/full-to-active-vdm.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/hidden-to-shape.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/pdm-to-vdm.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/prepared-profile.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/reconstructor.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/reference-slopes.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/shack-hartmann-coordinates.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/shape-to-hidden.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/subaperture-origins.u32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/thresholds.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/vdm-to-controller.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/calibration/vdm-to-pdm.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/hil/Project.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/hil/packages/AdaptiveOpticsCalibration/Project.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/hil/packages/AdaptiveOpticsSim/Project.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/hil/packages/AdaptiveOpticsSimPipeWireHIL/Project.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/hil/packages/FilterGraphAlgorithms/Project.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/hil/packages/PipeWireAO/Project.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/hil/packages/REVOLTClassicSim/Project.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/jfg/deployment/Project.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/jfg/julia/FilterGraphAlgorithms/Project.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/jfg/julia/FilterGraphPipeWire/Project.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/jfg/julia/JuliaFilterGraph/Project.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/hil/Manifest.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/jfg/deployment/Manifest.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/jfg/julia/FilterGraphAlgorithms/Manifest.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/jfg/julia/FilterGraphPipeWire/Manifest.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/jfg-hil/jfg/julia/JuliaFilterGraph/Manifest.toml"
+    ],
+    "method_selection_correction_launch_analysis_and_shared_adc_array": [
+      "~/.cache/rtc-calibration-quality-20261003/check-method-selection-fgn-correction.log",
+      "~/.cache/rtc-calibration-quality-20261003/check-method-selection-fgn-correction-file.log",
+      "~/.cache/rtc-calibration-quality-20261003/check-method-selection-fgn-correction-conf.log",
+      "~/.cache/rtc-calibration-quality-20261003/check-method-selection-jfg-correction-conf.log",
+      "~/.cache/rtc-calibration-quality-20261003/analyze-method-selection-fgn-correction.log",
+      "~/.cache/rtc-calibration-quality-20261003/analyze-method-selection-jfg-correction.log",
+      "~/.cache/rtc-calibration-quality-20261003/correction-fgn-analysis-v2.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/shared-adc-array/input-metadata.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/shared-adc-array/diagnostic-graph.conf",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/shared-adc-array/array-comparison.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/shared-adc-array/array-comparison.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/shared-adc-array/predicted.commands.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/verify-correction-array.jl"
+    ],
+    "method_selection_correction_preparation_and_prior_candidate": [
+      "~/.cache/rtc-calibration-quality-20261003/prepare-method-selection-correction.py",
+      "~/.cache/rtc-calibration-quality-20261003/prepare-method-selection-correction-v1.py",
+      "~/.cache/rtc-calibration-quality-20261003/prepare-method-selection-correction.log",
+      "~/.cache/rtc-calibration-quality-20261003/prepare-method-selection-correction-v2.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction/candidate-acceptance.json"
+    ],
+    "method_selection_correction_v2_acceptance_and_prepared_calibration": [
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/candidate-acceptance.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/active-subapertures.u8",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/active-to-full-vdm.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/background.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/controller-to-vdm.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/full-to-active-vdm.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/hidden-to-shape.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/pdm-to-vdm.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/prepared-profile.toml",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/reconstructor.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/reference-slopes.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/shack-hartmann-coordinates.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/shape-to-hidden.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/simulated-optical-flat.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/subaperture-origins.u32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/thresholds.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/vdm-to-controller.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-correction-v2/prepared-calibration/vdm-to-pdm.f32le"
+    ],
+    "method_selection_frozen_policy_context_and_corpus_declarations": [
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-final-policy.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-preparation-policy.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-context.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-spectral-screen.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/directions.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/interaction-plan.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/policy.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/probe-labels.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/directions.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/interaction-plan.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/policy.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/probe-labels.json"
+    ],
+    "method_selection_helpers_runner_tests_and_validation_records": [
+      "~/.cache/rtc-calibration-quality-20261003/analyze-method-selection.jl",
+      "~/.cache/rtc-calibration-quality-20261003/test-method-selection.jl",
+      "~/.cache/rtc-calibration-quality-20261003/run-method-selection-heldout.py",
+      "~/.cache/rtc-calibration-quality-20261003/test-run-method-selection-heldout.py",
+      "~/.cache/rtc-calibration-quality-20261003/prepare-method-selection-heldout.jl",
+      "~/.cache/rtc-calibration-quality-20261003/test-run-method-selection-heldout.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-test-initial.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-test-expanded.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-test-final.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-test-map-fix.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-test-primary-map-fix.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-test-primary.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis-validation.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis-map-fix-validation.json",
+      "~/.cache/rtc-calibration-quality-20261003/prepare-method-selection-analysis.log",
+      "~/.cache/rtc-calibration-quality-20261003/prepare-method-selection-analysis-map-fix.log"
+    ],
+    "method_selection_immutable_analysis_preparation_and_payloads": [
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/preparation.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/actual-modal-basis.f64le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/baseline-fixed-186.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/baseline-forward.f64le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/controller-modal-1.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/controller-modal-2.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/controller-modal-4.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/controller-modal-forward.f64le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/hadamard-1.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/hadamard-2.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/hadamard-4.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/hadamard-forward.f64le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/modal-coordinate-map.f64le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/physical-command-map.f64le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/zonal-1.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/zonal-2.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/zonal-4.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-analysis/zonal-forward.f64le"
+    ],
+    "method_selection_lockedtest_completed_corpus_declarations_receipts_and_package_binding": [
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/directions.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/interaction-plan.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/policy.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/probe-labels.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/evidence/stage-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/evidence/rtc-calibrate.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/evidence/rtc-calibrate.stderr",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/evidence/deployment.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/base/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/base/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/package/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-lockedtest/package/deployment.conf"
+    ],
+    "method_selection_validation_completed_corpus_declarations_receipts_and_package_binding": [
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/directions.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/interaction-plan.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/policy.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/probe-labels.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/evidence/stage-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/evidence/rtc-calibrate.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/evidence/rtc-calibrate.stderr",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/evidence/deployment.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/base/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/base/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/package/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-selection-validation/package/deployment.conf"
+    ],
     "method_smoke_reverse_v2_complete_and_prior_prelaunch_failure": [
       "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/method-result.json",
       "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/candidate-response.json",
@@ -3282,7 +4683,7 @@
       "~/.cache/rtc-calibration-quality-20261003/run-spatial-heldout.log"
     ]
   },
-  "inventory_time_utc": "2026-10-03T21:20:11Z",
+  "inventory_time_utc": "2026-10-03T22:30:24Z",
   "method": "SHA-256 over file bytes; no RTC/Julia process, score computation, or source-tree modification",
   "missing_or_absent": [
     {
@@ -3317,7 +4718,7 @@
     "cache": "/home/dgamroth/.cache/rtc-calibration-quality-20261003",
     "rtc": {
       "repository": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality",
-      "revision": "fa23e69",
+      "revision": "110b99a40ec4ef43da51759ea3d20eda078c90b7",
       "working_tree": "contains active source changes; listed paths hash exact current contents"
     }
   }

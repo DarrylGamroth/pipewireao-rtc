@@ -942,3 +942,296 @@ No production source edit or RTC launch was performed by this reviewer. The
 completed evidence characterizes these finite declared tasks and two repeat/
 order realizations. Selection of a new reconstructor, controller activation,
 physical operation and wall-rate qualification remain outside this result.
+
+## MCR-13 — Fresh method/reconstructor selection setup
+
+**Disposition:** The frozen setup is cleared for the first validation
+acquisition for this finite simulated controller task. The final audit below
+verifies the repaired analyzer, prepared candidates and acquisition policy.
+This clearance does not authorize locked acquisition, controller activation or
+an outcome claim.
+
+Reviewed from RTC `110b99a40ec4ef43da51759ea3d20eda078c90b7`, with the new
+`CALIBRATION_METHOD_SELECTION.md` and cache-only declaration/runner sources.
+The preparation context is bound by SHA-256
+`217a8865aaaaa005d54d9456076a92800fe39f4cd10098147d60f3559ffb4c1b`.
+No acquisition or production edit was performed by this reviewer.
+
+### Scientific contract
+
+The ten candidates are the unchanged baseline R186 and three public TSVD
+cutoffs for each of mean physical Hadamard, physical zonal N16 and
+controller-modal calibration. Each family uses its own controller-coordinate
+spectral repeat/order discrepancy, with multipliers 1, 2 and 4. Spatial 64 is
+excluded because it has only a partial span. The cutoff scale remains an
+empirical repeat/order discrepancy, not a probabilistic noise bound.
+
+Physical-family forward predictions are `S D Q_actual_F32`; controller-modal
+predictions are `S G L U_F64`, with representation residuals recorded separately.
+Inverse scoring uses the packed Float32 candidate and compares `B R z` with
+actual physical commands, where `z = (y_plus−y_minus)/2`. References remain
+separate diagnostics. Finite, nonzero-rank candidates must beat zero prediction
+and zero physical recovery in each sparse/mixed subgroup and pair realization.
+Selection minimizes the worst pair-realization **pooled physical MSE**. Exact
+ties prefer the baseline, then the larger cutoff multiplier, then lexical
+family order. This rule does not substitute normalized subgroup losses.
+
+This is selection for finite measured utility under frozen plant settings.
+It does not establish equal-energy method superiority, full physical rank,
+per-frame control performance or a new instrument acceptance threshold.
+A locked pass still precedes a separate deployed correction check.
+
+### Independently checked declarations and admission order
+
+All eight declaration-file hashes match the preparation policy. Ordinary
+Python inspection independently verified the exact label-to-command order,
+bracketing zero references, ABBA/BAAB signs and Float32 physical peak envelopes.
+Float32 JSON decimals were narrowed before exact command comparisons.
+
+| Partition | Directions | Batches | Accepted exposures | Model exposures including settling/restoration |
+| --- | ---: | ---: | ---: | ---: |
+| Validation | 8 | 48 | 3,072 | 3,121 |
+| Locked test | 16 | 96 | 6,144 | 6,241 |
+
+Sparse controller coordinates and random direction/detector seeds differ
+between partitions as declared. The two partitions total 9,216 accepted and
+9,362 model exposures. These are planned counts, not observed receipts.
+
+The runner checks the externally supplied final-policy hash, preparation
+context, source inventory, both corpora and prepared record before creating a
+stage or launching an owner. A locked launch additionally requires an
+externally bound receipt carrying the final-policy hash, exact locked
+statement hashes and selected-record hash. The final policy must enumerate
+**all** candidate and forward-model payloads: hashing `preparation.json` alone
+does not recursively check its referenced files. Final source review must
+also confirm that the analyzer binds these identities before reading responses,
+scores the packed candidates, rejects an entirely ineligible set, and reads
+only the frozen choice for the locked test.
+
+### Frozen analyzer verification
+
+The reviewed cache analyzer SHA-256 is
+`0535cc2b7a5c28b0dfe9f77088648d86c077d4a7dacd08dc350c3c8826129904`;
+its test source is
+`ab4018ce832fe449d0d1b9b210c746ce2ea7c2e35886df3f7859d6b62a6e2f99`.
+The durable worker log `method-selection-test-final.log` reports 71/71
+assertions across ten test sets. This reviewer inspected those tests and the
+frozen implementation; no RTC acquisition was used for that verification.
+
+**Confirmed draft defect, repaired:** the first candidate record originally
+fixed a Julia vector's NamedTuple schema to the baseline fields. Appending a
+new-family record with different fields raised `MethodError`. The implementer
+reproduced that failure and introduced a uniform `candidate_record` schema.
+The regression appends all ten records and retains the two rank-zero cases.
+Public TSVD returns zero gains for zero retained rank; these candidates remain
+visible and cannot become eligible.
+
+The frozen analyzer computes each empirical scale with the matrix spectral
+norm, constructs the inverse through the public AOC TSVD API, embeds selected
+columns in the full 221×376 matrix, then stores and scores Float32 coefficients.
+The baseline payload is copied unchanged. Tests distinguish the spectral norm
+from the Frobenius norm, expose coefficient rounding in the score, preserve
+modal representation residuals, reject all-ineligible selection, and check the
+exact declared tie order. Nonfinite losses remain explicitly ineligible and
+are serialized without nonstandard JSON numeric values.
+
+Final-policy validation requires all 17 payloads: four forward models, ten
+packed inverse matrices and B/L/M coordinate matrices. Locked scoring checks
+the externally supplied selection and launch-receipt hashes, rechecks validation
+response/lifecycle hashes, reconstructs the declared choice from the frozen
+validation scores, and binds its candidate record before reading locked
+responses. Only that candidate is evaluated on the locked corpus. A regression
+also verifies that serialization of startup-unit tuples does not falsely break
+common-input identity checks.
+
+No remaining source, mathematical-coordinate or split-boundary blocker was
+identified in this frozen version. Actual prepared-file identities, ranks and
+final acquisition-policy enumeration remain the final prelaunch audit.
+
+
+### Actual preparation repair and final prelaunch audit
+
+The first actual preparation attempt exposed a second confirmed integration
+defect: the new binding loop treated inventory metadata `invariants` as a map
+and attempted to open `invariants.f32le`. The preserved
+`prepare-method-selection-analysis.log` shows this failure before output-directory
+creation; no RTC launch occurred. The repaired binder uses the same six
+canonical map names as the already validated shared `load_maps` helper and
+checks each declared SHA. Its regression preserves the old `SystemError`,
+verifies six map records and rejects a changed map. Inventory metadata is
+unchanged.
+
+Final analyzer SHA-256:
+`5aaf18ecafb9228cdeffb34796f9575b2e0c8ed922a7618cf85584db68760122`.
+Final test SHA-256:
+`8d78220374d4dc3d63b35b6900f03d375e71a20df26246239c7a5529acd0bf9b`.
+The worker's durable map-fix log reports 78/78 assertions across eleven sets;
+the parent independently repeated them with bounds/deprecation checks before
+actual preparation. The successful preparation record is
+`8249e964ec5e1be5844294316ac19b83e67204e90bb14664c67dca06ddcf0c08`.
+
+The reviewer independently checked all 162 prepared bindings, including the
+36 map files across six training cases, and every file in the eight retained
+package trees. All four prepared forward means exactly equal the means of
+their frozen source matrices. The baseline R186 payload is byte-identical to
+the previously qualified payload. All ten inverse files are 332,384-byte
+221×376 ROW_MAJOR Float32 matrices with zero inactive measurement columns.
+
+| Family | Retained ranks at 1× / 2× / 4× discrepancy |
+| --- | --- |
+| Physical Hadamard | 206 / 181 / 136 |
+| Physical zonal N16 | 139 / 36 / 0 |
+| Controller-modal | 160 / 73 / 0 |
+
+An independent NumPy SVD calculation on CPU 5 reproduced all nine ranks and
+packed inverse coefficients to a maximum absolute difference of
+2.28×10⁻¹³. This is a numerical cross-check; public AOC remains the estimator
+used to produce the candidates. The zero-rank matrices remain ineligible.
+
+The final acquisition policy SHA-256 is
+`e47642d30ff2210dbec424852783526ffc3b93d0e3fb482c48f4b9f6ba8667e5`.
+All 29 listed files match, including every one of the 17 payloads, the prepared
+record, analyzer/tests, launch runner/tests and analysis environment. Both
+fresh corpus evidence directories were absent during this audit. The runner
+checks this externally supplied policy identity before launch.
+
+**Final setup conclusion:** No remaining prelaunch blocker was identified.
+The first validation acquisition may proceed with these exact identities.
+Its results must still select an eligible candidate under the frozen rule;
+a separately bound selection and locked-launch receipt must precede the
+locked acquisition. No outcome, correction, hardware or rate claim follows
+from this setup verification.
+
+## MCR-14 — Fresh selection, locked test and deployed correction
+
+**Disposition:** The frozen method/reconstructor selection and finite Classic
+CPU FGN/JFG correction checks pass. The conclusion is limited to the declared
+simulated corpora, selected packed inverse, unchanged controller and fixed
+correction windows. It does not establish physical operation, full actuator
+rank, general method superiority or wall-rate qualification.
+
+### Selection and independent locked test
+
+The reviewer independently checked 3,072 unique validation receipts and 6,144
+unique locked receipts, including exact sequence, generation, domain, model
+timestamp and 1,896,000 ns duration. Final restoration sequences are 3,121 and
+6,241. Both records confirm release, stopped lifecycle and launcher exit 0.
+Scientific sources, graphs, measured arrays, detector and plant match the
+frozen setup, apart from the declared detector seeds 97 and 98. All 29 files
+in the final acquisition policy remained unchanged.
+
+Independent Python/NumPy scoring of the actual Float32 commands and stored
+Float32 inverses reproduced all ten validation candidates within
+3.56×10⁻¹⁵ absolute difference. Eight positive-rank candidates are eligible;
+the two zero-rank candidates remain ineligible. The unchanged pooled physical
+MSE rule selects **Hadamard-1, rank 206**. Its worst pair-realization pooled
+physical MSE is 0.00816836934043 µm² OPD, versus 0.0188559478281 for the fixed
+baseline R186 on this validation corpus.
+
+The selection was frozen before locked acquisition. The separate launch
+receipt binds the exact selection, final policy and all four locked
+declarations. Locked scoring evaluates only the selected candidate and
+reproduces independently within 1.43×10⁻¹⁴. Its worst pooled physical MSE is
+0.00834611631331 µm² OPD. All four subgroup/pair forward and inverse comparisons
+beat zero; the worst normalized forward and physical inverse losses are
+0.04087579935 and 0.11818449674 respectively. No cutoff, ranking rule or
+candidate changed after validation or locked results.
+
+| Frozen record | SHA-256 |
+| --- | --- |
+| Validation scores | `2c54da5d061593e6ef277954470b8b8562194ac94c8f8f3d979619577f5cef9b` |
+| Selection | `234154a17c93f390fa9ea09c8e6138fced40cef005150a17c2e5f063c571400a` |
+| Locked-launch receipt | `e26e9e1977f29903cebf15809d5f4b35aabaff75a6b286193d7001e4bdc475ec` |
+| Locked scores | `f6aacf9a17d6428768f771e0f152cb1be73048a67b654cd96ea20fd34bdd2017` |
+| Selected 221×376 Float32 inverse | `bb9aa68345a3402445b65a350e796b212e048453bf917245cee7f36efa015813` |
+
+### Correction staging and retained failures
+
+The first staging attempt retained at `method-selection-correction` failed
+before RTC launch because it supplied the FGN measured campaign to JFG's
+conservative construction-config comparison. Qualified JFG had used `jfg-1`,
+while FGN used `fgn-3`. Their recipe and all five measured products are
+byte-identical. The successful fresh `method-selection-correction-v2` uses
+those engine-matched campaigns, preserving the guard. There was no threshold
+normalization or coefficient tuning: the public threshold parameter replaces
+both per-ROI arrays before processing, and the retained threshold payloads
+are identical (pixel 20, flux 1,000). A review-requested guard also binds the
+exact locked-score hash before staging.
+
+Before launch, the reviewer verified both scientific graph files against the
+qualified per-engine baseline, all parameter declarations and all calibration
+assets. Only the reconstructor payload changes. All six scientific package
+source trees, plant and analysis environment match. The JFG source tree,
+owner arguments, session and placement are identical to its qualified live
+truth baseline. FGN now uses that same qualified diagnostic witness helper.
+No operational gain, detector setting, map, offset or limit changes.
+
+Two later check-hil CLI admission failures (a directory argument and a
+nonexistent deployment.json argument) are retained separately; neither
+started RTC. The successful attempts use deployment.conf. These failures do
+not alter the scientific result or supply positive evidence.
+
+### Live delivery, reset and correction
+
+Each engine completes two 256-frame batches with exact sequence and model
+chronology. Recorded raw ADC, adopted-command payloads and live OPD witness
+dictionaries are identical across reset. All three FGN and all four JFG owned
+processes exit 0. Post-run inspection confirms all 387 FGN and 517 JFG
+artifact hashes remain unchanged. Demanded commands are finite and nonzero,
+with peak magnitudes approximately 0.42575 µm OPD (FGN) and 0.43224 µm OPD
+(JFG), below the retained ±0.8 µm limit and its rail-proximity tolerance.
+Actual live requested-minus-demanded feedback is not recorded here.
+
+The completed analyses verify the exact direct live public OPD witness,
+bound to plant, acquisition helpers, raw ADC and adopted commands, and verify
+the zero-command baseline. The statistic is population spatial variance after
+piston removal over the public annular pupil support. Independently summing
+the per-frame live variances gives the following ratios of window-mean residual
+to atmosphere variance:
+
+| Engine | Frames 17:128 | Frames 129:256 |
+| --- | ---: | ---: |
+| FGN | 0.029146254603 | 0.045117990061 |
+| JFG | 0.029177494189 | 0.044849010589 |
+
+Both engines satisfy the predeclared ratio < 1 criterion in both fixed windows.
+Command n affects frame n+1; the final recorded command's effect is outside
+this finite record. Truth is used for verification, not to estimate the
+calibration or select the inverse.
+
+FGN replay ADC is exact. JFG replay differs in five frames and 18 pixels;
+that residual replay boundary remains unattributed. JFG qualification uses
+its exact direct live OPD witness and verified zero-command baseline, and
+must not be described as exact ADC replay or identical live FGN/JFG inputs.
+
+### Same-input ordinary-array discriminator and limits
+
+The separately frozen public JFG replay consumes the actual 256 FGN ADC
+frames, adopts the exact staged parameters, resets once, and carries controller
+feedback only after each successful complete frame. The reviewer inspected
+that ordering and independently recomputed every per-frame and pooled
+command difference from the retained predicted/adopted Float32 payloads.
+Maximum absolute difference is 1.7053025658242404×10⁻¹³ m OPD; RMS difference
+is 3.1901523917418234×10⁻¹⁴ m OPD. This supports numerical agreement on the
+same recorded inputs, not bit identity or a newly imposed tolerance.
+
+All 256 replay records report zero requested-minus-demanded, physical-feedback
+and controller-feedback norms, with no requested values outside the rail or
+demanded values at it. Those are **ordinary JFG replay** observations, not
+unrecorded live FGN/JFG clipping-feedback receipts. They must remain separate
+from the live command-limit checks.
+
+| Completed correction artifact | SHA-256 |
+| --- | --- |
+| FGN functional result | `fdb7ac99d2bb193495c268a93718645b6dc082994dc49efac958239ba79f85bc` |
+| JFG functional result | `58fe87a7e48d16b4c029e3636803ca6085b2a3085ee1b7b8550f37611d9ec389` |
+| FGN correction analysis | `50b3a84f4fa9407a3dec8b301854f3298a2a7346c540c58e8536de70a50a85f7` |
+| JFG correction analysis | `ad320245fbf6a2c0a740e56edf7ce0be56ca6562c756f39b5f804afe35a024a2` |
+| Shared-input array comparison | `4b0a3090e2e3d41bcaec2e228ca6ec41b953f9326cc54ae6d55a22feb759ac27` |
+
+The parent reports all three cold analysis processes exited 0. This reviewer
+checked their completed artifacts, source contracts, payload hashes and
+arithmetic without rerunning the plant or RTC. Diagnostic witness work and
+concurrent cold analysis affect elapsed execution; no cadence or latency
+qualification follows. The prior baseline remains retained, and no physical
+instrument configuration was replaced by this review.

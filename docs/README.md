@@ -73,6 +73,9 @@ method acquisition and unaccepted-candidate boundary. The
 [correction review](CORRECTION_ANALYSIS_REVIEW.md) preserves failed replay gates
 and their dispositions. The [method comparison](CALIBRATION_METHOD_COMPARISON.md)
 records the zonal/Hadamard/controller-modal/spatial design and independent audits.
+[Fresh method selection](CALIBRATION_METHOD_SELECTION.md) records the frozen
+common controller decision, selected-only locked test and deployed FGN/JFG
+correction checks for the 206-mode Hadamard inverse.
 
 ## Inactive design archive
 

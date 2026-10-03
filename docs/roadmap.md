@@ -1150,7 +1150,7 @@ increment below records the finite Classic gates closed since that baseline.
 The finite Classic CPU quality gates now have independently reviewed evidence:
 two measured 277-coordinate sweeps, exact composition through the existing
 221-coordinate completion maps, frozen TSVD validation/locked test, and
-non-actuating correction in both FGN and JFG. The selected inverse retains 186
+non-actuating correction in both FGN and JFG. The initial selected inverse retains 186
 modes at unchanged controller settings. Shared-input complete-graph command
 differences and clipping feedback are explicitly recorded; correction uses
 verified replay/baseline evidence, including the fresh JFG live OPD witness.
@@ -1169,8 +1169,14 @@ workflow evidence from scientific method selection. The bounded dense-pattern
 confirmation was followed by two complete sweeps for each family. All candidate
 bytes, receipts and finite forward scores passed independent re-estimation.
 Precision, energy and acquisition time differ under the declared settings;
-spatial 64 remains a partial span. Fresh common validation and a locked
-controller-response test are required before selecting a replacement inverse.
+spatial 64 remains a partial span. The subsequent
+[fresh frozen decision](CALIBRATION_METHOD_SELECTION.md) compares ten inverses,
+selects a 206-mode Hadamard candidate and passes its separate locked response
+corpus and deployed FGN/JFG correction checks at unchanged settings. Shared-input
+complete-graph agreement and requested/demanded/feedback outputs are recorded.
+The baseline remains preserved; the new payload is admitted only in explicitly
+staged comparison packages. The JFG detector replay discrepancy remains
+unattributed despite exact live OPD witness verification.
 
 RTC-DEV-029 remains partial for its full selected scope: Copper, unchanged
 HEART, accelerator acquisition, physical endpoints, instrument acceptance and
