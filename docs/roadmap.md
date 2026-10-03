@@ -1061,6 +1061,40 @@ shared FGN metadata copy requires complete matching negotiated records. JFG's
 generic adapter has per-output propagation; deployed WFS association must still
 be checked independently for each engine before acknowledging an exposure.
 
+### Deployed calibration acquisition increment (in progress)
+
+Baseline `cfa36b0`; isolated branch `work/calibration-acquisition-20261002`.
+Classic is first. Generic prepared ndarray producers and one-exposure consumers
+belong to PipeWireAO.jl; this deployment composes the ordinary WFS and PDM
+constraint graphs. The AOS adapter retains the plant boundary and provides an
+owner-side hook to arm consumers with the actual exposure identity before
+publication. It also retains the received command's original Float32 wire values
+for adoption evidence, avoiding a multiply/divide round trip through metre OPD.
+
+| Delivery obligation | Planned acceptance | Current state |
+| --- | --- | --- |
+| Actual WFS outputs and constraint feedback | All output identities, durations and requested-minus-demanded feedback agree before exposure acknowledgement | Observed for Classic CPU FGN and JFG; clipped 0.9 → 0.8 µm OPD and fresh zero restoration verified |
+| Serialized bounded endpoint and command | Existing Rust coordinator drives hold, adoption, settling, collection, restoration and release; missing acknowledgements retain ownership | Private-core and installed FGN/JFG full cycles complete; invalid quality and clipping abort with confirmed restoration. Current installed full runs include normal release, public stop/quit and observed child exits zero |
+| Normal detector calibration | Dark, reference and interaction acquisitions traverse the raw ADC transport; detector noise and ADC settings remain enabled | Classic operational dark/flat/reference captures observed; explicit simulated eligibility selects 184 of 188 positions while retaining intrinsic validity. Automatic campaign/export and Copper remain open |
+| FGN/JFG agreement | Identical recorded exposures, parameter arrays and absolute probes; explicit Float32 tolerance and clipping acceptance | Current installed full runs verify all 1663 actual ADC frames and individual WFS outputs bit for bit, all 208,304 accepted response values and matching 376 × 277 matrices. An earlier installed full JFG run differs and lacks raw captures; its cause remains unattributed. Independent noisy calibration repeatability is a separate gate |
+| AOC estimation and correction | Associated accepted measurements produce matrices, provenance and an accepted reconstructor; installed graph demonstrates correction | Current AOC 0.17 reproduces both private-core and installed physical-command matrices bit for bit; deployment export validates. Small-probe noise identified. Precision acceptance, 221-coordinate command-map composition, reconstructor and correction remain open |
+| Copper, unchanged HEART and accelerators | Repeat functional/scientific gates before separately measuring cadence | Missing; helper transport tests do not qualify these endpoints |
+
+The interaction acquisition will use an explicitly stationary calibration
+illumination with zero uncompensated OPD and the production detector. This is a
+calibration condition, not a noise-free physics shortcut. Independent noisy
+acquisitions can differ statistically; comparing both engines on the same raw
+exposures isolates their algorithmic agreement. Every failure must fence pending
+publication and collection before restoration or close. A faulted plant instance
+cannot silently clear its failure and resume.
+
+The full-cycle and noise-discrimination evidence is recorded in
+[calibration acquisition validation](CALIBRATION_ACQUISITION_VALIDATION.md).
+Matched processing is established for this Classic procedure; scientific
+reconstructor acceptance, automatic calibration campaigns, unchanged HEART,
+Copper and accelerator/cadence qualification remain open. RTC-DEV-029 stays
+partial.
+
 ## Deferred capabilities
 
 The following topics are not active work. Their previous proposals are

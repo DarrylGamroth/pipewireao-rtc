@@ -1,0 +1,1714 @@
+{
+  "version": 1,
+  "date": "2026-10-02",
+  "requirement": "RTC-DEV-029",
+  "requirement_state": "partial",
+  "scope": "Classic CPU native FGN/JFG actual completion-driven calibration; independent AOC0.17 numerical/package checks; no physical, cadence, rank or correction claim",
+  "cache_root": "/home/dgamroth/.cache/rtc-event-calibration-20261002",
+  "sources": {
+    "rtc": {
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-acquisition",
+      "head": "996ca6018566f68b33a1521f18db8903477740ab",
+      "branch": "work/calibration-acquisition-20261002",
+      "dirty": true,
+      "file_sha256": {
+        "src/bin/rtc-calibrate.rs": "f030b5ab1663174f7850cab4dfa877c50064fb2bbd263f65bd7bad3206e36060",
+        "src/calibration.rs": "48bdd0c5937f757e255c41b57b3a1f57737aad9c157e8b58a62bab151bd4cde8",
+        "src/calibration_socket.rs": "8957dcaa1d89897a29e2a615e11be63bb60913e47aea0c6daf9bb16aff12d9bc",
+        "tests/calibration_cli.rs": "d9627c8953ead037f896a2d420cba03230a6a8032101278db64d6e1740be3415",
+        "deployment/export_calibration.py": "b9c22da395ea869c2cf79dfa02164b4d1b160e5336cdcbe949a07fa2fccc3583",
+        "deployment/export_hil.py": "3aff511c637d74624122ae9cca6dad4afd3a33c7289fb452b8fd921c627786a1",
+        "deployment/hil/calibration_acquisition.jl": "393160d71c0a0096e630852a02cbf6adeae1dcc1325e26388a9ba3aa8187a8ca",
+        "deployment/hil/calibration_owner.jl": "ab0f0702cd5ba0977ebb214fd8e04f2ad9710f0b596bd253d94e661b01b3fffb",
+        "deployment/hil/calibration_server.jl": "e23d5e33c770e2e0f3ca38f469dc29ce0aa4077ca934e31fb08b37f3cbfbd31d",
+        "deployment/hil/calibration_client.jl": "e43e8528cf806e1e9d02d19c816250702be5eb40bc4448fefce50ada98527b24",
+        "deployment/hil/test_calibration_acquisition.jl": "5676fa61b0548952e739b5009b7c7f47b49439c75b4bfdada5d37a03da893252",
+        "deployment/hil/test_calibration_server.jl": "8f47d5f3bdbf95b0ec08414870a46a6dd9f3bda63ec0e9d8950cde356c0c88c2",
+        "deployment/hil/test_calibration_client.jl": "6333c73f98fc6b5a1f10bc1ac962a4d63d51d8c6e268c012d67b1629713cba69",
+        "src/config.rs": "00b537572dc5dec6dbde947968f34ebd3dc52a44d535e8bf7d08ace495866aa1",
+        "src/live.rs": "41a3e6ea21dd82179881d87f1dba1d1198d927ba18354eab92b395171547b08c",
+        "tests/external_rtc_configuration.rs": "ba645da90827fe7a38a0585eab2417644696be43946439a75dbeea4756ee7333",
+        "deployment/test_export_calibration.py": "3259bd68f2a97448c07f3a38f7e9ebcdc341ce9d4f5f60454790b7fbbc44ca27",
+        "deployment/test_export_hil.py": "3fafffde2af2782784c3f716b1363fd8d4e8f3a86d2ee291436d652f160b6e6c"
+      },
+      "uncommitted_scope": "documentation only at source snapshot"
+    },
+    "pipewireao_julia": {
+      "path": "/home/dgamroth/workspaces/codex/pipewire/PipeWireAO-ndarray-exchange",
+      "head": "3c846025113eacb851b437c585c63f15bc057136",
+      "branch": "work/ndarray-exchange-20261002",
+      "dirty": false,
+      "file_sha256": {
+        "src/ndarray_exchange.jl": "da693c718af27b727cd1457fd4fd85b0c253423dd28110e15105b144cbd368f0",
+        "test/ndarray_exchange.jl": "9a6e46891e411588d3d07fe8d788fa3b75666488a28ddac6f0a26e7065c95096",
+        "test/ndarray_exchange_private_core.jl": "45c26283bde6c921ba309c7b0051f4cefbbfe3d9297d0aae120b000425591d59"
+      }
+    },
+    "hil_adapter": {
+      "path": "/home/dgamroth/workspaces/codex/AdaptiveOpticsSimPipeWireHIL-exposure-arming",
+      "head": "39efcf5c2a6a25d65c27433e13ab0f765bc5d056",
+      "branch": "work/calibration-exposure-arming-20261002",
+      "dirty": false,
+      "file_sha256": {
+        "src/calibration.jl": "4d70278d9c3c82d9191f4b3bec5473b29e212851c414e863c66f93818aaac8e6",
+        "test/calibration.jl": "6922527aea5fbd6bd463d8a973b19bd47f93ef95e9ddf2ca7e14737da47a2341",
+        "test/live_calibration_private_core.jl": "6861c9ca8bbfbee9fcd022a1303e68056e169f5da35b34a48f8b5e98b461a077"
+      }
+    },
+    "aos": {
+      "path": "/home/dgamroth/workspaces/codex/AdaptiveOpticsSim-calibration-boundary",
+      "head": "8b6364cd064ca707006613bab9e14a13b7c1033a",
+      "branch": "work/calibration-boundary-20261002",
+      "dirty": false,
+      "file_sha256": {}
+    },
+    "aoc": {
+      "path": "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration-rtc-calibration",
+      "head": "875a7c22e995491ef9b8c2c542b37e3c3bbf170b",
+      "branch": "work/rtc-calibration-20261002",
+      "dirty": false,
+      "file_sha256": {
+        "Project.toml": "5b2278a95a0396df80726d6a1e0556714763bca339400df6194e368e5c1e9dff",
+        "src/interaction_matrices/structured.jl": "ea2cba3d7e54b15a8ba52ca5f620fb80be74ddbe7d3f139c2130f3e9dabf0c0a"
+      }
+    },
+    "jfg": {
+      "path": "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph.jl",
+      "head": "116cdb4b34b8d2293bf8b27761f6e8aedb5ed4f1",
+      "branch": "main",
+      "dirty": true,
+      "file_sha256": {}
+    },
+    "native_pipewireao": {
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewire",
+      "head": "42fdf86f4e66b15e7cc1d22404294f2234dfcb85",
+      "branch": "master",
+      "dirty": false,
+      "file_sha256": {}
+    }
+  },
+  "selection": {
+    "raw_rois": 188,
+    "eligible_rois": 184,
+    "excluded_zero_based_roi_indices": [
+      85,
+      86,
+      101,
+      102
+    ],
+    "measurements": 376,
+    "physical_commands": 277,
+    "lamp_r_band_magnitude": 0.5,
+    "science_r_band_magnitude": 2,
+    "dark_exposures": 16,
+    "training_exposures": 16,
+    "criterion": "Intrinsic validity in every training exposure; minimum flux >= 2 * existing threshold 1000; reject ADC upper rail; freeze before probes.",
+    "minimum_selected_training_flux": 4929.25,
+    "maximum_adc": 1682,
+    "adc_upper_rail": 4095,
+    "same_thresholds": true,
+    "normal_detector_noise_and_adc": true,
+    "policy": {
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/acquisition/selection-policy.json",
+      "sha256": "6915d421d695550739c360778b685a121b244c5752aed72cac14d5df61cacf60"
+    },
+    "training_summary": {
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/acquisition/flat-training-summary.json",
+      "sha256": "2ee3d2b68ec6fc078461288e0ed19fb0a1df42e2209fbad48fb3ce8a43d27b79"
+    },
+    "mask": {
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/acquisition/simulated-eligibility.u8",
+      "sha256": "04090c0ed1a3808cd3b8ad03503008eb4915bab3c5eedbc856b14cc8db543697"
+    },
+    "background": {
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/acquisition/measured-background.f32le",
+      "sha256": "2a7f18cb35d6e7e7bfd463f10748bad586cfab938ec006ff7ddfac4dee7d198c"
+    },
+    "reference": {
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/acquisition/measured-reference-slopes.f32le",
+      "sha256": "0b39ecc5531b40fdf678b028f65f0d3c93f0d37314a7d2a4e2eec550d7c5683f"
+    },
+    "qualification_raw_note": "Independent four-frame FGN/JFG qualification differs by one ADC unit at one pixel in frame 3; full-cycle response bits nevertheless agree exactly. Independent noisy acquisitions require statistical comparison."
+  },
+  "actual_cases": {
+    "invalid-quality": {
+      "passed": true,
+      "rust_exit": 1,
+      "owner_exit": 0,
+      "link_client_exit": 0,
+      "sequence": 4,
+      "domain": {
+        "opaque_domain": 1,
+        "complete_domain": [
+          55,
+          113,
+          225,
+          24,
+          208,
+          37,
+          77,
+          120,
+          130,
+          159,
+          192,
+          142,
+          206,
+          146,
+          242,
+          238
+        ]
+      },
+      "native_link_count": 8,
+      "result": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-live/invalid-quality/rtc-calibrate.log",
+        "sha256": "959e22355f4f8a00cd8ff86df17cfbe37073622ddc23920f3ed8eab591d155a1"
+      },
+      "owner_report": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-live/invalid-quality/owner-report.json",
+        "sha256": "01a42eab4e6df1c1a012391c76b7650c312d55ff9063e709ccbe93425b155877"
+      },
+      "completion": {
+        "phase": "aborted",
+        "restoration_confirmed": true,
+        "resume_permitted": true,
+        "failure": "InvalidEvidence",
+        "recovery_failure": null
+      }
+    },
+    "clipping": {
+      "passed": true,
+      "rust_exit": 1,
+      "owner_exit": 0,
+      "link_client_exit": 0,
+      "sequence": 0,
+      "domain": {
+        "opaque_domain": 1,
+        "complete_domain": [
+          143,
+          221,
+          168,
+          94,
+          65,
+          239,
+          77,
+          84,
+          148,
+          41,
+          167,
+          69,
+          156,
+          56,
+          174,
+          9
+        ]
+      },
+      "native_link_count": 8,
+      "result": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-live/clipping/rtc-calibrate.log",
+        "sha256": "2f8f251486acd10761af3ec5a37ede9e4f852cc0835c2e09332503402e14e624"
+      },
+      "owner_report": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-live/clipping/owner-report.json",
+        "sha256": "fe5e0d29dd3e605f2b7191eb2a1343253d5ad46f32ad887410ff5f480ee7faee"
+      },
+      "completion": {
+        "phase": "aborted",
+        "restoration_confirmed": true,
+        "resume_permitted": true,
+        "failure": "ProbeClipped",
+        "recovery_failure": null
+      }
+    },
+    "positive": {
+      "passed": true,
+      "rust_exit": 0,
+      "owner_exit": 0,
+      "link_client_exit": 0,
+      "phase": "complete",
+      "restoration_confirmed": true,
+      "resume_permitted": true,
+      "failure": null,
+      "recovery_failure": null,
+      "native_link_count": 8,
+      "eligible_rois": 184,
+      "full_rois": 188,
+      "measurement_values_per_batch": 376,
+      "final_sequence": 7,
+      "domain": {
+        "opaque_domain": 1,
+        "complete_domain": [
+          176,
+          232,
+          171,
+          110,
+          13,
+          222,
+          65,
+          20,
+          166,
+          154,
+          17,
+          160,
+          192,
+          161,
+          198,
+          253
+        ]
+      },
+      "result": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-live/positive/rtc-calibrate.log",
+        "sha256": "26988c4571df87350f964fc7ab96e2492a7d02276d42a815933653e5d4323a20"
+      },
+      "owner_report": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-live/positive/owner-report.json",
+        "sha256": "0fd2500b9121d69471e15151fe7ae0f5955215d64a798ff7013c9ed5b38733ac"
+      },
+      "completion": {
+        "phase": "complete",
+        "restoration_confirmed": true,
+        "resume_permitted": true,
+        "failure": null,
+        "recovery_failure": null
+      },
+      "batches": 2,
+      "accepted_exposures": 4
+    },
+    "full-zonal": {
+      "passed": true,
+      "rust_exit": 0,
+      "owner_exit": 0,
+      "link_client_exit": 0,
+      "phase": "complete",
+      "restoration_confirmed": true,
+      "resume_permitted": true,
+      "failure": null,
+      "recovery_failure": null,
+      "native_link_count": 8,
+      "eligible_rois": 184,
+      "full_rois": 188,
+      "final_sequence": 1663,
+      "domain": {
+        "opaque_domain": 1,
+        "complete_domain": [
+          28,
+          79,
+          81,
+          137,
+          222,
+          254,
+          74,
+          123,
+          157,
+          113,
+          248,
+          195,
+          26,
+          100,
+          248,
+          7
+        ]
+      },
+      "cli_elapsed_seconds": 43.10716136684641,
+      "result": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-live/full-zonal/rtc-calibrate.log",
+        "sha256": "ab308df92d0cbdf063a1aa5e57662930b369757f3b19bdca1182184690ae7432"
+      },
+      "owner_report": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-live/full-zonal/owner-report.json",
+        "sha256": "cde51a429e36fe252bc4b23df5966088529b7856afb77ad4b99a61b23e43dcf9"
+      },
+      "completion": {
+        "phase": "complete",
+        "restoration_confirmed": true,
+        "resume_permitted": true,
+        "failure": null,
+        "recovery_failure": null
+      },
+      "batches": 554,
+      "accepted_exposures": 1108
+    },
+    "full-zonal-jfg": {
+      "passed": true,
+      "rust_exit": 0,
+      "owner_exit": 0,
+      "link_client_exit": 0,
+      "phase": "complete",
+      "restoration_confirmed": true,
+      "resume_permitted": true,
+      "failure": null,
+      "recovery_failure": null,
+      "native_link_count": 8,
+      "eligible_rois": 184,
+      "full_rois": 188,
+      "final_sequence": 1663,
+      "domain": {
+        "opaque_domain": 1,
+        "complete_domain": [
+          120,
+          78,
+          27,
+          157,
+          109,
+          59,
+          76,
+          127,
+          154,
+          186,
+          202,
+          28,
+          244,
+          221,
+          53,
+          61
+        ]
+      },
+      "cli_elapsed_seconds": 42.860659891040996,
+      "result": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-live/full-zonal-jfg/rtc-calibrate.log",
+        "sha256": "ab308df92d0cbdf063a1aa5e57662930b369757f3b19bdca1182184690ae7432"
+      },
+      "owner_report": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-live/full-zonal-jfg/owner-report.json",
+        "sha256": "e954a571d47ba08fd71d6ae99bbe2961902744a73b0241a472c590829c28d5c1"
+      },
+      "completion": {
+        "phase": "complete",
+        "restoration_confirmed": true,
+        "resume_permitted": true,
+        "failure": null,
+        "recovery_failure": null
+      },
+      "batches": 554,
+      "accepted_exposures": 1108
+    },
+    "noise-discriminator": {
+      "passed": true,
+      "rust_exit": 0,
+      "owner_exit": 0,
+      "link_client_exit": 0,
+      "phase": "complete",
+      "restoration_confirmed": true,
+      "resume_permitted": true,
+      "failure": null,
+      "recovery_failure": null,
+      "native_link_count": 8,
+      "eligible_rois": 184,
+      "full_rois": 188,
+      "final_sequence": 477,
+      "domain": {
+        "opaque_domain": 1,
+        "complete_domain": [
+          188,
+          40,
+          0,
+          84,
+          98,
+          175,
+          73,
+          154,
+          139,
+          216,
+          164,
+          157,
+          72,
+          231,
+          36,
+          168
+        ]
+      },
+      "cli_elapsed_seconds": 16.552844398887828,
+      "result": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-live/noise-discriminator/rtc-calibrate.log",
+        "sha256": "00ee2f9f7b25ae48c0061aa5cffcc8afd7bafd74d9ed4438e017bb86adc47cc5"
+      },
+      "owner_report": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-live/noise-discriminator/owner-report.json",
+        "sha256": "58fecc4cbee8f643b66585702ecaebfa006febc0c142777ecce149e0b6dabc47"
+      },
+      "completion": {
+        "phase": "complete",
+        "restoration_confirmed": true,
+        "resume_permitted": true,
+        "failure": null,
+        "recovery_failure": null
+      },
+      "batches": 28,
+      "accepted_exposures": 448
+    }
+  },
+  "full_cycle_comparison": {
+    "scope": "recorded full-batch Float32 outputs only; no separate source-frame or matrix-estimator claim",
+    "values_count": 208304,
+    "float32_bit_identical": true,
+    "max_abs_difference": 0.0,
+    "equal_exposure_receipts": true,
+    "fgn_float32_values_sha256": "5cec509995daec33c51b5cb73a7363434a94cf430e991d266ac411bb4568061a",
+    "jfg_float32_values_sha256": "5cec509995daec33c51b5cb73a7363434a94cf430e991d266ac411bb4568061a",
+    "fgn_record_sha256": "ab308df92d0cbdf063a1aa5e57662930b369757f3b19bdca1182184690ae7432",
+    "jfg_record_sha256": "ab308df92d0cbdf063a1aa5e57662930b369757f3b19bdca1182184690ae7432"
+  },
+  "current_aoc_matrix_comparison": {
+    "source_aoc_revision": "875a7c22e995491ef9b8c2c542b37e3c3bbf170b",
+    "AOC_version": "0.17.0",
+    "amplitudes": [
+      0.02
+    ],
+    "input_probe_sha256": "bf1c40cf4184dd848e3b543ffae48a7ffe4ad87f96d656d8ccdf524ebb7cbb6e",
+    "matrices": {
+      "full-zonal": {
+        "result_sha256": "ab308df92d0cbdf063a1aa5e57662930b369757f3b19bdca1182184690ae7432",
+        "fgn_or_jfg_matrix_sha256": "b5115a793d5d8475b8da7c7d73f4b5b2a22ba4a1fd6b4396bdbc9f9e5040e89b",
+        "response_count": 554,
+        "measurement_count": 376,
+        "matrix_shape": [
+          376,
+          277
+        ],
+        "bit_identical": true,
+        "differing_float32": 0,
+        "maximum_absolute_difference": 0.0
+      },
+      "full-zonal-jfg": {
+        "result_sha256": "ab308df92d0cbdf063a1aa5e57662930b369757f3b19bdca1182184690ae7432",
+        "fgn_or_jfg_matrix_sha256": "b5115a793d5d8475b8da7c7d73f4b5b2a22ba4a1fd6b4396bdbc9f9e5040e89b",
+        "response_count": 554,
+        "measurement_count": 376,
+        "matrix_shape": [
+          376,
+          277
+        ],
+        "bit_identical": true,
+        "differing_float32": 0,
+        "maximum_absolute_difference": 0.0
+      }
+    },
+    "fgn_jfg_aoc_bit_identical": true,
+    "fgn_jfg_maximum_absolute_difference": 0.0
+  },
+  "full_cycle_plan": {
+    "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/acquisition/full-zonal-plan.json",
+    "sha256": "bf1c40cf4184dd848e3b543ffae48a7ffe4ad87f96d656d8ccdf524ebb7cbb6e"
+  },
+  "noise_discriminator": {
+    "plan": {
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/acquisition/noise-discriminator-plan.json",
+      "sha256": "13c14307b0aea202d1bf296863beb43115c4d26fa9fea840d68c2a9102491f16"
+    },
+    "policy": {
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/acquisition/noise-discriminator-policy.json",
+      "sha256": "867ff81b71769aed57cd6d1c3df58f3d9bef63586bbe85695a52aca622fdf8cf"
+    },
+    "analysis": {
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-live/noise-discriminator/analysis.json",
+      "sha256": "6ee7d7ed79b553a72957f42b15a60187ff44ce493d0729bdc30aaa3038c8d7dc"
+    },
+    "results": {
+      "scope": "repeated selected-actuator noise and amplitude discriminator",
+      "status": "complete associated measurements; no scientific reconstructor acceptance",
+      "results": [
+        {
+          "actuator": 139,
+          "amplitude_um_opd": 0.02,
+          "norms_pixels_per_um": [
+            3.5097218,
+            3.169294
+          ],
+          "repeat_difference_norm_pixels_per_um": 4.332163,
+          "estimated_repeat_noise_rms_pixels_per_um": 3.0633018,
+          "repeatable_signal_energy_pixels2_per_um2": 1.7974694,
+          "cosine": 0.16159439,
+          "expected_noise_rms_from_flat": 3.218334389754148
+        },
+        {
+          "actuator": 139,
+          "amplitude_um_opd": 0.04,
+          "norms_pixels_per_um": [
+            1.9743903,
+            1.7931194
+          ],
+          "repeat_difference_norm_pixels_per_um": 2.2384992,
+          "estimated_repeat_noise_rms_pixels_per_um": 1.5828576,
+          "repeatable_signal_energy_pixels2_per_um2": 1.0513083,
+          "cosine": 0.2969531,
+          "expected_noise_rms_from_flat": 1.609167194877074
+        },
+        {
+          "actuator": 139,
+          "amplitude_um_opd": 0.08,
+          "norms_pixels_per_um": [
+            1.4546876,
+            1.4383142
+          ],
+          "repeat_difference_norm_pixels_per_um": 1.1875659,
+          "estimated_repeat_noise_rms_pixels_per_um": 0.8397359,
+          "repeatable_signal_energy_pixels2_per_um2": 1.3872755,
+          "cosine": 0.6630392,
+          "expected_noise_rms_from_flat": 0.804583597438537
+        },
+        {
+          "actuator": 143,
+          "amplitude_um_opd": 0.02,
+          "norms_pixels_per_um": [
+            6.604796,
+            6.7459335
+          ],
+          "repeat_difference_norm_pixels_per_um": 4.821264,
+          "estimated_repeat_noise_rms_pixels_per_um": 3.4091482,
+          "repeatable_signal_energy_pixels2_per_um2": 32.94318,
+          "cosine": 0.7393738,
+          "expected_noise_rms_from_flat": 3.218334389754148
+        },
+        {
+          "actuator": 143,
+          "amplitude_um_opd": 0.04,
+          "norms_pixels_per_um": [
+            5.6926928,
+            5.9374824
+          ],
+          "repeat_difference_norm_pixels_per_um": 2.46926,
+          "estimated_repeat_noise_rms_pixels_per_um": 1.7460304,
+          "repeatable_signal_energy_pixels2_per_um2": 30.7816,
+          "cosine": 0.9106912,
+          "expected_noise_rms_from_flat": 1.609167194877074
+        },
+        {
+          "actuator": 143,
+          "amplitude_um_opd": 0.08,
+          "norms_pixels_per_um": [
+            5.780365,
+            5.7806277
+          ],
+          "repeat_difference_norm_pixels_per_um": 1.203136,
+          "estimated_repeat_noise_rms_pixels_per_um": 0.85074556,
+          "repeatable_signal_energy_pixels2_per_um2": 32.69037,
+          "cosine": 0.97833943,
+          "expected_noise_rms_from_flat": 0.804583597438537
+        }
+      ],
+      "amplitude_scaling": [
+        {
+          "actuator": 139,
+          "amplitude_um_opd": 0.02,
+          "relative_column_difference_to_008": 1.8044106
+        },
+        {
+          "actuator": 139,
+          "amplitude_um_opd": 0.04,
+          "relative_column_difference_to_008": 0.9745262
+        },
+        {
+          "actuator": 139,
+          "amplitude_um_opd": 0.08,
+          "relative_column_difference_to_008": 0.0
+        },
+        {
+          "actuator": 143,
+          "amplitude_um_opd": 0.02,
+          "relative_column_difference_to_008": 0.44941545
+        },
+        {
+          "actuator": 143,
+          "amplitude_um_opd": 0.04,
+          "relative_column_difference_to_008": 0.23806807
+        },
+        {
+          "actuator": 143,
+          "amplitude_um_opd": 0.08,
+          "relative_column_difference_to_008": 0.0
+        }
+      ],
+      "nulls": [
+        {
+          "pair": 0,
+          "average_difference_norm_pixels": 0.13196518,
+          "estimated_single_average_noise_norm_pixels": 0.09331347031461959
+        },
+        {
+          "pair": 1,
+          "average_difference_norm_pixels": 0.13645847,
+          "estimated_single_average_noise_norm_pixels": 0.09649071048961334
+        }
+      ],
+      "response_sha256": "00ee2f9f7b25ae48c0061aa5cffcc8afd7bafd74d9ed4438e017bb86adc47cc5",
+      "assumptions": "repeat-noise and signal estimates assume stationary independent zero-mean measurement noise; only two repeats per amplitude",
+      "matrix_policy": "AOC structured estimator used for six labelled probe patterns, not six independent physical control coordinates"
+    },
+    "physical_coordinates": 2,
+    "amplitude_patterns": 6,
+    "repeat_blocks": 2,
+    "no_averaging_count_sweep": true,
+    "no_uncertainty_based_linearity_acceptance": true
+  },
+  "package_export": {
+    "package": "/home/dgamroth/.cache/rtc-event-calibration-20261002/package-export/classic-fgn-calibration-deployment-4-12",
+    "deployment": {
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/package-export/classic-fgn-calibration-deployment-4-12/deployment.conf",
+      "sha256": "0f8a71a08fcae02485bb4a038e0b8c4ba29637e4ba74c217ea9eb7cf3fddf3f4"
+    },
+    "provenance": {
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/package-export/classic-fgn-calibration-deployment-4-12/provenance.json",
+      "sha256": "eefc9c82576ddf0825cf9387a221c74273dd104d63f925bb2b144399132a6726"
+    },
+    "profile_decoder_accepted": true,
+    "all_declared_artifact_hashes_match": true,
+    "packaged_cli": {
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/package-export/classic-fgn-calibration-deployment-4-12/bin/rtc-calibrate",
+      "sha256": "ad5f3c493ed5f2eda08732184a5531ab65b95ac25b229f7348fc92eb7476035e"
+    },
+    "acceptance_mask_rois": 188,
+    "eligible_mask_not_installed_in_this_export": true,
+    "installed_launcher_qualification": "Historical initial export; actual current FGN installed qualification is separately recorded in installed_qualification.",
+    "commands": {
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/package-export/commands.json",
+      "sha256": "e3acc33dcf166143c660a278c0bcf3281198e6954a18c0d16bb26b2c4a423aed"
+    }
+  },
+  "native_client": {
+    "fixed_library": {
+      "path": "/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0",
+      "sha256": "083da9b7c347a40e8ce03cc1332c06774cbf766fdd71fe36010233e6d9096387"
+    },
+    "selection": "Explicit JULIA_DEPOT_PATH artifact override plus LD_LIBRARY_PATH for direct fixtures; deployment launcher creates a runtime artifact override for its selected prefix. Runtime library maps must confirm the selection.",
+    "artifact_only_release_qualified": false
+  },
+  "software_checks": [
+    {
+      "check": "live_rust_workspace",
+      "passed": 133,
+      "ignored_or_skipped": 3,
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/acquisition/rtc-workspace-tests-capability.log",
+      "sha256": "c0ad6da77fa4e427c869025d5042edc46e397f0682f72d61bc5df4098ac555b9",
+      "exit_code": 0
+    },
+    {
+      "check": "rust_clippy",
+      "passed": null,
+      "ignored_or_skipped": 0,
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/propinfo-capability-evidence/live-all-target-clippy.stdout.log",
+      "sha256": "bb98b70427887a29d0aba90fd5befdd03c2910e7338e2168d1911539db5fc3ba",
+      "exit_code": 0
+    },
+    {
+      "check": "release_rtc_and_calibration_binaries",
+      "passed": null,
+      "ignored_or_skipped": 0,
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/acquisition/rtc-release-capability-build.log",
+      "sha256": "1586bdc6f42546f5481764ed9836d9e2d2c796eb3a9f4917bca1d3e4cf006615",
+      "exit_code": 0
+    },
+    {
+      "check": "python_deployment",
+      "passed": 130,
+      "ignored_or_skipped": 2,
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/jfg-calibration-pin-evidence/deployment-discovery.stdout.log",
+      "sha256": "4a80272ceff46677e7072e7250704b96e526883f85b9d8984d3a06468330800d"
+    },
+    {
+      "check": "acquisition_unit",
+      "passed": 31,
+      "ignored_or_skipped": 0,
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/acquisition/acquisition-unit-final.log",
+      "sha256": "1871cd2eff0edae60b5e5ebf10ab1c4c402dfedf1abe315ece79c1bfced9adb2"
+    },
+    {
+      "check": "bounded_server",
+      "passed": 241,
+      "ignored_or_skipped": 0,
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/server-admission-pass-after.log",
+      "sha256": "8bc465f8ef310f9e746cfd3a16901b3375ef5a1d08439f41fe812e5bd6f4ba6d"
+    },
+    {
+      "check": "prepared_transport_unit",
+      "passed": 151,
+      "ignored_or_skipped": 0,
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/review-final-helper.log",
+      "sha256": "743fbc85b33d60f563c3da4ff798d77002beeed9f4962781e5621a00dfe415a8"
+    },
+    {
+      "check": "hil_adapter_full",
+      "passed": 1210,
+      "ignored_or_skipped": 0,
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/disconnect-full.log",
+      "sha256": "e9c97a212bf2d8182c7aeed0e83e914eecd08d321de84a5a9fb95b288046f286"
+    },
+    {
+      "check": "current_aoc_client",
+      "passed": 24,
+      "ignored_or_skipped": 0,
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/package-export/evidence-logs/client-test.stdout.log",
+      "sha256": "7b3bfe41ffe78c825b2e24041be5044be574e4f5dfc7fb30bec6c2b6aff42af6"
+    },
+    {
+      "check": "current_hil_export",
+      "passed": 12,
+      "ignored_or_skipped": 0,
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/package-export/evidence-logs/export-hil-test.stdout.log",
+      "sha256": "77ee45f716f5874f95988612a19a885532d5df35fe240f823c5a37f53c758273"
+    },
+    {
+      "check": "current_calibration_export",
+      "passed": 12,
+      "ignored_or_skipped": 1,
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/jfg-calibration-pin-evidence/focused.stdout.log",
+      "sha256": "97629cab865d8c5ce1b6c786cd77021f3a825d803df91d61b842300c5d133c40"
+    },
+    {
+      "check": "graph_optional_property_capabilities",
+      "passed": 14,
+      "ignored_or_skipped": 0,
+      "exit_code": 0,
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/propinfo-capability-evidence/live-lib-tests.stdout.log",
+      "sha256": "00b405ef02ef1e9dfd0b4e810216807c021f74a02120e92770292ff04a770db7"
+    }
+  ],
+  "independent_reviews": [
+    {
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/final-acquisition-review.md",
+      "sha256": "59fc093157e808f3d9fb8b5f3e668a530e031959dc1d5c20512cd56a56500444"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/full-zonal-scientific-review.md",
+      "sha256": "0ce05c3e0b525208a68fd26feaf224c102ea75acb7214aec38fbdd5b06415e53"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-live/noise-discriminator/README.review.md",
+      "sha256": "a4bceaa9efdd5a0e442d9281f9f76eb30ff4315848358541c91fa2308a5f42ef"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/current-aoc-package-review.md",
+      "sha256": "15ec984913cbe25c30f7504aa1985df90a50a2f264f6b56b0baf898c9cb9fc84"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/jfg-link-negotiation-review.md",
+      "sha256": "7c8958ab8e9a948d804b221a6b966b490fe2670653da142e6fe98b827d2f67a7"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/recording-paired-review-comparison.json",
+      "sha256": "b8b63394cb27d2f4b4b1b88d5d74f6a2874a6116ea4523114ac2ff0dc4861d54"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/recording-full-paired-review-comparison.json",
+      "sha256": "c7eddd8b117a34460d8397c2a642377f79294734eb76d3906a5f109390ab26d6"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/recording-full-matrix-review.json",
+      "sha256": "13c0e6fb827002b465b4dd77877bffb5f2465b8a2e8061c9e012132e6674c7b3"
+    }
+  ],
+  "fail_before_pass_after": {
+    "restore_post_effect_fence": [
+      {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/server-FAC-R3-fail-before.log",
+        "sha256": "3a0cabb7757fbbe5560dc53d1a0992b74e0d62ef751fe2dc43528eea97bde595"
+      },
+      {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/server-FAC-R3-pass-after.log",
+        "sha256": "a6444febd3235120dd5b81fefa7f68ad47795ac1a29bff0a037c80bfb46e9ac2"
+      }
+    ],
+    "invalid_quality_restore": [
+      {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/server-invalid-quality-fail-before.log",
+        "sha256": "6c27d1db0945805a140a2f14af1d312d8ecde22eff0e8e6489fc95334b4758e5"
+      },
+      {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/server-invalid-quality-pass-after.log",
+        "sha256": "acac40cb1de02f36a88c29dea23ed727406f3a514d7776a5de318e30df692fcb"
+      }
+    ],
+    "terminal_reply_peer_close": [
+      {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-live/terminal-fail-before.log",
+        "sha256": "7c6a76541309feb046408735a7b26125441722cd6efcb5e621dd2781c8525ad4"
+      },
+      {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-live/terminal-pass-after.log",
+        "sha256": "662387aeb292deb0c5be5d5a3a43c6a57a87dca01f228f56d1becbb1997560f3"
+      }
+    ],
+    "declared_exposure_duration": [
+      {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/review-exposure-mismatch.log",
+        "sha256": "7b986d5a34846d079ce629aeefca06adde223e2583bb6fc02606e5a5d5ea0534"
+      },
+      {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/review-exposure-mismatch-after.log",
+        "sha256": "61660e772e43f05d4c2474e75c140becae5277a1ed0bf6c522aacb8737310d38"
+      }
+    ],
+    "stale_embedded_rtc_runner": {
+      "fail_before": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed/evidence.json",
+        "sha256": "4c88777878cbb09f1063c7098d6a32ecd3b1daaf9d34d1fb32ad2bacdfb297ff"
+      },
+      "current_selected_runner": {
+        "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-acquisition/target/release/pipewireao-rtc",
+        "sha256": "656bfc821b57fca8209572fd653c057ef4334528aaeda6db3e918282b17191e5"
+      },
+      "pass_after": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed-capability/evidence.json",
+        "sha256": "daf923dcfc62fc78292ec653790fe4f1b079af9ba826b5d8f91807a9b4c9981b"
+      }
+    },
+    "accept_budget_after_admission": {
+      "fail_before": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/server-admission-fail-before.log",
+        "sha256": "adf1a89c585e86230a628131390434478312b3d455a0633168f000e4aa8b9c77"
+      },
+      "pass_after": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/server-admission-pass-after.log",
+        "sha256": "8bc465f8ef310f9e746cfd3a16901b3375ef5a1d08439f41fe812e5bd6f4ba6d"
+      },
+      "new_assertions_passed": 19,
+      "installed_fail_before": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed-jfg-positive/evidence.json",
+        "sha256": "1ff9ab989a1b9ae5ab3da426f486b94178c2c059a272e679a28cf26f23b415d9"
+      },
+      "installed_pass_after": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed-jfg-pinned/reviewer-final-state.json",
+        "sha256": "1357640d98065d2c60d5e6b05fefb3d6ad3039c8031b8c75ea5bde7542e942ec"
+      }
+    },
+    "split_julia_pinning": {
+      "fail_before_summary": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/jfg-calibration-pin-evidence/fail-before.txt",
+        "sha256": "f06608daeef99d8a09f41f5c730ce51918a13931fc70d6f943b3cd4b787372e9"
+      },
+      "fail_before_summary_note": "Recorded test command and diagnostic; not raw failing-test stdout. Actual installed failure is retained separately.",
+      "pass_after": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/jfg-calibration-pin-evidence/focused.stdout.log",
+        "sha256": "97629cab865d8c5ce1b6c786cd77021f3a825d803df91d61b842300c5d133c40"
+      },
+      "installed_fail_before": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed-jfg-admitted/evidence.json",
+        "sha256": "5dd304ab32272bdd600961ddff30abba9e55956080d846da36a8062cebe5859f"
+      },
+      "installed_pass_after": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed-jfg-pinned/reviewer-final-state.json",
+        "sha256": "1357640d98065d2c60d5e6b05fefb3d6ad3039c8031b8c75ea5bde7542e942ec"
+      }
+    }
+  },
+  "remaining": [
+    "Earlier installed numerical discrepancy cannot be attributed from retained evidence; current paired full functional/parity gate passes",
+    "Automatic normal dark/flat/reference campaign",
+    "Repeatability, precision and observability acceptance",
+    "Explicit physical 277-to-controller 221 map composition",
+    "Eligible-row covariance and accepted reconstructor",
+    "Corrected-loop validation",
+    "Copper and unchanged HEART operational calibration",
+    "GPU and cadence validation",
+    "Fixed released JLL artifact qualification"
+  ],
+  "installed_startup_failures": [
+    {
+      "stage": "stale inherited runner",
+      "observed": "Old runner rejects BOOL8 before readiness; current source already accepts BOOL8.",
+      "evidence": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed/evidence.json",
+        "sha256": "4c88777878cbb09f1063c7098d6a32ecd3b1daaf9d34d1fb32ad2bacdfb297ff"
+      },
+      "pass_after_negative": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed-capability/evidence.json",
+        "sha256": "daf923dcfc62fc78292ec653790fe4f1b079af9ba826b5d8f91807a9b4c9981b"
+      }
+    },
+    {
+      "stage": "unexpanded graph configuration path",
+      "observed": "Current runner rejects literal @RUNTIME@ reference; exporter now uses existing PIPEWIREAO_RTC_GRAPH environment bindings.",
+      "evidence": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed-current/evidence.json",
+        "sha256": "e44c305c187a5aa173b31b44dbc346460b41abb4ecd8571e52142852d2c35266"
+      },
+      "pass_after_negative": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed-capability/evidence.json",
+        "sha256": "daf923dcfc62fc78292ec653790fe4f1b079af9ba826b5d8f91807a9b4c9981b"
+      }
+    },
+    {
+      "stage": "external raw receipt link admission",
+      "observed": "Current runner rejects source-to-sink observer; complete-frame admission now permits explicitly declared external-to-external observers with all normal contract checks.",
+      "evidence": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed-envref/evidence.json",
+        "sha256": "3ce7cac2ca9b3ac70ddf5e4c1393a17c4f152d13c9cfb76a5caa3ef73eb3a9e8"
+      },
+      "pass_after_negative": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed-capability/evidence.json",
+        "sha256": "daf923dcfc62fc78292ec653790fe4f1b079af9ba826b5d8f91807a9b4c9981b"
+      }
+    },
+    {
+      "stage": "optional property metadata subscription",
+      "observed": "Graph run-control discovery requests unreadable PropInfo and receives core ENOENT. Actual command graph provides required Props/run/reset but no scientific properties.",
+      "evidence": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed-observer/evidence.json",
+        "sha256": "07c688c2a72cb653841f6c5fc32533bbeba65f3a7e0c87841f8186a29cd8cd64"
+      },
+      "remediation_state": "corrected at 996732f; installed negative passed with required statuses and strict core errors",
+      "pass_after_negative": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed-capability/evidence.json",
+        "sha256": "daf923dcfc62fc78292ec653790fe4f1b079af9ba826b5d8f91807a9b4c9981b"
+      }
+    },
+    {
+      "stage": "split JFG thread pinning arguments",
+      "observed": "Both graph owners prepared after admission-timeout correction; required CPU10 worker absent because split owner argv omitted inherited --pin-cpus while copied placement remained strict. No science admitted.",
+      "evidence": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed-jfg-admitted/evidence.json",
+        "sha256": "5dd304ab32272bdd600961ddff30abba9e55956080d846da36a8062cebe5859f"
+      },
+      "remediation_state": "corrected at996ca60; actual JFG recorded placement/readiness passes, numerical parity remains separate"
+    }
+  ],
+  "installed_qualification": {
+    "invalid_quality": {
+      "evidence": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed-capability/evidence.json",
+        "sha256": "daf923dcfc62fc78292ec653790fe4f1b079af9ba826b5d8f91807a9b4c9981b"
+      },
+      "package": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed-capability/package",
+      "all_declared_artifact_hashes_match": true,
+      "artifact_count": 370,
+      "native_loaded": {
+        "core": [
+          {
+            "path": "/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0",
+            "sha256": "083da9b7c347a40e8ce03cc1332c06774cbf766fdd71fe36010233e6d9096387"
+          }
+        ],
+        "simulator": [
+          {
+            "path": "/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0",
+            "sha256": "083da9b7c347a40e8ce03cc1332c06774cbf766fdd71fe36010233e6d9096387"
+          }
+        ],
+        "rtc": [
+          {
+            "path": "/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0",
+            "sha256": "083da9b7c347a40e8ce03cc1332c06774cbf766fdd71fe36010233e6d9096387"
+          }
+        ]
+      },
+      "checks": {
+        "ready_source_sequence_zero": true,
+        "calibration_socket_present": true,
+        "runtime_instance_removed": true,
+        "owned_processes_removed": true,
+        "safe_abort_restored_released": true
+      },
+      "cli_exit": 1,
+      "result": {
+        "failure": "InvalidEvidence",
+        "phase": "aborted",
+        "recovery_failure": null,
+        "responses": null,
+        "restoration_confirmed": true,
+        "resume_permitted": true,
+        "run": 1,
+        "version": 1
+      },
+      "owner_summary": {
+        "phase": "released",
+        "sequence": 4,
+        "completed": true,
+        "failure": null,
+        "ownership_held": false,
+        "restoration_confirmed": true
+      },
+      "declared_placement": {
+        "core": {
+          "cpus": [
+            2,
+            14
+          ],
+          "leader-cpu": 14,
+          "rt-priority": 83,
+          "threads": [
+            {
+              "cpus": [
+                2
+              ],
+              "policy": "fifo",
+              "priority": 83,
+              "count": 1
+            }
+          ],
+          "locked-bytes": 0
+        },
+        "rtc": {
+          "cpus": [
+            2,
+            14
+          ],
+          "leader-cpu": 14,
+          "rt-priority": 83,
+          "threads": [
+            {
+              "cpus": [
+                2
+              ],
+              "policy": "fifo",
+              "priority": 83,
+              "count": 1
+            }
+          ],
+          "locked-bytes": 0
+        },
+        "simulator": {
+          "cpus": [
+            6,
+            14
+          ],
+          "leader-cpu": 6,
+          "rt-priority": 0,
+          "threads": [],
+          "locked-bytes": 0
+        }
+      },
+      "actual_placement": {
+        "core": {
+          "pid": 876171,
+          "threads": [
+            {
+              "tid": 876171,
+              "name": "pipewire-ao",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 876172,
+              "name": "rtc-data-loop",
+              "cpus": [
+                2
+              ],
+              "policy": 1,
+              "priority": 83
+            }
+          ],
+          "locked_bytes": 0
+        },
+        "simulator": {
+          "pid": 876173,
+          "threads": [
+            {
+              "tid": 876173,
+              "name": "julia",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 876182,
+              "name": "iou-sqp-876173",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 876183,
+              "name": "julia",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 876845,
+              "name": "AdaptiveOpticsS",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            }
+          ],
+          "locked_bytes": 536576
+        },
+        "rtc": {
+          "pid": 876888,
+          "threads": [
+            {
+              "tid": 876888,
+              "name": "pipewireao-rtc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 876889,
+              "name": "ndarray-paramet",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 876890,
+              "name": "rtc-data-loop",
+              "cpus": [
+                2
+              ],
+              "policy": 1,
+              "priority": 83
+            },
+            {
+              "tid": 876891,
+              "name": "ndarray-paramet",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 876893,
+              "name": "rtc-control-soc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            }
+          ],
+          "locked_bytes": 536576
+        }
+      },
+      "launcher_exit": 0
+    },
+    "positive_full_zonal": {
+      "engine": "FGN",
+      "evidence": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed-positive/evidence.json",
+        "sha256": "3378b6966ea2a9266a946cca09b05b4327414b5d31ddba8032311b8f474b6403"
+      },
+      "package": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed-positive/package",
+      "all_declared_artifact_hashes_match": true,
+      "artifact_count": 371,
+      "native_loaded": {
+        "core": [
+          {
+            "path": "/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0",
+            "sha256": "083da9b7c347a40e8ce03cc1332c06774cbf766fdd71fe36010233e6d9096387"
+          }
+        ],
+        "simulator": [
+          {
+            "path": "/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0",
+            "sha256": "083da9b7c347a40e8ce03cc1332c06774cbf766fdd71fe36010233e6d9096387"
+          }
+        ],
+        "rtc": [
+          {
+            "path": "/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0",
+            "sha256": "083da9b7c347a40e8ce03cc1332c06774cbf766fdd71fe36010233e6d9096387"
+          }
+        ]
+      },
+      "checks": {
+        "ready_source_sequence_zero": true,
+        "calibration_socket_present": true,
+        "all554_valid_batches_exact1108_ids": true,
+        "result_equals_direct_fgn_and_jfg": true,
+        "runtime_instance_removed": true,
+        "owned_processes_removed": true,
+        "complete_restored_released": true
+      },
+      "cli_exit": 0,
+      "result_summary": {
+        "failure": null,
+        "phase": "complete",
+        "recovery_failure": null,
+        "restoration_confirmed": true,
+        "resume_permitted": true,
+        "run": 1,
+        "version": 1
+      },
+      "accepted_batches": 554,
+      "accepted_exposures": 1108,
+      "measurement_values": 208304,
+      "installed_result_sha256": "ab308df92d0cbdf063a1aa5e57662930b369757f3b19bdca1182184690ae7432",
+      "direct_result_sha256": "ab308df92d0cbdf063a1aa5e57662930b369757f3b19bdca1182184690ae7432",
+      "owner_summary": {
+        "phase": "released",
+        "sequence": 1663,
+        "completed": true,
+        "failure": null,
+        "ownership_held": false,
+        "restoration_confirmed": true,
+        "cursor_model_ns": 166201896000
+      },
+      "declared_placement": {
+        "core": {
+          "cpus": [
+            2,
+            14
+          ],
+          "leader-cpu": 14,
+          "rt-priority": 83,
+          "threads": [
+            {
+              "cpus": [
+                2
+              ],
+              "policy": "fifo",
+              "priority": 83,
+              "count": 1
+            }
+          ],
+          "locked-bytes": 0
+        },
+        "rtc": {
+          "cpus": [
+            2,
+            14
+          ],
+          "leader-cpu": 14,
+          "rt-priority": 83,
+          "threads": [
+            {
+              "cpus": [
+                2
+              ],
+              "policy": "fifo",
+              "priority": 83,
+              "count": 1
+            }
+          ],
+          "locked-bytes": 0
+        },
+        "simulator": {
+          "cpus": [
+            6,
+            14
+          ],
+          "leader-cpu": 6,
+          "rt-priority": 0,
+          "threads": [],
+          "locked-bytes": 0
+        }
+      },
+      "actual_placement": {
+        "core": {
+          "pid": 877254,
+          "threads": [
+            {
+              "tid": 877254,
+              "name": "pipewire-ao",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 877255,
+              "name": "rtc-data-loop",
+              "cpus": [
+                2
+              ],
+              "policy": 1,
+              "priority": 83
+            }
+          ],
+          "locked_bytes": 0
+        },
+        "simulator": {
+          "pid": 877256,
+          "threads": [
+            {
+              "tid": 877256,
+              "name": "julia",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 877261,
+              "name": "iou-sqp-877256",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 877262,
+              "name": "julia",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 877837,
+              "name": "AdaptiveOpticsS",
+              "cpus": [
+                6
+              ],
+              "policy": 0,
+              "priority": 0
+            }
+          ],
+          "locked_bytes": 536576
+        },
+        "rtc": {
+          "pid": 877862,
+          "threads": [
+            {
+              "tid": 877862,
+              "name": "pipewireao-rtc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 877863,
+              "name": "ndarray-paramet",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 877864,
+              "name": "rtc-data-loop",
+              "cpus": [
+                2
+              ],
+              "policy": 1,
+              "priority": 83
+            },
+            {
+              "tid": 877865,
+              "name": "ndarray-paramet",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            },
+            {
+              "tid": 877888,
+              "name": "rtc-control-soc",
+              "cpus": [
+                14
+              ],
+              "policy": 0,
+              "priority": 0
+            }
+          ],
+          "locked_bytes": 536576
+        }
+      },
+      "launcher_exit": 0
+    },
+    "jfg_full_zonal": {
+      "evidence": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed-jfg-pinned/evidence.json",
+        "sha256": "0eef867241226f541b97687b6f7a9c09e8774775f15f7b442af3aea41eea9aa2"
+      },
+      "independent_comparison": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed-jfg-pinned/reviewer-comparison.json",
+        "sha256": "9269d2dab87799b70293e0429beffd10aa2c87f2a614272d5801d34173374a40"
+      },
+      "independent_final_state": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed-jfg-pinned/reviewer-final-state.json",
+        "sha256": "1357640d98065d2c60d5e6b05fefb3d6ad3039c8031b8c75ea5bde7542e942ec"
+      },
+      "coordinator_phase": "complete",
+      "accepted_batches": 554,
+      "accepted_exposures": 1108,
+      "restoration_confirmed": true,
+      "exact_result_parity": false,
+      "different_values": 380,
+      "compared_values": 208304,
+      "maximum_absolute_slope_difference_pixels": 0.017796367406845093,
+      "nonvalue_response_metadata_equal": true,
+      "terminal_owner_report_captured": false,
+      "normal_manual_stop_before_assertion": false,
+      "launcher_exit": 0,
+      "owned_processes_and_instance_removed": true,
+      "root_cause": "unresolved; input vs processing discriminator pending",
+      "scientific_acceptance": false
+    }
+  },
+  "package_source_comparison": {
+    "report": {
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/source-package-comparison.md",
+      "sha256": "d031793b8b0efbe9933ab53b9a968e1bd5baa837c1202849902c3ab6b016b967"
+    },
+    "hash_inventory": {
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/source-package-comparison.json",
+      "sha256": "62cf8a67ed429b56597ffae116d66c3e3562b7e674e612bb5a2b48bd8789bd9d"
+    },
+    "no_root_cause_claim": true
+  },
+  "installed_identical_adc_diagnostic": {
+    "scope": "First four physical actuator push/pull pairs; unchanged settling/averaging; cache-only owner-thread payload recorder after completion",
+    "total_exposures": 25,
+    "accepted_exposures": 16,
+    "batches": 8,
+    "cases": {
+      "owner-installed-recording-fgn": {
+        "evidence": {
+          "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed-recording-fgn/evidence.json",
+          "sha256": "8935acba5c543f456d71273f82c093273de3e357d9b2f7ff1618507450967d6c"
+        },
+        "checks": {
+          "ready_source_sequence_zero": true,
+          "calibration_socket_present": true,
+          "all8_valid_batches_exact16_ids": true,
+          "all25_raw_individual_wfs_full_ids_captured": true,
+          "all_source_graph_and_rtc_child_exit0": true,
+          "runtime_instance_removed": true,
+          "owned_processes_removed": true,
+          "complete_restored_released": true
+        },
+        "child_exit_codes": {
+          "core": 0,
+          "simulator": 0,
+          "rtc": 0
+        },
+        "launcher_exit": 0,
+        "installed_result_sha256": "8d759cb6594cc3a935dbeb35621511ebc6f5705297f9772d488d293b0f71d68d",
+        "diagnostic_not_benchmark": true,
+        "native_loaded": {
+          "core": [
+            {
+              "path": "/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0",
+              "sha256": "083da9b7c347a40e8ce03cc1332c06774cbf766fdd71fe36010233e6d9096387"
+            }
+          ],
+          "simulator": [
+            {
+              "path": "/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0",
+              "sha256": "083da9b7c347a40e8ce03cc1332c06774cbf766fdd71fe36010233e6d9096387"
+            }
+          ],
+          "rtc": [
+            {
+              "path": "/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0",
+              "sha256": "083da9b7c347a40e8ce03cc1332c06774cbf766fdd71fe36010233e6d9096387"
+            }
+          ]
+        }
+      },
+      "owner-installed-recording-jfg-debug": {
+        "evidence": {
+          "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed-recording-jfg-debug/evidence.json",
+          "sha256": "89eb1bdeb5a40d2943a03497b6cabbd043cb36777f680570e9d5d427b89c7ba8"
+        },
+        "checks": {
+          "ready_source_sequence_zero": true,
+          "calibration_socket_present": true,
+          "all8_valid_batches_exact16_ids": true,
+          "all25_raw_individual_wfs_full_ids_captured": true,
+          "all_source_graph_and_rtc_child_exit0": true,
+          "runtime_instance_removed": true,
+          "owned_processes_removed": true,
+          "complete_restored_released": true
+        },
+        "child_exit_codes": {
+          "core": 0,
+          "simulator": 0,
+          "julia-wfs": 0,
+          "julia-command": 0,
+          "rtc": 0
+        },
+        "launcher_exit": 0,
+        "installed_result_sha256": "8d759cb6594cc3a935dbeb35621511ebc6f5705297f9772d488d293b0f71d68d",
+        "diagnostic_not_benchmark": true,
+        "native_loaded": {
+          "core": [
+            {
+              "path": "/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0",
+              "sha256": "083da9b7c347a40e8ce03cc1332c06774cbf766fdd71fe36010233e6d9096387"
+            }
+          ],
+          "simulator": [
+            {
+              "path": "/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0",
+              "sha256": "083da9b7c347a40e8ce03cc1332c06774cbf766fdd71fe36010233e6d9096387"
+            }
+          ],
+          "julia-wfs": [
+            {
+              "path": "/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0",
+              "sha256": "083da9b7c347a40e8ce03cc1332c06774cbf766fdd71fe36010233e6d9096387"
+            }
+          ],
+          "julia-command": [
+            {
+              "path": "/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0",
+              "sha256": "083da9b7c347a40e8ce03cc1332c06774cbf766fdd71fe36010233e6d9096387"
+            }
+          ],
+          "rtc": [
+            {
+              "path": "/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0",
+              "sha256": "083da9b7c347a40e8ce03cc1332c06774cbf766fdd71fe36010233e6d9096387"
+            }
+          ]
+        }
+      }
+    },
+    "paired_comparison": {
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed-recording-jfg-debug/captured-comparison.json",
+      "sha256": "1ecbb72b473dfe3e38f334182b9a2dcb58dcb8413b03075b1b7ce297a83bc824"
+    },
+    "all_adc_and_individual_wfs_payloads_bit_identical": true,
+    "full_domain_UUIDs_are_distinct": true,
+    "previous_full_run_difference_root_cause": "Unresolved; its ADC frames were not retained",
+    "debug_run_is_not_startup_remediation": true
+  },
+  "collector_handler_compilation": {
+    "scope": "Fresh Julia1.12.7 process, exact ThreadLoop F32 rank-two sink and UInt32/Pod handler signature; no loop started, links or exposures",
+    "evidence": [
+      {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/callback-compile-offline/README.md",
+        "sha256": "a34b22473a869e24a359fc6cbbe0ccd71b2d5898f8a7b76ddd15eccac4ab8750"
+      },
+      {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/callback-compile-offline/result.toml",
+        "sha256": "ae702a9ceae838d7b415a25f772b7a733b0e40d83468daf578cad79fdf311add"
+      },
+      {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/callback-compile-offline/compile.jl",
+        "sha256": "e6d923e625050f4a9af93b993a117ba8320c5fce88cefc4d0a5e494d32cf10d3"
+      },
+      {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/callback-compile-offline/provenance.json",
+        "sha256": "22caf09ee06fe0e3c5e2e5c536bbd04935c4ac000f0748fdc54651e3ecc6af8d"
+      }
+    ],
+    "first_call_ms": 473.736732,
+    "first_compilation_ms": 473.729639,
+    "second_call_us": 4.98,
+    "second_compilation_ms": 0,
+    "native_capability_handler_gap_ms": 455.507,
+    "change": "Single exact functor precompile before connect in existing helper cleanup path",
+    "change_commit": "3c846025113eacb851b437c585c63f15bc057136",
+    "focused_unit_assertions_passed": 151,
+    "private_core_assertions_passed": 133,
+    "tests": {
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/callback-compile-fix/helper-tests.log",
+      "sha256": "4d93381c20277c13c6c616a3d2a8fadce6a8cfb3ff044ea85b9c8809e55e86b9"
+    },
+    "native_after_validation": "Passed short targeted native trace and full installed no-debug JFG/FGN workflows; no WCET claim",
+    "does_not_execute_format_handler_or_change_parameters": true,
+    "does_not_guarantee_latency_when_adding_endpoints_to_active_loop": true,
+    "after": {
+      "evidence": [
+        {
+          "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/callback-compile-offline-after/result.toml",
+          "sha256": "984f6d6a997a76edcfa4aca0aaf010a958c69ada6eca6a3814a3d81b2820b7c9"
+        },
+        {
+          "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/callback-compile-offline-after/compile.jl",
+          "sha256": "c918fde6adbd06db7153a3281c2bae7c2f8ddf849bcace854f9d25bfb5d7ed7e"
+        },
+        {
+          "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/callback-compile-offline-after/measure.log",
+          "sha256": "c035ae98aa96ea2e1544905a99996893e99f0ca0b1af0721bd975b912333ca0d"
+        }
+      ],
+      "first_call_us": 5.45,
+      "first_compilation_ms": 0,
+      "second_call_us": 0.571,
+      "native_evidence": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed-recording-jfg-warm/evidence.json",
+        "sha256": "d71d0cb3a977c3e3546c559e0b2a7bc2d0bc339276559e15e65217006447e71a"
+      },
+      "native_peer_capability_gap_ms": 29.785,
+      "native_link_admission_ms": 47.951,
+      "native_link_admission_before_ms": 476.053,
+      "link_admission_budget_ms": 500,
+      "all_25_raw_and_individual_wfs_payloads_identical": true,
+      "all_five_children_exit_zero": true,
+      "residual_gap_attribution": "Not distinguished"
+    }
+  },
+  "installed_full_recording": {
+    "status": "Passed both installed full workflows, all-exposure comparison and current public AOC matrix estimation",
+    "jfg": {
+      "evidence": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed-recording-jfg-full/evidence.json",
+        "sha256": "467a84bae448d7a77e01a39e952df06db331932e58cd4b800fdf22860a73cac2"
+      },
+      "batches": 554,
+      "accepted_exposures": 1108,
+      "captured_exposures": 1663,
+      "result_sha256": "ab308df92d0cbdf063a1aa5e57662930b369757f3b19bdca1182184690ae7432",
+      "matches_private_fgn_complete_result": true,
+      "child_exit_codes": {
+        "core": 0,
+        "simulator": 0,
+        "julia-wfs": 0,
+        "julia-command": 0,
+        "rtc": 0
+      },
+      "launcher_exit": 0,
+      "owner_restoration_sequence": 1663,
+      "owner_restored_released_nonfailed": true,
+      "native_debug_environment_unset": true,
+      "diagnostic_recording_not_rate_or_latency_benchmark": true
+    },
+    "fgn": {
+      "evidence": {
+        "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed-recording-fgn-full/evidence.json",
+        "sha256": "a1338dff9004f069e400700f316fc75c3c5112f6472e1acba004a510babeea1f"
+      },
+      "batches": 554,
+      "accepted_exposures": 1108,
+      "captured_exposures": 1663,
+      "result_sha256": "ab308df92d0cbdf063a1aa5e57662930b369757f3b19bdca1182184690ae7432",
+      "matches_private_fgn_complete_result": true,
+      "child_exit_codes": {
+        "core": 0,
+        "simulator": 0,
+        "rtc": 0
+      },
+      "launcher_exit": 0,
+      "owner_restoration_sequence": 1663,
+      "owner_restored_released_nonfailed": true,
+      "native_debug_environment_unset": true,
+      "diagnostic_recording_not_rate_or_latency_benchmark": true
+    },
+    "paired_comparison": {
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed-recording-jfg-full/full-paired-comparison.json",
+      "sha256": "5662dfc880231beb07174d4240f0643cd6311f7e1376fdfc676f18026a56344c"
+    },
+    "all_adc_and_individual_wfs_payloads_bit_identical": true,
+    "all_208304_response_values_bit_identical": true,
+    "previous_full_run_difference_root_cause": "Unresolved; no raw ADC frames were retained for that run",
+    "matrix_comparison": {
+      "path": "/home/dgamroth/.cache/rtc-event-calibration-20261002/owner-installed-recording-jfg-full/matrix-paired-comparison.json",
+      "sha256": "4d1c1090e4932f9b038e4eb656c9ef1307c43fce1e7481f7178382199c5e21ce"
+    },
+    "matrix_shape": [
+      376,
+      277
+    ],
+    "matrix_bytes": 416608,
+    "matrix_sha256": "b5115a793d5d8475b8da7c7d73f4b5b2a22ba4a1fd6b4396bdbc9f9e5040e89b",
+    "matrix_status": "StructuredValid; no reconstructor or scientific rank/precision acceptance",
+    "server_startup_source_difference": "FGN retains earlier listener-startup variant; JFG uses admission-aware fix. Scientific owner/acquisition/parameters match. Current common server has separate241-assertion check and actual JFG workflow."
+  }
+}

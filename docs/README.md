@@ -44,6 +44,10 @@ the initial graph preparation, held-probe transport checks, independently
 reviewed native buffer-return fix, exact source identities and remaining
 operational calibration gates.
 
+[Calibration acquisition validation](CALIBRATION_ACQUISITION_VALIDATION.md)
+records the native Classic FGN/JFG full cycles, explicit simulated selection,
+noise discriminator and remaining scientific/deployment gates.
+
 ## Inactive design archive
 
 The [archived full-RTC design](archive/full-rtc/README.md) preserves prior work

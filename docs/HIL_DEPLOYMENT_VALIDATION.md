@@ -35,6 +35,7 @@ reserve correction described below.
 python3 deployment/export_hil.py \
   --base-package "$HOME/.config/pipewireao-rtc/revolt-copper-fgn-frame" \
   --output /absolute/export/revolt-copper-fgn-hil-cuda \
+  --aoc-root /absolute/AdaptiveOpticsCalibration.jl \
   --aos-root /absolute/AdaptiveOpticsSim.jl \
   --plant-root /absolute/REVOLTCopperSim.jl \
   --adapter-root /absolute/AdaptiveOpticsSimPipeWireHIL.jl \
@@ -46,6 +47,10 @@ python3 deployment/deploy.py install \
   --package /absolute/export/revolt-copper-fgn-hil-cuda \
   --destination "$HOME/.config/pipewireao-rtc/revolt-copper-fgn-hil-cuda"
 ```
+
+`--aoc-root` selects the maintained `AdaptiveOpticsCalibration.jl` source tree.
+The exporter includes that package in the HIL Julia environment and records its
+source revision in package provenance.
 
 `--backend cpu`, `cuda` or `amdgpu` selects the simulator independently of
 FGN/JFG. GPU dependencies are optional to CPU packages. An unavailable selected
