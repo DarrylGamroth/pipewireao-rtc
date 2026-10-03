@@ -279,9 +279,40 @@ class OperationalOffsetsTests(unittest.TestCase):
                 self.assertNotIn("simulated_calibration", provenance["hil"])
                 self.assertEqual(before, {str(p): export.sha256(p) for parent in (fixture.campaign, fixture.target)
                                          for p in parent.rglob("*") if p.is_file()})
+                simulator = next(owner for owner in json.loads(result.read_text())["owners"] if owner["role"] == "simulator")
+                self.assertNotIn("--correction-diagnostics", simulator["argv"])
                 self.assertTrue((args.output / "hil/calibrate_detector.jl").is_file())
                 for name in ("calibration_owner.jl", "calibration_acquisition.jl", "calibration_server.jl", "calibration_client.jl"):
                     self.assertEqual(export.sha256(args.output / "hil" / name), export.sha256(export_hil.ROOT / "hil" / name))
+
+    def test_correction_diagnostics_export_is_explicit_and_bound(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MeasuredFixture(Path(directory), "jfg")
+            args = fixture.export_arguments()
+            args.correction_diagnostics = True
+            with patch.object(export_hil.deploy, "profile", side_effect=lambda path, prefix: json.loads(path.read_text())), \
+                    patch.object(export_calibration, "spa_json", side_effect=json.dumps), \
+                    patch.object(export_hil.subprocess, "run"), \
+                    patch.object(export_hil.science, "revision", return_value="synthetic"):
+                result = export_hil.export_hil(args)
+            descriptor = json.loads(result.read_text())
+            simulator = next(owner for owner in descriptor["owners"] if owner["role"] == "simulator")
+            index = simulator["argv"].index("--correction-diagnostics")
+            self.assertEqual(simulator["argv"][index + 1], "true")
+            self.assertIn("hil/correction_truth.jl", descriptor["artifacts"])
+            self.assertEqual(descriptor["artifacts"]["hil/correction_truth.jl"], export.sha256(args.output / "hil/correction_truth.jl"))
+            self.assertIn("correction_diagnostics", json.loads((args.output / "provenance.json").read_text())["hil"])
+
+    def test_correction_diagnostics_rejects_unsupported_backend_before_output(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MeasuredFixture(Path(directory), "jfg")
+            args = fixture.export_arguments()
+            args.correction_diagnostics = True
+            args.backend = "cuda"
+            with patch.object(export_hil.deploy, "profile", side_effect=lambda path, prefix: json.loads(path.read_text())):
+                with self.assertRaisesRegex(ValueError, "correction diagnostics"):
+                    export_hil.export_hil(args)
+            self.assertFalse(args.output.exists())
 
     def test_failed_export_leaves_no_candidate_or_mutated_inputs(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -655,6 +686,7 @@ class HILExportTests(unittest.TestCase):
         parsed = export_hil.arguments([*arguments, "--aoc-root", "/src/aoc"])
         self.assertEqual(parsed.aoc_root, Path("/src/aoc"))
         self.assertIsNone(parsed.operational_calibration)
+        self.assertFalse(parsed.correction_diagnostics)
         parsed = export_hil.arguments([*arguments, "--aoc-root", "/src/aoc", "--operational-calibration", "/data/campaign"])
         self.assertEqual(parsed.operational_calibration, Path("/data/campaign"))
         with self.assertRaises(SystemExit):

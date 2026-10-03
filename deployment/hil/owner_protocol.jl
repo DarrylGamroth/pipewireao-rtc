@@ -12,8 +12,8 @@ const REQUIRED_OPTIONS = (
 
 """Parse the complete-frame simulator command line without loading a plant."""
 function parse_options(arguments)
-    values = Dict("backend" => "cpu", "frames" => "16", "transport" => "scientific")
-    allowed = Set((REQUIRED_OPTIONS..., "backend", "frames", "transport", "controller-request", "controller-reply"))
+    values = Dict("backend" => "cpu", "frames" => "16", "transport" => "scientific", "correction-diagnostics" => "false")
+    allowed = Set((REQUIRED_OPTIONS..., "backend", "frames", "transport", "controller-request", "controller-reply", "correction-diagnostics"))
     seen = Set{String}()
     iseven(length(arguments)) || throw(ArgumentError("each option requires one value"))
     for index in 1:2:length(arguments)
@@ -33,6 +33,10 @@ function parse_options(arguments)
     values["profile"] in ("classic", "copper") || throw(ArgumentError("--profile must be classic or copper"))
     values["backend"] in ("cpu", "cuda", "amdgpu") || throw(ArgumentError("--backend must be cpu, cuda or amdgpu"))
     values["transport"] in ("scientific", "heart") || throw(ArgumentError("--transport must be scientific or heart"))
+    values["correction-diagnostics"] in ("true", "false") || throw(ArgumentError("--correction-diagnostics must be true or false"))
+    correction_diagnostics = values["correction-diagnostics"] == "true"
+    !correction_diagnostics || (values["profile"] == "classic" && values["backend"] == "cpu" && values["transport"] == "scientific") ||
+        throw(ArgumentError("correction diagnostics require Classic CPU scientific transport"))
     controller_keys = ("controller-request", "controller-reply")
     present = count(key -> haskey(values, key), controller_keys)
     expected = values["transport"] == "heart" ? 2 : 0
@@ -51,6 +55,7 @@ function parse_options(arguments)
     abspath(values["graph"]) in paths && throw(ArgumentError("plant graph must differ from marker, control and output paths"))
     return (
         profile=Symbol(values["profile"]), backend=Symbol(values["backend"]),
+        correction_diagnostics,
         transport=Symbol(values["transport"]), controller_request=controller_paths[1], controller_reply=controller_paths[2],
         graph=abspath(values["graph"]), rate=rate, period_ns=UInt64(period),
         exposure_ns=UInt64(exposure), frames=frames, remote=values["remote"],

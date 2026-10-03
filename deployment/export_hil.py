@@ -683,6 +683,11 @@ def export_hil(args) -> Path:
         raise ValueError("base must be a maintained Classic/Copper complete-frame package")
     if "hil" in provenance:
         raise ValueError("base must be a recorded-input package, not a previous HIL export")
+    correction_diagnostics = getattr(args, "correction_diagnostics", False)
+    if type(correction_diagnostics) is not bool:
+        raise ValueError("correction diagnostics must be a Boolean")
+    if correction_diagnostics and (provenance["profile"] != "classic" or args.backend != "cpu" or provenance["engine"] not in ("fgn", "jfg")):
+        raise ValueError("correction diagnostics currently require Classic CPU FGN/JFG")
     operational = getattr(args, "operational_calibration", None)
     if operational is not None and (provenance["profile"] != "classic" or args.backend != "cpu" or provenance["engine"] not in ("fgn", "jfg")):
         raise ValueError("operational measured offsets currently require Classic CPU FGN/JFG")
@@ -757,6 +762,8 @@ def export_hil(args) -> Path:
                 "--profile", instrument, "--backend", args.backend, "--graph", "@PACKAGE@/hil/plant.toml",
                 "--rate", str(args.rate_hz), "--exposure-ns", str(exposure), "--frames", str(args.frames),
                 "--remote", "@REMOTE@", "--output", "@RUNTIME@/simulator-result.json"]
+        if correction_diagnostics:
+            argv += ["--correction-diagnostics", "true"]
         for option, marker in (("--prepared-event", "prepared"), ("--connect-request", "connect"), ("--connect-reply", "connected"),
                                ("--quit-request", "quit"), ("--control-request", "control-request"), ("--control-reply", "control-reply")):
             argv += [option, "@RUNTIME@/" + markers[marker]]
@@ -787,6 +794,8 @@ def export_hil(args) -> Path:
                               "calibration_algorithms_revision": science.revision(args.calibration_algorithms_root),
                               ("operational_calibration" if operational is not None else "simulated_calibration"): calibration,
                               "scientific_convergence": "not established by deployment exchange"}
+        if correction_diagnostics:
+            provenance["hil"]["correction_diagnostics"] = "direct public OPD witness; source diagnostic overhead excludes cadence qualification"
         provenance["runtime_requires"] = ["selected PipeWireAO prefix", "Julia resolved HIL environment", "selected simulator device"]
         science.write_json(package / "provenance.json", provenance)
         specification["artifacts"] = {str(path.relative_to(package)): science.sha256(path) for path in sorted(package.rglob("*"))
@@ -808,6 +817,8 @@ def arguments(argv=None):
     parser.add_argument("--dark-frames", type=int, default=256)
     parser.add_argument("--operational-calibration", type=Path,
                         help="preserve measured offsets from a completed Classic CPU candidate campaign directory")
+    parser.add_argument("--correction-diagnostics", action="store_true",
+                        help="record bounded public OPD witnesses for Classic CPU correction verification; adds source overhead")
     parser.add_argument("--pipewire-prefix", type=Path, default=Path("/opt/pipewireao"))
     return parser.parse_args(argv)
 

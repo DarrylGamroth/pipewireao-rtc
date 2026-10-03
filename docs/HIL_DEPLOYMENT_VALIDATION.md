@@ -356,3 +356,31 @@ Measured reconstructors and projections remain in use, so these packages are
 hybrid calibration deployments. Scientific convergence remains unqualified,
 and the historical HIL010 replay difference remains open. No controller
 coefficient, science tolerance or host tuning was changed by this correction.
+
+### Direct correction diagnostics (Classic CPU)
+
+Add `--correction-diagnostics` to `deployment/export_hil.py` to record a bounded
+live public-wavefront witness. This is an opt-in source diagnostic: hashing and
+variance work add allocations and runtime cost outside the RTC graph, so use
+separate runs for cadence qualification. Normal noisy ADC, command adoption,
+controller gains and clipping stay in use. Copper/accelerator/HEART witness
+support is not part of this increment.
+
+After a successful finite run, verify with the exact installed HIL environment:
+
+```bash
+julia --startup-file=no --threads=1,0 --project=/path/to/package/hil \
+  deployment/hil/analyze_correction.jl \
+  --package /path/to/package \
+  --report /path/to/evidence/batch-1/simulator-result.json \
+  --output /path/to/new-correction-analysis.json
+```
+
+The output and ADC replay sidecar must be new and outside the installed package.
+A new witness requires exact live OPD hashes, pupil support and variances plus
+a verified zero-command baseline before publishing ratios. Reports without a
+witness retain their exact source-ADC replay gate. Failed reports and unverified
+scores remain preserved. This diagnostic uses public ideal pupil products only
+for correction verification; they never become operational calibration inputs.
+See [quality validation](CALIBRATION_QUALITY_VALIDATION.md) for the observed
+Classic FGN/JFG result and its physical/rate/scientific limits.

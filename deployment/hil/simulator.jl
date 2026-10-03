@@ -9,6 +9,7 @@ using SHA
 using TOML
 
 include("owner_protocol.jl")
+include("correction_truth.jl")
 using .HILOwnerProtocol
 const Protocol = HILOwnerProtocol
 const Backends = AdaptiveOpticsSim.Backends
@@ -130,7 +131,7 @@ function prepare_science(options, plant, target)
     return (; graph, boundary, driver, target)
 end
 
-mutable struct Recorder
+mutable struct Recorder{W}
     count::Int
     frames::Vector{UInt16}
     commands::Matrix{Float32}
@@ -143,15 +144,16 @@ mutable struct Recorder
     missed_wall_periods::UInt64
     started_ns::UInt64
     completed_ns::UInt64
+    truth::W
 end
 
-function Recorder(options, boundary)
+function Recorder(options, boundary; truth=nothing)
     return Recorder(
         0, zeros(UInt16, length(hil_frame_buffer(boundary)) * options.frames),
         zeros(Float32, 277, options.frames), zeros(UInt64, options.frames),
         zeros(Int64, options.frames), zeros(UInt64, options.frames),
         zeros(UInt64, options.frames), zeros(Int64, options.frames),
-        zeros(Int64, options.frames), 0, 0, 0,
+        zeros(Int64, options.frames), UInt64(0), UInt64(0), UInt64(0), truth,
     )
 end
 
@@ -168,7 +170,26 @@ function reset_recorder!(recorder)
     fill!(recorder.graph_latency_ns, 0)
     fill!(recorder.source_published_ns, 0)
     fill!(recorder.command_received_ns, 0)
+    recorder.truth === nothing || CorrectionTruth.reset!(recorder.truth)
     return nothing
+end
+
+function prepare_correction_truth(options, science)
+    get(options, :correction_diagnostics, false) || return nothing
+    options.profile === :classic && options.backend === :cpu &&
+        get(options, :transport, :scientific) === :scientific || throw(
+            ArgumentError("correction diagnostics require Classic CPU scientific transport"))
+    witness = CorrectionTruth.prepare_witness(options.graph, AdaptiveOpticsSim.Optics, science.target, options.frames)
+    isapprox(witness.config.exposure_seconds, options.exposure_ns / 1e9; rtol=1e-12, atol=0) ||
+        throw(ArgumentError("truth plant/report exposure mismatch"))
+    return witness
+end
+
+function record_correction_truth!(recorder, science, sequence, model_timestamp_ns)
+    recorder.truth === nothing && return nothing
+    return CorrectionTruth.record!(recorder.truth,
+        graph_output(science.graph, :atmosphere_opd), graph_output(science.graph, :pupil_opd),
+        graph_output(science.graph, :pdm_surface_opd), sequence, model_timestamp_ns)
 end
 
 function record!(recorder, boundary, sequence, driver, model_timestamp_ns, timing, cycle_ns, start_ns, stop_ns)
@@ -268,6 +289,12 @@ function write_report(options, science, recorder, state; failure=nothing)
                  sha256=command_hash, layout="frame followed by 277 actuator values"),
         qualification="software complete-frame characterization against a provisional plant model; scientific convergence, hardware frame rate and physical validation not established",
     )
+    if recorder.truth !== nothing
+        truth = CorrectionTruth.report(recorder.truth; graph_sha256=report.graph_sha256,
+            frame_sha256=frame_hash, command_sha256=command_hash,
+            simulator_sha256=bytes2hex(open(sha256, @__FILE__)), completed_frames=count)
+        report = merge(report, (; correction_truth=truth))
+    end
     Protocol.write_json_atomic(options.output, report; maximum=256 * 1024)
     return nothing
 end
@@ -299,7 +326,7 @@ function run_owner(options, plant, target)
     println("SIMULATOR_PREPARING profile=$(options.profile) backend=$(options.backend)")
     flush(stdout)
     science = prepare_science(options, plant, target)
-    recorder = Recorder(options, science.boundary)
+    recorder = Recorder(options, science.boundary; truth=prepare_correction_truth(options, science))
     state = Protocol.OwnerState()
     # Warm success and failure serialization before bounded source control.
     # No transport frame has been admitted, and the recorder remains empty.
@@ -366,6 +393,10 @@ function run_owner(options, plant, target)
             state.sequence = sequence
             record!(recorder, science.boundary, sequence, science.driver, model_timestamp_ns,
                     frame_command_timing(pipewire), finished - started, started, finished)
+            # Public OPD outputs still describe this completed frame. Exchange
+            # has adopted its matching command for the next step. Hashing is an
+            # opt-in source diagnostic and can extend the cold owner interval.
+            record_correction_truth!(recorder, science, sequence, model_timestamp_ns)
             state.deadline_ns, missed = Protocol.next_deadline(state.deadline_ns, options.period_ns, time_ns())
             recorder.missed_wall_periods += missed
             if recorder.count == options.frames

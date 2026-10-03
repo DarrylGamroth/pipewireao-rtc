@@ -24,6 +24,17 @@ end
         options = Protocol.parse_options(arguments)
         @test options.profile === :classic
         @test options.backend === :cpu
+        @test !options.correction_diagnostics
+        @test Protocol.parse_options([arguments; "--correction-diagnostics"; "true"]).correction_diagnostics
+        @test !Protocol.parse_options([arguments; "--correction-diagnostics"; "false"]).correction_diagnostics
+        @test_throws ArgumentError Protocol.parse_options([arguments; "--correction-diagnostics"; "yes"])
+        @test_throws ArgumentError Protocol.parse_options([arguments; "--correction-diagnostics"; "true"; "--backend"; "cuda"])
+        copper = copy(arguments)
+        copper[findfirst(==("--profile"), copper) + 1] = "copper"
+        @test_throws ArgumentError Protocol.parse_options([copper; "--correction-diagnostics"; "true"])
+        @test_throws ArgumentError Protocol.parse_options([arguments; "--correction-diagnostics"; "true";
+            "--transport"; "heart"; "--controller-request"; joinpath(root, "controller-request");
+            "--controller-reply"; joinpath(root, "controller-reply")])
         @test options.frames == 16
         @test options.period_ns == 2_000_000
         @test Protocol.rounded_period(3) == 333_333_333
