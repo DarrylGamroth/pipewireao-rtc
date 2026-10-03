@@ -391,6 +391,54 @@ end
     end
 end
 
+@testset "initial admission precedes the finite client acceptance budget" begin
+    for outcome in (:complete, :timeout, :quit)
+        mktempdir() do directory
+            path = joinpath(directory, "admission.sock")
+            (; session, owner) = server_fixture()
+            enabled = Ref(false)
+            quit = Ref(false)
+            services = Ref(0)
+            server = @async Server.serve!(owner, path;
+                accept_timeout_ns=UInt64(100_000_000),
+                admission_enabled=() -> enabled[], should_stop=() -> quit[],
+                service_control=() -> (services[] += 1))
+            @test timedwait(() -> ispath(path), 1.0; pollint=0.005) == :ok
+            sleep(0.3) # Exceed the accept budget while graph owners prepare.
+            @test !istaskdone(server) && ispath(path)
+            @test services[] > 0 && !owner.held && !session.failed
+            if istaskdone(server)
+                try
+                    fetch(server)
+                catch
+                end
+                return
+            end
+            if outcome == :quit
+                quit[] = true
+            else
+                enabled[] = true
+                if outcome == :complete
+                    client = connect(path)
+                    try
+                        @test send_action(client, (; kind="hold"); serial=1).result.kind == "held"
+                        @test send_action(client, (; kind="restore", figure=Float32[0, 0],
+                            rule=(; kind="immediate")); serial=2).result.kind == "restored"
+                        @test send_action(client, (; kind="release"); serial=3).result.kind == "released"
+                        @test fetch(server) === owner && owner.restored && !owner.faulted
+                    finally
+                        close(client)
+                    end
+                    return
+                end
+            end
+            @test timedwait(() -> istaskdone(server), 2.0; pollint=0.005) == :ok
+            @test_throws TaskFailedException fetch(server)
+            @test owner.faulted && owner.held && session.failed && !ispath(path)
+        end
+    end
+end
+
 @testset "disconnect, incomplete record, accept timeout and quit retain hold/fault" begin
     for problem in (:disconnect, :partial, :oversized, :accept, :quit, :busy_disconnect)
         mktempdir() do directory

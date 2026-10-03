@@ -501,18 +501,27 @@ function serve_connection!(owner::Owner, socket; io_timeout_ns::UInt64=owner.max
     end
 end
 
-"""Serve a listener already created by the launcher before its connection ACK."""
+"""Serve a published listener; start the finite client budget after admission."""
 function serve!(owner::Owner, listener::Sockets.PipeServer;
     accept_timeout_ns::UInt64=owner.maximum_timeout_ns, kwargs...,
 )
     0 < accept_timeout_ns <= UInt64(typemax(Int64)) || throw(ArgumentError("invalid accept timeout"))
     should_stop = get(kwargs, :should_stop, () -> false)
     service_control = get(kwargs, :service_control, () -> nothing)
-    timer = Timer(Float64(accept_timeout_ns) / 1e9) do _
-        close(listener)
-    end
-    pending = @async accept(listener)
+    admission_enabled = get(kwargs, :admission_enabled, () -> true)
+    timer = pending = nothing
     try
+        # The launcher bounds graph preparation and keeps acquisition paused.
+        # Publishing the listener is readiness evidence, not client admission.
+        while !admission_enabled()
+            service_owner!(should_stop, service_control)
+            sleep(0.005)
+        end
+        service_owner!(should_stop, service_control)
+        timer = Timer(Float64(accept_timeout_ns) / 1e9) do _
+            close(listener)
+        end
+        pending = @async accept(listener)
         socket = wait_io(pending, should_stop, service_control)
         close(timer)
         return serve_connection!(owner, socket; kwargs...)
@@ -520,12 +529,14 @@ function serve!(owner::Owner, listener::Sockets.PipeServer;
         fault!(owner)
         rethrow()
     finally
-        close(timer)
+        timer === nothing || close(timer)
         close(listener)
-        try
-            socket = fetch(pending)
-            isopen(socket) && close(socket)
-        catch
+        if pending !== nothing
+            try
+                socket = fetch(pending)
+                isopen(socket) && close(socket)
+            catch
+            end
         end
     end
 end
