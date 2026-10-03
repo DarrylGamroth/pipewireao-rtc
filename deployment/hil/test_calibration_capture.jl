@@ -36,7 +36,12 @@ end
         @test_throws ArgumentError calibration_options([arguments; "--capture-directory"; joinpath(root, "missing", "capture"); "--capture-max-bytes"; "1"])
         copper = copy(arguments)
         copper[findfirst(==("--profile"), copper) + 1] = "copper"
-        @test_throws ArgumentError calibration_options([copper; capture])
+        copper_selected = calibration_options([copper; capture])
+        @test copper_selected.profile === :copper && copper_selected.capture_directory == directory
+        @test copper_selected.capture_max_bytes == 4_004_032 && !ispath(directory)
+        active = joinpath(root, "active.u8")
+        write(active, ones(UInt8, 188))
+        @test_throws ArgumentError calibration_options([copper; capture; "--wfs-active"; active])
         mkdir(directory)
         @test_throws ArgumentError calibration_options([arguments; capture])
         rm(directory)

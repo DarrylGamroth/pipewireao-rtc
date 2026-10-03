@@ -1,0 +1,1078 @@
+{
+  "files": [
+    {
+      "bytes": 33832,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-copper-calibration/deployment/calibration_campaign.py",
+      "sha256": "600f56d5786edf905fa88de775c899420d7db9ddb2a516d3efe854a63815afd4"
+    },
+    {
+      "bytes": 30405,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-copper-calibration/deployment/export_calibration.py",
+      "sha256": "918e5819c566d986b7f52df6cac8cdeac3b533723cc44cb047e73287fce51caa"
+    },
+    {
+      "bytes": 12027,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-copper-calibration/deployment/hil/calibration_owner.jl",
+      "sha256": "f9554d4ee617541f456bb803f513721a1d7369c1ab48efc320fd053097b8a32c"
+    },
+    {
+      "bytes": 35130,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-copper-calibration/deployment/hil/calibration_server.jl",
+      "sha256": "095c91ad77c20ed80b75c2882afff9b391c5aee7048fc399ea0f3742e4be4fc7"
+    },
+    {
+      "bytes": 3527,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-copper-calibration/deployment/hil/test_calibration_capture.jl",
+      "sha256": "e304779ff2dbb3c644a32b04f569cffae83e647965ba23b7acddfdc7e3be85a9"
+    },
+    {
+      "bytes": 56529,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-copper-calibration/deployment/hil/test_calibration_server.jl",
+      "sha256": "e615a85b3aee201ea0f5ced9d2578b3430d4bdf79da11424f663dd6b4917f5f8"
+    },
+    {
+      "bytes": 15845,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-copper-calibration/deployment/test_calibration_campaign.py",
+      "sha256": "688cf11c6094f9b0c87d836316b6a0ba9dadb96f92c16492277484b719f8a42d"
+    },
+    {
+      "bytes": 30539,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-copper-calibration/deployment/test_export_calibration.py",
+      "sha256": "d5af98e409e38a00169296267d957a1bea8eb3ebfd8b1ca55156b191a6a69ce0"
+    },
+    {
+      "bytes": 937,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/binary-admission-investigation.json",
+      "sha256": "4c51f1db29f3348e158547f2b04b1d02937cd334fdc77da63f7c94f5c4cd4292"
+    },
+    {
+      "bytes": 2555,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/compare-captures.py",
+      "sha256": "c51baf9748aba7021b011c2fe39d1e5822793b65fdf45e8c098238e974cb00dc"
+    },
+    {
+      "bytes": 5839,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/copper-capture-policy.json",
+      "sha256": "54d6ace77d23faa3265678a956f75b43c996de03606594576fd119244dbc8c29"
+    },
+    {
+      "bytes": 4,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/captured/4/1/intensity.f32le",
+      "sha256": "df853b18d4837923101b36290256ce67d1b5acb4839471fc55e339f7808c78e5"
+    },
+    {
+      "bytes": 14400,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/captured/4/1/pixels.f32le",
+      "sha256": "a3dc31c984bfa0162325d66eda92d8fd70e41f613c64ee008938742e4d4fdd37"
+    },
+    {
+      "bytes": 8192,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/captured/4/1/raw.u16le",
+      "sha256": "9da45584a3507ab501dd9ee8b6a437bccc97bb08bbed5a0ed1f0b08a70820cfa"
+    },
+    {
+      "bytes": 4,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/captured/4/2/intensity.f32le",
+      "sha256": "2fb4f0bc7dbc294671949ed6c4213b1dfc2c5e5b4179b31015e3e70157712d2b"
+    },
+    {
+      "bytes": 14400,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/captured/4/2/pixels.f32le",
+      "sha256": "d5a679bd7439cb29569ce37ff60c89edd7c04f44e2a303e0851f9775874d1618"
+    },
+    {
+      "bytes": 8192,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/captured/4/2/raw.u16le",
+      "sha256": "4f21132aa5b4b052728d49d0ceb1472ab03995ee6bf8a0e8f193157136a570e4"
+    },
+    {
+      "bytes": 4,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/captured/4/3/intensity.f32le",
+      "sha256": "aa09f0a5263e02c16b54b024fa9411f1cf08eee1422748a923d258cf94fca060"
+    },
+    {
+      "bytes": 14400,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/captured/4/3/pixels.f32le",
+      "sha256": "d1800027ed03c9df4746c4b116e4ea33cadf0242c346c1f15ca4c4377b20237d"
+    },
+    {
+      "bytes": 8192,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/captured/4/3/raw.u16le",
+      "sha256": "89c9e5fd9c77204f05600596cf342b64d306eda692e1123f049ba9959960d6cd"
+    },
+    {
+      "bytes": 4,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/captured/4/4/intensity.f32le",
+      "sha256": "bdbe507b508cd48b75aee1154a8b33b8ff1878b391de3ad6896e248d91f0c872"
+    },
+    {
+      "bytes": 14400,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/captured/4/4/pixels.f32le",
+      "sha256": "3ce50b5513d6cba491c8d54c020f2a7073bfc0d97843ca9ac87142d46fe666c4"
+    },
+    {
+      "bytes": 8192,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/captured/4/4/raw.u16le",
+      "sha256": "240a350a4a189221092ac539f735b8a628671aff7870b7194087c208e1d44104"
+    },
+    {
+      "bytes": 3675,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/captured/4/manifest.json",
+      "sha256": "a29db02f16ef190fa635f7ace8b161f45e6f75d7aba2593912ed65244e5ab5a1"
+    },
+    {
+      "bytes": 4651,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/deployment.log",
+      "sha256": "9408ec5ca80d8d17be3e65018dfb040396fb6164654d6687b5b1926d2ab40132"
+    },
+    {
+      "bytes": 33519,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/stage-result.json",
+      "sha256": "7b0265b5b9319bd8018df5cae6205b3f34a2f477c3d1e6ae573e29b93d79d7ef"
+    },
+    {
+      "bytes": 2678504,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/bin/pipewireao-rtc",
+      "sha256": "96c115595811665061232c641e901be1856d7fb6577d4e9351372508439879d2"
+    },
+    {
+      "bytes": 982400,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/bin/rtc-calibrate",
+      "sha256": "701443e1cd85912f12fcff6a3009c32019b054dd50f48cd261b472c3eacf6011"
+    },
+    {
+      "bytes": 16384,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/calibration/parameter-background.f32",
+      "sha256": "7ae9d82f5a04d881edb80be0558164dbd953b1d3c833f7470b7813755a29765a"
+    },
+    {
+      "bytes": 56110,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/deployment.conf",
+      "sha256": "6ca7a915f4865f7645db30e26911ef3256f1611b49bd8ee8de521225d311008a"
+    },
+    {
+      "bytes": 800,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/graphs/command.conf.in",
+      "sha256": "49300c79d5869dde544c60fa80ddb3eb49c16dbe322043185ae862a37b8bee8c"
+    },
+    {
+      "bytes": 6075,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/graphs/wfs.conf.in",
+      "sha256": "b2cad86571cc2116f16e590eb7c8b5ccdd0514b6a452acc8f907751caae05749"
+    },
+    {
+      "bytes": 17924,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/hil/Manifest.toml",
+      "sha256": "1031f3432eaeb519e5f972f93e76239356548a68d7c9ddde8f500904e69fa272"
+    },
+    {
+      "bytes": 1136,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/hil/Project.toml",
+      "sha256": "488647c61005302155f20c29d746882061ebef2f2c8bbcd601d1cad6f92bf69b"
+    },
+    {
+      "bytes": 1035,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/hil/packages/AdaptiveOpticsCalibration/Project.toml",
+      "sha256": "5b2278a95a0396df80726d6a1e0556714763bca339400df6194e368e5c1e9dff"
+    },
+    {
+      "bytes": 2528,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/hil/packages/AdaptiveOpticsSim/Project.toml",
+      "sha256": "068649bf27003791415e00a41ab8ae218510bce8f15a8c5ace6384927a4fb8a3"
+    },
+    {
+      "bytes": 657,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/hil/packages/AdaptiveOpticsSimPipeWireHIL/Project.toml",
+      "sha256": "7a09b7b7d3a9670aa98f3752e49f675024b8eab980947fb45c5337054fec9334"
+    },
+    {
+      "bytes": 871,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/hil/packages/FilterGraphAlgorithms/Project.toml",
+      "sha256": "bcfab0921b194910475f35951ab2ef39f390dd58a0de28ca93648b2a8e3db355"
+    },
+    {
+      "bytes": 480,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/hil/packages/PipeWireAO/Project.toml",
+      "sha256": "95dbf0256422074b82e8be1232bda1f238af40dac1f67fcf6fb6d66b99d88c2a"
+    },
+    {
+      "bytes": 606,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/hil/packages/REVOLTCopperSim/Project.toml",
+      "sha256": "2db49bff639c452a00e408c783247a38d30c3edc69f6a65a085a3ec72529d783"
+    },
+    {
+      "bytes": 66333,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/provenance.json",
+      "sha256": "251e552cbdc69d015c004d727bc84b971180177d5556e7a91758936b8835938f"
+    },
+    {
+      "bytes": 2663760,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/bin/pipewireao-rtc",
+      "sha256": "1a32b6f6b86e81fb942c87de7f8f870a42ccbef4ed27ad208fce9a9db985f78c"
+    },
+    {
+      "bytes": 256036,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/calibration/parameter-active-to-full.f32",
+      "sha256": "9d9fe9d8cd3311ade1604497cb88edf7872699935d79c972703b6ef828986e6f"
+    },
+    {
+      "bytes": 16384,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/calibration/parameter-background.f32",
+      "sha256": "7ae9d82f5a04d881edb80be0558164dbd953b1d3c833f7470b7813755a29765a"
+    },
+    {
+      "bytes": 256036,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/calibration/parameter-controller-to-vdm.f32",
+      "sha256": "9d9fe9d8cd3311ade1604497cb88edf7872699935d79c972703b6ef828986e6f"
+    },
+    {
+      "bytes": 256036,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/calibration/parameter-full-to-active.f32",
+      "sha256": "9d9fe9d8cd3311ade1604497cb88edf7872699935d79c972703b6ef828986e6f"
+    },
+    {
+      "bytes": 280324,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/calibration/parameter-pdm-to-vdm.f32",
+      "sha256": "05fd64b56ca512946a07991ed547478fcf29558c7574ee0160e3f04957a07f55"
+    },
+    {
+      "bytes": 3643200,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/calibration/parameter-reconstructor.f32",
+      "sha256": "1f46e372f50f64d27ee1fa5883861031a257341923b74d1081b9dcd8a7f7b370"
+    },
+    {
+      "bytes": 1108,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/calibration/parameter-system-flat.f32",
+      "sha256": "b61465acf0031e6a4cc34a66d568bd1735668abf591a6badb1f5f5bc20bf9919"
+    },
+    {
+      "bytes": 256036,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/calibration/parameter-vdm-to-controller.f32",
+      "sha256": "9d9fe9d8cd3311ade1604497cb88edf7872699935d79c972703b6ef828986e6f"
+    },
+    {
+      "bytes": 280324,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/calibration/parameter-vdm-to-pdm.f32",
+      "sha256": "19d2e6ef5f5eb43e535a6076fca5a2ac2cb835b8c746c05876d6fa25f43fcd92"
+    },
+    {
+      "bytes": 56405,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/deployment.conf",
+      "sha256": "e84a29f97e7a4c4b36218b59f83945fc7c2d5198b1f347c9c3ee22233016d204"
+    },
+    {
+      "bytes": 11639,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/graphs/graph.conf.in",
+      "sha256": "62a142981a1d17f07a071a56990263ec12583b57bf4d8d771be3f567bc3184b8"
+    },
+    {
+      "bytes": 17924,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/hil/Manifest.toml",
+      "sha256": "1031f3432eaeb519e5f972f93e76239356548a68d7c9ddde8f500904e69fa272"
+    },
+    {
+      "bytes": 1136,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/hil/Project.toml",
+      "sha256": "488647c61005302155f20c29d746882061ebef2f2c8bbcd601d1cad6f92bf69b"
+    },
+    {
+      "bytes": 1035,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/hil/packages/AdaptiveOpticsCalibration/Project.toml",
+      "sha256": "5b2278a95a0396df80726d6a1e0556714763bca339400df6194e368e5c1e9dff"
+    },
+    {
+      "bytes": 2528,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/hil/packages/AdaptiveOpticsSim/Project.toml",
+      "sha256": "068649bf27003791415e00a41ab8ae218510bce8f15a8c5ace6384927a4fb8a3"
+    },
+    {
+      "bytes": 657,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/hil/packages/AdaptiveOpticsSimPipeWireHIL/Project.toml",
+      "sha256": "7a09b7b7d3a9670aa98f3752e49f675024b8eab980947fb45c5337054fec9334"
+    },
+    {
+      "bytes": 871,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/hil/packages/FilterGraphAlgorithms/Project.toml",
+      "sha256": "bcfab0921b194910475f35951ab2ef39f390dd58a0de28ca93648b2a8e3db355"
+    },
+    {
+      "bytes": 480,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/hil/packages/PipeWireAO/Project.toml",
+      "sha256": "95dbf0256422074b82e8be1232bda1f238af40dac1f67fcf6fb6d66b99d88c2a"
+    },
+    {
+      "bytes": 606,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/hil/packages/REVOLTCopperSim/Project.toml",
+      "sha256": "2db49bff639c452a00e408c783247a38d30c3edc69f6a65a085a3ec72529d783"
+    },
+    {
+      "bytes": 9349,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/provenance.json",
+      "sha256": "e17e6a0234d0c5eb98105aa1826d6f305730bdb5ed30c3549087f2005f5c008a"
+    },
+    {
+      "bytes": 4,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/captured/4/1/intensity.f32le",
+      "sha256": "df853b18d4837923101b36290256ce67d1b5acb4839471fc55e339f7808c78e5"
+    },
+    {
+      "bytes": 14400,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/captured/4/1/pixels.f32le",
+      "sha256": "a3dc31c984bfa0162325d66eda92d8fd70e41f613c64ee008938742e4d4fdd37"
+    },
+    {
+      "bytes": 8192,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/captured/4/1/raw.u16le",
+      "sha256": "9da45584a3507ab501dd9ee8b6a437bccc97bb08bbed5a0ed1f0b08a70820cfa"
+    },
+    {
+      "bytes": 4,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/captured/4/2/intensity.f32le",
+      "sha256": "2fb4f0bc7dbc294671949ed6c4213b1dfc2c5e5b4179b31015e3e70157712d2b"
+    },
+    {
+      "bytes": 14400,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/captured/4/2/pixels.f32le",
+      "sha256": "d5a679bd7439cb29569ce37ff60c89edd7c04f44e2a303e0851f9775874d1618"
+    },
+    {
+      "bytes": 8192,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/captured/4/2/raw.u16le",
+      "sha256": "4f21132aa5b4b052728d49d0ceb1472ab03995ee6bf8a0e8f193157136a570e4"
+    },
+    {
+      "bytes": 4,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/captured/4/3/intensity.f32le",
+      "sha256": "aa09f0a5263e02c16b54b024fa9411f1cf08eee1422748a923d258cf94fca060"
+    },
+    {
+      "bytes": 14400,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/captured/4/3/pixels.f32le",
+      "sha256": "d1800027ed03c9df4746c4b116e4ea33cadf0242c346c1f15ca4c4377b20237d"
+    },
+    {
+      "bytes": 8192,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/captured/4/3/raw.u16le",
+      "sha256": "89c9e5fd9c77204f05600596cf342b64d306eda692e1123f049ba9959960d6cd"
+    },
+    {
+      "bytes": 4,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/captured/4/4/intensity.f32le",
+      "sha256": "bdbe507b508cd48b75aee1154a8b33b8ff1878b391de3ad6896e248d91f0c872"
+    },
+    {
+      "bytes": 14400,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/captured/4/4/pixels.f32le",
+      "sha256": "3ce50b5513d6cba491c8d54c020f2a7073bfc0d97843ca9ac87142d46fe666c4"
+    },
+    {
+      "bytes": 8192,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/captured/4/4/raw.u16le",
+      "sha256": "240a350a4a189221092ac539f735b8a628671aff7870b7194087c208e1d44104"
+    },
+    {
+      "bytes": 3675,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/captured/4/manifest.json",
+      "sha256": "2bceaad564361872d0eaf2136e2165c37c8c933477f8b3c1ea7b03e04e7c2cac"
+    },
+    {
+      "bytes": 7241,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/deployment.log",
+      "sha256": "5ff372ecd03c1a3cdfa83ed203aeaf4e914a8b6343b536cc425a5b40292ab905"
+    },
+    {
+      "bytes": 37983,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/stage-result.json",
+      "sha256": "05a3fbf38a362de3cf2b5ed74da0ef88b25a11e763643614ef09c5f1ff642011"
+    },
+    {
+      "bytes": 2678504,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/bin/pipewireao-rtc",
+      "sha256": "96c115595811665061232c641e901be1856d7fb6577d4e9351372508439879d2"
+    },
+    {
+      "bytes": 982400,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/bin/rtc-calibrate",
+      "sha256": "701443e1cd85912f12fcff6a3009c32019b054dd50f48cd261b472c3eacf6011"
+    },
+    {
+      "bytes": 16384,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/calibration/parameter-background.f32",
+      "sha256": "7ae9d82f5a04d881edb80be0558164dbd953b1d3c833f7470b7813755a29765a"
+    },
+    {
+      "bytes": 78319,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/deployment.conf",
+      "sha256": "c7c7f4e3557a514dafd1b2cc0539281e7b1adf725cc8e1f38253fdc6dfc1fce0"
+    },
+    {
+      "bytes": 771,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/graphs/command.conf.in",
+      "sha256": "5ebbb46450dda80765177774b49b0818559f6e81bb5d2d35f1b3ef564d924b0d"
+    },
+    {
+      "bytes": 1115,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/graphs/wfs.conf.in",
+      "sha256": "7f9f9f1e5a467fdcddaf247db68b03d6e6cce1d2e36aeefdf28e72158989ed4d"
+    },
+    {
+      "bytes": 17924,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/hil/Manifest.toml",
+      "sha256": "1031f3432eaeb519e5f972f93e76239356548a68d7c9ddde8f500904e69fa272"
+    },
+    {
+      "bytes": 1136,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/hil/Project.toml",
+      "sha256": "488647c61005302155f20c29d746882061ebef2f2c8bbcd601d1cad6f92bf69b"
+    },
+    {
+      "bytes": 1035,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/hil/packages/AdaptiveOpticsCalibration/Project.toml",
+      "sha256": "5b2278a95a0396df80726d6a1e0556714763bca339400df6194e368e5c1e9dff"
+    },
+    {
+      "bytes": 2528,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/hil/packages/AdaptiveOpticsSim/Project.toml",
+      "sha256": "068649bf27003791415e00a41ab8ae218510bce8f15a8c5ace6384927a4fb8a3"
+    },
+    {
+      "bytes": 657,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/hil/packages/AdaptiveOpticsSimPipeWireHIL/Project.toml",
+      "sha256": "7a09b7b7d3a9670aa98f3752e49f675024b8eab980947fb45c5337054fec9334"
+    },
+    {
+      "bytes": 871,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/hil/packages/FilterGraphAlgorithms/Project.toml",
+      "sha256": "bcfab0921b194910475f35951ab2ef39f390dd58a0de28ca93648b2a8e3db355"
+    },
+    {
+      "bytes": 480,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/hil/packages/PipeWireAO/Project.toml",
+      "sha256": "95dbf0256422074b82e8be1232bda1f238af40dac1f67fcf6fb6d66b99d88c2a"
+    },
+    {
+      "bytes": 606,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/hil/packages/REVOLTCopperSim/Project.toml",
+      "sha256": "2db49bff639c452a00e408c783247a38d30c3edc69f6a65a085a3ec72529d783"
+    },
+    {
+      "bytes": 13834,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/jfg/deployment/Manifest.toml",
+      "sha256": "81881d4c43f15c8ee69e00f31fec48a3391abf13b28a46e3b3cf2f873830a306"
+    },
+    {
+      "bytes": 701,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/jfg/deployment/Project.toml",
+      "sha256": "6ed946d4d3819af3a330a4b60b292903c51e017423d91292ef39c13d15727913"
+    },
+    {
+      "bytes": 3102,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/jfg/julia/FilterGraphAlgorithms/Manifest.toml",
+      "sha256": "ebca7f6b7a23fb373dd1a71689b2f57f10664ea70095ab7217fc7a0beec40918"
+    },
+    {
+      "bytes": 871,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/jfg/julia/FilterGraphAlgorithms/Project.toml",
+      "sha256": "bcfab0921b194910475f35951ab2ef39f390dd58a0de28ca93648b2a8e3db355"
+    },
+    {
+      "bytes": 4698,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/jfg/julia/FilterGraphPipeWire/Manifest.toml",
+      "sha256": "ded56470dd257dae7b273f282e2abf367f15f47290cd906b5c63075ce82032c5"
+    },
+    {
+      "bytes": 594,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/jfg/julia/FilterGraphPipeWire/Project.toml",
+      "sha256": "8f5e0c5dacd37200aba5cbc83f53018d5b2144eb2469c1f7c963a9f2fbc694ec"
+    },
+    {
+      "bytes": 3630,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/jfg/julia/JuliaFilterGraph/Manifest.toml",
+      "sha256": "c1efee68ac3892f1b73eab4488025a183996cadd309502dc3cad539d3e0e058d"
+    },
+    {
+      "bytes": 808,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/jfg/julia/JuliaFilterGraph/Project.toml",
+      "sha256": "34c4ff98f3ce87f4baab613713093b4493f1a3c52fc43a6710ffd98d3fc93c7b"
+    },
+    {
+      "bytes": 86732,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/provenance.json",
+      "sha256": "55e1ce7c61ae6918d324b9f16881d3d4f1dfc6d57cb5779e9c3e7a4a132de2f8"
+    },
+    {
+      "bytes": 2663760,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/bin/pipewireao-rtc",
+      "sha256": "1a32b6f6b86e81fb942c87de7f8f870a42ccbef4ed27ad208fce9a9db985f78c"
+    },
+    {
+      "bytes": 1012,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/calibration/hidden-to-shape.f32le",
+      "sha256": "dca67435629d486cac458300c323b247b68ed22541e3169dbaa0ec0412d595e6"
+    },
+    {
+      "bytes": 256036,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/calibration/parameter-active-to-full.f32",
+      "sha256": "9d9fe9d8cd3311ade1604497cb88edf7872699935d79c972703b6ef828986e6f"
+    },
+    {
+      "bytes": 16384,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/calibration/parameter-background.f32",
+      "sha256": "7ae9d82f5a04d881edb80be0558164dbd953b1d3c833f7470b7813755a29765a"
+    },
+    {
+      "bytes": 256036,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/calibration/parameter-controller-to-vdm.f32",
+      "sha256": "9d9fe9d8cd3311ade1604497cb88edf7872699935d79c972703b6ef828986e6f"
+    },
+    {
+      "bytes": 256036,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/calibration/parameter-full-to-active.f32",
+      "sha256": "9d9fe9d8cd3311ade1604497cb88edf7872699935d79c972703b6ef828986e6f"
+    },
+    {
+      "bytes": 280324,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/calibration/parameter-pdm-to-vdm.f32",
+      "sha256": "05fd64b56ca512946a07991ed547478fcf29558c7574ee0160e3f04957a07f55"
+    },
+    {
+      "bytes": 3643200,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/calibration/parameter-reconstructor.f32",
+      "sha256": "1f46e372f50f64d27ee1fa5883861031a257341923b74d1081b9dcd8a7f7b370"
+    },
+    {
+      "bytes": 1108,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/calibration/parameter-system-flat.f32",
+      "sha256": "b61465acf0031e6a4cc34a66d568bd1735668abf591a6badb1f5f5bc20bf9919"
+    },
+    {
+      "bytes": 256036,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/calibration/parameter-vdm-to-controller.f32",
+      "sha256": "9d9fe9d8cd3311ade1604497cb88edf7872699935d79c972703b6ef828986e6f"
+    },
+    {
+      "bytes": 280324,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/calibration/parameter-vdm-to-pdm.f32",
+      "sha256": "19d2e6ef5f5eb43e535a6076fca5a2ac2cb835b8c746c05876d6fa25f43fcd92"
+    },
+    {
+      "bytes": 1012,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/calibration/shape-to-hidden.f32le",
+      "sha256": "dca67435629d486cac458300c323b247b68ed22541e3169dbaa0ec0412d595e6"
+    },
+    {
+      "bytes": 78722,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/deployment.conf",
+      "sha256": "3b0201ca252c7ae54fb3b98de36f6a64a1e3186b1e710b4a52fd2324216b614a"
+    },
+    {
+      "bytes": 5196,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/graphs/graph.conf.in",
+      "sha256": "6d0351b19af08f2feee3cd63977ddca87af5234612f76678a8fea3d02a6d0982"
+    },
+    {
+      "bytes": 17924,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/hil/Manifest.toml",
+      "sha256": "1031f3432eaeb519e5f972f93e76239356548a68d7c9ddde8f500904e69fa272"
+    },
+    {
+      "bytes": 1136,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/hil/Project.toml",
+      "sha256": "488647c61005302155f20c29d746882061ebef2f2c8bbcd601d1cad6f92bf69b"
+    },
+    {
+      "bytes": 1035,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/hil/packages/AdaptiveOpticsCalibration/Project.toml",
+      "sha256": "5b2278a95a0396df80726d6a1e0556714763bca339400df6194e368e5c1e9dff"
+    },
+    {
+      "bytes": 2528,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/hil/packages/AdaptiveOpticsSim/Project.toml",
+      "sha256": "068649bf27003791415e00a41ab8ae218510bce8f15a8c5ace6384927a4fb8a3"
+    },
+    {
+      "bytes": 657,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/hil/packages/AdaptiveOpticsSimPipeWireHIL/Project.toml",
+      "sha256": "7a09b7b7d3a9670aa98f3752e49f675024b8eab980947fb45c5337054fec9334"
+    },
+    {
+      "bytes": 871,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/hil/packages/FilterGraphAlgorithms/Project.toml",
+      "sha256": "bcfab0921b194910475f35951ab2ef39f390dd58a0de28ca93648b2a8e3db355"
+    },
+    {
+      "bytes": 480,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/hil/packages/PipeWireAO/Project.toml",
+      "sha256": "95dbf0256422074b82e8be1232bda1f238af40dac1f67fcf6fb6d66b99d88c2a"
+    },
+    {
+      "bytes": 606,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/hil/packages/REVOLTCopperSim/Project.toml",
+      "sha256": "2db49bff639c452a00e408c783247a38d30c3edc69f6a65a085a3ec72529d783"
+    },
+    {
+      "bytes": 13834,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/jfg/deployment/Manifest.toml",
+      "sha256": "81881d4c43f15c8ee69e00f31fec48a3391abf13b28a46e3b3cf2f873830a306"
+    },
+    {
+      "bytes": 701,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/jfg/deployment/Project.toml",
+      "sha256": "6ed946d4d3819af3a330a4b60b292903c51e017423d91292ef39c13d15727913"
+    },
+    {
+      "bytes": 3102,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/jfg/julia/FilterGraphAlgorithms/Manifest.toml",
+      "sha256": "ebca7f6b7a23fb373dd1a71689b2f57f10664ea70095ab7217fc7a0beec40918"
+    },
+    {
+      "bytes": 871,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/jfg/julia/FilterGraphAlgorithms/Project.toml",
+      "sha256": "bcfab0921b194910475f35951ab2ef39f390dd58a0de28ca93648b2a8e3db355"
+    },
+    {
+      "bytes": 4698,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/jfg/julia/FilterGraphPipeWire/Manifest.toml",
+      "sha256": "ded56470dd257dae7b273f282e2abf367f15f47290cd906b5c63075ce82032c5"
+    },
+    {
+      "bytes": 594,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/jfg/julia/FilterGraphPipeWire/Project.toml",
+      "sha256": "8f5e0c5dacd37200aba5cbc83f53018d5b2144eb2469c1f7c963a9f2fbc694ec"
+    },
+    {
+      "bytes": 3630,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/jfg/julia/JuliaFilterGraph/Manifest.toml",
+      "sha256": "c1efee68ac3892f1b73eab4488025a183996cadd309502dc3cad539d3e0e058d"
+    },
+    {
+      "bytes": 808,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/jfg/julia/JuliaFilterGraph/Project.toml",
+      "sha256": "34c4ff98f3ce87f4baab613713093b4493f1a3c52fc43a6710ffd98d3fc93c7b"
+    },
+    {
+      "bytes": 9421,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/provenance.json",
+      "sha256": "dba0798ee71d200d1bdaba1b531d4f486fe226f90b3ef94d6747d0ee2df3ba00"
+    },
+    {
+      "bytes": 5327,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/paired-capture-comparison.json",
+      "sha256": "f08f0628545d39c2bc53a3ec251ba69a0ef87f537e864d63345bc88106e10f1b"
+    },
+    {
+      "bytes": 4764,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/prepare-copper-capture.py",
+      "sha256": "5daede0123c85183fe7b6f851183cf1fd10789a3bfd2b53a5a2073862ab2482b"
+    },
+    {
+      "bytes": 5614,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/prepare.log",
+      "sha256": "adca5de290a384a5ccf970e2f3d51e54c96daf941cdf2a762133e7e6adc203b5"
+    },
+    {
+      "bytes": 1277,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/python-validation.log",
+      "sha256": "aabd07d3ed56e1ac8fce5c505912131b5b452a7fa8020e877d462a4a2d4bb26b"
+    },
+    {
+      "bytes": 1761,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/rtc-config-tests.log",
+      "sha256": "b48e9ed1c1ef8191f64fe812f3b06b1bb7596a8f9db6f722198ef19e34f33064"
+    },
+    {
+      "bytes": 1650,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/run-copper-capture.py",
+      "sha256": "453e372a0178c40f04c93960809399f8216728ff60100e43cb7f9dfd9d0f284f"
+    },
+    {
+      "bytes": 253,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/run-fgn.log",
+      "sha256": "ddc779d55d5bdf6ebc527fe7a8dcc158426c25c34ae9bd2feeabe5943117017b"
+    },
+    {
+      "bytes": 253,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/run-jfg.log",
+      "sha256": "942bfa9c35bae63782a9a2b2e81266751f926df739c169726d5b2330af0b4c34"
+    },
+    {
+      "bytes": 5758,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/copper-capture-policy.json",
+      "sha256": "f0403102d7041563b25264ec6d64a8f8c03327cedc1ba50e64a41b514d66cbb4"
+    },
+    {
+      "bytes": 221,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/export-copper-capture-fail-before-binary.log",
+      "sha256": "53efe36777cbe9b24b5901577714afa0015d2cf3126f46cf4d91861d2a1c6bd4"
+    },
+    {
+      "bytes": 921,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/export-copper-capture-fail-before.log",
+      "sha256": "2e6ee7e6920c0e64f1c5190dd82eecc08fdb2ded2d46745985734a283b3cf5e6"
+    },
+    {
+      "bytes": 46574,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/fgn-capture-evidence/deployment.log",
+      "sha256": "e5236ef47ddf75fa714b1bed898533a3cecef8e4bcb9e5037c9daf89041db198"
+    },
+    {
+      "bytes": 904,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/fgn-capture-evidence/stage-result.json",
+      "sha256": "f73dff3ea1b8cbcc5f801c626c07611d65f5513536d743533ae7f41a7e188447"
+    },
+    {
+      "bytes": 2665896,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/fgn-capture-package/bin/pipewireao-rtc",
+      "sha256": "762bc218700a016ffbb82391254df606e5146fe4e76ec75844231638953ef20f"
+    },
+    {
+      "bytes": 982336,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/fgn-capture-package/bin/rtc-calibrate",
+      "sha256": "7ba49088955b82a1ca51eee381486fdcbb80879751094948284eb8f54f96d81b"
+    },
+    {
+      "bytes": 56110,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/fgn-capture-package/deployment.conf",
+      "sha256": "dd1a9f4c6eb9bd3598188515e513e07f6b7496a30163142142a8d0c6e2e73922"
+    },
+    {
+      "bytes": 17924,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/fgn-capture-package/hil/Manifest.toml",
+      "sha256": "1031f3432eaeb519e5f972f93e76239356548a68d7c9ddde8f500904e69fa272"
+    },
+    {
+      "bytes": 1136,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/fgn-capture-package/hil/Project.toml",
+      "sha256": "488647c61005302155f20c29d746882061ebef2f2c8bbcd601d1cad6f92bf69b"
+    },
+    {
+      "bytes": 66333,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/fgn-capture-package/provenance.json",
+      "sha256": "fcad490f103a0a6fa9840c8b42801968769c7fe4d98999688c19c26885c4daeb"
+    },
+    {
+      "bytes": 2665896,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/jfg-capture-package/bin/pipewireao-rtc",
+      "sha256": "762bc218700a016ffbb82391254df606e5146fe4e76ec75844231638953ef20f"
+    },
+    {
+      "bytes": 982336,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/jfg-capture-package/bin/rtc-calibrate",
+      "sha256": "7ba49088955b82a1ca51eee381486fdcbb80879751094948284eb8f54f96d81b"
+    },
+    {
+      "bytes": 78319,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/jfg-capture-package/deployment.conf",
+      "sha256": "d005c3c358e6f354e206f5a260f8e1e17a54d604565c5db60a0d7d8c2cdff7a3"
+    },
+    {
+      "bytes": 17924,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/jfg-capture-package/hil/Manifest.toml",
+      "sha256": "1031f3432eaeb519e5f972f93e76239356548a68d7c9ddde8f500904e69fa272"
+    },
+    {
+      "bytes": 1136,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/jfg-capture-package/hil/Project.toml",
+      "sha256": "488647c61005302155f20c29d746882061ebef2f2c8bbcd601d1cad6f92bf69b"
+    },
+    {
+      "bytes": 86732,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/jfg-capture-package/provenance.json",
+      "sha256": "14d32be0f13818802dd8cfa120f7873e6139d614a28f3f64a99bc5c325e67d9e"
+    },
+    {
+      "bytes": 2824,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/prepare-copper-capture-v1.py",
+      "sha256": "e2f8ffba8863be93a8f892248f9d8e4706cc1cd16322b7bcc58b7be99ad73dd8"
+    },
+    {
+      "bytes": 5587,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/prepare-copper-capture-v2.log",
+      "sha256": "51f91228d8bd0a1db0e453833bfc01933ae87eb81476e801c4f6bac0c8b066b3"
+    },
+    {
+      "bytes": 1428,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/prepare-copper-capture.log",
+      "sha256": "231e7ebfc01e947e7962986cb07b6dfcea8da3ec465b3113aad089614dbd27e5"
+    },
+    {
+      "bytes": 4708,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/prepare-copper-capture.py",
+      "sha256": "356eb20f9365cf12ebacae7feaa827e0a333d2ca43bcbe0546d49b50a14acf2b"
+    },
+    {
+      "bytes": 139,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/python-capture-export-pass.log",
+      "sha256": "cd4e15920f8df58fa5d80ae420d64ec527cf0e7077c16d657a0a57e07385afce"
+    },
+    {
+      "bytes": 751,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/python-copper-capture-fail-before.log",
+      "sha256": "ec81dd8c07a85beba2c3b34c5fbaed7f6f08302994c9bd991a793865af20697e"
+    },
+    {
+      "bytes": 1707,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/python-copper-capture-pass-after.log",
+      "sha256": "1affa4ed69b30594f314ecbfe91cd92b77c549edb5313479f902f3eedaee6b4a"
+    },
+    {
+      "bytes": 873,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/python-missing-profile-fail-before.log",
+      "sha256": "5853bb03b8a292c96d1e034b81c46c28aeecce6fbf6ec1ad39cb7101a7735098"
+    },
+    {
+      "bytes": 139,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/python-missing-profile-pass-after.log",
+      "sha256": "644bd958f574b71fd8f63e7305f86db6e2e51b36249d33e98e74a24c2c96bebc"
+    },
+    {
+      "bytes": 1277,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/python-suite-final.log",
+      "sha256": "e6e6f033334ea4c888d8e86434a0ac3bcbe069b272243fb1cfd86a5ace436b94"
+    },
+    {
+      "bytes": 1277,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/python-suite.log",
+      "sha256": "b052c8b4fe811a006688597ab71547967d62bc42c4b0d226b5a8c5a7451c0f94"
+    },
+    {
+      "bytes": 126,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/root-options-test.log",
+      "sha256": "d2a8f80858b5b20b763c930e7198913a15d36f6406021a200aa8bdfdc2197d5d"
+    },
+    {
+      "bytes": 4466,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/root-server-test.log",
+      "sha256": "6b88bea3ce9bca56b65a445ee3211b9625100d6a8537f32f8a5b9663741f4af0"
+    },
+    {
+      "bytes": 1644,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/run-copper-capture.py",
+      "sha256": "8fe9edf9ebdc3dd9648ecec2335f0cfe6e858352d7b20d4ad23979023cb0a3bb"
+    },
+    {
+      "bytes": 881,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003/run-fgn-capture.log",
+      "sha256": "371a885cde89a0d4571ab7c0cb5bf674479ffdb9522025c5e7c0e6a867ccff62"
+    },
+    {
+      "bytes": 5327,
+      "path": "~/.cache/rtc-copper-calibration-capture-20261003-v3/paired-analysis.log",
+      "sha256": "f08f0628545d39c2bc53a3ec251ba69a0ef87f537e864d63345bc88106e10f1b"
+    }
+  ],
+  "groups": {
+    "source_implementation_and_tests_at_start_revision": [
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-copper-calibration/deployment/calibration_campaign.py",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-copper-calibration/deployment/export_calibration.py",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-copper-calibration/deployment/hil/calibration_owner.jl",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-copper-calibration/deployment/hil/calibration_server.jl",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-copper-calibration/deployment/hil/test_calibration_capture.jl",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-copper-calibration/deployment/hil/test_calibration_server.jl",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-copper-calibration/deployment/test_calibration_campaign.py",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-copper-calibration/deployment/test_export_calibration.py"
+    ],
+    "v1_failed_admission_old_binary_receipts_and_test_logs": [
+      "~/.cache/rtc-copper-calibration-capture-20261003/copper-capture-policy.json",
+      "~/.cache/rtc-copper-calibration-capture-20261003/prepare-copper-capture.py",
+      "~/.cache/rtc-copper-calibration-capture-20261003/prepare-copper-capture-v1.py",
+      "~/.cache/rtc-copper-calibration-capture-20261003/run-copper-capture.py",
+      "~/.cache/rtc-copper-calibration-capture-20261003/prepare-copper-capture.log",
+      "~/.cache/rtc-copper-calibration-capture-20261003/prepare-copper-capture-v2.log",
+      "~/.cache/rtc-copper-calibration-capture-20261003/run-fgn-capture.log",
+      "~/.cache/rtc-copper-calibration-capture-20261003/export-copper-capture-fail-before.log",
+      "~/.cache/rtc-copper-calibration-capture-20261003/export-copper-capture-fail-before-binary.log",
+      "~/.cache/rtc-copper-calibration-capture-20261003/python-copper-capture-fail-before.log",
+      "~/.cache/rtc-copper-calibration-capture-20261003/python-copper-capture-pass-after.log",
+      "~/.cache/rtc-copper-calibration-capture-20261003/python-missing-profile-fail-before.log",
+      "~/.cache/rtc-copper-calibration-capture-20261003/python-missing-profile-pass-after.log",
+      "~/.cache/rtc-copper-calibration-capture-20261003/python-capture-export-pass.log",
+      "~/.cache/rtc-copper-calibration-capture-20261003/python-suite.log",
+      "~/.cache/rtc-copper-calibration-capture-20261003/python-suite-final.log",
+      "~/.cache/rtc-copper-calibration-capture-20261003/root-options-test.log",
+      "~/.cache/rtc-copper-calibration-capture-20261003/root-server-test.log",
+      "~/.cache/rtc-copper-calibration-capture-20261003/fgn-capture-evidence/stage-result.json",
+      "~/.cache/rtc-copper-calibration-capture-20261003/fgn-capture-evidence/deployment.log",
+      "~/.cache/rtc-copper-calibration-capture-20261003/fgn-capture-package/bin/rtc-calibrate",
+      "~/.cache/rtc-copper-calibration-capture-20261003/fgn-capture-package/bin/pipewireao-rtc",
+      "~/.cache/rtc-copper-calibration-capture-20261003/fgn-capture-package/provenance.json",
+      "~/.cache/rtc-copper-calibration-capture-20261003/fgn-capture-package/deployment.conf",
+      "~/.cache/rtc-copper-calibration-capture-20261003/fgn-capture-package/hil/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003/fgn-capture-package/hil/Manifest.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003/jfg-capture-package/bin/rtc-calibrate",
+      "~/.cache/rtc-copper-calibration-capture-20261003/jfg-capture-package/bin/pipewireao-rtc",
+      "~/.cache/rtc-copper-calibration-capture-20261003/jfg-capture-package/provenance.json",
+      "~/.cache/rtc-copper-calibration-capture-20261003/jfg-capture-package/deployment.conf",
+      "~/.cache/rtc-copper-calibration-capture-20261003/jfg-capture-package/hil/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003/jfg-capture-package/hil/Manifest.toml"
+    ],
+    "v3_compact_base_and_capture_package_provenance": [
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/deployment.conf",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/provenance.json",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/graphs/graph.conf.in",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/bin/pipewireao-rtc",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/calibration/parameter-active-to-full.f32",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/calibration/parameter-background.f32",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/calibration/parameter-controller-to-vdm.f32",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/calibration/parameter-full-to-active.f32",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/calibration/parameter-pdm-to-vdm.f32",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/calibration/parameter-reconstructor.f32",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/calibration/parameter-system-flat.f32",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/calibration/parameter-vdm-to-controller.f32",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/calibration/parameter-vdm-to-pdm.f32",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/hil/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/hil/packages/AdaptiveOpticsCalibration/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/hil/packages/AdaptiveOpticsSim/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/hil/packages/AdaptiveOpticsSimPipeWireHIL/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/hil/packages/FilterGraphAlgorithms/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/hil/packages/PipeWireAO/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/hil/packages/REVOLTCopperSim/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-refreshed-base/hil/Manifest.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/deployment.conf",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/provenance.json",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/graphs/graph.conf.in",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/bin/pipewireao-rtc",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/calibration/hidden-to-shape.f32le",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/calibration/parameter-active-to-full.f32",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/calibration/parameter-background.f32",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/calibration/parameter-controller-to-vdm.f32",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/calibration/parameter-full-to-active.f32",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/calibration/parameter-pdm-to-vdm.f32",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/calibration/parameter-reconstructor.f32",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/calibration/parameter-system-flat.f32",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/calibration/parameter-vdm-to-controller.f32",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/calibration/parameter-vdm-to-pdm.f32",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/calibration/shape-to-hidden.f32le",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/hil/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/hil/packages/AdaptiveOpticsCalibration/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/hil/packages/AdaptiveOpticsSim/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/hil/packages/AdaptiveOpticsSimPipeWireHIL/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/hil/packages/FilterGraphAlgorithms/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/hil/packages/PipeWireAO/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/hil/packages/REVOLTCopperSim/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/jfg/deployment/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/jfg/julia/FilterGraphAlgorithms/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/jfg/julia/FilterGraphPipeWire/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/jfg/julia/JuliaFilterGraph/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/hil/Manifest.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/jfg/deployment/Manifest.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/jfg/julia/FilterGraphAlgorithms/Manifest.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/jfg/julia/FilterGraphPipeWire/Manifest.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-refreshed-base/jfg/julia/JuliaFilterGraph/Manifest.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/deployment.conf",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/provenance.json",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/graphs/command.conf.in",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/graphs/wfs.conf.in",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/bin/pipewireao-rtc",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/bin/rtc-calibrate",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/calibration/parameter-background.f32",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/hil/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/hil/packages/AdaptiveOpticsCalibration/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/hil/packages/AdaptiveOpticsSim/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/hil/packages/AdaptiveOpticsSimPipeWireHIL/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/hil/packages/FilterGraphAlgorithms/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/hil/packages/PipeWireAO/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/hil/packages/REVOLTCopperSim/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-package/hil/Manifest.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/deployment.conf",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/provenance.json",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/graphs/command.conf.in",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/graphs/wfs.conf.in",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/bin/pipewireao-rtc",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/bin/rtc-calibrate",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/calibration/parameter-background.f32",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/hil/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/hil/packages/AdaptiveOpticsCalibration/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/hil/packages/AdaptiveOpticsSim/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/hil/packages/AdaptiveOpticsSimPipeWireHIL/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/hil/packages/FilterGraphAlgorithms/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/hil/packages/PipeWireAO/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/hil/packages/REVOLTCopperSim/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/jfg/deployment/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/jfg/julia/FilterGraphAlgorithms/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/jfg/julia/FilterGraphPipeWire/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/jfg/julia/JuliaFilterGraph/Project.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/hil/Manifest.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/jfg/deployment/Manifest.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/jfg/julia/FilterGraphAlgorithms/Manifest.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/jfg/julia/FilterGraphPipeWire/Manifest.toml",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-package/jfg/julia/JuliaFilterGraph/Manifest.toml"
+    ],
+    "v3_fgn_jfg_completed_capture_receipts_bulk_manifest_and_payloads": [
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/stage-result.json",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/deployment.log",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/captured/4/manifest.json",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/captured/4/1/raw.u16le",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/captured/4/1/pixels.f32le",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/captured/4/1/intensity.f32le",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/captured/4/2/raw.u16le",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/captured/4/2/pixels.f32le",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/captured/4/2/intensity.f32le",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/captured/4/3/raw.u16le",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/captured/4/3/pixels.f32le",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/captured/4/3/intensity.f32le",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/captured/4/4/raw.u16le",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/captured/4/4/pixels.f32le",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/fgn-capture-evidence/captured/4/4/intensity.f32le",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/stage-result.json",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/deployment.log",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/captured/4/manifest.json",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/captured/4/1/raw.u16le",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/captured/4/1/pixels.f32le",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/captured/4/1/intensity.f32le",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/captured/4/2/raw.u16le",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/captured/4/2/pixels.f32le",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/captured/4/2/intensity.f32le",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/captured/4/3/raw.u16le",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/captured/4/3/pixels.f32le",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/captured/4/3/intensity.f32le",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/captured/4/4/raw.u16le",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/captured/4/4/pixels.f32le",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/jfg-capture-evidence/captured/4/4/intensity.f32le"
+    ],
+    "v3_policy_helpers_tests_and_paired_comparison": [
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/copper-capture-policy.json",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/binary-admission-investigation.json",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/prepare-copper-capture.py",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/run-copper-capture.py",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/compare-captures.py",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/prepare.log",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/python-validation.log",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/rtc-config-tests.log",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/run-fgn.log",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/run-jfg.log",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/paired-capture-comparison.json",
+      "~/.cache/rtc-copper-calibration-capture-20261003-v3/paired-analysis.log"
+    ]
+  },
+  "inventory_time_utc": "2026-10-03T23:30:00Z",
+  "method": "SHA-256 and byte length for each listed file at inventory time. Cache references use portable ~/.cache paths. Copied package source trees are bound by package provenance/deployment descriptors, graphs, calibration payload identities, source binaries and Julia project/manifest identities; vendor source files are not duplicated in this ledger.",
+  "missing_or_absent": [],
+  "schema_version": 1,
+  "scope": "Functional Copper calibration capture provenance and finite capture evidence only. Includes prior failed admission/binary evidence. Does not establish an interaction matrix, physical instrument calibration, correction qualification, or cadence.",
+  "source_inventory": {
+    "cache_roots": {
+      "v1": "~/.cache/rtc-copper-calibration-capture-20261003",
+      "v3": "~/.cache/rtc-copper-calibration-capture-20261003-v3"
+    },
+    "changed_paths": [
+      " M deployment/calibration_campaign.py",
+      " M deployment/export_calibration.py",
+      " M deployment/hil/calibration_owner.jl",
+      " M deployment/hil/calibration_server.jl",
+      " M deployment/hil/test_calibration_capture.jl",
+      " M deployment/hil/test_calibration_server.jl",
+      " M deployment/test_calibration_campaign.py",
+      " M deployment/test_export_calibration.py",
+      " M docs/README.md",
+      " M docs/operations.md",
+      " M docs/roadmap.md",
+      "?? docs/COPPER_CALIBRATION_CAPTURE.md",
+      "?? docs/COPPER_CALIBRATION_CAPTURE_REVIEW.md"
+    ],
+    "documentation": "COPPER_CALIBRATION_CAPTURE.md and COPPER_CALIBRATION_CAPTURE_REVIEW.md are intentionally not hashed in this inventory while root review is in progress.",
+    "repository": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-copper-calibration",
+    "start_revision": "7fe0bcdc64ae53d7fa24eeb0116d206033b6ce8e",
+    "working_tree": "source/test edits present at inventory time; exact changed implementation/test paths listed"
+  }
+}

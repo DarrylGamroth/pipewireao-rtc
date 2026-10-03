@@ -45,6 +45,17 @@ def fixture(profile, engine):
 
 
 class CalibrationGraphContracts(unittest.TestCase):
+    def test_capture_budget_uses_declared_profile_before_export(self):
+        for profile, size in (("classic",250252),("copper",22596)):
+            for maximum in (1,size,4096*size):
+                self.assertIsNone(export_calibration.validate_capture_budget(profile,maximum,True))
+            for maximum in (False,True,0,-1,1.0,4096*size+1):
+                with self.subTest(profile=profile,maximum=maximum),self.assertRaises(ValueError):
+                    export_calibration.validate_capture_budget(profile,maximum,True)
+            with self.assertRaises(ValueError):export_calibration.validate_capture_budget(profile,size,False)
+        with self.assertRaises(ValueError):export_calibration.validate_capture_budget('unknown',1,True)
+        self.assertIsNone(export_calibration.validate_capture_budget('copper',None,False))
+
     def test_acceptance_mask_matches_deployed_active_parameter(self):
         source = fixture("classic", "fgn")
         graph = export_calibration.split_graph(source, "classic", "fgn", "calibration")["wfs"]

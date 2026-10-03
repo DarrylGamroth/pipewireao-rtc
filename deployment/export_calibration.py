@@ -27,6 +27,16 @@ REQUESTED_SCHEMA = "org.calculon.ao.requested-pdm-command/1"
 FEEDBACK_SCHEMA = "org.calculon.ao.pdm-constraint-feedback/1"
 
 
+def validate_capture_budget(profile, maximum_bytes, deployment):
+    """Admit a finite profile-sized payload budget before creating an export."""
+    if maximum_bytes is None:
+        return
+    payload_bytes = {"classic": 250252, "copper": 22596}.get(profile)
+    if (payload_bytes is None or type(maximum_bytes) is not int or
+            not 1 <= maximum_bytes <= 4096 * payload_bytes or not deployment):
+        raise ValueError("capture requires Classic/Copper deployment and a bounded positive payload budget")
+
+
 def spa_json(value, indent: int = 0) -> str:
     """Emit standard assignment syntax also accepted by the maintained JFG reader."""
     padding = "    " * indent
@@ -400,10 +410,7 @@ def export(arguments) -> Path:
         raise ValueError("illumination must be dark or lamp")
     if not isinstance(stage, str) or not re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]{0,63}", stage):
         raise ValueError("calibration stage must be a simple 1..64 character identifier")
-    if capture_max_bytes is not None:
-        if (type(capture_max_bytes) is not int or not 1 <= capture_max_bytes <= 4096 * 250252
-                or profile != "classic" or not getattr(arguments, "deployment", False)):
-            raise ValueError("capture requires Classic deployment and a bounded positive payload budget")
+    validate_capture_budget(profile, capture_max_bytes, getattr(arguments, "deployment", False))
     if profile not in ("classic", "copper") or engine not in ("fgn", "jfg") or provenance["mode"] != "frame":
         raise ValueError("initial calibration requires selected full-frame Classic/Copper FGN/JFG science")
     session = deploy.decode(base / specification["session"], arguments.pipewire_prefix)
@@ -521,7 +528,7 @@ def arguments(argv=None):
     parser.add_argument("--illumination", choices=("dark", "lamp"), default="lamp")
     parser.add_argument("--calibration-stage", default="interaction")
     parser.add_argument("--capture-max-bytes", type=int,
-                        help="enable finite Classic raw/WFS capture with this cumulative payload budget")
+                        help="enable finite Classic/Copper raw/WFS capture with this cumulative payload budget")
     return parser.parse_args(argv)
 
 

@@ -76,6 +76,11 @@ records the zonal/Hadamard/controller-modal/spatial design and independent audit
 [Fresh method selection](CALIBRATION_METHOD_SELECTION.md) records the frozen
 common controller decision, selected-only locked test and deployed FGN/JFG
 correction checks for the 206-mode Hadamard inverse.
+[Copper capture](COPPER_CALIBRATION_CAPTURE.md) and its
+[independent review](COPPER_CALIBRATION_CAPTURE_REVIEW.md) describe the completed
+bounded CPU endpoint extension, separate from Copper matrix acceptance. Its
+[evidence identities](COPPER_CALIBRATION_CAPTURE_EVIDENCE.json) preserve the
+failed stale-binary admission and successful FGN/JFG captures.
 
 ## Inactive design archive
 

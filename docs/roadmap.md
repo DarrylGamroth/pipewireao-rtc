@@ -1183,3 +1183,30 @@ HEART, accelerator acquisition, physical endpoints, instrument acceptance and
 wall-cadence qualification are not established by the finite Classic CPU
 results. No ideal optical output entered calibration estimation; direct OPD
 witnesses are optional correction diagnostics only.
+
+### Copper operational capture increment, 2026-10-03
+
+The [bounded capture extension](COPPER_CALIBRATION_CAPTURE.md) now records
+Copper's raw 64×64 ADC, 4×900 reconstruction pixels and current mean intensity
+through the normal noisy deployed acquisition path. Explicit profile dispatch
+and validation preserve Classic's contract. Copper requires at least one
+completed discarded exposure after each adoption because its normalization
+uses the previous successful frame. Capture and collect enforce this rule,
+including collection without optional capture storage.
+
+Installed FGN and JFG CPU checks each completed one discarded exposure, four
+captured exposures and a fresh reference-restoration exposure. All recorded
+ADC and WFS payloads match byte for byte; both runs confirmed restoration,
+release, public shutdown and owned-process cleanup. The first attempt's stale
+RTC release-binary rejection is retained separately and was resolved by
+rebuilding existing main, with no validator change. See the
+[independent review](COPPER_CALIBRATION_CAPTURE_REVIEW.md) and
+[evidence ledger](COPPER_CALIBRATION_CAPTURE_EVIDENCE.json).
+
+This closes only Copper capture admission and functional transport. Its full
+campaign, reference-centering/adoption, 277→253 composition, interaction matrix,
+inverse acceptance and correction are still open. Historical offset fixtures
+and provisional detector/DM settings remain explicitly identified. Cold stage
+times are recorded separately from model-time exposure settings; wall cadence,
+unchanged HEART calibration, accelerator acquisition and physical qualification
+remain open under RTC-DEV-029.

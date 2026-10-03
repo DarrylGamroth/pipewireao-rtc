@@ -708,7 +708,7 @@ end
     end
     mktempdir() do root
         path = joinpath(root, "new")
-        @test_throws ArgumentError Server.CaptureStore(path; maximum_bytes=UInt64(1), profile=:copper)
+        @test_throws ArgumentError Server.CaptureStore(path; maximum_bytes=UInt64(1), profile=:unsupported)
         @test_throws ArgumentError Server.CaptureStore(path; maximum_bytes=UInt64(0))
         @test_throws ArgumentError Server.CaptureStore(path; maximum_bytes=UInt64(1), stage="../escape")
         @test_throws ArgumentError Server.CaptureStore(path; maximum_bytes=UInt64(1), settings=(; oversized=repeat("x", 16385)))
@@ -719,6 +719,189 @@ end
         link = joinpath(root, "link")
         symlink(joinpath(root, "missing"), link)
         @test_throws ArgumentError Server.CaptureStore(link; maximum_bytes=UInt64(1))
+    end
+end
+
+# Explicit session-profile traits exercise ordinary Copper collect with and without storage.
+mutable struct CopperServerTestSession
+    inner::ServerTestSession
+    raw::Vector{UInt16}
+    intensity::Vector{Float32}
+    writes::Int
+    partial_write::Bool
+end
+Server.session_profile(::CopperServerTestSession) = Val(:copper)
+Server.session_cursor(session::CopperServerTestSession) = Server.session_cursor(session.inner)
+Server.session_domain(session::CopperServerTestSession) = session.inner.domain
+Server.session_domain_bytes(session::CopperServerTestSession) = collect(session.inner.domain)
+Server.session_hold!(session::CopperServerTestSession) = Server.session_hold!(session.inner)
+Server.session_release!(session::CopperServerTestSession) = Server.session_release!(session.inner)
+Server.session_fault!(session::CopperServerTestSession) = Server.session_fault!(session.inner)
+Server.session_adopt!(session::CopperServerTestSession, figure; timeout_ns) = Server.session_adopt!(session.inner, figure; timeout_ns)
+Server.session_response_values(session::CopperServerTestSession) = session.inner.values
+Server.session_capture_values(session::CopperServerTestSession) = (;raw=session.raw,pixels=session.inner.values,intensity=session.intensity)
+function Server.session_acquire!(session::CopperServerTestSession; timeout_ns, require_valid)
+    receipt = Server.session_acquire!(session.inner; timeout_ns, require_valid)
+    fill!(session.raw, UInt16(session.inner.sequence))
+    session.intensity[1] = Float32(session.inner.sequence)
+    return receipt
+end
+function Server.capture_write_payload(session::CopperServerTestSession, io, payload)
+    session.writes += 1
+    return session.partial_write ? write(io, view(payload, 1:3)) : write(io, payload)
+end
+function copper_server_fixture(root=nothing; maximum_bytes=2Server.COPPER_CAPTURE_BYTES,
+    samples=[fill(Float32(i),3600) for i in 1:43], valid=true)
+    inner = server_fixture(;samples).session
+    inner.valid = valid
+    session = CopperServerTestSession(inner, zeros(UInt16,64*64), zeros(Float32,1), 0, false)
+    capture = root === nothing ? nothing : Server.CaptureStore(joinpath(root,"capture");
+        maximum_bytes, profile=:copper, stage="copper-training", illumination=:lamp,
+        settings=(;detector_config=(;bits=14,photon_noise=true),graph_sha256="copper-fixture"))
+    owner = Server.Owner(session;normal_controller_absent=true,command_count=2,measurement_count=3600,
+        maximum_timeout_ns=UInt64(20_000_000_000),capture)
+    @test apply_server!(owner,(;kind="hold")).result.kind == "held"
+    @test apply_server!(owner,(;kind="adopt",probe=0,figure=Float32[0,0]);serial=2).result.kind == "adopted"
+    return (;owner,session,store=capture)
+end
+function copper_settle!(fixture;rule=(;kind="discard_exposures",frames=1),serial=3,probe=0)
+    return apply_server!(fixture.owner,(;kind="settle",probe,after=Server.session_cursor(fixture.session),rule);serial)
+end
+
+@testset "Copper profile capture construction and mismatch admission" begin
+    mktempdir() do root
+        fixture = copper_server_fixture(root)
+        @test fixture.store isa Server.CaptureStore{Server.CopperCaptureLayout}
+        @test fixture.owner.profile === Val(:copper)
+        @test Server.capture_bytes(fixture.store.layout) == 22_596
+        @test Server.capture_measurements(fixture.store.layout) == 3600
+        @test_throws ArgumentError Server.Owner(fixture.session;normal_controller_absent=true,measurement_count=376,capture=fixture.store)
+        classic = Server.CaptureStore(joinpath(root,"classic");maximum_bytes=Server.CLASSIC_CAPTURE_BYTES)
+        @test_throws ArgumentError Server.Owner(fixture.session;normal_controller_absent=true,measurement_count=3600,capture=classic)
+        @test_throws ArgumentError Server.Owner(fixture.session;normal_controller_absent=true,measurement_count=3601)
+        @test fixture.session.inner.sequence == 0 && fixture.session.writes == 0
+    end
+end
+
+@testset "Copper startup/probe priming rejects immediate settling before effects" begin
+    for capture in (false,true)
+        mktempdir() do root
+            fixture = copper_server_fixture(capture ? root : nothing)
+            (;owner,session) = fixture
+            cursor = Server.session_cursor(session)
+            rejected = copper_settle!(fixture;rule=(;kind="immediate"))
+            @test rejected.result.reason == "invalid_evidence"
+            @test owner.phase == :adopted && owner.probe == 0 && !owner.faulted
+            @test Server.session_cursor(session) == cursor && isempty(session.inner.exposure_budgets)
+            # Both accepted-measurement paths remain blocked until a correlated settle completes.
+            @test apply_server!(owner,(;kind="collect",probe=0,after=cursor,measurements=3600,frames=1);serial=4).result.reason == "invalid_evidence"
+            if capture
+                @test apply_server!(owner,capture_action(session);serial=5).result.reason == "invalid_evidence"
+                @test isempty(readdir(fixture.store.directory)) && fixture.store.reserved_bytes == 0
+            end
+            @test copper_settle!(fixture;serial=6).result.kind == "settled"
+            @test session.inner.sequence == 1 && owner.adoption_sequence == 0
+            action = capture ? capture_action(session) : (;kind="collect",probe=0,after=Server.session_cursor(session),measurements=3600,frames=1)
+            @test apply_server!(owner,action;serial=7).result.kind == (capture ? "captured" : "responses")
+            @test session.inner.sequence == 2
+            @test apply_server!(owner,(;kind="adopt",probe=1,figure=Float32[1,1]);serial=8).result.kind == "adopted"
+            @test owner.adoption_sequence == 2
+            @test copper_settle!(fixture;rule=(;kind="immediate"),probe=1,serial=9).result.reason == "invalid_evidence"
+            @test owner.phase == :adopted && owner.probe == 1 && session.inner.sequence == 2
+            @test copper_settle!(fixture;rule=(;kind="model_time",duration_ns=1),probe=1,serial=10).result.kind == "settled"
+            @test session.inner.sequence == 3
+            @test apply_server!(owner,(;kind="restore",figure=Float32[0,0],rule=(;kind="immediate"));serial=11).result.kind == "restored"
+            @test apply_server!(owner,(;kind="release");serial=12).result.kind == "released"
+            @test session.inner.sequence == 3 && !owner.faulted && !owner.held
+        end
+    end
+end
+
+@testset "Copper reply bounds and chronological averaging" begin
+    fixture = copper_server_fixture()
+    @test copper_settle!(fixture).result.kind == "settled"
+    cursor = Server.session_cursor(fixture.session)
+    oversized = apply_server!(fixture.owner,(;kind="collect",probe=0,after=cursor,measurements=3600,frames=42);serial=4)
+    @test oversized.result.reason == "invalid_evidence"
+    @test fixture.session.inner.sequence == 1 && length(fixture.session.inner.exposure_budgets) == 1
+    @test fixture.owner.phase == :settled && !fixture.owner.faulted
+    @test 512+16*3600+180*41 == 65_492
+    @test 512+16*3600+180*42 == 65_672
+    accepted = apply_server!(fixture.owner,(;kind="collect",probe=0,after=cursor,measurements=3600,frames=41);serial=5,
+        timeout_ns=UInt64(20_000_000_000))
+    @test accepted.result.kind == "responses" && accepted.result.valid
+    @test length(accepted.result.values) == 3600 && all(==(22.0f0),accepted.result.values)
+    @test [e.sequence for e in accepted.result.exposures] == collect(2:42)
+    @test [e.start_model_ns for e in accepted.result.exposures] == collect(50:50:2050)
+    @test ncodeunits(Server.encode_reply(accepted)) <= Server.MAX_REPLY_BYTES
+    @test fixture.session.inner.sequence == 42 && fixture.owner.phase == :collected
+end
+
+@testset "Copper capture keeps pupil-block order, intensity and invalid quality" begin
+    mktempdir() do root
+        samples=[Float32.(collect(1:3600) .+ 4000*i) for i in 1:4]
+        fixture = copper_server_fixture(root;samples,valid=false)
+        @test copper_settle!(fixture).result.kind == "settled"
+        reply = apply_server!(fixture.owner,capture_action(fixture.session;frames=2);serial=4,timeout_ns=UInt64(20_000_000_000))
+        @test reply.result.kind == "captured" && reply.result.bytes == 2Server.COPPER_CAPTURE_BYTES
+        @test reply.result.cursor.sequence == 3 && fixture.session.writes == 6
+        path = joinpath(fixture.store.directory,reply.result.manifest)
+        payload = read(path);manifest = JSON3.read(payload)
+        @test manifest.profile == "copper" && manifest.illumination == "lamp" && manifest.stage == "copper-training"
+        @test reply.result.sha256 == bytes2hex(Server.sha256(payload)) && reply.result.metadata_bytes == length(payload)
+        @test UInt8.(manifest.acquisition_domain_mapping.complete_domain) == collect(fixture.session.inner.domain)
+        @test [e.sequence for e in manifest.exposures] == [2,3]
+        @test all(e -> !e.valid && e.duration_ns == 50 && e.generation == 7,manifest.exposures)
+        for exposure in manifest.exposures
+            @test Set(keys(exposure.files)) == Set([:raw,:pixels,:intensity])
+            directory = joinpath(dirname(path),exposure.directory)
+            for (name,shape,bytes,element) in ((:raw,[64,64],8192,"U16_LE"),(:pixels,[4,900],14400,"F32_LE"),(:intensity,[1],4,"F32_LE"))
+                descriptor = getproperty(exposure.files,name)
+                file = joinpath(directory,descriptor.path)
+                @test collect(descriptor.shape) == shape && descriptor.bytes == bytes && filesize(file) == bytes
+                @test descriptor.layout == "ROW_MAJOR" && descriptor.element_type == element
+                @test descriptor.sha256 == bytes2hex(Server.sha256(read(file)))
+            end
+            @test reinterpret(Float32,read(joinpath(directory,"pixels.f32le"))) == samples[Int(exposure.sequence)]
+            @test only(reinterpret(Float32,read(joinpath(directory,"intensity.f32le")))) == exposure.sequence
+            @test all(==(UInt16(exposure.sequence)),reinterpret(UInt16,read(joinpath(directory,"raw.u16le"))))
+        end
+        @test fixture.store.reserved_bytes == 2Server.COPPER_CAPTURE_BYTES
+        @test apply_server!(fixture.owner,(;kind="restore",figure=Float32[0,0],rule=(;kind="immediate"));serial=5).result.kind == "restored"
+        @test apply_server!(fixture.owner,(;kind="release");serial=6).result.kind == "released"
+        @test read(path) == payload && !fixture.owner.faulted
+    end
+end
+
+@testset "Copper capture bounds, packed views and fault retention" begin
+    mktempdir() do root
+        fixture = copper_server_fixture(root;maximum_bytes=Server.COPPER_CAPTURE_BYTES)
+        @test copper_settle!(fixture).result.kind == "settled"
+        rejected = apply_server!(fixture.owner,capture_action(fixture.session;frames=2);serial=4)
+        @test rejected.result.reason == "invalid_evidence" && fixture.session.inner.sequence == 1
+        @test fixture.store.reserved_bytes == 0 && fixture.session.writes == 0
+        directory = joinpath(fixture.store.directory,"views");mkdir(directory)
+        values = (;raw=view(ones(UInt16,4098),2:4097),pixels=view(Float32.(1:3602),2:3601),intensity=view(Float32[0,3,0],2:2))
+        files = Server.capture_frame_payload!(fixture.owner,directory,values,time_ns()+UInt64(20_000_000_000),()->nothing)
+        @test sum(f.bytes for f in files) == Server.COPPER_CAPTURE_BYTES
+        @test read(joinpath(directory,"pixels.f32le")) == reinterpret(UInt8,values.pixels)
+        writes=fixture.session.writes
+        for malformed in (merge(values,(;raw=zeros(Float32,4096))),merge(values,(;raw=zeros(UInt16,7))),
+            merge(values,(;raw=view(zeros(UInt16,8192),1:2:8192))),
+            (;raw=zeros(UInt16,4096),slopes=zeros(Float32,376),flux=zeros(Float32,188),validity=falses(188)))
+            @test_throws Server.EndpointFailure Server.capture_frame_payload!(fixture.owner,directory,malformed,time_ns()+UInt64(20_000_000_000),()->nothing)
+        end
+        @test fixture.session.writes == writes
+    end
+    mktempdir() do root
+        fixture = copper_server_fixture(root)
+        @test copper_settle!(fixture).result.kind == "settled"
+        fixture.session.partial_write = true
+        reply = apply_server!(fixture.owner,capture_action(fixture.session);serial=4,timeout_ns=UInt64(20_000_000_000))
+        @test reply.result.reason == "endpoint" && fixture.owner.faulted && fixture.owner.held
+        @test fixture.session.inner.failed && fixture.session.inner.sequence == 2
+        @test !isfile(joinpath(fixture.store.directory,"4/manifest.json"))
+        @test isdir(joinpath(fixture.store.directory,"4/1")) && fixture.store.pending_manifest === nothing
     end
 end
 

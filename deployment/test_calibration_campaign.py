@@ -42,22 +42,22 @@ class CampaignTests(unittest.TestCase):
         bad=recipe();bad['unexpected']=True
         with self.assertRaises(ValueError):c.validate_recipe(bad)
 
-    def make_capture(self,root):
+    def make_capture(self,root,profile='classic'):
+        channels, payload_bytes = c.capture_contract(profile)
         after=dict(domain=1,generation=1,sequence=1,model_ns=10)
         settings=dict(detector_config=dict(bits=12,exposure_duration_s=5e-9),graph_sha256='graph',wfs_active_sha256='mask')
         mapping=dict(opaque_domain=1,complete_domain=[1]*16)
-        startup=dict(**settings,illumination='dark',acquisition_domain_mapping=mapping,capture_settings_sha256='settings',acquisition_generation=1)
+        startup=dict(**settings,profile=profile,illumination='dark',acquisition_domain_mapping=mapping,capture_settings_sha256='settings',acquisition_generation=1)
         records=[]
         for i in (1,2):
             frame=root/'4'/str(i);frame.mkdir(parents=True);files={}
-            names=dict(raw='raw.u16le',slopes='slopes.f32le',flux='flux.f32le',validity='validity.u8')
-            for channel,(element,shape,size) in c.CHANNELS.items():
-                path=frame/names[channel];path.write_bytes(bytes(size))
+            for channel,(element,shape,size) in channels.items():
+                path=frame/c.CAPTURE_FILENAMES[channel];path.write_bytes(bytes(size))
                 files[channel]=dict(path=path.name,element_type=element,shape=shape,layout='ROW_MAJOR',bytes=size,sha256=c.digest(path))
             records.append(dict(domain=1,generation=1,sequence=i+1,start_model_ns=i*10,duration_ns=5,valid=False,directory=str(i),files=files))
-        manifest=dict(version=1,run=1,serial=4,probe=0,stage='dark',profile='classic',illumination='dark',settings=settings,settings_sha256='settings',acquisition_domain_mapping=mapping,frames=2,bytes=2*c.PAYLOAD_BYTES,exposures=records)
+        manifest=dict(version=1,run=1,serial=4,probe=0,stage='dark',profile=profile,illumination='dark',settings=settings,settings_sha256='settings',acquisition_domain_mapping=mapping,frames=2,bytes=2*payload_bytes,exposures=records)
         path=root/'4/manifest.json';path.write_text(json.dumps(manifest))
-        completion=dict(manifest='4/manifest.json',sha256=c.digest(path),frames=2,bytes=2*c.PAYLOAD_BYTES,metadata_bytes=path.stat().st_size,cursor=dict(domain=1,generation=1,sequence=3,model_ns=25))
+        completion=dict(manifest='4/manifest.json',sha256=c.digest(path),frames=2,bytes=2*payload_bytes,metadata_bytes=path.stat().st_size,cursor=dict(domain=1,generation=1,sequence=3,model_ns=25))
         return manifest,completion,after,startup
 
     def verify(self,root,completion,after,startup):
@@ -68,6 +68,40 @@ class CampaignTests(unittest.TestCase):
             root=Path(tmp);_,completion,after,startup=self.make_capture(root)
             result=self.verify(root,completion,after,startup)
             self.assertTrue(all(not x['valid'] for x in result['exposures']))
+
+    def test_copper_three_channel_capture(self):
+        channels, size = c.capture_contract('copper')
+        self.assertEqual(size, 22596)
+        self.assertEqual(channels, dict(raw=('U16_LE',[64,64],8192),
+            pixels=('F32_LE',[4,900],14400), intensity=('F32_LE',[1],4)))
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);_,completion,after,startup=self.make_capture(root,'copper')
+            result=c.verify_capture(root,completion,run=1,serial=4,stage='dark',
+                frames=2,after=after,startup=startup,profile='copper')
+            self.assertEqual(result['profile'],'copper')
+            self.assertEqual(result['bytes'],45192)
+            with self.assertRaises(ValueError):self.verify(root,completion,after,startup)
+
+    def test_capture_profile_and_channels_cannot_be_selected_by_manifest(self):
+        for change in ('profile','startup_profile','missing_startup_profile','extra_measurement','missing_intensity','wrong_shape','payload'):
+            with self.subTest(change=change),tempfile.TemporaryDirectory() as tmp:
+                root=Path(tmp);manifest,completion,after,startup=self.make_capture(root,'copper')
+                if change=='profile':manifest['profile']='classic'
+                elif change=='startup_profile':startup['profile']='classic'
+                elif change=='missing_startup_profile':del startup['profile']
+                elif change=='extra_measurement':manifest['exposures'][0]['files']['extra']={}
+                elif change=='missing_intensity':del manifest['exposures'][0]['files']['intensity']
+                elif change=='wrong_shape':manifest['exposures'][0]['files']['pixels']['shape']=[3600]
+                else:(root/'4/1/pixels.f32le').write_bytes(b'changed')
+                path=root/'4/manifest.json';path.write_text(json.dumps(manifest))
+                completion['sha256']=c.digest(path);completion['metadata_bytes']=path.stat().st_size
+                with self.assertRaises(ValueError):c.verify_capture(root,completion,run=1,serial=4,
+                    stage='dark',frames=2,after=after,startup=startup,profile='copper')
+
+    def test_unsupported_capture_profile_rejects_before_read(self):
+        for profile in ('unknown',None,[],True):
+            with self.subTest(profile=profile),patch.object(Path,'read_bytes',side_effect=AssertionError('unexpected read')):
+                with self.assertRaises(ValueError):c.capture_contract(profile)
 
     def test_matching_hashes_do_not_override_association(self):
         for change in ('probe','illumination','settings','first','last'):
@@ -140,6 +174,7 @@ class CampaignTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp);package=root/'package';package.mkdir()
             output=root/'evidence';runtime=root/'runtime';instance=runtime/'owner'
+            (package/'provenance.json').write_text(json.dumps(dict(profile='classic')))
             ready=dict(socket=str(instance/'calibration.sock'))
             def ready_state(*args,**kwargs):
                 instance.mkdir(parents=True);(instance/'captured').mkdir()

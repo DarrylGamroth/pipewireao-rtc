@@ -966,7 +966,7 @@ full acquisition domain to the coordinator's domain ID. Transport limits are
 additional to the coordinator's retained-data budget; oversized records reject
 without unbounded allocation or silent truncation.
 
-The optional `capture` action is selected only for a Classic campaign owner
+The optional `capture` action is selected for an explicit Classic or Copper owner
 prepared with a fresh local capture directory, explicit stage identity and a
 positive whole-session payload-byte budget. It has the same current-probe,
 exact-after-cursor and settled-to-collected transition as `collect`. Unsupported
@@ -976,8 +976,24 @@ A capture is complete transport evidence and may retain false intrinsic WFS
 validity; it MUST NOT be reported as an accepted interaction response.
 
 One captured Classic exposure contains 247,808 raw U16_LE bytes, 1,504 slope
-F32_LE bytes, 752 flux F32_LE bytes and 188 BOOL8 bytes, all with the existing
-ROW_MAJOR contracts. Capture requests MUST remain within the 4,096-frame bound
+F32_LE bytes, 752 flux F32_LE bytes and 188 BOOL8 bytes. One captured Copper
+exposure contains 8,192 raw U16_LE bytes (64×64), 14,400 reconstruction-pixel
+F32_LE bytes (4×900) and four mean-pupil-intensity F32_LE bytes (1). All retain
+the existing ROW_MAJOR contracts. The Copper mean is diagnostic and MUST NOT
+be appended to the 3,600-measurement vector. The expected profile MUST be
+declared before acquisition and checked against the owner, startup snapshot
+and manifest; a manifest MUST NOT select its own payload contract.
+
+Copper uses the previous successful frame's mean for normalization. After
+startup and each probe adoption, its `settle` action MUST complete at least one
+discarded exposure before `collect` or `capture` can accept measurements. An
+`immediate` measurement-settling rule MUST reject before endpoint effects or
+phase/cursor changes, including when no capture storage is configured. A
+positive model-time rule MUST advance through completed exposures. This
+normalization rule does not establish physical mirror settling or change
+reference-restoration semantics. Classic immediate settling remains unchanged.
+
+Capture requests MUST remain within the 4,096-frame bound
 and the session's cumulative payload budget. Manifest metadata is separately
 bounded by a 16 KiB settings header and 4,096 bytes per exposure. Neither budget
 permits unbounded retained in-memory frames or JSON control records.

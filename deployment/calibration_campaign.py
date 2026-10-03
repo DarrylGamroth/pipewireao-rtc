@@ -31,6 +31,24 @@ CHANNELS = {
     "flux": ("F32_LE", [188], 752),
     "validity": ("BOOL8", [188], 188),
 }
+COPPER_CHANNELS = {
+    "raw": ("U16_LE", [64, 64], 8192),
+    "pixels": ("F32_LE", [4, 900], 14400),
+    "intensity": ("F32_LE", [1], 4),
+}
+CAPTURE_FILENAMES = {
+    "raw": "raw.u16le", "slopes": "slopes.f32le", "flux": "flux.f32le",
+    "validity": "validity.u8", "pixels": "pixels.f32le", "intensity": "intensity.f32le",
+}
+
+
+def capture_contract(profile):
+    """Select the caller-declared capture contract, never the incoming manifest."""
+    if profile == "classic":
+        return CHANNELS, PAYLOAD_BYTES
+    if profile == "copper":
+        return COPPER_CHANNELS, 22596
+    raise ValueError("capture requires the declared Classic or Copper profile")
 
 
 def digest(path):
@@ -181,8 +199,12 @@ class Endpoint:
         self.socket.close()
 
 
-def verify_capture(root, completion, *, run, serial, stage, frames, after, startup):
+def verify_capture(root, completion, *, run, serial, stage, frames, after, startup,
+                   profile="classic"):
     """Verify fixed-layout bulk evidence before any scientific consumption."""
+    channels, payload_bytes = capture_contract(profile)
+    if startup.get("profile") != profile:
+        raise ValueError("capture startup differs from declared profile")
     for field in ("frames", "bytes", "metadata_bytes"):
         if type(completion[field]) is not int or completion[field] <= 0:
             raise ValueError("capture completion counts must be positive integers")
@@ -201,7 +223,7 @@ def verify_capture(root, completion, *, run, serial, stage, frames, after, start
             raise ValueError("capture header requires integer identities/counts")
     if (manifest["version"], manifest["run"], manifest["serial"], manifest["stage"], manifest["frames"]) != (1, run, serial, stage, frames):
         raise ValueError("capture identity mismatch")
-    if manifest["probe"] != 0 or manifest["profile"] != "classic" or manifest["illumination"] != startup["illumination"]:
+    if manifest["probe"] != 0 or manifest["profile"] != profile or manifest["illumination"] != startup["illumination"]:
         raise ValueError("capture stage settings mismatch")
     settings = {name: startup[name] for name in ("detector_config", "graph_sha256", "wfs_active_sha256")}
     if manifest["settings"] != settings or manifest["acquisition_domain_mapping"] != startup["acquisition_domain_mapping"]:
@@ -210,7 +232,7 @@ def verify_capture(root, completion, *, run, serial, stage, frames, after, start
         raise ValueError("capture settings digest mismatch")
     if completion["frames"] != frames:
         raise ValueError("capture payload budget mismatch")
-    if manifest["bytes"] != frames * PAYLOAD_BYTES or completion["bytes"] != frames * PAYLOAD_BYTES:
+    if manifest["bytes"] != frames * payload_bytes or completion["bytes"] != frames * payload_bytes:
         raise ValueError("capture length mismatch")
     if len(manifest["exposures"]) != frames:
         raise ValueError("capture sample count mismatch")
@@ -238,11 +260,11 @@ def verify_capture(root, completion, *, run, serial, stage, frames, after, start
         if previous is not None and (exposure["generation"] != previous["generation"] or exposure["sequence"] != previous["sequence"] + 1 or exposure["start_model_ns"] < previous["start_model_ns"] + previous["duration_ns"]):
             raise ValueError("nonconsecutive or overlapping capture")
         previous = exposure
-        if set(exposure["files"]) != set(CHANNELS):
+        if set(exposure["files"]) != set(channels):
             raise ValueError("missing capture channel")
-        for name, (element, shape, size) in CHANNELS.items():
+        for name, (element, shape, size) in channels.items():
             record = exposure["files"][name]
-            filename = {"raw": "raw.u16le", "slopes": "slopes.f32le", "flux": "flux.f32le", "validity": "validity.u8"}[name]
+            filename = CAPTURE_FILENAMES[name]
             payload = path.parent / str(index) / filename
             if record["path"] != filename or any(p.is_symlink() for p in (payload.parent, payload)) or (record["element_type"], record["shape"], record["layout"], record["bytes"]) != (element, shape, "ROW_MAJOR", size):
                 raise ValueError("capture payload contract mismatch")
@@ -336,6 +358,10 @@ def wait_state(runtime, process, timeout, predicate):
 
 def run_stage(package, output, runtime, recipe, stage, *, frames=None):
     """Finish restore/release/public shutdown before returning immutable evidence."""
+    capture_profile = None
+    if frames is not None:
+        capture_profile = json.loads((package / "provenance.json").read_text())["profile"]
+        capture_contract(capture_profile)
     stage_started_ns = time.perf_counter_ns()
     launcher = Path(deploy.__file__).resolve()
     common = [sys.executable, str(launcher), "control", "--runtime", str(runtime), "--"]
@@ -390,7 +416,8 @@ def run_stage(package, output, runtime, recipe, stage, *, frames=None):
                 shutil.copytree(instance / "captured", output / "captured")
                 result["capture"] = capture
                 verify_capture(output / "captured", capture, run=1, serial=4, stage=stage,
-                               frames=frames, after=settled["cursor"], startup=result["startup_report"])
+                               frames=frames, after=settled["cursor"], startup=result["startup_report"],
+                               profile=capture_profile)
             else:
                 response = subprocess.run([str(package / "bin/rtc-calibrate"), "--endpoint", str(instance / "calibration.sock"), "--plan", str(output.parent / "interaction-plan.json")], env=env, capture_output=True, text=True, timeout=recipe["stage_timeout_seconds"])
                 (output / "rtc-calibrate.json").write_text(response.stdout)

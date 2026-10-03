@@ -65,7 +65,7 @@ function calibration_options(arguments)
     (capture_directory === nothing) == (capture_max_bytes === nothing) ||
         throw(ArgumentError("capture requires both directory and finite payload budget"))
     if capture_directory !== nothing
-        options.profile === :classic || throw(ArgumentError("capture supports Classic only"))
+        CalibrationServer.capture_layout(Val(options.profile))
         (ispath(capture_directory) || islink(capture_directory)) &&
             throw(ArgumentError("capture directory must be fresh"))
         isdir(dirname(capture_directory)) || throw(ArgumentError("capture directory parent is missing"))

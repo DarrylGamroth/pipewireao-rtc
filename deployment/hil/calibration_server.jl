@@ -10,6 +10,7 @@ const MAX_REPLY_BYTES = 64 * 1024
 const MAX_FRAMES = 4096
 const MAX_PROBE = 16_383
 const CLASSIC_CAPTURE_BYTES = UInt64(250_252)
+const COPPER_CAPTURE_BYTES = UInt64(22_596)
 const MAX_CAPTURE_SETTINGS_BYTES = 16 * 1024
 const Cursor = NamedTuple{(:domain, :generation, :sequence, :model_ns),NTuple{4,UInt64}}
 const Exposure = NamedTuple{(:domain, :generation, :sequence, :start_model_ns, :duration_ns),NTuple{5,UInt64}}
@@ -29,18 +30,39 @@ session_acquire!(session; timeout_ns, require_valid) = CalibrationAcquisition.ac
 session_response_values(session) = CalibrationAcquisition.array_values(first(session.responses))
 exposure_start_ns(exposure) = CalibrationAcquisition.model_nanoseconds(exposure.timestamp)
 session_domain_bytes(session) = collect(session.domain.bytes)
-session_capture_values(session) = (; raw=CalibrationAcquisition.array_values(session.raw),
+session_profile(session) = Val(:generic)
+session_profile(session::CalibrationAcquisition.AcquisitionSession) = Val(session.profile)
+session_capture_values(session) = session_capture_values(session, session_profile(session))
+session_capture_values(session, ::Val{:classic}) = (; raw=CalibrationAcquisition.array_values(session.raw),
     slopes=CalibrationAcquisition.array_values(session.responses[1]),
     flux=CalibrationAcquisition.array_values(session.responses[2]),
     validity=CalibrationAcquisition.array_values(session.responses[3]))
+session_capture_values(session, ::Val{:copper}) = (; raw=CalibrationAcquisition.array_values(session.raw),
+    pixels=CalibrationAcquisition.array_values(session.responses[1]),
+    intensity=CalibrationAcquisition.array_values(session.responses[2]))
 capture_write_payload(session, io, payload) = write(io, payload)
+
+struct ClassicCaptureLayout end
+struct CopperCaptureLayout end
+capture_layout(::Val{:classic}) = ClassicCaptureLayout()
+capture_layout(::Val{:copper}) = CopperCaptureLayout()
+capture_layout(profile) = throw(ArgumentError("unsupported capture profile"))
+capture_profile(::ClassicCaptureLayout) = Val(:classic)
+capture_profile(::CopperCaptureLayout) = Val(:copper)
+capture_profile_name(::ClassicCaptureLayout) = "classic"
+capture_profile_name(::CopperCaptureLayout) = "copper"
+capture_bytes(::ClassicCaptureLayout) = CLASSIC_CAPTURE_BYTES
+capture_bytes(::CopperCaptureLayout) = COPPER_CAPTURE_BYTES
+capture_measurements(::ClassicCaptureLayout) = 376
+capture_measurements(::CopperCaptureLayout) = 3600
 
 """Owner-selected local capture storage. The budget counts payload bytes;
 metadata is separately bounded by 16 KiB settings and 4096 bytes per frame.
 Completed files remain owned and immutable until the stage consumer verifies
 and reduces them after restoration/release and public shutdown.
 """
-mutable struct CaptureStore
+mutable struct CaptureStore{Layout}
+    layout::Layout
     directory::String
     maximum_bytes::UInt64
     reserved_bytes::UInt64
@@ -61,7 +83,7 @@ function CaptureStore(directory::AbstractString; maximum_bytes::UInt64,
     illumination::Symbol=:lamp, settings=(;),
 )
     require_capture_endian(Base.ENDIAN_BOM)
-    profile === :classic || throw(ArgumentError("capture supports Classic only"))
+    layout = capture_layout(Val(profile))
     0 < maximum_bytes <= UInt64(typemax(Int64)) || throw(ArgumentError("invalid capture payload budget"))
     occursin(r"^[A-Za-z][A-Za-z0-9_-]{0,63}$", stage) || throw(ArgumentError("invalid calibration stage"))
     illumination in (:dark, :lamp) || throw(ArgumentError("invalid illumination"))
@@ -72,11 +94,11 @@ function CaptureStore(directory::AbstractString; maximum_bytes::UInt64,
     # Resolve the existing parent once, then own a fresh private directory.
     target = joinpath(realpath(dirname(target)), basename(target))
     mkdir(target; mode=0o700)
-    return CaptureStore(target, maximum_bytes, UInt64(0), String(stage), String(illumination),
+    return CaptureStore(layout, target, maximum_bytes, UInt64(0), String(stage), String(illumination),
         settings_json, bytes2hex(sha256(settings_json)), nothing)
 end
 
-mutable struct Owner{Session,Domain,Capture}
+mutable struct Owner{Session,Domain,Capture,Profile}
     session::Session
     domain::Domain
     command_count::Int
@@ -91,6 +113,37 @@ mutable struct Owner{Session,Domain,Capture}
     restored::Bool
     effect_started::Bool
     capture::Capture
+    profile::Profile
+    adoption_sequence::UInt64
+end
+
+validate_session_measurements(::Val{:generic}, measurements) = nothing
+validate_session_measurements(::Val{:classic}, measurements) = measurements == 376 ? nothing : throw(ArgumentError("Classic measurement contract differs"))
+validate_session_measurements(::Val{:copper}, measurements) = measurements == 3600 ? nothing : throw(ArgumentError("Copper measurement contract differs"))
+validate_session_measurements(profile, measurements) = throw(ArgumentError("unsupported acquisition profile"))
+validate_capture_profile(::Val{:generic}, layout) = nothing
+validate_capture_profile(::Val{:classic}, ::ClassicCaptureLayout) = nothing
+validate_capture_profile(::Val{:copper}, ::CopperCaptureLayout) = nothing
+validate_capture_profile(profile, layout) = throw(ArgumentError("capture and acquisition profiles differ"))
+function validate_capture(profile, capture::CaptureStore, measurements)
+    measurements == capture_measurements(capture.layout) || throw(ArgumentError("capture measurement contract differs"))
+    validate_capture_profile(profile, capture.layout)
+    return nothing
+end
+validate_capture(profile, ::Nothing, measurements) = nothing
+owner_profile(profile, capture) = profile
+owner_profile(::Val{:generic}, capture::CaptureStore) = capture_profile(capture.layout)
+
+require_measurement_ready(profile, owner) = nothing
+function require_measurement_ready(::Val{:copper}, owner)
+    current_cursor(owner).sequence > owner.adoption_sequence || throw(InvalidRequest())
+    return nothing
+end
+validate_measurement_settling(profile, rule) = nothing
+function validate_measurement_settling(::Val{:copper}, rule)
+    ((rule.kind == "discard_exposures" && rule.frames >= 1) ||
+        (rule.kind == "model_time" && rule.duration_ns >= 1)) || throw(InvalidRequest())
+    return nothing
 end
 
 """
@@ -105,10 +158,13 @@ function Owner(session; command_count::Int=277,
 )
     normal_controller_absent || throw(ArgumentError("initial calibration requires the normal controller to be absent"))
     command_count > 0 && measurement_count > 0 || throw(ArgumentError("empty endpoint contract"))
-    capture === nothing || measurement_count == 376 || throw(ArgumentError("capture requires the Classic measurement contract"))
+    profile = session_profile(session)
+    validate_session_measurements(profile, measurement_count)
+    validate_capture(profile, capture, measurement_count)
     0 < maximum_timeout_ns <= UInt64(typemax(Int64)) || throw(ArgumentError("invalid maximum timeout"))
     return Owner(session, session_domain(session), command_count, measurement_count,
-        maximum_timeout_ns, UInt64(0), UInt64(0), nothing, :initial, false, false, false, false, capture)
+        maximum_timeout_ns, UInt64(0), UInt64(0), nothing, :initial, false, false, false, false, capture,
+        owner_profile(profile, capture), UInt64(0))
 end
 
 """Prepare ordinary acquisition endpoints; the launcher still owns graph links/startup."""
@@ -321,6 +377,7 @@ function adopted!(owner, figure, until, check_connection)
 end
 
 function collect!(owner, action, until, check_connection)
+    require_measurement_ready(owner.profile, owner)
     action.measurements == owner.measurement_count || throw(InvalidRequest())
     # Worst-case finite Float32 tokens and UInt64 identity fields fit the reply
     # before any model side effect. The encoded bound is checked again below.
@@ -373,7 +430,9 @@ function capture_frame!(owner, directory, until, check_connection)
     return capture_frame_payload!(owner, directory, values, until, check_connection)
 end
 
-function capture_frame_payload!(owner, directory,
+capture_frame_payload!(owner, directory, values, until, check_connection) =
+    capture_frame_payload!(owner.capture.layout, owner, directory, values, until, check_connection)
+function capture_frame_payload!(::ClassicCaptureLayout, owner, directory,
     values::NamedTuple{(:raw, :slopes, :flux, :validity),Tuple{R,S,F,V}},
     until, check_connection,
 ) where {R<:StridedVector{UInt16},S<:StridedVector{Float32},F<:StridedVector{Float32},V<:StridedVector{Bool}}
@@ -383,7 +442,16 @@ function capture_frame_payload!(owner, directory,
         flux=capture_file!(owner, directory, "flux.f32le", values.flux, "F32_LE", [188], until, check_connection),
         validity=capture_file!(owner, directory, "validity.u8", values.validity, "BOOL8", [188], until, check_connection))
 end
-capture_frame_payload!(owner, directory, values, until, check_connection) = throw(EndpointFailure())
+function capture_frame_payload!(::CopperCaptureLayout, owner, directory,
+    values::NamedTuple{(:raw, :pixels, :intensity),Tuple{R,P,I}},
+    until, check_connection,
+) where {R<:StridedVector{UInt16},P<:StridedVector{Float32},I<:StridedVector{Float32}}
+    return (;
+        raw=capture_file!(owner, directory, "raw.u16le", values.raw, "U16_LE", [64, 64], until, check_connection),
+        pixels=capture_file!(owner, directory, "pixels.f32le", values.pixels, "F32_LE", [4, 900], until, check_connection),
+        intensity=capture_file!(owner, directory, "intensity.f32le", values.intensity, "F32_LE", [1], until, check_connection))
+end
+capture_frame_payload!(layout, owner, directory, values, until, check_connection) = throw(EndpointFailure())
 
 function capture_domain_bytes(domain::AbstractVector{UInt8})
     length(domain) == 16 || throw(EndpointFailure())
@@ -402,9 +470,11 @@ function discard_pending_manifest!(owner)
 end
 
 function capture!(owner, action, until, check_connection)
+    require_measurement_ready(owner.profile, owner)
     store = owner.capture
     store === nothing && throw(InvalidRequest())
-    bytes = Base.checked_mul(CLASSIC_CAPTURE_BYTES, action.frames)
+    payload_bytes = capture_bytes(store.layout)
+    bytes = Base.checked_mul(payload_bytes, action.frames)
     bytes <= store.maximum_bytes - store.reserved_bytes || throw(InvalidRequest())
     action.frames <= typemax(UInt64) - current_cursor(owner).sequence || throw(InvalidRequest())
     domain = capture_domain_bytes(session_domain_bytes(owner.session))
@@ -421,11 +491,11 @@ function capture!(owner, action, until, check_connection)
         frame_directory = joinpath(directory, string(index))
         mkdir(frame_directory; mode=0o700)
         files = capture_frame!(owner, frame_directory, until, check_connection)
-        sum(file.bytes for file in files) == CLASSIC_CAPTURE_BYTES || throw(EndpointFailure())
+        sum(file.bytes for file in files) == payload_bytes || throw(EndpointFailure())
         (; receipt.record..., valid=receipt.valid, directory=string(index), files)
     end
     manifest = (; version=1, run=owner.run, serial=owner.serial, probe=action.probe,
-        stage=store.stage, illumination=store.illumination, profile="classic",
+        stage=store.stage, illumination=store.illumination, profile=capture_profile_name(store.layout),
         settings=JSON3.read(store.settings_json), settings_sha256=store.settings_sha256,
         acquisition_domain_mapping=(; opaque_domain=UInt64(1), complete_domain=domain),
         frames=action.frames, bytes, exposures=records)
@@ -499,6 +569,7 @@ function effect!(owner, action, until, check_connection)
         action.probe == expected_probe || throw(InvalidRequest())
         result = adopted!(owner, action.figure, until, check_connection)
         owner.probe = action.probe
+        owner.adoption_sequence = result.cursor.sequence
         owner.phase = :adopted
         owner.restored = false
         return (; kind="adopted", cursor=result.cursor, figure=result.figure, clipped=result.clipped)
@@ -507,7 +578,9 @@ function effect!(owner, action, until, check_connection)
     same_cursor(owner, action.after)
     if kind == "settle"
         owner.phase == :adopted || throw(InvalidRequest())
+        validate_measurement_settling(owner.profile, action.rule)
         cursor = settle!(owner, action.rule, until, check_connection)
+        require_measurement_ready(owner.profile, owner)
         owner.phase = :settled
         return (; kind="settled", cursor)
     elseif kind == "collect"
