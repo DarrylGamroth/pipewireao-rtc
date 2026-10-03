@@ -188,7 +188,8 @@ def calibration_session(graph_records: list[dict], profile: str, engine: str,
         if engine == "fgn":
             graph.update({"factory": "pipewireao.fgn-native",
                           "module": "libpipewire-module-ndarray-filter-chain",
-                          "config.path": "@RUNTIME@/" + record["role"] + ".conf"})
+                          "config.path": "${PIPEWIREAO_RTC_GRAPH_CALIBRATION_"
+                                         + record["role"].upper() + "}"})
         else:
             graph.update({"ownership": "external", "run-control": "session"})
         graphs.append(graph)
@@ -233,6 +234,12 @@ def deployment_descriptor(package: Path, base: Path, specification: dict,
         raise ValueError("calibration deployment descriptor requires an existing HIL source owner")
     if engine == "jfg" and not any(owner["role"] == "julia" for owner in specification["owners"]):
         raise ValueError("JFG calibration descriptor requires the existing Julia owner contract")
+    if engine == "fgn":
+        environment = specification.setdefault("environment", {})
+        environment.update({
+            "PIPEWIREAO_RTC_GRAPH_CALIBRATION_WFS": "@RUNTIME@/wfs.conf",
+            "PIPEWIREAO_RTC_GRAPH_CALIBRATION_COMMAND": "@RUNTIME@/command.conf",
+        })
 
     simulator["argv"] = list(simulator["argv"])
     entrypoint = "@PACKAGE@/hil/calibration_owner.jl"

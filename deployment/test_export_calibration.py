@@ -154,10 +154,17 @@ class CalibrationGraphContracts(unittest.TestCase):
                     if engine == "fgn":
                         self.assertTrue(all(item["factory"] == "pipewireao.fgn-native"
                                             for item in session["graphs"]))
+                        graph_by_role = {item["node.name"].rsplit("-", 1)[-1]: item
+                                         for item in session["graphs"]}
+                        self.assertEqual(graph_by_role["wfs"]["config.path"],
+                                         "${PIPEWIREAO_RTC_GRAPH_CALIBRATION_WFS}")
+                        self.assertEqual(graph_by_role["command"]["config.path"],
+                                         "${PIPEWIREAO_RTC_GRAPH_CALIBRATION_COMMAND}")
                     else:
                         self.assertTrue(all(item["ownership"] == "external" and
                                             item["run-control"] == "session"
                                             for item in session["graphs"]))
+                        self.assertTrue(all("config.path" not in item for item in session["graphs"]))
                     edges = {(item["output"], item["input"]) for item in session["links"]}
                     self.assertEqual(len(edges), len(session["links"]))
                     wfs_name, command_name = (item["node.name"] for item in session["graphs"])
@@ -231,6 +238,13 @@ class CalibrationGraphContracts(unittest.TestCase):
                          "sources": [], "graphs": [], "sinks": [], "links": []},
                         Path("/opt/pipewireao"))
                 owner_by_role = {item["role"]: item for item in result["owners"]}
+                if engine == "fgn":
+                    self.assertEqual(result["environment"]["PIPEWIREAO_RTC_GRAPH_CALIBRATION_WFS"],
+                                     "@RUNTIME@/wfs.conf")
+                    self.assertEqual(result["environment"]["PIPEWIREAO_RTC_GRAPH_CALIBRATION_COMMAND"],
+                                     "@RUNTIME@/command.conf")
+                else:
+                    self.assertNotIn("PIPEWIREAO_RTC_GRAPH_CALIBRATION_WFS", result["environment"])
                 runner_hash = export.sha256(package / "bin/pipewireao-rtc")
                 self.assertEqual(package.joinpath("bin/pipewireao-rtc").read_text(),
                                  "explicit selected runner\n")
