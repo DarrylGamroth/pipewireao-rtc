@@ -55,6 +55,11 @@ finite dark/reference/qualification/interaction workflow. Its
 [evidence identities](CALIBRATION_CAMPAIGN_EVIDENCE.json) separate functional
 completion from remaining scientific and exact-trajectory acceptance.
 
+[Classic calibration quality](ANALYSIS_PLAN.md) tracks the next precision,
+coordinate-composition and correction gates. Its
+[source and dependency provenance](CALIBRATION_PROVENANCE.md) records reuse
+constraints and unresolved license metadata separately from numerical evidence.
+
 ## Inactive design archive
 
 The [archived full-RTC design](archive/full-rtc/README.md) preserves prior work
