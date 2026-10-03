@@ -109,6 +109,31 @@ historical exact-replay investigation.
 
 ## Launch and control
 
+### Classic operational measured offsets
+
+For a completed Classic CPU calibration campaign, add
+`--operational-calibration /absolute/candidate-campaign` to the HIL export.
+This explicitly selects measured background, reference slopes and eligibility
+from normal noisy detector/WFS acquisition. It bypasses the historical
+`calibrate_detector.jl` offset fixture. Both FGN and JFG retain the base
+reconstructor and command/feedback maps; prepare a base with the intended
+candidate reconstructor before this export.
+
+The importer requires a complete four-stage candidate, confirmed restoration,
+ownership release and shutdown, artifact and startup identities, compatible
+detector/optical/ROI settings, and an actual zero physical reference. Cadence,
+seed, source magnitude and lamp versus atmospheric illumination differences
+are recorded explicitly. It rejects unsupported origins and mismatches before
+publishing a new package. Inputs are preserved and failed exports leave no
+candidate output. The default offset fixture remains available when this
+option is absent. See the [independent boundary review](CALIBRATION_OFFSET_REVIEW.md).
+
+Preserving measured offsets does not accept the candidate interaction matrix
+or reconstructor, prove scientific correction, or qualify wall cadence.
+The [quality analysis](ANALYSIS_PLAN.md) tracks these separate gates.
+
+### Public lifecycle
+
 ```sh
 python3 deployment/deploy.py preflight \
   --deployment "$HOME/.config/pipewireao-rtc/revolt-copper-fgn-hil-cuda/deployment.conf"
