@@ -546,6 +546,32 @@ Absolute figures already include the reference; no additional system-flat stage
 is applied. Preserving a running controller's state during calibration remains
 a separate gate.
 
+The selected automatic Classic campaign uses fresh initial-calibration sessions
+for dark acquisition, lamp training, frozen-parameter qualification and zonal
+interaction acquisition. Dark and lamp are startup selections; normal detector
+noise, conversion and ADC behavior remain enabled. Backgrounds and references
+are calculated from actual transported samples using public scientific-package
+operations. Training uses an explicit zero WFS reference and the declared ROI
+candidate universe. Eligibility is derived from a declared validity, flux and
+ADC policy, without targeting a particular count of selected ROIs. Qualification
+uses separately declared detector samples and cannot change the frozen mask.
+
+Each stage restores the declared DM reference, releases ownership and stops
+through the public launcher before reduction or the next stage. New standard
+graph startup artifacts establish each parameter snapshot. A submitted live
+parameter update is not used as evidence of adoption. Stage results remain
+candidates; successful acquisition does not establish matrix precision,
+reconstructor acceptance, closed-loop correction or instrument cadence.
+
+For finite dark/training evidence, the calibration owner may write bounded
+immutable raw and WFS payloads to an explicitly selected local staging directory
+outside callbacks. The completion channel returns a manifest descriptor and
+digest after publication completes. This is a temporary calibration evidence
+transfer, not an RTC recording service or graph configuration format. The
+campaign owns the files through verification and reduction. Exposure association,
+capacity, deadlines and interrupted-stage disposition are specified in
+RTC-DEV-029; interaction response quality requirements remain unchanged.
+
 The owner observes both the actual demanded figure with constraint feedback and
 the simulator's correlated adoption before generating exposures. Probe tokens
 advance independently of exposure identities. Publication of a detector buffer

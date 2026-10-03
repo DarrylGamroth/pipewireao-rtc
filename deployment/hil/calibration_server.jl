@@ -2,12 +2,15 @@ module CalibrationServer
 
 using JSON3
 using Sockets
+using SHA
 import ..CalibrationAcquisition
 
 const MAX_REQUEST_BYTES = 16 * 1024
 const MAX_REPLY_BYTES = 64 * 1024
 const MAX_FRAMES = 4096
 const MAX_PROBE = 16_383
+const CLASSIC_CAPTURE_BYTES = UInt64(250_252)
+const MAX_CAPTURE_SETTINGS_BYTES = 16 * 1024
 const Cursor = NamedTuple{(:domain, :generation, :sequence, :model_ns),NTuple{4,UInt64}}
 const Exposure = NamedTuple{(:domain, :generation, :sequence, :start_model_ns, :duration_ns),NTuple{5,UInt64}}
 
@@ -25,8 +28,55 @@ session_adopt!(session, figure; timeout_ns) = CalibrationAcquisition.adopt_probe
 session_acquire!(session; timeout_ns, require_valid) = CalibrationAcquisition.acquire_exposure!(session; timeout_ns, require_valid)
 session_response_values(session) = CalibrationAcquisition.array_values(first(session.responses))
 exposure_start_ns(exposure) = CalibrationAcquisition.model_nanoseconds(exposure.timestamp)
+session_domain_bytes(session) = collect(session.domain.bytes)
+session_capture_values(session) = (; raw=CalibrationAcquisition.array_values(session.raw),
+    slopes=CalibrationAcquisition.array_values(session.responses[1]),
+    flux=CalibrationAcquisition.array_values(session.responses[2]),
+    validity=CalibrationAcquisition.array_values(session.responses[3]))
+capture_write_payload(session, io, payload) = write(io, payload)
 
-mutable struct Owner{Session,Domain}
+"""Owner-selected local capture storage. The budget counts payload bytes;
+metadata is separately bounded by 16 KiB settings and 4096 bytes per frame.
+Completed files remain owned and immutable until the stage consumer verifies
+and reduces them after restoration/release and public shutdown.
+"""
+mutable struct CaptureStore
+    directory::String
+    maximum_bytes::UInt64
+    reserved_bytes::UInt64
+    stage::String
+    illumination::String
+    settings_json::String
+    settings_sha256::String
+    pending_manifest::Union{Nothing,String}
+end
+
+function require_capture_endian(bom::UInt32)
+    bom == 0x04030201 || throw(ArgumentError("capture requires a little-endian host"))
+    return nothing
+end
+
+function CaptureStore(directory::AbstractString; maximum_bytes::UInt64,
+    profile::Symbol=:classic, stage::AbstractString="calibration",
+    illumination::Symbol=:lamp, settings=(;),
+)
+    require_capture_endian(Base.ENDIAN_BOM)
+    profile === :classic || throw(ArgumentError("capture supports Classic only"))
+    0 < maximum_bytes <= UInt64(typemax(Int64)) || throw(ArgumentError("invalid capture payload budget"))
+    occursin(r"^[A-Za-z][A-Za-z0-9_-]{0,63}$", stage) || throw(ArgumentError("invalid calibration stage"))
+    illumination in (:dark, :lamp) || throw(ArgumentError("invalid illumination"))
+    settings_json = JSON3.write(settings)
+    ncodeunits(settings_json) <= MAX_CAPTURE_SETTINGS_BYTES || throw(ArgumentError("capture settings exceed the metadata bound"))
+    target = abspath(directory)
+    (ispath(target) || islink(target)) && throw(ArgumentError("capture directory must be fresh"))
+    # Resolve the existing parent once, then own a fresh private directory.
+    target = joinpath(realpath(dirname(target)), basename(target))
+    mkdir(target; mode=0o700)
+    return CaptureStore(target, maximum_bytes, UInt64(0), String(stage), String(illumination),
+        settings_json, bytes2hex(sha256(settings_json)), nothing)
+end
+
+mutable struct Owner{Session,Domain,Capture}
     session::Session
     domain::Domain
     command_count::Int
@@ -40,6 +90,7 @@ mutable struct Owner{Session,Domain}
     faulted::Bool
     restored::Bool
     effect_started::Bool
+    capture::Capture
 end
 
 """
@@ -50,12 +101,14 @@ precondition, not discovery or a physical command-ownership claim.
 function Owner(session; command_count::Int=277,
     measurement_count::Int,
     maximum_timeout_ns::UInt64=UInt64(10_000_000_000), normal_controller_absent::Bool,
+    capture::Union{Nothing,CaptureStore}=nothing,
 )
     normal_controller_absent || throw(ArgumentError("initial calibration requires the normal controller to be absent"))
     command_count > 0 && measurement_count > 0 || throw(ArgumentError("empty endpoint contract"))
+    capture === nothing || measurement_count == 376 || throw(ArgumentError("capture requires the Classic measurement contract"))
     0 < maximum_timeout_ns <= UInt64(typemax(Int64)) || throw(ArgumentError("invalid maximum timeout"))
     return Owner(session, session_domain(session), command_count, measurement_count,
-        maximum_timeout_ns, UInt64(0), UInt64(0), nothing, :initial, false, false, false, false)
+        maximum_timeout_ns, UInt64(0), UInt64(0), nothing, :initial, false, false, false, false, capture)
 end
 
 """Prepare ordinary acquisition endpoints; the launcher still owns graph links/startup."""
@@ -149,6 +202,11 @@ function action_type(action)
         _integer(action.measurements, 1, MAX_REPLY_BYTES)
         _integer(action.frames, 1, MAX_FRAMES)
         return NamedTuple{(:kind, :probe, :after, :measurements, :frames),Tuple{String,UInt64,cursor_type(action.after),UInt64,UInt64}}
+    elseif kind == "capture"
+        _fields(action, ("kind", "probe", "after", "frames"))
+        _integer(action.probe, 0, MAX_PROBE)
+        _integer(action.frames, 1, MAX_FRAMES)
+        return NamedTuple{(:kind, :probe, :after, :frames),Tuple{String,UInt64,cursor_type(action.after),UInt64}}
     elseif kind == "restore"
         _fields(action, ("kind", "figure", "rule"))
         return NamedTuple{(:kind, :figure, :rule),Tuple{String,figure_type(action),rule_type(action.rule)}}
@@ -289,6 +347,106 @@ function collect!(owner, action, until, check_connection)
     return (; kind="responses", values, exposures, valid)
 end
 
+function capture_file!(owner, directory, name, values::StridedVector{T}, element_type, shape,
+    until, check_connection,
+) where {T}
+    length(values) == prod(shape) && stride(values, 1) == 1 || throw(EndpointFailure())
+    all(isfinite, values) || throw(EndpointFailure())
+    remaining(until)
+    check_connection()
+    # Direct borrowed packed storage; it cannot be rearmed until this write returns.
+    payload = reinterpret(UInt8, values)
+    path = joinpath(directory, name)
+    (ispath(path) || islink(path)) && throw(EndpointFailure())
+    written = open(path, "w") do io
+        capture_write_payload(owner.session, io, payload)
+    end
+    written == length(payload) && filesize(path) == length(payload) || throw(EndpointFailure())
+    remaining(until)
+    check_connection()
+    return (; path=name, element_type, shape, layout="ROW_MAJOR",
+        bytes=length(payload), sha256=bytes2hex(sha256(payload)))
+end
+
+function capture_frame!(owner, directory, until, check_connection)
+    values = session_capture_values(owner.session)
+    return capture_frame_payload!(owner, directory, values, until, check_connection)
+end
+
+function capture_frame_payload!(owner, directory,
+    values::NamedTuple{(:raw, :slopes, :flux, :validity),Tuple{R,S,F,V}},
+    until, check_connection,
+) where {R<:StridedVector{UInt16},S<:StridedVector{Float32},F<:StridedVector{Float32},V<:StridedVector{Bool}}
+    return (;
+        raw=capture_file!(owner, directory, "raw.u16le", values.raw, "U16_LE", [352, 352], until, check_connection),
+        slopes=capture_file!(owner, directory, "slopes.f32le", values.slopes, "F32_LE", [188, 2], until, check_connection),
+        flux=capture_file!(owner, directory, "flux.f32le", values.flux, "F32_LE", [188], until, check_connection),
+        validity=capture_file!(owner, directory, "validity.u8", values.validity, "BOOL8", [188], until, check_connection))
+end
+capture_frame_payload!(owner, directory, values, until, check_connection) = throw(EndpointFailure())
+
+function capture_domain_bytes(domain::AbstractVector{UInt8})
+    length(domain) == 16 || throw(EndpointFailure())
+    return collect(domain)
+end
+capture_domain_bytes(domain) = throw(EndpointFailure())
+
+function discard_pending_manifest!(owner)
+    store = owner.capture
+    store === nothing && return nothing
+    if store.pending_manifest !== nothing
+        rm(store.pending_manifest; force=true)
+        store.pending_manifest = nothing
+    end
+    return nothing
+end
+
+function capture!(owner, action, until, check_connection)
+    store = owner.capture
+    store === nothing && throw(InvalidRequest())
+    bytes = Base.checked_mul(CLASSIC_CAPTURE_BYTES, action.frames)
+    bytes <= store.maximum_bytes - store.reserved_bytes || throw(InvalidRequest())
+    action.frames <= typemax(UInt64) - current_cursor(owner).sequence || throw(InvalidRequest())
+    domain = capture_domain_bytes(session_domain_bytes(owner.session))
+    directory = joinpath(store.directory, string(owner.serial))
+    islink(store.directory) && throw(EndpointFailure())
+    (ispath(directory) || islink(directory)) && throw(InvalidRequest())
+    remaining(until)
+    check_connection()
+    mkdir(directory; mode=0o700)
+    owner.effect_started = true
+    store.reserved_bytes += bytes
+    records = map(1:Int(action.frames)) do index
+        receipt = exposure!(owner, until, check_connection; require_valid=false)
+        frame_directory = joinpath(directory, string(index))
+        mkdir(frame_directory; mode=0o700)
+        files = capture_frame!(owner, frame_directory, until, check_connection)
+        sum(file.bytes for file in files) == CLASSIC_CAPTURE_BYTES || throw(EndpointFailure())
+        (; receipt.record..., valid=receipt.valid, directory=string(index), files)
+    end
+    manifest = (; version=1, run=owner.run, serial=owner.serial, probe=action.probe,
+        stage=store.stage, illumination=store.illumination, profile="classic",
+        settings=JSON3.read(store.settings_json), settings_sha256=store.settings_sha256,
+        acquisition_domain_mapping=(; opaque_domain=UInt64(1), complete_domain=domain),
+        frames=action.frames, bytes, exposures=records)
+    encoded = JSON3.write(manifest) * "\n"
+    ncodeunits(encoded) <= MAX_CAPTURE_SETTINGS_BYTES + 4096 * action.frames || throw(EndpointFailure())
+    temporary = joinpath(directory, "manifest.partial.json")
+    open(temporary, "w") do io
+        write(io, encoded) == ncodeunits(encoded) || throw(EndpointFailure())
+    end
+    remaining(until)
+    check_connection()
+    completed = joinpath(directory, "manifest.json")
+    store.pending_manifest = completed
+    mv(temporary, completed; force=false)
+    remaining(until)
+    check_connection()
+    return (; kind="captured", cursor=current_cursor(owner),
+        manifest=string(owner.serial, "/manifest.json"), sha256=bytes2hex(sha256(encoded)),
+        frames=action.frames, bytes, metadata_bytes=ncodeunits(encoded))
+end
+
 function effect!(owner, action, until, check_connection)
     kind = action.kind
     if kind == "hold"
@@ -357,6 +515,11 @@ function effect!(owner, action, until, check_connection)
         result = collect!(owner, action, until, check_connection)
         owner.phase = :collected
         return result
+    elseif kind == "capture"
+        owner.phase == :settled || throw(InvalidRequest())
+        result = capture!(owner, action, until, check_connection)
+        owner.phase = :collected
+        return result
     end
     throw(InvalidRequest())
 end
@@ -382,9 +545,12 @@ function execute!(owner::Owner, request; started::UInt64=time_ns(), check_connec
         check_connection()
         return (; version=1, run=request.run, serial=request.serial, result)
     catch exception
-        return failure(failure_reason!(owner, exception))
+        reason = failure_reason!(owner, exception)
+        discard_pending_manifest!(owner)
+        return failure(reason)
     finally
         owner.effect_started = false
+        owner.capture === nothing || (owner.capture.pending_manifest = nothing)
     end
 end
 

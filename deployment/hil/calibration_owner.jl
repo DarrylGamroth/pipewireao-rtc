@@ -10,6 +10,11 @@ function calibration_options(arguments)
     ordinary = String[]
     endpoint = nothing
     active_path = nothing
+    illumination = :lamp
+    capture_directory = nothing
+    capture_max_bytes = nothing
+    calibration_stage = "calibration"
+    seen_campaign = Set{String}()
     for index in 1:2:length(arguments)
         if arguments[index] == "--calibration-socket"
             endpoint === nothing || throw(ArgumentError("duplicate --calibration-socket"))
@@ -19,6 +24,25 @@ function calibration_options(arguments)
             active_path === nothing || throw(ArgumentError("duplicate --wfs-active"))
             isempty(arguments[index + 1]) && throw(ArgumentError("empty WFS active path"))
             active_path = abspath(arguments[index + 1])
+        elseif arguments[index] in ("--illumination", "--capture-directory", "--capture-max-bytes", "--calibration-stage")
+            option, value = arguments[index], arguments[index + 1]
+            option in seen_campaign && throw(ArgumentError("duplicate $option"))
+            push!(seen_campaign, option)
+            isempty(value) && throw(ArgumentError("empty $option"))
+            if option == "--illumination"
+                value in ("dark", "lamp") || throw(ArgumentError("illumination must be dark or lamp"))
+                illumination = Symbol(value)
+            elseif option == "--capture-directory"
+                capture_directory = abspath(value)
+            elseif option == "--capture-max-bytes"
+                parsed = tryparse(UInt64, value)
+                parsed !== nothing && 0 < parsed <= UInt64(typemax(Int64)) ||
+                    throw(ArgumentError("capture payload budget must be positive and fit Int64"))
+                capture_max_bytes = parsed
+            else
+                occursin(r"^[A-Za-z][A-Za-z0-9_-]{0,63}$", value) || throw(ArgumentError("invalid calibration stage"))
+                calibration_stage = value
+            end
         else
             push!(ordinary, arguments[index], arguments[index + 1])
         end
@@ -38,7 +62,19 @@ function calibration_options(arguments)
             options.connect_reply, options.quit_request, options.control_request,
             options.control_reply, options.output) && throw(ArgumentError("WFS active path conflicts"))
     end
-    return merge(options, (; calibration_socket=endpoint, active_path))
+    (capture_directory === nothing) == (capture_max_bytes === nothing) ||
+        throw(ArgumentError("capture requires both directory and finite payload budget"))
+    if capture_directory !== nothing
+        options.profile === :classic || throw(ArgumentError("capture supports Classic only"))
+        (ispath(capture_directory) || islink(capture_directory)) &&
+            throw(ArgumentError("capture directory must be fresh"))
+        isdir(dirname(capture_directory)) || throw(ArgumentError("capture directory parent is missing"))
+        capture_directory in (endpoint, options.graph, options.prepared_event, options.connect_request,
+            options.connect_reply, options.quit_request, options.control_request,
+            options.control_reply, options.output, active_path) && throw(ArgumentError("capture directory path conflicts"))
+    end
+    return merge(options, (; calibration_socket=endpoint, active_path,
+        illumination, capture_directory, capture_max_bytes, calibration_stage))
 end
 
 function calibration_active(options)
@@ -60,6 +96,11 @@ function calibration_report(options, science, state, owner; failure=nothing)
         ownership_held=owner.held, restoration_confirmed=owner.restored,
         acquisition_domain_mapping=(; opaque_domain=UInt64(1), complete_domain=collect(domain.bytes)),
         acquisition_generation=cursor.generation, cursor_model_ns=cursor.model_ns,
+        calibration_stage=options.calibration_stage,
+        capture_directory=owner.capture === nothing ? nothing : owner.capture.directory,
+        capture_max_bytes=options.capture_max_bytes,
+        capture_reserved_payload_bytes=owner.capture === nothing ? nothing : owner.capture.reserved_bytes,
+        capture_settings_sha256=owner.capture === nothing ? nothing : owner.capture.settings_sha256,
         illumination=String(science.illumination), detector_config=science.detector_config,
         wfs_active=owner.session.active,
         wfs_active_sha256=owner.session.active === nothing ? nothing : bytes2hex(sha256(UInt8.(owner.session.active))),
@@ -72,9 +113,15 @@ function run_calibration_owner(options, plant_module, target)
     println("CALIBRATION_PREPARING profile=$(options.profile) backend=$(options.backend)")
     flush(stdout)
     science = CalibrationAcquisition.prepare_science(options.graph, plant_module,
-        target, options.profile; period_ns=options.period_ns)
+        target, options.profile; period_ns=options.period_ns, illumination=options.illumination)
     CalibrationAcquisition.validate_exposure_duration(science.detector_config, options.exposure_ns)
     active = calibration_active(options)
+    capture = options.capture_directory === nothing ? nothing : CalibrationServer.CaptureStore(
+        options.capture_directory; maximum_bytes=options.capture_max_bytes,
+        profile=options.profile, stage=options.calibration_stage, illumination=options.illumination,
+        settings=(; detector_config=science.detector_config,
+            graph_sha256=bytes2hex(open(sha256, options.graph)),
+            wfs_active_sha256=active === nothing ? nothing : bytes2hex(sha256(UInt8.(active)))))
     Protocol.write_json_atomic(options.prepared_event, (; version=1, state="prepared", sequence=0))
     println("CALIBRATION_PREPARED sequence=0")
     flush(stdout)
@@ -93,7 +140,7 @@ function run_calibration_owner(options, plant_module, target)
             options.profile; rate=configuration.rate, active)
         owner = CalibrationServer.Owner(session; normal_controller_absent=true,
             measurement_count=options.profile === :classic ? 376 : 3600,
-            maximum_timeout_ns=configuration.timeout_ns)
+            maximum_timeout_ns=configuration.timeout_ns, capture)
         CalibrationAcquisition.start_session!(session)
         mkpath(dirname(options.calibration_socket))
         listener = listen(options.calibration_socket)

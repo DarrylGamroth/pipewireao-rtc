@@ -533,3 +533,244 @@ end
         end
     end
 end
+
+# Capture fixtures supply typed packed owned arrays, never native pointers.
+mutable struct CaptureTestSession
+    inner::ServerTestSession
+    raw::Vector{UInt16}
+    flux::Vector{Float32}
+    validity::Vector{Bool}
+    writes::Int
+    partial_write::Bool
+    write_delay::Float64
+end
+Server.session_cursor(session::CaptureTestSession) = Server.session_cursor(session.inner)
+Server.session_domain(session::CaptureTestSession) = session.inner.domain
+Server.session_domain_bytes(session::CaptureTestSession) = collect(session.inner.domain)
+Server.session_hold!(session::CaptureTestSession) = Server.session_hold!(session.inner)
+Server.session_release!(session::CaptureTestSession) = Server.session_release!(session.inner)
+Server.session_fault!(session::CaptureTestSession) = Server.session_fault!(session.inner)
+Server.session_adopt!(session::CaptureTestSession, figure; timeout_ns) = Server.session_adopt!(session.inner, figure; timeout_ns)
+Server.session_response_values(session::CaptureTestSession) = session.inner.values
+Server.session_capture_values(session::CaptureTestSession) = (; raw=session.raw,
+    slopes=session.inner.values, flux=session.flux, validity=session.validity)
+function Server.session_acquire!(session::CaptureTestSession; timeout_ns, require_valid)
+    receipt = Server.session_acquire!(session.inner; timeout_ns, require_valid)
+    fill!(session.raw, UInt16(session.inner.sequence))
+    fill!(session.validity, receipt.valid)
+    return receipt
+end
+function Server.capture_write_payload(session::CaptureTestSession, io, payload)
+    session.writes += 1
+    session.write_delay > 0 && sleep(session.write_delay)
+    return session.partial_write ? write(io, view(payload, 1:7)) : write(io, payload)
+end
+function capture_fixture(root; maximum_bytes=2Server.CLASSIC_CAPTURE_BYTES, valid=true)
+    inner = server_fixture(; samples=[zeros(Float32, 376)]).session
+    inner.valid = valid
+    session = CaptureTestSession(inner, zeros(UInt16, 352 * 352), fill(10.0f0, 188), fill(valid, 188), 0, false, 0.0)
+    store = Server.CaptureStore(joinpath(root, "capture"); maximum_bytes,
+        stage="dark-training", illumination=:dark,
+        settings=(; detector_config=(; bits=12, photon_noise=true), graph_sha256="fixture-graph"))
+    owner = Server.Owner(session; normal_controller_absent=true, command_count=2,
+        measurement_count=376, maximum_timeout_ns=UInt64(20_000_000_000), capture=store)
+    @test apply_server!(owner, (; kind="hold")).result.kind == "held"
+    @test apply_server!(owner, (; kind="adopt", probe=0, figure=Float32[0, 0]); serial=2).result.kind == "adopted"
+    @test apply_server!(owner, (; kind="settle", probe=0, after=Server.session_cursor(session),
+        rule=(; kind="immediate")); serial=3).result.kind == "settled"
+    return (; owner, session, store)
+end
+capture_action(session; frames=1, probe=0, after=Server.session_cursor(session)) =
+    (; kind="capture", probe, after, frames)
+
+@testset "bounded complete dark capture retains false WFS quality" begin
+    mktempdir() do root
+        (; owner, session, store) = capture_fixture(root; valid=false)
+        reply = apply_server!(owner, capture_action(session; frames=2); serial=4,
+            timeout_ns=UInt64(20_000_000_000))
+        @test reply.result.kind == "captured"
+        @test reply.result.frames == 2 && reply.result.bytes == 2Server.CLASSIC_CAPTURE_BYTES
+        @test ncodeunits(Server.encode_reply(reply)) <= Server.MAX_REPLY_BYTES
+        @test reply.result.manifest == "4/manifest.json"
+        manifest_path = joinpath(store.directory, reply.result.manifest)
+        bytes = read(manifest_path)
+        @test reply.result.sha256 == bytes2hex(Server.sha256(bytes))
+        @test reply.result.metadata_bytes == length(bytes)
+        manifest = JSON3.read(bytes)
+        @test manifest.run == 1 && manifest.serial == 4 && manifest.probe == 0
+        @test manifest.stage == "dark-training" && manifest.illumination == "dark"
+        @test manifest.settings.detector_config.bits == 12
+        @test manifest.settings_sha256 == store.settings_sha256
+        @test UInt8.(manifest.acquisition_domain_mapping.complete_domain) == collect(session.inner.domain)
+        @test manifest.acquisition_domain_mapping.opaque_domain == 1
+        @test [r.sequence for r in manifest.exposures] == [1, 2]
+        @test [r.start_model_ns for r in manifest.exposures] == [0, 50]
+        @test all(r -> r.generation == 7 && r.duration_ns == 50 && !r.valid, manifest.exposures)
+        for record in manifest.exposures
+            @test record.domain == 1
+            for (name, count, element_type) in ((:raw, 247808, "U16_LE"), (:slopes, 1504, "F32_LE"),
+                (:flux, 752, "F32_LE"), (:validity, 188, "BOOL8"))
+                file = getproperty(record.files, name)
+                path = joinpath(dirname(manifest_path), record.directory, file.path)
+                @test file.bytes == count && filesize(path) == count
+                @test file.sha256 == bytes2hex(Server.sha256(read(path)))
+                @test file.element_type == element_type && file.layout == "ROW_MAJOR"
+            end
+            @test all(==(UInt16(record.sequence)), reinterpret(UInt16,
+                read(joinpath(dirname(manifest_path), record.directory, record.files.raw.path))))
+        end
+        @test !owner.faulted && owner.held && owner.phase == :collected
+        @test !session.inner.failed && store.reserved_bytes == 2Server.CLASSIC_CAPTURE_BYTES
+        @test length(session.inner.exposure_budgets) == 2
+        @test session.inner.exposure_budgets[2] < session.inner.exposure_budgets[1]
+        @test apply_server!(owner, (; kind="collect", probe=0, after=Server.session_cursor(session),
+            measurements=376, frames=1); serial=5).result.reason == "invalid_evidence"
+        @test session.inner.sequence == 2
+        @test apply_server!(owner, (; kind="restore", figure=Float32[0, 0],
+            rule=(; kind="immediate")); serial=6).result.kind == "restored"
+        @test apply_server!(owner, (; kind="release"); serial=7).result.kind == "released"
+        @test !owner.faulted && !owner.held && !session.inner.failed
+        @test read(manifest_path) == bytes # completed captures survive restoration/release
+    end
+end
+
+@testset "capture capacity and association reject before acquisition" begin
+    mktempdir() do root
+        (; owner, session, store) = capture_fixture(root; maximum_bytes=Server.CLASSIC_CAPTURE_BYTES)
+        @test apply_server!(owner, capture_action(session; frames=2); serial=4).result.reason == "invalid_evidence"
+        @test session.inner.sequence == 0 && isempty(session.inner.exposure_budgets)
+        @test store.reserved_bytes == 0 && isempty(readdir(store.directory))
+        @test !owner.faulted && owner.phase == :settled
+        @test apply_server!(owner, capture_action(session; probe=1); serial=5).result.reason == "invalid_evidence"
+        stale = merge(Server.session_cursor(session), (; sequence=UInt64(1)))
+        @test apply_server!(owner, capture_action(session; after=stale); serial=6).result.reason == "invalid_evidence"
+        @test session.inner.sequence == 0
+        complete = apply_server!(owner, capture_action(session); serial=7, timeout_ns=UInt64(20_000_000_000))
+        @test complete.result.kind == "captured"
+        @test apply_server!(owner, capture_action(session); serial=8).result.reason == "invalid_evidence"
+        @test apply_server!(owner, (; kind="adopt", probe=1, figure=Float32[0, 0]); serial=9).result.kind == "adopted"
+        @test apply_server!(owner, (; kind="settle", probe=1, after=Server.session_cursor(session),
+            rule=(; kind="immediate")); serial=10).result.kind == "settled"
+        @test apply_server!(owner, capture_action(session; probe=1); serial=11).result.reason == "invalid_evidence"
+        @test session.inner.sequence == 1 && store.reserved_bytes == Server.CLASSIC_CAPTURE_BYTES
+        @test readdir(store.directory) == ["7"] && !owner.faulted
+    end
+    fixture = held_adopted_fixture()
+    @test apply_server!(fixture.owner, (; kind="settle", probe=0, after=Server.session_cursor(fixture.session),
+        rule=(; kind="immediate")); serial=3).result.kind == "settled"
+    @test apply_server!(fixture.owner, capture_action(fixture.session); serial=4).result.reason == "invalid_evidence"
+    @test fixture.session.sequence == 0 && !fixture.owner.faulted
+end
+
+@testset "capture failure keeps partial evidence and faults held owner" begin
+    for scenario in (:partial_write, :deadline, :disconnect, :publication)
+        mktempdir() do root
+            (; owner, session, store) = capture_fixture(root)
+            if scenario == :partial_write
+                session.partial_write = true
+            elseif scenario == :deadline
+                session.write_delay = 0.03
+            end
+            check_connection = () -> begin
+                if scenario == :disconnect && session.writes > 0
+                    throw(Server.EndpointFailure())
+                elseif scenario == :publication && isfile(joinpath(store.directory, "4", "manifest.json"))
+                    throw(Server.EndpointFailure())
+                end
+                nothing
+            end
+            timeout = scenario == :deadline ? UInt64(10_000_000) : UInt64(20_000_000_000)
+            reply = Server.execute!(owner, server_request(capture_action(session); serial=4,
+                timeout_ns=timeout); check_connection)
+            @test reply.result.kind == "failed" && reply.result.reason == "endpoint"
+            @test owner.faulted && owner.held && owner.phase == :fault && owner.probe === nothing
+            @test session.inner.failed && session.inner.held && session.inner.sequence == 1
+            @test !isfile(joinpath(store.directory, "4", "manifest.json"))
+            @test isdir(joinpath(store.directory, "4", "1"))
+            @test store.pending_manifest === nothing
+            @test apply_server!(owner, (; kind="restore", figure=Float32[0, 0],
+                rule=(; kind="immediate")); serial=5).result.reason == "endpoint"
+            @test session.inner.sequence == 1
+        end
+    end
+end
+
+@testset "capture strict schema and startup storage validation" begin
+    @test Server.require_capture_endian(UInt32(0x04030201)) === nothing
+    @test_throws ArgumentError Server.require_capture_endian(UInt32(0x01020304))
+    cursor = (; domain=1, generation=7, sequence=0, model_ns=0)
+    for action in ((; kind="capture", probe=0, after=cursor, frames=0),
+        (; kind="capture", probe=0, after=cursor, frames=4097),
+        (; kind="capture", probe=true, after=cursor, frames=1),
+        (; kind="capture", probe=0, after=cursor, frames=1.0),
+        (; kind="capture", probe=0, after=cursor, frames=1, directory="client-path"))
+        @test_throws Server.InvalidRequest server_request(action)
+    end
+    mktempdir() do root
+        path = joinpath(root, "new")
+        @test_throws ArgumentError Server.CaptureStore(path; maximum_bytes=UInt64(1), profile=:copper)
+        @test_throws ArgumentError Server.CaptureStore(path; maximum_bytes=UInt64(0))
+        @test_throws ArgumentError Server.CaptureStore(path; maximum_bytes=UInt64(1), stage="../escape")
+        @test_throws ArgumentError Server.CaptureStore(path; maximum_bytes=UInt64(1), settings=(; oversized=repeat("x", 16385)))
+        @test !ispath(path)
+        store = Server.CaptureStore(path; maximum_bytes=UInt64(1))
+        @test stat(path).mode & 0o777 == 0o700
+        @test_throws ArgumentError Server.CaptureStore(path; maximum_bytes=UInt64(1))
+        link = joinpath(root, "link")
+        symlink(joinpath(root, "missing"), link)
+        @test_throws ArgumentError Server.CaptureStore(link; maximum_bytes=UInt64(1))
+    end
+end
+
+@testset "capture packed view dispatch and malformed payload rejection" begin
+    mktempdir() do root
+        (; owner, session, store) = capture_fixture(root)
+        directory = joinpath(store.directory, "views")
+        mkdir(directory)
+        raw = view(ones(UInt16, 352 * 352 + 2), 2:(352 * 352 + 1))
+        slopes = view(zeros(Float32, 378), 2:377)
+        flux = view(fill(10.0f0, 190), 2:189)
+        validity = view(fill(false, 190), 2:189)
+        values = (; raw, slopes, flux, validity)
+        files = Server.capture_frame_payload!(owner, directory, values,
+            time_ns() + UInt64(20_000_000_000), () -> nothing)
+        @test sum(file.bytes for file in files) == Server.CLASSIC_CAPTURE_BYTES
+        @test read(joinpath(directory, "raw.u16le")) == reinterpret(UInt8, raw)
+        @test session.inner.sequence == 0 # payload dispatch fixture, no endpoint qualification
+        before = session.writes
+        for malformed in (merge(values, (; raw=zeros(Float32, 352 * 352))),
+            merge(values, (; raw=view(zeros(UInt16, 2 * 352 * 352), 1:2:(2 * 352 * 352)))),
+            merge(values, (; raw=zeros(UInt16, 7))))
+            @test_throws Server.EndpointFailure Server.capture_frame_payload!(owner, directory,
+                malformed, time_ns() + UInt64(20_000_000_000), () -> nothing)
+        end
+        @test session.writes == before
+    end
+end
+
+@testset "bounded capture wire descriptor and paused admission" begin
+    mktempdir() do root
+        (; owner, session, store) = capture_fixture(root; valid=false)
+        listener = listen(joinpath(root, "capture.sock"))
+        enabled = Ref(false)
+        # The admission timer starts only on resume; no science occurs while paused.
+        server = @async Server.serve!(owner, listener; admission_enabled=() -> enabled[])
+        client = connect(joinpath(root, "capture.sock"))
+        enabled[] = true
+        reply = send_action(client, capture_action(session; frames=2); serial=4,
+            timeout_ns=UInt64(20_000_000_000))
+        @test reply.result.kind == "captured" && reply.result.bytes == 2Server.CLASSIC_CAPTURE_BYTES
+        @test reply.result.cursor.sequence == 2
+        @test reply.result.manifest == "4/manifest.json"
+        @test !haskey(reply.result, :values) && !haskey(reply.result, :exposures)
+        @test reply.result.sha256 == bytes2hex(Server.sha256(read(joinpath(store.directory, reply.result.manifest))))
+        enabled[] = false
+        @test send_action(client, capture_action(session); serial=5).result.reason == "cancelled"
+        @test session.inner.sequence == 2 && owner.phase == :collected
+        @test send_action(client, (; kind="restore", figure=Float32[0, 0],
+            rule=(; kind="immediate")); serial=6).result.kind == "restored"
+        @test send_action(client, (; kind="release"); serial=7).result.kind == "released"
+        @test fetch(server) === owner && !owner.faulted && owner.restored
+        close(client)
+    end
+end

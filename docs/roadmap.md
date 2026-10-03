@@ -1113,3 +1113,28 @@ Promotion is one capability at a time. The archived text must be reviewed
 against current lower-level interfaces and reduced to the minimum active
 contract needed for that capability; the archive is never reactivated as one
 package.
+
+### Automatic Classic CPU campaign increment
+
+Baseline `dccb179`; isolated branch `work/calibration-campaign-20261002`.
+The [campaign usage](CALIBRATION_CAMPAIGN_USAGE.md) provides the maintained
+CLI and explicit example recipe. Fresh dark, lamp training, independent
+frozen-reference qualification and zonal interaction sessions now complete
+through the public installed FGN and JFG launchers. All stages confirm
+reference restoration, ownership release, public stop/quit and cleanup. AOC
+owns the batch numerical methods; RTC publishes five candidate artifacts
+without modifying an active calibration.
+
+The selected campaigns derive 184 of 188 eligible positions without forcing
+a count, pass the declared 0.1-pixel held-out mean-reference bound and produce
+byte-identical dark/reference/mask/interaction artifacts. Dark and training
+payloads also match. Four held-out raw frames differ between separate runs;
+associated WFS values differ, and the paired comparison preserves its failed
+exact-trajectory result. Source-input/transport attribution is unresolved.
+
+[Validation](CALIBRATION_CAMPAIGN_VALIDATION.md) and the
+[evidence record](CALIBRATION_CAMPAIGN_EVIDENCE.json) retain both successful
+functional results and original failures. RTC-DEV-029 remains partial: exact
+trajectory characterization, precision/linearity/observability, 277→221
+coordinate composition, reconstructor and correction acceptance, Copper,
+unchanged HEART calibration and GPU/cadence checks remain open.

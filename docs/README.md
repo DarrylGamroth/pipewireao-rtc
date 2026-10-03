@@ -48,6 +48,13 @@ operational calibration gates.
 records the native Classic FGN/JFG full cycles, explicit simulated selection,
 noise discriminator and remaining scientific/deployment gates.
 
+[Automatic Classic campaign](CALIBRATION_CAMPAIGN_USAGE.md) documents the
+finite dark/reference/qualification/interaction workflow. Its
+[validation](CALIBRATION_CAMPAIGN_VALIDATION.md),
+[independent review](CALIBRATION_CAMPAIGN_REVIEW.md) and
+[evidence identities](CALIBRATION_CAMPAIGN_EVIDENCE.json) separate functional
+completion from remaining scientific and exact-trajectory acceptance.
+
 ## Inactive design archive
 
 The [archived full-RTC design](archive/full-rtc/README.md) preserves prior work

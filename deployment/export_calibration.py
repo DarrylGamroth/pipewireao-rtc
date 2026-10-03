@@ -13,6 +13,7 @@ import copy
 from dataclasses import asdict
 import json
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -247,7 +248,8 @@ def julia_pin_cpu_arguments(argv: list[str]) -> list[str]:
 
 def deployment_descriptor(package: Path, base: Path, specification: dict,
                           graph_records: list[dict], profile: str, engine: str,
-                          session: dict, prefix: Path) -> dict:
+                          session: dict, prefix: Path, *, illumination: str = "lamp",
+                          stage: str = "interaction", capture_max_bytes: int | None = None) -> dict:
     """Emit the existing deployment contract for the opt-in calibration topology."""
     simulator = next((owner for owner in specification["owners"]
                       if owner["role"] == specification.get("source-owner")), None)
@@ -271,6 +273,10 @@ def deployment_descriptor(package: Path, base: Path, specification: dict,
     else:
         raise ValueError("HIL source owner has no maintained simulator entrypoint")
     simulator["argv"].extend(["--calibration-socket", "@RUNTIME@/calibration.sock"])
+    simulator["argv"].extend(["--illumination", illumination, "--calibration-stage", stage])
+    if capture_max_bytes is not None:
+        simulator["argv"].extend(["--capture-directory", "@RUNTIME@/captured",
+                                  "--capture-max-bytes", str(capture_max_bytes)])
     if profile == "classic":
         simulator["argv"].extend(["--wfs-active", "@PACKAGE@/calibration/wfs-active.u8"])
 
@@ -387,6 +393,17 @@ def export(arguments) -> Path:
     specification = deploy.profile(base / "deployment.conf", arguments.pipewire_prefix)
     provenance = json.loads((base / "provenance.json").read_text())
     profile, engine = provenance["profile"], provenance["engine"]
+    illumination = getattr(arguments, "illumination", "lamp")
+    stage = getattr(arguments, "calibration_stage", "interaction")
+    capture_max_bytes = getattr(arguments, "capture_max_bytes", None)
+    if illumination not in ("dark", "lamp"):
+        raise ValueError("illumination must be dark or lamp")
+    if not isinstance(stage, str) or not re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]{0,63}", stage):
+        raise ValueError("calibration stage must be a simple 1..64 character identifier")
+    if capture_max_bytes is not None:
+        if (type(capture_max_bytes) is not int or not 1 <= capture_max_bytes <= 4096 * 250252
+                or profile != "classic" or not getattr(arguments, "deployment", False)):
+            raise ValueError("capture requires Classic deployment and a bounded positive payload budget")
     if profile not in ("classic", "copper") or engine not in ("fgn", "jfg") or provenance["mode"] != "frame":
         raise ValueError("initial calibration requires selected full-frame Classic/Copper FGN/JFG science")
     session = deploy.decode(base / specification["session"], arguments.pipewire_prefix)
@@ -405,6 +422,12 @@ def export(arguments) -> Path:
             if not (base / "hil/calibration_acquisition.jl").is_file():
                 raise ValueError("calibration deployment descriptor requires calibration_acquisition.jl in the HIL package")
             shutil.copytree(base / "hil", package / "hil")
+            # The exporter owns these orchestration sources. Preserve the base's
+            # scientific packages/manifest, but do not deploy a stale owner from
+            # an earlier exported fixture under a new protocol descriptor.
+            for filename in ("calibration_owner.jl", "calibration_acquisition.jl",
+                             "calibration_server.jl", "calibration_client.jl"):
+                shutil.copy2(Path(__file__).parent / "hil" / filename, package / "hil" / filename)
             (package / "bin").mkdir()
             calibration_command = copy_calibration_binary(package, calibration_binary)
             rtc_runner = copy_rtc_binary(package, rtc_binary)
@@ -448,6 +471,8 @@ def export(arguments) -> Path:
             "operational_acquisition": "not-established",
             "requested_commands": "absolute prepared physical-actuator figures including reference",
             "additional_system_flat": False, "layout": "row-major",
+            "calibration_stage": stage, "illumination": illumination,
+            "capture_max_payload_bytes": capture_max_bytes,
             "source_deployment_sha256": science.sha256(base / "deployment.conf"),
             "source_graph_sha256": science.sha256(source_path),
             "source_provenance_sha256": science.sha256(base / "provenance.json"),
@@ -475,7 +500,9 @@ def export(arguments) -> Path:
             science.write_json(provenance_path, provenance)
             session = calibration_session(records, profile, engine, session["rate"])
             deployment_descriptor(package, base, specification, records, profile,
-                                   engine, session, arguments.pipewire_prefix)
+                                   engine, session, arguments.pipewire_prefix,
+                                   illumination=illumination, stage=stage,
+                                   capture_max_bytes=capture_max_bytes)
         package.rename(output)
     return output / "provenance.json"
 
@@ -491,6 +518,10 @@ def arguments(argv=None):
                         help="compiled rtc-calibrate executable required with --deployment")
     parser.add_argument("--rtc-binary", type=Path,
                         help="compiled pipewireao-rtc executable required with --deployment")
+    parser.add_argument("--illumination", choices=("dark", "lamp"), default="lamp")
+    parser.add_argument("--calibration-stage", default="interaction")
+    parser.add_argument("--capture-max-bytes", type=int,
+                        help="enable finite Classic raw/WFS capture with this cumulative payload budget")
     return parser.parse_args(argv)
 
 

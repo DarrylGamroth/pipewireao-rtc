@@ -254,8 +254,9 @@ class CalibrationGraphContracts(unittest.TestCase):
                 self.assertEqual(result["artifacts"]["bin/pipewireao-rtc"], runner_hash)
                 self.assertEqual(owner_by_role["simulator"]["argv"][1],
                                  "@PACKAGE@/hil/calibration_owner.jl")
-                self.assertEqual(owner_by_role["simulator"]["argv"][-4:],
+                self.assertEqual(owner_by_role["simulator"]["argv"][-8:],
                                  ["--calibration-socket", "@RUNTIME@/calibration.sock",
+                                  "--illumination", "lamp", "--calibration-stage", "interaction",
                                   "--wfs-active", "@PACKAGE@/calibration/wfs-active.u8"])
                 self.assertNotIn("julia", result["client"] if engine == "jfg" else {})
                 if engine == "jfg":

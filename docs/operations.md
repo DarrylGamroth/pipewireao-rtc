@@ -950,6 +950,7 @@ same deadline. There is no reconnect or operation retry after an unknown outcome
 | `adopt` | `probe`, absolute `figure` | `adopted`: `cursor`, actual `figure`, `clipped` |
 | `settle` | `probe`, `after`, `rule` | `settled`: `cursor` |
 | `collect` | `probe`, `after`, `measurements`, `frames` | `responses`: averaged `values`, contributing `exposures`, `valid` |
+| `capture` | `probe`, `after`, `frames` | `captured`: `cursor`, relative `manifest`, `sha256`, `frames`, payload `bytes`, `metadata_bytes` |
 | `restore` | absolute `figure`, `rule` | `restored`: actual `figure`, `clipped` |
 | `release` | none | `released`: no additional fields |
 
@@ -964,3 +965,38 @@ host receipt timestamps. The server must record an explicit mapping from its
 full acquisition domain to the coordinator's domain ID. Transport limits are
 additional to the coordinator's retained-data budget; oversized records reject
 without unbounded allocation or silent truncation.
+
+The optional `capture` action is selected only for a Classic campaign owner
+prepared with a fresh local capture directory, explicit stage identity and a
+positive whole-session payload-byte budget. It has the same current-probe,
+exact-after-cursor and settled-to-collected transition as `collect`. Unsupported
+profiles, insufficient capacity and stale requests MUST reject before any
+exposure is acquired. The six existing interaction actions retain their meaning.
+A capture is complete transport evidence and may retain false intrinsic WFS
+validity; it MUST NOT be reported as an accepted interaction response.
+
+One captured Classic exposure contains 247,808 raw U16_LE bytes, 1,504 slope
+F32_LE bytes, 752 flux F32_LE bytes and 188 BOOL8 bytes, all with the existing
+ROW_MAJOR contracts. Capture requests MUST remain within the 4,096-frame bound
+and the session's cumulative payload budget. Manifest metadata is separately
+bounded by a 16 KiB settings header and 4,096 bytes per exposure. Neither budget
+permits unbounded retained in-memory frames or JSON control records.
+
+The serialized owner writes from completed sink-owned arrays before rearming
+the next exposure, outside PipeWire callbacks. The original request deadline
+covers acquisition, writes and publication. Files are immutable in a unique
+request-serial subdirectory; a completion manifest is published atomically only
+after every payload succeeds. Its schema binds run, serial, probe, stage,
+illumination, exact detector/graph/mask settings, full acquisition-domain mapping,
+each exposure's generation/sequence/model start/duration, intrinsic quality,
+payload shape/type/length and SHA-256. The reply carries a canonical relative
+manifest path and its digest. Clients cannot select output paths. Missing,
+duplicate, stale or mismatched outputs remain endpoint failures.
+
+The campaign MUST verify the descriptor, exact lengths and hashes before using
+any data. It owns retention and cleanup after restoration, release and public
+shutdown. Partial files and an absent completion manifest are not accepted
+evidence. An unknown post-effect outcome retains the fault/hold disposition;
+restarting or killing a process does not confirm restoration. Automatic stage
+transition or publication of final candidates MUST stop on a failed required
+gate. Existing active calibrations are never overwritten by a campaign.
