@@ -224,6 +224,27 @@ def calibration_session(graph_records: list[dict], profile: str, engine: str,
     }
 
 
+def julia_pin_cpu_arguments(argv: list[str]) -> list[str]:
+    """Preserve only one explicit pin-cpus option from the existing JFG owner."""
+    occurrences = [index for index, argument in enumerate(argv)
+                   if argument == "--pin-cpus" or argument.startswith("--pin-cpus=")]
+    if len(occurrences) > 1:
+        raise ValueError("existing Julia owner has duplicate --pin-cpus options")
+    if not occurrences:
+        return []
+    index = occurrences[0]
+    argument = argv[index]
+    if argument == "--pin-cpus":
+        if index + 1 >= len(argv) or not argv[index + 1] or argv[index + 1].startswith("--"):
+            raise ValueError("existing Julia owner --pin-cpus requires a nonempty value")
+        value = argv[index + 1]
+    else:
+        _, value = argument.split("=", 1)
+        if not value:
+            raise ValueError("existing Julia owner --pin-cpus requires a nonempty value")
+    return ["--pin-cpus", value]
+
+
 def deployment_descriptor(package: Path, base: Path, specification: dict,
                           graph_records: list[dict], profile: str, engine: str,
                           session: dict, prefix: Path) -> dict:
@@ -263,13 +284,16 @@ def deployment_descriptor(package: Path, base: Path, specification: dict,
         shutil.copy2(base / "core.conf.in", package / "core.conf.in")
     old_julia = next((owner for owner in specification["owners"] if owner["role"] == "julia"), None)
     if engine == "jfg":
+        pin_arguments = julia_pin_cpu_arguments(old_julia["argv"])
         old_placement = specification["placement"].pop("julia")
         old_client = specification["client"].pop("julia")
         specification["owners"] = [owner for owner in specification["owners"]
                                     if owner["role"] != "julia"]
         for record in graph_records:
             role = "julia-" + record["role"]
-            owner = {"role": role, "argv": list(record["owner_arguments"]),
+            argv = list(record["owner_arguments"])
+            argv.extend(pin_arguments)
+            owner = {"role": role, "argv": argv,
                      "environment": dict(old_julia["environment"])}
             markers = {key: role + "." + key for key in
                        ("prepared", "connect", "connected", "quit")}

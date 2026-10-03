@@ -223,12 +223,15 @@ class CalibrationGraphContracts(unittest.TestCase):
                             "owner_arguments": ["julia", "--session-run-control", "--graph",
                                                 f"@PACKAGE@/graphs/{role}.conf.in"]}
                            for role in ("wfs", "command")]
+                old_julia_placement = None
                 if engine == "jfg":
-                    owner = {"role": "julia", "argv": ["julia"], "environment": {},
+                    owner = {"role": "julia", "argv": ["julia", "--pin-cpus", "14,10",
+                             "--feedback", "old-feedback"], "environment": {},
                              "prepared": "julia.prepared", "connect": "julia.connect",
                              "connected": "julia.connected", "quit": "julia.quit"}
                     specification["owners"].append(owner)
                     placements["julia"] = dict(placements["rtc"])
+                    old_julia_placement = copy.deepcopy(placements["julia"])
                     clients["julia"] = "client-julia.conf.in"
                 with patch.object(export_calibration.deploy, "profile",
                                   side_effect=lambda path, prefix: json.loads(path.read_text())):
@@ -260,6 +263,28 @@ class CalibrationGraphContracts(unittest.TestCase):
                                      {"julia-wfs", "julia-command"})
                     self.assertTrue(all("--session-run-control" in owner_by_role[role]["argv"]
                                         for role in ("julia-wfs", "julia-command")))
+                    for role in ("julia-wfs", "julia-command"):
+                        argv = owner_by_role[role]["argv"]
+                        pin_index = argv.index("--pin-cpus")
+                        self.assertEqual(argv[pin_index + 1], "14,10")
+                        self.assertEqual(argv.count("--pin-cpus"), 1)
+                        self.assertNotIn("--feedback", argv)
+                        self.assertEqual(result["placement"][role], old_julia_placement)
+
+    def test_julia_pin_cpus_are_preserved_only_once_and_reject_malformed_options(self):
+        self.assertEqual(export_calibration.julia_pin_cpu_arguments(["julia"]), [])
+        self.assertEqual(export_calibration.julia_pin_cpu_arguments(
+            ["julia", "--pin-cpus", "14,10", "--feedback", "old-feedback"]),
+            ["--pin-cpus", "14,10"])
+        self.assertEqual(export_calibration.julia_pin_cpu_arguments(
+            ["julia", "--pin-cpus=14,10"]), ["--pin-cpus", "14,10"])
+        for argv in (["julia", "--pin-cpus", "14,10", "--pin-cpus", "12,8"],
+                     ["julia", "--pin-cpus"],
+                     ["julia", "--pin-cpus", ""],
+                     ["julia", "--pin-cpus", "--feedback"],
+                     ["julia", "--pin-cpus="]):
+            with self.subTest(argv=argv), self.assertRaisesRegex(ValueError, "--pin-cpus"):
+                export_calibration.julia_pin_cpu_arguments(argv)
 
     def test_deployment_descriptor_rejects_missing_hil_source_owner(self):
         with tempfile.TemporaryDirectory() as directory:
