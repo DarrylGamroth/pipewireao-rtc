@@ -807,9 +807,10 @@ Standard WFS sink and Standard DM source on a private PipeWire core, an
 unchanged supervised HEART executable, and the installed AOS plant. A session
 with `execution = external-rtc` MUST have no processing graphs, execution
 groups, property/parameter submissions or observations. Its endpoints MUST be
-application-controlled external nodes with exact port contracts. Only this
-mode MAY contain direct source-to-sink links; existing modes retain their graph
-requirements and link restrictions.
+application-controlled external nodes with exact port contracts. This mode MAY
+contain direct source-to-sink links without processing graphs. RTC-DEV-029 also
+admits explicitly declared complete-frame acquisition observer links between
+external endpoints; existing processing graph requirements otherwise remain.
 
 Export MUST validate and record native executable, plugin, plant, calibration
 and configuration identities. Simulated dark/reference/static offsets MUST be
@@ -843,6 +844,15 @@ this requirement replaces RTC-DEV-027's independent/noiseless offset acquisition
 with operational detector/WFS acquisition. Existing offset exports remain
 historical fixture capability and MUST NOT be relabeled as operational
 interaction calibration.
+
+A complete-frame session MAY link an application-owned external source directly
+to an application-owned external sink to collect raw detector evidence alongside
+its processing graphs. Such a link MUST be explicitly declared and MUST retain
+the ordinary type, shape, schema, rate, direction, execution-group, passive-link
+and single-producer checks. Complete-frame processing graphs remain required.
+This extension MUST NOT admit direct links involving factory-owned endpoints
+or change row-block admission. It does not introduce a pass-through scientific
+algorithm or an RTC data scheduler.
 
 Calibration acquisition extends the RTC-DEV-025/026 lockstep contract: one
 adopted probe MAY remain held across several settling and measurement exposures,

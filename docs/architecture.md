@@ -532,6 +532,16 @@ deployed pixel/WFS frontend, and the deployed PDM constraint chain accepting
 prepared absolute probe figures. The correction graph and its command producer
 are excluded from this session. This establishes integration hold by topology
 without changing controller coefficients or adding a scientific algorithm.
+
+The complete-frame topology also declares a raw acquisition observer link
+between the external simulated detector source and an external collector. This
+extends RTC-DEV-028's former restriction of direct source-to-sink links to
+`external-rtc`: complete-frame links between two application-owned external
+endpoints are admitted alongside the required processing graphs. All existing
+port compatibility, rate, group, passive-link and producer checks still apply.
+Factory-owned direct links and row-block admission retain their restrictions.
+The collector receives actual transported ADC values without adding an echo
+algorithm to the scientific graph or changing PipeWire scheduling.
 Absolute figures already include the reference; no additional system-flat stage
 is applied. Preserving a running controller's state during calibration remains
 a separate gate.

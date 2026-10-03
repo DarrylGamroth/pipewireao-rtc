@@ -1,6 +1,9 @@
 use pipewireao_rtc::{
-    DevelopmentConfig, EndpointFactory, ExecutionMode, ObjectRealization, RunControl,
+    DevelopmentConfig, EndpointFactory, ExecutionMode, LinkSpec, ObjectRealization, PortDirection,
+    RunControl,
 };
+
+const AOS_HIL: &str = include_str!("../fixtures/aos-hil-development.conf");
 
 const TRANSPORT: &str = r#"
 profile = development execution = external-rtc authority = none
@@ -194,9 +197,134 @@ fn external_rtc_lifecycle_accepts_empty_execution_groups() {
     }
 }
 
+fn build_external_raw_receipt() -> DevelopmentConfig {
+    let mut config = DevelopmentConfig::parse(AOS_HIL).expect("AOS HIL configuration");
+    let source = &config.sources[0];
+    let mut port = source.ports[0].clone();
+    port.name = "input_1".to_owned();
+    port.direction = PortDirection::Input;
+    let sink = pipewireao_rtc::ObjectSpec {
+        realization: ObjectRealization::External {
+            run_control: RunControl::Application,
+        },
+        module: None,
+        node_name: "raw-receipt".to_owned(),
+        plugin_path: None,
+        configuration_path: None,
+        arguments: Default::default(),
+        ports: vec![port],
+    };
+    let source_endpoint = format!("{}:{}", source.node_name, source.ports[0].name);
+    config.sinks.push(sink);
+    config.links.push(LinkSpec {
+        output: source_endpoint,
+        input: "raw-receipt:input_1".to_owned(),
+        passive: false,
+    });
+    config
+}
+
 #[test]
-fn existing_modes_still_forbid_direct_source_sink_links() {
-    use pipewireao_rtc::LinkSpec;
+fn complete_frame_admits_external_raw_receipt_without_changing_row_block_rules() {
+    let mut config = build_external_raw_receipt();
+    config
+        .validate()
+        .expect("external source may feed a raw receipt sink");
+    assert_eq!(
+        config.graphs.len(),
+        1,
+        "the controller graph remains required"
+    );
+    assert_eq!(
+        config.links.len(),
+        3,
+        "both controller links and the receipt link remain"
+    );
+    assert_eq!(config.topological_node_names().len(), 4);
+
+    config.execution = ExecutionMode::RowBlock;
+    assert_eq!(config.validate().unwrap_err().field(), "links[2]");
+
+    let mut missing_graph = build_external_raw_receipt();
+    missing_graph.graphs.clear();
+    assert_eq!(missing_graph.validate().unwrap_err().field(), "graphs");
+}
+
+#[test]
+fn complete_frame_external_raw_receipt_preserves_link_contracts() {
+    for case in ["type", "shape", "schema", "rate", "passive"] {
+        let mut config = build_external_raw_receipt();
+        let field = match case {
+            "type" => {
+                config.sinks[1].ports[0].element_type = "U16_LE".to_owned();
+                "links[2].element-type"
+            }
+            "shape" => {
+                config.sinks[1].ports[0].shape = vec![64, 63];
+                "links[2].shape"
+            }
+            "schema" => {
+                config.sinks[1].ports[0].schema = "org.test.other/1".to_owned();
+                "links[2].schema"
+            }
+            "rate" => {
+                config.sinks[1].ports[0].rate = Some("50/1".to_owned());
+                "links[2].rate"
+            }
+            "passive" => {
+                config.links[2].passive = true;
+                "links[2].passive"
+            }
+            _ => unreachable!(),
+        };
+        assert_eq!(config.validate().unwrap_err().field(), field);
+    }
+
+    let mut duplicate_producer = build_external_raw_receipt();
+    let mut second_source = duplicate_producer.sources[0].clone();
+    second_source.node_name = "second-wfs".to_owned();
+    duplicate_producer.sources.push(second_source);
+    duplicate_producer.links.push(LinkSpec {
+        output: "second-wfs:output_1".to_owned(),
+        input: "raw-receipt:input_1".to_owned(),
+        passive: false,
+    });
+    assert_eq!(
+        duplicate_producer.validate().unwrap_err().field(),
+        "port raw-receipt:input_1"
+    );
+}
+
+#[test]
+fn complete_frame_direct_link_still_requires_external_endpoints() {
+    let mut owned_sink = build_external_raw_receipt();
+    owned_sink.sinks[1].realization =
+        ObjectRealization::Factory(EndpointFactory::FormatAgnosticDiscardSink);
+    owned_sink.sinks[1].module = Some("libpipewire-module-spa-node-factory".to_owned());
+    owned_sink.sinks[1].plugin_path = Some("${PIPEWIREAO_DISCARD_PLUGIN}".to_owned());
+    owned_sink.execution_groups[0]
+        .nodes
+        .push("raw-receipt".to_owned());
+    let sink_error = owned_sink.validate().unwrap_err();
+    assert_eq!(sink_error.field(), "links[2]");
+    assert!(sink_error.message().contains("external endpoints"));
+
+    let mut owned_source = build_external_raw_receipt();
+    owned_source.sources[0].realization =
+        ObjectRealization::Factory(EndpointFactory::SimulatedCompleteFrameSource);
+    owned_source.sources[0].module = Some("libpipewire-module-ndarray-filter-chain".to_owned());
+    owned_source.sources[0].configuration_path =
+        Some("${PIPEWIREAO_RTC_SOURCE_GRAPH_TEST}".to_owned());
+    owned_source.sources[0].ports[0].shape = vec![2];
+    owned_source.graphs[0].ports[0].shape = vec![2];
+    owned_source.sinks[1].ports[0].shape = vec![2];
+    let source_error = owned_source.validate().unwrap_err();
+    assert_eq!(source_error.field(), "links[2]");
+    assert!(source_error.message().contains("external endpoints"));
+}
+
+#[test]
+fn factory_modes_still_forbid_direct_source_sink_links() {
     let document = include_str!("../fixtures/minimal-development.conf");
     for execution in [ExecutionMode::CompleteFrame, ExecutionMode::RowBlock] {
         let mut config = DevelopmentConfig::parse(document).unwrap();

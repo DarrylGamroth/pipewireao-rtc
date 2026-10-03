@@ -1856,15 +1856,21 @@ fn validate_links(config: &DevelopmentConfig) -> Result<(), ScientificDiagnostic
                 "link input endpoint is not an input port",
             ));
         }
+        let direct_source_to_sink =
+            output.role == ObjectRole::Source && input.role == ObjectRole::Sink;
+        let admitted_direct_source_to_sink = config.execution == ExecutionMode::ExternalRtc
+            || (config.execution == ExecutionMode::CompleteFrame
+                && is_external_source_sink_link(config, output_node, input_node));
         let admitted_roles = matches!(output.role, ObjectRole::Source | ObjectRole::Graph)
             && matches!(input.role, ObjectRole::Graph | ObjectRole::Sink)
-            && (config.execution == ExecutionMode::ExternalRtc
-                || !(output.role == ObjectRole::Source && input.role == ObjectRole::Sink));
+            && (!direct_source_to_sink || admitted_direct_source_to_sink);
         if !admitted_roles {
-            return Err(ScientificDiagnostic::new(
-                field,
-                "links must be source -> graph, graph -> graph, or graph -> sink",
-            ));
+            let message = if direct_source_to_sink {
+                "direct source -> sink links require complete-frame execution with external endpoints"
+            } else {
+                "links must be source -> graph, graph -> graph, or graph -> sink"
+            };
+            return Err(ScientificDiagnostic::new(field, message));
         }
         let output_group = config.execution_group_for_node(output_node);
         let input_group = config.execution_group_for_node(input_node);
@@ -1965,6 +1971,21 @@ fn validate_links(config: &DevelopmentConfig) -> Result<(), ScientificDiagnostic
 
     validate_acyclic(config, &node_edges)?;
     validate_reachability(config, &node_edges)
+}
+
+fn is_external_source_sink_link(
+    config: &DevelopmentConfig,
+    source_node: &str,
+    sink_node: &str,
+) -> bool {
+    config
+        .sources
+        .iter()
+        .any(|source| source.node_name == source_node && source.realization.is_external())
+        && config
+            .sinks
+            .iter()
+            .any(|sink| sink.node_name == sink_node && sink.realization.is_external())
 }
 
 fn split_endpoint(endpoint: &str) -> Result<(&str, &str), &'static str> {
