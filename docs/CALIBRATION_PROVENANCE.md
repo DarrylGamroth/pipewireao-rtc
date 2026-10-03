@@ -119,3 +119,18 @@ code/tests are consistent with the documented AOC numerical contracts.
 
 No full source-similarity comparison against GPL bodies was performed. No
 historical migration audit or full-stack distribution clearance is claimed.
+
+## Repeated-response diagnostics
+
+The next independently written AOC diagnostic increment is
+`3997efe..f79104d`. It adds repeated-response mean, sample variance, conditional
+mean standard error and a low-rank covariance factor, with no dependency,
+external fixture, vendored implementation or license change. Its equations
+and numerical contracts are documented in AOC's
+`docs/DESIGN_RESPONSE_MOMENTS.md`. Independent numerical review reproduced and
+verified correction of a Float64 large-offset variance error before merge;
+that software defect and correction are unrelated to source licensing.
+
+The diagnostic has not been derived from pyRTC, MagAO-X or SPIDERS code.
+Existing CP-001/CP-003 and inherited FFTW packaging questions remain open.
+Numerical test success is not legal clearance or a new outbound license grant.

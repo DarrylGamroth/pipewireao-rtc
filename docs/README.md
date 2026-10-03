@@ -59,6 +59,20 @@ completion from remaining scientific and exact-trajectory acceptance.
 coordinate-composition and correction gates. Its
 [source and dependency provenance](CALIBRATION_PROVENANCE.md) records reuse
 constraints and unresolved license metadata separately from numerical evidence.
+The [measured-offset export review](CALIBRATION_OFFSET_REVIEW.md) records the
+import boundary and its independently verified recipe-validation correction.
+The [quality review](CALIBRATION_QUALITY_REVIEW.md) records numerical findings
+and the predeclared held-out acceptance plan.
+[Quality validation](CALIBRATION_QUALITY_VALIDATION.md) and its
+[evidence identities](CALIBRATION_QUALITY_EVIDENCE.json) separate the measured
+matrix, frozen held-out decision and correction checks.
+[Method measurements](CALIBRATION_METHOD_VALIDATION.md) records the bounded dense
+pattern screens and predeclared complete physical comparison.
+[Selectable calibration usage](CALIBRATION_METHOD_USAGE.md) describes the maintained
+method acquisition and unaccepted-candidate boundary. The
+[correction review](CORRECTION_ANALYSIS_REVIEW.md) preserves failed replay gates
+and their dispositions. The [method comparison](CALIBRATION_METHOD_COMPARISON.md)
+defines the next zonal/Hadamard/controller-modal/spatial increment.
 
 ## Inactive design archive
 

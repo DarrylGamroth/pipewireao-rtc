@@ -1090,8 +1090,9 @@ cannot silently clear its failure and resume.
 
 The full-cycle and noise-discrimination evidence is recorded in
 [calibration acquisition validation](CALIBRATION_ACQUISITION_VALIDATION.md).
-Matched processing is established for this Classic procedure; scientific
-reconstructor acceptance, automatic calibration campaigns, unchanged HEART,
+Matched processing was established for this Classic acquisition increment;
+scientific reconstructor acceptance and automatic campaigns were then open, as
+were unchanged HEART,
 Copper and accelerator/cadence qualification remain open. RTC-DEV-029 stays
 partial.
 
@@ -1138,7 +1139,37 @@ shared inputs without attributing the historical divergence.
 
 [Validation](CALIBRATION_CAMPAIGN_VALIDATION.md) and the
 [evidence record](CALIBRATION_CAMPAIGN_EVIDENCE.json) retain both successful
-functional results and original failures. RTC-DEV-029 remains partial: exact
+functional results and original failures. At the campaign increment, exact
 trajectory characterization, precision/linearity/observability, 277→221
-coordinate composition, reconstructor and correction acceptance, Copper,
-unchanged HEART calibration and GPU/cadence checks remain open.
+coordinate composition, reconstructor/correction acceptance, Copper, unchanged
+HEART calibration and GPU/cadence checks were open. The subsequent quality
+increment below records the finite Classic gates closed since that baseline.
+
+### Classic measured-calibration quality and selectable methods, 2026-10-03
+
+The finite Classic CPU quality gates now have independently reviewed evidence:
+two measured 277-coordinate sweeps, exact composition through the existing
+221-coordinate completion maps, frozen TSVD validation/locked test, and
+non-actuating correction in both FGN and JFG. The selected inverse retains 186
+modes at unchanged controller settings. Shared-input complete-graph command
+differences and clipping feedback are explicitly recorded; correction uses
+verified replay/baseline evidence, including the fresh JFG live OPD witness.
+Historical failed JFG ADC replay reports remain unaccepted and their cause
+remains open. See [quality validation](CALIBRATION_QUALITY_VALIDATION.md) and
+[independent review](CORRECTION_ANALYSIS_REVIEW.md).
+
+The maintained selectable method owner adds zonal, complete Hadamard, supplied
+modal and spatial sine/cosine preparation through public AOC. Chronological
+receipts are validated before reordering. The reverse-modal deployed smoke
+passed restoration, release and shutdown and published an explicitly unaccepted
+directional candidate. [Usage](CALIBRATION_METHOD_USAGE.md),
+[review](CALIBRATION_METHOD_COMPARISON.md) and
+[method measurements](CALIBRATION_METHOD_VALIDATION.md) distinguish this
+workflow evidence from scientific method selection. The bounded dense-pattern
+confirmation precedes the predeclared full physical-span comparison.
+
+RTC-DEV-029 remains partial for its full selected scope: Copper, unchanged
+HEART, accelerator acquisition, physical endpoints, instrument acceptance and
+wall-cadence qualification are not established by the finite Classic CPU
+results. No ideal optical output entered calibration estimation; direct OPD
+witnesses are optional correction diagnostics only.

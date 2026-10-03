@@ -1,0 +1,1579 @@
+{
+  "files": [
+    {
+      "bytes": 1277,
+      "path": "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/Manifest.toml",
+      "sha256": "cf7ea8e3437650af81bcfc190e5fe6273723242e04d363dedbb3a3318f2be85f"
+    },
+    {
+      "bytes": 1035,
+      "path": "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/Project.toml",
+      "sha256": "5b2278a95a0396df80726d6a1e0556714763bca339400df6194e368e5c1e9dff"
+    },
+    {
+      "bytes": 1388,
+      "path": "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/src/AdaptiveOpticsCalibration.jl",
+      "sha256": "f08e9b808839392f1542e3bc9e7adadd704f3d37be1a4e934d138d7e99c3bcc8"
+    },
+    {
+      "bytes": 1129,
+      "path": "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/src/diagnostics/diagnostics.jl",
+      "sha256": "300172fe1030249d8a37050570c239a91e3d867af1bbe0909d76feae8595233f"
+    },
+    {
+      "bytes": 12698,
+      "path": "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/src/diagnostics/interaction_matrix_stability.jl",
+      "sha256": "bd2785a137b899fea4b41d0ef5ca7d72e78019fe83b9eba33355773f42ee7352"
+    },
+    {
+      "bytes": 10830,
+      "path": "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/src/diagnostics/repeated_response_moments.jl",
+      "sha256": "8c271194b9c364b3d1f625a818f0c6a5047b08009c18ab05543f4c2c5ff913fe"
+    },
+    {
+      "bytes": 888,
+      "path": "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/src/interaction_matrices/interaction_matrices.jl",
+      "sha256": "7b96b1590b21975eec502994bc8ef133ceb056555a2d18db5ef3b511fffc8c31"
+    },
+    {
+      "bytes": 14427,
+      "path": "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/src/interaction_matrices/structured.jl",
+      "sha256": "ea2cba3d7e54b15a8ba52ca5f620fb80be74ddbe7d3f139c2130f3e9dabf0c0a"
+    },
+    {
+      "bytes": 1159,
+      "path": "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/src/reconstructors/reconstructors.jl",
+      "sha256": "b689dd7a307354e364c06480db8cc2a11f3ae23488d3d466aae16683743dad8e"
+    },
+    {
+      "bytes": 11786,
+      "path": "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/src/reconstructors/svd_inverse.jl",
+      "sha256": "640e941fc54c0c933fdb63d5b90603d4ca542e7eb9a32e1bfbeb178a00837c90"
+    },
+    {
+      "bytes": 17364,
+      "path": "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/src/reconstructors/weighted.jl",
+      "sha256": "b81259e8e05bcd9892e70417edf20aa4a79d3adc962086819a3868d3f8a29333"
+    },
+    {
+      "bytes": 7052,
+      "path": "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/test/interaction_matrix_stability.jl",
+      "sha256": "cd8372b0ae58f41b5c9b056e76be1ae2f5bde3235994547cfe7a020dece02660"
+    },
+    {
+      "bytes": 21430,
+      "path": "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/test/reconstructors.jl",
+      "sha256": "690c02080e5308e06ab413b0657345214312358c563bfa2a4bb31b404e5a2f2b"
+    },
+    {
+      "bytes": 12517,
+      "path": "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/test/repeated_response_moments.jl",
+      "sha256": "81bdd0fec7a49f5b34fe4913976dda63e72652a088af881c8ab8a89af3ea2f76"
+    },
+    {
+      "bytes": 10400,
+      "path": "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/test/structured_interaction_matrices.jl",
+      "sha256": "299dffc687a72a3de6a407361c1fbb468006ad20bb560d24c9765aef7d19207e"
+    },
+    {
+      "bytes": 10917,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/calibration_method.py",
+      "sha256": "169c7adf0232e3e096f41d3ec4bd6726a579b1fcd06dd6a4a794220a08fd2465"
+    },
+    {
+      "bytes": 55499,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/export_hil.py",
+      "sha256": "89c4c3488cd200133ad3d6f2558a1f2221093e70f0dd7238a4e22e367b1d8d58"
+    },
+    {
+      "bytes": 26163,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/hil/analyze_correction.jl",
+      "sha256": "0107322ba291c9853d9784a08f11d24d3ad11fe09446ebfb9bf706107760db5e"
+    },
+    {
+      "bytes": 17073,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/hil/calibration_client.jl",
+      "sha256": "0625169579554d9afcf52ed04b29ba0110d484a9b11c6a51289c7c8adde20174"
+    },
+    {
+      "bytes": 10730,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/hil/calibration_method_analysis.jl",
+      "sha256": "d27274c5b55e8d5a4cd9b231405e719163cca629c35cafaa773fab2ee1bba71c"
+    },
+    {
+      "bytes": 8247,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/hil/correction_truth.jl",
+      "sha256": "598484d85d05d38cf517ac46a8705aaea79452555aff852b3f6c396140fe9835"
+    },
+    {
+      "bytes": 8918,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/hil/owner_protocol.jl",
+      "sha256": "3542bef6ec26f35b7eb77373783ce78ca58c7b4112efd81fc2839fe72af438e9"
+    },
+    {
+      "bytes": 20951,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/hil/simulator.jl",
+      "sha256": "0be5fcef8d4040d0836eb884d90144ac661b9c02cca3d8fb1842a7196da7c2cb"
+    },
+    {
+      "bytes": 17663,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/hil/test_analyze_correction.jl",
+      "sha256": "417fc9b57aad9b87daaba91af7d3e5ea8f76927cd3ab4cccdfa2f1c4ef3454cd"
+    },
+    {
+      "bytes": 14424,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/hil/test_calibration_client.jl",
+      "sha256": "9efab76b50d21b353bcdb88dcac5ab602b26b86029edd0bcb4500678dc9479ac"
+    },
+    {
+      "bytes": 8084,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/hil/test_calibration_method_analysis.jl",
+      "sha256": "0472ebed1025cc0e0af38acdbae805227639abae3d00f1356befc915c9ccee3b"
+    },
+    {
+      "bytes": 9226,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/hil/test_correction_truth.jl",
+      "sha256": "6a551c4927fce749a38b94ea5ff7ecc66fe91d315fa2c6374b84a26b3dd7f59f"
+    },
+    {
+      "bytes": 7844,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/hil/test_owner_protocol.jl",
+      "sha256": "475d87c3c1d138007b69f63e8d072012719d1a5edd1f527de4c98876a9bb7a57"
+    },
+    {
+      "bytes": 3817,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/hil/test_simulator.jl",
+      "sha256": "e94cfd77dceff46f57c3e454c602d1eeee7a4c5993288a8b8d322847e79d9773"
+    },
+    {
+      "bytes": 11341,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/test_calibration_method.py",
+      "sha256": "4524aa71ff5eb4fcf79db8aa2ed80457e24249e724db77a46ba51efd64c94697"
+    },
+    {
+      "bytes": 49505,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/test_export_hil.py",
+      "sha256": "b58318b101b0df0ce7f3a3ec2d6ab7ef732474c3bc45cad3cb212d96582cb127"
+    },
+    {
+      "bytes": 5371,
+      "path": "~/.cache/rtc-calibration-quality-20261003/analyze-dense-confirmation.jl",
+      "sha256": "6b882c4140f612c16e06f1688bf8cd3f7db9ec5d3fa3caec5f82404bf12aa198"
+    },
+    {
+      "bytes": 510,
+      "path": "~/.cache/rtc-calibration-quality-20261003/analyze-dense-confirmation.log",
+      "sha256": "d0fad04a62cde96cd235090a93197a7b8709888350d4ff9fcc221cfda2a99ee6"
+    },
+    {
+      "bytes": 5113,
+      "path": "~/.cache/rtc-calibration-quality-20261003/analyze-dense-pilot-v1.jl",
+      "sha256": "830064ddcfabd0684d8ac488fa09ce644d0a1ea5ddddab22caaf732bbc25b13b"
+    },
+    {
+      "bytes": 412,
+      "path": "~/.cache/rtc-calibration-quality-20261003/analyze-dense-pilot-v2.log",
+      "sha256": "0b4b13e16faa1237dab9bebc55e9ff33c2d6f36a0a7e185ee85bd59bd745b05a"
+    },
+    {
+      "bytes": 5076,
+      "path": "~/.cache/rtc-calibration-quality-20261003/analyze-dense-pilot.jl",
+      "sha256": "1551bb85c324840d9f0f5f593599c55e37487afe056c96740710e23da03c44dd"
+    },
+    {
+      "bytes": 780,
+      "path": "~/.cache/rtc-calibration-quality-20261003/analyze-dense-pilot.log",
+      "sha256": "86197f4e6cf4ada12270adf177021e8f62cabc095c84242ff7cd5a6638d0fe7a"
+    },
+    {
+      "bytes": 5919,
+      "path": "~/.cache/rtc-calibration-quality-20261003/analyze-full.jl",
+      "sha256": "67285f96ccf53af12547cfa73f9d416a1a300d2507fa68667cef940e583c12ce"
+    },
+    {
+      "bytes": 3415,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction-fgn-analysis.log",
+      "sha256": "cd29178898ef957e3be11bac8735d162b14485fecc9d019e821af1bf723487c2"
+    },
+    {
+      "bytes": 4889,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction-fgn.log",
+      "sha256": "842ababd9fb50d92e43b8806e46e3f7606b7d6f51c4c91a18766e06931727dd4"
+    },
+    {
+      "bytes": 6477,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction-jfg.log",
+      "sha256": "450e4679a040d52f4fc8fdfb01751b1bfc9d0f1bf75559eee04406447576ebcf"
+    },
+    {
+      "bytes": 4534,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/analyze-jfg-live-truth.log",
+      "sha256": "321323dfc0e9772ce1eab47577fb9afb03b67c4904defab0e8c32fd270b55ee4"
+    },
+    {
+      "bytes": 951,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/candidate-acceptance.json",
+      "sha256": "da7e5a9542c043a9132b7536ebd406dcdc9caf44ceba20e53696991f488a241b"
+    },
+    {
+      "bytes": 6250,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/check-jfg-truth.log",
+      "sha256": "bb7df1b00d183a1367d25aa39055f8b6ed747d5658c9a5effdefc77b316fb0c8"
+    },
+    {
+      "bytes": 0,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/correction-jfg-analysis-cpu6.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 4534,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/correction-jfg-analysis.log",
+      "sha256": "ae1927cc5deb306a16893a3b2fee89bced20a56f7c93c8e1a248b6a42745eeef"
+    },
+    {
+      "bytes": 3359,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/fgn-base/deployment.conf",
+      "sha256": "c7136ce42417c4ecd9b04d717d69f00645121eb849356e302301fdb99e11dd79"
+    },
+    {
+      "bytes": 19721,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/fgn-base/provenance.json",
+      "sha256": "6730cbe92105c3d3064dd809103e45399f8017e302e6bd12f6f913add2477b90"
+    },
+    {
+      "bytes": 737,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/fgn-correction-analysis-v2.json",
+      "sha256": "960c38c672cc103cf1673e909b8291dd80fb998aab1251656a53cd4907c22a56"
+    },
+    {
+      "bytes": 289861,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/fgn-correction-analysis-v3.json",
+      "sha256": "f571a3185b46c652fbd38c62b789ead52caab2d134bbdd9e9103dd164cf576cf"
+    },
+    {
+      "bytes": 63438848,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/fgn-correction-analysis-v3.json.replayed.frames.u16le",
+      "sha256": "ab8220cf65a33b1e8479dce7d7f36f79ba5d9e834c679aa0c678b00f22b1154a"
+    },
+    {
+      "bytes": 410,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/fgn-correction-analysis.json",
+      "sha256": "9d3f91d8310a13ae467b28ca61813b119618e0f2fab13a824d5a26e49cd31519"
+    },
+    {
+      "bytes": 283648,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/fgn-evidence/batch-1/simulator-result.commands.f32le",
+      "sha256": "30353573bdec4ec69181d8a853e1198b0026a535c8861b96db4cb76e8ebe030a"
+    },
+    {
+      "bytes": 63438848,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/fgn-evidence/batch-1/simulator-result.frames.u16le",
+      "sha256": "ab8220cf65a33b1e8479dce7d7f36f79ba5d9e834c679aa0c678b00f22b1154a"
+    },
+    {
+      "bytes": 26879,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/fgn-evidence/batch-1/simulator-result.json",
+      "sha256": "75ffeb62c88747e8c0d9ca28651a3e2ac6c16fc919e37ddd8dc23fbea8fc8c88"
+    },
+    {
+      "bytes": 77825,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/fgn-evidence/result.json",
+      "sha256": "64cb9506223e0cbb8e2986cdf4bf4e8e437463a8d4010b4c022cd941bca6a685"
+    },
+    {
+      "bytes": 56643,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/fgn-hil/deployment.conf",
+      "sha256": "40de0be6b6cd3d13ae820c9ee14d4e8b2305ec3aa3582aea72c2844d593efcad"
+    },
+    {
+      "bytes": 50499,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/fgn-hil/provenance.json",
+      "sha256": "bba2276b0dfa239a4a48b09b717f7fc390603f2cfdd769cf784b7f825d8bbe00"
+    },
+    {
+      "bytes": 26394,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/jfg-base/deployment.conf",
+      "sha256": "dae00a138e3644a3b06f8907c286794592186a8c0f5ef9d61677f1bec9557b12"
+    },
+    {
+      "bytes": 19688,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/jfg-base/provenance.json",
+      "sha256": "f35acae39960912a0a19647b5afffe0b2c874e4b22cdadce31faefdc07cfc9ec"
+    },
+    {
+      "bytes": 286356,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/jfg-correction-analysis-cpu6.json",
+      "sha256": "23cdba023bc94bd0755633460668e90b8c43e27f9697ecd484c6a4fa54b5917d"
+    },
+    {
+      "bytes": 63438848,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/jfg-correction-analysis-cpu6.json.replayed.frames.u16le",
+      "sha256": "fca62ab348007e66816979b87ad9e1c0ce18b38a51a18baaab5dfaeb20e27650"
+    },
+    {
+      "bytes": 286589,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/jfg-correction-analysis.json",
+      "sha256": "ab251aff9034336f07189b5454ee211f3c051176fb2bdf9ef33e267831ae59dc"
+    },
+    {
+      "bytes": 63438848,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/jfg-correction-analysis.json.replayed.frames.u16le",
+      "sha256": "514107dfd556dda6db1acf813d4cabff84acc315171338066b276f854675f017"
+    },
+    {
+      "bytes": 283648,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/jfg-evidence/batch-1/simulator-result.commands.f32le",
+      "sha256": "c033ffae259ab293957dbf1e66e22c072dd1cdbf2838b396e3b4827a99378980"
+    },
+    {
+      "bytes": 63438848,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/jfg-evidence/batch-1/simulator-result.frames.u16le",
+      "sha256": "353c0be653fd24e13e663b96ca133e8b8bd7f110a269ecdf1a475f9e0d7befc0"
+    },
+    {
+      "bytes": 26879,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/jfg-evidence/batch-1/simulator-result.json",
+      "sha256": "2324be10f8527ca2b18e491359223533dbb72cb35ca3fd3f8a20cba00f2226e1"
+    },
+    {
+      "bytes": 79906,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/jfg-evidence/result.json",
+      "sha256": "dfe10c91237a710ff71526c862dbb40c061b2d969f8f36554ec5d3303f8b5d2f"
+    },
+    {
+      "bytes": 79417,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/jfg-hil/deployment.conf",
+      "sha256": "b22dcff9ac5e9c9e3227c4ed90155283d3e97d9978038ecca564b77e27bc3efd"
+    },
+    {
+      "bytes": 51262,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/jfg-hil/provenance.json",
+      "sha256": "da03032aedbe15f46fb04bd2eb539700e577a5ca358bc4267b468d452c473ef0"
+    },
+    {
+      "bytes": 290181,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/jfg-live-truth-analysis.json",
+      "sha256": "f0ad40a9ac380c33ed1c42299fc22e041ac2f3aa4c281958a03dfad28d984661"
+    },
+    {
+      "bytes": 63438848,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/jfg-live-truth-analysis.json.replayed.frames.u16le",
+      "sha256": "921015f36e0d8b45d07ec2a91e4aedb8d98caa827fdf05627a60aaebf911573f"
+    },
+    {
+      "bytes": 283648,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/jfg-truth-evidence/batch-1/simulator-result.commands.f32le",
+      "sha256": "1a53f9f63202b40f21bc3d6388e591181fadf20fe8beb66fc49af0ade28dedc6"
+    },
+    {
+      "bytes": 63438848,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/jfg-truth-evidence/batch-1/simulator-result.frames.u16le",
+      "sha256": "921015f36e0d8b45d07ec2a91e4aedb8d98caa827fdf05627a60aaebf911573f"
+    },
+    {
+      "bytes": 150741,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/jfg-truth-evidence/batch-1/simulator-result.json",
+      "sha256": "04cef8de7a192d56355d6f0387c0113ac3491d3e6c2e52452ef4a1ba7c7a470b"
+    },
+    {
+      "bytes": 283648,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/jfg-truth-evidence/batch-2/simulator-result.commands.f32le",
+      "sha256": "1a53f9f63202b40f21bc3d6388e591181fadf20fe8beb66fc49af0ade28dedc6"
+    },
+    {
+      "bytes": 63438848,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/jfg-truth-evidence/batch-2/simulator-result.frames.u16le",
+      "sha256": "921015f36e0d8b45d07ec2a91e4aedb8d98caa827fdf05627a60aaebf911573f"
+    },
+    {
+      "bytes": 150737,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/jfg-truth-evidence/batch-2/simulator-result.json",
+      "sha256": "894f84fc48233658fd3a830caf50b2e89fcb639bb88d737be98cc716480d569e"
+    },
+    {
+      "bytes": 346408,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/jfg-truth-evidence/result.json",
+      "sha256": "254223625084090b6fb660eb60ac0d9360c7200e23b373079e7e2f3fade8d8ed"
+    },
+    {
+      "bytes": 79568,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/jfg-truth-hil/deployment.conf",
+      "sha256": "552634449918f92c5aa9fa773cd1ddf03b5872f01ecf20807288e328b4a2394f"
+    },
+    {
+      "bytes": 51380,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/jfg-truth-hil/provenance.json",
+      "sha256": "d86efe69f684eff1f0ef5cba96679a92602d6033674af3814adc5128a4e83cca"
+    },
+    {
+      "bytes": 4701,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/prepare-jfg-truth.log",
+      "sha256": "617440f876bd0c70ccb94ad3a011d298717c82da0b72391751109817ac64a004"
+    },
+    {
+      "bytes": 188,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/active-subapertures.u8",
+      "sha256": "04090c0ed1a3808cd3b8ad03503008eb4915bab3c5eedbc856b14cc8db543697"
+    },
+    {
+      "bytes": 244868,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/active-to-full-vdm.f32le",
+      "sha256": "8c6c942d40ea6f2814db19c407ebba2d2159eaf29876ed08114967a1c96c0e81"
+    },
+    {
+      "bytes": 495616,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/background.f32le",
+      "sha256": "914044dfcf902a3361a8da6921f91e3086f7880cb430293d2bc7743c6df428ad"
+    },
+    {
+      "bytes": 195364,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/controller-to-vdm.f32le",
+      "sha256": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772"
+    },
+    {
+      "bytes": 244868,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/full-to-active-vdm.f32le",
+      "sha256": "f8293d858992ae5acac10cc67dd6fd887cf72d5f3b489e6d42866b787d8dccaa"
+    },
+    {
+      "bytes": 884,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/hidden-to-shape.f32le",
+      "sha256": "6ca83adefc47fc9ab71637c150b95b33083e61e507dff2ee5f2692aa27e1453e"
+    },
+    {
+      "bytes": 306916,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/pdm-to-vdm.f32le",
+      "sha256": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+    },
+    {
+      "bytes": 10764,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/prepared-profile.toml",
+      "sha256": "9058b87a73a7dda24c4839ca8a7def98d6dca4bba8cc8ac0e6cff1f8382877c4"
+    },
+    {
+      "bytes": 332384,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/reconstructor.f32le",
+      "sha256": "987a9560ace009c1184b1930e20f78dcfa94edeefeba3023af7677060338b138"
+    },
+    {
+      "bytes": 1504,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/reference-slopes.f32le",
+      "sha256": "4786782913a4699359fd095dd1952152669b03ff8132ddcd739852c7f17cf4ba"
+    },
+    {
+      "bytes": 3872,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/shack-hartmann-coordinates.f32le",
+      "sha256": "ce732de6ee687fad3814756575084393cf937b3e4b7befea953cce2264193315"
+    },
+    {
+      "bytes": 884,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/shape-to-hidden.f32le",
+      "sha256": "6ca83adefc47fc9ab71637c150b95b33083e61e507dff2ee5f2692aa27e1453e"
+    },
+    {
+      "bytes": 495616,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/simulated-optical-flat.f32le",
+      "sha256": "be4c6b4ecc9203e8d7511ba3dc4a4486927937773f6a2bb41f40898dae798803"
+    },
+    {
+      "bytes": 1504,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/subaperture-origins.u32le",
+      "sha256": "8d648983755d662c98a4e66e9f6173d945a928c118153f1ca1699ebf17412279"
+    },
+    {
+      "bytes": 1504,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/thresholds.f32le",
+      "sha256": "38ff0ca092c5ca6e0cbf57aa80ce78e3907eada03d88dce8f9257008ce4da752"
+    },
+    {
+      "bytes": 195364,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/vdm-to-controller.f32le",
+      "sha256": "983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772"
+    },
+    {
+      "bytes": 306916,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/vdm-to-pdm.f32le",
+      "sha256": "3b65fcfa047483b8f46a6129b86db1f990b0651487c6c5bf2418862ed093e136"
+    },
+    {
+      "bytes": 11326,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/shared-array-config-differences.json",
+      "sha256": "ab0d6b519df894c4eb3701e14c00e16a656189898c01fef527a6583671f043ca"
+    },
+    {
+      "bytes": 1118,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/shared-input-array-v2.log",
+      "sha256": "9d54fb2b806a5f6e421730d8323699c61a5f5f80b6921716f9c0929a56e8b5d1"
+    },
+    {
+      "bytes": 185173,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/shared-input-array-v2/array-comparison.json",
+      "sha256": "625f35664acb6b3f1c9f1c515076df53cc840d6945947108a0f8ec1d169f0ff7"
+    },
+    {
+      "bytes": 151919,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/shared-input-array-v2/array-comparison.toml",
+      "sha256": "8dd9f41753be6b18b1d92cf233ec43afee601ad76083cbbf48a375c693163abe"
+    },
+    {
+      "bytes": 6298,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/shared-input-array-v2/diagnostic-graph.conf",
+      "sha256": "e170ad4e3bf4a97d64a2a33bf152695325ba5acb4b60de7a21d90df70e53a0e2"
+    },
+    {
+      "bytes": 12298,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/shared-input-array-v2/input-metadata.toml",
+      "sha256": "e4187855cd6f7377e17988e825cf6248f073eb2a768a5afdb9a07e5cfd2eb538"
+    },
+    {
+      "bytes": 283648,
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/shared-input-array-v2/predicted.commands.f32le",
+      "sha256": "642626049a3a2a607d3d80ff5e8dc049ae5daed060e5f462209cc141eb546bcc"
+    },
+    {
+      "bytes": 22102,
+      "path": "~/.cache/rtc-calibration-quality-20261003/dense-method-confirmation/analysis.json",
+      "sha256": "f7242b5f91ae3b8a655145b1facb11e84db36e820ec2eea726be548264f9b3a5"
+    },
+    {
+      "bytes": 4642,
+      "path": "~/.cache/rtc-calibration-quality-20261003/dense-method-confirmation/evidence/deployment.log",
+      "sha256": "a58633ce0d60efb1411d5abd4dcc649b35474f36e5add8498c8047fb34e7129d"
+    },
+    {
+      "bytes": 2013956,
+      "path": "~/.cache/rtc-calibration-quality-20261003/dense-method-confirmation/evidence/rtc-calibrate.json",
+      "sha256": "7b4cbe2491157a5da6054d2591dc5db6da2472644e4463ee97032a3b3c7564e1"
+    },
+    {
+      "bytes": 0,
+      "path": "~/.cache/rtc-calibration-quality-20261003/dense-method-confirmation/evidence/rtc-calibrate.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 14001,
+      "path": "~/.cache/rtc-calibration-quality-20261003/dense-method-confirmation/evidence/stage-result.json",
+      "sha256": "aec0579ce7924e92010a26eb33d42cf93415df5d03831cda18e764adff14dbb0"
+    },
+    {
+      "bytes": 268321,
+      "path": "~/.cache/rtc-calibration-quality-20261003/dense-method-confirmation/interaction-plan.json",
+      "sha256": "9924f339caf433b613a0ddb3c396d75967749c3fa229381ffcb1bf033dee705c"
+    },
+    {
+      "bytes": 10881,
+      "path": "~/.cache/rtc-calibration-quality-20261003/dense-method-confirmation/policy.json",
+      "sha256": "17deca4a07fbbbf9875d1ac8ab9a0f6e5c417eace65f770e7f655ab2bd720f12"
+    },
+    {
+      "bytes": 14282,
+      "path": "~/.cache/rtc-calibration-quality-20261003/dense-method-confirmation/probe-labels.json",
+      "sha256": "434ab0dea3474610e129a515d15aec31d1b892499dff0b58d804a0114aa75406"
+    },
+    {
+      "bytes": 13994,
+      "path": "~/.cache/rtc-calibration-quality-20261003/dense-method-confirmation/recipe.json",
+      "sha256": "548bc36bb6b6309b884a6fdd69fb35f9e2293a98f883be8244696df032658aba"
+    },
+    {
+      "bytes": 19405,
+      "path": "~/.cache/rtc-calibration-quality-20261003/dense-method-pilot/analysis.json",
+      "sha256": "4ba8ac1713a3c2428df3ac89bf044fd59a5eb65724f04f603219a3240fccf9bf"
+    },
+    {
+      "bytes": 56853,
+      "path": "~/.cache/rtc-calibration-quality-20261003/dense-method-pilot/base/deployment.conf",
+      "sha256": "88b919fca0ac965c1041ed5abf7479b74678a3f8e10e79bc0595c277a587bcaf"
+    },
+    {
+      "bytes": 103701,
+      "path": "~/.cache/rtc-calibration-quality-20261003/dense-method-pilot/base/provenance.json",
+      "sha256": "883ebb36b3871f457b76fd998cb595a103bb73ee8fd84db451011490869d6d12"
+    },
+    {
+      "bytes": 4636,
+      "path": "~/.cache/rtc-calibration-quality-20261003/dense-method-pilot/evidence/deployment.log",
+      "sha256": "9785564c02c8c34adaf3aff5e061081a1f4b688c7ba7ffee388521abe55a9e62"
+    },
+    {
+      "bytes": 1357561,
+      "path": "~/.cache/rtc-calibration-quality-20261003/dense-method-pilot/evidence/rtc-calibrate.json",
+      "sha256": "2ee6fd8e92cfc1185a7c191ed461653dd4fabf79e8bd9b8d9295478941006c93"
+    },
+    {
+      "bytes": 0,
+      "path": "~/.cache/rtc-calibration-quality-20261003/dense-method-pilot/evidence/rtc-calibrate.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 13969,
+      "path": "~/.cache/rtc-calibration-quality-20261003/dense-method-pilot/evidence/stage-result.json",
+      "sha256": "2ae44becd316b100cd34c66d74d848dd24771d5a26d7fc505d8266e2b86df296"
+    },
+    {
+      "bytes": 248385,
+      "path": "~/.cache/rtc-calibration-quality-20261003/dense-method-pilot/interaction-plan.json",
+      "sha256": "6d983b100d7ff24947d3a74491b4c20e500d8763baa58c4e877c987528f5e5b5"
+    },
+    {
+      "bytes": 56444,
+      "path": "~/.cache/rtc-calibration-quality-20261003/dense-method-pilot/package/deployment.conf",
+      "sha256": "f76e4710b2dd51c0374d31ff02bee1e5ef1cf6b8d815dcb345bc0bbeff0f7c7e"
+    },
+    {
+      "bytes": 169284,
+      "path": "~/.cache/rtc-calibration-quality-20261003/dense-method-pilot/package/provenance.json",
+      "sha256": "d8009c353e2de9c73740d33695a88780fd1b7ceb01e27d4668a1325dc63391ed"
+    },
+    {
+      "bytes": 37689,
+      "path": "~/.cache/rtc-calibration-quality-20261003/dense-method-pilot/policy.json",
+      "sha256": "8269e7f2881e8e2bb845ee549dd8c06aa4190d724064eb74e8a09f5a5505cd17"
+    },
+    {
+      "bytes": 12134,
+      "path": "~/.cache/rtc-calibration-quality-20261003/dense-method-pilot/probe-labels.json",
+      "sha256": "f35acadd31ae4d06694fe3b1fff414c7174ab362a1fc76890ec066193038b85e"
+    },
+    {
+      "bytes": 13994,
+      "path": "~/.cache/rtc-calibration-quality-20261003/dense-method-pilot/recipe.json",
+      "sha256": "76d8e49168b097102407eb8d5ebb2c59606113df2d55a94ef38020673a6fd3ae"
+    },
+    {
+      "bytes": 1274,
+      "path": "~/.cache/rtc-calibration-quality-20261003/deployment-tests-method-final.log",
+      "sha256": "339f11720cb7d847c67ea5da0b81af49994d36a15b138aff01cc82e231475bf1"
+    },
+    {
+      "bytes": 26700,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-analysis/analysis.json",
+      "sha256": "958c2c0e0bd207d52bc0dd2d6ee560c71e3239d2eab29e7acb2fc1510d2885ba"
+    },
+    {
+      "bytes": 332384,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-analysis/candidate-1-reconstructor.f32le",
+      "sha256": "987a9560ace009c1184b1930e20f78dcfa94edeefeba3023af7677060338b138"
+    },
+    {
+      "bytes": 664768,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-analysis/candidate-1-reconstructor.f64le",
+      "sha256": "563e09251b23ca9c461efb40d15eb56aee15bbdecab529baba6ba7f74358ff7f"
+    },
+    {
+      "bytes": 332384,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-analysis/candidate-2-reconstructor.f32le",
+      "sha256": "740997b35995378e0b8e6dd8ef253528ba9912c0174cfd2126bddc92de3ad7e8"
+    },
+    {
+      "bytes": 664768,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-analysis/candidate-2-reconstructor.f64le",
+      "sha256": "c9bce1fb0ae175cfa006b6c4005fdaf80d5660bf58abffea6ed22efbfae64772"
+    },
+    {
+      "bytes": 332384,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-analysis/candidate-4-reconstructor.f32le",
+      "sha256": "061c01bedb5b7080ecc189d0d0fe4f459fbecaf8be146377fb63b53fbed35cd8"
+    },
+    {
+      "bytes": 664768,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-analysis/candidate-4-reconstructor.f64le",
+      "sha256": "5fcaff699a3743a5f302e95218d3b76406811b0dab725b3e31e3977ef75d3ba3"
+    },
+    {
+      "bytes": 650624,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-analysis/controller-response.f64le",
+      "sha256": "92182b90be957b17de4a430cd86c5796c1f3c93677587e8f0eb968d2e1ea2abd"
+    },
+    {
+      "bytes": 650624,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-analysis/empirical-discrepancy.f64le",
+      "sha256": "f5532b58667b9afb43eff4d44ed7a9dc51ef63210059038d7d405d681dcae316"
+    },
+    {
+      "bytes": 2480,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-analysis/lockedtest-scores.json",
+      "sha256": "ac943f00dd1908aa3955eead96126eec23b417b49fca7706d58ca1cb3ed63eb8"
+    },
+    {
+      "bytes": 1237,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-analysis/null-propagation.json",
+      "sha256": "6172efbd3d3163de4df889906e617f57b354534f87acfade54e12a8529e27c11"
+    },
+    {
+      "bytes": 833216,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-analysis/physical-mean.f64le",
+      "sha256": "0c738fe544d55648c34fc2443424c62cd74fa2a65fec42874082dba9a3cacdcb"
+    },
+    {
+      "bytes": 833216,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-analysis/physical-sweep1.f64le",
+      "sha256": "6b297da54d5eb05e1589c646877d3c6077706ba7883a24536119c44c6afa5444"
+    },
+    {
+      "bytes": 833216,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-analysis/physical-sweep2.f64le",
+      "sha256": "52f5c39154fd63059cf30197f3fa5223c14aa9d7e95c33fe95bb055c8a2709f8"
+    },
+    {
+      "bytes": 1518,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-analysis/selection-before-identity-guards.json",
+      "sha256": "d58443ad3ac2283dd6257ce8fe96f3b878958dcf3703dd3581f49b2c61ab1fe2"
+    },
+    {
+      "bytes": 1168,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-analysis/selection-relative-prototype.json",
+      "sha256": "eaa6fdbd085cacc213355d4c97d872680aeb1ea7007692cfe6e5947877bcd58f"
+    },
+    {
+      "bytes": 1390,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-analysis/selection-subgroup-prototype.json",
+      "sha256": "bd70ade057c7b374c12a899395179aa81c4cc2af0befe01bc15ccad2412e3aab"
+    },
+    {
+      "bytes": 1788,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-analysis/selection.json",
+      "sha256": "179373f3359a54fb950fdb78b63949ccbb15366ae7380e64bf6301f8cdd4fe10"
+    },
+    {
+      "bytes": 4221,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-analysis/validation-scores-before-identity-guards.json",
+      "sha256": "dad5af663057173540aa5afd9a9c543a38cdb4721e85316b0acfe777bd253d1a"
+    },
+    {
+      "bytes": 3897,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-analysis/validation-scores-relative-prototype.json",
+      "sha256": "524a63165703b34f96688d85a1d7d9d7b44b7bb968f119a2cf60852393da1a9a"
+    },
+    {
+      "bytes": 4024,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-analysis/validation-scores-subgroup-prototype.json",
+      "sha256": "198e5c4af76a2305f5563c5a0ee191753e45a9482623488dafc03a3c6c9977a5"
+    },
+    {
+      "bytes": 4221,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-analysis/validation-scores.json",
+      "sha256": "eca29550ed7945aff8f69550cf29146cbe2fa760afebbb1472ae8349f5bd2ab0"
+    },
+    {
+      "bytes": 112,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep1/elapsed.json",
+      "sha256": "d91bd3b49d5168576df774119f079a1370b027d34a01d15a5e7de652075d2da9"
+    },
+    {
+      "bytes": 4629,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep1/evidence/deployment.log",
+      "sha256": "230d641ae0676a90a9c98ff2baba6da49a28e8d38bcd2b227086993d5b28fe4b"
+    },
+    {
+      "bytes": 7944831,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep1/evidence/rtc-calibrate.json",
+      "sha256": "0bc096963886d55e8590a5aeab7c51f219f0f2f6d1bbe1e55d62c0b826915ae9"
+    },
+    {
+      "bytes": 0,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep1/evidence/rtc-calibrate.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 13947,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep1/evidence/stage-result.json",
+      "sha256": "12d5d25f69a313f6f09d6020ff9f8292b7baade5ec9330f664d5ca1f8ff974d7"
+    },
+    {
+      "bytes": 617155,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep1/interaction-plan.json",
+      "sha256": "bc35af887aea34fe4e9a8399edb1d1038e4874911430ad79c0c689b0482e21f3"
+    },
+    {
+      "bytes": 2657,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep1/policy.json",
+      "sha256": "51123ed3ad45101b72518788c705adc600c812e58e75a918e2702e709f20621a"
+    },
+    {
+      "bytes": 44167,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep1/probe-labels.json",
+      "sha256": "3fda81a25a5fef345d8e1e1e23b68ab3c6c6abc269bbdc2768eaf9469de78c71"
+    },
+    {
+      "bytes": 13995,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep1/recipe.json",
+      "sha256": "faf036cb4118bbf97b1b4c0cfeec1024892f2e9694351b6c01e6148ad440975e"
+    },
+    {
+      "bytes": 112,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep2/elapsed.json",
+      "sha256": "b72f4959220737adbca49583287a3dd2313513751837084359171d26d2dfa8a4"
+    },
+    {
+      "bytes": 4629,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep2/evidence/deployment.log",
+      "sha256": "597151500f501bd0311873b3850ca4aef552151413ed5d3713d15d6f7a5b2808"
+    },
+    {
+      "bytes": 7943940,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep2/evidence/rtc-calibrate.json",
+      "sha256": "867cfb74fc7f619498fc8861deada1d4b5e0f7e43353bb54ec7c505e7b4fb627"
+    },
+    {
+      "bytes": 0,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep2/evidence/rtc-calibrate.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 13947,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep2/evidence/stage-result.json",
+      "sha256": "60d4abf53053455f783f2116e9260c493a5bb356385ce97aeae19bbd0b08f956"
+    },
+    {
+      "bytes": 617155,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep2/interaction-plan.json",
+      "sha256": "7845bc5879dc7f3103cb01037c9f17d0da80cd81dc8486b955cdebe4cdd2cc90"
+    },
+    {
+      "bytes": 2658,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep2/policy.json",
+      "sha256": "3f2b1065e81c92a22cbccaa68b0d0175452d1f63e0e10fc491c06bd17a0658f1"
+    },
+    {
+      "bytes": 44167,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep2/probe-labels.json",
+      "sha256": "72e8bd9dd9f38278ff573bea5cd10c6ffd7eef08d4ec920eacc5a5d4e84aa8b8"
+    },
+    {
+      "bytes": 13995,
+      "path": "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep2/recipe.json",
+      "sha256": "53adac1c46dcdca974a36b2aa65afe37f75e93c16c5fce95a7e966c9aa9df894"
+    },
+    {
+      "bytes": 85740,
+      "path": "~/.cache/rtc-calibration-quality-20261003/heldout-lockedtest/directions.json",
+      "sha256": "70800d04367688a3fcc2efc12566cf7693d3343a33a540eccfe8d3d5711d6f28"
+    },
+    {
+      "bytes": 4635,
+      "path": "~/.cache/rtc-calibration-quality-20261003/heldout-lockedtest/evidence/deployment.log",
+      "sha256": "ede63f855ea9e24586d8898e3f289eeed9d02a5281e7dc5856bd8b5fcfa4f3c2"
+    },
+    {
+      "bytes": 1351992,
+      "path": "~/.cache/rtc-calibration-quality-20261003/heldout-lockedtest/evidence/rtc-calibrate.json",
+      "sha256": "defb6e52e34a64aba377b74cf4787785f614dfc2b76ac217a3310330b6fee89c"
+    },
+    {
+      "bytes": 0,
+      "path": "~/.cache/rtc-calibration-quality-20261003/heldout-lockedtest/evidence/rtc-calibrate.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 13968,
+      "path": "~/.cache/rtc-calibration-quality-20261003/heldout-lockedtest/evidence/stage-result.json",
+      "sha256": "a22cb5ee3fa7ee860fd4b85f48f3f1163e4a62aa8021f38a5c8c5b16674624de"
+    },
+    {
+      "bytes": 199756,
+      "path": "~/.cache/rtc-calibration-quality-20261003/heldout-lockedtest/interaction-plan.json",
+      "sha256": "7eb8dd3faf1670036a88f00dc8272d9a8c367360b01f2bc20292e77336505152"
+    },
+    {
+      "bytes": 1017,
+      "path": "~/.cache/rtc-calibration-quality-20261003/heldout-lockedtest/policy.json",
+      "sha256": "3fe8a0e01d33ba27fc1e42c68ac97a634db9ea7562225074c772c41b9bb344f0"
+    },
+    {
+      "bytes": 5020,
+      "path": "~/.cache/rtc-calibration-quality-20261003/heldout-lockedtest/probe-labels.json",
+      "sha256": "c47b76a066f1fa0da37ac43b3e3c8a0baf22bc25c9bf8622a1587f0fed5c2308"
+    },
+    {
+      "bytes": 13994,
+      "path": "~/.cache/rtc-calibration-quality-20261003/heldout-lockedtest/recipe.json",
+      "sha256": "1b98b5369aefebd3e52ff69b5a050cfef743263f04c3d64dfd90f3e3c0672467"
+    },
+    {
+      "bytes": 43101,
+      "path": "~/.cache/rtc-calibration-quality-20261003/heldout-validation/directions.json",
+      "sha256": "9e6a4f3da0d18898fe270d31d4f989a9719affccca2a03283ef326e3a2bba949"
+    },
+    {
+      "bytes": 4635,
+      "path": "~/.cache/rtc-calibration-quality-20261003/heldout-validation/evidence/deployment.log",
+      "sha256": "3c7f6ad8544cef6f6b551d7a5a01464b0fb2ce02503954c9e57724e173231f99"
+    },
+    {
+      "bytes": 675154,
+      "path": "~/.cache/rtc-calibration-quality-20261003/heldout-validation/evidence/rtc-calibrate.json",
+      "sha256": "c0c8e7ebd74add76734f913fd538a7a5b6c8168eeb601691b2c3bdbd1c07c489"
+    },
+    {
+      "bytes": 0,
+      "path": "~/.cache/rtc-calibration-quality-20261003/heldout-validation/evidence/rtc-calibrate.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 13964,
+      "path": "~/.cache/rtc-calibration-quality-20261003/heldout-validation/evidence/stage-result.json",
+      "sha256": "8a9f94cd40d7b3d9115776773482fa2708df85352742059b5ed1cbf74104f092"
+    },
+    {
+      "bytes": 100296,
+      "path": "~/.cache/rtc-calibration-quality-20261003/heldout-validation/interaction-plan.json",
+      "sha256": "39c3f000895d574bba7e900983c6662587969b3e7b84558852f4cb43a1ced24a"
+    },
+    {
+      "bytes": 1016,
+      "path": "~/.cache/rtc-calibration-quality-20261003/heldout-validation/policy.json",
+      "sha256": "f9704a24be8c811344817354c795004b6cd0b6e59ca5e2140912b594a7160242"
+    },
+    {
+      "bytes": 2490,
+      "path": "~/.cache/rtc-calibration-quality-20261003/heldout-validation/probe-labels.json",
+      "sha256": "4590d609873338805c40bc6aa27738f380ef79d2495ac1de1846cab491cbb569"
+    },
+    {
+      "bytes": 13994,
+      "path": "~/.cache/rtc-calibration-quality-20261003/heldout-validation/recipe.json",
+      "sha256": "47757f3075ff57f356354884cef90858a6d48e27bdaa8a6eb5cf1f1b2ec40e10"
+    },
+    {
+      "bytes": 101,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort-inputs/hadamard-1-method.json",
+      "sha256": "597835fdbb6309cb6c68d9843f95958eb31e90bb06f3b0508b74eb9fd8f8c81b"
+    },
+    {
+      "bytes": 9561,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort-inputs/hadamard-1-recipe.json",
+      "sha256": "46e3bbee33e0a013207e46b18fcac2fd653ffa6d89962ab1ec8eabfe88889d24"
+    },
+    {
+      "bytes": 101,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort-inputs/hadamard-2-method.json",
+      "sha256": "a9a8fb2ff60a1f1bf4105ede981befd7a2c26bc760949ee2b98fefbb2827d9d4"
+    },
+    {
+      "bytes": 9561,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort-inputs/hadamard-2-recipe.json",
+      "sha256": "03e9db24200e6550f54128cc2dd73d4a9c30a3a71c6d6d9ae8630111a6aff2e9"
+    },
+    {
+      "bytes": 2737,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort-inputs/policy.json",
+      "sha256": "142549f176135fb9d6405b96c1569fdf164e61ea034dc6d5b921ba6b5c15cf74"
+    },
+    {
+      "bytes": 98,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort-inputs/zonal-1-method.json",
+      "sha256": "af27eff6551d95849c8158f8936a1f81855c0d1eae7088e110a716333004a7ec"
+    },
+    {
+      "bytes": 9562,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort-inputs/zonal-1-recipe.json",
+      "sha256": "6f65ce66de2e897921b3dd911a1138ad7e1e0d2da2174158ad3da9760af1fc69"
+    },
+    {
+      "bytes": 98,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort-inputs/zonal-2-method.json",
+      "sha256": "1113963bd4327274e92de7b174f855a4ea97770906c399d38abba4d0c64fd37e"
+    },
+    {
+      "bytes": 9562,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-cohort-inputs/zonal-2-recipe.json",
+      "sha256": "0e4ab39cf7164ac81c4dc0e1d009183a148810ea8ceb4b99597d6a4bd303cb6b"
+    },
+    {
+      "bytes": 2824,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-owner/VALIDATION.json",
+      "sha256": "324a2706a343d46e32772e081c269dd1e344eff04e1cb1952aa7380abda3239b"
+    },
+    {
+      "bytes": 106,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-owner/independent-python.log",
+      "sha256": "31d461d4f5ea9a76ac910ab10c6f0bdaffcf73105fffad0bef6b67b23d0e121f"
+    },
+    {
+      "bytes": 392,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-owner/julia-final.log",
+      "sha256": "3517d83000a5554ab305cfdc837447ef5e762a7ad71e0321ac52222290da11df"
+    },
+    {
+      "bytes": 106,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-owner/python-final.log",
+      "sha256": "31d461d4f5ea9a76ac910ab10c6f0bdaffcf73105fffad0bef6b67b23d0e121f"
+    },
+    {
+      "bytes": 886,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-owner/root-julia-final.log",
+      "sha256": "be5b133bb548fa800d4eed80b54d6c790fb770cd0941916f96452cc6ad4b37d9"
+    },
+    {
+      "bytes": 721,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-owner/smoke-independent-aoc.log",
+      "sha256": "178b93672e1da2ce4af3070300ece894da5a5cdef7438acc3689a65c966c0eba"
+    },
+    {
+      "bytes": 7422,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-inputs/method.json",
+      "sha256": "9e5fcd45f07b935d895ccf5b89d8b4fb2e28bc8bed6e5140e41242775cc33627"
+    },
+    {
+      "bytes": 13994,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-inputs/recipe.json",
+      "sha256": "8cbed58035ac2d38efde1238442883f69e6d79e5a9eb283d24fb8464af5d6b8e"
+    },
+    {
+      "bytes": 62111,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/base-identity.json",
+      "sha256": "93d0dc55bdbeb1c84e13c47324e6cc296b6950c62e6cf45556b8505241c16960"
+    },
+    {
+      "bytes": 3008,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/candidate-response.f32le",
+      "sha256": "9eddbeaf7efc15364280a03411841557bedecc53aff9fe82571a0e635950dc70"
+    },
+    {
+      "bytes": 56683,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/candidate-response.json",
+      "sha256": "6c3a2474a0c31cc8fca2555caaca7ac9257feb18697f4e00100a47d5ce5075ae"
+    },
+    {
+      "bytes": 118,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/canonical-order.json",
+      "sha256": "72a80ff9701e4dd5bf3f38eebfa896738248b440de88bf2f8fdba2690969d94e"
+    },
+    {
+      "bytes": 5831,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/canonical-plan.json",
+      "sha256": "f6d8d2a29119ac437a0b36e60d0d88cbe986f4dce27c1691179f8ac1c181d011"
+    },
+    {
+      "bytes": 4639,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/evidence/deployment.log",
+      "sha256": "c9d44f5b682220a2b4d511b6e1e6124f186c8a54cfdb4b571dfa573de41ebbbe"
+    },
+    {
+      "bytes": 38279,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/evidence/rtc-calibrate.json",
+      "sha256": "0b0794badd37cd5414399fd26b9a335aaabac632428ac072698934b749f04024"
+    },
+    {
+      "bytes": 0,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/evidence/rtc-calibrate.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 13981,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/evidence/stage-result.json",
+      "sha256": "bab0a9725042f0514649994e70d003c8d267dc39320fb6438ec37342018f2659"
+    },
+    {
+      "bytes": 7422,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/input-method.json",
+      "sha256": "9e5fcd45f07b935d895ccf5b89d8b4fb2e28bc8bed6e5140e41242775cc33627"
+    },
+    {
+      "bytes": 13994,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/input-recipe.json",
+      "sha256": "8cbed58035ac2d38efde1238442883f69e6d79e5a9eb283d24fb8464af5d6b8e"
+    },
+    {
+      "bytes": 5831,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/interaction-plan.json",
+      "sha256": "d5ad126d2de484b6658d005ac07bbbeb7a9b20c1a4390ddd9c677ec8ab41fffd"
+    },
+    {
+      "bytes": 56853,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/method-base/deployment.conf",
+      "sha256": "d5773063c4f1220b7a7ce8e41df7e09ff64ebf696f88bac40c049e0a54ef6c4f"
+    },
+    {
+      "bytes": 103701,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/method-base/provenance.json",
+      "sha256": "4ed45ffe131733013ea862cb52e98e3a801ca56fb69d8844671e64b36aa72834"
+    },
+    {
+      "bytes": 81105,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/method-result.json",
+      "sha256": "ca76b0ef3b4e0604b8972b22dcb46906c0c86de5818301fde16be24745fc0059"
+    },
+    {
+      "bytes": 7422,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/method.json",
+      "sha256": "9e5fcd45f07b935d895ccf5b89d8b4fb2e28bc8bed6e5140e41242775cc33627"
+    },
+    {
+      "bytes": 56444,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/package/deployment.conf",
+      "sha256": "5371e6a0bfaadaac21e031aa25811002a6ab323103e6c7c6d361779c1933bdd0"
+    },
+    {
+      "bytes": 169284,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/package/provenance.json",
+      "sha256": "877bab2c03a66fb586880854d5864c905b5999dfd2236dc845c26cf6db422104"
+    },
+    {
+      "bytes": 3718,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/preparation.json",
+      "sha256": "c638874be3e4d0846f86d841c9d4cc4aa2ec96142e2dd3d97a98d397cdf3f357"
+    },
+    {
+      "bytes": 424,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/prepare.stderr",
+      "sha256": "b125d4b1449931b08a661a545f5ba42b0cdac9b15608a0fc676e6b2e5c520aac"
+    },
+    {
+      "bytes": 0,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/prepare.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 55520,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/prepared-identity.json",
+      "sha256": "9ff790295241f58cf7f48facfcc08694fd44c87ed8d9fbffcfead105bc6943bf"
+    },
+    {
+      "bytes": 7841,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/prepared-specification.json",
+      "sha256": "da9cbb97be3a6bdefbda019d1bb503f27e7978266613ec10f3a9fc04ec20a6a5"
+    },
+    {
+      "bytes": 13994,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/recipe.json",
+      "sha256": "8cbed58035ac2d38efde1238442883f69e6d79e5a9eb283d24fb8464af5d6b8e"
+    },
+    {
+      "bytes": 0,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/reduce.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/reduce.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 72,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse/evidence/deployment.log",
+      "sha256": "e27731df0f8895ffcb9599c38ef9521b99a65076464925f0525accadb3fc5727"
+    },
+    {
+      "bytes": 880,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse/evidence/stage-result.json",
+      "sha256": "bfeb61b7a9961534a4ecd0946a5c15f35b9a289122bca560737b724271f397e3"
+    },
+    {
+      "bytes": 1435,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse/method-result.json",
+      "sha256": "cc9714d079add2f51407fb70f0ddb6d98a85308e2adda054d28d6d42951ee50b"
+    },
+    {
+      "bytes": 98,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke-v2.log",
+      "sha256": "47673e2f610483d078c7daadeb0cf0a06828c3eef414b893b9be5ec69873561a"
+    },
+    {
+      "bytes": 1195,
+      "path": "~/.cache/rtc-calibration-quality-20261003/method-smoke.log",
+      "sha256": "b708db0602a8a7ab2a1864a8fd5e7978ef9de92abbe0ace1a7d3063a14d59981"
+    },
+    {
+      "bytes": 4173,
+      "path": "~/.cache/rtc-calibration-quality-20261003/prepare-correction.py",
+      "sha256": "6a23287154d03897392e84b3c511c5c9950e73ccf63eaeea64a150c31030a899"
+    },
+    {
+      "bytes": 2452,
+      "path": "~/.cache/rtc-calibration-quality-20261003/prepare-dense-confirmation.jl",
+      "sha256": "8eca69ec9fdd8787b9c054ea122f448ee53eb94f277ac7ad0cdf1b366e133957"
+    },
+    {
+      "bytes": 83,
+      "path": "~/.cache/rtc-calibration-quality-20261003/prepare-dense-confirmation.log",
+      "sha256": "879d000ac55af22253f2bba9fe6e9017a486660bb251b593fa3eed766b00dd3c"
+    },
+    {
+      "bytes": 1968,
+      "path": "~/.cache/rtc-calibration-quality-20261003/prepare-full.jl",
+      "sha256": "c1ec7931ec443a9cd6defe0bd2234561595771a2eff269ff90a773eb4fa7c287"
+    },
+    {
+      "bytes": 4219,
+      "path": "~/.cache/rtc-calibration-quality-20261003/prepare-heldout.jl",
+      "sha256": "cd8904ce2b9d4bcd4b9ad4badb259aac8c629b4d68c582c67ec931780379e5fb"
+    },
+    {
+      "bytes": 2883,
+      "path": "~/.cache/rtc-calibration-quality-20261003/propagate-null.jl",
+      "sha256": "3f1033ed668a646a6b7f512ffce7c2991fb165f8198b28bf3439b16f187ee7c7"
+    },
+    {
+      "bytes": 193,
+      "path": "~/.cache/rtc-calibration-quality-20261003/run-dense-confirmation.log",
+      "sha256": "0541cdc8c9d6e99afed2655e8683964194ec5040342146b3d041250c6ee338a3"
+    },
+    {
+      "bytes": 1713,
+      "path": "~/.cache/rtc-calibration-quality-20261003/run-dense-confirmation.py",
+      "sha256": "cb2a7322a3b00539ffe18b0e7cc978e20677865a43a3a1da9049f8fc42f15426"
+    },
+    {
+      "bytes": 2554,
+      "path": "~/.cache/rtc-calibration-quality-20261003/run-full.py",
+      "sha256": "4f58076d400b79471b33ad29e5ce84491e7344db4bbb7630ba24600bd4b4f5e9"
+    },
+    {
+      "bytes": 3519,
+      "path": "~/.cache/rtc-calibration-quality-20261003/run-heldout.py",
+      "sha256": "57afa4373d2b5256887434d396638cae72d499f1ca918a7fde77334476e70a36"
+    },
+    {
+      "bytes": 8519,
+      "path": "~/.cache/rtc-calibration-quality-20261003/score-heldout.jl",
+      "sha256": "a3606aadf34e9786e6d7fd04a6bab7a8b57be48500ecd7d868258d5cce949b30"
+    },
+    {
+      "bytes": 1341,
+      "path": "~/.cache/rtc-calibration-quality-20261003/test-composition.jl",
+      "sha256": "97d9cdd6405a41bf5f66ae7ec3df437d26d96ce0c6be23fbb7d3c3d860a8a719"
+    },
+    {
+      "bytes": 24003,
+      "path": "~/.cache/rtc-calibration-quality-20261003/verify-correction-array.jl",
+      "sha256": "cb6f586eb9b15ed13254bf898b9b141dccdf4d93caf750f0f75122547794513c"
+    }
+  ],
+  "groups": {
+    "both_fgn_failed_run_logs": [
+      "~/.cache/rtc-calibration-quality-20261003/correction-fgn.log",
+      "~/.cache/rtc-calibration-quality-20261003/correction-fgn-analysis.log"
+    ],
+    "core_source_scripts": [
+      "~/.cache/rtc-calibration-quality-20261003/prepare-full.jl",
+      "~/.cache/rtc-calibration-quality-20261003/run-full.py",
+      "~/.cache/rtc-calibration-quality-20261003/analyze-full.jl",
+      "~/.cache/rtc-calibration-quality-20261003/prepare-heldout.jl",
+      "~/.cache/rtc-calibration-quality-20261003/run-heldout.py",
+      "~/.cache/rtc-calibration-quality-20261003/score-heldout.jl",
+      "~/.cache/rtc-calibration-quality-20261003/propagate-null.jl",
+      "~/.cache/rtc-calibration-quality-20261003/test-composition.jl",
+      "~/.cache/rtc-calibration-quality-20261003/prepare-correction.py"
+    ],
+    "correction_candidate_inputs_packages_results_and_batch1": [
+      "~/.cache/rtc-calibration-quality-20261003/correction/candidate-acceptance.json",
+      "~/.cache/rtc-calibration-quality-20261003/correction/fgn-base/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/correction/fgn-base/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/correction/fgn-hil/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/correction/fgn-hil/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/correction/fgn-evidence/result.json",
+      "~/.cache/rtc-calibration-quality-20261003/correction/fgn-evidence/batch-1/simulator-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/correction/fgn-evidence/batch-1/simulator-result.frames.u16le",
+      "~/.cache/rtc-calibration-quality-20261003/correction/fgn-evidence/batch-1/simulator-result.commands.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/correction/fgn-correction-analysis-v2.json",
+      "~/.cache/rtc-calibration-quality-20261003/correction/fgn-correction-analysis-v3.json",
+      "~/.cache/rtc-calibration-quality-20261003/correction/fgn-correction-analysis.json",
+      "~/.cache/rtc-calibration-quality-20261003/correction/fgn-correction-analysis-v3.json.replayed.frames.u16le",
+      "~/.cache/rtc-calibration-quality-20261003/correction/jfg-base/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/correction/jfg-base/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/correction/jfg-hil/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/correction/jfg-hil/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/correction/jfg-evidence/result.json",
+      "~/.cache/rtc-calibration-quality-20261003/correction/jfg-evidence/batch-1/simulator-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/correction/jfg-evidence/batch-1/simulator-result.frames.u16le",
+      "~/.cache/rtc-calibration-quality-20261003/correction/jfg-evidence/batch-1/simulator-result.commands.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/correction/jfg-correction-analysis.json",
+      "~/.cache/rtc-calibration-quality-20261003/correction/jfg-correction-analysis.json.replayed.frames.u16le",
+      "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/active-subapertures.u8",
+      "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/active-to-full-vdm.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/background.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/controller-to-vdm.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/full-to-active-vdm.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/hidden-to-shape.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/pdm-to-vdm.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/prepared-profile.toml",
+      "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/reconstructor.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/reference-slopes.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/shack-hartmann-coordinates.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/shape-to-hidden.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/simulated-optical-flat.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/subaperture-origins.u32le",
+      "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/thresholds.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/vdm-to-controller.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/correction/prepared-calibration/vdm-to-pdm.f32le"
+    ],
+    "current_aoc_source_and_tests": [
+      "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/src/AdaptiveOpticsCalibration.jl",
+      "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/src/interaction_matrices/interaction_matrices.jl",
+      "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/src/interaction_matrices/structured.jl",
+      "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/src/diagnostics/diagnostics.jl",
+      "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/src/diagnostics/interaction_matrix_stability.jl",
+      "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/src/diagnostics/repeated_response_moments.jl",
+      "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/src/reconstructors/reconstructors.jl",
+      "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/src/reconstructors/svd_inverse.jl",
+      "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/src/reconstructors/weighted.jl",
+      "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/test/interaction_matrix_stability.jl",
+      "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/test/repeated_response_moments.jl",
+      "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/test/structured_interaction_matrices.jl",
+      "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/test/reconstructors.jl",
+      "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/Project.toml",
+      "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl/Manifest.toml"
+    ],
+    "current_jfg_cpu6_failure_and_capture": [
+      "~/.cache/rtc-calibration-quality-20261003/correction/jfg-correction-analysis-cpu6.json",
+      "~/.cache/rtc-calibration-quality-20261003/correction/jfg-correction-analysis-cpu6.json.replayed.frames.u16le",
+      "~/.cache/rtc-calibration-quality-20261003/correction/correction-jfg-analysis-cpu6.log",
+      "~/.cache/rtc-calibration-quality-20261003/correction/correction-jfg-analysis.log",
+      "~/.cache/rtc-calibration-quality-20261003/correction/jfg-correction-analysis.json",
+      "~/.cache/rtc-calibration-quality-20261003/correction/jfg-correction-analysis.json.replayed.frames.u16le",
+      "~/.cache/rtc-calibration-quality-20261003/correction-jfg.log",
+      "~/.cache/rtc-calibration-quality-20261003/correction/jfg-evidence/result.json",
+      "~/.cache/rtc-calibration-quality-20261003/correction/jfg-evidence/batch-1/simulator-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/correction/jfg-evidence/batch-1/simulator-result.frames.u16le",
+      "~/.cache/rtc-calibration-quality-20261003/correction/jfg-evidence/batch-1/simulator-result.commands.f32le"
+    ],
+    "current_rtc_source_and_tests": [
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/calibration_method.py",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/test_calibration_method.py",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/export_hil.py",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/test_export_hil.py",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/hil/calibration_client.jl",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/hil/test_calibration_client.jl",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/hil/owner_protocol.jl",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/hil/test_owner_protocol.jl",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/hil/simulator.jl",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/hil/test_simulator.jl",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/hil/calibration_method_analysis.jl",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/hil/test_calibration_method_analysis.jl",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/hil/correction_truth.jl",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/hil/test_correction_truth.jl",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/hil/analyze_correction.jl",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality/deployment/hil/test_analyze_correction.jl"
+    ],
+    "dense_method_confirmation_completed_evidence_and_scripts": [
+      "~/.cache/rtc-calibration-quality-20261003/dense-method-confirmation/policy.json",
+      "~/.cache/rtc-calibration-quality-20261003/dense-method-confirmation/interaction-plan.json",
+      "~/.cache/rtc-calibration-quality-20261003/dense-method-confirmation/probe-labels.json",
+      "~/.cache/rtc-calibration-quality-20261003/dense-method-confirmation/recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/dense-method-confirmation/analysis.json",
+      "~/.cache/rtc-calibration-quality-20261003/dense-method-confirmation/evidence/stage-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/dense-method-confirmation/evidence/rtc-calibrate.json",
+      "~/.cache/rtc-calibration-quality-20261003/dense-method-confirmation/evidence/rtc-calibrate.stderr",
+      "~/.cache/rtc-calibration-quality-20261003/dense-method-confirmation/evidence/deployment.log",
+      "~/.cache/rtc-calibration-quality-20261003/prepare-dense-confirmation.jl",
+      "~/.cache/rtc-calibration-quality-20261003/prepare-dense-confirmation.log",
+      "~/.cache/rtc-calibration-quality-20261003/run-dense-confirmation.py",
+      "~/.cache/rtc-calibration-quality-20261003/run-dense-confirmation.log",
+      "~/.cache/rtc-calibration-quality-20261003/analyze-dense-confirmation.jl",
+      "~/.cache/rtc-calibration-quality-20261003/analyze-dense-confirmation.log"
+    ],
+    "dense_method_pilot_declaration_analysis_and_evidence": [
+      "~/.cache/rtc-calibration-quality-20261003/dense-method-pilot/policy.json",
+      "~/.cache/rtc-calibration-quality-20261003/dense-method-pilot/interaction-plan.json",
+      "~/.cache/rtc-calibration-quality-20261003/dense-method-pilot/probe-labels.json",
+      "~/.cache/rtc-calibration-quality-20261003/dense-method-pilot/recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/dense-method-pilot/analysis.json",
+      "~/.cache/rtc-calibration-quality-20261003/dense-method-pilot/evidence/stage-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/dense-method-pilot/evidence/rtc-calibrate.json",
+      "~/.cache/rtc-calibration-quality-20261003/dense-method-pilot/evidence/rtc-calibrate.stderr",
+      "~/.cache/rtc-calibration-quality-20261003/dense-method-pilot/evidence/deployment.log",
+      "~/.cache/rtc-calibration-quality-20261003/dense-method-pilot/base/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/dense-method-pilot/base/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/dense-method-pilot/package/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/dense-method-pilot/package/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/analyze-dense-pilot-v1.jl",
+      "~/.cache/rtc-calibration-quality-20261003/analyze-dense-pilot.jl",
+      "~/.cache/rtc-calibration-quality-20261003/analyze-dense-pilot-v2.log",
+      "~/.cache/rtc-calibration-quality-20261003/analyze-dense-pilot.log"
+    ],
+    "full-n64-sweep1_declaration_and_receipts": [
+      "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep1/policy.json",
+      "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep1/interaction-plan.json",
+      "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep1/probe-labels.json",
+      "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep1/recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep1/elapsed.json",
+      "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep1/evidence/stage-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep1/evidence/rtc-calibrate.json",
+      "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep1/evidence/rtc-calibrate.stderr",
+      "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep1/evidence/deployment.log"
+    ],
+    "full-n64-sweep2_declaration_and_receipts": [
+      "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep2/policy.json",
+      "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep2/interaction-plan.json",
+      "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep2/probe-labels.json",
+      "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep2/recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep2/elapsed.json",
+      "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep2/evidence/stage-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep2/evidence/rtc-calibrate.json",
+      "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep2/evidence/rtc-calibrate.stderr",
+      "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep2/evidence/deployment.log"
+    ],
+    "full_analysis_json_and_packed_arrays": [
+      "~/.cache/rtc-calibration-quality-20261003/full-analysis/analysis.json",
+      "~/.cache/rtc-calibration-quality-20261003/full-analysis/candidate-1-reconstructor.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/full-analysis/candidate-1-reconstructor.f64le",
+      "~/.cache/rtc-calibration-quality-20261003/full-analysis/candidate-2-reconstructor.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/full-analysis/candidate-2-reconstructor.f64le",
+      "~/.cache/rtc-calibration-quality-20261003/full-analysis/candidate-4-reconstructor.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/full-analysis/candidate-4-reconstructor.f64le",
+      "~/.cache/rtc-calibration-quality-20261003/full-analysis/controller-response.f64le",
+      "~/.cache/rtc-calibration-quality-20261003/full-analysis/empirical-discrepancy.f64le",
+      "~/.cache/rtc-calibration-quality-20261003/full-analysis/lockedtest-scores.json",
+      "~/.cache/rtc-calibration-quality-20261003/full-analysis/null-propagation.json",
+      "~/.cache/rtc-calibration-quality-20261003/full-analysis/physical-mean.f64le",
+      "~/.cache/rtc-calibration-quality-20261003/full-analysis/physical-sweep1.f64le",
+      "~/.cache/rtc-calibration-quality-20261003/full-analysis/physical-sweep2.f64le",
+      "~/.cache/rtc-calibration-quality-20261003/full-analysis/selection-before-identity-guards.json",
+      "~/.cache/rtc-calibration-quality-20261003/full-analysis/selection-relative-prototype.json",
+      "~/.cache/rtc-calibration-quality-20261003/full-analysis/selection-subgroup-prototype.json",
+      "~/.cache/rtc-calibration-quality-20261003/full-analysis/selection.json",
+      "~/.cache/rtc-calibration-quality-20261003/full-analysis/validation-scores-before-identity-guards.json",
+      "~/.cache/rtc-calibration-quality-20261003/full-analysis/validation-scores-relative-prototype.json",
+      "~/.cache/rtc-calibration-quality-20261003/full-analysis/validation-scores-subgroup-prototype.json",
+      "~/.cache/rtc-calibration-quality-20261003/full-analysis/validation-scores.json"
+    ],
+    "heldout-lockedtest_declarations_and_receipts": [
+      "~/.cache/rtc-calibration-quality-20261003/heldout-lockedtest/directions.json",
+      "~/.cache/rtc-calibration-quality-20261003/heldout-lockedtest/interaction-plan.json",
+      "~/.cache/rtc-calibration-quality-20261003/heldout-lockedtest/policy.json",
+      "~/.cache/rtc-calibration-quality-20261003/heldout-lockedtest/probe-labels.json",
+      "~/.cache/rtc-calibration-quality-20261003/heldout-lockedtest/recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/heldout-lockedtest/evidence/stage-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/heldout-lockedtest/evidence/rtc-calibrate.json",
+      "~/.cache/rtc-calibration-quality-20261003/heldout-lockedtest/evidence/rtc-calibrate.stderr",
+      "~/.cache/rtc-calibration-quality-20261003/heldout-lockedtest/evidence/deployment.log"
+    ],
+    "heldout-validation_declarations_and_receipts": [
+      "~/.cache/rtc-calibration-quality-20261003/heldout-validation/directions.json",
+      "~/.cache/rtc-calibration-quality-20261003/heldout-validation/interaction-plan.json",
+      "~/.cache/rtc-calibration-quality-20261003/heldout-validation/policy.json",
+      "~/.cache/rtc-calibration-quality-20261003/heldout-validation/probe-labels.json",
+      "~/.cache/rtc-calibration-quality-20261003/heldout-validation/recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/heldout-validation/evidence/stage-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/heldout-validation/evidence/rtc-calibrate.json",
+      "~/.cache/rtc-calibration-quality-20261003/heldout-validation/evidence/rtc-calibrate.stderr",
+      "~/.cache/rtc-calibration-quality-20261003/heldout-validation/evidence/deployment.log"
+    ],
+    "independent_aoc_and_final_method_audit_logs": [
+      "~/.cache/rtc-calibration-quality-20261003/method-owner/smoke-independent-aoc.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-owner/python-final.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-owner/julia-final.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-owner/root-julia-final.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-owner/independent-python.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-owner/VALIDATION.json"
+    ],
+    "jfg_truth_capture_analysis_and_package_binding": [
+      "~/.cache/rtc-calibration-quality-20261003/correction/jfg-truth-hil/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/correction/jfg-truth-hil/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/correction/jfg-truth-evidence/result.json",
+      "~/.cache/rtc-calibration-quality-20261003/correction/jfg-truth-evidence/batch-1/simulator-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/correction/jfg-truth-evidence/batch-1/simulator-result.frames.u16le",
+      "~/.cache/rtc-calibration-quality-20261003/correction/jfg-truth-evidence/batch-1/simulator-result.commands.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/correction/jfg-truth-evidence/batch-2/simulator-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/correction/jfg-truth-evidence/batch-2/simulator-result.frames.u16le",
+      "~/.cache/rtc-calibration-quality-20261003/correction/jfg-truth-evidence/batch-2/simulator-result.commands.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/correction/jfg-live-truth-analysis.json",
+      "~/.cache/rtc-calibration-quality-20261003/correction/jfg-live-truth-analysis.json.replayed.frames.u16le",
+      "~/.cache/rtc-calibration-quality-20261003/correction/prepare-jfg-truth.log",
+      "~/.cache/rtc-calibration-quality-20261003/correction/check-jfg-truth.log",
+      "~/.cache/rtc-calibration-quality-20261003/correction/analyze-jfg-live-truth.log"
+    ],
+    "method_cohort_frozen_inputs_only": [
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort-inputs/policy.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort-inputs/hadamard-1-method.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort-inputs/hadamard-1-recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort-inputs/hadamard-2-method.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort-inputs/hadamard-2-recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort-inputs/zonal-1-method.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort-inputs/zonal-1-recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort-inputs/zonal-2-method.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-cohort-inputs/zonal-2-recipe.json"
+    ],
+    "method_smoke_reverse_v2_complete_and_prior_prelaunch_failure": [
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/method-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/candidate-response.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/candidate-response.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/method.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/prepared-identity.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/preparation.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/prepared-specification.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/interaction-plan.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/canonical-plan.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/canonical-order.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/base-identity.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/input-method.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/input-recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/evidence/stage-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/evidence/rtc-calibrate.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/evidence/rtc-calibrate.stderr",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/evidence/deployment.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-v2.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/prepare.stderr",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/prepare.stdout",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/reduce.stderr",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/reduce.stdout",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/package/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/package/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/method-base/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/method-base/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse/method-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse/evidence/stage-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-reverse/evidence/deployment.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-inputs/method.json",
+      "~/.cache/rtc-calibration-quality-20261003/method-smoke-inputs/recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/deployment-tests-method-final.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-owner/root-julia-final.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-owner/python-final.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-owner/independent-python.log",
+      "~/.cache/rtc-calibration-quality-20261003/method-owner/VALIDATION.json"
+    ],
+    "shared_input_array_v2_comparison": [
+      "~/.cache/rtc-calibration-quality-20261003/correction/shared-input-array-v2/diagnostic-graph.conf",
+      "~/.cache/rtc-calibration-quality-20261003/correction/shared-input-array-v2/input-metadata.toml",
+      "~/.cache/rtc-calibration-quality-20261003/correction/shared-input-array-v2/predicted.commands.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/correction/shared-input-array-v2/array-comparison.json",
+      "~/.cache/rtc-calibration-quality-20261003/correction/shared-input-array-v2/array-comparison.toml",
+      "~/.cache/rtc-calibration-quality-20261003/correction/shared-array-config-differences.json",
+      "~/.cache/rtc-calibration-quality-20261003/correction/shared-input-array-v2.log",
+      "~/.cache/rtc-calibration-quality-20261003/verify-correction-array.jl"
+    ]
+  },
+  "inventory_time_utc": "2026-10-03T20:37:12Z",
+  "method": "SHA-256 over file bytes; no RTC/Julia process, score computation, or source-tree modification",
+  "missing_or_absent": [
+    {
+      "group": "heldout-validation_declarations_and_receipts",
+      "path": "~/.cache/rtc-calibration-quality-20261003/heldout-validation/elapsed.json",
+      "reason": "no standalone elapsed.json in this run directory"
+    },
+    {
+      "group": "heldout-lockedtest_declarations_and_receipts",
+      "path": "~/.cache/rtc-calibration-quality-20261003/heldout-lockedtest/elapsed.json",
+      "reason": "no standalone elapsed.json in this run directory"
+    },
+    {
+      "group": "correction_candidate_inputs_packages_results_and_batch1",
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/fgn-correction-analysis-v2.json.replayed.frames.u16le",
+      "reason": "not present at inventory time"
+    },
+    {
+      "group": "correction_candidate_inputs_packages_results_and_batch1",
+      "path": "~/.cache/rtc-calibration-quality-20261003/correction/fgn-correction-analysis.json.replayed.frames.u16le",
+      "reason": "not present at inventory time"
+    }
+  ],
+  "schema_version": 1,
+  "scope": "Evidence file identity ledger only; scientific result summaries are maintained separately.",
+  "source_inventory": {
+    "aoc": {
+      "repository": "/home/dgamroth/workspaces/codex/AdaptiveOpticsCalibration.jl",
+      "revision": "f79104ddec1fcd609ea60d5a081f72dfb280ff73",
+      "working_tree": "listed source paths hash exact current contents"
+    },
+    "cache": "/home/dgamroth/.cache/rtc-calibration-quality-20261003",
+    "rtc": {
+      "repository": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality",
+      "revision": "f8a12c7576702a5f024c5ad5e5e99e461670d1ed",
+      "working_tree": "contains active source changes; listed paths hash exact current contents"
+    }
+  }
+}

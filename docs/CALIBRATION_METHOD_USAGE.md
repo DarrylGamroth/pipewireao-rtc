@@ -105,7 +105,8 @@ calibration cadence guarantee. Startup includes cold compilation. An earlier
 attempt deliberately retained as failed evidence was rejected before launch
 because the encompassing affinity mask admitted only CPU 5; it emitted no
 frames. Eight focused Python tests and 56 Julia assertions passed independently;
-the complete deployment suite passed 163 tests with two fixture-dependent skips.
+the complete deployment suite ran 163 tests: 161 passed and two were skipped
+because their external fixtures were unavailable.
 
 Evidence is retained under `~/.cache/rtc-calibration-quality-20261003/` in
 `method-smoke-reverse-v2/`, `method-smoke-reverse/` and `method-owner/`.
