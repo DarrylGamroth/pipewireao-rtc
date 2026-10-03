@@ -160,6 +160,12 @@ class HILExportTests(unittest.TestCase):
                 for plant in ("REVOLTClassicSim", "REVOLTCopperSim"):
                     export_hil.environment(root, plant, backend)
                     value = tomllib.loads((root / "hil/Project.toml").read_text())
+                    self.assertEqual(value["deps"]["AdaptiveOpticsCalibration"],
+                                     export_hil.PACKAGE_UUIDS["AdaptiveOpticsCalibration"])
+                    self.assertEqual(value["sources"]["AdaptiveOpticsCalibration"]["path"],
+                                     "packages/AdaptiveOpticsCalibration")
+                    self.assertEqual(value["compat"]["AdaptiveOpticsCalibration"], "0.17")
+                    self.assertEqual(value["compat"]["julia"], "1.12")
                     self.assertEqual(value["sources"][plant]["path"], f"packages/{plant}")
                     self.assertEqual(value["sources"]["PipeWireAO"]["path"], "packages/PipeWireAO")
                     self.assertEqual(value["sources"]["FilterGraphAlgorithms"]["path"], "packages/FilterGraphAlgorithms")
@@ -167,6 +173,31 @@ class HILExportTests(unittest.TestCase):
                     self.assertNotIn(other, value["deps"])
                     self.assertEqual("CUDA" in value["deps"], backend == "cuda")
                     self.assertEqual("AMDGPU" in value["deps"], backend == "amdgpu")
+
+    def test_aoc_package_copy_includes_public_package_sources(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "AdaptiveOpticsCalibration"
+            (source / "src").mkdir(parents=True)
+            (source / "ext").mkdir()
+            (source / "Project.toml").write_text(
+                'name = "AdaptiveOpticsCalibration"\n'
+                'uuid = "3c8b5851-926e-4ebb-af30-f8544b98d45f"\n')
+            (source / "src/AdaptiveOpticsCalibration.jl").write_text("module AdaptiveOpticsCalibration\nend\n")
+            destination = root / "package/hil/packages/AdaptiveOpticsCalibration"
+            export_hil.copy_package(source, destination)
+            self.assertEqual((destination / "Project.toml").read_text(), (source / "Project.toml").read_text())
+            self.assertTrue((destination / "src/AdaptiveOpticsCalibration.jl").is_file())
+
+    def test_hil_export_cli_requires_aoc_source_root(self):
+        arguments = ["--output", "/tmp/export", "--base-package", "/tmp/base",
+                     "--aos-root", "/src/aos", "--plant-root", "/src/plant",
+                     "--adapter-root", "/src/adapter", "--pipewireao-jl-root", "/src/pwao",
+                     "--calibration-algorithms-root", "/src/fga"]
+        parsed = export_hil.arguments([*arguments, "--aoc-root", "/src/aoc"])
+        self.assertEqual(parsed.aoc_root, Path("/src/aoc"))
+        with self.assertRaises(SystemExit):
+            export_hil.arguments(arguments)
 
     def test_julia_owner_uses_same_portable_transport_source(self):
         with tempfile.TemporaryDirectory() as directory:

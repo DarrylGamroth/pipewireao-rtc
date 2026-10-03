@@ -22,6 +22,7 @@ import export as science
 
 ROOT = Path(__file__).resolve().parent
 PACKAGE_UUIDS = {
+    "AdaptiveOpticsCalibration": "3c8b5851-926e-4ebb-af30-f8544b98d45f",
     "AdaptiveOpticsSim": "002fb5eb-ad68-44a0-adbe-b299bfc2febc",
     "AdaptiveOpticsSimPipeWireHIL": "355e2bce-7765-4934-ac1c-873e1c98ec3d",
     "REVOLTClassicSim": "c09822aa-3d1e-4a1e-903c-d4d0f13badd1",
@@ -102,11 +103,12 @@ def environment(package: Path, plant: str, backend: str) -> None:
     for name in ("REVOLTClassicSim", "REVOLTCopperSim"):
         dependencies.pop(name, None)
     dependencies.update({name: PACKAGE_UUIDS[name] for name in
-                         ("AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL", plant)})
+                         ("AdaptiveOpticsCalibration", "AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL", plant)})
     compat = dict(project.get("compat", {}))
     for name in ("REVOLTClassicSim", "REVOLTCopperSim"):
         if name != plant:
             compat.pop(name, None)
+    compat["AdaptiveOpticsCalibration"] = "0.17"
     if backend == "cuda":
         dependencies["CUDA"] = "052768ef-5323-5732-b1bb-66c8b64840ba"
         compat["CUDA"] = "6"
@@ -115,7 +117,8 @@ def environment(package: Path, plant: str, backend: str) -> None:
         compat["AMDGPU"] = "2.7"
     text = "[deps]\n" + "".join(f'{name} = {json.dumps(uuid)}\n' for name, uuid in sorted(dependencies.items()))
     text += "\n[sources]\n" + "".join(f'{name} = {{path = "packages/{name}"}}\n' for name in
-                                       ("AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL", "PipeWireAO", "FilterGraphAlgorithms", plant))
+                                       ("AdaptiveOpticsCalibration", "AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL",
+                                        "PipeWireAO", "FilterGraphAlgorithms", plant))
     text += "\n[compat]\n" + "".join(f'{name} = {json.dumps(version)}\n' for name, version in sorted(compat.items()))
     (package / "hil/Project.toml").write_text(text)
 
@@ -302,7 +305,8 @@ def export_hil(args) -> Path:
         for path in (ROOT / "hil").glob("*.jl"):
             if not path.name.startswith("test_"):
                 shutil.copy2(path, package / "hil" / path.name)
-        for name, path in (("AdaptiveOpticsSim", args.aos_root),
+        for name, path in (("AdaptiveOpticsCalibration", args.aoc_root),
+                           ("AdaptiveOpticsSim", args.aos_root),
                            ("AdaptiveOpticsSimPipeWireHIL", args.adapter_root),
                            ("PipeWireAO", args.pipewireao_jl_root),
                            ("FilterGraphAlgorithms", args.calibration_algorithms_root), (plant, args.plant_root)):
@@ -354,6 +358,7 @@ def export_hil(args) -> Path:
                               "command_unit": "micrometre OPD", "plant_command_scale": 1e-6,
                               "instrument_model": "provisional grid-Gaussian HSDM277",
                               "aos_revision": science.revision(args.aos_root), "plant_revision": science.revision(args.plant_root),
+                              "adaptive_optics_calibration_revision": science.revision(args.aoc_root),
                               "adapter_revision": science.revision(args.adapter_root), "original_model_sha256": science.sha256(model_source),
                               "pipewireao_jl_revision": science.revision(args.pipewireao_jl_root),
                               "base_deployment_sha256": science.sha256(base / "deployment.conf"),
@@ -372,7 +377,7 @@ def export_hil(args) -> Path:
 
 def arguments(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ("output", "base-package", "aos-root", "plant-root", "adapter-root", "pipewireao-jl-root",
+    for name in ("output", "base-package", "aoc-root", "aos-root", "plant-root", "adapter-root", "pipewireao-jl-root",
                  "calibration-algorithms-root"):
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--backend", choices=("cpu", "cuda", "amdgpu"), default="cpu")

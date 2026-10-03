@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Export two ordinary full-frame graphs for explicit initial calibration.
+"""Export full-frame initial-calibration graphs and an optional RTC descriptor.
 
-The selected installed profile supplies the exact WFS processing and PDM
-constraints. These are graph assets, not a runnable deployment or evidence of
-operational acquisition. Existing offset provenance retains its original claim.
+The default output contains graph assets only. ``--deployment`` adds the
+standard RTC session and owner descriptor; it does not qualify acquisition.
+Existing offset provenance retains its original claim.
 """
 
 from __future__ import annotations
@@ -144,10 +144,214 @@ def boundary_contract(graph: dict, profile: str, role: str, engine: str) -> list
     return value
 
 
+def calibration_session(graph_records: list[dict], profile: str, engine: str,
+                        rate: str) -> dict:
+    """Compose the calibration graphs and application-owned acquisition endpoints."""
+    extent = 352 if profile == "classic" else 64
+    def repeated_port(name: str, direction: str, shape: tuple[int, ...],
+                      schema: str, element_type: str) -> dict:
+        result = science.port(name, direction, shape, schema, element_type)
+        result["rate"] = rate
+        return result
+
+    raw = repeated_port("output_1", "output", (extent, extent), science.RAW_SCHEMA, "U16_LE")
+    requested = repeated_port("output_1", "output", (277,), REQUESTED_SCHEMA, "F32_LE")
+    command = repeated_port("input_1", "input", (277,), science.COMMAND_SCHEMA, "F32_LE")
+    feedback = repeated_port("input_1", "input", (277,), FEEDBACK_SCHEMA, "F32_LE")
+    sources = [
+        {"ownership": "external", "node.name": "simulator-wfs", "ports": [raw]},
+        {"ownership": "external", "node.name": "calibration-probe", "ports": [requested]},
+    ]
+    sinks = [
+        {"ownership": "external", "node.name": "simulator-command", "ports": [command]},
+        {"ownership": "external", "node.name": "calibration-feedback", "ports": [feedback]},
+    ]
+    wfs_record = next(record for record in graph_records if record["role"] == "wfs")
+    command_record = next(record for record in graph_records if record["role"] == "command")
+    for name, port_contract in zip(
+            ("calibration-slopes", "calibration-flux", "calibration-validity")
+            if profile == "classic" else
+            ("calibration-reconstruction-pixels", "calibration-mean-pupil-intensity"),
+            wfs_record["ports"][1:]):
+        shape = tuple(port_contract["shape"])
+        sinks.append({"ownership": "external", "node.name": name,
+                      "ports": [repeated_port("input_1", "input", shape,
+                                               port_contract["schema"],
+                                               port_contract["element-type"])]})
+    sinks.append({"ownership": "external", "node.name": "calibration-raw",
+                  "ports": [repeated_port("input_1", "input", (extent, extent),
+                                           science.RAW_SCHEMA, "U16_LE")]})
+
+    graphs = []
+    for record in graph_records:
+        graph = {"node.name": record["node.name"], "ports": record["ports"]}
+        if engine == "fgn":
+            graph.update({"factory": "pipewireao.fgn-native",
+                          "module": "libpipewire-module-ndarray-filter-chain",
+                          "config.path": "@RUNTIME@/" + record["role"] + ".conf"})
+        else:
+            graph.update({"ownership": "external", "run-control": "session"})
+        graphs.append(graph)
+
+    wfs = wfs_record
+    command_graph = command_record
+    wfs_node, command_node = wfs["node.name"], command_graph["node.name"]
+    wfs_raw = wfs["ports"][0]["name"]
+    requested_name = command_graph["ports"][0]["name"]
+    demanded_name = command_graph["ports"][1]["name"]
+    feedback_name = command_graph["ports"][2]["name"]
+    outputs = wfs["ports"][1:]
+    links = [
+        {"output": f"simulator-wfs:output_1", "input": f"{wfs_node}:{wfs_raw}", "passive": True},
+        {"output": "simulator-wfs:output_1", "input": "calibration-raw:input_1", "passive": False},
+        {"output": "calibration-probe:output_1", "input": f"{command_node}:{requested_name}", "passive": True},
+        {"output": f"{command_node}:{demanded_name}", "input": "simulator-command:input_1", "passive": False},
+        {"output": f"{command_node}:{feedback_name}", "input": "calibration-feedback:input_1", "passive": False},
+    ]
+    response_names = ("calibration-slopes", "calibration-flux", "calibration-validity") \
+        if profile == "classic" else \
+        ("calibration-reconstruction-pixels", "calibration-mean-pupil-intensity")
+    links.extend({"output": f"{wfs_node}:{port['name']}",
+                  "input": f"{sink}:input_1", "passive": False}
+                 for port, sink in zip(outputs, response_names))
+    return {
+        "profile": "development", "execution": "complete-frame", "authority": "none",
+        "claim": "development-characterization", "rate": rate,
+        "sources": sources, "graphs": graphs, "sinks": sinks,
+        "execution-groups": [{"name": "calibration", "nodes": [item["node.name"] for item in graphs]}],
+        "properties": {}, "parameters": {}, "observations": [], "links": links,
+    }
+
+
+def deployment_descriptor(package: Path, base: Path, specification: dict,
+                          graph_records: list[dict], profile: str, engine: str,
+                          session: dict, prefix: Path) -> dict:
+    """Emit the existing deployment contract for the opt-in calibration topology."""
+    simulator = next((owner for owner in specification["owners"]
+                      if owner["role"] == specification.get("source-owner")), None)
+    if simulator is None:
+        raise ValueError("calibration deployment descriptor requires an existing HIL source owner")
+    if engine == "jfg" and not any(owner["role"] == "julia" for owner in specification["owners"]):
+        raise ValueError("JFG calibration descriptor requires the existing Julia owner contract")
+
+    simulator["argv"] = list(simulator["argv"])
+    entrypoint = "@PACKAGE@/hil/calibration_owner.jl"
+    for index, argument in enumerate(simulator["argv"]):
+        if argument.endswith("/hil/simulator.jl"):
+            simulator["argv"][index] = entrypoint
+            break
+    else:
+        raise ValueError("HIL source owner has no maintained simulator entrypoint")
+    simulator["argv"].extend(["--calibration-socket", "@RUNTIME@/calibration.sock"])
+    if profile == "classic":
+        simulator["argv"].extend(["--wfs-active", "@PACKAGE@/calibration/wfs-active.u8"])
+
+    specification["name"] += "-calibration"
+    specification["session"] = "session.conf.in"
+    specification["client"].setdefault("simulator", "client-simulator.conf.in")
+    clients = base / "client-simulator.conf.in"
+    if clients.is_file():
+        shutil.copy2(clients, package / clients.name)
+    if "core.conf.in" not in {path.name for path in package.iterdir()}:
+        shutil.copy2(base / "core.conf.in", package / "core.conf.in")
+    old_julia = next((owner for owner in specification["owners"] if owner["role"] == "julia"), None)
+    if engine == "jfg":
+        old_placement = specification["placement"].pop("julia")
+        old_client = specification["client"].pop("julia")
+        specification["owners"] = [owner for owner in specification["owners"]
+                                    if owner["role"] != "julia"]
+        for record in graph_records:
+            role = "julia-" + record["role"]
+            owner = {"role": role, "argv": list(record["owner_arguments"]),
+                     "environment": dict(old_julia["environment"])}
+            markers = {key: role + "." + key for key in
+                       ("prepared", "connect", "connected", "quit")}
+            owner.update(markers)
+            for option, marker in (("--prepared-event", "prepared"),
+                                   ("--connect-request", "connect"),
+                                   ("--connect-reply", "connected"),
+                                   ("--quit-request", "quit")):
+                owner["argv"].extend([option, "@RUNTIME@/" + markers[marker]])
+            specification["owners"].append(owner)
+            specification["placement"][role] = copy.deepcopy(old_placement)
+            specification["client"][role] = old_client
+    for client in set(specification["client"].values()):
+        path = base / client
+        if path.is_file():
+            shutil.copy2(path, package / client)
+    science.write_json(package / "session.conf.in", session)
+    specification["artifacts"] = {
+        str(path.relative_to(package)): science.sha256(path)
+        for path in sorted(package.rglob("*"))
+        if path.is_file() and path.name != "deployment.conf"
+    }
+    science.write_json(package / "deployment.conf", specification)
+    deploy.profile(package / "deployment.conf", prefix)
+    return specification
+
+
+def classic_active(graph: dict, parameters: list, package: Path) -> bytes:
+    """Bind acceptance to the exact active parameter used by the WFS owner."""
+    node = next(node for node in graph["filter.graph"]["nodes"]
+                if node["label"] == "shack-hartmann-image-f32")
+    endpoint = node["name"] + ":active"
+    supplied = [parameter for parameter in parameters if parameter.endpoint == endpoint]
+    if len(supplied) > 1:
+        raise ValueError("Classic has duplicate active parameters")
+    if supplied:
+        values = (package / "calibration" / supplied[0].file).read_bytes()
+        if any(value not in (0, 1) for value in values):
+            raise ValueError("Classic active parameter requires zero/one bytes")
+    else:
+        configured = node["config"].get("active")
+        if configured is None or any(type(value) is not bool for value in configured):
+            raise ValueError("Classic requires an explicit deployed active selection")
+        values = bytes(configured)
+    if len(values) != 188 or not any(values):
+        raise ValueError("Classic active selection requires 188 entries and at least one active ROI")
+    return values
+
+
+def selected_calibration_binary(arguments) -> Path | None:
+    """Require the installed calibration CLI only for deployment exports."""
+    if not getattr(arguments, "deployment", False):
+        return None
+    source = getattr(arguments, "calibration_binary", None)
+    if source is None or not source.is_file():
+        raise ValueError("--deployment requires an existing --calibration-binary")
+    return source.resolve()
+
+
+def selected_rtc_binary(arguments) -> Path | None:
+    """Require an explicitly selected RTC runner for deployment exports."""
+    if not getattr(arguments, "deployment", False):
+        return None
+    source = getattr(arguments, "rtc_binary", None)
+    if source is None or not source.is_file():
+        raise ValueError("--deployment requires an existing --rtc-binary")
+    return source.resolve()
+
+
+def copy_calibration_binary(package: Path, source: Path) -> dict:
+    relative_path = "bin/rtc-calibrate"
+    destination = package / relative_path
+    science.copy_file(source, destination)
+    return {"path": relative_path, "sha256": science.sha256(destination)}
+
+
+def copy_rtc_binary(package: Path, source: Path) -> dict:
+    relative_path = "bin/pipewireao-rtc"
+    destination = package / relative_path
+    science.copy_file(source, destination)
+    return {"path": relative_path, "sha256": science.sha256(destination)}
+
+
 def export(arguments) -> Path:
     output = arguments.output.resolve()
     if output.exists():
         raise ValueError(f"export output must be new: {output}")
+    calibration_binary = selected_calibration_binary(arguments)
+    rtc_binary = selected_rtc_binary(arguments)
     base = arguments.base_package.resolve()
     specification = deploy.profile(base / "deployment.conf", arguments.pipewire_prefix)
     provenance = json.loads((base / "provenance.json").read_text())
@@ -166,6 +370,13 @@ def export(arguments) -> Path:
         package = Path(temporary) / "package"
         (package / "graphs").mkdir(parents=True)
         (package / "calibration").mkdir()
+        if getattr(arguments, "deployment", False):
+            if not (base / "hil/calibration_acquisition.jl").is_file():
+                raise ValueError("calibration deployment descriptor requires calibration_acquisition.jl in the HIL package")
+            shutil.copytree(base / "hil", package / "hil")
+            (package / "bin").mkdir()
+            calibration_command = copy_calibration_binary(package, calibration_binary)
+            rtc_runner = copy_rtc_binary(package, rtc_binary)
         if engine == "fgn":
             shutil.copytree(base / "lib", package / "lib")
         else:
@@ -173,7 +384,7 @@ def export(arguments) -> Path:
             # Installed HIL owners use this maintained local transport package
             # through their unchanged Project/Manifest relative source path.
             transport = base / "hil/packages/PipeWireAO"
-            if transport.is_dir():
+            if transport.is_dir() and not (package / "hil/packages/PipeWireAO").exists():
                 shutil.copytree(transport, package / "hil/packages/PipeWireAO")
         records = []
         parameters = []
@@ -197,6 +408,9 @@ def export(arguments) -> Path:
                 record["owner_arguments"] = julia_arguments(graph, selected, role, session["rate"], owner["argv"][0])
             records.append(record)
         retained_nodes = {node["name"] for graph in graphs.values() for node in graph["filter.graph"]["nodes"]}
+        if getattr(arguments, "deployment", False) and profile == "classic":
+            active = classic_active(graphs["wfs"], parameters, package)
+            (package / "calibration/wfs-active.u8").write_bytes(active)
         science.write_json(package / "provenance.json", {
             "profile": profile, "engine": engine, "mode": "frame", "rate": session["rate"],
             "artifact_scope": "initial-calibration-graph-assets",
@@ -217,6 +431,20 @@ def export(arguments) -> Path:
             "graphs": records,
             "artifacts": {str(path.relative_to(package)): science.sha256(path)
                           for path in sorted(package.rglob("*")) if path.is_file()}})
+        if getattr(arguments, "deployment", False):
+            provenance_path = package / "provenance.json"
+            provenance = json.loads(provenance_path.read_text())
+            provenance["deployment_descriptor"] = "deployment.conf"
+            provenance["deployment_entrypoint"] = (
+                "hil/calibration_owner.jl" if (package / "hil/calibration_owner.jl").is_file()
+                else "missing: hil/calibration_owner.jl")
+            provenance["artifact_scope"] = "initial-calibration-graphs-and-deployment-descriptor"
+            provenance["calibration_command"] = calibration_command
+            provenance["rtc_runner"] = rtc_runner
+            science.write_json(provenance_path, provenance)
+            session = calibration_session(records, profile, engine, session["rate"])
+            deployment_descriptor(package, base, specification, records, profile,
+                                   engine, session, arguments.pipewire_prefix)
         package.rename(output)
     return output / "provenance.json"
 
@@ -226,6 +454,12 @@ def arguments(argv=None):
     parser.add_argument("--base-package", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--pipewire-prefix", type=Path, required=True)
+    parser.add_argument("--deployment", action="store_true",
+                        help="also export an initial calibration session and deployment descriptor")
+    parser.add_argument("--calibration-binary", type=Path,
+                        help="compiled rtc-calibrate executable required with --deployment")
+    parser.add_argument("--rtc-binary", type=Path,
+                        help="compiled pipewireao-rtc executable required with --deployment")
     return parser.parse_args(argv)
 
 
