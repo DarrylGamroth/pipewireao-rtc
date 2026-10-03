@@ -1414,10 +1414,13 @@ fn validate_port_declarations(field: &str, ports: &[PortSpec]) -> Result<(), Sci
                 "port name must be non-empty and unique on its node",
             ));
         }
-        if port.element_type != "F32_LE" && port.element_type != "U16_LE" {
+        if !matches!(port.element_type.as_str(), "F32_LE" | "U16_LE" | "BOOL8") {
             return Err(ScientificDiagnostic::new(
                 format!("{port_field}.element-type"),
-                format!("expected F32_LE or U16_LE, got {:?}", port.element_type),
+                format!(
+                    "expected F32_LE, U16_LE or BOOL8, got {:?}",
+                    port.element_type
+                ),
             ));
         }
         if port.parameter && port.element_type != "F32_LE" {

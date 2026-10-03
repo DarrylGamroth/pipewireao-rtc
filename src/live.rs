@@ -3226,6 +3226,7 @@ fn validate_ndarray_port(
     let expected_element_type = match port.element_type.as_str() {
         "F32_LE" => ElementType::F32Le,
         "U16_LE" => ElementType::U16Le,
+        "BOOL8" => ElementType::Bool8,
         _ => unreachable!("port element type was validated before realization"),
     };
     if observed.element_type() != expected_element_type {

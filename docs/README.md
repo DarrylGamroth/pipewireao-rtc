@@ -39,6 +39,11 @@ the [evidence summary](HEART_HIL_EVIDENCE.json) preserves measured artifact iden
 completion-event acquisition core, independent findings and remaining endpoint
 integration gates. It does not establish operational calibration support.
 
+[Calibration endpoint evidence](CALIBRATION_ENDPOINT_EVIDENCE.json) records
+the initial graph preparation, held-probe transport checks, independently
+reviewed native buffer-return fix, exact source identities and remaining
+operational calibration gates.
+
 ## Inactive design archive
 
 The [archived full-RTC design](archive/full-rtc/README.md) preserves prior work

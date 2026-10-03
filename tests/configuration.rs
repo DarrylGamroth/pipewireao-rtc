@@ -15,6 +15,33 @@ const COPPER_JULIA: &str = include_str!("../fixtures/revolt-copper-julia-develop
 const LATEST_HOLD_LIVE: &str = include_str!("../fixtures/latest-hold-live.conf");
 const LATEST_HOLD_JULIA_LIVE: &str = include_str!("../fixtures/latest-hold-julia-live.conf");
 
+#[test]
+fn scientific_validity_ports_retain_bool8_transport_type() {
+    let document = EXTERNAL_GRAPH.replace(
+        "element-type = F32_LE shape = [ 2 ] schema = org.calculon.ao.controller-command/1",
+        "element-type = BOOL8 shape = [ 2 ] schema = org.calculon.ao.shack-hartmann-validity/1",
+    );
+    let config = DevelopmentConfig::parse(&document).unwrap();
+    assert_eq!(config.graphs[0].ports[1].element_type, "BOOL8");
+    assert_eq!(config.sinks[0].ports[0].element_type, "BOOL8");
+    let mismatch = document.replace(
+        "name = in direction = input element-type = BOOL8",
+        "name = in direction = input element-type = U16_LE",
+    );
+    assert!(DevelopmentConfig::parse(&mismatch)
+        .unwrap_err()
+        .field()
+        .ends_with("element-type"));
+    let parameter = document.replace(
+        "name = output direction = output element-type = BOOL8",
+        "name = output direction = output parameter = true element-type = BOOL8",
+    );
+    assert!(DevelopmentConfig::parse(&parameter)
+        .unwrap_err()
+        .message()
+        .contains("parameters require F32_LE"));
+}
+
 const LATEST_HOLD: &str = r#"
 {
     profile = development execution = complete-frame authority = none

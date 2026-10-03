@@ -1,0 +1,494 @@
+{
+  "date": "2026-10-02",
+  "requirement": "RTC-DEV-029",
+  "implementation_state": "partial",
+  "scope": "Initial-calibration endpoint foundations and software transport; no deployed calibration server or scientific matrix qualification",
+  "rtc": {
+    "baseline": "6482fdd1a8a5d5f54f7858810233c57603ee6e1a",
+    "branch": "work/operational-calibration-20261002",
+    "worktree": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-operational-calibration",
+    "preexisting_changes": false,
+    "source_sha256": {
+      "deployment/export_calibration.py": "c104773d3f132a0169c5f2bc362819a9b186d1c08916355b17e959941f89778d",
+      "deployment/test_export_calibration.py": "3b7b604c13d3084ade9025af6bf6633bc18f1542b822a64547add92e61d1a54e",
+      "src/calibration_socket.rs": "8957dcaa1d89897a29e2a615e11be63bb60913e47aea0c6daf9bb16aff12d9bc",
+      "tests/calibration_socket.rs": "c40de58e19297ede8e67ea311182a5e2d37f20c3bce2bccb72c7e3eb377c6f3b",
+      "src/config.rs": "5bdfe1fa28e7f72e03aa377f71460bacb3bf79ab8d278dde77bf57046bab7d83",
+      "src/live.rs": "b04f5fe6a6c527cb66d4953137c249e7fd49cca998f315ff18140220c944b15a",
+      "src/lib.rs": "0eca42429e3169b64ce596b9afb0563def78eb9679a4c0f824e1bb6eae4317b7",
+      "tests/configuration.rs": "4302cd60af01b0c994d36f268b93ce8958785969e87fdd1e04adedefe0e48820"
+    }
+  },
+  "transport_routes": {
+    "heart": "AOS ndarray frame \u2192 SPA stdWfs sink \u2192 UDP \u2192 unchanged HEART; HEART stdDM UDP \u2192 SPA stdDM source \u2192 AOS command",
+    "fgn_jfg": "AOS native PipeWire ndarray detector and demanded-command ports; RTC owns session and lifecycle outside pixel processing",
+    "compatibility": "Earlier matched replay comparisons also used stdWfs receive for FGN/JFG; it is not required for native AOS/HIL"
+  },
+  "checks": [
+    {
+      "command": "cargo test --workspace --locked",
+      "passed": 88,
+      "failed": 0
+    },
+    {
+      "command": "cargo test --workspace --features live --locked",
+      "passed": 124,
+      "failed": 0,
+      "ignored": 3,
+      "qualification": "software; environment-dependent live tests ignored"
+    },
+    {
+      "command": "cargo clippy --workspace --all-targets --features live --locked -- -D warnings",
+      "exit_code": 0
+    },
+    {
+      "command": "cargo fmt --all -- --check",
+      "exit_code": 0
+    },
+    {
+      "command": "python3 -m unittest discover -s deployment",
+      "run": 124,
+      "passed": 122,
+      "skipped": 2,
+      "skip_reason": "normal exporter generator matrix and installed calibration matrix prerequisites not selected"
+    },
+    {
+      "command": "python3 -m unittest discover -s deployment; installed calibration matrix environment enabled",
+      "run": 124,
+      "passed": 123,
+      "skipped": 1,
+      "skip_reason": "unselected normal exporter generator matrix"
+    },
+    {
+      "command": "OPENBLAS_NUM_THREADS=1 JULIA_NUM_THREADS=1 julia --project=/home/dgamroth/.cache/rtc-event-calibration-20261002/aos-boundary test/runtests.jl algorithm-graphs",
+      "passed": 596,
+      "failed": 0,
+      "qualification": "CPU AOS algorithm graphs including both boundary APIs"
+    },
+    {
+      "command": "focused HIL adapter software tests",
+      "passed": 364,
+      "failed": 0
+    },
+    {
+      "command": "HIL adapter Aqua",
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "command": "taskset -c 6,14 env JULIA_NUM_THREADS=2 OPENBLAS_NUM_THREADS=1 PIPEWIREAO_HIL_TEST_PREFIX=/opt/pipewireao PIPEWIREAO_HIL_TEST_LOG=/home/dgamroth/.cache/rtc-event-calibration-20261002/adapter-calibration-private-core-pass-after.log julia --project=/home/dgamroth/.cache/rtc-event-calibration-20261002/adapter /home/dgamroth/.cache/rtc-event-calibration-20261002/adapter-live.jl",
+      "passed": 545,
+      "failed": 0,
+      "private_core_assertions": 278,
+      "qualification": "isolated private-core adapter software transport with a two-element copy plant; no deployed WFS/AOC, matrix, physical hardware, or end-to-end calibration qualification"
+    }
+  ],
+  "helper_sources": {
+    "aos_commit": "8b6364cd064ca707006613bab9e14a13b7c1033a",
+    "aos_branch": "work/calibration-boundary-20261002",
+    "aos_changed_sources": {
+      "docs/glossary.md": "96f04eae992fe9128398b0f98c309a3a356ad0780047f8867a51b0b0da34d1cf",
+      "docs/runtime-dataflow.md": "09a4fc5bf639386c84105cba1742478bc0fc01d4bb1a83706a52308ce2986e4c",
+      "src/algorithm_graphs/algorithm_graphs.jl": "7eedf953fe628793f99d0352e674d94c7e0fc3dd1315ed7a7dd83123c90b9571",
+      "src/algorithm_graphs/api.jl": "4a6a6a5b4f32472519ef833b878e89cb9a21b894c50503235fdf3a86c994adcc",
+      "src/algorithm_graphs/hil_boundary.jl": "41080f6a1e51e39e2c746ab798514e76dedf381a683eaf036e0c54ac7adb9b2f",
+      "test/testsets/algorithm_graphs.jl": "5f899631f9b864c13f858a01c9ec26839aef9c573485ca2d07dd7ec0ba6aca3f",
+      "src/algorithm_graphs/calibration_boundary.jl": "48f7a7e39ab59b1d6f018777ec241dde9c0762054e815e9c63d14bb867766bef"
+    },
+    "adapter_commit": "273122745a4ea55a5b1d3d115b681544dfbc601e",
+    "adapter_branch": "work/held-probe-calibration-20261002",
+    "adapter_changed_sources": {
+      "Project.toml": "7a09b7b7d3a9670aa98f3752e49f675024b8eab980947fb45c5337054fec9334",
+      "README.md": "c33da52faf53e84b18a17951ca62270694ba7d53b8adb7a59c4dd72f7e274533",
+      "src/AdaptiveOpticsSimPipeWireHIL.jl": "454cc323469fa793fd66e972fdc420e2d66722114fa6fdc0561590d63ce9d403",
+      "test/runtests.jl": "18a0506702c990358a022d6ca564b3b2ae572c6350d49cd1b5b48d407bc40bb5",
+      "src/calibration.jl": "f756fddde07bace9880f15f936e830cc85d0e6dd19e0370c379352a56aafe206",
+      "src/completion.jl": "9707b1b5271f53d7cd74420f16ffb121cda8f02dc68eed4640652bc127e39519",
+      "test/calibration.jl": "2608600b38d1e7a9d56266bafb55af0c960e5cbab042fbc693bd0803335affb3",
+      "test/completion.jl": "81e6705fd02e4d7fe9bb78ca717ef30e2a8cca9562d6c09813c317290097f4e8",
+      "test/live_calibration_private_core.jl": "fd0f0066f7a7d33145b7ff973dc65a9f365347eaa477fa872ed44db60e74e9c3"
+    },
+    "original_dirty_aos_checkout": "Preserved unchanged; work performed in isolated worktree",
+    "adapter_remote": "No remote configured; local commit only"
+  },
+  "native_fix": {
+    "baseline": "7e17c0fa2690b06884e456ef34a221cb813d30e5",
+    "branch": "fix/stream-buffer-return-20261002",
+    "worktree": "/home/dgamroth/workspaces/codex/pipewire/pipewire-stream-buffer-return",
+    "cpu_mask": [
+      6,
+      14
+    ],
+    "review": {
+      "reviewer": "Astra",
+      "result": "no remaining native correctness blocker; source transitions and regression matrix reviewed"
+    },
+    "findings": [
+      {
+        "id": "CAP-R1",
+        "evidence": "Original output return leaves DEQUEUED; exact default regression aborts at flag assertion",
+        "fail_before_exit": -6,
+        "pass_after_exit": 0
+      },
+      {
+        "id": "CAP-R2",
+        "evidence": "Original input return decrements Busy delivery ownership; exact input regression aborts at Busy assertion",
+        "fail_before_exit": -6,
+        "pass_after_exit": 0
+      }
+    ],
+    "matrix": {
+      "directions": [
+        "input",
+        "output"
+      ],
+      "busy_metadata": [
+        true,
+        false
+      ],
+      "return_cycles_per_case": 128,
+      "duplicate_return_rejected": true,
+      "return_after_queue_rejected": true,
+      "failed_front_insert_preserves_loan": true
+    },
+    "existing_regression_tests_passed": 9,
+    "existing_regression_tests_failed": 0,
+    "deployment": {
+      "old_sha256": "02220ec0d27016c5eed5947eeeafb87b4b9844686a797a2aebefda75a132d1d7",
+      "new_sha256": "083da9b7c347a40e8ce03cc1332c06774cbf766fdd71fe36010233e6d9096387",
+      "exported_symbol_names_and_types_unchanged": true,
+      "installed_path": "/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0",
+      "backup_path": "/home/dgamroth/.cache/rtc-operational-calibration-20261002/native-return/build/installed-library-before.so",
+      "installation_method": "atomic file replacement; existing SONAME symlinks retained"
+    },
+    "source_sha256": {
+      "src/pipewire/stream.c": "600aa9bd5e7624753380bf59cbd83ff8449b9246eba21ba54960028bf56a879c",
+      "src/tests/test-stream-buffer-return.c": "279925f98a55086a5f7fde26d91fb2a00e48789b6d70b5f5781d1abfe42a1b78",
+      "src/tests/meson.build": "7814c8ae15925b92b579cdb6544f466b4b571f911be0431f8e45e855f2e43f39"
+    },
+    "logs_sha256": {
+      "fail-before-input.log": "8d6d29821223e01441450735eaec52d410a461e48c6183e72b36f268ed490ba3",
+      "pass-after-input.log": "e1b49a04e2927e11b29f12fffb1a163893a105ce80d7cbf83df5d38411c95173",
+      "pass-after-default.log": "8d1323954a365628341021d99b96153914cb7cd6667d8ad416a5e9d69b983ef0",
+      "pass-after-build.log": "c7b7f63ed600808cc384489a71a0899ab51f614817b108b5ec6243434639083b",
+      "meson-setup.log": "a120ec6268bdab49fc7994ca8f9b3cb7c724333d6074e75cff2765fa639dcae7",
+      "pass-after-build-selected.log": "516889ff5bcf05c9ff5b96d957ba66fe6dc7882ac9a2496533caa2aec21247fb",
+      "fail-before-build.log": "786c875e2f5b13461777c9fadccc5220ea8a3628117bc1c52c092866d4f5e96a",
+      "pass-after-existing-regressions.log": "b3bec4e232b54e4f029efcce2134a679e934cf990c5bd48244f1ffb4e20feff6",
+      "fail-before-default.log": "795eeb0b876e34618ddc0bc57427fa028e06acd21c95a7be2754c6a50b4f9164",
+      "pass-after-fixture-dependencies-build.log": "c5497c6257d4b413404cf983c8fa280fedaccac9ac94f10aeccb02cbbac0da2f"
+    },
+    "commit": "42fdf86f4",
+    "merged_branch": "master",
+    "canonical_checkout": "/home/dgamroth/workspaces/codex/pipewire/pipewire"
+  },
+  "original_native_failure_output": {
+    "fail-before-default.log": "'!SPA_FLAG_IS_SET(buffer->flags, BUFFER_FLAG_DEQUEUED)' failed at ../src/tests/test-stream-buffer-return.c:42 test_return()\n",
+    "fail-before-input.log": "'!with_busy || busy.count == (direction == SPA_DIRECTION_INPUT ? 1u : 0u)' failed at ../src/tests/test-stream-buffer-return.c:40 test_return()\n"
+  },
+  "graph_preparation": {
+    "status": "passed",
+    "qualification": "native-preparation-only",
+    "frames_submitted": 0,
+    "run_requests_submitted": 0,
+    "normal_user_pipewire_accessed": false,
+    "prepared_graphs": [
+      {
+        "profile": "classic",
+        "role": "wfs",
+        "node_name": "revolt-classic-fgn-initial-calibration-wfs",
+        "graph_sha256": "af95fe4cb959bf149eabb2b423c713b4f8430826129d38d2e6112c38c8d75639",
+        "ports": [
+          {
+            "name": "pixel-calibration:raw",
+            "direction": "input",
+            "element-type": "U16_LE",
+            "shape": [
+              352,
+              352
+            ],
+            "schema": "org.calculon.ao.raw-detector-pixels/1"
+          },
+          {
+            "name": "shack-hartmann:slopes",
+            "direction": "output",
+            "element-type": "F32_LE",
+            "shape": [
+              188,
+              2
+            ],
+            "schema": "org.calculon.ao.shack-hartmann-slopes/1"
+          },
+          {
+            "name": "shack-hartmann:flux",
+            "direction": "output",
+            "element-type": "F32_LE",
+            "shape": [
+              188
+            ],
+            "schema": "org.calculon.ao.shack-hartmann-flux/1"
+          },
+          {
+            "name": "shack-hartmann:validity",
+            "direction": "output",
+            "element-type": "BOOL8",
+            "shape": [
+              188
+            ],
+            "schema": "org.calculon.ao.shack-hartmann-validity/1"
+          }
+        ]
+      },
+      {
+        "profile": "classic",
+        "role": "command",
+        "node_name": "revolt-classic-fgn-initial-calibration-command",
+        "graph_sha256": "e67c6b74220df75243665ffba1d3c05ef255ccb355cad257568c4dd1c3555c9c",
+        "ports": [
+          {
+            "name": "pdm-command:requested",
+            "direction": "input",
+            "element-type": "F32_LE",
+            "shape": [
+              277
+            ],
+            "schema": "org.calculon.ao.requested-pdm-command/1"
+          },
+          {
+            "name": "pdm-command:demanded",
+            "direction": "output",
+            "element-type": "F32_LE",
+            "shape": [
+              277
+            ],
+            "schema": "org.calculon.ao.demanded-pdm-command/1"
+          },
+          {
+            "name": "pdm-command:constraint-feedback",
+            "direction": "output",
+            "element-type": "F32_LE",
+            "shape": [
+              277
+            ],
+            "schema": "org.calculon.ao.pdm-constraint-feedback/1"
+          }
+        ]
+      },
+      {
+        "profile": "copper",
+        "role": "wfs",
+        "node_name": "revolt-copper-fgn-initial-calibration-wfs",
+        "graph_sha256": "b2cad86571cc2116f16e590eb7c8b5ccdd0514b6a452acc8f907751caae05749",
+        "ports": [
+          {
+            "name": "calibrate:raw",
+            "direction": "input",
+            "element-type": "U16_LE",
+            "shape": [
+              64,
+              64
+            ],
+            "schema": "org.calculon.ao.raw-detector-pixels/1"
+          },
+          {
+            "name": "pyramid:reconstruction-pixels",
+            "direction": "output",
+            "element-type": "F32_LE",
+            "shape": [
+              4,
+              900
+            ],
+            "schema": "org.calculon.ao.pyramid-reconstruction-pixels/1"
+          },
+          {
+            "name": "pyramid:mean-pupil-intensity",
+            "direction": "output",
+            "element-type": "F32_LE",
+            "shape": [
+              1
+            ],
+            "schema": "org.calculon.ao.pyramid-mean-pupil-intensity/1"
+          }
+        ]
+      },
+      {
+        "profile": "copper",
+        "role": "command",
+        "node_name": "revolt-copper-fgn-initial-calibration-command",
+        "graph_sha256": "49300c79d5869dde544c60fa80ddb3eb49c16dbe322043185ae862a37b8bee8c",
+        "ports": [
+          {
+            "name": "command:requested",
+            "direction": "input",
+            "element-type": "F32_LE",
+            "shape": [
+              277
+            ],
+            "schema": "org.calculon.ao.requested-pdm-command/1"
+          },
+          {
+            "name": "command:demanded",
+            "direction": "output",
+            "element-type": "F32_LE",
+            "shape": [
+              277
+            ],
+            "schema": "org.calculon.ao.demanded-pdm-command/1"
+          },
+          {
+            "name": "command:constraint-feedback",
+            "direction": "output",
+            "element-type": "F32_LE",
+            "shape": [
+              277
+            ],
+            "schema": "org.calculon.ao.pdm-constraint-feedback/1"
+          }
+        ]
+      }
+    ],
+    "jfg_owner_preparation_checks_passed": 4,
+    "exported_profiles": [
+      "classic-fgn",
+      "classic-jfg",
+      "copper-fgn",
+      "copper-jfg"
+    ],
+    "live_wfs_processing_qualified": false,
+    "native_library_sha256_during_preparation": "02220ec0d27016c5eed5947eeeafb87b4b9844686a797a2aebefda75a132d1d7"
+  },
+  "live_transport_proven_cases": [
+    "asynchronous first probe is published after empty driver cycle",
+    "normal command receipt and complete scaled AOS adoption before first model step",
+    "legitimate public output return then redequeue",
+    "no output buffer first: same prepared exposure publishes after buffers return with no second graph/model step",
+    "16 held exposures before reset; four exposures under new probe after reset",
+    "actual consumer identity/duration/pixels and full identity completion acknowledgment",
+    "pending unit rejects probe/exposure/reset; duplicate, sequence-only, stale-generation acknowledgment reject",
+    "wire probe tokens advance across reset"
+  ],
+  "review": {
+    "reviewer": "Astra",
+    "method": "independent source and fixture/evidence review; reviewer did not run tests",
+    "final_result": "No remaining native or adapter software-transport blocker; no new AOS alias-safety blocker",
+    "findings": [
+      {
+        "id": "CAP-R1",
+        "severity": "high",
+        "confidence": "high",
+        "evidence_class": "observed",
+        "affected_code": "PipeWireAO src/pipewire/stream.c pw_stream_return_buffer",
+        "analysis": "Returned output retains DEQUEUED; later dequeue skips it as a duplicate loan",
+        "validation": "Original native default test aborts; identical test passes after fix; public return/redequeue passes in live fixture",
+        "disposition": "Fixed, independently reviewed, merged to master and installed"
+      },
+      {
+        "id": "CAP-R2",
+        "severity": "high",
+        "confidence": "high",
+        "evidence_class": "observed",
+        "affected_code": "PipeWireAO src/pipewire/stream.c pw_stream_return_buffer",
+        "analysis": "Input Busy ownership is acquired on delivery and must survive return to the same input queue; unconditional decrement releases it early",
+        "validation": "Original input test aborts at Busy count; identical test passes with output-only decrement; both directions with/without metadata and rollback covered",
+        "disposition": "Fixed, independently reviewed, merged to master and installed"
+      },
+      {
+        "id": "CAP-R3",
+        "severity": "medium",
+        "confidence": "high",
+        "evidence_class": "observed",
+        "affected_code": "AOS src/algorithm_graphs/hil_boundary.jl shared preparation",
+        "analysis": "Object identity does not reject different Arrays sharing storage or cross-aliasing command/frame bindings",
+        "validation": "Original guards: 22 assertions pass and 34 fail; Base.mightalias guards: 56/56 pass; full algorithm graph selector 596/596",
+        "disposition": "Fixed and independently reviewed on committed development branch"
+      },
+      {
+        "id": "CAP-R4",
+        "severity": "medium",
+        "confidence": "high",
+        "evidence_class": "observed source behavior",
+        "affected_code": "HIL src/calibration.jl stream readiness callbacks",
+        "analysis": "Native driving state can change through public IO position notification without a stream state event",
+        "validation": "Refresh public IO callback; delayed initial probe fixture passes before first exposure",
+        "disposition": "Fixed and independently reviewed on committed development branch"
+      },
+      {
+        "id": "CAP-R5",
+        "severity": "medium",
+        "confidence": "high",
+        "evidence_class": "observed source and live behavior",
+        "affected_code": "HIL src/calibration.jl owner progress wait",
+        "analysis": "An explicit driver trigger with no available output buffer may require retrigger after return; publication cannot be inferred from the trigger",
+        "validation": "Deadline-bounded owner retries preserve same exposure and original deadline; live loan-exhaustion fixture recovers with graph/model sequence still one",
+        "disposition": "Fixed and independently reviewed on committed development branch"
+      }
+    ],
+    "handoff_verification": "Independent factual review: all 51 checked source/evidence hashes matched; no blocker. Roadmap wording corrected to describe selected design rather than completed acquisition."
+  },
+  "known_warning": "Existing proc-macro-error2 2.0.1 future-incompatibility notice; all requested Clippy checks pass",
+  "remaining": [
+    "Installed operational calibration server/session descriptor and exclusive command topology with restoration/fault fences",
+    "Bounded probe producer plus correlated deployed WFS response collectors, including Classic validity/flux and clipping feedback",
+    "Operational detector dark/reference acquisition through normal noisy detector transport; existing exported offset provenance is not promoted",
+    "AdaptiveOpticsCalibration basis, averaging, interaction/reconstructor artifacts and installed calibration command",
+    "Classic then Copper numerical matrix and correction validation for FGN and JFG",
+    "Unchanged HEART command/WFS averaging interface qualification; CALIB_INTER remains a stub",
+    "Native fix incorporated in a released PipeWireAO_jll artifact before artifact-only calibration acceptance",
+    "CUDA/AMDGPU, attainable pacing, physical command conventions and hardware qualification"
+  ],
+  "evidence_files": {
+    "/home/dgamroth/.cache/rtc-event-calibration-20261002/aos-calibration-boundary-tests.json": "6a76977625c0a9f3fdf1f6349d9ae9813c70c2ae5e1ee1c006cc52eabe5d701a",
+    "/home/dgamroth/.cache/rtc-event-calibration-20261002/adapter-calibration-tests.json": "fc65b6c474f89a44cb9ca38ed4f1b2d9674d81f955914df4946fe9fbabd72e93",
+    "/home/dgamroth/.cache/rtc-event-calibration-20261002/adapter-calibration-live-tests.json": "ed504cf9bbacd59529a906e4acd7c02e1fdf8dfb375ea71f0774b65869d2c637",
+    "/home/dgamroth/.cache/rtc-operational-calibration-20261002/graph-assets-validation.json": "6bd133397976bfe1f6f67ef371b7710be060a4b5645fecd57a7040f16da868d7",
+    "/home/dgamroth/.cache/rtc-operational-calibration-20261002/native-preparation/evidence.json": "6c914b389edc635fdf92f9563b660e190aeeb2457746ff368d6b8c4e3c5f7a99",
+    "/home/dgamroth/.cache/rtc-operational-calibration-20261002/native-return/build/evidence.json": "013b40170706fc3e10e78857e206d769e92e236ebf81b06f22b832e0d6c03146",
+    "/home/dgamroth/.cache/rtc-operational-calibration-20261002/rtc-final-checks/cargo-clippy-workspace-live-all-targets.exitcode": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "/home/dgamroth/.cache/rtc-operational-calibration-20261002/rtc-final-checks/cargo-clippy-workspace-live-all-targets.log": "e8d7158b8f2ee705bdc053fcaa1eb21769a818332d6dde9d3203ebbb8a72b1e2",
+    "/home/dgamroth/.cache/rtc-operational-calibration-20261002/rtc-final-checks/cargo-fmt-check.exitcode": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "/home/dgamroth/.cache/rtc-operational-calibration-20261002/rtc-final-checks/cargo-fmt-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "/home/dgamroth/.cache/rtc-operational-calibration-20261002/rtc-final-checks/cargo-test-workspace-default.exitcode": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "/home/dgamroth/.cache/rtc-operational-calibration-20261002/rtc-final-checks/cargo-test-workspace-default.log": "7ace9612644650af3eb2c1bfe56a66197a6b23b156ce41e2d204c522cf4812b6",
+    "/home/dgamroth/.cache/rtc-operational-calibration-20261002/rtc-final-checks/cargo-test-workspace-live.exitcode": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "/home/dgamroth/.cache/rtc-operational-calibration-20261002/rtc-final-checks/cargo-test-workspace-live.log": "b67558e9e14367ddad477cc7366cbd49edc13900210efb8536fbb2b0fdea0da7",
+    "/home/dgamroth/.cache/rtc-operational-calibration-20261002/rtc-final-checks/commands.json": "4b2e032305bb90d4bb13a5ab7b74e95c3b1178e61a329c208f3fcaafcdef3eb3",
+    "/home/dgamroth/.cache/rtc-operational-calibration-20261002/rtc-final-checks/python-deployment-unittest-calibration-matrix.command.json": "d1382b4ee2523ae9f70dfa9c17abf4d7d89d22a2929c4b6ba8e06b88144518a9",
+    "/home/dgamroth/.cache/rtc-operational-calibration-20261002/rtc-final-checks/python-deployment-unittest-calibration-matrix.exitcode": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "/home/dgamroth/.cache/rtc-operational-calibration-20261002/rtc-final-checks/python-deployment-unittest-calibration-matrix.log": "e7fa32c7834524eaa57203a614e6135b6b31dfaa0311a03497d195eaea8bdc8c",
+    "/home/dgamroth/.cache/rtc-operational-calibration-20261002/rtc-final-checks/python-deployment-unittest.exitcode": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "/home/dgamroth/.cache/rtc-operational-calibration-20261002/rtc-final-checks/python-deployment-unittest.log": "909f814a410721816d044c4c74f586a0a025b7e7c9b4ecd87dbfc736bad3c661",
+    "/home/dgamroth/.cache/rtc-event-calibration-20261002/adapter-calibration-live-pass-after.log": "dbd49a56189c8df46cff8783f98deec721c772a51bf2ab397a82231b68a5b1cc",
+    "/home/dgamroth/.cache/rtc-event-calibration-20261002/adapter-calibration-private-core-pass-after.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "/home/dgamroth/.cache/rtc-event-calibration-20261002/adapter-calibration-live-native-return-fail-before.log": "143635dfaea52de1e94184a3dc174f553144686474e046cbc0a7d631679ee392",
+    "/home/dgamroth/.cache/rtc-event-calibration-20261002/adapter-calibration-private-core-native-return-fail-before.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "/home/dgamroth/.cache/rtc-operational-calibration-20261002/metadata-routes.json": "38258839de8c67838f3e6fcaabc56f749e86448f48ec196c96bb08ee467b84d4"
+  },
+  "next_gate_source_inspection": {
+    "method": "read-only source inspection; no multi-output live processing test run",
+    "revisions": {
+      "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper": "518a57897004deb70000f2e71c3fe240911f4937",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewire": "42fdf86f4e66b15e7cc1d22404294f2234dfcb85"
+    },
+    "observed": [
+      "FGN dispatch resolves each output metadata_from input and copies matching native metadata records before optional Header projection",
+      "Classic slopes, flux, BOOL8 validity each declare image as metadata source",
+      "Copper reconstruction-pixels and mean-pupil-intensity each declare image as metadata source",
+      "PDM demanded and constraint-feedback each declare requested as metadata source",
+      "Native graph host requests Header and Acquisition metadata on all ports"
+    ],
+    "limits": [
+      "Matching-record copy uses min(source_size,output_size); full record propagation requires negotiated complete matching metadata",
+      "JFG generic adapter propagates per declared output source and has generic source-selection tests; exact deployed WFS multi-output acquisition association still needs live test",
+      "Output publication does not imply collector receipt or completed response association"
+    ],
+    "next_validation": "Submit real detector frames to each existing deployed WFS graph and check all named response outputs carry exact complete acquisition identity, before acknowledging the source exposure",
+    "source_sha256": {
+      "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/crates/calculon-fgn/src/algorithm.rs": "acadfb1b448bcd08fb7b493597008d5040f82d2223916b4787bbcc2facf736b7",
+      "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/crates/calculon-fgn/src/lib.rs": "29b457aea2fa5c5e9962d48e3f2f9e6f1d905ed2c1be15291c35b9c0ad91ad51",
+      "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/crates/calculon-algorithms/src/composites/shack_hartmann_image.rs": "27486d1711f403ebcd8241ad1ebcc1d1cdfdcd667c45a292f9c2cdef5152d1fa",
+      "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/crates/calculon-algorithms/src/composites/pyramid_pixel_image.rs": "1ce76786bf45cf6bc09824e3f303cf99174fec1af10b433fb46869685018fc7c",
+      "/home/dgamroth/workspaces/codex/pipewire/calculon-algorithms-main-copper/crates/calculon-algorithms/src/algorithms/deformable_mirror/pdm_command.rs": "c3b1930ac17c2b11b71822383aaed1ce96a579e8ac261d785573cf46ab335906",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-ndarray-filter-chain.c": "04da409593e3f295f1debaeac7ae252e26271368c46def81d71584a49f3a8aac"
+    }
+  }
+}

@@ -915,3 +915,42 @@ closed-loop correction with simulation-derived artifacts. Exercise rejected
 probe/frame association and interrupted calibration without replacing active
 artifacts. Backend/rate checks remain distinct from calibration correctness;
 HEART interfaces require observed support without source modifications.
+
+### Calibration completion channel
+
+The prototype `CalibrationSocketEndpoint` uses a preconnected local Unix stream
+with one bounded pending request, outside processing callbacks. It does not
+establish command ownership itself. The endpoint server MUST serialize effects,
+fence prior work before restoration, and retain the hold or fault the deployment
+on an unknown outcome or disconnect. The installed deployment launcher does not
+select a calibration server yet.
+
+Records are newline-terminated JSON: requests are at most 16 KiB, replies at most
+64 KiB, including the delimiter. Requests carry `version = 1`, positive integer
+`run` and `serial`, positive relative `timeout_ns`, and an `action` object. Host
+monotonic `Instant` deadlines remain authoritative at the coordinator; the
+relative budget does not synchronize process clocks or extend that deadline.
+Submission enqueues one request without socket I/O or waiting for queue space;
+the receiving caller drives nonblocking I/O and waits for readiness with the
+same deadline. There is no reconnect or operation retry after an unknown outcome.
+
+| Action kind | Additional fields | Completion result kind / fields |
+| --- | --- | --- |
+| `hold` | none | `held`: `cursor` |
+| `adopt` | `probe`, absolute `figure` | `adopted`: `cursor`, actual `figure`, `clipped` |
+| `settle` | `probe`, `after`, `rule` | `settled`: `cursor` |
+| `collect` | `probe`, `after`, `measurements`, `frames` | `responses`: averaged `values`, contributing `exposures`, `valid` |
+| `restore` | absolute `figure`, `rule` | `restored`: actual `figure`, `clipped` |
+| `release` | none | `released`: no additional fields |
+
+Replies carry `version`, `run`, `serial`, and `result`. Failure results have
+`kind = failed` and `reason` equal to `cancelled`, `endpoint`, `invalid_evidence`,
+or `probe_clipped`. Unknown fields/kinds and malformed records fail validation.
+Settling rules have kind `immediate`, `discard_exposures` with `frames`, or
+`model_time` with `duration_ns`. Cursors carry `domain`, `generation`, `sequence`
+and `model_ns`; exposure records replace `model_ns` with `start_model_ns` and
+`duration_ns`. These are integer model-time/identity fields, not Header PTS or
+host receipt timestamps. The server must record an explicit mapping from its
+full acquisition domain to the coordinator's domain ID. Transport limits are
+additional to the coordinator's retained-data budget; oversized records reject
+without unbounded allocation or silent truncation.

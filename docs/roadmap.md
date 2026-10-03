@@ -1004,6 +1004,63 @@ limitations and remaining gates are recorded in the
 [evidence summary](CALIBRATION_COORDINATOR_EVIDENCE.json). No runtime or test
 change was made to HEART, FGN, JFG or the AOS adapter in this slice.
 
+### Initial calibration endpoint increment (in progress)
+
+Baseline `6482fdd`; isolated RTC branch `work/operational-calibration-20261002`.
+The selected design uses independent ordinary WFS
+and PDM constraint graphs. The normal correction graph is unstarted and absent
+from the command topology. No new scientific algorithm or controller-coefficient
+change is needed; preservation of a running integrator remains a later gate.
+
+| Component | Observed evidence | Remaining gate |
+| --- | --- | --- |
+| Graph asset export | [Exporter](../deployment/export_calibration.py) preserves selected full-frame Classic/Copper FGN/JFG WFS and command node declarations, startup arrays and source provenance; all four exports checked. Four native graphs prepared against a private installed core with exact ports, including Classic validity; no frames or run requests | Assets have no runnable deployment descriptor; native live processing and actual WFS acquisition remain unqualified |
+| Julia graph preparation | Both WFS and command graphs prepared with the real owner for Classic and Copper; no connection was made | Live response acquisition and numerical agreement |
+| Validity transport | RTC configuration and live format validation admit `BOOL8` alongside F32/U16 data; mismatched links and non-F32 runtime parameters still reject | Actual linked Classic validity delivery |
+| Completion IPC | [Unix stream endpoint](../src/calibration_socket.rs) queues bounded requests without I/O in submit; eight focused socket tests include kernel queue saturation and late adoption during restoration | Serialized operational server, restoration fences and deployment fault integration |
+| AOS held-probe boundary | Separate boundary advances probe and exposure identities independently; CPU algorithm-graph selector passes 596 assertions, including inference, zero warmed allocations and alias rejection | GPU qualification and deployed scientific acquisition |
+| Held-probe transport | Private-core fixture passes 278 assertions: delayed first probe, returned-buffer reuse, exhaustion recovery without another model step, 16 exposures plus reset and four further exposures, full-identity completion fences | Actual deployed WFS collection and command/clipping feedback; operational session and estimator |
+| Calibration session and estimator | Existing WFS/constraint algorithms and AdaptiveOpticsCalibration retain their ownership | Operational backgrounds/references, associated responses, AOC matrices, installation and correction checks; unchanged HEART interface qualification |
+
+The graph exporter retains historical offset claims without promoting them to
+operational acquisition. It excludes the additional system-flat stage because
+prepared absolute probes contain the reference already. Source publications do
+not acknowledge WFS completion. The new adapter must fence the complete identity
+before another exposure and must retain probe wire tokens across reset.
+
+RTC checks in this increment: 88 default workspace tests and 124 live-feature
+tests passed, with three environment-dependent live tests ignored. Deployment
+Python checks: 124 discovered, 123 passed and one unconfigured existing generator
+matrix skipped. Live-feature all-target Clippy and formatting passed. These are
+software checks, not operational calibration or cadence qualification.
+
+The return/redequeue fixture reproduced two native stream ownership defects.
+PipeWireAO `42fdf86f4` clears the returned loan flag, releases Busy ownership only
+for output and preserves the loan if insertion fails. Identical output/input
+regressions fail before and pass after; nine existing stream/ndarray regressions
+also pass. The independently reviewed fix is merged and pushed to owned master
+and installed in `/opt/pipewireao`, with unchanged exported symbol names/types.
+A released JLL artifact must include it before artifact-only calibration is
+accepted. The AOS boundary (`8b6364c`) and HIL adapter (`2731227`) are committed
+on development branches; the original dirty AOS checkout remains untouched.
+
+The adapter's offline checks pass 364 assertions and Aqua passes 11. Independent
+review closes readiness-refresh and no-buffer retry findings at the software
+transport level. The installed-matrix Python rerun passes 123 tests and skips
+one unselected normal exporter generator matrix; the unconfigured discovery run
+passes 122 and skips both matrices. Exact hashes, original failures, review
+dispositions and remaining gates are recorded in the
+[endpoint evidence](CALIBRATION_ENDPOINT_EVIDENCE.json). No operational
+calibration server, interaction matrix or correction qualification is claimed.
+
+The next gate is actual multi-output WFS response acquisition. Source inspection
+confirms that the native FGN Classic and Copper frontends declare the detector
+image as metadata source for every response output, and PDM constraints declare
+the requested figure as source for both demanded and feedback outputs. The
+shared FGN metadata copy requires complete matching negotiated records. JFG's
+generic adapter has per-output propagation; deployed WFS association must still
+be checked independently for each engine before acknowledging an exposure.
+
 ## Deferred capabilities
 
 The following topics are not active work. Their previous proposals are

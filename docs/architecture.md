@@ -526,6 +526,25 @@ calibration support. RTC-DEV-029 selects this calibration-specific acquisition
 contract; ordinary lockstep sessions and the RTC-DEV-027 offset fixture remain
 unchanged.
 
+The first selected operational session performs initial calibration before the
+ordinary correction graph starts. It contains two ordinary graphs: the exact
+deployed pixel/WFS frontend, and the deployed PDM constraint chain accepting
+prepared absolute probe figures. The correction graph and its command producer
+are excluded from this session. This establishes integration hold by topology
+without changing controller coefficients or adding a scientific algorithm.
+Absolute figures already include the reference; no additional system-flat stage
+is applied. Preserving a running controller's state during calibration remains
+a separate gate.
+
+The owner observes both the actual demanded figure with constraint feedback and
+the simulator's correlated adoption before generating exposures. Probe tokens
+advance independently of exposure identities. Publication of a detector buffer
+does not establish WFS completion: the owner must consume all required WFS
+outputs, including validity where provided, before acknowledging that exposure
+and admitting another. HEART uses the SPA stdWfs/stdDM UDP bridge; FGN/JFG use
+native PipeWire ndarray ports. The RTC lifecycle owner executes neither WFS
+processing nor detector simulation.
+
 ## Authoritative lower contracts
 
 This repository does not duplicate the data-plane contracts:

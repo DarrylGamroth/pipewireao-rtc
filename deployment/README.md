@@ -8,6 +8,31 @@ recorded profiles use a non-actuating command discard sink. The optional
 simulated detector and command sink, using CPU, CUDA or AMDGPU independently of
 the science owner. Physical device authority remains deferred.
 
+## Initial calibration graph assets
+
+The experimental exporter selects the exact frontend and PDM constraint
+declarations from an existing complete-frame Classic/Copper FGN/JFG package:
+
+```sh
+python3 deployment/export_calibration.py \
+  --base-package /absolute/installed-hil-package \
+  --output /absolute/new-calibration-assets \
+  --pipewire-prefix /opt/pipewireao
+```
+
+It emits `graphs/wfs.conf.in`, `graphs/command.conf.in`, their selected startup
+arrays and scientific owner dependencies, and provenance. Classic exposes
+slopes, flux and `BOOL8` validity; Copper exposes four pupil arrays and mean
+intensity. Prepared absolute commands pass through the existing constraints,
+with demanded figures and constraint feedback observable. No controller,
+reconstructor, projection or additional system-flat stage executes.
+
+These assets have no `deployment.conf` and are not installed as runnable RTC
+profiles. Existing offset provenance keeps its original claim; exporting assets
+does not establish operational background/reference or interaction calibration.
+The session owner, response acquisition and matrix client remain integration
+gates under RTC-DEV-029.
+
 ## Build and export
 
 Use an installed PipeWireAO prefix with compatible FITS, ndarray and discard

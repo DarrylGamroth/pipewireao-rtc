@@ -1,6 +1,8 @@
 //! Non-actuating `PipeWireAO` development runner.
 
 pub mod calibration;
+#[cfg(unix)]
+pub mod calibration_socket;
 mod config;
 mod ffi;
 mod lifecycle;
