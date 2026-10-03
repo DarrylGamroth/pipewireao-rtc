@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import shutil
 import socket
 import tempfile
 import threading
@@ -134,5 +135,90 @@ class CampaignTests(unittest.TestCase):
             process=SimpleNamespace(pid=10,poll=lambda:None)
             with self.assertRaisesRegex(RuntimeError,'different launcher'):
                 c.wait_state(root,process,1,lambda state:True)
+
+    def test_stage_timing_boundaries_and_units(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);package=root/'package';package.mkdir()
+            output=root/'evidence';runtime=root/'runtime';instance=runtime/'owner'
+            ready=dict(socket=str(instance/'calibration.sock'))
+            def ready_state(*args,**kwargs):
+                instance.mkdir(parents=True);(instance/'captured').mkdir()
+                (instance/'simulator-result.json').write_text(json.dumps(dict(illumination='dark')))
+                return ready
+            class Process:
+                pid=123
+                returncode=None
+                def poll(self):return self.returncode
+                def wait(self,timeout=None):
+                    shutil.rmtree(instance)
+                    (runtime/'state.json').write_text(json.dumps(dict(phase='stopped')))
+                    self.returncode=0
+                def terminate(self):self.returncode=-15
+                def kill(self):self.returncode=-9
+            class Client:
+                def __init__(self,*args):self.records=[];self.can_restore=False
+                def request(self,action,expected):
+                    kind=action['kind'];cursor=dict(domain=1,generation=1,sequence=1,model_ns=1)
+                    if kind=='hold':return dict(cursor=cursor)
+                    if kind=='adopt':return dict(figure=action['figure'],clipped=False,cursor=cursor)
+                    if kind=='restore':return dict(figure=action['figure'],clipped=False)
+                    if kind=='settle':return dict(cursor=cursor)
+                    if kind=='capture':return dict(frames=1)
+                    if kind=='release':return dict(kind='released')
+                    raise AssertionError(kind)
+                def close(self):pass
+            class Response:
+                returncode=0;stderr=''
+                def check_returncode(self):pass
+            def control(argv,**kwargs):
+                response=Response()
+                response.stdout=json.dumps(dict(ok=True,state='Ready' if argv[-1]=='session-stop' else 'Stopped'))
+                return response
+            recipe_value=recipe()
+            with patch.object(c.subprocess,'Popen',return_value=Process()), \
+                 patch.object(c.subprocess,'run',side_effect=control), \
+                 patch.object(c,'Endpoint',Client), \
+                 patch.object(c,'wait_state',side_effect=ready_state), \
+                 patch.object(c,'verify_capture'), \
+                 patch.object(c.time,'perf_counter_ns',side_effect=[0,10,20,30,40,50,60]):
+                result=c.run_stage(package,output,runtime,recipe_value,'dark',frames=1)
+            self.assertEqual(result['timing_ns'],dict(startup_readiness=10,acquisition=10,
+                public_shutdown=10,total_stage=60))
+            self.assertEqual(result['timing_confirmed'],dict(startup_readiness=True,
+                acquisition=True,public_shutdown=True))
+            stored=json.loads((output/'stage-result.json').read_text())
+            self.assertEqual(stored['timing_ns'],result['timing_ns'])
+
+    def test_campaign_total_timing_is_persisted(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);aoc=root/'aoc';(aoc/'src/reference_frames').mkdir(parents=True)
+            (aoc/'src/reference_frames/reference_frames.jl').write_text('')
+            recipe_path=root/'recipe.json';recipe_path.write_text(json.dumps(recipe()))
+            output=root/'campaign';base=root/'base';base.mkdir()
+            args=SimpleNamespace(recipe=recipe_path,output=output,aoc_source=aoc,
+                base_package=base,pipewire_prefix=root/'prefix',rtc_binary='rtc',
+                calibration_binary='cal',runtime=root/'runtime',julia='julia')
+            def fake_stage_base(base_path,target,*args,**kwargs):
+                target.mkdir(parents=True);return target
+            def fake_run_stage(package,evidence,runtime,recipe_value,stage,*,frames=None):
+                evidence.mkdir(parents=True);return {}
+            class Response:
+                returncode=0;stdout='';stderr=''
+                def check_returncode(self):pass
+            def analysis(argv,**kwargs):
+                mode=argv[-3]
+                if mode=='dark':(output/'measured-background.f32le').write_bytes(bytes(495616))
+                if mode=='training':
+                    (output/'measured-reference-slopes.f32le').write_bytes(bytes(1504))
+                    (output/'measured-active.u8').write_bytes(bytes(188))
+                return Response()
+            with patch.object(c,'stage_base',side_effect=fake_stage_base), \
+                 patch.object(c.export_calibration,'export'), \
+                 patch.object(c,'run_stage',side_effect=fake_run_stage), \
+                 patch.object(c.subprocess,'run',side_effect=analysis), \
+                 patch.object(c.time,'perf_counter_ns',side_effect=[100,450]):
+                result_path=c.campaign(args)
+            stored=json.loads(result_path.read_text())
+            self.assertEqual(stored['timing_ns'],dict(total_campaign=350))
 
 if __name__=='__main__':unittest.main()

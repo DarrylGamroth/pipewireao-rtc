@@ -105,6 +105,12 @@ def validate_recipe(recipe):
     return recipe
 
 
+def validate_detector_rail(detector, recipe):
+    """Require the declared calibration rail to match the deployed ADC."""
+    if 2 ** detector["bits"] - 1 != recipe["adc_upper_rail"]:
+        raise ValueError("declared ADC rail differs from deployed detector")
+
+
 class Endpoint:
     """One pending request, one connection, finite I/O; never retry unknown effects."""
     def __init__(self, path, run, timeout_ns):
@@ -290,8 +296,7 @@ def stage_base(base, output, recipe, stage, background, references, active, aoc_
     model = set_model_setting(model_path.read_text(), "shwfs", "source_magnitude", recipe["lamp_magnitude"])
     model = set_model_setting(model, "detector", "rng_seed", recipe["seeds"][stage])
     detector = next(item for item in tomllib.loads(model)["nodes"] if item["name"] == "detector")["config"]
-    if 2 ** detector["bits"] - 1 != recipe["adc_upper_rail"]:
-        raise ValueError("declared ADC rail differs from deployed detector")
+    validate_detector_rail(detector, recipe)
     model_path.write_text(model)
     target = output / "hil/packages/AdaptiveOpticsCalibration"
     shutil.rmtree(target)
@@ -331,6 +336,7 @@ def wait_state(runtime, process, timeout, predicate):
 
 def run_stage(package, output, runtime, recipe, stage, *, frames=None):
     """Finish restore/release/public shutdown before returning immutable evidence."""
+    stage_started_ns = time.perf_counter_ns()
     launcher = Path(deploy.__file__).resolve()
     common = [sys.executable, str(launcher), "control", "--runtime", str(runtime), "--"]
     env = {**os.environ, "OPENBLAS_NUM_THREADS": "1"}
@@ -343,11 +349,22 @@ def run_stage(package, output, runtime, recipe, stage, *, frames=None):
         raise ValueError("each campaign stage requires a fresh runtime directory")
     endpoint = None
     result = {"stage": stage, "run_argv": command, "restoration_confirmed": False,
-              "release_confirmed": False, "shutdown_confirmed": False}
+              "release_confirmed": False, "shutdown_confirmed": False,
+              "timing_ns": {"startup_readiness": None, "acquisition": None,
+                            "public_shutdown": None, "total_stage": None},
+              "timing_confirmed": {"startup_readiness": False, "acquisition": False,
+                                    "public_shutdown": False}}
+    process = None
+    acquisition_started_ns = shutdown_started_ns = None
     with (output / "deployment.log").open("w") as log:
-        process = subprocess.Popen(command, env=env, stdout=log, stderr=log)
+        startup_started_ns = time.perf_counter_ns()
         try:
+            process = subprocess.Popen(command, env=env, stdout=log, stderr=log)
             ready = wait_state(runtime, process, recipe["stage_timeout_seconds"], lambda state: state.get("phase") == "running")
+            ready_ns = time.perf_counter_ns()
+            result["timing_ns"]["startup_readiness"] = ready_ns - startup_started_ns
+            result["timing_confirmed"]["startup_readiness"] = True
+            acquisition_started_ns = ready_ns
             instance = Path(ready["socket"]).parent
             result["ready"] = ready
             result["startup_report"] = json.loads((instance / "simulator-result.json").read_text())
@@ -365,6 +382,8 @@ def run_stage(package, output, runtime, recipe, stage, *, frames=None):
                 result["restoration_confirmed"] = True
                 endpoint.request({"kind": "release"}, "released")
                 result["release_confirmed"] = True
+                result["timing_ns"]["acquisition"] = time.perf_counter_ns() - acquisition_started_ns
+                result["timing_confirmed"]["acquisition"] = True
                 result["requests"] = endpoint.records
                 endpoint.close()
                 endpoint = None
@@ -381,6 +400,9 @@ def run_stage(package, output, runtime, recipe, stage, *, frames=None):
                 if matrix_result["phase"] != "complete" or matrix_result["failure"] is not None or matrix_result["recovery_failure"] is not None or not matrix_result["restoration_confirmed"] or not matrix_result["resume_permitted"]:
                     raise ValueError("interaction stage did not restore and release")
                 result["restoration_confirmed"] = result["release_confirmed"] = True
+                result["timing_ns"]["acquisition"] = time.perf_counter_ns() - acquisition_started_ns
+                result["timing_confirmed"]["acquisition"] = True
+            shutdown_started_ns = time.perf_counter_ns()
             for arguments, expected in ((["session-stop"], "Ready"), (["quit"], None)):
                 response = subprocess.run(common + arguments, env=env, capture_output=True, text=True, timeout=55)
                 response.check_returncode()
@@ -393,7 +415,16 @@ def run_stage(package, output, runtime, recipe, stage, *, frames=None):
                 raise ValueError("deployment cleanup incomplete")
             result["shutdown_confirmed"] = True
             result["final"] = final
+            result["timing_ns"]["public_shutdown"] = time.perf_counter_ns() - shutdown_started_ns
+            result["timing_confirmed"]["public_shutdown"] = True
         except BaseException as error:
+            failed_ns = time.perf_counter_ns()
+            if result["timing_ns"]["startup_readiness"] is None:
+                result["timing_ns"]["startup_readiness"] = failed_ns - startup_started_ns
+            if acquisition_started_ns is not None and result["timing_ns"]["acquisition"] is None:
+                result["timing_ns"]["acquisition"] = failed_ns - acquisition_started_ns
+            if shutdown_started_ns is not None and result["timing_ns"]["public_shutdown"] is None:
+                result["timing_ns"]["public_shutdown"] = failed_ns - shutdown_started_ns
             result["failure"] = repr(error)
             if endpoint is not None and endpoint.can_restore and not result["release_confirmed"]:
                 try:
@@ -411,19 +442,26 @@ def run_stage(package, output, runtime, recipe, stage, *, frames=None):
         finally:
             if endpoint is not None:
                 endpoint.close()  # Unknown outcomes retain owner fault/hold; no blind restore retry.
-            if process.poll() is None:
+            if process is not None and process.poll() is None:
                 process.terminate()
                 try:
                     process.wait(timeout=45)
                 except subprocess.TimeoutExpired:
                     process.kill()
                     process.wait(timeout=5)
-            result["launcher_exit"] = process.returncode
+            result["launcher_exit"] = process.returncode if process is not None else None
+            finished_ns = time.perf_counter_ns()
+            if acquisition_started_ns is not None and result["timing_ns"]["acquisition"] is None:
+                result["timing_ns"]["acquisition"] = finished_ns - acquisition_started_ns
+            if shutdown_started_ns is not None and result["timing_ns"]["public_shutdown"] is None:
+                result["timing_ns"]["public_shutdown"] = finished_ns - shutdown_started_ns
+            result["timing_ns"]["total_stage"] = finished_ns - stage_started_ns
             science.write_json(output / "stage-result.json", result)
     return result
 
 
 def campaign(arguments):
+    campaign_started_ns = time.perf_counter_ns()
     if sys.byteorder != "little":
         raise ValueError("campaign packed acquisition currently requires a little-endian host")
     recipe = validate_recipe(json.loads(arguments.recipe.read_text()))
@@ -478,6 +516,7 @@ def campaign(arguments):
         raise
     finally:
         record["artifacts"] = {str(p.relative_to(output)): digest(p) for p in sorted(output.glob("measured-*")) if p.is_file()}
+        record["timing_ns"] = {"total_campaign": time.perf_counter_ns() - campaign_started_ns}
         deploy.atomic_record(output / "campaign-result.json", record)
     return output / "campaign-result.json"
 
