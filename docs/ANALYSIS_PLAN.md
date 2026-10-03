@@ -229,3 +229,16 @@ controller clipping feedback. This completes the finite Classic CPU baseline;
 physical, global-linearity, Copper/HEART/accelerator and wall-cadence claims
 remain outside that evidence. The next comparison follows
 [the method design](CALIBRATION_METHOD_COMPARISON.md).
+
+
+2026-10-03, selectable methods: all eight declared full candidate sweeps completed
+through the maintained owner: two zonal, two complete Hadamard, two
+controller-modal and two spatial. Fresh spatial combinations completed through
+the same acquisition path. Independent review reproduced candidate bytes,
+receipt/lifecycle invariants and all finite forward scores. Hadamard settings
+showed lower repeat discrepancy and forward residuals than the declared zonal
+settings, while using 16× integrated command energy. Controller-modal reduced
+acquisition cost; spatial measured only a 64-mode span. See
+[method measurements](CALIBRATION_METHOD_VALIDATION.md). No new inverse was
+selected. Fresh common controller validation/locked test, replacement correction
+checks, Copper, unchanged HEART and accelerator qualification remain.

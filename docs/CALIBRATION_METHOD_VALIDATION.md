@@ -86,8 +86,7 @@ Under an ideal linear homogeneous independent-noise model, these settings
 predict Hadamard coefficient standard deviation one quarter of zonal's.
 That conditional model is not an observed uncertainty bound. Hadamard's total
 integrated squared physical command energy is **16 times** zonal's per sweep:
-226.9184 versus 14.1824 µm² OPD × accepted exposures. Actual rounded figures
-will determine the recorded energy values.
+226.9184 versus 14.1824 µm² OPD × accepted exposures. These energy values use the actual rounded figures.
 
 The comparison measures complete physical matrices, repeat/order discrepancy,
 controller-map composition, descriptive common held-out forward predictions,
@@ -157,7 +156,7 @@ The comparison source/test and result hashes are preserved in the evidence
 ledger. The exploratory comparison script remains a cache artifact; selectable
 acquisition and candidate reduction are maintained production entry points.
 
-## Next directional comparison, declared before acquisition
+## Directional comparison declaration
 
 The next four methods are frozen in `directional-cohort-inputs`: two
 controller-modal 221-coordinate runs at 0.04/N16 and two spatial 64-mode runs
@@ -176,3 +175,78 @@ Float32 representation residuals; it will not be labelled a full physical D.
 All eight fresh spatial directions and their 48-batch acquisition plan were
 frozen before the first directional candidate was acquired. No inverse or
 scientific method winner is accepted by this declaration.
+
+## Directional comparison results
+
+All four deployed owner runs passed exact accepted-frame counts, restoration,
+release, public shutdown and launcher exit 0. The controller-modal runs produced
+376×221 directional matrices; the spatial runs produced 376×64 matrices. The
+fresh spatial corpus completed all 48 batches, 3,072 accepted exposures and
+restoration at sequence 3,121. Across these five runs, counts are 21,312 accepted
+and 22,505 total model exposures.
+
+Independent audit reproduced all four packed matrices byte for byte from the
+chronological signed observations after validating receipts and permutations.
+All preparation seals, package identities and common source/input settings
+passed. Every comparison statistic reproduced within 1.11×10⁻¹³. The report is
+`directional-cohort/comparison.json`; its source, declarations and results are
+bound in the evidence ledger and [MCR-12](CALIBRATION_METHOD_COMPARISON.md).
+
+| Per-family result | Controller-modal, 0.04/N16 | Spatial 64, 0.01/N16 |
+| --- | ---: | ---: |
+| Relative directional repeat Frobenius discrepancy | 0.42043 | 0.12114 |
+| Acquisition, repeat 1 / 2 | 119.727 / 117.816 s | 42.116 / 42.552 s |
+| Accepted signed command energy per sweep, µm² OPD × exposures | 13.626337 | 28.364799 |
+| Measured coordinates | 221 controller directions | 64 spatial directions |
+
+The controller response is `S G L`, where L restores the recorded column-peak
+normalization. Here L = I. The empirical controller repeat/order spectral scale
+is 3.13116 pixel/µm OPD. The spatial scale 9.57576 uses its 64 normalized mode
+coordinates; these two numerical scales describe different tasks and cannot be
+ranked directly. Neither is an unbiased noise estimate or a confidence bound.
+
+Actual Float32 commands and amplitudes were widened before basis division.
+The representation residual `M L − B` is dimensionless. For the retained
+controller commands, `Q_actual − M L U` has maximum absolute residual
+3.13780×10⁻⁹ µm OPD. For the fresh spatial commands, `Q_actual − W α` has maximum
+absolute residual 8.65988×10⁻¹⁰ µm OPD. Predictions use retained Float64 U and α;
+no noisy physical matrix is used to correct these representation residuals.
+
+| Mean directional prediction | Sparse residual RMS, pair 1 / 2 | Mixed residual RMS, pair 1 / 2 |
+| --- | ---: | ---: |
+| Controller-modal, retained controller corpus | 0.002563 / 0.002568 pixel | 0.026713 / 0.026718 pixel |
+| Spatial 64, fresh spatial corpus | 0.004413 / 0.004447 pixel | 0.002518 / 0.002522 pixel |
+| Physical Hadamard mean, same fresh spatial corpus | 0.003396 / 0.003407 pixel | 0.002308 / 0.002264 pixel |
+| Physical zonal N16 mean, same fresh spatial corpus | 0.011616 / 0.011560 pixel | 0.005886 / 0.005933 pixel |
+
+The fresh spatial corpus contains four sparse modes and four mixed combinations
+within W's declared span, with physical peaks 0.01/0.02 µm alternating between
+different directions. This supports prediction characterization within that
+span. It is not a paired amplitude experiment. The controller and spatial
+corpora are different, so their subgroup RMS values do not rank equivalent
+controller tasks. Physical predictors use the same actual spatial commands,
+which permits the last three rows' descriptive comparison. Energy, calibrated
+span and amplitude remain unequal.
+
+Controller-modal acquisition was shorter than full zonal acquisition on these
+runs, with similar sparse and somewhat lower mixed controller prediction error.
+Spatial acquisition was shortest because it measured fewer coordinates.
+Hadamard had the lowest observed prediction residuals among these means on
+both available corpora. These observations do not select a new inverse or prove
+an intrinsic method advantage at equal energy.
+
+## Completion and next acceptance boundary
+
+The maintained selectable acquisition/reduction path has now completed two
+finite full sweeps for each of zonal, complete Hadamard, controller-modal and
+spatial sine/cosine families. Their matrices, precision/order discrepancies,
+command energy, forward predictions and stage timings are recorded. Startup
+and cold estimation include compilation; no wall-rate qualification follows.
+
+The previously qualified 186-mode baseline inverse remains unchanged. A new
+method/reconstructor decision needs fresh frozen common validation and locked
+controller-response corpora, followed by correction checks at unchanged
+settings. Existing controller tests have already been examined descriptively.
+The 64-mode spatial candidate cannot serve as a complete 221-coordinate
+controller matrix without a separately declared representation policy.
+Copper, unchanged HEART and accelerator calibration remain unqualified.

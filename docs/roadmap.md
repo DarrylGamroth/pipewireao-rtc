@@ -1166,7 +1166,11 @@ directional candidate. [Usage](CALIBRATION_METHOD_USAGE.md),
 [review](CALIBRATION_METHOD_COMPARISON.md) and
 [method measurements](CALIBRATION_METHOD_VALIDATION.md) distinguish this
 workflow evidence from scientific method selection. The bounded dense-pattern
-confirmation precedes the predeclared full physical-span comparison.
+confirmation was followed by two complete sweeps for each family. All candidate
+bytes, receipts and finite forward scores passed independent re-estimation.
+Precision, energy and acquisition time differ under the declared settings;
+spatial 64 remains a partial span. Fresh common validation and a locked
+controller-response test are required before selecting a replacement inverse.
 
 RTC-DEV-029 remains partial for its full selected scope: Copper, unchanged
 HEART, accelerator acquisition, physical endpoints, instrument acceptance and

@@ -783,3 +783,162 @@ controller-modal/full-controller and spatial/partial-span experiments under
 MCR-2/MCR-3. Their distinct representation claims, actual command energy and
 fresh selection/test boundaries remain required; these observations do not
 remove those conditions.
+
+## MCR-11 — Frozen controller-modal and spatial declarations
+
+**Disposition:** declaration/representation audit passes; no additional setup
+experiment is required before the declared cohort and fresh held-out run.
+This is not a directional-result or quality acceptance finding. The reviewer
+did not launch RTC or inspect directional candidate outcomes.
+
+Frozen policy: `directional-cohort-inputs/policy.json`, SHA-256
+`e9770490a324821d24239814f2714fc7e84d369b0cb1133d60d9c972d1454570`.
+It binds all four recipe/method files, geometry, prerequisite physical-cohort
+comparison and the four fresh spatial held-out declaration hashes. Independent
+checks confirmed those identities. The spatial-heldout launcher now checks
+this exact policy and all four declared hashes before writing its recipe,
+preparing packages or launching; the initial filename-only guard was strengthened
+before acquisition. No declaration was changed by that guard correction.
+
+A separate ordinary-array Julia check on CPU 5 used the actual H1 packaged
+public client and `REVOLTClassicSim.actuator_coordinates()`. It confirmed the
+supplied 277×2 geometry exactly matches the public coordinate order and rebuilt
+both declared bases. The 221 controller-column peaks are all 1. The actual
+Float32-derived M satisfies the reported `M diag(peaks)−B` residual:
+maximum absolute 4.496656480501571×10⁻⁸ and Frobenius norm
+1.6627164305802358×10⁻⁷. Its G therefore has 376×221 directional coordinates.
+The prediction on an existing controller vector c is `S G diag(peaks)c`;
+report the separate physical residual `q_actual−M diag(peaks)c`. Do not silently
+use a noisy physical D to correct that predictor's representation residual.
+
+The 64 spatial modes are reconstructed from the fixed 32 supplied frequencies,
+peak normalization and actual Float32 0.01 commands. The actual sampled W has
+rank 64 at the declared relative 1e-10 tolerance and condition number
+5.133531655824748. This establishes independence of these sampled command
+columns, not their optical observability, physical full rank or controller-span
+coverage. G is 376×64; no 277-column physical D is inferred.
+
+The fresh spatial corpus contains four sparse modal coordinates 2, 18, 35, 51 and
+four mixed sign directions from seed 903, with alternating physical peaks 0.01
+and 0.02 and independent detector seed 96. Independent checks reconstructed each
+mode-coefficient vector's physical figure and all 48 quartet/reference batch
+labels, including exact signed Float32 commands. The largest stored-versus-
+represented physical residual norm is 3.1666849326866416×10⁻⁹ µm OPD. Prediction
+is `S G α`; compare physical-estimator predictions on the same actual q, and
+report `q−Wα` separately. The 0.02 held-out figures intentionally test finite-
+amplitude extrapolation beyond 0.01 training, so their failures would not by
+themselves demonstrate an estimator implementation defect.
+
+The four training cases use 18240 accepted exposures and 19384 total model
+exposures. The fresh held-out corpus adds 3072 accepted and 3121 total exposures:
+combined 21312 accepted and 22505 model exposures. These are declared counts,
+not completed-run evidence or projected wall time. The spatial corpus is a
+separate span-specific comparison; it cannot rank a 64-coordinate model against
+a complete 221-coordinate controller task on unrestricted controller commands.
+
+Required result audit remains: complete lifecycle and receipts, exact unchanged
+source/settings and declared seeds, reversed chronology before canonical
+estimation, actual coefficient/command packing, measured repeat disagreement,
+energy accounting and matching held-out equations. Keep amplitude-stratified
+results, particularly 0.01 versus 0.02 spatial predictions. No new inverse,
+threshold/gain change, automatic winner or physical/rate claim is authorized by
+this setup review. The ordinary-array check exited 0; Julia emitted dependency
+precompilation notices, which carry no latency qualification.
+
+## MCR-12 — Actual directional cohort and fresh spatial corpus
+
+**Disposition:** source, installed integration and descriptive numerical audit
+pass. No new inverse, method winner, full physical D from a partial basis or
+scientific/cadence acceptance is implied. Source was inspected before the
+reviewer consumed the directional outcomes.
+
+Frozen analyzer SHA-256:
+`2e7f21c4ab33e0d35b44e59df9422e73d114ed604bedd8e45a6512a5da0a8516`.
+It binds the previously reviewed `e38bd711…` shared helper and uses the frozen
+MCR-11 policy. Its owner reported 39 / 39 focused assertions passing before the
+primary agent's actual run. Actual `directional-cohort/comparison.json` SHA-256:
+`5aebaed358c09562a31ca0011930df4f7ad606549ba25c1f0f6d5e60cf79b1ee`.
+
+### Independent checks and numerical meaning
+
+A CPU 5 NumPy audit independently validated every 20-file preparation seal and
+381-file package set for all four cases, source/input/result hashes, exact
+chronological permutations, positive-basis metadata and Float32 signed-pair
+estimation. Every packed candidate byte agrees: 376×221 / 332384 bytes per
+controller-modal case; 376×64 / 96256 bytes per spatial case.
+
+Each controller-modal case has 7072 valid accepted exposure identities and a
+fresh restoration at sequence 7515. Each spatial case has 2048 and restoration
+2177. The fresh spatial corpus has 3072 accepted exposures and restoration 3121.
+Identities are unique and ordered within each run, fixed 1,896,000 ns intervals
+are nonoverlapping, and completion/restoration/release/stopped/launcher 0 checks
+pass. Combined counts are 21312 accepted and 22505 model exposures. The fresh
+corpus retains its four frozen declaration hashes, all 48 batch labels and exact
+signed Float32 commands.
+
+Across 12 packages—four directional, four physical-cohort, two N64 baseline,
+old controller held-out and fresh spatial held-out—startup arrays, graphs,
+five top-level HIL preparation/association helpers and six scientific package
+source trees match. Plant/adopted detector equality removes only RNG seed.
+Declared unit labels and lamp illumination remain unchanged.
+
+The analyzer widens actual Float32 commands and amplitudes **before division**
+to construct M and W. It retains the authoring controller coordinates U and
+spatial coefficients α as Float64. Predictions are exactly `S G L U` and
+`S G α`; no physical-D correction is added. The audited `M L−B` residual has
+explicit dimensionless map units, while actual held-out command residuals have
+µm OPD units. Their maximum absolute/Frobenius values are respectively:
+
+| Residual | Maximum absolute | Frobenius norm | Units |
+| --- | ---: | ---: | --- |
+| Actual controller Q−M L U | 3.137797×10⁻⁹ | 4.534717×10⁻⁸ | µm OPD |
+| Actual spatial Q−W α | 8.659881×10⁻¹⁰ | 4.894151×10⁻⁹ | µm OPD |
+
+Every case/family/physical-comparator forward score, directional G−D W
+diagnostic, representation statistic and spectral task scale independently
+reproduces within 1.11×10⁻¹³ absolute numerical difference. Retained references
+are audited separately; the signed-pair observations remain `(y_plus−y_minus)/2`.
+
+### Descriptive observations and limits
+
+The controller-modal repeat/order spectral scale is 3.1311635018 for
+`S(G1−G2)L/sqrt(2)`. The spatial value 9.5757626482 is for
+`S(G1−G2)/sqrt(2)` in 64 normalized spatial-mode coordinates. These are different
+tasks and norms; their numerical magnitudes must not be ranked directly.
+
+| Family/corpus | Sparse mean-prediction RMS, pair 1 / 2 (pixel) | Mixed mean-prediction RMS, pair 1 / 2 (pixel) |
+| --- | --- | --- |
+| Controller-modal, retained controller corpus | 0.0025629 / 0.0025683 | 0.0267127 / 0.0267180 |
+| Spatial 64, fresh spatial corpus | 0.0044128 / 0.0044474 | 0.0025184 / 0.0025221 |
+
+On the **same fresh spatial commands**, the physical Hadamard mean gives sparse
+RMS 0.0033957 / 0.0034072 and mixed 0.0023084 / 0.0022642. That is an admissible
+same-command descriptive comparison, unlike comparing unrestricted controller
+scores to a partial spatial corpus. It does not make a new independent winner
+selection or remove the unequal energy/cost conditions.
+
+Additional independent spatial amplitude-stratified RMS checks are:
+
+| Spatial subgroup | Physical peak | Pair 1 / 2 RMS (pixel) |
+| --- | --- | --- |
+| Sparse | 0.01 | 0.0029668 / 0.0030514 |
+| Sparse | 0.02 | 0.0054903 / 0.0054999 |
+| Mixed | 0.01 | 0.0021709 / 0.0021063 |
+| Mixed | 0.02 | 0.0028235 / 0.0028785 |
+
+Each stratum contains two different directions. This table is not a paired
+amplitude experiment; higher raw 0.02 error can reflect scaled calibration noise
+and direction dependence as well as nonlinearity. The MCR-9 balanced amplitude
+experiment retains its separate interpretive role.
+
+Accepted integrated squared command energy is 13.6263367808 µm² OPD·exposures
+per controller-modal sweep and 28.3647990956 per spatial sweep. Recorded
+acquisition times are 119.7266 / 117.8164 s and 42.1162 / 42.5519 s respectively.
+The fresh held-out acquisition takes 52.6373 s, with 41.7100 s startup and 0.9957 s
+shutdown. Lower partial-spatial acquisition cost purchases fewer calibrated
+coordinates; no equivalent full-controller accuracy or physical rank follows.
+
+No production source edit or RTC launch was performed by this reviewer. The
+completed evidence characterizes these finite declared tasks and two repeat/
+order realizations. Selection of a new reconstructor, controller activation,
+physical operation and wall-rate qualification remain outside this result.

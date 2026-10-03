@@ -111,6 +111,9 @@ because their external fixtures were unavailable.
 Evidence is retained under `~/.cache/rtc-calibration-quality-20261003/` in
 `method-smoke-reverse-v2/`, `method-smoke-reverse/` and `method-owner/`.
 The evidence ledger binds their material inputs, outputs and failed prelaunch
-record. This qualifies the finite workflow and ordering behavior; full
-Hadamard, modal/spatial scientific prediction and method selection remain
-separate measurements.
+record. This qualifies the finite workflow and ordering behavior. Subsequent two-sweep
+zonal, complete Hadamard, 221-coordinate controller-modal and 64-mode spatial
+runs also completed through this entry point. Their finite prediction, energy
+and timing results are in [method measurements](CALIBRATION_METHOD_VALIDATION.md).
+Candidate completion does not select a new method or inverse; fresh common
+validation and a locked test remain necessary for that decision.

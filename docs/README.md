@@ -67,12 +67,12 @@ and the predeclared held-out acceptance plan.
 [evidence identities](CALIBRATION_QUALITY_EVIDENCE.json) separate the measured
 matrix, frozen held-out decision and correction checks.
 [Method measurements](CALIBRATION_METHOD_VALIDATION.md) records the bounded dense
-pattern screens and predeclared complete physical comparison.
+pattern screens and completed physical/controller-modal/spatial comparisons.
 [Selectable calibration usage](CALIBRATION_METHOD_USAGE.md) describes the maintained
 method acquisition and unaccepted-candidate boundary. The
 [correction review](CORRECTION_ANALYSIS_REVIEW.md) preserves failed replay gates
 and their dispositions. The [method comparison](CALIBRATION_METHOD_COMPARISON.md)
-defines the next zonal/Hadamard/controller-modal/spatial increment.
+records the zonal/Hadamard/controller-modal/spatial design and independent audits.
 
 ## Inactive design archive
 

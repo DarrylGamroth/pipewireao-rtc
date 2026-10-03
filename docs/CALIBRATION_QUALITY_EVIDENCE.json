@@ -186,6 +186,16 @@
       "sha256": "86197f4e6cf4ada12270adf177021e8f62cabc095c84242ff7cd5a6638d0fe7a"
     },
     {
+      "bytes": 24083,
+      "path": "~/.cache/rtc-calibration-quality-20261003/analyze-directional-cohort.jl",
+      "sha256": "2e7f21c4ab33e0d35b44e59df9422e73d114ed604bedd8e45a6512a5da0a8516"
+    },
+    {
+      "bytes": 90,
+      "path": "~/.cache/rtc-calibration-quality-20261003/analyze-directional-cohort.log",
+      "sha256": "1195fc6a6664d8777d3ea59f9320feb6ca1c1c3610fd93ecd4f1d8b20b540096"
+    },
+    {
       "bytes": 5919,
       "path": "~/.cache/rtc-calibration-quality-20261003/analyze-full.jl",
       "sha256": "67285f96ccf53af12547cfa73f9d416a1a300d2507fa68667cef940e583c12ce"
@@ -654,6 +664,721 @@
       "bytes": 1274,
       "path": "~/.cache/rtc-calibration-quality-20261003/deployment-tests-method-final.log",
       "sha256": "339f11720cb7d847c67ea5da0b81af49994d36a15b138aff01cc82e231475bf1"
+    },
+    {
+      "bytes": 2838,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort-analysis-validation.json",
+      "sha256": "b22fda3cf5949ea84e0c620dc55c4bd104aaad9727b208ff61e53ad03a5b6429"
+    },
+    {
+      "bytes": 910309,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort-inputs/controller-modal-1-method.json",
+      "sha256": "83e6405c1b4b50f6a9f742f186e8806b7729a7258f0117932807ba0b05f77281"
+    },
+    {
+      "bytes": 9562,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort-inputs/controller-modal-1-recipe.json",
+      "sha256": "517c6badaaf52ed362b6b4bf666bb91ad6bc609c18372abe73d2f391d704e1b3"
+    },
+    {
+      "bytes": 910309,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort-inputs/controller-modal-2-method.json",
+      "sha256": "fa7ca868257a3ca507f657f6d97673579af9a77a9a946f1a9f25be12940dba69"
+    },
+    {
+      "bytes": 9562,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort-inputs/controller-modal-2-recipe.json",
+      "sha256": "1b8d5acd1b56dbefcffb9783147c4208681097b9ef3a24f72b2a12e9155e7c42"
+    },
+    {
+      "bytes": 2615,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort-inputs/geometry.json",
+      "sha256": "45e8fe3c695cb39515a68f00d9153f24020b69b79741d7980bf6030b83e131c3"
+    },
+    {
+      "bytes": 348039,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort-inputs/modal-basis.json",
+      "sha256": "aeee0fbfb013ef648a5085f16a016adf94cf18eab133680450c2fed7d78e2d18"
+    },
+    {
+      "bytes": 3651,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort-inputs/policy.json",
+      "sha256": "e9770490a324821d24239814f2714fc7e84d369b0cb1133d60d9c972d1454570"
+    },
+    {
+      "bytes": 14981,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort-inputs/spatial-1-method.json",
+      "sha256": "afd4519df985baa63d419b2eeefbc5c41fd58ed5540b0578a3ee341f77f768d5"
+    },
+    {
+      "bytes": 9562,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort-inputs/spatial-1-recipe.json",
+      "sha256": "4ebbea9ddaa1860683dbafd27b0d5bc39467542ac5b3a7ae4059ac1b30491ad6"
+    },
+    {
+      "bytes": 14981,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort-inputs/spatial-2-method.json",
+      "sha256": "190969f96860cbe328e602246e9cc497ad1ce4b7bba97da8aecc7708c6bb2532"
+    },
+    {
+      "bytes": 9562,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort-inputs/spatial-2-recipe.json",
+      "sha256": "7bac4243f5eb0350502651e9052cb2c84a54876b9c2d2fb4fd933e4774003bb7"
+    },
+    {
+      "bytes": 4520,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort-inputs/spatial-basis.json",
+      "sha256": "42f921cc0ce44e864ae5bf25e95b4ed3efa9305d93a75138a14bf64ecfb24afb"
+    },
+    {
+      "bytes": 26,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort-parse-initial.log",
+      "sha256": "3a8dd612885ccad8be2bd7c3a995c81938f70884ee89a1686b6646b95a1b1d90"
+    },
+    {
+      "bytes": 924,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort-test-final.log",
+      "sha256": "b727556e889541d2e7db381ac459390a6bff335860164dd3f8f4f171afb1e1c2"
+    },
+    {
+      "bytes": 1828,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort-test-initial.log",
+      "sha256": "b6d4a0d4491835c477df7102ce8ef83f3a1e33383f1dada6739abc8dce50a359"
+    },
+    {
+      "bytes": 924,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort-test-second.log",
+      "sha256": "b727556e889541d2e7db381ac459390a6bff335860164dd3f8f4f171afb1e1c2"
+    },
+    {
+      "bytes": 1718,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/cohort-result.json",
+      "sha256": "5d462333141807e42d8cc052dc38a3ffa77738c20c16e0f670efcd75acb44ed9"
+    },
+    {
+      "bytes": 108642,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/comparison.json",
+      "sha256": "5aebaed358c09562a31ca0011930df4f7ad606549ba25c1f0f6d5e60cf79b1ee"
+    },
+    {
+      "bytes": 112,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1.log",
+      "sha256": "00b9e99f173ccced279cb7148f15a4421395f02ba2b991b74d46b5a2905e803d"
+    },
+    {
+      "bytes": 17073,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/analysis/calibration_client.jl",
+      "sha256": "0625169579554d9afcf52ed04b29ba0110d484a9b11c6a51289c7c8adde20174"
+    },
+    {
+      "bytes": 10730,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/analysis/calibration_method_analysis.jl",
+      "sha256": "d27274c5b55e8d5a4cd9b231405e719163cca629c35cafaa773fab2ee1bba71c"
+    },
+    {
+      "bytes": 62111,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/base-identity.json",
+      "sha256": "c23a7c9f23dd876f9237de9e82aaadd2bbd49eb2d360560342453edbc859ecc4"
+    },
+    {
+      "bytes": 332384,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/candidate-response.f32le",
+      "sha256": "f940553579f224a118c303305f191b0a55b039d1dfdaeae19da4b5c0aaecc7ae"
+    },
+    {
+      "bytes": 403651,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/candidate-response.json",
+      "sha256": "498b14d438cda41ffa6801da92ff32bc75de3ec9b16ca5ab771703aa36665702"
+    },
+    {
+      "bytes": 1770,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/canonical-order.json",
+      "sha256": "45c4e2620b51c05b938b7f42b463591ab2cc7435daad2b69f5a1168f5e5becfb"
+    },
+    {
+      "bytes": 695480,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/canonical-plan.json",
+      "sha256": "f2f4d5ae3aa5d0b34213fefb2aae5f6e728c0784cb31c91e2f4d2f7b00cf8a90"
+    },
+    {
+      "bytes": 4654,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/evidence/deployment.log",
+      "sha256": "f2642e16e433edb46a58e6256ae259c47aa2c04f1484edda1e8cfa4c1484cb23"
+    },
+    {
+      "bytes": 4243411,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/evidence/rtc-calibrate.json",
+      "sha256": "9044ab6239b6b3fa6fd16b4581b766790c8e1d24a0c353bfb5dc630fffbdc312"
+    },
+    {
+      "bytes": 0,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/evidence/rtc-calibrate.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 14048,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/evidence/stage-result.json",
+      "sha256": "8f10dce2b43328a19b775a3fbb410e5623de00707beed2ed9e02cd6598d1b418"
+    },
+    {
+      "bytes": 910309,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/input-method.json",
+      "sha256": "83e6405c1b4b50f6a9f742f186e8806b7729a7258f0117932807ba0b05f77281"
+    },
+    {
+      "bytes": 9562,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/input-recipe.json",
+      "sha256": "517c6badaaf52ed362b6b4bf666bb91ad6bc609c18372abe73d2f391d704e1b3"
+    },
+    {
+      "bytes": 695480,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/interaction-plan.json",
+      "sha256": "f2f4d5ae3aa5d0b34213fefb2aae5f6e728c0784cb31c91e2f4d2f7b00cf8a90"
+    },
+    {
+      "bytes": 56853,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/method-base/deployment.conf",
+      "sha256": "9413dde7f06544e21165b3778f6d55732916586f5c6886aa5c94893f8f266038"
+    },
+    {
+      "bytes": 103424,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/method-base/provenance.json",
+      "sha256": "a36ba04b709ef8056c43308e43cec5a9b819fac0babac959fdb22fe30a32c0ce"
+    },
+    {
+      "bytes": 985719,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/method-result.json",
+      "sha256": "9cf15378ed8b4c52629c7b9d333a6425cc13185360735298a7ef49519fd7e986"
+    },
+    {
+      "bytes": 910309,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/method.json",
+      "sha256": "83e6405c1b4b50f6a9f742f186e8806b7729a7258f0117932807ba0b05f77281"
+    },
+    {
+      "bytes": 32802,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/orchestration-sources/calibration_campaign.py",
+      "sha256": "d9174ea14a5e007db58ceed0c0e0ed79a89a2d8a96a4e2567411e50f17460cc2"
+    },
+    {
+      "bytes": 10917,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/orchestration-sources/calibration_method.py",
+      "sha256": "169c7adf0232e3e096f41d3ec4bd6726a579b1fcd06dd6a4a794220a08fd2465"
+    },
+    {
+      "bytes": 50966,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/orchestration-sources/deploy.py",
+      "sha256": "681e623b75bd7f9197ae223c55813f226abf3fc17ba4fa126dae5ae61fec6f53"
+    },
+    {
+      "bytes": 27229,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/orchestration-sources/export.py",
+      "sha256": "2697b968c3edbca82794591844267a4981a4f8acf30b287aa1cd10674368b0e3"
+    },
+    {
+      "bytes": 30110,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/orchestration-sources/export_calibration.py",
+      "sha256": "7b811325aa897fbbefb0f6b5e24a5020d0e2d726759605ac86c421e8bf190b0e"
+    },
+    {
+      "bytes": 55499,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/orchestration-sources/export_hil.py",
+      "sha256": "89c4c3488cd200133ad3d6f2558a1f2221093e70f0dd7238a4e22e367b1d8d58"
+    },
+    {
+      "bytes": 56444,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/package/deployment.conf",
+      "sha256": "4620f870149108fb3947fa82694aac1c782a170f75592b28cd2d5e95e044560a"
+    },
+    {
+      "bytes": 169007,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/package/provenance.json",
+      "sha256": "b89b654a2011fcbfd3b0e5eb5c6a510e89756b300a921ffa3d981a1ac1ba4885"
+    },
+    {
+      "bytes": 349032,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/preparation.json",
+      "sha256": "c1e7e80db3f2adb5b156fbda34dfb4a72cf7c4e065994fa1b8f8201cc0b0d6e1"
+    },
+    {
+      "bytes": 55520,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/prepared-identity.json",
+      "sha256": "276ea6551f84eac89542931dc258fd09b6c7e1a69af750e23827106d24958149"
+    },
+    {
+      "bytes": 354416,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/prepared-specification.json",
+      "sha256": "9832be5d2045364959c380e1b2b6df32e21c6fc9091c5c9af9623fc088c9668e"
+    },
+    {
+      "bytes": 13717,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/recipe.json",
+      "sha256": "b9a9164903a4d67a09bd680aa6d22fc6d5de63a494ccce92cff0b106d4e13498"
+    },
+    {
+      "bytes": 112,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2.log",
+      "sha256": "5b7f58e558f860d14f087e4ecce449f46853c770096e14c3c2d829e9de79c781"
+    },
+    {
+      "bytes": 17073,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/analysis/calibration_client.jl",
+      "sha256": "0625169579554d9afcf52ed04b29ba0110d484a9b11c6a51289c7c8adde20174"
+    },
+    {
+      "bytes": 10730,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/analysis/calibration_method_analysis.jl",
+      "sha256": "d27274c5b55e8d5a4cd9b231405e719163cca629c35cafaa773fab2ee1bba71c"
+    },
+    {
+      "bytes": 62111,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/base-identity.json",
+      "sha256": "2c83341de2038de0a26fa96b01d754ac6087bacd25f7950c4d390221fd62d084"
+    },
+    {
+      "bytes": 332384,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/candidate-response.f32le",
+      "sha256": "6d4a978cc2d87d07a758ce97e4a9dfee3ee9940decdce1fbfe8eb2566853d55d"
+    },
+    {
+      "bytes": 403651,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/candidate-response.json",
+      "sha256": "73c820a48a14ca90e3cd088b6ed1263966c6d7821395a5c2e171f6f37fc09a10"
+    },
+    {
+      "bytes": 1770,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/canonical-order.json",
+      "sha256": "084c322647ef4bb5ddd6987e0cbbe1011244038452255d67d93dd3496fc8a255"
+    },
+    {
+      "bytes": 695480,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/canonical-plan.json",
+      "sha256": "7fb1b1cdfa3725f842c88d4eafd42cc53ccd6fd79a2f3b26fb27998f7470fb91"
+    },
+    {
+      "bytes": 4655,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/evidence/deployment.log",
+      "sha256": "acb849321070df5539a427f8727f6527cc498e99422260f4e0c4aa1cd0f9854e"
+    },
+    {
+      "bytes": 4243183,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/evidence/rtc-calibrate.json",
+      "sha256": "3dc222a72569afa37a066770eea297f245ec25f694b4b1b58b1cbb9406da001b"
+    },
+    {
+      "bytes": 0,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/evidence/rtc-calibrate.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 14043,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/evidence/stage-result.json",
+      "sha256": "06152c22c317042d36b1014325723f4e3542a1cb439ba12998df0167f6842d0d"
+    },
+    {
+      "bytes": 910309,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/input-method.json",
+      "sha256": "fa7ca868257a3ca507f657f6d97673579af9a77a9a946f1a9f25be12940dba69"
+    },
+    {
+      "bytes": 9562,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/input-recipe.json",
+      "sha256": "1b8d5acd1b56dbefcffb9783147c4208681097b9ef3a24f72b2a12e9155e7c42"
+    },
+    {
+      "bytes": 695480,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/interaction-plan.json",
+      "sha256": "8ddd96dcecd454dda8329ca8da0eb67d3e99d9ddd4d2aede587f7a426eb897c8"
+    },
+    {
+      "bytes": 56853,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/method-base/deployment.conf",
+      "sha256": "b9dccb70e447178774c38b9841b107abd87d3eb04eb22c8f4af305d75d0134b3"
+    },
+    {
+      "bytes": 103424,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/method-base/provenance.json",
+      "sha256": "80746dfe49f307c09a4cbddc309f2341c9e0fe11b3682b47e7b7f17585f71f9b"
+    },
+    {
+      "bytes": 985714,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/method-result.json",
+      "sha256": "08304958ce08ee2ab742f7e5946079cfb195b3cd0c7926d32dabb5ac212d8416"
+    },
+    {
+      "bytes": 910309,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/method.json",
+      "sha256": "fa7ca868257a3ca507f657f6d97673579af9a77a9a946f1a9f25be12940dba69"
+    },
+    {
+      "bytes": 32802,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/orchestration-sources/calibration_campaign.py",
+      "sha256": "d9174ea14a5e007db58ceed0c0e0ed79a89a2d8a96a4e2567411e50f17460cc2"
+    },
+    {
+      "bytes": 10917,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/orchestration-sources/calibration_method.py",
+      "sha256": "169c7adf0232e3e096f41d3ec4bd6726a579b1fcd06dd6a4a794220a08fd2465"
+    },
+    {
+      "bytes": 50966,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/orchestration-sources/deploy.py",
+      "sha256": "681e623b75bd7f9197ae223c55813f226abf3fc17ba4fa126dae5ae61fec6f53"
+    },
+    {
+      "bytes": 27229,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/orchestration-sources/export.py",
+      "sha256": "2697b968c3edbca82794591844267a4981a4f8acf30b287aa1cd10674368b0e3"
+    },
+    {
+      "bytes": 30110,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/orchestration-sources/export_calibration.py",
+      "sha256": "7b811325aa897fbbefb0f6b5e24a5020d0e2d726759605ac86c421e8bf190b0e"
+    },
+    {
+      "bytes": 55499,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/orchestration-sources/export_hil.py",
+      "sha256": "89c4c3488cd200133ad3d6f2558a1f2221093e70f0dd7238a4e22e367b1d8d58"
+    },
+    {
+      "bytes": 56444,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/package/deployment.conf",
+      "sha256": "eb4f8cc3d8035173b2ccbdfdea047e10613c837d26290375c09c4891c10b5c9c"
+    },
+    {
+      "bytes": 169007,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/package/provenance.json",
+      "sha256": "72f063fa87a509dc5ef1c5e924f29aae2a8949c81ea4ad41492ba77151add3f1"
+    },
+    {
+      "bytes": 349032,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/preparation.json",
+      "sha256": "426437a1228ffe6f38d5567c9abb18f6438930c02a5d7534da163143049ad4b4"
+    },
+    {
+      "bytes": 55520,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/prepared-identity.json",
+      "sha256": "4d0da8fe69df3b9a5cb01a68aab83b3d28126f1ae1e407d466053fa5542bfc15"
+    },
+    {
+      "bytes": 354416,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/prepared-specification.json",
+      "sha256": "6fe65e616726cb76cf5d173b403947414f0227f5a44f7a4af66ba3137aecd3c2"
+    },
+    {
+      "bytes": 13717,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/recipe.json",
+      "sha256": "b35495d2af66d7e3f1d917ac62fe3e96727a0ffd35999e79d54e37116cbc6d2b"
+    },
+    {
+      "bytes": 103,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1.log",
+      "sha256": "bd7dca7bf12f5450a3c9bd6c3fedd152216a056ee49b94d219479ec9e41004ee"
+    },
+    {
+      "bytes": 17073,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/analysis/calibration_client.jl",
+      "sha256": "0625169579554d9afcf52ed04b29ba0110d484a9b11c6a51289c7c8adde20174"
+    },
+    {
+      "bytes": 10730,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/analysis/calibration_method_analysis.jl",
+      "sha256": "d27274c5b55e8d5a4cd9b231405e719163cca629c35cafaa773fab2ee1bba71c"
+    },
+    {
+      "bytes": 62111,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/base-identity.json",
+      "sha256": "ff6499e1c223754b56ea78892ae5785572cdc06296f2c212a19efecd2d625975"
+    },
+    {
+      "bytes": 96256,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/candidate-response.f32le",
+      "sha256": "713f34bcede51598a6017d8afa01be4adc698028687cb9556d993b09f282fd22"
+    },
+    {
+      "bytes": 493819,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/candidate-response.json",
+      "sha256": "da0e6806d53121c9cfd153132b6bfc21d8c6594cdd1d93c2b53e0d99a719f285"
+    },
+    {
+      "bytes": 514,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/canonical-order.json",
+      "sha256": "b36ada0ca0df1feae5808d16a075d98309e5e4b7d51a4c49122cafa3539d0e64"
+    },
+    {
+      "bytes": 365001,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/canonical-plan.json",
+      "sha256": "e21576baa8cf76916ab2ce8b7817913ad46322ab8ad92c0f574aee08e0b82f72"
+    },
+    {
+      "bytes": 4646,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/evidence/deployment.log",
+      "sha256": "ac9307e5b6986100c23b4951b8dbd876f595658692cb5fe8235c7420eb0fa417"
+    },
+    {
+      "bytes": 1195088,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/evidence/rtc-calibrate.json",
+      "sha256": "c4974edbeaaece58d6dff1ccd7cb793c915f01dcc66ed014803e6bf501d181c4"
+    },
+    {
+      "bytes": 0,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/evidence/rtc-calibrate.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 14010,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/evidence/stage-result.json",
+      "sha256": "0280ce9cdf2e7eaa83e0217a6368f2b904156ed834ba8bd723484595f246cf87"
+    },
+    {
+      "bytes": 14981,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/input-method.json",
+      "sha256": "afd4519df985baa63d419b2eeefbc5c41fd58ed5540b0578a3ee341f77f768d5"
+    },
+    {
+      "bytes": 9562,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/input-recipe.json",
+      "sha256": "4ebbea9ddaa1860683dbafd27b0d5bc39467542ac5b3a7ae4059ac1b30491ad6"
+    },
+    {
+      "bytes": 365001,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/interaction-plan.json",
+      "sha256": "e21576baa8cf76916ab2ce8b7817913ad46322ab8ad92c0f574aee08e0b82f72"
+    },
+    {
+      "bytes": 56853,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/method-base/deployment.conf",
+      "sha256": "d6a3336f2d855ac91790408feea9bc05966ab37cc61476c5ad30944c55040861"
+    },
+    {
+      "bytes": 103701,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/method-base/provenance.json",
+      "sha256": "5f8b23f052e1db156c59ef48c7f3f97ec2a938f97e8f681b1a8210529a6f1ce6"
+    },
+    {
+      "bytes": 877651,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/method-result.json",
+      "sha256": "e6fb8cea1862617a551ea762b5ba27edd4e8db38c4b2a8c9a6cd5f73bbc16d04"
+    },
+    {
+      "bytes": 14981,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/method.json",
+      "sha256": "afd4519df985baa63d419b2eeefbc5c41fd58ed5540b0578a3ee341f77f768d5"
+    },
+    {
+      "bytes": 32802,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/orchestration-sources/calibration_campaign.py",
+      "sha256": "d9174ea14a5e007db58ceed0c0e0ed79a89a2d8a96a4e2567411e50f17460cc2"
+    },
+    {
+      "bytes": 10917,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/orchestration-sources/calibration_method.py",
+      "sha256": "169c7adf0232e3e096f41d3ec4bd6726a579b1fcd06dd6a4a794220a08fd2465"
+    },
+    {
+      "bytes": 50966,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/orchestration-sources/deploy.py",
+      "sha256": "681e623b75bd7f9197ae223c55813f226abf3fc17ba4fa126dae5ae61fec6f53"
+    },
+    {
+      "bytes": 27229,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/orchestration-sources/export.py",
+      "sha256": "2697b968c3edbca82794591844267a4981a4f8acf30b287aa1cd10674368b0e3"
+    },
+    {
+      "bytes": 30110,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/orchestration-sources/export_calibration.py",
+      "sha256": "7b811325aa897fbbefb0f6b5e24a5020d0e2d726759605ac86c421e8bf190b0e"
+    },
+    {
+      "bytes": 55499,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/orchestration-sources/export_hil.py",
+      "sha256": "89c4c3488cd200133ad3d6f2558a1f2221093e70f0dd7238a4e22e367b1d8d58"
+    },
+    {
+      "bytes": 56444,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/package/deployment.conf",
+      "sha256": "08e3f2f89e01f4634a6dc15c61bd73f89861839af46dc8ea49cf32204e7c05dd"
+    },
+    {
+      "bytes": 169284,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/package/provenance.json",
+      "sha256": "aeb6b20a268855d0ff121f2c7f75fefec96662e45848d85c3bd70418a560d7d5"
+    },
+    {
+      "bytes": 440457,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/preparation.json",
+      "sha256": "94bf72529e64687cca6dcb6ad64172bc9afa84b2e4f2fffac00355f83630880d"
+    },
+    {
+      "bytes": 55520,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/prepared-identity.json",
+      "sha256": "f001f6e9434d85d9f570d21d54991e1f2437c9386bdbf9f99bb2b61a74b7036b"
+    },
+    {
+      "bytes": 11038,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/prepared-specification.json",
+      "sha256": "d68c873e004e45daf509876fdfabb5565c9398a2b443c926ef778c4d9fc1378e"
+    },
+    {
+      "bytes": 13994,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/recipe.json",
+      "sha256": "45e5cae21764ca0c74fb820d1f4369fb53f6f62de8177b0cdbac8cec0de41852"
+    },
+    {
+      "bytes": 103,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2.log",
+      "sha256": "424eb34a3050a9b75b0b31ef8bf5b78d076830b8bc78da1b2766a829b7863b66"
+    },
+    {
+      "bytes": 17073,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/analysis/calibration_client.jl",
+      "sha256": "0625169579554d9afcf52ed04b29ba0110d484a9b11c6a51289c7c8adde20174"
+    },
+    {
+      "bytes": 10730,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/analysis/calibration_method_analysis.jl",
+      "sha256": "d27274c5b55e8d5a4cd9b231405e719163cca629c35cafaa773fab2ee1bba71c"
+    },
+    {
+      "bytes": 62111,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/base-identity.json",
+      "sha256": "81c8bebe3ff299db2b7305fd85f608617f243ff6408a64e22c6d1d0c9cd24d26"
+    },
+    {
+      "bytes": 96256,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/candidate-response.f32le",
+      "sha256": "5ccb3a9cd1f5e9efb2d7f7e081cbb0fbaf34bdfa79a1cc7b18d9b1dd77973e51"
+    },
+    {
+      "bytes": 493819,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/candidate-response.json",
+      "sha256": "9e3c4bc009092aff209eab1db2607e71d49e953eb2486c12242d147aea7ccd00"
+    },
+    {
+      "bytes": 514,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/canonical-order.json",
+      "sha256": "409ce8796faebaaf539aaaf330e98531ba0f30c57e5778ebc52111922e1a4da6"
+    },
+    {
+      "bytes": 365001,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/canonical-plan.json",
+      "sha256": "4a494617feea734364976b065735b582084da9c7f3c35abe2a93ebc9e16ec0de"
+    },
+    {
+      "bytes": 4645,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/evidence/deployment.log",
+      "sha256": "a69753246cc84b9003e2ddfef44d0a97b65b0fd77819e75508588a538fd56378"
+    },
+    {
+      "bytes": 1194989,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/evidence/rtc-calibrate.json",
+      "sha256": "ebff7d91ee0ba4e0b010a3fdbce38840b364b842da587131ee5e9fbc6fdcb734"
+    },
+    {
+      "bytes": 0,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/evidence/rtc-calibrate.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 14005,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/evidence/stage-result.json",
+      "sha256": "929dcb695ed18c5c7e0947257762d3002bed997a38fd2455b1d55e363e6acf93"
+    },
+    {
+      "bytes": 14981,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/input-method.json",
+      "sha256": "190969f96860cbe328e602246e9cc497ad1ce4b7bba97da8aecc7708c6bb2532"
+    },
+    {
+      "bytes": 9562,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/input-recipe.json",
+      "sha256": "7bac4243f5eb0350502651e9052cb2c84a54876b9c2d2fb4fd933e4774003bb7"
+    },
+    {
+      "bytes": 365001,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/interaction-plan.json",
+      "sha256": "17a2899d511decc9ee1f6968921e683559b8b2be13b2f2093d18aacc4eaf0e87"
+    },
+    {
+      "bytes": 56853,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/method-base/deployment.conf",
+      "sha256": "2be5e25e2da7424a02f7ea5d5472f88d92d56a1823d052460050be75599a17ac"
+    },
+    {
+      "bytes": 103701,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/method-base/provenance.json",
+      "sha256": "9d53c10b5ec1e76dbbcfe2cfd64a0b3785910ef347b04a1637a732becd032f50"
+    },
+    {
+      "bytes": 877646,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/method-result.json",
+      "sha256": "05e1a50d9fc31d4dc8a50ecd031204733dac4efe7c0432f3d707fe425522994d"
+    },
+    {
+      "bytes": 14981,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/method.json",
+      "sha256": "190969f96860cbe328e602246e9cc497ad1ce4b7bba97da8aecc7708c6bb2532"
+    },
+    {
+      "bytes": 32802,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/orchestration-sources/calibration_campaign.py",
+      "sha256": "d9174ea14a5e007db58ceed0c0e0ed79a89a2d8a96a4e2567411e50f17460cc2"
+    },
+    {
+      "bytes": 10917,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/orchestration-sources/calibration_method.py",
+      "sha256": "169c7adf0232e3e096f41d3ec4bd6726a579b1fcd06dd6a4a794220a08fd2465"
+    },
+    {
+      "bytes": 50966,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/orchestration-sources/deploy.py",
+      "sha256": "681e623b75bd7f9197ae223c55813f226abf3fc17ba4fa126dae5ae61fec6f53"
+    },
+    {
+      "bytes": 27229,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/orchestration-sources/export.py",
+      "sha256": "2697b968c3edbca82794591844267a4981a4f8acf30b287aa1cd10674368b0e3"
+    },
+    {
+      "bytes": 30110,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/orchestration-sources/export_calibration.py",
+      "sha256": "7b811325aa897fbbefb0f6b5e24a5020d0e2d726759605ac86c421e8bf190b0e"
+    },
+    {
+      "bytes": 55499,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/orchestration-sources/export_hil.py",
+      "sha256": "89c4c3488cd200133ad3d6f2558a1f2221093e70f0dd7238a4e22e367b1d8d58"
+    },
+    {
+      "bytes": 56444,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/package/deployment.conf",
+      "sha256": "eb77200c8c85d7433e40c64376d899f214ce530736322aa8fc10a91a3e7ce36f"
+    },
+    {
+      "bytes": 169284,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/package/provenance.json",
+      "sha256": "2f3ba735d88f9f7c5e56834dcef82ef2965ee394299ddc4552998975ee711d81"
+    },
+    {
+      "bytes": 440457,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/preparation.json",
+      "sha256": "2e54d18047e37872f4b04707d7c270f48b74f8731ae2efbd0ac099c37bf0f9f2"
+    },
+    {
+      "bytes": 55520,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/prepared-identity.json",
+      "sha256": "271bfa1f8e560474e0bc16fa6ee829e560eab16fda784136402cc60c80e696b1"
+    },
+    {
+      "bytes": 11038,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/prepared-specification.json",
+      "sha256": "28e64e6af198127b89359cc87405c95c690b6c967a979c486600017ee6d0ad67"
+    },
+    {
+      "bytes": 13994,
+      "path": "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/recipe.json",
+      "sha256": "fb1037cfbfd0703ddda698314e3f76c182c2f17ec82ccd2b8ab622e2c0072413"
     },
     {
       "bytes": 26700,
@@ -1771,6 +2496,16 @@
       "sha256": "879d000ac55af22253f2bba9fe6e9017a486660bb251b593fa3eed766b00dd3c"
     },
     {
+      "bytes": 3008,
+      "path": "~/.cache/rtc-calibration-quality-20261003/prepare-directional-cohort.jl",
+      "sha256": "c425a3e9d032c190eb52347ecc3de00a2e282f620f22916e04e2ba3e66a5d326"
+    },
+    {
+      "bytes": 3104,
+      "path": "~/.cache/rtc-calibration-quality-20261003/prepare-directional-cohort.log",
+      "sha256": "7b27a706bbc87240093ce373f19fc868b99834b8a3d9a395810f2fba04107faf"
+    },
+    {
       "bytes": 1968,
       "path": "~/.cache/rtc-calibration-quality-20261003/prepare-full.jl",
       "sha256": "c1ec7931ec443a9cd6defe0bd2234561595771a2eff269ff90a773eb4fa7c287"
@@ -1779,6 +2514,16 @@
       "bytes": 4219,
       "path": "~/.cache/rtc-calibration-quality-20261003/prepare-heldout.jl",
       "sha256": "cd8904ce2b9d4bcd4b9ad4badb259aac8c629b4d68c582c67ec931780379e5fb"
+    },
+    {
+      "bytes": 2990,
+      "path": "~/.cache/rtc-calibration-quality-20261003/prepare-spatial-heldout.jl",
+      "sha256": "f5aef7b736b07ed0cad75d2d5f37a0ab37726c8b25b230a4fa2bc4dc594cf17e"
+    },
+    {
+      "bytes": 74,
+      "path": "~/.cache/rtc-calibration-quality-20261003/prepare-spatial-heldout.log",
+      "sha256": "b6221bcc6d13b6bad76ebfef3adda2ada0a65c5210a1dd7cdec88b7158112240"
     },
     {
       "bytes": 2883,
@@ -1794,6 +2539,16 @@
       "bytes": 1713,
       "path": "~/.cache/rtc-calibration-quality-20261003/run-dense-confirmation.py",
       "sha256": "cb2a7322a3b00539ffe18b0e7cc978e20677865a43a3a1da9049f8fc42f15426"
+    },
+    {
+      "bytes": 852,
+      "path": "~/.cache/rtc-calibration-quality-20261003/run-directional-cohort.log",
+      "sha256": "a97df2190ba8c2bd978e9ad690e5582c11542a7afb9a7de31bf512a0540960ab"
+    },
+    {
+      "bytes": 2009,
+      "path": "~/.cache/rtc-calibration-quality-20261003/run-directional-cohort.py",
+      "sha256": "b1089ddcd43819be704b7c4be5b5bdf65b554c49cbdfb70cd57d692fcca9ead8"
     },
     {
       "bytes": 2554,
@@ -1816,14 +2571,94 @@
       "sha256": "01b08377cab90cc3fe970b8192524a7973d892afd5f420c0b2f4bada5969a350"
     },
     {
+      "bytes": 190,
+      "path": "~/.cache/rtc-calibration-quality-20261003/run-spatial-heldout.log",
+      "sha256": "b5999e782f06c15296f7e3e410c1f7ef7f7982b88cf8ffa86bba0bedc23559b4"
+    },
+    {
+      "bytes": 2252,
+      "path": "~/.cache/rtc-calibration-quality-20261003/run-spatial-heldout.py",
+      "sha256": "5e48937eb1c8b6cf4a2bbe4fcf35334ec1c7159f2f9dd2659dec7b1db597a7c1"
+    },
+    {
       "bytes": 8519,
       "path": "~/.cache/rtc-calibration-quality-20261003/score-heldout.jl",
       "sha256": "a3606aadf34e9786e6d7fd04a6bab7a8b57be48500ecd7d868258d5cce949b30"
     },
     {
+      "bytes": 56853,
+      "path": "~/.cache/rtc-calibration-quality-20261003/spatial-heldout/base/deployment.conf",
+      "sha256": "5652df6cd5ba5bb85bb0f06e9d8009f59469a022a54a4cc21a32c02128fe6391"
+    },
+    {
+      "bytes": 103701,
+      "path": "~/.cache/rtc-calibration-quality-20261003/spatial-heldout/base/provenance.json",
+      "sha256": "bca6d31aaf0656ab943052155940ae93623289ceaa281af06ddef9ee58e20e03"
+    },
+    {
+      "bytes": 34633,
+      "path": "~/.cache/rtc-calibration-quality-20261003/spatial-heldout/directions.json",
+      "sha256": "bc622388ede60982b7f16febd2a6c324fa112a97d1b9a3de39bb2d85c220c6b7"
+    },
+    {
+      "bytes": 4639,
+      "path": "~/.cache/rtc-calibration-quality-20261003/spatial-heldout/evidence/deployment.log",
+      "sha256": "b30fb1fa1404018c8e48867ab80ace9f197f81e98c566488e6c68a1e526d67a1"
+    },
+    {
+      "bytes": 673194,
+      "path": "~/.cache/rtc-calibration-quality-20261003/spatial-heldout/evidence/rtc-calibrate.json",
+      "sha256": "49540c4b48dca2f4ae4290b7b038d821cb8c4d1c5d88725a8b25c6d4ad37a454"
+    },
+    {
+      "bytes": 0,
+      "path": "~/.cache/rtc-calibration-quality-20261003/spatial-heldout/evidence/rtc-calibrate.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 13979,
+      "path": "~/.cache/rtc-calibration-quality-20261003/spatial-heldout/evidence/stage-result.json",
+      "sha256": "4c059c9eaa4e708ba9347c578dff537968ab89b65f60f8375e462f6fe53efac2"
+    },
+    {
+      "bytes": 122893,
+      "path": "~/.cache/rtc-calibration-quality-20261003/spatial-heldout/interaction-plan.json",
+      "sha256": "bbc7f2342a3e500f529e33e75575bc54b134a6d60c759a36e1ab12e07f62f513"
+    },
+    {
+      "bytes": 56444,
+      "path": "~/.cache/rtc-calibration-quality-20261003/spatial-heldout/package/deployment.conf",
+      "sha256": "5ec18e29feb63579a003194d14786316722a56df703cecc794e49e1fe2dcccde"
+    },
+    {
+      "bytes": 169284,
+      "path": "~/.cache/rtc-calibration-quality-20261003/spatial-heldout/package/provenance.json",
+      "sha256": "f86c75867624c41d83224361f15dc0a3e7beceee8dad61e3934dc0a3a639cf20"
+    },
+    {
+      "bytes": 625,
+      "path": "~/.cache/rtc-calibration-quality-20261003/spatial-heldout/policy.json",
+      "sha256": "7122cafe16bc01ec01bf4c7b323a36c3c56c7166dfd22284e9def0fc09e14b52"
+    },
+    {
+      "bytes": 2490,
+      "path": "~/.cache/rtc-calibration-quality-20261003/spatial-heldout/probe-labels.json",
+      "sha256": "4590d609873338805c40bc6aa27738f380ef79d2495ac1de1846cab491cbb569"
+    },
+    {
+      "bytes": 13994,
+      "path": "~/.cache/rtc-calibration-quality-20261003/spatial-heldout/recipe.json",
+      "sha256": "53943a77af986f052a7b4611edb9a2adf7c1933fdb448f9a2a04248d3887fb3f"
+    },
+    {
       "bytes": 1341,
       "path": "~/.cache/rtc-calibration-quality-20261003/test-composition.jl",
       "sha256": "97d9cdd6405a41bf5f66ae7ec3df437d26d96ce0c6be23fbb7d3c3d860a8a719"
+    },
+    {
+      "bytes": 6384,
+      "path": "~/.cache/rtc-calibration-quality-20261003/test-directional-cohort-analysis.jl",
+      "sha256": "4ce0b12105e51545f1a7ce085ce8f3d7d4bc06f024983053757fc59868f23f4a"
     },
     {
       "bytes": 6887,
@@ -1834,6 +2669,11 @@
       "bytes": 24003,
       "path": "~/.cache/rtc-calibration-quality-20261003/verify-correction-array.jl",
       "sha256": "cb6f586eb9b15ed13254bf898b9b141dccdf4d93caf750f0f75122547794513c"
+    },
+    {
+      "bytes": 924,
+      "path": "/home/dgamroth/.cache/rtc-calibration-quality-20261003/directional-cohort-test-primary.log",
+      "sha256": "db2fa059dce5a130ca66893fa061a7b29a284347400e26f49d553058c0bbc007"
     }
   ],
   "groups": {
@@ -1977,6 +2817,168 @@
       "~/.cache/rtc-calibration-quality-20261003/analyze-dense-pilot.jl",
       "~/.cache/rtc-calibration-quality-20261003/analyze-dense-pilot-v2.log",
       "~/.cache/rtc-calibration-quality-20261003/analyze-dense-pilot.log"
+    ],
+    "directional_cohort_comparison_runner_analysis_and_validation": [
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/cohort-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/comparison.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1.log",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2.log",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1.log",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2.log",
+      "~/.cache/rtc-calibration-quality-20261003/prepare-directional-cohort.jl",
+      "~/.cache/rtc-calibration-quality-20261003/prepare-directional-cohort.log",
+      "~/.cache/rtc-calibration-quality-20261003/run-directional-cohort.py",
+      "~/.cache/rtc-calibration-quality-20261003/run-directional-cohort.log",
+      "~/.cache/rtc-calibration-quality-20261003/analyze-directional-cohort.jl",
+      "~/.cache/rtc-calibration-quality-20261003/analyze-directional-cohort.log",
+      "~/.cache/rtc-calibration-quality-20261003/test-directional-cohort-analysis.jl",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort-analysis-validation.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort-parse-initial.log",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort-test-initial.log",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort-test-second.log",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort-test-final.log"
+    ],
+    "directional_cohort_controller-modal-1_case_and_provenance": [
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/method.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/preparation.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/interaction-plan.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/canonical-plan.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/canonical-order.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/base-identity.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/prepared-identity.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/prepared-specification.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/input-method.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/input-recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/candidate-response.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/candidate-response.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/method-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/evidence/stage-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/evidence/rtc-calibrate.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/evidence/rtc-calibrate.stderr",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/evidence/deployment.log",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/method-base/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/method-base/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/package/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/package/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/analysis/calibration_client.jl",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/analysis/calibration_method_analysis.jl",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/orchestration-sources/calibration_campaign.py",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/orchestration-sources/calibration_method.py",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/orchestration-sources/deploy.py",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/orchestration-sources/export.py",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/orchestration-sources/export_calibration.py",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-1/orchestration-sources/export_hil.py"
+    ],
+    "directional_cohort_controller-modal-2_case_and_provenance": [
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/method.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/preparation.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/interaction-plan.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/canonical-plan.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/canonical-order.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/base-identity.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/prepared-identity.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/prepared-specification.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/input-method.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/input-recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/candidate-response.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/candidate-response.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/method-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/evidence/stage-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/evidence/rtc-calibrate.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/evidence/rtc-calibrate.stderr",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/evidence/deployment.log",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/method-base/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/method-base/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/package/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/package/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/analysis/calibration_client.jl",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/analysis/calibration_method_analysis.jl",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/orchestration-sources/calibration_campaign.py",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/orchestration-sources/calibration_method.py",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/orchestration-sources/deploy.py",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/orchestration-sources/export.py",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/orchestration-sources/export_calibration.py",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/controller-modal-2/orchestration-sources/export_hil.py"
+    ],
+    "directional_cohort_frozen_declarations_and_basis_inputs": [
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort-inputs/policy.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort-inputs/geometry.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort-inputs/modal-basis.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort-inputs/spatial-basis.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort-inputs/controller-modal-1-method.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort-inputs/controller-modal-1-recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort-inputs/controller-modal-2-method.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort-inputs/controller-modal-2-recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort-inputs/spatial-1-method.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort-inputs/spatial-1-recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort-inputs/spatial-2-method.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort-inputs/spatial-2-recipe.json"
+    ],
+    "directional_cohort_spatial-1_case_and_provenance": [
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/method.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/preparation.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/interaction-plan.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/canonical-plan.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/canonical-order.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/base-identity.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/prepared-identity.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/prepared-specification.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/input-method.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/input-recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/candidate-response.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/candidate-response.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/method-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/evidence/stage-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/evidence/rtc-calibrate.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/evidence/rtc-calibrate.stderr",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/evidence/deployment.log",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/method-base/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/method-base/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/package/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/package/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/analysis/calibration_client.jl",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/analysis/calibration_method_analysis.jl",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/orchestration-sources/calibration_campaign.py",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/orchestration-sources/calibration_method.py",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/orchestration-sources/deploy.py",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/orchestration-sources/export.py",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/orchestration-sources/export_calibration.py",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-1/orchestration-sources/export_hil.py"
+    ],
+    "directional_cohort_spatial-2_case_and_provenance": [
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/method.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/preparation.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/interaction-plan.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/canonical-plan.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/canonical-order.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/base-identity.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/prepared-identity.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/prepared-specification.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/input-method.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/input-recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/candidate-response.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/candidate-response.f32le",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/method-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/evidence/stage-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/evidence/rtc-calibrate.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/evidence/rtc-calibrate.stderr",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/evidence/deployment.log",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/method-base/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/method-base/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/package/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/package/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/analysis/calibration_client.jl",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/analysis/calibration_method_analysis.jl",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/orchestration-sources/calibration_campaign.py",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/orchestration-sources/calibration_method.py",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/orchestration-sources/deploy.py",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/orchestration-sources/export.py",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/orchestration-sources/export_calibration.py",
+      "~/.cache/rtc-calibration-quality-20261003/directional-cohort/spatial-2/orchestration-sources/export_hil.py"
     ],
     "full-n64-sweep1_declaration_and_receipts": [
       "~/.cache/rtc-calibration-quality-20261003/full-n64-sweep1/policy.json",
@@ -2259,9 +3261,28 @@
       "~/.cache/rtc-calibration-quality-20261003/correction/shared-array-config-differences.json",
       "~/.cache/rtc-calibration-quality-20261003/correction/shared-input-array-v2.log",
       "~/.cache/rtc-calibration-quality-20261003/verify-correction-array.jl"
+    ],
+    "spatial_heldout_frozen_inputs_package_and_receipts": [
+      "~/.cache/rtc-calibration-quality-20261003/spatial-heldout/policy.json",
+      "~/.cache/rtc-calibration-quality-20261003/spatial-heldout/directions.json",
+      "~/.cache/rtc-calibration-quality-20261003/spatial-heldout/probe-labels.json",
+      "~/.cache/rtc-calibration-quality-20261003/spatial-heldout/interaction-plan.json",
+      "~/.cache/rtc-calibration-quality-20261003/spatial-heldout/recipe.json",
+      "~/.cache/rtc-calibration-quality-20261003/spatial-heldout/base/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/spatial-heldout/base/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/spatial-heldout/package/provenance.json",
+      "~/.cache/rtc-calibration-quality-20261003/spatial-heldout/package/deployment.conf",
+      "~/.cache/rtc-calibration-quality-20261003/spatial-heldout/evidence/stage-result.json",
+      "~/.cache/rtc-calibration-quality-20261003/spatial-heldout/evidence/rtc-calibrate.json",
+      "~/.cache/rtc-calibration-quality-20261003/spatial-heldout/evidence/rtc-calibrate.stderr",
+      "~/.cache/rtc-calibration-quality-20261003/spatial-heldout/evidence/deployment.log",
+      "~/.cache/rtc-calibration-quality-20261003/prepare-spatial-heldout.jl",
+      "~/.cache/rtc-calibration-quality-20261003/prepare-spatial-heldout.log",
+      "~/.cache/rtc-calibration-quality-20261003/run-spatial-heldout.py",
+      "~/.cache/rtc-calibration-quality-20261003/run-spatial-heldout.log"
     ]
   },
-  "inventory_time_utc": "2026-10-03T20:54:32Z",
+  "inventory_time_utc": "2026-10-03T21:20:11Z",
   "method": "SHA-256 over file bytes; no RTC/Julia process, score computation, or source-tree modification",
   "missing_or_absent": [
     {
@@ -2296,7 +3317,7 @@
     "cache": "/home/dgamroth/.cache/rtc-calibration-quality-20261003",
     "rtc": {
       "repository": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-quality",
-      "revision": "2e0d26dc850210fe396b8d805f5747c95f93b6c8",
+      "revision": "fa23e69",
       "working_tree": "contains active source changes; listed paths hash exact current contents"
     }
   }
