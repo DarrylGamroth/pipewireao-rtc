@@ -1130,7 +1130,11 @@ a count, pass the declared 0.1-pixel held-out mean-reference bound and produce
 byte-identical dark/reference/mask/interaction artifacts. Dark and training
 payloads also match. Four held-out raw frames differ between separate runs;
 associated WFS values differ, and the paired comparison preserves its failed
-exact-trajectory result. Source-input/transport attribution is unresolved.
+exact-trajectory result. Source-input/transport attribution is unresolved for that historical run.
+A subsequent instrumented FGN qualification checks all 18 source/sink frames
+and all 16 capture payloads exactly. Its 16 raw/slopes/flux/validity records
+match the earlier JFG corpus byte for byte, establishing processing parity on
+shared inputs without attributing the historical divergence.
 
 [Validation](CALIBRATION_CAMPAIGN_VALIDATION.md) and the
 [evidence record](CALIBRATION_CAMPAIGN_EVIDENCE.json) retain both successful

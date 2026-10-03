@@ -1688,5 +1688,737 @@
     "deployment/hil/calibration_campaign_analysis.jl": "a0997f6c414b6860d8aa8cd0eb3b1ef91cda5c04a614482826030ade2d0f8412"
   },
   "source_limit": "installed nominal runs precede later records-map typing and preflight-only guards; final source has unit coverage, but is not claimed exact-hash nominal end-to-end evidence",
-  "qualification_disposition": "unequal raw inputs precede unequal WFS values; cause unresolved; exact outputs/artifacts do not establish exact qualification trajectory"
+  "qualification_disposition": "unequal raw inputs precede unequal WFS values; cause unresolved; exact outputs/artifacts do not establish exact qualification trajectory",
+  "followup_source_sink": {
+    "scope": "cache-only instrumented FGN qualification; cold owner snapshots perturb timing; not a latency benchmark or historical cause attribution",
+    "stage": {
+      "restoration_confirmed": true,
+      "release_confirmed": true,
+      "shutdown_confirmed": true,
+      "launcher_exit": 0,
+      "failure": null,
+      "recovery_failure": null
+    },
+    "source_sink_comparison": {
+      "diagnostic": "qualification source/sink comparison",
+      "exposures": [
+        {
+          "sequence": 1,
+          "source_to_public_sink": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_output_to_input": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          }
+        },
+        {
+          "sequence": 2,
+          "source_to_public_sink": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_output_to_input": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "public_sink_to_capture": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_prior_fgn": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_prior_jfg": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          }
+        },
+        {
+          "sequence": 3,
+          "source_to_public_sink": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_output_to_input": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "public_sink_to_capture": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_prior_fgn": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_prior_jfg": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          }
+        },
+        {
+          "sequence": 4,
+          "source_to_public_sink": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_output_to_input": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "public_sink_to_capture": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_prior_fgn": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_prior_jfg": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          }
+        },
+        {
+          "sequence": 5,
+          "source_to_public_sink": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_output_to_input": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "public_sink_to_capture": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_prior_fgn": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_prior_jfg": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          }
+        },
+        {
+          "sequence": 6,
+          "source_to_public_sink": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_output_to_input": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "public_sink_to_capture": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_prior_fgn": {
+            "equal_bytes": false,
+            "different_elements": 1,
+            "maximum_absolute_difference": 1.0
+          },
+          "source_to_prior_jfg": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          }
+        },
+        {
+          "sequence": 7,
+          "source_to_public_sink": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_output_to_input": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "public_sink_to_capture": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_prior_fgn": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_prior_jfg": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          }
+        },
+        {
+          "sequence": 8,
+          "source_to_public_sink": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_output_to_input": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "public_sink_to_capture": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_prior_fgn": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_prior_jfg": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          }
+        },
+        {
+          "sequence": 9,
+          "source_to_public_sink": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_output_to_input": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "public_sink_to_capture": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_prior_fgn": {
+            "equal_bytes": false,
+            "different_elements": 33,
+            "maximum_absolute_difference": 77.0
+          },
+          "source_to_prior_jfg": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          }
+        },
+        {
+          "sequence": 10,
+          "source_to_public_sink": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_output_to_input": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "public_sink_to_capture": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_prior_fgn": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_prior_jfg": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          }
+        },
+        {
+          "sequence": 11,
+          "source_to_public_sink": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_output_to_input": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "public_sink_to_capture": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_prior_fgn": {
+            "equal_bytes": false,
+            "different_elements": 2,
+            "maximum_absolute_difference": 1.0
+          },
+          "source_to_prior_jfg": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          }
+        },
+        {
+          "sequence": 12,
+          "source_to_public_sink": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_output_to_input": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "public_sink_to_capture": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_prior_fgn": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_prior_jfg": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          }
+        },
+        {
+          "sequence": 13,
+          "source_to_public_sink": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_output_to_input": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "public_sink_to_capture": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_prior_fgn": {
+            "equal_bytes": false,
+            "different_elements": 451,
+            "maximum_absolute_difference": 110.0
+          },
+          "source_to_prior_jfg": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          }
+        },
+        {
+          "sequence": 14,
+          "source_to_public_sink": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_output_to_input": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "public_sink_to_capture": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_prior_fgn": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_prior_jfg": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          }
+        },
+        {
+          "sequence": 15,
+          "source_to_public_sink": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_output_to_input": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "public_sink_to_capture": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_prior_fgn": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_prior_jfg": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          }
+        },
+        {
+          "sequence": 16,
+          "source_to_public_sink": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_output_to_input": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "public_sink_to_capture": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_prior_fgn": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_prior_jfg": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          }
+        },
+        {
+          "sequence": 17,
+          "source_to_public_sink": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_output_to_input": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_to_offline": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "public_sink_to_capture": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_prior_fgn": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "source_to_prior_jfg": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          }
+        },
+        {
+          "sequence": 18,
+          "source_to_public_sink": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          },
+          "photon_output_to_input": {
+            "equal_bytes": true,
+            "different_elements": 0,
+            "maximum_absolute_difference": 0.0
+          }
+        }
+      ],
+      "all_source_sink_equal": true,
+      "all_photon_ports_equal": true,
+      "all_public_sink_capture_equal": true,
+      "limitation": "One isolated instrumented deployment cannot recover older FGN upstream arrays or establish all-launch determinism."
+    },
+    "shared_input_wfs_parity": {
+      "version": 1,
+      "comparison": "instrumented FGN vs prior JFG qualification; actual raw pixels equal",
+      "channels": {
+        "raw.u16le": {
+          "frames": 16,
+          "different_frames": [],
+          "all_equal": true
+        },
+        "slopes.f32le": {
+          "frames": 16,
+          "different_frames": [],
+          "all_equal": true
+        },
+        "flux.f32le": {
+          "frames": 16,
+          "different_frames": [],
+          "all_equal": true
+        },
+        "validity.u8": {
+          "frames": 16,
+          "different_frames": [],
+          "all_equal": true
+        }
+      },
+      "all_equal": true,
+      "scope": "corpus-specific numerical processing parity, not latency or historical cause"
+    },
+    "evidence": {
+      "source-sink-discriminator/source-evidence/manifest.json": {
+        "path": "/home/dgamroth/.cache/rtc-calibration-campaign-20261002/source-sink-discriminator/source-evidence/manifest.json",
+        "sha256": "9fc86cf4bdb7e40f0d9ea7281210f1ee11c70a26a5b674e1e2e2f2da7ff42044"
+      },
+      "source-sink-discriminator/comparison.json": {
+        "path": "/home/dgamroth/.cache/rtc-calibration-campaign-20261002/source-sink-discriminator/comparison.json",
+        "sha256": "09edbab063c8a39d6ee88928750de39d6856d9641d55cc492ac68f735f9b3efd"
+      },
+      "source-sink-discriminator/paired-wfs.json": {
+        "path": "/home/dgamroth/.cache/rtc-calibration-campaign-20261002/source-sink-discriminator/paired-wfs.json",
+        "sha256": "55fc05e49903eabdb7d218ed5650f8422b0271c59c52c7a464f9f3fc1d8217e1"
+      },
+      "source-sink-discriminator/run.py": {
+        "path": "/home/dgamroth/.cache/rtc-calibration-campaign-20261002/source-sink-discriminator/run.py",
+        "sha256": "3a82bc4c5b498356f942ebd3149f1f8f321e73d9a8466596bf7e5427c3790986"
+      },
+      "source-sink-discriminator/run.log": {
+        "path": "/home/dgamroth/.cache/rtc-calibration-campaign-20261002/source-sink-discriminator/run.log",
+        "sha256": "94457459181efc8dc957d4c29f9e82b3242f07aa4e08a3f7bfe27541599bde95"
+      },
+      "source-sink-discriminator/fixture-provenance.json": {
+        "path": "/home/dgamroth/.cache/rtc-calibration-campaign-20261002/source-sink-discriminator/fixture-provenance.json",
+        "sha256": "1bb20ddd2af56e8b8ad7113a59456c64cdadb4148a41617cb6f60a9f3fd3f326"
+      },
+      "offline-plant-determinism/REPORT.md": {
+        "path": "/home/dgamroth/.cache/rtc-calibration-campaign-20261002/offline-plant-determinism/REPORT.md",
+        "sha256": "bb6dc44ed4e6e2c185c358ae4bbe530fad94b512ec5f9da4dd131ac0a3f6021f"
+      },
+      "offline-plant-determinism/capture.jl": {
+        "path": "/home/dgamroth/.cache/rtc-calibration-campaign-20261002/offline-plant-determinism/capture.jl",
+        "sha256": "af89996ea81d2ad7ddf91506e4ffc8bd136954eef6a8e279d4a48503266ff645"
+      },
+      "offline-plant-determinism/comparison.json": {
+        "path": "/home/dgamroth/.cache/rtc-calibration-campaign-20261002/offline-plant-determinism/comparison.json",
+        "sha256": "4cc07f49e133d56647f690c6910b4b8420929d9d21636701a645fde2f4b3fb1f"
+      }
+    },
+    "offline_scope": "two fresh CPU processes with threads=2,0; actual deployed source uses threads=1,0; no all-launch determinism claim",
+    "disposition": "18/18 source-to-sink and 16/16 capture integrity pass; all four channels in current FGN qualification match the prior JFG corpus exactly. Historical FGN divergence remains unresolved and original all_passed=false remains preserved."
+  }
 }

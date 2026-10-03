@@ -28,7 +28,7 @@ sinusoidal, LiFT and DOCRIME qualification are independent work.
 | Declared eligibility and held-out qualification | Campaign recipe and separate fresh session | All ROI evidence retained; no forced count/reselection; references are individual deployed measurements | Implemented; software fixture tests and installed selected CPU campaigns pass |
 | Startup parameter snapshot | Standard existing graph artifacts/export | Exact background/reference/mask binding and preparation before first exposure | Implemented; software fixture tests and installed selected CPU campaigns pass |
 | Restoration and stage transition | Existing protocol and public launcher | Confirmed restore/release/stop/quit before reduction/next stage, failures preserve disposition | Implemented; software fixture tests and installed selected CPU campaigns pass |
-| Candidate publication and numerical agreement | Campaign provenance and comparison | Complete candidate only, source/settings hashes, equivalent ADC/WFS processing | Candidate generation/artifact equality observed; exact qualification trajectory differs and remains under investigation |
+| Candidate publication and numerical agreement | Campaign provenance and comparison | Complete candidate only, source/settings hashes, equivalent ADC/WFS processing | Candidate generation/artifact equality and later shared-input WFS parity observed; historical trajectory difference remains unresolved |
 | Interaction matrix | Existing AOC zonal helpers and Rust coordinator | 554 signed commands, full 277 physical coordinates, valid associated responses | Implemented; both campaign interaction sessions complete |
 
 RTC-DEV-029 remains partial. Precision/linearity/observability and 221-coordinate

@@ -68,6 +68,43 @@ The historical 1,663-exposure fixed-input equality result remains separate
 evidence in [the prior validation](CALIBRATION_ACQUISITION_VALIDATION.md).
 It does not erase the current held-out discrepancy.
 
+### Source/sink discriminator and shared-input parity — 2026-10-03
+
+A cache-only copy of the FGN qualification package snapshots the public
+`hil_frame_buffer` after the model step and host staging, before publication.
+It also records the ordinary SHWFS photon output, detector photon input, pupil
+OPD and held command. The raw sink is copied only after the associated receipt
+and completed exposure. The bound is 18 snapshots: settling, sixteen held-out
+frames and restoration. Serialization happens after endpoint close. Production
+sources, original evidence, plant settings and calibration inputs are unchanged.
+
+Observed in this run:
+
+- All 18 independently encoded source ADC frames equal their public raw sink
+  byte for byte; both photon ports also match.
+- All 16 qualification sink arrays equal the completed capture payloads.
+- Those 16 actual raw frames equal the earlier JFG qualification frames.
+  Slopes, flux and validity also match bit for bit on this shared corpus.
+- Restoration, release, public shutdown and launcher exit zero are confirmed.
+
+Two separate RTC-free plant runs also match over 17 steps and reproduce this
+JFG corpus. Their Julia thread count was `2,0`; the installed source uses
+`1,0`. They establish the observed pair result, not all-launch determinism.
+The direct instrumented deployment retains the installed thread layout.
+
+This establishes input/capture integrity in the instrumented run and FGN/JFG
+numerical processing parity for the shared sixteen-frame corpus. It does not
+recover the earlier FGN source buffers or exclude a timing-sensitive defect
+in that earlier run. Cold snapshot copies perturb timing; these are not latency
+measurements. The historical failed comparison remains intact and its cause
+remains unresolved. Exact fixture, script, manifest and comparison identities
+are in [the evidence record](CALIBRATION_CAMPAIGN_EVIDENCE.json).
+An independent Astra audit recomputed 190 source/capture payload hashes and
+all 375 packaged artifact hashes, verified the complete domain/generation,
+sequence 1–18, 100-ms model spacing, 1.896-ms exposures and fresh restoration
+probe, and confirmed all 64 qualification channel payloads match prior JFG.
+It found no blocker within this explicitly limited diagnostic scope.
+
 ## Software checks and original failures
 
 - Python deployment suite: 141 tests, passed, two skipped; focused campaign
