@@ -205,7 +205,13 @@ end
             "actual_native_frames_revalidated"=>1561,"actual_native_accepted_frames_revalidated"=>1536,
             "transfer_score_sha256"=>"synthetic transfer seal","selected_controller_sha256"=>"synthetic padded CM seal")
         admission_path=joinpath(root,"heart-cold-admission.json");Protocol.write_json_atomic(admission_path,admission)
+        mkdir(joinpath(root,"heart"));mkdir(joinpath(root,"heart/calibration"))
+        native_threshold=joinpath(root,"heart/calibration/threshold.fits");write(native_threshold,"sealed synthetic native FITS")
+        wire_threshold=joinpath(root,"heart/classic-flux-thresholds.f32le");write(wire_threshold,fill(1000f0,188))
         contract=Dict("version"=>1,"profile"=>"classic","controller_coordinates"=>277,"frames"=>options.frames,
+            "normal_response_policy"=>CorrectionOwner.Profiles.CLASSIC_RESPONSE_POLICY,
+            "flux_threshold_native_file"=>"threshold.fits","flux_threshold_native_sha256"=>CorrectionOwner.digest(native_threshold),
+            "flux_threshold_wire_sha256"=>CorrectionOwner.digest(wire_threshold),"runtime_inputs"=>Dict("threshold.fits"=>CorrectionOwner.digest(native_threshold)),
             "native_ingress_mode"=>"streaming","gain"=>-.3,"pole"=>.99,"integration_scalar"=>1,"controller_sign"=>1,
             "detector_acceptance_policy"=>CorrectionOwner.Profiles.DETECTOR_ACCEPTANCE_POLICY,
             "native_telemetry_max_bytes"=>128*1024*1024,"physical_projection_mode"=>"native-default-copy","projection_native_file"=>nothing,

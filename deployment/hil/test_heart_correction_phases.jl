@@ -110,12 +110,12 @@ end
         @test streams[3]==("cbHoGrad0",13,(188,1))
         @test streams[4]==("cbClUnclipped0",16,(277,1))
         for phase in Phases.PHASES;phase_fixture_set(root,streams,phase,frames;active);end
-        archive=Phases.read_archive(root;frames,budget=UInt64(4*1024*1024),profile=:classic,active)
+        archive=Phases.read_archive(root;frames,budget=UInt64(4*1024*1024),profile=:classic,active,thresholds=fill(1000f0,188))
         @test length(archive.files)==15
         @test archive.phases[:restore_run]["cbDmCmd0"][1].sync==2
         @test_throws ArgumentError Phases.read_archive(root;frames,budget=UInt64(4*1024*1024))
         path=phase_fixture_path(root,:correcting,"cbHoGrad0")
         open(path,"r+") do io;seek(io,1024+64+16(86-1));write(io,Int32(0));end
-        @test_throws ArgumentError Phases.read_archive(root;frames,budget=UInt64(4*1024*1024),profile=:classic,active)
+        @test_throws ArgumentError Phases.read_archive(root;frames,budget=UInt64(4*1024*1024),profile=:classic,active,thresholds=fill(1000f0,188))
     end
 end

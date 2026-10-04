@@ -39,13 +39,18 @@ end
 struct QuitService{Options,Store}
     options::Options
     phases::Store
+    response::Base.RefValue{Union{Nothing,Telemetry.TelemetryFrame}}
+    thresholds::Union{Nothing,Vector{Float32}}
+    diagnostics::Profiles.ResponseDiagnostics
 end
 (service::QuitService)() = isfile(service.options.quit_request) ? error("native correction shutdown requested") : nothing
 
 # This specialization is installed only by the active correction owner. The
 # frozen held-calibration session and default reader remain unchanged.
 function Native.read_native!(session::Native.Session{P,D,S,K,O,A,Service},tag,datatype,shape,until) where {P,D,S,K,O,A,Service<:QuitService}
-    return Phases.read_frame!(session,session.service.phases,tag,datatype,shape,until;remaining=Acquisition.remaining)
+    frame=Phases.read_frame!(session,session.service.phases,tag,datatype,shape,until;remaining=Acquisition.remaining)
+    tag=="cbHoGrad0" && (session.service.response[]=frame)
+    return frame
 end
 
 function enter_phase!(owner,phase,until)
@@ -164,6 +169,7 @@ function load_contract(options)
         isfile(options.active_path) && !islink(options.active_path) && filesize(options.active_path)==188 &&
             digest(options.active_path)==contract.wfs_active_sha256 || error("Classic correction eligibility differs")
     end
+    Profiles.read_response_thresholds(dirname(options.heart_active_contract),contract,options.profile)
     projection=Profiles.projection(options,contract)
     return contract,projection
 end
@@ -213,6 +219,8 @@ function startup_proof(owner,expected_generation)
         reinterpret(UInt32,vec(native_projection))==reinterpret(UInt32,vec(owner.projection)) ||
             error("wire projection differs from the actual native Float32 FITS projection")
     else
+        threshold_path=realpath(joinpath(options.heart_native_runtime,"config",contract.flux_threshold_native_file))
+        digest(threshold_path)==contract.flux_threshold_native_sha256 || error("native loaded flux threshold differs")
         native_E=read_native_extrapolation(options,contract)
         reinterpret(UInt32,vec(native_E))==reinterpret(UInt32,vec(owner.projection.extrapolation)) ||
             error("Classic wire E differs from actual native sparse Float32 entries")
@@ -336,7 +344,7 @@ function exchange!(owner)
     session=owner.session;until=Acquisition.deadline(TIMEOUT_NS)
     sequence=Base.checked_add(session.state.cursor_sequence,UInt64(1))
     arm_native_receipt!(session.dm_sink,sequence)
-    result=Acquisition.acquire_exposure!(session;timeout_ns=Acquisition.remaining(until),require_valid=sequence!=1)
+    result=Acquisition.acquire_exposure!(session;timeout_ns=Acquisition.remaining(until),require_valid=session.options.profile===:classic ? false : sequence!=1)
     if session.options.profile===:classic
         calibrated=Native.read_native!(session,"cbHoPixelsCalib0",8,(352,352),until)
         calibrated.bucket==sequence-1 && calibrated.sync==sequence && calibrated.state==2 &&
@@ -344,9 +352,17 @@ function exchange!(owner)
         all(index->session.active[index] || !session.validity[index],eachindex(session.active)) ||
             error("inactive Classic subaperture became valid")
     end
-    # The first native zero-lag initialization is retained in the science window,
-    # not skipped or replaced by an extra exposure.
-    !result.valid && (sequence!=1 || any(!iszero,session.values)) && error("undeclared invalid active native response")
+    # Copper retains its declared first zero-lag initialization. Classic retains
+    # every normal response, including finite native flux-classified dropouts.
+    if session.options.profile===:copper
+        !result.valid && (sequence!=1 || any(!iszero,session.values)) && error("undeclared invalid active native response")
+    end
+    frame=session.service.response[]
+    frame!==nothing && frame.bucket==sequence-1 && frame.sync==sequence || error("active response association differs")
+    response=Profiles.normal_response(frame,session.options.profile,session.active;thresholds=session.service.thresholds)
+    response.valid==result.valid || error("native response validity differs from acquired payload")
+    Profiles.observe_response!(session.service.diagnostics,response)
+    session.service.response[]=nothing
     received=wait_native_receipt!(session,sequence,until)
     receipt_completed=time_ns()
     native=Native.read_native!(session,"cbDmCmd0",20,(277,1),until)
@@ -361,7 +377,8 @@ function exchange!(owner)
     token=relay_figure!(session,received,until)
     session.native_dm_bucket=native.bucket
     Native.record_evidence!(session,(;kind="active_command",window=owner.window,
-        sequence,acquisition=Acquisition.cursor(session),native_dm_bucket=native.bucket,native_dm_sync=native.sync,
+        sequence,acquisition=Acquisition.cursor(session),native_response_valid=response.valid,
+        native_dropout_subapertures=count(response.dropout),native_dm_bucket=native.bucket,native_dm_sync=native.sync,
         native_vdm_bucket=vdm_frame.bucket,native_vdm_sync=vdm_frame.sync,relay_sequence=token,
         native_dm_um_sha256=bytes2hex(sha256(reinterpret(UInt8,transport.figure))),
         std_dm_metres_sha256=bytes2hex(sha256(reinterpret(UInt8,received))),
@@ -389,12 +406,15 @@ function finish_window!(owner)
     diagnostics=Acquisition.exposure_diagnostics(session)
     diagnostics.frames==sequence || error("active native detector frame count differs")
     archive=Phases.read_archive(session.options.heart_native_runtime;frames=Int(sequence),
-        budget=session.options.heart_telemetry_max_bytes,profile=session.options.profile,active=session.active)
+        budget=session.options.heart_telemetry_max_bytes,profile=session.options.profile,active=session.active,thresholds=session.service.thresholds)
     Profiles.validate_detector_diagnostics(archive.phases[:correcting]["cbHoPixelsRaw0"],
-        archive.phases[:correcting]["cbHoGrad0"],session.options.profile,session.active,diagnostics)
+        archive.phases[:correcting]["cbHoGrad0"],session.options.profile,session.active,diagnostics;thresholds=session.service.thresholds)
+    Profiles.validate_response_diagnostics(archive.phases[:correcting]["cbHoGrad0"],session.options.profile,session.active,
+        Profiles.response_diagnostics(session.service.diagnostics);thresholds=session.service.thresholds)
     Native.record_evidence!(session,(;kind="window_completed",window=owner.window,
         expected_records=expected,restoration_confirmed=true,clipping_excluded=true,
-        detector_diagnostics=Acquisition.exposure_diagnostics(session)))
+        detector_diagnostics=Acquisition.exposure_diagnostics(session),
+        native_response_diagnostics=Profiles.response_diagnostics(session.service.diagnostics)))
     snapshot!(owner,"before-reset")
     owner.retained=true
     return nothing
@@ -423,8 +443,8 @@ function snapshot!(owner,label)
     return root
 end
 
-function verify_closed_window(root,frames,budget::UInt64;profile::Symbol=:copper,active=nothing)
-    archive=Phases.read_archive(root;frames,budget,profile,active)
+function verify_closed_window(root,frames,budget::UInt64;profile::Symbol=:copper,active=nothing,thresholds=nothing)
+    archive=Phases.read_archive(root;frames,budget,profile,active,thresholds)
     result=Dict{String,Any}()
     for (tag,_,_) in Phases.stream_contract(profile)
         values=vcat([archive.phases[phase][tag] for phase in Phases.PHASES]...)
@@ -458,6 +478,8 @@ function publish_report!(options,science,recorder,state,owner;failure=nothing)
         "native_journal_prefix_sha256"=>(isfile(joinpath(root,"native-evidence.jsonl")) ? digest(joinpath(root,"native-evidence.jsonl")) : nothing),
         "native_recording_retained"=>owner.retained,"active_contract_sha256"=>digest(options.heart_active_contract),
         "native_phase_paths"=>owner.session.service.phases.paths,
+        "native_response_diagnostics"=>Profiles.response_diagnostics(owner.session.service.diagnostics),
+        "normal_response_policy"=>(options.profile===:classic ? Profiles.CLASSIC_RESPONSE_POLICY : "native-copper-first-zero-initialization-v1"),
         "time_observation_scope"=>"CLOCK_MONOTONIC application whole-exchange boundaries; no exact callback, native RTC latency, RTT or cadence claim",
         "qualification"=>"finite unchanged native CORRECT comparison fixture; scientific utility, reset equivalence and public shutdown require independent validation"))
     Protocol.write_json_atomic(retained_options.output,report;maximum=256*1024)
@@ -487,7 +509,7 @@ function reset_window!(owner,options,science,recorder,request_id)
     # The new generation has not recorded or admitted a frame. Preserve the
     # closed old files before any new SET_TELM_RECORD command is issued.
     archive=snapshot!(owner,"after-native-exit")
-    closed_records=verify_closed_window(archive,options.frames,options.heart_telemetry_max_bytes;profile=options.profile,active=session.active)
+    closed_records=verify_closed_window(archive,options.frames,options.heart_telemetry_max_bytes;profile=options.profile,active=session.active,thresholds=session.service.thresholds)
     Native.record_evidence!(session,(;kind="closed_native_generation",window=owner.window,
         old_child_pid=old_pid,old_generation,old_child_absent=true,closed_records))
     for path in readdir(options.heart_native_runtime;join=true)
@@ -502,6 +524,9 @@ function reset_window!(owner,options,science,recorder,request_id)
     session.state=Acquisition.AcquisitionState()
     session.state.probe_sequence=lifetime_token
     session.association=Telemetry.FrameAssociation();session.native_dm_bucket=nothing
+    session.service.response[]=nothing
+    session.service.diagnostics.frames=0;session.service.diagnostics.dropout_frames=0
+    session.service.diagnostics.dropout_subaperture_samples=0;fill!(session.service.diagnostics.per_subaperture_dropout_frames,0)
     session.previous_intensity=0.0f0
     session.diagnostics=Acquisition.ExposureDiagnostics(Profiles.descriptor(options.profile).adc_bits)
     session.native_controller_held=nothing
@@ -549,7 +574,9 @@ function run_owner(options,plant_module,target)
     try
         session_options=merge(options,(;heart_probe_directory=directory))
         active=options.profile===:classic ? Main.calibration_active(options) : nothing
-        session=Native.prepare_session(plant,science.driver,session_options;active,adc_bits=Profiles.descriptor(options.profile).adc_bits,service=QuitService(options,Phases.PhaseStore(options.profile)))
+        session=Native.prepare_session(plant,science.driver,session_options;active,adc_bits=Profiles.descriptor(options.profile).adc_bits,service=QuitService(options,Phases.PhaseStore(options.profile),
+            Ref{Union{Nothing,Telemetry.TelemetryFrame}}(nothing),
+            Profiles.read_response_thresholds(dirname(options.heart_active_contract),contract,options.profile),Profiles.ResponseDiagnostics(options.profile)))
         owner=Owner(session,contract,projection,nothing,nothing,1,false)
         Native.start_session!(session)
         # RUN acknowledges held native control before the connect reply, without

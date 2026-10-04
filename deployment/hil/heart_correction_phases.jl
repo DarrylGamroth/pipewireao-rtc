@@ -158,7 +158,7 @@ function read_frame!(session,store,tag,datatype,shape,until;remaining)
     return frame
 end
 
-function validate_frame(frame,phase,tag,index,frames;profile::Symbol=:copper,active=nothing)
+function validate_frame(frame,phase,tag,index,frames;profile::Symbol=:copper,active=nothing,thresholds=nothing)
     expected_bucket=tag=="cbDmCmd0" ? (phase===:startup_run ? 0 : phase===:restore_run ? frames+1 : index) : index-1
     expected_sync=tag=="cbClUnclipped0" ? 0 : tag=="cbDmCmd0" ? (phase===:startup_run ? 0 : phase===:restore_run ? frames : index) : index
     frame.bucket==expected_bucket && frame.sync==expected_sync || error("native phase global bucket/exposure sync differs")
@@ -169,14 +169,13 @@ function validate_frame(frame,phase,tag,index,frames;profile::Symbol=:copper,act
     end
     tag=="cbClUnclipped0" && CorrectionTelemetry.vdm_values(frame,UInt64(index);coordinates=Profiles.descriptor(profile).coordinates)
     if tag=="cbHoGrad0" && profile===:classic
-        valid=Profiles.response_valid(frame,profile,active)
-        index==1 || valid || error("undeclared invalid Classic phase record")
+        Profiles.normal_response(frame,profile,active;thresholds)
     end
     return nothing
 end
 
 """Decode every retained phase file, including both empty WFS RUN sets."""
-function read_archive(root;frames::Int,budget::UInt64,profile::Symbol=:copper,active=nothing)
+function read_archive(root;frames::Int,budget::UInt64,profile::Symbol=:copper,active=nothing,thresholds=nothing)
     0<frames<=256 || error("native retained phase frame bound differs")
     result=Dict{Symbol,Dict{String,Vector{Telemetry.TelemetryFrame}}}()
     files=Dict{String,String}()
@@ -199,7 +198,7 @@ function read_archive(root;frames::Int,budget::UInt64,profile::Symbol=:copper,ac
                 for index in 1:count
                     frame=Telemetry.next_frame!(reader)
                     frame!==nothing || error("native retained phase record is absent")
-                    validate_frame(frame,phase,tag,index,frames;profile,active);push!(records,frame)
+                    validate_frame(frame,phase,tag,index,frames;profile,active,thresholds);push!(records,frame)
                 end
                 Telemetry.next_frame!(reader)===nothing && reader.frames==count &&
                     filesize(path)==1024+count*(64+reader.spec.data_bytes) || error("extra or partial native phase records remain")

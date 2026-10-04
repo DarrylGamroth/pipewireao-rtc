@@ -45,6 +45,9 @@ include("test_heart_correction_phase_fixture.jl")
             for index in 1:277;projection[index,index]=1;end
             write(joinpath(package,"heart/native-extrapolation.f32le"),vec(permutedims(projection)))
             write(joinpath(package,"heart/classic-active.u8"),UInt8.(active))
+            mkpath(joinpath(package,"heart/calibration"))
+            write(joinpath(package,"heart/calibration/threshold.fits"),"synthetic sealed native thresholds")
+            write(joinpath(package,"heart/classic-flux-thresholds.f32le"),fill(1000f0,188))
         end
         write(joinpath(package,"heart/physical-projection.f32le"),vec(permutedims(projection)))
         native=joinpath(root,"native");mkpath(joinpath(native,"before-reset"))
@@ -73,21 +76,28 @@ include("test_heart_correction_phase_fixture.jl")
             entries=Dict(tag=>(;path,device=stat(path).device,inode=stat(path).inode,per_file_records=0) for (tag,path) in phase_paths[phase])
             push!(records,(;kind="native_phase_admitted",phase,window=1,no_publication_before_all_empty_headers=true,files=entries))
         end
+        response_diagnostics=(;frames=256,dropout_frames=0,dropout_subaperture_samples=0,per_subaperture_dropout_frames=zeros(UInt64,profile===:classic ? 188 : 0))
         for index in 1:256
-            push!(records,(;kind="active_command",sequence=index,native_dm_bucket=index,native_dm_sync=index,
+            push!(records,(;kind="active_command",sequence=index,native_response_valid=profile===:classic || index>1,native_dropout_subapertures=0,native_dm_bucket=index,native_dm_sync=index,
                 native_vdm_bucket=index-1,native_vdm_sync=0,std_dm_metres_sha256=zero_dm,projection=(;vdm_sha256=zero_vdm)))
         end
-        push!(records,(;kind="window_completed",restoration_confirmed=true,clipping_excluded=true))
+        push!(records,(;kind="window_completed",restoration_confirmed=true,clipping_excluded=true,native_response_diagnostics=response_diagnostics))
         journal=joinpath(native,"native-evidence.jsonl");write(journal,join(JSON3.write.(records),'\n')*"\n")
         raw=zeros(UInt16,spec.width^2*256);raw[1:spec.width^2:end].=1
         frame=joinpath(native,"science.frames.u16le");write(frame,raw)
         command=joinpath(native,"science.commands.f32le");write(command,zeros(Float32,277*256))
         report=JSON3.read(JSON3.write((;native_evidence_directory=native,native_journal_bytes=filesize(journal),
             native_journal_prefix_sha256=FrozenAnalysis.file_hash(journal),completed_correct_proof=proof,native_phase_paths=phase_paths,
+            native_response_diagnostics=response_diagnostics,normal_response_policy=profile===:classic ? NativeAnalysis.Profiles.CLASSIC_RESPONSE_POLICY : "native-copper-first-zero-initialization-v1",
             detector_diagnostics=(;raw_available=true,adc_upper_rail=2^spec.adc_bits-1,frames=256,maximum_adc=1,
                 upper_rail_frames=0,upper_rail_pixels=0,invalid_frames=profile===:classic ? 0 : 1),
             frame=(;file=frame,sha256=FrozenAnalysis.file_hash(frame)),command=(;file=command,sha256=FrozenAnalysis.file_hash(command)))))
         contract=JSON3.read(JSON3.write((;runtime_flags=flag_rows,profile=String(profile),
+            normal_response_policy=profile===:classic ? NativeAnalysis.Profiles.CLASSIC_RESPONSE_POLICY : nothing,
+            flux_threshold_native_file="threshold.fits",
+            flux_threshold_native_sha256=profile===:classic ? FrozenAnalysis.file_hash(joinpath(package,"heart/calibration/threshold.fits")) : nothing,
+            flux_threshold_wire_sha256=profile===:classic ? FrozenAnalysis.file_hash(joinpath(package,"heart/classic-flux-thresholds.f32le")) : nothing,
+            runtime_inputs=profile===:classic ? Dict("threshold.fits"=>FrozenAnalysis.file_hash(joinpath(package,"heart/calibration/threshold.fits"))) : Dict(),
             native_telemetry_max_bytes=spec.telemetry_max_bytes,physical_projection_mode="native-default-copy",projection_native_file=nothing,
             extrapolation_wire_sha256=profile===:classic ? FrozenAnalysis.file_hash(joinpath(package,"heart/native-extrapolation.f32le")) : nothing,
             wfs_active_sha256=profile===:classic ? FrozenAnalysis.file_hash(joinpath(package,"heart/classic-active.u8")) : nothing,
@@ -98,6 +108,12 @@ include("test_heart_correction_phase_fixture.jl")
         @test verified.actual_dm_records==258
         @test verified.clipping_excluded && verified.restoration_confirmed
         original_report=JSON3.read(JSON3.write(report),Dict{String,Any})
+        changed=deepcopy(original_report)
+        changed["native_response_diagnostics"]["dropout_frames"]=1
+        @test_throws ArgumentError NativeAnalysis.verify_native_records(package,JSON3.read(JSON3.write(changed)),contract)
+        changed=deepcopy(original_report)
+        changed["normal_response_policy"]="calibration-all-active"
+        @test_throws ErrorException NativeAnalysis.verify_native_records(package,JSON3.read(JSON3.write(changed)),contract)
         changed=deepcopy(original_report)
         changed["native_phase_paths"]["startup_run"]["cbDmCmd0"]="unrelated.tel"
         @test_throws ErrorException NativeAnalysis.verify_native_records(package,JSON3.read(JSON3.write(changed)),contract)

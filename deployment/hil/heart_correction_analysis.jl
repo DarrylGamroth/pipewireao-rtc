@@ -77,6 +77,7 @@ function verify_native_records(package,report,contract)
     budget=spec.telemetry_max_bytes
     get(contract,:native_telemetry_max_bytes,profile===:copper ? budget : nothing)==budget && budget>=Profiles.required_file_budget(profile,256) || error("native retained telemetry capacity differs")
     active=profile===:classic ? Profiles.read_active(joinpath(package,"heart/classic-active.u8"),contract.wfs_active_sha256) : nothing
+    thresholds=Profiles.read_response_thresholds(package,contract,profile)
     root=report.native_evidence_directory
     adc=report.detector_diagnostics
     adc.frames==256 || error("native detector frame count differs")
@@ -108,9 +109,13 @@ function verify_native_records(package,report,contract)
         occursin("status<0><SUCCESS>",reply.stdout*reply.stderr) || error("native active CORRECT ACK failed")
     archive=isdir(joinpath(root,"after-native-exit")) ? joinpath(root,"after-native-exit") : joinpath(root,"before-reset")
     snapshot=JSON3.read(read(joinpath(archive,"snapshot.json"),String))
-    archive_records=Phases.read_archive(archive;frames=256,budget,profile,active)
+    archive_records=Phases.read_archive(archive;frames=256,budget,profile,active,thresholds)
     actual_diagnostics=Profiles.validate_detector_diagnostics(archive_records.phases[:correcting]["cbHoPixelsRaw0"],
-        archive_records.phases[:correcting]["cbHoGrad0"],profile,active,adc)
+        archive_records.phases[:correcting]["cbHoGrad0"],profile,active,adc;thresholds)
+    response_diagnostics=Profiles.validate_response_diagnostics(archive_records.phases[:correcting]["cbHoGrad0"],
+        profile,active,report.native_response_diagnostics;thresholds)
+    only(completed).native_response_diagnostics==report.native_response_diagnostics || error("native completed response diagnostics differ")
+    report.normal_response_policy==(profile===:classic ? Profiles.CLASSIC_RESPONSE_POLICY : "native-copper-first-zero-initialization-v1") || error("native reported response policy differs")
     for (name,hash) in archive_records.files
         get(snapshot.files,Symbol(name),nothing)==hash || error("native snapshot phase hash differs")
     end
@@ -141,8 +146,13 @@ function verify_native_records(package,report,contract)
     for index in 1:256
         bytes2hex(sha256(reinterpret(UInt8,Telemetry.raw_pixels(native["cbHoPixelsRaw0"][index]))))==
             bytes2hex(sha256(@view frames[(index-1)*frame_bytes+1:index*frame_bytes])) || error("native raw frame differs from actual retained ADC")
-        valid=Profiles.response_valid(native["cbHoGrad0"][index],profile,active)
-        index==1 || valid || error("undeclared invalid native response remains")
+        response=Profiles.normal_response(native["cbHoGrad0"][index],profile,active;thresholds)
+        valid=response.valid
+        commands[index].native_response_valid===valid &&
+            commands[index].native_dropout_subapertures isa Integer && !(commands[index].native_dropout_subapertures isa Bool) &&
+            commands[index].native_dropout_subapertures==count(response.dropout) ||
+            error("native per-frame response diagnostics differ")
+        profile===:classic || index==1 || valid || error("undeclared invalid native response remains")
         dm=native["cbDmCmd0"][index+1]
         figure=[Telemetry.value_at(Float32,dm.payload,4(actuator-1)) for actuator in 1:277]
         transport=Telemetry.confirm_probe(dm,figure,collect(adopted[:,index]))
@@ -157,6 +167,7 @@ function verify_native_records(package,report,contract)
     end
     return (;actual_raw_frames=256,actual_wfs_records=256,actual_vdm_records=256,actual_dm_records=258,
         detector_acceptance_policy=Profiles.DETECTOR_ACCEPTANCE_POLICY,detector_diagnostics=actual_diagnostics,
+        normal_response_policy=report.normal_response_policy,native_response_diagnostics=response_diagnostics,
         clipping_excluded=true,restoration_confirmed=true,native_journal_prefix_sha256=report.native_journal_prefix_sha256,
         scope="retained native payload/count/ACK verification; public shutdown is a separate lifecycle gate")
 end

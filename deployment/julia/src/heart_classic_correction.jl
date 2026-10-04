@@ -101,11 +101,19 @@ function export_classic_package(args,base,output,backend,specification,provenanc
         wfs=only(filter(item->get(get(item,"args",Dict()),"factory.name",nothing)=="api.heart.std-wfs.sink",core["context.objects"]))["args"]
         ingress=HeartCalibrationExport.ingress_contract("streaming","classic",wfs,joinpath(package,"heart/bin/scaoTemplate");source_revision=staged_provenance["heart"]["revision"])
         runtime_inputs=Dict(basename(path)=>digest(path) for path in readdir(joinpath(package,"heart/calibration");join=true))
+        threshold_native=basename(HeartConfiguration.one(sections["HO"],"SUBAP_THRES_FLUX","WFS_NUM")["FILE"])
+        threshold_values=HeartConfiguration.native_float_values(joinpath(package,"heart/calibration",threshold_native),[1,188])
+        thresholds=Float32.(threshold_values)
+        all(==(1000f0),thresholds) || throw(ArgumentError("Classic qualified normal flux thresholds differ"))
+        threshold_wire=joinpath(package,"heart/classic-flux-thresholds.f32le")
+        write(threshold_wire,thresholds)
         flags=[Dict("section"=>section,"field"=>field,"value"=>value) for (section,field,value) in HeartOwner.read_requirements(joinpath(package,"heart/requirements.json"))]
         NativeFlags.validate_flags(flags,:classic)
         contract=merge(recurrence,Dict("version"=>1,"profile"=>"classic","controller_coordinates"=>277,"frames"=>256,
             "native_ingress_mode"=>"streaming","native_telemetry_max_bytes"=>128*1024*1024,
-            "detector_acceptance_policy"=>"normal-correction-adc-bounded-replay-v1","native_ingress"=>ingress,"runtime_flags"=>flags,"plant_sha256"=>plant_hash,
+            "detector_acceptance_policy"=>"normal-correction-adc-bounded-replay-v1",
+            "normal_response_policy"=>"normal-classic-flux-state-v1","flux_threshold_native_file"=>threshold_native,
+            "flux_threshold_native_sha256"=>runtime_inputs[threshold_native],"flux_threshold_wire_sha256"=>digest(threshold_wire),"native_ingress"=>ingress,"runtime_flags"=>flags,"plant_sha256"=>plant_hash,
             "projection_wire_sha256"=>digest(joinpath(package,"heart/physical-projection.f32le")),"projection_native_file"=>nothing,
             "physical_projection_mode"=>"native-default-copy","extrapolation_wire_sha256"=>digest(joinpath(package,"heart/native-extrapolation.f32le")),
             "extrapolation_native_file"=>extrapolation_native,"wfs_active_sha256"=>digest(joinpath(package,"heart/classic-active.u8")),

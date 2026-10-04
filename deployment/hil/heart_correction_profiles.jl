@@ -90,14 +90,103 @@ function response_valid(frame,profile::Symbol,active)
     return Telemetry.classic_response(frame;order=collect(1:188),scale=(1.0,1.0),active).valid
 end
 
+const CLASSIC_RESPONSE_POLICY="normal-classic-flux-state-v1"
+
+"""Read the independently sealed representation of the actual native thresholds."""
+function read_response_thresholds(package,contract,profile::Symbol)
+    descriptor(profile)
+    profile===:copper && return nothing
+    contract.normal_response_policy==CLASSIC_RESPONSE_POLICY || throw(ArgumentError("Classic normal response policy differs"))
+    name=String(contract.flux_threshold_native_file)
+    basename(name)==name && !isempty(name) || throw(ArgumentError("Classic native threshold filename differs"))
+    native=joinpath(package,"heart/calibration",name)
+    isfile(native) && !islink(native) && bytes2hex(open(sha256,native))==contract.flux_threshold_native_sha256 &&
+        contract.runtime_inputs[name]==contract.flux_threshold_native_sha256 || throw(ArgumentError("Classic native threshold identity differs"))
+    thresholds=vec(read_matrix(joinpath(package,"heart/classic-flux-thresholds.f32le"),(188,1),contract.flux_threshold_wire_sha256))
+    # This qualified profile binds the unchanged native 1000-count threshold.
+    all(==(1000f0),thresholds) || throw(ArgumentError("Classic qualified flux thresholds differ"))
+    return thresholds
+end
+
+"""Validate normal Classic classification while preserving every raw slope.
+
+Eligible subapertures may drop below their sealed flux threshold on any normal
+science frame. The native reconstructor excludes their state-zero records.
+This does not change the held calibration all-active validity rule.
+"""
+function normal_response(frame,profile::Symbol,active;thresholds=nothing)
+    valid=response_valid(frame,profile,active)
+    profile===:copper && return (;valid,dropout=Bool[])
+    thresholds isa Vector{Float32} && length(thresholds)==188 && all(==(1000f0),thresholds) ||
+        throw(ArgumentError("Classic normal flux thresholds differ"))
+    dropout=fill(false,188)
+    for index in eachindex(active)
+        offset=16(index-1)
+        state=Telemetry.value_at(Int32,frame.payload,offset)
+        x=Telemetry.value_at(Float32,frame.payload,offset+4)
+        y=Telemetry.value_at(Float32,frame.payload,offset+8)
+        flux=Telemetry.value_at(Float32,frame.payload,offset+12)
+        all(isfinite,(x,y,flux)) || throw(ArgumentError("nonfinite Classic normal response"))
+        expected=active[index] ? Int32(flux>0 && flux>=thresholds[index]) : Int32(-1)
+        state==expected || throw(ArgumentError("Classic native state differs from sealed eligibility/flux classification"))
+        dropout[index]=active[index] && state==0
+    end
+    return (;valid,dropout)
+end
+
+mutable struct ResponseDiagnostics
+    frames::UInt64
+    dropout_frames::UInt64
+    dropout_subaperture_samples::UInt64
+    per_subaperture_dropout_frames::Vector{UInt64}
+end
+function ResponseDiagnostics(profile::Symbol)
+    spec=descriptor(profile)
+    return ResponseDiagnostics(0,0,0,zeros(UInt64,profile===:classic ? spec.gradient_rows : 0))
+end
+function observe_response!(diagnostics::ResponseDiagnostics,response)
+    length(response.dropout)==length(diagnostics.per_subaperture_dropout_frames) || throw(ArgumentError("native response diagnostic extent differs"))
+    diagnostics.frames=Base.checked_add(diagnostics.frames,UInt64(1))
+    diagnostics.dropout_frames=Base.checked_add(diagnostics.dropout_frames,UInt64(any(response.dropout)))
+    diagnostics.dropout_subaperture_samples=Base.checked_add(diagnostics.dropout_subaperture_samples,UInt64(count(response.dropout)))
+    for index in eachindex(response.dropout)
+        diagnostics.per_subaperture_dropout_frames[index]=Base.checked_add(diagnostics.per_subaperture_dropout_frames[index],UInt64(response.dropout[index]))
+    end
+    return nothing
+end
+response_diagnostics(diagnostics::ResponseDiagnostics)=(;frames=diagnostics.frames,dropout_frames=diagnostics.dropout_frames,
+    dropout_subaperture_samples=diagnostics.dropout_subaperture_samples,
+    per_subaperture_dropout_frames=copy(diagnostics.per_subaperture_dropout_frames))
+function response_statistics(frames,profile::Symbol,active;thresholds=nothing)
+    diagnostics=ResponseDiagnostics(profile)
+    for frame in frames
+        observe_response!(diagnostics,normal_response(frame,profile,active;thresholds))
+    end
+    return response_diagnostics(diagnostics)
+end
+function validate_response_diagnostics(frames,profile::Symbol,active,reported;thresholds=nothing)
+    actual=response_statistics(frames,profile,active;thresholds)
+    for key in (:frames,:dropout_frames,:dropout_subaperture_samples)
+        value=getproperty(reported,key)
+        value isa Integer && !(value isa Bool) && value>=0 && value==getproperty(actual,key) ||
+            throw(ArgumentError("native response diagnostic $key differs"))
+    end
+    counts=reported.per_subaperture_dropout_frames
+    length(counts)==length(actual.per_subaperture_dropout_frames) &&
+        all(value->value isa Integer && !(value isa Bool) && value>=0,counts) &&
+        counts==actual.per_subaperture_dropout_frames || throw(ArgumentError("native per-subaperture dropout diagnostics differ"))
+    return actual
+end
+
 """Recompute normal-correction ADC diagnostics from all retained native records.
 
 Rail values remain part of the actual detector and truth replay. Saturation
 counts are observations; exact ADC/truth replay and finite correction utility
 are separate required gates. Only the declared first initialization response
-may be invalid. Calibration keeps its own stricter acceptance policy.
+may be invalid for Copper. Classic retains classified normal flux dropouts.
+Calibration keeps its own stricter acceptance policy.
 """
-function detector_statistics(raw_frames,response_frames,profile::Symbol,active)
+function detector_statistics(raw_frames,response_frames,profile::Symbol,active;thresholds=nothing)
     spec=descriptor(profile)
     length(raw_frames)==length(response_frames) && 0<length(raw_frames)<=256 ||
         throw(ArgumentError("native detector record counts differ"))
@@ -111,16 +200,16 @@ function detector_statistics(raw_frames,response_frames,profile::Symbol,active)
         peak=max(peak,maximum(values))
         hits=UInt64(count(==(rail),values))
         pixels=Base.checked_add(pixels,hits);frames=Base.checked_add(frames,UInt64(hits>0))
-        valid=response_valid(response,profile,active)
-        index==1 || valid || throw(ArgumentError("undeclared invalid native correction response"))
+        valid=normal_response(response,profile,active;thresholds).valid
+        profile===:classic || index==1 || valid || throw(ArgumentError("undeclared invalid native correction response"))
         invalid=Base.checked_add(invalid,UInt64(!valid))
     end
     return (;raw_available=true,adc_upper_rail=rail,frames=UInt64(length(raw_frames)),
         invalid_frames=invalid,maximum_adc=peak,upper_rail_pixels=pixels,upper_rail_frames=frames)
 end
 
-function validate_detector_diagnostics(raw_frames,response_frames,profile::Symbol,active,reported)
-    actual=detector_statistics(raw_frames,response_frames,profile,active)
+function validate_detector_diagnostics(raw_frames,response_frames,profile::Symbol,active,reported;thresholds=nothing)
+    actual=detector_statistics(raw_frames,response_frames,profile,active;thresholds)
     reported.raw_available===true || throw(ArgumentError("native raw diagnostics are unavailable"))
     for key in (:adc_upper_rail,:frames,:invalid_frames,:maximum_adc,:upper_rail_pixels,:upper_rail_frames)
         value=getproperty(reported,key)
