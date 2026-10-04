@@ -2323,6 +2323,8 @@ impl LiveGraphAdapter {
             ),
             ("node.virtual", "true"),
             ("node.want-driver", "true"),
+            // Lifecycle progress needs live counters after broad Props queries.
+            ("node.cache-params", "false"),
             ("object.linger", "false"),
         ]
         .into_iter()

@@ -819,6 +819,15 @@ and documented; asynchronous adoption is a later design option, not an implied
 
 [Deployment validation](DEPLOYMENT_VALIDATION.md) and its
 [artifact/placement record](deployment-evidence.json) retain the evidence.
+The [recorded-FITS restart correction](UI_RESTART_ISSUE_1.md) adds fresh
+Classic/Copper regressions for RTC-DEV-004, RTC-DEV-011 and RTC-DEV-022 after a
+broad topology query. Owned discard sinks disable parameter caching so later
+buffer checks read live counters. Both immediate group restarts, session
+stop/reset/start, stopped scalar adoption and independent update/reconnect
+scenarios pass while node/link IDs and serials remain unchanged. The
+[independent review](UI_RESTART_REVIEW.md) records the confirmed boundary and
+software integration limits.
+
 Row replay keeps calibration fixed; a progressive parameter transaction can
 abandon an in-flight unit, so mutation/adoption recovery is qualified separately.
 The recorded-input, non-actuating increment is complete. Physical devices,
