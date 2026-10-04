@@ -82,6 +82,14 @@ bounded CPU endpoint extension, separate from Copper matrix acceptance. Its
 [evidence identities](COPPER_CALIBRATION_CAPTURE_EVIDENCE.json) preserve the
 failed stale-binary admission and successful FGN/JFG captures.
 
+[Copper reference candidates](COPPER_REFERENCE_USAGE.md), their
+[validation](COPPER_REFERENCE_VALIDATION.md),
+[independent review](COPPER_REFERENCE_REVIEW.md) and
+[evidence identities](COPPER_REFERENCE_EVIDENCE.json) record the measured
+dark/lamp/fresh-reference workflow. Byte-identical paired CPU results are
+functional evidence; Copper scientific reference and matrix acceptance remain
+open.
+
 ## Inactive design archive
 
 The [archived full-RTC design](archive/full-rtc/README.md) preserves prior work

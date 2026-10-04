@@ -1,0 +1,1709 @@
+{
+  "baseline": "2f62fd582be3a6e0b5fc2dcb7af4a7b77426d698",
+  "binary_origins": {
+    "pipewireao-rtc": {
+      "build_revision": "7fe0bcdc64ae53d7fa24eeb0116d206033b6ce8e",
+      "preserved_path": "/home/dgamroth/.cache/rtc-copper-reference-20261003/baseline-binaries/pipewireao-rtc",
+      "sha256": "96c115595811665061232c641e901be1856d7fb6577d4e9351372508439879d2",
+      "source_path_at_launch": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc/target/release/pipewireao-rtc"
+    },
+    "rtc-calibrate": {
+      "build_revision": "7fe0bcdc64ae53d7fa24eeb0116d206033b6ce8e",
+      "preserved_path": "/home/dgamroth/.cache/rtc-copper-reference-20261003/baseline-binaries/rtc-calibrate",
+      "sha256": "701443e1cd85912f12fcff6a3009c32019b054dd50f48cd261b472c3eacf6011",
+      "source_path_at_launch": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc/target/release/rtc-calibrate"
+    }
+  },
+  "branch": "work/copper-calibration-reference-20261003",
+  "engines": {
+    "fgn": {
+      "output": "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2",
+      "phase": "complete-candidate",
+      "products": {
+        "measured-background.f32le": "95139f7112c6dc40b4ff0b01b190cc8f4604165f1f7a2ee875a50114260fb46b",
+        "measured-dark-variance.f64le": "b96d1c4fd23afa71ff77fad555124815735ebce514f149ae8c0310686ec5f2ec",
+        "measured-reference-pixels.f32le": "de28f5b8942f0e2d8ff756dbbc57c8552fe3b31b6ce06c5e1dd110325ff0ff7e",
+        "measured-reference-variance.f64le": "7f49f3e0dad87bb355ba5d18a93e0b593732b1fa8563b0c3681a45770895c337",
+        "qualification-mean.f64le": "2642a303ac756aaac313426ba3561f72107f674eec18ee6cf0d18452b62043bb"
+      },
+      "recipe_sha256": "4cc2ec8d94381dcd8674ff27c010d217640a8136ba6d301513ddeb38dd2990fa",
+      "stages": {
+        "dark": {
+          "adc_maximum": 5,
+          "analysis_wall_ns": 7210803045,
+          "captured_sequences": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "cold_numerical_wall_ns": 64922,
+          "comparison": null,
+          "final_source_sequence": 10,
+          "frames": 8,
+          "launcher_exit": 0,
+          "owned_runtime_removed": true,
+          "release_confirmed": true,
+          "restoration_confirmed": true,
+          "shutdown_confirmed": true,
+          "timing_ns": {
+            "acquisition": 9485967773,
+            "public_shutdown": 855571542,
+            "startup_readiness": 36931280889,
+            "total_stage": 47281918654
+          }
+        },
+        "qualification": {
+          "adc_maximum": 62,
+          "analysis_wall_ns": 7639953602,
+          "captured_sequences": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "cold_numerical_wall_ns": 152786,
+          "comparison": {
+            "acceptance": "descriptive independent-seed comparison; no acceptance tolerance",
+            "max_abs": 0.4097371995449066,
+            "reference_sha256": "de28f5b8942f0e2d8ff756dbbc57c8552fe3b31b6ce06c5e1dd110325ff0ff7e",
+            "relative_norm": 0.08880739336786189,
+            "relative_norm_definition": "norm(mean - frozen F32 reference) / norm(frozen F32 reference); null for zero denominator",
+            "rms": 0.0983977997543304,
+            "training_analysis_sha256": "a807620a584bbb9862237e0afc90a16791e1c364ba52cdd38a8d5c55cda5b01d",
+            "units": "normalized pixel"
+          },
+          "final_source_sequence": 10,
+          "frames": 8,
+          "launcher_exit": 0,
+          "owned_runtime_removed": true,
+          "release_confirmed": true,
+          "restoration_confirmed": true,
+          "shutdown_confirmed": true,
+          "timing_ns": {
+            "acquisition": 14926513228,
+            "public_shutdown": 1091268852,
+            "startup_readiness": 44308516819,
+            "total_stage": 60330984813
+          }
+        },
+        "training": {
+          "adc_maximum": 65,
+          "analysis_wall_ns": 7261802502,
+          "captured_sequences": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "cold_numerical_wall_ns": 149300,
+          "comparison": null,
+          "final_source_sequence": 10,
+          "frames": 8,
+          "launcher_exit": 0,
+          "owned_runtime_removed": true,
+          "release_confirmed": true,
+          "restoration_confirmed": true,
+          "shutdown_confirmed": true,
+          "timing_ns": {
+            "acquisition": 14799266211,
+            "public_shutdown": 1071547074,
+            "startup_readiness": 44204300409,
+            "total_stage": 60079615113
+          }
+        }
+      },
+      "total_campaign_seconds": 190.93667073
+    },
+    "jfg": {
+      "output": "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate",
+      "phase": "complete-candidate",
+      "products": {
+        "measured-background.f32le": "95139f7112c6dc40b4ff0b01b190cc8f4604165f1f7a2ee875a50114260fb46b",
+        "measured-dark-variance.f64le": "b96d1c4fd23afa71ff77fad555124815735ebce514f149ae8c0310686ec5f2ec",
+        "measured-reference-pixels.f32le": "de28f5b8942f0e2d8ff756dbbc57c8552fe3b31b6ce06c5e1dd110325ff0ff7e",
+        "measured-reference-variance.f64le": "7f49f3e0dad87bb355ba5d18a93e0b593732b1fa8563b0c3681a45770895c337",
+        "qualification-mean.f64le": "2642a303ac756aaac313426ba3561f72107f674eec18ee6cf0d18452b62043bb"
+      },
+      "recipe_sha256": "4cc2ec8d94381dcd8674ff27c010d217640a8136ba6d301513ddeb38dd2990fa",
+      "stages": {
+        "dark": {
+          "adc_maximum": 5,
+          "analysis_wall_ns": 7259741484,
+          "captured_sequences": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "cold_numerical_wall_ns": 65843,
+          "comparison": null,
+          "final_source_sequence": 10,
+          "frames": 8,
+          "launcher_exit": 0,
+          "owned_runtime_removed": true,
+          "release_confirmed": true,
+          "restoration_confirmed": true,
+          "shutdown_confirmed": true,
+          "timing_ns": {
+            "acquisition": 9432176789,
+            "public_shutdown": 1122166786,
+            "startup_readiness": 69269959111,
+            "total_stage": 79828538286
+          }
+        },
+        "qualification": {
+          "adc_maximum": 62,
+          "analysis_wall_ns": 7565364790,
+          "captured_sequences": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "cold_numerical_wall_ns": 155400,
+          "comparison": {
+            "acceptance": "descriptive independent-seed comparison; no acceptance tolerance",
+            "max_abs": 0.4097371995449066,
+            "reference_sha256": "de28f5b8942f0e2d8ff756dbbc57c8552fe3b31b6ce06c5e1dd110325ff0ff7e",
+            "relative_norm": 0.08880739336786189,
+            "relative_norm_definition": "norm(mean - frozen F32 reference) / norm(frozen F32 reference); null for zero denominator",
+            "rms": 0.0983977997543304,
+            "training_analysis_sha256": "26e293f4e27f7c108eecaf5075ee4353217ca6df84183407234a069f0cdce1ed",
+            "units": "normalized pixel"
+          },
+          "final_source_sequence": 10,
+          "frames": 8,
+          "launcher_exit": 0,
+          "owned_runtime_removed": true,
+          "release_confirmed": true,
+          "restoration_confirmed": true,
+          "shutdown_confirmed": true,
+          "timing_ns": {
+            "acquisition": 14848038210,
+            "public_shutdown": 1217049650,
+            "startup_readiness": 76000967495,
+            "total_stage": 92070088903
+          }
+        },
+        "training": {
+          "adc_maximum": 65,
+          "analysis_wall_ns": 7234798529,
+          "captured_sequences": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "cold_numerical_wall_ns": 154710,
+          "comparison": null,
+          "final_source_sequence": 10,
+          "frames": 8,
+          "launcher_exit": 0,
+          "owned_runtime_removed": true,
+          "release_confirmed": true,
+          "restoration_confirmed": true,
+          "shutdown_confirmed": true,
+          "timing_ns": {
+            "acquisition": 14938603489,
+            "public_shutdown": 1298262925,
+            "startup_readiness": 76298725006,
+            "total_stage": 92540507161
+          }
+        }
+      },
+      "total_campaign_seconds": 287.858405312
+    }
+  },
+  "evidence_files": {
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/audit-copper-reference-provenance.py": {
+      "bytes": 6487,
+      "sha256": "30cb3b6c12bda8e16c249834b8307a8d7a7491d5377bf25315b0a3fb0ee49833"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/baseline-binaries/pipewireao-rtc": {
+      "bytes": 2678504,
+      "sha256": "96c115595811665061232c641e901be1856d7fb6577d4e9351372508439879d2"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/baseline-binaries/rtc-calibrate": {
+      "bytes": 982400,
+      "sha256": "701443e1cd85912f12fcff6a3009c32019b054dd50f48cd261b472c3eacf6011"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/check-reference-rounding.py": {
+      "bytes": 3568,
+      "sha256": "6c6401622de3955296632864b62a538f0b91413d0038bcef03c7ac12b2e53c79"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/compare-copper-reference.py": {
+      "bytes": 19227,
+      "sha256": "9a34ad1663f98fe2c2362511f40411075fedf4b1cd14c64fd2c4b2b12e6332da"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/declared-recipe.json": {
+      "bytes": 2892,
+      "sha256": "4cc2ec8d94381dcd8674ff27c010d217640a8136ba6d301513ddeb38dd2990fa"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-base/deployment.conf": {
+      "bytes": 56518,
+      "sha256": "bdfecfbca5eac1acd7de709bfd303401bae10ac87365e835a4ce3da4de8b8d4c"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-base/hil/Project.toml": {
+      "bytes": 1136,
+      "sha256": "488647c61005302155f20c29d746882061ebef2f2c8bbcd601d1cad6f92bf69b"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-base/hil/plant.toml": {
+      "bytes": 4354,
+      "sha256": "a10b48971e0adeba536bc605d0a1dc2706f7dd1a756b1cf3d37dbca9eb601ef9"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-base/provenance.json": {
+      "bytes": 20011,
+      "sha256": "ad56d40b2d2b2e96182e9f8f548e2c6ed05e6301daa476a288f25f82f6f005a5"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-evidence/analysis.json": {
+      "bytes": 7206,
+      "sha256": "fd2f3c47fae2e32f94f068e2615bc93abf307d8407ab52a746378298aff52bb3"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-evidence/captured/4/1/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "eed4f18db069e95af00116ded0aa4c362e054a5292e636399bfff04996501ebe"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-evidence/captured/4/1/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "954ee1dbdf183f829cf74c70fe52ebf183c31d22a838a351f751faebf13aefdc"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-evidence/captured/4/1/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "0f095f1c9ab79f56fe283113d094929b4cb0611da12b53a6c94303c836e09a49"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-evidence/captured/4/2/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "3923078d3fa896b65526efb87ee50df5582e5ebff803e3c0e419d63b7b425620"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-evidence/captured/4/2/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "5acce5758dba6c2e1eabcd29246bd8876542fde11814be49ebc27a281f138e73"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-evidence/captured/4/2/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "84956ffc2979da7cb53de5e404a425ca4152487f2e71923440e4a61fe99cc986"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-evidence/captured/4/3/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "8361d453f6ce29ba0c1d4849d40cb883dfd5f4f328b2c97daa79782b4931e8fe"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-evidence/captured/4/3/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "10126b19926e61e8050a179a76931a8d04ef0c65a6087303e9ac3f20a3b4625b"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-evidence/captured/4/3/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "5fd11cacab7053b8e3e37018a835b8be6831ef9b6dff712d2918026d1c8c463e"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-evidence/captured/4/4/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "c2ed3ab4997282d4eb0b3f6af2d19893bc051c05b092d0c48d75ded0cbf1427d"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-evidence/captured/4/4/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "6afb5ba4b55bdf06b7ef4ff585be43d79929f23a24f85084c473e3b648403f6a"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-evidence/captured/4/4/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "c86bd6bf90df28bb6cab4e6de0f847a77f76bc3300edd3d20056837823070ec6"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-evidence/captured/4/5/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "17f58198d1ebf563d7adc4613dce515e47b11d6d20fabb431f456db3218f1245"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-evidence/captured/4/5/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "703d54af102f46f64deb238f8a9db558f231054fa0bc1e1b7b0e7059f054b32b"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-evidence/captured/4/5/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "f34195c8efc052ca276f93cd2c7fb51d795b9573070e0768ed68eb2896eefa58"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-evidence/captured/4/6/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "7b6cd45c2f7ae25700c4fd7dc5338a27f7f20e796f8a7fabb8ea5948718053f5"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-evidence/captured/4/6/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "a7c64146c9ab77d9ead56797866143dff9b299e4ebf099df2f208246fb48206e"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-evidence/captured/4/6/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "37024a69da924bc142469acea260a9e4eca54c94d06283986eebf45b124fe84f"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-evidence/captured/4/7/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "4f0f0c36bd10e6c537d668ef8e70f122334e9596e67be17dade7efd7e2f854ac"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-evidence/captured/4/7/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "7da56cb6ac4cfe50c587ec5e194554c47abc99bde6947f1a1fd573775c62fb1d"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-evidence/captured/4/7/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "d21c2f787e609e3a1b28f49273a3ba02a062fffa2daa37311fbbf6191b55c9ad"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-evidence/captured/4/8/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "9484e0ec47b1ce7b27f9f253107feb97f9a48f6ee534d514bf9ed4c7cce101c6"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-evidence/captured/4/8/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "b5ef20446b74886127a2c73261eb1d05c6af3cce19c8ff7b4726386c6b4aede3"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-evidence/captured/4/8/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "30628b395f2bc856c622c321f068b2c2b0c5192f1be2fcaaecbe49c5bc5403ec"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-evidence/captured/4/manifest.json": {
+      "bytes": 6356,
+      "sha256": "56af09324b26caf54a7c74db6b3bd630566c11bea8544542b4252f39d85049a6"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-evidence/stage-result.json": {
+      "bytes": 34578,
+      "sha256": "c88a0568bf1e539b401abe48747b1cae1d9d2532f5434a51e039dbe0c533f0b3"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-package/deployment.conf": {
+      "bytes": 56214,
+      "sha256": "96fbe4a5ab5b063af261f533d2acafc3e459349cff061f61b2c1f813d1417391"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-package/hil/Project.toml": {
+      "bytes": 1136,
+      "sha256": "488647c61005302155f20c29d746882061ebef2f2c8bbcd601d1cad6f92bf69b"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-package/hil/plant.toml": {
+      "bytes": 4354,
+      "sha256": "a10b48971e0adeba536bc605d0a1dc2706f7dd1a756b1cf3d37dbca9eb601ef9"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/dark-package/provenance.json": {
+      "bytes": 77815,
+      "sha256": "201d425e260bf2d631ed5464cd9129b3c7fed6c407aa3606284fae1dbefa6412"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/measured-background.f32le": {
+      "bytes": 16384,
+      "sha256": "95139f7112c6dc40b4ff0b01b190cc8f4604165f1f7a2ee875a50114260fb46b"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/measured-dark-variance.f64le": {
+      "bytes": 32768,
+      "sha256": "b96d1c4fd23afa71ff77fad555124815735ebce514f149ae8c0310686ec5f2ec"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/measured-reference-pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "de28f5b8942f0e2d8ff756dbbc57c8552fe3b31b6ce06c5e1dd110325ff0ff7e"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/measured-reference-variance.f64le": {
+      "bytes": 28800,
+      "sha256": "7f49f3e0dad87bb355ba5d18a93e0b593732b1fa8563b0c3681a45770895c337"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-base/deployment.conf": {
+      "bytes": 56518,
+      "sha256": "0a9ada2bca5bb3ea2e1850cfca0d8b3735dac379cf6cc77295ea09864e490e2f"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-base/hil/Project.toml": {
+      "bytes": 1136,
+      "sha256": "488647c61005302155f20c29d746882061ebef2f2c8bbcd601d1cad6f92bf69b"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-base/hil/plant.toml": {
+      "bytes": 4354,
+      "sha256": "5c8023c9240cf9bb2003aed2d0f4e024dd944e54a251081198b29787a73dee6e"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-base/provenance.json": {
+      "bytes": 20020,
+      "sha256": "751e656d0115246e0de84ef90405775d77f4935f0f76862bd57fc09d0dca59d5"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-evidence/analysis.json": {
+      "bytes": 7541,
+      "sha256": "3a70f0fae78277b7ae94833ba2c0e7424b073e253d764b34da78123590c5be1a"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-evidence/captured/4/1/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "2cb9b216fc12d76173679ad510ebcfa39f58ae49b15885b89f310deebf94a39e"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-evidence/captured/4/1/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "b923e5f5ba74bfa339b057faa3073d1802fa224c96cc1465fe40d9b56ca31641"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-evidence/captured/4/1/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "9753fa604aad2f7e2ad77382f7c2584de0b9b675c62791632498c6e08dcf0812"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-evidence/captured/4/2/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "8671f0891e0f8881ab894580c793d507fa502cce010de94413ae5c7ac0386563"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-evidence/captured/4/2/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "ee3872852a62bd376dc428d68cd1f4dca770193c630e77607b3cabd3256e2522"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-evidence/captured/4/2/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "8b1791584f85c02dbb6450082f509131044e3595781042fb1dcc840df536f837"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-evidence/captured/4/3/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "b9956673143ed1a2d788edb35023987fc81c8162e599791f3fd19babce447231"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-evidence/captured/4/3/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "425f307a57a6e102e0170644f33e29083532f374b7c949ccad2ad1e2c7dcb423"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-evidence/captured/4/3/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "5a815d2c0ba605f9e0904b0fb05eeece3cf51ba726f84d7ba1e236ddcef5a246"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-evidence/captured/4/4/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "6fd5e2c5f166368f395a04dd17cd0aab31d62bfb6331ee27f4bcdf44f091cc8e"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-evidence/captured/4/4/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "ba9233763bfa8b361f1eb45163ecffc7e849decd5f1a998042fdb66c4568ca58"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-evidence/captured/4/4/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "423c6efa749af25d269c56cb4c923544b95d916d292fcb4be5100cd351adf1ce"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-evidence/captured/4/5/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "5fff7cb8713df45af8f975dd375ca2a078571f1972418758fbc9c7c95ba01f69"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-evidence/captured/4/5/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "72ade027515b936a6e2bc50945828b68665241728cf1f12751743868169f3fcc"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-evidence/captured/4/5/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "c6b8db04ca4c99eeddac026e94c5d335f170167c0be7427602db9ad919039250"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-evidence/captured/4/6/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "fa62210fee934afd0fbb1acb3f0f62d766e1c23243495061822e84820b068421"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-evidence/captured/4/6/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "6051ebdaaf6e4d146a0dab4c1f77b5d2b78ade7de3b8cedd7ed1785088072f99"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-evidence/captured/4/6/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "ef5768afc7b445b6146272ff0bb8c67c68e1d4315d889d1689143dd442739b51"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-evidence/captured/4/7/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "4a1049ecd337cfcbd11e852bd2a7e0232351bd895c351b188a8d5142bffbef33"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-evidence/captured/4/7/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "db168b1fcab8d286ddbe67b5ca922efdf62a27d80382fc4d5296394c4a450cfe"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-evidence/captured/4/7/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "131ed00c5da60d5584e1a58a6dcf2a44d51aeb7c03776b2408d4598978e614c6"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-evidence/captured/4/8/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "776c3a283ccf3997aed13ef6049bd29d3e579839e6229749602ab151ea9d0fd0"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-evidence/captured/4/8/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "0e8b469580f6e4913079b1e44a5cc10b93081a5c511a805e574c0f4ff3b71c2d"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-evidence/captured/4/8/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "f6187d8b5d20a6f5e73abc783fecdd8f4ecc7c3f0371fc39c389711a2bae348b"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-evidence/captured/4/manifest.json": {
+      "bytes": 6366,
+      "sha256": "7451de714cffcf0e12f8fa2ed84062ee8daf7e0faead52cff05c228cfd93428d"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-evidence/stage-result.json": {
+      "bytes": 34644,
+      "sha256": "ebc612cb28e8cfb37b66f89405057fe921652c551df45680ec911e7380ddd4f5"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-mean.f64le": {
+      "bytes": 28800,
+      "sha256": "2642a303ac756aaac313426ba3561f72107f674eec18ee6cf0d18452b62043bb"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-package/deployment.conf": {
+      "bytes": 56223,
+      "sha256": "fc8ad22ae1fb4e54bb57dcb0c1576e903abb00d87349bce757bde1f059c2fabe"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-package/hil/Project.toml": {
+      "bytes": 1136,
+      "sha256": "488647c61005302155f20c29d746882061ebef2f2c8bbcd601d1cad6f92bf69b"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-package/hil/plant.toml": {
+      "bytes": 4354,
+      "sha256": "5c8023c9240cf9bb2003aed2d0f4e024dd944e54a251081198b29787a73dee6e"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/qualification-package/provenance.json": {
+      "bytes": 77833,
+      "sha256": "cac2adf8010a4d2973daa61d76c8f6b70f8661691e39774d6f27b8c8a3b277d5"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/recipe.json": {
+      "bytes": 2892,
+      "sha256": "4cc2ec8d94381dcd8674ff27c010d217640a8136ba6d301513ddeb38dd2990fa"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/reference-result.json": {
+      "bytes": 135709,
+      "sha256": "7fe457a363abd0c599db99b707f04cfd3fc6246f4f09fee78b171a23b7d32ef8"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-base/deployment.conf": {
+      "bytes": 56518,
+      "sha256": "049fa58e9435091631962f7a693f1f94d45fa73e5453edc4ef450dc906833e3d"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-base/hil/Project.toml": {
+      "bytes": 1136,
+      "sha256": "488647c61005302155f20c29d746882061ebef2f2c8bbcd601d1cad6f92bf69b"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-base/hil/plant.toml": {
+      "bytes": 4354,
+      "sha256": "6f019835c9c016c776834395da210d0bbba4b578e88f669814884aef233f5a3c"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-base/provenance.json": {
+      "bytes": 20015,
+      "sha256": "3bae9039de40328299e89593c54ae0babadda19b9c18641b4c7502d05a34adfa"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-evidence/analysis.json": {
+      "bytes": 7280,
+      "sha256": "a807620a584bbb9862237e0afc90a16791e1c364ba52cdd38a8d5c55cda5b01d"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-evidence/captured/4/1/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "b01e300b3ab2c46b23bbfc1e790bd5a0276292c7d7c1a1292be34a5f03a37651"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-evidence/captured/4/1/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "d0d6a34f97eefe3c7439bf3bf343efd51b7cb7e47e3d41bcdeaf5a80ea6a3120"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-evidence/captured/4/1/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "51ea39ab54e5766b459a83ebc336ab23872fb7fbb73d946f2adfeb480447aae4"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-evidence/captured/4/2/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "58c7c1cc3d97ea8f1a84c94e7a5caa6e8bc839558fac22685d1f5b164a457a60"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-evidence/captured/4/2/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "2fbee97a981b1c287eb147bc25ec5c33b27dceabd30a493118524d5d2bba8c76"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-evidence/captured/4/2/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "b912abbdca74645949994b73c2b50b8ff4774aab21d5acc583ca7a123f7041f2"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-evidence/captured/4/3/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "f865cd298fced75e4c13d93066253209a7c8e572b2db809165e9f9400067ed43"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-evidence/captured/4/3/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "7b0853394471534b9495a94923e5987ed2147f413f92167d269afabd1e8100cc"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-evidence/captured/4/3/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "b352efda686133f1dec1ed367685d8dd1eebf20ba5e92ca6e277fc635745d824"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-evidence/captured/4/4/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "e52941da41142d418babab1470fe61df7a46bdf2baea2d6d972329cd549b951b"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-evidence/captured/4/4/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "445e73632bb659895123044c613f9fb18d803f1ac9d57f02b35510ff4dffc862"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-evidence/captured/4/4/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "33b18fbfa4664074060d248c7797366774e982e721f26aae2a9166d3e5b9d520"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-evidence/captured/4/5/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "3927f3a6f27b0b82fe223bbb80fa830236c8707bd86b4e101e4397c952206547"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-evidence/captured/4/5/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "4cf43b58e1d61a6bab116c4b5e4151e57a63a00499fe5e9425dfde759d8313aa"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-evidence/captured/4/5/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "9b8cfc690266ab8793b8f3faa6378dacd037a1c8c04fcceebbb6fea2cd16ed26"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-evidence/captured/4/6/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "599069d4edd076d9959faf908164d4db357cfe47c76102158a97deb28e6c55a0"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-evidence/captured/4/6/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "635177e186a8b2d6c6d05dbf2f81937c7f4098c4eb57ce92b3a435113375ba50"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-evidence/captured/4/6/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "0006367204c24f5b20d404f734b6a84ffbe94167ffa101d2f27b139194fea5a3"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-evidence/captured/4/7/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "7a8aab6d592a2c9332b89a8b9def27996e4eec2f442819a8cc212c25a3cee8a6"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-evidence/captured/4/7/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "3513e7a440391b29e95be7376d60a4adc2ceae5367e79c704b9ede45c3cc0035"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-evidence/captured/4/7/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "565633d67d871515d9c49f5730f5598e790faab8911fdc0a41a7a76562eeae9b"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-evidence/captured/4/8/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "6cb09d7ac75a7a56505428822be96eccee7cbef1d0a6e3d769f52611279ef7f9"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-evidence/captured/4/8/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "8d4df278eaf9249e4ba1c6ca01a6f56315e48a178c1546ed0a4e1bbc2c8d8b76"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-evidence/captured/4/8/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "78f64f08d9085ce0ff4c979ff7d4b4b0f463261629dba14b6c1d94f488948eae"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-evidence/captured/4/manifest.json": {
+      "bytes": 6359,
+      "sha256": "4086340d889b7980d3e37a9db0a9882246fc37258136cd4c51fa7f1e8300daf3"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-evidence/stage-result.json": {
+      "bytes": 34607,
+      "sha256": "a8755bdeaed4c71d911fe5bafa19e03e274abce13025579b6de18864acd1d0e2"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-package/deployment.conf": {
+      "bytes": 56218,
+      "sha256": "a31db1a21b95412c87af5ceea661e1b33b408e49ddd2861eba82b3331895bec0"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-package/hil/Project.toml": {
+      "bytes": 1136,
+      "sha256": "488647c61005302155f20c29d746882061ebef2f2c8bbcd601d1cad6f92bf69b"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-package/hil/plant.toml": {
+      "bytes": 4354,
+      "sha256": "6f019835c9c016c776834395da210d0bbba4b578e88f669814884aef233f5a3c"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2/training-package/provenance.json": {
+      "bytes": 77823,
+      "sha256": "46ce2a9609065fcea7c05605d54206b051d391aea09cf739835e3e01c0578958"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate/dark-evidence/deployment.log": {
+      "bytes": 72,
+      "sha256": "7f940b0500f965b6bc18d30cf3bdf0711d32fb532d621893ecbf4a7ca06503f7"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate/dark-evidence/stage-result.json": {
+      "bytes": 868,
+      "sha256": "d09cf36e65ee0b5e74fd2e0d87b394dfaff125e9b8c427f8680679abe79ac890"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate/reference-result.json": {
+      "bytes": 9106,
+      "sha256": "09903d41ea4dd9f6cb7406836919cc10de71fd5debd1fc38c40bd32479a41511"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-reference-rounding.json": {
+      "bytes": 24566,
+      "sha256": "1d35ea1c04a03b0dfb6f17066983ad6a0af6f7b1ab4552b1c489081bc1790ae5"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-reference-rounding.log": {
+      "bytes": 4048,
+      "sha256": "4b40caae45a44a1119d1b353bb104bd8cef2cc18314540f6fac537a070266d5d"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/focused-binding-final.log": {
+      "bytes": 1004,
+      "sha256": "b8e68ed83ecf97b9caf948179fe17cb2eea1671231cc35a9e64225b5d1e6a6e2"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/focused-binding-first.log": {
+      "bytes": 2650,
+      "sha256": "8a304b3a9a216bbda79e79730f280a906d9bddb5d6600f4ddc925dedd7c1fd55"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/focused-final.log": {
+      "bytes": 1961,
+      "sha256": "282a3c30b31e23bb78e258a7eea582c636e12d585f85c87229fb807aa600ca7c"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/focused-initial.log": {
+      "bytes": 1040,
+      "sha256": "e72c705458ece4681c6e9fa0cde9830375de74c8a72a8243a9086667ae98b331"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/focused-oracle-corrected.log": {
+      "bytes": 824,
+      "sha256": "e30f18e5b4e1dd1ceff62b869467a8b28d1050c694e8858e7528776b910d9883"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/focused-second.log": {
+      "bytes": 824,
+      "sha256": "7cec37ec45478e5458c80554df30ad972fc3d698e79c6eed2d4203229814ef79"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-base/deployment.conf": {
+      "bytes": 78835,
+      "sha256": "4634a7f27c5171a3244c825c4a02873907b298ccb141b6f8b0c7d43b91c5ee46"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-base/hil/Project.toml": {
+      "bytes": 1136,
+      "sha256": "488647c61005302155f20c29d746882061ebef2f2c8bbcd601d1cad6f92bf69b"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-base/hil/plant.toml": {
+      "bytes": 4354,
+      "sha256": "a10b48971e0adeba536bc605d0a1dc2706f7dd1a756b1cf3d37dbca9eb601ef9"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-base/provenance.json": {
+      "bytes": 20083,
+      "sha256": "7db1d0baa1b5cbacbbaad6e9f7228f8ea3dbd9a2a36ff1649c48ddc8438bc2cb"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-evidence/analysis.json": {
+      "bytes": 7203,
+      "sha256": "f971b70bfc96f51c0e8178199b4ade69cbbcb633373f64dee341e0b5c394e0c8"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-evidence/captured/4/1/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "eed4f18db069e95af00116ded0aa4c362e054a5292e636399bfff04996501ebe"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-evidence/captured/4/1/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "954ee1dbdf183f829cf74c70fe52ebf183c31d22a838a351f751faebf13aefdc"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-evidence/captured/4/1/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "0f095f1c9ab79f56fe283113d094929b4cb0611da12b53a6c94303c836e09a49"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-evidence/captured/4/2/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "3923078d3fa896b65526efb87ee50df5582e5ebff803e3c0e419d63b7b425620"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-evidence/captured/4/2/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "5acce5758dba6c2e1eabcd29246bd8876542fde11814be49ebc27a281f138e73"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-evidence/captured/4/2/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "84956ffc2979da7cb53de5e404a425ca4152487f2e71923440e4a61fe99cc986"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-evidence/captured/4/3/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "8361d453f6ce29ba0c1d4849d40cb883dfd5f4f328b2c97daa79782b4931e8fe"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-evidence/captured/4/3/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "10126b19926e61e8050a179a76931a8d04ef0c65a6087303e9ac3f20a3b4625b"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-evidence/captured/4/3/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "5fd11cacab7053b8e3e37018a835b8be6831ef9b6dff712d2918026d1c8c463e"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-evidence/captured/4/4/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "c2ed3ab4997282d4eb0b3f6af2d19893bc051c05b092d0c48d75ded0cbf1427d"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-evidence/captured/4/4/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "6afb5ba4b55bdf06b7ef4ff585be43d79929f23a24f85084c473e3b648403f6a"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-evidence/captured/4/4/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "c86bd6bf90df28bb6cab4e6de0f847a77f76bc3300edd3d20056837823070ec6"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-evidence/captured/4/5/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "17f58198d1ebf563d7adc4613dce515e47b11d6d20fabb431f456db3218f1245"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-evidence/captured/4/5/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "703d54af102f46f64deb238f8a9db558f231054fa0bc1e1b7b0e7059f054b32b"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-evidence/captured/4/5/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "f34195c8efc052ca276f93cd2c7fb51d795b9573070e0768ed68eb2896eefa58"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-evidence/captured/4/6/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "7b6cd45c2f7ae25700c4fd7dc5338a27f7f20e796f8a7fabb8ea5948718053f5"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-evidence/captured/4/6/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "a7c64146c9ab77d9ead56797866143dff9b299e4ebf099df2f208246fb48206e"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-evidence/captured/4/6/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "37024a69da924bc142469acea260a9e4eca54c94d06283986eebf45b124fe84f"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-evidence/captured/4/7/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "4f0f0c36bd10e6c537d668ef8e70f122334e9596e67be17dade7efd7e2f854ac"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-evidence/captured/4/7/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "7da56cb6ac4cfe50c587ec5e194554c47abc99bde6947f1a1fd573775c62fb1d"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-evidence/captured/4/7/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "d21c2f787e609e3a1b28f49273a3ba02a062fffa2daa37311fbbf6191b55c9ad"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-evidence/captured/4/8/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "9484e0ec47b1ce7b27f9f253107feb97f9a48f6ee534d514bf9ed4c7cce101c6"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-evidence/captured/4/8/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "b5ef20446b74886127a2c73261eb1d05c6af3cce19c8ff7b4726386c6b4aede3"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-evidence/captured/4/8/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "30628b395f2bc856c622c321f068b2c2b0c5192f1be2fcaaecbe49c5bc5403ec"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-evidence/captured/4/manifest.json": {
+      "bytes": 6353,
+      "sha256": "fa84a542611d77486f5605b750ed362af195cab364fc419190a552aea728a57a"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-evidence/stage-result.json": {
+      "bytes": 39025,
+      "sha256": "f024817bcd1f5b2e7da016096e6b8516db89998aeafeca70b2e1bb164d8d8cf7"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-package/deployment.conf": {
+      "bytes": 78423,
+      "sha256": "5f905e9ba9592fea0414ea1a1b7ef9f2c6effc0ce160b5e1bdad61dc4daefaec"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-package/hil/Project.toml": {
+      "bytes": 1136,
+      "sha256": "488647c61005302155f20c29d746882061ebef2f2c8bbcd601d1cad6f92bf69b"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-package/hil/plant.toml": {
+      "bytes": 4354,
+      "sha256": "a10b48971e0adeba536bc605d0a1dc2706f7dd1a756b1cf3d37dbca9eb601ef9"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/dark-package/provenance.json": {
+      "bytes": 98214,
+      "sha256": "2fe1c597c6afe48f8b363b82c528b41f0af4f684e68286346e8f7c817dc82636"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/measured-background.f32le": {
+      "bytes": 16384,
+      "sha256": "95139f7112c6dc40b4ff0b01b190cc8f4604165f1f7a2ee875a50114260fb46b"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/measured-dark-variance.f64le": {
+      "bytes": 32768,
+      "sha256": "b96d1c4fd23afa71ff77fad555124815735ebce514f149ae8c0310686ec5f2ec"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/measured-reference-pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "de28f5b8942f0e2d8ff756dbbc57c8552fe3b31b6ce06c5e1dd110325ff0ff7e"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/measured-reference-variance.f64le": {
+      "bytes": 28800,
+      "sha256": "7f49f3e0dad87bb355ba5d18a93e0b593732b1fa8563b0c3681a45770895c337"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-base/deployment.conf": {
+      "bytes": 78835,
+      "sha256": "bdda32fb0821425c3660500e8339046fc632edc444fb6f8dc0215e8dba748d03"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-base/hil/Project.toml": {
+      "bytes": 1136,
+      "sha256": "488647c61005302155f20c29d746882061ebef2f2c8bbcd601d1cad6f92bf69b"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-base/hil/plant.toml": {
+      "bytes": 4354,
+      "sha256": "5c8023c9240cf9bb2003aed2d0f4e024dd944e54a251081198b29787a73dee6e"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-base/provenance.json": {
+      "bytes": 20092,
+      "sha256": "7a00f9b2f97cbc2fce680aae80f3ba7d03aaf0d38a475f684009e6dbbe2d1072"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-evidence/analysis.json": {
+      "bytes": 7539,
+      "sha256": "60cc03ba49382888af6544c6e93ce6c8c3b17b4fe7f2b2d4767bc58e8b782462"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-evidence/captured/4/1/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "2cb9b216fc12d76173679ad510ebcfa39f58ae49b15885b89f310deebf94a39e"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-evidence/captured/4/1/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "b923e5f5ba74bfa339b057faa3073d1802fa224c96cc1465fe40d9b56ca31641"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-evidence/captured/4/1/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "9753fa604aad2f7e2ad77382f7c2584de0b9b675c62791632498c6e08dcf0812"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-evidence/captured/4/2/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "8671f0891e0f8881ab894580c793d507fa502cce010de94413ae5c7ac0386563"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-evidence/captured/4/2/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "ee3872852a62bd376dc428d68cd1f4dca770193c630e77607b3cabd3256e2522"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-evidence/captured/4/2/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "8b1791584f85c02dbb6450082f509131044e3595781042fb1dcc840df536f837"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-evidence/captured/4/3/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "b9956673143ed1a2d788edb35023987fc81c8162e599791f3fd19babce447231"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-evidence/captured/4/3/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "425f307a57a6e102e0170644f33e29083532f374b7c949ccad2ad1e2c7dcb423"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-evidence/captured/4/3/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "5a815d2c0ba605f9e0904b0fb05eeece3cf51ba726f84d7ba1e236ddcef5a246"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-evidence/captured/4/4/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "6fd5e2c5f166368f395a04dd17cd0aab31d62bfb6331ee27f4bcdf44f091cc8e"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-evidence/captured/4/4/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "ba9233763bfa8b361f1eb45163ecffc7e849decd5f1a998042fdb66c4568ca58"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-evidence/captured/4/4/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "423c6efa749af25d269c56cb4c923544b95d916d292fcb4be5100cd351adf1ce"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-evidence/captured/4/5/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "5fff7cb8713df45af8f975dd375ca2a078571f1972418758fbc9c7c95ba01f69"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-evidence/captured/4/5/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "72ade027515b936a6e2bc50945828b68665241728cf1f12751743868169f3fcc"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-evidence/captured/4/5/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "c6b8db04ca4c99eeddac026e94c5d335f170167c0be7427602db9ad919039250"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-evidence/captured/4/6/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "fa62210fee934afd0fbb1acb3f0f62d766e1c23243495061822e84820b068421"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-evidence/captured/4/6/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "6051ebdaaf6e4d146a0dab4c1f77b5d2b78ade7de3b8cedd7ed1785088072f99"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-evidence/captured/4/6/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "ef5768afc7b445b6146272ff0bb8c67c68e1d4315d889d1689143dd442739b51"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-evidence/captured/4/7/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "4a1049ecd337cfcbd11e852bd2a7e0232351bd895c351b188a8d5142bffbef33"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-evidence/captured/4/7/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "db168b1fcab8d286ddbe67b5ca922efdf62a27d80382fc4d5296394c4a450cfe"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-evidence/captured/4/7/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "131ed00c5da60d5584e1a58a6dcf2a44d51aeb7c03776b2408d4598978e614c6"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-evidence/captured/4/8/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "776c3a283ccf3997aed13ef6049bd29d3e579839e6229749602ab151ea9d0fd0"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-evidence/captured/4/8/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "0e8b469580f6e4913079b1e44a5cc10b93081a5c511a805e574c0f4ff3b71c2d"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-evidence/captured/4/8/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "f6187d8b5d20a6f5e73abc783fecdd8f4ecc7c3f0371fc39c389711a2bae348b"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-evidence/captured/4/manifest.json": {
+      "bytes": 6364,
+      "sha256": "127835bf1761abfa709cfd463ade7397c7cdb81f2f2f33b1acbcb202e54a8192"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-evidence/stage-result.json": {
+      "bytes": 39091,
+      "sha256": "c291bf161e8b8aaaaf04bb6882e1ea300a030032d61f55843ce816f3f7707daf"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-mean.f64le": {
+      "bytes": 28800,
+      "sha256": "2642a303ac756aaac313426ba3561f72107f674eec18ee6cf0d18452b62043bb"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-package/deployment.conf": {
+      "bytes": 78432,
+      "sha256": "48285efb8865f8738b945907296a4d6f9fe27812561772652e17890387f70db7"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-package/hil/Project.toml": {
+      "bytes": 1136,
+      "sha256": "488647c61005302155f20c29d746882061ebef2f2c8bbcd601d1cad6f92bf69b"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-package/hil/plant.toml": {
+      "bytes": 4354,
+      "sha256": "5c8023c9240cf9bb2003aed2d0f4e024dd944e54a251081198b29787a73dee6e"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/qualification-package/provenance.json": {
+      "bytes": 98232,
+      "sha256": "6344aecc953acd5ea6d79a75f7420bbeb7652f93f21cc7903facebf60ed02863"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/recipe.json": {
+      "bytes": 2892,
+      "sha256": "4cc2ec8d94381dcd8674ff27c010d217640a8136ba6d301513ddeb38dd2990fa"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/reference-result.json": {
+      "bytes": 151645,
+      "sha256": "66421e07595c5407638238fe98899ea373ae0e05cc26e9eb415698a4c153abb3"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-base/deployment.conf": {
+      "bytes": 78835,
+      "sha256": "860a386628b614648d7f555385bfc930b4a7e51082e044363d1cbe332785dac2"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-base/hil/Project.toml": {
+      "bytes": 1136,
+      "sha256": "488647c61005302155f20c29d746882061ebef2f2c8bbcd601d1cad6f92bf69b"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-base/hil/plant.toml": {
+      "bytes": 4354,
+      "sha256": "6f019835c9c016c776834395da210d0bbba4b578e88f669814884aef233f5a3c"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-base/provenance.json": {
+      "bytes": 20087,
+      "sha256": "22182303725a424fe72cc542cadb8f96b4b3ece4c9091bcc6cf7ade0b0677eb6"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-evidence/analysis.json": {
+      "bytes": 7281,
+      "sha256": "26e293f4e27f7c108eecaf5075ee4353217ca6df84183407234a069f0cdce1ed"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-evidence/captured/4/1/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "b01e300b3ab2c46b23bbfc1e790bd5a0276292c7d7c1a1292be34a5f03a37651"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-evidence/captured/4/1/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "d0d6a34f97eefe3c7439bf3bf343efd51b7cb7e47e3d41bcdeaf5a80ea6a3120"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-evidence/captured/4/1/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "51ea39ab54e5766b459a83ebc336ab23872fb7fbb73d946f2adfeb480447aae4"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-evidence/captured/4/2/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "58c7c1cc3d97ea8f1a84c94e7a5caa6e8bc839558fac22685d1f5b164a457a60"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-evidence/captured/4/2/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "2fbee97a981b1c287eb147bc25ec5c33b27dceabd30a493118524d5d2bba8c76"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-evidence/captured/4/2/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "b912abbdca74645949994b73c2b50b8ff4774aab21d5acc583ca7a123f7041f2"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-evidence/captured/4/3/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "f865cd298fced75e4c13d93066253209a7c8e572b2db809165e9f9400067ed43"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-evidence/captured/4/3/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "7b0853394471534b9495a94923e5987ed2147f413f92167d269afabd1e8100cc"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-evidence/captured/4/3/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "b352efda686133f1dec1ed367685d8dd1eebf20ba5e92ca6e277fc635745d824"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-evidence/captured/4/4/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "e52941da41142d418babab1470fe61df7a46bdf2baea2d6d972329cd549b951b"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-evidence/captured/4/4/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "445e73632bb659895123044c613f9fb18d803f1ac9d57f02b35510ff4dffc862"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-evidence/captured/4/4/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "33b18fbfa4664074060d248c7797366774e982e721f26aae2a9166d3e5b9d520"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-evidence/captured/4/5/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "3927f3a6f27b0b82fe223bbb80fa830236c8707bd86b4e101e4397c952206547"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-evidence/captured/4/5/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "4cf43b58e1d61a6bab116c4b5e4151e57a63a00499fe5e9425dfde759d8313aa"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-evidence/captured/4/5/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "9b8cfc690266ab8793b8f3faa6378dacd037a1c8c04fcceebbb6fea2cd16ed26"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-evidence/captured/4/6/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "599069d4edd076d9959faf908164d4db357cfe47c76102158a97deb28e6c55a0"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-evidence/captured/4/6/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "635177e186a8b2d6c6d05dbf2f81937c7f4098c4eb57ce92b3a435113375ba50"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-evidence/captured/4/6/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "0006367204c24f5b20d404f734b6a84ffbe94167ffa101d2f27b139194fea5a3"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-evidence/captured/4/7/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "7a8aab6d592a2c9332b89a8b9def27996e4eec2f442819a8cc212c25a3cee8a6"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-evidence/captured/4/7/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "3513e7a440391b29e95be7376d60a4adc2ceae5367e79c704b9ede45c3cc0035"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-evidence/captured/4/7/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "565633d67d871515d9c49f5730f5598e790faab8911fdc0a41a7a76562eeae9b"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-evidence/captured/4/8/intensity.f32le": {
+      "bytes": 4,
+      "sha256": "6cb09d7ac75a7a56505428822be96eccee7cbef1d0a6e3d769f52611279ef7f9"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-evidence/captured/4/8/pixels.f32le": {
+      "bytes": 14400,
+      "sha256": "8d4df278eaf9249e4ba1c6ca01a6f56315e48a178c1546ed0a4e1bbc2c8d8b76"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-evidence/captured/4/8/raw.u16le": {
+      "bytes": 8192,
+      "sha256": "78f64f08d9085ce0ff4c979ff7d4b4b0f463261629dba14b6c1d94f488948eae"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-evidence/captured/4/manifest.json": {
+      "bytes": 6360,
+      "sha256": "31b9284bebbc479e5ee9489b3ea3c16668764c14e80f4bc9005e18c89ce7b34f"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-evidence/stage-result.json": {
+      "bytes": 39057,
+      "sha256": "d421814842c005bf08b4542c2a42b6873fe61c9453bbd52f72f5eb272ecf30b3"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-package/deployment.conf": {
+      "bytes": 78427,
+      "sha256": "b61b23a0c87de43e00dbe5bf7addfbb7a08cad3d375a16eaa2811e64eee1ff9a"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-package/hil/Project.toml": {
+      "bytes": 1136,
+      "sha256": "488647c61005302155f20c29d746882061ebef2f2c8bbcd601d1cad6f92bf69b"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-package/hil/plant.toml": {
+      "bytes": 4354,
+      "sha256": "6f019835c9c016c776834395da210d0bbba4b578e88f669814884aef233f5a3c"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate/training-package/provenance.json": {
+      "bytes": 98222,
+      "sha256": "f91934e00fb6f13f99a6876e4b970c1c522bca919aa368c83aab24eb1f9bd03f"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/julia-validation.json": {
+      "bytes": 3753,
+      "sha256": "72ad56917105ed899eb88c2a55d389938110ceaa01fcddb9482ee36d3d48c8a4"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/numpy-checker-tests.log": {
+      "bytes": 1169,
+      "sha256": "6a21aa4bc08c7a3cd5489d158db1f9d722ab9acdb91bfd1124eeb4f74bb175b4"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/numpy-comparison-validation.json": {
+      "bytes": 3265,
+      "sha256": "8edf5be1e5346deaee87a47978717948727a9fe53aada73462bcc899f7e856b4"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/numpy-fgn-only.json": {
+      "bytes": 24103,
+      "sha256": "30f1e5f383b827d70b01f170b00436cf22d6cf4048dfa23e35ee01fd9f8eea6c"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/numpy-fgn-only.log": {
+      "bytes": 3526,
+      "sha256": "560ab4fecb79b54108f805a136504f8c8acfeb57b17b2bc7f94198b2fcfbe948"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/paired-copper-reference-comparison.json": {
+      "bytes": 55470,
+      "sha256": "6a83792e10b0beabcfcd63f25154baaa4abb9165bcb51bf5a7c02849e5ae36a4"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/paired-copper-reference-comparison.log": {
+      "bytes": 184,
+      "sha256": "80c04fe917bd8fd466837d712448c485b8694cfc574e9ad1df715f388dfc7ca8"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/paired-copper-reference-provenance.json": {
+      "bytes": 221451,
+      "sha256": "19aa4bb5c2db35738a1acb31f3a4842fa4ef7f9b41e140bd3f5dfb28012a308d"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/paired-copper-reference-provenance.log": {
+      "bytes": 3092,
+      "sha256": "20924c1e082dc7b37e52e3a06c14462c35c6b20a9ebbbc9576997dc5d467e3b1"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/prelaunch-identities.json": {
+      "bytes": 16398,
+      "sha256": "04738f0cfba6829bb927046b7758e5d3c50fe35bee987849ff487487436433a0"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/python-deployment-final.log": {
+      "bytes": 1285,
+      "sha256": "1f86c4b981503f3b1978cb6841591222ceaae32cdb596a414021251e89e2b4a3"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/run-fgn-v2.log": {
+      "bytes": 91,
+      "sha256": "85be74bb002086d8bf3c0ae400b49960796100790258dc449c4ddfe03953053f"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/run-fgn.log": {
+      "bytes": 1326,
+      "sha256": "bce930224016c70623ddfea93358785d38cd94872dc0b292bc19aa6ec4d202c1"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/run-jfg.log": {
+      "bytes": 88,
+      "sha256": "69a7409677a3c810acfc01346e2530cdb2774b4fd7f4f3084a8c3189536eb40c"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/tampered-reference-fail-before-v2.log": {
+      "bytes": 1440,
+      "sha256": "23defa5a5bb68621c3aad88ebc78f6bfd53e6c346f1c5be198f20f43c9476a42"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/tampered-reference-fail-before.log": {
+      "bytes": 1353,
+      "sha256": "ec3de73cb75761277dcc75e104d3c01f8a91204b59778c91c0eb974e54021ff2"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/tampered-reference-fixture.jl": {
+      "bytes": 1145,
+      "sha256": "0fc40dd53831171fd9c86450526eb76efc6c0ecfd614140729d237d5418a451a"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/tampered-reference-pass-after.log": {
+      "bytes": 162,
+      "sha256": "b312975af088fd38eb828fc0590f615644218f0b1392dd4d27e4e1769b69439f"
+    },
+    "/home/dgamroth/.cache/rtc-copper-reference-20261003/test-compare-copper-reference.py": {
+      "bytes": 4153,
+      "sha256": "376698164af9b6c1f4ee7a132d1cb7a020c33344bb35645a83b0cd64fe6d83a0"
+    }
+  },
+  "evidence_root": "/home/dgamroth/.cache/rtc-copper-reference-20261003",
+  "failures": {
+    "CRR-1": "Same tamper fixture accepted altered reference before binding repair; rejected after repair.",
+    "early_julia_fixture_iterations": "Preserved test-oracle/setup failures; final232 assertions pass.",
+    "initial_fgn_affinity": "Before startup, taskset-c6 excludes declared deployment cores. Fresh retry admits2\u201315; no source change."
+  },
+  "independent_reduction": {
+    "fgn": {
+      "artifacts": {
+        "measured-background.f32le": {
+          "different_elements": 0,
+          "dtype_actual": "float32",
+          "dtype_expected": "float32",
+          "equal_bytes": true,
+          "equal_values": true,
+          "frobenius_difference": 0.0,
+          "max_abs_difference": 0.0,
+          "rms_difference": 0.0,
+          "shape": [
+            64,
+            64
+          ]
+        },
+        "measured-dark-variance.f64le": {
+          "different_elements": 1597,
+          "dtype_actual": "float64",
+          "dtype_expected": "float64",
+          "equal_bytes": false,
+          "equal_values": false,
+          "frobenius_difference": 3.762493250920716e-15,
+          "max_abs_difference": 4.440892098500626e-16,
+          "rms_difference": 5.878895704563619e-17,
+          "shape": [
+            64,
+            64
+          ]
+        },
+        "measured-reference-pixels.f32le": {
+          "different_elements": 4,
+          "dtype_actual": "float32",
+          "dtype_expected": "float32",
+          "equal_bytes": false,
+          "equal_values": false,
+          "frobenius_difference": 3.3579312967732447e-09,
+          "max_abs_difference": 1.862645149230957e-09,
+          "rms_difference": 5.596552161288741e-11,
+          "shape": [
+            3600
+          ]
+        },
+        "measured-reference-variance.f64le": {
+          "different_elements": 1111,
+          "dtype_actual": "float64",
+          "dtype_expected": "float64",
+          "equal_bytes": false,
+          "equal_values": false,
+          "frobenius_difference": 3.725966061064941e-16,
+          "max_abs_difference": 6.938893903907228e-17,
+          "rms_difference": 6.209943435108236e-18,
+          "shape": [
+            3600
+          ]
+        },
+        "qualification-mean.f64le": {
+          "different_elements": 48,
+          "dtype_actual": "float64",
+          "dtype_expected": "float64",
+          "equal_bytes": false,
+          "equal_values": false,
+          "frobenius_difference": 7.514577022197681e-17,
+          "max_abs_difference": 2.7755575615628914e-17,
+          "rms_difference": 1.2524295036996136e-18,
+          "shape": [
+            3600
+          ]
+        }
+      },
+      "qualification_recorded_minus_numpy": {
+        "max_abs": 0.0,
+        "relative_norm": -1.249000902703301e-16,
+        "rms": -2.3592239273284576e-16
+      }
+    },
+    "jfg": {
+      "artifacts": {
+        "measured-background.f32le": {
+          "different_elements": 0,
+          "dtype_actual": "float32",
+          "dtype_expected": "float32",
+          "equal_bytes": true,
+          "equal_values": true,
+          "frobenius_difference": 0.0,
+          "max_abs_difference": 0.0,
+          "rms_difference": 0.0,
+          "shape": [
+            64,
+            64
+          ]
+        },
+        "measured-dark-variance.f64le": {
+          "different_elements": 1597,
+          "dtype_actual": "float64",
+          "dtype_expected": "float64",
+          "equal_bytes": false,
+          "equal_values": false,
+          "frobenius_difference": 3.762493250920716e-15,
+          "max_abs_difference": 4.440892098500626e-16,
+          "rms_difference": 5.878895704563619e-17,
+          "shape": [
+            64,
+            64
+          ]
+        },
+        "measured-reference-pixels.f32le": {
+          "different_elements": 4,
+          "dtype_actual": "float32",
+          "dtype_expected": "float32",
+          "equal_bytes": false,
+          "equal_values": false,
+          "frobenius_difference": 3.3579312967732447e-09,
+          "max_abs_difference": 1.862645149230957e-09,
+          "rms_difference": 5.596552161288741e-11,
+          "shape": [
+            3600
+          ]
+        },
+        "measured-reference-variance.f64le": {
+          "different_elements": 1111,
+          "dtype_actual": "float64",
+          "dtype_expected": "float64",
+          "equal_bytes": false,
+          "equal_values": false,
+          "frobenius_difference": 3.725966061064941e-16,
+          "max_abs_difference": 6.938893903907228e-17,
+          "rms_difference": 6.209943435108236e-18,
+          "shape": [
+            3600
+          ]
+        },
+        "qualification-mean.f64le": {
+          "different_elements": 48,
+          "dtype_actual": "float64",
+          "dtype_expected": "float64",
+          "equal_bytes": false,
+          "equal_values": false,
+          "frobenius_difference": 7.514577022197681e-17,
+          "max_abs_difference": 2.7755575615628914e-17,
+          "rms_difference": 1.2524295036996136e-18,
+          "shape": [
+            3600
+          ]
+        }
+      },
+      "qualification_recorded_minus_numpy": {
+        "max_abs": 0.0,
+        "relative_norm": -1.249000902703301e-16,
+        "rms": -2.3592239273284576e-16
+      }
+    }
+  },
+  "independent_validation_inventory_sha256": "8edf5be1e5346deaee87a47978717948727a9fe53aada73462bcc899f7e856b4",
+  "paired": {
+    "dark": {
+      "candidate_artifacts": {
+        "measured-background.f32le": {
+          "different_elements": 0,
+          "dtype_actual": "float32",
+          "dtype_expected": "float32",
+          "equal_bytes": true,
+          "equal_values": true,
+          "frobenius_difference": 0.0,
+          "max_abs_difference": 0.0,
+          "rms_difference": 0.0,
+          "shape": [
+            64,
+            64
+          ]
+        },
+        "measured-dark-variance.f64le": {
+          "different_elements": 0,
+          "dtype_actual": "float64",
+          "dtype_expected": "float64",
+          "equal_bytes": true,
+          "equal_values": true,
+          "frobenius_difference": 0.0,
+          "max_abs_difference": 0.0,
+          "rms_difference": 0.0,
+          "shape": [
+            64,
+            64
+          ]
+        }
+      },
+      "channels": {
+        "intensity": {
+          "different_elements": 0,
+          "dtype_actual": "float32",
+          "dtype_expected": "float32",
+          "equal_bytes": true,
+          "equal_values": true,
+          "frames": 8,
+          "frobenius_difference": 0.0,
+          "matching_frame_hashes": 8,
+          "max_abs_difference": 0.0,
+          "rms_difference": 0.0,
+          "shape": [
+            8
+          ]
+        },
+        "pixels": {
+          "different_elements": 0,
+          "dtype_actual": "float32",
+          "dtype_expected": "float32",
+          "equal_bytes": true,
+          "equal_values": true,
+          "frames": 8,
+          "frobenius_difference": 0.0,
+          "matching_frame_hashes": 8,
+          "max_abs_difference": 0.0,
+          "rms_difference": 0.0,
+          "shape": [
+            8,
+            3600
+          ]
+        },
+        "raw": {
+          "different_elements": 0,
+          "dtype_actual": "uint16",
+          "dtype_expected": "uint16",
+          "equal_bytes": true,
+          "equal_values": true,
+          "frames": 8,
+          "frobenius_difference": 0.0,
+          "matching_frame_hashes": 8,
+          "max_abs_difference": 0.0,
+          "rms_difference": 0.0,
+          "shape": [
+            8,
+            64,
+            64
+          ]
+        }
+      },
+      "matching_intrinsic_validity": true,
+      "matching_sequence_and_model_times": true
+    },
+    "qualification": {
+      "candidate_artifacts": {
+        "qualification-mean.f64le": {
+          "different_elements": 0,
+          "dtype_actual": "float64",
+          "dtype_expected": "float64",
+          "equal_bytes": true,
+          "equal_values": true,
+          "frobenius_difference": 0.0,
+          "max_abs_difference": 0.0,
+          "rms_difference": 0.0,
+          "shape": [
+            3600
+          ]
+        }
+      },
+      "channels": {
+        "intensity": {
+          "different_elements": 0,
+          "dtype_actual": "float32",
+          "dtype_expected": "float32",
+          "equal_bytes": true,
+          "equal_values": true,
+          "frames": 8,
+          "frobenius_difference": 0.0,
+          "matching_frame_hashes": 8,
+          "max_abs_difference": 0.0,
+          "rms_difference": 0.0,
+          "shape": [
+            8
+          ]
+        },
+        "pixels": {
+          "different_elements": 0,
+          "dtype_actual": "float32",
+          "dtype_expected": "float32",
+          "equal_bytes": true,
+          "equal_values": true,
+          "frames": 8,
+          "frobenius_difference": 0.0,
+          "matching_frame_hashes": 8,
+          "max_abs_difference": 0.0,
+          "rms_difference": 0.0,
+          "shape": [
+            8,
+            3600
+          ]
+        },
+        "raw": {
+          "different_elements": 0,
+          "dtype_actual": "uint16",
+          "dtype_expected": "uint16",
+          "equal_bytes": true,
+          "equal_values": true,
+          "frames": 8,
+          "frobenius_difference": 0.0,
+          "matching_frame_hashes": 8,
+          "max_abs_difference": 0.0,
+          "rms_difference": 0.0,
+          "shape": [
+            8,
+            64,
+            64
+          ]
+        }
+      },
+      "matching_intrinsic_validity": true,
+      "matching_sequence_and_model_times": true
+    },
+    "training": {
+      "candidate_artifacts": {
+        "measured-reference-pixels.f32le": {
+          "different_elements": 0,
+          "dtype_actual": "float32",
+          "dtype_expected": "float32",
+          "equal_bytes": true,
+          "equal_values": true,
+          "frobenius_difference": 0.0,
+          "max_abs_difference": 0.0,
+          "rms_difference": 0.0,
+          "shape": [
+            3600
+          ]
+        },
+        "measured-reference-variance.f64le": {
+          "different_elements": 0,
+          "dtype_actual": "float64",
+          "dtype_expected": "float64",
+          "equal_bytes": true,
+          "equal_values": true,
+          "frobenius_difference": 0.0,
+          "max_abs_difference": 0.0,
+          "rms_difference": 0.0,
+          "shape": [
+            3600
+          ]
+        }
+      },
+      "channels": {
+        "intensity": {
+          "different_elements": 0,
+          "dtype_actual": "float32",
+          "dtype_expected": "float32",
+          "equal_bytes": true,
+          "equal_values": true,
+          "frames": 8,
+          "frobenius_difference": 0.0,
+          "matching_frame_hashes": 8,
+          "max_abs_difference": 0.0,
+          "rms_difference": 0.0,
+          "shape": [
+            8
+          ]
+        },
+        "pixels": {
+          "different_elements": 0,
+          "dtype_actual": "float32",
+          "dtype_expected": "float32",
+          "equal_bytes": true,
+          "equal_values": true,
+          "frames": 8,
+          "frobenius_difference": 0.0,
+          "matching_frame_hashes": 8,
+          "max_abs_difference": 0.0,
+          "rms_difference": 0.0,
+          "shape": [
+            8,
+            3600
+          ]
+        },
+        "raw": {
+          "different_elements": 0,
+          "dtype_actual": "uint16",
+          "dtype_expected": "uint16",
+          "equal_bytes": true,
+          "equal_values": true,
+          "frames": 8,
+          "frobenius_difference": 0.0,
+          "matching_frame_hashes": 8,
+          "max_abs_difference": 0.0,
+          "rms_difference": 0.0,
+          "shape": [
+            8,
+            64,
+            64
+          ]
+        }
+      },
+      "matching_intrinsic_validity": true,
+      "matching_sequence_and_model_times": true
+    }
+  },
+  "remaining": [
+    "Reference centering/adoption in the complete science graphs",
+    "Copper277\u2192253 coordinate composition, measured interaction matrix, frozen inverse selection and correction",
+    "Precision/linearity scientific acceptance under qualified plant/detector settings",
+    "Unchanged HEART calibration and accelerator/cadence qualification"
+  ],
+  "scope": "Bounded CPU dark/reference candidate collection, not adoption or interaction/inverse/correction/cadence acceptance",
+  "source_files": {
+    "deployment/copper_reference.py": {
+      "bytes": 17411,
+      "sha256": "6a7174de9f546579adb76a82038cb3bf32804db52c801af0c4618aad4e35b7dd"
+    },
+    "deployment/hil/calibration_reference_analysis.jl": {
+      "bytes": 24877,
+      "sha256": "ce51e54b71140a628d36c96b99c056a469bdde568a10be18b8b3a6384f135201"
+    },
+    "deployment/hil/test_calibration_reference_analysis.jl": {
+      "bytes": 18368,
+      "sha256": "5cf2dbc4f5468786881d11e0352edfc393346fe10492fc160c5680ab2dad0696"
+    },
+    "deployment/test_copper_reference.py": {
+      "bytes": 16388,
+      "sha256": "8fe900a95123c626e7af65298556ceaa47f7319bd85dc2067754e2d705cd6cf5"
+    }
+  },
+  "version": 1,
+  "worktree": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-copper-reference"
+}

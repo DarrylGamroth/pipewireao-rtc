@@ -1210,3 +1210,27 @@ and provisional detector/DM settings remain explicitly identified. Cold stage
 times are recorded separately from model-time exposure settings; wall cadence,
 unchanged HEART calibration, accelerator acquisition and physical qualification
 remain open under RTC-DEV-029.
+
+### Copper measured dark/reference candidates, 2026-10-03
+
+The [candidate workflow](COPPER_REFERENCE_USAGE.md) now uses public AOC dark
+and repeated-response moments through the deployed Copper CPU endpoint.
+Fresh stages acquire a measured detector background, an absolute normalized
+3,600-value lamp reference and an independent-seed qualification batch.
+Source snapshots and producing artifact reports bind every dependent stage;
+the [review](COPPER_REFERENCE_REVIEW.md) records fail-before/pass-after binding
+evidence and source-freeze repairs.
+
+Both FGN/JFG runs completed three eight-frame stages with restoration, release,
+public shutdown and owned cleanup. Actual paired ADC/pixel/intensity captures
+and all five candidate products match byte for byte. The fresh reference
+comparison has relative residual norm 0.0888074; without an instrument tolerance
+it remains descriptive, not scientific acceptance. The
+[validation](COPPER_REFERENCE_VALIDATION.md) separates cold campaign time from
+cadence and binds the [evidence ledger](COPPER_REFERENCE_EVIDENCE.json).
+
+This closes bounded Copper background/reference collection. Reference
+centering/adoption, adequate precision/linearity, 277→253 composition, measured
+interaction matrix, inverse selection and correction remain open. Unchanged
+HEART calibration, accelerator acquisition and physical qualification remain
+open; RTC-DEV-029 is still partial.
