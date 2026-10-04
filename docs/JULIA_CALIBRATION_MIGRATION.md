@@ -1,13 +1,23 @@
 # Julia operational calibration migration
 
+## Delivery status
+
+The selected operational migration is complete. Julia owns the four campaign
+entry points and their installed export/supervision dependencies. The
+[delivery record](JULIA_CALIBRATION_MIGRATION_VALIDATION.md),
+[evidence ledger](JULIA_CALIBRATION_MIGRATION_EVIDENCE.json) and
+[independent review](JULIA_CALIBRATION_MIGRATION_REVIEW.md) bind verification
+and limits. Scientific calibration remains partial under RTC-DEV-029. The
+starting-state and implementation plan below preserve the original decision.
+
 ## Decision and starting state
 
 User direction on 2026-10-03: scripts promoted to production must use Julia.
 RTC-DEV-029 applies this boundary to operational calibration, including indirect
 package-export and process-supervision dependencies. Starting RTC source:
 `7aa7cbd`, clean main. This plan is prepared in a dedicated worktree on branch
-`work/julia-calibration-orchestration-20261003`; no executable replacement is
-implemented by this document.
+`work/julia-calibration-orchestration-20261003`; no executable replacement was
+implemented when this plan was written.
 
 Julia already owns detector/DM acquisition, the completion-event server, probe
 construction and numerical analysis. Python assembles packages, supervises

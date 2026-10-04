@@ -1,6 +1,6 @@
 # Copper measured dark and reference candidates
 
-`deployment/copper_reference.py` acquires three finite batches through the
+`deployment/copper_reference.jl` acquires three finite batches through the
 existing deployed calibration endpoint: dark, lamp training and independently
 seeded lamp qualification. It uses public AdaptiveOpticsCalibration moments;
 the [plan](COPPER_REFERENCE_PLAN.md) and [review](COPPER_REFERENCE_REVIEW.md)
@@ -42,7 +42,7 @@ settling must discard at least one completed exposure or require positive
 model time. Immediate settling is rejected. Declare policy before acquisition.
 
 ```sh
-python3 deployment/copper_reference.py \
+julia --startup-file=no --project=deployment/julia deployment/copper_reference.jl \
   --base-package /absolute/path/to/copper-cpu-science-base \
   --output /absolute/path/to/fresh-candidate \
   --recipe /absolute/path/to/recipe.json \

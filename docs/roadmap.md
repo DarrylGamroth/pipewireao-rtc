@@ -1271,10 +1271,21 @@ RTC-DEV-029 remains partial.
 
 ## Selected Julia calibration orchestration (2026-10-03)
 
-Production calibration orchestration will use Julia, including export and
-supervision dependencies reachable from the installed workflow. Existing
-Python campaigns remain development validation references until the
-[Julia migration](JULIA_CALIBRATION_MIGRATION.md) passes portable and installed
-parity and packaging gates. Reuse current Julia acquisition and AOC analysis.
-The migration is planned, not implemented; Copper illumination and matrix
-qualification remain separate scientific gates.
+Production calibration orchestration uses Julia, including export and
+supervision dependencies reachable from the installed workflow. The selected
+[Julia migration](JULIA_CALIBRATION_MIGRATION.md) is complete: 343 portable
+assertions, installed Classic/Copper FGN/JFG acquisition, cold export and
+unchanged HEART foreground/systemd lifecycle checks pass. See the
+[delivery record](JULIA_CALIBRATION_MIGRATION_VALIDATION.md),
+[evidence ledger](JULIA_CALIBRATION_MIGRATION_EVIDENCE.json) and
+[independent review](JULIA_CALIBRATION_MIGRATION_REVIEW.md). Earlier acquisition
+snapshots retain their identities; targeted final-source checks qualify the
+reviewed intervening corrections. Python science-input generators and historical
+campaigns remain external development references. Acquisition and numerical
+estimators retain their existing Julia/AOC owners.
+
+The tested HEART packages explicitly pin a compatible adapter and seal actual
+scientific source bytes; the newer adapter/AOS API mismatch remains recorded.
+Copper illumination, Classic response variation, matrix/reconstructor acceptance,
+correction and accelerator/physical qualification remain separate scientific
+gates. RTC-DEV-029 remains partial for that broader scope.

@@ -2,12 +2,14 @@
 
 ## Scope
 
-`deployment/calibration_method.py` acquires one declared probe basis through the
+`deployment/calibration_method.jl` acquires one declared probe basis through the
 same deployed, completion-driven Classic CPU DM/WFS path as the zonal campaign.
 It publishes an **unaccepted response candidate**. It does not select a
 reconstructor, update the controller or establish scientific equivalence.
 AdaptiveOpticsCalibration owns probe construction and numerical estimation;
-Python owns export, lifecycle supervision and evidence collection.
+Julia owns export, lifecycle supervision and evidence collection. The former
+Python entrypoint remains a development reference; historical evidence below
+retains its original producer.
 
 The existing campaign recipe supplies reference, physical amplitudes, exposure
 count, settling, detector seed/settings and timeouts. The input must be a
@@ -53,7 +55,7 @@ checks remain separate scientific gates.
 Use new output and runtime paths outside the source package and AOC checkout:
 
 ```sh
-python3 deployment/calibration_method.py \
+julia --startup-file=no --project=deployment/julia deployment/calibration_method.jl \
   --base-package /path/to/qualified-classic-recorded-package \
   --recipe /path/to/shared-recipe.json \
   --method /path/to/method.json \
@@ -91,6 +93,10 @@ software review, pilot evidence and the remaining method-selection gates.
 qualified baseline against which methods will be compared.
 
 ## Qualification record
+
+This section records the earlier Python-owned workflow. Current Julia migration
+qualification is tracked in the
+[migration record](JULIA_CALIBRATION_MIGRATION_VALIDATION.md).
 
 The maintained owner completed a Classic FGN CPU reverse-modal smoke on
 2026-10-03: two declared physical directions, four signed batches, 16 accepted

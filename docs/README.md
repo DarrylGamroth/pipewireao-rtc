@@ -45,8 +45,10 @@ completion-event acquisition core, independent findings and remaining endpoint
 integration gates. It does not establish operational calibration support.
 
 [Julia calibration migration](JULIA_CALIBRATION_MIGRATION.md) records the selected
-production language boundary, current Python dependencies and replacement gates.
-The current development campaigns have not yet been migrated.
+production language boundary and completed replacement gates; its delivery
+record retains the historical Python evidence.
+The selected operational entrypoints and their installed dependencies now use
+Julia; scientific calibration acceptance remains separate.
 
 [Calibration endpoint evidence](CALIBRATION_ENDPOINT_EVIDENCE.json) records
 the initial graph preparation, held-probe transport checks, independently
@@ -106,6 +108,17 @@ open.
 [evidence identities](COPPER_QUALITY_EVIDENCE.json) record the completed bounded
 FGN/JFG directional collection. The paired measurements/products match exactly;
 the pilot does not establish adequate precision for full-matrix admission.
+
+## Julia operational deployment
+
+The [Julia operational deployment usage](JULIA_DEPLOYMENT_USAGE.md),
+[migration plan](JULIA_CALIBRATION_MIGRATION.md),
+[delivery record](JULIA_CALIBRATION_MIGRATION_VALIDATION.md) and
+[independent review](JULIA_CALIBRATION_MIGRATION_REVIEW.md) track the operational
+language boundary and completed selected installed qualification. The
+[evidence ledger](JULIA_CALIBRATION_MIGRATION_EVIDENCE.json) binds tested sources
+and results. Scientific calibration remains partial. Historical Python evidence
+continues to identify its original producer.
 
 ## Inactive design archive
 

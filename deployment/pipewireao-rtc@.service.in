@@ -12,8 +12,9 @@ LimitRTPRIO=95
 LimitMEMLOCK=4294967296
 CPUAffinity=@CPUS@
 KillMode=mixed
+KillSignal=SIGINT
 TimeoutStartSec=600
-TimeoutStopSec=180
+TimeoutStopSec=300
 Restart=no
 
 [Install]

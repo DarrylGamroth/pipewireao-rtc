@@ -8,13 +8,19 @@ recorded profiles use a non-actuating command discard sink. The optional
 simulated detector and command sink, using CPU, CUDA or AMDGPU independently of
 the science owner. Physical device authority remains deferred.
 
+Operational preparation from a sealed science base, deployment supervision and
+calibration campaigns use Julia ≥ 1.12. See
+[Julia deployment usage](../docs/JULIA_DEPLOYMENT_USAGE.md). The recorded-input
+science generator below remains external development preparation; installed
+operational workflows do not invoke it or require Python.
+
 ## Initial calibration graph assets
 
 The experimental exporter selects the exact frontend and PDM constraint
 declarations from an existing complete-frame Classic/Copper FGN/JFG package:
 
 ```sh
-python3 deployment/export_calibration.py \
+julia --startup-file=no --project=deployment/julia deployment/export_calibration.jl \
   --base-package /absolute/installed-hil-package \
   --output /absolute/new-calibration-assets \
   --pipewire-prefix /opt/pipewireao
@@ -30,8 +36,10 @@ reconstructor, projection or additional system-flat stage executes.
 These assets have no `deployment.conf` and are not installed as runnable RTC
 profiles. Existing offset provenance keeps its original claim; exporting assets
 does not establish operational background/reference or interaction calibration.
-The session owner, response acquisition and matrix client remain integration
-gates under RTC-DEV-029.
+Add `--deployment`, `--rtc-binary` and `--calibration-binary` to produce a
+runnable held-probe acquisition package. The maintained Classic/Copper campaign
+entrypoints perform this preparation and preserve acquisition evidence; see
+[migration qualification](../docs/JULIA_CALIBRATION_MIGRATION_VALIDATION.md).
 
 ## Build and export
 
@@ -80,7 +88,7 @@ simplified scientific substitute is introduced.
 ## Install and run
 
 ```sh
-python3 deployment/deploy.py install \
+julia --startup-file=no --project=deployment/julia deployment/deploy.jl install \
   --package /absolute/new-package \
   --destination "$HOME/.config/pipewireao-rtc/revolt-classic-jfg-frame" \
   --pipewire-prefix /opt/pipewireao
@@ -117,7 +125,7 @@ publication, resets state, connects inactive, and awaits session admission.
 The source remains stopped through preparation and placement checks. Losing a
 required process fails the deployment. Restart uses a fresh private core and
 runtime directory; it does not reuse readiness markers from a previous launch.
-SIGINT/SIGTERM stops the session, tears down the RTC, then releases external
+SIGINT stops the session, tears down the RTC, then releases external
 owners and the core. If completed ingress revocation cannot be confirmed, the
 source-owning private core is terminated before consumer quit markers.
 
@@ -181,7 +189,7 @@ parameter GRAPH PORT F32_LE ROWSxCOLUMNS SCHEMA /absolute/new-matrix.f32le
 `reset` requires a stopped session. Group stop/start preserves graph state;
 it does not reset it. A finite owned FITS source automatically returns the
 session to Ready. A fresh deployment replays from the beginning; session resume
-is not a promise to seek a file. Use `systemctl --user stop` or SIGTERM for
+is not a promise to seek a file. Use `systemctl --user stop` or SIGINT for
 supervisor shutdown. The Rust `quit` command alone closes its owner and is
 reported as a required-process exit by the supervisor.
 
@@ -203,7 +211,7 @@ Build the live runner, install the HEART SPA plugin, and prepare a CPU FGN HIL
 base with simulation-derived offsets. Export and install to new directories:
 
 ```sh
-python3 deployment/export_heart_hil.py \
+julia --startup-file=no --project=deployment/julia deployment/export_heart_hil.jl \
   --base-package /absolute/revolt-classic-fgn-hil-cpu \
   --output /absolute/new-heart-package \
   --heart-root /absolute/built-heart \
@@ -211,10 +219,11 @@ python3 deployment/export_heart_hil.py \
   --calibration-root /absolute/revolt-rtc \
   --adapter-root /absolute/AdaptiveOpticsSimPipeWireHIL.jl
 
-python3 deployment/deploy.py install \
+julia --startup-file=no --project=deployment/julia deployment/deploy.jl install \
   --package /absolute/new-heart-package \
   --destination "$HOME/.config/pipewireao-rtc/revolt-classic-heart-hil-cpu"
 
+# Optional external development qualification, not an operational dependency.
 python3 deployment/check_hil.py \
   --deployment "$HOME/.config/pipewireao-rtc/revolt-classic-heart-hil-cpu/deployment.conf" \
   --runtime "$XDG_RUNTIME_DIR/heart-classic-check" \

@@ -1,6 +1,6 @@
 # Classic CPU calibration campaign usage
 
-`deployment/calibration_campaign.py` runs a finite, non-actuating Classic
+`deployment/calibration_campaign.jl` runs a finite, non-actuating Classic
 calibration campaign from an installed CPU base package. The base package may
 use the native FGN graph or the external JuliaFilterGraph (JFG) graph. The
 campaign makes four fresh stage packages and runtimes:
@@ -29,36 +29,33 @@ mask declares the candidate universe; training derives eligibility from the
 captured evidence. It does not force all positions to remain active. A prior
 campaign happened to select 184 positions, but that count is not prescribed.
 
-Save this as `write-example-recipe.py` and run it with Python 3. It writes a
+Save this as `write-example-recipe.jl` and run it with the
+`deployment/julia` project. It writes a
 JSON recipe with separate detector seeds for all four stages:
 
-```python
-import json
-from pathlib import Path
+```julia
+using JSON3
 
-recipe = {
-    "version": 1,
-    "dark_frames": 16,
-    "training_frames": 16,
-    "qualification_frames": 16,
-    "seeds": {"dark": 0, "training": 1, "qualification": 2, "interaction": 3},
-    "lamp_magnitude": 0.5,
-    "candidate_mask": [True] * 188,
-    "minimum_flux": [2000.0] * 188,
-    "adc_upper_rail": 4095,
-    "maximum_reference_residual": 0.1,
-    "reference": [0.0] * 277,
-    "amplitudes": [0.02] * 277,
-    "frames_per_probe": 2,
-    "settling": {"kind": "discard_exposures", "frames": 1},
-    "request_timeout_ns": 20_000_000_000,
-    "stage_timeout_seconds": 180,
-}
-
-Path("classic-campaign-recipe.json").write_text(
-    json.dumps(recipe, indent=2, allow_nan=False) + "\n",
-    encoding="utf-8",
+recipe = Dict(
+    "version" => 1,
+    "dark_frames" => 16,
+    "training_frames" => 16,
+    "qualification_frames" => 16,
+    "seeds" => Dict("dark" => 0, "training" => 1, "qualification" => 2, "interaction" => 3),
+    "lamp_magnitude" => 0.5,
+    "candidate_mask" => fill(true, 188),
+    "minimum_flux" => fill(2000.0, 188),
+    "adc_upper_rail" => 4095,
+    "maximum_reference_residual" => 0.1,
+    "reference" => zeros(277),
+    "amplitudes" => fill(0.02, 277),
+    "frames_per_probe" => 2,
+    "settling" => Dict("kind" => "discard_exposures", "frames" => 1),
+    "request_timeout_ns" => 20_000_000_000,
+    "stage_timeout_seconds" => 180,
 )
+
+write("classic-campaign-recipe.json", JSON3.write(recipe) * "\n")
 ```
 
 ## Run
@@ -70,7 +67,7 @@ must not already exist; use a new short runtime root because the campaign uses
 local AF_UNIX sockets.
 
 ```sh
-python3 deployment/calibration_campaign.py \
+julia --startup-file=no --project=deployment/julia deployment/calibration_campaign.jl \
   --base-package /absolute/path/to/classic-cpu-base-package \
   --output /absolute/path/to/new-campaign-output \
   --recipe /absolute/path/to/classic-campaign-recipe.json \
@@ -110,3 +107,9 @@ linearity, observability, a qualified reconstructor, closed-loop correction,
 GPU behavior, or cadence/rate acceptance. The campaign changes no HEART source
 or operational configuration. It also makes no claim that qualification
 frames from separate FGN and JFG runs will be bit-identical.
+
+The former Python entrypoint remains a development reference. Historical
+campaign evidence retains its original producer. See
+[Julia deployment usage](JULIA_DEPLOYMENT_USAGE.md) for installed commands and
+the [migration record](JULIA_CALIBRATION_MIGRATION_VALIDATION.md) for current
+qualification.

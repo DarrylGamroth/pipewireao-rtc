@@ -1,9 +1,9 @@
 # Copper precision and amplitude characterization
 
-The maintained `deployment/copper_quality.py` collects a bounded one-direction
+The maintained `deployment/copper_quality.jl` collects a bounded one-direction
 pilot through the ordinary deployed Copper CPU calibration endpoint. It requires
 a complete-frame FGN/JFG science base and its completed measured-reference
-candidate from `copper_reference.py`. It does not adopt a reference or reconstructor.
+candidate from `copper_reference.jl`. It does not adopt a reference or reconstructor.
 The [predeclared plan](COPPER_QUALITY_PLAN.md) explains the scientific limits.
 
 ## Explicit recipe
@@ -49,7 +49,7 @@ qualified fixture is 64×64 and 14 bit; it is not a qualified DU860 gain/noise m
 ## Invocation
 
 ```sh
-python3 deployment/copper_quality.py \
+julia --startup-file=no --project=deployment/julia deployment/copper_quality.jl \
   --base-package /absolute/path/to/copper-cpu-science-base \
   --reference-candidate /absolute/path/to/completed-reference-candidate \
   --recipe /absolute/path/to/recipe.json \

@@ -221,3 +221,10 @@ is preserved as an [inactive design archive](docs/archive/full-rtc/README.md).
 [Recorded-input deployment](deployment/README.md) describes profile export,
 installation, foreground and systemd user launch, placement and local control
 for Classic/Copper FGN and JuliaFilterGraph owners.
+
+[Julia operational deployment](docs/JULIA_DEPLOYMENT_USAGE.md) describes the
+Julia calibration campaigns, method selection, HIL/HEART package exporters and
+installed lifecycle owner. Numerical calibration remains in
+AdaptiveOpticsCalibration; the workflows accept sealed scientific base packages.
+The [migration delivery record](docs/JULIA_CALIBRATION_MIGRATION_VALIDATION.md)
+separates language and lifecycle qualification from scientific acceptance.

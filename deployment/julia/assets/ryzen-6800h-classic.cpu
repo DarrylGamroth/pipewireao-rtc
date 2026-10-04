@@ -1,0 +1,18 @@
+# Measurement-only placement for the 8-core Ryzen 7 6800H host.
+# Keep CPUs 0 and 1 for the operating system. HEART's short TFC and CLWC
+# stages share CPU 8 to leave the remaining active stages on separate cores.
+HOP0.wfs.w = { 2 }
+HOP0.proc.w = { 4 }
+HOP0.recon.w = { 6 }
+WCC.tfc.w = { 8 }
+WCC.clwc.w = { 8 }
+WCC.dm0.w = { 10 }
+HOP0.wfs.pxStat = { 14 }
+HOP0.proc.gOpt = { 14 }
+WCC.clwc.pdm0 = { 14 }
+HOP0 = { 2, 4, 6 }
+WCC = { 8, 10 }
+CMDS = { 14 }
+TELM = { 14 }
+MON = { 14 }
+DEFAULT = -1
