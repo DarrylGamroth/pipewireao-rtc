@@ -69,6 +69,13 @@ worktree changes.
 
 ## Implementation constraints
 
+- Operational calibration orchestration and scripts selected for production
+  deployment must use Julia. Reuse the existing Julia acquisition, protocol
+  and analysis modules and AdaptiveOpticsCalibration; do not introduce new
+  Python dependencies into that operational path. Existing Python exporters,
+  campaign owners and qualification scripts remain development tooling and
+  validation references until Julia parity is demonstrated. The selected
+  migration is recorded in `docs/JULIA_CALIBRATION_MIGRATION.md`.
 - Rust is the default language for the small headless runner.
 - Implement the lifecycle with Statig's blocking state-machine API and one
   serialized dispatcher from the first increment. Keep Statig types private.

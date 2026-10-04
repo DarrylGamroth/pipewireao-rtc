@@ -44,6 +44,10 @@ the [evidence summary](HEART_HIL_EVIDENCE.json) preserves measured artifact iden
 completion-event acquisition core, independent findings and remaining endpoint
 integration gates. It does not establish operational calibration support.
 
+[Julia calibration migration](JULIA_CALIBRATION_MIGRATION.md) records the selected
+production language boundary, current Python dependencies and replacement gates.
+The current development campaigns have not yet been migrated.
+
 [Calibration endpoint evidence](CALIBRATION_ENDPOINT_EVIDENCE.json) records
 the initial graph preparation, held-probe transport checks, independently
 reviewed native buffer-return fix, exact source identities and remaining

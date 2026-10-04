@@ -1268,3 +1268,13 @@ calibration-lamp discriminator is proposed; no gain, tolerance or active
 calibration was changed. Full Copper matrix, 277→253 composition, held-out
 inverse/correction, unchanged HEART and accelerator gates remain open.
 RTC-DEV-029 remains partial.
+
+## Selected Julia calibration orchestration (2026-10-03)
+
+Production calibration orchestration will use Julia, including export and
+supervision dependencies reachable from the installed workflow. Existing
+Python campaigns remain development validation references until the
+[Julia migration](JULIA_CALIBRATION_MIGRATION.md) passes portable and installed
+parity and packaging gates. Reuse current Julia acquisition and AOC analysis.
+The migration is planned, not implemented; Copper illumination and matrix
+qualification remain separate scientific gates.

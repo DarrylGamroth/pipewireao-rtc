@@ -837,6 +837,13 @@ maximum frame rate, physical actuation or algorithmic equivalence.
 
 ## RTC-DEV-029 — Operational interaction calibration
 
+Calibration orchestration selected for production deployment MUST use Julia
+and reuse the existing Julia acquisition and AdaptiveOpticsCalibration APIs.
+Its installed operational path MUST NOT require Python, including indirect
+export or supervision dependencies. Existing Python development workflows
+remain validation references pending the parity gates in
+[the Julia migration](JULIA_CALIBRATION_MIGRATION.md).
+
 This requirement applies to explicitly selected operational-calibration
 sessions. Existing installed finite exchange profiles retain RTC-DEV-025,
 RTC-DEV-026 and RTC-DEV-027 unchanged. For the new calibration session only,
