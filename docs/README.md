@@ -109,6 +109,16 @@ open.
 FGN/JFG directional collection. The paired measurements/products match exactly;
 the pilot does not establish adequate precision for full-matrix admission.
 
+[Calibration completion plan](CALIBRATION_COMPLETION_PLAN.md),
+[measured evidence](CALIBRATION_COMPLETION_VALIDATION.md) and
+[independent review](CALIBRATION_COMPLETION_REVIEW.md) track the brighter noisy
+detector cohort, matched methods, held-out inverse selection, deployed correction
+and completion of all five selected finite simulation gates. The
+[HEART calibration adapter](HEART_CALIBRATION_ADAPTER.md) distinguishes held
+command acquisition from ordinary closed-loop operation and records the selected
+native ingress mode. Finite simulation results do not qualify physical devices
+or wall-clock cadence.
+
 ## Julia operational deployment
 
 The [Julia package structure review](JULIA_PACKAGE_STRUCTURE_REVIEW.md) distinguishes
@@ -124,8 +134,9 @@ The [Julia operational deployment usage](JULIA_DEPLOYMENT_USAGE.md),
 [independent review](JULIA_CALIBRATION_MIGRATION_REVIEW.md) track the operational
 language boundary and completed selected installed qualification. The
 [evidence ledger](JULIA_CALIBRATION_MIGRATION_EVIDENCE.json) binds tested sources
-and results. Scientific calibration remains partial. Historical Python evidence
-continues to identify its original producer.
+and results. Selected finite simulation calibration gates are complete; physical,
+ordinary Copper streaming and wall-clock rate qualification remain separate.
+Historical Python evidence continues to identify its original producer.
 
 ## Inactive design archive
 

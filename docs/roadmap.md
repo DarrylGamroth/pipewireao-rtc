@@ -1289,3 +1289,33 @@ scientific source bytes; the newer adapter/AOS API mismatch remains recorded.
 Copper illumination, Classic response variation, matrix/reconstructor acceptance,
 correction and accelerator/physical qualification remain separate scientific
 gates. RTC-DEV-029 remains partial for that broader scope.
+
+## Selected measured calibration completion (2026-10-04)
+
+The five selected finite simulation gates under RTC-ARCH-023 / RTC-DEV-029 are
+complete. See the [predeclared plan and decisions](CALIBRATION_COMPLETION_PLAN.md),
+[measured validation](CALIBRATION_COMPLETION_VALIDATION.md) and
+[independent review](CALIBRATION_COMPLETION_REVIEW.md). The earlier open-gate
+statements above record the state at their respective checkpoints.
+
+Normal noisy acquisition provides repeated Classic and Copper interaction
+matrices, zonal/Hadamard/spatial comparison, held-out selection and public AOC
+inverse construction. Paired Copper FGN/JFG matrices match byte for byte;
+Hadamard is selected for the full supported correction space. Spatial sine
+results qualify only their measured span, and method cost includes differing
+probe energy and exposure counts. Actual coordinate maps and polarity are
+verified rather than inferred from actuator prefixes.
+
+Selected FGN/JFG and unchanged HEART correction runs pass fixed-window direct
+simulation-truth/zero-command comparisons, reset reproduction, restoration and
+public shutdown. CUDA and available AMDGPU simulation have separate retained
+results. Native Classic normal correction retains threshold-classified region
+dropouts; calibration still rejects invalid eligible probes. Native Copper's
+normal ADC rail diagnostics are preserved under the disclosed common replay
+policy. Original failed gates remain failed in their original reports.
+
+This completes the selected finite scientific increment, not broad instrument
+qualification. Ordinary native Copper streaming CCR-017 and the independent
+generic PipeWireAO private-core timeout CCR-006 remain open. Physical endpoints,
+DU860 electronics, instrument acceptance tolerances, full engine/backend
+coverage, progressive latency and wall-clock rates are separate gates.
