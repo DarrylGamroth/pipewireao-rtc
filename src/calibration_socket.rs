@@ -17,7 +17,7 @@ use std::sync::Arc;
 use std::time::Instant;
 
 const MAX_REQUEST_BYTES: usize = 16 * 1024;
-const MAX_REPLY_BYTES: usize = 64 * 1024;
+const MAX_REPLY_BYTES: usize = 128 * 1024;
 
 /// One preconnected, nonblocking endpoint channel. No reconnect or retry of an
 /// operation with an unknown outcome is performed. Setup occurs before Hold.

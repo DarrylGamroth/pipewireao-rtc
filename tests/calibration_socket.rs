@@ -109,12 +109,45 @@ fn split_and_coalesced_completions_preserve_identities() {
 }
 
 #[test]
+fn receives_copper_sized_reply_above_legacy_limit() {
+    let (client, mut server) = UnixStream::pair().unwrap();
+    let mut endpoint = CalibrationSocketEndpoint::new(client).unwrap();
+    let values = vec![3.402_823_5e38_f32; 3600];
+    // Exercise transport size with finite Float32 values and large identities;
+    // the coordinator separately validates chronology and acquisition meaning.
+    let exposures: Vec<_> = (1..=64)
+        .map(|sequence| {
+            json!({
+                "domain":u64::MAX,"generation":u64::MAX,"sequence":sequence,
+                "start_model_ns":u64::MAX,"duration_ns":u64::MAX,
+            })
+        })
+        .collect();
+    let bytes = reply(&json!({"kind":"responses","values":values,
+        "exposures":exposures,"valid":true}));
+    assert!(bytes.len() > 64 * 1024 && bytes.len() <= 128 * 1024);
+    let producer = thread::spawn(move || server.write_all(&bytes).unwrap());
+    let completion = endpoint
+        .receive(Instant::now() + Duration::from_secs(2))
+        .unwrap()
+        .unwrap();
+    match completion.result.unwrap() {
+        CalibrationEvidence::Responses(batch) => {
+            assert_eq!(batch.values.len(), 3600);
+            assert_eq!(batch.exposures.len(), 64);
+        }
+        other => panic!("unexpected completion: {other:?}"),
+    }
+    producer.join().unwrap();
+}
+
+#[test]
 fn malformed_and_oversized_evidence_is_rejected() {
     for bytes in [
         b"{\n".to_vec(),
         reply(&json!({"kind":"released","extra":true})),
         reply(&json!({"kind":"failed","reason":"invented"})),
-        vec![b'x'; 64 * 1024],
+        vec![b'x'; 128 * 1024],
     ] {
         let (client, mut server) = UnixStream::pair().unwrap();
         let mut endpoint = CalibrationSocketEndpoint::new(client).unwrap();
