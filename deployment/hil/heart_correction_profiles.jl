@@ -15,9 +15,9 @@ const Flags=HeartCorrectionFlags
 const DETECTOR_ACCEPTANCE_POLICY="normal-correction-adc-bounded-replay-v1"
 
 function descriptor(profile::Symbol)
-    profile===:copper && return (;profile,width=64,measurements=3600,coordinates=253,
+    profile===:copper && return (;profile,frame_output=:pwfs_frame,width=64,measurements=3600,coordinates=253,
         gradient_datatype=8,gradient_rows=3600,telemetry_max_bytes=UInt64(16*1024*1024),adc_bits=14,ingress="deferred",gain=0.01,pole=0.99,sign=-1)
-    profile===:classic && return (;profile,width=352,measurements=376,coordinates=277,
+    profile===:classic && return (;profile,frame_output=:shwfs_frame,width=352,measurements=376,coordinates=277,
         gradient_datatype=13,gradient_rows=188,telemetry_max_bytes=UInt64(128*1024*1024),adc_bits=12,ingress="streaming",gain=-0.3,pole=0.99,sign=1)
     throw(ArgumentError("unsupported native correction profile"))
 end

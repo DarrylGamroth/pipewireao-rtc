@@ -513,6 +513,14 @@ function reset_window!(owner,options,science,recorder,request_id)
     return nothing
 end
 
+function prepare_boundary(science,profile::Symbol)
+    spec=Profiles.descriptor(profile)
+    boundary=prepare_graph_calibration_boundary(science.graph;command_input=:pdm_command,frame_output=spec.frame_output)
+    size(hil_frame_buffer(boundary))==(spec.width,spec.width) || error("native correction detector boundary extent differs")
+    size(hil_command_buffer(boundary))==(277,) || error("native correction physical command boundary extent differs")
+    return boundary
+end
+
 function run_owner(options,plant_module,target)
     contract,projection=load_contract(options)
     mkdir(options.heart_probe_directory;mode=0o700)
@@ -520,7 +528,7 @@ function run_owner(options,plant_module,target)
     original=Main.prepare_science(options,plant_module,target)
     # Reuse the exact prepared normal graph. Only the external completion
     # boundary changes; the turbulent graph and all scientific nodes remain.
-    boundary=prepare_graph_calibration_boundary(original.graph;command_input=:pdm_command,frame_output=:pwfs_frame)
+    boundary=prepare_boundary(original,options.profile)
     science=merge(original,(;boundary))
     recorder=Main.Recorder(options,boundary;truth=Main.prepare_correction_truth(options,science))
     state=Protocol.OwnerState()

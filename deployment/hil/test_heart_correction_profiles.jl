@@ -11,6 +11,8 @@ digest(path)=bytes2hex(open(sha256,path))
     @test (copper.width,copper.measurements,copper.coordinates,copper.adc_bits,copper.ingress,copper.gain,copper.sign)==(64,3600,253,14,"deferred",.01,-1)
     @test (classic.width,classic.measurements,classic.coordinates,classic.adc_bits,classic.ingress,classic.gain,classic.sign)==(352,376,277,12,"streaming",-.3,1)
     @test copper.pole==classic.pole==.99
+    @test copper.frame_output===:pwfs_frame
+    @test classic.frame_output===:shwfs_frame
     @test Profiles.streams(:copper,256)[4]==("cbClUnclipped0",16,(253,1),256)
     @test Profiles.streams(:classic,256)[3]==("cbHoGrad0",13,(188,1),256)
     @test Profiles.streams(:classic,256)[5]==("cbDmCmd0",20,(277,1),258)
