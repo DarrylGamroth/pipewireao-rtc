@@ -111,6 +111,10 @@ the pilot does not establish adequate precision for full-matrix admission.
 
 ## Julia operational deployment
 
+The [Julia package structure review](JULIA_PACKAGE_STRUCTURE_REVIEW.md) distinguishes
+the current include-loaded application from a named reusable package and records
+the resource/provenance contracts that a source-layout conversion must preserve.
+
 The [Julia operational deployment usage](JULIA_DEPLOYMENT_USAGE.md),
 [migration plan](JULIA_CALIBRATION_MIGRATION.md),
 [delivery record](JULIA_CALIBRATION_MIGRATION_VALIDATION.md) and
