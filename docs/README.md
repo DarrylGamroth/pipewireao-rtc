@@ -25,6 +25,11 @@ requirements below govern implementation.
 [Deployment validation](DEPLOYMENT_VALIDATION.md) records the completed
 recorded-input increment and its functional qualification limits.
 
+[Recorded-FITS restart correction](UI_RESTART_ISSUE_1.md) and its
+[independent review](UI_RESTART_REVIEW.md) record the discard-counter caching
+defect, focused RTC correction and Classic/Copper client/lifecycle regressions
+under RTC-DEV-004, RTC-DEV-011 and RTC-DEV-022.
+
 [AOS/HIL deployment](HIL_DEPLOYMENT_VALIDATION.md) gives export, launch and
 control instructions and separates backend preparation from installed live
 qualification. [HIL review](HIL_DEPLOYMENT_REVIEW.md) tracks confirmed defects
