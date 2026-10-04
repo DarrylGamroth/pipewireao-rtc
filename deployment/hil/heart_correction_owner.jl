@@ -179,6 +179,13 @@ function acknowledged_log!(session,source,name)
     return bytes2hex(sha256(output))
 end
 
+function read_native_extrapolation(options,contract)
+    name=contract.extrapolation_native_file
+    path=realpath(joinpath(options.heart_native_runtime,"config",name))
+    digest(path)==contract.runtime_inputs[name] || error("native loaded extrapolation input differs")
+    return Profiles.sparse_extrapolation(path)
+end
+
 function startup_proof(owner,expected_generation)
     session=owner.session; options=session.options
     status=bounded_json(joinpath(options.heart_native_runtime,"heart-owner-status.json"))
@@ -206,8 +213,7 @@ function startup_proof(owner,expected_generation)
         reinterpret(UInt32,vec(native_projection))==reinterpret(UInt32,vec(owner.projection)) ||
             error("wire projection differs from the actual native Float32 FITS projection")
     else
-        path=joinpath(options.heart_native_runtime,"config",contract.extrapolation_native_file)
-        native_E=Profiles.sparse_extrapolation(path)
+        native_E=read_native_extrapolation(options,contract)
         reinterpret(UInt32,vec(native_E))==reinterpret(UInt32,vec(owner.projection.extrapolation)) ||
             error("Classic wire E differs from actual native sparse Float32 entries")
     end

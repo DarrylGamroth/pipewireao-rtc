@@ -228,3 +228,32 @@ end
         @test_throws ErrorException CorrectionOwner.load_contract(options)
     end
 end
+
+@testset "native runtime sparse links resolve only the sealed Classic input" begin
+    mktempdir() do root
+        calibration=joinpath(root,"calibration");mkdir(calibration)
+        runtime=joinpath(root,"runtime");mkdir(runtime);mkdir(joinpath(runtime,"config"))
+        name="map.sparse";source=joinpath(calibration,name)
+        open(source,"w") do io
+            println(io,"Sparse: rows=277 cols=277 nnz=12597")
+            for index in 0:12596
+                println(io,"$(div(index,277)) $(rem(index,277)) 0.125")
+            end
+        end
+        link=joinpath(runtime,"config",name);symlink(realpath(source),link)
+        options=(;heart_native_runtime=runtime)
+        contract=(;extrapolation_native_file=name,runtime_inputs=Dict(name=>CorrectionOwner.digest(source)))
+        @test islink(link)
+        @test_throws ArgumentError CorrectionOwner.Profiles.sparse_extrapolation(link)
+        actual=CorrectionOwner.read_native_extrapolation(options,contract)
+        expected=CorrectionOwner.Profiles.sparse_extrapolation(source)
+        @test reinterpret(UInt32,vec(actual))==reinterpret(UInt32,vec(expected))
+        other=joinpath(calibration,"changed.sparse")
+        write(other,replace(read(source,String),"0.125"=>"0.25";count=1))
+        rm(link);symlink(realpath(other),link)
+        @test_throws ErrorException CorrectionOwner.read_native_extrapolation(options,contract)
+        rm(link);symlink(realpath(source),link)
+        write(source,replace(read(source,String),"0.125"=>"0.25";count=1))
+        @test_throws ErrorException CorrectionOwner.read_native_extrapolation(options,contract)
+    end
+end
