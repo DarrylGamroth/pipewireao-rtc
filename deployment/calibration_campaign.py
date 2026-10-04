@@ -200,8 +200,10 @@ class Endpoint:
 
 
 def verify_capture(root, completion, *, run, serial, stage, frames, after, startup,
-                   profile="classic"):
+                   profile="classic", probe=0):
     """Verify fixed-layout bulk evidence before any scientific consumption."""
+    if type(probe) is not int or not 0 <= probe < 2**64:
+        raise ValueError("expected probe must be a UInt64 integer")
     channels, payload_bytes = capture_contract(profile)
     if startup.get("profile") != profile:
         raise ValueError("capture startup differs from declared profile")
@@ -223,7 +225,7 @@ def verify_capture(root, completion, *, run, serial, stage, frames, after, start
             raise ValueError("capture header requires integer identities/counts")
     if (manifest["version"], manifest["run"], manifest["serial"], manifest["stage"], manifest["frames"]) != (1, run, serial, stage, frames):
         raise ValueError("capture identity mismatch")
-    if manifest["probe"] != 0 or manifest["profile"] != profile or manifest["illumination"] != startup["illumination"]:
+    if manifest["probe"] != probe or manifest["profile"] != profile or manifest["illumination"] != startup["illumination"]:
         raise ValueError("capture stage settings mismatch")
     settings = {name: startup[name] for name in ("detector_config", "graph_sha256", "wfs_active_sha256")}
     if manifest["settings"] != settings or manifest["acquisition_domain_mapping"] != startup["acquisition_domain_mapping"]:
@@ -356,13 +358,56 @@ def wait_state(runtime, process, timeout, predicate):
     raise TimeoutError("deployment lifecycle deadline")
 
 
-def run_stage(package, output, runtime, recipe, stage, *, frames=None):
+def validate_batches(batches):
+    """Validate the finite wire commands before any output or owner is created."""
+    if not isinstance(batches, list) or not 1 <= len(batches) <= 32:
+        raise ValueError("batches require a list of 1..32 captures")
+    result = []
+    for batch in batches:
+        if not isinstance(batch, dict) or set(batch) != {"figure", "frames"}:
+            raise ValueError("batch requires exactly figure and frames")
+        if not isinstance(batch["figure"], list) or len(batch["figure"]) != 277:
+            raise ValueError("batch figure requires 277 physical coordinates")
+        try:
+            figure = [wire_float32(value) for value in batch["figure"]
+                      if type(value) in (int, float)]
+        except (OverflowError, struct.error) as error:
+            raise ValueError("batch figure must be representable as Float32") from error
+        if len(figure) != 277:
+            raise ValueError("batch figure requires 277 finite numeric coordinates")
+        result.append({"figure": figure,
+                       "frames": positive_integer(batch["frames"], "batch frames", 64)})
+        if result[-1]["frames"] < 2:
+            raise ValueError("batch frames require at least two exposures")
+    return result
+
+
+def run_stage(package, output, runtime, recipe, stage, *, frames=None, batches=None):
     """Finish restore/release/public shutdown before returning immutable evidence."""
+    if batches is not None:
+        if frames is not None:
+            raise ValueError("frames and batches are mutually exclusive")
+        batches = validate_batches(batches)
     capture_profile = None
-    if frames is not None:
+    if frames is not None or batches is not None:
         capture_profile = json.loads((package / "provenance.json").read_text())["profile"]
         capture_contract(capture_profile)
+    if batches is not None and capture_profile != "copper":
+        raise ValueError("batched capture requires Copper")
+    if batches is not None:
+        provenance = json.loads((package / "provenance.json").read_text())
+        required = sum(batch["frames"] * capture_contract("copper")[1] for batch in batches)
+        if provenance.get("capture_max_payload_bytes") != required:
+            raise ValueError("exported capture budget differs from all batches")
     stage_started_ns = time.perf_counter_ns()
+    stage_deadline = time.monotonic() + recipe["stage_timeout_seconds"] if batches is not None else None
+    def remaining(limit):
+        if stage_deadline is None:
+            return limit
+        value = min(limit, stage_deadline - time.monotonic())
+        if value <= 0:
+            raise TimeoutError("batched stage deadline expired")
+        return value
     launcher = Path(deploy.__file__).resolve()
     common = [sys.executable, str(launcher), "control", "--runtime", str(runtime), "--"]
     env = {**os.environ, "OPENBLAS_NUM_THREADS": "1"}
@@ -386,7 +431,7 @@ def run_stage(package, output, runtime, recipe, stage, *, frames=None):
         startup_started_ns = time.perf_counter_ns()
         try:
             process = subprocess.Popen(command, env=env, stdout=log, stderr=log)
-            ready = wait_state(runtime, process, recipe["stage_timeout_seconds"], lambda state: state.get("phase") == "running")
+            ready = wait_state(runtime, process, remaining(recipe["stage_timeout_seconds"]), lambda state: state.get("phase") == "running")
             ready_ns = time.perf_counter_ns()
             result["timing_ns"]["startup_readiness"] = ready_ns - startup_started_ns
             result["timing_confirmed"]["startup_readiness"] = True
@@ -394,30 +439,61 @@ def run_stage(package, output, runtime, recipe, stage, *, frames=None):
             instance = Path(ready["socket"]).parent
             result["ready"] = ready
             result["startup_report"] = json.loads((instance / "simulator-result.json").read_text())
-            if frames is not None:
-                endpoint = Endpoint(instance / "calibration.sock", 1, recipe["request_timeout_ns"])
-                held = endpoint.request({"kind": "hold"}, "held")
-                adopted = endpoint.request({"kind": "adopt", "probe": 0, "figure": recipe["reference"]}, "adopted")
-                if adopted["clipped"] or not same_figure(adopted["figure"], recipe["reference"]) or held["cursor"] != adopted["cursor"]:
-                    raise ValueError("reference adoption clipped or changed")
-                settled = endpoint.request({"kind": "settle", "probe": 0, "after": adopted["cursor"], "rule": recipe["settling"]}, "settled")
-                capture = endpoint.request({"kind": "capture", "probe": 0, "after": settled["cursor"], "frames": frames}, "captured")
-                restored = endpoint.request({"kind": "restore", "figure": recipe["reference"], "rule": recipe["settling"]}, "restored")
+            if frames is not None or batches is not None:
+                endpoint = Endpoint(instance / "calibration.sock", 1,
+                                    min(recipe["request_timeout_ns"],
+                                        max(1, int(remaining(recipe["request_timeout_ns"] / 1e9) * 1e9)))
+                                    if batches is not None else recipe["request_timeout_ns"])
+                def request(action, expected):
+                    if batches is not None:
+                        endpoint.timeout_ns = min(recipe["request_timeout_ns"],
+                                                  max(1, int(remaining(recipe["request_timeout_ns"] / 1e9) * 1e9)))
+                    return endpoint.request(action, expected)
+                held = request({"kind": "hold"}, "held")
+                commands = batches if batches is not None else [{"figure": recipe["reference"], "frames": frames}]
+                previous = held["cursor"]
+                captures = result.setdefault("captures", []) if batches is not None else []
+                if batches is not None:
+                    (output / "captured").mkdir()
+                for probe, batch in enumerate(commands):
+                    adopted = request({"kind": "adopt", "probe": probe, "figure": batch["figure"]}, "adopted")
+                    if adopted["clipped"] or not same_figure(adopted["figure"], batch["figure"]) or previous != adopted["cursor"]:
+                        raise ValueError("figure adoption clipped or changed cursor")
+                    settled = request({"kind": "settle", "probe": probe, "after": adopted["cursor"], "rule": recipe["settling"]}, "settled")
+                    capture = request({"kind": "capture", "probe": probe, "after": settled["cursor"], "frames": batch["frames"]}, "captured")
+                    captures.append({"probe": probe, "serial": endpoint.serial if batches is not None else 4,
+                                     "figure": batch["figure"],
+                                     "settled_cursor": settled["cursor"], "completion": capture})
+                    if batches is not None:
+                        serial = captures[-1]["serial"]
+                        shutil.copytree(instance / "captured" / str(serial), output / "captured" / str(serial))
+                        verify_capture(output / "captured", capture, run=1, serial=serial,
+                                       stage=stage, frames=batch["frames"], after=settled["cursor"],
+                                       startup=result["startup_report"], profile=capture_profile, probe=probe)
+                        remaining(recipe["stage_timeout_seconds"])
+                        previous = capture["cursor"]
+                restored = request({"kind": "restore", "figure": recipe["reference"], "rule": recipe["settling"]}, "restored")
                 if restored["clipped"] or not same_figure(restored["figure"], recipe["reference"]):
                     raise ValueError("reference restoration clipped or changed")
                 result["restoration_confirmed"] = True
-                endpoint.request({"kind": "release"}, "released")
+                request({"kind": "release"}, "released")
                 result["release_confirmed"] = True
                 result["timing_ns"]["acquisition"] = time.perf_counter_ns() - acquisition_started_ns
                 result["timing_confirmed"]["acquisition"] = True
                 result["requests"] = endpoint.records
                 endpoint.close()
                 endpoint = None
-                shutil.copytree(instance / "captured", output / "captured")
-                result["capture"] = capture
-                verify_capture(output / "captured", capture, run=1, serial=4, stage=stage,
-                               frames=frames, after=settled["cursor"], startup=result["startup_report"],
-                               profile=capture_profile)
+                remaining(recipe["stage_timeout_seconds"])
+                if batches is None:
+                    shutil.copytree(instance / "captured", output / "captured")
+                    for item, batch in zip(captures, commands):
+                        verify_capture(output / "captured", item["completion"], run=1,
+                                       serial=item["serial"], stage=stage, frames=batch["frames"],
+                                       after=item["settled_cursor"], startup=result["startup_report"],
+                                       profile=capture_profile, probe=item["probe"])
+                remaining(recipe["stage_timeout_seconds"])
+                if batches is None:
+                    result["capture"] = capture
             else:
                 response = subprocess.run([str(package / "bin/rtc-calibrate"), "--endpoint", str(instance / "calibration.sock"), "--plan", str(output.parent / "interaction-plan.json")], env=env, capture_output=True, text=True, timeout=recipe["stage_timeout_seconds"])
                 (output / "rtc-calibrate.json").write_text(response.stdout)
@@ -431,12 +507,12 @@ def run_stage(package, output, runtime, recipe, stage, *, frames=None):
                 result["timing_confirmed"]["acquisition"] = True
             shutdown_started_ns = time.perf_counter_ns()
             for arguments, expected in ((["session-stop"], "Ready"), (["quit"], None)):
-                response = subprocess.run(common + arguments, env=env, capture_output=True, text=True, timeout=55)
+                response = subprocess.run(common + arguments, env=env, capture_output=True, text=True, timeout=remaining(55))
                 response.check_returncode()
                 reply = json.loads(response.stdout)
                 if not reply["ok"] or expected is not None and reply["state"] != expected:
                     raise ValueError("public shutdown rejected")
-            process.wait(timeout=45)
+            process.wait(timeout=remaining(45))
             final = json.loads((runtime / "state.json").read_text())
             if process.returncode != 0 or final["phase"] != "stopped" or final.get("error") or final.get("cleanup_errors") or instance.exists():
                 raise ValueError("deployment cleanup incomplete")
@@ -444,6 +520,7 @@ def run_stage(package, output, runtime, recipe, stage, *, frames=None):
             result["final"] = final
             result["timing_ns"]["public_shutdown"] = time.perf_counter_ns() - shutdown_started_ns
             result["timing_confirmed"]["public_shutdown"] = True
+            remaining(recipe["stage_timeout_seconds"])
         except BaseException as error:
             failed_ns = time.perf_counter_ns()
             if result["timing_ns"]["startup_readiness"] is None:

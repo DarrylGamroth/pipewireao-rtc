@@ -116,6 +116,139 @@ class CampaignTests(unittest.TestCase):
                 completion['sha256']=c.digest(path);completion['metadata_bytes']=path.stat().st_size
                 with self.assertRaises(ValueError):self.verify(root,completion,after,startup)
 
+    def test_expected_probe_is_strict_and_bound_to_manifest(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);manifest,completion,after,startup=self.make_capture(root,'copper')
+            manifest['probe']=1
+            path=root/'4/manifest.json';path.write_text(json.dumps(manifest))
+            completion['sha256']=c.digest(path);completion['metadata_bytes']=path.stat().st_size
+            kwargs=dict(run=1,serial=4,stage='dark',frames=2,after=after,startup=startup,profile='copper')
+            self.assertEqual(c.verify_capture(root,completion,probe=1,**kwargs)['probe'],1)
+            for probe in (0,True,1.0,-1,2**64):
+                with self.subTest(probe=probe),self.assertRaises(ValueError):
+                    c.verify_capture(root,completion,probe=probe,**kwargs)
+
+    def test_batch_validation_precedes_output_and_launch(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);package=root/'package';package.mkdir()
+            (package/'provenance.json').write_text(json.dumps(dict(profile='copper',capture_max_payload_bytes=45192)))
+            for batches in ([],[{'figure':[0]*277,'frames':1}],
+                            [{'figure':[0]*276,'frames':2}],
+                            [{'figure':[True]*277,'frames':2}],
+                            [{'figure':[0]*276+[float('inf')],'frames':2}],
+                            [{'figure':[0]*277,'frames':2}]*33):
+                with self.subTest(batches=len(batches)),patch.object(c.subprocess,'Popen',side_effect=AssertionError('launched')):
+                    with self.assertRaises(ValueError):
+                        c.run_stage(package,root/'evidence',root/'runtime',recipe(),'training',batches=batches)
+                    self.assertFalse((root/'evidence').exists())
+            with patch.object(c.subprocess,'Popen',side_effect=AssertionError('launched')):
+                with self.assertRaises(ValueError):
+                    c.run_stage(package,root/'evidence',root/'runtime',recipe(),'training',
+                                batches=[{'figure':[0]*277,'frames':2}]*2)
+                self.assertFalse((root/'evidence').exists())
+
+    def test_batched_stage_records_each_probe_and_restores_original_reference(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);package=root/'package';package.mkdir()
+            (package/'provenance.json').write_text(json.dumps(dict(profile='copper',capture_max_payload_bytes=4*22596)))
+            output=root/'evidence';runtime=root/'runtime';instance=runtime/'owner'
+            ready=dict(socket=str(instance/'calibration.sock'))
+            def ready_state(*args,**kwargs):
+                instance.mkdir(parents=True);(instance/'captured').mkdir()
+                for serial in (4,7):(instance/'captured'/str(serial)).mkdir()
+                (instance/'simulator-result.json').write_text(json.dumps(dict(profile='copper')))
+                return ready
+            class Process:
+                pid=123;returncode=None
+                def poll(self):return self.returncode
+                def wait(self,timeout=None):
+                    shutil.rmtree(instance)
+                    (runtime/'state.json').write_text(json.dumps(dict(phase='stopped')))
+                    self.returncode=0
+                def terminate(self):self.returncode=-15
+                def kill(self):self.returncode=-9
+            calls=[]
+            class Client:
+                def __init__(self,*args):self.serial=0;self.records=[];self.can_restore=True;self.timeout_ns=1
+                def request(self,action,expected):
+                    self.serial+=1;calls.append(action)
+                    self.records.append(dict(request=action))
+                    sequence=1 if self.serial<4 else 3 if self.serial<7 else 5
+                    cursor=dict(domain=1,generation=1,sequence=sequence,model_ns=sequence)
+                    if expected in ('held','adopted','settled'):return dict(cursor=cursor,figure=action.get('figure'),clipped=False)
+                    if expected=='captured':return dict(cursor=cursor,frames=2,bytes=45192)
+                    if expected=='restored':return dict(figure=action['figure'],clipped=False)
+                    return dict(kind='released')
+                def close(self):pass
+            class Response:
+                returncode=0;stderr=''
+                def check_returncode(self):pass
+            def control(argv,**kwargs):
+                response=Response();response.stdout=json.dumps(dict(ok=True,state='Ready' if argv[-1]=='session-stop' else 'Stopped'))
+                return response
+            value=recipe();value['reference']=[.125]*277
+            figures=[[.25]*277,[.375]*277]
+            with patch.object(c.subprocess,'Popen',return_value=Process()), \
+                 patch.object(c.subprocess,'run',side_effect=control), \
+                 patch.object(c,'Endpoint',Client),patch.object(c,'wait_state',side_effect=ready_state), \
+                 patch.object(c,'verify_capture') as verify:
+                result=c.run_stage(package,output,runtime,value,'training',
+                    batches=[{'figure':figure,'frames':2} for figure in figures])
+            self.assertEqual([x['kind'] for x in calls],['hold','adopt','settle','capture','adopt','settle','capture','restore','release'])
+            self.assertEqual([x['probe'] for x in result['captures']],[0,1])
+            self.assertEqual([x['serial'] for x in result['captures']],[4,7])
+            self.assertEqual(calls[-2]['figure'],value['reference'])
+            self.assertEqual([x.kwargs['probe'] for x in verify.call_args_list],[0,1])
+            self.assertTrue(result['restoration_confirmed'] and result['release_confirmed'] and result['shutdown_confirmed'])
+
+    def test_batched_known_rejection_records_partial_capture_and_recovers(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);package=root/'package';package.mkdir()
+            (package/'provenance.json').write_text(json.dumps(dict(profile='copper',capture_max_payload_bytes=4*22596)))
+            output=root/'evidence';runtime=root/'runtime';instance=runtime/'owner'
+            fixture={}
+            def ready_state(*args,**kwargs):
+                instance.mkdir(parents=True)
+                _,completion,after,startup=self.make_capture(instance/'captured','copper')
+                fixture.update(completion=completion,after=after,startup=startup)
+                (instance/'simulator-result.json').write_text(json.dumps(startup))
+                return dict(socket=str(instance/'calibration.sock'))
+            class Process:
+                pid=123;returncode=None
+                def poll(self):return self.returncode
+                def terminate(self):self.returncode=-15
+                def kill(self):self.returncode=-9
+                def wait(self,timeout=None):pass
+            calls=[]
+            class Client:
+                def __init__(self,*args):self.serial=0;self.records=[];self.can_restore=True;self.timeout_ns=1
+                def request(self,action,expected):
+                    self.serial+=1;calls.append(action)
+                    self.records.append(dict(request=action))
+                    cursor=dict(domain=1,generation=1,sequence=1 if self.serial<=3 else 3,model_ns=1)
+                    if self.serial==5:
+                        raise ValueError('invalid_evidence')
+                    if expected in ('held','adopted','settled'):return dict(cursor=cursor,figure=action.get('figure'),clipped=False)
+                    if expected=='captured':return fixture['completion']
+                    if expected=='restored':return dict(figure=action['figure'],clipped=False)
+                    return dict(kind='released')
+                def close(self):pass
+            value=recipe();value['reference']=[.125]*277
+            with patch.object(c.subprocess,'Popen',return_value=Process()), \
+                 patch.object(c,'Endpoint',Client),patch.object(c,'wait_state',side_effect=ready_state):
+                with self.assertRaisesRegex(ValueError,'invalid_evidence'):
+                    c.run_stage(package,output,runtime,value,'dark',
+                        batches=[{'figure':[.25]*277,'frames':2},{'figure':[.375]*277,'frames':2}])
+            result=json.loads((output/'stage-result.json').read_text())
+            self.assertEqual([x['probe'] for x in result['captures']],[0])
+            self.assertEqual([x['kind'] for x in calls[-2:]],['restore','release'])
+            self.assertEqual(calls[-2]['figure'],value['reference'])
+            self.assertTrue(result['restoration_confirmed'] and result['release_confirmed'])
+            self.assertFalse(result['shutdown_confirmed'])
+            preserved=output/'captured/4/1/pixels.f32le'
+            self.assertEqual(preserved.stat().st_size,14400)
+            self.assertEqual(c.digest(preserved),c.digest(instance/'captured/4/1/pixels.f32le'))
+
     def test_bound_checked_before_read(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp);_,completion,after,startup=self.make_capture(root)
