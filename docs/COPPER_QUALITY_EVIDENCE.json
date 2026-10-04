@@ -1,0 +1,646 @@
+{
+  "version": 1,
+  "source_commit": "5cf8182",
+  "baseline_commit": "5565d6e",
+  "scope": "bounded Copper CPU one-direction measurement characterization; no scientific precision, linearity, full matrix, inverse, correction or cadence acceptance",
+  "reference_candidate_inputs": {
+    "fgn": "/home/dgamroth/.cache/rtc-copper-reference-20261003/fgn-candidate-v2",
+    "jfg": "/home/dgamroth/.cache/rtc-copper-reference-20261003/jfg-candidate"
+  },
+  "paired_channel_bytes_identical": {
+    "raw_hashes": true,
+    "pixel_hashes": true,
+    "intensity_hashes": true
+  },
+  "all_four_numerical_products_identical": true,
+  "independent_report_scalar_checks_per_engine": [
+    378,
+    378
+  ],
+  "runs": {
+    "fgn": {
+      "output": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot",
+      "source_inventory_count": 1808,
+      "sealed_inventory_count": 395,
+      "batches": 16,
+      "retained_exposures": 128,
+      "restored_sequence": 145,
+      "restoration": true,
+      "release": true,
+      "public_shutdown": true,
+      "launcher_exit": 0,
+      "timing_ns": {
+        "startup_readiness": 45463406679,
+        "acquisition": 51255060631,
+        "public_shutdown": 1058235393,
+        "total_stage": 97776932393
+      },
+      "workflow_wall_ns": 110451839773,
+      "analysis_process_wall_ns": 11512898119,
+      "adc_maximum": 66,
+      "amplitude_characterization": [
+        {
+          "amplitude_um_opd": 0.019999999552965164,
+          "repeat_cosine": 0.0467937667850514,
+          "repeat_relative_difference": 1.4121781224152612
+        },
+        {
+          "amplitude_um_opd": 0.03999999910593033,
+          "repeat_cosine": 0.16589589717175235,
+          "repeat_relative_difference": 1.293005912761467
+        },
+        {
+          "amplitude_um_opd": 0.07999999821186066,
+          "repeat_cosine": 0.4377757914340974,
+          "repeat_relative_difference": 1.0752852000134419
+        }
+      ]
+    },
+    "jfg": {
+      "output": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot",
+      "source_inventory_count": 2066,
+      "sealed_inventory_count": 522,
+      "batches": 16,
+      "retained_exposures": 128,
+      "restored_sequence": 145,
+      "restoration": true,
+      "release": true,
+      "public_shutdown": true,
+      "launcher_exit": 0,
+      "timing_ns": {
+        "startup_readiness": 77647291436,
+        "acquisition": 50534049186,
+        "public_shutdown": 1252814264,
+        "total_stage": 129434402298
+      },
+      "workflow_wall_ns": 142249947051,
+      "analysis_process_wall_ns": 11483038342,
+      "adc_maximum": 66,
+      "amplitude_characterization": [
+        {
+          "amplitude_um_opd": 0.019999999552965164,
+          "repeat_cosine": 0.0467937667850514,
+          "repeat_relative_difference": 1.4121781224152612
+        },
+        {
+          "amplitude_um_opd": 0.03999999910593033,
+          "repeat_cosine": 0.16589589717175235,
+          "repeat_relative_difference": 1.293005912761467
+        },
+        {
+          "amplitude_um_opd": 0.07999999821186066,
+          "repeat_cosine": 0.4377757914340974,
+          "repeat_relative_difference": 1.0752852000134419
+        }
+      ]
+    }
+  },
+  "evidence_files": [
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/baseline.json",
+      "role": "qualification and independent analysis",
+      "bytes": 670,
+      "sha256": "5c0304b4185503f1f42b465ba2b0bf86a42e939eb7417e4d266c8b18788b43c8"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/pilot-recipe.json",
+      "role": "qualification and independent analysis",
+      "bytes": 2865,
+      "sha256": "aa171884ca58ed5535bcb875b26aa462911b3c2c4d69288266309f4c3ff6ed3e"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/qualified-source-files.json",
+      "role": "qualification and independent analysis",
+      "bytes": 800,
+      "sha256": "df5493b5170f86dffc5caa8060a25e31cdada36efa8c43d71e0cc0d0135bce8a"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/portable-validation.json",
+      "role": "qualification and independent analysis",
+      "bytes": 918,
+      "sha256": "27b0efaf0aea1597c9b0f000c01208eaddcd80c82832bbea189aa06614315611"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/paired-independent-audit.json",
+      "role": "qualification and independent analysis",
+      "bytes": 193557,
+      "sha256": "5a347ed383f34049b7ab4d9ee97b4137e98d8b1aead518cd541b050242089969"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/audit.py",
+      "role": "qualification and independent analysis",
+      "bytes": 9891,
+      "sha256": "a98cfdf1868bb2f5227ae4749536648b8ed967b9817b405d6cc3a5ecfd7599fe"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/test_audit.py",
+      "role": "qualification and independent analysis",
+      "bytes": 4947,
+      "sha256": "327101f79c08f25b88bcf18aaad1d7cd8ff86b83f38c63ce78601ae079e0df3b"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/make-ledger.py",
+      "role": "qualification and independent analysis",
+      "bytes": 4900,
+      "sha256": "c80c0bd2017d7f2b3cf98f0915a579b9cac7b12b356d72e3e17158b7b8b481bb"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/python-tests.log",
+      "role": "qualification and independent analysis",
+      "bytes": 1296,
+      "sha256": "ed372e27819814c565755ec724a17ad4da4e8b588def51fd74bd6a59c64ed551"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/julia-server-tests.log",
+      "role": "qualification and independent analysis",
+      "bytes": 7771,
+      "sha256": "e830524670cd401dc231a6455239a847e283689e70610956275b6708c232b2c2"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/julia-client-tests.log",
+      "role": "qualification and independent analysis",
+      "bytes": 726,
+      "sha256": "02c5c91ff97e3d1657ca1a2270f612750c2dba3d18311cc9bb723299104cc316"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/julia-reference-tests.log",
+      "role": "qualification and independent analysis",
+      "bytes": 1151,
+      "sha256": "7f4641a6d478f6337d0f45c13c93d5a8d6444431c3f9972b9287a7211317a426"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/julia-quality-primary-tests.log",
+      "role": "qualification and independent analysis",
+      "bytes": 432,
+      "sha256": "ff99d767b4d5803846d752a4666400d99899de4a298abd339c4129ef0b2ae76f"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/cqr5-fail-before.log",
+      "role": "qualification and independent analysis",
+      "bytes": 1238,
+      "sha256": "3358dfa79b7b4dd74de5c48b52583522609797cf670cd60a01f69c743eea72a7"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/cqr5-pass-after.log",
+      "role": "qualification and independent analysis",
+      "bytes": 278,
+      "sha256": "cfa8b1680319edd4e4c8cbb0b98740700d05abc0480d9d5dca4a7ef88fc75716"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/calibration_campaign-cqr5-before.py",
+      "role": "qualification and independent analysis",
+      "bytes": 38243,
+      "sha256": "5cbba8f2cec42db3d8dcad25760fc82911403d4629163ef3508249fb96e8ef88"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/test-cqr5.py",
+      "role": "qualification and independent analysis",
+      "bytes": 844,
+      "sha256": "97c2a856149a5252c71ba25ebb50961da51fd7958a6c0a9a21e1c7db36033e93"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/cqr6-fail-before.log",
+      "role": "qualification and independent analysis",
+      "bytes": 25728,
+      "sha256": "726a49bff9e417cdcfb1d3f8fcbad56d7deeb185d8d60fd0471aa584d4d5b613"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/calibration_quality_analysis-cqr6-before.jl",
+      "role": "qualification and independent analysis",
+      "bytes": 28190,
+      "sha256": "b205a82257140f4f7487b306549311d35434a5d7ad03ef24565ba51b4d154d96"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/test_calibration_quality_analysis-cqr6.jl",
+      "role": "qualification and independent analysis",
+      "bytes": 16055,
+      "sha256": "4c773959a799df1cac4cb8eac812fe9f28e4bbc7901095899d1273d08faa2f41"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/baseline-binaries/pipewireao-rtc",
+      "role": "selected immutable release binary",
+      "bytes": 2678672,
+      "sha256": "490fe9fa67f9f1266fdf7901c5f275eb8065ca885d197e198e1092a17a22f16f"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/baseline-binaries/rtc-calibrate",
+      "role": "selected immutable release binary",
+      "bytes": 982440,
+      "sha256": "275e82090a9500a31cd131ceb226ec8ab26bf1d75a315980298a4d59033a5b38"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/qualified-sources/deployment/calibration_campaign.py",
+      "role": "immutable qualified source",
+      "bytes": 38641,
+      "sha256": "61c3019c5d2a7780524141893a392ca60e23d55f5c95e96a3279317d41402997"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/qualified-sources/deployment/copper_quality.py",
+      "role": "immutable qualified source",
+      "bytes": 24264,
+      "sha256": "ee86b28eec8c3a557a58ccb8978e657aa909acfea18772f212f3210d52e79d52"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/qualified-sources/deployment/hil/calibration_quality_analysis.jl",
+      "role": "immutable qualified source",
+      "bytes": 28345,
+      "sha256": "813c4355c423dcfc310ce39df19f3a6db646eb2a5c65c99f9fbb247d1ffd6fb2"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/qualified-sources/deployment/hil/calibration_reference_analysis.jl",
+      "role": "immutable qualified source",
+      "bytes": 24877,
+      "sha256": "ce51e54b71140a628d36c96b99c056a469bdde568a10be18b8b3a6384f135201"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/qualified-sources/deployment/hil/test_calibration_quality_analysis.jl",
+      "role": "immutable qualified source",
+      "bytes": 16284,
+      "sha256": "1ebb2474f9136574c1fcab6dcdcbafbaf6aa8baef5d34f235a34701a36a9cd11"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/qualified-sources/deployment/test_calibration_campaign.py",
+      "role": "immutable qualified source",
+      "bytes": 24835,
+      "sha256": "9a549caa57323b9db66428e4c01da79abb456fce597303d9d2618d270b91d2e1"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/qualified-sources/deployment/test_copper_quality.py",
+      "role": "immutable qualified source",
+      "bytes": 10739,
+      "sha256": "a68d394bff580181cbc689068be88840693b42d738c4095fd17f7289e05b539b"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/recipe.json",
+      "role": "fgn completed capture provenance",
+      "bytes": 2911,
+      "sha256": "784b0c4d0eff4b52e634927891cd80c2a7151242cdc5e143bca8b27c8bdd3e09"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/schedule.json",
+      "role": "fgn completed capture provenance",
+      "bytes": 51183,
+      "sha256": "35b2dcf72d449734545e094ce6d0a6af752a0ba35dcdfff5051df1d763a80c6f"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/quality-inputs.json",
+      "role": "fgn completed capture provenance",
+      "bytes": 61486,
+      "sha256": "25fdb43e30b7a82b1d8e18bcef549c240e568766ce577db98317cd421c8beeb3"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/quality-result.json",
+      "role": "fgn completed capture provenance",
+      "bytes": 677866,
+      "sha256": "b6d851e990e9d1c74ba898f5f1d51fc7515c5342748e4c8d3ed94fde1c15f5af"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/training-package/deployment.conf",
+      "role": "fgn completed capture provenance",
+      "bytes": 56330,
+      "sha256": "659c235ae84a8c57c5484733b7b2b7330de57e5bb69af719b240bc37d3a1e3e5"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/training-package/provenance.json",
+      "role": "fgn completed capture provenance",
+      "bytes": 73404,
+      "sha256": "56269ffa3976162e17ef26d5fd499212e27abc260503a4eabb5ca5377c588ce6"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/training-evidence/stage-result.json",
+      "role": "fgn completed capture provenance",
+      "bytes": 277474,
+      "sha256": "75b910cdf942fe574a7e4ea445d4de85b23875df2e1292e99ab532bcbc720a2d"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/training-evidence/analysis.json",
+      "role": "fgn completed capture provenance",
+      "bytes": 22142,
+      "sha256": "323bd3c429469614b3b677120c11887c40db16badf6b4d9912e7e55b2a84ce36"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/training-evidence/deployment.log",
+      "role": "fgn completed capture provenance",
+      "bytes": 4614,
+      "sha256": "0e759a5cddfabe9647dfe8bbbaee0872ec1fcdb02be4a1960c9c02516b0e3baf"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/training-evidence/analysis.stdout",
+      "role": "fgn completed capture provenance",
+      "bytes": 22142,
+      "sha256": "323bd3c429469614b3b677120c11887c40db16badf6b4d9912e7e55b2a84ce36"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/training-evidence/analysis.stderr",
+      "role": "fgn completed capture provenance",
+      "bytes": 147,
+      "sha256": "c6bfdc2180854d924584a5481a84cffb842fae47bb4c4064e8c9f7f8528a7982"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/training-evidence/captured/10/manifest.json",
+      "role": "fgn capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6373,
+      "sha256": "db2f842a0d543d244d38a33adfe86b187b5fca8821fbf83a5b986e6703ca5981"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/training-evidence/captured/13/manifest.json",
+      "role": "fgn capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6373,
+      "sha256": "ecb5343d52da1b5bc3e284140f09b9bbb4b36c3ff04392c683165036ad3dd833"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/training-evidence/captured/16/manifest.json",
+      "role": "fgn capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6373,
+      "sha256": "12b34ef38535f01dd28905ffbe8aa4c3b51505b6b72c7989aca2a8dc2c1a49a0"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/training-evidence/captured/19/manifest.json",
+      "role": "fgn capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6373,
+      "sha256": "6a543e952a2a0a284a9ad901b7892c4e91cc07c2c61660df6a7b54db796c75a5"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/training-evidence/captured/22/manifest.json",
+      "role": "fgn capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6373,
+      "sha256": "88a794a384291c413c34688b6546f069d44029ec2d470fcc54d8d6a7794b6793"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/training-evidence/captured/25/manifest.json",
+      "role": "fgn capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6373,
+      "sha256": "9198e4b69301714bc07a8daf8e6b52273014d4b56001aa17286806f4c9df1012"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/training-evidence/captured/28/manifest.json",
+      "role": "fgn capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6373,
+      "sha256": "4ab49a0df9fc08e93c510eb2cd6104bffff6b813428fa0385162874fafdf7df7"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/training-evidence/captured/31/manifest.json",
+      "role": "fgn capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6373,
+      "sha256": "15f45137eb6214826a2f5993332cca33df28ed7e65ed2e889464b3e94ba6398e"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/training-evidence/captured/34/manifest.json",
+      "role": "fgn capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6374,
+      "sha256": "b7c981b1024dfff31147934cef3ac9a8fbb71b2415bb652d62ce0b23943b7d65"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/training-evidence/captured/37/manifest.json",
+      "role": "fgn capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6390,
+      "sha256": "cb848e5ace9dd96dad5d9d8a47f47ad82301af2f3fc546054546bf65eb3cd0d8"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/training-evidence/captured/4/manifest.json",
+      "role": "fgn capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6356,
+      "sha256": "c1d5a2aea99561caeb55ea63dfd5f7de42cbcffcb3a47691603c83941fb16716"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/training-evidence/captured/40/manifest.json",
+      "role": "fgn capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6390,
+      "sha256": "480c207cafe4be59ddf843a31bd5b5f4b483998480ea42fa7e3a4135f4457458"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/training-evidence/captured/43/manifest.json",
+      "role": "fgn capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6390,
+      "sha256": "71b07af976bb0608e5fa7e1fb7d49205c3ac2d0158d74d6f380570890e5d4f46"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/training-evidence/captured/46/manifest.json",
+      "role": "fgn capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6390,
+      "sha256": "e0c3a4117a3795ea29558669b04cd53304dbb3149b76506b4781212aed68435f"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/training-evidence/captured/49/manifest.json",
+      "role": "fgn capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6390,
+      "sha256": "0d0e55758d0c07c1ec95b9fb5fe9e4141a36f01306673f4b2744d2716f33a0de"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/training-evidence/captured/7/manifest.json",
+      "role": "fgn capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6372,
+      "sha256": "f6a1ca2694b98ffc86e59a07f7188b7a0881d5d13a9df31fd1ccd02c0e9b9770"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/batch-means.f64le",
+      "role": "fgn numerical product",
+      "bytes": 460800,
+      "sha256": "e9f7aee7ae4e9e29800f178b27487cb1ddb98aa2d432138cb739ae7692c1e12c"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/batch-variances.f64le",
+      "role": "fgn numerical product",
+      "bytes": 460800,
+      "sha256": "f1042716458157b73f9de778af30a3581ee484fdb69b2fad23903fda1c33a8c6"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/derivative-repeats.f64le",
+      "role": "fgn numerical product",
+      "bytes": 172800,
+      "sha256": "60bccbf1c3e9363d2c558240752a470e35b470348069a5627a0755ac86032ba8"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/fgn-pilot/derivative-means.f64le",
+      "role": "fgn numerical product",
+      "bytes": 86400,
+      "sha256": "30f3b9d6f7f55d833bab756c8abfa36daa6588696b250eb2d9a951ec733ce0df"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/recipe.json",
+      "role": "jfg completed capture provenance",
+      "bytes": 2911,
+      "sha256": "784b0c4d0eff4b52e634927891cd80c2a7151242cdc5e143bca8b27c8bdd3e09"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/schedule.json",
+      "role": "jfg completed capture provenance",
+      "bytes": 51183,
+      "sha256": "35b2dcf72d449734545e094ce6d0a6af752a0ba35dcdfff5051df1d763a80c6f"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/quality-inputs.json",
+      "role": "jfg completed capture provenance",
+      "bytes": 82470,
+      "sha256": "ef38f99a59c4d94370ac722f6eebbfac3f4c886d21e306ba98d2f7437572112b"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/quality-result.json",
+      "role": "jfg completed capture provenance",
+      "bytes": 740811,
+      "sha256": "6b764cace3d53b69f5fc28fcdf522e444efe10bbe7e476656aae90bf9c65c4c3"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/training-package/deployment.conf",
+      "role": "jfg completed capture provenance",
+      "bytes": 78539,
+      "sha256": "f7565f1d089c71a3ed695bc88d33f429a2d9e4e5b3f1c98ebc75bd4a3b57eb15"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/training-package/provenance.json",
+      "role": "jfg completed capture provenance",
+      "bytes": 93803,
+      "sha256": "745f429cff26de72ac02e5f46cbb2e54f4a85b411247c590769f7042a92f90d0"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/training-evidence/stage-result.json",
+      "role": "jfg completed capture provenance",
+      "bytes": 281942,
+      "sha256": "3e39cfc3671029f58385ad3f0db6952879b8c704ab814f007f116c94472d733a"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/training-evidence/analysis.json",
+      "role": "jfg completed capture provenance",
+      "bytes": 22142,
+      "sha256": "cf2a5a7e79116e620883c3dbc27b3d7f250b326cf20b513f544017f290facd92"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/training-evidence/deployment.log",
+      "role": "jfg completed capture provenance",
+      "bytes": 7082,
+      "sha256": "650072b874f48cf3c09d2e1d32555fb8b4330f3d12efe2c05369e28658a14e96"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/training-evidence/analysis.stdout",
+      "role": "jfg completed capture provenance",
+      "bytes": 22142,
+      "sha256": "cf2a5a7e79116e620883c3dbc27b3d7f250b326cf20b513f544017f290facd92"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/training-evidence/analysis.stderr",
+      "role": "jfg completed capture provenance",
+      "bytes": 147,
+      "sha256": "d54a8ca3bf5c10e5dd437b0e28ab316de1d5ae54ffc5d1a55c2c6221ff29af15"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/training-evidence/captured/10/manifest.json",
+      "role": "jfg capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6376,
+      "sha256": "0e88f18fe53a948e8cb6104a74e2d1b7a23a702a62403acec109397c296fecdd"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/training-evidence/captured/13/manifest.json",
+      "role": "jfg capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6376,
+      "sha256": "dd6cfd6eb139c703f121f825caac01d58b65dd5cccdc3f5cb7cb41065c19aa04"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/training-evidence/captured/16/manifest.json",
+      "role": "jfg capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6376,
+      "sha256": "57a71e09cae8d53c14e21ce7dbc3dc4aa6213adee008872c2cb5a59494199b66"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/training-evidence/captured/19/manifest.json",
+      "role": "jfg capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6376,
+      "sha256": "afb514f24f41b0360f4e045efc4c15f4071b8cf7ea6091a4fac975e3908c62f0"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/training-evidence/captured/22/manifest.json",
+      "role": "jfg capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6376,
+      "sha256": "0bcc4566e98ff03acd47d2d0659ca2e26c5d0c457534c9645da4544fcf81b2de"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/training-evidence/captured/25/manifest.json",
+      "role": "jfg capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6376,
+      "sha256": "81f73f6c51e1efb1b44097cb106ba3747f632dc37ebdefd9c3ad002457a8362e"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/training-evidence/captured/28/manifest.json",
+      "role": "jfg capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6376,
+      "sha256": "b55f00721aff62eb401e26c753f2ea6c54a8911b705e5c7f2fab78eec18fdafd"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/training-evidence/captured/31/manifest.json",
+      "role": "jfg capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6376,
+      "sha256": "7a5e36fe0710a47d7f6fc72bcc64ccfe495f404970f0c4e34923fb6a1625f4a2"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/training-evidence/captured/34/manifest.json",
+      "role": "jfg capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6377,
+      "sha256": "d0b6bcf08204888b12a75e510ec9d04a35364f8827cf944088bb2cec35c71e4a"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/training-evidence/captured/37/manifest.json",
+      "role": "jfg capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6393,
+      "sha256": "f610a4b71f7f6649ea8300725b1cdb321f9f59cf9b2aad9c50f502d1b105acaa"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/training-evidence/captured/4/manifest.json",
+      "role": "jfg capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6359,
+      "sha256": "4b17b7df511973640faf89f2bfb9647cf3c18e08d3f291e0469aed4905e27fde"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/training-evidence/captured/40/manifest.json",
+      "role": "jfg capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6393,
+      "sha256": "e708da5562fe19429d8f2c6df9a28c9b0411919c3a7885400a98ed7863c13605"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/training-evidence/captured/43/manifest.json",
+      "role": "jfg capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6393,
+      "sha256": "dc8830a46fe4c367c3803d9db0dd1cf9289ab9d7bfc2bddd96bac1ad4aff18b6"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/training-evidence/captured/46/manifest.json",
+      "role": "jfg capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6393,
+      "sha256": "636138a9306478d4e44349e81229d605b8da05f81bcccd00d1f71fb9cfd17f32"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/training-evidence/captured/49/manifest.json",
+      "role": "jfg capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6393,
+      "sha256": "e8cc6015a2c4d235854807b0edd2587db470b86a5dcbc9576748fea2f8d3bab2"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/training-evidence/captured/7/manifest.json",
+      "role": "jfg capture manifest binding raw/pixel/intensity payloads",
+      "bytes": 6375,
+      "sha256": "96dae5dacf1836c17ab602a644819cf9bbb19d193977239078957b50fc5ce436"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/batch-means.f64le",
+      "role": "jfg numerical product",
+      "bytes": 460800,
+      "sha256": "e9f7aee7ae4e9e29800f178b27487cb1ddb98aa2d432138cb739ae7692c1e12c"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/batch-variances.f64le",
+      "role": "jfg numerical product",
+      "bytes": 460800,
+      "sha256": "f1042716458157b73f9de778af30a3581ee484fdb69b2fad23903fda1c33a8c6"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/derivative-repeats.f64le",
+      "role": "jfg numerical product",
+      "bytes": 172800,
+      "sha256": "60bccbf1c3e9363d2c558240752a470e35b470348069a5627a0755ac86032ba8"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-copper-quality-20261003/jfg-pilot/derivative-means.f64le",
+      "role": "jfg numerical product",
+      "bytes": 86400,
+      "sha256": "30f3b9d6f7f55d833bab756c8abfa36daa6588696b250eb2d9a951ec733ce0df"
+    }
+  ]
+}

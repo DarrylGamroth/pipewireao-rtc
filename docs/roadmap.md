@@ -1243,3 +1243,28 @@ centering/adoption, adequate precision/linearity, 277→253 composition, measure
 interaction matrix, inverse selection and correction remain open. Unchanged
 HEART calibration, accelerator acquisition and physical qualification remain
 open; RTC-DEV-029 is still partial.
+
+### Copper precision and amplitude pilot, 2026-10-03
+
+Implementation `5cf8182` extends the existing cold calibration coordinator with
+bounded multi-probe capture, preserving default single-batch behavior. Each
+completed batch is saved and verified before the next probe; later failures
+retain completed raw evidence. It reuses public AOC moments and one-direction
+zonal estimation, with actual represented Float32 command intervals.
+
+Both CPU FGN/JFG windows completed 16 batches and 128 retained exposures, plus
+normalization and restoration exposures. All paired raw/pixel/intensity bytes
+and four numerical products match exactly. Restoration/release/public shutdown
+and owned cleanup pass; the independent numerical reduction and source/receipt
+audits passed. See the [predeclared plan](COPPER_QUALITY_PLAN.md),
+[validation](COPPER_QUALITY_VALIDATION.md), [review](COPPER_QUALITY_REVIEW.md) and
+[evidence ledger](COPPER_QUALITY_EVIDENCE.json).
+
+Small-amplitude estimates have poor repeat/order coherence, and their
+response-space discrepancy is consistent in size across amplitudes and with
+null-batch variability. This supports a measurement-dispersion explanation
+without establishing independence, causal noise or linearity. A frozen brighter
+calibration-lamp discriminator is proposed; no gain, tolerance or active
+calibration was changed. Full Copper matrix, 277→253 composition, held-out
+inverse/correction, unchanged HEART and accelerator gates remain open.
+RTC-DEV-029 remains partial.

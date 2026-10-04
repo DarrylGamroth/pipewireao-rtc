@@ -95,6 +95,14 @@ dark/lamp/fresh-reference workflow. Byte-identical paired CPU results are
 functional evidence; Copper scientific reference and matrix acceptance remain
 open.
 
+[Copper amplitude and precision pilot](COPPER_QUALITY_USAGE.md), its
+[predeclared plan](COPPER_QUALITY_PLAN.md),
+[validation](COPPER_QUALITY_VALIDATION.md),
+[independent review](COPPER_QUALITY_REVIEW.md) and
+[evidence identities](COPPER_QUALITY_EVIDENCE.json) record the completed bounded
+FGN/JFG directional collection. The paired measurements/products match exactly;
+the pilot does not establish adequate precision for full-matrix admission.
+
 ## Inactive design archive
 
 The [archived full-RTC design](archive/full-rtc/README.md) preserves prior work
