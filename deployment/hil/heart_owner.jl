@@ -1,3 +1,3 @@
 #!/usr/bin/env julia
-include(joinpath(@__DIR__, "..", "julia", "PipeWireAODeployment.jl"))
+using PipeWireAODeployment
 exit(PipeWireAODeployment.HeartOwner.main(ARGS))

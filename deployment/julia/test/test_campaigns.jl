@@ -1,12 +1,7 @@
 using Test, JSON3, Sockets
 
-module CampaignTestModules
-for name in ("common","placement","science_export","deploy","hil_export",
-             "calibration_export","calibration_campaign","calibration_method",
-             "copper_reference","copper_quality")
-    include(joinpath(@__DIR__,name*".jl"))
-end
-end
+using PipeWireAODeployment
+const CampaignTestModules=PipeWireAODeployment
 const A=CampaignTestModules.CalibrationCampaign
 const M=CampaignTestModules.CalibrationMethod
 const C=CampaignTestModules.Common
@@ -70,20 +65,20 @@ end
     @test converted["reference"]!==original["reference"]
     @test A.same_figure(converted["amplitudes"],fill(0.02,277))
     source=A.orchestration_sources()
-    @test haskey(source,abspath(joinpath(@__DIR__,"..","hil","calibration_campaign_analysis.jl")))
-    @test haskey(source,abspath(joinpath(@__DIR__,"..","hil","calibration_method_analysis.jl")))
-    @test haskey(source,abspath(joinpath(@__DIR__,"..","templates","client-simulator.conf.in")))
-    @test haskey(source,abspath(joinpath(@__DIR__,"..","pipewireao-rtc@.service.in")))
-    @test haskey(source,abspath(joinpath(@__DIR__,"assets","ryzen-6800h-classic.cpu")))
-    @test haskey(source,abspath(joinpath(@__DIR__,"assets","ryzen-6800h-classic.threads")))
-    service=read(joinpath(@__DIR__,"..","pipewireao-rtc@.service.in"),String)
+    @test haskey(source,abspath(joinpath(PipeWireAODeployment.resource_root(),"hil","calibration_campaign_analysis.jl")))
+    @test haskey(source,abspath(joinpath(PipeWireAODeployment.resource_root(),"hil","calibration_method_analysis.jl")))
+    @test haskey(source,abspath(joinpath(PipeWireAODeployment.resource_root(),"templates","client-simulator.conf.in")))
+    @test haskey(source,abspath(joinpath(PipeWireAODeployment.resource_root(),"pipewireao-rtc@.service.in")))
+    @test haskey(source,abspath(joinpath(PipeWireAODeployment.package_root(),"assets","ryzen-6800h-classic.cpu")))
+    @test haskey(source,abspath(joinpath(PipeWireAODeployment.package_root(),"assets","ryzen-6800h-classic.threads")))
+    service=read(joinpath(PipeWireAODeployment.resource_root(),"pipewireao-rtc@.service.in"),String)
     stop_bound=parse(Float64,only(match(r"(?m)^TimeoutStopSec=(\d+)$",service).captures))
     @test CampaignTestModules.Deployment.CLEANUP_TIMEOUT_SECONDS==stop_bound
     mktempdir() do root
         copied=joinpath(root,"orchestration-sources")
         mkdir(copied)
         for path in keys(source)
-            target=joinpath(copied,relpath(path,joinpath(@__DIR__,"..")))
+            target=joinpath(copied,PipeWireAODeployment.source_relative_path(path))
             mkpath(dirname(target))
             cp(path,target)
         end

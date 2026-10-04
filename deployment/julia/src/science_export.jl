@@ -4,9 +4,7 @@ using JSON3
 using SHA
 using ..Common
 
-const ROOT = normpath(joinpath(@__DIR__, ".."))
-resource_root() = isdir(joinpath(@__DIR__, "assets", "deployment")) ?
-    joinpath(@__DIR__, "assets", "deployment") : ROOT
+import ..package_root, ..resource_root, ..source_relative_path
 const RAW_SCHEMA = "org.calculon.ao.raw-detector-pixels/1"
 const ROW_SCHEMA = "org.calculon.ao.raw-pixel-row-block/1"
 const COMMAND_SCHEMA = "org.calculon.ao.demanded-pdm-command/1"
@@ -20,9 +18,11 @@ struct Parameter
     shape::Vector{Int}
     file::String
     schema::String
+    function Parameter(name, endpoint, element_type, shape, file, schema)
+        new(String(name), String(endpoint), String(element_type), Int[shape...], String(file), String(schema))
+    end
 end
 Parameter(name, endpoint, element_type, shape, file) = Parameter(String(name), String(endpoint), String(element_type), Int[shape...], String(file), "")
-Parameter(name, endpoint, element_type, shape, file, schema) = Parameter(String(name), String(endpoint), String(element_type), Int[shape...], String(file), String(schema))
 Parameter(item::AbstractDict) = Parameter(item["name"], item["endpoint"], item["element_type"], item["shape"], item["file"], get(item, "schema", ""))
 parameter_dict(p::Parameter) = Dict{String,Any}("name" => p.name, "endpoint" => p.endpoint, "element_type" => p.element_type, "shape" => p.shape, "file" => p.file, "schema" => p.schema)
 
@@ -66,20 +66,33 @@ function copy_tree(source::AbstractString, destination::AbstractString; ignored=
 end
 
 function copy_deployment_runtime(package::AbstractString; copy_service=true)
-    target = joinpath(package, "julia")
+    target = abspath(joinpath(package, "julia"))
+    ancestor = target
+    while !ispath(ancestor)
+        ancestor = dirname(ancestor)
+    end
+    outside(relative) = relative == ".." || startswith(relative, ".." * string(Base.Filesystem.path_separator))
+    for directory in (package_root(), joinpath(resource_root(), "hil"), joinpath(resource_root(), "templates"))
+        source = realpath(directory)
+        outside(relpath(realpath(ancestor), source)) &&
+            (!ispath(target) || outside(relpath(source, realpath(target)))) ||
+            throw(ArgumentError("deployment runtime destination must not overlap copied source: $directory"))
+    end
     ispath(target) && rm(target; recursive=true, force=true)
-    ignored = Set(name for name in readdir(@__DIR__) if startswith(name, "test_"))
+    ignored = Set(["__pycache__", ".git"])
+    copy_tree(package_root(), target; ignored)
     union!(ignored, Set(name for name in readdir(joinpath(resource_root(), "hil"))
         if startswith(name, "test_") || endswith(name, ".py")))
-    union!(ignored, Set(["__pycache__", ".git"]))
-    copy_tree(@__DIR__, target; ignored)
     for directory in ("templates", "hil")
         destination = joinpath(target, "assets", "deployment", directory)
         ispath(destination) && rm(destination; recursive=true, force=true)
         copy_tree(joinpath(resource_root(), directory), destination; ignored)
     end
+    for name in readdir(resource_root())
+        endswith(name, ".jl") && !startswith(name, "test_") || continue
+        copy_file(joinpath(resource_root(), name), joinpath(target, "assets", "deployment", name))
+    end
     service_source = joinpath(resource_root(), "pipewireao-rtc@.service.in")
-    isfile(service_source) || (service_source = joinpath(ROOT, "pipewireao-rtc@.service.in"))
     copy_file(service_source, joinpath(target, "assets/deployment/pipewireao-rtc@.service.in"))
     copy_service && copy_file(service_source, joinpath(package, "pipewireao-rtc@.service.in"))
     return target

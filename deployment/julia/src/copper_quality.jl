@@ -149,7 +149,7 @@ function source_snapshot(base,aoc,candidate,arguments)
         "helpers"=>Reference.input_snapshot(base,aoc)["helpers"],
         "orchestration"=>Acquisition.orchestration_sources())
     paths=vcat(candidate_paths(candidate),[arguments.recipe,arguments.rtc_binary,arguments.calibration_binary,
-        abspath(@__FILE__),joinpath(@__DIR__,"calibration_campaign.jl"),joinpath(@__DIR__,"copper_reference.jl")])
+        joinpath(HILExport.ScienceExport.package_root(),"src","copper_quality.jl"),joinpath(HILExport.ScienceExport.package_root(),"src","calibration_campaign.jl"),joinpath(HILExport.ScienceExport.package_root(),"src","copper_reference.jl")])
     source["files"]=Dict(abspath(path)=>sha256_file(Acquisition.regular(path)) for path in paths)
     return source
 end
@@ -348,6 +348,7 @@ function main(argv=ARGS)
         defaults=(pipewire_prefix="/opt/pipewireao",julia="julia"))
     arguments.pipewire_prefix=="/opt/pipewireao" || throw(ArgumentError("only /opt/pipewireao supported"))
     println(campaign(arguments))
+    return 0
 end
 
 end # module

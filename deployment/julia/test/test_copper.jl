@@ -1,12 +1,7 @@
 using Test
 
-module CopperTestModules
-for name in ("common","placement","science_export","deploy","hil_export",
-             "calibration_export","calibration_campaign","calibration_method",
-             "copper_reference","copper_quality")
-    include(joinpath(@__DIR__,name*".jl"))
-end
-end
+using PipeWireAODeployment
+const CopperTestModules=PipeWireAODeployment
 const A=CopperTestModules.CalibrationCampaign
 const R=CopperTestModules.CopperReference
 const Q=CopperTestModules.CopperQuality

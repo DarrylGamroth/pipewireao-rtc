@@ -1,8 +1,6 @@
 using Test, JSON3, Sockets
 
-if !isdefined(Main, :PipeWireAODeployment)
-    include("PipeWireAODeployment.jl")
-end
+using PipeWireAODeployment
 const D = PipeWireAODeployment.Deployment
 const P = PipeWireAODeployment.Placement
 
@@ -57,7 +55,7 @@ end
         @test isfile(joinpath(destination, "julia/assets/deployment/hil/heart_owner.jl"))
         @test isfile(joinpath(destination, "julia/assets/deployment/templates/client-simulator.conf.in"))
         @test read(joinpath(destination, "julia/assets/deployment/pipewireao-rtc@.service.in")) ==
-            read(joinpath(@__DIR__, "../pipewireao-rtc@.service.in"))
+            read(joinpath(PipeWireAODeployment.resource_root(), "pipewireao-rtc@.service.in"))
         @test read(joinpath(destination, "pipewireao-rtc@.service.in"), String) == "sealed root service\n"
         @test read(joinpath(destination, "bin/pipewireao-rtc@.service.in"), String) == "sealed bin service\n"
         @test D.profile(joinpath(destination, "deployment.conf"), "/unused prefix") == spec
@@ -67,8 +65,20 @@ end
             @test (stat(entrypoint).mode & 0o111) != 0
             @test occursin("PipeWireAODeployment.$owner.main", read(entrypoint, String))
             result = PipeWireAODeployment.Common.run_checked([entrypoint]; timeout=30)
-            @test result.returncode != 0
+            @test result.returncode == 1
             @test occursin("missing --", result.stderr)
+            flagged = PipeWireAODeployment.Common.run_checked([entrypoint, "--base-package", "fixture"]; timeout=30)
+            @test flagged.returncode == 1
+            @test occursin("missing --", flagged.stderr)
+            @test !occursin("missing --base-package", flagged.stderr)
+            @test !occursin("unknown option", flagged.stderr)
+            if name == "export_hil"
+                version = PipeWireAODeployment.Common.run_checked([entrypoint, "--version"]; timeout=30)
+                @test version.returncode == 1
+                @test occursin("ArgumentError: unknown option --version", version.stderr)
+                @test occursin("PipeWireAODeployment.Common", version.stderr)
+                @test occursin("src/common.jl", version.stderr)
+            end
         end
         unit = read(joinpath(destination, "systemd/pipewireao-rtc@.service"), String)
         @test occursin("/unused prefix", unit)
@@ -96,17 +106,50 @@ end
         source = joinpath(directory, "sealed-export")
         mkdir(source)
         spec = deployment_fixture(source)
-        cp(@__DIR__, joinpath(source, "julia"); follow_symlinks=true)
+        PipeWireAODeployment.ScienceExport.copy_deployment_runtime(source)
+        template = joinpath(source, "julia/assets/deployment/pipewireao-rtc@.service.in")
+        write(template, read(template, String) * "\n# incoming-SDK-template-marker\n")
         for (root, _, files) in walkdir(joinpath(source, "julia")), file in files
             relative = relpath(joinpath(root, file), source)
             spec["artifacts"][relative] = D.digest(joinpath(source, relative))
         end
         write(joinpath(source, "deployment.conf"), JSON3.write(spec))
+        source_identity = PipeWireAODeployment.CalibrationCampaign.file_identity(source)
         destination = joinpath(directory, "installed")
         D.install((; package=source, destination, pipewire_prefix="/unused prefix"))
+        @test occursin("incoming-SDK-template-marker", read(joinpath(destination, "systemd/pipewireao-rtc@.service"), String))
+        @test PipeWireAODeployment.CalibrationCampaign.file_identity(source) == source_identity
         @test D.profile(joinpath(destination, "deployment.conf"), "/unused prefix") == spec
         @test read(joinpath(destination, "julia/deploy_cli.jl")) ==
             read(joinpath(source, "julia/deploy_cli.jl"))
+    end
+    for missing in ("hil/Project.toml", "templates/core.conf.in", "pipewireao-rtc@.service.in")
+        mktempdir() do directory
+            source = joinpath(directory, "incomplete-SDK")
+            mkdir(source)
+            spec = deployment_fixture(source)
+            PipeWireAODeployment.ScienceExport.copy_deployment_runtime(source)
+            rm(joinpath(source, "julia/assets/deployment", missing))
+            # Seal the incomplete input itself, so the resource admission check,
+            # rather than an artifact hash mismatch, must reject it.
+            for (root, _, files) in walkdir(joinpath(source, "julia")), file in files
+                relative = relpath(joinpath(root, file), source)
+                spec["artifacts"][relative] = D.digest(joinpath(source, relative))
+            end
+            write(joinpath(source, "deployment.conf"), JSON3.write(spec))
+            identity = PipeWireAODeployment.CalibrationCampaign.file_identity(source)
+            destination = joinpath(directory, "destination")
+            error = try
+                D.install((;package=source, destination, pipewire_prefix="/unused prefix"))
+                nothing
+            catch caught
+                caught
+            end
+            @test error isa D.DeploymentError
+            @test occursin("resources are incomplete", sprint(showerror, error))
+            @test !ispath(destination)
+            @test PipeWireAODeployment.CalibrationCampaign.file_identity(source) == identity
+        end
     end
     @test occursin("\\\"", D.substitute("\"@PACKAGE@\"", Dict("PACKAGE" => "a\"b"); quoted=true))
     @test_throws D.DeploymentError D.substitute("@MISSING@", Dict{String,String}())
@@ -195,11 +238,11 @@ with open(sys.argv[3], 'w') as output:
                     "ok" => true, "state" => "Ready")) * "\n")
                 close(peer)
             end
-            code = "include(ARGS[1]); D=PipeWireAODeployment.Deployment; " *
-                "@assert D.control(ARGS[2], [\"status\"])[\"state\"]==\"Ready\""
+            code = "using PipeWireAODeployment; D=PipeWireAODeployment.Deployment; " *
+                "@assert D.control(ARGS[1], [\"status\"])[\"state\"]==\"Ready\""
             child = PipeWireAODeployment.Common.run_checked([
-                Base.julia_cmd().exec[1], "--startup-file=no", "--project=" * @__DIR__,
-                "-e", code, joinpath(@__DIR__, "PipeWireAODeployment.jl"), path]; timeout=30)
+                Base.julia_cmd().exec[1], "--startup-file=no", "--project=" * PipeWireAODeployment.package_root(),
+                "-e", code, path]; timeout=30)
             wait(responder)
             close(server)
             @test child.returncode == 0
@@ -219,23 +262,22 @@ with open(sys.argv[3], 'w') as output:
             process_running(child) && kill(child)
             wait(child)
         end
-        code = "module Probe; include(ARGS[1]); include(ARGS[2]); end; " *
-            "result=Probe.Placement.pin_supervisor(parse(Int,ARGS[3])); " *
+        code = "using PipeWireAODeployment; " *
+            "result=PipeWireAODeployment.Placement.pin_supervisor(parse(Int,ARGS[1])); " *
             "println(length(result[\"threads\"]));"
         child = PipeWireAODeployment.Common.run_checked([
             Base.julia_cmd().exec[1], "--startup-file=no", "--threads=4",
-            "--project=" * @__DIR__, "-e", code,
-            joinpath(@__DIR__, "common.jl"), joinpath(@__DIR__, "placement.jl"),
+            "--project=" * PipeWireAODeployment.package_root(), "-e", code,
             string(cpu)]; timeout=30)
         @test child.returncode == 0
         @test parse(Int, strip(child.stdout)) >= 4
         mktempdir() do directory
             probe = joinpath(directory, "spawn-stderr.jl")
             write(probe, """
-include(ARGS[1])
+using PipeWireAODeployment
 D = PipeWireAODeployment.Deployment
-runtime = ARGS[2]
-cpu = parse(Int, ARGS[3])
+runtime = ARGS[1]
+cpu = parse(Int, ARGS[2])
 mkdir(joinpath(runtime, "core"))
 spec = Dict{String,Any}("placement" => Dict("core" => Dict("leader-cpu" => cpu)))
 runner = D.DeploymentRunner((;), runtime, spec, Dict{String,String}(), Set([cpu]),
@@ -249,8 +291,8 @@ wait(child)
 success(child) || error("diagnostic child exited unsuccessfully")
 """)
             observed = PipeWireAODeployment.Common.run_checked([
-                Base.julia_cmd().exec[1], "--startup-file=no", "--project=" * @__DIR__,
-                probe, joinpath(@__DIR__, "PipeWireAODeployment.jl"), directory,
+                Base.julia_cmd().exec[1], "--startup-file=no", "--project=" * PipeWireAODeployment.package_root(),
+                probe, directory,
                 string(cpu)]; timeout=30)
             @test observed.returncode == 0
             @test occursin("supervised-child-diagnostic", observed.stderr)

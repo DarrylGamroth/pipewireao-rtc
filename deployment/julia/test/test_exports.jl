@@ -2,7 +2,9 @@ using Test
 
 # Keep these portable checks independent of an installed PipeWireAO prefix.
 module ExportFixture
-include("common.jl")
+using PipeWireAODeployment: package_root, resource_root, source_relative_path
+using PipeWireAODeployment
+const Common = PipeWireAODeployment.Common
 module Deployment
 using ..Common
 decode(path,prefix) = Common.read_json(path)
@@ -10,10 +12,10 @@ profile(path,prefix) = Common.read_json(path)
 end
 
 module HeartConfiguration end
-include("science_export.jl")
-include("hil_export.jl")
-include("calibration_export.jl")
-include("heart_export.jl")
+include(joinpath(package_root(), "src", "science_export.jl"))
+include(joinpath(package_root(), "src", "hil_export.jl"))
+include(joinpath(package_root(), "src", "calibration_export.jl"))
+include(joinpath(package_root(), "src", "heart_export.jl"))
 end
 
 const Science = ExportFixture.ScienceExport
@@ -151,7 +153,7 @@ end
         @test result == joinpath(deployed,"provenance.json")
         @test isfile(joinpath(deployed,"deployment.conf"))
         @test isfile(joinpath(deployed,"julia/Manifest.toml"))
-        @test isfile(joinpath(deployed,"julia/PipeWireAODeployment.jl"))
+        @test isfile(joinpath(deployed,"julia/src/PipeWireAODeployment.jl"))
         @test isfile(joinpath(deployed,"pipewireao-rtc@.service.in"))
         @test isfile(joinpath(deployed,"julia/assets/deployment/templates/client-simulator.conf.in"))
         @test isfile(joinpath(deployed,"julia/assets/deployment/hil/calibration_campaign_analysis.jl"))
@@ -204,7 +206,7 @@ end
     @test session["sources"][1]["ports"][1]["shape"] == [352,352]
     @test session["sources"][2]["ports"][1]["shape"] == [277]
     @test session["links"][2]["output"] == "heart-dm-source:command"
-    source = read(joinpath(@__DIR__,"..","..","benchmark/profiles/ryzen-6800h-classic.cpu"),String)
+    source = read(joinpath(ExportFixture.package_root(),"assets/ryzen-6800h-classic.cpu"),String)
     mapped = Heart._cpu_map(source)
     @test occursin("HOP0.wfs.w = { 4 }",mapped)
     @test occursin("WCC.dm0.w = { 14 }",mapped)

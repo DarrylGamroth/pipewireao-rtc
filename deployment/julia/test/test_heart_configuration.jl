@@ -1,9 +1,6 @@
 using Test
-module HeartConfigurationTests
-include("common.jl")
-include("heart_configuration.jl")
-end
-const HC=HeartConfigurationTests.HeartConfiguration
+using PipeWireAODeployment
+const HC=PipeWireAODeployment.HeartConfiguration
 
 @testset "HEART configuration preparation without Python" begin
     @test "TELOFF" in HC.required_sections(Val(:classic))

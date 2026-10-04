@@ -6,7 +6,6 @@ using ..ScienceExport
 using ..HILExport
 using ..HeartConfiguration
 
-const ROOT = ScienceExport.resource_root()
 const RAW_SCHEMA = "org.heart.std-wfs.raw-pixels/1"
 const COMMAND_SCHEMA = "org.heart.std-dm.actuator-command/1"
 const WORKERS = Dict("HOP0.wfs.w"=>4,"HOP0.proc.w"=>6,"HOP0.recon.w"=>8,
@@ -98,7 +97,7 @@ function export_package(args)
         end
         ScienceExport.copy_file(args.rtc_binary,joinpath(package,"bin/pipewireao-rtc"))
         for name in ("simulator.jl","owner_protocol.jl","heart_owner.jl")
-            source = joinpath(ROOT,"hil",name)
+            source = joinpath(ScienceExport.resource_root(),"hil",name)
             destination = joinpath(package,"hil",name)
             isfile(destination) && rm(destination)
             ScienceExport.copy_file(source,destination)
@@ -145,9 +144,9 @@ function export_package(args)
         ScienceExport.write_spa_config(joinpath(package,"client-heart-rtc.conf.in"),rtc_client)
         specification["client"]["rtc"] = "client-heart-rtc.conf.in"
         specification["placement"]["rtc"] = Dict("cpus"=>[14],"leader-cpu"=>14,"rt-priority"=>0,"threads"=>Any[],"locked-bytes"=>0)
-        cpu = read(joinpath(@__DIR__,"assets/ryzen-6800h-classic.cpu"),String)
+        cpu = read(joinpath(ScienceExport.package_root(),"assets/ryzen-6800h-classic.cpu"),String)
         write(joinpath(package,"heart/host.cpu"),_cpu_map(cpu))
-        ScienceExport.copy_file(joinpath(@__DIR__,"assets/ryzen-6800h-classic.threads"),joinpath(package,"heart/host.threads"))
+        ScienceExport.copy_file(joinpath(ScienceExport.package_root(),"assets/ryzen-6800h-classic.threads"),joinpath(package,"heart/host.threads"))
         Common.write_json(joinpath(package,"heart/placement.json"),Dict("cpus"=>[3,4,6,8,10,14],
             "allowed_priorities"=>[5,10,15,20],"workers"=>[Dict("name"=>name,"cpus"=>[cpu],"policy"=>1,"priority"=>15) for (name,cpu) in WORKERS]))
         markers = Dict(name=>"heart."*name for name in ("prepared","connect","connected","quit"))
@@ -189,9 +188,9 @@ function export_package(args)
 end
 
 function main(argv=ARGS)
-    installed_binary = joinpath(@__DIR__, "..", "bin", "pipewireao-rtc")
+    installed_binary = joinpath(dirname(ScienceExport.package_root()), "bin", "pipewireao-rtc")
     default_binary = isfile(installed_binary) ? installed_binary :
-        normpath(joinpath(@__DIR__, "..", "..", "target", "release", "pipewireao-rtc"))
+        normpath(joinpath(ScienceExport.resource_root(), "..", "target", "release", "pipewireao-rtc"))
     options = Common.cli_arguments(argv;required=["base-package","output","heart-root","heart-source-config","calibration-root"],
         allowed=["adapter-root","readout-us"],defaults=(rtc_binary=default_binary,
                                                          pipewire_prefix="/opt/pipewireao"))

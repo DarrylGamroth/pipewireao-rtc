@@ -5,7 +5,6 @@ using ..Common
 using ..Deployment
 using ..ScienceExport
 
-const ROOT = ScienceExport.resource_root()
 const REQUESTED_SCHEMA = "org.calculon.ao.requested-pdm-command/1"
 const FEEDBACK_SCHEMA = "org.calculon.ao.pdm-constraint-feedback/1"
 
@@ -315,7 +314,7 @@ function export_package(args)
             ScienceExport.copy_deployment_runtime(package)
             ScienceExport.copy_tree(joinpath(base,"hil"),joinpath(package,"hil"))
             for filename in ("calibration_owner.jl","calibration_acquisition.jl","calibration_server.jl","calibration_client.jl")
-                source = joinpath(ROOT,"hil",filename)
+                source = joinpath(ScienceExport.resource_root(),"hil",filename)
                 isfile(source) && cp(source,joinpath(package,"hil",filename);force=true)
             end
             mkpath(joinpath(package,"bin"))
@@ -367,8 +366,8 @@ function export_package(args)
             "source_deployment_sha256"=>ScienceExport.sha256(joinpath(base,"deployment.conf")),
             "source_graph_sha256"=>ScienceExport.sha256(source_path),
             "source_provenance_sha256"=>ScienceExport.sha256(joinpath(base,"provenance.json")),
-            "source_provenance"=>provenance,"rtc_revision"=>ScienceExport.revision(normpath(joinpath(ROOT,".."))),
-            "exporter_sha256"=>ScienceExport.sha256(@__FILE__),"parameter_initialization"=>"owner-preload",
+            "source_provenance"=>provenance,"rtc_revision"=>ScienceExport.revision(normpath(joinpath(ScienceExport.resource_root(),".."))),
+            "exporter_sha256"=>ScienceExport.sha256(joinpath(ScienceExport.package_root(),"src","calibration_export.jl")),"parameter_initialization"=>"owner-preload",
             "parameters"=>[merge(ScienceExport.parameter_dict(p),Dict("sha256"=>ScienceExport.sha256(joinpath(package,"calibration",p.file)))) for p in parameters],
             "construction_parameters"=>[item for item in get(provenance,"construction_parameters",Any[]) if first(split(item["endpoint"],":";limit=2)) in retained],
             "graphs"=>records,"artifacts"=>_artifacts(package;include_deployment=true))

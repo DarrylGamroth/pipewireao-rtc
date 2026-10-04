@@ -112,13 +112,13 @@ function method(arguments)
             calibration_stage="interaction",capture_max_bytes=nothing))
         scripts=joinpath(output,"analysis")
         mkdir(scripts)
-        cp(joinpath(HILExport.ROOT,"hil","calibration_method_analysis.jl"),
+        cp(joinpath(HILExport.ScienceExport.resource_root(),"hil","calibration_method_analysis.jl"),
            joinpath(scripts,"calibration_method_analysis.jl"))
         cp(joinpath(package,"hil","calibration_client.jl"),joinpath(scripts,"calibration_client.jl"))
         sources=joinpath(output,"orchestration-sources")
         mkdir(sources)
         for path in keys(Campaign.orchestration_sources())
-            target=joinpath(sources,relpath(path,joinpath(@__DIR__,"..")))
+            target=joinpath(sources,HILExport.ScienceExport.source_relative_path(path))
             mkpath(dirname(target))
             cp(path,target)
         end
@@ -183,6 +183,7 @@ function main(argv=ARGS)
     arguments=cli_arguments(argv;required=["base-package","recipe","method","output","aoc-source",
         "rtc-binary","calibration-binary","runtime"],defaults=(prefix="/opt/pipewireao",julia="julia"))
     println(method(arguments))
+    return 0
 end
 
 end # module

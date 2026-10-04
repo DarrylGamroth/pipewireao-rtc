@@ -1,6 +1,6 @@
 module Deployment
 
-using JSON3, Sockets, UUIDs
+using JSON3, Sockets, UUIDs, TOML
 using ..Common
 using ..Placement
 using ..ScienceExport
@@ -990,19 +990,56 @@ function shutdown(runtime::AbstractString, process::Base.Process; timeout=30)
     final
 end
 
+function validate_runtime(root::AbstractString)
+    isfile(joinpath(root, "src", "PipeWireAODeployment.jl")) ||
+        fail("unsupported legacy include-loaded deployment runtime; preserve this sealed SDK and use its original launcher, or export a new SDK with the named package")
+    for name in ("Project.toml", "Manifest.toml", "deploy_cli.jl", "test/Project.toml", "test/runtests.jl")
+        isfile(joinpath(root, name)) || fail("installed Julia deployment runtime is incomplete: $name")
+    end
+    metadata = TOML.parsefile(joinpath(root, "Project.toml"))
+    owner = parentmodule(@__MODULE__)
+    get(metadata, "name", nothing) == "PipeWireAODeployment" &&
+        get(metadata, "uuid", nothing) == string(Base.PkgId(owner).uuid) ||
+        fail("installed Julia deployment runtime has an unsupported package identity")
+    version = tryparse(VersionNumber, get(metadata, "version", ""))
+    version !== nothing && version.major == Base.pkgversion(owner).major &&
+        version.minor == Base.pkgversion(owner).minor ||
+        fail("installed Julia deployment runtime version is unsupported by this installer")
+    for name in readdir(joinpath(ScienceExport.package_root(), "src"))
+        endswith(name, ".jl") || continue
+        isfile(joinpath(root, "src", name)) || fail("installed Julia deployment runtime is incomplete: src/$name")
+    end
+    resources = joinpath(root, "assets", "deployment")
+    for directory in ("hil", "templates")
+        for (parent, dirs, files) in walkdir(joinpath(ScienceExport.resource_root(), directory))
+            filter!(name -> !(name in ("__pycache__", ".git")) && !startswith(name, "test_"), dirs)
+            for name in files
+                (startswith(name, "test_") || endswith(name, ".py")) && continue
+                relative = relpath(joinpath(parent, name), ScienceExport.resource_root())
+                isfile(joinpath(resources, relative)) && !islink(joinpath(resources, relative)) ||
+                    fail("installed Julia deployment resources are incomplete: $relative")
+            end
+        end
+    end
+    for name in readdir(ScienceExport.resource_root())
+        (endswith(name, ".jl") && !startswith(name, "test_")) || name == "pipewireao-rtc@.service.in" || continue
+        isfile(joinpath(resources, name)) && !islink(joinpath(resources, name)) ||
+            fail("installed Julia deployment resources are incomplete: $name")
+    end
+    return root
+end
+
 function install(options::NamedTuple)
     source = realpath(options.package)
     destination = abspath(options.destination)
     (source == destination || ispath(destination)) && fail("install destination must be a new directory")
     source_spec = profile(joinpath(source, "deployment.conf"), options.pipewire_prefix)
+    source_runtime = joinpath(source, "julia")
+    isdir(source_runtime) && validate_runtime(source_runtime)
     cp(source, destination; force=false, follow_symlinks=true)
     installed_julia = joinpath(destination, "julia")
     isdir(installed_julia) || ScienceExport.copy_deployment_runtime(destination; copy_service=false)
-    for name in ("Project.toml", "PipeWireAODeployment.jl", "common.jl", "placement.jl",
-                 "deploy.jl", "deploy_cli.jl")
-        isfile(joinpath(installed_julia, name)) ||
-            fail("installed Julia deployment runtime is incomplete: $name")
-    end
+    validate_runtime(installed_julia)
     bin = joinpath(destination, "bin")
     mkpath(bin)
     wrapper = joinpath(bin, "pipewireao-rtc-deploy")
@@ -1019,8 +1056,8 @@ function install(options::NamedTuple)
         if !isfile(entrypoint)
             script = "#!/bin/sh\njulia_dir=\"\$(dirname \"\$0\")/../julia\"\n" *
                 "exec julia --startup-file=no --project=\"\$julia_dir\" -e " *
-                "'include(joinpath(ARGS[1], \"PipeWireAODeployment.jl\")); " *
-                "PipeWireAODeployment.$owner.main(ARGS[2:end])' \"\$julia_dir\" \"\$@\"\n"
+                "'using PipeWireAODeployment; " *
+                "exit(PipeWireAODeployment.$owner.main(ARGS))' -- \"\$@\"\n"
             write(entrypoint, script)
             chmod(entrypoint, 0o755)
         else
@@ -1028,9 +1065,7 @@ function install(options::NamedTuple)
                 fail("existing sealed $name entrypoint is not a Julia CLI")
         end
     end
-    template = joinpath(@__DIR__, "assets", "deployment", "pipewireao-rtc@.service.in")
-    isfile(template) || (template = joinpath(@__DIR__, "..", "pipewireao-rtc@.service.in"))
-    isfile(template) || (template = joinpath(@__DIR__, "..", "bin", "pipewireao-rtc@.service.in"))
+    template = joinpath(installed_julia, "assets", "deployment", "pipewireao-rtc@.service.in")
     bin_template = joinpath(bin, basename(template))
     haskey(source_spec["artifacts"], "bin/" * basename(template)) ||
         cp(template, bin_template; force=true)

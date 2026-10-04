@@ -1,8 +1,6 @@
 using Test, JSON3
 
-if !isdefined(Main, :PipeWireAODeployment)
-    include("PipeWireAODeployment.jl")
-end
+using PipeWireAODeployment
 const H = PipeWireAODeployment.HeartOwner
 
 const HEART_REQUIREMENTS = Dict("runtime_requirements" => [

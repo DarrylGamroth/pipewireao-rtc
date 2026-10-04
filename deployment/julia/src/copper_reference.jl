@@ -11,7 +11,7 @@ export validate_recipe, validate_base, stage_base, input_snapshot, check_product
        analysis_products, campaign, main
 
 const STAGES=("dark","training","qualification")
-const HELPER=joinpath(HILExport.ROOT,"hil","calibration_reference_analysis.jl")
+helper_path() =joinpath(HILExport.ScienceExport.resource_root(),"hil","calibration_reference_analysis.jl")
 
 function validate_recipe(value)
     expected=("version","dark_frames","training_frames","qualification_frames","seeds",
@@ -75,7 +75,7 @@ function input_snapshot(base,aoc)
                 "base_files"=>Acquisition.file_identity(base),
                 "aoc_files"=>Acquisition.file_identity(aoc),
                 "helpers"=>Dict(basename(path)=>sha256_file(path) for path in
-                    readdir(joinpath(HILExport.ROOT,"hil");join=true)
+                    readdir(joinpath(HILExport.ScienceExport.resource_root(),"hil");join=true)
                     if endswith(path,".jl") && !startswith(basename(path),"test_")))
 end
 
@@ -142,7 +142,7 @@ function stage_base(base,output,recipe,stage,background,aoc_source,prefix)
     target=joinpath(output,"hil","packages","AdaptiveOpticsCalibration")
     rm(target;recursive=true)
     HILExport.copy_package(aoc_source,target)
-    for helper in readdir(joinpath(HILExport.ROOT,"hil");join=true)
+    for helper in readdir(joinpath(HILExport.ScienceExport.resource_root(),"hil");join=true)
         endswith(helper,".jl") && !startswith(basename(helper),"test_") || continue
         cp(helper,joinpath(output,"hil",basename(helper));force=true)
     end
@@ -178,7 +178,7 @@ function campaign(arguments)
     orchestration=Acquisition.orchestration_sources()
     sources=copy(orchestration)
     merge!(sources,Dict(abspath(path)=>sha256_file(path) for path in
-        (HELPER,abspath(arguments.rtc_binary),abspath(arguments.calibration_binary),
+        (helper_path(),abspath(arguments.rtc_binary),abspath(arguments.calibration_binary),
          abspath(arguments.recipe))))
     mkpath(output)
     write_json(joinpath(output,"recipe.json"),recipe)
@@ -220,7 +220,7 @@ function campaign(arguments)
                 stage,output,evidence],evidence,"analysis",recipe["stage_timeout_seconds"])
             record["stages"][stage]["analysis_wall_ns"]=time_ns()-analysis_started
             new_products,report_sha=analysis_products(output,evidence,stage,recipe,
-                sources[HELPER])
+                sources[helper_path()])
             if stage=="qualification"
                 comparison=read_json(joinpath(evidence,"analysis.json"))["comparison"]
                 comparison["reference_sha256"]==products["measured-reference-pixels.f32le"] ||
@@ -250,6 +250,7 @@ function main(argv=ARGS)
         "calibration-binary","runtime"],defaults=(pipewire_prefix="/opt/pipewireao",julia="julia"))
     arguments.pipewire_prefix=="/opt/pipewireao" || throw(ArgumentError("only /opt/pipewireao supported"))
     println(campaign(arguments))
+    return 0
 end
 
 end # module

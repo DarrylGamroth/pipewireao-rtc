@@ -1,0 +1,50 @@
+"""Configuration export, installed deployment supervision and calibration orchestration.
+
+Scientific algorithms and frame execution remain in their owning packages.
+"""
+module PipeWireAODeployment
+
+VERSION >= v"1.12" || error("PipeWireAODeployment requires Julia 1.12 or newer; found $VERSION")
+
+"""Return this package's current location, including after precompiled relocation."""
+package_root() = pkgdir(@__MODULE__)
+
+"""Find required deployment resources in an installed SDK or source checkout."""
+function resource_root()
+    installed = joinpath(package_root(), "assets", "deployment")
+    source = dirname(package_root())
+    root = isdir(installed) ? installed : source
+    all(isdir(joinpath(root, name)) for name in ("hil", "templates")) &&
+        isfile(joinpath(root, "pipewireao-rtc@.service.in")) ||
+        throw(ArgumentError("deployment resources are incomplete: $root"))
+    return root
+end
+
+"""Map an operational source to a contained, stable evidence-copy path."""
+function source_relative_path(path::AbstractString)
+    absolute = abspath(path)
+    for (root, prefix) in ((resource_root(), ""), (package_root(), "julia"))
+        relative = relpath(absolute, root)
+        (relative == ".." || startswith(relative, ".." * string(Base.Filesystem.path_separator))) && continue
+        # In a checkout the package is under the resource root; retain julia/.
+        return isempty(prefix) ? relative : joinpath(prefix, relative)
+    end
+    throw(ArgumentError("source is outside deployment package and resources: $path"))
+end
+
+
+include("common.jl")
+include("placement.jl")
+include("science_export.jl")
+include("deploy.jl")
+include("hil_export.jl")
+include("calibration_export.jl")
+include("heart_configuration.jl")
+include("heart_export.jl")
+include("heart_owner.jl")
+include("calibration_campaign.jl")
+include("calibration_method.jl")
+include("copper_reference.jl")
+include("copper_quality.jl")
+
+end

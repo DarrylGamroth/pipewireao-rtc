@@ -158,23 +158,32 @@ end
 check_identity(root,identity) = file_identity(root)==identity || throw(ArgumentError("frozen package identity changed"))
 
 function orchestration_sources()
-    files=[path for path in readdir(@__DIR__;join=true)
-        if endswith(path,".jl") && !startswith(basename(path),"test_")]
-    append!(files,[joinpath(@__DIR__,name) for name in ("Project.toml","Manifest.toml")])
-    for directory in ("hil","templates")
-        root=joinpath(HILExport.ROOT,directory)
-        for (parent,_,names) in walkdir(root), name in names
-            startswith(name,"test_") || push!(files,joinpath(parent,name))
+    files = String[]
+    function collect_sources(root; excluded=Set{String}())
+        isdir(root) && !islink(root) || throw(ArgumentError("invalid orchestration directory: $root"))
+        for (parent, dirs, names) in walkdir(root)
+            filter!(name -> !(name in excluded) && !startswith(name, "test_"), dirs)
+            for name in dirs
+                islink(joinpath(parent, name)) && throw(ArgumentError("linked orchestration directory"))
+            end
+            for name in names
+                (name in excluded || startswith(name, "test_") || endswith(name, ".py")) && continue
+                push!(files, joinpath(parent, name))
+            end
         end
     end
-    assets=joinpath(@__DIR__,"assets")
-    if isdir(assets)
-        for (parent,_,names) in walkdir(assets), name in names
-            startswith(name,"test_") || push!(files,joinpath(parent,name))
-        end
+    package = HILExport.ScienceExport.package_root()
+    collect_sources(joinpath(package, "src"))
+    append!(files, [joinpath(package, name) for name in ("Project.toml", "Manifest.toml", "deploy_cli.jl")])
+    collect_sources(joinpath(package, "assets"); excluded=Set(["__pycache__", ".git"]))
+    resources = HILExport.ScienceExport.resource_root()
+    for name in ("hil", "templates")
+        collect_sources(joinpath(resources, name); excluded=Set(["__pycache__", ".git"]))
     end
-    push!(files,joinpath(@__DIR__,"..","pipewireao-rtc@.service.in"))
-    return Dict(abspath(path)=>sha256_file(regular(path)) for path in unique(files))
+    append!(files, [joinpath(resources, name) for name in readdir(resources)
+        if endswith(name, ".jl") && !startswith(name, "test_")])
+    push!(files, joinpath(resources, "pipewireao-rtc@.service.in"))
+    return Dict(abspath(path) => sha256_file(regular(path)) for path in unique(files))
 end
 
 function cursor(value)
@@ -358,8 +367,8 @@ function run_stage(package,output,runtime,recipe,stage;frames=nothing,batches=no
     stage_started=time_ns()
     deadline=Int128(stage_started)+Int128(recipe["stage_timeout_seconds"])*1_000_000_000
     mkpath(output)
-    command=[Base.julia_cmd().exec[1],"--startup-file=no","--project="*@__DIR__,
-             joinpath(@__DIR__,"deploy_cli.jl"),"run",
+    command=[Base.julia_cmd().exec[1],"--startup-file=no","--project="*HILExport.ScienceExport.package_root(),
+             joinpath(HILExport.ScienceExport.package_root(),"deploy_cli.jl"),"run",
              "--deployment",joinpath(package,"deployment.conf"),"--runtime",runtime,
              "--pipewire-prefix","/opt/pipewireao"]
     result=Dict{String,Any}("stage"=>stage,"run_argv"=>command,
@@ -640,14 +649,14 @@ function campaign(arguments)
             evidence=joinpath(output,stage*"-evidence")
             if stage=="dark"
                 checked_analysis([arguments.julia,"--startup-file=no","--project="*joinpath(package,"hil"),
-                    joinpath(HILExport.ROOT,"hil","calibration_campaign_analysis.jl"),"prepare",output,output],
+                    joinpath(HILExport.ScienceExport.resource_root(),"hil","calibration_campaign_analysis.jl"),"prepare",output,output],
                     output,"preparation",recipe["stage_timeout_seconds"])
             end
             record["stages"][stage]=run_stage(package,evidence,joinpath(arguments.runtime,stage),recipe,stage;frames)
             check_identity(package,package_identity)
             check_inputs()
             checked_analysis([arguments.julia,"--startup-file=no","--project="*joinpath(package,"hil"),
-                joinpath(HILExport.ROOT,"hil","calibration_campaign_analysis.jl"),stage,output,evidence],
+                joinpath(HILExport.ScienceExport.resource_root(),"hil","calibration_campaign_analysis.jl"),stage,output,evidence],
                 evidence,"analysis",recipe["stage_timeout_seconds"])
             check_identity(package,package_identity)
             check_inputs()
@@ -677,6 +686,7 @@ function main(argv=ARGS)
         "calibration-binary","runtime"],defaults=(pipewire_prefix="/opt/pipewireao",julia="julia"))
     arguments.pipewire_prefix=="/opt/pipewireao" || throw(ArgumentError("only /opt/pipewireao is supported"))
     println(campaign(arguments))
+    return 0
 end
 
 end # module

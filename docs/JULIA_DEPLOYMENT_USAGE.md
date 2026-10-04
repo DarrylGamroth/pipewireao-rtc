@@ -34,6 +34,32 @@ wrappers use `--pipewire-prefix`; the supported prefix is `/opt/pipewireao`.
 See the maintained Copper reference and quality usage documents for recipes
 and product contracts. Output and runtime directories must be new.
 
+## Package and resources
+
+The cold orchestration project is the named package `PipeWireAODeployment`
+(v0.1.0, Julia ≥ 1.12), loaded with `using PipeWireAODeployment`. Modules live in
+`deployment/julia/src`; the test workspace lives in `deployment/julia/test`.
+Run portable verification with:
+
+```sh
+julia --startup-file=no --project=deployment/julia -e 'using Pkg; Pkg.precompile(); Pkg.test()'
+```
+
+Source wrappers keep their existing command lines. The source checkout uses
+`deployment/hil`, `deployment/templates` and the service template as resources.
+Every exported SDK embeds these resources under `julia/assets/deployment`, along
+with its package project, lock, source, CLI and test workspace closure. Resource
+paths are resolved from the loaded package at runtime, including after SDK
+relocation and precompilation. Operational provenance inventories exclude test
+and Python development files.
+
+Installation verifies the sealed incoming artifacts, package identity/version
+and resource completeness before copying an SDK. Generated service units use
+that SDK's embedded template. Installation writes the unit but does not enable
+or start it. Keep legacy include-loaded SDKs with their original launcher;
+export a new SDK to adopt this package format. The new installer rejects the old
+format instead of replacing sealed code.
+
 ## Installed entrypoints
 
 Install a sealed exported package with `deployment/deploy.jl install`, supplying

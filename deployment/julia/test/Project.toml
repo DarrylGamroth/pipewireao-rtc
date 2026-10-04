@@ -1,0 +1,19 @@
+[deps]
+PipeWireAODeployment = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
+Sockets = "6462fe0b-24de-5631-8697-dd941f90decc"
+SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
+TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
+
+[sources]
+PipeWireAODeployment = {path = ".."}
+
+[compat]
+SHA = "0.7, 1"
+Sockets = "1"
+TOML = "1"
+Test = "1"
+PipeWireAODeployment = "0.1"
+JSON3 = "1"
+julia = "1.12"

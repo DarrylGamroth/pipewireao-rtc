@@ -7,7 +7,6 @@ using ..Common
 using ..Deployment
 using ..ScienceExport
 
-const ROOT = ScienceExport.resource_root()
 const PACKAGE_UUIDS = Dict(
     "AdaptiveOpticsCalibration" => "3c8b5851-926e-4ebb-af30-f8544b98d45f",
     "AdaptiveOpticsSim" => "002fb5eb-ad68-44a0-adbe-b299bfc2febc",
@@ -366,7 +365,7 @@ function hil_core(base::AbstractDict)
 end
 
 function environment(package::AbstractString,plant::AbstractString,backend::AbstractString)
-    project = TOML.parsefile(joinpath(ROOT,"hil/Project.toml"))
+    project = TOML.parsefile(joinpath(ScienceExport.resource_root(),"hil/Project.toml"))
     dependencies = copy(project["deps"])
     delete!(dependencies,"REVOLTClassicSim"); delete!(dependencies,"REVOLTCopperSim")
     for name in ("AdaptiveOpticsCalibration","AdaptiveOpticsSim","AdaptiveOpticsSimPipeWireHIL",plant)
@@ -770,9 +769,9 @@ function export_package(args)
             index === nothing || (owner["argv"][index+1] = session["rate"])
         end
         mkpath(joinpath(package,"hil"))
-        for name in readdir(joinpath(ROOT,"hil"))
+        for name in readdir(joinpath(ScienceExport.resource_root(),"hil"))
             endswith(name,".jl") && !startswith(name,"test_") || continue
-            ScienceExport.copy_file(joinpath(ROOT,"hil",name),joinpath(package,"hil",name))
+            ScienceExport.copy_file(joinpath(ScienceExport.resource_root(),"hil",name),joinpath(package,"hil",name))
         end
         for (name,source) in (("AdaptiveOpticsCalibration",args.aoc_root),("AdaptiveOpticsSim",args.aos_root),
                               ("AdaptiveOpticsSimPipeWireHIL",args.adapter_root),("PipeWireAO",args.pipewireao_jl_root),
@@ -817,7 +816,7 @@ function export_package(args)
         core_path = joinpath(package,specification["core"])
         ScienceExport.write_spa_config(core_path,hil_core(Deployment.decode(core_path,args.pipewire_prefix)))
         specification["client"]["simulator"] = "client-simulator.conf.in"
-        ScienceExport.copy_file(joinpath(ROOT,"templates/client-simulator.conf.in"),joinpath(package,"client-simulator.conf.in"))
+        ScienceExport.copy_file(joinpath(ScienceExport.resource_root(),"templates/client-simulator.conf.in"),joinpath(package,"client-simulator.conf.in"))
         provenance["hil"] = Dict{String,Any}("backend"=>args.backend,"wall_rate_hz"=>args.rate_hz,
             "model_period_ns"=>round(Int,1_000_000_000/args.rate_hz),"exposure_ns"=>exposure,
             "frames"=>args.frames,"frame_encoding"=>"UInt16 ADC codes, row-major","command_unit"=>"micrometre OPD",
