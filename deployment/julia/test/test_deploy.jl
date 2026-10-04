@@ -19,6 +19,7 @@ function deployment_fixture(directory)
 end
 
 @testset "Julia deployment portable admission and protocol" begin
+    @test D.INSTALLED_ENTRYPOINTS["export_heart_correction"] == "HeartCorrectionExport"
     mktempdir() do directory
         spec = deployment_fixture(directory)
         path = joinpath(directory, "deployment.conf")
@@ -54,6 +55,23 @@ end
         @test isfile(joinpath(destination, "julia/Project.toml"))
         @test isfile(joinpath(destination, "julia/assets/deployment/hil/heart_owner.jl"))
         @test isfile(joinpath(destination, "julia/assets/deployment/templates/client-simulator.conf.in"))
+        for name in ("heart_calibration_export.jl", "heart_classic_calibration.jl",
+                "heart_classic_transfer.jl", "heart_correction_export.jl")
+            @test read(joinpath(destination, "julia/src", name)) ==
+                read(joinpath(PipeWireAODeployment.package_root(), "src", name))
+        end
+        for name in ("heart_classic_calibration_evidence.jl", "heart_classic_calibration_verify.jl",
+                "heart_classic_transfer_score.jl", "heart_correction_admission.jl",
+                "heart_correction_analysis.jl", "heart_correction_owner.jl",
+                "heart_correction_phases.jl", "heart_correction_profiles.jl",
+                "heart_correction_telemetry.jl")
+            @test read(joinpath(destination, "julia/assets/deployment/hil", name)) ==
+                read(joinpath(PipeWireAODeployment.resource_root(), "hil", name))
+        end
+        for name in ("export_heart_calibration.jl", "export_heart_correction.jl")
+            @test read(joinpath(destination, "julia", name)) ==
+                read(joinpath(PipeWireAODeployment.package_root(), name))
+        end
         @test read(joinpath(destination, "julia/assets/deployment/pipewireao-rtc@.service.in")) ==
             read(joinpath(PipeWireAODeployment.resource_root(), "pipewireao-rtc@.service.in"))
         @test read(joinpath(destination, "pipewireao-rtc@.service.in"), String) == "sealed root service\n"
@@ -123,7 +141,8 @@ end
         @test read(joinpath(destination, "julia/deploy_cli.jl")) ==
             read(joinpath(source, "julia/deploy_cli.jl"))
     end
-    for missing in ("hil/Project.toml", "templates/core.conf.in", "pipewireao-rtc@.service.in")
+    for missing in ("hil/Project.toml", "templates/core.conf.in", "pipewireao-rtc@.service.in",
+            "hil/heart_classic_transfer_score.jl", "hil/heart_correction_analysis.jl")
         mktempdir() do directory
             source = joinpath(directory, "incomplete-SDK")
             mkdir(source)

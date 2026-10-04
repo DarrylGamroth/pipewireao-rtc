@@ -3,6 +3,7 @@ module HeartConfiguration
 using YAML
 using OrderedCollections: OrderedDict
 import ..Common
+import ..HILExport
 
 export load_config, serialize_config, prepare_heart_configuration
 
@@ -342,10 +343,140 @@ required_sections(::Val{:classic}) =
 required_sections(::Val{:copper}) =
     ("ALIASES","ADDRS","CB","GEN","HO","LO","DM","TFC","SUM","CLWC")
 
-function prepare_heart_configuration(package,base,source,calibration_root,rate)
+# Operational Classic inputs bind the maintained measured artifacts to the
+# actual selected graph. Native offsets must not fall back to historical files.
+function calibration_inputs(base,provenance;pipewire_prefix="/opt/pipewireao")
+    instrument=get(provenance,"profile",nothing)
+    instrument in ("classic","copper") || throw(ArgumentError("unsupported HEART instrument"))
+    hil=provenance["hil"]
+    simulated=haskey(hil,"simulated_calibration")
+    operational=haskey(hil,"operational_calibration")
+    simulated && operational && throw(ArgumentError("conflicting HEART calibration modes"))
+    if simulated
+        generated=hil["simulated_calibration"]["artifacts"]
+        return (;mode="simulated",artifacts=generated,
+                background=joinpath(base,"hil",generated["background"]["path"]),
+                reference=instrument=="classic" ? joinpath(base,"hil",generated["reference_slopes"]["path"]) : nothing,
+                active=nothing)
+    end
+    instrument=="classic" && operational || throw(ArgumentError("HEART requires explicit simulated offsets or operational Classic offsets"))
+    record=hil["operational_calibration"]
+    get(record,"mode",nothing)=="operational-measured-offsets" &&
+        get(record,"source",nothing) isa AbstractString && !isempty(record["source"]) ||
+        throw(ArgumentError("unsupported operational Classic source"))
+    get(record,"reference_units",nothing)=="micrometre OPD" &&
+        get(record,"reference_command",nothing) isa AbstractVector &&
+        length(record["reference_command"])==277 &&
+        all(x->x isa Real && !(x isa Bool) && isfinite(x) && iszero(x),record["reference_command"]) ||
+        throw(ArgumentError("operational Classic requires the declared zero physical reference"))
+    specification=Common.read_json(joinpath(base,"deployment.conf"))
+    snapshot,graph,bindings=HILExport.classic_snapshot(base,provenance,pipewire_prefix)
+    HILExport.validate_startup_bindings(base,specification,provenance,graph,bindings)
+    get(record,"target_estimator",nothing)==snapshot || throw(ArgumentError("operational Classic estimator differs"))
+    for (key,path) in (("target_graph_sha256","graphs/graph.conf.in"),("target_model_sha256","hil/plant.toml"))
+        get(record,key,nothing)==Common.sha256_file(joinpath(base,path)) ||
+            throw(ArgumentError("operational Classic target source differs: $key"))
+    end
+    paths=Dict{String,String}()
+    for (name,filename,element,shape,units) in (
+            ("background","measured-background.f32le","F32_LE",[352,352],"ADC"),
+            ("reference-slopes","measured-reference-slopes.f32le","F32_LE",[188,2],"detector coordinate"),
+            ("active","measured-active.u8","Bool",[188],"eligible ROI"))
+        artifact=record["artifacts"][filename];target=record["target_bindings"][name];binding=bindings[name]
+        relative="calibration/"*binding["file"]
+        get(artifact,"shape",nothing)==shape && get(artifact,"element_type",nothing)==element &&
+            get(artifact,"layout",nothing)=="ROW_MAJOR" && get(artifact,"units",nothing)==units ||
+            throw(ArgumentError("operational Classic artifact descriptor differs: $name"))
+        all(get(target,key,nothing)==binding[key] for key in ("name","endpoint","element_type","shape","file","schema")) &&
+            get(target,"path",nothing)==relative || throw(ArgumentError("operational Classic target binding differs: $name"))
+        sha=get(artifact,"sha256",nothing)
+        sha isa AbstractString && occursin(r"^[0-9a-f]{64}$",sha) &&
+            get(target,"sha256",nothing)==sha && get(binding,"sha256",nothing)==sha &&
+            get(specification["artifacts"],relative,nothing)==sha ||
+            throw(ArgumentError("operational Classic input identities differ: $name"))
+        path=HILExport.campaign_file(base,relative,4prod(shape))
+        Common.sha256_file(path)==sha || throw(ArgumentError("operational Classic payload SHA differs: $name"))
+        payload=HILExport.finite_payload(path,element,shape)
+        if name=="active"
+            # FGN's static graph mask is independently bound by classic_snapshot.
+            # A native zero mask state can reactivate; permanent false is -1.
+            wfs=only(filter(n->n["label"]=="shack-hartmann-image-f32",graph["filter.graph"]["nodes"]))
+            configured=get(wfs["config"],"active",nothing)
+            configured===nothing || Bool.(payload)==configured || throw(ArgumentError("operational Classic eligibility differs"))
+        end
+        paths[name]=path
+    end
+    return (;mode="operational",artifacts=record["artifacts"],background=paths["background"],
+            reference=paths["reference-slopes"],active=paths["active"])
+end
+
+# Read the existing native floating calibration without adding a slope scale.
+function native_float_values(path,axes)
+    length(axes) in (1,2) && all(x->x isa Integer && !(x isa Bool) && x>0,axes) &&
+        prod(Int128.(axes))<=1_048_576 || throw(ArgumentError("native FITS axes exceed bound"))
+    filesize(path)<=4*1024*1024 || throw(ArgumentError("native floating calibration exceeds bound"))
+    bytes=read(path);cards=Dict{String,String}();offset=0;ended=false
+    while offset+80<=length(bytes)
+        card=String(bytes[offset+1:offset+80]);offset+=80;key=strip(card[1:8])
+        if key=="END";ended=true;break;end
+        if card[9:10]=="= "
+            haskey(cards,key) && throw(ArgumentError("duplicate native FITS card"))
+            cards[key]=strip(first(split(card[11:end],'/';limit=2)))
+        end
+    end
+    ended && get(cards,"SIMPLE",nothing)=="T" && get(cards,"BSCALE","1") in ("1","1.0") &&
+        get(cards,"BZERO","0") in ("0","0.0") || throw(ArgumentError("native calibration must be unscaled primary FITS"))
+    parse(Int,cards["NAXIS"])==length(axes) &&
+        [parse(Int,cards["NAXIS$i"]) for i in eachindex(axes)]==axes || throw(ArgumentError("native calibration axes differ"))
+    bits=parse(Int,cards["BITPIX"]);bits in (-32,-64) || throw(ArgumentError("native calibration must be floating FITS"))
+    start=cld(offset,2880)*2880;extent=prod(axes)*(abs(bits)÷8)
+    start+extent<=length(bytes) || throw(ArgumentError("truncated native FITS calibration"))
+    payload=bytes[start+1:start+extent]
+    values=bits==-32 ? reinterpret(Float32,ntoh.(reinterpret(UInt32,payload))) :
+        Float32.(reinterpret(Float64,ntoh.(reinterpret(UInt64,payload))))
+    all(isfinite,values) || throw(ArgumentError("nonfinite native calibration"))
+    return values
+end
+
+function validate_native_measurements(base,provenance,sections,root,pipewire_prefix)
+    snapshot,_,bindings=HILExport.classic_snapshot(base,provenance,pipewire_prefix)
+    resolve(key)=inside_root(realpath(joinpath(root,one(sections["HO"],key,"WFS_NUM")["FILE"])),root)
+    coordinates=HILExport.finite_payload(joinpath(base,"calibration",bindings["coordinates"]["file"]),"F32_LE",[484,2])
+    xy=reinterpret(Float32,coordinates)
+    coefficients=native_float_values(resolve("GRAD_COEFF_INITIAL_FILE"),[188*484,2])
+    for component in 1:2,roi in 0:187,pixel in 1:484
+        index=(component-1)*188*484+roi*484+pixel
+        reinterpret(UInt32,coefficients[index])==reinterpret(UInt32,xy[2pixel-2+component]) ||
+            throw(ArgumentError("native Classic coordinate weights/order/scale differ"))
+    end
+    thresholdbytes=HILExport.finite_payload(joinpath(base,"calibration",bindings["thresholds"]["file"]),"F32_LE",[188,2])
+    thresholds=reinterpret(Float32,thresholdbytes)
+    for (key,axes,component) in (("SUBAP_THRES_PIXEL",[188],1),("SUBAP_THRES_FLUX",[1,188],2))
+        values=native_float_values(resolve(key),axes)
+        all(reinterpret(UInt32,values[i])==reinterpret(UInt32,thresholds[2i-2+component]) for i in 1:188) ||
+            throw(ArgumentError("native Classic threshold differs"))
+    end
+    path=resolve("SHWFS_SUBAP_LOCATION_FILE")
+    filesize(path)<=65536 || throw(ArgumentError("native Classic ROI file exceeds bound"))
+    lines=filter(!isempty,strip.(readlines(path)))
+    split(first(lines))==["188","2","1","uint"] || throw(ArgumentError("native Classic ROI header differs"))
+    origins=parse.(Int,filter(!isempty,strip.(split(join(lines[2:end],','),','))))
+    length(origins)==376 && [origins[2i-1:2i] for i in 1:188]==snapshot["subaperture_origins"] ||
+        throw(ArgumentError("native Classic ROI order differs"))
+    return nothing
+end
+
+function write_disabled_mask(source,destination)
+    mask=HILExport.finite_payload(source,"Bool",[188])
+    # hrtSubaps_state_disabled=-1; inactive=0 may become active on valid flux.
+    write(destination,"188 1 1 int\n"*join((value==1 ? "1" : "-1" for value in mask),'\n')*"\n")
+end
+
+function prepare_heart_configuration(package,base,source,calibration_root,rate;pipewire_prefix="/opt/pipewireao")
     rate isa Integer && !(rate isa Bool) && rate>0 || throw(ArgumentError("HEART rate must be positive integer"))
     root=realpath(calibration_root)
     provenance=Common.read_json(joinpath(base,"provenance.json"))
+    selected=calibration_inputs(base,provenance;pipewire_prefix)
     instrument=provenance["profile"]
     instrument in ("classic","copper") || throw(ArgumentError("unsupported HEART instrument"))
     text=instrument=="copper" ? normalize_aliases(yaml_text(source)) : yaml_text(source)
@@ -356,6 +487,7 @@ function prepare_heart_configuration(package,base,source,calibration_root,rate)
     instrument=="classic" && validate_classic_sections(sections)
     instrument=="classic" && classic_overlay!(sections,rate)
     instrument=="classic" && validate_classic_calibrations(sections,root)
+    selected.mode=="operational" && validate_native_measurements(base,provenance,sections,root,pipewire_prefix)
     ho,dm=sections["HO"],sections["DM"]
     shape=instrument=="classic" ? [352,352] : [64,64]
     detector=one(ho,"WFS_SIZE","WFS_NUM")
@@ -363,14 +495,18 @@ function prepare_heart_configuration(package,base,source,calibration_root,rate)
         throw(ArgumentError("HEART detector differs from simulated profile"))
     require_value(dm,"PDM_COUNT",1); require_value(dm,"PDM_SIZES",[Dict("PDM_NUM"=>0,"SIZE"=>277)])
     calibration=joinpath(package,"heart","calibration"); mkpath(calibration)
-    generated=provenance["hil"]["simulated_calibration"]["artifacts"]
-    write_offset_fits(joinpath(base,"hil",generated["background"]["path"]),joinpath(calibration,"simulated-background.fits"),shape)
+    generated=selected.artifacts
+    write_offset_fits(selected.background,joinpath(calibration,"simulated-background.fits"),shape)
     ho["BIAS_FILE"]=[OrderedDict("WFS_NUM"=>0,"FILE"=>"./config/simulated-background.fits")]
     for key in ("DARK_FILE","SKY_FILE","FLAT_FILE")
         pop!(ho,key,nothing)
     end
     if instrument=="classic"
-        write_offset_fits(joinpath(base,"hil",generated["reference_slopes"]["path"]),joinpath(calibration,"simulated-references.fits"),[188,2])
+        write_offset_fits(selected.reference,joinpath(calibration,"simulated-references.fits"),[188,2])
+        if selected.mode=="operational"
+            write_disabled_mask(selected.active,joinpath(calibration,"operational-disabled-subapertures.csv"))
+            ho["SUBAP_MASK_INITIAL_FILE"]=[OrderedDict("WFS_NUM"=>0,"FILE"=>"./config/operational-disabled-subapertures.csv")]
+        end
     end
     ho["NCPA_GRADS_FILE"]=[OrderedDict("WFS_NUM"=>0,"FILE"=>(instrument=="classic" ? "./config/simulated-references.fits" : ""))]
     dm["PDM_SYS_FLAT_FILE"]=[OrderedDict("PDM_NUM"=>0,"FILE"=>"")]
@@ -393,11 +529,16 @@ function prepare_heart_configuration(package,base,source,calibration_root,rate)
     end
     requirements=Dict("runtime_requirements"=>runtime_requirements(instrument),"calibrations"=>retained)
     Common.write_json(joinpath(package,"heart","requirements.json"),requirements)
-    return Dict("source_configuration"=>abspath(source),"source_sha256"=>Common.sha256_file(source),
+    result=Dict("source_configuration"=>abspath(source),"source_sha256"=>Common.sha256_file(source),
         "retained_calibration"=>retained,"generated_offsets"=>generated,
         "command_convention"=>"matched numerical command interpreted as OPD; physical calibration unqualified",
         "static_offset"=>"zero simulated figure; empty native flat/offset files",
         "detector_roi"=>Dict("row"=>detector["FIRSTROW"],"column"=>detector["FIRSTCOL"]))
+    if selected.mode=="operational"
+        result["calibration_mode"]=selected.mode
+        result["mask_representation"]="accepted Bool true→native active1; false→permanently disabled−1; signed TINT"
+    end
+    return result
 end
 
 retain_files!(value,calibration,root,retained)=nothing
@@ -408,7 +549,7 @@ function retain_files!(value::AbstractDict,calibration,root,retained)
     for (key,child) in value
         if (key=="FILE" || endswith(key,"_FILE") || endswith(key,"FILEPATH")) && child isa AbstractString && !isempty(child)
             target=joinpath(calibration,basename(child))
-            if basename(target) in ("simulated-background.fits","simulated-references.fits")
+            if basename(target) in ("simulated-background.fits","simulated-references.fits","operational-disabled-subapertures.csv")
                 isfile(target) || throw(ArgumentError("missing generated HEART offset"))
             else
                 original=inside_root(realpath(isabspath(child) ? child : joinpath(root,child)),root)

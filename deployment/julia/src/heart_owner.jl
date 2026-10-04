@@ -174,12 +174,13 @@ mutable struct Owner
     last_reply::Any
     stopping::Bool
     status_path::String
+    ingress_environment::Union{Nothing,String}
 end
 
 function Owner(options::NamedTuple)
     Owner(options, Common.sha256_file(options.config), read_requirements(options.requirements),
         read_placement(get(options, :placement, nothing)), nothing, nothing, 0, 0,
-        nothing, nothing, false, joinpath(options.runtime, "heart-owner-status.json"))
+        nothing, nothing, false, joinpath(options.runtime, "heart-owner-status.json"), nothing)
 end
 
 function report(owner::Owner, error_message=nothing)
@@ -203,6 +204,17 @@ function report(owner::Owner, error_message=nothing)
         "source_config" => owner.options.config,
         "source_config_sha256" => owner.source_config_sha256,
         "rendered_config" => joinpath(owner.options.runtime, "config/heart.yaml"),
+        "native_ingress" => Dict("mode"=>get(owner.options, :native_ingress_mode, "streaming"),
+            "environment_key"=>"HRT_DEFER_WFS_INGRESS", "observed_environment"=>owner.ingress_environment,
+            "qualification"=>get(owner.options, :native_ingress_mode, "streaming") == "deferred" ?
+                "comparison fixture; completion calibration only; ordinary streaming and cadence unqualified" : "ordinary streaming"),
+        "native_diagnostics" => Dict("wfs_proc_debug"=>get(owner.options, :native_wfs_proc_debug, false),
+            "stdio_wrapper"=>get(owner.options, :native_debug_stdio_wrapper, nothing),
+            "stdio_wrapper_sha256"=>get(owner.options, :native_debug_stdio_wrapper, nothing) === nothing ? nothing :
+                Common.sha256_file(owner.options.native_debug_stdio_wrapper),
+            "child_argv"=>hasproperty(owner.options, :executable) ? child_arguments(owner.options) : nothing,
+            "qualification"=>get(owner.options, :native_wfs_proc_debug, false) ?
+                "diagnostic only; cadence and scientific acceptance excluded" : "diagnostics disabled"),
         "state" => error_message === nothing ? "paused" : "failed", "sequence" => 0,
         "completed" => false, "error" => error_message,
         "flag_verification" => "command SUCCESS acknowledgements only; no effective readback"))
@@ -230,16 +242,46 @@ function command(owner::Owner, name; flag=nothing, required=true, deadline=nothi
     success
 end
 
+function ingress_setting(mode)
+    mode in ("streaming", "deferred") || throw(ArgumentError("native ingress mode must be streaming or deferred"))
+    return mode == "deferred" ? "1" : "0"
+end
+
+function ingress_environment(bytes::AbstractString)
+    ncodeunits(bytes) <= 1024 * 1024 || throw(ArgumentError("native child environment exceeds its bound"))
+    entries = filter(entry -> startswith(entry, "HRT_DEFER_WFS_INGRESS="), split(bytes, '\0'))
+    length(entries) == 1 || throw(ArgumentError("native child ingress environment is missing or repeated"))
+    value = split(only(entries), '='; limit=2)[2]
+    value in ("0", "1") || throw(ArgumentError("invalid native child ingress environment"))
+    return String(value)
+end
+
+function child_environment(options, inherited=ENV)
+    env = Dict{String,String}(inherited)
+    env["HRT_CPU_MACHINE_FILE"] = joinpath(options.runtime, "config/host.cpu")
+    env["HRT_THREAD_MAP_FILE"] = joinpath(options.runtime, "config/host.threads")
+    env["HRT_DEFER_WFS_INGRESS"] = ingress_setting(get(options, :native_ingress_mode, "streaming"))
+    return env
+end
+
+function child_arguments(options)
+    argv = [options.executable, "-shm", "-config", joinpath(options.runtime, "config/heart.yaml")]
+    if get(options, :native_wfs_proc_debug, false)
+        append!(argv, ["-moduleDebug", "hrtWfsProcBlock_debugLevel", "-moduleDebugLevel", "4"])
+    end
+    wrapper = get(options, :native_debug_stdio_wrapper, nothing)
+    wrapper === nothing || prepend!(argv, [wrapper, "-oL", "-eL"])
+    return argv
+end
+
 function start(owner::Owner; deadline=nothing)
     remaining_timeout(deadline, START_TIMEOUT)
     guard_port()
     owner.generation += 1
     owner.child_log = open(joinpath(owner.options.runtime, "heart-$(owner.generation).log"), "a")
-    env = Dict{String,String}(ENV)
-    env["HRT_CPU_MACHINE_FILE"] = joinpath(owner.options.runtime, "config/host.cpu")
-    env["HRT_THREAD_MAP_FILE"] = joinpath(owner.options.runtime, "config/host.threads")
-    child_cmd = Cmd(Cmd([owner.options.executable, "-shm", "-config",
-        joinpath(owner.options.runtime, "config/heart.yaml")]); dir=owner.options.runtime)
+    env = child_environment(owner.options)
+    owner.ingress_environment = nothing
+    child_cmd = Cmd(Cmd(child_arguments(owner.options)); dir=owner.options.runtime)
     owner.child = Base.run(pipeline(setenv(child_cmd, env); stdin=devnull,
         stdout=owner.child_log, stderr=owner.child_log); wait=false)
     listener_deadline = monotonic() + remaining_timeout(deadline, START_TIMEOUT)
@@ -249,6 +291,13 @@ function start(owner::Owner; deadline=nothing)
         monotonic() < listener_deadline || error("HEART command listener timed out")
         sleep(POLL_SECONDS)
     end
+    if get(owner.options, :native_debug_stdio_wrapper, nothing) !== nothing
+        readlink("/proc/$(getpid(owner.child))/exe") == realpath(owner.options.executable) ||
+            error("supervised HEART child has not execed the declared native executable")
+    end
+    observed = ingress_environment(open(io -> String(read(io, 1024 * 1024 + 1)), "/proc/$(getpid(owner.child))/environ"))
+    observed == env["HRT_DEFER_WFS_INGRESS"] || error("native child ingress environment differs from selected mode")
+    owner.ingress_environment = observed
     command(owner, "INIT"; deadline)
     command(owner, "RUN"; deadline)
     for flag in owner.flags
@@ -387,12 +436,24 @@ function arguments(argv=ARGS)
         "connect-request", "connect-reply", "quit-request", "control-request", "control-reply",
         "cpu-map", "thread-map"]
     raw = Common.cli_arguments(argv; required=names,
-        allowed=["package", "calibration-root", "placement"])
-    option_values = Dict{Symbol,Any}(name => abspath(value) for (name, value) in pairs(raw))
+        allowed=["package", "calibration-root", "placement", "native-wfs-proc-debug", "native-debug-stdio-wrapper", "native-ingress-mode"])
+    ingress_mode = get(raw, :native_ingress_mode, "streaming")
+    ingress_setting(ingress_mode)
+    debug_option = get(raw, :native_wfs_proc_debug, "false")
+    debug_option in ("true", "false") || throw(ArgumentError("native WFS processing debug must be true or false"))
+    wrapper = get(raw, :native_debug_stdio_wrapper, nothing)
+    if wrapper !== nothing
+        debug_option == "true" || throw(ArgumentError("native stdio wrapper requires explicit diagnostic mode"))
+        isfile(wrapper) && stat(wrapper).mode & 0o111 != 0 || throw(ArgumentError("native diagnostic stdio wrapper is unavailable"))
+        basename(wrapper) == "stdbuf" || throw(ArgumentError("native diagnostic stdio wrapper must be stdbuf"))
+        wrapper = realpath(wrapper)
+    end
+    option_values = Dict{Symbol,Any}(name => abspath(value) for (name, value) in pairs(raw)
+        if name !== :native_wfs_proc_debug && name !== :native_debug_stdio_wrapper && name !== :native_ingress_mode)
     if !haskey(option_values, :package)
         option_values[:package] = dirname(dirname(realpath(option_values[:config])))
     end
-    options = (; option_values...)
+    options = (; option_values..., native_ingress_mode=ingress_mode, native_wfs_proc_debug=debug_option == "true", native_debug_stdio_wrapper=wrapper)
     for name in (:prepared_event, :connect_request, :connect_reply,
         :quit_request, :control_request, :control_reply)
         islink(getproperty(options, name)) &&

@@ -99,6 +99,31 @@ function validate_recipe(value)
     return result
 end
 
+const SIMULATOR_BACKENDS=("cpu","cuda","amdgpu")
+
+# Validate the selected source without loading any optional simulator backend.
+# Callers retain CPU as the default and opt into additional backends explicitly.
+function validate_simulator_backend(base,specification,provenance;allowed_backends=("cpu",))
+    backend=get(get(provenance,"hil",Dict()),"backend",nothing)
+    backend in SIMULATOR_BACKENDS && backend in allowed_backends ||
+        throw(ArgumentError("calibration requires an explicitly admitted simulator backend"))
+    sources=filter(owner->owner["role"]==specification["source-owner"],specification["owners"])
+    length(sources)==1 || throw(ArgumentError("calibration requires one selected simulator source owner"))
+    argv=only(sources)["argv"]
+    selectors=findall(==("--backend"),argv)
+    length(selectors)==1 && only(selectors)<length(argv) &&
+        !any(value->startswith(value,"--backend="),argv) && argv[only(selectors)+1]==backend ||
+        throw(ArgumentError("source owner backend must match declared simulator backend"))
+    if backend!="cpu"
+        package,uuid=backend=="cuda" ? ("CUDA","052768ef-5323-5732-b1bb-66c8b64840ba") :
+            ("AMDGPU","21141c5a-9bdb-4563-92ae-f87d6854732e")
+        project=TOML.parsefile(joinpath(base,"hil","Project.toml"))
+        get(get(project,"deps",Dict()),package,nothing)==uuid ||
+            throw(ArgumentError("selected $backend simulator requires its declared $package dependency"))
+    end
+    return backend
+end
+
 function validate_detector_rail(detector,recipe)
     bits = positive_integer(detector["bits"],"detector bits",16)
     (1 << bits)-1 == recipe["adc_upper_rail"] || throw(ArgumentError("declared ADC rail differs from deployed detector"))
@@ -348,7 +373,88 @@ function stage_remaining(deadline,limit)
     return min(remaining,limit)
 end
 
-function run_stage(package,output,runtime,recipe,stage;frames=nothing,batches=nothing)
+const INTERACTION_RESULT_MAX_OUTPUT_BYTES=512*1024*1024
+
+function interaction_result_output_limit_bytes(probe_count,measurements,frames_per_probe)
+    probe_count=Int(positive_integer(probe_count,"interaction probe count",typemax(Int)))
+    measurements=Int(positive_integer(measurements,"interaction measurements",typemax(Int)))
+    frames_per_probe=Int(positive_integer(frames_per_probe,"interaction frames per probe",64))
+    values_per_number=32
+    bytes_per_exposure=512
+    bytes_per_probe=4096
+    fixed_bytes=64*1024
+    total=try
+        value_bytes=Base.checked_mul(Base.checked_mul(probe_count,measurements),values_per_number)
+        exposure_bytes=Base.checked_mul(Base.checked_mul(probe_count,frames_per_probe),bytes_per_exposure)
+        Base.checked_add(fixed_bytes,Base.checked_add(
+            Base.checked_mul(probe_count,bytes_per_probe),Base.checked_add(value_bytes,exposure_bytes)))
+    catch error
+        error isa OverflowError || rethrow()
+        throw(ArgumentError("interaction result output bound overflows supported arithmetic"))
+    end
+    total<=INTERACTION_RESULT_MAX_OUTPUT_BYTES || throw(ArgumentError(
+        "interaction result output bound exceeds 512 MiB"))
+    return total
+end
+
+function interaction_result_output_limit_bytes(plan_path::AbstractString)
+    plan=read_json(plan_path;maximum=16*1024*1024)
+    isint(get(plan,"version",nothing)) && plan["version"]==1 &&
+        positive_integer(get(plan,"run",nothing),"interaction plan run",typemax(UInt64))>0 ||
+        throw(ArgumentError("invalid interaction plan identity"))
+    probes=get(plan,"probes",nothing)
+    probes isa AbstractVector && !isempty(probes) || throw(ArgumentError("interaction plan has no probes"))
+    all(probe->probe isa AbstractVector && length(probe)==277 && all(number,probe),probes) ||
+        throw(ArgumentError("interaction plan probes must be finite 277-coordinate figures"))
+    measurements=positive_integer(get(plan,"measurements",nothing),"interaction measurements",typemax(Int))
+    frames=positive_integer(get(plan,"frames_per_probe",nothing),"interaction frames per probe",64)
+    return interaction_result_output_limit_bytes(length(probes),Int(measurements),Int(frames))
+end
+
+function completed_owner_report(path,sequence;timeout)
+    isfinite(timeout) && timeout>0 || throw(ArgumentError("invalid owner report timeout"))
+    deadline=time_ns()+round(Int,timeout*1e9)
+    while time_ns()<deadline
+        if isfile(path)
+            report=read_json(path)
+            if get(report,"state",nothing)=="paused" && get(report,"sequence",nothing)==sequence
+                get(report,"ownership_held",nothing)===false &&
+                    get(report,"restoration_confirmed",nothing)===true &&
+                    get(report,"failure",nothing)===nothing ||
+                    throw(ArgumentError("completed calibration owner remains held or failed"))
+                return report
+            end
+        end
+        sleep(0.01)
+    end
+    throw(ArgumentError("timed out waiting for completed calibration owner report"))
+end
+
+function paused_source_cursor(package,instance)
+    specification=read_json(joinpath(package,"deployment.conf"))
+    source_owner=only(filter(item->item["role"]==specification["source-owner"],
+        specification["owners"]))
+    # state.json is a lifecycle snapshot; the operation ACK is the current
+    # source cursor and can advance without rewriting that snapshot.
+    paused=read_json(joinpath(instance,source_owner["control-reply"]))
+    paused["ok"]===true && paused["operation"]=="pause" && paused["state"]=="paused" &&
+        isint(paused["sequence"]) && paused["sequence"]>=0 ||
+        throw(ArgumentError("missing current source pause acknowledgement"))
+    return paused["sequence"]
+end
+
+function stage_command(package,runtime;owner_preparation_timeout_seconds=90)
+    positive_integer(owner_preparation_timeout_seconds,"owner preparation timeout seconds",3600)
+    return [Base.julia_cmd().exec[1],"--startup-file=no","--project="*HILExport.ScienceExport.package_root(),
+            joinpath(HILExport.ScienceExport.package_root(),"deploy_cli.jl"),"run",
+            "--deployment",joinpath(package,"deployment.conf"),"--runtime",runtime,
+            "--pipewire-prefix","/opt/pipewireao",
+            "--owner-preparation-timeout-seconds",string(owner_preparation_timeout_seconds)]
+end
+
+function run_stage(package,output,runtime,recipe,stage;frames=nothing,batches=nothing,
+                   owner_preparation_timeout_seconds=90)
+    command=stage_command(package,runtime;owner_preparation_timeout_seconds)
     batches===nothing || frames===nothing || throw(ArgumentError("frames and batches are mutually exclusive"))
     normalized=batches===nothing ? nothing : validate_batches(batches)
     profile=nothing
@@ -367,11 +473,8 @@ function run_stage(package,output,runtime,recipe,stage;frames=nothing,batches=no
     stage_started=time_ns()
     deadline=Int128(stage_started)+Int128(recipe["stage_timeout_seconds"])*1_000_000_000
     mkpath(output)
-    command=[Base.julia_cmd().exec[1],"--startup-file=no","--project="*HILExport.ScienceExport.package_root(),
-             joinpath(HILExport.ScienceExport.package_root(),"deploy_cli.jl"),"run",
-             "--deployment",joinpath(package,"deployment.conf"),"--runtime",runtime,
-             "--pipewire-prefix","/opt/pipewireao"]
     result=Dict{String,Any}("stage"=>stage,"run_argv"=>command,
+        "owner_preparation_timeout_seconds"=>owner_preparation_timeout_seconds,
         "restoration_confirmed"=>false,"release_confirmed"=>false,"shutdown_confirmed"=>false,
         "timing_ns"=>Dict{String,Any}(name=>nothing for name in
             ("startup_readiness","acquisition","public_shutdown","total_stage")),
@@ -452,7 +555,8 @@ function run_stage(package,output,runtime,recipe,stage;frames=nothing,batches=no
             else
                 argv=[joinpath(package,"bin","rtc-calibrate"),"--endpoint",joinpath(instance,"calibration.sock"),
                       "--plan",joinpath(dirname(output),"interaction-plan.json")]
-                response=run_checked(argv;timeout=stage_remaining(deadline,recipe["stage_timeout_seconds"]))
+                response=run_checked(argv;timeout=stage_remaining(deadline,recipe["stage_timeout_seconds"]),
+                    maximum_output_bytes=interaction_result_output_limit_bytes(joinpath(dirname(output),"interaction-plan.json")))
                 write(joinpath(output,"rtc-calibrate.json"),response.stdout)
                 write(joinpath(output,"rtc-calibrate.stderr"),response.stderr)
                 response.returncode==0 || throw(ErrorException("rtc-calibrate exited $(response.returncode)"))
@@ -464,6 +568,17 @@ function run_stage(package,output,runtime,recipe,stage;frames=nothing,batches=no
                 result["timing_ns"]["acquisition"]=time_ns()-acquisition_started
                 result["timing_confirmed"]["acquisition"]=true
             end
+            # The instance is removed by public shutdown. Pause admission and
+            # retain the completed owner's report while it is still available.
+            stopped=Deployment.control(ready["socket"],["session-stop"];
+                timeout=stage_remaining(deadline,8.0))
+            stopped["ok"]===true || throw(ArgumentError("stage admission pause failed"))
+            sequence=paused_source_cursor(package,instance)
+            report_path=joinpath(instance,"simulator-result.json")
+            completed_report=completed_owner_report(report_path,sequence;
+                timeout=stage_remaining(deadline,8.0))
+            result["completed_report"]=completed_report
+            write_json(joinpath(output,"completed-owner-report.json"),completed_report)
             shutdown_started=time_ns()
             final=Deployment.shutdown(runtime,process;timeout=stage_remaining(deadline,55.0))
             result["shutdown_confirmed"]=true
@@ -546,15 +661,12 @@ function set_model_setting(text,node,field,value)
     return join(sections)
 end
 
-function stage_base(base,output,recipe,stage,background,references,active,aoc_source,prefix)
+function stage_base(base,output,recipe,stage,background,references,active,aoc_source,prefix;allowed_backends=("cpu",))
     original=read_json(joinpath(base,"provenance.json"))
     specification=Deployment.profile(joinpath(base,"deployment.conf"),prefix)
-    source=only(filter(owner->owner["role"]==specification["source-owner"],specification["owners"]))
-    argv=source["argv"]
-    original["profile"]=="classic" && original["mode"]=="frame" &&
-        original["hil"]["backend"]=="cpu" && count(==("--backend"),argv)==1 &&
-        argv[findfirst(==("--backend"),argv)+1]=="cpu" ||
-        throw(ArgumentError("Classic campaign requires complete-frame CPU science"))
+    original["profile"]=="classic" && original["mode"]=="frame" ||
+        throw(ArgumentError("Classic campaign requires complete-frame science"))
+    backend=validate_simulator_backend(base,specification,original;allowed_backends)
     for (name,payload,expected) in (("background",background,495616),
                                     ("reference-slopes",references,1504),("active",active,188))
         length(payload)==expected || throw(ArgumentError("wrong startup extent for $name"))
@@ -581,7 +693,7 @@ function stage_base(base,output,recipe,stage,background,references,active,aoc_so
     target=joinpath(output,"hil","packages","AdaptiveOpticsCalibration")
     rm(target;recursive=true)
     HILExport.copy_package(aoc_source,target)
-    provenance["campaign_stage_inputs"]=Dict("stage"=>stage,"recipe"=>recipe,
+    provenance["campaign_stage_inputs"]=Dict("stage"=>stage,"recipe"=>recipe,"backend"=>backend,
         "source_deployment_sha256"=>sha256_file(joinpath(base,"deployment.conf")),
         "source_aoc_files"=>file_identity(target),
         "previous_offset_provenance"=>"historical base only; startup offsets replaced by campaign inputs")

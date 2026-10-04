@@ -724,7 +724,7 @@ function export_package(args)
     correction = option(args,:correction_diagnostics,false)
     correction isa Bool || throw(ArgumentError("correction diagnostics must be a Boolean"))
     operational = option(args,:operational_calibration)
-    if correction || operational !== nothing
+    if operational !== nothing
         provenance["profile"] == "classic" && args.backend == "cpu" && provenance["engine"] in ("fgn","jfg") ||
             throw(ArgumentError("correction diagnostics and operational offsets currently require Classic CPU FGN/JFG"))
     end

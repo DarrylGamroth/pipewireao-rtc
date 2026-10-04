@@ -35,8 +35,6 @@ function parse_options(arguments)
     values["transport"] in ("scientific", "heart") || throw(ArgumentError("--transport must be scientific or heart"))
     values["correction-diagnostics"] in ("true", "false") || throw(ArgumentError("--correction-diagnostics must be true or false"))
     correction_diagnostics = values["correction-diagnostics"] == "true"
-    !correction_diagnostics || (values["profile"] == "classic" && values["backend"] == "cpu" && values["transport"] == "scientific") ||
-        throw(ArgumentError("correction diagnostics require Classic CPU scientific transport"))
     controller_keys = ("controller-request", "controller-reply")
     present = count(key -> haskey(values, key), controller_keys)
     expected = values["transport"] == "heart" ? 2 : 0

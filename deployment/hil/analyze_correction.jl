@@ -1,6 +1,7 @@
 #!/usr/bin/env julia
 """
-Cold Classic CPU correction diagnostic. Run with the exact installed HIL project:
+Cold Classic or Copper correction diagnostic on the explicitly selected backend.
+Run with the exact installed HIL project:
 
     julia --project=PACKAGE/hil analyze_correction.jl \
         --package PACKAGE --report simulator-result.json --output NEW.json
@@ -11,6 +12,10 @@ never become calibration/reconstructor inputs. Ratios are published only after
 the zero-command replay checks pass and either legacy ADC payloads match exactly
 or a new direct live OPD witness matches exactly. A present witness must match;
 ADC equality cannot override a witness failure. This checks source payloads, not independent sink receipt.
+Copper and Classic GPU require a direct live witness and match the package's declared
+CPU, CUDA or AMDGPU simulator. Classic CPU retains its legacy ADC admission.
+The selected Classic GPU fixture has a 12-bit detector; Copper has 14 bits. Replay retains the installed dynamic atmosphere and
+detector, using host staging for public OPD diagnostics on every backend.
 The declared windows are 17:128 and 129:256, truncated to available frames for
 shorter recordings; recordings of at most 16 frames use their full prefix.
 
@@ -36,6 +41,73 @@ require(condition, message) = condition || throw(ArgumentError(message))
 file_hash(path) = bytes2hex(open(sha256, path))
 positive_integer(x) = x isa Integer && !(x isa Bool) && 0 < x <= typemax(Int)
 nonnegative_integer(x) = x isa Integer && !(x isa Bool) && x >= 0
+
+detector_shape(::Val{:classic}) = (352,352)
+detector_shape(::Val{:copper}) = (64,64)
+detector_rail(::Val{:classic}) = typemax(UInt16)
+detector_rail(::Val{:copper}) = 16383
+
+function selected_backend(::Val{:classic},backend)
+    require(backend in ("cpu","cuda","amdgpu"),"unknown Classic simulator backend")
+    return Symbol(backend)
+end
+function selected_backend(::Val{:copper},backend)
+    require(backend in ("cpu","cuda","amdgpu"),"unknown Copper simulator backend")
+    return Symbol(backend)
+end
+
+function validate_backend_package(package,report)
+    descriptor=JSON3.read(read(joinpath(package,"deployment.conf"),String))
+    require(haskey(descriptor.artifacts,"provenance.json"),"selected provenance must be hash-bound")
+    checked_artifact(package,"provenance.json",descriptor.artifacts["provenance.json"])
+    provenance=JSON3.read(read(joinpath(package,"provenance.json"),String))
+    require(provenance.profile==report.profile && provenance.hil.backend==report.backend,
+        "recorded profile/backend differs from selected package")
+    owner_role=get(descriptor,Symbol("source-owner"),nothing)
+    require(owner_role isa AbstractString,"requires declared simulator source owner")
+    owners=filter(owner->owner.role==owner_role,descriptor.owners)
+    require(length(owners)==1,"requires exactly one declared simulator source owner")
+    argv=only(owners).argv
+    for (key,expected) in (("--profile",report.profile),("--backend",report.backend))
+        indices=findall(==(key),argv)
+        require(length(indices)==1 && only(indices)<length(argv) && argv[only(indices)+1]==expected &&
+            !any(arg->startswith(arg,key*"="),argv),"selected simulator argument differs: $key")
+    end
+    if report.backend!="cpu"
+        name,uuid=report.backend=="cuda" ? ("CUDA","052768ef-5323-5732-b1bb-66c8b64840ba") :
+            ("AMDGPU","21141c5a-9bdb-4563-92ae-f87d6854732e")
+        project=TOML.parsefile(joinpath(package,"hil/Project.toml"))
+        require(get(get(project,"deps",Dict()),name,nothing)==uuid,"selected backend dependency missing or differs")
+    end
+    return nothing
+end
+function validate_detector_bits(package,expected)
+    detector=only(filter(node->node["name"]=="detector",TOML.parsefile(joinpath(package,"hil/plant.toml"))["nodes"]))["config"]
+    bits=get(detector,"bits",nothing)
+    require(positive_integer(bits) && bits==expected,"selected correction detector bits differ")
+    return nothing
+end
+function validate_selected_package(package,report,::Val{:classic})
+    report.backend=="cpu" && return nothing
+    validate_backend_package(package,report)
+    # This bounded extension selects the captured Classic fixture. It does not
+    # alter the legacy CPU encoding gate or admit an unrelated detector model.
+    validate_detector_bits(package,12)
+    return nothing
+end
+function validate_selected_package(package,report,::Val{:copper})
+    validate_backend_package(package,report)
+    validate_detector_bits(package,14)
+    return nothing
+end
+recording_rail(profile,backend)=detector_rail(profile)
+recording_rail(::Val{:classic},backend)=backend===:cpu ? typemax(UInt16) : 4095
+
+require_live_truth(::Val{:classic},truth) = nothing
+require_live_truth(::Val{:copper},truth) = require(truth!==nothing,"Copper correction requires a direct live OPD witness")
+require_live_truth(profile,backend,truth)=require_live_truth(profile,truth)
+require_live_truth(::Val{:classic},::Union{Val{:cuda},Val{:amdgpu}},truth) =
+    require(truth!==nothing,"Classic GPU correction requires a direct live OPD witness")
 
 """Resolve a new output through its nearest existing parent before any write.
 Dangling links are occupied paths. Return the resolved path so subsequent mkdir
@@ -117,7 +189,11 @@ end
 
 function validate_recording(package, report_path)
     report = JSON3.read(read(report_path, String))
-    require(report.version == 1 && report.profile == "classic" && report.backend == "cpu", "requires a version-1 Classic CPU report")
+    require(report.version == 1 && report.profile in ("classic","copper"), "requires a version-1 Classic or Copper report")
+    profile=Symbol(report.profile)
+    detector=Val(profile)
+    backend=selected_backend(detector,report.backend)
+    validate_selected_package(package,report,detector)
     require(report.completed === true && report.failure === nothing, "simulator run did not complete successfully")
     n = report.completed_frames
     require(positive_integer(n) && n <= 256, "completed frame count must be in 1:256")
@@ -139,7 +215,8 @@ function validate_recording(package, report_path)
     graph = joinpath(package, "hil/plant.toml")
     require(file_hash(graph) == report.graph_sha256, "installed plant differs from recorded graph hash")
     f, c = report.frame, report.command
-    require(f.element_type == "U16_LE" && f.layout == "ROW_MAJOR" && f.shape == [352, 352] && f.units == "raw detector ADC code" && f.encoding == "nearest ties to even", "unsupported detector contract")
+    shape=detector_shape(detector)
+    require(f.element_type == "U16_LE" && f.layout == "ROW_MAJOR" && f.shape == collect(shape) && f.units == "raw detector ADC code" && f.encoding == "nearest ties to even", "unsupported detector contract")
     require(c.recorded_element_type == "F32_LE" && c.shape == [277] && c.recorded_units == "metre OPD" && c.plant_units == "metre OPD" && c.layout == "frame followed by 277 actuator values", "unsupported adopted command contract")
     transport = get(report, :transport, "scientific")
     require(transport in ("scientific", "heart"), "unsupported transport contract")
@@ -147,14 +224,17 @@ function validate_recording(package, report_path)
         ("org.heart.std-wfs.raw-pixels/1", "org.heart.std-dm.actuator-command/1", "metre OPD", 1.0f0) :
         ("org.calculon.ao.raw-detector-pixels/1", "org.calculon.ao.demanded-pdm-command/1", "micrometre OPD", 1.0f-6)
     require(f.schema == frame_schema && c.schema == command_schema && c.transport_element_type == "F32_LE" && c.transport_units == units && isfinite(c.transport_to_plant_scale) && Float32(c.transport_to_plant_scale) == scale, "inconsistent wire contract")
-    frames = checked_payload(report_path, f, Base.Checked.checked_mul(2 * 352 * 352, n))
+    frames = checked_payload(report_path, f, Base.Checked.checked_mul(2 * prod(shape), n))
+    adc_upper_rail=recording_rail(detector,backend)
+    require(all(word->ltoh(word)<=adc_upper_rail,reinterpret(UInt16,frames)),"recorded detector exceeds selected ADC rail")
     command_bytes = checked_payload(report_path, c, Base.Checked.checked_mul(4 * 277, n))
     command_words = ltoh.(copy(reinterpret(UInt32, command_bytes)))
     commands = reshape(copy(reinterpret(Float32, command_words)), 277, n)
     require(all(isfinite, commands), "non-finite adopted command")
     require(isfinite(report.command_limit_um) && report.command_limit_um > 0 && isfinite(report.command_limit_tolerance_um) && report.command_limit_tolerance_um >= 0, "invalid retained command limit diagnostic")
     truth = validate_live_truth(package, report, graph, n)
-    return (; report, graph, n, period, frames, commands, truth,
+    require_live_truth(detector,Val(backend),truth)
+    return (; report, graph, n, period, frames, commands, truth, profile, backend, adc_upper_rail,
         report_sha256=file_hash(report_path))
 end
 
@@ -212,20 +292,24 @@ end
 verification_gate(adc_exact, live_truth, live_exact, baseline_verified) =
     baseline_verified && (live_truth === nothing ? adc_exact : live_exact)
 
-function adc_bytes(frame::AbstractMatrix{<:Real})
+adc_bytes(frame::AbstractMatrix{<:Real}) = adc_bytes(Val(:classic),frame)
+function adc_bytes(profile::Val,frame::AbstractMatrix{<:Real};upper_rail=detector_rail(profile))
     Base.require_one_based_indexing(frame)
-    require(size(frame) == (352, 352), "replay detector shape mismatch")
-    require(all(v -> isfinite(v) && 0 <= v <= typemax(UInt16), frame), "replay detector cannot encode as UInt16")
+    require(size(frame) == detector_shape(profile), "replay detector shape mismatch")
+    require(all(v -> isfinite(v) && 0 <= v <= upper_rail, frame), "replay detector cannot encode within profile ADC rail")
     words = UInt16[htol(round(UInt16, frame[r, c])) for r in axes(frame, 1) for c in axes(frame, 2)]
     return copy(reinterpret(UInt8, words))
 end
 
-function adc_comparison(actual::AbstractVector{UInt8}, expected::AbstractVector{UInt8})
-    require(length(actual) == length(expected) == 2 * 352 * 352, "ADC comparison byte count mismatch")
+adc_comparison(actual::AbstractVector{UInt8},expected::AbstractVector{UInt8}) =
+    adc_comparison(Val(:classic),actual,expected)
+function adc_comparison(profile::Val,actual::AbstractVector{UInt8}, expected::AbstractVector{UInt8})
+    columns=last(detector_shape(profile))
+    require(length(actual) == length(expected) == 2 * prod(detector_shape(profile)), "ADC comparison byte count mismatch")
     a, e = ltoh.(reinterpret(UInt16, actual)), ltoh.(reinterpret(UInt16, expected))
     differences = findall(i -> a[i] != e[i], eachindex(a))
     first = isempty(differences) ? nothing : let i = differences[1]
-        (; row=div(i - 1, 352) + 1, column=rem(i - 1, 352) + 1, replay=Int(a[i]), recorded=Int(e[i]))
+        (; row=div(i - 1, columns) + 1, column=rem(i - 1, columns) + 1, replay=Int(a[i]), recorded=Int(e[i]))
     end
     return (; exact=isempty(differences), differing_pixels=length(differences),
         maximum_abs_adc_difference=maximum(i -> abs(Int(a[i]) - Int(e[i])), differences; init=0),
@@ -255,13 +339,20 @@ function replay(installed, recording, output)
     s = installed
     cfg = telescope_config(recording.graph)
     require(isapprox(cfg.exposure_seconds, recording.report.exposure_ns / 1e9; rtol=1e-12, atol=0), "plant/report exposure mismatch")
-    options = (; profile=:classic, backend=:cpu, graph=recording.graph, period_ns=UInt64(recording.period))
-    science = Base.invokelatest(s.prepare_science, options, s.load_plant(:classic), s.load_target(:cpu))
+    options = (; profile=recording.profile, backend=recording.backend, graph=recording.graph, period_ns=UInt64(recording.period))
+    science = Base.invokelatest(s.prepare_science, options, s.load_plant(recording.profile), s.load_target(recording.backend))
+    # The selected backend import may define array transfers lazily. Execute
+    # diagnostics in that world, with no replacement backend on failure.
+    return Base.invokelatest(replay_science,s,science,recording,output,cfg)
+end
+
+function replay_science(s,science,recording,output,cfg)
     optics = s.AdaptiveOpticsSim.Optics
-    telescope = optics.prepare_telescope(optics.TelescopeDefinition(;
-        resolution=cfg.resolution, diameter=cfg.diameter, central_obstruction=cfg.central_obstruction,
-        pupil_reflectivity=cfg.pupil_reflectivity, revision=cfg.revision, T=Float32), science.target)
-    mask = optics.pupil_mask(telescope)
+    witness=CorrectionTruth.prepare_witness(recording.graph,optics,science.target,recording.n)
+    mask=witness.mask
+    detector=Val(recording.profile)
+    stage_products()=CorrectionTruth.stage!(witness,s.graph_output(science.graph,:atmosphere_opd),
+        s.graph_output(science.graph,:pupil_opd),s.graph_output(science.graph,:pdm_surface_opd))
     atmosphere_snapshots = Matrix{Float32}[]
     raw_path = output * ".replayed.frames.u16le"
     require(!ispath(raw_path) && !islink(raw_path), "replayed ADC output must be new")
@@ -269,13 +360,11 @@ function replay(installed, recording, output)
         map(1:recording.n) do n
             step = s.step_hil_frame_at!(science.boundary, science.driver)
             require(step.sequence == n && s.model_nanoseconds(step.timestamp) == recording.report.model_timestamps_ns[n], "replay model chronology mismatch")
-            adc = adc_bytes(s.hil_frame_buffer(science.boundary))
+            adc = adc_bytes(detector,s.hil_frame_buffer(science.boundary);upper_rail=recording.adc_upper_rail)
             write(raw_io, adc)
             width = length(adc)
-            comparison = adc_comparison(adc, @view recording.frames[(n - 1) * width + 1:n * width])
-            atmosphere = s.graph_output(science.graph, :atmosphere_opd)
-            residual = s.graph_output(science.graph, :pupil_opd)
-            surface = s.graph_output(science.graph, :pdm_surface_opd)
+            comparison = adc_comparison(detector,adc, @view recording.frames[(n - 1) * width + 1:n * width])
+            atmosphere,residual,surface=stage_products()
             require(size(surface) == size(mask) && all(isfinite, surface), "invalid public PDM surface")
             push!(atmosphere_snapshots, copy(atmosphere))
             measured = (; sequence=n, model_timestamp_ns=recording.report.model_timestamps_ns[n], adc=comparison,
@@ -290,9 +379,7 @@ function replay(installed, recording, output)
     baseline = map(1:recording.n) do n
         step = s.step_hil_frame_at!(science.boundary, science.driver)
         require(step.sequence == n && s.model_nanoseconds(step.timestamp) == recording.report.model_timestamps_ns[n], "baseline model chronology mismatch")
-        atmosphere = s.graph_output(science.graph, :atmosphere_opd)
-        pupil = s.graph_output(science.graph, :pupil_opd)
-        surface = s.graph_output(science.graph, :pdm_surface_opd)
+        atmosphere,pupil,surface=stage_products()
         reference = atmosphere_snapshots[n]
         require(size(atmosphere) == size(pupil) == size(reference) && all(isfinite, atmosphere) && all(isfinite, pupil), "invalid baseline public OPD products")
         # Elementwise tolerance in metre OPD. With atol=0 zero-valued reference
@@ -324,7 +411,7 @@ function replay(installed, recording, output)
         live_truth_present=recording.truth !== nothing, live_truth_verified=live_verified,
         adc_exact=adc_verified, adc_differing_frames=count(p -> !p.adc.exact, per_frame),
         adc_differing_pixels=sum(p -> p.adc.differing_pixels, per_frame),
-        replayed_adc=(; path=raw_path, sha256=file_hash(raw_path), element_type="U16_LE", layout="ROW_MAJOR", shape=[352,352], frames=recording.n),
+        replayed_adc=(; path=raw_path, sha256=file_hash(raw_path), element_type="U16_LE", layout="ROW_MAJOR", shape=collect(detector_shape(detector)), frames=recording.n),
         baseline_verified, zero_comparison=(; rtol=ZERO_RTOL, atol_m=ZERO_ATOL_M, comparison="elementwise"),
         pupil=(; cfg..., support_pixels=count(mask),
             mask_sha256=bytes2hex(sha256(UInt8[mask[r,c] for r in axes(mask,1) for c in axes(mask,2)])),
@@ -358,7 +445,8 @@ function analyze(package, report_path, output)
     mkpath(dirname(output))
     installed = load_installed_simulator(joinpath(provenance.package, "hil/simulator.jl"))
     result = Base.invokelatest(replay, installed, recording, output)
-    return (; version=1, diagnostic="Classic CPU simulation truth correction replay", scope="diagnostic only; no calibration, reconstructor, physical, hardware-rate or complete scientific acceptance claim",
+    return (; version=1, diagnostic=titlecase(String(recording.profile))*" "*uppercase(String(recording.backend))*" simulation truth correction replay",
+        profile=String(recording.profile),backend=String(recording.backend),scope="diagnostic only; no calibration, reconstructor, physical, hardware-rate or complete scientific acceptance claim",
         chronology="frame 1 uses zero; command n is adopted after frame n and affects frame n+1",
         julia_version=string(VERSION), analyzer_sha256=file_hash(@__FILE__),
         analysis_helper_sha256=file_hash(joinpath(@__DIR__, "correction_truth.jl")), provenance, report=(; path=abspath(report_path), sha256=recording.report_sha256),

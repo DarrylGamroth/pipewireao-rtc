@@ -5,6 +5,7 @@ import ..Common: read_json, write_json, sha256_file, cli_arguments
 import ..CalibrationCampaign as Acquisition
 import ..CopperReference as Reference
 import ..CalibrationExport
+import ..HILExport
 import ..Deployment
 
 export validate_recipe, schedule, validate_candidate, analysis_products, campaign, main

@@ -5,6 +5,7 @@ using ..Deployment
 using ..ScienceExport
 using ..HILExport
 using ..HeartConfiguration
+using ..CalibrationCampaign
 
 const RAW_SCHEMA = "org.heart.std-wfs.raw-pixels/1"
 const COMMAND_SCHEMA = "org.heart.std-dm.actuator-command/1"
@@ -64,17 +65,20 @@ function _cpu_map(text)
     return text
 end
 
-function export_package(args)
+function export_package(args; simulator_backend::String="cpu")
     base = realpath(args.base_package)
     output = abspath(args.output)
     !ispath(output) && !islink(output) || throw(ArgumentError("export output must be new"))
     specification = Deployment.profile(joinpath(base,"deployment.conf"),args.pipewire_prefix)
     provenance = Common.read_json(joinpath(base,"provenance.json"))
-    get(provenance,"engine",nothing) == "fgn" && get(get(provenance,"hil",Dict()),"backend",nothing) == "cpu" ||
-        throw(ArgumentError("initial HEART HIL export requires a corrected FGN CPU HIL base"))
+    get(provenance,"engine",nothing) == "fgn" ||
+        throw(ArgumentError("HEART HIL export requires a corrected FGN HIL base"))
+    simulator_backend in ("cpu","cuda") || throw(ArgumentError("unsupported HEART simulator backend"))
+    CalibrationCampaign.validate_simulator_backend(base,specification,provenance;
+        allowed_backends=(simulator_backend,))
+    plant_sha256 = ScienceExport.sha256(joinpath(base,"hil/plant.toml"))
     instrument = provenance["profile"]
-    instrument in ("classic","copper") && haskey(provenance["hil"],"simulated_calibration") ||
-        throw(ArgumentError("HEART requires a maintained simulated-offset calibration base"))
+    HeartConfiguration.calibration_inputs(base,provenance;pipewire_prefix=args.pipewire_prefix)
     rate = provenance["hil"]["wall_rate_hz"]
     readout_us = readout_interval(instrument,option(args,:readout_us),rate)
     paths = Deployment.installed_paths(args.pipewire_prefix)
@@ -84,6 +88,8 @@ function export_package(args)
     return mktempdir(dirname(output);prefix=".rtc-heart-export-") do temporary
         package = joinpath(temporary,"package")
         ScienceExport.copy_tree(base,package;ignored=Set(["__pycache__","systemd"]))
+        ScienceExport.sha256(joinpath(package,"hil/plant.toml")) == plant_sha256 ||
+            throw(ArgumentError("HEART export changed the selected simulator plant"))
         for name in ("pipewireao-rtc-deploy","placement.py","pipewireao-rtc@.service.in")
             path = joinpath(package,"bin",name)
             isfile(path) && rm(path)
@@ -116,7 +122,7 @@ function export_package(args)
             provenance["hil"]["adapter_source"] = adapter
         end
         config = HeartConfiguration.prepare_heart_configuration(package,base,realpath(args.heart_source_config),
-                                                                 realpath(args.calibration_root),rate)
+                                                                 realpath(args.calibration_root),rate;pipewire_prefix=args.pipewire_prefix)
         Common.write_json(joinpath(package,"session.conf.in"),bridge_session(instrument,rate))
         core = Deployment.decode(joinpath(package,specification["core"]),args.pipewire_prefix)
         core["context.spa-libs"]["api.heart.*"] = "heart/libspa-heart"
@@ -172,7 +178,7 @@ function export_package(args)
         specification["placement"]["heart"] = Dict("cpus"=>[3,4,6,8,10,14],"leader-cpu"=>3,"rt-priority"=>0,"threads"=>Any[],"locked-bytes"=>0)
         specification["client"]["heart"] = "client-simulator.conf.in"
         specification["environment"] = Dict{String,Any}()
-        specification["name"] = "revolt-$instrument-heart-hil-cpu"
+        specification["name"] = "revolt-$instrument-heart-hil-$simulator_backend"
         provenance["engine"] = "heart"
         merge!(provenance["hil"],Dict("command_unit"=>"metre OPD","plant_command_scale"=>1.0,"transport"=>"heart"))
         provenance["heart"] = merge(config,Dict("revision"=>ScienceExport.revision(args.heart_root),

@@ -15,6 +15,7 @@ module HeartConfiguration end
 include(joinpath(package_root(), "src", "science_export.jl"))
 include(joinpath(package_root(), "src", "hil_export.jl"))
 include(joinpath(package_root(), "src", "calibration_export.jl"))
+include(joinpath(package_root(), "src", "calibration_campaign.jl"))
 include(joinpath(package_root(), "src", "heart_export.jl"))
 end
 

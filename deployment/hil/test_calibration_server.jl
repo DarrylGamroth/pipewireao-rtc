@@ -818,23 +818,25 @@ end
 end
 
 @testset "Copper reply bounds and chronological averaging" begin
-    fixture = copper_server_fixture()
+    fixture = copper_server_fixture(;samples=fill(Float32[22 for _ in 1:3600], 432))
     @test copper_settle!(fixture).result.kind == "settled"
     cursor = Server.session_cursor(fixture.session)
-    oversized = apply_server!(fixture.owner,(;kind="collect",probe=0,after=cursor,measurements=3600,frames=42);serial=4)
+    oversized = apply_server!(fixture.owner,(;kind="collect",probe=0,after=cursor,measurements=3600,frames=430);serial=4)
     @test oversized.result.reason == "invalid_evidence"
     @test fixture.session.inner.sequence == 1 && length(fixture.session.inner.exposure_budgets) == 1
     @test fixture.owner.phase == :settled && !fixture.owner.faulted
-    @test 512+16*3600+180*41 == 65_492
-    @test 512+16*3600+180*42 == 65_672
-    accepted = apply_server!(fixture.owner,(;kind="collect",probe=0,after=cursor,measurements=3600,frames=41);serial=5,
+    copper_reply_bound = 512+16*3600+180*64
+    @test copper_reply_bound == 69_632
+    @test 64*1024 < copper_reply_bound <= Server.MAX_REPLY_BYTES
+    @test 512+16*3600+180*430 > Server.MAX_REPLY_BYTES
+    accepted = apply_server!(fixture.owner,(;kind="collect",probe=0,after=cursor,measurements=3600,frames=64);serial=5,
         timeout_ns=UInt64(20_000_000_000))
     @test accepted.result.kind == "responses" && accepted.result.valid
     @test length(accepted.result.values) == 3600 && all(==(22.0f0),accepted.result.values)
-    @test [e.sequence for e in accepted.result.exposures] == collect(2:42)
-    @test [e.start_model_ns for e in accepted.result.exposures] == collect(50:50:2050)
+    @test [e.sequence for e in accepted.result.exposures] == collect(2:65)
+    @test [e.start_model_ns for e in accepted.result.exposures] == collect(50:50:3200)
     @test ncodeunits(Server.encode_reply(accepted)) <= Server.MAX_REPLY_BYTES
-    @test fixture.session.inner.sequence == 42 && fixture.owner.phase == :collected
+    @test fixture.session.inner.sequence == 65 && fixture.owner.phase == :collected
 end
 
 @testset "Copper capture keeps pupil-block order, intensity and invalid quality" begin

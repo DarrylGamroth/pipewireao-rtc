@@ -2,6 +2,33 @@ using Test
 include("calibration_acquisition.jl")
 const Acquisition = CalibrationAcquisition
 
+@testset "completed ADC diagnostics retain settling and rail evidence" begin
+    diagnostics = Acquisition.ExposureDiagnostics(14)
+    raw = UInt16[0, 4, 16383, 16383]
+    @test Acquisition.record_exposure!(diagnostics, raw, true) === nothing
+    @test diagnostics.frames == 1 && diagnostics.invalid_frames == 0
+    @test diagnostics.maximum_adc == 16383
+    @test diagnostics.upper_rail_frames == 1 && diagnostics.upper_rail_pixels == 2
+    @test raw == UInt16[0, 4, 16383, 16383]
+    Acquisition.record_exposure!(diagnostics, UInt16[0, 8], false)
+    @test diagnostics.frames == 2 && diagnostics.invalid_frames == 1
+    @test diagnostics.upper_rail_frames == 1 && diagnostics.upper_rail_pixels == 2
+    @test_throws ErrorException Acquisition.record_exposure!(diagnostics, UInt16[16384], true)
+    @test diagnostics.frames == 2
+    @test_throws ArgumentError Acquisition.record_exposure!(diagnostics, UInt16[], true)
+    for bits in (0, 17, true)
+        @test_throws ArgumentError Acquisition.ExposureDiagnostics(bits)
+    end
+    unknown = Acquisition.ExposureDiagnostics()
+    Acquisition.record_exposure!(unknown, UInt16[65535], true)
+    @test unknown.adc_upper_rail === nothing && unknown.upper_rail_pixels == 0
+    sixteen = Acquisition.ExposureDiagnostics(16)
+    Acquisition.record_exposure!(sixteen, UInt16[65535], true)
+    @test sixteen.adc_upper_rail == 65535 && sixteen.upper_rail_pixels == 1
+    session = (; raw=nothing, diagnostics=unknown)
+    @test !Acquisition.exposure_diagnostics(session).raw_available
+end
+
 @testset "declared detector and transport exposure agree" begin
     declared = Dict("exposure_duration_s" => 0.001896)
     @test Acquisition.validate_exposure_duration(declared, UInt64(1_896_000)) === nothing

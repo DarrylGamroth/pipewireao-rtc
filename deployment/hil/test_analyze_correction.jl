@@ -319,3 +319,296 @@ end
         @test CA.validate_recording(f.package, f.report_path).truth === nothing
     end
 end
+
+function selected_fixture(root,profile,backend)
+    f=fixture(root)
+    definition=TOML.parsefile(f.graph)
+    profile=="copper" && (only(filter(n->n["name"]=="shwfs",definition["nodes"]))["name"]="pwfs")
+    only(filter(n->n["name"]=="detector",definition["nodes"]))["config"]["bits"]=profile=="copper" ? 14 : 12
+    open(io->TOML.print(io,definition),f.graph,"w")
+    report=deepcopy(f.report)
+    report["profile"]=profile;report["backend"]=backend
+    report["graph_sha256"]=CA.file_hash(f.graph)
+    shape=CA.detector_shape(Val(Symbol(profile)))
+    report["frame"]["shape"]=collect(shape)
+    write(f.frames,zeros(UInt8,2*prod(shape)*2));report["frame"]["sha256"]=CA.file_hash(f.frames)
+    cp(joinpath(@__DIR__,"correction_truth.jl"),joinpath(f.package,"hil/correction_truth.jl"))
+    deps=backend=="cpu" ? Dict() : Dict((backend=="cuda" ? "CUDA" : "AMDGPU") =>
+        (backend=="cuda" ? "052768ef-5323-5732-b1bb-66c8b64840ba" : "21141c5a-9bdb-4563-92ae-f87d6854732e"))
+    open(io->TOML.print(io,Dict("deps"=>deps)),joinpath(f.package,"hil/Project.toml"),"w")
+    provenance=Dict("profile"=>profile,"engine"=>"fgn","mode"=>"frame","hil"=>Dict("backend"=>backend))
+    write(joinpath(f.package,"provenance.json"),JSON3.write(provenance))
+    descriptor=Dict("version"=>1,"source-owner"=>"simulator","owners"=>[
+        Dict("role"=>"simulator","argv"=>["julia","--profile",profile,"--backend",backend])],
+        "artifacts"=>Dict(relpath(p,f.package)=>CA.file_hash(p) for p in
+            vcat(readdir(joinpath(f.package,"hil");join=true),[joinpath(f.package,"provenance.json")])) )
+    write(joinpath(f.package,"deployment.conf"),JSON3.write(descriptor))
+    cfg=CA.telescope_config(f.graph);witness=CA.CorrectionTruth.Witness(cfg,trues(4,4),2)
+    for i in 1:2
+        atmosphere=reshape(Float32.(1:16).*1f-7,4,4)
+        surface=fill(i==1 ? 0.0f0 : 1.0f-8,4,4)
+        CA.CorrectionTruth.record!(witness,atmosphere,atmosphere.+surface,surface,UInt64(i),Int64((i-1)*2_000_000))
+    end
+    report["correction_truth"]=JSON3.read(JSON3.write(CA.CorrectionTruth.report(witness;
+        graph_sha256=report["graph_sha256"],frame_sha256=report["frame"]["sha256"],
+        command_sha256=report["command"]["sha256"],simulator_sha256=CA.file_hash(joinpath(f.package,"hil/simulator.jl")),completed_frames=2)),Dict{String,Any})
+    write(f.report_path,JSON3.write(report))
+    return (;f...,report,descriptor)
+end
+
+copper_fixture(root,backend="cpu")=selected_fixture(root,"copper",backend)
+classic_gpu_fixture(root,backend)=selected_fixture(root,"classic",backend)
+
+@testset "Copper selected backend and detector admission" begin
+    for backend in ("cpu","cuda","amdgpu")
+        mktempdir() do root
+            f=copper_fixture(root,backend)
+            recording=CA.validate_recording(f.package,f.report_path)
+            @test recording.profile===:copper && recording.backend===Symbol(backend)
+            @test recording.truth.complete_prefix
+            @test length(recording.frames)==2*64*64*2
+            @test CA.validate_package(f.package).artifact_count==7
+            for (key,value) in (("profile","unknown"),("backend","unknown"),("backend",backend=="cpu" ? "cuda" : "cpu"))
+                changed=deepcopy(f.report);changed[key]=value;write(f.report_path,JSON3.write(changed))
+                @test_throws ArgumentError CA.validate_recording(f.package,f.report_path)
+            end
+            changed=deepcopy(f.report);delete!(changed,"correction_truth");write(f.report_path,JSON3.write(changed))
+            @test_throws ArgumentError CA.validate_recording(f.package,f.report_path)
+        end
+    end
+    frame=zeros(Float32,64,64);frame[1,2]=1.5;frame[2,1]=2.5;frame[end,end]=16383
+    bytes=CA.adc_bytes(Val(:copper),frame)
+    @test bytes[3:4]==UInt8[2,0] && bytes[129:130]==UInt8[2,0]
+    @test CA.adc_comparison(Val(:copper),bytes,bytes).exact
+    other=copy(bytes);other[129]=3
+    @test CA.adc_comparison(Val(:copper),bytes,other).first_difference==
+        (;row=2,column=1,replay=2,recorded=3)
+    @test_throws ArgumentError CA.adc_bytes(Val(:copper),zeros(352,352))
+    frame[1,1]=16384
+    @test_throws ArgumentError CA.adc_bytes(Val(:copper),frame)
+end
+
+struct TransferOnlyMatrix <: AbstractMatrix{Float32}
+    values::Matrix{Float32}
+end
+Base.size(matrix::TransferOnlyMatrix)=size(matrix.values)
+Base.getindex(::TransferOnlyMatrix,args...)=error("device diagnostic must use declared host transfer")
+Base.copyto!(destination::Matrix{Float32},source::TransferOnlyMatrix)=copyto!(destination,source.values)
+
+mutable struct ReplayFixtureState
+    sequence::Int
+    command::Vector{Float32}
+    atmosphere::TransferOnlyMatrix
+    pupil::TransferOnlyMatrix
+    surface::TransferOnlyMatrix
+end
+
+function fake_replay_simulator(;baseline_mismatch=false,unavailable=false,frame_shape=(64,64))
+    state=ReplayFixtureState(0,zeros(Float32,277),TransferOnlyMatrix(zeros(Float32,4,4)),
+        TransferOnlyMatrix(zeros(Float32,4,4)),TransferOnlyMatrix(zeros(Float32,4,4)))
+    selected=Tuple{Symbol,Symbol}[]
+    prepare=(options,plant,target)->begin
+        push!(selected,(options.profile,target))
+        (;graph=state,boundary=state,driver=state,target)
+    end
+    step=(boundary,driver)->begin
+        state.sequence+=1
+        copyto!(state.atmosphere.values,reshape(Float32.(1:16).*1f-7,4,4))
+        fill!(state.surface.values,state.command[1])
+        state.pupil.values .= state.atmosphere.values .+ state.surface.values
+        if baseline_mismatch && length(selected)>1
+            state.pupil.values[1]+=1f-7
+        end
+        (;sequence=UInt64(state.sequence),timestamp=Int64((state.sequence-1)*2_000_000))
+    end
+    reset=(boundary,driver)->begin
+        state.sequence=0;fill!(state.command,0.0f0)
+        # Record that the paired baseline follows command replay.
+        push!(selected,last(selected))
+        nothing
+    end
+    optics=(;TelescopeDefinition=(;kwargs...)->(;kwargs...),
+        prepare_telescope=(definition,target)->nothing,pupil_mask=telescope->trues(4,4))
+    simulator=(;prepare_science=prepare,load_plant=identity,
+        load_target=backend->(unavailable ? error("selected backend unavailable") : backend),
+        AdaptiveOpticsSim=(;Optics=optics),step_hil_frame_at! = step,
+        model_nanoseconds=identity,hil_frame_buffer=boundary->zeros(Float32,frame_shape),
+        graph_output=(graph,name)->getproperty(graph,name===:atmosphere_opd ? :atmosphere : name===:pupil_opd ? :pupil : :surface),
+        hil_command_buffer=boundary->state.command,adopt_hil_command! = (boundary,sequence)->nothing,
+        reset_hil_boundary! = reset)
+    return (;simulator,selected,state)
+end
+
+@testset "Copper replay preserves backend and stages device products" begin
+    for backend in ("cpu","cuda","amdgpu")
+        mktempdir() do root
+            f=copper_fixture(root,backend)
+            recording=CA.validate_recording(f.package,f.report_path)
+            fake=fake_replay_simulator()
+            result=CA.replay(fake.simulator,recording,joinpath(root,"analysis"))
+            @test result.verified && result.live_truth_verified && result.baseline_verified && result.adc_exact
+            @test first(fake.selected)==(:copper,Symbol(backend))
+            @test result.replayed_adc.shape==[64,64]
+            @test filesize(result.replayed_adc.path)==2*64*64*2
+            @test result.zero_comparison.rtol==CA.ZERO_RTOL && result.zero_comparison.atol_m==0.0
+            @test result.command.final_command_effect_is_recorded===false
+            @test all(sample->sample.surface_is_zero,result.baseline)
+            @test only(result.windows).residual_to_atmosphere_variance_ratio≈1.0
+            changed=deepcopy(f.report);changed["correction_truth"]["per_frame"][2]["pupil_sha256"]="0"^64
+            write(f.report_path,JSON3.write(changed));tampered=CA.validate_recording(f.package,f.report_path)
+            bad=fake_replay_simulator();rejected=CA.replay(bad.simulator,tampered,joinpath(root,"bad-witness"))
+            @test !rejected.verified && rejected.adc_exact && !rejected.live_truth_verified
+            @test only(rejected.windows).residual_to_atmosphere_variance_ratio===nothing
+            bad=fake_replay_simulator(;baseline_mismatch=true)
+            rejected=CA.replay(bad.simulator,recording,joinpath(root,"bad-baseline"))
+            @test !rejected.verified && rejected.live_truth_verified && !rejected.baseline_verified
+            @test only(rejected.windows).residual_to_atmosphere_variance_ratio===nothing
+            unavailable=fake_replay_simulator(;unavailable=true)
+            @test_throws ErrorException CA.replay(unavailable.simulator,recording,joinpath(root,"unavailable"))
+            @test isempty(unavailable.selected)
+        end
+    end
+end
+
+@testset "Copper selection identities fail closed" begin
+    for backend in ("cpu","cuda","amdgpu")
+        mktempdir() do root
+            f=copper_fixture(root,backend)
+            for argv in (["julia","--profile","classic","--backend",backend],
+                ["julia","--profile","copper","--backend",backend,"--backend",backend],
+                ["julia","--profile","copper","--backend="*backend],
+                ["julia","--profile","copper","--backend",backend,"--backend="*backend])
+                descriptor=deepcopy(f.descriptor);descriptor["owners"][1]["argv"]=argv
+                write(joinpath(f.package,"deployment.conf"),JSON3.write(descriptor))
+                @test_throws ArgumentError CA.validate_recording(f.package,f.report_path)
+            end
+            descriptor=deepcopy(f.descriptor);delete!(descriptor["artifacts"],"provenance.json")
+            write(joinpath(f.package,"deployment.conf"),JSON3.write(descriptor))
+            @test_throws ArgumentError CA.validate_recording(f.package,f.report_path)
+            write(joinpath(f.package,"deployment.conf"),JSON3.write(f.descriptor))
+            write(joinpath(f.package,"provenance.json"),"{}")
+            @test_throws ArgumentError CA.validate_recording(f.package,f.report_path)
+        end
+    end
+    frame=zeros(Float32,64,64)
+    @test CA.adc_bytes(Val(:copper),@view(frame[:,:]))==CA.adc_bytes(Val(:copper),frame)
+end
+
+@testset "Classic replay retains legacy finite gate" begin
+    mktempdir() do root
+        f=fixture(root);recording=CA.validate_recording(f.package,f.report_path)
+        fake=fake_replay_simulator(;frame_shape=(352,352))
+        result=CA.replay(fake.simulator,recording,joinpath(root,"classic"))
+        @test result.verified && result.adc_exact && result.baseline_verified
+        @test !result.live_truth_present && !result.live_truth_verified
+        @test first(fake.selected)==(:classic,:cpu)
+        @test result.replayed_adc.shape==[352,352]
+        @test result.verification_basis=="exact source ADC replay and zero-command baseline"
+        @test result.zero_comparison==(;rtol=8*Float64(eps(Float32)),atol_m=0.0,comparison="elementwise")
+        @test only(result.windows).residual_to_atmosphere_variance_ratio≈1.0
+        bad=fake_replay_simulator(;baseline_mismatch=true,frame_shape=(352,352))
+        rejected=CA.replay(bad.simulator,recording,joinpath(root,"classic-baseline"))
+        @test !rejected.verified && rejected.adc_exact && !rejected.baseline_verified
+        @test only(rejected.windows).residual_to_atmosphere_variance_ratio===nothing
+    end
+end
+
+@testset "Copper source dependency and detector failures" begin
+    for backend in ("cuda","amdgpu")
+        mktempdir() do root
+            f=copper_fixture(root,backend)
+            write(joinpath(f.package,"hil/Project.toml"),"[deps]\n")
+            @test_throws ArgumentError CA.validate_recording(f.package,f.report_path)
+        end
+    end
+    for bits in (13,16,14.0)
+        mktempdir() do root
+            f=copper_fixture(root)
+            plant=TOML.parsefile(f.graph)
+            only(filter(n->n["name"]=="detector",plant["nodes"]))["config"]["bits"]=bits
+            open(io->TOML.print(io,plant),f.graph,"w")
+            @test_throws ArgumentError CA.validate_recording(f.package,f.report_path)
+        end
+    end
+    mktempdir() do root
+        f=copper_fixture(root)
+        bytes=read(f.frames);bytes[1:2]=reinterpret(UInt8,[htol(UInt16(16384))]);write(f.frames,bytes)
+        report=deepcopy(f.report);report["frame"]["sha256"]=CA.file_hash(f.frames)
+        report["correction_truth"]["frame_sha256"]=report["frame"]["sha256"]
+        write(f.report_path,JSON3.write(report))
+        @test_throws ArgumentError CA.validate_recording(f.package,f.report_path)
+    end
+end
+
+@testset "Classic GPU selected package, twelve-bit ADC and direct witness" begin
+    for backend in ("cuda","amdgpu")
+        mktempdir() do root
+            f=classic_gpu_fixture(root,backend)
+            recording=CA.validate_recording(f.package,f.report_path)
+            @test recording.profile===:classic && recording.backend===Symbol(backend)
+            @test recording.truth.complete_prefix
+            @test length(recording.frames)==2*352*352*2
+            @test recording.adc_upper_rail==4095
+            for (key,value) in (("profile","copper"),("profile","unknown"),("backend","unknown"),("backend",backend=="cuda" ? "amdgpu" : "cuda"))
+                changed=deepcopy(f.report);changed[key]=value;write(f.report_path,JSON3.write(changed))
+                @test_throws ArgumentError CA.validate_recording(f.package,f.report_path)
+            end
+            changed=deepcopy(f.report);delete!(changed,"correction_truth");write(f.report_path,JSON3.write(changed))
+            @test_throws ArgumentError CA.validate_recording(f.package,f.report_path)
+            write(f.report_path,JSON3.write(f.report))
+            for argv in (["julia","--profile","copper","--backend",backend],
+                ["julia","--profile","classic","--backend",backend,"--backend",backend],
+                ["julia","--profile","classic","--backend="*backend])
+                descriptor=deepcopy(f.descriptor);descriptor["owners"][1]["argv"]=argv
+                write(joinpath(f.package,"deployment.conf"),JSON3.write(descriptor))
+                @test_throws ArgumentError CA.validate_recording(f.package,f.report_path)
+            end
+            write(joinpath(f.package,"deployment.conf"),JSON3.write(f.descriptor))
+            project=joinpath(f.package,"hil/Project.toml");original=read(project)
+            for content in ("[deps]\n",backend=="cuda" ? "[deps]\nCUDA = \"wrong\"\n" : "[deps]\nAMDGPU = \"wrong\"\n")
+                write(project,content)
+                @test_throws ArgumentError CA.validate_recording(f.package,f.report_path)
+            end
+            write(project,original)
+            bytes=read(f.frames);bytes[1:2]=reinterpret(UInt8,[htol(UInt16(4096))]);write(f.frames,bytes)
+            changed=deepcopy(f.report);changed["frame"]["sha256"]=CA.file_hash(f.frames)
+            changed["correction_truth"]["frame_sha256"]=changed["frame"]["sha256"];write(f.report_path,JSON3.write(changed))
+            @test_throws ArgumentError CA.validate_recording(f.package,f.report_path)
+        end
+        for bits in (14,16,12.0)
+            mktempdir() do root
+                f=classic_gpu_fixture(root,backend);plant=TOML.parsefile(f.graph)
+                only(filter(n->n["name"]=="detector",plant["nodes"]))["config"]["bits"]=bits
+                open(io->TOML.print(io,plant),f.graph,"w")
+                @test_throws ArgumentError CA.validate_recording(f.package,f.report_path)
+            end
+        end
+    end
+end
+@testset "Classic GPU replay stages declared products and fails closed" begin
+    for backend in ("cuda","amdgpu")
+        mktempdir() do root
+            f=classic_gpu_fixture(root,backend);recording=CA.validate_recording(f.package,f.report_path)
+            fake=fake_replay_simulator(;frame_shape=(352,352))
+            result=CA.replay(fake.simulator,recording,joinpath(root,"classic-gpu"))
+            @test result.verified && result.live_truth_verified && result.baseline_verified
+            @test first(fake.selected)==(:classic,Symbol(backend))
+            @test result.replayed_adc.shape==[352,352]
+            @test result.verification_basis=="exact direct live public OPD witness and zero-command baseline"
+            @test result.zero_comparison==(;rtol=8*Float64(eps(Float32)),atol_m=0.0,comparison="elementwise")
+            @test CA.adc_bytes(Val(:classic),fill(4095f0,352,352);upper_rail=recording.adc_upper_rail)==repeat(UInt8[0xff,0x0f],352*352)
+            @test_throws ArgumentError CA.adc_bytes(Val(:classic),fill(4096f0,352,352);upper_rail=recording.adc_upper_rail)
+            changed=deepcopy(f.report);changed["correction_truth"]["per_frame"][2]["pupil_sha256"]="0"^64
+            write(f.report_path,JSON3.write(changed));tampered=CA.validate_recording(f.package,f.report_path)
+            bad=fake_replay_simulator(;frame_shape=(352,352));rejected=CA.replay(bad.simulator,tampered,joinpath(root,"bad-truth"))
+            @test !rejected.verified && rejected.adc_exact && !rejected.live_truth_verified
+            @test only(rejected.windows).residual_to_atmosphere_variance_ratio===nothing
+            bad=fake_replay_simulator(;baseline_mismatch=true,frame_shape=(352,352))
+            rejected=CA.replay(bad.simulator,recording,joinpath(root,"bad-baseline"))
+            @test !rejected.verified && rejected.live_truth_verified && !rejected.baseline_verified
+            unavailable=fake_replay_simulator(;unavailable=true,frame_shape=(352,352))
+            @test_throws ErrorException CA.replay(unavailable.simulator,recording,joinpath(root,"unavailable"))
+            @test isempty(unavailable.selected)
+        end
+    end
+end

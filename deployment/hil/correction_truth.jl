@@ -11,7 +11,9 @@ positive_integer(x) = x isa Integer && !(x isa Bool) && 0 < x <= typemax(Int)
 function telescope_config(graph)
     definition = TOML.parsefile(graph)
     nodes = definition["nodes"]
-    names = ("atmosphere", "pdm", "shwfs")
+    sensors = filter(node -> node["name"] in ("shwfs", "pwfs"), nodes)
+    require(length(sensors) == 1, "requires exactly one supported WFS node")
+    names = ("atmosphere", "pdm", only(sensors)["name"])
     configs = map(names) do name
         selected = filter(node -> node["name"] == name, nodes)
         require(length(selected) == 1, "requires exactly one $name node")
@@ -77,6 +79,7 @@ mutable struct Witness{C}
     atmosphere_sha256::Vector{String}
     pupil_sha256::Vector{String}
     surface_sha256::Vector{String}
+    staging::NTuple{3,Matrix{Float32}}
 end
 
 function Witness(config, mask::AbstractMatrix{Bool}, frames::Integer)
@@ -86,7 +89,8 @@ function Witness(config, mask::AbstractMatrix{Bool}, frames::Integer)
     support = Matrix{Bool}(mask)
     mask_hash = bytes2hex(sha256(UInt8[support[r, c] for r in axes(support, 1) for c in axes(support, 2)]))
     return Witness(config, support, mask_hash, 0, zeros(UInt64, frames), zeros(Int64, frames),
-        zeros(Float64, frames), zeros(Float64, frames), fill("", frames), fill("", frames), fill("", frames))
+        zeros(Float64, frames), zeros(Float64, frames), fill("", frames), fill("", frames), fill("", frames),
+        ntuple(_ -> zeros(Float32, size(support)), 3))
 end
 
 """Prepare the same public annular pupil as the cold correction replay."""
@@ -95,7 +99,23 @@ function prepare_witness(graph, optics, target, frames)
     telescope = optics.prepare_telescope(optics.TelescopeDefinition(;
         resolution=config.resolution, diameter=config.diameter, central_obstruction=config.central_obstruction,
         pupil_reflectivity=config.pupil_reflectivity, revision=config.revision, T=Float32), target)
-    return Witness(config, optics.pupil_mask(telescope), frames)
+    # Materialize the public support once. Device masks must not be indexed
+    # scalarly by the host diagnostic or silently trigger a backend fallback.
+    return Witness(config, Array(optics.pupil_mask(telescope)), frames)
+end
+
+"""Copy public OPD products into prepared host diagnostic buffers.
+
+For accelerator arrays, copyto! performs the declared device-to-host transfer.
+This opt-in witness adds transfer/synchronization cost and is excluded from
+cadence qualification. No staging array is created per frame.
+"""
+function stage!(witness::Witness, atmosphere, pupil, surface)
+    for (destination, source) in zip(witness.staging, (atmosphere, pupil, surface))
+        require(size(destination) == size(source), "truth staging extent differs")
+        copyto!(destination, source)
+    end
+    return witness.staging
 end
 
 function reset!(witness::Witness)

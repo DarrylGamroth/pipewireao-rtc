@@ -70,10 +70,60 @@ function basis_metadata(canonical)
         amplitudes=canonical.amplitudes, description)
 end
 
+"""Select the measurement contract from retained package provenance, never recipe dimensions."""
+function selected_profile(output, package)
+    identity = document(bound_path(output, "base-identity.json"))
+    all(name -> hasproperty(identity, name), (:files, :selected_profile, :startup_snapshot)) ||
+        throw(ArgumentError("missing selected base identities"))
+    for relative in ("deployment.conf", "provenance.json")
+        haskey(identity.files, relative) && identity.files[relative] isa AbstractString &&
+            occursin(r"^[0-9a-f]{64}$", identity.files[relative]) ||
+            throw(ArgumentError("missing base file identity: $relative"))
+    end
+    selected = identity.selected_profile
+    all(name -> hasproperty(selected, name), (:profile, :engine, :mode, :backend)) ||
+        throw(ArgumentError("incomplete selected profile identity"))
+    selected.profile in ("classic", "copper") && selected.engine in ("fgn", "jfg") &&
+        selected.mode == "frame" && selected.backend in ("cpu", "cuda", "amdgpu") ||
+        throw(ArgumentError("method requires selected complete-frame Classic/Copper science backend"))
+    provenance = document(bound_path(package, "provenance.json"))
+    all(name -> hasproperty(provenance, name),
+        (:profile, :engine, :mode, :calibration_stage, :illumination, :source_provenance)) ||
+        throw(ArgumentError("missing acquisition package profile identity"))
+    source = provenance.source_provenance
+    all(name -> hasproperty(source, name), (:profile, :engine, :mode, :hil)) &&
+        hasproperty(source.hil, :backend) || throw(ArgumentError("missing source profile identity"))
+    provenance.profile == source.profile == selected.profile &&
+        provenance.engine == source.engine == selected.engine &&
+        provenance.mode == source.mode == selected.mode && source.hil.backend == selected.backend &&
+        provenance.calibration_stage == "interaction" && provenance.illumination == "lamp" ||
+        throw(ArgumentError("selected and acquisition package profile identities differ"))
+    copper = selected.profile == "copper"
+    return (; profile=selected.profile, backend=selected.backend, physical_count=277, measurements=copper ? 3600 : 376,
+        command_units="micrometre OPD", measurement_units=copper ? "normalized pixel" : "detector pixel coordinate",
+        response_units=copper ? "normalized pixel per micrometre OPD of estimated coordinate" :
+            "detector pixel coordinate per micrometre OPD of estimated coordinate")
+end
+
+function profile_specification(recipe, method, selected)
+    if selected.profile == "copper"
+        hasproperty(recipe, :adc_upper_rail) && typeof(recipe.adc_upper_rail) <: Integer &&
+            typeof(recipe.adc_upper_rail) !== Bool && recipe.adc_upper_rail == 16383 ||
+            throw(ArgumentError("Copper method requires 14-bit ADC rail"))
+        rule = recipe.settling
+        Set(keys(rule)) == Set((:kind, :frames)) && rule.kind == "discard_exposures" &&
+            typeof(rule.frames) <: Integer && typeof(rule.frames) !== Bool && 1 <= rule.frames <= 4096 ||
+            throw(ArgumentError("Copper method requires discarded settling exposures"))
+    end
+    return prepared_specification(recipe, method; physical_count=selected.physical_count,
+        measurements=selected.measurements)
+end
+
 function prepare_method(output, package)
     recipe = document(joinpath(output, "recipe.json"))
     method = document(joinpath(output, "method.json"))
-    specification = prepared_specification(recipe, method)
+    selected = selected_profile(output, package)
+    specification = profile_specification(recipe, method, selected)
     canonical = prepare_plan(specification)
     chronological, permutation = ordered_plan(canonical, method.order)
     write_new(joinpath(output, "prepared-specification.json"), specification)
@@ -87,10 +137,11 @@ function prepare_method(output, package)
         "canonical-order.json", "canonical-plan.json", "interaction-plan.json",
         "analysis/calibration_method_analysis.jl", "analysis/calibration_client.jl")
     inputs = Dict(relative => digest(joinpath(output, relative)) for relative in files)
+    inputs["package_provenance"] = digest(bound_path(package, "provenance.json"))
     inputs["installed_client"] = digest(joinpath(package, "hil/calibration_client.jl"))
     inputs["analysis/calibration_client.jl"] == inputs["installed_client"] ||
         throw(ArgumentError("frozen client differs from installed client"))
-    return write_new(joinpath(output, "preparation.json"), (; version=1, status="prepared",
+    return write_new(joinpath(output, "preparation.json"), (; version=1, status="prepared", profile=selected.profile, backend=selected.backend,
         signed_batches=size(canonical.figures, 1), measurements=canonical.measurements,
         frames_per_probe=canonical.frames_per_probe, physical_coordinates=length(canonical.reference),
         order=method.order, basis=basis_metadata(canonical), input_hashes=inputs))
@@ -109,6 +160,14 @@ function check_seal(output, package, expected)
     sealpath = joinpath(output, "prepared-identity.json")
     digest(sealpath) == expected || throw(ArgumentError("prepared identity hash changed"))
     seal = document(sealpath)
+    for relative in ("recipe.json", "method.json", "base-identity.json", "prepared-specification.json",
+            "canonical-order.json", "canonical-plan.json", "interaction-plan.json",
+            "analysis/calibration_method_analysis.jl", "analysis/calibration_client.jl")
+        haskey(seal.files, relative) || throw(ArgumentError("missing frozen input identity: $relative"))
+    end
+    for relative in ("provenance.json", "hil/calibration_client.jl")
+        haskey(seal.package_files, relative) || throw(ArgumentError("missing frozen package identity: $relative"))
+    end
     for (root, files) in ((output, seal.files), (package, seal.package_files))
         for (relative, hash) in pairs(files)
             digest(bound_path(root, String(relative))) == hash || throw(ArgumentError("frozen input hash changed: $relative"))
@@ -139,7 +198,8 @@ function reduce_method(output, package, expected_seal)
     # is passed by the owner from before acquisition, not read from a mutable file.
     seal = check_seal(output, package, expected_seal)
     recipe, method = document(joinpath(output, "recipe.json")), document(joinpath(output, "method.json"))
-    canonical = prepare_plan(prepared_specification(recipe, method))
+    selected = selected_profile(output, package)
+    canonical = prepare_plan(profile_specification(recipe, method, selected))
     chronological, permutation = ordered_plan(canonical, method.order)
     retained = document(joinpath(output, "canonical-order.json"))
     collect(retained.chronology_to_canonical) == permutation || throw(ArgumentError("canonical ordering differs"))
@@ -160,10 +220,10 @@ function reduce_method(output, package, expected_seal)
     end
     basis = basis_metadata(canonical)
     return write_new(joinpath(output, "candidate-response.json"), (; version=1,
-        status="complete-unaccepted-candidate", shape=size(matrix), layout="ROW_MAJOR", element_type="F32_LE",
+        status="complete-unaccepted-candidate", profile=selected.profile, backend=selected.backend, shape=size(matrix), layout="ROW_MAJOR", element_type="F32_LE",
         path="candidate-response.f32le", sha256=digest(destination), coordinate_kind=basis.coordinate_kind,
-        command_units="micrometre OPD", measurement_units="detector pixel coordinate",
-        response_units="detector pixel coordinate per micrometre OPD of estimated coordinate",
+        command_units=selected.command_units, measurement_units=selected.measurement_units,
+        response_units=selected.response_units,
         basis, order=method.order, chronology_to_canonical=permutation,
         frames_per_signed_batch=canonical.frames_per_probe, signed_batches=size(canonical.figures, 1),
         source_hashes=seal.files, package_hashes=seal.package_files, prepared_identity_sha256=expected_seal,

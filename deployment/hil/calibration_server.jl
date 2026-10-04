@@ -6,7 +6,7 @@ using SHA
 import ..CalibrationAcquisition
 
 const MAX_REQUEST_BYTES = 16 * 1024
-const MAX_REPLY_BYTES = 64 * 1024
+const MAX_REPLY_BYTES = 128 * 1024
 const MAX_FRAMES = 4096
 const MAX_PROBE = 16_383
 const CLASSIC_CAPTURE_BYTES = UInt64(250_252)

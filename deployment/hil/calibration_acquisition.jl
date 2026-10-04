@@ -88,6 +88,47 @@ mutable struct AcquisitionState
 end
 AcquisitionState() = AcquisitionState(0, nothing, Threads.Atomic{Bool}(false), 0, 0, false, false, false)
 
+"""Bounded acquisition diagnostics, including discarded settling exposures.
+
+The owner scans the already received raw ADC array outside SPA callbacks. These
+counters expose clipping; they do not change WFS validity or invent an optical
+acceptance threshold.
+"""
+mutable struct ExposureDiagnostics
+    adc_upper_rail::Union{Nothing,UInt16}
+    frames::UInt64
+    invalid_frames::UInt64
+    maximum_adc::UInt16
+    upper_rail_pixels::UInt64
+    upper_rail_frames::UInt64
+end
+function ExposureDiagnostics(adc_bits::Union{Nothing,Integer}=nothing)
+    adc_bits === nothing || (!(adc_bits isa Bool) && 1 <= adc_bits <= 16) ||
+        throw(ArgumentError("ADC width requires 1..16 bits"))
+    rail = adc_bits === nothing ? nothing : UInt16((UInt32(1) << adc_bits) - 1)
+    return ExposureDiagnostics(rail, 0, 0, 0, 0, 0)
+end
+function record_exposure!(diagnostics::ExposureDiagnostics, raw::AbstractVector{UInt16}, valid::Bool)
+    isempty(raw) && throw(ArgumentError("empty raw detector exposure"))
+    peak = maximum(raw)
+    rail = diagnostics.adc_upper_rail
+    rail === nothing || peak <= rail || error("ADC payload exceeds declared detector rail")
+    hits = rail === nothing ? 0 : count(==(rail), raw)
+    diagnostics.frames = Base.checked_add(diagnostics.frames, UInt64(1))
+    diagnostics.invalid_frames = Base.checked_add(diagnostics.invalid_frames, UInt64(!valid))
+    diagnostics.maximum_adc = max(diagnostics.maximum_adc, peak)
+    diagnostics.upper_rail_pixels = Base.checked_add(diagnostics.upper_rail_pixels, UInt64(hits))
+    diagnostics.upper_rail_frames = Base.checked_add(diagnostics.upper_rail_frames, UInt64(hits > 0))
+    return nothing
+end
+function exposure_diagnostics(session)
+    value = session.diagnostics
+    return (; raw_available=session.raw !== nothing, adc_upper_rail=value.adc_upper_rail,
+        frames=value.frames, invalid_frames=value.invalid_frames, maximum_adc=value.maximum_adc,
+        upper_rail_pixels=value.upper_rail_pixels, upper_rail_frames=value.upper_rail_frames,
+        scope="all completed exposures including settling; descriptive ADC diagnostics, no scientific acceptance")
+end
+
 """Initial calibration composition; scientific work stays outside callbacks."""
 struct AcquisitionSession{Plant,Driver,Source,Feedback,Responses,Raw,Active}
     plant::Plant
@@ -100,6 +141,7 @@ struct AcquisitionSession{Plant,Driver,Source,Feedback,Responses,Raw,Active}
     active::Active
     domain::AcquisitionDomain
     state::AcquisitionState
+    diagnostics::ExposureDiagnostics
 end
 
 function response_sinks(core, ::Val{:classic}, rate)
@@ -160,7 +202,7 @@ end
 prepare_active(::Val{:copper}, ::Nothing) = nothing
 prepare_active(profile, active) = throw(ArgumentError("unsupported WFS active selection"))
 
-function prepare_session(plant, driver, profile::Symbol; rate, capture_raw=true, active=nothing)
+function prepare_session(plant, driver, profile::Symbol; rate, capture_raw=true, active=nothing, adc_bits=nothing)
     profile in (:classic, :copper) || throw(ArgumentError("unknown calibration profile"))
     selection = prepare_active(Val(profile), active)
     source = feedback = raw = nothing
@@ -181,7 +223,8 @@ function prepare_session(plant, driver, profile::Symbol; rate, capture_raw=true,
                 schema="org.calculon.ao.raw-detector-pixels/1")
         end
         return AcquisitionSession(plant, driver, source, feedback, responses, raw,
-            profile, selection, pipewire_calibration_status(plant).acquisition_domain, AcquisitionState())
+            profile, selection, pipewire_calibration_status(plant).acquisition_domain, AcquisitionState(),
+            ExposureDiagnostics(adc_bits))
     catch
         close_endpoints((raw, responses..., feedback, source))
         rethrow()
@@ -381,6 +424,7 @@ function acquire_exposure!(session; timeout_ns::UInt64, require_valid=true)
             receipt.exposure_duration_ns == exposure.exposure_duration_nanoseconds || error("response exposure duration differs")
         end
         valid = response_valid(Val(session.profile), session.responses, session.active)
+        session.raw === nothing || record_exposure!(session.diagnostics, array_values(session.raw), valid)
         require_valid && !valid && error("invalid WFS measurement")
         finish_progress!(session)
         remaining(until)

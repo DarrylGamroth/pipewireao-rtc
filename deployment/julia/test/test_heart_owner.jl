@@ -74,7 +74,17 @@ const HEART_REQUIREMENTS = Dict("runtime_requirements" => [
         for (name, path) in option_values
             append!(argv, ["--" * name, path])
         end
-        options = H.arguments(argv)
+        @test_throws ArgumentError H.arguments(vcat(argv, ["--native-debug-stdio-wrapper", "/absent/stdbuf"]))
+        @test_throws ArgumentError H.arguments(vcat(argv, ["--native-wfs-proc-debug", "true", "--native-debug-stdio-wrapper", "/absent/stdbuf"]))
+        options = H.arguments(vcat(argv, ["--native-wfs-proc-debug", "true", "--native-debug-stdio-wrapper", "/usr/bin/stdbuf"]))
+        @test options.native_debug_stdio_wrapper == realpath("/usr/bin/stdbuf")
+        @test options.native_wfs_proc_debug
+        diagnostic_owner = H.Owner(options)
+        H.report(diagnostic_owner)
+        diagnostics = JSON3.read(read(diagnostic_owner.status_path, String))["native_diagnostics"]
+        @test diagnostics["stdio_wrapper_sha256"] == PipeWireAODeployment.Common.sha256_file("/usr/bin/stdbuf")
+        @test diagnostics["child_argv"][1:3] == [realpath("/usr/bin/stdbuf"), "-oL", "-eL"]
+        @test occursin("scientific acceptance excluded", diagnostics["qualification"])
         @test isfile(joinpath(options.runtime, "config/heart.yaml"))
         @test occursin(package, read(joinpath(options.runtime, "config/heart.yaml"), String))
         @test read(joinpath(options.runtime, "config/host.cpu"), String) == "fixture"

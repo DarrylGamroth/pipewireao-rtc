@@ -290,3 +290,32 @@ end
         wait(task)
     end
 end
+
+@testset "Interaction result output bound follows the sealed plan" begin
+    mktempdir() do root
+        classic=Dict("version"=>1,"run"=>1,"measurements"=>376,"frames_per_probe"=>16,
+            "probes"=>[zeros(277) for _ in 1:554])
+        classic_path=joinpath(root,"classic-plan.json")
+        C.write_json(classic_path,classic)
+        classic_limit=A.interaction_result_output_limit_bytes(classic_path)
+        @test classic_limit>0
+        @test classic_limit<16*1024*1024
+
+        copper=Dict("version"=>1,"run"=>2,"measurements"=>3600,"frames_per_probe"=>64,
+            "probes"=>[zeros(277) for _ in 1:1024])
+        copper_path=joinpath(root,"copper-plan.json")
+        C.write_json(copper_path,copper)
+        copper_limit=A.interaction_result_output_limit_bytes(copper_path)
+        @test copper_limit>16*1024*1024
+        @test copper_limit<=512*1024*1024
+        @test copper_limit>classic_limit
+
+        malformed=deepcopy(classic)
+        delete!(malformed,"frames_per_probe")
+        malformed_path=joinpath(root,"malformed-plan.json")
+        C.write_json(malformed_path,malformed)
+        @test_throws ArgumentError A.interaction_result_output_limit_bytes(malformed_path)
+    end
+    @test_throws ArgumentError A.interaction_result_output_limit_bytes(1,17_000_000,1)
+    @test_throws ArgumentError A.interaction_result_output_limit_bytes(typemax(Int),1,1)
+end

@@ -23,7 +23,9 @@ const INSTALLED_ENTRYPOINTS = Dict(
     "copper_quality" => "CopperQuality",
     "export_calibration" => "CalibrationExport",
     "export_hil" => "HILExport",
-    "export_heart_hil" => "HeartExport")
+    "export_heart_hil" => "HeartExport",
+    "export_heart_calibration" => "HeartCalibrationExport",
+    "export_heart_correction" => "HeartCorrectionExport")
 const REQUIRED_KEYS = Set(["version", "name", "session", "core", "client", "placement",
     "owners", "environment", "artifacts", "cpu-latency-us"])
 
@@ -308,13 +310,21 @@ mutable struct DeploymentRunner
     record::Dict{String,Any}
 end
 
+function owner_preparation_timeout(seconds)
+    seconds isa Integer && !(seconds isa Bool) && 1 <= seconds <= 3600 ||
+        fail("owner preparation timeout requires integer seconds in 1..3600")
+    return seconds
+end
+
 function DeploymentRunner(options::NamedTuple)
+    preparation_timeout = owner_preparation_timeout(get(options, :owner_preparation_timeout_seconds, 90))
     deployment = abspath(options.deployment)
     spec = profile(deployment, options.pipewire_prefix)
     source = get(spec, "source-owner", nothing)
     owner = source === nothing ? nothing : only(filter(o -> o["role"] == source, spec["owners"]))
     record = Dict{String,Any}("version" => 1, "name" => spec["name"], "phase" => "preflight",
-        "pid" => getpid(), "admitted" => false, "processes" => Dict{String,Any}(), "error" => nothing)
+        "pid" => getpid(), "admitted" => false, "processes" => Dict{String,Any}(), "error" => nothing,
+        "owner_preparation_timeout_seconds" => preparation_timeout)
     DeploymentRunner(options, dirname(deployment), spec, installed_paths(options.pipewire_prefix),
         Placement.inherited_cpus(), Tuple{String,Base.Process}[], IdDict{Base.Process,Int}(), nothing, nothing, nothing,
         nothing, nothing, nothing, owner, 0, nothing, false, false, false, nothing, record)
@@ -864,7 +874,8 @@ function _run_locked(deployment::DeploymentRunner, base)
             env = environment(deployment, role, bindings)
             merge!(env, Dict(key => substitute(value, bindings) for (key, value) in owner["environment"]))
             spawn(deployment, role, [substitute(arg, bindings) for arg in owner["argv"]], env)
-            wait_until(deployment, () -> isfile(joinpath(runtime, owner["prepared"])), "$role preparation")
+            wait_until(deployment, () -> isfile(joinpath(runtime, owner["prepared"])), "$role preparation";
+                timeout=get(deployment.options, :owner_preparation_timeout_seconds, 90))
             _touch(joinpath(runtime, owner["connect"]))
             wait_until(deployment, () -> isfile(joinpath(runtime, owner["connected"])), "$role connection")
         end
@@ -1111,12 +1122,16 @@ function _options(argv)
     allowed = command == "install" ? Set(["--package", "--destination", "--pipewire-prefix"]) :
         command == "control" ? Set(["--runtime"]) :
         Set(["--deployment", "--pipewire-prefix", "--fits", "--runtime"])
+    command == "run" && push!(allowed, "--owner-preparation-timeout-seconds")
     isempty(setdiff(Set(keys(parsed)), allowed)) || fail("unsupported option for $command")
+    preparation_timeout = tryparse(Int, get(parsed, "--owner-preparation-timeout-seconds", "90"))
+    owner_preparation_timeout(preparation_timeout)
     options = (; command, deployment=get(parsed, "--deployment", ""),
         pipewire_prefix=get(parsed, "--pipewire-prefix", "/opt/pipewireao"),
         runtime=get(parsed, "--runtime", joinpath(get(ENV, "XDG_RUNTIME_DIR", "/run/user/$(ccall(:getuid, Cuint, ()))"), "pipewireao-rtc")),
         fits=get(parsed, "--fits", nothing), package=get(parsed, "--package", ""),
-        destination=get(parsed, "--destination", ""), argv=positionals)
+        destination=get(parsed, "--destination", ""), argv=positionals,
+        owner_preparation_timeout_seconds=preparation_timeout)
     if command == "install"
         isempty(options.package) && fail("missing --package")
         isempty(options.destination) && fail("missing --destination")

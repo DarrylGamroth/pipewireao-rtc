@@ -40,6 +40,9 @@ end
     @test bounded_report.observed_frames == length(bounded_report.per_frame) == 256
     @test ncodeunits(Protocol.JSON3.write(bounded_report)) < 200 * 1024
     @test (atmosphere, pupil, surface) == original
+    @test CT.stage!(witness, atmosphere, pupil, surface) === witness.staging
+    @test witness.staging == original
+    @test_throws ArgumentError CT.stage!(witness, zeros(Float32, 1, 2), pupil, surface)
     @test witness.atmosphere_variance_m2[1] == 1.0
     @test witness.residual_variance_m2[1] == 0.25
     @test_throws ArgumentError CT.record!(witness, atmosphere, pupil, surface, UInt64(1), Int64(1))
@@ -66,10 +69,9 @@ end
 @testset "optional preparation and public annular pupil" begin
     @test prepare_correction_truth((;), nothing) === nothing
     @test record_correction_truth!((; truth=nothing), nothing, UInt64(1), Int64(0)) === nothing
-    for options in ((; profile=:copper, backend=:cpu, correction_diagnostics=true),
-                    (; profile=:classic, backend=:cuda, correction_diagnostics=true),
-                    (; profile=:classic, backend=:amdgpu, correction_diagnostics=true),
-                    (; profile=:classic, backend=:cpu, transport=:heart, correction_diagnostics=true))
+    for options in ((; profile=:unknown, backend=:cpu, correction_diagnostics=true),
+                    (; profile=:classic, backend=:unknown, correction_diagnostics=true),
+                    (; profile=:classic, backend=:cpu, transport=:unknown, correction_diagnostics=true))
         @test_throws ArgumentError prepare_correction_truth(options, nothing)
     end
     mktempdir() do root
@@ -99,6 +101,10 @@ end
             pupil_reflectivity=cfg.pupil_reflectivity, revision=cfg.revision, T=Float32), target)
         @test witness.mask == optics.pupil_mask(telescope)
         @test 0 < count(witness.mask) < 64
+        write(graph, replace(text, "name = \"shwfs\"" => "name = \"pwfs\""))
+        @test CT.telescope_config(graph) == cfg
+        write(graph, replace(text, "name = \"shwfs\"" => "name = \"unknown\""))
+        @test_throws ArgumentError CT.telescope_config(graph)
         write(graph, replace(text, "resolution = 8" => "resolution = 9"; count=1))
         @test_throws ArgumentError CT.telescope_config(graph)
     end

@@ -176,9 +176,9 @@ end
 
 function prepare_correction_truth(options, science)
     get(options, :correction_diagnostics, false) || return nothing
-    options.profile === :classic && options.backend === :cpu &&
-        get(options, :transport, :scientific) === :scientific || throw(
-            ArgumentError("correction diagnostics require Classic CPU scientific transport"))
+    options.profile in (:classic, :copper) && options.backend in (:cpu, :cuda, :amdgpu) &&
+        get(options, :transport, :scientific) in (:scientific, :heart) || throw(
+            ArgumentError("correction diagnostics require a declared Classic/Copper simulation"))
     witness = CorrectionTruth.prepare_witness(options.graph, AdaptiveOpticsSim.Optics, science.target, options.frames)
     isapprox(witness.config.exposure_seconds, options.exposure_ns / 1e9; rtol=1e-12, atol=0) ||
         throw(ArgumentError("truth plant/report exposure mismatch"))
@@ -187,9 +187,10 @@ end
 
 function record_correction_truth!(recorder, science, sequence, model_timestamp_ns)
     recorder.truth === nothing && return nothing
-    return CorrectionTruth.record!(recorder.truth,
+    staged = CorrectionTruth.stage!(recorder.truth,
         graph_output(science.graph, :atmosphere_opd), graph_output(science.graph, :pupil_opd),
-        graph_output(science.graph, :pdm_surface_opd), sequence, model_timestamp_ns)
+        graph_output(science.graph, :pdm_surface_opd))
+    return CorrectionTruth.record!(recorder.truth, staged..., sequence, model_timestamp_ns)
 end
 
 function record!(recorder, boundary, sequence, driver, model_timestamp_ns, timing, cycle_ns, start_ns, stop_ns)

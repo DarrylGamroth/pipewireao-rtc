@@ -38,16 +38,13 @@ function validate_recipe(value)
     return result
 end
 
-function validate_base(base,prefix,recipe)
+function validate_base(base,prefix,recipe;allowed_backends=("cpu",))
     specification=Deployment.profile(joinpath(base,"deployment.conf"),prefix)
     provenance=read_json(joinpath(base,"provenance.json"))
     provenance["profile"]=="copper" && provenance["engine"] in ("fgn","jfg") &&
-        provenance["mode"]=="frame" && get(provenance["hil"],"backend",nothing)=="cpu" ||
-        throw(ArgumentError("Copper reference requires complete-frame CPU science"))
-    source=only(filter(owner->owner["role"]==specification["source-owner"],specification["owners"]))
-    argv=source["argv"]
-    count(==("--backend"),argv)==1 && argv[findfirst(==("--backend"),argv)+1]=="cpu" ||
-        throw(ArgumentError("source owner must select CPU backend"))
+        provenance["mode"]=="frame" ||
+        throw(ArgumentError("Copper calibration requires complete-frame science"))
+    Acquisition.validate_simulator_backend(base,specification,provenance;allowed_backends)
     graph=Deployment.decode(joinpath(base,"graphs","graph.conf.in"),prefix)
     CalibrationExport.split_graph(graph,"copper",provenance["engine"],"reference-validation")
     bindings=filter(item->item["name"]=="background",provenance["parameters"])
@@ -125,9 +122,11 @@ function analysis_products(output,evidence,stage,recipe,helper_sha)
     return hashes,sha256_file(path)
 end
 
-function stage_base(base,output,recipe,stage,background,aoc_source,prefix)
-    stage in STAGES || throw(ArgumentError("unknown Copper reference stage"))
-    _,provenance,binding=validate_base(base,prefix,recipe)
+function stage_base(base,output,recipe,stage,background,aoc_source,prefix;allowed_backends=("cpu",))
+    # Interaction uses the same retained background and normal detector setup.
+    # It acquires absolute normalized pixels; no measured reference is subtracted.
+    stage in STAGES || stage == "interaction" || throw(ArgumentError("unknown Copper calibration stage"))
+    _,provenance,binding=validate_base(base,prefix,recipe;allowed_backends)
     length(background)==16384 && all(isfinite,reinterpret(Float32,background)) ||
         throw(ArgumentError("Copper background requires 4096 finite Float32 ADC values"))
     !ispath(output) && !islink(output) || throw(ArgumentError("Copper stage base must be fresh"))
@@ -147,9 +146,12 @@ function stage_base(base,output,recipe,stage,background,aoc_source,prefix)
         cp(helper,joinpath(output,"hil",basename(helper));force=true)
     end
     provenance["reference_campaign_inputs"]=Dict("stage"=>stage,"recipe"=>recipe,
+        "backend"=>provenance["hil"]["backend"],
         "source_deployment_sha256"=>sha256_file(joinpath(base,"deployment.conf")),
         "background_sha256"=>sha256_file(path),"aoc_files"=>Acquisition.file_identity(target),
-        "qualification"=>"measured candidate only; no reference adoption, interaction matrix, inverse or correction acceptance",
+        "qualification"=>stage == "interaction" ?
+            "interaction candidate only; no reference subtraction, inverse or correction acceptance" :
+            "measured candidate only; no reference adoption, interaction matrix, inverse or correction acceptance",
         "historical_fixture"=>"Only background replaced; other offset provenance remains historical.")
     write_json(joinpath(output,"provenance.json"),provenance)
     descriptor=read_json(joinpath(output,"deployment.conf"))

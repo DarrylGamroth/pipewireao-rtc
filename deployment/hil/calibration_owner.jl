@@ -5,7 +5,7 @@ include("calibration_acquisition.jl")
 include("calibration_server.jl")
 using Sockets
 
-function calibration_options(arguments)
+function calibration_options(arguments; required_transport::Symbol=:scientific)
     length(arguments) % 2 == 0 || throw(ArgumentError("each option requires one value"))
     ordinary = String[]
     endpoint = nothing
@@ -49,7 +49,7 @@ function calibration_options(arguments)
     end
     endpoint === nothing && throw(ArgumentError("missing --calibration-socket"))
     options = Protocol.parse_options(ordinary)
-    options.transport === :scientific || throw(ArgumentError("calibration uses native ndarray transport"))
+    options.transport === required_transport || throw(ArgumentError("calibration transport differs from the selected owner"))
     ncodeunits(endpoint) < 108 || throw(ArgumentError("calibration socket path exceeds the Unix limit"))
     endpoint in (options.graph, options.prepared_event, options.connect_request,
         options.connect_reply, options.quit_request, options.control_request,
@@ -104,6 +104,7 @@ function calibration_report(options, science, state, owner; failure=nothing)
         illumination=String(science.illumination), detector_config=science.detector_config,
         wfs_active=owner.session.active,
         wfs_active_sha256=owner.session.active === nothing ? nothing : bytes2hex(sha256(UInt8.(owner.session.active))),
+        detector_diagnostics=CalibrationAcquisition.exposure_diagnostics(owner.session),
         command_transport_units="micrometre OPD", plant_command_units="metre OPD",
         graph_sha256=bytes2hex(open(sha256, options.graph)),
         qualification="operational software acquisition; matrix, correction and rate require separate acceptance")
@@ -137,7 +138,7 @@ function run_calibration_owner(options, plant_module, target)
     failure = nothing
     try
         session = CalibrationAcquisition.prepare_session(plant, science.driver,
-            options.profile; rate=configuration.rate, active)
+            options.profile; rate=configuration.rate, active, adc_bits=science.detector_config["bits"])
         owner = CalibrationServer.Owner(session; normal_controller_absent=true,
             measurement_count=options.profile === :classic ? 376 : 3600,
             maximum_timeout_ns=configuration.timeout_ns, capture)
