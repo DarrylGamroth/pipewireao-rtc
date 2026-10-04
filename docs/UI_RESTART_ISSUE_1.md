@@ -3,6 +3,12 @@
 Status: discard-counter cache mechanism confirmed; focused correction reviewed
 and Classic/Copper functional regressions pass.
 
+Integration: correction `46b718a` and Copper candidate increment `3ea1706`
+were merged into RTC main `ef79350` and pushed to the user's repository.
+[Issue #1 is closed](https://github.com/DarrylGamroth/pipewireao-rtc/issues/1#issuecomment-5974982026).
+GUI harness/validation changes are merged locally as `84f4a6a`; that repository
+has no configured remote.
+
 Date: 2026-10-03. [Issue #1](https://github.com/DarrylGamroth/pipewireao-rtc/issues/1).
 This record is software integration evidence under RTC-DEV-004,
 RTC-DEV-011, RTC-DEV-022 and RTC-DEV-023. The active
@@ -200,6 +206,26 @@ acceptance evidence before delivery.
 No scientific equivalence, observer non-gating, rendered GUI interaction, HIL,
 hardware safety, wall cadence or real-time qualification is claimed.
 
+## Merge and release handoff
+
+RTC main `ef79350` rebuilt successfully with the live feature, locked
+dependencies and one Cargo job on CPU 6. Its `src/live.rs` hash equals the
+qualified worker source. The canonical release binary SHA-256 is
+`490fe9fa67f9f1266fdf7901c5f275eb8065ca885d197e198e1092a17a22f16f`;
+the calibration client is
+`275e82090a9500a31cd131ceb226ec8ab26bf1d75a315980298a4d59033a5b38`.
+Preserved copies and the post-merge build/source/test record are under the
+same issue evidence root in `preserved/` and `postmerge-validation.json`.
+Merged deployment Python checks ran 175 tests with two skips; merged GUI
+cleanup checks passed all 13 tests. These are build and software checks;
+the live scenarios above used the preserved source-identical worker build.
+
+After verification, Cargo metadata resolved the RTC worktree's own target;
+cleaning it removed 1.8 GiB of logical build artifacts (1.6 GiB on disk).
+Preserved evidence binaries remain. Canonical and sibling targets were retained.
+Existing installed packages are immutable and continue to contain their
+original binary; new exports must use the rebuilt canonical release.
+
 ## SHA-256 evidence ledger
 
 Paths without a leading slash are relative to
@@ -252,3 +278,5 @@ are independent copies; later rebuilds cannot change this evidence identity.
 | `/tmp/pipewireao-gui-rtc-evidence-6o6fxzh4/client.log` | `66ff3b76adee213348775159c078cff723c027c599c45c6b4a6a5f48eb87c690` |
 | `/tmp/pipewireao-gui-rtc-evidence-jlh6ivyj/result.json` | `e654ffe2764c8b74e84cc7138656d72e52ecb700d5a15167f519fbbe1659ee10` |
 | `/tmp/pipewireao-gui-rtc-evidence-jlh6ivyj/client.log` | `de0ea5af783ec61824eb4559d9ef8748994fbca08c43ff5734eaba1089eddf2e` |
+| `postmerge-validation.json` | `cf8dc0d073c3990d76744c3a4c018c5635d5152713e13ba8bc1dae7f6908f9a3` |
+| `rtc-worktree-cleanup.json` | `9ba59ecf38c60206d949faecfb6425f1c2f28d699d6b7b0215c0cddb2f064099` |
