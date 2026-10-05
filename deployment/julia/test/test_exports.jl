@@ -213,3 +213,102 @@ end
     @test occursin("WCC.dm0.w = { 14 }",mapped)
     @test_throws ArgumentError Heart._cpu_map("HOP0.wfs.w = { 4 }\n")
 end
+
+# These portable fixture methods replace external dependency installation and
+# scientific calibration only. Export validation, argument construction,
+# package copying, model-period conversion and provenance writing stay real.
+function HIL._checked(argv::Vector{String}; timeout=1800)
+    return (; returncode=0, stdout="fixture dependency preparation", stderr="")
+end
+function HIL.simulated_calibration(package::String, specification::AbstractDict,
+        provenance::AbstractDict, prefix::String, executable::String, dark_frames::Int)
+    return Dict("fixture"=>true, "dark_frames"=>dark_frames)
+end
+
+@testset "sustained HIL exporter preserves effective pacing provenance" begin
+    mktempdir() do root
+        base = joinpath(root, "recorded-base")
+        mkpath(joinpath(base, "graphs"))
+        ExportFixture.Common.write_json(joinpath(base, "graphs/graph.conf.in"), fixture_graph())
+        port(name) = Dict("name"=>name, "rate"=>"500/1")
+        session = Dict("execution"=>"complete-frame", "rate"=>"500/1",
+            "sources"=>[Dict("node.name"=>"recorded-source", "ports"=>[port("output")])],
+            "graphs"=>[Dict("node.name"=>"science", "ports"=>[port("input"), port("output")])],
+            "sinks"=>[Dict("node.name"=>"recorded-sink", "ports"=>[port("input")])],
+            "links"=>[Dict("output"=>"recorded-source:output", "input"=>"science:input"),
+                Dict("output"=>"science:output", "input"=>"recorded-sink:input")],
+            "execution-groups"=>[Dict("nodes"=>["recorded-source", "science", "recorded-sink"])])
+        ExportFixture.Common.write_json(joinpath(base, "session.conf.in"), session)
+        ExportFixture.Common.write_json(joinpath(base, "provenance.json"),
+            Dict("mode"=>"frame", "profile"=>"classic", "engine"=>"fgn", "parameters"=>Any[]))
+        core = Dict("context.properties"=>Dict("context.data-loops"=>[
+            Dict("loop.name"=>name) for name in ("rtc-data-loop", "source-loop", "sink-loop")]))
+        ExportFixture.Common.write_json(joinpath(base, "core.conf.in"), core)
+        specification = Dict("owners"=>Any[], "core"=>"core.conf.in",
+            "placement"=>Dict{String,Any}(), "client"=>Dict{String,Any}())
+        ExportFixture.Common.write_json(joinpath(base, "deployment.conf"), specification)
+        packages = Dict{String,String}()
+        for name in ("AdaptiveOpticsCalibration", "AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL",
+                     "PipeWireAO", "FilterGraphAlgorithms", "REVOLTClassicSim")
+            path = joinpath(root, "sources", name)
+            mkpath(joinpath(path, "src"))
+            write(joinpath(path, "Project.toml"), "name = \"$name\"\n")
+            write(joinpath(path, "src", name * ".jl"), "module $name end\n")
+            packages[name] = path
+        end
+        plant = packages["REVOLTClassicSim"]
+        mkpath(joinpath(plant, "graphs"))
+        write(joinpath(plant, "graphs/revolt_classic_hil_grid_gaussian.toml"), """
+            [[nodes]]
+            name = "atmosphere"
+            [nodes.config]
+            atmosphere_step = 0.002
+            [[nodes]]
+            name = "detector"
+            [nodes.config]
+            exposure_duration_s = 0.001896
+            bits = 12
+            """)
+        arguments = (; base_package=base, output=joinpath(root, "candidate"), pipewire_prefix="/unused",
+            backend="cpu", rate_hz=500, frames=256, dark_frames=1, total_exchanges=1024,
+            aos_root=packages["AdaptiveOpticsSim"], aoc_root=packages["AdaptiveOpticsCalibration"],
+            adapter_root=packages["AdaptiveOpticsSimPipeWireHIL"], pipewireao_jl_root=packages["PipeWireAO"],
+            calibration_algorithms_root=packages["FilterGraphAlgorithms"], plant_root=plant)
+        argument(argv, option) = argv[only(findall(==(option), argv)) + 1]
+        for (wall_rate, effective) in (("default", 500), ("100", 100), ("unpaced", 0))
+            output = joinpath(root, "export-" * wall_rate)
+            @test HIL.export_package(merge(arguments, (; output, wall_rate))) == joinpath(output, "deployment.conf")
+            metadata = ExportFixture.Common.read_json(joinpath(output, "provenance.json"))["hil"]
+            deployment = ExportFixture.Common.read_json(joinpath(output, "deployment.conf"))
+            owner = only(filter(owner -> owner["role"] == "simulator", deployment["owners"]))
+            @test metadata["wall_rate_hz"] == effective
+            @test metadata["model_rate_hz"] == 500 && metadata["model_period_ns"] == 2_000_000
+            @test metadata["wall_rate"] == wall_rate
+            @test metadata["frames"] == 256 && metadata["total_exchanges"] == 1024
+            @test argument(owner["argv"], "--wall-rate") == wall_rate
+            @test argument(owner["argv"], "--total-exchanges") == "1024"
+            @test argument(owner["argv"], "--frames") == "256"
+            @test argument(owner["argv"], "--rate") == "500"
+            @test argument(owner["argv"], "--exposure-ns") == "1896000"
+            @test HIL.TOML.parsefile(joinpath(output, "hil/plant.toml"))["nodes"][1]["config"]["atmosphere_step"] == 0.002
+            @test ExportFixture.Common.read_json(joinpath(output, "session.conf.in"))["rate"] == "500/1"
+        end
+        # Finite defaults retain their prefix-only owner arguments.
+        finite = joinpath(root, "finite")
+        HIL.export_package(merge(arguments, (; output=finite, frames=16, total_exchanges=16)))
+        metadata = ExportFixture.Common.read_json(joinpath(finite, "provenance.json"))["hil"]
+        owner = only(ExportFixture.Common.read_json(joinpath(finite, "deployment.conf"))["owners"])
+        @test metadata["wall_rate_hz"] == metadata["model_rate_hz"] == 500
+        @test metadata["frames"] == metadata["total_exchanges"] == 16
+        @test !("--total-exchanges" in owner["argv"]) && !("--wall-rate" in owner["argv"])
+        for total in (0, 255, 65537, true, 1024.0)
+            @test_throws ArgumentError HIL.export_package(merge(arguments, (; total_exchanges=total)))
+        end
+        for rate in ("0", "501", "-1", "100.5", "fast", "999999999999999999999999", 100, true)
+            @test_throws ArgumentError HIL.export_package(merge(arguments, (; wall_rate=rate)))
+        end
+        @test_throws ArgumentError HIL.export_package(merge(arguments, (; total_exchanges=256, wall_rate="unpaced")))
+        @test_throws ArgumentError HIL.export_package(merge(arguments, (; rate_hz=501)))
+        @test !ispath(arguments.output)
+    end
+end

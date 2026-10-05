@@ -123,6 +123,14 @@ or wall-clock cadence.
 JLL ownership fix, release of the prepared Julia API and generic CCR-006
 private-core qualification separately from those scientific cohorts.
 
+[Sustained HIL plan](SUSTAINED_HIL_PLAN.md) defines the bounded Classic/Copper
+complete-frame extension. The [usage guide](SUSTAINED_HIL_USAGE.md) describes
+installed options, reports and measurement scope. Its [independent review](SUSTAINED_HIL_REVIEW.md)
+separates continuous delivery, clipping feedback, simulator allocations and
+cadence evidence from the earlier finite scientific checks. The
+[evidence ledger](SUSTAINED_HIL_EVIDENCE.json) seals completed campaign reports
+and records the remaining midrun-control and qualification limits.
+
 ## Julia operational deployment
 
 The [Julia package structure review](JULIA_PACKAGE_STRUCTURE_REVIEW.md) distinguishes

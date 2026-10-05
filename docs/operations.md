@@ -765,6 +765,16 @@ command exchange and MUST NOT produce catch-up bursts or silently skip model
 sequences. Preparation/warm/reset costs MUST precede admission. Hardware results
 MUST identify the tested backend/device; CPU checks alone do not qualify GPUs.
 
+The bounded sustained qualification mode MAY preserve continuous plant and
+controller state for up to 65,536 exchanges while retaining at most 256 complete
+frames. It MUST validate every exchange beyond that retained prefix and report
+actual total delivery separately from retained payload counts. Its report MUST
+distinguish model period from wall pacing, exclude the declared warmup from
+timing distributions, and disclose histogram resolution and overflow. An
+unpaced completed-exchange rate MUST NOT be presented as a scheduled frame rate
+or maximum isolated RTC throughput. Simulator-process allocation measurements
+MUST NOT be described as graph-callback allocations.
+
 Verification intent: CPU functional exchange, explicit unsupported-device rejection,
 selected GPU execution where available, model/command causality, pacing and
 missed-period boundary tests. These are functional simulation checks, not a

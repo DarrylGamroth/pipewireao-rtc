@@ -67,7 +67,7 @@ function opd_hash(values::AbstractMatrix{Float32})
     return bytes2hex(sha256(reinterpret(UInt8, words)))
 end
 
-mutable struct Witness{C}
+mutable struct Witness{C,B}
     config::C
     mask::Matrix{Bool}
     mask_sha256::String
@@ -80,6 +80,9 @@ mutable struct Witness{C}
     pupil_sha256::Vector{String}
     surface_sha256::Vector{String}
     staging::NTuple{3,Matrix{Float32}}
+    hash_contexts::Matrix{SHA2_256_CTX}
+    hash_words::Vector{UInt32}
+    hash_bytes::B
 end
 
 function Witness(config, mask::AbstractMatrix{Bool}, frames::Integer)
@@ -88,9 +91,11 @@ function Witness(config, mask::AbstractMatrix{Bool}, frames::Integer)
     require(size(mask) == (config.resolution, config.resolution) && any(mask), "invalid truth pupil support")
     support = Matrix{Bool}(mask)
     mask_hash = bytes2hex(sha256(UInt8[support[r, c] for r in axes(support, 1) for c in axes(support, 2)]))
+    words = Vector{UInt32}(undef, length(support))
     return Witness(config, support, mask_hash, 0, zeros(UInt64, frames), zeros(Int64, frames),
         zeros(Float64, frames), zeros(Float64, frames), fill("", frames), fill("", frames), fill("", frames),
-        ntuple(_ -> zeros(Float32, size(support)), 3))
+        ntuple(_ -> zeros(Float32, size(support)), 3),
+        [SHA2_256_CTX() for _ in 1:3, _ in 1:frames], words, reinterpret(UInt8, words))
 end
 
 """Prepare the same public annular pupil as the cold correction replay."""
@@ -127,11 +132,25 @@ function reset!(witness::Witness)
     fill!(witness.atmosphere_sha256, "")
     fill!(witness.pupil_sha256, "")
     fill!(witness.surface_sha256, "")
+    for index in eachindex(witness.hash_contexts)
+        witness.hash_contexts[index] = SHA2_256_CTX()
+    end
+    return nothing
+end
+
+function _update_opd_hash!(witness::Witness, product::Int, frame::Int, values::AbstractMatrix{Float32})
+    index = 1
+    for row in axes(values, 1), column in axes(values, 2)
+        witness.hash_words[index] = htol(reinterpret(UInt32, values[row, column]))
+        index += 1
+    end
+    SHA.update!(witness.hash_contexts[product, frame], witness.hash_bytes)
     return nothing
 end
 
 """Observe current public graph products after exchange, before another step.
-Hashes allocate in this opt-in source diagnostic. This is no cadence measurement
+Canonical hash input and SHA contexts are prepared before recording; digest
+strings are finalized by the cold report writer. This is no cadence measurement
 or calibration input; it never changes a graph, command, detector or model time.
 """
 function record!(witness::Witness, atmosphere::AbstractMatrix{Float32}, pupil::AbstractMatrix{Float32},
@@ -144,20 +163,25 @@ function record!(witness::Witness, atmosphere::AbstractMatrix{Float32}, pupil::A
     require(size(surface) == size(witness.mask) && all(isfinite, surface), "invalid public PDM surface")
     atmosphere_variance = pupil_variance(atmosphere, witness.mask)
     residual_variance = pupil_variance(pupil, witness.mask)
-    atmosphere_hash, pupil_hash, surface_hash = opd_hash(atmosphere), opd_hash(pupil), opd_hash(surface)
+    _update_opd_hash!(witness, 1, index, atmosphere)
+    _update_opd_hash!(witness, 2, index, pupil)
+    _update_opd_hash!(witness, 3, index, surface)
     witness.sequences[index] = sequence
     witness.model_timestamps_ns[index] = model_timestamp_ns
     witness.atmosphere_variance_m2[index] = atmosphere_variance
     witness.residual_variance_m2[index] = residual_variance
-    witness.atmosphere_sha256[index] = atmosphere_hash
-    witness.pupil_sha256[index] = pupil_hash
-    witness.surface_sha256[index] = surface_hash
     witness.count = index
     return nothing
 end
 
 function report(witness::Witness; graph_sha256, frame_sha256, command_sha256, simulator_sha256, completed_frames)
     count = witness.count
+    for (product, hashes) in enumerate((witness.atmosphere_sha256, witness.pupil_sha256, witness.surface_sha256))
+        for frame in 1:count
+            isempty(hashes[frame]) || continue
+            hashes[frame] = bytes2hex(SHA.digest!(witness.hash_contexts[product, frame]))
+        end
+    end
     return (; version=1, observed_frames=count, recorded_frames=completed_frames,
         complete_prefix=count == completed_frames, graph_sha256, frame_sha256, command_sha256, simulator_sha256,
         helper_sha256=bytes2hex(open(sha256, @__FILE__)),

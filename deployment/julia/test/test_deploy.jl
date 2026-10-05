@@ -18,6 +18,128 @@ function deployment_fixture(directory)
         "artifacts" => Dict("session.conf.in" => D.digest(joinpath(directory, "session.conf.in"))))
 end
 
+# Focused source-status failure fixture; no PipeWire or scientific owner is used.
+function source_status_failure_fixture(mode)
+    mktempdir() do directory
+        D._enable_subreaper()
+        owner = Dict("role" => "simulator", "control-request" => "source.request",
+            "control-reply" => "source.reply", "quit" => "source.quit")
+        public_path = joinpath(directory, "public.sock")
+        native_path = joinpath(directory, "native.sock")
+        broker, native = listen(public_path), listen(native_path)
+        children = Tuple{String,Base.Process}[]
+        pids = IdDict{Base.Process,Int}()
+        descendant_path = joinpath(directory, "descendant.pid")
+        native_events = String[]
+        native_task = nothing
+        client = nothing
+        try
+            for role in ("core", "simulator", "rtc")
+                argv = role == "simulator" ? ["sh", "-c",
+                    "sleep 60 & echo \$! > \"\$1\"; wait", "source", descendant_path] : ["sleep", "60"]
+                child = Base.run(Cmd(Cmd(argv); detach=true); wait=false)
+                push!(children, (role, child))
+                pids[child] = getpid(child)
+            end
+            @test timedwait(() -> isfile(descendant_path), 5; pollint=0.01) == :ok
+            descendant = parse(Int, strip(read(descendant_path, String)))
+            record = Dict{String,Any}("phase" => "running", "admitted" => true,
+                "error" => nothing, "processes" => Dict{String,Any}())
+            runner = D.DeploymentRunner((;), directory, Dict{String,Any}("owners" => [owner]),
+                Dict{String,String}(), Set{Int}(), children, pids, directory,
+                public_path, native_path, broker, nothing, nothing, owner, 0, "running",
+                false, false, false, joinpath(directory, "state.json"), record)
+            if mode == :malformed
+                # Valid JSON with a matching ID/operation, but an invalid state.
+                D.atomic_record(joinpath(directory, "source.reply"), Dict(
+                    "version" => 1, "id" => 1, "operation" => "status", "ok" => true,
+                    "state" => "unknown", "sequence" => 1, "completed" => false, "error" => nothing))
+            end
+            native_task = @async begin
+                for request_number in 1:3
+                    peer = accept(native)
+                    try
+                        request = JSON3.read(readline(peer), Dict{String,Any})
+                        operation = only(request["argv"])
+                        push!(native_events, operation)
+                        if request_number > 1
+                            # Consumer control must follow ingress revocation.
+                            for (role, child) in children
+                                if role in ("core", "simulator")
+                                    @test !process_running(child)
+                                    @test isempty(D._live_owned_orphans(pids[child]))
+                                end
+                            end
+                            @test !ispath("/proc/$descendant")
+                        end
+                        if operation == "quit"
+                            kill(only(child for (role, child) in children if role == "rtc"))
+                        end
+                        write(peer, JSON3.write(Dict("version" => 1, "id" => request["id"],
+                            "ok" => true, "state" => "Ready")) * "\n")
+                    finally
+                        close(peer)
+                    end
+                end
+            end
+            client = connect(public_path)
+            write(client, JSON3.write(Dict("version" => 1, "id" => "source-status-fault",
+                "argv" => ["status"])) * "\n")
+            supervisor = @async try
+                D.serve_control(runner)
+                nothing
+            catch exception
+                exception
+            finally
+                # Same cleanup entrypoint used when serve_control propagates
+                # a failed acknowledgement out of the supervisor's run loop.
+                D.stop(runner)
+            end
+            reply = JSON3.read(String(D._read_line_bounded(client, D.MAX_REPLY_BYTES,
+                D.monotonic() + 20)), Dict{String,Any})
+            @test reply["ok"] === false
+            @test reply["id"] == "source-status-fault"
+            @test reply["error"]["field"] == "control.outcome"
+            @test fetch(supervisor) isa D.DeploymentError
+            wait(native_task)
+            @test runner.source_failed
+            @test runner.source_id == 1
+            @test runner.record["admitted"] === false
+            @test runner.record["phase"] == "failed"
+            persisted = JSON3.read(read(runner.state_path, String), Dict{String,Any})
+            @test persisted["admitted"] === false && persisted["phase"] == "failed"
+            @test occursin(mode == :missing ? "ACK timed out" : "invalid source", runner.record["error"])
+            @test native_events == ["status", "status", "quit"]
+            @test !isfile(joinpath(directory, "source.reply")) || mode == :malformed
+            for (_, child) in children
+                @test !process_running(child)
+                @test isempty(D._live_owned_orphans(pids[child]))
+            end
+            @test !ispath("/proc/$descendant")
+        finally
+            client === nothing || close(client)
+            close(broker)
+            close(native)
+            for (_, child) in reverse(children)
+                D._owned_wait(child, pids[child], 0)
+            end
+            native_task === nothing || try wait(native_task) catch end
+        end
+    end
+end
+
+@testset "Public source status failures revoke ingress and clean owned groups" begin
+    if Sys.islinux()
+        withenv("NOTIFY_SOCKET" => nothing) do
+            for mode in (:malformed, :missing)
+                @testset "$mode acknowledgement" begin
+                    source_status_failure_fixture(mode)
+                end
+            end
+        end
+    end
+end
+
 @testset "Julia deployment portable admission and protocol" begin
     @test D.INSTALLED_ENTRYPOINTS["export_heart_correction"] == "HeartCorrectionExport"
     mktempdir() do directory

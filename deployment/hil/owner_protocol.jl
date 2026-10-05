@@ -12,8 +12,8 @@ const REQUIRED_OPTIONS = (
 
 """Parse the complete-frame simulator command line without loading a plant."""
 function parse_options(arguments)
-    values = Dict("backend" => "cpu", "frames" => "16", "transport" => "scientific", "correction-diagnostics" => "false")
-    allowed = Set((REQUIRED_OPTIONS..., "backend", "frames", "transport", "controller-request", "controller-reply", "correction-diagnostics"))
+    values = Dict("backend" => "cpu", "frames" => "16", "transport" => "scientific", "correction-diagnostics" => "false", "total-exchanges" => "0", "wall-rate" => "default")
+    allowed = Set((REQUIRED_OPTIONS..., "backend", "frames", "transport", "controller-request", "controller-reply", "correction-diagnostics", "total-exchanges", "wall-rate"))
     seen = Set{String}()
     iseven(length(arguments)) || throw(ArgumentError("each option requires one value"))
     for index in 1:2:length(arguments)
@@ -42,6 +42,14 @@ function parse_options(arguments)
     controller_paths = present == 0 ? (nothing, nothing) : Tuple(abspath(values[key]) for key in controller_keys)
     rate = parse_positive_integer(values["rate"], "--rate", 500)
     frames = parse_positive_integer(values["frames"], "--frames", 256)
+    total_exchanges = values["total-exchanges"] == "0" ? frames : parse_positive_integer(values["total-exchanges"], "--total-exchanges", 65536)
+    total_exchanges >= frames || throw(ArgumentError("total exchanges must cover the retained prefix"))
+    wall_rate = values["wall-rate"] == "default" ? rate : values["wall-rate"] == "unpaced" ? 0 : parse_positive_integer(values["wall-rate"], "--wall-rate", 500)
+    wall_rate <= rate || throw(ArgumentError("wall rate must not exceed model rate"))
+    sustained = total_exchanges != frames || wall_rate != rate
+    sustained && values["transport"] != "scientific" && throw(ArgumentError("sustained mode requires scientific transport"))
+    sustained && total_exchanges <= frames && throw(ArgumentError("sustained mode requires total exchanges greater than retained frames"))
+    wall_period_ns = wall_rate == 0 ? UInt64(0) : UInt64(rounded_period(wall_rate))
     period = rounded_period(rate)
     exposure = parse_positive_integer(values["exposure-ns"], "--exposure-ns", period)
     paths = [abspath(values[key]) for key in (
@@ -49,11 +57,14 @@ function parse_options(arguments)
         "control-request", "control-reply", "output",
     )]
     append!(paths, [path for path in controller_paths if path !== nothing])
+    prefix = endswith(paths[7],".json") ? paths[7][1:end-5] : paths[7]
+    append!(paths,[prefix * ".frames.u16le",prefix * ".commands.f32le"])
+    sustained && push!(paths,paths[7] * ".sustained.json")
     length(unique(paths)) == length(paths) || throw(ArgumentError("marker, control and output paths must differ"))
     abspath(values["graph"]) in paths && throw(ArgumentError("plant graph must differ from marker, control and output paths"))
     return (
         profile=Symbol(values["profile"]), backend=Symbol(values["backend"]),
-        correction_diagnostics,
+        correction_diagnostics, total_exchanges, wall_rate, wall_period_ns, sustained,
         transport=Symbol(values["transport"]), controller_request=controller_paths[1], controller_reply=controller_paths[2],
         graph=abspath(values["graph"]), rate=rate, period_ns=UInt64(period),
         exposure_ns=UInt64(exposure), frames=frames, remote=values["remote"],
@@ -169,11 +180,13 @@ end
 
 """Reject marker paths from a prior instance before plant preparation."""
 function require_fresh_instance(options)
-    for path in (
-        options.prepared_event, options.connect_request, options.connect_reply,
+    prefix = endswith(options.output,".json") ? options.output[1:end-5] : options.output
+    paths = [options.prepared_event, options.connect_request, options.connect_reply,
         options.quit_request, options.control_request, options.control_reply, options.output,
-    )
-        ispath(path) && throw(ArgumentError("instance path already exists: $path"))
+        prefix * ".frames.u16le",prefix * ".commands.f32le"]
+    get(options,:sustained,false) && push!(paths,options.output * ".sustained.json")
+    for path in paths
+        (ispath(path) || islink(path)) && throw(ArgumentError("instance path already exists: $path"))
     end
     return nothing
 end

@@ -10,6 +10,8 @@ using TOML
 
 include("owner_protocol.jl")
 include("correction_truth.jl")
+include("sustained_metrics.jl")
+include("sustained_run.jl")
 using .HILOwnerProtocol
 const Protocol = HILOwnerProtocol
 const Backends = AdaptiveOpticsSim.Backends
@@ -101,7 +103,10 @@ function validate_graph_timing(options)
     return nothing
 end
 
-function prepare_science(options, plant, target)
+simulator_execution(::Backends.HostComputeDevice) = StreamGraphExecution()
+simulator_execution(::Backends.AcceleratorComputeDevice) = CapturedGraphExecution()
+
+function prepare_science(options, plant, target; execution=simulator_execution(target))
     validate_graph_timing(options)
     # These public plant APIs define the exact grid geometry and command count.
     isfile(plant.graph_path(:grid_gaussian)) || error("plant grid Gaussian graph is unavailable")
@@ -112,7 +117,7 @@ function prepare_science(options, plant, target)
     definition = load_algorithm_graph(
         options.graph; bindings=(; pdm_command, pdm_actuator_grid_indices),
     )
-    graph = prepare_algorithm_graph(definition; target, execution=StreamGraphExecution())
+    graph = prepare_algorithm_graph(definition; target, execution)
     frame_output = options.profile === :classic ? :shwfs_frame : :pwfs_frame
     boundary = prepare_graph_hil_boundary(graph; command_input=:pdm_command, frame_output)
     expected_shape = options.profile === :classic ? (352, 352) : (64, 64)
@@ -188,8 +193,8 @@ end
 function record_correction_truth!(recorder, science, sequence, model_timestamp_ns)
     recorder.truth === nothing && return nothing
     staged = CorrectionTruth.stage!(recorder.truth,
-        graph_output(science.graph, :atmosphere_opd), graph_output(science.graph, :pupil_opd),
-        graph_output(science.graph, :pdm_surface_opd))
+        graph_output(science.graph, Val(:atmosphere_opd)), graph_output(science.graph, Val(:pupil_opd)),
+        graph_output(science.graph, Val(:pdm_surface_opd)))
     return CorrectionTruth.record!(recorder.truth, staged..., sequence, model_timestamp_ns)
 end
 
@@ -243,7 +248,7 @@ function write_binary_atomic(path, values)
     return bytes2hex(open(sha256, path))
 end
 
-function write_report(options, science, recorder, state; failure=nothing)
+function write_report(options, science, recorder, state; failure=nothing, sustained_run=nothing)
     transport = transport_contract(options)
     count = recorder.count
     prefix = endswith(options.output, ".json") ? options.output[1:end-5] : options.output
@@ -261,16 +266,17 @@ function write_report(options, science, recorder, state; failure=nothing)
     nonzero_components = Base.count(!iszero, recorded_command)
     report = (
         version=1, profile=String(options.profile), backend=String(options.backend),
+        graph_execution=string(typeof(graph_execution_policy(science.graph))),
         remote=options.remote, graph=options.graph, graph_sha256=bytes2hex(open(sha256, options.graph)),
         target=(type=string(typeof(science.target)),
                 backend=string(typeof(Backends.compute_device_backend(science.target))),
                 device_identifier=Backends.compute_device_identifier(science.target)),
-        state=state.running ? "running" : "paused", completed=state.completed,
+        state=state.running ? "running" : "paused", completed=sustained_run === nothing ? state.completed : count == options.frames,
         failure=failure, requested_rate_hz=options.rate, achieved_cycle_rate_hz=achieved,
         measurement_span_ns=elapsed, source_publication_span_ns=source_span,
         model_period_ns=options.period_ns, exposure_ns=options.exposure_ns,
         requested_frames=options.frames, completed_frames=count, completed_commands=count,
-        sequence=state.sequence, sequences=recorder.sequences[1:count],
+        sequence=sustained_run === nothing ? state.sequence : UInt64(count), sequences=recorder.sequences[1:count],
         model_timestamps_ns=recorder.model_timestamps_ns[1:count],
         cycle_durations_ns=recorder.cycle_ns[1:count],
         source_to_command_latency_ns=recorder.graph_latency_ns[1:count],
@@ -296,11 +302,29 @@ function write_report(options, science, recorder, state; failure=nothing)
             simulator_sha256=bytes2hex(open(sha256, @__FILE__)), completed_frames=count)
         report = merge(report, (; correction_truth=truth))
     end
+    summary = nothing
+    if sustained_run !== nothing
+        report = merge(report,(; recording_scope="completed contiguous prefix of sustained run; owner state and total delivery in companion report",
+            owner_sequence=state.sequence, sustained_report=options.output * ".sustained.json"))
+        details = SustainedRun.report(sustained_run)
+        summary = (; version=2, profile=String(options.profile), backend=String(options.backend),
+            completed=state.completed && sustained_run.metrics.count == options.total_exchanges,
+            failure, state=state.running ? "running" : "paused", sequence=state.sequence,
+            requested_exchanges=options.total_exchanges, completed_frames=sustained_run.metrics.count,
+            completed_commands=sustained_run.metrics.count, retained_prefix_frames=count,
+            prefix_report=options.output, graph_sha256=report.graph_sha256,
+            model_period_ns=options.period_ns, exposure_ns=options.exposure_ns,
+            wall_rate_hz=options.wall_rate, wall_period_ns=options.wall_period_ns,
+            arrival_policy=options.wall_rate == 0 ? "unpaced closed-loop completion-driven capacity" : "paced closed-loop future-deadline scheduling without catch-up",
+            missed_wall_periods=sustained_run.missed_wall_periods,
+            source_sha256=bytes2hex(open(sha256,@__FILE__)), details...)
+    end
     Protocol.write_json_atomic(options.output, report; maximum=256 * 1024)
+    summary === nothing || Protocol.write_json_atomic(options.output * ".sustained.json",summary;maximum=256 * 1024)
     return nothing
 end
 
-function warm_report_writer!(options, science, recorder, state)
+function warm_report_writer!(options, science, recorder, state; sustained_run=nothing)
     recorder.count == 0 && state.sequence == 0 && !state.running || throw(
         ArgumentError("report warmup requires the initial paused owner"),
     )
@@ -309,9 +333,9 @@ function warm_report_writer!(options, science, recorder, state)
     mkpath(dirname(options.output))
     mktempdir(dirname(options.output); prefix=".report-warmup-") do directory
         warm_options = merge(options, (; output=joinpath(directory, "result.json")))
-        write_report(warm_options, science, recorder, state; failure="report writer warmup")
+        write_report(warm_options, science, recorder, state; failure="report writer warmup", sustained_run)
     end
-    write_report(options, science, recorder, state)
+    write_report(options, science, recorder, state; sustained_run)
     return nothing
 end
 
@@ -323,15 +347,74 @@ function wait_for_connect(options)
     return !isfile(options.quit_request)
 end
 
+function installed_detector_bits(options)
+    definition = TOML.parsefile(options.graph)
+    detectors = filter(node -> get(node,"name",nothing) == "detector",definition["nodes"])
+    length(detectors) == 1 || throw(ArgumentError("installed graph requires exactly one detector"))
+    bits = get(only(detectors)["config"],"bits",nothing)
+    bits isa Integer && !(bits isa Bool) && 1 <= bits <= 16 || throw(ArgumentError("installed detector bits must fit UInt16"))
+    return Int(bits)
+end
+
+function consume_control_request!(options, state, wall_period,
+                                  reset_owner!::Reset, report_owner!::Report) where {Reset,Report}
+    ispath(options.control_request) || return nothing
+    flags = Base.Filesystem.JL_O_RDONLY | Base.Filesystem.JL_O_NOFOLLOW |
+        Base.Filesystem.JL_O_NONBLOCK
+    io = Base.Filesystem.open(options.control_request, flags)
+    payload = try
+        isfile(stat(io)) || throw(ArgumentError("control request must be a regular file"))
+        String(read(io, Protocol.MAX_REQUEST_BYTES + 1))
+    finally
+        close(io)
+    end
+    reply = Protocol.control!(state, payload, time_ns(), max(wall_period, UInt64(1)), reset_owner!)
+    # The broker publishes its next request only after this matching ACK. Remove
+    # the consumed file first, so a later request cannot be deleted after ACK.
+    # Rejected requests are consumed too; their response retains the error.
+    rm(options.control_request)
+    if reply.ok && reply.operation in ("pause", "reset")
+        report_owner!()
+    end
+    Protocol.write_json_atomic(options.control_reply, reply)
+    return reply
+end
+
+function pace_owner!()
+    yield()
+    GC.safepoint()
+    return nothing
+end
+
+function warm_exchange_methods!(science, pipewire, recorder, sustained_run)
+    # Executing an exchange here would admit a transport frame before release.
+    # Compile its exact public signature while the streams are still inactive.
+    precompile(exchange_frame!, (typeof(pipewire), typeof(science.driver))) ||
+        error("cannot compile the prepared frame exchange before admission")
+    precompile(record!, (typeof(recorder), typeof(science.boundary), UInt64,
+        typeof(science.driver), Int64, PipeWireFrameCommandTiming,
+        UInt64, UInt64, UInt64)) || error("cannot compile the prepared frame recorder")
+    precompile(record_correction_truth!, (typeof(recorder), typeof(science), UInt64, Int64)) ||
+        error("cannot compile the prepared truth recorder")
+    if sustained_run !== nothing
+        precompile(SustainedRun.observe!, (typeof(sustained_run), UInt64, Int64, UInt64,
+            PipeWireFrameCommandTiming, UInt64, typeof(hil_command_buffer(science.boundary)),
+            typeof(hil_frame_buffer(science.boundary)))) || error("cannot compile prepared exchange metrics")
+    end
+    return nothing
+end
+
 function run_owner(options, plant, target)
     println("SIMULATOR_PREPARING profile=$(options.profile) backend=$(options.backend)")
     flush(stdout)
     science = prepare_science(options, plant, target)
     recorder = Recorder(options, science.boundary; truth=prepare_correction_truth(options, science))
     state = Protocol.OwnerState()
+    sustained_run = get(options,:sustained,false) ? SustainedRun.Run(options,recorder.truth;detector_bits=installed_detector_bits(options)) : nothing
+    wall_period = get(options,:wall_period_ns,options.period_ns)
     # Warm success and failure serialization before bounded source control.
     # No transport frame has been admitted, and the recorder remains empty.
-    warm_report_writer!(options, science, recorder, state)
+    warm_report_writer!(options, science, recorder, state; sustained_run)
     Protocol.write_json_atomic(options.prepared_event, (version=1, state="prepared", sequence=0))
     println("SIMULATOR_PREPARED sequence=0")
     flush(stdout)
@@ -346,44 +429,42 @@ function run_owner(options, plant, target)
     println("SIMULATOR_CONNECTING remote=$(options.remote)")
     flush(stdout)
     pipewire = prepare_pipewire_hil(science.boundary, configuration)
+    # Graph preparation selects concrete scientific owners at runtime. Cross
+    # that boundary once so the frame loop specializes on retained storage.
+    return run_prepared_owner!(options, science, recorder, state,
+        sustained_run, pipewire, wall_period)
+end
+
+function run_prepared_owner!(options, science, recorder, state, sustained_run, pipewire, wall_period)
     failure = nothing
-    last_payload = nothing
+    reset_owner! = () -> begin
+        heart = get(options, :transport, :scientific) === :heart
+        heart && stop!(pipewire)
+        reset_controller!(options, state.last_request_id)
+        reset_pipewire_hil!(pipewire, science.driver)
+        reset_recorder!(recorder)
+        sustained_run === nothing || SustainedRun.reset!(sustained_run)
+        heart && start!(pipewire)
+    end
+    report_owner! = () -> write_report(options, science, recorder, state; sustained_run)
     try
+        warm_exchange_methods!(science, pipewire, recorder, sustained_run)
         # Both streams become inspectable with no pending frame. No frame is
         # armed until a valid typed resume request reaches the serialized loop.
         start!(pipewire)
         Protocol.write_json_atomic(options.connect_reply, (version=1, state="connected", sequence=0))
         println("SIMULATOR_CONNECTED sequence=0 held=true")
         flush(stdout)
-        while !isfile(options.quit_request)
-            if isfile(options.control_request)
-                payload = open(options.control_request) do io
-                    String(read(io, Protocol.MAX_REQUEST_BYTES + 1))
-                end
-                if payload != last_payload
-                    last_payload = payload
-                    reply = Protocol.control!(state, payload, time_ns(), options.period_ns, () -> begin
-                        heart = get(options, :transport, :scientific) === :heart
-                        heart && stop!(pipewire)
-                        reset_controller!(options, state.last_request_id)
-                        reset_pipewire_hil!(pipewire, science.driver)
-                        reset_recorder!(recorder)
-                        heart && start!(pipewire)
-                    end)
-                    if reply.ok && reply.operation in ("pause", "reset")
-                        write_report(options, science, recorder, state)
-                    end
-                    Protocol.write_json_atomic(options.control_reply, reply)
-                end
-            end
-            isfile(options.quit_request) && break
+        while !ispath(options.quit_request)
+            consume_control_request!(options, state, wall_period, reset_owner!, report_owner!)
+            ispath(options.quit_request) && break
             if !state.running
                 sleep(0.005)
                 continue
             end
             now = time_ns()
             if now < state.deadline_ns
-                sleep(min((state.deadline_ns - now) / 1e9, 0.001))
+                pace_owner!()
                 continue
             end
             started = time_ns()
@@ -392,19 +473,44 @@ function run_owner(options, plant, target)
             finished = time_ns()
             # exchange_frame! adopts the matching command before returning.
             state.sequence = sequence
-            record!(recorder, science.boundary, sequence, science.driver, model_timestamp_ns,
-                    frame_command_timing(pipewire), finished - started, started, finished)
+            model_time_sequence(science.driver) == sequence || error("model-time sequence does not match plant")
+            if sustained_run !== nothing
+                SustainedRun.observe!(sustained_run, sequence, model_timestamp_ns, options.period_ns,
+                    frame_command_timing(pipewire), finished - started,
+                    hil_command_buffer(science.boundary),hil_frame_buffer(science.boundary))
+            end
+            if recorder.count < options.frames
+                record!(recorder, science.boundary, sequence, science.driver, model_timestamp_ns,
+                        frame_command_timing(pipewire), finished - started, started, finished)
+                record_correction_truth!(recorder, science, sequence, model_timestamp_ns)
+            end
+            if sustained_run !== nothing
+                sustained_run.truth === nothing || SustainedRun.sample!(sustained_run,
+                    graph_output(science.graph,Val(:atmosphere_opd)),
+                    graph_output(science.graph,Val(:pupil_opd)),
+                    graph_output(science.graph,Val(:pdm_surface_opd)),sequence,model_timestamp_ns)
+                sequence == options.frames && (sustained_run.allocation_start = Base.gc_num())
+            end
             # Public OPD outputs still describe this completed frame. Exchange
             # has adopted its matching command for the next step. Hashing is an
             # opt-in source diagnostic and can extend the cold owner interval.
-            record_correction_truth!(recorder, science, sequence, model_timestamp_ns)
-            state.deadline_ns, missed = Protocol.next_deadline(state.deadline_ns, options.period_ns, time_ns())
-            recorder.missed_wall_periods += missed
-            if recorder.count == options.frames
+            if wall_period == 0
+                state.deadline_ns = 0
+            else
+                state.deadline_ns, missed = Protocol.next_deadline(state.deadline_ns, wall_period, time_ns())
+                if sustained_run === nothing
+                    recorder.missed_wall_periods += missed
+                else
+                    sustained_run.missed_wall_periods += missed
+                    sequence <= options.frames && (recorder.missed_wall_periods += missed)
+                end
+            end
+            if sequence == get(options,:total_exchanges,options.frames)
                 state.running = false
                 state.completed = true
                 state.deadline_ns = 0
-                write_report(options, science, recorder, state)
+                sustained_run === nothing || (sustained_run.allocation_finish = Base.gc_num())
+                write_report(options, science, recorder, state; sustained_run)
             end
         end
     catch exception
@@ -417,7 +523,10 @@ function run_owner(options, plant, target)
         try
             close(pipewire)
         finally
-            write_report(options, science, recorder, state; failure)
+            if sustained_run !== nothing && sustained_run.allocation_finish === nothing
+                sustained_run.allocation_finish = Base.gc_num()
+            end
+            write_report(options, science, recorder, state; failure, sustained_run)
         end
     end
     return nothing

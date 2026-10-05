@@ -1,0 +1,860 @@
+{
+  "version": 1,
+  "evidence_root": "/home/dgamroth/.cache/rtc-sustained-hil-20261004",
+  "scope": "Selected complete-frame captured-CUDA simulation with CPU FGN/JFG RTCs; non-actuating, shared-host characterization.",
+  "source_start_commit": "1d3f1b5cadab0bb222390d90311b4094c30a40c3",
+  "reports": [
+    {
+      "path": "zero-allocation-continuous-results.json",
+      "sha256": "428a8765792412917f704c256aff5aa5d2125b56d850bcb2c7d9d219f0e6fcf6"
+    },
+    {
+      "path": "zero-allocation-reset-results.json",
+      "sha256": "6f75e86fe1a49150356baf9163f8c3370a6d61f1fe5a3bc53aab63814fc07018"
+    },
+    {
+      "path": "zero-allocation-paced-results.json",
+      "sha256": "1ecffca39d34d2786ae12af311f93fdf521fcb201eb2a3c85d407752f73094b4"
+    },
+    {
+      "path": "classic-fgn-released-v32-evidence.lifecycle.json",
+      "sha256": "10c8a02817407045625905e6fee77b1f6dff8098a24b9e613ce11e602854c99f"
+    },
+    {
+      "path": "classic-clipping-feedback-control/graph-replay.json",
+      "sha256": "43210ba3e32534831c327e11b756474c41568482a7280dd3852845bc8cd9c8a1"
+    },
+    {
+      "path": "copper-fgn-clipping-v30a-evidence.lifecycle.json",
+      "sha256": "b64e337cbf6f82b43c95d6843a47a28961e1617805ddb9fb1ce5a631ad2c3bd6"
+    },
+    {
+      "path": "copper-jfg-clipping-v31a-evidence.lifecycle.json",
+      "sha256": "2691d4e428c75b7c52d6959d0cd7294cd4d29cd887b010188d93dea8e86a9eac"
+    },
+    {
+      "path": "classic-captured-graph-replay-v28/graph-replay.json",
+      "sha256": "1018704ec6affd8580459a5bd3e68c150a8c4a24cfe1ad8ba11c53c3e7ce5dcb"
+    },
+    {
+      "path": "copper-captured-graph-replay-v29/graph-replay.json",
+      "sha256": "35cdaffbc6c6873c2dd21ceec7fe868868ef3b80f1467420976a3ddffac89281"
+    },
+    {
+      "path": "copper-captured-clipping-fgn-replay-v34/graph-replay.json",
+      "sha256": "b7012837bde6dfc9019926d20df3408fb1f0b2857a89ba0036eff645975ac797"
+    },
+    {
+      "path": "copper-captured-clipping-jfg-replay-v35/graph-replay.json",
+      "sha256": "5e76327d16ed111f84bb8f4aba41aa86d57b29bb573d1a1ce9ec4524b4fdaf08"
+    },
+    {
+      "path": "copper-stream-captured-wire-v33.json",
+      "sha256": "1651004eeb61b293cae50db1ed3dd2bf3f88bbb536c4678536b2700d10bcdca3"
+    }
+  ],
+  "qualified_interval": "Entire simulator process after retained prefix, before final serialization; optics, transport, pacing, metrics and enabled per-frame diagnostics included. GC remains enabled.",
+  "excluded_phases": [
+    "cold preparation",
+    "stopped reset",
+    "final serialization"
+  ],
+  "unqualified": [
+    "inclusive zero allocation during midrun pause/report controls",
+    "HIP zero allocation",
+    "GPU RTC algorithm execution",
+    "physical-device acceptance",
+    "hard real-time deadlines",
+    "isolated maximum RTC rate"
+  ],
+  "continuous": [
+    {
+      "case": "classic-fgn-wait-v14",
+      "evidence": "/home/dgamroth/.cache/rtc-sustained-hil-20261004/classic-fgn-wait-v14-evidence.lifecycle.json",
+      "success": true,
+      "shutdown_confirmed": true,
+      "cleanup": "complete",
+      "total": 8192,
+      "allocation": {
+        "gc_pauses": 0,
+        "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included",
+        "completed_exchanges": 7936,
+        "allocations": {
+          "malloc": 0,
+          "realloc": 0,
+          "big": 0,
+          "pool": 0
+        },
+        "allocated_bytes": 0,
+        "gc_time_ns": 0,
+        "full_sweeps": 0
+      },
+      "observed_completion_hz": 515.0448815617235,
+      "GPU_boundaries": [
+        [
+          {
+            "pid": 2853204,
+            "used_bytes": 396361728
+          }
+        ],
+        [
+          {
+            "pid": 2853204,
+            "used_bytes": 396361728
+          }
+        ]
+      ],
+      "scope": "one unpaced completion-driven continuous run; not maximum isolated RTC throughput; local unreleased Julia repairs and /opt native libraries"
+    },
+    {
+      "case": "classic-jfg-wait-v15",
+      "evidence": "/home/dgamroth/.cache/rtc-sustained-hil-20261004/classic-jfg-wait-v15-evidence.lifecycle.json",
+      "success": true,
+      "shutdown_confirmed": true,
+      "cleanup": "complete",
+      "total": 8192,
+      "allocation": {
+        "gc_pauses": 0,
+        "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included",
+        "completed_exchanges": 7936,
+        "allocations": {
+          "malloc": 0,
+          "realloc": 0,
+          "big": 0,
+          "pool": 0
+        },
+        "allocated_bytes": 0,
+        "gc_time_ns": 0,
+        "full_sweeps": 0
+      },
+      "observed_completion_hz": 513.8168278325185,
+      "GPU_boundaries": [
+        [
+          {
+            "pid": 2856286,
+            "used_bytes": 396361728
+          }
+        ],
+        [
+          {
+            "pid": 2856286,
+            "used_bytes": 396361728
+          }
+        ]
+      ],
+      "scope": "one unpaced completion-driven continuous run; not maximum isolated RTC throughput; local unreleased Julia repairs and /opt native libraries"
+    },
+    {
+      "case": "copper-fgn-wait-v16",
+      "evidence": "/home/dgamroth/.cache/rtc-sustained-hil-20261004/copper-fgn-wait-v16-evidence.lifecycle.json",
+      "success": true,
+      "shutdown_confirmed": true,
+      "cleanup": "complete",
+      "total": 4096,
+      "allocation": {
+        "gc_pauses": 0,
+        "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included",
+        "completed_exchanges": 3840,
+        "allocations": {
+          "malloc": 0,
+          "realloc": 0,
+          "big": 0,
+          "pool": 0
+        },
+        "allocated_bytes": 0,
+        "gc_time_ns": 0,
+        "full_sweeps": 0
+      },
+      "observed_completion_hz": 265.15798156262525,
+      "GPU_boundaries": [
+        [
+          {
+            "pid": 2863749,
+            "used_bytes": 1033895936
+          }
+        ],
+        [
+          {
+            "pid": 2863749,
+            "used_bytes": 1033895936
+          }
+        ]
+      ],
+      "scope": "one unpaced completion-driven continuous run; not maximum isolated RTC throughput; local unreleased Julia repairs and /opt native libraries"
+    },
+    {
+      "case": "copper-jfg-wait-v17",
+      "evidence": "/home/dgamroth/.cache/rtc-sustained-hil-20261004/copper-jfg-wait-v17-evidence.lifecycle.json",
+      "success": true,
+      "shutdown_confirmed": true,
+      "cleanup": "complete",
+      "total": 4096,
+      "allocation": {
+        "gc_pauses": 0,
+        "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included",
+        "completed_exchanges": 3840,
+        "allocations": {
+          "malloc": 0,
+          "realloc": 0,
+          "big": 0,
+          "pool": 0
+        },
+        "allocated_bytes": 0,
+        "gc_time_ns": 0,
+        "full_sweeps": 0
+      },
+      "observed_completion_hz": 263.7458412611227,
+      "GPU_boundaries": [
+        [
+          {
+            "pid": 2866488,
+            "used_bytes": 1033895936
+          }
+        ],
+        [
+          {
+            "pid": 2866488,
+            "used_bytes": 1033895936
+          }
+        ]
+      ],
+      "scope": "one unpaced completion-driven continuous run; not maximum isolated RTC throughput; local unreleased Julia repairs and /opt native libraries"
+    }
+  ],
+  "stopped_reset": [
+    {
+      "case": "classic-fgn-reset-v20",
+      "success": true,
+      "shutdown_confirmed": true,
+      "cleanup": "complete",
+      "runs": [
+        {
+          "total": 8192,
+          "allocation": {
+            "gc_pauses": 0,
+            "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included",
+            "completed_exchanges": 7936,
+            "allocations": {
+              "malloc": 0,
+              "realloc": 0,
+              "big": 0,
+              "pool": 0
+            },
+            "allocated_bytes": 0,
+            "gc_time_ns": 0,
+            "full_sweeps": 0
+          }
+        },
+        {
+          "total": 8192,
+          "allocation": {
+            "gc_pauses": 0,
+            "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included",
+            "completed_exchanges": 7936,
+            "allocations": {
+              "malloc": 0,
+              "realloc": 0,
+              "big": 0,
+              "pool": 0
+            },
+            "allocated_bytes": 0,
+            "gc_time_ns": 0,
+            "full_sweeps": 0
+          }
+        }
+      ],
+      "repeat": {
+        "prefix_frame_sha256": true,
+        "prefix_command_sha256": true,
+        "truth": true
+      }
+    },
+    {
+      "case": "copper-fgn-reset-v21",
+      "success": true,
+      "shutdown_confirmed": true,
+      "cleanup": "complete",
+      "runs": [
+        {
+          "total": 4096,
+          "allocation": {
+            "gc_pauses": 0,
+            "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included",
+            "completed_exchanges": 3840,
+            "allocations": {
+              "malloc": 0,
+              "realloc": 0,
+              "big": 0,
+              "pool": 0
+            },
+            "allocated_bytes": 0,
+            "gc_time_ns": 0,
+            "full_sweeps": 0
+          }
+        },
+        {
+          "total": 4096,
+          "allocation": {
+            "gc_pauses": 0,
+            "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included",
+            "completed_exchanges": 3840,
+            "allocations": {
+              "malloc": 0,
+              "realloc": 0,
+              "big": 0,
+              "pool": 0
+            },
+            "allocated_bytes": 0,
+            "gc_time_ns": 0,
+            "full_sweeps": 0
+          }
+        }
+      ],
+      "repeat": {
+        "prefix_frame_sha256": true,
+        "prefix_command_sha256": true,
+        "truth": true
+      }
+    },
+    {
+      "case": "classic-jfg-reset-v22",
+      "success": true,
+      "shutdown_confirmed": true,
+      "cleanup": "complete",
+      "runs": [
+        {
+          "total": 8192,
+          "allocation": {
+            "gc_pauses": 0,
+            "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included",
+            "completed_exchanges": 7936,
+            "allocations": {
+              "malloc": 0,
+              "realloc": 0,
+              "big": 0,
+              "pool": 0
+            },
+            "allocated_bytes": 0,
+            "gc_time_ns": 0,
+            "full_sweeps": 0
+          }
+        },
+        {
+          "total": 8192,
+          "allocation": {
+            "gc_pauses": 0,
+            "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included",
+            "completed_exchanges": 7936,
+            "allocations": {
+              "malloc": 0,
+              "realloc": 0,
+              "big": 0,
+              "pool": 0
+            },
+            "allocated_bytes": 0,
+            "gc_time_ns": 0,
+            "full_sweeps": 0
+          }
+        }
+      ],
+      "repeat": {
+        "prefix_frame_sha256": true,
+        "prefix_command_sha256": true,
+        "truth": true
+      }
+    },
+    {
+      "case": "copper-jfg-reset-v23",
+      "success": true,
+      "shutdown_confirmed": true,
+      "cleanup": "complete",
+      "runs": [
+        {
+          "total": 4096,
+          "allocation": {
+            "gc_pauses": 0,
+            "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included",
+            "completed_exchanges": 3840,
+            "allocations": {
+              "malloc": 0,
+              "realloc": 0,
+              "big": 0,
+              "pool": 0
+            },
+            "allocated_bytes": 0,
+            "gc_time_ns": 0,
+            "full_sweeps": 0
+          }
+        },
+        {
+          "total": 4096,
+          "allocation": {
+            "gc_pauses": 0,
+            "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included",
+            "completed_exchanges": 3840,
+            "allocations": {
+              "malloc": 0,
+              "realloc": 0,
+              "big": 0,
+              "pool": 0
+            },
+            "allocated_bytes": 0,
+            "gc_time_ns": 0,
+            "full_sweeps": 0
+          }
+        }
+      ],
+      "repeat": {
+        "prefix_frame_sha256": true,
+        "prefix_command_sha256": true,
+        "truth": true
+      }
+    }
+  ],
+  "paced": [
+    {
+      "case": "classic-fgn-paced-v24",
+      "success": true,
+      "shutdown_confirmed": true,
+      "cleanup": "complete",
+      "total": 8192,
+      "wall_rate_hz": 250,
+      "observed_completion_hz": 247.37329384053666,
+      "missed_wall_periods_whole_run": 105,
+      "measured_exchanges_over_wall_budget": 72,
+      "allocation": {
+        "gc_pauses": 0,
+        "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included",
+        "completed_exchanges": 7936,
+        "allocations": {
+          "malloc": 0,
+          "realloc": 0,
+          "big": 0,
+          "pool": 0
+        },
+        "allocated_bytes": 0,
+        "gc_time_ns": 0,
+        "full_sweeps": 0
+      },
+      "source_to_command": {
+        "bin_width_nanoseconds": 10000,
+        "above_comparison_period_count": 5,
+        "maximum_nanoseconds": 6901379,
+        "inclusive_limit_nanoseconds": 1000000000,
+        "count": 7936,
+        "quantiles": {
+          "p95": {
+            "lower_nanoseconds": 1120000,
+            "upper_nanoseconds": 1129999
+          },
+          "p50": {
+            "lower_nanoseconds": 1050000,
+            "upper_nanoseconds": 1059999
+          },
+          "p999": {
+            "lower_nanoseconds": 3710000,
+            "upper_nanoseconds": 3719999
+          },
+          "p90": {
+            "lower_nanoseconds": 1100000,
+            "upper_nanoseconds": 1109999
+          },
+          "p99": {
+            "lower_nanoseconds": 1130000,
+            "upper_nanoseconds": 1139999
+          }
+        },
+        "overflow_count": 0,
+        "minimum_nanoseconds": 1022136
+      },
+      "exchange": {
+        "bin_width_nanoseconds": 10000,
+        "above_comparison_period_count": 72,
+        "maximum_nanoseconds": 7575895,
+        "inclusive_limit_nanoseconds": 1000000000,
+        "count": 7936,
+        "quantiles": {
+          "p95": {
+            "lower_nanoseconds": 1920000,
+            "upper_nanoseconds": 1929999
+          },
+          "p50": {
+            "lower_nanoseconds": 1730000,
+            "upper_nanoseconds": 1739999
+          },
+          "p999": {
+            "lower_nanoseconds": 5770000,
+            "upper_nanoseconds": 5779999
+          },
+          "p90": {
+            "lower_nanoseconds": 1800000,
+            "upper_nanoseconds": 1809999
+          },
+          "p99": {
+            "lower_nanoseconds": 3710000,
+            "upper_nanoseconds": 3719999
+          }
+        },
+        "overflow_count": 0,
+        "minimum_nanoseconds": 1668298
+      },
+      "scope": "single paced closed-loop run; exact delivery separate from scheduled-deadline misses; no host isolation/tuning or hard real-time claim"
+    },
+    {
+      "case": "classic-jfg-paced-v25",
+      "success": true,
+      "shutdown_confirmed": true,
+      "cleanup": "complete",
+      "total": 8192,
+      "wall_rate_hz": 250,
+      "observed_completion_hz": 248.08480480819102,
+      "missed_wall_periods_whole_run": 83,
+      "measured_exchanges_over_wall_budget": 58,
+      "allocation": {
+        "gc_pauses": 0,
+        "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included",
+        "completed_exchanges": 7936,
+        "allocations": {
+          "malloc": 0,
+          "realloc": 0,
+          "big": 0,
+          "pool": 0
+        },
+        "allocated_bytes": 0,
+        "gc_time_ns": 0,
+        "full_sweeps": 0
+      },
+      "source_to_command": {
+        "bin_width_nanoseconds": 10000,
+        "above_comparison_period_count": 27,
+        "maximum_nanoseconds": 5983203,
+        "inclusive_limit_nanoseconds": 1000000000,
+        "count": 7936,
+        "quantiles": {
+          "p95": {
+            "lower_nanoseconds": 1750000,
+            "upper_nanoseconds": 1759999
+          },
+          "p50": {
+            "lower_nanoseconds": 1060000,
+            "upper_nanoseconds": 1069999
+          },
+          "p999": {
+            "lower_nanoseconds": 5240000,
+            "upper_nanoseconds": 5249999
+          },
+          "p90": {
+            "lower_nanoseconds": 1650000,
+            "upper_nanoseconds": 1659999
+          },
+          "p99": {
+            "lower_nanoseconds": 2090000,
+            "upper_nanoseconds": 2099999
+          }
+        },
+        "overflow_count": 0,
+        "minimum_nanoseconds": 228148
+      },
+      "exchange": {
+        "bin_width_nanoseconds": 10000,
+        "above_comparison_period_count": 58,
+        "maximum_nanoseconds": 7560488,
+        "inclusive_limit_nanoseconds": 1000000000,
+        "count": 7936,
+        "quantiles": {
+          "p95": {
+            "lower_nanoseconds": 2470000,
+            "upper_nanoseconds": 2479999
+          },
+          "p50": {
+            "lower_nanoseconds": 1750000,
+            "upper_nanoseconds": 1759999
+          },
+          "p999": {
+            "lower_nanoseconds": 6680000,
+            "upper_nanoseconds": 6689999
+          },
+          "p90": {
+            "lower_nanoseconds": 2350000,
+            "upper_nanoseconds": 2359999
+          },
+          "p99": {
+            "lower_nanoseconds": 3110000,
+            "upper_nanoseconds": 3119999
+          }
+        },
+        "overflow_count": 0,
+        "minimum_nanoseconds": 1685389
+      },
+      "scope": "single paced closed-loop run; exact delivery separate from scheduled-deadline misses; no host isolation/tuning or hard real-time claim"
+    },
+    {
+      "case": "copper-fgn-paced-v26",
+      "success": true,
+      "shutdown_confirmed": true,
+      "cleanup": "complete",
+      "total": 4096,
+      "wall_rate_hz": 100,
+      "observed_completion_hz": 99.99646474337501,
+      "missed_wall_periods_whole_run": 7,
+      "measured_exchanges_over_wall_budget": 0,
+      "allocation": {
+        "gc_pauses": 0,
+        "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included",
+        "completed_exchanges": 3840,
+        "allocations": {
+          "malloc": 0,
+          "realloc": 0,
+          "big": 0,
+          "pool": 0
+        },
+        "allocated_bytes": 0,
+        "gc_time_ns": 0,
+        "full_sweeps": 0
+      },
+      "source_to_command": {
+        "bin_width_nanoseconds": 10000,
+        "above_comparison_period_count": 0,
+        "maximum_nanoseconds": 6470543,
+        "inclusive_limit_nanoseconds": 1000000000,
+        "count": 3840,
+        "quantiles": {
+          "p95": {
+            "lower_nanoseconds": 1110000,
+            "upper_nanoseconds": 1119999
+          },
+          "p50": {
+            "lower_nanoseconds": 1030000,
+            "upper_nanoseconds": 1039999
+          },
+          "p999": {
+            "lower_nanoseconds": 5060000,
+            "upper_nanoseconds": 5069999
+          },
+          "p90": {
+            "lower_nanoseconds": 1060000,
+            "upper_nanoseconds": 1069999
+          },
+          "p99": {
+            "lower_nanoseconds": 1200000,
+            "upper_nanoseconds": 1209999
+          }
+        },
+        "overflow_count": 0,
+        "minimum_nanoseconds": 1024009
+      },
+      "exchange": {
+        "bin_width_nanoseconds": 10000,
+        "above_comparison_period_count": 0,
+        "maximum_nanoseconds": 9314933,
+        "inclusive_limit_nanoseconds": 1000000000,
+        "count": 3840,
+        "quantiles": {
+          "p95": {
+            "lower_nanoseconds": 3970000,
+            "upper_nanoseconds": 3979999
+          },
+          "p50": {
+            "lower_nanoseconds": 3780000,
+            "upper_nanoseconds": 3789999
+          },
+          "p999": {
+            "lower_nanoseconds": 8930000,
+            "upper_nanoseconds": 8939999
+          },
+          "p90": {
+            "lower_nanoseconds": 3880000,
+            "upper_nanoseconds": 3889999
+          },
+          "p99": {
+            "lower_nanoseconds": 5400000,
+            "upper_nanoseconds": 5409999
+          }
+        },
+        "overflow_count": 0,
+        "minimum_nanoseconds": 3736931
+      },
+      "scope": "single paced closed-loop run; exact delivery separate from scheduled-deadline misses; no host isolation/tuning or hard real-time claim"
+    },
+    {
+      "case": "copper-jfg-paced-v27",
+      "success": true,
+      "shutdown_confirmed": true,
+      "cleanup": "complete",
+      "total": 4096,
+      "wall_rate_hz": 100,
+      "observed_completion_hz": 99.9707027509506,
+      "missed_wall_periods_whole_run": 10,
+      "measured_exchanges_over_wall_budget": 1,
+      "allocation": {
+        "gc_pauses": 0,
+        "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included",
+        "completed_exchanges": 3840,
+        "allocations": {
+          "malloc": 0,
+          "realloc": 0,
+          "big": 0,
+          "pool": 0
+        },
+        "allocated_bytes": 0,
+        "gc_time_ns": 0,
+        "full_sweeps": 0
+      },
+      "source_to_command": {
+        "bin_width_nanoseconds": 10000,
+        "above_comparison_period_count": 0,
+        "maximum_nanoseconds": 7020069,
+        "inclusive_limit_nanoseconds": 1000000000,
+        "count": 3840,
+        "quantiles": {
+          "p95": {
+            "lower_nanoseconds": 2110000,
+            "upper_nanoseconds": 2119999
+          },
+          "p50": {
+            "lower_nanoseconds": 1090000,
+            "upper_nanoseconds": 1099999
+          },
+          "p999": {
+            "lower_nanoseconds": 5140000,
+            "upper_nanoseconds": 5149999
+          },
+          "p90": {
+            "lower_nanoseconds": 1220000,
+            "upper_nanoseconds": 1229999
+          },
+          "p99": {
+            "lower_nanoseconds": 3370000,
+            "upper_nanoseconds": 3379999
+          }
+        },
+        "overflow_count": 0,
+        "minimum_nanoseconds": 1025261
+      },
+      "exchange": {
+        "bin_width_nanoseconds": 10000,
+        "above_comparison_period_count": 1,
+        "maximum_nanoseconds": 10818233,
+        "inclusive_limit_nanoseconds": 1000000000,
+        "count": 3840,
+        "quantiles": {
+          "p95": {
+            "lower_nanoseconds": 5690000,
+            "upper_nanoseconds": 5699999
+          },
+          "p50": {
+            "lower_nanoseconds": 4040000,
+            "upper_nanoseconds": 4049999
+          },
+          "p999": {
+            "lower_nanoseconds": 9160000,
+            "upper_nanoseconds": 9169999
+          },
+          "p90": {
+            "lower_nanoseconds": 4980000,
+            "upper_nanoseconds": 4989999
+          },
+          "p99": {
+            "lower_nanoseconds": 7590000,
+            "upper_nanoseconds": 7599999
+          }
+        },
+        "overflow_count": 0,
+        "minimum_nanoseconds": 3754332
+      },
+      "scope": "single paced closed-loop run; exact delivery separate from scheduled-deadline misses; no host isolation/tuning or hard real-time claim"
+    }
+  ],
+  "released_live": {
+    "case": "classic-fgn-released-v32",
+    "success": true,
+    "shutdown_confirmed": true,
+    "cleanup": "complete",
+    "requested_exchanges": 8192,
+    "completed_frames": 8192,
+    "completed_commands": 8192,
+    "allocation": {
+      "gc_pauses": 0,
+      "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included",
+      "completed_exchanges": 7936,
+      "allocations": {
+        "malloc": 0,
+        "realloc": 0,
+        "big": 0,
+        "pool": 0
+      },
+      "allocated_bytes": 0,
+      "gc_time_ns": 0,
+      "full_sweeps": 0
+    },
+    "pipewireao_version": "0.6.14",
+    "pipewireao_tree": "134bc7cd9e7055f42d22e526ad7de01e65f4e440",
+    "native_libraries": "Recorded /opt/pipewireao override; do not claim execution of JLL-native artifacts."
+  },
+  "clipping": [
+    {
+      "case": "classic-clipping-feedback-control",
+      "informative": true,
+      "gate_passed": true,
+      "normal_controller_nonzero_frames": 256,
+      "no_carry_vs_normal": {
+        "max_abs_difference_m": 1.999999987845058e-08,
+        "rms_difference_m": 1.046138575482834e-08,
+        "max_abs_difference_um": 0.019999999928945727,
+        "rms_difference_um": 0.010461385781240801,
+        "nonidentical_components": 26963
+      },
+      "ordinary_process_allocation_bytes": 0,
+      "scope": "fixed recorded ADC inputs; algorithm counterfactual with controller feedback held zero; not a live plant trajectory or numerical acceptance test"
+    },
+    {
+      "case": "copper-captured-clipping-fgn-replay-v34",
+      "informative": true,
+      "gate_passed": true,
+      "normal_controller_nonzero_frames": 254,
+      "no_carry_vs_normal": {
+        "max_abs_difference_m": 1.999999987845058e-08,
+        "rms_difference_m": 1.035983943940142e-08,
+        "max_abs_difference_um": 0.019999999928945727,
+        "rms_difference_um": 0.0103598394655575,
+        "nonidentical_components": 43446
+      },
+      "ordinary_process_allocation_bytes": 0,
+      "scope": "fixed recorded ADC inputs; algorithm counterfactual with controller feedback held zero; not a live plant trajectory or numerical acceptance test"
+    },
+    {
+      "case": "copper-captured-clipping-jfg-replay-v35",
+      "informative": true,
+      "gate_passed": true,
+      "normal_controller_nonzero_frames": 254,
+      "no_carry_vs_normal": {
+        "max_abs_difference_m": 1.999999987845058e-08,
+        "rms_difference_m": 1.0359833148732894e-08,
+        "max_abs_difference_um": 0.019999999928945727,
+        "rms_difference_um": 0.010359833174888958,
+        "nonidentical_components": 43445
+      },
+      "ordinary_process_allocation_bytes": 0,
+      "scope": "fixed recorded ADC inputs; algorithm counterfactual with controller feedback held zero; not a live plant trajectory or numerical acceptance test"
+    }
+  ],
+  "copper_wire": {
+    "frames": 256,
+    "pixels": 1048576,
+    "differing_pixels": 218,
+    "differing_frames": 142,
+    "differing_pixel_fraction": 0.0002079010009765625,
+    "maximum_adc_difference": 2,
+    "opd_maximum_difference_m": [
+      3.410605131648481e-13,
+      3.410605131648481e-13,
+      0.0
+    ],
+    "reset_exact": [
+      true,
+      true
+    ],
+    "scope": "same noisy graph, seeds, fixed2ms model steps and measured command trace; execution policy only changes; descriptive comparison without an acceptance tolerance",
+    "accepted_numerical_tolerance": null
+  }
+}

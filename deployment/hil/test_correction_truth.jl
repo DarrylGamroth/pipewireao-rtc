@@ -1,6 +1,21 @@
 using Test
-include("simulator.jl")
+using SHA
+const CORRECTION_TRUTH_UNIT_ONLY = get(ENV, "CORRECTION_TRUTH_UNIT_ONLY", "0") == "1"
+include(CORRECTION_TRUTH_UNIT_ONLY ? "correction_truth.jl" : "simulator.jl")
 const CT = CorrectionTruth
+
+function correction_truth_record_bytes(witness, atmosphere, pupil, surface, sequence, timestamp)
+    return @allocated CT.record!(witness, atmosphere, pupil, surface, sequence, timestamp)
+end
+
+function correction_truth_update_bytes(context, bytes)
+    return @allocated SHA.update!(context, bytes)
+end
+
+function correction_truth_report(witness)
+    return CT.report(witness; graph_sha256="graph", frame_sha256="frame",
+        command_sha256="command", simulator_sha256="owner", completed_frames=witness.count)
+end
 
 @testset "shared pupil arithmetic and payload convention" begin
     mask = Bool[true true; false false]
@@ -38,7 +53,9 @@ end
     bounded_report = CT.report(bounded; graph_sha256="a"^64, frame_sha256="b"^64,
         command_sha256="c"^64, simulator_sha256="d"^64, completed_frames=256)
     @test bounded_report.observed_frames == length(bounded_report.per_frame) == 256
-    @test ncodeunits(Protocol.JSON3.write(bounded_report)) < 200 * 1024
+    if !CORRECTION_TRUTH_UNIT_ONLY
+        @test ncodeunits(Protocol.JSON3.write(bounded_report)) < 200 * 1024
+    end
     @test (atmosphere, pupil, surface) == original
     @test CT.stage!(witness, atmosphere, pupil, surface) === witness.staging
     @test witness.staging == original
@@ -66,6 +83,60 @@ end
     @test CT.record!(witness, atmosphere, pupil, surface, UInt64(1), Int64(0)) === nothing
 end
 
+@testset "prepared canonical hashes and zero allocation recording" begin
+    for resolution in (2, 8, 240)
+        config = (; resolution)
+        mask = trues(resolution, resolution)
+        witness = CT.Witness(config, mask, 3)
+        atmosphere = zeros(Float32, resolution, resolution)
+        # Preserve signed zero, subnormal and finite extremes bit for bit.
+        atmosphere[1:2, 1:2] .= reinterpret(Float32,
+            UInt32[0x80000000 0x00000001; 0x7f7fffff 0xff7fffff])
+        pupil = reverse(atmosphere; dims=2)
+        surface = reverse(atmosphere; dims=1)
+        originals = (copy(atmosphere), copy(pupil), copy(surface))
+        expected = map(CT.opd_hash, originals)
+        words = witness.hash_words
+        bytes = witness.hash_bytes
+        staging = witness.staging
+        fill!(words, 0)
+        @test isconcretetype(typeof(witness))
+        correction_truth_update_bytes(SHA2_256_CTX(), bytes)
+        @test correction_truth_update_bytes(SHA2_256_CTX(), bytes) == 0
+        CT.record!(witness, atmosphere, pupil, surface, UInt64(1), Int64(0))
+        correction_truth_record_bytes(witness, atmosphere, pupil, surface, UInt64(2), Int64(1))
+        CT.reset!(witness)
+        @test witness.hash_words === words && witness.hash_bytes === bytes && witness.staging === staging
+        @test correction_truth_record_bytes(witness, atmosphere, pupil, surface, UInt64(1), Int64(0)) == 0
+        @test all(isempty, witness.atmosphere_sha256)
+        first_report = correction_truth_report(witness)
+        @test (witness.atmosphere_sha256[1], witness.pupil_sha256[1], witness.surface_sha256[1]) == expected
+        @test correction_truth_report(witness) == first_report
+        @test correction_truth_record_bytes(witness, atmosphere, pupil, surface, UInt64(2), Int64(1)) == 0
+        # Later producer writes must not change already recorded hashes.
+        fill!(atmosphere, 1.0f0)
+        fill!(pupil, 2.0f0)
+        fill!(surface, 3.0f0)
+        report = correction_truth_report(witness)
+        @test all(frame -> (frame.atmosphere_sha256, frame.pupil_sha256, frame.surface_sha256) == expected,
+            report.per_frame)
+        @test correction_truth_report(witness) == report
+        CT.reset!(witness)
+        @test all(isempty, witness.atmosphere_sha256) && all(isempty, witness.pupil_sha256) && all(isempty, witness.surface_sha256)
+        @test isempty(correction_truth_report(witness).per_frame)
+        @test correction_truth_record_bytes(witness, originals..., UInt64(1), Int64(0)) == 0
+        @test correction_truth_report(witness).per_frame[1] == first_report.per_frame[1]
+        @test_throws ArgumentError CT.record!(witness, zeros(Float32, 0, 0), pupil, surface, UInt64(2), Int64(1))
+        @test_throws ArgumentError CT.record!(witness, atmosphere, zeros(Float32, 1, 1), surface, UInt64(2), Int64(1))
+        @test_throws ArgumentError CT.record!(witness, atmosphere, pupil, fill(Float32(Inf), resolution, resolution), UInt64(2), Int64(1))
+        @test witness.count == 1
+        @test correction_truth_record_bytes(witness, originals..., UInt64(2), Int64(1)) == 0
+        recovered = correction_truth_report(witness).per_frame[2]
+        @test (recovered.atmosphere_sha256, recovered.pupil_sha256, recovered.surface_sha256) == expected
+    end
+end
+
+if !CORRECTION_TRUTH_UNIT_ONLY
 @testset "optional preparation and public annular pupil" begin
     @test prepare_correction_truth((;), nothing) === nothing
     @test record_correction_truth!((; truth=nothing), nothing, UInt64(1), Int64(0)) === nothing
@@ -134,10 +205,11 @@ end
             source_published_nanoseconds=Int64(1), command_received_nanoseconds=Int64(2))
         record!(recorder, science.boundary, step.sequence, science.driver, timestamp, timing, UInt64(1), UInt64(1), UInt64(2))
         @test record_correction_truth!(recorder, science, step.sequence, timestamp) === nothing
-        @test (recorder.truth.atmosphere_sha256[1], recorder.truth.pupil_sha256[1], recorder.truth.surface_sha256[1]) == hashes
+        @test all(isempty, recorder.truth.atmosphere_sha256)
         @test all(==(0.1f-6), hil_command_buffer(science.boundary))
         state.sequence = step.sequence
         write_report(options, science, recorder, state)
+        @test (recorder.truth.atmosphere_sha256[1], recorder.truth.pupil_sha256[1], recorder.truth.surface_sha256[1]) == hashes
         report = Protocol.JSON3.read(read(options.output, String))
         @test report.correction_truth.complete_prefix
         @test report.correction_truth.graph_sha256 == report.graph_sha256
@@ -153,4 +225,5 @@ end
         write_report(options, science, disabled, Protocol.OwnerState())
         @test !haskey(Protocol.JSON3.read(read(options.output, String)), :correction_truth)
     end
+end
 end

@@ -502,6 +502,11 @@ function native_control(deployment::DeploymentRunner, argv; request_id=nothing)
 end
 
 function coordinate(deployment::DeploymentRunner, argv, request_id)
+    if argv == ["status"]
+        reply = native_control(deployment,argv;request_id)
+        reply["ok"] && (reply["source"] = source_control(deployment,"status"))
+        return reply
+    end
     stopping = argv in (["session-stop"], ["source-ended"], ["quit"], ["exit"]) ||
         length(argv) == 2 && argv[1] == "stop"
     starting = argv == ["session-start"] || length(argv) == 2 && argv[1] == "start"

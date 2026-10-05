@@ -713,6 +713,13 @@ function export_package(args)
     !ispath(output) && !islink(output) || throw(ArgumentError("export output must be new"))
     args.rate_hz isa Int && 1 <= args.rate_hz <= 500 && args.frames isa Int && 1 <= args.frames <= 256 ||
         throw(ArgumentError("rate must be 1..500 Hz and finite batch 1..256 frames"))
+    total = option(args,:total_exchanges,args.frames)
+    total isa Int && args.frames <= total <= 65536 || throw(ArgumentError("total exchanges must cover prefix and be at most 65536"))
+    wall_rate = option(args,:wall_rate,"default")
+    wall_rate isa AbstractString || throw(ArgumentError("wall rate must be default, unpaced or an integer rate"))
+    wall_rate in ("default","unpaced") || (occursin(r"^[0-9]+$",wall_rate) && tryparse(Int,wall_rate) !== nothing && 1 <= parse(Int,wall_rate) <= args.rate_hz) ||
+        throw(ArgumentError("paced wall rate must be 1..model rate"))
+    total > args.frames || wall_rate == "default" || throw(ArgumentError("separate wall pacing requires sustained total"))
     args.dark_frames isa Int && 1 <= args.dark_frames <= 4096 || throw(ArgumentError("dark calibration must use 1..4096 exposures"))
     args.backend in ("cpu","cuda","amdgpu") || throw(ArgumentError("unsupported HIL backend"))
     base = realpath(args.base_package)
@@ -803,6 +810,7 @@ function export_package(args)
                       "--rate",string(args.rate_hz),"--exposure-ns",string(exposure),"--frames",string(args.frames),
                       "--remote","@REMOTE@","--output","@RUNTIME@/simulator-result.json"]
         correction && append!(argv,["--correction-diagnostics","true"])
+        total > args.frames && append!(argv,["--total-exchanges",string(total),"--wall-rate",wall_rate])
         for (option,marker) in (("--prepared-event","prepared"),("--connect-request","connect"),("--connect-reply","connected"),
                                 ("--quit-request","quit"),("--control-request","control-request"),("--control-reply","control-reply"))
             append!(argv,[option,"@RUNTIME@/"*markers[marker]])
@@ -817,9 +825,9 @@ function export_package(args)
         ScienceExport.write_spa_config(core_path,hil_core(Deployment.decode(core_path,args.pipewire_prefix)))
         specification["client"]["simulator"] = "client-simulator.conf.in"
         ScienceExport.copy_file(joinpath(ScienceExport.resource_root(),"templates/client-simulator.conf.in"),joinpath(package,"client-simulator.conf.in"))
-        provenance["hil"] = Dict{String,Any}("backend"=>args.backend,"wall_rate_hz"=>args.rate_hz,
+        provenance["hil"] = Dict{String,Any}("backend"=>args.backend,"wall_rate_hz"=>(wall_rate == "default" ? args.rate_hz : wall_rate == "unpaced" ? 0 : parse(Int,wall_rate)),"model_rate_hz"=>args.rate_hz,
             "model_period_ns"=>round(Int,1_000_000_000/args.rate_hz),"exposure_ns"=>exposure,
-            "frames"=>args.frames,"frame_encoding"=>"UInt16 ADC codes, row-major","command_unit"=>"micrometre OPD",
+            "frames"=>args.frames,"total_exchanges"=>total,"wall_rate"=>wall_rate,"frame_encoding"=>"UInt16 ADC codes, row-major","command_unit"=>"micrometre OPD",
             "plant_command_scale"=>1e-6,"instrument_model"=>"provisional grid-Gaussian HSDM277",
             "aos_revision"=>ScienceExport.revision(args.aos_root),"plant_revision"=>ScienceExport.revision(args.plant_root),
             "adaptive_optics_calibration_revision"=>ScienceExport.revision(args.aoc_root),
@@ -845,9 +853,11 @@ end
 function main(argv=ARGS)
     options = Common.cli_arguments(argv;required=["output","base-package","aoc-root","aos-root","plant-root",
         "adapter-root","pipewireao-jl-root","calibration-algorithms-root"],flags=["correction-diagnostics"],
-        allowed=["operational-calibration","pipewire-prefix"],defaults=(backend="cpu",rate_hz="10",frames="16",dark_frames="256"))
+        allowed=["operational-calibration","pipewire-prefix","total-exchanges","wall-rate"],defaults=(backend="cpu",rate_hz="10",frames="16",dark_frames="256"))
     args = merge(options,(rate_hz=parse(Int,options.rate_hz),frames=parse(Int,options.frames),
                           dark_frames=parse(Int,options.dark_frames),
+                          total_exchanges=hasproperty(options,:total_exchanges) ? parse(Int,options.total_exchanges) : parse(Int,options.frames),
+                          wall_rate=hasproperty(options,:wall_rate) ? options.wall_rate : "default",
                           pipewire_prefix=hasproperty(options,:pipewire_prefix) ? options.pipewire_prefix : "/opt/pipewireao"))
     println(export_package(args))
     return 0

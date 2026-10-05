@@ -1321,3 +1321,78 @@ independent generic PipeWireAO timeout CCR-006 is resolved for the released
 packages are not relabeled. Physical endpoints, DU860 electronics, instrument
 acceptance tolerances, full engine/backend coverage, progressive latency and
 wall-clock rates are separate gates.
+
+## Bounded sustained complete-frame HIL qualification
+
+The next increment under RTC-ARCH-021 and RTC-DEV-025/026 preserves the accepted
+Classic/Copper calibration and science while extending the scientific source
+owner beyond its 256-frame retention limit. Its [plan](SUSTAINED_HIL_PLAN.md),
+[usage](SUSTAINED_HIL_USAGE.md) and [independent review](SUSTAINED_HIL_REVIEW.md)
+separate fresh released-package deployments, continuous correction/reset,
+clipping feedback, ordinary graph allocations and source cadence.
+
+All four fresh finite CUDA-simulator/CPU-RTC compositions and their extended
+FGN/JFG diagnostic runs have exact delivery and reset evidence. Allocation
+remediation preserves the accepted science and ordinary Julia GC. Prepared
+storage, specialized owner calls, consumed control files, cooperative waits and
+serialized driver-cycle ownership remove the observed steady frame-loop heap
+allocations. CUDA's periodic blocking-wait memory-budget refresh was separately
+profiled and corrected through public completion APIs, with pending-kernel and
+kernel-error checks.
+
+The four unpaced continuous runs in
+`~/.cache/rtc-sustained-hil-20261004/zero-allocation-continuous-results.json`
+pass exact delivery and public shutdown/cleanup. After the 256-frame prefix,
+Classic measures 7,936 exchanges and Copper 3,840: all heap-allocation counters,
+GC pauses/time and full sweeps remain zero. Observed completion rates were
+514–515 Hz for Classic and 264–265 Hz for Copper, including simulation and
+transport. These are single completion-driven closed-loop observations on the
+recorded, shared host. They do not establish an isolated maximum RTC rate.
+
+The four stopped-reset cases in `zero-allocation-reset-results.json` each
+repeat two uninterrupted runs with the same zero-allocation result, exact
+retained ADC/command hashes and identical sparse late truth. Diagnostic-enabled
+continuous cases also pass. Preparation, stopped reset and final serialization
+are cold allocating operations; the inclusive gate for midrun control/report
+processing remains unqualified.
+
+PipeWireAO 0.6.14 is published and registered in the user's repositories. Fresh
+registry installation verifies the exact tag tree and passes 14 loop/state
+allocation assertions. The complete wrapper and adapter suites pass 1,520 and
+1,272 assertions; the deployment SDK passes 1,293. Final min-version export and
+deployment checks pass another 126 and 214 assertions. AOS's narrow wait repair
+also passes seven assertions on current main; campaign science remains frozen
+to its recorded source rather than silently adopting the remote package split.
+
+CPU replay of the new captured FGN prefixes through ordinary JFG `process!`
+allocates zero bytes on each of 256 calls. Maximum command discrepancies are
+2.56 × 10⁻¹³ m for Classic and 4.95 × 10⁻¹² m for Copper. The Copper report
+explicitly records the pre-existing 11-coefficient inverse difference; no new
+scientific acceptance tolerance is inferred. All four paced runs also deliver
+exactly with zero warmed frame-loop allocations: Classic at requested 250 Hz
+observes 247.373/248.085 Hz, and Copper at requested 100 Hz observes
+99.996/99.971 Hz. Whole-run wall misses are 105/83 and 7/10 respectively,
+with no missing model exchanges or commands. Shared-host scheduling makes
+these observations distinct from guaranteed scheduled rates.
+
+Both captured Copper clipping cohorts repeat their two finite reset batches
+exactly. Fixed-ADC ordinary JFG controls prove nonzero carried feedback and a
+changed command trajectory when carry is removed; their public `process!`
+calls allocate zero bytes. The released, registry-resolved Classic FGN v32
+deployment independently passes all 8,192 exchanges and the 7,936-exchange
+allocation interval with public shutdown and cleanup. Its native libraries
+are the explicitly recorded `/opt/pipewireao` override. The noisy Copper
+stream/capture comparison differs by at most two UInt16 ADC codes on 218 of
+1,048,576 pixels; this is characterized rather than declared bit-identical.
+The [evidence ledger](SUSTAINED_HIL_EVIDENCE.json) seals these completed reports.
+
+The selected continuous/stopped-reset increment is ready for integration.
+The next allocation work is inclusive midrun control/report handling; its
+existing failed lifecycle gate remains visible. Historical calibration image
+telemetry is losslessly compressed in the old campaign's
+`historical-telemetry-archive-20261005/`, with a verified per-path restore
+manifest. Those files must be restored for their original offline verifiers;
+calibration artifacts and current sustained evidence remain in place.
+Source-process totals and ordinary graph calls must remain distinct from
+foreign graph-callback costs. No hard deadline, physical-device acceptance or
+AMDGPU hardware qualification follows from these observations.
