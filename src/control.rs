@@ -1,6 +1,7 @@
 use pipewireao_rtc::{
-    ExecutionGroupState, LifecycleEvent, LifecycleState, LiveGraphAdapter, NdArrayParameterValue,
-    PropertyGeneration, Runner, ScalarValue, ScientificDiagnostic,
+    ExecutionGroupState, LifecycleEvent, LifecycleState, LiveGraphAdapter, LiveGraphStatus,
+    NdArrayParameterValue, ParameterGeneration, PropertyGeneration, Runner, ScalarValue,
+    ScientificDiagnostic,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -91,8 +92,199 @@ pub struct ControlErrorResponse {
 }
 
 pub struct Execution {
-    pub result: Value,
+    pub result: ExecutionResult,
     pub shutdown: bool,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Outcome {
+    Accepted,
+    Observed,
+    Requested,
+    Completed,
+    Active,
+    Submitted,
+}
+
+impl Outcome {
+    const fn legacy_name(self) -> &'static str {
+        match self {
+            Self::Accepted => "accepted",
+            Self::Observed => "observed",
+            Self::Requested => "requested",
+            Self::Completed => "completed",
+            Self::Active => "active",
+            Self::Submitted => "submitted",
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PropertyGenerationObservation {
+    pub node: String,
+    pub generation: Option<PropertyGeneration>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum ExecutionResult {
+    Quit,
+    Groups {
+        groups: BTreeMap<String, ExecutionGroupState>,
+    },
+    Status {
+        lifecycle_state: LifecycleState,
+        status: LiveGraphStatus,
+    },
+    Properties {
+        graph: String,
+        properties: BTreeMap<String, ScalarValue>,
+    },
+    PropertyGeneration {
+        graph: String,
+        node: String,
+        generation: PropertyGeneration,
+    },
+    ParameterGeneration {
+        graph: String,
+        node: String,
+        generation: ParameterGeneration,
+    },
+    GroupState {
+        group: String,
+        requested: ExecutionGroupState,
+        observed: Option<ExecutionGroupState>,
+    },
+    SessionStop {
+        state: LifecycleState,
+    },
+    SessionStart {
+        state: LifecycleState,
+    },
+    SourceEnded {
+        state: LifecycleState,
+    },
+    Reset {
+        state: LifecycleState,
+    },
+    PropertiesSet {
+        graph: String,
+        generations: Vec<PropertyGenerationObservation>,
+        active_adoption_observed: bool,
+    },
+    Parameter {
+        graph: String,
+        parameter: String,
+        generation: Option<ParameterGeneration>,
+    },
+}
+
+impl ExecutionResult {
+    #[must_use]
+    pub const fn outcome(&self) -> Outcome {
+        match self {
+            Self::Quit => Outcome::Accepted,
+            Self::Groups { .. }
+            | Self::Status { .. }
+            | Self::Properties { .. }
+            | Self::PropertyGeneration { .. }
+            | Self::ParameterGeneration { .. } => Outcome::Observed,
+            Self::GroupState { .. } => Outcome::Requested,
+            Self::SessionStop { .. }
+            | Self::SessionStart { .. }
+            | Self::SourceEnded { .. }
+            | Self::Reset { .. } => Outcome::Completed,
+            Self::PropertiesSet {
+                active_adoption_observed: true,
+                ..
+            } => Outcome::Active,
+            Self::PropertiesSet {
+                active_adoption_observed: false,
+                ..
+            }
+            | Self::Parameter { .. } => Outcome::Submitted,
+        }
+    }
+
+    /// Renders the existing console/socket result after typed owner execution.
+    #[must_use]
+    pub fn legacy_json(&self) -> Value {
+        let outcome = self.outcome().legacy_name();
+        match self {
+            Self::Quit => json!({
+                "outcome":outcome,"message":"shutdown requested","shutdown":true,
+            }),
+            Self::Groups { groups } => json!({
+                "outcome":outcome,
+                "groups":groups.iter().map(|(name,state)| (name,group_state(*state))).collect::<BTreeMap<_,_>>(),
+            }),
+            Self::Status {
+                lifecycle_state,
+                status,
+            } => json!({
+                "outcome":outcome,"lifecycle_state":state_name(*lifecycle_state),
+                "running":status.running,"owned_nodes":status.owned_nodes,
+                "owned_links":status.owned_links,"discarded_buffers":status.discarded_buffers,
+                "discarded_by_sink":status.discarded_by_sink,
+            }),
+            Self::Properties { graph, properties } => json!({
+                "outcome":outcome,"graph":graph,
+                "properties":properties.iter().map(|(name,value)| (name,scalar_json(value))).collect::<BTreeMap<_,_>>(),
+            }),
+            Self::PropertyGeneration {
+                graph,
+                node,
+                generation,
+            } => json!({
+                "outcome":outcome,"graph":graph,"node":node,
+                "requested":generation.requested,"active":generation.active,
+            }),
+            Self::ParameterGeneration {
+                graph,
+                node,
+                generation,
+            } => json!({
+                "outcome":outcome,"graph":graph,"node":node,
+                "requested":generation.requested,"active":generation.active,
+            }),
+            Self::GroupState {
+                group,
+                requested,
+                observed,
+            } => json!({
+                "outcome":outcome,"group":group,"requested":group_state(*requested),
+                "observed":observed.map(group_state),
+            }),
+            Self::SessionStop { state } | Self::SessionStart { state } => json!({
+                "outcome":outcome,"session_state":state_name(*state).to_ascii_uppercase(),
+            }),
+            Self::SourceEnded { state } | Self::Reset { state } => json!({
+                "outcome":outcome,"session_state":state_name(*state),
+            }),
+            Self::PropertiesSet {
+                graph,
+                generations,
+                active_adoption_observed,
+            } => json!({
+                "outcome":outcome,"graph":graph,"active_adoption_observed":active_adoption_observed,
+                "property_generations":generations.iter().map(|observation| json!({
+                    "node":observation.node,
+                    "requested":observation.generation.map(|generation| generation.requested),
+                    "active":observation.generation.and_then(|generation| generation.active),
+                })).collect::<Vec<_>>(),
+            }),
+            Self::Parameter {
+                graph,
+                parameter,
+                generation,
+            } => json!({
+                "outcome":outcome,"graph":graph,"parameter":parameter,
+                "active_adoption_observed":false,
+                "parameter_generations":generation.map(|generation| json!({
+                    "requested":generation.requested,"active":generation.active,
+                })),
+            }),
+        }
+    }
 }
 
 pub fn parse(arguments: &[String]) -> Result<Command, ControlError> {
@@ -310,100 +502,89 @@ impl Command {
     #[allow(clippy::too_many_lines)]
     pub fn execute(self, runner: &mut Runner<LiveGraphAdapter>) -> Result<Execution, ControlError> {
         use Command as C;
-        let (outcome, result, shutdown) = match self {
-            C::Quit => (
-                "accepted",
-                json!({"message":"shutdown requested","shutdown":true}),
-                true,
-            ),
-            C::Groups => (
-                "observed",
-                json!({"groups": runner.execution_group_states().iter().map(|(name,state)| (name, group_state(*state))).collect::<BTreeMap<_,_>>() }),
-                false,
-            ),
+        let result = match self {
+            C::Quit => ExecutionResult::Quit,
+            C::Groups => ExecutionResult::Groups {
+                groups: runner.execution_group_states().clone(),
+            },
             C::Status => {
                 let discarded = runner
                     .executor_mut()
                     .observe_discarded_buffers()
                     .map_err(|diagnostic| ControlError::from_diagnostic(&diagnostic))?;
-                let status = runner.executor().status();
-                (
-                    "observed",
-                    json!({
-                        "lifecycle_state":state_name(runner.state()),
-                        "running": status.running,
-                        "owned_nodes": status.owned_nodes,
-                        "owned_links": status.owned_links,
-                        "discarded_buffers": status.discarded_buffers,
-                        "discarded_by_sink": discarded,
-                    }),
-                    false,
-                )
+                let mut status = runner.executor().status();
+                // Retain the exact observation returned above, as the legacy
+                // result did, rather than selecting a cached sink snapshot.
+                status.discarded_by_sink = discarded;
+                ExecutionResult::Status {
+                    lifecycle_state: runner.state(),
+                    status,
+                }
             }
             C::Properties(graph) => {
-                let values = runner
+                let properties = runner
                     .executor()
                     .observe_properties(&graph)
                     .map_err(|diagnostic| ControlError::from_diagnostic(&diagnostic))?;
-                (
-                    "observed",
-                    json!({"graph":graph,"properties":values.iter().map(|(name,value)| (name, scalar_json(value))).collect::<BTreeMap<_,_>>() }),
-                    false,
-                )
+                ExecutionResult::Properties { graph, properties }
             }
             C::PropertyGeneration(graph, node) => {
                 let generation = runner
                     .executor()
                     .observe_property_generation(&graph, &node)
                     .map_err(|diagnostic| ControlError::from_diagnostic(&diagnostic))?;
-                (
-                    "observed",
-                    json!({"graph":graph,"node":node,"requested":generation.requested,"active":generation.active}),
-                    false,
-                )
+                ExecutionResult::PropertyGeneration {
+                    graph,
+                    node,
+                    generation,
+                }
             }
             C::ParameterGeneration(graph, node) => {
                 let generation = runner
                     .executor()
                     .observe_parameter_generation(&graph, &node)
                     .map_err(|diagnostic| ControlError::from_diagnostic(&diagnostic))?;
-                (
-                    "observed",
-                    json!({"graph":graph,"node":node,"requested":generation.requested,"active":generation.active}),
-                    false,
-                )
+                ExecutionResult::ParameterGeneration {
+                    graph,
+                    node,
+                    generation,
+                }
             }
             C::StopGroup(name) => {
                 dispatch_preserving_state(
                     runner,
                     LifecycleEvent::StopExecutionGroup(name.clone()),
                 )?;
-                let state = runner.execution_group_states().get(&name).copied();
-                (
-                    "requested",
-                    json!({"group":name,"requested":"stopped","observed":state.map(group_state)}),
-                    false,
-                )
+                let observed = runner.execution_group_states().get(&name).copied();
+                ExecutionResult::GroupState {
+                    group: name,
+                    requested: ExecutionGroupState::Stopped,
+                    observed,
+                }
             }
             C::StartGroup(name) => {
                 dispatch_preserving_state(
                     runner,
                     LifecycleEvent::StartExecutionGroup(name.clone()),
                 )?;
-                let state = runner.execution_group_states().get(&name).copied();
-                (
-                    "requested",
-                    json!({"group":name,"requested":"running","observed":state.map(group_state)}),
-                    false,
-                )
+                let observed = runner.execution_group_states().get(&name).copied();
+                ExecutionResult::GroupState {
+                    group: name,
+                    requested: ExecutionGroupState::Running,
+                    observed,
+                }
             }
             C::SessionStop => {
                 dispatch_expected(runner, LifecycleEvent::Stop, LifecycleState::Ready)?;
-                ("completed", json!({"session_state":"READY"}), false)
+                ExecutionResult::SessionStop {
+                    state: LifecycleState::Ready,
+                }
             }
             C::SessionStart => {
                 dispatch_expected(runner, LifecycleEvent::Start, LifecycleState::Running)?;
-                ("completed", json!({"session_state":"RUNNING"}), false)
+                ExecutionResult::SessionStart {
+                    state: LifecycleState::Running,
+                }
             }
             C::SourceEnded => {
                 dispatch_expected(
@@ -411,19 +592,15 @@ impl Command {
                     LifecycleEvent::FiniteSourceCompleted,
                     LifecycleState::Ready,
                 )?;
-                (
-                    "completed",
-                    json!({"session_state":state_name(runner.state())}),
-                    false,
-                )
+                ExecutionResult::SourceEnded {
+                    state: runner.state(),
+                }
             }
             C::Reset => {
                 dispatch_expected(runner, LifecycleEvent::Reset, LifecycleState::Ready)?;
-                (
-                    "completed",
-                    json!({"session_state":state_name(runner.state())}),
-                    false,
-                )
+                ExecutionResult::Reset {
+                    state: runner.state(),
+                }
             }
             C::PropertiesSet(graph, values) => {
                 runner
@@ -462,20 +639,18 @@ impl Command {
                             .ok()
                     })
                     .collect::<Vec<_>>();
-                let active = property_adoption_observed(running, &baseline, &observed);
-                let observations = nodes
-                    .iter()
-                    .zip(&observed)
-                    .map(|(node, generation)| {
-                        json!({"node":node,"requested":generation.map(|value| value.requested),
-                        "active":generation.and_then(|value| value.active)})
-                    })
-                    .collect::<Vec<_>>();
-                (
-                    if active { "active" } else { "submitted" },
-                    json!({"graph":graph,"property_generations":observations,"active_adoption_observed":active}),
-                    false,
-                )
+                let active_adoption_observed =
+                    property_adoption_observed(running, &baseline, &observed);
+                let generations = nodes
+                    .into_iter()
+                    .zip(observed)
+                    .map(|(node, generation)| PropertyGenerationObservation { node, generation })
+                    .collect();
+                ExecutionResult::PropertiesSet {
+                    graph,
+                    generations,
+                    active_adoption_observed,
+                }
             }
             C::Parameter {
                 graph, parameter, ..
@@ -503,26 +678,20 @@ impl Command {
                         value,
                     },
                 )?;
-                let observed = runner
+                let generation = runner
                     .executor()
                     .observe_parameter_generation(&graph, &source_node)
                     .ok();
-                (
-                    "submitted",
-                    json!({"graph":graph,"parameter":parameter,"active_adoption_observed":false, "parameter_generations":observed.map(|generation| json!({"requested":generation.requested,"active":generation.active}))}),
-                    false,
-                )
+                ExecutionResult::Parameter {
+                    graph,
+                    parameter,
+                    generation,
+                }
             }
         };
         Ok(Execution {
-            result: {
-                let mut result = result;
-                if let Some(object) = result.as_object_mut() {
-                    object.insert("outcome".to_owned(), json!(outcome));
-                }
-                result
-            },
-            shutdown,
+            shutdown: matches!(&result, ExecutionResult::Quit),
+            result,
         })
     }
 }
@@ -611,7 +780,10 @@ fn parse_dimensions(value: &str) -> Result<Vec<u32>, ControlError> {
     Ok(dimensions)
 }
 
-fn expected_parameter_bytes(element_type: &str, shape: &[u32]) -> Result<u64, ControlError> {
+pub(crate) fn expected_parameter_bytes(
+    element_type: &str,
+    shape: &[u32],
+) -> Result<u64, ControlError> {
     if element_type != "F32_LE" {
         return Err(ControlError::new(
             "command.parameter.element_type",
@@ -668,8 +840,308 @@ fn parse_scalar(value_type: &str, value: &str) -> Result<ScalarValue, ControlErr
 
 #[cfg(test)]
 mod tests {
-    use super::{parse, prepare, Command, MAX_ARGUMENTS, MAX_PARAMETER_BYTES};
+    use super::{
+        parse, prepare, Command, ExecutionResult, Outcome, PropertyGenerationObservation,
+        MAX_ARGUMENTS, MAX_PARAMETER_BYTES,
+    };
+    use pipewireao_rtc::{
+        ExecutionGroupState, LifecycleState, LiveGraphStatus, ParameterGeneration,
+        PropertyGeneration, ScalarValue,
+    };
     use std::fs;
+
+    fn assert_legacy(result: &ExecutionResult, outcome: Outcome, expected: &str) {
+        assert_eq!(result.outcome(), outcome);
+        assert_eq!(
+            result.legacy_json(),
+            serde_json::from_str::<serde_json::Value>(expected).unwrap()
+        );
+    }
+
+    #[test]
+    fn legacy_shutdown_and_group_snapshots_match_golden_json() {
+        assert_legacy(
+            &ExecutionResult::Quit,
+            Outcome::Accepted,
+            r#"{"outcome":"accepted","message":"shutdown requested","shutdown":true}"#,
+        );
+        assert_legacy(
+            &ExecutionResult::Groups {
+                groups: [
+                    ("a".into(), ExecutionGroupState::Stopped),
+                    ("b".into(), ExecutionGroupState::Running),
+                ]
+                .into(),
+            },
+            Outcome::Observed,
+            r#"{"outcome":"observed","groups":{"a":"stopped","b":"running"}}"#,
+        );
+        assert_legacy(
+            &ExecutionResult::Groups {
+                groups: Default::default(),
+            },
+            Outcome::Observed,
+            r#"{"outcome":"observed","groups":{}}"#,
+        );
+    }
+
+    #[test]
+    fn legacy_status_preserves_lifecycle_names_and_unsigned_counters() {
+        for (state, name) in [
+            (LifecycleState::Offline, "Offline"),
+            (LifecycleState::Configuring, "Configuring"),
+            (LifecycleState::Ready, "Ready"),
+            (LifecycleState::Running, "Running"),
+            (LifecycleState::Fault, "Fault"),
+        ] {
+            assert_legacy(
+                &ExecutionResult::Status {
+                    lifecycle_state: state,
+                    status: LiveGraphStatus {
+                        running: true,
+                        owned_nodes: 2,
+                        owned_links: 3,
+                        discarded_buffers: u64::MAX,
+                        discarded_by_sink: [("sink".into(), u64::MAX)].into(),
+                    },
+                },
+                Outcome::Observed,
+                &format!(
+                    r#"{{"outcome":"observed","lifecycle_state":"{name}","running":true,"owned_nodes":2,"owned_links":3,"discarded_buffers":18446744073709551615,"discarded_by_sink":{{"sink":18446744073709551615}}}}"#
+                ),
+            );
+        }
+        assert_legacy(
+            &ExecutionResult::Status {
+                lifecycle_state: LifecycleState::Ready,
+                status: LiveGraphStatus::default(),
+            },
+            Outcome::Observed,
+            r#"{"outcome":"observed","lifecycle_state":"Ready","running":false,"owned_nodes":0,"owned_links":0,"discarded_buffers":0,"discarded_by_sink":{}}"#,
+        );
+    }
+
+    #[test]
+    fn legacy_properties_preserve_all_seven_scalar_variants_and_bits() {
+        assert_legacy(
+            &ExecutionResult::Properties {
+                graph: "graph".into(),
+                properties: [
+                    ("n:bool".into(), ScalarValue::Bool(false)),
+                    ("n:int".into(), ScalarValue::Int(i32::MIN)),
+                    ("n:long".into(), ScalarValue::Long(i64::MIN)),
+                    ("n:float".into(), ScalarValue::Float((-0.0_f32).to_bits())),
+                    ("n:double".into(), ScalarValue::Double(u64::MAX)),
+                    ("n:id".into(), ScalarValue::Id(u32::MAX)),
+                    ("n:string".into(), ScalarValue::String("λ\n\0\"\\".into())),
+                ]
+                .into(),
+            },
+            Outcome::Observed,
+            r#"{"outcome":"observed","graph":"graph","properties":{"n:bool":{"type":"bool","value":false},"n:int":{"type":"int","value":-2147483648},"n:long":{"type":"long","value":-9223372036854775808},"n:float":{"type":"float","bits":2147483648},"n:double":{"type":"double","bits":18446744073709551615},"n:id":{"type":"id","value":4294967295},"n:string":{"type":"string","value":"λ\n\u0000\"\\"}}}"#,
+        );
+        assert_legacy(
+            &ExecutionResult::Properties {
+                graph: "g".into(),
+                properties: [
+                    ("n:f".into(), ScalarValue::Float(u32::MAX)),
+                    ("n:d".into(), ScalarValue::Double((-0.0_f64).to_bits())),
+                ]
+                .into(),
+            },
+            Outcome::Observed,
+            r#"{"outcome":"observed","graph":"g","properties":{"n:f":{"type":"float","bits":4294967295},"n:d":{"type":"double","bits":9223372036854775808}}}"#,
+        );
+        assert_legacy(
+            &ExecutionResult::Properties {
+                graph: "g".into(),
+                properties: Default::default(),
+            },
+            Outcome::Observed,
+            r#"{"outcome":"observed","graph":"g","properties":{}}"#,
+        );
+    }
+
+    #[test]
+    fn legacy_generation_queries_preserve_optional_active_and_signed_values() {
+        for (active, expected) in [
+            (
+                Some(i64::MIN),
+                r#"{"outcome":"observed","graph":"g","node":"n","requested":9223372036854775807,"active":-9223372036854775808}"#,
+            ),
+            (
+                None,
+                r#"{"outcome":"observed","graph":"g","node":"n","requested":9223372036854775807,"active":null}"#,
+            ),
+        ] {
+            assert_legacy(
+                &ExecutionResult::PropertyGeneration {
+                    graph: "g".into(),
+                    node: "n".into(),
+                    generation: PropertyGeneration {
+                        requested: i64::MAX,
+                        active,
+                    },
+                },
+                Outcome::Observed,
+                expected,
+            );
+        }
+        assert_legacy(
+            &ExecutionResult::ParameterGeneration {
+                graph: "g".into(),
+                node: "n".into(),
+                generation: ParameterGeneration {
+                    requested: i64::MIN,
+                    active: i64::MAX,
+                },
+            },
+            Outcome::Observed,
+            r#"{"outcome":"observed","graph":"g","node":"n","requested":-9223372036854775808,"active":9223372036854775807}"#,
+        );
+    }
+
+    #[test]
+    fn legacy_group_requests_preserve_requested_and_optional_observed_state() {
+        for (requested, requested_name) in [
+            (ExecutionGroupState::Stopped, "stopped"),
+            (ExecutionGroupState::Running, "running"),
+        ] {
+            for (observed, observed_json) in [
+                (None, "null"),
+                (Some(ExecutionGroupState::Stopped), r#""stopped""#),
+                (Some(ExecutionGroupState::Running), r#""running""#),
+            ] {
+                assert_legacy(
+                    &ExecutionResult::GroupState {
+                        group: "group".into(),
+                        requested,
+                        observed,
+                    },
+                    Outcome::Requested,
+                    &format!(
+                        r#"{{"outcome":"requested","group":"group","requested":"{requested_name}","observed":{observed_json}}}"#
+                    ),
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn legacy_session_completions_retain_command_specific_capitalization() {
+        for (result, expected) in [
+            (
+                ExecutionResult::SessionStop {
+                    state: LifecycleState::Ready,
+                },
+                r#"{"outcome":"completed","session_state":"READY"}"#,
+            ),
+            (
+                ExecutionResult::SessionStart {
+                    state: LifecycleState::Running,
+                },
+                r#"{"outcome":"completed","session_state":"RUNNING"}"#,
+            ),
+            (
+                ExecutionResult::SourceEnded {
+                    state: LifecycleState::Ready,
+                },
+                r#"{"outcome":"completed","session_state":"Ready"}"#,
+            ),
+            (
+                ExecutionResult::Reset {
+                    state: LifecycleState::Ready,
+                },
+                r#"{"outcome":"completed","session_state":"Ready"}"#,
+            ),
+        ] {
+            assert_legacy(&result, Outcome::Completed, expected);
+        }
+    }
+
+    #[test]
+    fn legacy_property_updates_retain_null_observations_and_adoption_outcomes() {
+        let observations = vec![
+            PropertyGenerationObservation {
+                node: "a".into(),
+                generation: None,
+            },
+            PropertyGenerationObservation {
+                node: "b".into(),
+                generation: Some(PropertyGeneration {
+                    requested: 10,
+                    active: None,
+                }),
+            },
+            PropertyGenerationObservation {
+                node: "c".into(),
+                generation: Some(PropertyGeneration {
+                    requested: 11,
+                    active: Some(10),
+                }),
+            },
+        ];
+        assert_legacy(
+            &ExecutionResult::PropertiesSet {
+                graph: "g".into(),
+                generations: observations,
+                active_adoption_observed: false,
+            },
+            Outcome::Submitted,
+            r#"{"outcome":"submitted","graph":"g","active_adoption_observed":false,"property_generations":[{"node":"a","requested":null,"active":null},{"node":"b","requested":10,"active":null},{"node":"c","requested":11,"active":10}]}"#,
+        );
+        assert_legacy(
+            &ExecutionResult::PropertiesSet {
+                graph: "g".into(),
+                generations: vec![PropertyGenerationObservation {
+                    node: "n".into(),
+                    generation: Some(PropertyGeneration {
+                        requested: 12,
+                        active: Some(12),
+                    }),
+                }],
+                active_adoption_observed: true,
+            },
+            Outcome::Active,
+            r#"{"outcome":"active","graph":"g","active_adoption_observed":true,"property_generations":[{"node":"n","requested":12,"active":12}]}"#,
+        );
+        assert_legacy(
+            &ExecutionResult::PropertiesSet {
+                graph: "g".into(),
+                generations: Vec::new(),
+                active_adoption_observed: false,
+            },
+            Outcome::Submitted,
+            r#"{"outcome":"submitted","graph":"g","active_adoption_observed":false,"property_generations":[]}"#,
+        );
+    }
+
+    #[test]
+    fn legacy_parameter_submission_is_submitted_with_or_without_observation() {
+        for (generation, expected) in [
+            (
+                None,
+                r#"{"outcome":"submitted","graph":"g","parameter":"n:p","active_adoption_observed":false,"parameter_generations":null}"#,
+            ),
+            (
+                Some(ParameterGeneration {
+                    requested: 9,
+                    active: 9,
+                }),
+                r#"{"outcome":"submitted","graph":"g","parameter":"n:p","active_adoption_observed":false,"parameter_generations":{"requested":9,"active":9}}"#,
+            ),
+        ] {
+            assert_legacy(
+                &ExecutionResult::Parameter {
+                    graph: "g".into(),
+                    parameter: "n:p".into(),
+                    generation,
+                },
+                Outcome::Submitted,
+                expected,
+            );
+        }
+    }
 
     fn words(line: &str) -> Vec<String> {
         line.split_whitespace().map(str::to_owned).collect()
@@ -812,7 +1284,11 @@ mod tests {
         assert_eq!(runner.state(), LifecycleState::Ready);
         assert!(runner.diagnostic().is_none());
         assert_eq!(
-            Command::Status.execute(&mut runner).unwrap().result["discarded_buffers"],
+            Command::Status
+                .execute(&mut runner)
+                .unwrap()
+                .result
+                .legacy_json()["discarded_buffers"],
             0
         );
         for expected in [LifecycleState::Ready, LifecycleState::Running] {
@@ -832,7 +1308,7 @@ mod tests {
             assert_eq!(runner.state(), expected);
             assert!(runner.diagnostic().is_none());
             assert_eq!(
-                result.result["outcome"],
+                result.result.legacy_json()["outcome"],
                 if expected == LifecycleState::Running {
                     "active"
                 } else {
@@ -850,11 +1326,19 @@ mod tests {
             .execute(&mut runner)
             .unwrap();
         assert_eq!(runner.state(), LifecycleState::Running);
-        let paused =
-            Command::Status.execute(&mut runner).unwrap().result["discarded_buffers"].clone();
+        let paused = Command::Status
+            .execute(&mut runner)
+            .unwrap()
+            .result
+            .legacy_json()["discarded_buffers"]
+            .clone();
         std::thread::sleep(std::time::Duration::from_millis(200));
         assert_eq!(
-            Command::Status.execute(&mut runner).unwrap().result["discarded_buffers"],
+            Command::Status
+                .execute(&mut runner)
+                .unwrap()
+                .result
+                .legacy_json()["discarded_buffers"],
             paused
         );
         Command::StartGroup(group).execute(&mut runner).unwrap();
@@ -876,7 +1360,7 @@ mod tests {
         let submitted = Command::PropertiesSet(graph.clone(), values.clone())
             .execute(&mut runner)
             .unwrap();
-        assert_eq!(submitted.result["outcome"], "submitted");
+        assert_eq!(submitted.result.legacy_json()["outcome"], "submitted");
         Command::SessionStart.execute(&mut runner).unwrap();
         let after = runner
             .executor()

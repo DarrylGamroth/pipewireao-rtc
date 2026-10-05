@@ -1,5 +1,8 @@
 mod control;
 mod control_socket;
+// Request codec is compiled before production endpoint wiring is selected.
+#[allow(dead_code)]
+mod native_runner_codec;
 
 use crate::control::{state_name, Command, ControlError, ControlErrorResponse, ControlResponse};
 use crate::control_socket::ControlSocketServer;
@@ -228,7 +231,12 @@ fn execute_request(
     let (ok, result, error, shutdown) = match command {
         Err(error) => (false, None, Some(error), false),
         Ok(command) => match command.execute(runner) {
-            Ok(execution) => (true, Some(execution.result), None, execution.shutdown),
+            Ok(execution) => (
+                true,
+                Some(execution.result.legacy_json()),
+                None,
+                execution.shutdown,
+            ),
             Err(error) => (false, None, Some(error), false),
         },
     };

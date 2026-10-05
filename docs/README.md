@@ -151,6 +151,11 @@ and diagnostic interoperability separately from production owner migration.
 The [synchronization prerequisite](NATIVE_CONTROL_SYNC_VALIDATION.md) and its
 [independent review](NATIVE_CONTROL_SYNC_REVIEW.md) record the corrected inner
 wait and stalled-core evidence, separately from native runner ingress.
+The [runner request profile](NATIVE_RUNNER_CONTROL.md), its
+[independent review](NATIVE_RUNNER_CONTROL_REVIEW.md) and
+[validation](NATIVE_RUNNER_CONTROL_VALIDATION.md) record closed typed dispatcher
+results and exact native request encoding; production endpoint wiring remains
+open.
 The simulator source migration
 is complete; remaining native endpoints are implementation work, not implied
 by the proof or contract.

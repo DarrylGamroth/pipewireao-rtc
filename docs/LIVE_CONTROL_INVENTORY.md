@@ -6,6 +6,35 @@ Read-only source inventory, 2026-10-05. RTC worktree:
 source-control changes included. No source edits, tests or GPU work performed.
 File references below are relative to that RTC worktree.
 
+This is the historical starting inventory, not a claim that the removed worktree
+is still active. Follow the maintained [migration design](NATIVE_CONTROL_MIGRATION_DESIGN.md)
+for current implementation status. A 2026-10-05 read-only recheck of the HEART
+wrapper and callers at `e57b2e5403bd8b90b6a2ebbaa7fbefe6c4ccfada` confirmed that
+reset/status files and health-report reads below remain live migration debt.
+
+## HEART boundary recheck
+
+No HEART source change is needed for this migration. Our `heart_owner.jl`
+wrapper supplies the new native endpoint, and our exporter, simulator,
+calibration and correction callers consume it. The wrapper's vendor TCP command
+client and SPA Standard WFS/DM UDP bridges remain their existing interfaces.
+
+The wrapper reset still stops the old child, starts and initializes its
+replacement, verifies ingress configuration and thread placement, and publishes
+the new child PID/generation only after preparation. Calibration initially
+requires generation 1; correction reset requires exactly the previous generation
+plus one and fences old child/telemetry before admitting another exposure. These
+are child lifecycle semantics, not merely graph numerical reset.
+
+`heart-owner-status.json` is currently consumed as live authority by both
+`heart_calibration_owner.jl::require_usable` and
+`heart_correction_owner.jl::require_active`. Native fresh queries must preserve
+PID/generation, child liveness/error and configured/observed ingress checks.
+Startup also verifies configuration/executable/input evidence and command logs.
+Saved immutable evidence may remain files; mutable report reads must cease to
+authorize acquisition. Flag verification currently proves command SUCCESS
+acknowledgements, not effective flag readback; migration must retain that limit.
+
 ## Observed live paths
 
 | Path | Exact entrypoints and callers | Current wire fields | Native alternative / dependency |
