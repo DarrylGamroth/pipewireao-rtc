@@ -670,15 +670,16 @@ source silence before admission and clean shutdown in both launch modes.
 
 ### RTC-DEV-022 — Bounded local control
 
-The console and private Unix endpoint MUST use one typed command executor on
-the sole lifecycle owner. Socket I/O and parameter-file preparation MUST run
-outside that owner. The endpoint MUST admit at most one prepared request at a
+The console and private native PipeWire endpoint MUST use one typed command
+executor on the sole lifecycle owner. Parameter decoding and parameter-file
+preparation MUST run outside effect handlers. RTC-DEV-030 selects the native
+transport; the existing Unix endpoint remains explicit migration debt. The endpoint MUST admit at most one prepared request at a
 time, limit a request to 16 KiB and 128 fields, a parameter payload to 512 MiB,
 and a reply to 64 KiB. Parameter dimensions/type/byte length MUST be checked
 before reading the payload. Client read/write deadlines MUST be finite.
 Malformed commands MUST reject the request without terminating a healthy
-session. The endpoint MUST restrict access to the owning user and MUST NOT
-unlink arbitrary pre-existing path objects.
+session. The private core MUST restrict control access to the owning user. Remaining
+legacy socket cleanup MUST NOT unlink arbitrary pre-existing path objects.
 
 Commands MUST cover session/group start and stop, reset, scalar transactions,
 declared ndarray parameter replacement, property/parameter generation queries,
@@ -970,11 +971,14 @@ The prototype `CalibrationSocketEndpoint` uses a preconnected local Unix stream
 with one bounded pending request, outside processing callbacks. It does not
 establish command ownership itself. The endpoint server MUST serialize effects,
 fence prior work before restoration, and retain the hold or fault the deployment
-on an unknown outcome or disconnect. The installed deployment launcher does not
-select a calibration server yet.
+on an unknown outcome or disconnect. Installed acquisition profiles now select this server; its transport remains
+explicit migration debt.
 
-Records are newline-terminated JSON: requests are at most 16 KiB, replies at most
-64 KiB, including the delimiter. Requests carry `version = 1`, positive integer
+The unmigrated prototype uses newline-terminated JSON, with requests bounded
+to 16 KiB and server/Rust replies to 128 KiB, including the delimiter. Its Julia
+capture reader still has a divergent 64 KiB bound. RTC-DEV-030 supersedes this
+transport with native PODs and one shared 128 KiB calibration completion bound;
+the field/action semantics below remain applicable. Requests carry `version = 1`, positive integer
 `run` and `serial`, positive relative `timeout_ns`, and an `action` object. Host
 monotonic `Instant` deadlines remain authoritative at the coordinator; the
 relative budget does not synchronize process clocks or extend that deadline.
@@ -1054,3 +1058,64 @@ evidence. An unknown post-effect outcome retains the fault/hold disposition;
 restarting or killing a process does not confirm restoration. Automatic stage
 transition or publication of final candidates MUST stop on a failed required
 gate. Existing active calibrations are never overwritten by a campaign.
+
+## RTC-DEV-030 — Native local live controls
+
+Under RTC-ARCH-024, local live control requests, completions and authoritative
+status MUST use standard SPA `Props` with typed scalar, Struct and Array PODs
+on public PipeWire owner nodes. JSON embedded in a POD MUST NOT be treated as
+native serialization. Saved configuration and scientific artifacts MAY retain
+JSON; their existence MUST NOT substitute for a fresh live completion.
+
+Each endpoint MUST retain its existing sole lifecycle/acquisition owner.
+Callbacks MUST stage bounded owned values and MUST NOT execute scientific or
+blocking lifecycle effects. Cold no-port inactive Filter endpoints MAY allocate;
+the measured scientific source MUST retain its prepared control storage and
+inclusive allocation boundary. No new scientific scheduler or graph-authoring
+contract is introduced.
+
+The following common-envelope and retained-completion rules apply to the new
+cold owner endpoints. The already completed supervisor-exclusive scientific
+source MUST retain its unchanged native run/reset/source schemas under
+RTC-DEV-025; it does not acquire this new caller envelope.
+
+New cold-owner requests and matching completions MUST identify the exact endpoint incarnation,
+controller registry global ID, object.serial and controller instance, request
+token and operation. Duplicate equivalence MUST additionally include the
+canonical payload. A completion from a different controller MUST NOT satisfy a
+request even when its token and operation match. A fresh status query MUST have
+a newly processed matching token. Uncorrelated malformed-input diagnostics MUST
+NOT fabricate a request identity or replace the retained terminal completion.
+
+New cold owners MUST retain at most one pending request, one terminal completion and one
+independent rejection. Caller collisions, malformed/stale/busy requests MUST
+preserve accepted state. All controls MUST have finite client and owner budgets;
+nested PipeWire synchronization MUST receive the remaining deadline rather than
+restart it. Timeout, disappearance or changed incarnation MUST retain unknown
+outcome without reconnect, automatic retry or JSON fallback.
+
+Calibration MUST preserve Hold, Adopt, Settle, Collect, Capture, Restore and
+Release semantics and exact full-width acquisition identities. Controller
+lifetime MUST be bound to the calibration run. Disappearance or next-request
+inactivity expiry MUST retain hold or fault; a live but silent controller MUST
+NOT extend authority indefinitely. The next-request inactivity deadline MUST
+start at the preceding request's acceptance, preserving the current reader
+boundary, rather than after its action completes. Restoration MUST fence prior
+work before Release, and submission MUST NOT establish adoption or settling.
+
+Requests MUST be bounded to 16 KiB. Ordinary lifecycle replies MUST be bounded
+to 64 KiB; calibration replies MUST use one shared 128 KiB bound across both
+clients and server. Native codecs MUST validate exact fields/types/arity,
+checked encoded size, array element counts and finite scientific values before
+side effects. Semantic frame-count limits MUST NOT replace encoded-capacity
+preflight. Calibration unsigned identities MUST preserve all 64 bits; an SPA
+Long bit pattern MUST be decoded and compared as UInt64 where specified.
+
+Implementation MUST follow the reviewed migration phases. Existing live JSON
+paths listed in the inventory remain migration debt and MUST NOT be reported
+as native capability. Verification MUST cover cross-language exact fields,
+unsigned boundary values, callback staging versus application, fresh queries,
+malformed/busy/duplicate/stale and competing callers, removal and deadline
+expiry, restoration/disconnect/inactivity, startup and bounded cleanup. Installed
+Classic/Copper functional, scientific and allocation gates remain distinct from
+CPU transport tests or host real-time qualification.

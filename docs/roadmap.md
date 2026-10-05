@@ -1433,3 +1433,32 @@ supervisor-to-Rust, calibration action or HEART wrapper control interfaces.
 Their current JSON transport must be replaced in separately reviewed,
 dependency-ordered increments, preserving restoration fencing, identities,
 bounded payloads and completion semantics. Saved JSON artifacts are distinct.
+
+## Remaining native live control migration
+
+RTC-ARCH-024 and RTC-DEV-030 select native serialization for the remaining
+local controls, following the [reviewed design](NATIVE_CONTROL_MIGRATION_DESIGN.md).
+The [inventory](LIVE_CONTROL_INVENTORY.md) is the explicit retirement checklist.
+The completed source path remains separate. Keep its zero-allocation and causal
+adoption checks intact.
+
+1. Validate a fixed shared identity/deadline envelope and exact owner-specific
+   payloads with CPU Julia↔Rust no-port Filter tests. The Julia-only and Julia↔Rust scalar proofs cover the primitive. The fixed
+   header now has 66 Julia checks, ten Rust test groups and a 42-check native
+   diagnostic exchange; [validation](NATIVE_CONTROL_ENVELOPE_VALIDATION.md)
+   keeps actual caller authority and owner integration gates open.
+2. Bound Rust inner synchronization and replace runner socket ingress while
+   preserving the single Statig dispatcher and existing operation outcomes.
+3. Migrate supervisor-to-runner and HEART wrapper readiness/reset/health through
+   native completions without changing HEART's scientific implementation.
+4. Migrate calibration/correction source admission and the calibration action
+   server plus both clients, preserving restoration and inactivity fencing.
+5. Replace public operator requests and remaining live readiness/status-file
+   authority. Retire JSON control transports after their native callers pass;
+   retain saved evidence and artifact verification.
+
+Each phase needs focused CPU behavioral verification and independent review
+before affected installed science/allocation campaigns. The current transport
+proof is CPU software evidence and is not a hard real-time or complete deployment
+claim. See [review dispositions](NATIVE_CONTROL_MIGRATION_REVIEW.md) for the
+confirmed prerequisites and still-open implementation validation.

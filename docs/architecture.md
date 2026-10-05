@@ -581,6 +581,33 @@ and admitting another. HEART uses the SPA stdWfs/stdDM UDP bridge; FGN/JFG use
 native PipeWire ndarray ports. The RTC lifecycle owner executes neither WFS
 processing nor detector simulation.
 
+## Native live control transport
+
+This is decision **RTC-ARCH-024**: replace local live JSON requests and replies
+with standard PipeWire Node parameters and events on the existing private core.
+This applies to supervisor/operator control, the Rust lifecycle runner,
+calibration and correction owners, the calibration action endpoint, and the
+supervised HEART wrapper. The completed simulator source path retains its
+prepared native SPA run/reset/query contract. Persisted configuration, recipes,
+immutable captures and reports retain their current formats.
+
+Existing owners and their serialized dispatchers remain authoritative. Cold
+owners may publish an inactive Filter with no ports or process callback; it
+owns no scientific graph, frame queue or scheduling policy. A callback stages
+bounded owned data. The existing owner performs the operation outside that
+callback and publishes its typed completion afterward. Scientists continue to
+write ordinary transport-neutral algorithms and properties.
+
+The migration is dependency ordered under RTC-DEV-030. The
+[design](NATIVE_CONTROL_MIGRATION_DESIGN.md),
+[control inventory](LIVE_CONTROL_INVENTORY.md),
+[mechanism proof](NATIVE_CONTROL_FILTER_PROOF.md) and
+[independent review](NATIVE_CONTROL_MIGRATION_REVIEW.md) distinguish selected
+behavior from implementation evidence. Native serialization does not itself
+establish application, finite owner execution, restoration or real-time
+qualification. Existing JSON interfaces remain explicitly unmigrated until
+their corresponding native gates pass; they are not a native fallback.
+
 ## Authoritative lower contracts
 
 This repository does not duplicate the data-plane contracts:

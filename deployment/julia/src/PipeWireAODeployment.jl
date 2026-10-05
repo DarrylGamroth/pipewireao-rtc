@@ -36,6 +36,7 @@ end
 include("common.jl")
 include("placement.jl")
 include("science_export.jl")
+include("native_control_codec.jl")
 include(joinpath(resource_root(), "hil", "source_control.jl"))
 include("source_client.jl")
 include("deploy.jl")

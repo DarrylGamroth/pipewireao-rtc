@@ -11,7 +11,7 @@ declared session without introducing another graph-authoring format.
 | Document | Authority |
 | --- | --- |
 | [Development architecture](architecture.md) | RTCW composition, scientist boundary, external-node substitution, laboratory placement, and the selected deployment package |
-| [Development operating contract](operations.md) | RTC-DEV-001 through RTC-DEV-029: lifecycle, composition, updates, equivalence, placement, installed profiles, simulated calibration, bounded control and user-service operation |
+| [Development operating contract](operations.md) | RTC-DEV-001 through RTC-DEV-030: lifecycle, composition, updates, equivalence, placement, installed profiles, simulated calibration, bounded control and user-service operation |
 | [Development roadmap](roadmap.md) | Dependency-ordered implementation, completion evidence, performance characterization, and deferred capability triggers |
 
 These three files are the complete RTC-level implementation baseline. An
@@ -138,6 +138,19 @@ and records the remaining midrun-control and qualification limits.
 transport and its separate installed midrun-control qualification. Saved JSON
 reports remain artifacts; the public supervisor socket and calibration controls
 are separate live transports still awaiting migration.
+
+[Native control migration design](NATIVE_CONTROL_MIGRATION_DESIGN.md), its
+[inventory](LIVE_CONTROL_INVENTORY.md),
+[mechanism proof](NATIVE_CONTROL_FILTER_PROOF.md) and
+[independent review](NATIVE_CONTROL_MIGRATION_REVIEW.md) document the selected
+RTC-ARCH-024 / RTC-DEV-030 transport increment. The three active documents
+above remain the normative authority. The [fixed envelope](NATIVE_CONTROL_ENVELOPE.md),
+[codec review](NATIVE_CONTROL_CODEC_REVIEW.md) and
+[CPU validation](NATIVE_CONTROL_ENVELOPE_VALIDATION.md) record the common header
+and diagnostic interoperability separately from production owner migration.
+The simulator source migration
+is complete; remaining native endpoints are implementation work, not implied
+by the proof or contract.
 
 ## Julia operational deployment
 
