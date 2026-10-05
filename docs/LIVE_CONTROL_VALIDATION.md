@@ -26,9 +26,10 @@ These checks do not establish native allocator freedom.
 The campaigns use the frozen Classic/Copper simulation, calibration,
 graphs, matrices, detector settings, seeds and model period. Staging verifies
 342/345 protected files for Classic FGN/JFG and 336/338 for Copper FGN/JFG.
-Only source-control, SDK and adapter infrastructure is replaced. Candidate
-packages are explicitly labelled development sources, not registered-release
-qualification. Their scientific bytes remain unchanged.
+Only source-control, SDK and adapter infrastructure is replaced. The initial
+four candidate packages are explicitly labelled development sources. The separate committed-main
+check below resolves registered PipeWireAO 0.6.16 without a development override.
+All protected scientific bytes remain unchanged.
 
 ## Preserved failure and targeted correction
 
@@ -86,8 +87,23 @@ FGN v26 and Copper JFG v27. This is a cross-increment payload check in addition
 to the two-run reset comparison; it does not establish unrestricted numerical
 equivalence outside the recorded prefixes.
 This closes the selected installed source-owner control/allocation gate for
-these development candidates. A clean committed-main registered-package run
-remains a separate final deployment check.
+these development candidates.
+
+A fresh Classic FGN v13 installation from clean RTC main
+`74099a2861ed7d60789a38c0f3ad4121b029bf48` resolves registered PipeWireAO
+0.6.16 in both SDK and HIL manifests, with no PipeWireAO path override. It passes
+two 8,192-exchange runs, each with all inclusive heap/GC fields zero over 7,936
+measured exchanges. Midrun pause holds sequence 5,982 across fresh query tokens
+5 and 6. Reset reaches generation 2; final report readiness, public shutdown
+and owned cleanup pass. Both retained pixel and command prefixes match the
+earlier v9 and frozen v36 baselines exactly. This completes the selected
+committed-main installed integration check; Copper and JFG release-installed
+reruns remain distinct from the four development-source results. Independent
+read-only verification checks all 342 protected files across staged/installed v13,
+v9 and frozen v36, plus descriptor and environment hashes. Five precompile
+loaded-version notices and an optional D-Bus warning appear in the consolidated
+log; their cause is not inferred. The exact-delivery, inclusive allocation and
+unchanged-artifact checks pass.
 
 Registered PipeWireAO 0.6.16 SDK tests pass 1,384 assertions across 63 test
 summaries. Focused owner protocol/source/loop tests pass 87/125/18 assertions.
