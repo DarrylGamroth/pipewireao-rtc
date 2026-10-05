@@ -1,7 +1,9 @@
 # Sustained complete-frame HIL qualification
 
 Starting revision: `1d3f1b5cadab0bb222390d90311b4094c30a40c3`.
-Worktree: `pipewireao-rtc-sustained-hil`, branch `work/sustained-hil-20261004`.
+Original worktree: `pipewireao-rtc-sustained-hil`, branch `work/sustained-hil-20261004`.
+Integrated in canonical main at `600de343bd3914157333e23697a9c1b54833b7da`;
+the clean completed worktree was removed and its branch retained.
 Fresh evidence: `/home/dgamroth/.cache/rtc-sustained-hil-20261004`.
 
 ## Selected increment
@@ -216,3 +218,17 @@ the intentional `/opt/pipewireao` native-library override; it does not prove tha
 JLL-native artifacts executed. Successful local-repair packages keep their own
 original identities. Min-version export/deployment checks and installation of
 the released dependency supplement this live result.
+
+### Clean-main installation check
+
+After integration, canonical main passes all 1,293 SDK assertions in 59 test
+sets. A fresh clone of the sealed released package receives only the main SDK
+and a shortened 1,024-exchange target; 383 protected calibration, graph, HIL
+source/dependency and binary files retain their exact hashes. Public install
+and installed preflight pass. Actual installed Classic FGN/CUDA execution
+delivers 1,024 frames and commands, records zero heap/GC activity across its
+768 measured exchanges, repeats the released v32 prefix hashes exactly, and
+completes public shutdown and owned cleanup. HIL Project/Manifest bytes remain
+unchanged after execution. This is an installation smoke check, not another
+rate qualification. The ledger seals the lifecycle report and records known
+cold precompilation and unused optional dbus diagnostics.

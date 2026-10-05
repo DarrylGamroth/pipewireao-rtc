@@ -1386,7 +1386,16 @@ stream/capture comparison differs by at most two UInt16 ADC codes on 218 of
 1,048,576 pixels; this is characterized rather than declared bit-identical.
 The [evidence ledger](SUSTAINED_HIL_EVIDENCE.json) seals these completed reports.
 
-The selected continuous/stopped-reset increment is ready for integration.
+The selected continuous/stopped-reset increment is integrated in canonical main
+at `600de343bd3914157333e23697a9c1b54833b7da` and pushed to the user's origin.
+Clean-main SDK regression passes all 1,293 assertions. A freshly installed
+package preserves 383 scientific, HIL dependency/source and binary hashes,
+passes public preflight and delivers all 1,024 smoke-check exchanges with zero
+heap/GC activity across 768 measured exchanges. Its recorded pixel/command
+prefix matches the earlier released deployment exactly; public shutdown and
+owned cleanup complete. Both merged clean sustained/calibration-completion
+worktrees are retired with their branches retained. The older progressive
+checkout's uncommitted benchmark files are preserved.
 The next allocation work is inclusive midrun control/report handling; its
 existing failed lifecycle gate remains visible. Historical calibration image
 telemetry is losslessly compressed in the old campaign's

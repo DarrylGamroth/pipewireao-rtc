@@ -856,5 +856,47 @@
     ],
     "scope": "same noisy graph, seeds, fixed2ms model steps and measured command trace; execution policy only changes; descriptive comparison without an acceptance tolerance",
     "accepted_numerical_tolerance": null
-  }
+  },
+  "clean_main_verification": {
+    "rtc_revision": "600de343bd3914157333e23697a9c1b54833b7da",
+    "sdk_test_exit_code": 0,
+    "sdk_testsets": 59,
+    "sdk_assertions_passed": 1293,
+    "public_installed_preflight_exit_code": 0,
+    "native_prefix": "/opt/pipewireao",
+    "mermaid_rendered": [
+      "operations",
+      "roadmap"
+    ],
+    "scope": "Clean canonical main SDK regression, public installed preflight and installed complete-frame CUDA smoke check; not new rate or physical qualification.",
+    "live_success": true,
+    "live_exchanges": 1024,
+    "measured_exchanges": 768,
+    "simulator_allocated_bytes": 0,
+    "gc_pauses": 0,
+    "prefix_equal_released_v32": true,
+    "shutdown_confirmed": true,
+    "cleanup": "complete",
+    "hil_manifest_unchanged_after_run": true,
+    "lifecycle_report": "/home/dgamroth/.cache/rtc-sustained-hil-20261004/classic-fgn-clean-main-v36-evidence.lifecycle.json",
+    "lifecycle_sha256": "1ff71efb3567e7dc85be61a900c7bbd7023d1ac6033ffd7a20940798bd06db9f",
+    "installed_descriptor_sha256": "d95375ccb5727811d4a9806aa676c8bc095da734e658411ef99af4c23b892ca6",
+    "protected_files_verified": 383,
+    "known_diagnostics": [
+      "Private core cannot load optional SPA dbus support; no dbus use in this graph.",
+      "Cold package preparation emits loaded-version precompile diagnostics; occurs before source admission."
+    ]
+  },
+  "retired_worktrees": [
+    {
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-sustained-hil",
+      "revision": "600de343bd3914157333e23697a9c1b54833b7da",
+      "branch_retained": true
+    },
+    {
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-completion",
+      "revision": "528bb92a2cbb555dd8d4d08da98551e5b659e68d",
+      "branch_retained": true
+    }
+  ]
 }

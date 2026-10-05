@@ -1084,6 +1084,27 @@ CUDA synchronization preferences, HEART changes, host tuning, physical-device
 acceptance and hard real-time qualification. Stream/Captured differences remain
 numerical characterization without an invented acceptance tolerance.
 
+## Post-integration installation verification
+
+Canonical main `600de343bd3914157333e23697a9c1b54833b7da` passes the complete
+SDK suite: 1,293 assertions in 59 test sets. The fresh installed v36 smoke
+package preserves all 383 protected calibration, graph, HIL source/dependency
+and binary files. Independent inspection verifies all 486 installed artifact
+seals, preparation/descriptor/manifest identities, actual 1,024/1,024 delivery,
+and zero heap/GC counters over 768 measured exchanges. Recomputed recorded
+frame/command payload hashes match released v32 exactly. Public shutdown and
+owned cleanup complete without fallback. The source HIL Project/Manifest remain
+unchanged after execution.
+
+Evidence is `E/rtc-clean-main-validation-20261005.json`,
+`E/rtc-clean-main-v36-preparation.json` and
+`E/classic-fgn-clean-main-v36-evidence.lifecycle.json`. This independently
+confirmed result qualifies installation of the unchanged source increment;
+it is not another rate or physical-device qualification. No new source defect
+or speculative repair is requested. Completed clean RTC worktrees were removed
+normally, with branch history retained. The progressive checkout's uncommitted
+files remain untouched.
+
 ## Reviewed identities
 
 The measured FGN descriptor SHA-256 is
