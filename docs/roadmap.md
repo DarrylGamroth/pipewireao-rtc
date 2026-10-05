@@ -1315,7 +1315,9 @@ normal ADC rail diagnostics are preserved under the disclosed common replay
 policy. Original failed gates remain failed in their original reports.
 
 This completes the selected finite scientific increment, not broad instrument
-qualification. Ordinary native Copper streaming CCR-017 and the independent
-generic PipeWireAO private-core timeout CCR-006 remain open. Physical endpoints,
-DU860 electronics, instrument acceptance tolerances, full engine/backend
-coverage, progressive latency and wall-clock rates are separate gates.
+qualification. Ordinary native Copper streaming CCR-017 remains open. The
+independent generic PipeWireAO timeout CCR-006 is resolved for the released
+[prepared exchange path](PREPARED_EXCHANGE_DELIVERY.md); historical scientific
+packages are not relabeled. Physical endpoints, DU860 electronics, instrument
+acceptance tolerances, full engine/backend coverage, progressive latency and
+wall-clock rates are separate gates.

@@ -645,8 +645,10 @@ correction, and unchanged selected HEART plus available accelerator simulation.
 The [plan table](CALIBRATION_COMPLETION_PLAN.md#five-steps-and-existing-evidence)
 and independent review specify the qualified cohorts and partial spatial spans.
 
-Separate work remains: ordinary native Copper streaming CCR-017; the generic
-PipeWireAO private-core loan-exhaustion timeout CCR-006; physical endpoints,
+The generic PipeWireAO loan-exhaustion timeout CCR-006 has a separate
+[qualification of the released packages](PREPARED_EXCHANGE_DELIVERY.md). Frozen scientific
+packages retain their original source identities. Separate work remains:
+ordinary native Copper streaming CCR-017; physical endpoints,
 instrument-specific tolerances and DU860 electronics; wall-clock cadence,
 progressive latency and full engine/backend configuration coverage. Accelerator
 labels here describe the AOS simulator backend, not accelerator execution of

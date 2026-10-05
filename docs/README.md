@@ -119,6 +119,10 @@ command acquisition from ordinary closed-loop operation and records the selected
 native ingress mode. Finite simulation results do not qualify physical devices
 or wall-clock cadence.
 
+[Prepared exchange delivery](PREPARED_EXCHANGE_DELIVERY.md) records the native
+JLL ownership fix, release of the prepared Julia API and generic CCR-006
+private-core qualification separately from those scientific cohorts.
+
 ## Julia operational deployment
 
 The [Julia package structure review](JULIA_PACKAGE_STRUCTURE_REVIEW.md) distinguishes
