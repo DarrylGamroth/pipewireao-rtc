@@ -4,6 +4,7 @@ using JSON3, Sockets, UUIDs, TOML
 using ..Common
 using ..Placement
 using ..ScienceExport
+import ..NativeSourceClient
 
 export DeploymentError, digest, installed_paths, decode, profile, relative_asset,
     substitute, control, atomic_record, validate_source_reply, validate_control_request,
@@ -92,6 +93,8 @@ function valid_cpu_list(value)
     Placement.cpu_set(value)
 end
 
+native_source(owner) = get(owner, "control-protocol", nothing) == "pipewireao.source-control/1"
+
 function profile(path::AbstractString, prefix::AbstractString)
     value = decode(path, prefix)
     require(value isa AbstractDict && Set(keys(value)) in (REQUIRED_KEYS,
@@ -111,8 +114,15 @@ function profile(path::AbstractString, prefix::AbstractString)
     for owner in owners
         require(owner isa AbstractDict, "external owner fields do not match the deployment contract")
         fields = Set(["role", "argv", "environment", "prepared", "connect", "connected", "quit"])
-        source_role !== nothing && get(owner, "role", nothing) == source_role &&
-            union!(fields, ["control-request", "control-reply"])
+        if source_role !== nothing && get(owner, "role", nothing) == source_role
+            union!(fields, native_source(owner) ? ["control-protocol", "control-node"] :
+                ["control-request", "control-reply"])
+            if native_source(owner)
+                node = get(owner,"control-node",nothing)
+                require(node isa String && occursin(r"^[a-zA-Z0-9_.-]{1,128}$",node),
+                    "native source requires a bounded exact node name")
+            end
+        end
         require(Set(keys(owner)) == fields, "external owner fields do not match the deployment contract")
         role = owner["role"]
         require(role isa String && !(role in roles) && occursin(r"^[a-z][a-z0-9-]{0,31}$", role),
@@ -125,7 +135,7 @@ function profile(path::AbstractString, prefix::AbstractString)
         validate_environment(owner["environment"], "owner $role")
         names = Set{String}()
         marker_keys = ["prepared", "connect", "connected", "quit"]
-        role == source_role && append!(marker_keys, ["control-request", "control-reply"])
+        role == source_role && !native_source(owner) && append!(marker_keys, ["control-request", "control-reply"])
         for key in marker_keys
             marker = owner[key]
             require(marker isa String && !(marker in (".", "..")) &&
@@ -140,7 +150,7 @@ function profile(path::AbstractString, prefix::AbstractString)
         "source-owner must name an existing external owner")
     reserved = union(roles, Set(["control.sock", "native-control.sock", "native-prefix", "julia-depot"]))
     require(isempty(intersect(markers, reserved)), "owner markers conflict with deployment runtime paths")
-    if source_role !== nothing
+    if source_role !== nothing && !native_source(only(filter(owner -> owner["role"] == source_role, owners)))
         source = only(filter(owner -> owner["role"] == source_role, owners))
         staging = splitext(source["control-request"])[1] * ".new"
         require(!(staging in markers || staging in reserved), "source request staging path conflicts with runtime paths")
@@ -301,6 +311,7 @@ mutable struct DeploymentRunner
     broker_accept::Any
     latency_io::Any
     source_owner::Any
+    source_client::Any
     source_id::Int
     source_state::Any
     source_failed::Bool
@@ -327,7 +338,7 @@ function DeploymentRunner(options::NamedTuple)
         "owner_preparation_timeout_seconds" => preparation_timeout)
     DeploymentRunner(options, dirname(deployment), spec, installed_paths(options.pipewire_prefix),
         Placement.inherited_cpus(), Tuple{String,Base.Process}[], IdDict{Base.Process,Int}(), nothing, nothing, nothing,
-        nothing, nothing, nothing, owner, 0, nothing, false, false, false, nothing, record)
+        nothing, nothing, nothing, owner, nothing, 0, nothing, false, false, false, nothing, record)
 end
 
 function preflight(deployment::DeploymentRunner)
@@ -431,7 +442,69 @@ function wait_until(deployment::DeploymentRunner, predicate, stage; timeout=90)
     end
 end
 
+struct SourceHealth{D}
+    deployment::D
+    shutdown::Bool
+end
+
+function (probe::SourceHealth)()
+    return probe.shutdown ? check_processes(probe.deployment; ignore_roles=("rtc",)) :
+        check(probe.deployment)
+end
+
 function source_control(deployment::DeploymentRunner, operation::AbstractString;
+                        initial=false, shutdown=false, allow_rejection=false)
+    deployment.source_owner !== nothing || fail("source owner is not configured")
+    native_source(deployment.source_owner) || return source_file_control(deployment,operation;
+        initial,shutdown,allow_rejection)
+    operation in ("resume", "pause", "reset", "status") || fail("invalid source control operation")
+    check_owner = SourceHealth(deployment, shutdown)
+    try
+        deployment.source_failed && fail("source coordination already failed; source outcome unknown")
+        if deployment.source_client === nothing
+            initial || fail("native source client was not prepared; source outcome unknown")
+            preparation_deadline = monotonic() +
+                get(deployment.options, :owner_preparation_timeout_seconds, 90)
+            owner_pid = deployment.record["processes"][deployment.source_owner["role"]]["pid"]
+            deployment.source_client = NativeSourceClient.connect(joinpath(something(deployment.runtime), deployment.record["remote"]),
+                deployment.source_owner["control-node"],owner_pid;
+                deadline=preparation_deadline,check=check_owner)
+            NativeSourceClient.prepare_requests!(deployment.source_client;
+                deadline=preparation_deadline,check=check_owner)
+        end
+        # Cold discovery and compilation are bounded preparation, while the
+        # source is held. Every real control starts a fresh finite budget.
+        deadline = monotonic() + (operation == "reset" ? 16 : 8)
+        deployment.source_id = Base.checked_add(deployment.source_id,1)
+        reply = NativeSourceClient.request!(deployment.source_client,String(operation),
+            Int64(deployment.source_id);deadline,check=check_owner)
+        reply["id"] == deployment.source_id && reply["operation"] == operation ||
+            fail("source ACK does not match request identity/operation")
+        expected = operation == "resume" ? "running" : operation == "status" ? reply["state"] : "paused"
+        if !reply["ok"] && !allow_rejection
+            fail("source $operation rejected: $(reply["error"])")
+        end
+        reply["ok"] && reply["state"] != expected && fail("source $operation ACK has wrong state")
+        (initial || operation == "reset") && reply["sequence"] != 0 &&
+            fail("source admission/reset requires sequence zero")
+        monotonic() < deadline || fail("source $operation ACK timed out")
+        deployment.source_state = reply["state"]
+        deployment.record["source"] = reply
+        return reply
+    catch error
+        deployment.source_failed = true
+        merge!(deployment.record,Dict("phase"=>"failed","admitted"=>false))
+        if deployment.record["error"] === nothing
+            deployment.record["error"] = sprint(showerror,error)
+        else
+            push!(get!(deployment.record,"cleanup_errors",String[]),sprint(showerror,error))
+        end
+        deployment.state_path !== nothing && atomic_record(deployment.state_path,deployment.record)
+        fail("source coordination failed: $(sprint(showerror,error))")
+    end
+end
+
+function source_file_control(deployment::DeploymentRunner, operation::AbstractString;
                         initial=false, shutdown=false, allow_rejection=false)
     operation in ("resume", "pause", "reset", "status") && deployment.source_owner !== nothing ||
         fail("invalid source control operation")
@@ -936,6 +1009,12 @@ function _run_locked(deployment::DeploymentRunner, base)
             deployment.record["error"] === nothing && (deployment.record["error"] = sprint(showerror, error))
             primary_error === nothing && rethrow()
         finally
+            try
+                deployment.source_client !== nothing && close(deployment.source_client)
+            catch error
+                push!(get!(deployment.record,"cleanup_errors",String[]),sprint(showerror,error))
+                deployment.record["error"] === nothing && (deployment.record["error"] = sprint(showerror,error))
+            end
             deployment.broker !== nothing && close(deployment.broker)
             merge!(deployment.record, Dict("phase" => deployment.record["error"] === nothing ? "stopped" : "failed",
                 "admitted" => false))

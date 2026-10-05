@@ -9,11 +9,13 @@ using SHA
 using TOML
 
 include("owner_protocol.jl")
+include("source_control.jl")
 include("correction_truth.jl")
 include("sustained_metrics.jl")
 include("sustained_run.jl")
 using .HILOwnerProtocol
 const Protocol = HILOwnerProtocol
+const SourceControl = HILSourceControl
 const Backends = AdaptiveOpticsSim.Backends
 const RAW_SCHEMA = "org.calculon.ao.raw-detector-pixels/1"
 const COMMAND_SCHEMA = "org.calculon.ao.demanded-pdm-command/1"
@@ -356,33 +358,39 @@ function installed_detector_bits(options)
     return Int(bits)
 end
 
-function consume_control_request!(options, state, wall_period,
-                                  reset_owner!::Reset, report_owner!::Report) where {Reset,Report}
-    ispath(options.control_request) || return nothing
-    flags = Base.Filesystem.JL_O_RDONLY | Base.Filesystem.JL_O_NOFOLLOW |
-        Base.Filesystem.JL_O_NONBLOCK
-    io = Base.Filesystem.open(options.control_request, flags)
-    payload = try
-        isfile(stat(io)) || throw(ArgumentError("control request must be a regular file"))
-        String(read(io, Protocol.MAX_REQUEST_BYTES + 1))
-    finally
-        close(io)
-    end
-    reply = Protocol.control!(state, payload, time_ns(), max(wall_period, UInt64(1)), reset_owner!)
-    # The broker publishes its next request only after this matching ACK. Remove
-    # the consumed file first, so a later request cannot be deleted after ACK.
-    # Rejected requests are consumed too; their response retains the error.
-    rm(options.control_request)
-    if reply.ok && reply.operation in ("pause", "reset")
-        report_owner!()
-    end
-    Protocol.write_json_atomic(options.control_reply, reply)
-    return reply
-end
-
 function pace_owner!()
     yield()
     GC.safepoint()
+    return nothing
+end
+
+function consume_native_control!(mailbox, pipewire, state, wall_period,
+                                 reset_owner!::Reset, report_owner!::Report) where {Reset,Report}
+    mailbox.ready[] || return nothing
+    kind, token, requested_running = with_frame_stream(pipewire) do _
+        SourceControl.pending(mailbox)
+    end
+    if kind != SourceControl.INITIAL
+        result = SourceControl.apply!(state, kind, token, requested_running,
+            time_ns(), max(wall_period, UInt64(1)), reset_owner!)
+        if kind == SourceControl.RESET && result == 0
+            # Stopped reset is a cold phase. Status/pause/resume never rewrite
+            # reports; their native snapshot is the live owner cursor.
+            report_owner!()
+            SourceControl.report_ready!(mailbox,
+                Int64(frame_acquisition_generation(pipewire)), state.sequence)
+        end
+        completed_generation = Int64(frame_acquisition_generation(pipewire))
+        with_frame_stream(pipewire) do stream
+            SourceControl.publish!(mailbox, stream, kind, token, result, state,
+                completed_generation)
+        end
+    end
+    rejection_generation = Int64(frame_acquisition_generation(pipewire))
+    with_frame_stream(pipewire) do stream
+        SourceControl.publish_rejection!(mailbox, stream, state,
+            rejection_generation)
+    end
     return nothing
 end
 
@@ -410,6 +418,7 @@ function run_owner(options, plant, target)
     science = prepare_science(options, plant, target)
     recorder = Recorder(options, science.boundary; truth=prepare_correction_truth(options, science))
     state = Protocol.OwnerState()
+    source_control = SourceControl.Mailbox(Int64(rand(UInt64) % UInt64(typemax(Int64))) + Int64(1))
     sustained_run = get(options,:sustained,false) ? SustainedRun.Run(options,recorder.truth;detector_bits=installed_detector_bits(options)) : nothing
     wall_period = get(options,:wall_period_ns,options.period_ns)
     # Warm success and failure serialization before bounded source control.
@@ -421,21 +430,26 @@ function run_owner(options, plant, target)
     wait_for_connect(options) || return nothing
     transport = transport_contract(options)
     configuration = PipeWireHILConfiguration(
-        remote=options.remote, frame_node_name="simulator-wfs", command_node_name="simulator-command",
+        remote=options.remote, frame_node_name=get(options,:control_node,"simulator-wfs"), command_node_name="simulator-command",
         frame_schema=transport.frame_schema, command_schema=transport.command_schema,
         rate=SPA.Fraction(UInt32(options.rate), UInt32(1)), exposure_duration_ns=options.exposure_ns,
         frame_encoding=:uint16, command_scale=transport.command_scale,
     )
     println("SIMULATOR_CONNECTING remote=$(options.remote)")
     flush(stdout)
-    pipewire = prepare_pipewire_hil(science.boundary, configuration)
+    pipewire = prepare_pipewire_hil(science.boundary, configuration;
+        frame_properties=SourceControl.source_properties(source_control),
+        frame_params=source_control.parameters.params,
+        on_frame_param_changed=SourceControl.ParameterChanged(source_control),
+        frame_param_buffer=PodBuffer(4096),
+        on_frame_param_overflow=SourceControl.ParameterOverflow(source_control))
     # Graph preparation selects concrete scientific owners at runtime. Cross
     # that boundary once so the frame loop specializes on retained storage.
     return run_prepared_owner!(options, science, recorder, state,
-        sustained_run, pipewire, wall_period)
+        sustained_run, pipewire, wall_period, source_control)
 end
 
-function run_prepared_owner!(options, science, recorder, state, sustained_run, pipewire, wall_period)
+function run_prepared_owner!(options, science, recorder, state, sustained_run, pipewire, wall_period, source_control)
     failure = nothing
     reset_owner! = () -> begin
         heart = get(options, :transport, :scientific) === :heart
@@ -456,10 +470,10 @@ function run_prepared_owner!(options, science, recorder, state, sustained_run, p
         println("SIMULATOR_CONNECTED sequence=0 held=true")
         flush(stdout)
         while !ispath(options.quit_request)
-            consume_control_request!(options, state, wall_period, reset_owner!, report_owner!)
+            consume_native_control!(source_control, pipewire, state, wall_period, reset_owner!, report_owner!)
             ispath(options.quit_request) && break
             if !state.running
-                sleep(0.005)
+                pace_owner!()
                 continue
             end
             now = time_ns()
@@ -511,6 +525,8 @@ function run_prepared_owner!(options, science, recorder, state, sustained_run, p
                 state.deadline_ns = 0
                 sustained_run === nothing || (sustained_run.allocation_finish = Base.gc_num())
                 write_report(options, science, recorder, state; sustained_run)
+                SourceControl.report_ready!(source_control,
+                    Int64(frame_acquisition_generation(pipewire)), state.sequence)
             end
         end
     catch exception
@@ -534,6 +550,8 @@ end
 
 function main(arguments=ARGS)
     options = Protocol.parse_options(arguments)
+    options.control_request === nothing && options.control_reply === nothing ||
+        error("simulator controls require native PipeWire Props; file controls belong to calibration owners")
     Protocol.require_fresh_instance(options)
     plant = load_plant(options.profile)
     target = load_target(options.backend)

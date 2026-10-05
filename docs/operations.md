@@ -740,12 +740,33 @@ MUST pause before session/group stop and shutdown, start the graph before
 resuming the source, and reset the held model only with the stopped RTC. A
 reset MUST change acquisition generation and clear sequence/timing state.
 
-Control files and the coordinating socket MUST use current-instance ownership,
-finite sizes, positive request identities, matching acknowledgements and finite
-waits. Malformed/stale controls MUST preserve state. Timeout/disconnect outcomes
+Complete-frame simulator live controls MUST use native SPA `Props` parameters
+on the exact owned source-node incarnation. They MUST retain native Version 1
+run/reset contracts and use versioned source-query and source-snapshot schemas.
+They MUST use bounded prepared storage, positive request tokens, matching
+owner-applied completions and one finite overall request deadline. Initial
+native-client discovery and static compilation MUST use a separate bounded
+preparation phase while the source is held, before the first real request. This
+phase MUST NOT emit fabricated requests or frames, and MUST NOT be re-entered
+after source failure or during cleanup. Every actual request MUST retain its
+finite dispatch/submission/completion deadline. Cached parameter enumeration
+MUST NOT substitute for a fresh status-query completion.
+Calibration-owner restoration/report controls retain their separate existing
+contract until deliberately migrated; simulator file controls MUST NOT be used
+as a fallback. The coordinating socket and calibration files MUST retain
+current-instance ownership and finite sizes and waits.
+Malformed/stale controls MUST preserve state. Timeout/disconnect outcomes
 MUST remain unknown without automatic retry. Required-owner death or unconfirmed
 source control MUST fail the deployment and revoke ingress before consumer
 cleanup. Both foreground and user-service paths MUST use this same behavior.
+
+Native pause MUST return the adopted owner cursor without requiring a saved
+partial checkpoint. Preparation, stopped reset, finite completion and orderly
+termination MUST retain truthful saved reports. A completed snapshot consumed
+as report readiness MUST identify the same generation and sequence as the
+successfully published artifact set. Final serialization remains outside the
+already declared retained-prefix-to-final-adoption allocation interval; actual
+midrun controls and paused waiting MUST remain inside that interval.
 
 Verification intent: silence before admission, delayed/malformed acknowledgements,
 stop/restart state preservation, stopped reset, invalid-request survival,

@@ -6,14 +6,13 @@ const MAX_REQUEST_BYTES = 16 * 1024
 const MAX_REPLY_BYTES = 64 * 1024
 const REQUIRED_OPTIONS = (
     "profile", "graph", "rate", "exposure-ns", "remote", "prepared-event",
-    "connect-request", "connect-reply", "quit-request", "control-request",
-    "control-reply", "output",
+    "connect-request", "connect-reply", "quit-request", "output",
 )
 
 """Parse the complete-frame simulator command line without loading a plant."""
 function parse_options(arguments)
-    values = Dict("backend" => "cpu", "frames" => "16", "transport" => "scientific", "correction-diagnostics" => "false", "total-exchanges" => "0", "wall-rate" => "default")
-    allowed = Set((REQUIRED_OPTIONS..., "backend", "frames", "transport", "controller-request", "controller-reply", "correction-diagnostics", "total-exchanges", "wall-rate"))
+    values = Dict("backend" => "cpu", "frames" => "16", "transport" => "scientific", "correction-diagnostics" => "false", "total-exchanges" => "0", "wall-rate" => "default", "control-node" => "simulator-wfs")
+    allowed = Set((REQUIRED_OPTIONS..., "backend", "frames", "transport", "controller-request", "controller-reply", "correction-diagnostics", "total-exchanges", "wall-rate", "control-node", "control-request", "control-reply"))
     seen = Set{String}()
     iseven(length(arguments)) || throw(ArgumentError("each option requires one value"))
     for index in 1:2:length(arguments)
@@ -54,12 +53,18 @@ function parse_options(arguments)
     exposure = parse_positive_integer(values["exposure-ns"], "--exposure-ns", period)
     paths = [abspath(values[key]) for key in (
         "prepared-event", "connect-request", "connect-reply", "quit-request",
-        "control-request", "control-reply", "output",
+        "output",
     )]
+    control_keys = ("control-request", "control-reply")
+    control_present = count(key -> haskey(values,key), control_keys)
+    control_present in (0,2) || throw(ArgumentError("calibration controls require both file paths"))
+    control_paths = control_present == 0 ? (nothing,nothing) : Tuple(abspath(values[key]) for key in control_keys)
+    occursin(r"^[a-zA-Z0-9_.-]{1,128}$", values["control-node"]) || throw(ArgumentError("invalid control node name"))
+    append!(paths, [path for path in control_paths if path !== nothing])
     append!(paths, [path for path in controller_paths if path !== nothing])
-    prefix = endswith(paths[7],".json") ? paths[7][1:end-5] : paths[7]
+    prefix = endswith(paths[5],".json") ? paths[5][1:end-5] : paths[5]
     append!(paths,[prefix * ".frames.u16le",prefix * ".commands.f32le"])
-    sustained && push!(paths,paths[7] * ".sustained.json")
+    sustained && push!(paths,paths[5] * ".sustained.json")
     length(unique(paths)) == length(paths) || throw(ArgumentError("marker, control and output paths must differ"))
     abspath(values["graph"]) in paths && throw(ArgumentError("plant graph must differ from marker, control and output paths"))
     return (
@@ -69,8 +74,8 @@ function parse_options(arguments)
         graph=abspath(values["graph"]), rate=rate, period_ns=UInt64(period),
         exposure_ns=UInt64(exposure), frames=frames, remote=values["remote"],
         prepared_event=paths[1], connect_request=paths[2], connect_reply=paths[3],
-        quit_request=paths[4], control_request=paths[5], control_reply=paths[6],
-        output=paths[7],
+        quit_request=paths[4], control_request=control_paths[1], control_reply=control_paths[2],
+        control_node=values["control-node"], output=paths[5],
     )
 end
 
@@ -185,7 +190,7 @@ function require_fresh_instance(options)
         options.quit_request, options.control_request, options.control_reply, options.output,
         prefix * ".frames.u16le",prefix * ".commands.f32le"]
     get(options,:sustained,false) && push!(paths,options.output * ".sustained.json")
-    for path in paths
+    for path in filter(!isnothing,paths)
         (ispath(path) || islink(path)) && throw(ArgumentError("instance path already exists: $path"))
     end
     return nothing

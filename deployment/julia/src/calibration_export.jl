@@ -228,9 +228,25 @@ function _artifacts(package; include_deployment=false)
     return result
 end
 
+"Retain the separate calibration owner's restoration and report file contract."
+function calibration_source_control!(source)
+    Deployment.native_source(source) || return source
+    argv = source["argv"]
+    index = findfirst(==("--control-node"),argv)
+    index === nothing || deleteat!(argv,index:(index+1))
+    delete!(source,"control-node")
+    delete!(source,"control-protocol")
+    source["control-request"] = "simulator.control.request"
+    source["control-reply"] = "simulator.control.reply"
+    append!(argv,["--control-request","@RUNTIME@/simulator.control.request",
+                  "--control-reply","@RUNTIME@/simulator.control.reply"])
+    return source
+end
+
 function deployment_descriptor(package,base,specification,records,profile,engine,session,prefix;
                                illumination="lamp",stage="interaction",capture_max_bytes=nothing)
     simulator = only([owner for owner in specification["owners"] if owner["role"] == get(specification,"source-owner",nothing)])
+    calibration_source_control!(simulator)
     if engine == "fgn"
         environment = get!(specification,"environment",Dict{String,Any}())
         environment["PIPEWIREAO_RTC_GRAPH_CALIBRATION_WFS"] = "@RUNTIME@/wfs.conf"

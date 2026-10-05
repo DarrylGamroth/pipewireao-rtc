@@ -1405,3 +1405,31 @@ calibration artifacts and current sustained evidence remain in place.
 Source-process totals and ordinary graph calls must remain distinct from
 foreign graph-callback costs. No hard deadline, physical-device acceptance or
 AMDGPU hardware qualification follows from these observations.
+
+## Native simulator source controls
+
+The user selected native PipeWire serialization for live controls. The
+complete-frame simulator now uses standard SPA V1 run/reset and separate
+versioned Props query/snapshot/rejection records under RTC-DEV-025/026.
+The owner applies requests after command adoption; fresh status identifies
+the live cursor without writing a partial report. Preparation, stopped reset
+and final saved artifacts retain truthful report cursors.
+
+All four installed Classic/Copper CPU FGN/JFG compositions pass two exact
+delivery runs, including public midrun pause/status/resume and stopped reset.
+Every inclusive simulator heap/GC field remains zero across 7,936 measured
+exchanges per Classic run and 3,840 per Copper run. Reset-prefix hashes match
+and public shutdown/owned cleanup complete. The preserved native v7/v8
+allocation failure led to the narrowly reviewed absent-observer callback
+correction released as PipeWireAO 0.6.16; no native ABI/JLL change was needed.
+The SDK requires that registered release and passes 1,384 assertions.
+The [validation](LIVE_CONTROL_VALIDATION.md) and
+[sealed evidence](LIVE_CONTROL_EVIDENCE.json) record exact measurement scope,
+source identities, failures and deployment limits. Clean committed-main
+registered-package qualification remains the final integration check.
+
+The source-owner migration does not complete native public supervisor,
+supervisor-to-Rust, calibration action or HEART wrapper control interfaces.
+Their current JSON transport must be replaced in separately reviewed,
+dependency-ordered increments, preserving restoration fencing, identities,
+bounded payloads and completion semantics. Saved JSON artifacts are distinct.

@@ -7,6 +7,7 @@ using PipeWireAODeployment
 const Common = PipeWireAODeployment.Common
 module Deployment
 using ..Common
+native_source(owner) = get(owner, "control-protocol", nothing) == "pipewireao.source-control/1"
 decode(path,prefix) = Common.read_json(path)
 profile(path,prefix) = Common.read_json(path)
 end

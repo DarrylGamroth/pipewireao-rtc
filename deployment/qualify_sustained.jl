@@ -269,6 +269,7 @@ function main(args)
     all(path -> !ispath(path) && !islink(path),(runtime,evidence,evidence*".lifecycle.json")) || error("fresh outputs required")
     mkpath(evidence;mode=0o700)
     sdk = joinpath(package,"julia")
+    retained_prefix_frames = C.read_json(joinpath(package,"provenance.json"))["hil"]["frames"]
     command = `$(Base.julia_cmd()) --startup-file=no --project=$sdk $(joinpath(sdk,"deploy_cli.jl")) run --deployment $(joinpath(package,"deployment.conf")) --pipewire-prefix /opt/pipewireao --runtime $runtime --owner-preparation-timeout-seconds 900`
     record = Dict{String,Any}("version"=>1,"package"=>package,"descriptor_sha256"=>C.sha256_file(joinpath(package,"deployment.conf")),
         "coordinator_sha256"=>C.sha256_file(@__FILE__),"success"=>false,"shutdown_confirmed"=>false,"lifecycle_test"=>lifecycle,
@@ -316,9 +317,10 @@ function main(args)
                     end
                     if lifecycle && number == 1 && !paused && length(samples) >= 12
                         record["midrun_stop"] = D.control(ready["socket"],["session-stop"];timeout=48)
-                        held = C.read_json(joinpath(instance,"simulator-result.json.sustained.json"))
-                        !held["completed"] && held["sequence"] > held["retained_prefix_frames"] || error("pause did not observe a continuing run")
                         first_status = D.control(ready["socket"],["status"];timeout=48)
+                        held = first_status["source"]
+                        !held["completed"] && held["sequence"] > retained_prefix_frames ||
+                            error("pause did not observe a continuing run")
                         first_status["source"]["state"] == "paused" || error("source pause not observed")
                         sleep(0.1)
                         still = D.control(ready["socket"],["status"];timeout=48)

@@ -131,6 +131,14 @@ cadence evidence from the earlier finite scientific checks. The
 [evidence ledger](SUSTAINED_HIL_EVIDENCE.json) seals completed campaign reports
 and records the remaining midrun-control and qualification limits.
 
+[Native simulator controls](LIVE_CONTROL_NATIVE.md), the
+[allocation plan](LIVE_CONTROL_ALLOCATION_PLAN.md) and
+[independent review](LIVE_CONTROL_REVIEW.md) and
+[validation](LIVE_CONTROL_VALIDATION.md) record the selected SPA parameter
+transport and its separate installed midrun-control qualification. Saved JSON
+reports remain artifacts; the public supervisor socket and calibration controls
+are separate live transports still awaiting migration.
+
 ## Julia operational deployment
 
 The [Julia package structure review](JULIA_PACKAGE_STRUCTURE_REVIEW.md) distinguishes

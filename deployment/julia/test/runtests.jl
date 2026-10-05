@@ -4,3 +4,6 @@ for name in ("common", "deploy", "preparation_timeout", "heart_configuration", "
     suite = Module(Symbol("Suite_", name))
     Base.include(suite, joinpath(@__DIR__, "test_" * name * ".jl"))
 end
+
+suite = Module(:Suite_source_client)
+Base.include(suite, joinpath(@__DIR__, "source_client.jl"))

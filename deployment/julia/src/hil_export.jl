@@ -804,19 +804,20 @@ function export_package(args)
                       "-e","using Pkg; Pkg.resolve(); Pkg.instantiate(; update_registry=false, allow_autoprecomp=false)"])
         end
         markers = Dict("prepared"=>"simulator.prepared","connect"=>"simulator.connect","connected"=>"simulator.connected",
-                       "quit"=>"simulator.quit","control-request"=>"simulator.control.request","control-reply"=>"simulator.control.reply")
+                       "quit"=>"simulator.quit")
         argv = String[executable,"--startup-file=no","--threads=1,0","--project=@PACKAGE@/hil","@PACKAGE@/hil/simulator.jl",
                       "--profile",instrument,"--backend",args.backend,"--graph","@PACKAGE@/hil/plant.toml",
                       "--rate",string(args.rate_hz),"--exposure-ns",string(exposure),"--frames",string(args.frames),
-                      "--remote","@REMOTE@","--output","@RUNTIME@/simulator-result.json"]
+                      "--remote","@REMOTE@","--output","@RUNTIME@/simulator-result.json", "--control-node","simulator-wfs"]
         correction && append!(argv,["--correction-diagnostics","true"])
         total > args.frames && append!(argv,["--total-exchanges",string(total),"--wall-rate",wall_rate])
         for (option,marker) in (("--prepared-event","prepared"),("--connect-request","connect"),("--connect-reply","connected"),
-                                ("--quit-request","quit"),("--control-request","control-request"),("--control-reply","control-reply"))
+                                ("--quit-request","quit"))
             append!(argv,[option,"@RUNTIME@/"*markers[marker]])
         end
         push!(specification["owners"],merge(Dict{String,Any}("role"=>"simulator","argv"=>argv,
-            "environment"=>simulator_environment(args.backend)),markers))
+            "environment"=>simulator_environment(args.backend),"control-protocol"=>"pipewireao.source-control/1",
+            "control-node"=>"simulator-wfs"),markers))
         specification["source-owner"] = "simulator"
         specification["name"] = "revolt-$instrument-$(provenance["engine"])-hil-$(args.backend)"
         specification["placement"]["simulator"] = Dict("cpus"=>[6,14],"leader-cpu"=>6,"rt-priority"=>0,"threads"=>Any[],"locked-bytes"=>0)

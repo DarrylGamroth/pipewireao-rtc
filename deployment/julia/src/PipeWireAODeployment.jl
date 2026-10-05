@@ -36,6 +36,8 @@ end
 include("common.jl")
 include("placement.jl")
 include("science_export.jl")
+include(joinpath(resource_root(), "hil", "source_control.jl"))
+include("source_client.jl")
 include("deploy.jl")
 include("hil_export.jl")
 include("calibration_export.jl")

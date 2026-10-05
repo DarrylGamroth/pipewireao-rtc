@@ -37,6 +37,16 @@ end
             "--controller-reply"; joinpath(root, "controller-reply")]).correction_diagnostics
         @test options.frames == 16
         @test options.period_ns == 2_000_000
+        native_options = copy(arguments)
+        for key in ("--control-request", "--control-reply")
+            index = findfirst(==(key), native_options)
+            index === nothing || splice!(native_options, index:index + 1)
+        end
+        # Native PipeWire Props source controls need no legacy file paths.
+        native = Protocol.parse_options([native_options; "--control-node"; "simulator-source"])
+        @test native.control_request === nothing && native.control_reply === nothing
+        @test native.control_node == "simulator-source"
+        @test_throws ArgumentError Protocol.parse_options([native_options; "--control-request"; "only-one"])
         @test Protocol.rounded_period(3) == 333_333_333
         @test Protocol.parse_options([arguments; "--frames"; "256"]).frames == 256
         @test Protocol.parse_options([arguments; "--backend"; "cuda"]).backend === :cuda

@@ -47,7 +47,7 @@ function source_status_failure_fixture(mode)
                 "error" => nothing, "processes" => Dict{String,Any}())
             runner = D.DeploymentRunner((;), directory, Dict{String,Any}("owners" => [owner]),
                 Dict{String,String}(), Set{Int}(), children, pids, directory,
-                public_path, native_path, broker, nothing, nothing, owner, 0, "running",
+                public_path, native_path, broker, nothing, nothing, owner, nothing, 0, "running",
                 false, false, false, joinpath(directory, "state.json"), record)
             if mode == :malformed
                 # Valid JSON with a matching ID/operation, but an invalid state.
@@ -182,6 +182,10 @@ end
             @test read(joinpath(destination, "julia/src", name)) ==
                 read(joinpath(PipeWireAODeployment.package_root(), "src", name))
         end
+        @test read(joinpath(destination, "julia/src/source_client.jl")) ==
+            read(joinpath(PipeWireAODeployment.package_root(), "src", "source_client.jl"))
+        @test read(joinpath(destination, "julia/assets/deployment/hil/source_control.jl")) ==
+            read(joinpath(PipeWireAODeployment.resource_root(), "hil", "source_control.jl"))
         for name in ("heart_classic_calibration_evidence.jl", "heart_classic_calibration_verify.jl",
                 "heart_classic_transfer_score.jl", "heart_correction_admission.jl",
                 "heart_correction_analysis.jl", "heart_correction_owner.jl",
@@ -232,7 +236,7 @@ end
         result = PipeWireAODeployment.Common.run_checked([
             joinpath(relocated, "bin/pipewireao-rtc-deploy"), "install",
             "--package", relocated, "--destination", second,
-            "--pipewire-prefix", "/unused prefix"]; timeout=30)
+            "--pipewire-prefix", "/unused prefix"]; timeout=120)
         @test result.returncode == 0
         @test isfile(joinpath(second, "bin/pipewireao-rtc-deploy"))
         @test D.profile(joinpath(second, "deployment.conf"), "/unused prefix") == spec
@@ -264,6 +268,7 @@ end
             read(joinpath(source, "julia/deploy_cli.jl"))
     end
     for missing in ("hil/Project.toml", "templates/core.conf.in", "pipewireao-rtc@.service.in",
+            "hil/source_control.jl",
             "hil/heart_classic_transfer_score.jl", "hil/heart_correction_analysis.jl")
         mktempdir() do directory
             source = joinpath(directory, "incomplete-SDK")
@@ -423,7 +428,7 @@ mkdir(joinpath(runtime, "core"))
 spec = Dict{String,Any}("placement" => Dict("core" => Dict("leader-cpu" => cpu)))
 runner = D.DeploymentRunner((;), runtime, spec, Dict{String,String}(), Set([cpu]),
     Tuple{String,Base.Process}[], IdDict{Base.Process,Int}(), runtime,
-    nothing, nothing, nothing, nothing, nothing, nothing, 0, nothing,
+    nothing, nothing, nothing, nothing, nothing, nothing, nothing, 0, nothing,
     false, false, false, nothing,
     Dict{String,Any}("processes" => Dict{String,Any}()))
 child = D.spawn(runner, "core", ["sh", "-c", "printf supervised-child-diagnostic >&2"],
@@ -460,5 +465,27 @@ success(child) || error("diagnostic child exited unsuccessfully")
             end
             D._reap_owned_orphans(owner_pid)
         end
+    end
+end
+
+@testset "native source preparation cannot become a live reconnect" begin
+    mktempdir() do directory
+        owner = Dict("role" => "simulator", "control-protocol" => "pipewireao.source-control/1",
+            "control-node" => "simulator-wfs")
+        record = Dict{String,Any}("phase" => "running", "admitted" => true,
+            "error" => nothing, "processes" => Dict{String,Any}())
+        runner = D.DeploymentRunner((;), directory, Dict{String,Any}("owners" => [owner]),
+            Dict{String,String}(), Set{Int}(), Tuple{String,Base.Process}[],
+            IdDict{Base.Process,Int}(), directory, nothing, nothing, nothing,
+            nothing, nothing, owner, nothing, 0, "running", false, false, false,
+            nothing, record)
+        @test_throws D.DeploymentError D.source_control(runner, "pause")
+        @test runner.source_client === nothing
+        @test runner.source_id == 0
+        @test runner.source_failed && !record["admitted"]
+        @test occursin("was not prepared", record["error"])
+        # Even an erroneous second startup call cannot re-enter preparation.
+        @test_throws D.DeploymentError D.source_control(runner, "pause"; initial=true)
+        @test runner.source_client === nothing && runner.source_id == 0
     end
 end
