@@ -1425,8 +1425,12 @@ correction released as PipeWireAO 0.6.16; no native ABI/JLL change was needed.
 The SDK requires that registered release and passes 1,384 assertions.
 The [validation](LIVE_CONTROL_VALIDATION.md) and
 [sealed evidence](LIVE_CONTROL_EVIDENCE.json) record exact measurement scope,
-source identities, failures and deployment limits. Clean committed-main
-registered-package qualification remains the final integration check.
+source identities, failures and deployment limits. A fresh clean-main Classic
+FGN installation resolves registered PipeWireAO 0.6.16 without a development
+path override and passes both 8,192-exchange lifecycle runs, including zero
+inclusive heap/GC activity, unchanged frozen prefixes, public shutdown and
+owned cleanup. This closes the selected committed-main integration check;
+JFG and Copper release-installed reruns are not implied.
 
 The source-owner migration does not complete native public supervisor,
 supervisor-to-Rust, calibration action or HEART wrapper control interfaces.
