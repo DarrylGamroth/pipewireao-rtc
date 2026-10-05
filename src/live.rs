@@ -37,6 +37,150 @@ const NDARRAY_LIBRARY_FILE: &str = "libspa-ndarray.so";
 const DISCARD_METRIC_SEQUENCE: i32 = 0x4453;
 const FITS_STATUS_SEQUENCE: i32 = 0x4649;
 const FORMAT_ENUM_SEQUENCE: i32 = 0x4654;
+const CALLBACK_TIMEOUT: Duration = Duration::from_secs(5);
+
+// These scopes are private and lexically nested on the sole adapter owner.
+// Own the Cell handle so a scope does not prevent mutable adapter operations.
+struct DeadlineGuard {
+    current: Rc<Cell<Option<Instant>>>,
+    previous: Option<Instant>,
+}
+
+impl DeadlineGuard {
+    fn new(current: Rc<Cell<Option<Instant>>>, deadline: Instant) -> Self {
+        let previous = current.get();
+        current.set(Some(previous.map_or(deadline, |outer| outer.min(deadline))));
+        Self { current, previous }
+    }
+}
+
+impl Drop for DeadlineGuard {
+    fn drop(&mut self) {
+        self.current.set(self.previous);
+    }
+}
+
+#[cfg(test)]
+mod deadline_tests {
+    use super::{Cell, DeadlineGuard, Duration, Instant, Rc};
+
+    #[test]
+    fn nested_scopes_preserve_the_earliest_deadline() {
+        let current = Rc::new(Cell::new(None));
+        let early = Instant::now() + Duration::from_secs(1);
+        let late = early + Duration::from_secs(1);
+        let outer = DeadlineGuard::new(Rc::clone(&current), early);
+        {
+            let _inner = DeadlineGuard::new(Rc::clone(&current), late);
+            assert_eq!(current.get(), Some(early));
+        }
+        assert_eq!(current.get(), Some(early));
+        drop(outer);
+        assert_eq!(current.get(), None);
+    }
+
+    #[test]
+    fn inner_earlier_deadline_restores_parent_on_return() {
+        let current = Rc::new(Cell::new(None));
+        let early = Instant::now();
+        let late = early + Duration::from_secs(1);
+        let _outer = DeadlineGuard::new(Rc::clone(&current), late);
+        {
+            let _inner = DeadlineGuard::new(Rc::clone(&current), early);
+            assert_eq!(current.get(), Some(early));
+        }
+        assert_eq!(current.get(), Some(late));
+    }
+
+    #[test]
+    fn deadline_is_restored_on_unwind() {
+        let current = Rc::new(Cell::new(None));
+        let deadline = Instant::now();
+        let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _scope = DeadlineGuard::new(Rc::clone(&current), deadline);
+            panic!("diagnostic unwind");
+        }));
+        assert!(outcome.is_err());
+        assert_eq!(current.get(), None);
+    }
+
+    // The companion Julia fixture stops only its private daemon after READY.
+    // Marker files synchronize the test, not an operational control interface.
+    #[test]
+    #[ignore = "requires the native synchronization private-core fixture"]
+    fn stopped_core_bounds_discovery_and_cleanup() {
+        let remote = std::env::var("PIPEWIREAO_SYNC_PROOF_REMOTE").unwrap();
+        let directory =
+            std::path::PathBuf::from(std::env::var_os("PIPEWIREAO_SYNC_PROOF_DIRECTORY").unwrap());
+        let mut adapter = super::LiveGraphAdapter::connect(remote).unwrap();
+        let done_events = Rc::new(Cell::new(0_u32));
+        let seen = Rc::clone(&done_events);
+        let _listener = adapter
+            .core
+            .add_listener_local()
+            .done(move |id, _sequence| {
+                if id == pipewire::core::PW_ID_CORE {
+                    seen.set(seen.get() + 1);
+                }
+            })
+            .register();
+        std::fs::write(directory.join("ready"), "").unwrap();
+        let marker = |name: &str| {
+            let deadline = Instant::now() + Duration::from_secs(30);
+            while !directory.join(name).is_file() {
+                assert!(
+                    Instant::now() < deadline,
+                    "fixture marker deadline expired: {name}"
+                );
+                std::thread::sleep(Duration::from_millis(2));
+            }
+        };
+        let record =
+            |stage: &str, started: Instant, value: Result<(), super::ScientificDiagnostic>| {
+                assert!(value.is_err());
+                std::fs::write(
+                    directory.join(format!("result-{stage}")),
+                    format!(
+                        "elapsed_ns={} result={value:?}\n",
+                        started.elapsed().as_nanos()
+                    ),
+                )
+                .unwrap();
+                marker(&format!("release-{stage}"));
+            };
+        marker("go-discovery");
+        let started = Instant::now();
+        let result =
+            adapter.wait_for_external_object(super::ObjectRole::Graph, "absent.sync.proof");
+        record("discovery", started, result);
+        let started = Instant::now();
+        let result = adapter.cleanup(None);
+        record("cleanup", started, result);
+        // The fixture resumes the daemon to serve old requests while this
+        // owner waits, then stops it again before allowing a new sync.
+        marker("go-stale");
+        let started = Instant::now();
+        let result = adapter.progress_until(Instant::now() + Duration::from_millis(250));
+        assert_eq!(
+            done_events.get(),
+            2,
+            "both old sync replies must actually have been observed"
+        );
+        std::fs::write(
+            directory.join("late-done-count"),
+            done_events.get().to_string(),
+        )
+        .unwrap();
+        record("stale", started, result);
+        marker("go-fresh");
+        adapter.progress().unwrap();
+        // This empty adapter never owned a scientific graph. Local handle
+        // release for populated arrays is source-reviewed, not measured here.
+        assert!(
+            adapter.links.is_empty() && adapter.spa_nodes.is_empty() && adapter.modules.is_empty()
+        );
+    }
+}
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct LiveGraphStatus {
@@ -486,6 +630,7 @@ pub struct LiveGraphAdapter {
     status: LiveGraphStatus,
     globals: Rc<RefCell<BTreeMap<u32, GlobalObject<PropertiesBox>>>>,
     errors: Rc<RefCell<Vec<String>>>,
+    callback_deadline: Rc<Cell<Option<Instant>>>,
     _registry_listener: pw::registry::Listener,
     _core_listener: pw::core::Listener,
     registry: pw::registry::RegistryRc,
@@ -602,6 +747,7 @@ impl LiveGraphAdapter {
             status: LiveGraphStatus::default(),
             globals,
             errors,
+            callback_deadline: Rc::new(Cell::new(None)),
             _registry_listener: registry_listener,
             _core_listener: core_listener,
             registry,
@@ -658,6 +804,16 @@ impl LiveGraphAdapter {
     #[doc(hidden)]
     pub fn progress(&self) -> Result<(), ScientificDiagnostic> {
         self.roundtrip("PipeWire callback progress")
+    }
+
+    /// Drives callback synchronization within an explicit absolute deadline.
+    /// This bounds callback waits, not arbitrary code executed by callbacks.
+    ///
+    /// # Errors
+    /// Returns a diagnostic for expiry, core errors or a loop iteration failure.
+    #[doc(hidden)]
+    pub fn progress_until(&self, deadline: Instant) -> Result<(), ScientificDiagnostic> {
+        self.roundtrip_until(deadline, "PipeWire callback progress")
     }
 
     /// Observes the requested and active scalar-property generations exported
@@ -1179,6 +1335,8 @@ impl LiveGraphAdapter {
     }
 
     fn reset_numerical_graphs(&mut self, token: EffectToken) -> Result<(), ScientificDiagnostic> {
+        let deadline = Instant::now() + CALLBACK_TIMEOUT;
+        let _deadline = self.scoped_deadline(deadline);
         let wire_token = i64::try_from(token.value()).map_err(|_| {
             ScientificDiagnostic::new(
                 "lifecycle effect token",
@@ -1208,7 +1366,6 @@ impl LiveGraphAdapter {
                 .proxy
                 .set_param(pw::spa::param::ParamType::Props, 0, pod);
         }
-        let deadline = Instant::now() + Duration::from_secs(5);
         loop {
             self.roundtrip("reset processing graphs")?;
             let completed = self
@@ -1262,6 +1419,8 @@ impl LiveGraphAdapter {
         graph_name: &str,
         values: &BTreeMap<String, ScalarValue>,
     ) -> Result<PropertyUpdateOutcome, ScientificDiagnostic> {
+        let deadline = Instant::now() + CALLBACK_TIMEOUT;
+        let _deadline = self.scoped_deadline(deadline);
         self.validate_property_update(graph_name, values)?;
         let affected_nodes = values
             .keys()
@@ -1298,7 +1457,6 @@ impl LiveGraphAdapter {
             self.roundtrip(&format!("graph {graph_name} property submission"))?;
             return Ok(PropertyUpdateOutcome::Submitted);
         }
-        let deadline = Instant::now() + Duration::from_secs(5);
         loop {
             self.roundtrip(&format!("graph {graph_name} property transaction"))?;
             let snapshot = latest_property_snapshot(graph)?;
@@ -1672,6 +1830,8 @@ impl LiveGraphAdapter {
         requested_state: RunState,
         label: &str,
     ) -> Result<(), ScientificDiagnostic> {
+        let deadline = Instant::now() + CALLBACK_TIMEOUT;
+        let _deadline = self.scoped_deadline(deadline);
         let wire_token = i64::try_from(token.value()).map_err(|_| {
             ScientificDiagnostic::new(
                 "lifecycle effect token",
@@ -1719,7 +1879,6 @@ impl LiveGraphAdapter {
                 .proxy
                 .set_param(pw::spa::param::ParamType::Props, 0, pod);
         }
-        let deadline = Instant::now() + Duration::from_secs(5);
         loop {
             self.roundtrip(label)?;
             let mut completed = 0;
@@ -1797,6 +1956,7 @@ impl LiveGraphAdapter {
     fn wait_for_links_active(&mut self, label: &str) -> Result<(), ScientificDiagnostic> {
         let mut states;
         let deadline = Instant::now() + Duration::from_millis(500);
+        let _deadline = self.scoped_deadline(deadline);
         loop {
             self.roundtrip(label)?;
             states = self
@@ -1821,6 +1981,7 @@ impl LiveGraphAdapter {
     }
 
     fn cleanup(&mut self, token: Option<EffectToken>) -> Result<(), ScientificDiagnostic> {
+        let _deadline = self.scoped_deadline(Instant::now() + CALLBACK_TIMEOUT);
         let present_latest_holds = self
             .latest_hold_order
             .iter()
@@ -1925,6 +2086,7 @@ impl LiveGraphAdapter {
 
     fn wait_for_owned_nodes_removed(&self) -> Result<(), ScientificDiagnostic> {
         let deadline = Instant::now() + Duration::from_millis(500);
+        let _deadline = self.scoped_deadline(deadline);
         loop {
             self.roundtrip("runner-owned node cleanup")?;
             if self.count_owned_nodes() == 0 {
@@ -2423,6 +2585,7 @@ impl LiveGraphAdapter {
         node_name: &str,
     ) -> Result<(), ScientificDiagnostic> {
         let deadline = Instant::now() + Duration::from_millis(500);
+        let _deadline = self.scoped_deadline(deadline);
         loop {
             self.roundtrip(&format!("{} node creation", role.name()))?;
             let matches = self
@@ -2465,6 +2628,7 @@ impl LiveGraphAdapter {
         node_name: &str,
     ) -> Result<(), ScientificDiagnostic> {
         let deadline = Instant::now() + Duration::from_millis(500);
+        let _deadline = self.scoped_deadline(deadline);
         loop {
             self.roundtrip(&format!("external {} discovery", role.name()))?;
             let globals = self.globals.borrow();
@@ -2670,7 +2834,8 @@ impl LiveGraphAdapter {
         previous: &BTreeMap<String, u64>,
     ) -> Result<BTreeMap<String, u64>, ScientificDiagnostic> {
         let mut observed;
-        let deadline = Instant::now() + Duration::from_secs(5);
+        let deadline = Instant::now() + CALLBACK_TIMEOUT;
+        let _deadline = self.scoped_deadline(deadline);
         loop {
             observed = self.discard_buffer_counts()?;
             if previous
@@ -2710,9 +2875,10 @@ impl LiveGraphAdapter {
         &self,
         sink_names: &[String],
     ) -> Result<BTreeMap<String, u64>, ScientificDiagnostic> {
+        let deadline = Instant::now() + Duration::from_millis(500);
+        let _deadline = self.scoped_deadline(deadline);
         let mut previous = self.discard_buffer_counts_for(sink_names)?;
         let mut stable_samples = 0;
-        let deadline = Instant::now() + Duration::from_millis(500);
         while Instant::now() < deadline {
             // Stability samples retain their 5 ms spacing while callbacks
             // continue to run between observations.
@@ -3032,6 +3198,7 @@ impl LiveGraphAdapter {
 
         let label = format!("links[{index}] {output} -> {input}");
         let deadline = Instant::now() + Duration::from_millis(500);
+        let _deadline = self.scoped_deadline(deadline);
         loop {
             self.roundtrip(&label)?;
             match state.borrow().clone() {
@@ -3168,6 +3335,10 @@ impl LiveGraphAdapter {
         deadline: Instant,
         field: &str,
     ) -> Result<bool, ScientificDiagnostic> {
+        let deadline = self
+            .callback_deadline
+            .get()
+            .map_or(deadline, |outer| outer.min(deadline));
         let remaining = deadline.saturating_duration_since(Instant::now());
         if remaining.is_zero() {
             return Ok(false);
@@ -3181,9 +3352,27 @@ impl LiveGraphAdapter {
     }
 
     fn roundtrip(&self, field: &str) -> Result<(), ScientificDiagnostic> {
+        self.roundtrip_until(Instant::now() + CALLBACK_TIMEOUT, field)
+    }
+
+    fn scoped_deadline(&self, deadline: Instant) -> DeadlineGuard {
+        DeadlineGuard::new(Rc::clone(&self.callback_deadline), deadline)
+    }
+
+    fn roundtrip_until(&self, deadline: Instant, field: &str) -> Result<(), ScientificDiagnostic> {
+        let _deadline = self.scoped_deadline(deadline);
+        let deadline = self
+            .callback_deadline
+            .get()
+            .expect("deadline scope installed");
+        if Instant::now() >= deadline {
+            return Err(ScientificDiagnostic::new(
+                field,
+                "PipeWire synchronization deadline expired before submission",
+            ));
+        }
         let completed = Rc::new(Cell::new(false));
         let observed = Rc::clone(&completed);
-        let main_loop = self.main_loop.clone();
         let pending = self.core.sync(0).map_err(|error| {
             ScientificDiagnostic::new(field, format!("PipeWire sync failed: {error}"))
         })?;
@@ -3193,21 +3382,27 @@ impl LiveGraphAdapter {
             .done(move |id, sequence| {
                 if id == pw::core::PW_ID_CORE && sequence == pending {
                     observed.set(true);
-                    main_loop.quit();
                 }
             })
             .register();
-        while !completed.get() {
-            self.main_loop.run();
-        }
-        let errors = std::mem::take(&mut *self.errors.borrow_mut());
-        if errors.is_empty() {
-            Ok(())
-        } else {
-            Err(ScientificDiagnostic::new(
-                field,
-                format!("PipeWire operation failed: {}", errors.join("; ")),
-            ))
+        loop {
+            let errors = std::mem::take(&mut *self.errors.borrow_mut());
+            if !errors.is_empty() {
+                return Err(ScientificDiagnostic::new(
+                    field,
+                    format!("PipeWire operation failed: {}", errors.join("; ")),
+                ));
+            }
+            if Instant::now() >= deadline {
+                return Err(ScientificDiagnostic::new(
+                    field,
+                    "PipeWire synchronization deadline expired; completion is unknown",
+                ));
+            }
+            if completed.get() {
+                return Ok(());
+            }
+            self.wait_for_callbacks(deadline, field)?;
         }
     }
 

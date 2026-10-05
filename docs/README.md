@@ -148,6 +148,9 @@ above remain the normative authority. The [fixed envelope](NATIVE_CONTROL_ENVELO
 [codec review](NATIVE_CONTROL_CODEC_REVIEW.md) and
 [CPU validation](NATIVE_CONTROL_ENVELOPE_VALIDATION.md) record the common header
 and diagnostic interoperability separately from production owner migration.
+The [synchronization prerequisite](NATIVE_CONTROL_SYNC_VALIDATION.md) and its
+[independent review](NATIVE_CONTROL_SYNC_REVIEW.md) record the corrected inner
+wait and stalled-core evidence, separately from native runner ingress.
 The simulator source migration
 is complete; remaining native endpoints are implementation work, not implied
 by the proof or contract.

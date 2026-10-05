@@ -112,11 +112,13 @@ from another caller must not invalidate the successful caller's result.
 
 ### NCMR-002 — Inner Rust sync can outlive every outer deadline
 
-Severity: High. Confidence: High. Evidence class: observed source behavior;
-runtime stalled-core reproduction remains required.
-Disposition: confirmed prerequisite already correctly identified by the design.
+Severity: High. Confidence: High. Evidence class: observed baseline source behavior
+and subsequently reproduced runtime stall.
+Disposition: local synchronization corrected and independently verified in
+[NCMS-001](NATIVE_CONTROL_SYNC_REVIEW.md#ncms-001--inner-sync-ignores-outer-deadlines).
+The whole-request budget and production owner admission remain integration gates.
 
-Evidence: `src/live.rs:3183` waits in `main_loop.run()` until the selected sync
+Baseline evidence: `src/live.rs:3183` waits in `main_loop.run()` until the selected sync
 callback runs, with no elapsed-time or error-exit condition in that loop. Calls
 include constructor discovery (`:612`), property/reset paths (`:1192`, `:1298`),
 group control (`:1681`), required-object monitoring (`:2845`) and cleanup

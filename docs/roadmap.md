@@ -1453,6 +1453,9 @@ adoption checks intact.
    keeps actual caller authority and owner integration gates open.
 2. Bound Rust inner synchronization and replace runner socket ingress while
    preserving the single Statig dispatcher and existing operation outcomes.
+   The [local synchronization prerequisite](NATIVE_CONTROL_SYNC_VALIDATION.md)
+   now passes stalled-core, late-done, expiry, disconnect and empty-cleanup checks.
+   Production native ingress and a whole-request budget remain open.
 3. Migrate supervisor-to-runner and HEART wrapper readiness/reset/health through
    native completions without changing HEART's scientific implementation.
 4. Migrate calibration/correction source admission and the calibration action

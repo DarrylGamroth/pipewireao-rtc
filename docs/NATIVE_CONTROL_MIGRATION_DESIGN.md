@@ -186,15 +186,14 @@ their existing local maximum; they must not restart an eight/five-second budget.
 Queued expiry must be rejected before effects. In-flight expiry retains truthful
 hold/fault state and cannot claim rollback or success.
 
-**Confirmed implementation prerequisite:** `src/live.rs:3183` `roundtrip()` uses
-`main_loop.run()` without a timeout. Native run/reset/property/status/cleanup paths
-call it even when an outer loop has a nominal finite deadline (`:1192`, `:1213`,
-`:1298`, `:1303`, `:1681`, `:1724`, `:1890`). Add a deadline-aware synchronization
-path using Core sync callbacks and existing finite `Loop::iterate`
-(`src/live.rs:3573`), and thread the current control/preparation/cleanup deadline
-through all reachable blocking effects. A native endpoint alone cannot make
-these old inner waits finite. Keep this as a focused prerequisite, not a lifecycle
-rewrite or a claimed correction from source inspection alone.
+**Confirmed baseline prerequisite:** the inspected starting `roundtrip()` used
+`main_loop.run()` without a timeout, even inside nominally finite outer loops.
+The [synchronization correction](NATIVE_CONTROL_SYNC_VALIDATION.md) now has
+stalled-core fail-before/pass-after evidence. It uses exact Core sync callbacks
+and finite `Loop::iterate`, propagating local observation/cleanup deadlines.
+The production endpoint must still carry one remaining request budget through
+preparation, all effects and completion, with a separately defined restoration
+budget. Local finite waits alone do not establish that whole-request boundary.
 
 ### Startup before operator broker readiness
 
@@ -301,8 +300,9 @@ affected paths are implemented.
   [the common envelope](NATIVE_CONTROL_ENVELOPE.md) and exercised across Julia/Rust.
   Production owner-specific enums, payload/catalog identity and authenticated
   controller lifetime remain implementation and integration gates.
-- Full finite control requires fixing reachable Rust inner synchronization, not
-  merely timing out the external client. Cleanup has its own bounded owner budget.
+- Rust inner synchronization is now locally bounded with separate
+  [failure evidence](NATIVE_CONTROL_SYNC_VALIDATION.md). Full finite control still
+  requires whole-request budget integration; timing out a client is insufficient.
 - Existing vendor HEART TCP commands and binary telemetry remain external HEART
   interfaces; replacing the wrapper's JSON control/health IPC does not claim to
   redesign the vendor command server or its science.

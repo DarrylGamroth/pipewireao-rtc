@@ -127,7 +127,9 @@ The existing public supervisor socket, supervisor-to-Rust socket, calibration
 endpoint and calibration/HEART control/health files remain JSON migration debt.
 The [inventory](LIVE_CONTROL_INVENTORY.md) and
 [reviewed phases](NATIVE_CONTROL_MIGRATION_DESIGN.md) are the retirement checklist.
-The next phase must bound existing Rust inner synchronization before native
+The [local synchronization prerequisite](NATIVE_CONTROL_SYNC_VALIDATION.md)
+now bounds existing Rust inner waits. A production request still needs its
+remaining budget carried across all effects before native
 owner controls can promise finite application/cleanup. Callback set_param return
 alone is not application, and a caller timeout cannot bound a stalled owner.
 
