@@ -80,6 +80,11 @@ frame/command counts, repeated retained-prefix hashes and owned cleanup.
 All four lifecycle records pass. The [sealed evidence](LIVE_CONTROL_EVIDENCE.json)
 records each primary lifecycle and summary hash, exact reset-prefix identities,
 the two preserved failed allocation gates and the sampled profile identity.
+Each native candidate's retained frame and command prefix also matches its
+original frozen deployment exactly: Classic FGN v36, Classic JFG v25, Copper
+FGN v26 and Copper JFG v27. This is a cross-increment payload check in addition
+to the two-run reset comparison; it does not establish unrestricted numerical
+equivalence outside the recorded prefixes.
 This closes the selected installed source-owner control/allocation gate for
 these development candidates. A clean committed-main registered-package run
 remains a separate final deployment check.
