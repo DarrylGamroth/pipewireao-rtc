@@ -103,7 +103,12 @@ Reviewed source SHA-256:
 | `src/live.rs` | `cf990d47bfc824cb85911025f4a76f20d06b072fe06547532630bebfce128747` |
 | `examples/native_sync_deadline_proof.rs` | `b1f4758ff1c8b0412f295c48f14e5776e7641d069e9777c212d558e945d158b3` |
 | `deployment/julia/test/native_sync_deadline_proof.jl` | `36119148be7514a1eda019532175b85fb07493cd4314abf691a515b6500803c1` |
-| `deployment/julia/test/native_control_private_core.jl` | `7a48eec02c229dc425e8cb2f4b000a8fb9434643f9c171c3e9bf1c154077678f` |
+| `deployment/julia/test/native_control_private_core.jl` | `1ef02e594e76daa702601b0de53bf1ff14b06084d5f726eb26bfb860e549ca93` |
+
+Finalization removed one surplus newline at EOF from the reviewed helper
+(`7a48eec02c229dc425e8cb2f4b000a8fb9434643f9c171c3e9bf1c154077678f`).
+The primary agent verified that this single byte is the entire source difference;
+the helper implementation and recorded behavioral results are unchanged.
 
 The diff is confined to deadline state/guard, hidden `progress_until`, the sync
 helper, existing local observation scopes, three focused guard tests and one

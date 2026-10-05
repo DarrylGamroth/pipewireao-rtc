@@ -91,4 +91,3 @@ function with_control_private_core(f; check_running=true)
         end
     end
 end
-
