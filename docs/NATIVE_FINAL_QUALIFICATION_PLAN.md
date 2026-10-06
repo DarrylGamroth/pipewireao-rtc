@@ -18,6 +18,28 @@ work below; no automatic production remediation.
 
 ## Acceptance map
 
+### Current execution scope — 2026-10-06
+
+The user selected CUDA for the AOS simulator and CPU execution for the RTC
+graphs, including JFG and FGN. Keep the Classic/Copper foreground and
+user-service receiver matrix below; a CUDA simulator does not imply a CUDA RTC
+graph. CPU0/1 remain excluded. Use the admitted scientific artifacts and keep
+simulation cadence, functional equivalence, allocation and latency evidence
+separate.
+
+Only RTC issue 2 is closed. Committed native control implementations and
+focused fixtures do not close the nine remaining acceptance gates. The current
+bounded SDK repair addresses interrupted native-lock ownership; its SIGINT and
+GC fixtures pass, but the full suite exposes prepared-parameter allocations
+and the repair is not ready for deployment. Finish that repair before refreshing
+installed packages, then batch the required checks against one frozen revision.
+
+Defer the CUDA/HIP **RTC executor** investigation in JFG31 for this increment;
+retain its unresolved obligations rather than counting them as completed.
+Continue the CPU progressive-transport and executor path after the installed
+checks. This sequencing does not remove calibration, unchanged HEART,
+observation or exact-delivery acceptance from the ten-item plan.
+
 All ten issue bodies were read through GitHub during this review or the immediately
 preceding JFG review. “HEART #5” below means **RTC issue 5**, not a separate
 HEART repository issue. Issue 2 is closed; the other nine remain open.
