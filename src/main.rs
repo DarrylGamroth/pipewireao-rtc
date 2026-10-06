@@ -1,12 +1,11 @@
 use pipewireao_rtc::control;
-mod control_socket;
+mod native_path;
 use pipewireao_rtc::native_runner_codec;
 mod native_runner_endpoint;
 mod native_runner_mailbox;
 use pipewireao_rtc::native_runner_result;
 
 use crate::control::{state_name, Command, ControlError, ControlErrorResponse, ControlResponse};
-use crate::control_socket::ControlSocketServer;
 use pipewireao_rtc::{
     ConfigurationInput, LifecycleEvent, LifecycleState, LiveGraphAdapter, Runner,
     ScientificDiagnostic,
@@ -35,7 +34,6 @@ struct Arguments {
     remote: String,
     hold: bool,
     start_paused: bool,
-    control_socket: Option<PathBuf>,
     native_control: Option<native_runner_endpoint::Options>,
 }
 
@@ -53,7 +51,7 @@ fn main() {
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     let arguments = parse_arguments()?;
-    let socket_mode = arguments.control_socket.is_some() || arguments.native_control.is_some();
+    let native_mode = arguments.native_control.is_some();
     let session_id = session_id();
     let adapter = LiveGraphAdapter::connect(arguments.remote)?;
     let mut runner = Runner::new(adapter);
@@ -63,39 +61,30 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         LifecycleEvent::Load(ConfigurationInput::File(arguments.config)),
         LifecycleState::Ready,
     )?;
-    if !socket_mode {
+    if !native_mode {
         println!("READY {:?}", runner.executor().status());
     }
 
     if !arguments.start_paused {
         require_state(&mut runner, LifecycleEvent::Start, LifecycleState::Running)?;
-        if !socket_mode {
+        if !native_mode {
             println!("RUNNING {:?}", runner.executor().status());
         }
     }
 
-    let mut control_socket = None;
     let control_result = if let Some(options) = &arguments.native_control {
         native_runner_endpoint::run(&mut runner, options)
-    } else if arguments.hold || arguments.start_paused || socket_mode {
-        control_session(
-            &mut runner,
-            arguments.control_socket.as_deref(),
-            &session_id,
-            &mut control_socket,
-        )
+    } else if arguments.hold || arguments.start_paused {
+        control_session(&mut runner, &session_id)
     } else {
         Ok(())
     };
 
-    if let Some(socket) = &control_socket {
-        socket.shutdown();
-    }
     let (stop_result, unload_result) =
         runner.with_control_deadline(Instant::now() + Duration::from_secs(5), |runner| {
             let stop_result = if runner.state() == LifecycleState::Running {
                 let result = require_state(runner, LifecycleEvent::Stop, LifecycleState::Ready);
-                if result.is_ok() && !socket_mode {
+                if result.is_ok() && !native_mode {
                     println!("READY {:?}", runner.executor().status());
                 }
                 result
@@ -106,7 +95,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 Ok(())
             } else {
                 let result = require_state(runner, LifecycleEvent::Unload, LifecycleState::Offline);
-                if result.is_ok() && !socket_mode {
+                if result.is_ok() && !native_mode {
                     println!("OFFLINE {:?}", runner.executor().status());
                 }
                 result
@@ -114,7 +103,6 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             (stop_result, unload_result)
         });
 
-    drop(control_socket);
     unload_result?;
     stop_result?;
     control_result?;
@@ -173,9 +161,7 @@ fn run_client() -> Result<(), Box<dyn std::error::Error>> {
 
 fn control_session(
     runner: &mut Runner<LiveGraphAdapter>,
-    socket_path: Option<&std::path::Path>,
     session: &str,
-    socket: &mut Option<ControlSocketServer>,
 ) -> Result<(), ScientificDiagnostic> {
     let main_loop = runner.executor().main_loop();
     let inputs = Rc::new(RefCell::new(VecDeque::new()));
@@ -187,19 +173,10 @@ fn control_session(
         queued_inputs.borrow_mut().push_back(input);
     });
 
-    *socket = match socket_path {
-        Some(path) => Some(
-            ControlSocketServer::bind(path, sender.clone(), session.to_owned())
-                .map_err(|error| ScientificDiagnostic::new("control socket", error.to_string()))?,
-        ),
-        None => None,
-    };
     let stopping = Arc::new(AtomicBool::new(false));
     signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&stopping))
         .map_err(|error| ScientificDiagnostic::new("SIGTERM", error.to_string()))?;
-    if socket_path.is_none() {
-        spawn_console_reader(sender);
-    }
+    spawn_console_reader(sender);
 
     let mut monitor_deadline = Instant::now() + Duration::from_millis(100);
     loop {
@@ -229,7 +206,7 @@ fn control_session(
         match input {
             ControlInput::Request { id, command, reply } => {
                 let (response, shutdown) = execute_request(runner, id, command, session);
-                // An abandoned or timed-out client must never stall the sole
+                // An abandoned console reader must never stall the sole
                 // lifecycle owner while it returns a response.
                 let _ = reply.try_send(response);
                 if shutdown {
@@ -409,14 +386,18 @@ fn require_state(
 }
 
 fn parse_arguments() -> Result<Arguments, ScientificDiagnostic> {
+    parse_arguments_from(std::env::args().skip(1))
+}
+
+fn parse_arguments_from(
+    mut arguments: impl Iterator<Item = String>,
+) -> Result<Arguments, ScientificDiagnostic> {
     let mut config = None;
     let mut remote = String::from("pipewire-ao-0");
     let mut hold = false;
     let mut start_paused = false;
-    let mut control_socket = None;
     let mut control_name = None;
     let mut control_instance = None;
-    let mut arguments = std::env::args().skip(1);
     while let Some(argument) = arguments.next() {
         match argument.as_str() {
             "--config" => {
@@ -431,11 +412,6 @@ fn parse_arguments() -> Result<Arguments, ScientificDiagnostic> {
             }
             "--hold" => hold = true,
             "--start-paused" => start_paused = true,
-            "--control-socket" => {
-                control_socket = Some(PathBuf::from(arguments.next().ok_or_else(|| {
-                    ScientificDiagnostic::new("command", "--control-socket requires a path")
-                })?));
-            }
             "--control-node" => {
                 control_name = Some(arguments.next().ok_or_else(|| {
                     ScientificDiagnostic::new("command", "--control-node requires a name")
@@ -463,10 +439,10 @@ fn parse_arguments() -> Result<Arguments, ScientificDiagnostic> {
             }
             "--help" | "-h" => {
                 println!(
-                    "Usage: pipewireao-rtc --config PATH [--remote CORE] [--hold] [--start-paused] [--control-socket PATH]\n\
+                    "Usage: pipewireao-rtc --config PATH [--remote CORE] [--hold] [--start-paused]\n\
                      Native: --remote PRIVATE_SOCKET --start-paused --control-node NAME --control-instance POSITIVE\n\
                      Loads, starts, stops, and unloads one non-actuating complete-frame session.\n\
-                     --start-paused loads to READY without starting; socket mode does not read stdin.\n\
+                     --start-paused loads to READY without starting; native mode does not read stdin.\n\
                      Client: pipewireao-rtc control --locator PATH -- COMMAND [ARG ...]"
                 );
                 std::process::exit(0);
@@ -482,13 +458,11 @@ fn parse_arguments() -> Result<Arguments, ScientificDiagnostic> {
     let native_control = match (control_name, control_instance) {
         (None, None) => None,
         (Some(name), Some(instance)) => {
-            if control_socket.is_some()
-                || !start_paused
-                || name.is_empty()
-                || name.len() > 128
-                || name.contains('\0')
-            {
-                return Err(ScientificDiagnostic::new("command", "native ingress needs a bounded node name and --start-paused, and excludes --control-socket"));
+            if !start_paused || name.is_empty() || name.len() > 128 || name.contains('\0') {
+                return Err(ScientificDiagnostic::new(
+                    "command",
+                    "native ingress needs a bounded node name and --start-paused",
+                ));
             }
             remote = native_runner_endpoint::validate_remote(&remote)?;
             Some(native_runner_endpoint::Options { name, instance })
@@ -506,7 +480,6 @@ fn parse_arguments() -> Result<Arguments, ScientificDiagnostic> {
         remote,
         hold,
         start_paused,
-        control_socket,
         native_control,
     })
 }
@@ -527,6 +500,66 @@ mod tests {
     use std::rc::Rc;
     use std::sync::mpsc;
     use std::time::{Duration, Instant};
+
+    #[test]
+    fn retired_socket_argument_is_rejected_before_native_or_console_selection() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("retired.sock");
+        for extra in [
+            vec![],
+            vec!["--hold"],
+            vec![
+                "--start-paused",
+                "--control-node",
+                "test",
+                "--control-instance",
+                "1",
+            ],
+        ] {
+            let mut arguments = vec!["--config".to_owned(), "not-opened.conf".to_owned()];
+            arguments.extend(extra.into_iter().map(str::to_owned));
+            arguments.extend([
+                "--control-socket".to_owned(),
+                path.to_str().unwrap().to_owned(),
+            ]);
+            let error = super::parse_arguments_from(arguments.into_iter())
+                .err()
+                .unwrap();
+            assert!(error
+                .message()
+                .contains("unknown argument \"--control-socket\""));
+            assert!(!path.exists());
+        }
+        let error = super::parse_arguments_from(
+            vec![format!("--control-socket={}", path.display())].into_iter(),
+        )
+        .err()
+        .unwrap();
+        assert!(error.message().contains("unknown argument"));
+        assert!(!path.exists());
+    }
+
+    #[test]
+    fn console_selection_and_line_bounds_remain_available() {
+        let parsed = super::parse_arguments_from(
+            ["--config", "console.conf", "--hold"]
+                .map(str::to_owned)
+                .into_iter(),
+        )
+        .unwrap();
+        assert!(parsed.hold);
+        assert!(parsed.native_control.is_none());
+        let mut line = std::io::Cursor::new(b"status\n".to_vec());
+        assert_eq!(
+            super::read_console_line(&mut line).unwrap().unwrap(),
+            "status"
+        );
+        let mut oversized = std::io::Cursor::new(vec![b'a'; crate::control::MAX_REQUEST_BYTES]);
+        assert_eq!(
+            super::read_console_line(&mut oversized).unwrap_err().kind(),
+            std::io::ErrorKind::InvalidData
+        );
+    }
 
     #[test]
     fn owner_loop_services_timer_without_control_input_and_monitors_deadline() {

@@ -66,14 +66,6 @@ impl ControlError {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
-#[serde(deny_unknown_fields)]
-pub struct SocketRequest {
-    pub version: u8,
-    pub id: String,
-    pub argv: Vec<String>,
-}
-
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ControlResponse {
     pub version: u8,

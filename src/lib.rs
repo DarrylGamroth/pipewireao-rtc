@@ -1,8 +1,6 @@
 //! Non-actuating `PipeWireAO` development runner.
 
 pub mod calibration;
-#[cfg(unix)]
-pub mod calibration_socket;
 mod config;
 #[cfg(feature = "live")]
 pub mod control;

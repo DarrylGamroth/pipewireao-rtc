@@ -6,6 +6,37 @@ use pipewireao_rtc::{ConfigurationInput, LifecycleEvent};
 use std::path::PathBuf;
 
 #[test]
+fn native_remote_requires_actual_socket_without_following_or_replacing_final_symlink() {
+    use std::os::unix::fs::{symlink, PermissionsExt};
+    use std::os::unix::net::UnixListener;
+    let directory = tempfile::tempdir().unwrap();
+    std::fs::set_permissions(directory.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
+    let path = directory.path().join("native-core");
+    assert!(validate_remote(path.to_str().unwrap()).is_err());
+    assert!(!path.exists());
+    std::fs::write(&path, b"preserved").unwrap();
+    assert!(validate_remote(path.to_str().unwrap()).is_err());
+    assert_eq!(std::fs::read(&path).unwrap(), b"preserved");
+    std::fs::remove_file(&path).unwrap();
+    let listener = UnixListener::bind(&path).unwrap();
+    assert_eq!(
+        validate_remote(path.to_str().unwrap()).unwrap(),
+        path.to_str().unwrap()
+    );
+    let alias = directory.path().join("alias");
+    symlink(&path, &alias).unwrap();
+    assert!(validate_remote(alias.to_str().unwrap()).is_err());
+    assert!(std::fs::symlink_metadata(&alias)
+        .unwrap()
+        .file_type()
+        .is_symlink());
+    std::fs::set_permissions(directory.path(), std::fs::Permissions::from_mode(0o750)).unwrap();
+    assert!(validate_remote(path.to_str().unwrap()).is_err());
+    std::fs::set_permissions(directory.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
+    drop(listener);
+}
+
+#[test]
 #[ignore = "requires the native runner pending-preparation monitor fixture"]
 fn pending_preparation_is_fenced_by_required_object_loss() {
     required_object_loss(false);

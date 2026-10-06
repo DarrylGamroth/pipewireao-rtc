@@ -41,11 +41,10 @@ pub(crate) struct Options {
 }
 
 pub(crate) fn validate_remote(remote: &str) -> Result<String, ScientificDiagnostic> {
-    let path =
-        crate::control_socket::validate_socket_path(Path::new(remote)).map_err(diagnostic)?;
+    let path = crate::native_path::validate_socket_path(Path::new(remote)).map_err(diagnostic)?;
     let metadata = std::fs::symlink_metadata(&path).map_err(diagnostic)?;
     if !metadata.file_type().is_socket()
-        || metadata.uid() != crate::control_socket::effective_uid().map_err(diagnostic)?
+        || metadata.uid() != crate::native_path::effective_uid().map_err(diagnostic)?
     {
         return Err(diagnostic(
             "native remote must be the effective user's socket in a private directory",
