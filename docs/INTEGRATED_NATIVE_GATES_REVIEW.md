@@ -62,7 +62,8 @@ high; observed evidence inconsistency. `docs/NATIVE_HIL_GUI_GATES.md` reports
 89/89. Both its referenced `/tmp/gui-native-gates-cold-third.log` and the primary's
 `/tmp/gui-native-gates-root-cold-20261006.log` actually total **83/83 in nine
 sets** (26+12+6+6+4+6+7+4+12). Correct the documentation/report count to 83;
-no implementation or test change is required. Disposition: reported to primary.
+no implementation or test change is required. Disposition: corrected by primary
+in GUI commit `86646b0`, with the integrated root log retained here.
 
 The calibration root log totals **175/175 in nine sets**. Neither cold log has
 test failure markers. Retained Rust software evidence reports **119 passed,
@@ -79,3 +80,35 @@ trajectory/reset records remain execution gates. Generic Collect/Capture must
 still run on the selected installed fixtures. Offscreen rendering is not native
 window validation. These increments make no allocation, timing, hardware or
 full-transfer acceptance claim.
+
+## Primary integration and cold preparation
+
+The reviewed GUI commits were integrated as `ed2de43` and `cc51286`; calibration
+as `456a772`. The root reran the unchanged focused suites: GUI 83/83 and
+calibration 175/175. The reviewed SDK source `d514d6b` was staged into all four
+Classic/Copper CPU FGN/JFG reference packages. The new Classic JFG service
+baseline completes both 512-exchange cohorts, exact retained prefix/truth
+reset equality, midrun controls, normal exit and owned cleanup. Its first
+post-prefix interval allocates 4,045,040 bytes, while its second allocates zero;
+both record zero collections. The result is functional acceptance only. It
+does not close late-client allocation, GUI rendering or complete-trajectory
+acceptance. The complete record was copied and hash-verified at
+`~/.cache/rtc-native-final-deployment-20261006/gui-hil-service-classic-jfg-final-v1`.
+
+The [preparation directory](validation/integrated-gates-review-20261006/preparation)
+retains bounded Julia preparation helpers and protected-byte ledgers. They
+clone frozen CUDA AOS / CPU graph inputs, retain calibration/plant/scientific
+implementation bytes, and separately seal disabled/enabled optional observation
+packages with full 256-frame recordings, 500 Hz model cadence and 10 Hz wall
+pacing. The optional queue and loop use the maintained HIL export recipe.
+No science admission occurs during this preparation. Unchanged HEART exports
+use the explicit `simulator_backend="cuda"` API and retain the frozen vendor
+executables. The recorded Copper controls fixture deliberately shares the
+Classic primary's human label, launches no AOS, and establishes only control
+and discovery behavior; it is not an algorithm comparison.
+
+The storage ledgers record deletion of 429 verified regenerable static build
+outputs, 505,484,527 bytes, in this project's native build cache. Executables,
+shared libraries, GUI build inputs, evidence and active unrelated workloads
+were preserved and hash-checked. The ledger explicitly records limited
+cross-user `/proc` visibility. No source or calibration recording was deleted.

@@ -39,6 +39,13 @@ allocations and normal service exit; it omits the temporary selection client
 and does not qualify GUI attachment. Refresh the other packages from this
 verified source before batching the remaining checks against one frozen revision.
 
+The matching Classic JFG service baseline also passes normal shutdown, reset
+and both exact 512-exchange cohorts. Independent selection still produces
+4,045,040 measured bytes in its first post-prefix interval and zero in its
+second, with zero collections. This remains an open allocation gate, separate
+from the repaired SDK ownership defect. See the
+[integrated review and preparation](INTEGRATED_NATIVE_GATES_REVIEW.md).
+
 Defer the CUDA/HIP **RTC executor** investigation in JFG31 for this increment;
 retain its unresolved obligations rather than counting them as completed.
 Continue the CPU progressive-transport and executor path after the installed
@@ -196,8 +203,9 @@ Use current Julia `deployment/export_calibration.jl --deployment` with
 `--rtc-binary` and `--calibration-binary`. HEART variants use
 `deployment/julia/export_heart_calibration.jl` and
 `export_heart_correction.jl`; both need the frozen vendor/config/calibration
-roots and source SDK. Specify `--simulator-backend cpu` explicitly: correction
-currently defaults to CUDA. Fresh export/install must precede service admission.
+roots and source SDK. Specify `--simulator-backend cuda` explicitly, following
+the user's current AOS selection. Keep FGN/JFG graph execution on CPU.
+Fresh export/install must precede service admission.
 
 Minimum actual cycle for each applicable Classic/Copper FGN/JFG/HEART owner:
 Hold→Adopt→Settle→Collect, exact contributing exposure/model identities and

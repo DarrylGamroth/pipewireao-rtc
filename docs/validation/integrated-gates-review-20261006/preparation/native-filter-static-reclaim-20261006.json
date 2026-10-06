@@ -1,0 +1,4411 @@
+{
+  "active_process_check_after_hashing": {
+    "cargo_rustc_processes": [],
+    "known_preserved_processes": [
+      {
+        "comm": "julia",
+        "cwd": "/run/user/1000/pipewireao-gui-hil-demo-hIo0tX/run-sgkgv5fh/simulator",
+        "disposition": "preserve; no interaction",
+        "pid": 1632747
+      },
+      {
+        "comm": "julia",
+        "cwd": "/home/dgamroth/workspaces/codex/pipewire/PipeWireAO-mainloop-gc-before/test",
+        "disposition": "preserve; no interaction",
+        "pid": 2791914
+      },
+      {
+        "comm": "julia",
+        "cwd": "/home/dgamroth",
+        "disposition": "preserve; no interaction",
+        "pid": 3001258
+      }
+    ],
+    "pool_open_states": [],
+    "proc_entries_or_fds_denied": 347,
+    "processes_visited": 352
+  },
+  "active_process_check_before_hashing": {
+    "cargo_rustc_processes": [],
+    "known_preserved_processes": [
+      {
+        "comm": "julia",
+        "cwd": "/run/user/1000/pipewireao-gui-hil-demo-hIo0tX/run-sgkgv5fh/simulator",
+        "disposition": "preserve; no interaction",
+        "pid": 1632747
+      },
+      {
+        "comm": "julia",
+        "cwd": "/home/dgamroth/workspaces/codex/pipewire/PipeWireAO-mainloop-gc-before/test",
+        "disposition": "preserve; no interaction",
+        "pid": 2791914
+      },
+      {
+        "comm": "julia",
+        "cwd": "/home/dgamroth",
+        "disposition": "preserve; no interaction",
+        "pid": 3001258
+      }
+    ],
+    "pool_open_states": [],
+    "proc_entries_or_fds_denied": 347,
+    "processes_visited": 352
+  },
+  "candidate_file_count": 429,
+  "computed_total_bytes": 505484527,
+  "computed_total_mib": 482.0676107406616,
+  "created_utc": "2026-10-06T17:23:24Z",
+  "eligible_suffixes": [
+    ".a",
+    ".o",
+    ".rlib",
+    ".rmeta"
+  ],
+  "excluded_suffixes": [
+    "ELF executables",
+    "shared objects",
+    "reports",
+    "fixtures",
+    "source files",
+    "GUI target outputs"
+  ],
+  "files": [
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042766,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276510812605822,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-7742f8c0ca647dbd/out/064923f652f131b8-pod.o",
+      "sha256": "482ba19824a053b5dad62094eecf82d9d7f0ae06ace1b5d1b600bd79c0ba7487",
+      "size_bytes": 315144
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042767,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276510848605662,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-7742f8c0ca647dbd/out/libpod.a",
+      "sha256": "539e61740a15e1ad8647905d8efc4db9e4c2572a294b0ec121b37e00f72693c3",
+      "size_bytes": 315870
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3053313,
+      "mode_octal": "0664",
+      "mtime_ns": 1791281509112177471,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-8b89fc610b6b68c2/out/064923f652f131b8-pod.o",
+      "sha256": "482ba19824a053b5dad62094eecf82d9d7f0ae06ace1b5d1b600bd79c0ba7487",
+      "size_bytes": 315144
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3053314,
+      "mode_octal": "0664",
+      "mtime_ns": 1791281509192176827,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-8b89fc610b6b68c2/out/libpod.a",
+      "sha256": "539e61740a15e1ad8647905d8efc4db9e4c2572a294b0ec121b37e00f72693c3",
+      "size_bytes": 315870
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042383,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276420357006683,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-947a0e40555faa46/out/064923f652f131b8-pod.o",
+      "sha256": "482ba19824a053b5dad62094eecf82d9d7f0ae06ace1b5d1b600bd79c0ba7487",
+      "size_bytes": 315144
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042384,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276420389006541,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-947a0e40555faa46/out/libpod.a",
+      "sha256": "539e61740a15e1ad8647905d8efc4db9e4c2572a294b0ec121b37e00f72693c3",
+      "size_bytes": 315870
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927048,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295011437028339,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-de7112148011b547/out/064923f652f131b8-pod.o",
+      "sha256": "02511264dc919d59518dcd7151a20f54205d3b274aa2ca83f1e6b93f69ae672f",
+      "size_bytes": 180992
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927050,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295011465028218,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-de7112148011b547/out/libpod.a",
+      "sha256": "e9c91e4c1adf02e60faecea045ba66bcccb0d1914fdbf9f68b3e89fcab33aedd",
+      "size_bytes": 181718
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042725,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276507600620132,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-sys-04c1896392f1733a/out/5785d149d58a7abc-static_fns.o",
+      "sha256": "6507c33b7e5f043c413b2500873bc1173b7e493fdf3a031f5cff5915ae3e8dc7",
+      "size_bytes": 1227912
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042722,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276507000622804,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-sys-04c1896392f1733a/out/ea708c7824d36062-command.o",
+      "sha256": "d164c215e6a9ce581eb4acfdb9e06c34d1bb089cac1d4f99ba2f74b26109d8f8",
+      "size_bytes": 8552
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042724,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276507048622591,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-sys-04c1896392f1733a/out/ea708c7824d36062-meta.o",
+      "sha256": "732a6db38d86383a94ed2aa8817c1797b1da05bd687fbaf09eef90c2fb0e32e5",
+      "size_bytes": 8192
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042723,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276507024622698,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-sys-04c1896392f1733a/out/ea708c7824d36062-node-command.o",
+      "sha256": "4816a489a0658e545dbf26b210b7e33b8c70d5b9f9a574fe37a15154f891945a",
+      "size_bytes": 7952
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042721,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276506980622894,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-sys-04c1896392f1733a/out/ea708c7824d36062-type-info.o",
+      "sha256": "d907074c3a0e2268edeb42054fdb647dfce4e908d8154113a0cd610f61caebe2",
+      "size_bytes": 173800
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042726,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276507644619936,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-sys-04c1896392f1733a/out/liblibspa-rs-reexports.a",
+      "sha256": "57300eaefd17c049edd370746a549bf2aa608f21b00864733ce4f11dd6f527d4",
+      "size_bytes": 1449426
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927045,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295010709031469,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-sys-1b01d660ebdcc1aa/out/6b18a8c57cb13683-static_fns.o",
+      "sha256": "9857ab698f9d05563a51dc638bef30579d8d80f358fcfbeaff0b5cc2226fae4c",
+      "size_bytes": 636688
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927042,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295010189033704,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-sys-1b01d660ebdcc1aa/out/ea708c7824d36062-command.o",
+      "sha256": "0dc8ce1504d592d92e1ccf5d22d40877986a8642ed8bacc94474486bc90c9d61",
+      "size_bytes": 1800
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927044,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295010229033532,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-sys-1b01d660ebdcc1aa/out/ea708c7824d36062-meta.o",
+      "sha256": "98d7490c8d0b463b1ea069527ea8a274a0beabe567913f0493c0688b636d0aef",
+      "size_bytes": 2776
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927043,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295010209033618,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-sys-1b01d660ebdcc1aa/out/ea708c7824d36062-node-command.o",
+      "sha256": "955f492edb0bd2e4d5e963f82df4b471b07cb148d678d0774974181e6b1444bc",
+      "size_bytes": 1584
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927041,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295010169033790,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-sys-1b01d660ebdcc1aa/out/ea708c7824d36062-type-info.o",
+      "sha256": "8a9ec2431fb46c51d193d595ad0d524f8809053fbe0301432bc4841b01fdd925",
+      "size_bytes": 108048
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927047,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295010741031331,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-sys-1b01d660ebdcc1aa/out/liblibspa-rs-reexports.a",
+      "sha256": "0b172e4d6b32e52ac3e2b4a042f19e00f466e536b863ed2a353bd59436909d9b",
+      "size_bytes": 773914
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042276,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276415945026114,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-sys-af9f7576241fbdb8/out/14465b667c88bc61-static_fns.o",
+      "sha256": "92acd5b4d214f23eaf470d967fef6739cfbeb7e961891f734b66fce923ee911e",
+      "size_bytes": 1227912
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042273,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276415369028650,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-sys-af9f7576241fbdb8/out/ea708c7824d36062-command.o",
+      "sha256": "d164c215e6a9ce581eb4acfdb9e06c34d1bb089cac1d4f99ba2f74b26109d8f8",
+      "size_bytes": 8552
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042275,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276415409028474,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-sys-af9f7576241fbdb8/out/ea708c7824d36062-meta.o",
+      "sha256": "732a6db38d86383a94ed2aa8817c1797b1da05bd687fbaf09eef90c2fb0e32e5",
+      "size_bytes": 8192
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042274,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276415389028562,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-sys-af9f7576241fbdb8/out/ea708c7824d36062-node-command.o",
+      "sha256": "4816a489a0658e545dbf26b210b7e33b8c70d5b9f9a574fe37a15154f891945a",
+      "size_bytes": 7952
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042272,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276415345028755,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-sys-af9f7576241fbdb8/out/ea708c7824d36062-type-info.o",
+      "sha256": "d907074c3a0e2268edeb42054fdb647dfce4e908d8154113a0cd610f61caebe2",
+      "size_bytes": 173800
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042277,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276415989025920,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-sys-af9f7576241fbdb8/out/liblibspa-rs-reexports.a",
+      "sha256": "1aef8d4648c676936f404ba8a4d1563ae53b5d27b6e58353234f29db63c63b06",
+      "size_bytes": 1449426
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3053288,
+      "mode_octal": "0664",
+      "mtime_ns": 1791281506180201111,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-sys-e409703c37cf73b5/out/ea708c7824d36062-command.o",
+      "sha256": "d164c215e6a9ce581eb4acfdb9e06c34d1bb089cac1d4f99ba2f74b26109d8f8",
+      "size_bytes": 8552
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3053290,
+      "mode_octal": "0664",
+      "mtime_ns": 1791281506284200272,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-sys-e409703c37cf73b5/out/ea708c7824d36062-meta.o",
+      "sha256": "732a6db38d86383a94ed2aa8817c1797b1da05bd687fbaf09eef90c2fb0e32e5",
+      "size_bytes": 8192
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3053289,
+      "mode_octal": "0664",
+      "mtime_ns": 1791281506228200723,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-sys-e409703c37cf73b5/out/ea708c7824d36062-node-command.o",
+      "sha256": "4816a489a0658e545dbf26b210b7e33b8c70d5b9f9a574fe37a15154f891945a",
+      "size_bytes": 7952
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3053287,
+      "mode_octal": "0664",
+      "mtime_ns": 1791281506140201434,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-sys-e409703c37cf73b5/out/ea708c7824d36062-type-info.o",
+      "sha256": "d907074c3a0e2268edeb42054fdb647dfce4e908d8154113a0cd610f61caebe2",
+      "size_bytes": 173800
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3053291,
+      "mode_octal": "0664",
+      "mtime_ns": 1791281507428191041,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-sys-e409703c37cf73b5/out/ee89eadfea1eb1cc-static_fns.o",
+      "sha256": "ba2f03b52d8676758f31ef610d1eeae583a37ad8b8dbc35c0b98a0e963e43edd",
+      "size_bytes": 1227912
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3053292,
+      "mode_octal": "0664",
+      "mtime_ns": 1791281507508190397,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/libspa-ao-sys-e409703c37cf73b5/out/liblibspa-rs-reexports.a",
+      "sha256": "1108db2273937cf4fd9daa2330293a34393284d4b7a0a6412a062de2e3d959cd",
+      "size_bytes": 1449426
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042523,
+      "mode_octal": "0664",
+      "mtime_ns": 1791280378640462330,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/pipewireao-rtc-407f958f199c19bd/out/f17b5a9852f781a4-spa_json.o",
+      "sha256": "22c44c928b5a0727007bf7380a7298bc8c84706887cd7c469730133fc5aa188f",
+      "size_bytes": 44808
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042527,
+      "mode_octal": "0664",
+      "mtime_ns": 1791280378728462054,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/pipewireao-rtc-407f958f199c19bd/out/libpipewireao_rtc_spa_json_shim.a",
+      "sha256": "aa14cc57a2ba9bfd479dccc43116fdceab6bfbfde94b7e738d552879cfb387f5",
+      "size_bytes": 45302
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042841,
+      "mode_octal": "0664",
+      "mtime_ns": 1791280280200766422,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/pipewireao-rtc-4b6a6a48bb2da2e9/out/f17b5a9852f781a4-spa_json.o",
+      "sha256": "e25ec74e804806b03e15934adcdaaaab2dc554c81baab641bb98798b332e6e1d",
+      "size_bytes": 44800
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042845,
+      "mode_octal": "0664",
+      "mtime_ns": 1791280280228766336,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/pipewireao-rtc-4b6a6a48bb2da2e9/out/libpipewireao_rtc_spa_json_shim.a",
+      "sha256": "5d72f6f6974d04ea3da784a467c8d43d22c3cb720d75a41bf9bcafdf956687d7",
+      "size_bytes": 45294
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042974,
+      "mode_octal": "0664",
+      "mtime_ns": 1791284951504947237,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/pipewireao-rtc-8627444201293e2b/out/f17b5a9852f781a4-spa_json.o",
+      "sha256": "81407748cd99de19cdf2993f419f39442c4db5b401647ec795808620ea2fd4ae",
+      "size_bytes": 44800
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042975,
+      "mode_octal": "0664",
+      "mtime_ns": 1791284951532947128,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/pipewireao-rtc-8627444201293e2b/out/libpipewireao_rtc_spa_json_shim.a",
+      "sha256": "a86052529d57430da528d1feecc911c5f4459f30bfff33bf5c63723e89c1498f",
+      "size_bytes": 45294
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927051,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295015169012288,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/pipewireao-rtc-96b9208143d39abe/out/f17b5a9852f781a4-spa_json.o",
+      "sha256": "39fe0aad83e3a3aefb57a13101bf738b8dec3739236baa77a07b2d6e883b5707",
+      "size_bytes": 21528
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927056,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295015197012167,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/pipewireao-rtc-96b9208143d39abe/out/libpipewireao_rtc_spa_json_shim.a",
+      "sha256": "ac0aefa4399e3c1247e83fa221a789118af417d0995294c28ddfc1ac90a99a04",
+      "size_bytes": 22022
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927066,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295149588431297,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/pipewireao-rtc-a92ac15374cb1bd6/out/f17b5a9852f781a4-spa_json.o",
+      "sha256": "39fe0aad83e3a3aefb57a13101bf738b8dec3739236baa77a07b2d6e883b5707",
+      "size_bytes": 21528
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927073,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295149616431176,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/pipewireao-rtc-a92ac15374cb1bd6/out/libpipewireao_rtc_spa_json_shim.a",
+      "sha256": "ac0aefa4399e3c1247e83fa221a789118af417d0995294c28ddfc1ac90a99a04",
+      "size_bytes": 22022
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042826,
+      "mode_octal": "0664",
+      "mtime_ns": 1791284583650360622,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/pipewireao-rtc-f629f0cf26ead77e/out/f17b5a9852f781a4-spa_json.o",
+      "sha256": "77848bbf1dec899437676cd0bfb9f897d6b0f3c302a0846c62394f6f1748db0e",
+      "size_bytes": 44808
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042827,
+      "mode_octal": "0664",
+      "mtime_ns": 1791284583686360486,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/build/pipewireao-rtc-f629f0cf26ead77e/out/libpipewireao_rtc_spa_json_shim.a",
+      "sha256": "b7fdeca3bbd8477f0da5d5d23c9510b7ee6f7d033a438d49c58906bbc748586c",
+      "size_bytes": 45302
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942985,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237606555673688,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libannotate_snippets-2a49cc13d4401674.rlib",
+      "sha256": "c85f8109108129fb6d3aa8c12aedce117797003d3cbb4a9dc335ba70d593255e",
+      "size_bytes": 1611634
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942964,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237606235674442,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libannotate_snippets-2a49cc13d4401674.rmeta",
+      "sha256": "2edcb8c9648f5142982592bd8dfebd796b5745c13d01efd83dd020a82c91d18d",
+      "size_bytes": 205825
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042143,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276271385655506,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libannotate_snippets-c28a69e03600d476.rlib",
+      "sha256": "f35937ff542b5c8587f4ce63b41140f749525ab5da65cc505cbe8bc3d3f1bac2",
+      "size_bytes": 1611610
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042139,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276271149656521,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libannotate_snippets-c28a69e03600d476.rmeta",
+      "sha256": "72a7fa72bfdf4b1f692cfa760733d311809f4014cfe0ca4ea4fa16f5a496248e",
+      "size_bytes": 205825
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942958,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237605843675367,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libanstyle-6a122e3c3b9ccbc5.rlib",
+      "sha256": "739553dcaecf0b1dccba50450c46c0e8d64a0189000e8f5cf2d98ac2c5a0fa39",
+      "size_bytes": 267914
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942942,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237605823675415,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libanstyle-6a122e3c3b9ccbc5.rmeta",
+      "sha256": "5d2ea0fff2b2be36165152ec0e46f51bb4f91372ed9d75b7d912a52452a67f29",
+      "size_bytes": 206979
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041483,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276269557663364,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libanstyle-f4b6c96d4116f868.rlib",
+      "sha256": "5dad5c0a5a8961ce0a23442a72a994f1957f2826276b4f9c993a046f28b2635d",
+      "size_bytes": 267914
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041479,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276269533663468,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libanstyle-f4b6c96d4116f868.rmeta",
+      "sha256": "568e3c250daadfc1f011ae99f8174ad81de91d198f6448b9ee19df7868d11387",
+      "size_bytes": 206979
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042194,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276276493633538,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libbindgen-20685530a3940fe9.rmeta",
+      "sha256": "b5816001c10dd7a367d50079d7ff4ef1f55de0a878bbb366fb343d8ce4f6e8af",
+      "size_bytes": 3038544
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042701,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276502284643804,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libbindgen-2159dc3f38708d22.rmeta",
+      "sha256": "a1768e49da99df5465dfb4c06c7e2881f5fecd26d7ce6f2ea8cd1a25e2d76734",
+      "size_bytes": 3038544
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943079,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237614767654330,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libbindgen-7a0107d1131960a0.rmeta",
+      "sha256": "812414483c8ce93bf95fd1f7fa93f49d4480618c833c7509c4f6fccbe2b4e2e9",
+      "size_bytes": 3038544
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3053272,
+      "mode_octal": "0664",
+      "mtime_ns": 1791281498536263052,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libbindgen-956e0ba303941fd5.rmeta",
+      "sha256": "bc37cef3c583fa10105519c85b75c6c043d5bc44cb1ae5527be363efaf4b4f67",
+      "size_bytes": 3038544
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042314,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276416981021552,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libbitflags-39e3b73b47d4740c.rlib",
+      "sha256": "b178b29d1dca764cd2c626792747d9f26b77068d2133e06041d1465cad25fb49",
+      "size_bytes": 504492
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042310,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276416957021657,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libbitflags-39e3b73b47d4740c.rmeta",
+      "sha256": "8e974a9d31b5f617a217a8ecc770e71dd8f754d667711660f5a477559c558890",
+      "size_bytes": 221273
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943075,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237612319660098,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libbitflags-60f41d7ebd44b968.rlib",
+      "sha256": "dc9a3e92f03b4de606ca21f57b256d70a69a3dd3671583e3779fb35511439945",
+      "size_bytes": 299500
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943070,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237612279660192,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libbitflags-60f41d7ebd44b968.rmeta",
+      "sha256": "557ec3caf0ecb3ad031e167f271b293f7a5bf424a83c783bae4473f62f1e314e",
+      "size_bytes": 221273
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042744,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276508456616319,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libbitflags-671965b2b064992d.rmeta",
+      "sha256": "30cafb961243fcfa70fba0cbd5ce26cd2f2c19066deb391a0ede1a59a9343334",
+      "size_bytes": 174549
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943443,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237693387470500,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libbitflags-87a19937a7518f03.rmeta",
+      "sha256": "bd41bd86f61b5ec7afc4e56132480195ecc06cfa5f0cdb665357b1310201c899",
+      "size_bytes": 174549
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943018,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237608947668046,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libbitflags-8c22cac17e7d18be.rlib",
+      "sha256": "68c23b65ba92abd0ea0e813204105d08ec86444a61cf1cd1b6e052d03850904b",
+      "size_bytes": 285792
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943011,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237608919668113,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libbitflags-8c22cac17e7d18be.rmeta",
+      "sha256": "5f7ad05e6222ca69472d1a0845f8d598540df1c845f0d282f49ed3b7e1e72b47",
+      "size_bytes": 219611
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042186,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276274829640697,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libbitflags-af2bdcc652bcd743.rlib",
+      "sha256": "a6b59091133aad451304d42a207fc967fa0ac7b2600bc749b235640aea544249",
+      "size_bytes": 285792
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042182,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276274817640748,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libbitflags-af2bdcc652bcd743.rmeta",
+      "sha256": "3ea0159927872fa436af146e912295f3d75dd851cffcf2e7f5f22ccd427bfb8a",
+      "size_bytes": 219611
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3051490,
+      "mode_octal": "0664",
+      "mtime_ns": 1791284973952860054,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcalibration-2e3d72f843e17d2f.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927081,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295152048420618,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcalibration-39eab0b61c41f82f.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042954,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276655131957887,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcalibration-cf59cd99fd68a843.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927084,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295152188420010,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcalibration_cli-8b3b6637b040c0ae.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3045493,
+      "mode_octal": "0664",
+      "mtime_ns": 1791284973536861670,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcalibration_cli-e3a88ab2167e4fba.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042998,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276655403956658,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcalibration_cli-fece6b1c084f97bf.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3050743,
+      "mode_octal": "0664",
+      "mtime_ns": 1791284973608861391,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcalibration_socket-66c06bd011bb8cbb.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042987,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276657247948321,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcalibration_socket-be9cc0b93f92eafb.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2947551,
+      "mode_octal": "0664",
+      "mtime_ns": 1791248004121888644,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcalibration_socket-dba04ef26d8c61c8.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942887,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237602483683296,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcc-a5204a6df000dc8f.rlib",
+      "sha256": "b359ea38c1e1522afb9af4fdcb3616985ebc9942d2c1b9e76b816fe7ace5134a",
+      "size_bytes": 3327168
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942871,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237601851684787,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcc-a5204a6df000dc8f.rmeta",
+      "sha256": "ae84e07608d7bf3d111929c1b6efb6596d8f49060cc5d114d2a593caf1cd391e",
+      "size_bytes": 448810
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041429,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276262853692154,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcc-d46d2e7af81566f9.rlib",
+      "sha256": "1d9634c7722d3552eb57fc572bb26210d64fc7ac37da88f425dbe1e8c7cc43c5",
+      "size_bytes": 3328262
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041425,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276262573693354,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcc-d46d2e7af81566f9.rmeta",
+      "sha256": "327983ade11d9d17f41efe73249b2f17b9a21b02edd0ff79cb6a19024e4004f8",
+      "size_bytes": 448810
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042168,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276274509642075,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcexpr-2df4dd15998cd4e7.rlib",
+      "sha256": "65102a9a7c4f6be9f6aa3e60339c2444b17151653b33cfcb52947460405183b4",
+      "size_bytes": 1316870
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042164,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276274393642574,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcexpr-2df4dd15998cd4e7.rmeta",
+      "sha256": "3812200cff5301725d00da274397293b4864fa2d32213c73116f87e4f10b290e",
+      "size_bytes": 164437
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042699,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276500464651906,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcexpr-36a18444c38b9ea2.rlib",
+      "sha256": "0592fcf6ed65bc2caceb8626483d19bf67515b0dd21ec63921d180be320fe9cb",
+      "size_bytes": 1316420
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042695,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276500348652422,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcexpr-36a18444c38b9ea2.rmeta",
+      "sha256": "249f6c9177919336013365afbdd9fe45ccbd2718678012f1677044d81e29a80f",
+      "size_bytes": 164437
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943007,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237608623668810,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcexpr-a7d70927e33871ff.rlib",
+      "sha256": "dee7a24655e90d4c4bfb46d530e0d1b701d3825a99be0f98b34139ca63b80d53",
+      "size_bytes": 1317052
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942997,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237608367669414,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcexpr-a7d70927e33871ff.rmeta",
+      "sha256": "934cedc83365de3aca76477004dd82bf8762dde39bc1ff84d1c33fb49c44c604",
+      "size_bytes": 164437
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942899,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237603399681134,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcfg_expr-ad9b7d850b4ba82e.rlib",
+      "sha256": "e08eeaa09e9518fa05083ca9bcb83b6d223b98512556b25a4eb9e91e51e907f0",
+      "size_bytes": 1405244
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942890,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237603283681408,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcfg_expr-ad9b7d850b4ba82e.rmeta",
+      "sha256": "f5f1bf68fe5f45b682137eedc0aea9fe958a414c090944b4b166963c61a1385d",
+      "size_bytes": 737563
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041435,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276263165690818,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcfg_expr-f76344ab8f69657b.rlib",
+      "sha256": "a0558fdb84a0aced52e70ff499eb65b3c29aba808461e33f9f1eef039efaf172",
+      "size_bytes": 1404508
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041431,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276263073691212,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcfg_expr-f76344ab8f69657b.rmeta",
+      "sha256": "a844553a6bc7dde4a8a720c20d4fee9922171bae8bc2b1f48ddc18573b964780",
+      "size_bytes": 737563
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041301,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276256325720159,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcfg_if-72a7719c5a503f05.rlib",
+      "sha256": "bcb6a3ac5324d83695b2cdb184f3246bd4a9cbbb2bb2d5ca820f0c83f865d889",
+      "size_bytes": 7714
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041297,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276256321720177,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcfg_if-72a7719c5a503f05.rmeta",
+      "sha256": "294cef77cc9d6f4e0505cf654a3ab33ebb953ec7a8f09e2826d9d3a253652388",
+      "size_bytes": 5499
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943528,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237704711444229,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcfg_if-753ddf5d9c5b0de4.rmeta",
+      "sha256": "28b6793b6dd98f197403b027fb1f8f78d5484f779ba80ab8449c41ee9f81bd53",
+      "size_bytes": 5499
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042852,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276516516580397,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcfg_if-8e014ddcb785b96d.rmeta",
+      "sha256": "788d8f3dd03daa6484982f7a24323e4954c4741d9e9bf90c54dc71659688805d",
+      "size_bytes": 5499
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042669,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276497148666661,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcfg_if-a5d74e57c5b7e6d1.rlib",
+      "sha256": "c73a43bb50d3c8b503c5b4ba6892d528a75bae914ff7a5a33bcdb162dc315a44",
+      "size_bytes": 7714
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042665,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276497148666661,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcfg_if-a5d74e57c5b7e6d1.rmeta",
+      "sha256": "af4124850faacb017fe36c582369fee4e6988b37d2218be476fde92e8d2c7554",
+      "size_bytes": 5499
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2933951,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237594891701232,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcfg_if-ac2c7868b47d7c32.rlib",
+      "sha256": "d1dbb658fdeb5039fee4bf6010915962a32805f6dc1c921cf6730e7157c4b540",
+      "size_bytes": 7714
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2933946,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237594879701260,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcfg_if-ac2c7868b47d7c32.rmeta",
+      "sha256": "2b04f1864b0d8891e94034bd8c279ab3ea1f673b374c11c2e391d59a4755ceb3",
+      "size_bytes": 5499
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042158,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276273349647063,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libclang_sys-10fdcd95af9ca126.rmeta",
+      "sha256": "1c8de85cc037d65886548aabd8cf9b037d07e414db5f170a4c417d96ce18fdf5",
+      "size_bytes": 1996824
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042689,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276499260657264,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libclang_sys-6cf2537ee53742e0.rmeta",
+      "sha256": "d75e09834209fe3741c095a91300bfaf303bc12eb129b8f3cfc0eee47ad75eda",
+      "size_bytes": 1996824
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943013,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237609475666801,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libclang_sys-9fb9ae1309c1eea9.rmeta",
+      "sha256": "2c7fc4f3de3b4a3fd237e3909ebe7bfc627368ebc22b4dc7067813f167f81473",
+      "size_bytes": 1996824
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2947562,
+      "mode_octal": "0664",
+      "mtime_ns": 1791248002909890886,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libconfiguration-1b72ad13c70f84ed.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042965,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276653791963943,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libconfiguration-5cee8864e2031e86.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3050665,
+      "mode_octal": "0664",
+      "mtime_ns": 1791284969440877584,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libconfiguration-eff2dfaffbf92170.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042797,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276515276585925,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcookie_factory-13a63e3f0f1fb7bc.rmeta",
+      "sha256": "9e7a525e8132875a179c8c286409416d2a2a4b91f465bbda4c549151e58d5bfe",
+      "size_bytes": 214770
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943492,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237702267449895,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcookie_factory-77950fd7133fd446.rmeta",
+      "sha256": "3590804db5c0521272ce00508ba7b946006ae994f0e0815a68544d510576cf5c",
+      "size_bytes": 214770
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943235,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237631787614311,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcookie_factory-aaffc4e2bd4be5fa.rlib",
+      "sha256": "1d4540db7264d9bab0f5fe0b4834093a4b688e886a49347de9c26840f8972177",
+      "size_bytes": 494014
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943226,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237631767614358,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcookie_factory-aaffc4e2bd4be5fa.rmeta",
+      "sha256": "550c78cc6bb82613005343613dfac01fcc46786c82e20236d098f1230707506e",
+      "size_bytes": 471305
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042445,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276426528979481,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcookie_factory-b9140f162887d862.rlib",
+      "sha256": "b0890991a10fdf7448a466c5d768b999740fad9bf464c171948ce8039f211c82",
+      "size_bytes": 530278
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042441,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276426520979515,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libcookie_factory-b9140f162887d862.rmeta",
+      "sha256": "60ce2f70b2123e71db2229eafb55c27c74e71858e8b5c1d3361065e3f4f7abc2",
+      "size_bytes": 471305
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942955,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237605583675981,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libeither-4c5fa07e4119fffb.rlib",
+      "sha256": "b99c8482bbba34802dedd10e00bf71c926b0b59f933615a54036f14e6b27d328",
+      "size_bytes": 227938
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942949,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237605567676019,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libeither-4c5fa07e4119fffb.rmeta",
+      "sha256": "0bc8a1836f4ea16d02059247ce249c27da6783409d21fabacf36407c70c36a72",
+      "size_bytes": 225727
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041489,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276269737662591,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libeither-535fa036de1e0873.rlib",
+      "sha256": "50f00dbd260e5628c229034d6c513f9c505a2f97f52f4c06525fecad824fb613",
+      "size_bytes": 227938
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041485,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276269717662676,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libeither-535fa036de1e0873.rmeta",
+      "sha256": "b33299605b8a202acd9a9636f35f97633fbd64d6eac2afe18b3381ce093769b8",
+      "size_bytes": 225727
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042409,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276423740991771,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liberrno-41cb959a1577806c.rlib",
+      "sha256": "ed3631537079d263334b8c969a72675d6be67323bf827de7f65ed41926c7d87d",
+      "size_bytes": 92662
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042405,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276423728991824,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liberrno-41cb959a1577806c.rmeta",
+      "sha256": "7e973a138923baa4faf682e016e1afe2320772922b7cd645f134fdc383564431",
+      "size_bytes": 16145
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042792,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276515236586104,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liberrno-6f35137132c41998.rmeta",
+      "sha256": "101a08434a47ccb4bff45f1e1231fa3888f94365a184dc984e5bac896bdc71d9",
+      "size_bytes": 14644
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943486,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237702127450220,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liberrno-bc68c876f887f528.rmeta",
+      "sha256": "166e8672a4bca7a605ab066a70ffc3460f84c99c3f4e2bdc521a2508f40d3381",
+      "size_bytes": 14644
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943166,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237624191632156,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liberrno-e43a7cf51550e558.rlib",
+      "sha256": "82bcd6a3a6d81a9a15c5316150cc730b308501b8d114c9e0e3d5866d6afc19a4",
+      "size_bytes": 45294
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943161,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237624171632203,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liberrno-e43a7cf51550e558.rmeta",
+      "sha256": "7389187840a0e096924a4e30ab1640ad61f6fc5360ee8413282a23e9defd4fde",
+      "size_bytes": 16145
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3050744,
+      "mode_octal": "0664",
+      "mtime_ns": 1791284972396866099,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libexternal_rtc_configuration-1331920455691bab.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3043091,
+      "mode_octal": "0664",
+      "mtime_ns": 1791281392405024479,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libexternal_rtc_configuration-3e5000e66bb8e77c.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2947613,
+      "mode_octal": "0664",
+      "mtime_ns": 1791248004661887645,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libexternal_rtc_configuration-fac145caf0004a65.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943377,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237638747597982,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libfastrand-29d534039df410df.rlib",
+      "sha256": "14a9eb50de762888f4059ed70e4db87fe87b6c6682f236d1966d4049a7a8933e",
+      "size_bytes": 205764
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943372,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237638719598048,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libfastrand-29d534039df410df.rmeta",
+      "sha256": "848d3710658412aa48dd115e579355acd075eaf536bc63556c1f86867217b6b9",
+      "size_bytes": 149223
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943590,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237708187436175,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libfastrand-3fa3f12ab924e04a.rmeta",
+      "sha256": "3a627f670ba840eec0dfeda03077ec24111ddbb417fa5f05a273c1ff00ef22da",
+      "size_bytes": 63394
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042902,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276518024573672,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libfastrand-c563bad9d8c99ac6.rmeta",
+      "sha256": "162a8bf9ebb8e1ade8b90c93156a764830f641eb94d58845995d33f43cd50075",
+      "size_bytes": 63394
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042545,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276430944960004,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libfastrand-d389aad8579139bd.rlib",
+      "sha256": "d4b6bd997f335766714d408b338eaa61b74f582bfefd53269d4a1380b7955799",
+      "size_bytes": 326660
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042541,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276430928960074,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libfastrand-d389aad8579139bd.rmeta",
+      "sha256": "eeb033939b6d564465354e2f591db66fbdba0d26e3867dcbac36c2e0ee5488d3",
+      "size_bytes": 149223
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041404,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276261977695914,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libfind_msvc_tools-1fbd42f55850069f.rlib",
+      "sha256": "ba955ede7e8ce16edfe6524d62fae05bb7b5d20a2bd8bb015307926d0605a1fa",
+      "size_bytes": 313818
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041400,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276261945696053,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libfind_msvc_tools-1fbd42f55850069f.rmeta",
+      "sha256": "69ec3cf7b8984edd102e3c5c80a600aa3f58cefdbc3bf35cff13d0d7a2bbcc77",
+      "size_bytes": 51300
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942868,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237600915686998,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libfind_msvc_tools-29d64717e526419d.rlib",
+      "sha256": "9ced5e24233f04844d80c52878e805389b4711ca72be4b7bf49983461e5f6ed3",
+      "size_bytes": 313818
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942854,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237600839687177,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libfind_msvc_tools-29d64717e526419d.rmeta",
+      "sha256": "f77fd4307a2b357733ac45bc07e2bd85233290da2fbc94cca9d4f0de2b299f65",
+      "size_bytes": 51300
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042496,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276430476962068,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libgetrandom-36305fcc82767e62.rlib",
+      "sha256": "f57136bdfed7be0a4130a5123a548e8c4092a328bc8d89b3ba42d19cd56e40e3",
+      "size_bytes": 223082
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042492,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276430464962121,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libgetrandom-36305fcc82767e62.rmeta",
+      "sha256": "d9c07bf3bee8b4ebf892a53f458a99c8fd99b00ec38e1f862d6dac3951be4b87",
+      "size_bytes": 80303
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042857,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276516532580325,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libgetrandom-832ae392d5e62272.rmeta",
+      "sha256": "4463156503c787853e450e86191d29497a189ebadafcd714fae89340049ebcd2",
+      "size_bytes": 67471
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943363,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237638363598883,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libgetrandom-bfd4996d41549b0c.rlib",
+      "sha256": "8420dc620c9f690c978107d07d58cd6a97704e7a7310c04ba723266ad83c44e2",
+      "size_bytes": 140194
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943358,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237638339598939,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libgetrandom-bfd4996d41549b0c.rmeta",
+      "sha256": "27bf0b51afa25eb9802d80a65dd9d9a776a8c72aaa4ab6ca21be494bb232f676",
+      "size_bytes": 80303
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943534,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237704763444109,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libgetrandom-ec014236ce395bdc.rmeta",
+      "sha256": "263d497dcaaac1f96aee38442b63d081c17a561e36f47fefd405be4dd10228d6",
+      "size_bytes": 67471
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2933935,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237594635701838,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libglob-02df50349b0e6ca3.rlib",
+      "sha256": "c179b66671be939ac64ff3c2d89cf948dad1e1a8acc55809cfa4fa1f84f188d4",
+      "size_bytes": 612248
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2933926,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237594487702187,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libglob-02df50349b0e6ca3.rmeta",
+      "sha256": "54c879a914eb8e114b121150843fa4f565a6840bf9ddcc6a0a85f56c817b168b",
+      "size_bytes": 96566
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041319,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276257049717054,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libglob-ce5c9c276074f742.rlib",
+      "sha256": "9eff3158cdc53ae23b23b7ee71b2e8e079216cce4b07d14afa7d3c16822d69ad",
+      "size_bytes": 610140
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041315,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276256993717295,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libglob-ce5c9c276074f742.rmeta",
+      "sha256": "8f6bb2e2a82a4bb4ca5b7354757214077d6ca8ee1abee68ee30b106c1417eb60",
+      "size_bytes": 96566
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2947569,
+      "mode_octal": "0664",
+      "mtime_ns": 1791248047877808131,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libgraph_adapter-0de9c29197b29782.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042943,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276656863950057,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libgraph_adapter-2f552147d0310c3f.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3045483,
+      "mode_octal": "0664",
+      "mtime_ns": 1791284969676876667,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libgraph_adapter-578061027f62f6fd.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942945,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237605775675527,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libheck-7b55e12f6a68dc6d.rlib",
+      "sha256": "421143e2c5eae922f93c22a807f3604672aea077d4bfedb333e23ebf38123690",
+      "size_bytes": 360604
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942925,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237605703675698,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libheck-7b55e12f6a68dc6d.rmeta",
+      "sha256": "5bd68710b53ada3fb4448f701026b8ffda88af2e8585c18376548dbc8db8a12d",
+      "size_bytes": 78881
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041501,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276270101661025,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libheck-c513532ecb82790f.rlib",
+      "sha256": "3043bb0c9ac7ec3904ab62f4a47415f42b3d77076846107bdc44a333ab140c21",
+      "size_bytes": 360616
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041497,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276270033661317,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libheck-c513532ecb82790f.rmeta",
+      "sha256": "a177749a02bc9359f9215f092ad65452f7e4d7480f37bf6f7f51f5e2fe3f1f1a",
+      "size_bytes": 78881
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042149,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276272445650950,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libitertools-306c79b624777496.rlib",
+      "sha256": "ad704568a225463fbdff0bcecae5c8c06324bd65e26458950cc990686a6fc251",
+      "size_bytes": 2038726
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042145,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276272413651088,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libitertools-306c79b624777496.rmeta",
+      "sha256": "67c5701400196ef2cd7e02dbd6678d6c60861f10a510e2034ae6c24e96e2e68e",
+      "size_bytes": 2023440
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942995,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237607859670612,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libitertools-6bfa3a483669c67c.rlib",
+      "sha256": "af9b8583f27477621542ab31c7b8871481bf69da638dca322d7459249e7c4d39",
+      "size_bytes": 2038726
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942990,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237607835670668,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libitertools-6bfa3a483669c67c.rmeta",
+      "sha256": "69782607cc53aca91e2e635626d08870218371222683ea5defb8cd74243da571",
+      "size_bytes": 2023440
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042847,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276516464580628,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libitoa-6ddde9f8d1eacb1c.rmeta",
+      "sha256": "b069fcbd2bf1e55cdd2f314d645b938b476b4e2c4fed61554aee13cfd03c04ca",
+      "size_bytes": 49285
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943338,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237636627602954,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libitoa-b362c8e5dd776d18.rlib",
+      "sha256": "acde26645d7652e29cdd465cf9683f90b0a36d985e3e3002525f22ee0ef7acfc",
+      "size_bytes": 140748
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943333,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237636591603038,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libitoa-b362c8e5dd776d18.rmeta",
+      "sha256": "bccdef91e9837050d1a67ea52b1fbeb306ab3f85b3222df3eda35b62dae0e484",
+      "size_bytes": 60422
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042533,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276430776960744,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libitoa-e1cf0ba11d02098b.rlib",
+      "sha256": "2936221483a9010dd96815032334142710315c6ff6b151bd6dea9d5d6377afa3",
+      "size_bytes": 204724
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042529,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276430760960815,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libitoa-e1cf0ba11d02098b.rmeta",
+      "sha256": "a48d59889eca07086a2747d8c21ef4315863e9867cafc503b70db61bf73f12d8",
+      "size_bytes": 60422
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943522,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237704535444637,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libitoa-e3d9a227397671e1.rmeta",
+      "sha256": "83f1db51aff0c16abb2b7102d79988192f442d72e098fecf07bd9cd44f4491b4",
+      "size_bytes": 49285
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042216,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276278153626393,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibc-010731c869a51028.rlib",
+      "sha256": "5b7ced0e522018555d0094a99a4c04268835699d068f325712cf0d14b30da7b4",
+      "size_bytes": 4157372
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042212,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276278137626461,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibc-010731c869a51028.rmeta",
+      "sha256": "5af5f378a89b65abe4abd9ef81125315f581338ed58e5b320db2a148307b95b9",
+      "size_bytes": 4111317
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943045,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237610427664557,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibc-238f645c0e52abc2.rlib",
+      "sha256": "decd16b25ac82d0cab4f7d26cd787d9cbe6e77ae3722e5a45ae4943958e63083",
+      "size_bytes": 4132012
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943039,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237610391664642,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibc-238f645c0e52abc2.rmeta",
+      "sha256": "77de19608f1296a2f136746c901671ea7bf78eef3499e1994d0c9b0a7c12a15e",
+      "size_bytes": 4111317
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041459,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276268845666426,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibc-421811f1f81d68b1.rlib",
+      "sha256": "2a6b9c385585ac1029a0d76bf1a6fb6b837d2899659a02fe5e866228db0cdd6e",
+      "size_bytes": 4132212
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041455,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276268813666563,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibc-421811f1f81d68b1.rmeta",
+      "sha256": "c4fa41f24d6f463b59782a51d74aa5d685f6f77e482bd853636e638fd56ef4fc",
+      "size_bytes": 4111517
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042707,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276503444638640,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibc-72577fe584cae775.rmeta",
+      "sha256": "8eb3c0b889cf886e8ea8373cfde9486a4dc4b42e4ab721fad896997d02a85063",
+      "size_bytes": 3643697
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943450,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237693387470500,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibc-9108de5dc47c0f72.rmeta",
+      "sha256": "cf0bb163085f56a9e73efe598930a2ab16557f24eb8ad3545f1a6d0c0db93445",
+      "size_bytes": 3643697
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942904,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237604583678340,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibc-a1d54b1194481b74.rlib",
+      "sha256": "4a161cefdae9f431b989d55cde911ed91bdabd0198e92e6aca5b041402228f40",
+      "size_bytes": 4132212
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942898,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237604547678425,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibc-a1d54b1194481b74.rmeta",
+      "sha256": "6c44bd71f659267b88651fbd823357fd0d5c2bee59c9bc072038d1c668ea0362",
+      "size_bytes": 4111517
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942913,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237604751677944,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibloading-7b2e56320bacfa5e.rlib",
+      "sha256": "a9a7a8e207f8eb60c2d5486be52357e99987e2aa301d6d30cccfb073b959b24e",
+      "size_bytes": 238824
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942908,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237604719678019,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibloading-7b2e56320bacfa5e.rmeta",
+      "sha256": "77a0757ae9444eea41e843c5b5241a5f8ba27e3ff9f54fc2d85375a4687fd997",
+      "size_bytes": 134349
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042687,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276498320661447,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibloading-d1b7e0eb73eb6072.rlib",
+      "sha256": "dc3b0333e3939713bd711aa989d0a1f88655c04ed8b4bece50b15269411dc782",
+      "size_bytes": 238824
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042683,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276498308661500,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibloading-d1b7e0eb73eb6072.rmeta",
+      "sha256": "082c6a53ba104011ba5dec0b4965ffe11b1d7e6c9113e1762f477cc9b747d3f2",
+      "size_bytes": 134349
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041465,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276269013665703,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibloading-d2cefbd0d21a83b0.rlib",
+      "sha256": "8e100e98b00e165bd3bf64de522bbcf080e28453dc28c26dcba1f927a2d01bef",
+      "size_bytes": 238824
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041461,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276268973665876,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibloading-d2cefbd0d21a83b0.rmeta",
+      "sha256": "0ca4e09069bc6de8f393427c7352e625bb1ed7546dbd20d18edb3560bb8d3ae9",
+      "size_bytes": 134349
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927068,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295148668435291,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibspa-27d0a0744d20cd95.rmeta",
+      "sha256": "15257b7e1e397b635bdce40e5abaaa71fa0270499debf350aa9d46ecd9df6283",
+      "size_bytes": 1957690
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042802,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276515380585461,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibspa-45a882cbae457fdf.rmeta",
+      "sha256": "5fdacae1b807427679b6c7925a88e583f19ca8c91b13f31d9c10cbda8f37b026",
+      "size_bytes": 1957690
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3053329,
+      "mode_octal": "0664",
+      "mtime_ns": 1791281514732132341,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibspa-8624af30face74bc.rmeta",
+      "sha256": "92dea79b7ecfc1a4c6b3ab6f7034dc801b024c26b816b2ecbdb74039e9976199",
+      "size_bytes": 2580146
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042447,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276427236976358,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibspa-8945e180d10bf97a.rmeta",
+      "sha256": "d0163eb71062128eab2f2ce96661352f6ffa0e80b385abde8f802fbbdcf260b3",
+      "size_bytes": 2580146
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927074,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295014789013922,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibspa-edd5bbabef45778e.rlib",
+      "sha256": "48d70fbf68634e59ed108fddac0df2e6514732695c8d7cac6c613fdc250169b1",
+      "size_bytes": 7499108
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927052,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295014369015729,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibspa-edd5bbabef45778e.rmeta",
+      "sha256": "72ea5727cd1fd019e5cf967e4679f965a51663daa57e5d4982b8e2ffd3ddb901",
+      "size_bytes": 2580146
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042333,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276419481010541,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibspa_sys-026c6f8625aa53dc.rlib",
+      "sha256": "27293c4086429055768e5e97104263a6bd109e5009075f02541bd7d492ebf63b",
+      "size_bytes": 4278324
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042329,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276419473010576,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibspa_sys-026c6f8625aa53dc.rmeta",
+      "sha256": "9463b11721acacb91918fc07eb8ca2d6dd200fc59617c4ee36dd3ae63172202e",
+      "size_bytes": 2826795
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042754,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276510100608995,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibspa_sys-15b51d4c8858e7d6.rmeta",
+      "sha256": "d40e344c0031937d73ed5775dc7ee9476b2a9e93d17eaef6eac45935d43b70ee",
+      "size_bytes": 2525331
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927067,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295148356436644,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibspa_sys-8d3d9ed91cbe6f97.rmeta",
+      "sha256": "d833bc085500a0a5acfc50b8390b4324543f42797e42a0e8974c6d3c6a2a5e97",
+      "size_bytes": 2525331
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3053304,
+      "mode_octal": "0664",
+      "mtime_ns": 1791281508320183851,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibspa_sys-aa0c5971e158584b.rlib",
+      "sha256": "14e6ada67b9077dfe5d1542dba0358122974518938cfc053f846ba26616a087d",
+      "size_bytes": 4278324
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3053300,
+      "mode_octal": "0664",
+      "mtime_ns": 1791281508300184012,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibspa_sys-aa0c5971e158584b.rmeta",
+      "sha256": "e43318e776a7f6f994ee5f51d32d44e3df72060332d95152d20c481be29de5c1",
+      "size_bytes": 2826795
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927054,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295011085029852,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibspa_sys-e5696eb2b3607cdd.rlib",
+      "sha256": "925cb0018f5557778388e7a7c9e51b2a4537d1c461b7d32fc0e65a491a3b5c5c",
+      "size_bytes": 3602812
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927049,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295011073029904,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblibspa_sys-e5696eb2b3607cdd.rmeta",
+      "sha256": "5ebddc14e6b3b6858fb84238b16e687542c06ab67e44b462907b5104fac6caf7",
+      "size_bytes": 2826795
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3043031,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276657447947418,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblifecycle-3ad286dab884dc2e.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3043087,
+      "mode_octal": "0664",
+      "mtime_ns": 1791284973844860473,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblifecycle-ad2ef0447e714a39.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2949242,
+      "mode_octal": "0664",
+      "mtime_ns": 1791248047465808886,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblifecycle-c5438698a3ba124c.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042734,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276507660619865,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblinux_raw_sys-06708494d5122178.rmeta",
+      "sha256": "a043f24b45cfc91a06ea9b071406dfdafd022a5f5de09e0b99348be6aebd6916",
+      "size_bytes": 4902753
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943084,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237613991656159,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblinux_raw_sys-68027686a32ec2db.rlib",
+      "sha256": "1aa7f699e06146d548cc01f9ba6c289f200fc68ba6a74392bfbe8b85263c32cc",
+      "size_bytes": 5862824
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943077,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237613943656271,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblinux_raw_sys-68027686a32ec2db.rmeta",
+      "sha256": "a47dc05c653489e032066218c645feab1adbe28bbab4c2769acfaded2c6a87a7",
+      "size_bytes": 5843213
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042302,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276416793022380,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblinux_raw_sys-8d7361e33ee9b249.rlib",
+      "sha256": "4f97cbc41ae54c20694a75bdd0fd6a90cb77f5ba23ff331655932dfec2e2bec8",
+      "size_bytes": 5881446
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042298,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276416773022468,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblinux_raw_sys-8d7361e33ee9b249.rmeta",
+      "sha256": "3d59f916c7ea984ad777b15a8b0365ce407c64c7bb398b529812c6d2eda2e7ca",
+      "size_bytes": 5843213
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943456,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237693619469962,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblinux_raw_sys-eda2ca7809f16a39.rmeta",
+      "sha256": "10fb59a3b504cb5cccce95eecc174c662b46e1073fb79dfb9ec97fed26ff2d49",
+      "size_bytes": 4902753
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042976,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276656747950582,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblive_parameter_routes-e5b63cb971d3de5c.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3045485,
+      "mode_octal": "0664",
+      "mtime_ns": 1791284969620876884,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblive_parameter_routes-e62b3871f7cc7cc1.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2949241,
+      "mode_octal": "0664",
+      "mtime_ns": 1791248004477887985,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblive_parameter_routes-f5a7c8a81e9d66a5.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3049914,
+      "mode_octal": "0664",
+      "mtime_ns": 1791284972468865819,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblive_private_core-4ace30d1f06800f4.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2949165,
+      "mode_octal": "0664",
+      "mtime_ns": 1791248049461805230,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblive_private_core-4e9370e2387c47d1.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3043009,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276654075962660,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/liblive_private_core-58eb70c11932741a.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042675,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276497452665308,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libmemchr-01f2ccb340eb6ec8.rlib",
+      "sha256": "6315f55f3ab285cfc142c70ca9b67810846efd47902eb1b0af1b49aacf09c85b",
+      "size_bytes": 1858772
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042671,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276497372665664,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libmemchr-01f2ccb340eb6ec8.rmeta",
+      "sha256": "377d1551d1a96c793f467f2bfbf7cb82c5301b4f23ec513ad2921186efe3f247",
+      "size_bytes": 1290721
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042739,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276508252617227,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libmemchr-0263503a7d6f4437.rmeta",
+      "sha256": "41391cf57e1f7babc6df440514e98a6a6e51b8b31b5cdc4d99fb1cfadad5009b",
+      "size_bytes": 975316
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041313,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276256897717706,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libmemchr-0b319444e8f73b56.rlib",
+      "sha256": "eb5b3895b7267d538ec30cb61cc166fd34434ce5a8871f371c57d49ea400ba12",
+      "size_bytes": 2566170
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041308,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276256749718340,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libmemchr-0b319444e8f73b56.rmeta",
+      "sha256": "e74c4017a8bdaff11bd915a9722743adabcf762d47251ce3c7c93367bb4e8c48",
+      "size_bytes": 1290721
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943458,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237695043466655,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libmemchr-33772984e8d7c2a4.rmeta",
+      "sha256": "88a48fd1ff9aeeaab2fd81fabab39a12bf3fa45e8fbe974dbd8dfb537c2a833f",
+      "size_bytes": 975316
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2933960,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237595347700154,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libmemchr-6837fa2df5dda909.rlib",
+      "sha256": "29a65207b6dc555499164459b43ea45e10836fe22c94b6489cc67c18ca922260",
+      "size_bytes": 1858512
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2933952,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237595167700580,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libmemchr-6837fa2df5dda909.rmeta",
+      "sha256": "e21b31192bb6b9fb58528551007e0956f2c0f5032a4579901ae59a2e6cd3391c",
+      "size_bytes": 1290721
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942864,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237600831687196,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libminimal_lexical-40af2add6e41abba.rlib",
+      "sha256": "6a37759662b152b9e26fa9bc6171c95fb3144fa98c076a3cfaa1d11e32ebbb1b",
+      "size_bytes": 330524
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942848,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237600807687253,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libminimal_lexical-40af2add6e41abba.rmeta",
+      "sha256": "ecde4109541fd065b28032daf4360490e6dff1bbfd82aa07a94b6f9f0e023e01",
+      "size_bytes": 250520
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041386,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276260801700958,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libminimal_lexical-69ccb812560533a6.rlib",
+      "sha256": "324662c2e60def2906be1d8ce03d13375a903aa746264ea329d72758bca9d894",
+      "size_bytes": 330524
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041382,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276260789701010,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libminimal_lexical-69ccb812560533a6.rmeta",
+      "sha256": "3fc5846ec3bce15a9e483f3373ac16d3e43ac0d7440f0123e57f715243658b57",
+      "size_bytes": 250520
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942882,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237602747682673,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libnom-40893d9e96d218c0.rlib",
+      "sha256": "41edefc892b2d47241034d3477511f5a91988af093c610343d759a155b083634",
+      "size_bytes": 3590454
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942876,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237602663682871,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libnom-40893d9e96d218c0.rmeta",
+      "sha256": "9dc7af10f19540ade6f4e14526ce597e83eacd240eb18722fcb4f6e1055a7ed0",
+      "size_bytes": 3368377
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042415,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276425124985671,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libnom-4bbd5aa851efa3e1.rlib",
+      "sha256": "ecba5463b42568c37070a8c18640aeef2e4494218250f19a246f5fec2e04023f",
+      "size_bytes": 4780002
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042411,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276425080985864,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libnom-4bbd5aa851efa3e1.rmeta",
+      "sha256": "3eb89d07c6c096e1438e914ccd11cb5d0d49a8e2396c1e778a444824b29b4dfc",
+      "size_bytes": 4391366
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041453,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276267809670874,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libnom-4fbc845e36a307f7.rlib",
+      "sha256": "030af7f87f12e0e1ef5d5d01177c17b1ae849b24fd8190ee525a89ebfe058965",
+      "size_bytes": 3590454
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041449,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276267733671201,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libnom-4fbc845e36a307f7.rmeta",
+      "sha256": "aa0ce3be61d7bc1a14c19d5012651202bfe7f4dc3ad7e9ff74e190417395bb47",
+      "size_bytes": 3368377
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943540,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237700827453234,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libnom-7f12246fa2d11538.rmeta",
+      "sha256": "407597da034a60332350fafe87ea210f81c03af04f7b2387d887c66f45a0861f",
+      "size_bytes": 2149533
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042787,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276514008591578,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libnom-bf478492fc0ae71f.rmeta",
+      "sha256": "373a6155fb77de5b46292214d5c865d709a1b5080e4a9a989a94104e27345973",
+      "size_bytes": 2149533
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943198,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237627931623366,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libnom-f2cf0302bd7444b3.rlib",
+      "sha256": "e26a5821b87e2dcadfcc2de8ba1555eeba58a2fa776fbca9bcbd1ee37e587972",
+      "size_bytes": 4535530
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943191,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237627831623600,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libnom-f2cf0302bd7444b3.rmeta",
+      "sha256": "23864a20ad5a6fed79043f0113367f31fda8617b8ba9f4cc63b020039ccd6cfd",
+      "size_bytes": 4391366
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042681,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276498244661785,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libnom-f395e91d0b9012fa.rlib",
+      "sha256": "a35c355ac23d808549f2eae1cd16c88739745c9360803b0279468d3c41c31c62",
+      "size_bytes": 3590454
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042677,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276498208661946,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libnom-f395e91d0b9012fa.rmeta",
+      "sha256": "30eb3ecc72beb9087d6c39bf7e271d21c543fc38362f9aa219bb81fa4774c2ef",
+      "size_bytes": 3368377
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042539,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276430856960391,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libonce_cell-2cd7a9ea509151f0.rlib",
+      "sha256": "1bf4ce921f45eeb3bfa7eb571e281d9c4526239454736e0db887a2914879c35d",
+      "size_bytes": 291010
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042535,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276430844960444,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libonce_cell-2cd7a9ea509151f0.rmeta",
+      "sha256": "8e05855509b1f5221ff945223f0d69154f8a7ed0aeb7bbe791dbf3973bfe8c2a",
+      "size_bytes": 193334
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042897,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276517960573957,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libonce_cell-6fcdaf3a45a59df3.rmeta",
+      "sha256": "96ded9f70578c36ced36dba79fe93acd9847857f7354be5d9d3dbb5ff950685b",
+      "size_bytes": 138368
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943583,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237707935436758,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libonce_cell-aa863b857b9da4d8.rmeta",
+      "sha256": "dcb0cdcc5eeb275b017d4137c744fd64389dd745535c3abe18e8727f01f3130f",
+      "size_bytes": 138368
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943370,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237638547598452,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libonce_cell-b3b985d5955b1d83.rlib",
+      "sha256": "fd6de45223317e8635a94dd187ae43f4aca349e69f42578a8dd3d055f02000b5",
+      "size_bytes": 232554
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943365,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237638527598499,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libonce_cell-b3b985d5955b1d83.rmeta",
+      "sha256": "9def7fef4eb65943dfa84b2b9b14c4d431a6acf81792f4cb41519c23ed23c8c4",
+      "size_bytes": 193334
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042882,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276517088577846,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewire-1df9ed8917d68643.rmeta",
+      "sha256": "21fc0159183cea64fc4d216f5629bfd5bfed108a36ebacbf0151fa7e8b9e97de",
+      "size_bytes": 1929910
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927072,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295016045008519,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewire-95c7a35edec78c51.rlib",
+      "sha256": "9556690180ac3680ec59cbdabd12c3bc3696541805a6e98035c600461ea64c8a",
+      "size_bytes": 4785478
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927058,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295015849009362,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewire-95c7a35edec78c51.rmeta",
+      "sha256": "30a85e2b15dfb98014914621ec3fd8490a4f3f69c2add78c32c7057480f22d12",
+      "size_bytes": 2481346
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3053341,
+      "mode_octal": "0664",
+      "mtime_ns": 1791281518656100973,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewire-a82fe1e7e8de8207.rmeta",
+      "sha256": "4d0aadf618bc0503b7b2b93e944187d1b6b0f17b698d9dc0ef76ad2ef06b9720",
+      "size_bytes": 2481346
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042579,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276432912951319,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewire-de99a4f70ff876fa.rlib",
+      "sha256": "f607cdac59be0d6a138d0c3b75311c429afb0899b0d5aa421f5bb75f4c5449a1",
+      "size_bytes": 8260404
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042575,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276432548952925,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewire-de99a4f70ff876fa.rmeta",
+      "sha256": "3b6c5e257a78d9693b023ab082dc57e2a19b73f8c434eb2e6ad2879532e5f274",
+      "size_bytes": 2481346
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927078,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295149620431158,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewire-f41e5584719991e9.rmeta",
+      "sha256": "32b7ce01f0ac12c992f6aae6ac663d206950583fc56b062960397bc2ed2c8b80",
+      "size_bytes": 1929910
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042486,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276429728965368,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewire_sys-2227f280e820894e.rlib",
+      "sha256": "c49023db11163331ba7efef0c5fe5b460501d3d0473fb1d5314279d2c89e1f4d",
+      "size_bytes": 1847734
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042482,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276429724965385,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewire_sys-2227f280e820894e.rmeta",
+      "sha256": "223620148efcf396cdd07b2f7f4a59a016940cfad9a13e2103f9ee5669334fdb",
+      "size_bytes": 1845490
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927070,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295149232432842,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewire_sys-4d195aeae97c9eaa.rmeta",
+      "sha256": "f01f26af9d6e6c3a7e0510526f6499623c4763bceef96aa0fd04a0e9a0050d0f",
+      "size_bytes": 1659805
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042812,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276516016582626,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewire_sys-9c6e09170dbebae6.rmeta",
+      "sha256": "3872fd2fa14e30c224a5dbf6249c9e20cac8d933b6fc535e50cc3f643e1072e6",
+      "size_bytes": 1659805
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927060,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295015033012873,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewire_sys-bf99a8557af52167.rlib",
+      "sha256": "73095903f6806c16bf0c7d721b136cf4980519a384068acb9e7abb0091f1b83f",
+      "size_bytes": 1847734
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927053,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295015025012907,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewire_sys-bf99a8557af52167.rmeta",
+      "sha256": "441c10efb890ced15b54c52a4a0e472ee7fc17a567c1c558632842f4e44e284b",
+      "size_bytes": 1845490
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3053339,
+      "mode_octal": "0664",
+      "mtime_ns": 1791281517192112662,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewire_sys-c46a40b50ec3edf6.rlib",
+      "sha256": "127e6f00ef80d4cff65f2af1ec1a055b8152a6c590db13a7566d4b5be1b6124e",
+      "size_bytes": 1847734
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3053335,
+      "mode_octal": "0664",
+      "mtime_ns": 1791281517172112821,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewire_sys-c46a40b50ec3edf6.rmeta",
+      "sha256": "922243a203f8425c58e75e3016f7d4f411d9599cf21469dc7f35b853a1dc858e",
+      "size_bytes": 1845490
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2946255,
+      "mode_octal": "0664",
+      "mtime_ns": 1791245896274325633,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewireao_rtc-1afd4c724f8ac06e.rmeta",
+      "sha256": "7e9776588029ea30ff538e535f689fec0d82ec0537250e2c325245f00ff06b10",
+      "size_bytes": 850189
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3043142,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276657675946387,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewireao_rtc-1f537f6171f445fd.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3057589,
+      "mode_octal": "0664",
+      "mtime_ns": 1791281963161116686,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewireao_rtc-370e7d5f4724fbb8.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3050768,
+      "mode_octal": "0664",
+      "mtime_ns": 1791284974204859074,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewireao_rtc-3d0b3ea1c1cbf2a2.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927079,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295150160428814,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewireao_rtc-48de9278d8dd628a.rmeta",
+      "sha256": "27d328108f3361f2d101e792b9df58f9d17a5c2771af4a78b6988f5e2f11c03d",
+      "size_bytes": 1245207
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042932,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276655523956116,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewireao_rtc-56c6125ee913295f.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3057581,
+      "mode_octal": "0664",
+      "mtime_ns": 1791281960541131801,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewireao_rtc-6dd8bd7e003d4454.rmeta",
+      "sha256": "e0c97408e23843272a8b886c08557495faa0b09d15df86f0b4340b64b510f9ff",
+      "size_bytes": 1179964
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927083,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295018896996248,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewireao_rtc-7130def06a1f59b7.rlib",
+      "sha256": "9077641960e4024ed0f5e98370a9b3564dfa02240a291bf9cff38b0049ee9a50",
+      "size_bytes": 17368548
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927059,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295017573001945,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewireao_rtc-7130def06a1f59b7.rmeta",
+      "sha256": "849fbd3f1abd93d8f6837538c1e843b9ddd0a5f4b5d4e938496f365baca43e34",
+      "size_bytes": 1842364
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927089,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295152384419159,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewireao_rtc-8ef4f77582af1c71.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2949166,
+      "mode_octal": "0664",
+      "mtime_ns": 1791248048965806138,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewireao_rtc-8f562c8dad1feb34.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2947608,
+      "mode_octal": "0664",
+      "mtime_ns": 1791247997729900472,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewireao_rtc-935c84ccd8919fa4.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3050675,
+      "mode_octal": "0664",
+      "mtime_ns": 1791284973180863053,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewireao_rtc-962bf7887d6d978c.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3053351,
+      "mode_octal": "0664",
+      "mtime_ns": 1791281523420063043,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewireao_rtc-b9d292379d84f8b8.rmeta",
+      "sha256": "227d4548a1508a478ea02eeb664bc1cd8f0edeb886794e07c87e2c630ca78a95",
+      "size_bytes": 1523686
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3059487,
+      "mode_octal": "0664",
+      "mtime_ns": 1791284967196886300,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewireao_rtc-c915e6321853b766.rmeta",
+      "sha256": "e508a9fafffe5b69bb0cc262cc1eed2bf39e6fc711868d149fc9a9e1e9769fe3",
+      "size_bytes": 1380435
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3059478,
+      "mode_octal": "0664",
+      "mtime_ns": 1791284699769918150,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewireao_rtc-d57e6fa29a4a3b89.rmeta",
+      "sha256": "d9a70e939e1a133876ebabd18abd3471044a4a45cb88cad00627c18e0752f1b2",
+      "size_bytes": 1379991
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3043070,
+      "mode_octal": "0664",
+      "mtime_ns": 1791281390317031839,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewireao_rtc-d63fd2fff136f748.rmeta",
+      "sha256": "d6a54f70d016c6a0908c2addb51e7e66556da78c3d9b9e42e31b4bfc586303e8",
+      "size_bytes": 987137
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042836,
+      "mode_octal": "0664",
+      "mtime_ns": 1791282026632756843,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewireao_rtc-e63ad29a27d267aa.rmeta",
+      "sha256": "9d519e8a14feff98a6c1159a4311cdb044a418d5b0043a96674e9e6fae262fa0",
+      "size_bytes": 1523426
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3050826,
+      "mode_octal": "0664",
+      "mtime_ns": 1791279837709968616,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewireao_rtc-e98d725d0a93e54c.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3045487,
+      "mode_octal": "0664",
+      "mtime_ns": 1791281228753599518,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewireao_rtc-eb934e90c1045a2b.rmeta",
+      "sha256": "a4274b4d9bfd9560c81c7e6185251dbbf3c9b1adbd874a8f020e1ca98f478a5c",
+      "size_bytes": 1523763
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3050742,
+      "mode_octal": "0664",
+      "mtime_ns": 1791284969808876154,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewireao_rtc-f581ec71f88b75d8.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3052195,
+      "mode_octal": "0664",
+      "mtime_ns": 1791283670093534604,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpipewireao_rtc-f917cb788a49c219.rmeta",
+      "sha256": "6a301f9e9ab8bf905c2aa73184d756a6e55eedd23966f5c7205436e1d25415e8",
+      "size_bytes": 2024173
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041350,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276260049704186,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpkg_config-3a32112fd8d6d350.rlib",
+      "sha256": "064dbc21e9c61cf55bc0a1d81ac3656eec4b2f968bce93feddd037af74718a18",
+      "size_bytes": 1038584
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041345,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276259941704649,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpkg_config-3a32112fd8d6d350.rmeta",
+      "sha256": "221ab356107b71592c501db8ec6dfcecf384840a8db64c95dc7f8fecb2e732ee",
+      "size_bytes": 70680
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2933983,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237596127698310,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpkg_config-bddc136918bf7cd6.rlib",
+      "sha256": "05f297deeb0c720492191e5ac35c7b5990600eb0cde79f3cb67007a7f67b7570",
+      "size_bytes": 1036842
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2933973,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237595887698877,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libpkg_config-bddc136918bf7cd6.rmeta",
+      "sha256": "e4b0c91fb4ff9f99efcef91597698486fe15dc762ba75ad9fdd70f1e211fb030",
+      "size_bytes": 70680
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041289,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276256189720743,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libproc_macro2-16bdc4cfed7c29c3.rlib",
+      "sha256": "b06fb35fa4bc9d561bc39f3312356f83323f58614310df00e8f110ea6ccf52c6",
+      "size_bytes": 1251364
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041285,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276256093721154,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libproc_macro2-16bdc4cfed7c29c3.rmeta",
+      "sha256": "a765cd89c98e32c6442e5ce447a17727242fb5fb94dc3b2431867b45c8d19dd5",
+      "size_bytes": 342134
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2933936,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237594595701932,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libproc_macro2-221393b5fd132365.rlib",
+      "sha256": "9d3085db768b0cdf5ec4e4b2ac74316f973f610d715aeb6cf9ac66a2be0bab7e",
+      "size_bytes": 1251920
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2933922,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237594379702443,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libproc_macro2-221393b5fd132365.rmeta",
+      "sha256": "3a3180b1a04fb6fc70dd249d258016307589a6e6c65b097616248e2f6df34064",
+      "size_bytes": 342134
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943147,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237621147639314,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libproc_macro_error2-38a9fb540fafcfc2.rlib",
+      "sha256": "f8e04729da02f2c62fe7f66e1480c19d634956af799682139a2ea65e62b356b8",
+      "size_bytes": 420226
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943142,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237621039639569,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libproc_macro_error2-38a9fb540fafcfc2.rmeta",
+      "sha256": "b91e5f172246e22b98a6419e735369e5f2313ab73065c6dfdb72446c9d6f48a6",
+      "size_bytes": 131496
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042379,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276420201007370,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libproc_macro_error2-84b8a768c6bc0162.rlib",
+      "sha256": "0d87f6fac30955dc40c2672fab654b55509b167ea15d525e706802eb8da5ad0a",
+      "size_bytes": 420226
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042375,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276420169007511,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libproc_macro_error2-84b8a768c6bc0162.rmeta",
+      "sha256": "092b58bb028f8526a55a381c34e2265c9744576751ad42f7ff71c97153d4314f",
+      "size_bytes": 131496
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2933944,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237594847701336,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libquote-98606d294cf7fa47.rlib",
+      "sha256": "f8a1f16497865290be7a06fe4c2290433e3a040f15c4acb45ab29fc62d668c55",
+      "size_bytes": 515722
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2933939,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237594787701478,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libquote-98606d294cf7fa47.rmeta",
+      "sha256": "c2196974991d5eaecc4413abae2af2bd26ba9bba035f8217959bb6a32b9bd308",
+      "size_bytes": 270450
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041295,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276256301720263,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libquote-e96822e57ba4e32c.rlib",
+      "sha256": "da24e9d87980d78e6aa3c672ef56b78fa104deb41d1bbd42eb8ec0635601a038",
+      "size_bytes": 515722
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041291,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276256277720364,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libquote-e96822e57ba4e32c.rmeta",
+      "sha256": "cf412912e9fb11f0484a8050d0be78a257d9574bf3e2fa0d817c9e00f65f5817",
+      "size_bytes": 270450
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042174,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276274685641315,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libregex-353bd855c9938c0a.rlib",
+      "sha256": "3656a2e28ebed9cef557aff50bec101a59ff154e8c882c299beb0b25aa8f3b93",
+      "size_bytes": 1018472
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042170,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276274653641455,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libregex-353bd855c9938c0a.rmeta",
+      "sha256": "d3947714e9925640e973a6b71126c49d4a20b3d296b3d3a3e34f18a8b1363b80",
+      "size_bytes": 673028
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942988,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237607187672197,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libregex-5183fa92907046da.rlib",
+      "sha256": "9b0f9e42a6b49adc8b4171b73432fec44fcebce78cf0ad18ee34dc4371eb4261",
+      "size_bytes": 1018472
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942982,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237607095672414,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libregex-5183fa92907046da.rmeta",
+      "sha256": "729de4386baaa69647c2156bcf7d31acff6fa79e4fdfca4b40cb684c89105083",
+      "size_bytes": 673028
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942960,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237605631675867,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libregex_automata-92b0d3db0d2dd396.rlib",
+      "sha256": "ed51cbfae281f220a58c0c9c213d3113b200a29fe68b1b2d57a896a738cb1091",
+      "size_bytes": 5959588
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942900,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237604907677575,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libregex_automata-92b0d3db0d2dd396.rmeta",
+      "sha256": "31a1094a13f9589727c463493a2ee2b72eaa8cbd7cfc30dd5b88d5b25c078856",
+      "size_bytes": 2331604
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041447,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276266013678590,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libregex_automata-a2d00d604926d016.rlib",
+      "sha256": "ded831b544e258385ba6edc9983d39e6b56db0b6032f448babdcdaf3942dffc3",
+      "size_bytes": 5960456
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041443,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276265353681422,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libregex_automata-a2d00d604926d016.rmeta",
+      "sha256": "903b248661f1136a46d95d902f9358940f1f53f080de132cf6b2554b5ff2f535",
+      "size_bytes": 2331604
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942847,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237599991689179,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libregex_syntax-7b3125fb0d1fb49c.rlib",
+      "sha256": "fe04e4895794cfb87b1d741f5708314bce196cc1217d54e86bb6ef47106565ae",
+      "size_bytes": 5099830
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942815,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237599255690919,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libregex_syntax-7b3125fb0d1fb49c.rmeta",
+      "sha256": "bde8ed0212812169359caffaaac120b8391baf727dcf996aa9bd74fd39b3720f",
+      "size_bytes": 1634048
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041392,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276261781696754,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libregex_syntax-9286b6ffebf5b71b.rlib",
+      "sha256": "b3cd4caecbb17c561d8ec09fd0c2b024cc9b4c642341b217cebe8876b83f4c8f",
+      "size_bytes": 5098438
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041388,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276261441698214,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libregex_syntax-9286b6ffebf5b71b.rmeta",
+      "sha256": "7618d72409ffca821a35bf2034aa0f7a807678a4c87ffd373a27c4e56325569b",
+      "size_bytes": 1634048
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927087,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295152232419820,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libretired_ingress-7245e16e4ec453e3.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3043020,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276657047949225,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/librtc_calibrate-2825740046808dce.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3057602,
+      "mode_octal": "0664",
+      "mtime_ns": 1791281963561114381,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/librtc_calibrate-288ad9be348751dd.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3043093,
+      "mode_octal": "0664",
+      "mtime_ns": 1791284973704861017,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/librtc_calibrate-380c095b3135b50c.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2927088,
+      "mode_octal": "0664",
+      "mtime_ns": 1791295152268419663,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/librtc_calibrate-626cf19a4effbef8.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3043103,
+      "mode_octal": "0664",
+      "mtime_ns": 1791284974088859525,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/librtc_calibrate-a4a72ad30b012744.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2946264,
+      "mode_octal": "0664",
+      "mtime_ns": 1791245897194325299,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/librtc_calibrate-b8a6dbcada622744.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2947527,
+      "mode_octal": "0664",
+      "mtime_ns": 1791248048525806944,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/librtc_calibrate-dad8c0e8428a5ecc.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3052206,
+      "mode_octal": "0664",
+      "mtime_ns": 1791280404376381345,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/librtc_calibrate-e19a50159b5b80f2.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943025,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237609035667838,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/librustc_hash-308b154d285273e6.rlib",
+      "sha256": "ab329e0250334b1ec91769424f58ca303528eff0e2d75aaea201c5f8a13b9704",
+      "size_bytes": 32410
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943020,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237609019667877,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/librustc_hash-308b154d285273e6.rmeta",
+      "sha256": "d9ddefe089fdf403e11a9b5ca4159eb82a693e3e68a0688ae76ad134c18721d6",
+      "size_bytes": 28062
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042192,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276274865640542,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/librustc_hash-caad09642a132adc.rlib",
+      "sha256": "0439fb509a608c867d7cefe572e9ae60033fd40a6c383fe2e3ea04da8b353627",
+      "size_bytes": 32404
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042188,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276274861640559,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/librustc_hash-caad09642a132adc.rmeta",
+      "sha256": "7cb1dc42230a006bd8430cd95aef9356d733cb4df32c462c0352b2811845bb72",
+      "size_bytes": 28062
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943480,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237695895464678,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/librustix-1b9a194ef028af3b.rmeta",
+      "sha256": "2a53d5d54d3e28348d32773e002695ff632dd910ac3b97a22031b0df0a9ccc75",
+      "size_bytes": 6801461
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042749,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276508516616052,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/librustix-64484eb68bda4954.rmeta",
+      "sha256": "b3458ca7ed1ad595a418aa8d83d5effd7dea96581c407451411cc85d3bc77f83",
+      "size_bytes": 6801461
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042316,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276418641014242,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/librustix-e658ab7d7a99afd7.rmeta",
+      "sha256": "834c19c2a4e3568e745ce29d3ce83fcde0f4165ee4fc36baa91b7b67270729db",
+      "size_bytes": 8583868
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943096,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237618375645837,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/librustix-ee9b719e1531578f.rmeta",
+      "sha256": "aab99c45285e75ed69cb28cfadf7891fa98d0f2d119bc12c735cc87f329d6714",
+      "size_bytes": 8583868
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042591,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276433308949571,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libserde-2694295408b945c6.rlib",
+      "sha256": "909483e95ee73323fbf39aeb1b4c8f28d60c26ebf97d563e11e980df6b2b29df",
+      "size_bytes": 1180554
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042587,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276433284949677,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libserde-2694295408b945c6.rmeta",
+      "sha256": "4914ea2fd11b4a0880023fb630623efa0c95ab17b54e7b21d5ed6c128401f3e4",
+      "size_bytes": 827196
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042892,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276517748574902,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libserde-381667f86eab4b36.rmeta",
+      "sha256": "d8e1ee24b7cf5b2197db4239216e59063c8f35b6d4ffcf5fd354c94ba56ab0b4",
+      "size_bytes": 514868
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943572,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237707123438639,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libserde-96a4f85c00cac66d.rmeta",
+      "sha256": "cbb8e035b91e5fb653f05f701713169d9965fed045b54be19bc71f71fd54505e",
+      "size_bytes": 514868
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943346,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237637927599905,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libserde-9b1dba664a444772.rlib",
+      "sha256": "ba42866f69e27995a6773cff4f8fce15865c89864061f7446888bfbcd9eeba91",
+      "size_bytes": 944370
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943339,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237637891599989,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libserde-9b1dba664a444772.rmeta",
+      "sha256": "d09ed251aeea5cb406442eab9368e9ec2c048ca35361a04fd0f0daa174b8a12f",
+      "size_bytes": 827196
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943474,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237697115461846,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libserde_core-01d40801288ade30.rmeta",
+      "sha256": "8fe83e8feafcbb90a830ae9575209371ce1a3e2688c85fa17dc1924434b170c9",
+      "size_bytes": 2649606
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943157,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237624075632428,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libserde_core-1864b6dff4d5795f.rlib",
+      "sha256": "b6b5d18c5da8b6132827bf67515c20e048f9767f6d945692d8be0431d83413ee",
+      "size_bytes": 4936840
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943150,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237623999632607,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libserde_core-1864b6dff4d5795f.rmeta",
+      "sha256": "c58cfdd8641e92a478d1c1d307fdf386ff2e070e599a96db25ffb858a99671b2",
+      "size_bytes": 4754418
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042782,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276513100595625,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libserde_core-c2ece60d1ccba7c9.rmeta",
+      "sha256": "5eb4d9303ce1463231ef74cc045d5b38bb174566b107b76bbc39dae7b5801f0e",
+      "size_bytes": 2649606
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042403,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276423684992017,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libserde_core-f5e46e0723bd319e.rlib",
+      "sha256": "f646a16ad6e6790d3004f7813d67222e86b737ff151e79337e0d854efa6b15a7",
+      "size_bytes": 5272736
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042399,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276423632992246,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libserde_core-f5e46e0723bd319e.rmeta",
+      "sha256": "fef0380642aeaf62bde3f3b07e12a9219d1e10f995535c7fa8822f89c6f05532",
+      "size_bytes": 4754418
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042557,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276431728956544,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libserde_json-1f53e1b7a8e26068.rlib",
+      "sha256": "a7ebc2b7b8288f6dea9e6febd5f48e001a2da5d9c5055c48d7f3afe7f9e2c421",
+      "size_bytes": 4474718
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042553,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276431528957427,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libserde_json-1f53e1b7a8e26068.rmeta",
+      "sha256": "cf505a53001d0a70f8de25837efc7c0c823bd0112c0723570a47ea03dd46a87a",
+      "size_bytes": 1427128
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943353,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237638027599670,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libserde_json-66bf25877df9af69.rlib",
+      "sha256": "ff02ee7567589f8060e37978f32b8f20be97290610df634735f4246d5387b21a",
+      "size_bytes": 2474926
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943330,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237637767600281,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libserde_json-66bf25877df9af69.rmeta",
+      "sha256": "274a1e1752e8124124cee212d186d9e156bcb3e6048829957cd4c29b673b916c",
+      "size_bytes": 1427128
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943546,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237704935443710,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libserde_json-88a494999bece10b.rmeta",
+      "sha256": "837561a40358122dc4b0fe730bb34f2c75c5d6036a435a08749d5be30b6321d1",
+      "size_bytes": 945525
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042862,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276516580580111,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libserde_json-dfa7fbe1582cd7ab.rmeta",
+      "sha256": "920a4ac629a533c7dbcc6fa71624d9f7569c56b412b36e9927be5e534566dd6f",
+      "size_bytes": 945525
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041410,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276262013695760,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libserde_spanned-2c5f6123271da335.rlib",
+      "sha256": "17047e15d2e39190db354e52416c1a1c9a0484f537827b9c21c2c97289511466",
+      "size_bytes": 24364
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041406,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276262013695760,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libserde_spanned-2c5f6123271da335.rmeta",
+      "sha256": "5088c4edaed40468745ff59cbc36b240c75307d66ff81d22bfdeb701acc0503d",
+      "size_bytes": 18714
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942840,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237600703687498,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libserde_spanned-b615ba7acf09bf68.rlib",
+      "sha256": "c5b0580f5c0898bf384351596529b689cbb6e3f6b1669bc445f37d3565697b20",
+      "size_bytes": 24350
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942828,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237600687687536,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libserde_spanned-b615ba7acf09bf68.rmeta",
+      "sha256": "3cef27f688829e3185609d6ad8781ef489677b6b579576ec3723598a8ac55605",
+      "size_bytes": 18714
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041422,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276262181695039,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libshlex-7b06ff0077903996.rlib",
+      "sha256": "2e04deb92fb577c4d3a53c32363b3926a1bf68f6b8b318e10ac7d70b81bd978c",
+      "size_bytes": 134404
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041418,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276262161695125,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libshlex-7b06ff0077903996.rmeta",
+      "sha256": "4c942244eb87c687a811439a623b5f1a658b0d625c98b9a788640e0e6a31e673",
+      "size_bytes": 48639
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042180,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276274757641006,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libshlex-8266d0c2d1082cbe.rlib",
+      "sha256": "a19e79dad4660234558709aed9886edfa8e6bf6bcf7f4e984bc3bc8d829554bc",
+      "size_bytes": 142736
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042176,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276274741641075,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libshlex-8266d0c2d1082cbe.rmeta",
+      "sha256": "174626dbf85244ef22fd3f7500dbb2da7cbf3bd47c92f03391793f63bf358620",
+      "size_bytes": 53167
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942849,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237600367688292,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libshlex-83c0049dbcc3a20a.rlib",
+      "sha256": "aa8e5f90e97c3d629189f39c791a69dc6d23b04261de805b9040fdb2cf82b083",
+      "size_bytes": 134404
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942843,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237600339688358,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libshlex-83c0049dbcc3a20a.rmeta",
+      "sha256": "98fe6e534fcb6efa25b5e43dfbdec1535f39d26cc3c4fd05cb62cce276eb9ca4",
+      "size_bytes": 48639
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943009,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237608779668443,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libshlex-d8acfe4d38ff2f31.rlib",
+      "sha256": "b4ef7aa32f1fe24818ab117f699dbc44d49d8721695a0dd2e7a1159c2a0077f2",
+      "size_bytes": 142736
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943003,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237608747668517,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libshlex-d8acfe4d38ff2f31.rmeta",
+      "sha256": "788ebec248bbdef9e4921a1b02df5d3af477d5293f9b6ddb14d5720e5578720f",
+      "size_bytes": 53167
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943355,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237638215599230,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libsignal_hook-3fa9ec35eb1ae6e3.rlib",
+      "sha256": "59e4f6267aea420813dfb93475dc5a3d8fe89d13828fd7fcdcde63b8cc0bd538",
+      "size_bytes": 473412
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943349,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237638151599380,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libsignal_hook-3fa9ec35eb1ae6e3.rmeta",
+      "sha256": "33c4161e83ca9df29f30efebe4974339fd6681a82a52a16938f1584ac5486a18",
+      "size_bytes": 239520
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042585,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276433048950719,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libsignal_hook-555496694c8dbc34.rlib",
+      "sha256": "0dee2bc69e3f87f3d7ba30caa11ae0bb5bd26652f3b8d9368aa7708b8a3d6e6e",
+      "size_bytes": 917356
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042581,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276433004950913,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libsignal_hook-555496694c8dbc34.rmeta",
+      "sha256": "2f624e2a0da76fd6aa25bf547b9511c28573ae0a249d8ea602255a3504ecf293",
+      "size_bytes": 239520
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042887,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276517668575259,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libsignal_hook-a43c956c3ec789d3.rmeta",
+      "sha256": "95debc489e12c12f08b928be790f76f1d2991227fa7be94f190aee4a6b5a41a1",
+      "size_bytes": 199247
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943566,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237706839439298,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libsignal_hook-cef258733d657edf.rmeta",
+      "sha256": "09bc6fbaaf5ae6544e4b69a3e126f59d8f93e2931afcc084456408b9b090b293",
+      "size_bytes": 199247
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042480,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276429488966426,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libsignal_hook_registry-39592bb56b2ce8b4.rlib",
+      "sha256": "7f235b1483f761f03cdcf9a4ed8641bb617ebd725a865d2e69ecd0b2d9fde585",
+      "size_bytes": 781106
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042476,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276429444966620,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libsignal_hook_registry-39592bb56b2ce8b4.rmeta",
+      "sha256": "ce2e6bb43af78b900462265fac7c371a61544f874ae3d8a85338057f75c4f983",
+      "size_bytes": 77751
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943291,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237634919606959,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libsignal_hook_registry-98a71d4d76e3d58a.rlib",
+      "sha256": "be0599ebe117f2f3e7a7835a4f864792ca915efcaab2f30306e4035f3960ff4a",
+      "size_bytes": 303458
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943284,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237634855607110,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libsignal_hook_registry-98a71d4d76e3d58a.rmeta",
+      "sha256": "f06d8266fe2ecc0aca5e801d438e9b894dc03d89c4bb9c303b320a63a36df448",
+      "size_bytes": 77751
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943498,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237702659448986,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libsignal_hook_registry-bf6f679daff84234.rmeta",
+      "sha256": "a15b28b7cd43735bc13180bcf6d276837fbec7dd7a5b90fc8f26515f26169445",
+      "size_bytes": 64914
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042807,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276515952582911,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libsignal_hook_registry-ca61398a9ca98351.rmeta",
+      "sha256": "dfc536ff349155b3df0e748d48fa293642c79f54e6b8f8771feb4031076dbbdf",
+      "size_bytes": 64914
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942839,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237600215688650,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libsmallvec-3bdb347b3e8cd744.rlib",
+      "sha256": "549cefb26eca8ba55a8b7144f9e79e218f2333a41485678edf7de5bcd3c4ce5d",
+      "size_bytes": 262570
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942833,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237600195688699,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libsmallvec-3bdb347b3e8cd744.rmeta",
+      "sha256": "4997a5f860db3ca660db1deb0a59f9e2ca7a76e1c0d78f970dd5597a502477cf",
+      "size_bytes": 247205
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041416,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276262105695365,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libsmallvec-d78dddddb3bcc403.rlib",
+      "sha256": "90784985bcba56bbe39bc2a331d5214e81164880f36c2ce4cec8c3489ce0ea83",
+      "size_bytes": 262570
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041412,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276262105695365,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libsmallvec-d78dddddb3bcc403.rmeta",
+      "sha256": "66912982d43ba597854d271237841ccf02fc21de9274cc64ac663c9f230855ea",
+      "size_bytes": 247205
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042877,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276517036578078,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libstatig-120080683553597e.rmeta",
+      "sha256": "79621088a19ea2e2619ebc67660efd4c1fd3596bcf55e7f8cb220615e2b06302",
+      "size_bytes": 118839
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943560,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237706655439724,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libstatig-6c39980d4555dd67.rmeta",
+      "sha256": "024aecb4b8af44554535fdaa8c4b71e6057155dbca92d5a7ac8d6cfd9c298434",
+      "size_bytes": 118839
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943313,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237636891602334,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libstatig-6d7d6631056d5dcc.rlib",
+      "sha256": "21c714cc4a3cae8db93ebfe96d1893b6c1ed67930221b1ae29fd642a745b0deb",
+      "size_bytes": 164530
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943303,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237636879602363,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libstatig-6d7d6631056d5dcc.rmeta",
+      "sha256": "c3f03a3bdbe19c20d5517e4f5655c68061315a71243aa7ec816fbd244c977db7",
+      "size_bytes": 162313
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042573,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276431900955785,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libstatig-e9aabe3ca59c41f5.rlib",
+      "sha256": "585d7af2701acd55c37a19a7cd9ecc3963776295f58bfa23210187c45867c7d1",
+      "size_bytes": 164530
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042569,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276431896955802,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libstatig-e9aabe3ca59c41f5.rmeta",
+      "sha256": "d9383b65a11340ed1b6562903e96397b8e1190ebdb4dc2790bf0ef598937bb1a",
+      "size_bytes": 162313
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042421,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276426192980962,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libsyn-07cacae0c4ab1d02.rlib",
+      "sha256": "f6cc875bf54cf15fb2caf79a1a16b6d886591ddb3f9472a634534614b3d26989",
+      "size_bytes": 6410692
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042417,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276425820982602,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libsyn-07cacae0c4ab1d02.rmeta",
+      "sha256": "10ae3cb40045fbc1a46775c143287b376de2c9f33d628c5c7d08bd4db0402a89",
+      "size_bytes": 2223844
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943220,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237631215615653,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libsyn-36fe69daff2a6174.rlib",
+      "sha256": "d8361b26061e769ac38ed5bde1d8fef25bb04563c9c604a406abc4da9d31f405",
+      "size_bytes": 6410258
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943200,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237630331617729,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libsyn-36fe69daff2a6174.rmeta",
+      "sha256": "83189dfaf0654212805f19998db83457d9d89098619df9f735ddb302e1d14541",
+      "size_bytes": 2223844
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942813,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237598843691892,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libsyn-79c70a3047a18a06.rmeta",
+      "sha256": "26011bced92e8dc92ae4da78f0093e4abbaf015f7bc058b7f98a469b6fe8e138",
+      "size_bytes": 4609772
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041334,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276258901709112,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libsyn-89321e558e414f64.rmeta",
+      "sha256": "2a7cefc39bcb823ab687601f5663fec79480d1f2b3b27e61e86a772d45c1e271",
+      "size_bytes": 4609772
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942981,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237606643673479,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libsystem_deps-78a0cd4d07398b19.rlib",
+      "sha256": "2cbc96d7a9b3345c3646bf68dc3ba464b4ec6f9f68eae7b337c9da4c56eea90c",
+      "size_bytes": 2024950
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942962,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237606251674404,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libsystem_deps-78a0cd4d07398b19.rmeta",
+      "sha256": "6b284db07869c9e7b9b30eb334e6921a35a07e889cb736b28d3c038f87c021aa",
+      "size_bytes": 215502
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042137,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276270817657946,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libsystem_deps-aea9577ed5f9dbca.rlib",
+      "sha256": "846eefb020afcf01bfebe2bc917792df6482cab2e6b3fb5198ded4012eeb6bdf",
+      "size_bytes": 2026296
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042131,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276270493659340,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libsystem_deps-aea9577ed5f9dbca.rmeta",
+      "sha256": "e59449aff01f6c19706ab1ed12d4e27a6e9774b07b62bb4e32dd46e97ba8fbda",
+      "size_bytes": 215502
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942806,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237597867694197,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libtarget_lexicon-671e8143c5ed23d1.rlib",
+      "sha256": "70c9039a7c4c873f2b371f69314c73c320ff7e92bf33e95b78ab828781fc7af8",
+      "size_bytes": 602842
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942799,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237597791694377,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libtarget_lexicon-671e8143c5ed23d1.rmeta",
+      "sha256": "35ef35b78d5a1d3e76a38333e178515ae546ab7dcac956629da23a19727e926f",
+      "size_bytes": 319291
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041374,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276260689701440,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libtarget_lexicon-cd7a8904f53773a9.rlib",
+      "sha256": "2f1bed573e9eb67b96e59a3b43a185bbda7beda1c3592b8d440422a262ca17c6",
+      "size_bytes": 602842
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041370,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276260653701593,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libtarget_lexicon-cd7a8904f53773a9.rmeta",
+      "sha256": "ed9fa64b28de20586c2d4197b505258cc68f26b84256920b58e17c3e499aaeb3",
+      "size_bytes": 319291
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042551,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276431144959121,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libtempfile-08b830eaebb1ac77.rlib",
+      "sha256": "4b4fa413a8302d786575a609994d8baf6278bfdaf4904e0a522bd655d4fd159e",
+      "size_bytes": 1496830
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042547,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276431048959544,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libtempfile-08b830eaebb1ac77.rmeta",
+      "sha256": "335674bb21d6c713958ca7c5a6f982be4a0dec09e8c5746989e03bbaa3f9d4de",
+      "size_bytes": 240653
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943596,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237708479435498,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libtempfile-9ac53be59e12d4b3.rmeta",
+      "sha256": "dd431526a4dc8ebf315eadeee6f45dd8a6a24d6e0c6eacc9b64d689122bb992a",
+      "size_bytes": 188453
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943385,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237639123597101,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libtempfile-da96cc44214639be.rlib",
+      "sha256": "b9b592370529ba38afda019a9c269c427eaa981752b40076bcf36ae1d6fdebd8",
+      "size_bytes": 748424
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943379,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237638999597391,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libtempfile-da96cc44214639be.rmeta",
+      "sha256": "f2825baa2d8f30d304e5215ae3cd6b3bac80080e9a50ced9086055531762350c",
+      "size_bytes": 240653
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042907,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276518092573368,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libtempfile-f17cf9e7236f772c.rmeta",
+      "sha256": "144ea710df7c36b18a76799fb9bb209c47e23d00372f5bd0062f42195244ec83",
+      "size_bytes": 188453
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041441,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276263689688566,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libtoml-10309c44cc1c6b3e.rlib",
+      "sha256": "1a1d245b120e67370d8c57fbce5fecbd380ed77cf8338b72d5ab0c9c9b436fdf",
+      "size_bytes": 1151386
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041437,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276263501689375,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libtoml-10309c44cc1c6b3e.rmeta",
+      "sha256": "4232bd24d3a65bfb7ca49232efac7e0733d3142a27d595934aed5a793df46606",
+      "size_bytes": 260005
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942894,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237603047681964,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libtoml-ebad4db334eec2c9.rlib",
+      "sha256": "91892455c40365ada810cd1791e6a4a7441f993c9928c6f83cbb1a59a1306814",
+      "size_bytes": 1146304
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942878,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237602835682464,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libtoml-ebad4db334eec2c9.rmeta",
+      "sha256": "ad892d6f408e2ec58582bdc03524241f20e98f255ac5eeefe8be6a50d50e9886",
+      "size_bytes": 260005
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942863,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237600599687744,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libtoml_datetime-990b9846322c3701.rlib",
+      "sha256": "15de9adac6eb2546da7d8c4b73418a3b9cfa596a8cd150a47a8d12f311ed7097",
+      "size_bytes": 255206
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942853,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237600539687885,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libtoml_datetime-990b9846322c3701.rmeta",
+      "sha256": "f1ca108caba9a5462da95bb123c505ba0379917133c41468b3c722846265c64e",
+      "size_bytes": 66610
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041398,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276261881696328,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libtoml_datetime-d33184e9cdd8175d.rlib",
+      "sha256": "9afff0e4639e25fcda71fa9d31fb9c18cdfb26320849d25cd69a1ebdb7888731",
+      "size_bytes": 255206
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041394,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276261861696412,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libtoml_datetime-d33184e9cdd8175d.rmeta",
+      "sha256": "72f85f94e3c3b9a1434a366143d00232e98208b72bd41e27026c71b30b4c15a7",
+      "size_bytes": 66610
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041362,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276260529702125,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libtoml_parser-a6fcbcf6fe9ea275.rlib",
+      "sha256": "761cc25103c1c6b63c8252135139252414cb88f163330d440027a7064898d008",
+      "size_bytes": 1128416
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041358,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276260425702571,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libtoml_parser-a6fcbcf6fe9ea275.rmeta",
+      "sha256": "9e2fbfc9e710c8dfe102255b81b459e61f1202bf27be7af45d60f814526e8171",
+      "size_bytes": 306741
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942802,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237597539694972,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libtoml_parser-cb74bb7de8958562.rlib",
+      "sha256": "f1aa97e8a38e1b9a086f474341064c930083a2d4d191e9458015c81253c28f10",
+      "size_bytes": 1129486
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942793,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237597307695521,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libtoml_parser-cb74bb7de8958562.rmeta",
+      "sha256": "0a319d6ab558be9eb0ec4b89da6b84b1b26bad69259f7094bf2e6f042b5052f0",
+      "size_bytes": 306741
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2933892,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237593683704088,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libunicode_ident-2e98e8e63d63278b.rlib",
+      "sha256": "5f80820051d58fc9353b5459d69ac864bc270a43fa547dfce878ab92b933f3bc",
+      "size_bytes": 54934
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2933887,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237593663704136,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libunicode_ident-2e98e8e63d63278b.rmeta",
+      "sha256": "aaa5274ee8ad76ca555d5229b01d724d6f7339f3ad5b265971481ad332aa4b64",
+      "size_bytes": 32917
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041271,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276255785722474,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libunicode_ident-8443eb632a3fbe4c.rlib",
+      "sha256": "5eb03c5d1a28d87a8a10d18ae2d3d2d1e79aa85750af15dfdfdbf941b43e7cd1",
+      "size_bytes": 54934
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041267,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276255781722492,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libunicode_ident-8443eb632a3fbe4c.rmeta",
+      "sha256": "a197da1f437ac8f790c2309bce809a10f4c1044d418f7c43a22b94a537d4f886",
+      "size_bytes": 32917
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041495,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276269921661799,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libunicode_width-4785d62c56d63461.rlib",
+      "sha256": "d2945a651e82e8202af5286afaa028ab44ee93d0035e25ead283a9203878bc54",
+      "size_bytes": 896834
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041491,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276269909661850,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libunicode_width-4785d62c56d63461.rmeta",
+      "sha256": "c7489be326cee59a2a7e6c333f322ee0d2c4e91fb3e0685d7eeb70c5fa06674c",
+      "size_bytes": 856365
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942921,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237604979677406,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libunicode_width-fbefb46597d86357.rlib",
+      "sha256": "35c9b9be7611de95516bc90a3f6a60fd8a6e6b740a9937ec9915e48c0a12fc9f",
+      "size_bytes": 896834
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942915,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237604963677444,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libunicode_width-fbefb46597d86357.rmeta",
+      "sha256": "819ed9396351db227bf21a2c8a770ac978f541bf7221c4008ae2e3a5582a18c9",
+      "size_bytes": 856365
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942943,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237605371676481,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libversion_compare-b7938fecbc157db2.rlib",
+      "sha256": "adff95dd6a9191929a67f251b27c2d109146018ba175eb8dd31ee9b1688abd2b",
+      "size_bytes": 261642
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2942936,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237605315676612,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libversion_compare-b7938fecbc157db2.rmeta",
+      "sha256": "69389b05a6b87f5bb79ab927c3114a099348387601482214503aae0f9f598057",
+      "size_bytes": 77915
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041471,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276269197664912,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libversion_compare-deed5a9007549ce4.rlib",
+      "sha256": "5360eb23c568d6f8e0fb1d2abd8b47fa57f765bee1f663fe4a2ccad48531eb3e",
+      "size_bytes": 261634
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041467,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276269145665136,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libversion_compare-deed5a9007549ce4.rmeta",
+      "sha256": "b4a7c13c6f5391dc003f8a1ff0b1e1806d7a7961aacd0a519a92076934cc9775",
+      "size_bytes": 77915
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041356,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276260221703448,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libwinnow-a41b2136c6d6d21e.rlib",
+      "sha256": "1d4a8a625f630508f2b3546468ae55f693454540689d190720873989b1ae013e",
+      "size_bytes": 713352
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3041352,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276260209703500,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libwinnow-a41b2136c6d6d21e.rmeta",
+      "sha256": "984cd09712b45caa80b21328a68eb785f504712171ca4e870358c738d344c7a7",
+      "size_bytes": 653068
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2933985,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237596519697383,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libwinnow-c4b2ef09eb435428.rlib",
+      "sha256": "4d55692904f29157c25e94d37f992491b553db22a5c4e6877e20d50879228c4d",
+      "size_bytes": 713352
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2933979,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237596495697439,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libwinnow-c4b2ef09eb435428.rmeta",
+      "sha256": "ff67e1878eb95b5241b8a3fff4bc6cdf14511c59f0e372ba07a047c3c41af115",
+      "size_bytes": 653068
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042817,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276516248581591,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libzmij-09764c09118bc5c9.rmeta",
+      "sha256": "a7a00e1f9f4704eefbd33e98a185ebc69304713d18ccd3953ebe0be38af46cf7",
+      "size_bytes": 408587
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943311,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237636243603854,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libzmij-b615d446b7c26b29.rlib",
+      "sha256": "68e65fb94989670c70dd8822b78a129ddadcaf72a81461dafdf4890251d52b4e",
+      "size_bytes": 544674
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943302,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237636199603957,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libzmij-b615d446b7c26b29.rmeta",
+      "sha256": "a6519e12bf05e19c0bacb515c2550e9409e5436797b67660359275cf80e31175",
+      "size_bytes": 417834
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2943510,
+      "mode_octal": "0664",
+      "mtime_ns": 1791237703835446259,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libzmij-f0bcdb8095dcf362.rmeta",
+      "sha256": "7a7388ceb689108ff069d9567c78d43dd5761ec9b9523f94e3c2e5e393fd4b0d",
+      "size_bytes": 408587
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042502,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276430620961433,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libzmij-fe95c7ae1d0a6e3a.rlib",
+      "sha256": "0b79ba538cb64697f076f00757ffdfd384b8709c7052a0e01a37bf7eddc6401e",
+      "size_bytes": 666882
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3042498,
+      "mode_octal": "0664",
+      "mtime_ns": 1791276430596961539,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/deps/libzmij-fe95c7ae1d0a6e3a.rmeta",
+      "sha256": "64a605cfe6f65456246626cde57c709650bbfab5ef867be195155e6e921269ef",
+      "size_bytes": 417834
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2947572,
+      "mode_octal": "0664",
+      "mtime_ns": 1791248002645891374,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/examples/libnative_control_envelope_proof-181bb97dfd7d6e62.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3053021,
+      "mode_octal": "0664",
+      "mtime_ns": 1791284969368877864,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/examples/libnative_control_envelope_proof-2a2c1873a1aac0a2.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3043139,
+      "mode_octal": "0664",
+      "mtime_ns": 1791284973104863349,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/examples/libnative_filter_proof-d53f114aaf1953aa.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2947557,
+      "mode_octal": "0664",
+      "mtime_ns": 1791248048213807515,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/examples/libnative_filter_proof-e5d13517d6602602.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2947576,
+      "mode_octal": "0664",
+      "mtime_ns": 1791248002793891100,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/examples/libnative_sync_deadline_proof-d396dd06989b172f.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 3045472,
+      "mode_octal": "0664",
+      "mtime_ns": 1791284969764876325,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/examples/libnative_sync_deadline_proof-ee2b4c4aa71ba585.rmeta",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "device_id": 66307,
+      "file_type": "regular static build output",
+      "inode": 2887664,
+      "mode_octal": "0664",
+      "mtime_ns": 1791240266288846321,
+      "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/libpipewireao_rtc.rlib",
+      "sha256": "c65abdaf0f15c2f63884f30ebe9f32cf1b06631083879cd5163459e465d99856",
+      "size_bytes": 12803734
+    }
+  ],
+  "filesystem_snapshot": {
+    "root": {
+      "available_bytes": 66121728,
+      "device_id": 66307,
+      "path": "/"
+    },
+    "tmp": {
+      "available_bytes": 2011504640,
+      "device_id": 36,
+      "path": "/tmp"
+    }
+  },
+  "format_version": 1,
+  "lsof_diagnostic": {
+    "returncode": 1,
+    "stderr": "",
+    "stdout": ""
+  },
+  "process_check_diagnostics": {
+    "lsof_returncode": 1,
+    "lsof_stderr_empty": true,
+    "lsof_stdout_empty": true,
+    "proc_scan_denied_entry_count": 347
+  },
+  "process_visibility_note": "The /proc scan found no file-descriptor or mapping references into source_pool_root and no cargo/rustc processes, but 347 process fd/maps accesses were denied. lsof +D over the exact pool returned code 1 with empty stdout/stderr (no reported open files). Candidate list is an inventory for root review, not proof every cross-UID process was inspectable.",
+  "protected_paths": [
+    {
+      "device_id": 66307,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-gui-native-rtc/target",
+      "role": "current GUI Cargo target: retain executable and all dependencies for the upcoming fresh GUI test binary",
+      "size_bytes": 1661082290,
+      "symlink": false,
+      "type": "directory"
+    },
+    {
+      "device_id": 66307,
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-gui-native-rtc/target/debug/deps/pipewireao_gui-58b27f436766f125",
+      "role": "currently available GUI ignored native offscreen fixture binary; retain",
+      "sha256": "8a14cf1c83f31bf6e20e6f0a57a788d788104185c7713367622d37b513464814",
+      "size_bytes": 56554584,
+      "symlink": false,
+      "type": "regular file"
+    }
+  ],
+  "purpose": "root-review candidate inventory only; no files deleted",
+  "source_pool_device_id": 66307,
+  "source_pool_root": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target"
+}
