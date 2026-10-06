@@ -1,18 +1,18 @@
 //! Public deployment supervisor codec foundation. No lifecycle effects occur here.
 //! The profile is distinct from the internal runner; typed commands/results are reused.
 use crate::control::{Command, ControlError, ExecutionResult};
+use crate::native_control_codec::{self as envelope, ReplyHeader, RequestHeader};
+use crate::LifecycleState;
 use crate::{native_runner_codec as runner, native_runner_result as result};
 use pipewire::spa::pod::Value;
 use pipewire::spa::utils::Id;
-use pipewireao_rtc::native_control_codec::{self as envelope, ReplyHeader, RequestHeader};
-use pipewireao_rtc::LifecycleState;
 use std::collections::BTreeSet;
 
-pub(crate) const PROFILE: &str = "pipewireao.rtc.deployment-supervisor/1";
+pub const PROFILE: &str = "pipewireao.rtc.deployment-supervisor/1";
 const MAX_PROCESSES: usize = 32;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(u32)]
-pub(crate) enum Phase {
+pub enum Phase {
     Preparing = 1,
     Admitted = 2,
     Failed = 3,
@@ -21,7 +21,7 @@ pub(crate) enum Phase {
 }
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(u32)]
-pub(crate) enum ColdLifecycle {
+pub enum ColdLifecycle {
     Preparing = 1,
     Prepared = 2,
     Connected = 3,
@@ -30,13 +30,13 @@ pub(crate) enum ColdLifecycle {
 }
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(u32)]
-pub(crate) enum Instrument {
+pub enum Instrument {
     Classic = 1,
     Copper = 2,
 }
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(u32)]
-pub(crate) enum HeartLifecycle {
+pub enum HeartLifecycle {
     Preparing = 1,
     Ready = 2,
     Fault = 3,
@@ -44,12 +44,12 @@ pub(crate) enum HeartLifecycle {
 }
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(u32)]
-pub(crate) enum Ingress {
+pub enum Ingress {
     Streaming = 1,
     Deferred = 2,
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct Binding {
+pub struct Binding {
     pub name: String,
     pub profile: String,
     pub pid: u32,
@@ -58,24 +58,24 @@ pub(crate) struct Binding {
     pub instance: i64,
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct OwnedProcess {
+pub struct OwnedProcess {
     pub role: String,
     pub pid: u32,
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct RunnerRecord {
+pub struct RunnerRecord {
     pub lifecycle: LifecycleState,
     pub result: ExecutionResult,
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct RunnerObservation {
+pub struct RunnerObservation {
     pub binding: Binding,
     pub token: i64,
     pub session_id: String,
     pub status: RunnerRecord,
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct SimulatorSnapshot {
+pub struct SimulatorSnapshot {
     pub version: i32,
     pub instance: i64,
     pub kind: i32,
@@ -89,7 +89,7 @@ pub(crate) struct SimulatorSnapshot {
     pub report_sequence: i64,
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct Cursor {
+pub struct Cursor {
     pub domain: u64,
     pub generation: u64,
     pub sequence: u64,
@@ -97,7 +97,7 @@ pub(crate) struct Cursor {
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[allow(clippy::struct_excessive_bools)] // Mirrors the existing acquisition wire fields.
-pub(crate) struct AcquisitionSnapshot {
+pub struct AcquisitionSnapshot {
     pub instrument: Instrument,
     pub cursor: Option<Cursor>,
     pub report_cursor: Option<Cursor>,
@@ -109,7 +109,7 @@ pub(crate) struct AcquisitionSnapshot {
     pub window: Option<u64>,
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) enum SourceSnapshot {
+pub enum SourceSnapshot {
     Simulator(SimulatorSnapshot),
     Calibration {
         lifecycle: ColdLifecycle,
@@ -121,13 +121,13 @@ pub(crate) enum SourceSnapshot {
     },
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct SourceObservation {
+pub struct SourceObservation {
     pub binding: Binding,
     pub token: i64,
     pub snapshot: SourceSnapshot,
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct HeartSnapshot {
+pub struct HeartSnapshot {
     pub generation: i64,
     pub child_pid: Option<u32>,
     pub child_returncode: Option<i32>,
@@ -139,21 +139,21 @@ pub(crate) struct HeartSnapshot {
     pub report_sha256: String,
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct HeartObservation {
+pub struct HeartObservation {
     pub binding: Binding,
     pub token: i64,
     pub lifecycle: HeartLifecycle,
     pub snapshot: HeartSnapshot,
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct Snapshot {
+pub struct Snapshot {
     pub processes: Vec<OwnedProcess>,
     pub runner: Option<RunnerObservation>,
     pub source: Option<SourceObservation>,
     pub heart: Option<HeartObservation>,
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct Completion {
+pub struct Completion {
     pub header: ReplyHeader,
     pub lifecycle: Phase,
     pub admitted: bool,
@@ -162,7 +162,7 @@ pub(crate) struct Completion {
     pub error: Option<ControlError>,
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct Rejection {
+pub struct Rejection {
     pub header: ReplyHeader,
     pub lifecycle: Phase,
     pub admitted: bool,
@@ -328,13 +328,17 @@ fn decode_binding(value: &Value) -> Result<Binding, ControlError> {
     Ok(b)
 }
 fn record_value(header: &ReplyHeader, record: &RunnerRecord) -> Result<Value, ControlError> {
-    let bytes = result::encode_completion(header, record.lifecycle, &record.result)?;
+    let mut inner_header = *header;
+    inner_header.result = 0;
+    let bytes = result::encode_completion(&inner_header, record.lifecycle, &record.result)?;
     let decoded = envelope::decode_completion(&bytes).map_err(|e| bad(&e.to_string()))?;
     Ok(Value::Struct(decoded.payload))
 }
 fn decode_record(header: &ReplyHeader, value: &Value) -> Result<RunnerRecord, ControlError> {
     let f = fields(value, 3)?;
-    let bytes = envelope::encode_completion(header, f).map_err(|e| bad(&e.to_string()))?;
+    let mut inner_header = *header;
+    inner_header.result = 0;
+    let bytes = envelope::encode_completion(&inner_header, f).map_err(|e| bad(&e.to_string()))?;
     let completion = result::decode_completion(&bytes)?;
     Ok(RunnerRecord {
         lifecycle: completion.lifecycle,
@@ -740,17 +744,23 @@ fn decode_snapshot(header: &ReplyHeader, value: &Value) -> Result<Snapshot, Cont
         heart: optional(&f[3], decode_heart)?,
     })
 }
-pub(crate) fn encode_request(
-    header: &RequestHeader,
-    command: &Command,
-) -> Result<Vec<u8>, ControlError> {
+/// Checks or converts the closed public supervisor profile.
+/// # Errors
+/// Rejects invalid identity, admission, typed fields, grammar or wire capacity.
+pub fn encode_request(header: &RequestHeader, command: &Command) -> Result<Vec<u8>, ControlError> {
     runner::encode_request(header, command)
 }
-pub(crate) fn decode_request(bytes: &[u8]) -> Result<(RequestHeader, Command), ControlError> {
+/// Checks or converts the closed public supervisor profile.
+/// # Errors
+/// Rejects invalid identity, admission, typed fields, grammar or wire capacity.
+pub fn decode_request(bytes: &[u8]) -> Result<(RequestHeader, Command), ControlError> {
     runner::decode_request(bytes)
 }
 /// Preparing and retired endpoints admit only fresh Status without owner effects.
-pub(crate) fn validate_admission(phase: Phase, command: &Command) -> Result<(), ControlError> {
+/// Checks or converts the closed public supervisor profile.
+/// # Errors
+/// Rejects invalid identity, admission, typed fields, grammar or wire capacity.
+pub fn validate_admission(phase: Phase, command: &Command) -> Result<(), ControlError> {
     check(
         phase == Phase::Admitted || matches!(command, Command::Status),
         "supervisor has not coherently admitted this operation",
@@ -765,8 +775,8 @@ fn completion_payload(c: &Completion) -> Result<Vec<Value>, ControlError> {
     )?;
     if c.header.result < 0 {
         check(
-            c.snapshot.is_none() && c.result.is_none(),
-            "invalid failed supervisor completion",
+            c.result.is_none() || c.lifecycle == Phase::Admitted,
+            "partial inner result requires admitted phase",
         )?;
         let error = c
             .error
@@ -777,8 +787,16 @@ fn completion_payload(c: &Completion) -> Result<Vec<Value>, ControlError> {
         return Ok(vec![
             Value::Id(Id(c.lifecycle as u32)),
             Value::Bool(c.admitted),
-            Value::String(error.field.clone()),
-            Value::String(error.message.clone()),
+            c.snapshot.as_ref().map_or(Ok(Value::None), |snapshot| {
+                snapshot_value(&c.header, c.lifecycle, c.admitted, snapshot)
+            })?,
+            Value::Struct(vec![
+                Value::String(error.field.clone()),
+                Value::String(error.message.clone()),
+                c.result
+                    .as_ref()
+                    .map_or(Ok(Value::None), |record| record_value(&c.header, record))?,
+            ]),
         ]);
     }
     check(c.error.is_none(), "success cannot contain error")?;
@@ -836,7 +854,9 @@ fn record_size(header: &ReplyHeader, r: &RunnerRecord) -> Result<usize, ControlE
     let base = envelope::encode_completion(header, &[])
         .map_err(|e| bad(&e.to_string()))?
         .len();
-    Ok(result::completion_size(header, r.lifecycle, &r.result)? - base + 8)
+    let mut inner_header = *header;
+    inner_header.result = 0;
+    Ok(result::completion_size(&inner_header, r.lifecycle, &r.result)? - base + 8)
 }
 fn runner_size(header: &ReplyHeader, r: &RunnerObservation) -> Result<usize, ControlError> {
     binding(&r.binding, Some(runner::PROFILE))?;
@@ -887,9 +907,21 @@ fn snapshot_size(header: &ReplyHeader, s: &Snapshot) -> Result<usize, ControlErr
             .map_or(Ok(8), |o| value_size(&heart_value(o)?))?,
     ])
 }
-fn validate_admitted_snapshot(snapshot: &Snapshot) -> Result<(), ControlError> {
+fn validate_snapshot_shape(phase: Phase, snapshot: &Snapshot) -> Result<(), ControlError> {
     check(
-        snapshot.runner.is_some(),
+        snapshot.processes.len() <= MAX_PROCESSES,
+        "too many owned processes",
+    )?;
+    check(
+        phase != Phase::Preparing
+            || (snapshot.processes.is_empty()
+                && snapshot.runner.is_none()
+                && snapshot.source.is_none()
+                && snapshot.heart.is_none()),
+        "Preparing cannot report admitted owners",
+    )?;
+    check(
+        phase != Phase::Admitted || snapshot.runner.is_some(),
         "Admitted requires fresh runner Status",
     )?;
     let mut roles = BTreeSet::new();
@@ -914,7 +946,10 @@ fn validate_admitted_snapshot(snapshot: &Snapshot) -> Result<(), ControlError> {
 }
 /// Reserve the combined mutation result before effects. An explicit future
 /// snapshot bound must cover any layout/string growth introduced by the effect.
-pub(crate) fn preflight_mutation_reply(
+/// Checks or converts the closed public supervisor profile.
+/// # Errors
+/// Rejects invalid identity, admission, typed fields, grammar or wire capacity.
+pub fn preflight_mutation_reply(
     command: &Command,
     snapshot: &Snapshot,
     snapshot_bound: Option<usize>,
@@ -953,7 +988,7 @@ pub(crate) fn preflight_mutation_reply(
         budget_ns: 1,
     };
     runner::preflight(&request_header, command)?;
-    validate_admitted_snapshot(snapshot)?;
+    validate_snapshot_shape(Phase::Admitted, snapshot)?;
     let present = snapshot_size(&header, snapshot)?;
     let bound = snapshot_bound.unwrap_or(present);
     check(
@@ -999,26 +1034,47 @@ pub(crate) fn preflight_mutation_reply(
     };
     let record = struct_size(&[16, 16, size_add(8, details)?])?;
     let success = struct_size(&[16, 16, bound, record])?;
-    let failure = struct_size(&[16, 16, ((8192 + 16) & !7), ((8192 + 16) & !7)])?;
+    let failure = struct_size(&[
+        16,
+        16,
+        bound,
+        struct_size(&[((8192 + 16) & !7), ((8192 + 16) & !7), record])?,
+    ])?;
     let base = envelope::encode_completion(&header, &[])
         .map_err(|e| bad(&e.to_string()))?
         .len();
     Ok(size_add(base, success - 8)?.max(size_add(base, failure - 8)?))
 }
 /// Exact capacity preflight before cloning variable runner catalogs or encoding.
-pub(crate) fn completion_size(c: &Completion) -> Result<usize, ControlError> {
+/// Checks or converts the closed public supervisor profile.
+/// # Errors
+/// Rejects invalid identity, admission, typed fields, grammar or wire capacity.
+pub fn completion_size(c: &Completion) -> Result<usize, ControlError> {
     phase_check(c.lifecycle, c.admitted)?;
     runner::Operation::try_from(c.header.operation)?;
     let payload = if c.header.result < 0 {
+        check(
+            c.result.is_none() || c.lifecycle == Phase::Admitted,
+            "partial inner result requires admitted phase",
+        )?;
         let e = c
             .error
             .as_ref()
-            .ok_or_else(|| bad("failure requires error"))?;
+            .ok_or_else(|| bad("failure requires typed error"))?;
         struct_size(&[
             16,
             16,
-            string_size(&e.field, true, 8192)?,
-            string_size(&e.message, true, 8192)?,
+            c.snapshot.as_ref().map_or(Ok(8), |snapshot| {
+                validate_snapshot_shape(c.lifecycle, snapshot)?;
+                snapshot_size(&c.header, snapshot)
+            })?,
+            struct_size(&[
+                string_size(&e.field, true, 8192)?,
+                string_size(&e.message, true, 8192)?,
+                c.result
+                    .as_ref()
+                    .map_or(Ok(8), |record| record_size(&c.header, record))?,
+            ])?,
         ])?
     } else {
         let s = c
@@ -1039,26 +1095,33 @@ pub(crate) fn completion_size(c: &Completion) -> Result<usize, ControlError> {
         .len();
     size_add(base, payload - 8)
 }
-pub(crate) fn encode_completion(c: &Completion) -> Result<Vec<u8>, ControlError> {
+/// Checks or converts the closed public supervisor profile.
+/// # Errors
+/// Rejects invalid identity, admission, typed fields, grammar or wire capacity.
+pub fn encode_completion(c: &Completion) -> Result<Vec<u8>, ControlError> {
     completion_size(c)?;
     envelope::encode_completion(&c.header, &completion_payload(c)?).map_err(|e| bad(&e.to_string()))
 }
-pub(crate) fn decode_completion(bytes: &[u8]) -> Result<Completion, ControlError> {
+/// Checks or converts the closed public supervisor profile.
+/// # Errors
+/// Rejects invalid identity, admission, typed fields, grammar or wire capacity.
+pub fn decode_completion(bytes: &[u8]) -> Result<Completion, ControlError> {
     let r = envelope::decode_completion(bytes).map_err(|e| bad(&e.to_string()))?;
     let f = fields(&Value::Struct(r.payload.clone()), 4)?.to_vec();
     let lifecycle = phase(&f[0])?;
     let admitted = boolean(&f[1])?;
     phase_check(lifecycle, admitted)?;
     let c = if r.header.result < 0 {
+        let failure = fields(&f[3], 3)?;
         Completion {
             header: r.header,
             lifecycle,
             admitted,
-            snapshot: None,
-            result: None,
+            snapshot: optional(&f[2], |value| decode_snapshot(&r.header, value))?,
+            result: optional(&failure[2], |value| decode_record(&r.header, value))?,
             error: Some(ControlError::new(
-                text(&f[2], true, 8192)?,
-                text(&f[3], true, 8192)?,
+                text(&failure[0], true, 8192)?,
+                text(&failure[1], true, 8192)?,
             )),
         }
     } else {
@@ -1074,7 +1137,10 @@ pub(crate) fn decode_completion(bytes: &[u8]) -> Result<Completion, ControlError
     completion_payload(&c)?;
     Ok(c)
 }
-pub(crate) fn encode_rejection(r: &Rejection) -> Result<Vec<u8>, ControlError> {
+/// Checks or converts the closed public supervisor profile.
+/// # Errors
+/// Rejects invalid identity, admission, typed fields, grammar or wire capacity.
+pub fn encode_rejection(r: &Rejection) -> Result<Vec<u8>, ControlError> {
     phase_check(r.lifecycle, r.admitted)?;
     string(&r.error.field, true, 8192)?;
     string(&r.error.message, true, 8192)?;
@@ -1089,7 +1155,10 @@ pub(crate) fn encode_rejection(r: &Rejection) -> Result<Vec<u8>, ControlError> {
     )
     .map_err(|e| bad(&e.to_string()))
 }
-pub(crate) fn decode_rejection(bytes: &[u8]) -> Result<Rejection, ControlError> {
+/// Checks or converts the closed public supervisor profile.
+/// # Errors
+/// Rejects invalid identity, admission, typed fields, grammar or wire capacity.
+pub fn decode_rejection(bytes: &[u8]) -> Result<Rejection, ControlError> {
     let r = envelope::decode_rejection(bytes).map_err(|e| bad(&e.to_string()))?;
     let f = fields(&Value::Struct(r.payload.clone()), 4)?.to_vec();
     let reject = Rejection {
@@ -1136,7 +1205,7 @@ mod tests {
             }
             checked += 1;
         }
-        assert_eq!(checked, 44);
+        assert_eq!(checked, 48);
     }
     #[test]
     fn all_mutation_variants_reserve_exact_capacity_before_effects() {
@@ -1160,7 +1229,7 @@ mod tests {
                 assert!(preflight_mutation_reply(&command, &snapshot, None).is_err());
             } else {
                 assert!(preflight_mutation_reply(&command, &snapshot, None).unwrap() <= 65536);
-                let bound = 65536 - 1024;
+                let bound = 65536 - 24576;
                 let reserved = preflight_mutation_reply(&command, &snapshot, Some(bound)).unwrap();
                 let maximum = 65536 - (reserved - bound);
                 assert_eq!(

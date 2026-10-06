@@ -132,10 +132,25 @@ and digest. A saved report path is an artifact locator, not a live health source
 
 ## Failures and capacity
 
-A failed accepted operation and an independent admission rejection have exact
-payload `Struct(Id phase, Bool admitted, String field, String message)`.
-Each diagnostic string has at most 8192 UTF-8 bytes and no embedded NUL. A
-negative completion has no success snapshot/result. The common zero sentinel
+An independent admission Rejection has exact payload
+`Struct(Id phase, Bool admitted, String field, String message)` and carries no
+applied inner result. A negative accepted Completion instead has exactly:
+
+```text
+Struct(Id phase, Bool admitted, snapshot or None,
+       Struct(String field, String message, runner_result or None))
+```
+
+Each diagnostic string has at most 8192 UTF-8 bytes and no embedded NUL. An
+optional RunnerRecord preserves an actual matched successful inner operation
+under phase Admitted and the same outer operation ID; it does not claim overall
+supervisor success. Snapshot remains None unless fresh Status verified it.
+For example, an explicit source Resume rejection after completed runner Start
+preserves Running/Completed and the source error; a subsequent fresh Status
+reports the actual paused source. Local render exposes that known inner result
+with `ok=false`. No rollback or retry is invented. This pre-release refinement
+changes only the prototype negative Completion grammar; successful completions
+and Rejection are unchanged. There is no old negative grammar fallback. The common zero sentinel
 remains an uncorrelated rejection diagnostic and cannot become a fresh operation
 completion. Oversized diagnostics require a short truthful capacity error;
 stack traces remain stderr/saved diagnostics, not a wire schema.
@@ -148,7 +163,8 @@ capacity failure rejects rather than truncating a catalog.
 Before **any mutation effect**, integration must call
 `preflight_mutation_reply(command, snapshot; snapshot_bound=...)`. The helper
 reserves the common header, complete supervisor snapshot, worst closed runner
-mutation result, and bounded failure alternative. It uses actual requested
+mutation result, and bounded failure alternative including its nested Struct,
+optional actual snapshot and worst matched inner result. It uses actual requested
 names and distinct `node:property` prefixes for up to 42 property generation
 rows, and the optional generation pair for parameter results. Parameter shape,
 schema and artifact path are preparation metadata and are not fabricated result
@@ -164,12 +180,14 @@ Preparing Status and mutation rejection continue until coherent runner/source
 admission. The same accepted `Ticket.deadline` must reach every nested runner,
 source, acquisition, HEART and synchronization operation. Existing fresh
 8/16/30-second nested budgets in `deploy.jl` require replacement in that
-integration; this foundation does not establish a whole-request deadline.
+integration; the Julia runtime now propagates the accepted deadline at available wait boundaries,
+with the Simulator V1 inner-owner limitation described below.
 
 ## CPU codec evidence and remaining integration
 
-On CPU 15, the Julia supervisor suite passes 197 assertions. The adjacent runner
-codec and generic client suites pass 146 and 23 assertions. Forty-four shared
+The foundation baseline passed 197 assertions on CPU15; the negative Completion
+refinement now passes 207. The adjacent runner
+codec and generic client suites pass 146 and 23 assertions. Forty-eight shared
 native POD fixtures cover all fourteen requests, all result variants, Preparing
 and admitted simulator/calibration/correction/HEART status, negative completion,
 rejection/sentinel, Float negative zero/NaN diagnostic bits, signed generation
@@ -269,7 +287,40 @@ exact discovery hint match. No saved UUID can establish admission without fresh
 native Status. Endpoint removal retires live authority; final saved reports do not
 provide a live Stopped endpoint.
 
-Adjacent cold suites also passed native client23, supervisor codec197, typed
-supervisor coordination15 and legacy fixture runner coordination39 assertions.
-The broader portable deployment/control-interruption suites were still running
-at this integration commit and are not included in that pass claim.
+Adjacent cold suites also passed native client 23, supervisor codec 197, typed
+supervisor coordination 15 and legacy fixture runner coordination 39 assertions.
+The broader portable deployment/control-interruption suites subsequently passed:
+source failure 44, portable admission/protocol 214, native preparation 7 and
+control interruption 4.
+
+
+## Public Rust library and selected CLI
+
+The library exposes one shared runner request/result and supervisor codec authority
+under the live feature. The bounded domain client uses exact bound owner/controller
+NodeInfo, retained capability admission, a private same-user native remote, one
+pending token and finite MainLoop iteration. Matching terminals observed before
+later removal remain valid; malformed/conflicting evidence is fatal. Expiry after
+submission retires the client with explicit UnknownOutcome. Retired clients expose
+no owner binding/UUID and never reconnect/retry/fallback. Public Command/ExecutionResult
+and the supervisor client are available without exposing mailbox or Statig state.
+
+`pipewireao-rtc control --locator PATH -- COMMAND` parses operator arguments locally,
+reads bounded locator hints, binds/proves the actual public profile, then sends fresh
+Status and any typed command under one absolute Instant. Output JSON is local render.
+The former `--socket` spelling temporarily aliases the locator flag; no Unix control
+socket is opened. Retired JSON client helpers compile only for explicit legacy Rust
+fixtures. The native client’s transport mechanics temporarily parallel the calibration
+client while each domain qualifies independently; a common extraction requires a
+separate adjudicated review and must preserve both domains’ capacity/ordering rules.
+
+
+Final cold refinement/client evidence is recorded in
+[NATIVE_SUPERVISOR_RUNTIME_VALIDATION.md](NATIVE_SUPERVISOR_RUNTIME_VALIDATION.md).
+Rust library tests passed 75 with 3 existing installed/private-core tests ignored;
+all 45 native codec/client tests passed. Strict all-target Clippy and Rust fmt passed.
+The actual private-core Julia/Rust public-client proof passed 63 assertions, including
+PID/inc/profile rejection before effects and preserved partial runner Start after
+source Resume rejection followed by fresh Running/paused Status. Those inner
+science bindings remain explicit mocks; root-owned installed qualification and
+independent final runtime/negative-grammar review remain gates.

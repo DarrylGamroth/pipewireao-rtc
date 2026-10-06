@@ -345,8 +345,13 @@ function _completion_payload(header, phase, admitted, snapshot, result, error)
     _phase(phase, admitted); _operation(header)
     header.controller === nothing && throw(ArgumentError("sentinel is not a fresh supervisor completion"))
     if header.result < 0
-        snapshot === nothing && result === nothing && error isa Runner.RunnerError || throw(ArgumentError("invalid failed supervisor completion"))
-        return _struct(_id(phase), Pod(admitted), Pod(_text(error.field; empty=true, limit=8192)), Pod(_text(error.message; empty=true, limit=8192)))
+        error isa Runner.RunnerError || throw(ArgumentError("failed supervisor completion requires typed error"))
+        result===nothing || phase===Admitted && result isa RunnerRecord ||
+            throw(ArgumentError("partial inner result requires admitted phase"))
+        snapshot===nothing || validate_snapshot(phase,admitted,snapshot)
+        return _struct(_id(phase),Pod(admitted),_optional_pod(snapshot,_snapshot_pod),
+            Pod(_struct(Pod(_text(error.field;empty=true,limit=8192)),Pod(_text(error.message;empty=true,limit=8192)),
+                _optional_pod(result,r->_record_pod(r,header.operation)))))
     end
     error === nothing && snapshot isa Snapshot || throw(ArgumentError("successful supervisor completion requires snapshot"))
     validate_snapshot(phase, admitted, snapshot)
@@ -450,7 +455,7 @@ function preflight_mutation_reply(command::Runner.RunnerCommand, snapshot::Snaps
     end
     record = _struct_size((16, 16, _add(8, details)))
     success = _struct_size((16, 16, snapshot_bound, record))
-    failure = _struct_size((16, 16, Runner._pod_size(8193), Runner._pod_size(8193)))
+    failure = _struct_size((16, 16, snapshot_bound, _struct_size((Runner._pod_size(8193), Runner._pod_size(8193), record))))
     base = sizeof(Envelope.encode_completion(Envelope.ReplyHeader(Int64(1), Int32(0)), _struct()))
     return max(_add(base, success - 8), _add(base, failure - 8))
 end
@@ -460,8 +465,13 @@ function completion_size(header, phase, admitted, snapshot, result=nothing, erro
     _phase(phase, admitted); _operation(header)
     header.controller === nothing && throw(ArgumentError("sentinel is not a fresh supervisor completion"))
     payload_size = if header.result < 0
-        snapshot === nothing && result === nothing && error isa Runner.RunnerError || throw(ArgumentError("invalid failed supervisor completion"))
-        _struct_size((16, 16, _string_size(error.field; empty=true, limit=8192), _string_size(error.message; empty=true, limit=8192)))
+        error isa Runner.RunnerError || throw(ArgumentError("failed supervisor completion requires typed error"))
+        result===nothing || phase===Admitted && result isa RunnerRecord ||
+            throw(ArgumentError("partial inner result requires admitted phase"))
+        snapshot===nothing || validate_snapshot(phase,admitted,snapshot)
+        _struct_size((16,16,_optional_size(snapshot,_snapshot_size),
+            _struct_size((_string_size(error.field;empty=true,limit=8192),_string_size(error.message;empty=true,limit=8192),
+                _optional_size(result,r->_record_size(r,header.operation))))))
     else
         error === nothing && snapshot isa Snapshot || throw(ArgumentError("success requires snapshot"))
         validate_snapshot(phase, admitted, snapshot)
@@ -482,8 +492,12 @@ function decode_completion(input)
     _operation(header); header.controller === nothing && throw(ArgumentError("sentinel is not a fresh supervisor completion"))
     f = _arity(payload.values, 4); phase = _enum(Phase, f[1]); admitted = _bool(f[2]); _phase(phase, admitted)
     if header.result < 0
-        return Completion(header, phase, admitted, nothing, nothing,
-            Runner.RunnerError(_string(f[3]; empty=true, limit=8192), _string(f[4]; empty=true, limit=8192)))
+        snapshot=_optional(f[3],_decode_snapshot)
+        failed=_arity(_fields(f[4]),3)
+        error=Runner.RunnerError(_string(failed[1];empty=true,limit=8192),_string(failed[2];empty=true,limit=8192))
+        result=_optional(failed[3],p->_decode_record(p,header.operation))
+        _completion_payload(header,phase,admitted,snapshot,result,error)
+        return Completion(header,phase,admitted,snapshot,result,error)
     end
     snapshot = _decode_snapshot(f[3]); result = _optional(f[4], p -> _decode_record(p, header.operation))
     _completion_payload(header, phase, admitted, snapshot, result, nothing)

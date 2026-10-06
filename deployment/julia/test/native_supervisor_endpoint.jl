@@ -90,8 +90,40 @@ function supervisor_endpoint_proof(remote,directory,daemon)
                 @test rust["ok"]&&rust["admitted"]
             end
             @test backend.state===R.Running&&plant.running
+            wrong_path=joinpath(directory,"wrong-control.json")
+            for (key,value) in (("owner_pid",getpid()+1),("instance",43),("profile","pipewireao.rtc.runner/1"))
+                hints=PipeWireAODeployment.Common.read_json(locator;maximum=4096);hints[key]=value
+                D.atomic_record(wrong_path,hints)
+                previous=(length(backend.calls),length(plant.calls))
+                child=run(pipeline(ignorestatus(`$cli control --locator $wrong_path -- session-stop`);stdout=devnull,stderr=devnull))
+                @test !success(child)
+                @test (length(backend.calls),length(plant.calls))==previous
+            end
+
         end
         @test via_locator["ok"]&&via_locator["admitted"]&&via_locator["state"]=="Running"
+        # An explicit source rejection preserves the known applied inner result.
+        Public.request!(clients[2],R.RunnerCommand(:session_stop);deadline=Client.monotonic()+30)
+        plant.reject_resume=true
+        partial=Public.request!(clients[2],R.RunnerCommand(:session_start);deadline=Client.monotonic()+30)
+        @test partial.header.result<0&&partial.lifecycle===C.Admitted&&partial.snapshot===nothing
+        @test partial.result.lifecycle===R.Running&&partial.result.result.outcome===R.Completed
+        @test backend.calls[end][2]===plant.calls[end][2]===deadlines[end]
+        shown=Public.render(partial)
+        @test !shown["ok"]&&shown["state"]=="Running"&&shown["result"]["outcome"]=="completed"&&shown["error"]["field"]=="source.state"
+        fresh=Public.request!(clients[2],R.RunnerCommand(:status);deadline=Client.monotonic()+30)
+        @test fresh.snapshot.runner.status.lifecycle===R.Running&&!fresh.snapshot.source.snapshot.running
+        if haskey(ENV,"SUPERVISOR_CLI_BINARY")
+            Public.request!(clients[2],R.RunnerCommand(:session_stop);deadline=Client.monotonic()+30)
+            cli=ENV["SUPERVISOR_CLI_BINARY"]
+            rust=JSON3.read(read(pipeline(ignorestatus(`$cli control --locator $locator -- session-start`);stderr=devnull),String),Dict{String,Any})
+            @test !rust["ok"]&&rust["state"]=="Running"&&rust["result"]["outcome"]=="completed"&&rust["error"]["field"]=="source.state"
+            rust=JSON3.read(read(`$cli control --locator $locator -- status`,String),Dict{String,Any})
+            @test rust["state"]=="Running"&&rust["source"]["state"]=="paused"
+        end
+        plant.reject_resume=false
+        Public.request!(clients[2],R.RunnerCommand(:session_stop);deadline=Client.monotonic()+30)
+        Public.request!(clients[2],R.RunnerCommand(:session_start);deadline=Client.monotonic()+30)
         # A replay preserves its retained result and has no source/runner effects.
         Public.request!(clients[1],R.RunnerCommand(:status);deadline=Client.monotonic()+30)
         terminal=locked(e->e.terminal_request)

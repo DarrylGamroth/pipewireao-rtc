@@ -1,13 +1,9 @@
-mod control;
+use pipewireao_rtc::control;
 mod control_socket;
-#[allow(dead_code)] // Encoder/client entrypoints remain until CLI migration.
-mod native_runner_codec;
+use pipewireao_rtc::native_runner_codec;
 mod native_runner_endpoint;
 mod native_runner_mailbox;
-#[allow(dead_code)]
-mod native_runner_result;
-#[allow(dead_code)] // Public supervisor integration follows this codec foundation.
-mod native_supervisor_codec;
+use pipewireao_rtc::native_runner_result;
 
 use crate::control::{state_name, Command, ControlError, ControlErrorResponse, ControlResponse};
 use crate::control_socket::ControlSocketServer;
@@ -126,40 +122,51 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn run_client() -> Result<(), Box<dyn std::error::Error>> {
+    use pipewireao_rtc::native_supervisor_client::{Binding, Client};
     let mut arguments = std::env::args().skip(2);
-    let mut socket = None;
+    let mut locator = None;
+    let mut timeout = 30.0_f64;
     loop {
         match arguments.next().as_deref() {
-            Some("--socket") => {
-                socket = Some(PathBuf::from(arguments.next().ok_or_else(|| {
-                    ScientificDiagnostic::new("command", "control --socket requires a path")
+            Some("--locator" | "--socket") => {
+                locator = Some(PathBuf::from(arguments.next().ok_or_else(|| {
+                    ScientificDiagnostic::new("command", "control --locator requires a path")
                 })?));
             }
+            Some("--timeout") => {
+                timeout = arguments.next().ok_or("--timeout requires seconds")?.parse()?;
+                if !timeout.is_finite() || timeout <= 0.0 || timeout > 30.0 {
+                    return Err("control timeout must be finite, positive and at most 30 seconds".into());
+                }
+            }
             Some("--") => break,
-            Some(argument) => {
-                return Err(ScientificDiagnostic::new(
-                    "command",
-                    format!("unexpected control client option {argument:?}"),
-                )
-                .into())
-            }
-            None => {
-                return Err(ScientificDiagnostic::new(
-                    "command",
-                    "usage: pipewireao-rtc control --socket PATH -- COMMAND [ARG ...]",
-                )
-                .into())
-            }
+            Some(argument) => return Err(format!("unexpected control client option {argument:?}").into()),
+            None => return Err("usage: pipewireao-rtc control --locator PATH [--timeout SECONDS] -- COMMAND [ARG ...]".into()),
         }
     }
-    let socket = socket
-        .ok_or_else(|| ScientificDiagnostic::new("command", "control --socket PATH is required"))?;
+    let locator = locator.ok_or("control --locator PATH is required")?;
     let argv = arguments.collect::<Vec<_>>();
-    let id = session_id();
-    let response = control_socket::send_request(&socket, argv, &id)?;
-    println!("{}", serde_json::to_string(&response)?);
-    if !response.ok {
-        return Err(format!("remote control rejected: {:?}", response.error).into());
+    let command =
+        control::parse(&argv).map_err(|e| ScientificDiagnostic::new(e.field, e.message))?;
+    let deadline = Instant::now() + Duration::from_secs_f64(timeout);
+    let binding = Binding::from_locator(&locator)?;
+    let pid = binding.owner_pid;
+    let mut client = Client::connect(binding, deadline)?;
+    let uuid = client.live_uuid();
+    // Saved hints never supply admission or scientific state. Query the same
+    // exact bound owner before any optional typed mutation, under one deadline.
+    let status = client.request(&Command::Status, deadline)?;
+    let reply = if command == Command::Status {
+        status
+    } else {
+        client.request(&command, deadline)?
+    };
+    let mut rendered = reply.render(Some(&session_id()));
+    rendered["pid"] = serde_json::json!(pid);
+    rendered["deployment_uuid"] = serde_json::json!(uuid);
+    println!("{}", serde_json::to_string(&rendered)?);
+    if reply.header().result < 0 {
+        return Err("native supervisor rejected control".into());
     }
     Ok(())
 }
@@ -460,7 +467,7 @@ fn parse_arguments() -> Result<Arguments, ScientificDiagnostic> {
                      Native: --remote PRIVATE_SOCKET --start-paused --control-node NAME --control-instance POSITIVE\n\
                      Loads, starts, stops, and unloads one non-actuating complete-frame session.\n\
                      --start-paused loads to READY without starting; socket mode does not read stdin.\n\
-                     Client: pipewireao-rtc control --socket PATH -- COMMAND [ARG ...]"
+                     Client: pipewireao-rtc control --locator PATH -- COMMAND [ARG ...]"
                 );
                 std::process::exit(0);
             }

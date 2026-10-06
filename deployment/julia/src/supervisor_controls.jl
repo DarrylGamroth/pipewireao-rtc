@@ -5,9 +5,11 @@ const RunnerProtocol = NativeRunnerCodec
 struct CoordinationRejected <: Exception
     field::String
     message::String
+    runner_result::Union{Nothing,Supervisor.RunnerRecord}
 end
+CoordinationRejected(field,message)=CoordinationRejected(field,message,nothing)
 Base.showerror(io::IO, error::CoordinationRejected) = print(io,error.message)
-reject_control(field,message) = throw(CoordinationRejected(field,message))
+reject_control(field,message;runner_result=nothing) = throw(CoordinationRejected(field,message,runner_result))
 
 function control(path::AbstractString, argv::AbstractVector; timeout=30,
         request_id=nothing, allow_rejection=false, check=nothing, deadline=nothing)
@@ -156,7 +158,8 @@ function coordinate(deployment::DeploymentRunner,command::RunnerProtocol.RunnerC
     if completion.header.result==0
         if starting&&completion.lifecycle===RunnerProtocol.Running
             resumed=source_control(deployment,"resume";deadline,check,allow_rejection=true)
-            resumed["ok"] || reject_control("source.state",something(resumed["error"],"source rejected resume"))
+            resumed["ok"] || reject_control("source.state",something(resumed["error"],"source rejected resume");
+                runner_result=Supervisor.RunnerRecord(completion.lifecycle,something(completion.result)))
         elseif resetting
             source_control(deployment,"reset";deadline,check)
         end
@@ -239,7 +242,8 @@ function serve_control(deployment::DeploymentRunner; snapshot_query=supervisor_s
         ncodeunits(message)<=8192 || (message="control failed with oversized diagnostics; inspect supervisor stderr")
         error=RunnerProtocol.RunnerError(field,message)
         try
-            NativeSupervisorRuntime.complete!(runtime,ticket,phase,nothing;result=Int32(-5),error)
+            NativeSupervisorRuntime.complete!(runtime,ticket,phase,nothing;result=Int32(-5),error,
+                runner_result=failure isa CoordinationRejected ? failure.runner_result : nothing)
         catch publication
             known=false
             failure=CompositeException([failure,publication])

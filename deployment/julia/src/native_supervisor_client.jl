@@ -79,11 +79,15 @@ function render(completion; request_id=nothing, owner_pid=nothing)
     header = completion.header
     id = request_id === nothing ? string(header.token) : String(request_id)
     snapshot = completion isa Codec.Completion ? completion.snapshot : nothing
-    if header.result == 0 && snapshot !== nothing && snapshot.runner !== nothing
-        record = completion.result === nothing ? snapshot.runner.status : completion.result
-        backend = Runner.Completion(header, record.lifecycle, record.result, nothing)
+    record=completion isa Codec.Completion && completion.result!==nothing ? completion.result :
+        snapshot!==nothing&&snapshot.runner!==nothing ? snapshot.runner.status : nothing
+    if record!==nothing
+        inner_header=NativeControlCodec.ReplyHeader(header.controller,header.endpoint_instance,header.token,header.operation,Int32(0))
+        backend = Runner.Completion(inner_header, record.lifecycle, record.result, nothing)
         reply = RunnerCommands.render(backend; request_id=id)
-        reply["session_id"] = snapshot.runner.session_id
+        reply["session_id"] = snapshot!==nothing&&snapshot.runner!==nothing ? snapshot.runner.session_id : nothing
+        reply["ok"]=header.result==0
+        reply["error"]=header.result==0 ? nothing : Dict("field"=>completion.error.field,"message"=>completion.error.message)
     else
         reply = Dict{String,Any}("version"=>1,"id"=>id,"session_id"=>nothing,
             "state"=>nothing,"result"=>nothing,"ok"=>header.result==0,

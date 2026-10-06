@@ -2,14 +2,14 @@
 //! Native results preserve domain types and scalar bits; no JSON conversion occurs.
 
 use crate::control::{ControlError, ExecutionResult, Outcome, PropertyGenerationObservation};
+use crate::native_control_codec::{self as envelope, ReplyHeader, ReplyKind};
 use crate::native_runner_codec::Operation;
-use pipewire::spa::pod::Value;
-use pipewire::spa::utils::Id;
-use pipewireao_rtc::native_control_codec::{self as envelope, ReplyHeader, ReplyKind};
-use pipewireao_rtc::{
+use crate::{
     ExecutionGroupState, LifecycleState, LiveGraphStatus, ParameterGeneration, PropertyGeneration,
     ScalarValue,
 };
+use pipewire::spa::pod::Value;
+use pipewire::spa::utils::Id;
 use std::collections::{BTreeMap, BTreeSet};
 
 const BOUND: usize = envelope::LIFECYCLE_REPLY_BOUND;
@@ -18,14 +18,14 @@ const BOUND: usize = envelope::LIFECYCLE_REPLY_BOUND;
 const MIN_ROW_BYTES: usize = 40;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct Completion {
+pub struct Completion {
     pub header: ReplyHeader,
     pub lifecycle: LifecycleState,
     pub result: Result<ExecutionResult, ControlError>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct Rejection {
+pub struct Rejection {
     pub header: ReplyHeader,
     pub lifecycle: LifecycleState,
     pub error: ControlError,
@@ -35,7 +35,8 @@ fn invalid(message: impl Into<String>) -> ControlError {
     ControlError::new("native.runner.result", message)
 }
 
-pub(crate) fn lifecycle_id(state: LifecycleState) -> u32 {
+#[must_use]
+pub fn lifecycle_id(state: LifecycleState) -> u32 {
     match state {
         LifecycleState::Offline => 1,
         LifecycleState::Configuring => 2,
@@ -333,7 +334,10 @@ fn base_size(header: &ReplyHeader, kind: ReplyKind) -> Result<usize, ControlErro
         .map_err(|e| invalid(e.to_string()))
 }
 
-pub(crate) fn completion_size(
+/// Checks or encodes the bounded closed runner result.
+/// # Errors
+/// Rejects invalid headers, result semantics or replies exceeding 64 KiB.
+pub fn completion_size(
     header: &ReplyHeader,
     state: LifecycleState,
     result: &ExecutionResult,
@@ -347,7 +351,10 @@ pub(crate) fn completion_size(
 }
 
 /// Checks borrowed result fields before any variable payload is cloned.
-pub(crate) fn validate_completion_capacity(
+/// Checks or encodes the bounded closed runner result.
+/// # Errors
+/// Rejects invalid headers, result semantics or replies exceeding 64 KiB.
+pub fn validate_completion_capacity(
     header: &ReplyHeader,
     state: LifecycleState,
     result: &ExecutionResult,
@@ -485,7 +492,10 @@ fn details(result: &ExecutionResult) -> Result<Vec<Value>, ControlError> {
     })
 }
 
-pub(crate) fn encode_completion(
+/// Checks or encodes the bounded closed runner result.
+/// # Errors
+/// Rejects invalid headers, result semantics or replies exceeding 64 KiB.
+pub fn encode_completion(
     header: &ReplyHeader,
     state: LifecycleState,
     result: &ExecutionResult,
@@ -541,7 +551,10 @@ fn encode_error(
     .map_err(|e| invalid(e.to_string()))
 }
 
-pub(crate) fn encode_failed_completion(
+/// Checks or encodes the bounded closed runner result.
+/// # Errors
+/// Rejects invalid headers, result semantics or replies exceeding 64 KiB.
+pub fn encode_failed_completion(
     header: &ReplyHeader,
     state: LifecycleState,
     error: &ControlError,
@@ -549,7 +562,10 @@ pub(crate) fn encode_failed_completion(
     encode_error(header, ReplyKind::Completion, state, error)
 }
 
-pub(crate) fn encode_rejection(
+/// Checks or encodes the bounded closed runner result.
+/// # Errors
+/// Rejects invalid headers, result semantics or replies exceeding 64 KiB.
+pub fn encode_rejection(
     header: &ReplyHeader,
     state: LifecycleState,
     error: &ControlError,
@@ -786,7 +802,10 @@ fn decode_error(fields: &[Value]) -> Result<(LifecycleState, ControlError), Cont
     ))
 }
 
-pub(crate) fn decode_completion(bytes: &[u8]) -> Result<Completion, ControlError> {
+/// Checks or encodes the bounded closed runner result.
+/// # Errors
+/// Rejects invalid headers, result semantics or replies exceeding 64 KiB.
+pub fn decode_completion(bytes: &[u8]) -> Result<Completion, ControlError> {
     let reply = envelope::decode_completion(bytes).map_err(|e| invalid(e.to_string()))?;
     check_header(&reply.header, ReplyKind::Completion)?;
     if reply.header.result < 0 {
@@ -817,7 +836,10 @@ pub(crate) fn decode_completion(bytes: &[u8]) -> Result<Completion, ControlError
     })
 }
 
-pub(crate) fn decode_rejection(bytes: &[u8]) -> Result<Rejection, ControlError> {
+/// Checks or encodes the bounded closed runner result.
+/// # Errors
+/// Rejects invalid headers, result semantics or replies exceeding 64 KiB.
+pub fn decode_rejection(bytes: &[u8]) -> Result<Rejection, ControlError> {
     let reply = envelope::decode_rejection(bytes).map_err(|e| invalid(e.to_string()))?;
     let (state, error) = decode_error(&reply.payload)?;
     Ok(Rejection {

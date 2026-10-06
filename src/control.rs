@@ -1,4 +1,4 @@
-use pipewireao_rtc::{
+use crate::{
     ExecutionGroupState, LifecycleEvent, LifecycleState, LiveGraphAdapter, LiveGraphStatus,
     NdArrayParameterValue, ParameterGeneration, PropertyGeneration, Runner, ScalarValue,
     ScientificDiagnostic,
@@ -287,6 +287,9 @@ impl ExecutionResult {
     }
 }
 
+/// Parses the existing operator syntax into one typed command.
+/// # Errors
+/// Rejects unknown syntax, invalid scalar values, shapes or request bounds.
 pub fn parse(arguments: &[String]) -> Result<Command, ControlError> {
     if arguments.len() > MAX_ARGUMENTS {
         return Err(ControlError::new(
@@ -367,6 +370,9 @@ pub fn parse(arguments: &[String]) -> Result<Command, ControlError> {
     }
 }
 
+/// Prepares the bounded parameter artifact for the existing owner.
+/// # Errors
+/// Rejects invalid paths, file identity, extent, schema or parameter values.
 pub fn prepare(command: Command) -> Result<Command, ControlError> {
     let Command::Parameter {
         graph,
@@ -500,6 +506,9 @@ fn property_adoption_observed(
 impl Command {
     // Keep the complete typed command surface in one exhaustive owner dispatch.
     #[allow(clippy::too_many_lines)]
+    /// Applies a prepared typed command through the existing runner.
+    /// # Errors
+    /// Returns owner lifecycle, target, parameter or preparation diagnostics.
     pub fn execute(self, runner: &mut Runner<LiveGraphAdapter>) -> Result<Execution, ControlError> {
         use Command as C;
         let result = match self {
@@ -737,6 +746,7 @@ fn group_state(state: ExecutionGroupState) -> &'static str {
     }
 }
 
+#[must_use]
 pub fn state_name(state: LifecycleState) -> &'static str {
     match state {
         LifecycleState::Offline => "Offline",
@@ -747,6 +757,7 @@ pub fn state_name(state: LifecycleState) -> &'static str {
     }
 }
 
+#[must_use]
 pub fn scalar_json(value: &ScalarValue) -> Value {
     match value {
         ScalarValue::Bool(value) => json!({"type":"bool","value":value}),
@@ -844,7 +855,7 @@ mod tests {
         parse, prepare, Command, ExecutionResult, Outcome, PropertyGenerationObservation,
         MAX_ARGUMENTS, MAX_PARAMETER_BYTES,
     };
-    use pipewireao_rtc::{
+    use crate::{
         ExecutionGroupState, LifecycleState, LiveGraphStatus, ParameterGeneration,
         PropertyGeneration, ScalarValue,
     };
@@ -1158,7 +1169,7 @@ mod tests {
             parse(&words("property graph node:gain float 0.5")).unwrap(),
             Command::PropertiesSet(
                 "graph".into(),
-                [("node:gain".into(), pipewireao_rtc::ScalarValue::float(0.5))].into()
+                [("node:gain".into(), crate::ScalarValue::float(0.5))].into()
             )
         );
         assert!(parse(&words("properties-set g n:v int 1 n:v int 2")).is_err());
@@ -1166,11 +1177,11 @@ mod tests {
     }
 
     fn assert_property_rejections(
-        runner: &mut pipewireao_rtc::Runner<pipewireao_rtc::LiveGraphAdapter>,
+        runner: &mut crate::Runner<crate::LiveGraphAdapter>,
         graph: &str,
         node: &str,
     ) {
-        use pipewireao_rtc::ScalarValue;
+        use crate::ScalarValue;
         use std::collections::BTreeMap;
         let expected = runner.state();
         let generation = runner
@@ -1234,7 +1245,7 @@ mod tests {
     #[ignore = "requires a private core and a looping native scientific deployment fixture"]
     #[allow(clippy::too_many_lines)]
     fn property_rejections_preserve_ready_and_running_sessions() {
-        use pipewireao_rtc::{
+        use crate::{
             ConfigurationInput, DevelopmentConfig, LifecycleEvent, LifecycleState,
             LiveGraphAdapter, Runner, ScalarValue,
         };
@@ -1398,7 +1409,7 @@ mod tests {
 
     #[test]
     fn property_adoption_requires_running_and_advancement_of_this_mutation() {
-        use pipewireao_rtc::PropertyGeneration;
+        use crate::PropertyGeneration;
         let previous = Some(PropertyGeneration {
             requested: 9,
             active: Some(9),

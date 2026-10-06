@@ -4,20 +4,20 @@
 //! The production endpoint must establish those boundaries separately.
 
 use crate::control::{expected_parameter_bytes, Command, ControlError, MAX_PARAMETER_BYTES};
+use crate::native_control_codec::{self as envelope, RequestHeader};
+use crate::ScalarValue;
 use pipewire::spa::pod::{Value, ValueArray};
 use pipewire::spa::utils::Id;
-use pipewireao_rtc::native_control_codec::{self as envelope, RequestHeader};
-use pipewireao_rtc::ScalarValue;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-pub(crate) const PROFILE: &str = "pipewireao.rtc.runner/1";
+pub const PROFILE: &str = "pipewireao.rtc.runner/1";
 // The existing CLI admits 128 fields: command, graph and three per property.
 const MAX_PROPERTIES: usize = (crate::control::MAX_ARGUMENTS - 2) / 3;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(u32)]
-pub(crate) enum Operation {
+pub enum Operation {
     Quit = 1,
     Groups = 2,
     Status = 3,
@@ -148,7 +148,10 @@ fn string_size(value: &str) -> Result<usize, ControlError> {
 
 // Inspect borrowed fields before cloning any variable-size input. Every nested
 // Struct contributes its eight-byte POD header; array child metadata adds eight.
-pub(crate) fn preflight(header: &RequestHeader, command: &Command) -> Result<(), ControlError> {
+/// Checks borrowed request fields before allocation.
+/// # Errors
+/// Rejects invalid headers, operation fields, types, extents or request capacity.
+pub fn preflight(header: &RequestHeader, command: &Command) -> Result<(), ControlError> {
     use Command as C;
     header
         .validate()
@@ -247,7 +250,10 @@ pub(crate) fn preflight(header: &RequestHeader, command: &Command) -> Result<(),
     Ok(())
 }
 
-pub(crate) fn decode_request(bytes: &[u8]) -> Result<(RequestHeader, Command), ControlError> {
+/// Decodes one exact typed runner request.
+/// # Errors
+/// Rejects malformed, excessive or semantically invalid native requests.
+pub fn decode_request(bytes: &[u8]) -> Result<(RequestHeader, Command), ControlError> {
     let request = envelope::decode_request(bytes).map_err(|error| invalid(error.to_string()))?;
     let operation = Operation::try_from(request.header.operation)?;
     let command = decode_payload(operation, &request.payload)?;
@@ -321,10 +327,10 @@ fn decode_payload(operation: Operation, fields: &[Value]) -> Result<Command, Con
     })
 }
 
-pub(crate) fn encode_request(
-    header: &RequestHeader,
-    command: &Command,
-) -> Result<Vec<u8>, ControlError> {
+/// Encodes one exact typed runner request.
+/// # Errors
+/// Rejects invalid headers, operation fields or requests exceeding 16 KiB.
+pub fn encode_request(header: &RequestHeader, command: &Command) -> Result<Vec<u8>, ControlError> {
     use Command as C;
     preflight(header, command)?;
     let (operation, fields) = match command {

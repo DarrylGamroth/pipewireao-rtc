@@ -12,7 +12,9 @@ mutable struct SupervisorSourceFixture
     calls::Vector{Tuple{Symbol,Float64}}
     running::Bool
     generation::Int64
+    reject_resume::Bool
 end
+SupervisorSourceFixture(calls,running,generation)=SupervisorSourceFixture(calls,running,generation,false)
 function PipeWireAODeployment.NativeRunnerClient.request!(client::SupervisorRunnerFixture,command::R.RunnerCommand{O};deadline::Float64,check=()->nothing) where O
     check();push!(client.calls,(O,deadline))
     if O in (:session_start,:session_stop,:reset,:source_ended)
@@ -32,6 +34,10 @@ function PipeWireAODeployment.NativeRunnerClient.request!(client::SupervisorRunn
 end
 function PipeWireAODeployment.NativeSourceClient.request!(client::SupervisorSourceFixture,operation::String,token::Int64;deadline::Float64,check=()->nothing)
     check();push!(client.calls,(Symbol(operation),deadline))
+    if operation=="resume"&&client.reject_resume
+        return Dict{String,Any}("version"=>1,"id"=>token,"operation"=>operation,"ok"=>false,
+            "error"=>"fixture source resume rejected","state"=>client.running ? "running" : "paused","sequence"=>0,"completed"=>false)
+    end
     client.running=operation=="resume" ? true : operation=="pause"||operation=="reset" ? false : client.running
     operation=="reset"&&(client.generation+=1)
     return Dict{String,Any}("version"=>1,"id"=>token,"operation"=>operation,"ok"=>true,"error"=>nothing,

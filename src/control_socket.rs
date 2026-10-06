@@ -14,9 +14,11 @@ use std::sync::{mpsc, Arc};
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
 
+#[cfg(test)] // Retired JSON client retained only for explicit legacy fixtures.
 const SOCKET_CONNECT_TIMEOUT: Duration = Duration::from_secs(2);
 const SOCKET_READ_TIMEOUT: Duration = Duration::from_secs(2);
 const SOCKET_WRITE_TIMEOUT: Duration = Duration::from_secs(2);
+#[cfg(test)] // Retired JSON client retained only for explicit legacy fixtures.
 const CLIENT_RESPONSE_TIMEOUT: Duration = Duration::from_secs(10);
 const OWNER_REPLY_TIMEOUT: Duration = Duration::from_secs(7);
 const MAX_RESPONSE_BYTES: usize = 64 * 1024;
@@ -490,6 +492,7 @@ fn write_with_deadline(
     Ok(())
 }
 
+#[cfg(test)] // Retired JSON client retained only for explicit legacy fixtures.
 fn connect_with_deadline(path: &Path, deadline: Instant) -> io::Result<UnixStream> {
     use rustix::event::{poll, PollFd, PollFlags, Timespec};
     use rustix::io::Errno;
@@ -539,6 +542,7 @@ fn connect_with_deadline(path: &Path, deadline: Instant) -> io::Result<UnixStrea
     }
 }
 
+#[cfg(test)] // Retired JSON client retained only for explicit legacy fixtures.
 pub fn send_request(path: &Path, argv: Vec<String>, id: &str) -> io::Result<ControlResponse> {
     if argv.len() > MAX_ARGUMENTS {
         return Err(io::Error::new(

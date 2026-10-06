@@ -114,6 +114,24 @@ end
     failure = C.encode_completion(negative,C.Failed,false,nothing,nothing,R.RunnerError("source","unknown outcome"))
     fixture("reply-failed",failure)
     @test C.decode_completion(failure).error.message == "unknown outcome"
+    inner=runner_record(10,R.Completed,ps(id(R.Running));lifecycle=R.Running)
+    partial=C.encode_completion(negative,C.Admitted,true,nothing,inner,R.RunnerError("source.state","resume rejected"))
+    fixture("reply-failed-partial",partial)
+    decoded=C.decode_completion(partial)
+    @test decoded.result==inner&&decoded.snapshot===nothing&&decoded.error.field=="source.state"
+    @test C.completion_size(negative,C.Admitted,true,nothing,inner,decoded.error)==sizeof(partial)
+    with_snapshot=C.encode_completion(negative,C.Admitted,true,admitted,inner,decoded.error)
+    @test C.decode_completion(with_snapshot).snapshot.runner.status.result.details==admitted.runner.status.result.details
+    old=E.encode_completion(negative,ps(id(C.Admitted),Pod(true),Pod("source.state"),Pod("old grammar")))
+    fixture("bad-reply-negative-old-grammar",old)
+    @test_throws ArgumentError C.decode_completion(old)
+    wrongphase=E.encode_completion(negative,ps(id(C.Preparing),Pod(false),Pod(nothing),
+        Pod(ps(Pod("source"),Pod("bad phase"),Pod(C._record_pod(inner,UInt32(10)))))))
+    fixture("bad-reply-partial-phase",wrongphase)
+    @test_throws ArgumentError C.decode_completion(wrongphase)
+    wrongop=E.encode_completion(reply(9;result=Int32(-5)),C._completion_payload(negative,C.Admitted,true,nothing,inner,decoded.error))
+    fixture("bad-reply-partial-operation",wrongop)
+    @test_throws ArgumentError C.decode_completion(wrongop)
     rejected = C.encode_rejection(reply(10;result=Int32(-16)),C.Preparing,false)
     fixture("rejection",rejected)
     @test C.decode_rejection(rejected).lifecycle == C.Preparing
@@ -181,7 +199,7 @@ end
             @test_throws ArgumentError C.preflight_mutation_reply(command,admitted)
         else
             @test C.preflight_mutation_reply(command,admitted) <= 64*1024
-            probe_bound=64*1024-1024
+            probe_bound=64*1024-24576
             reserve=C.preflight_mutation_reply(command,admitted;snapshot_bound=probe_bound)
             overhead=reserve-probe_bound
             max_bound=64*1024-overhead

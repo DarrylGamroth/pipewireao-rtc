@@ -4,6 +4,8 @@ pub mod calibration;
 #[cfg(unix)]
 pub mod calibration_socket;
 mod config;
+#[cfg(feature = "live")]
+pub mod control;
 mod ffi;
 mod lifecycle;
 #[cfg(feature = "live")]
@@ -14,6 +16,14 @@ pub mod native_calibration_action_codec;
 pub mod native_calibration_endpoint;
 #[cfg(feature = "live")]
 pub mod native_control_codec;
+#[cfg(feature = "live")]
+pub mod native_runner_codec;
+#[cfg(feature = "live")]
+pub mod native_runner_result;
+#[cfg(feature = "live")]
+pub mod native_supervisor_client;
+#[cfg(feature = "live")]
+pub mod native_supervisor_codec;
 mod runner;
 
 pub use config::{
