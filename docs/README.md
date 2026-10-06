@@ -148,6 +148,12 @@ above remain the normative authority. The [fixed envelope](NATIVE_CONTROL_ENVELO
 [codec review](NATIVE_CONTROL_CODEC_REVIEW.md) and
 [CPU validation](NATIVE_CONTROL_ENVELOPE_VALIDATION.md) record the common header
 and diagnostic interoperability separately from production owner migration.
+[Local RTC session discovery](NATIVE_SESSION_DISCOVERY.md) defines the bounded
+per-user native locator record and fresh-status selection boundary. Its module
+and fixture tests do not establish supervisor publication, native status
+integration, or the GUI session picker. The
+[integration handoff](DISCOVERY_INTEGRATION_HANDOFF.md) identifies those gates.
+
 The [synchronization prerequisite](NATIVE_CONTROL_SYNC_VALIDATION.md) and its
 [independent review](NATIVE_CONTROL_SYNC_REVIEW.md) record the corrected inner
 wait and stalled-core evidence, separately from native runner ingress.
