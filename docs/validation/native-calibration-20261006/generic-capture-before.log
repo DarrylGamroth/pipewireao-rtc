@@ -1,0 +1,44 @@
+ERROR: LoadError: Some tests did not pass: 3 passed, 3 failed, 0 errored, 0 broken.
+in expression starting at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/docs/validation/native-calibration-20261006/generic-capture-oracle.jl:17
+Capture verification follows actual selected profile and stage: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/docs/validation/native-calibration-20261006/generic-capture-oracle.jl:27
+  Expression: (result["manifest"])["stage"] == stage
+   Evaluated: "native-functional" == "interaction"
+
+Stacktrace:
+ [1] top-level scope
+   @ ~/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/docs/validation/native-calibration-20261006/generic-capture-oracle.jl:18
+ [2] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [3] macro expansion
+   @ ~/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/docs/validation/native-calibration-20261006/generic-capture-oracle.jl:27 [inlined]
+ [4] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+Capture verification follows actual selected profile and stage: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/docs/validation/native-calibration-20261006/generic-capture-oracle.jl:26
+  Expression: (result["manifest"])["profile"] == profile
+   Evaluated: "classic" == "copper"
+
+Stacktrace:
+ [1] top-level scope
+   @ ~/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/docs/validation/native-calibration-20261006/generic-capture-oracle.jl:18
+ [2] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [3] macro expansion
+   @ ~/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/docs/validation/native-calibration-20261006/generic-capture-oracle.jl:26 [inlined]
+ [4] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+Capture verification follows actual selected profile and stage: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/docs/validation/native-calibration-20261006/generic-capture-oracle.jl:27
+  Expression: (result["manifest"])["stage"] == stage
+   Evaluated: "native-functional" == "nativepilot"
+
+Stacktrace:
+ [1] top-level scope
+   @ ~/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/docs/validation/native-calibration-20261006/generic-capture-oracle.jl:18
+ [2] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [3] macro expansion
+   @ ~/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/docs/validation/native-calibration-20261006/generic-capture-oracle.jl:27 [inlined]
+ [4] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+Test Summary:                                                  | Pass  Fail  Total  Time
+Capture verification follows actual selected profile and stage |    3     3      6  2.5s
+RNG of the outermost testset: Random.Xoshiro(0x7bd674234ec84cde, 0x270f93de3cbb5b7f, 0xae50b552efcc3754, 0x5c657fb6d4f2e166, 0xdf5f385c869b9dc9)

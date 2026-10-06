@@ -1,0 +1,18 @@
+Test Summary:                                                        | Pass  Total  Time
+Sealed six-profile fixture derives extents and rejects before launch |   84     84  1.5s
+Test Summary:                                             | Pass  Total  Time
+Fresh startup matches selected native instrument/settings |   12     12  0.3s
+Test Summary:                                        | Pass  Total  Time
+HEART child generation and published hold stay exact |   23     23  2.9s
+Test Summary:                                          | Pass  Total  Time
+Bounded HEART evidence remains tied to published bytes |    5      5  0.2s
+Test Summary:                                                  | Pass  Total  Time
+Native calibration success requires failure-free owned cleanup |   17     17  0.2s
+Test Summary:                                          | Pass  Total  Time
+Release completion waits for native report publication |    4      4  0.3s
+Test Summary:                                  | Pass  Total  Time
+Installed native calibration retained evidence |   17     17  0.9s
+Test Summary:                                                 | Pass  Total  Time
+Frozen Copper small plan retains actual 3600 by two responses |    2      2  0.4s
+Test Summary:                                     | Pass  Total  Time
+Unsupported Reset retains calibration owner facts |   11     11  0.4s

@@ -108,22 +108,26 @@ client, verify final native owner facts/report, and complete owned cleanup.
 Julia Capture uses the existing typed client sequence
 Hold→Adopt(first probe)→Settle→Capture(2)→Restore(reference)→Release.
 
-## Small cold qualifier changes before broader execution
+## Generic qualifier and remaining installed execution
 
-`deployment/qualify_calibration_native.jl` currently hardcodes Classic instrument,
-startup profile and Capture profile/stage. Derive these from the sealed selected
-profile and source calibration provenance, validate plan extents against that
-profile, and retain the existing two-frame bound. This is necessary even for a
-fresh default-stage ordinary Classic export. Keep the corrected cleanup reducer
-and Reset lifecycle/report-cursor invariance checks unchanged.
+`deployment/qualify_calibration_native.jl` now derives Classic/Copper instrument,
+engine, backend, Capture profile/stage/budget and illumination from the strict
+sealed source/provenance. It rejects mismatched 277-coordinate figures, WFS
+extents, nonfinite inputs and invalid Rust-plan timeouts before launch, and
+retains the two-frame Capture bound. The corrected cleanup reducer and Reset
+lifecycle/report-cursor invariance checks remain selected.
 
-HEART additionally needs an exact retained `NativeHeartClient` from the freshly
-proved `ready["heart_endpoint"]`. Check Ready, child PID, generation, liveness,
-required flags and ingress before effects and before report use; retain exact
-native command/child evidence and include child cleanup. The calibration owner
-already records `native_controller_held` and a hashed `native-evidence.jsonl`.
-Compare that proof with the live child rather than trusting report JSON as
-authority. HEART source calibration Reset remains explicitly unsupported.
+HEART retains an exact `NativeHeartClient` from the freshly proved
+`ready["heart_endpoint"]`. Fresh native generation reports and typed snapshots
+establish child PID/generation/liveness, placed execution, disabled diagnostics,
+configuration hash and ingress before effects and before report use. The
+qualification records the sealed requirements hash; Ready follows the wrapper's
+required flag acknowledgements, with no claim of effective flag readback. The
+published calibration `native_controller_held` proof must match that live child
+and native snapshot. Hashed/count-bounded `native-evidence.jsonl` is retained.
+Child parent/group/session/start ticks must match the owned wrapper group;
+native shutdown must remove that child and all owned groups. Calibration Reset
+remains explicitly unsupported. Unknown effects never trigger speculative Release.
 
 Classic HEART strict export binds run98/24 probes/64 frames/discard1, 1561
 exposures and 25 DM records. Its declared plan SHA256 is
@@ -187,8 +191,8 @@ replace this full256 correction acceptance.
 
 1. Finish runner maintenance qualification; reserve one actual owner fixture.
 2. Run already prepared Classic FGN Collect and separate Capture first.
-3. Make the small profile/stage and HEART child-proof qualifier changes, review
-   pure failure oracles, then prepare/run one profile at a time.
+3. Review the generic profile/stage and HEART child-proof qualifier, then
+   prepare/run one profile at a time after an explicit SCI reservation.
 4. Establish offline replay compatibility; upgrade retained full256 correction
    wrappers/runtime with full scientific file hash identity, then run both
    HEART correction windows without new matrix acquisition.
@@ -236,3 +240,45 @@ Receipts, exact oracle scripts and logs are in
 `historical-transfer-namespace-after.log` are the same fully restored fixture
 comparison; `historical-transfer-ram-receipt.json` records restoration identity.
 This does not pass a new full transfer, score-replay or active-correction gate.
+
+## Generic consumer cold evidence and command recipes
+
+The source Capture verification discriminator fails before (3 pass / 3 fail)
+and passes after (6/6) with the same injected public request/copy/verification
+seams: both selected profiles and non-default stages now reach the maintained
+verifier. This is a cold wiring test, not an actual Capture. Focused qualification
+tests pass175/175, covering all six fixture derivations, startup instrument and
+settings, wrong extents/nonfinite inputs/budgets, exact HEART child and published
+hold identity, native evidence and cleanup-failure gates. The existing sealed
+Classic CUDA calibration package also preflights both modes with its actual
+frozen run82 plan, unchanged 500504-byte Capture budget and native-functional
+stage. Actual Collect/Capture on the generic increment is still pending.
+
+Run the common five-argument qualifier command above separately for these six
+selected fresh installed calibration packages; table values describe required
+inputs, not uncreated destination paths:
+
+| Installed selected calibration | Called plan | Declared export / required scope |
+| --- | --- | --- |
+| Classic FGN native | Classic run82 path above | strict fresh FGN source; AOS CUDA / RTC CPU |
+| Classic JFG native | Classic run82 | strict fresh JFG source; AOS CUDA / RTC CPU |
+| Copper FGN native | Copper run1 path above | strict fresh FGN source; AOS CUDA / RTC CPU |
+| Copper JFG native | Copper run1 | strict fresh JFG source; AOS CUDA / RTC CPU |
+| Classic unchanged HEART native | Classic run82 | preserve declared run98/24×64 plan separately; functional action effects only |
+| Copper unchanged HEART native | Copper run1 | preserve its frozen native pilot and selected backend |
+
+For each choose fresh runtime/output names ending `-collect` and `-capture` and
+record package descriptor, provenance, called plan, declared export plan and both
+binary hashes. Preserve source libraries, plant/calibration arrays, wisdom and
+startup flags. SDK/control refreshes must be explicit sealed provenance; do not
+regenerate darks, references, inverse matrices or vendor algorithms.
+
+The two HEART full256 correction consumers need a separate retained native
+CORRECTION-profile coordinator. Their source lifecycle, phases, window reports
+and supported stopped Reset already exist. Old marker-based launch scripts are
+historical algorithm/evidence inputs, not current live control commands. The
+primary agent approved implementing that bounded coordinator next. Its future
+recipe will run both restored full256 windows and the existing analyzer against
+immutable reports after fresh native cursor publication, with generation+1 and
+distinct child identity at Reset. A failure of the retained scientific trajectory
+gate remains a failure, even if native transport and cleanup succeed.

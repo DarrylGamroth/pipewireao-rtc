@@ -1,0 +1,21 @@
+{
+  "source_base": "ff7d430",
+  "scope": "Cold schema/action/evidence/cleanup tests; no SCI, actual Collect, actual Capture, transfer, inverse or correction qualification",
+  "tests": {
+    "generic_pure": 175,
+    "capture_fail_before": "3 pass / 3 fail",
+    "capture_pass_after": 6,
+    "actual_sealed_classic_preflight": "collect and capture pass"
+  },
+  "preliminary_logs_preserved": "/home/dgamroth/.cache/rtc-native-calibration-final-20261006/generic-cold-preliminary",
+  "files": {
+    "deployment/julia/test/test_qualify_calibration_native.jl": "fd1ed0f9db45fbb5dfda99a93e7c0d0873d64974fc08a248973a19c6a078c88f",
+    "deployment/qualify_calibration_native.jl": "270ec5de12a64272519e0c62bf4a847fa692509b77d244b87f5db9fc156301b8",
+    "docs/NATIVE_CALIBRATION_CONSUMER_MATRIX.md": "afa8afe0ea2cac56f0247e6a95f6584d9a30805910f5a64d9966c3fc5440e87f",
+    "docs/validation/native-calibration-20261006/generic-actual-package-cold-v2.log": "cddae6f9092e1ca737d4fbbd2027c7ee4ea3bb84c3d75073d1b9a948f523c671",
+    "docs/validation/native-calibration-20261006/generic-calibration-cold-final-v2.log": "c37f82ecc218fe96206febf69f7e9a2007ece789d632f6a4b490293059e30727",
+    "docs/validation/native-calibration-20261006/generic-capture-after.log": "9eba6ddc6dc1c4b001dcd6986b891811d28da3d7b8af36fe61b33d99eef72471",
+    "docs/validation/native-calibration-20261006/generic-capture-before.log": "3de9b3adc5ffeff4edc46f87fd27fd4cd329173684262c6435a58b13728e4b72",
+    "docs/validation/native-calibration-20261006/generic-capture-oracle.jl": "bd41ce0da0d84cdd71b1d462b37cd8610ee85e2ae92a2396029ae698e4c79997"
+  }
+}
