@@ -1,0 +1,25 @@
+{
+  "all_registered_process_pids_absent": true,
+  "known_observed_pids": [
+    3924236,
+    3924362,
+    3924693,
+    3924732
+  ],
+  "launcher_exit_code": 1,
+  "native_admission_observed": false,
+  "observed_time_ns": 1791311779899897446,
+  "pid_absence": {
+    "3924236": true,
+    "3924362": true,
+    "3924693": true,
+    "3924732": true
+  },
+  "private_runtime": "/run/user/1000/rtc-nativecal-classic-collect-final-v1/run-37xZhD",
+  "private_runtime_absent": true,
+  "qualifier_cleanup_status": "unknown (admitted ownership identities unavailable)",
+  "scope": "post-failure kernel PID absence and owned runtime cleanup only; startup state is bookkeeping, not native admission/control authority",
+  "source_exception_cause": "not identified; exception formatting interrupted during source cleanup",
+  "source_exit_signal_observed": 15,
+  "startup_failure_state_sha256": "a906569cf094d7f8d7b384d2ef0f84b51e0929b39e578c22a301041847c155ca"
+}

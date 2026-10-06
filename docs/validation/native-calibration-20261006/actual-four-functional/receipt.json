@@ -1,0 +1,92 @@
+{
+  "argv": [
+    "taskset",
+    "-c",
+    "2,12,13,14",
+    "env",
+    "-u",
+    "PIPEWIRE_REMOTE",
+    "-u",
+    "PIPEWIRE_RUNTIME_DIR",
+    "-u",
+    "PW_REMOTE",
+    "-u",
+    "PW_CORE",
+    "julia",
+    "--startup-file=no",
+    "--compiled-modules=existing",
+    "--project=/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-controls/deployment/julia",
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-controls/deployment/qualify_calibration_native.jl",
+    "/tmp/classic-fgn-nativecal-final-v2-installed",
+    "/run/user/1000/rtc-nativecal-classic-collect-final-v1",
+    "/home/dgamroth/.cache/rtc-native-calibration-four-functional-20261006/classic-collect-v1",
+    "/home/dgamroth/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/canonical-plan.json",
+    "collect"
+  ],
+  "calibration_cli_sha256": "ce0ba26cf04f64ea1cb730c4b89309592c5097843cc326d867c4ddd1bfe9b1cb",
+  "case_disposition": {
+    "classic-capture": "not executed; stopped after first failure",
+    "classic-collect": "failed before native admission/Running",
+    "copper-capture": "not executed; stopped after first failure",
+    "copper-collect": "not executed; stopped after first failure"
+  },
+  "cleanup_proof": {
+    "all_registered_process_pids_absent": true,
+    "known_observed_pids": [
+      3924236,
+      3924362,
+      3924693,
+      3924732
+    ],
+    "launcher_exit_code": 1,
+    "native_admission_observed": false,
+    "observed_time_ns": 1791311779899897446,
+    "pid_absence": {
+      "3924236": true,
+      "3924362": true,
+      "3924693": true,
+      "3924732": true
+    },
+    "private_runtime": "/run/user/1000/rtc-nativecal-classic-collect-final-v1/run-37xZhD",
+    "private_runtime_absent": true,
+    "qualifier_cleanup_status": "unknown (admitted ownership identities unavailable)",
+    "scope": "post-failure kernel PID absence and owned runtime cleanup only; startup state is bookkeeping, not native admission/control authority",
+    "source_exception_cause": "not identified; exception formatting interrupted during source cleanup",
+    "source_exit_signal_observed": 15,
+    "startup_failure_state_sha256": "a906569cf094d7f8d7b384d2ef0f84b51e0929b39e578c22a301041847c155ca"
+  },
+  "concurrency_limit": "preexisting user GUI/GC/Kaimon processes preserved; no isolation/timing/resource-budget acceptance",
+  "coordinator_failure": "native control outcome unknown: owner proxy was removed",
+  "copied_evidence_bytes": 88719,
+  "descriptor_sha256": "360bb4ed545cfeefb42b480f45b0f27dc15cc5933c4ba12010dad0389e08d364",
+  "environment_remote_selectors": {},
+  "evidence": "/home/dgamroth/.cache/rtc-native-calibration-four-functional-20261006/classic-collect-v1",
+  "exit_code": 1,
+  "native_runner_sha256": "750059d1ee71783b63d1fbb96a6bc92cd9be436f551d1b450688a6aae2c2d5cb",
+  "no_production_or_scientific_edits": true,
+  "observed_SIGSEGV": false,
+  "observed_source_exit_signal": 15,
+  "package": "/tmp/classic-fgn-nativecal-final-v2-installed",
+  "plan": "/home/dgamroth/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/canonical-plan.json",
+  "plan_sha256": "f6d8d2a29119ac437a0b36e60d0d88cbe986f4dce27c1691179f8ac1c181d011",
+  "primary_exception_identified": false,
+  "raw_evidence_sha256": {
+    "/home/dgamroth/.cache/rtc-native-calibration-four-functional-20261006/classic-collect-v1-driver.log": "6494472b3690c7dbb7f502c5f07c7f095503452e5a0f60b63dc53eb906bf9666",
+    "/home/dgamroth/.cache/rtc-native-calibration-four-functional-20261006/classic-collect-v1-final-control-hint.json": "7f5e1c69b40d44db49516ffc2f0f775329f92d7637430f4aa4d8113d49b5aac7",
+    "/home/dgamroth/.cache/rtc-native-calibration-four-functional-20261006/classic-collect-v1-final-state.json": "a906569cf094d7f8d7b384d2ef0f84b51e0929b39e578c22a301041847c155ca",
+    "/home/dgamroth/.cache/rtc-native-calibration-four-functional-20261006/classic-collect-v1-owned-pid-absence.json": "994708c6479a2b11373e4e1a81ab2117f9b75a2f0afc1be6c5538a0e90c4cfc2",
+    "/home/dgamroth/.cache/rtc-native-calibration-four-functional-20261006/classic-collect-v1/deployment.log": "af9ec2705b0cf2bf036ca5fa2917dc8b03f86f217435fb7584693b0e8d0478b0",
+    "/home/dgamroth/.cache/rtc-native-calibration-four-functional-20261006/classic-collect-v1/qualification.json": "22ab47ef3ff696120580abf78984ef4a2e49f03a6c209949db2c84c543a607b1",
+    "/tmp/classic-fgn-nativecal-final-v2-loaded-sdk-actual.log": "e114053bdf5231b6db8ed8d7ff061e6ee3a3390896418926b9d0b6f886b1a151"
+  },
+  "root_source_checkpoint": "e01aa824360b616d39b7746925d5d7389fab682c",
+  "runtime": "/run/user/1000/rtc-nativecal-classic-collect-final-v1",
+  "scope": "attempted installed native action functional qualification; no admission/actions completed, no SCI/numerical/hardware acceptance",
+  "sealed_artifact_count": 575,
+  "source_sha256": {
+    "deployment/julia/src/native_acquisition_lifecycle_client.jl": "2d2d26302ef93bf23c0f3afbce16deb698faea152dc63fa5e25db31cca4142d5",
+    "deployment/qualify_calibration_native.jl": "bd82f3200414e4a1952ed85466583c13ff27cf5baa613655cf908f354ba15e63",
+    "deployment/qualify_sustained.jl": "c99e5150730bad708633977c1a0e0f97e14343c11b9a3c086b341846bbd41161"
+  },
+  "supervisor_failure": "acquisition owner Connect did not complete"
+}
