@@ -35,6 +35,11 @@ calibration action JSON framing, science graphs or the vendor HEART process.
   validation and archival. Retained restoration and source command ownership
   are separate facts: a Connected restored window can still have `held=true`
   until the source session closes.
+- Correction reports retain a separate completed-record cursor. It advances
+  after both the ordinary recorder and correction-truth record complete, and
+  resets at the successful new-generation zero boundary. Resume and failure
+  publication preserve that cursor while the live acquisition cursor can be
+  newer. Failed report writes do not advance the published report cursor.
 - An accepted Shutdown ticket is completed only after the session and action
   listener are closed. Stopped is synchronized with the private core under
   that ticket's remaining deadline. Failure or deadline expiry retains unknown
@@ -69,9 +74,13 @@ or Pause does not extend its input lifetime.
   explicit native control identity and an absolute private remote. A focused
   correction test checks held/restored independence before and after closure.
 
-The local HIL project has no Manifest and cannot load its declared JSON3 and
-AdaptiveOpticsSim packages. The primary integration worktree must run selected
-installed Classic/Copper owner tests, deployment/export tests, actual private
-core admission, and hardware/science qualification before closing RTC #6.
+The worktree HIL project has no Manifest. Source option tests can use the
+existing sealed CPU HIL environment without changing its dependencies.
+Integration passed 2,178 deployment assertions across 78 test sets, the 103
+protocol assertions and adjacent private-core endpoint and bridge tests.
+The [independent owner review](NATIVE_ACQUISITION_LIFECYCLE_OWNER_REVIEW.md)
+records the report-cursor correction's fail-before/pass-after evidence.
+The primary integration worktree must still run selected installed
+Classic/Copper owner cycles and scientific qualification before closing RTC #6.
 The retained Unix action JSON service is issue #7; ordinary simulator marker
 startup remains issue #9.

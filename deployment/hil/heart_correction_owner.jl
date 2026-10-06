@@ -610,6 +610,7 @@ function run_owner_native(options,bridge,plant_module,target)
     plant=session=owner=shutdown_ticket=nothing
     primary=control_failure=nothing
     in_effect=false
+    retained_cursor=Ref{Union{Nothing,Codec.AcquisitionCursor}}(nothing)
     current_cursor()=owner===nothing ? nothing : Acquisition.cursor(session)
     current_phase()=owner===nothing ? "initial" : owner.retained ? "restored" :
         session.service.phases.current===nothing ? "initial" : String(session.service.phases.current)
@@ -619,9 +620,8 @@ function run_owner_native(options,bridge,plant_module,target)
         window=owner===nothing ? nothing : UInt64(owner.window))
     function save_report!()
         owner===nothing && return nothing
-        cursor=current_cursor()
         HeartCorrectionOwner.publish_report!(options,science,recorder,state,owner)
-        Lifecycle.report_published!(bridge,cursor)
+        Lifecycle.report_published!(bridge,retained_cursor[])
         return nothing
     end
     function connect_effect!(ticket)
@@ -647,6 +647,7 @@ function run_owner_native(options,bridge,plant_module,target)
         owner=Owner(session,contract,projection,nothing,nothing,1,false)
         Native.start_session!(session)
         hold_window!(owner,1;deadline=ticket.deadline)
+        retained_cursor[]=Lifecycle.cursor(current_cursor())
         save_report!()
         return nothing
     end
@@ -662,6 +663,7 @@ function run_owner_native(options,bridge,plant_module,target)
         state.sequence=UInt64(0)
         state.completed=false
         state.deadline_ns=UInt64(0)
+        retained_cursor[]=Lifecycle.cursor(current_cursor())
         save_report!()
         return (Int32(0),"")
     end
@@ -715,6 +717,7 @@ function run_owner_native(options,bridge,plant_module,target)
             Main.record!(recorder,boundary,sequence,science.driver,model_nanoseconds(exposure.timestamp),
                 timing,finished-started,started,finished)
             Main.record_correction_truth!(recorder,science,sequence,model_nanoseconds(exposure.timestamp))
+            retained_cursor[]=Lifecycle.cursor(current_cursor())
             if state.running
                 state.deadline_ns,missed=Protocol.next_deadline(state.deadline_ns,options.period_ns,time_ns())
                 recorder.missed_wall_periods+=missed
@@ -739,7 +742,7 @@ function run_owner_native(options,bridge,plant_module,target)
             !owner.retained && snapshot!(owner,"failure-or-shutdown")
             report=primary===nothing ? nothing : sprint(showerror,primary)
             HeartCorrectionOwner.publish_report!(options,science,recorder,state,owner;failure=report)
-            Lifecycle.report_published!(bridge,stopped_cursor)
+            Lifecycle.report_published!(bridge,retained_cursor[])
         catch error
             push!(cleanup,error)
         end
