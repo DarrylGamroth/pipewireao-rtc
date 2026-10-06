@@ -4,6 +4,7 @@ const Common = PipeWireAODeployment.Common
 
 @testset "native HEART calibration exports the action server adapter" begin
     @test "native_calibration_actions.jl" in Export.HELPERS
+    @test all(name->name in Export.HELPERS,("simulator_owner.jl","native_owner_bootstrap.jl","jfg_owner.jl"))
     @test all(name -> isfile(joinpath(PipeWireAODeployment.resource_root(), "hil", name)),
         Export.HELPERS)
 end

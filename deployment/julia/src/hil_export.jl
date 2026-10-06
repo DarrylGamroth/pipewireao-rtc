@@ -6,6 +6,7 @@ using JSON3
 using ..Common
 using ..Deployment
 using ..ScienceExport
+import ..NativeControlClient, ..NativeOwnerBootstrapCodec
 
 const PACKAGE_UUIDS = Dict(
     "AdaptiveOpticsCalibration" => "3c8b5851-926e-4ebb-af30-f8544b98d45f",
@@ -406,17 +407,89 @@ function environment(package::AbstractString,plant::AbstractString,backend::Abst
     write(joinpath(package,"hil/Project.toml"),text)
 end
 
-function julia_owner_environment(package::AbstractString)
+function add_bootstrap_dependency!(path::AbstractString)
+    definition = TOML.parsefile(path)
+    dependencies = get!(definition, "deps", Dict{String,Any}())
+    uuid = "811555cd-349b-4f26-b7bc-1f208b848042"
+    get(dependencies,"ThreadPinning",uuid) == uuid || throw(ArgumentError("ThreadPinning dependency identity differs"))
+    dependencies["ThreadPinning"] = uuid
+    get!(definition, "compat", Dict{String,Any}())["ThreadPinning"] = "1"
+    open(path, "w") do io
+        TOML.print(io, definition; sorted=true)
+    end
+    return nothing
+end
+
+function julia_owner_environment(package::AbstractString; refresh=false)
     path = joinpath(package,"jfg/deployment/Project.toml")
-    text = read(path,String)
-    definition = TOML.parse(text)
-    !haskey(get(definition,"sources",Dict()),"PipeWireAO") || throw(ArgumentError("base Julia owner already overrides PipeWireAO"))
-    length(findall("[sources]\n",text)) == 1 || throw(ArgumentError("base Julia owner requires one sources table"))
-    write(path,replace(text,"[sources]\n"=>"[sources]\nPipeWireAO = {path = \"../../hil/packages/PipeWireAO\"}\n";count=1))
+    definition = TOML.parsefile(path)
+    sources = get!(definition, "sources", Dict{String,Any}())
+    expected = Dict("path"=>"../../hil/packages/PipeWireAO")
+    (!haskey(sources,"PipeWireAO") || (refresh && sources["PipeWireAO"] == expected)) ||
+        throw(ArgumentError("base Julia owner already overrides PipeWireAO"))
+    sources["PipeWireAO"] = expected
+    open(path,"w") do io
+        TOML.print(io,definition;sorted=true)
+    end
+    add_bootstrap_dependency!(path)
+end
+
+const LEGACY_BOOTSTRAP_FLAGS = (("--prepared-event","prepared"),("--connect-request","connect"),
+    ("--connect-reply","connected"),("--quit-request","quit"))
+
+"Bind an exported ordinary owner to its distinct cold endpoint."
+function bind_bootstrap_owner!(owner)
+    role = owner["role"]
+    node = "pipewireao.rtc.bootstrap." * role
+    ncodeunits(node) <= 128 || throw(ArgumentError("bootstrap node name exceeds its bound"))
+    owner["bootstrap-protocol"] = NativeControlClient.profile_name(NativeOwnerBootstrapCodec.PROFILE)
+    owner["bootstrap-node"] = node
+    append!(owner["argv"], ["--bootstrap-node", node, "--bootstrap-instance",
+        "@" * Deployment.bootstrap_instance_key(role) * "@"])
+    return owner
+end
+
+"Upgrade only the maintained sealed JFG marker descriptor, offline."
+function upgrade_legacy_julia_owner!(owner)
+    owner["role"] == "julia" || throw(ArgumentError("unsupported legacy external owner"))
+    argv = owner["argv"]
+    script = "@PACKAGE@/jfg/deployment/run_island.jl"
+    count(==(script),argv) == 1 || throw(ArgumentError("legacy owner lacks the maintained JFG entrypoint"))
+    "--session-run-control" in argv || throw(ArgumentError("legacy JFG owner lacks session run control"))
+    for (flag,key) in LEGACY_BOOTSTRAP_FLAGS
+        marker = "julia." * key
+        get(owner,key,nothing) == marker || throw(ArgumentError("legacy JFG marker differs: $key"))
+        positions = findall(arg->first(split(arg,'=';limit=2)) == flag,argv)
+        length(positions) == 1 && argv[only(positions)] == flag && only(positions) < length(argv) &&
+            argv[only(positions)+1] == "@RUNTIME@/" * marker || throw(ArgumentError("legacy JFG marker argument differs: $flag"))
+    end
+    for flag in ("--control-request","--control-reply","--bootstrap-node","--bootstrap-instance")
+        !any(arg->first(split(arg,'=';limit=2)) == flag,argv) || throw(ArgumentError("unexpected legacy owner control: $flag"))
+    end
+    remotes = findall(==("--remote"),argv)
+    length(remotes) == 1 && only(remotes) < length(argv) && argv[only(remotes)+1] == "@REMOTE@" ||
+        throw(ArgumentError("legacy JFG remote differs"))
+    for (flag,key) in LEGACY_BOOTSTRAP_FLAGS
+        index = only(findall(==(flag),argv))
+        deleteat!(argv,index:index+1)
+        delete!(owner,key)
+    end
+    argv[only(findall(==(script),argv))] = "@PACKAGE@/hil/jfg_owner.jl"
+    argv[only(findall(==("--remote"),argv))+1] = "@RUNTIME@/@REMOTE@"
+    return bind_bootstrap_owner!(owner)
+end
+
+function bootstrap_placement!(placement)
+    threads = placement["threads"]
+    any(thread->get(thread,"name",nothing) == "rtc-bootstrap",threads) &&
+        throw(ArgumentError("duplicate bootstrap placement"))
+    push!(threads,Dict("cpus"=>[placement["leader-cpu"]],"policy"=>"other","priority"=>0,
+        "count"=>1,"name"=>"rtc-bootstrap"))
+    return placement
 end
 
 function simulator_environment(backend::AbstractString)
-    value = Dict("OPENBLAS_NUM_THREADS"=>"1","JULIA_NUM_THREADS"=>"1,0")
+    value = Dict("OPENBLAS_NUM_THREADS"=>"1","JULIA_NUM_THREADS"=>"2,0")
     backend == "amdgpu" && (value["HSA_OVERRIDE_CPU_AFFINITY_DEBUG"] = "0")
     return value
 end
@@ -744,7 +817,7 @@ function export_package(args)
     args.dark_frames isa Int && 1 <= args.dark_frames <= 4096 || throw(ArgumentError("dark calibration must use 1..4096 exposures"))
     args.backend in ("cpu","cuda","amdgpu") || throw(ArgumentError("unsupported HIL backend"))
     base = realpath(args.base_package)
-    specification = Deployment.profile(joinpath(base,"deployment.conf"),args.pipewire_prefix)
+    specification = Deployment.profile(joinpath(base,"deployment.conf"),args.pipewire_prefix;legacy_export_input=true)
     provenance = Common.read_json(joinpath(base,"provenance.json"))
     get(provenance,"mode",nothing) == "frame" && get(provenance,"profile",nothing) in ("classic","copper") ||
         throw(ArgumentError("base must be a maintained Classic/Copper complete-frame package"))
@@ -794,7 +867,11 @@ function export_package(args)
             text = read(path,String)
             write(path,replace(text,r"\brate\s*=\s*\[\s*\d+\s+1\s*\]"=>"rate = [ $(args.rate_hz) 1 ]"))
         end
+        legacy_roles = String[]
         for owner in specification["owners"]
+            push!(legacy_roles,owner["role"])
+            upgrade_legacy_julia_owner!(owner)
+            bootstrap_placement!(specification["placement"][owner["role"]])
             index = findfirst(==("--rate"),owner["argv"])
             index === nothing || (owner["argv"][index+1] = session["rate"])
         end
@@ -826,27 +903,21 @@ function export_package(args)
             _checked([executable,"--startup-file=no","--threads=1,0","--project="*joinpath(package,"jfg/deployment"),
                       "-e","using Pkg; Pkg.resolve(); Pkg.instantiate(; update_registry=false, allow_autoprecomp=false)"])
         end
-        markers = Dict("prepared"=>"simulator.prepared","connect"=>"simulator.connect","connected"=>"simulator.connected",
-                       "quit"=>"simulator.quit")
-        argv = String[executable,"--startup-file=no","--threads=1,0","--project=@PACKAGE@/hil","@PACKAGE@/hil/simulator.jl",
+        argv = String[executable,"--startup-file=no","--threads=2,0","--project=@PACKAGE@/hil","@PACKAGE@/hil/simulator.jl",
                       "--profile",instrument,"--backend",args.backend,"--graph","@PACKAGE@/hil/plant.toml",
                       "--rate",string(args.rate_hz),"--exposure-ns",string(exposure),"--frames",string(args.frames),
-                      "--remote","@REMOTE@","--output","@RUNTIME@/simulator-result.json", "--control-node","simulator-wfs"]
+                      "--remote","@RUNTIME@/@REMOTE@","--output","@RUNTIME@/simulator-result.json", "--control-node","simulator-wfs"]
         correction && append!(argv,["--correction-diagnostics","true"])
         detector_observation && append!(argv,["--detector-observation","true"])
         (total > args.frames || wall_rate != "default") &&
             append!(argv,["--total-exchanges",string(total),"--wall-rate",wall_rate])
-        for (option,marker) in (("--prepared-event","prepared"),("--connect-request","connect"),("--connect-reply","connected"),
-                                ("--quit-request","quit"))
-            append!(argv,[option,"@RUNTIME@/"*markers[marker]])
-        end
-        push!(specification["owners"],merge(Dict{String,Any}("role"=>"simulator","argv"=>argv,
+        push!(specification["owners"],bind_bootstrap_owner!(Dict{String,Any}("role"=>"simulator","argv"=>argv,
             "environment"=>simulator_environment(args.backend),"control-protocol"=>"pipewireao.source-control/1",
-            "control-node"=>"simulator-wfs"),markers))
+            "control-node"=>"simulator-wfs")))
         specification["source-owner"] = "simulator"
         detector_observation && (specification["detector-observation"] = true)
         specification["name"] = "revolt-$instrument-$(provenance["engine"])-hil-$(args.backend)"
-        specification["placement"]["simulator"] = Dict("cpus"=>[6,14],"leader-cpu"=>6,"rt-priority"=>0,"threads"=>Any[],"locked-bytes"=>0)
+        specification["placement"]["simulator"] = bootstrap_placement!(Dict("cpus"=>[6,14],"leader-cpu"=>6,"rt-priority"=>0,"threads"=>Any[],"locked-bytes"=>0))
         specification["placement"]["core"] = ScienceExport.placement([2,14],provenance["engine"] == "fgn" ? [2] : Int[])
         detector_observation && push!(specification["placement"]["core"]["threads"],
             Dict("cpus"=>[14], "policy"=>"fifo", "priority"=>83, "count"=>1, "name"=>"observer-loop"))
@@ -871,6 +942,11 @@ function export_package(args)
         correction && (provenance["hil"]["correction_diagnostics"] = "direct public OPD witness; source diagnostic overhead excludes cadence qualification")
         detector_observation && (provenance["hil"]["detector_observation"] = "raw transported ADC behind capacity-one copy/drop-oldest queue; optional observer")
         provenance["runtime_requires"] = ["selected PipeWireAO prefix","Julia resolved HIL environment","selected simulator device"]
+        provenance["hil"]["owner_bootstrap"] = Dict(
+            "protocol"=>NativeControlClient.profile_name(NativeOwnerBootstrapCodec.PROFILE),
+            "converted_legacy_roles"=>legacy_roles,
+            "helpers_sha256"=>Dict(name=>ScienceExport.sha256(joinpath(package,"hil",name)) for name in
+                ("simulator.jl","simulator_owner.jl","native_owner_bootstrap.jl","jfg_owner.jl")))
         Common.write_json(joinpath(package,"provenance.json"),provenance)
         specification["artifacts"] = _package_artifacts(package)
         Common.write_json(joinpath(package,"deployment.conf"),specification)

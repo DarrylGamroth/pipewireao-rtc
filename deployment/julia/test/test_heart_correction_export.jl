@@ -140,3 +140,24 @@ end
         @test occursin("heart_correction_flags.jl",read(joinpath(package,"julia/assets/deployment/hil/heart_correction_analysis.jl"),String))
     end
 end
+
+
+@testset "correction freezes the moved scientific body and cold SDK" begin
+    @test all(name->name in X.FROZEN_HELPERS,("simulator.jl","simulator_owner.jl","native_owner_bootstrap.jl","jfg_owner.jl"))
+    @test all(name->name in X.HELPERS,X.FROZEN_HELPERS)
+    source = Meta.parseall(read(joinpath(PipeWireAODeployment.resource_root(),"hil/heart_correction_owner.jl"),String))
+    function frozen_assignment(expression)
+        expression isa Expr || return nothing
+        if expression.head == :(=) && expression.args[1] == :FROZEN_HELPERS
+            return expression.args[2]
+        end
+        for child in expression.args
+            result = frozen_assignment(child)
+            result === nothing || return result
+        end
+        nothing
+    end
+    assignment = frozen_assignment(source)
+    @test assignment !== nothing && assignment.head == :tuple
+    @test Tuple(assignment.args) == X.FROZEN_HELPERS
+end

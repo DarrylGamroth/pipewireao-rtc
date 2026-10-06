@@ -105,7 +105,8 @@ function export_package(args; simulator_backend::String="cpu")
             ScienceExport.copy_file(source,joinpath(package,"heart/bin",name))
         end
         ScienceExport.copy_file(args.rtc_binary,joinpath(package,"bin/pipewireao-rtc"))
-        for name in ("simulator.jl","owner_protocol.jl","heart_owner.jl","native_heart_control.jl")
+        for name in ("simulator.jl","simulator_owner.jl","native_owner_bootstrap.jl","jfg_owner.jl",
+                "owner_protocol.jl","heart_owner.jl","native_heart_control.jl")
             source = joinpath(ScienceExport.resource_root(),"hil",name)
             destination = joinpath(package,"hil",name)
             isfile(destination) && rm(destination)
@@ -177,7 +178,7 @@ function export_package(args; simulator_backend::String="cpu")
             "control-protocol"=>"pipewireao.rtc.heart/1",
             "control-node"=>"pipewireao.rtc.heart.revolt-$instrument-heart-hil-$simulator_backend",
             "environment"=>Dict("HRT_MEMORY_HUGEPAGES"=>"0","HRT_DEFER_WFS_INGRESS"=>"0")),simulator]
-        specification["placement"]["simulator"] = Dict("cpus"=>[12],"leader-cpu"=>12,"rt-priority"=>0,"threads"=>Any[],"locked-bytes"=>0)
+        specification["placement"]["simulator"] = HILExport.bootstrap_placement!(Dict("cpus"=>[12],"leader-cpu"=>12,"rt-priority"=>0,"threads"=>Any[],"locked-bytes"=>0))
         specification["placement"]["heart"] = Dict("cpus"=>[3,4,6,8,10,14],"leader-cpu"=>3,"rt-priority"=>0,"threads"=>Any[],"locked-bytes"=>0)
         specification["client"]["heart"] = "client-simulator.conf.in"
         specification["environment"] = Dict{String,Any}()

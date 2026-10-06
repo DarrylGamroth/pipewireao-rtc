@@ -4,6 +4,7 @@ using JSON3
 using ..Common
 using ..Deployment
 using ..ScienceExport
+using ..HILExport
 import ..NativeControlClient
 import ..NativeAcquisitionLifecycleCodec
 
@@ -243,7 +244,8 @@ function acquisition_source_control!(source, profile, instrument::AbstractString
         throw(ArgumentError("acquisition source requires one explicit remote"))
     argv[only(remotes) + 1] = "@RUNTIME@/@REMOTE@"
     for flag in ("--prepared-event", "--connect-request", "--connect-reply", "--quit-request",
-            "--control-request", "--control-reply", "--control-node", "--control-instance")
+            "--control-request", "--control-reply", "--control-node", "--control-instance",
+            "--bootstrap-node", "--bootstrap-instance")
         positions = findall(==(flag), argv)
         length(positions) <= 1 || throw(ArgumentError("duplicate source option $flag"))
         isempty(positions) && continue
@@ -251,7 +253,8 @@ function acquisition_source_control!(source, profile, instrument::AbstractString
         index < length(argv) || throw(ArgumentError("missing source option value $flag"))
         deleteat!(argv, index:(index + 1))
     end
-    for key in ("prepared", "connect", "connected", "quit", "control-request", "control-reply")
+    for key in ("prepared", "connect", "connected", "quit", "control-request", "control-reply",
+            "bootstrap-protocol", "bootstrap-node")
         delete!(source, key)
     end
     source["control-protocol"] = NativeControlClient.profile_name(profile)
@@ -272,6 +275,7 @@ function deployment_descriptor(package,base,specification,records,profile,engine
                                illumination="lamp",stage="interaction",capture_max_bytes=nothing)
     simulator = only([owner for owner in specification["owners"] if owner["role"] == get(specification,"source-owner",nothing)])
     calibration_source_control!(simulator, profile)
+    filter!(thread->get(thread,"name",nothing) != "rtc-bootstrap",specification["placement"][simulator["role"]]["threads"])
     if engine == "fgn"
         environment = get!(specification,"environment",Dict{String,Any}())
         environment["PIPEWIREAO_RTC_GRAPH_CALIBRATION_WFS"] = "@RUNTIME@/wfs.conf"
@@ -296,16 +300,19 @@ function deployment_descriptor(package,base,specification,records,profile,engine
         old = only([owner for owner in specification["owners"] if owner["role"] == "julia"])
         pins = julia_pin_cpu_arguments(old["argv"])
         placement = pop!(specification["placement"],"julia")
+        any(thread->get(thread,"name",nothing) == "rtc-bootstrap",placement["threads"]) ||
+            HILExport.bootstrap_placement!(placement)
         client = pop!(specification["client"],"julia")
         filter!(owner -> owner["role"] != "julia",specification["owners"])
         for record in records
             role = "julia-" * record["role"]
             owner = Dict{String,Any}("role"=>role,"argv"=>vcat(record["owner_arguments"],pins),"environment"=>deepcopy(old["environment"]))
-            for (flag,key) in (("--prepared-event","prepared"),("--connect-request","connect"),("--connect-reply","connected"),("--quit-request","quit"))
-                marker = role * "." * key
-                owner[key] = marker
-                append!(owner["argv"],[flag,"@RUNTIME@/" * marker])
-            end
+            argv = owner["argv"]
+            script = only(findall(==("@PACKAGE@/jfg/deployment/run_island.jl"),argv))
+            argv[script] = "@PACKAGE@/hil/jfg_owner.jl"
+            remote = only(findall(==("--remote"),argv))
+            argv[remote+1] = "@RUNTIME@/@REMOTE@"
+            HILExport.bind_bootstrap_owner!(owner)
             push!(specification["owners"],owner)
             specification["placement"][role] = deepcopy(placement)
             specification["client"][role] = client
@@ -328,7 +335,7 @@ function export_package(args)
     calibration_binary = selected_calibration_binary(args)
     rtc_binary = selected_rtc_binary(args)
     base = realpath(args.base_package)
-    specification = Deployment.profile(joinpath(base,"deployment.conf"),args.pipewire_prefix)
+    specification = Deployment.profile(joinpath(base,"deployment.conf"),args.pipewire_prefix;legacy_export_input=true)
     provenance = Common.read_json(joinpath(base,"provenance.json"))
     profile,engine = provenance["profile"],provenance["engine"]
     illumination,stage = option(args,:illumination,"lamp"),option(args,:calibration_stage,"interaction")
@@ -354,12 +361,14 @@ function export_package(args)
             isfile(joinpath(base,"hil/calibration_acquisition.jl")) || throw(ArgumentError("calibration deployment descriptor requires calibration_acquisition.jl in the HIL package"))
             ScienceExport.copy_deployment_runtime(package)
             ScienceExport.copy_tree(joinpath(base,"hil"),joinpath(package,"hil"))
-            for filename in ("calibration_owner.jl","calibration_acquisition.jl","calibration_server.jl",
+            for filename in ("simulator.jl","simulator_owner.jl","native_owner_bootstrap.jl","jfg_owner.jl",
+                    "calibration_owner.jl","calibration_acquisition.jl","calibration_server.jl",
                     "calibration_client.jl","owner_protocol.jl","native_acquisition_lifecycle.jl",
                     "native_calibration_actions.jl")
                 source = joinpath(ScienceExport.resource_root(),"hil",filename)
                 ScienceExport.copy_file(source,joinpath(package,"hil",filename))
             end
+            isfile(joinpath(package,"hil/Project.toml")) && HILExport.add_bootstrap_dependency!(joinpath(package,"hil/Project.toml"))
             mkpath(joinpath(package,"bin"))
             calibration_command = copy_calibration_binary(package,calibration_binary)
             rtc_runner = copy_rtc_binary(package,rtc_binary)
@@ -368,6 +377,7 @@ function export_package(args)
             ScienceExport.copy_tree(joinpath(base,"lib"),joinpath(package,"lib"))
         else
             ScienceExport.copy_tree(joinpath(base,"jfg"),joinpath(package,"jfg"))
+            deployment && HILExport.julia_owner_environment(package;refresh=true)
             transport = joinpath(base,"hil/packages/PipeWireAO")
             isdir(transport) && !isdir(joinpath(package,"hil/packages/PipeWireAO")) && ScienceExport.copy_tree(transport,joinpath(package,"hil/packages/PipeWireAO"))
         end
@@ -420,6 +430,11 @@ function export_package(args)
             metadata["artifact_scope"] = "initial-calibration-graphs-and-deployment-descriptor"
             metadata["calibration_command"] = calibration_command
             metadata["rtc_runner"] = rtc_runner
+            metadata["owner_transport_conversion"] = Dict(
+                "source"=>"pipewireao.rtc.calibration-lifecycle/1",
+                "external_graphs"=>engine == "jfg" ? "pipewireao.rtc.owner-bootstrap/1" : nothing,
+                "helpers_sha256"=>Dict(name=>ScienceExport.sha256(joinpath(package,"hil",name)) for name in
+                    ("simulator.jl","simulator_owner.jl","native_owner_bootstrap.jl","jfg_owner.jl")))
         end
         Common.write_json(joinpath(package,"provenance.json"),metadata)
         if deployment

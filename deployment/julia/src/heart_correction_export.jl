@@ -26,7 +26,7 @@ export export_package, main
 const HELPERS=(HeartCalibrationExport.HELPERS...,"heart_calibration_coordinates.jl",
     "calibration_inverse_analysis.jl","calibration_selection.jl","heart_correction_telemetry.jl","heart_correction_owner.jl","analyze_correction.jl",
     "heart_calibration_capture.jl","heart_calibration_capture_inputs.jl","heart_correction_admission.jl","heart_correction_analysis.jl","heart_correction_profiles.jl","heart_correction_phases.jl","heart_classic_projection.jl","heart_correction_flags.jl")
-const FROZEN_HELPERS=("simulator.jl","owner_protocol.jl","correction_truth.jl","analyze_correction.jl")
+const FROZEN_HELPERS=("simulator.jl","simulator_owner.jl","native_owner_bootstrap.jl","jfg_owner.jl","owner_protocol.jl","correction_truth.jl","analyze_correction.jl")
 const SOURCE_FILES=("source/blocks/src/hrtClwcBlock.c","source/blocks/src/hrtTfcBlock.c",
     "source/blocks/src/hrtHoReconBlock.c","source/template/src/hrtTemplateCmds.c",
     "source/template/src/hrtTemplateCB.c","source/config/src/hrtConfig.c",
@@ -204,7 +204,7 @@ function export_package(args)
         throw(ArgumentError("native correction requires the exact-zero public receive dependency"))
     helper_hashes=Dict(name=>digest(joinpath(base,"hil",name)) for name in FROZEN_HELPERS)
     all(digest(joinpath(ScienceExport.resource_root(),"hil",name))==hash for (name,hash) in helper_hashes) ||
-        throw(ArgumentError("native correction must preserve the frozen four normal scientific helpers"))
+        throw(ArgumentError("native correction must preserve the frozen normal scientific helpers and bootstrap SDK"))
     plant_hash=digest(joinpath(base,"hil/plant.toml"))
     projection=only(filter(item->item["name"]=="vdm-to-pdm",provenance["parameters"]))
     projection["shape"]==[277,253] || throw(ArgumentError("native physical projection shape differs"))

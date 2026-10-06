@@ -94,7 +94,7 @@ Main exceptions send a bounded fault fact to the monitor. It publishes Fault whi
 | BOOT-3 — root | Strict deploy profile/configuration, owner clients, absolute remotes/incarnations, export descriptors/assets/direct dependencies, thread placement and launcher flags; reject all legacy operational marker/file-control configurations. | Fresh installed ordinary Classic/Copper native and external JFG profiles, early preparation failure, bounded terminal stop, no marker IPC. |
 | BOOT-4 — root | System scientific and allocation gates after selected installed bootstrap migration. | Existing frame/command/reference comparison and inclusive zero-allocation boundary; owner/core/process cleanup, monitored thread placement. |
 
-Root owns deployment/export production files. The bootstrap worker owns only BOOT-1/2 and this design. Changes to shared generic envelope/endpoint semantics require separate evidence and adjudication. Persisted artifact writes are retained. Unsupported generic external owners must select a supported native SDK adapter or fail preflight with migration guidance.
+Root owns deployment runtime/schema, installed admission and scientific qualification. The bootstrap worker owns BOOT-1/2 and, after explicit adjudication, BOOT-3b exporter descriptors, helper/environment lists and their focused tests. Changes to shared generic envelope/endpoint semantics require separate evidence and adjudication. Persisted artifact writes are retained. Unsupported generic external owners must select a supported native SDK adapter or fail preflight with migration guidance.
 
 ## Required validation and limits
 
@@ -127,4 +127,24 @@ A native private-core discriminator established why ordinary Julia timer sleeps 
 
 Exact commands and retained logs are in `~/.cache/rtc-native-owner-bootstrap-20261006/`: `pure-source-final.log`, `actual-reviewed.log`, `jfg-actual.log`, `timer-before.jl`/`timer-runtime-before.jl`/`timer-before.log`, `include-seams.log`, `simulator-unit.log` and `resolve.log`. Direct ThreadPinning compat1 resolves offline to installed1.1.1; no dependency download or new Cargo target occurred. Source/parser mistakes and fixture races were corrected before these final results; retained earlier logs remain distinguishable.
 
-Documentation local links, whitespace and final newline passed; the Mermaid diagram rendered using the retained CLI image. This evidence does not close issue #9: root-owned strict deployment/export descriptors, frozen asset/provenance lists, monitor/native-loop placement and installed scientific/allocation gates remain required.
+Documentation local links, whitespace and final newline passed; the Mermaid diagram rendered using the retained CLI image. BOOT-1/2 evidence alone does not close issue #9. The later exporter work is recorded below; installed scientific/allocation and measured monitor/native-loop placement gates remain required.
+
+
+## BOOT-3b exporter integration
+
+Ordinary HIL source descriptors now bind `pipewireao.rtc.owner-bootstrap/1` at a node distinct from SourceControlV1. They use absolute `@RUNTIME@/@REMOTE@`, explicit role incarnation placeholders and `--threads=2,0`. External JFG owners use `hil/jfg_owner.jl` and retain their scientific graph/rate/parameter/pin arguments. HIL and JFG projects declare ThreadPinning directly. Ordinary process placement requires the `rtc-bootstrap` native ThreadLoop on the process leader CPU with SCHED_OTHER; this descriptor is a requirement, not measured placement evidence.
+
+Recorded legacy JFG descriptors are upgraded only during offline export, after checking their exact maintained script, role, all four marker names/arguments, session control and old remote binding. Unsupported/custom descriptors fail. Runtime profiles retain the strict default; only the input export validation opts into `legacy_export_input=true`. Original sealed base deployment/provenance hashes remain recorded. New HIL bootstrap conversion metadata records the converted roles and current entry-point, scientific-body and SDK helper hashes. Initial calibration records its acquisition/graph transport conversion and helper hashes. Neither path reports historical marker inputs as already natively qualified.
+
+Selecting native calibration/correction acquisition removes ordinary bootstrap flags, fields and the corresponding source placement requirement. The shared calibration/correction export helper lists now include `simulator_owner.jl`, `native_owner_bootstrap.jl` and `jfg_owner.jl`. Exporter and correction owner require the same expanded frozen-helper key set. The correction scientific hash gate remains unchanged in strength: a fresh upgraded HIL base is required, and a historical helper mismatch is rejected.
+
+Focused software verification passed **449/449** checks on CPU9 and retains exact output in `~/.cache/rtc-native-owner-bootstrap-20261006/exporters-final.log`. It covers strict-profile rejection of operational legacy descriptors, explicit offline input acceptance, migrated native profile acceptance, source/control endpoint separation, preserved scientific arguments, marker removal, role incarnation bindings, native acquisition stripping, helper assets/provenance hashes and matching frozen exporter/SDK key sets. These tests do not run an installed scientific cohort, establish stream readiness, measure allocation or prove OS thread placement. Those BOOT-4 gates remain required.
+
+
+Verification command:
+
+```sh
+taskset -c 9 julia --startup-file=no --project=deployment/julia -e 'using PipeWireAODeployment; include("deployment/julia/test/test_native_bootstrap_exports.jl"); include("deployment/julia/test/test_exports.jl"); include("deployment/julia/test/test_heart_calibration_export.jl"); include("deployment/julia/test/test_heart_correction_export.jl")'
+```
+
+The strict descriptor suite contributes 12 assertions; the split JFG wrapper suite contributes 18. Earlier `exporters-fixture-error.log` retains a test-only dictionary-pair sorting error corrected by selecting `by=first`; no production remediation was inferred from it. Temporary revision fixtures emit existing `git` diagnostics for paths outside a repository; all final test summaries pass and the process exits zero.

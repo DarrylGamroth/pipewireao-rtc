@@ -22,7 +22,7 @@ const Acquisition = Native.Acquisition
 const CorrectionTelemetry = HeartCorrectionTelemetry
 const TIMEOUT_NS = UInt64(30_000_000_000)
 const TAGS = (Native.NATIVE_TELEMETRY_TAGS..., "cbClUnclipped0")
-const FROZEN_HELPERS = ("simulator.jl","owner_protocol.jl","correction_truth.jl","analyze_correction.jl")
+const FROZEN_HELPERS = ("simulator.jl","simulator_owner.jl","native_owner_bootstrap.jl","jfg_owner.jl","owner_protocol.jl","correction_truth.jl","analyze_correction.jl")
 required_flags(profile::Symbol)=Profiles.Flags.required_flags(profile)
 digest(path) = bytes2hex(open(sha256,path))
 

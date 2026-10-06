@@ -5,6 +5,7 @@ module ExportFixture
 using PipeWireAODeployment: package_root, resource_root, source_relative_path
 using PipeWireAODeployment
 const Common = PipeWireAODeployment.Common
+const NativeOwnerBootstrapCodec = PipeWireAODeployment.NativeOwnerBootstrapCodec
 const NativeControlClient = PipeWireAODeployment.NativeControlClient
 const NativeAcquisitionLifecycleCodec = PipeWireAODeployment.NativeAcquisitionLifecycleCodec
 const NativeCalibrationActionClient = PipeWireAODeployment.NativeCalibrationActionClient
@@ -12,7 +13,8 @@ module Deployment
 using ..Common
 native_source(owner) = get(owner, "control-protocol", nothing) == "pipewireao.source-control/1"
 decode(path,prefix) = Common.read_json(path)
-profile(path,prefix) = Common.read_json(path)
+profile(path,prefix;legacy_export_input=false) = Common.read_json(path)
+bootstrap_instance_key(role) = "BOOTSTRAP_INSTANCE_" * replace(uppercase(role), "-"=>"_")
 end
 
 module HeartConfiguration end
@@ -195,7 +197,8 @@ end
         @test isfile(joinpath(deployed,"julia/assets/deployment/hil/calibration_campaign_analysis.jl"))
         @test isfile(joinpath(deployed,"julia/assets/deployment/hil/Project.toml"))
         for name in ("owner_protocol.jl", "native_acquisition_lifecycle.jl", "calibration_server.jl",
-                "native_calibration_actions.jl")
+                "native_calibration_actions.jl", "simulator.jl", "simulator_owner.jl",
+                "native_owner_bootstrap.jl", "jfg_owner.jl")
             @test read(joinpath(deployed,"hil",name)) ==
                 read(joinpath(ExportFixture.resource_root(),"hil",name))
         end
@@ -205,6 +208,10 @@ end
         selected = only(ExportFixture.Common.read_json(joinpath(deployed,"deployment.conf"))["owners"])
         @test selected["control-protocol"] == "pipewireao.rtc.calibration-lifecycle/1"
         @test selected["instrument"] == "classic"
+        provenance = ExportFixture.Common.read_json(joinpath(deployed,"provenance.json"))
+        @test provenance["source_deployment_sha256"] == ExportFixture.Common.sha256_file(joinpath(base,"deployment.conf"))
+        @test provenance["owner_transport_conversion"]["helpers_sha256"]["simulator_owner.jl"] ==
+            ExportFixture.Common.sha256_file(joinpath(deployed,"hil/simulator_owner.jl"))
         @test selected["argv"][findfirst(==("--control-instance"), selected["argv"]) + 1] == "@SOURCE_OWNER_INSTANCE@"
         @test selected["argv"][findfirst(==("--remote"), selected["argv"]) + 1] == "@RUNTIME@/@REMOTE@"
         @test isempty(intersect(Set(keys(selected)), Set(("prepared", "connect", "connected", "quit", "control-request", "control-reply"))))
@@ -215,10 +222,12 @@ end
     function base_source(instrument)
         Dict{String,Any}("role" => "simulator", "argv" => ["julia", "owner.jl",
             "--profile", instrument, "--remote", "@REMOTE@", "--control-node", "simulator-wfs",
+            "--bootstrap-node", "pipewireao.rtc.bootstrap.simulator", "--bootstrap-instance", "@BOOTSTRAP_INSTANCE_SIMULATOR@",
             "--prepared-event", "old.prepared", "--connect-request", "old.connect",
             "--connect-reply", "old.connected", "--quit-request", "old.quit"],
             "environment" => Dict(), "control-protocol" => "pipewireao.source-control/1",
-            "control-node" => "simulator-wfs", "prepared" => "old.prepared", "connect" => "old.connect",
+            "control-node" => "simulator-wfs", "bootstrap-protocol"=>"pipewireao.rtc.owner-bootstrap/1",
+            "bootstrap-node"=>"pipewireao.rtc.bootstrap.simulator", "prepared" => "old.prepared", "connect" => "old.connect",
             "connected" => "old.connected", "quit" => "old.quit")
     end
     for instrument in ("classic", "copper"), select! in
@@ -227,7 +236,8 @@ end
         select!(source, instrument)
         @test source["instrument"] == instrument
         @test source["argv"][findfirst(==("--control-node"), source["argv"]) + 1] == source["control-node"]
-        @test !any(flag -> flag in source["argv"], ("--prepared-event", "--quit-request", "--control-request"))
+        @test !any(flag -> flag in source["argv"], ("--prepared-event", "--quit-request", "--control-request", "--bootstrap-node", "--bootstrap-instance"))
+        @test !haskey(source,"bootstrap-protocol") && !haskey(source,"bootstrap-node")
         @test_throws ArgumentError select!(source, instrument)
     end
     @test_throws ArgumentError Calibration.calibration_source_control!(base_source("classic"), "copper")
@@ -363,9 +373,21 @@ end
             @test metadata["model_rate_hz"] == 500 && metadata["model_period_ns"] == 2_000_000
             @test metadata["wall_rate"] == wall_rate
             @test metadata["frames"] == 256 && metadata["total_exchanges"] == 1024
+            @test metadata["owner_bootstrap"]["protocol"] == "pipewireao.rtc.owner-bootstrap/1"
+            @test metadata["base_deployment_sha256"] == ExportFixture.Common.sha256_file(joinpath(base,"deployment.conf"))
+            @test metadata["owner_bootstrap"]["helpers_sha256"]["simulator_owner.jl"] ==
+                ExportFixture.Common.sha256_file(joinpath(output,"hil/simulator_owner.jl"))
             @test argument(owner["argv"], "--wall-rate") == wall_rate
             @test argument(owner["argv"], "--total-exchanges") == "1024"
             @test argument(owner["argv"], "--frames") == "256"
+            @test owner["bootstrap-protocol"] == "pipewireao.rtc.owner-bootstrap/1"
+            @test owner["bootstrap-node"] != owner["control-node"]
+            @test argument(owner["argv"],"--bootstrap-instance") == "@BOOTSTRAP_INSTANCE_SIMULATOR@"
+            @test argument(owner["argv"],"--remote") == "@RUNTIME@/@REMOTE@"
+            @test "--threads=2,0" in owner["argv"]
+            @test !any(haskey(owner,key) for (_,key) in HIL.LEGACY_BOOTSTRAP_FLAGS)
+            @test only(filter(thread->get(thread,"name",nothing) == "rtc-bootstrap",
+                ExportFixture.Common.read_json(joinpath(output,"deployment.conf"))["placement"]["simulator"]["threads"]))["cpus"] == [6]
             @test argument(owner["argv"], "--rate") == "500"
             @test argument(owner["argv"], "--exposure-ns") == "1896000"
             @test HIL.TOML.parsefile(joinpath(output, "hil/plant.toml"))["nodes"][1]["config"]["atmosphere_step"] == 0.002
@@ -410,5 +432,96 @@ end
         end
         @test_throws ArgumentError HIL.export_package(merge(arguments, (; rate_hz=501)))
         @test !ispath(arguments.output)
+    end
+end
+
+
+@testset "ordinary export native bootstrap contracts" begin
+    function legacy_jfg()
+        owner = Dict{String,Any}("role"=>"julia","environment"=>Dict("OPENBLAS_NUM_THREADS"=>"1"),
+            "argv"=>["julia","--threads=2,0","--project=@PACKAGE@/jfg/deployment",
+                "@PACKAGE@/jfg/deployment/run_island.jl","--session-run-control","--remote","@REMOTE@",
+                "--graph","@RUNTIME@/graph.conf","--pin-cpus","14,10"])
+        for (flag,key) in HIL.LEGACY_BOOTSTRAP_FLAGS
+            owner[key] = "julia." * key
+            append!(owner["argv"],[flag,"@RUNTIME@/julia." * key])
+        end
+        owner
+    end
+    original = legacy_jfg()
+    converted = HIL.upgrade_legacy_julia_owner!(deepcopy(original))
+    @test converted["bootstrap-protocol"] == "pipewireao.rtc.owner-bootstrap/1"
+    @test converted["bootstrap-node"] == "pipewireao.rtc.bootstrap.julia"
+    @test "@PACKAGE@/hil/jfg_owner.jl" in converted["argv"]
+    @test "@BOOTSTRAP_INSTANCE_JULIA@" in converted["argv"]
+    @test converted["argv"][findfirst(==("--remote"),converted["argv"])+1] == "@RUNTIME@/@REMOTE@"
+    @test Calibration.julia_pin_cpu_arguments(converted["argv"]) == ["--pin-cpus","14,10"]
+    @test !any(haskey(converted,key) for (_,key) in HIL.LEGACY_BOOTSTRAP_FLAGS)
+    @test legacy_jfg() == original
+    for mutate! in (owner->(owner["role"]="unknown"), owner->(owner["prepared"]="other"),
+            owner->push!(owner["argv"],"--prepared-event=other"),
+            owner->replace!(owner["argv"],"@REMOTE@"=>"other"),
+            owner->replace!(owner["argv"],"@PACKAGE@/jfg/deployment/run_island.jl"=>"custom.jl"),
+            owner->append!(owner["argv"],["--control-request","old"]))
+        invalid = legacy_jfg(); mutate!(invalid)
+        before = deepcopy(invalid)
+        @test_throws ArgumentError HIL.upgrade_legacy_julia_owner!(invalid)
+        @test invalid == before
+    end
+    placement = Dict("leader-cpu"=>6,"threads"=>Any[])
+    HIL.bootstrap_placement!(placement)
+    @test only(placement["threads"]) == Dict("cpus"=>[6],"policy"=>"other","priority"=>0,"count"=>1,"name"=>"rtc-bootstrap")
+    @test_throws ArgumentError HIL.bootstrap_placement!(placement)
+    @test HIL.simulator_environment("cpu")["JULIA_NUM_THREADS"] == "2,0"
+    mktempdir() do root
+        mkpath(joinpath(root,"jfg/deployment"))
+        path = joinpath(root,"jfg/deployment/Project.toml")
+        write(path,"[deps]\nJSON3 = \"0f8b85d8-7281-11e9-16c2-39a750bddbf1\"\n[sources]\n[compat]\nJSON3 = \"1\"\n")
+        HIL.julia_owner_environment(root)
+        definition = HIL.TOML.parsefile(path)
+        @test definition["deps"]["ThreadPinning"] == "811555cd-349b-4f26-b7bc-1f208b848042"
+        @test definition["compat"]["ThreadPinning"] == "1"
+        @test definition["sources"]["PipeWireAO"]["path"] == "../../hil/packages/PipeWireAO"
+        @test definition["compat"]["JSON3"] == "1"
+        @test_throws ArgumentError HIL.julia_owner_environment(root)
+        HIL.julia_owner_environment(root;refresh=true)
+        @test HIL.TOML.parsefile(path) == definition
+    end
+end
+
+@testset "split JFG deployment owners select the native wrapper" begin
+    mktempdir() do root
+        package = joinpath(root,"package"); mkpath(package)
+        source = Dict{String,Any}("role"=>"simulator","environment"=>Dict(),
+            "argv"=>["julia","@PACKAGE@/hil/simulator.jl","--profile","classic","--remote","@RUNTIME@/@REMOTE@",
+                "--control-node","simulator-wfs"],"control-protocol"=>"pipewireao.source-control/1","control-node"=>"simulator-wfs")
+        HIL.bind_bootstrap_owner!(source)
+        old = Dict{String,Any}("role"=>"julia","argv"=>["julia","--pin-cpus","14,10"],"environment"=>Dict("OPENBLAS_NUM_THREADS"=>"1"))
+        HIL.bind_bootstrap_owner!(old)
+        placement = Dict("cpus"=>[14,10],"leader-cpu"=>14,"rt-priority"=>0,"threads"=>Any[],"locked-bytes"=>0)
+        specification = Dict{String,Any}("owners"=>[source,old],"source-owner"=>"simulator","name"=>"split-fixture",
+            "client"=>Dict("simulator"=>"client.conf","julia"=>"client.conf"),
+            "placement"=>Dict("simulator"=>HIL.bootstrap_placement!(deepcopy(placement)),
+                "julia"=>HIL.bootstrap_placement!(deepcopy(placement))))
+        graphs = Calibration.split_graph(fixture_graph(),"classic","jfg","fixture")
+        records = [Dict("role"=>role,"owner_arguments"=>Calibration.julia_arguments(graph,[],role,"10/1","julia"))
+            for (role,graph) in sort(collect(graphs);by=first)]
+        saved_arguments = deepcopy(records)
+        Calibration.deployment_descriptor(package,root,specification,records,"classic","jfg",Dict("rate"=>"10/1"),"/unused")
+        @test records == saved_arguments
+        @test isempty(specification["placement"]["simulator"]["threads"])
+        @test !haskey(source,"bootstrap-protocol")
+        for role in ("julia-wfs","julia-command")
+            owner = only(filter(item->item["role"] == role,specification["owners"]))
+            @test "@PACKAGE@/hil/jfg_owner.jl" in owner["argv"]
+            @test !("@PACKAGE@/jfg/deployment/run_island.jl" in owner["argv"])
+            @test owner["argv"][findfirst(==("--remote"),owner["argv"])+1] == "@RUNTIME@/@REMOTE@"
+            @test owner["argv"][findfirst(==("--bootstrap-instance"),owner["argv"])+1] ==
+                "@BOOTSTRAP_INSTANCE_" * replace(uppercase(role),"-"=>"_") * "@"
+            @test Calibration.julia_pin_cpu_arguments(owner["argv"]) == ["--pin-cpus","14,10"]
+            @test owner["bootstrap-protocol"] == "pipewireao.rtc.owner-bootstrap/1"
+            @test only(specification["placement"][role]["threads"])["name"] == "rtc-bootstrap"
+        end
+        @test specification["placement"]["julia-wfs"] !== specification["placement"]["julia-command"]
     end
 end
