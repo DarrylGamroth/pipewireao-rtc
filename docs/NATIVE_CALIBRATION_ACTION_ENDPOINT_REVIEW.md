@@ -194,3 +194,38 @@ client/campaign/export assertions are software evidence. Actual installed
 Classic/Copper scientific and HEART actions, restoration, native Rust caller
 parity, exported asset completeness and end-to-end qualification remain distinct
 primary-agent gates.
+
+## Rust endpoint independent source review — 2026-10-06
+
+The earlier unfinished-Rust statement above describes its original revision.
+An independent bounded source pass now inspected the completed Rust adapter at
+`757e1e408b852000b9c692ce7ce084cd421148a8` in
+`pipewireao-rtc-native-controls`. The primary's pre-existing change to
+`deployment/test_qualify_sustained.jl` was preserved. Review notes are maintained
+in the separate `rtc-bootstrap-review` worktree; no production source or build
+target was changed for this pass.
+
+Files inspected: `src/native_calibration_endpoint.rs`, its focused tests,
+`src/native_calibration_action_codec.rs`, `src/bin/rtc-calibrate.rs`, the
+`CalibrationEndpoint` trait and selected driver/coordinator in
+`src/calibration.rs`, and the corresponding Julia client/action server and
+maintained wire contract.
+
+| Boundary | Source assessment |
+| --- | --- |
+| Live admission | Exact remote/node/PID/incarnation binding is revalidated; the remote is an owned socket in a private directory. Sparse registry candidates are followed by full owner/controller NodeInfo and typed capability proof. An ambiguous/replaced name, changed serial or changed full identity fails admission. |
+| Preparation | Discovery, marker proof, owner proof and Connected capability use the same absolute connection deadline. Preparing/Prepared remain waiting states; Fault/Stopped fail admission. |
+| Request | Wire preflight precedes submission. The adapter chooses a new token above both its own and the observed maximum and preserves the actual controller identity, endpoint instance and action run/serial. One pending request is retained; no automatic retry/reconnection is introduced. |
+| Timing | Submission serializes remaining effect time. Main-loop iterations are bounded by the remaining receive deadline and 10 ms. The selected `acquire_calibration` driver supplies the same coordinator/effect deadline to receive and independently rejects late coordinator completion; it does not restart the effect budget. |
+| Terminal and retirement | Matching terminal observation is timestamped. A matching reply observed before nonfatal removal can retain its outcome; prior loss, malformed/conflicting terminal state, or a late reply cannot establish success. Run/serial mismatch and negative transport results retire the connection. |
+| Capacity and malformed input | Owner Props have the shared 128 KiB bound. Capability keys, scalar widths, owner identities, lifecycle, accepted token and up to 32 unique controller rows are checked. Action completion/rejection goes through the shared strict codec. Adopt/Restore figure preflight precedes owned copying. The CLI preflights the whole plan before connection/Hold, including Collect reply capacity. |
+| Science and recovery | Native result conversion preserves full-width cursor/exposure identities and forwards evidence to the existing coordinator, which retains phase, causal evidence, figure/clipping and restoration checks. Typed known failures remain distinct from transport uncertainty. Endpoint retirement drops controller resources; the owner then retains hold/fault. The Rust coordinator does not silently add Capture support. |
+
+No additional confirmed defect was established by this source pass. The focused
+Rust tests were read, including retained completion before retirement, prior
+loss/conflict/late/mismatched reply rejection, typed recoverable failure,
+capability limits and figure preflight. They were **not independently executed**
+in this pass; no new Cargo build or private-core fixture was started. The
+primary's connected Rust/Julia proof remains separately attributable evidence.
+This addendum closes the bounded independent source assessment, not installed
+Rust caller/scientific parity, restoration qualification or target-host timing.
