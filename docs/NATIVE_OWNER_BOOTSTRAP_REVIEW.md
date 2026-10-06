@@ -12,11 +12,12 @@ this review. Investigative scripts and logs are retained under
 ## Scope and decision
 
 The native bootstrap preserves the intended thread ownership and exact native
-identity boundary in the inspected paths. **The reviewed revision is not ready
-for the inclusive simulator allocation gate:** BOOT-R001 confirms continuous
-allocation by the idle bootstrap monitor. Installed scientific, allocation,
-thread placement and systemd evidence remain separate required gates being
-performed by the primary agent.
+identity boundary in the inspected paths. BOOT-R001 confirmed continuous idle
+allocation at the initial revision; the paired runtime/SDK correction now passes
+independent quiet allocation and lifecycle verification below. BOOT-R002 records
+a subsequently found qualification locator mismatch and its correction.
+Installed scientific, allocation, thread placement and systemd evidence remain
+separate required gates being performed by the primary agent.
 
 Authority is [RTC-ARCH-024](architecture.md#native-live-control-transport),
 [RTC-DEV-030](operations.md#rtc-dev-030--native-local-live-controls), the approved
@@ -55,8 +56,9 @@ not proof of untested interleavings or hardware timing.
   `serve!` (line 402 onwards at reviewed revision), and the generic endpoint
   calls it makes; `deployment/julia/src/native_control_endpoint.jl`,
   `refresh_controllers!`, `poll!` and `take!`.
-- **Disposition:** confirmed; sent to the primary agent for remediation.
-  No production fix is included in this review artifact.
+- **Disposition:** confirmed, accepted and corrected; independent verification
+  passed for runtime `93a0661` (primary cherry-pick `bd669d9`) paired with
+  PipeWireAO Julia SDK `6e4e1ee`. The reviewer made no production changes.
 
 `serve!` calls `Endpoint.poll!` every 5 ms, including Connected with no incoming
 control traffic. With no accepted ticket it also calls `take!`. Both traverse
@@ -117,6 +119,100 @@ controller removal, accepted-effect timeout, Fault query and cleanup-before-Quit
 checks. Run the installed inclusive scientific allocation cohort after the fix;
 quiet transport evidence alone cannot qualify scientific execution or controls.
 
+### Independent remediation verification
+
+The runtime atomically consumes the old wake before checking operational state
+and the pending slot under the ThreadLoop lock. Poll/take no longer clear wake,
+so a newly published event is retained. A pending ticket independently requires
+polling even with no wake. Active tickets still undergo deadline/controller
+checks every cycle, and main facts/lifecycle transitions are not gated by wake.
+Concrete `Facts` avoids boxing the old fact tuple on the quiet path.
+
+The paired SDK change removes a per-query scratch `Ref` from healthy
+`filter_state` calls. Native `pw_filter_get_state` explicitly accepts a null
+optional error output (`if (error)` in local native `src/pipewire/filter.c`).
+The SDK still checks retained callback failure first, checks the open handle
+under its state lock, and on ERROR obtains/copies the native error text under
+that lock before throwing `PipeWireError`. If the second native query observes
+a newer healthy state, it returns that current state. There is no public
+signature, handle ownership or scientific algorithm change.
+
+The reviewer cherry-picked only remediation `93a0661` into the independent
+worktree as `6b91d40`. Every allocation/lifecycle test explicitly loaded canonical
+source SDK `6e4e1eebf8bd160f01a532dcfc7284dec92de61b`, not registered 0.6.16.
+The external JFG child also explicitly loaded that source; an additional
+assertion verifies its printed module path. All runs used CPU 13, with GC
+enabled, and no scientific frames.
+
+| Independent verification | Result |
+| --- | --- |
+| Same original 500 ms process-wide oracle, warmed baseline | 0 bytes, 0 pool allocations |
+| Quiet Connected first and second warmed 500 ms windows | Both 0 bytes, 0 pool allocations; before fix both 1,753,920 bytes |
+| Direct cancellation and preparation check | Both 0 bytes |
+| Maintained quiet runtime regression | 12/12; zero quiet health/facts allocation, wake preservation, pending/health behavior |
+| Actual private-core lifecycle suite | 49/49; fresh Status during blocked main, accepted expiry/removal, staged pending without wake, Fault and cleanup/terminal behavior |
+| Actual external JFG suite with canonical child SDK | 8/8 (seven maintained assertions plus child SDK source check) |
+| SDK getter focused suite | 10/10; 1,000 healthy queries allocate zero, native error code/text and callback exception identity retained, closed-handle rejection |
+
+The unchanged direct registry poll still allocates 9,712 bytes: it is now
+intentional control-event work outside quiet Connected operation. Neither that
+work nor installed scientific controls are reclassified as allocation-free.
+
+Evidence in the review cache: `idle-after.log`, `lifecycle-after.log`,
+`remaining-after.log`, `jfg-after.log` and `jfg_proof.jl`. The first combined
+cache-only SDK/quiet/JFG driver completed SDK 10/10 and quiet 12/12, then failed
+to resolve a relative fixture include from `include_string`; that setup error
+is retained in `remaining-after.log`. The corrected JFG-only driver uses an
+absolute fixture include and passed. No production correction was inferred
+from the fixture error.
+
+The successful JFG child emits a Julia 1.12 world-age warning for accessing the
+later-defined `Main.parse_arguments` binding. No failure was observed; future
+Julia/Revise behavior is not qualified by these checks. Layered source SDK runs
+also retain dependency precompile/version warnings in their logs.
+
+Verified source SHA-256:
+
+- Runtime: `f4bc3b0aab1757465a7cf9d436c4cb1cc23f65953f1c182a5f8c271c7a57cba2`.
+- SDK `filter.jl`: `a3936d67b193885159b25136beb3bfede182bb02113e328103fe44c679f73b4b`.
+
+## BOOT-R002 — Sustained qualifier reads retired locator field
+
+- **Severity:** medium.
+- **Confidence:** high.
+- **Evidence class:** confirmed source/schema mismatch; deterministic local
+  field-access failure and corrected handoff test. No installed failing launch
+  is claimed.
+- **Affected code:** `deployment/qualify_sustained.jl`, `main`, at `983897b` /
+  primary revision `bd669d9`.
+- **Disposition:** primary accepted and corrected the call site; independent
+  focused handoff verification is recorded below.
+
+The new native qualification code called
+`N.connect_locator(ready["socket"])`. The current `Deployment.wait_state`
+deliberately publishes `control_locator` and no `socket` alias. Consequently
+the selected qualifier would raise `KeyError` before it could bind the native
+supervisor. This is a coordinator regression, not a scientific failure.
+
+The primary added `connect_supervisor`, selecting `control_locator`, retaining
+the observed deployment UUID via `expected_uuid`, and rejecting/closing a client
+whose owner PID differs from the spawned launcher. Main now calls this helper.
+The reviewer independently checks the retired expression fails on the current
+schema, the correct locator/deadline/UUID reach the connector, a matching PID
+returns the retained client, and a mismatched PID closes it and fails.
+The local connector is injected; this does not substitute for live native proof.
+The independent handoff suite passed **6/6** on CPU 13; script and log are
+`locator_handoff.jl` and `locator-handoff-after.log` in the review cache.
+Verified corrected qualifier SHA-256 (primary working tree before commit):
+`7ad1d5dfe6b4acfefe25041d9a4327d170ebbfddeee44b7e604dedc6dfb3527d`.
+
+The rest of `983897b` was inspected without finding another confirmed defect.
+Report admission follows fresh native completed/report-ready generation and
+sequence; reset observes the new native generation and zero cursor. The report
+adds acquisition generation without moving the scientific allocation boundary.
+Its final generation read after adapter close accesses retained Julia state;
+the adapter checks `isrunning` and avoids locking the closed native loop.
+
 ## Evidence reviewed and remaining gates
 
 The reviewed [bootstrap design evidence](NATIVE_OWNER_BOOTSTRAP_DESIGN.md)
@@ -125,7 +221,8 @@ codec/parser/owner suites and 449 exporter checks. The
 [deployment validation](NATIVE_DEPLOYMENT_BOOTSTRAP_VALIDATION.md) records
 40 strict schema checks, 432 coordination regressions and 59 actual launcher
 checks. These are producer-reported evidence inspected alongside source;
-this review independently executed only the allocation discriminator above.
+this review independently executed the allocation discriminator and the
+post-remediation suites listed above.
 
 These fixtures submit zero SCI frames. Required remaining evidence includes
 fresh installed Classic/Copper ordinary and external graph science, inclusive
