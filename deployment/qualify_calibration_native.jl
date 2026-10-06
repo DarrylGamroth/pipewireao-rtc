@@ -191,6 +191,23 @@ function retain_heart_evidence(report, fixture, output)
     return merge(evidence,Dict("retained_path"=>destination))
 end
 
+"Retain the owner report on a failed qualification without hiding its primary error."
+function retain_failure_owner_report!(record, instance, output)
+    instance === nothing && return
+    source = joinpath(instance,"simulator-result.json")
+    isfile(source) && !islink(source) || return
+    delete!(record,"failure_owner_report_sha256")
+    delete!(record,"failure_owner_report_copy_failure")
+    destination = joinpath(output,"failure-owner-report.json")
+    try
+        cp(source,destination;force=true)
+        record["failure_owner_report_sha256"] = C.sha256_file(destination)
+    catch copy_failure
+        record["failure_owner_report_copy_failure"] = sprint(showerror,copy_failure)
+    end
+    return
+end
+
 "Accept success only with all required effects, cleanup, and no recorded failure."
 function qualification_exit_code(record)
     Q.qualification_exit_code(record) == 0 || return 1
@@ -349,7 +366,7 @@ function main(args=ARGS)
         "shutdown_confirmed"=>false,"success"=>false)
     command = installed_command(package,runtime;owner_preparation_timeout_seconds=300)
     record["run_argv"] = command
-    process = endpoint = lifecycle = heart = nothing
+    process = endpoint = lifecycle = heart = instance = nothing
     heart_initial = child_identity = nothing
     identities = Dict{String,Any}()
     try
@@ -402,12 +419,19 @@ function main(args=ARGS)
                     if mode == "collect"
                         argv = [joinpath(package,"bin/rtc-calibrate"),"--remote",binding.remote,
                             "--node",binding.node,"--owner-pid",string(binding.owner_pid),
-                            "--owner-instance",string(binding.instance),"--plan",plan_path]
+                            "--owner-instance",string(binding.instance),"--plan",plan_path,
+                            "--evidence",joinpath(output,"calibration-completions.json")]
                         record["calibration_argv"] = argv
                         response = Campaign.run_checked(argv;timeout=180,
                             maximum_output_bytes=Campaign.interaction_result_output_limit_bytes(plan_path))
                         write(joinpath(output,"rtc-calibrate.json"),response.stdout)
                         write(joinpath(output,"rtc-calibrate.stderr"),response.stderr)
+                        evidence_path = joinpath(output,"calibration-completions.json")
+                        if isfile(evidence_path) && !islink(evidence_path)
+                            record["calibration_completions_evidence"] = Dict(
+                                "path"=>evidence_path,"sha256"=>C.sha256_file(evidence_path))
+                        end
+                        response.returncode == 0 || retain_failure_owner_report!(record,instance,output)
                         require(response.returncode == 0,"Rust calibration process failed")
                         result = C.parse_json(response.stdout)
                         last = verify_collect(result,plan,startup)
@@ -463,6 +487,11 @@ function main(args=ARGS)
                         record["heart_child_cleanup_confirmed"] = heart_child_absent(child_identity)
                         require(record["heart_child_cleanup_confirmed"],"owned HEART child survived native shutdown")
                     end
+                catch primary
+                    record["success"] = false
+                    record["failure"] = sprint(showerror,primary)
+                    retain_failure_owner_report!(record,instance,output)
+                    rethrow()
                 finally
                     if process_running(process)
                         # Use the retained admitted client while it is available.
@@ -497,6 +526,7 @@ function main(args=ARGS)
                 record["client_cleanup_failure"] = sprint(showerror,cleanup)
             end
         end
+        record["success"] || retain_failure_owner_report!(record,instance,output)
         if process !== nothing && process_running(process)
             record["success"] = false
             try record["cleanup"] = Q.fallback_cleanup(process,identities)

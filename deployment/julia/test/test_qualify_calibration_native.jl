@@ -264,6 +264,38 @@ end
     end
 end
 
+@testset "Failed calibration retains the owner report without masking failure" begin
+    mktempdir() do directory
+        instance=joinpath(directory,"runtime");output=joinpath(directory,"output")
+        mkpath(instance);mkpath(output)
+        source=joinpath(instance,"simulator-result.json")
+        write(source,"{\"state\":\"failed\"}")
+        record=Dict{String,Any}("success"=>false,"failure"=>"primary failure")
+        CQ.retain_failure_owner_report!(record,instance,output)
+        retained=joinpath(output,"failure-owner-report.json")
+        @test read(retained,String) == read(source,String)
+        @test record["failure_owner_report_sha256"] == CQ.C.sha256_file(retained)
+        @test record["failure"] == "primary failure"
+        @test !record["success"]
+
+        rm(source)
+        CQ.retain_failure_owner_report!(record,instance,output)
+        @test record["failure_owner_report_sha256"] == CQ.C.sha256_file(retained)
+        @test !haskey(record,"failure_owner_report_copy_failure")
+        @test record["failure"] == "primary failure"
+        @test !record["success"]
+
+        write(source,"{\"state\":\"new failure\"}")
+        blocked_output=joinpath(directory,"blocked-output")
+        write(blocked_output,"not a directory")
+        CQ.retain_failure_owner_report!(record,instance,blocked_output)
+        @test !haskey(record,"failure_owner_report_sha256")
+        @test record["failure_owner_report_copy_failure"] isa String
+        @test record["failure"] == "primary failure"
+        @test !record["success"]
+    end
+end
+
 @testset "Frozen Copper small plan retains actual 3600 by two responses" begin
     plan=Dict("version"=>1,"run"=>1,"probes"=>[zeros(Float32,277) for _ in 1:2],"measurements"=>3600,
         "frames_per_probe"=>2,"settling"=>Dict("kind"=>"discard_exposures","frames"=>1))
