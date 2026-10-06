@@ -73,8 +73,39 @@ including six terminal report/snapshot checks.
 
 ## Remaining gates
 
-Fresh installed Classic/Copper HIL deployments and calibration/correction
-consumers remain required. The process fixture does not replace those checks.
+The merged deployment unit suite passed **1707/1707 assertions in 72 sets**
+after incorporating main's installed Julia launcher correction. The interrupt
+fixture needed the newly added native HEART client field; its initial merge
+failure and corrected run are retained under the control evidence root.
+
+A fresh installed Classic CPU HIL package passed two finite 16-frame runs,
+coordinated Stop/Reset/Start and shutdown. Fresh source queries observed
+generation 1/sequence 16 and generation 2/sequence 16, each completed and with
+matching report cursor. HEART generation reports identify old child PID3559678
+and replacement PID3560548 under wrapper PID3559565. The launcher exited0 and
+its owned runtime was removed. CPU0 was excluded; the package retained its
+declared core CPU2, simulator CPU12 and vendor worker placement. This is
+functional software HIL evidence, not numerical equivalence or wall cadence.
+
+Installed evidence is in `$HOME/.cache/rtc-heart-native-20261006/`:
+`classic-installed-final-qualification.json`, its launcher log and
+`classic-installed-final-reports/`. The qualification used the exact previously
+qualified vendor executable/client hashes above. The original `heart/` checkout
+contains an older February executable with a different hash; an initial export
+selected that binary and failed wrapper preparation. That input and failure are
+retained separately. The tested binary matches `heart-copper-comparison` and
+the immutable earlier qualification package. No vendor source was changed.
+
+The fresh installed Copper CPU HIL package also passed two finite 16-frame runs,
+Stop/Reset/Start and shutdown. Fresh source queries observed generations1 and2,
+sequence16 and matching report cursors. Wrapper PID3563128 replaced child
+PID3563208 with PID3564051. The launcher exited0 and its owned runtime was
+removed. `copper-installed-final-qualification.json`, launcher log and
+`copper-installed-final-reports/` retain these observations under the same
+installed evidence root. Both profiles used the same unchanged vendor hashes.
+
+Affected calibration/correction consumers remain required. The process and
+ordinary HIL fixtures do not replace those checks.
 The native framework separately exercises collision/stale/duplicate, controller
 removal and transport/deadline behavior; owner-specific effects and installed
 scientific/allocation evidence must retain their own boundaries. Issue #5 is
