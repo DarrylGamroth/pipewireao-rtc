@@ -1,0 +1,20 @@
+   Compiling pipewireao-rtc v0.1.0 (/home/dgamroth/workspaces/codex/pipewire/rtc-native-explicit-socket)
+    Finished `test` profile [unoptimized] target(s) in 3.49s
+warning: the following packages contain code that will be rejected by a future version of Rust: proc-macro-error2 v2.0.1
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running unittests src/lib.rs (/tmp/rtc-maintenance-target-20261006/debug/deps/pipewireao_rtc-4cee2cf8cb150278)
+
+running 3 tests
+test native_connection::tests::explicit_socket_ignores_environment_in_owned_child ... 
+running 1 test
+test native_connection::tests::explicit_socket_ignores_environment_in_owned_child ... EXPLICIT_SOCKET requested_accepted=true environment_accepted=false
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 93 filtered out; finished in 0.00s
+
+ok
+test native_connection::tests::full_unix_backlog_is_failure_without_wait_or_retry ... ok
+test native_connection::tests::socket_is_nonblocking_and_failure_does_not_fall_back ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 91 filtered out; finished in 0.01s
+

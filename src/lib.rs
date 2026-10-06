@@ -13,6 +13,8 @@ pub mod native_calibration_action_codec;
 #[cfg(feature = "live")]
 pub mod native_calibration_endpoint;
 #[cfg(feature = "live")]
+mod native_connection;
+#[cfg(feature = "live")]
 pub mod native_control_codec;
 #[cfg(feature = "live")]
 pub mod native_runner_codec;

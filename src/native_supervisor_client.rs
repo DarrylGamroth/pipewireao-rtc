@@ -762,11 +762,15 @@ impl Resources {
         observation: &Rc<RefCell<Observation>>,
         marker_name: &str,
         marker_instance: i64,
+        deadline: Instant,
     ) -> Result<Self, String> {
         let loop_ = pw::main_loop::MainLoopRc::new(None).map_err(|e| e.to_string())?;
         let context = pw::context::ContextRc::new(&loop_, None).map_err(|e| e.to_string())?;
         let core = context
-            .connect_rc(Some(properties! { "remote.name"=>remote }))
+            .connect_fd_rc(
+                crate::native_connection::connect_socket(remote, deadline)?,
+                None,
+            )
             .map_err(|e| e.to_string())?;
         let errors = Rc::clone(observation);
         let core_listener = core
@@ -864,6 +868,7 @@ impl Client {
                 &observation,
                 &marker_name,
                 marker_instance,
+                deadline,
             )?),
             observation,
             last_token: 0,

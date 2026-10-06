@@ -1,0 +1,37 @@
+   Compiling pipewireao-rtc v0.1.0 (/home/dgamroth/workspaces/codex/pipewire/rtc-native-explicit-socket)
+    Finished `test` profile [unoptimized] target(s) in 3.88s
+warning: the following packages contain code that will be rejected by a future version of Rust: proc-macro-error2 v2.0.1
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running unittests src/lib.rs (/tmp/rtc-maintenance-target-20261006/debug/deps/pipewireao_rtc-4cee2cf8cb150278)
+
+running 1 test
+test native_connection::tests::explicit_socket_ignores_environment_in_owned_child ... 
+running 1 test
+test native_connection::tests::explicit_socket_ignores_environment_in_owned_child ... EXPLICIT_SOCKET requested_accepted=false environment_accepted=true
+
+thread 'native_connection::tests::explicit_socket_ignores_environment_in_owned_child' (3920333) panicked at src/native_connection.rs:102:54:
+called `Result::unwrap()` on an `Err` value: Os { code: 11, kind: WouldBlock, message: "Resource temporarily unavailable" }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    native_connection::tests::explicit_socket_ignores_environment_in_owned_child
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 93 filtered out; finished in 0.00s
+
+
+thread 'native_connection::tests::explicit_socket_ignores_environment_in_owned_child' (3920331) panicked at src/native_connection.rs:134:9:
+assertion failed: status.success()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    native_connection::tests::explicit_socket_ignores_environment_in_owned_child
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 93 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `--lib`
