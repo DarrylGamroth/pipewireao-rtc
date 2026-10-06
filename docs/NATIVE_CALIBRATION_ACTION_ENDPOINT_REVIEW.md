@@ -55,8 +55,10 @@ as a completed native capability here.
 
 - Severity: P1. Confidence: high. Classification: confirmed source defect and
   deterministic private-core reproduction.
-- Disposition: independently confirmed and accepted by the primary agent;
-  targeted remediation assigned, pass-after verification pending.
+- Disposition: independently confirmed, accepted by the primary agent, fixed
+  in `5743b3e`, and independently verified. Review-worktree cherry-pick:
+  `d206c42`. Corrected action-server source SHA-256:
+  `66276c157686c590b8cc1ed2b3da7f9bc73278719a58332ca1cf40b08c189a43`.
 - Affected code: `deployment/hil/native_calibration_actions.jl`, `serve!`
   terminal-request handling and `_fault_transport!`; related `apply!`
   foreign-controller completion path.
@@ -104,8 +106,9 @@ A related source-derived race exists after a foreign ticket has been taken:
 `apply!` emits a semantic InvalidEvidence result with a zero transport result.
 `Endpoint.complete!` consequently checks B's deadline/presence again. Expiry or
 removal there throws through the same service fault path. This second ordering
-has not been separately reproduced and is a required remediation discriminator,
-not an additional independently observed finding.
+was source-derived at baseline, rather than a second independently observed
+failure. Its expiry and removal branches were exercised successfully during
+post-fix verification below.
 
 ### Adjudicated remediation and required validation
 
@@ -121,7 +124,55 @@ Rerun the exact reproducer after remediation and require A to remain held and
 healthy, then successfully Restore and Release. Add the complementary foreign
 expiry and taken-ticket completion race, and retain regressions proving that
 bound A removal, action expiry and actual Core loss still fault or retain
-unknown outcome as required. Final independent verification remains pending.
+unknown outcome as required.
+
+### Independent post-fix verification
+
+The exact original discriminator now passes **12/12**, compared with **7 passed,
+3 failed** on the baseline. Controller A remains healthy and held after B's
+retirement, then successfully performs Restore and Release. The extra two
+success assertions are reached only when A remains healthy. The test source
+was unchanged between the discriminating before and after runs; only the
+review worktree's production source changed.
+
+Further cold verification passed **80/80**:
+
+| Check | Assertions | Observed outcome |
+| --- | ---: | --- |
+| Maintained foreign pre-take expiry/removal and expiry while applying | 26 | A's controller, activity, run, serial, phase and hold preserved; A restores/releases |
+| Maintained expired initial invalid ticket before take | 7 | No controller or SCI identity binding; subsequent valid run succeeds |
+| Foreign removal after take and bound-controller expiry before take | 19 | Foreign removal remains neutral; bound-controller expiry faults and retains hold |
+| Injected actual endpoint publication failure during expired foreign completion | 11 | Failure propagates, endpoint becomes failed, A faults/holds; no foreign adoption |
+| Maintained bound-controller removal | 9 | Fault and hold retained, native lifecycle Fault observed |
+| Actual disposable private Core termination | 8 | Owner faults and retains hold; action ingress closes without restoration claim |
+
+Total independent post-fix assertions: **92/92**, including the original 12.
+The publication test supplies a controlled throwing callback to the real generic
+endpoint publisher; it does not synthesize an owner result. The core-loss test
+terminates only its own disposable private daemon. Both confirm that the
+foreign-retirement exception path does not conceal real owner transport
+failure. No production source was modified for these tests.
+
+Source inspection confirms why these cases remain distinct. The neutral
+completion fallback first requires an operational endpoint and the identical
+pending/applying ticket, then confirms that the foreign ticket actually expired
+or lost its controller. `publish!` poisons endpoint failure before rethrowing,
+so its error cannot pass that operational check. Bound-controller terminal
+retirement still takes the original fail-closed path.
+
+Evidence in the same cache directory:
+
+- `foreign-retirement-after.log` (exact original discriminator).
+- `foreign-retirement-verification.jl` and
+  `foreign-retirement-verification.log` (63 assertions).
+- `bound-controller-core-loss.jl` and `bound-controller-core-loss.log`
+  (17 assertions).
+
+All runs used Julia 1.12.7 with bounds checking on shared CPU 15 and printed the
+loaded source SDK path. Precompile cache/version warnings from the layered
+prepared HIL/source SDK environment remain in the logs; the tests completed
+successfully. These are protocol and cleanup assertions with synthetic SCI,
+not timing, installed-owner or scientific qualification.
 
 ## Evidence discipline and remaining gates
 
