@@ -9,7 +9,7 @@ const SR_PERIOD_NS = UInt64(2_000_000)
 function sustained_arguments(root; extra=String[])
     return [
         "--profile", "classic", "--graph", joinpath(root, "plant.toml"),
-        "--rate", "500", "--exposure-ns", "1896000", "--remote", "mock-core",
+        "--rate", "500", "--exposure-ns", "1896000", "--remote", joinpath(root,"mock-core"),
         "--prepared-event", joinpath(root, "prepared"),
         "--connect-request", joinpath(root, "connect-request"),
         "--connect-reply", joinpath(root, "connect-reply"),
@@ -52,8 +52,8 @@ end
         end
         @test_throws ArgumentError parse(["--wall-rate", "unpaced"])
         @test_throws ArgumentError parse(["--wall-rate", "100"])
-        heart = ["--transport", "heart", "--controller-request", joinpath(root, "heart-request"),
-            "--controller-reply", joinpath(root, "heart-reply")]
+        heart = ["--transport", "heart", "--controller-node", "fixture.heart",
+            "--controller-pid", "123", "--controller-instance", "17"]
         @test !parse(heart).sustained
         @test_throws ArgumentError parse([heart; prefix])
         @test_throws ArgumentError parse([heart; prefix; "--wall-rate"; "unpaced"])

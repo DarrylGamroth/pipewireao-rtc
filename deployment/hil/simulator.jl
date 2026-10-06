@@ -9,6 +9,7 @@ using SHA
 using TOML
 
 include("owner_protocol.jl")
+include("native_heart_control.jl")
 include("source_control.jl")
 include("correction_truth.jl")
 include("sustained_metrics.jl")
@@ -33,25 +34,8 @@ end
 
 function reset_controller!(options, request_id; timeout_seconds=14)
     get(options, :transport, :scientific) === :heart || return nothing
-    Protocol.write_json_atomic(options.controller_request,
-        (; version=1, id=request_id, operation="reset"))
-    deadline = time_ns() + UInt64(round(Int, timeout_seconds * 1e9))
-    while time_ns() < deadline
-        isfile(options.quit_request) && error("shutdown requested while resetting HEART")
-        if isfile(options.controller_reply)
-            payload = read(options.controller_reply)
-            length(payload) <= Protocol.MAX_REPLY_BYTES || error("HEART reset reply exceeds bound")
-            reply = Protocol.JSON3.read(payload)
-            if get(reply, :id, nothing) == request_id
-                get(reply, :version, nothing) == 1 && get(reply, :operation, nothing) == "reset" &&
-                    get(reply, :ok, false) === true && get(reply, :sequence, nothing) == 0 &&
-                    get(reply, :state, nothing) == "paused" || error("HEART reset failed: $reply")
-                return nothing
-            end
-        end
-        sleep(0.005)
-    end
-    error("HEART reset acknowledgement timed out")
+    # Native tokens belong to the bound controller, not the legacy request id.
+    return HILHeartControl.reset!(options; timeout_seconds)
 end
 
 function load_plant(profile)
@@ -557,7 +541,9 @@ function main(arguments=ARGS)
     target = load_target(options.backend)
     # Selected plant and accelerator extension imports must be visible to all
     # calls made by the owner, including public backend availability methods.
-    return Base.invokelatest(run_owner, options, plant, target)
+    return HILHeartControl.with_controller(options) do admitted
+        Base.invokelatest(run_owner, admitted, plant, target)
+    end
 end
 
 abspath(PROGRAM_FILE) == (@__FILE__) && main()

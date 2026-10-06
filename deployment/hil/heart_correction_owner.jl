@@ -34,6 +34,7 @@ struct NativeActive
     flag_replies::Dict{String,String}
     ingress_mode::String
     ingress_environment::String
+    snapshot::Main.HILHeartControl.Codec.HeartSnapshot
 end
 
 struct QuitService{Options,Store}
@@ -194,7 +195,8 @@ end
 
 function startup_proof(owner,expected_generation)
     session=owner.session; options=session.options
-    status=bounded_json(joinpath(options.heart_native_runtime,"heart-owner-status.json"))
+    snapshot,status=Main.HILHeartControl.Heart.generation_report(options.controller_control,
+        options.heart_native_runtime;deadline=Main.HILHeartControl.Client.monotonic()+30.0,check=session.service)
     status.generation==expected_generation && status.sequence==0 && status.state=="paused" &&
         status.error===nothing && status.child_returncode===nothing && isdir("/proc/$(status.child_pid)") ||
         error("active correction requires the owned successfully initialized native generation")
@@ -237,7 +239,7 @@ function startup_proof(owner,expected_generation)
     end
     observed=Native.validate_ingress_status(status,options.heart_native_ingress_mode)
     Protocol.write_json_atomic(joinpath(options.heart_probe_directory,"startup-owner-status.json"),status)
-    return (;status,flags,observed,rendered_sha256=digest(status.rendered_config))
+    return (;status,snapshot,flags,observed,rendered_sha256=digest(status.rendered_config))
 end
 
 function hold_window!(owner,expected_generation)
@@ -245,7 +247,7 @@ function hold_window!(owner,expected_generation)
     proof=startup_proof(owner,expected_generation)
     Native.native_command!(session,"RUN",String[],Acquisition.deadline(TIMEOUT_NS))
     session.native_controller_held=Native.NativeHold(Int(proof.status.child_pid),expected_generation,true,true,
-        "startup CORRECT",proof.flags["CORRECT"],0,session.options.heart_native_ingress_mode,proof.observed)
+        "startup CORRECT",proof.flags["CORRECT"],0,session.options.heart_native_ingress_mode,proof.observed,proof.snapshot)
     session.state.held=true
     return nothing
 end
@@ -256,7 +258,7 @@ function begin_window!(owner,expected_generation)
     until=Acquisition.deadline(TIMEOUT_NS)
     Native.native_command!(session,"RUN",String[],until)
     session.native_controller_held=Native.NativeHold(Int(proof.status.child_pid),expected_generation,true,true,
-        "startup CORRECT",proof.flags["CORRECT"],0,session.options.heart_native_ingress_mode,proof.observed)
+        "startup CORRECT",proof.flags["CORRECT"],0,session.options.heart_native_ingress_mode,proof.observed,proof.snapshot)
     session.state.held=true # Serialized plant command ownership; native integration remains RUN here.
     Native.native_command!(session,"SET_TELM_RECORD",["-configTelemEnable","1","-configTelemCbNames",join(TAGS,',')],until)
     enter_phase!(owner,:startup_run,until)
@@ -268,7 +270,7 @@ function begin_window!(owner,expected_generation)
     session.native_controller_held=nothing
     owner.active=NativeActive(Int(proof.status.child_pid),expected_generation,digest(reply*".json"),
         owner.contract.native_config_sha256,proof.rendered_sha256,proof.flags,
-        session.options.heart_native_ingress_mode,proof.observed)
+        session.options.heart_native_ingress_mode,proof.observed,proof.snapshot)
     Native.record_evidence!(session,(;kind="native_active",proof=owner.active,
         flag_verification="strict public command SUCCESS and exact INIT inputs; no effective GMS readback"))
     return nothing
@@ -292,10 +294,8 @@ end
 function require_active(owner)
     proof=owner.active
     proof!==nothing && owner.session.native_controller_held===nothing || error("native controller is not actively acknowledged")
-    status=bounded_json(joinpath(owner.session.options.heart_native_runtime,"heart-owner-status.json"))
-    status.child_pid==proof.child_pid && status.generation==proof.generation && status.error===nothing &&
-        Native.validate_ingress_status(status,proof.ingress_mode)==proof.ingress_environment &&
-        isdir("/proc/$(proof.child_pid)") || error("active native child identity changed")
+    Main.HILHeartControl.Heart.require_ready(owner.session.options.controller_control,proof.snapshot)
+    isdir("/proc/$(proof.child_pid)") || error("active native child exited")
     return nothing
 end
 
@@ -501,7 +501,8 @@ function reset_window!(owner,options,science,recorder,request_id)
     owner.retained && owner.active===nothing || error("reset requires a completed retained native window")
     owner.window==1 || error("only two declared native correction windows are supported")
     session=owner.session
-    status=bounded_json(joinpath(options.heart_native_runtime,"heart-owner-status.json"))
+    status=Main.HILHeartControl.Heart.status(options.controller_control;
+        deadline=Main.HILHeartControl.Client.monotonic()+14.0,check=session.service)
     old_pid=Int(status.child_pid);old_generation=Int(status.generation)
     stop!(session.plant)
     Main.reset_controller!(options,request_id)
@@ -640,7 +641,9 @@ end
 function main(arguments=ARGS)
     prepared=options(arguments)
     Protocol.require_fresh_instance(prepared)
-    return Base.invokelatest(run_owner,prepared,Main.load_plant(prepared.profile),Main.load_target(prepared.backend))
+    return Main.HILHeartControl.with_controller(prepared) do admitted
+        Base.invokelatest(run_owner,admitted,Main.load_plant(admitted.profile),Main.load_target(admitted.backend))
+    end
 end
 
 end

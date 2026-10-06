@@ -1,11 +1,15 @@
 module HeartOwner
 
-using JSON3, Sockets
+using JSON3, Sockets, PipeWireAO
 using ..Common
 using ..Placement
+import ..NativeControlClient
+import ..NativeControlEndpoint
+import ..NativeControlCodec
+import ..NativeHeartCodec
 
 export read_requirements, read_placement, validate_placement, acknowledged,
-    guard_port, listener_ready, thread_snapshot, Owner, response, control,
+    guard_port, listener_ready, thread_snapshot, Owner,
     start, stop, run, arguments, main
 
 const MAX_REQUEST_BYTES = 16 * 1024
@@ -17,6 +21,68 @@ const RESET_TIMEOUT = 12.0
 const POLL_SECONDS = 0.005
 monotonic() = time_ns() / 1.0e9
 const GMS_SECTIONS = Dict("clwcBlock" => "CLWFC", "tfcBlock" => "TFC")
+const Codec = NativeHeartCodec
+const Endpoint = NativeControlEndpoint
+const Commands = Union{Codec.HeartCommand{:status},Codec.HeartCommand{:reset},
+    Codec.HeartCommand{:connect},Codec.HeartCommand{:shutdown}}
+
+struct NativeRuntime{C,E}
+    loop::ThreadLoop
+    context::Context
+    core::C
+    endpoint::E
+    acknowledged_sequence::Base.RefValue{Cint}
+end
+
+function NativeRuntime(remote, name, instance::Int64)
+    loop = ThreadLoop("rtc.heart.owner")
+    context = core = endpoint = nothing
+    endpoint_ref = Ref{Union{Nothing,Endpoint.Endpoint}}(nothing)
+    acknowledged_sequence = Ref{Cint}(-1)
+    connection_failure = Ref{Union{Nothing,String}}(nothing)
+    try
+        with_thread_loop_lock(loop) do _
+            context = Context(loop)
+            core = CoreConnection(context; properties=Dict("remote.name"=>remote),
+                on_done=(core, id, sequence) -> (id == 0 && (acknowledged_sequence[] = sequence); nothing),
+                on_error=(core, id, sequence, error) -> begin
+                    connection_failure[] = sprint(showerror, error)
+                    current = endpoint_ref[]
+                    current === nothing || (current.failure = connection_failure[])
+                    nothing
+                end)
+            endpoint = Endpoint.Endpoint(Codec.HEART_PROFILE, Commands, loop, core,
+                name, instance, Codec.Preparing)
+            endpoint_ref[] = endpoint
+            connection_failure[] === nothing || (endpoint.failure = connection_failure[])
+        end
+        start!(loop)
+        return NativeRuntime(loop, context, core, endpoint, acknowledged_sequence)
+    catch primary
+        failures = Exception[primary]
+        with_thread_loop_lock(loop) do _
+            for resource in (endpoint, core, context)
+                resource === nothing && continue
+                try close(resource) catch cleanup; push!(failures, cleanup) end
+            end
+        end
+        try close(loop) catch cleanup; push!(failures, cleanup) end
+        length(failures) == 1 && rethrow()
+        throw(CompositeException(failures))
+    end
+end
+
+function Base.close(runtime::NativeRuntime)
+    failures = Exception[]
+    with_thread_loop_lock(runtime.loop) do _
+        for resource in (runtime.endpoint, runtime.core, runtime.context)
+            try close(resource) catch error; push!(failures, error) end
+        end
+    end
+    try close(runtime.loop) catch error; push!(failures, error) end
+    isempty(failures) || throw(CompositeException(failures))
+    return nothing
+end
 
 function remaining_timeout(deadline, maximum)
     deadline === nothing && return maximum
@@ -169,18 +235,54 @@ mutable struct Owner
     child::Any
     child_log::Any
     generation::Int
-    last_id::Int
-    last_payload::Any
-    last_reply::Any
     stopping::Bool
     status_path::String
     ingress_environment::Union{Nothing,String}
+    native::Union{Nothing,NativeRuntime}
+    active_ticket::Union{Nothing,Endpoint.Ticket{Commands}}
+    generation_report::String
+    generation_report_sha256::String
+    child_pid::Union{Nothing,UInt32}
 end
 
 function Owner(options::NamedTuple)
     Owner(options, Common.sha256_file(options.config), read_requirements(options.requirements),
-        read_placement(get(options, :placement, nothing)), nothing, nothing, 0, 0,
-        nothing, nothing, false, joinpath(options.runtime, "heart-owner-status.json"), nothing)
+        read_placement(get(options, :placement, nothing)), nothing, nothing, 0,
+        false, joinpath(options.runtime, "heart-owner-status.json"), nothing,
+        nothing, nothing, "", "", nothing)
+end
+
+function require_control(owner::Owner)
+    owner.native === nothing && return nothing
+    if owner.active_ticket === nothing
+        Endpoint.poll!(owner.native.endpoint)
+    else
+        Endpoint.check_ticket(owner.native.endpoint, owner.active_ticket)
+    end
+    return nothing
+end
+
+function seal_generation!(owner::Owner)
+    destination = joinpath(realpath(owner.options.runtime), "heart-generation-$(owner.generation).json")
+    !ispath(destination) && !islink(destination) || error("HEART generation report already exists")
+    cp(owner.status_path, destination)
+    owner.generation_report = destination
+    owner.generation_report_sha256 = Common.sha256_file(destination)
+    return nothing
+end
+
+function snapshot(owner::Owner)
+    child = owner.child
+    alive = child !== nothing && process_running(child)
+    pid = owner.child_pid
+    code = child === nothing || alive ? nothing : Int32(child.exitcode)
+    ingress = get(owner.options, :native_ingress_mode, "streaming") == "streaming" ?
+        Codec.Streaming : Codec.Deferred
+    return Codec.HeartSnapshot(Int64(owner.generation), pid, code, alive, ingress,
+        owner.placement !== nothing && alive,
+        !get(owner.options, :native_wfs_proc_debug, false) &&
+            get(owner.options, :native_debug_stdio_wrapper, nothing) === nothing,
+        owner.generation_report, owner.generation_report_sha256)
 end
 
 function report(owner::Owner, error_message=nothing)
@@ -188,14 +290,14 @@ function report(owner::Owner, error_message=nothing)
     observation_error = nothing
     if owner.child !== nothing && process_running(owner.child)
         try
-            threads = thread_snapshot(getpid(owner.child))
+            threads = thread_snapshot(owner.child_pid)
         catch error
             observation_error = sprint(showerror, error)
         end
     end
     write_json_atomic(owner.status_path, Dict{String,Any}(
         "version" => 1, "owner_pid" => getpid(),
-        "child_pid" => owner.child === nothing ? nothing : getpid(owner.child),
+        "child_pid" => owner.child_pid,
         "child_returncode" => owner.child === nothing || process_running(owner.child) ? nothing : owner.child.exitcode,
         "generation" => owner.generation, "native_threads" => threads,
         "placement_observation_error" => observation_error,
@@ -215,13 +317,14 @@ function report(owner::Owner, error_message=nothing)
             "child_argv"=>hasproperty(owner.options, :executable) ? child_arguments(owner.options) : nothing,
             "qualification"=>get(owner.options, :native_wfs_proc_debug, false) ?
                 "diagnostic only; cadence and scientific acceptance excluded" : "diagnostics disabled"),
-        "state" => error_message === nothing ? "paused" : "failed", "sequence" => 0,
+        "state" => error_message === nothing ? (owner.stopping ? "stopped" : "paused") : "failed", "sequence" => 0,
         "completed" => false, "error" => error_message,
         "flag_verification" => "command SUCCESS acknowledgements only; no effective readback"))
 end
 
 function command(owner::Owner, name; flag=nothing, required=true, deadline=nothing)
-    required && (owner.stopping || ispath(owner.options.quit_request)) &&
+    required && require_control(owner)
+    required && owner.stopping &&
         error("HEART command interrupted by owner shutdown")
     argv = [owner.options.client, "-cmdName", name, "-address", "127.0.0.1", "-port", "5001"]
     if flag !== nothing
@@ -275,27 +378,32 @@ function child_arguments(options)
 end
 
 function start(owner::Owner; deadline=nothing)
+    require_control(owner)
     remaining_timeout(deadline, START_TIMEOUT)
     guard_port()
     owner.generation += 1
+    owner.generation_report = ""
+    owner.generation_report_sha256 = ""
     owner.child_log = open(joinpath(owner.options.runtime, "heart-$(owner.generation).log"), "a")
     env = child_environment(owner.options)
     owner.ingress_environment = nothing
     child_cmd = Cmd(Cmd(child_arguments(owner.options)); dir=owner.options.runtime)
     owner.child = Base.run(pipeline(setenv(child_cmd, env); stdin=devnull,
         stdout=owner.child_log, stderr=owner.child_log); wait=false)
+    owner.child_pid = UInt32(getpid(owner.child))
     listener_deadline = monotonic() + remaining_timeout(deadline, START_TIMEOUT)
     while !listener_ready(owner.child)
-        (owner.stopping || ispath(owner.options.quit_request)) &&
+        require_control(owner)
+        owner.stopping &&
             error("HEART preparation interrupted")
         monotonic() < listener_deadline || error("HEART command listener timed out")
         sleep(POLL_SECONDS)
     end
     if get(owner.options, :native_debug_stdio_wrapper, nothing) !== nothing
-        readlink("/proc/$(getpid(owner.child))/exe") == realpath(owner.options.executable) ||
+        readlink("/proc/$(owner.child_pid)/exe") == realpath(owner.options.executable) ||
             error("supervised HEART child has not execed the declared native executable")
     end
-    observed = ingress_environment(open(io -> String(read(io, 1024 * 1024 + 1)), "/proc/$(getpid(owner.child))/environ"))
+    observed = ingress_environment(open(io -> String(read(io, 1024 * 1024 + 1)), "/proc/$(owner.child_pid)/environ"))
     observed == env["HRT_DEFER_WFS_INGRESS"] || error("native child ingress environment differs from selected mode")
     owner.ingress_environment = observed
     command(owner, "INIT"; deadline)
@@ -309,7 +417,7 @@ function start(owner::Owner; deadline=nothing)
     threads = nothing
     while threads === nothing
         try
-            threads = thread_snapshot(getpid(owner.child))
+            threads = thread_snapshot(owner.child_pid)
         catch error
             (!process_running(owner.child) || monotonic() >= placement_deadline) && rethrow()
             sleep(POLL_SECONDS)
@@ -318,6 +426,7 @@ function start(owner::Owner; deadline=nothing)
     owner.placement !== nothing && validate_placement(threads, owner.placement)
     remaining_timeout(deadline, COMMAND_TIMEOUT)
     report(owner)
+    seal_generation!(owner)
     remaining_timeout(deadline, COMMAND_TIMEOUT)
 end
 
@@ -363,82 +472,125 @@ function stop(owner::Owner; deadline=nothing)
     end
 end
 
-response(_, request_id, operation, error_message=nothing) = Dict{String,Any}(
-    "version" => 1, "id" => request_id, "operation" => operation,
-    "state" => "paused", "sequence" => 0, "completed" => false,
-    "ok" => error_message === nothing, "error" => error_message)
+function apply!(owner::Owner, ::Codec.HeartCommand{:status}, ticket)
+    require_control(owner)
+    owner.child !== nothing && process_running(owner.child) || error("HEART child is absent")
+    report(owner)
+    return snapshot(owner)
+end
 
-function control(owner::Owner, payload::AbstractVector{UInt8})
-    request_id, operation = 0, "invalid"
-    request = try
-        length(payload) <= MAX_REQUEST_BYTES || throw(ArgumentError("oversized"))
-        Common.parse_json(String(payload))
+function apply!(owner::Owner, ::Codec.HeartCommand{:reset}, ticket)
+    require_control(owner)
+    deadline = min(ticket.deadline, monotonic() + RESET_TIMEOUT)
+    Endpoint.state!(owner.native.endpoint, Codec.Preparing)
+    try
+        stop(owner; deadline)
+        require_control(owner)
+        start(owner; deadline)
     catch
-        return response(owner, request_id, operation, "invalid JSON request")
+        try stop(owner; deadline=monotonic()) catch end
+        rethrow()
     end
-    request isa AbstractDict || return response(owner, request_id, operation, "invalid JSON request")
-    raw_id = get(request, "id", nothing)
-    raw_operation = get(request, "operation", nothing)
-    typeof(raw_id) === Int && 1 <= raw_id <= typemax(Int64) && (request_id = raw_id)
-    raw_operation isa String && ncodeunits(raw_operation) <= 32 && (operation = raw_operation)
-    if Set(keys(request)) != Set(["version", "id", "operation"]) ||
-        get(request, "version", nothing) !== 1 || request_id == 0 ||
-        !(operation in ("reset", "status"))
-        return response(owner, request_id, operation,
-            "expected version 1, positive integer id and reset or status")
+    Endpoint.state!(owner.native.endpoint, Codec.Ready)
+    return snapshot(owner)
+end
+
+function apply!(owner::Owner, ::Codec.HeartCommand{:connect}, ticket)
+    # The old connection marker was only an acknowledgement. The actual links
+    # remain owned by the RTC runner; this operation grants no correction state.
+    return apply!(owner, Codec.HeartCommand(:status), ticket)
+end
+
+function apply!(owner::Owner, ::Codec.HeartCommand{:shutdown}, ticket)
+    require_control(owner)
+    stop(owner; deadline=ticket.deadline)
+    require_control(owner)
+    owner.child === nothing || !process_running(owner.child) || error("HEART child remains alive")
+    Endpoint.state!(owner.native.endpoint, Codec.Stopped)
+    owner.stopping = true
+    report(owner)
+    return snapshot(owner)
+end
+
+"Flush the terminal publication before endpoint removal, within the same budget."
+function flush_terminal!(owner::Owner, ticket)
+    runtime = owner.native
+    sequence = with_thread_loop_lock(runtime.loop) do _
+        Endpoint.operational(runtime.endpoint)
+        sync!(runtime.core)
     end
-    request_id > owner.last_id || return response(owner, request_id, operation, "stale request id")
-    owner.last_id = request_id
-    if operation == "reset"
-        deadline = monotonic() + RESET_TIMEOUT
-        try
-            stop(owner; deadline)
-            start(owner; deadline)
-        catch
-            try stop(owner; deadline=monotonic()) catch end
-            rethrow()
+    while true
+        observed = with_thread_loop_lock(runtime.loop) do _
+            Endpoint.operational(runtime.endpoint)
+            runtime.acknowledged_sequence[] == sequence
         end
-    else
-        report(owner)
+        monotonic() < ticket.deadline || error("HEART terminal publication deadline expired")
+        observed && return nothing
+        sleep(min(POLL_SECONDS, max(0.0, ticket.deadline - monotonic())))
     end
-    response(owner, request_id, operation)
+end
+
+function consume_native!(owner::Owner)
+    endpoint = owner.native.endpoint
+    ticket = Endpoint.take!(endpoint)
+    ticket === nothing && return nothing
+    owner.active_ticket = ticket
+    try
+        current = apply!(owner, ticket.command, ticket)
+        header = NativeControlCodec.ReplyHeader(ticket.header.controller, endpoint.instance,
+            ticket.header.token, ticket.header.operation, Int32(0))
+        reply = NativeControlClient.encode_completion(Codec.HEART_PROFILE,
+            header, endpoint.lifecycle, current, "")
+        Endpoint.complete!(endpoint, ticket, reply)
+        owner.stopping && flush_terminal!(owner, ticket)
+    catch primary
+        # The existing wrapper fails closed. A negative completion carries no
+        # invented child facts if the effect did not leave a verified snapshot.
+        try
+            Endpoint.state!(endpoint, Codec.Fault)
+            header = NativeControlCodec.ReplyHeader(ticket.header.controller, endpoint.instance,
+                ticket.header.token, ticket.header.operation, Int32(-5))
+            message = sprint(showerror, primary)
+            message = first(message, min(length(message), 1024))
+            if endpoint.pending === ticket
+                Endpoint.complete!(endpoint, ticket, NativeControlClient.encode_completion(
+                    Codec.HEART_PROFILE, header, Codec.Fault, nothing, message))
+            end
+        catch publication
+            throw(CompositeException([primary, publication]))
+        end
+        rethrow()
+    finally
+        owner.active_ticket = nothing
+    end
+    return nothing
 end
 
 function run(owner::Owner)
+    owner.native = NativeRuntime(owner.options.remote, owner.options.control_node,
+        owner.options.control_instance)
     start(owner)
-    write_json_atomic(owner.options.prepared_event,
-        Dict("version" => 1, "state" => "prepared", "sequence" => 0))
-    connected = false
-    while !owner.stopping && !ispath(owner.options.quit_request)
+    Endpoint.state!(owner.native.endpoint, Codec.Ready)
+    while !owner.stopping
         process_running(owner.child) ||
             error("HEART child exited unexpectedly with $(owner.child.exitcode)")
-        if !connected && ispath(owner.options.connect_request)
-            write_json_atomic(owner.options.connect_reply,
-                Dict("version" => 1, "state" => "connected", "sequence" => 0))
-            connected = true
-        end
-        if isfile(owner.options.control_request)
-            payload = open(owner.options.control_request) do io
-                read(io, MAX_REQUEST_BYTES + 1)
-            end
-            if payload != owner.last_payload
-                owner.last_payload = payload
-                owner.last_reply = control(owner, payload)
-                write_json_atomic(owner.options.control_reply, owner.last_reply)
-            end
-        end
+        consume_native!(owner)
         sleep(POLL_SECONDS)
     end
 end
 
 function arguments(argv=ARGS)
-    names = ["executable", "client", "config", "requirements", "runtime", "prepared-event",
-        "connect-request", "connect-reply", "quit-request", "control-request", "control-reply",
+    names = ["executable", "client", "config", "requirements", "runtime",
+        "remote", "control-node", "control-instance",
         "cpu-map", "thread-map"]
     raw = Common.cli_arguments(argv; required=names,
         allowed=["package", "calibration-root", "placement", "native-wfs-proc-debug", "native-debug-stdio-wrapper", "native-ingress-mode"])
     ingress_mode = get(raw, :native_ingress_mode, "streaming")
     ingress_setting(ingress_mode)
+    instance = tryparse(Int64, raw.control_instance)
+    instance !== nothing && instance > 0 || throw(ArgumentError("control instance must be positive"))
+    occursin(r"^[a-zA-Z0-9_.-]{1,128}$", raw.control_node) || throw(ArgumentError("invalid HEART control node"))
+    remote = NativeControlClient.private_remote(raw.remote)
     debug_option = get(raw, :native_wfs_proc_debug, "false")
     debug_option in ("true", "false") || throw(ArgumentError("native WFS processing debug must be true or false"))
     wrapper = get(raw, :native_debug_stdio_wrapper, nothing)
@@ -449,26 +601,21 @@ function arguments(argv=ARGS)
         wrapper = realpath(wrapper)
     end
     option_values = Dict{Symbol,Any}(name => abspath(value) for (name, value) in pairs(raw)
-        if name !== :native_wfs_proc_debug && name !== :native_debug_stdio_wrapper && name !== :native_ingress_mode)
+        if !(name in (:native_wfs_proc_debug, :native_debug_stdio_wrapper, :native_ingress_mode,
+            :remote, :control_node, :control_instance)))
     if !haskey(option_values, :package)
         option_values[:package] = dirname(dirname(realpath(option_values[:config])))
     end
-    options = (; option_values..., native_ingress_mode=ingress_mode, native_wfs_proc_debug=debug_option == "true", native_debug_stdio_wrapper=wrapper)
-    for name in (:prepared_event, :connect_request, :connect_reply,
-        :quit_request, :control_request, :control_reply)
-        islink(getproperty(options, name)) &&
-            throw(ArgumentError("instance path is a symlink: $(getproperty(options, name))"))
-    end
+    options = (; option_values..., remote, control_node=String(raw.control_node), control_instance=instance,
+        native_ingress_mode=ingress_mode, native_wfs_proc_debug=debug_option == "true", native_debug_stdio_wrapper=wrapper)
     inputs = [options.executable, options.client, options.config, options.requirements,
         options.cpu_map, options.thread_map]
-    outputs = [options.prepared_event, options.connect_request, options.connect_reply,
-        options.quit_request, options.control_request, options.control_reply,
-        joinpath(options.runtime, "heart-owner-status.json")]
+    outputs = [joinpath(options.runtime, "heart-owner-status.json")]
     reserved = [joinpath(options.runtime, "config", name) for name in
         ("heart.yaml", "host.cpu", "host.threads")]
     length(unique(outputs)) == length(outputs) && isempty(intersect(Set(inputs), Set(outputs))) &&
         isempty(intersect(Set(outputs), Set(reserved))) ||
-        throw(ArgumentError("input, marker, control and report paths must differ"))
+        throw(ArgumentError("input and report paths must differ"))
     all(isfile, inputs) || throw(ArgumentError("required file is missing"))
     for path in (options.executable, options.client)
         (stat(path).mode & 0o111) != 0 || throw(ArgumentError("required executable is not executable: $path"))
@@ -525,16 +672,19 @@ function main(argv=ARGS)
     catch error
         error isa InterruptException && return 0
         if owner !== nothing
-            rm(owner.options.prepared_event; force=true)
-            rm(owner.options.connect_reply; force=true)
+            owner.native === nothing || try Endpoint.state!(owner.native.endpoint, Codec.Fault) catch end
             report(owner, sprint(showerror, error))
-            write_json_atomic(owner.options.control_reply,
-                response(owner, owner.last_id, "failure", sprint(showerror, error)))
         end
         println(stderr, "HEART owner failed: ", sprint(showerror, error))
         return 1
     finally
-        owner !== nothing && stop(owner)
+        if owner !== nothing
+            try
+                stop(owner)
+            finally
+                owner.native === nothing || close(owner.native)
+            end
+        end
     end
 end
 

@@ -7,7 +7,7 @@ const Protocol = HILOwnerProtocol
 function options_arguments(root)
     return [
         "--profile", "classic", "--graph", joinpath(root, "plant.toml"),
-        "--rate", "500", "--exposure-ns", "2000000", "--remote", "isolated-core",
+        "--rate", "500", "--exposure-ns", "2000000", "--remote", joinpath(root,"isolated-core"),
         "--prepared-event", joinpath(root, "prepared"),
         "--connect-request", joinpath(root, "connect-request"),
         "--connect-reply", joinpath(root, "connect-reply"),
@@ -33,8 +33,8 @@ end
         copper[findfirst(==("--profile"), copper) + 1] = "copper"
         @test Protocol.parse_options([copper; "--correction-diagnostics"; "true"]).correction_diagnostics
         @test Protocol.parse_options([arguments; "--correction-diagnostics"; "true";
-            "--transport"; "heart"; "--controller-request"; joinpath(root, "controller-request");
-            "--controller-reply"; joinpath(root, "controller-reply")]).correction_diagnostics
+            "--transport"; "heart"; "--controller-node"; "fixture.heart";
+            "--controller-pid"; "123"; "--controller-instance"; "17"]).correction_diagnostics
         @test options.frames == 16
         @test options.period_ns == 2_000_000
         native_options = copy(arguments)
@@ -133,20 +133,28 @@ end
     end
 end
 
-@testset "explicit HEART transport and paired controller paths" begin
+@testset "explicit HEART transport and native controller identity" begin
     mktempdir() do root
         arguments = options_arguments(root)
         @test Protocol.parse_options(arguments).transport === :scientific
-        heart = [arguments; "--transport"; "heart"; "--controller-request"; joinpath(root,"heart.request");
-            "--controller-reply"; joinpath(root,"heart.reply")]
+        heart = [arguments; "--transport"; "heart"; "--controller-node"; "fixture.heart";
+            "--controller-pid"; "123"; "--controller-instance"; "17"]
         @test Protocol.parse_options(heart).transport === :heart
-        @test Protocol.parse_options(heart).controller_request == joinpath(root,"heart.request")
+        @test Protocol.parse_options(heart).controller_node == "fixture.heart"
+        @test Protocol.parse_options(heart).controller_pid == UInt32(123)
+        @test Protocol.parse_options(heart).controller_instance == Int64(17)
         @test_throws ArgumentError Protocol.parse_options([arguments; "--transport"; "heart"])
         @test_throws ArgumentError Protocol.parse_options([arguments; "--transport"; "invalid"])
         @test_throws ArgumentError Protocol.parse_options([arguments; "--controller-request"; "x"])
         @test_throws ArgumentError Protocol.parse_options([arguments; "--controller-request"; "x"; "--controller-reply"; "y"])
         bad = copy(heart)
-        bad[findfirst(==("--controller-reply"),bad)+1] = joinpath(root,"request.json")
+        bad[findfirst(==("--controller-instance"),bad)+1] = "0"
         @test_throws ArgumentError Protocol.parse_options(bad)
+        for (key, value) in (("--controller-pid","0"),("--controller-pid","4294967296"),
+                ("--controller-node","invalid/name"),("--remote","implicit-remote"))
+            bad = copy(heart)
+            bad[findfirst(==(key),bad)+1] = value
+            @test_throws ArgumentError Protocol.parse_options(bad)
+        end
     end
 end

@@ -165,6 +165,12 @@ supervisor-to-runner hop. HEART, calibration, public operator and remaining live
 readiness/status-file controls are still awaiting migration.
 The [sealed source/evidence identities](NATIVE_RUNNER_CONTROL_EVIDENCE.json)
 bind the passing runner/caller checks and preserve their remaining limits.
+The [HEART profile](NATIVE_HEART_CONTROL.md),
+[connected client tests](NATIVE_HEART_CLIENT_VALIDATION.md),
+[unchanged vendor process checks](NATIVE_HEART_VENDOR_VALIDATION.md) and
+[independent review](NATIVE_HEART_REVIEW.md) record wrapper preparation,
+connection, reset, health and shutdown migration separately from pending
+installed HIL caller qualification.
 The simulator source migration
 is complete; remaining native endpoints are implementation work, not implied
 by the proof or contract.

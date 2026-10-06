@@ -6,6 +6,8 @@ using ..Placement
 using ..ScienceExport
 import ..NativeSourceClient
 import ..NativeRunnerClient
+import ..NativeHeartClient
+import ..NativeControlClient
 import ..RunnerCommands
 
 export DeploymentError, digest, installed_paths, decode, profile, relative_asset,
@@ -95,6 +97,8 @@ function valid_cpu_list(value)
     Placement.cpu_set(value)
 end
 
+native_heart(owner) = get(owner, "control-protocol", nothing) == "pipewireao.rtc.heart/1"
+
 native_source(owner) = get(owner, "control-protocol", nothing) == "pipewireao.source-control/1"
 
 function profile(path::AbstractString, prefix::AbstractString)
@@ -115,7 +119,14 @@ function profile(path::AbstractString, prefix::AbstractString)
     markers = Set{String}()
     for owner in owners
         require(owner isa AbstractDict, "external owner fields do not match the deployment contract")
-        fields = Set(["role", "argv", "environment", "prepared", "connect", "connected", "quit"])
+        fields = native_heart(owner) ? Set(["role", "argv", "environment", "control-protocol", "control-node"]) :
+            Set(["role", "argv", "environment", "prepared", "connect", "connected", "quit"])
+        if native_heart(owner)
+            require(get(owner, "role", nothing) == "heart", "native HEART profile requires the heart role")
+            node = get(owner, "control-node", nothing)
+            require(node isa String && occursin(r"^[a-zA-Z0-9_.-]{1,128}$", node),
+                "native HEART requires a bounded exact node name")
+        end
         if source_role !== nothing && get(owner, "role", nothing) == source_role
             union!(fields, native_source(owner) ? ["control-protocol", "control-node"] :
                 ["control-request", "control-reply"])
@@ -127,6 +138,7 @@ function profile(path::AbstractString, prefix::AbstractString)
         end
         require(Set(keys(owner)) == fields, "external owner fields do not match the deployment contract")
         role = owner["role"]
+        require(role != "heart" || native_heart(owner), "HEART owner requires the native control profile")
         require(role isa String && !(role in roles) && occursin(r"^[a-z][a-z0-9-]{0,31}$", role),
             "external owner role must be unique and filesystem-safe")
         push!(roles, role)
@@ -136,7 +148,7 @@ function profile(path::AbstractString, prefix::AbstractString)
             "owner argv must be a nonempty bounded string list")
         validate_environment(owner["environment"], "owner $role")
         names = Set{String}()
-        marker_keys = ["prepared", "connect", "connected", "quit"]
+        marker_keys = native_heart(owner) ? String[] : ["prepared", "connect", "connected", "quit"]
         role == source_role && !native_source(owner) && append!(marker_keys, ["control-request", "control-reply"])
         for key in marker_keys
             marker = owner[key]
@@ -321,6 +333,7 @@ mutable struct DeploymentRunner
     stopping::Bool
     state_path::Union{Nothing,String}
     record::Dict{String,Any}
+    heart_client::Union{Nothing,NativeControlClient.Client}
 end
 
 function owner_preparation_timeout(seconds)
@@ -340,7 +353,7 @@ function DeploymentRunner(options::NamedTuple)
         "owner_preparation_timeout_seconds" => preparation_timeout)
     DeploymentRunner(options, dirname(deployment), spec, installed_paths(options.pipewire_prefix),
         Placement.inherited_cpus(), Tuple{String,Base.Process}[], IdDict{Base.Process,Int}(), nothing, nothing, nothing,
-        nothing, nothing, nothing, owner, nothing, 0, nothing, false, false, false, nothing, record)
+        nothing, nothing, nothing, owner, nothing, 0, nothing, false, false, false, nothing, record, nothing)
 end
 
 function preflight(deployment::DeploymentRunner)
@@ -783,6 +796,23 @@ function _is_socket(path)
     end
 end
 
+function stop_owner!(deployment::DeploymentRunner, owner)
+    if native_heart(owner)
+        child = findfirst(pair -> first(pair) == owner["role"], deployment.processes)
+        child === nothing && return nothing
+        process_running(last(deployment.processes[child])) || return nothing
+        client = deployment.heart_client
+        # Failed preparation cannot be reconnected during cleanup. The final
+        # owned-process-group pass still revokes any children in that case.
+        client === nothing && return nothing
+        NativeHeartClient.shutdown!(client; deadline=monotonic() + 30,
+            check=() -> nothing)
+    else
+        _touch(joinpath(something(deployment.runtime), owner["quit"]))
+    end
+    return nothing
+end
+
 function _stop_processes(deployment, errors; source=false)
     runtime = deployment.runtime
     if source
@@ -832,7 +862,7 @@ function _stop_processes(deployment, errors; source=false)
         source_closed = !source_started
         if runtime !== nothing && revoked
             try
-                _touch(joinpath(runtime, owner["quit"]))
+                stop_owner!(deployment, owner)
                 for (role, process) in deployment.processes
                     role == owner["role"] && _owned_wait(deployment, process, 8)
                 end
@@ -843,7 +873,7 @@ function _stop_processes(deployment, errors; source=false)
             if source_closed
                 for other in deployment.spec["owners"]
                     other === owner && continue
-                    try _touch(joinpath(runtime, other["quit"])) catch error push!(errors, error) end
+                    try stop_owner!(deployment, other) catch error push!(errors, error) end
                 end
             else
                 for (role, process) in deployment.processes
@@ -891,7 +921,7 @@ function _stop_processes(deployment, errors; source=false)
         end
         if runtime !== nothing && ingress_stopped
             for owner in deployment.spec["owners"]
-                try _touch(joinpath(runtime, owner["quit"])) catch error push!(errors, error) end
+                try stop_owner!(deployment, owner) catch error push!(errors, error) end
             end
         end
         for (role, process) in reverse(deployment.processes)
@@ -953,6 +983,11 @@ function _run_locked(deployment::DeploymentRunner, base)
         bindings = Dict("PACKAGE" => deployment.package,
             "PREFIX" => abspath(deployment.options.pipewire_prefix),
             "RUNTIME" => runtime, "REMOTE" => "rtc-" * first(replace(string(uuid4()), "-" => ""), 12))
+        if any(owner -> owner["role"] == "heart", deployment.spec["owners"])
+            heart = only(filter(native_heart, deployment.spec["owners"]))
+            bindings["HEART_OWNER_NODE"] = heart["control-node"]
+            bindings["HEART_OWNER_INSTANCE"] = string(Int64(time_ns() % UInt64(typemax(Int64) - 1)) + 1)
+        end
         deployment.source_owner === nothing && (bindings["FITS"] = realpath(deployment.options.fits))
         merge!(deployment.record, Dict("instance" => basename(runtime), "socket" => deployment.socket,
             "remote" => bindings["REMOTE"]))
@@ -979,11 +1014,20 @@ function _run_locked(deployment::DeploymentRunner, base)
             role = owner["role"]
             env = environment(deployment, role, bindings)
             merge!(env, Dict(key => substitute(value, bindings) for (key, value) in owner["environment"]))
-            spawn(deployment, role, [substitute(arg, bindings) for arg in owner["argv"]], env)
-            wait_until(deployment, () -> isfile(joinpath(runtime, owner["prepared"])), "$role preparation";
-                timeout=get(deployment.options, :owner_preparation_timeout_seconds, 90))
-            _touch(joinpath(runtime, owner["connect"]))
-            wait_until(deployment, () -> isfile(joinpath(runtime, owner["connected"])), "$role connection")
+            process = spawn(deployment, role, [substitute(arg, bindings) for arg in owner["argv"]], env)
+            if native_heart(owner)
+                bindings["HEART_OWNER_PID"] = string(getpid(process))
+                deadline = monotonic() + get(deployment.options, :owner_preparation_timeout_seconds, 90)
+                deployment.heart_client = NativeHeartClient.connect(joinpath(runtime, bindings["REMOTE"]),
+                    bindings["HEART_OWNER_NODE"], getpid(process), parse(Int64, bindings["HEART_OWNER_INSTANCE"]);
+                    deadline, check=() -> check(deployment))
+                NativeHeartClient.connect!(deployment.heart_client; deadline, check=() -> check(deployment))
+            else
+                wait_until(deployment, () -> isfile(joinpath(runtime, owner["prepared"])), "$role preparation";
+                    timeout=get(deployment.options, :owner_preparation_timeout_seconds, 90))
+                _touch(joinpath(runtime, owner["connect"]))
+                wait_until(deployment, () -> isfile(joinpath(runtime, owner["connected"])), "$role connection")
+            end
         end
         deployment.source_owner !== nothing && source_control(deployment, "pause"; initial=true)
         runner_node = "pipewireao.rtc.runner.$(deployment.spec["name"])"
@@ -1045,6 +1089,12 @@ function _run_locked(deployment::DeploymentRunner, base)
             end
             try
                 deployment.source_client !== nothing && close(deployment.source_client)
+            catch error
+                push!(get!(deployment.record,"cleanup_errors",String[]),sprint(showerror,error))
+                deployment.record["error"] === nothing && (deployment.record["error"] = sprint(showerror,error))
+            end
+            try
+                deployment.heart_client !== nothing && close(deployment.heart_client)
             catch error
                 push!(get!(deployment.record,"cleanup_errors",String[]),sprint(showerror,error))
                 deployment.record["error"] === nothing && (deployment.record["error"] = sprint(showerror,error))

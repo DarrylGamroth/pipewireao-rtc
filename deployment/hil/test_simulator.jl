@@ -209,7 +209,29 @@ end
     end
 end
 
-@testset "HEART units and bounded reset acknowledgement" begin
+mutable struct NativeResetFixture
+    previous::HILHeartControl.Codec.HeartSnapshot
+    deadlines::Vector{Float64}
+    fail::Bool
+end
+
+function HILHeartControl.Heart.status(client::NativeResetFixture; deadline::Float64, check)
+    check()
+    deadline > HILHeartControl.Client.monotonic() || error("expired native status request")
+    push!(client.deadlines, deadline)
+    return client.previous
+end
+
+function HILHeartControl.Heart.reset!(client::NativeResetFixture, previous; deadline::Float64, check)
+    check()
+    push!(client.deadlines, deadline)
+    client.fail && error("injected native reset failure")
+    return HILHeartControl.Codec.HeartSnapshot(previous.generation + 1,
+        previous.child_pid + UInt32(1), nothing, true, previous.ingress,
+        true, true, "/new/report", "b"^64)
+end
+
+@testset "HEART units and native reset authority" begin
     @test transport_contract((;)).command_scale == 1.0f-6
     heart = transport_contract((; transport=:heart))
     @test heart.command_scale == 1.0f0
@@ -217,15 +239,17 @@ end
     @test heart.command_schema == "org.heart.std-dm.actuator-command/1"
     @test heart.command_units == "metre OPD"
     mktempdir() do root
-        options = (; transport=:heart, controller_request=joinpath(root,"request"),
-            controller_reply=joinpath(root,"reply"), quit_request=joinpath(root,"quit"))
-        Protocol.write_json_atomic(options.controller_reply,
-            (; version=1,id=7,operation="reset",ok=true,state="paused",sequence=0))
-        @test reset_controller!(options,7;timeout_seconds=0.1) === nothing
-        Protocol.write_json_atomic(options.controller_reply,
-            (; version=1,id=7,operation="reset",ok=false,state="paused",sequence=0))
+        snapshot = HILHeartControl.Codec.HeartSnapshot(Int64(1), UInt32(123), nothing,
+            true, HILHeartControl.Codec.Streaming, true, true, "/report", "a"^64)
+        client = NativeResetFixture(snapshot, Float64[], false)
+        options = (; transport=:heart, controller_control=client, quit_request=joinpath(root,"quit"))
+        result = reset_controller!(options,7;timeout_seconds=0.1)
+        @test result.generation == 2 && result.child_pid == 124
+        @test length(client.deadlines) == 2 && client.deadlines[1] == client.deadlines[2]
+        @test isempty(readdir(root))
+        client.fail = true
         @test_throws ErrorException reset_controller!(options,7;timeout_seconds=0.1)
-        @test_throws ErrorException reset_controller!(options,8;timeout_seconds=0.01)
+        @test_throws ErrorException reset_controller!(options,8;timeout_seconds=0)
         touch(options.quit_request)
         @test_throws ErrorException reset_controller!(options,9;timeout_seconds=0.1)
     end

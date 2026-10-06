@@ -15,9 +15,15 @@ reset/status files and health-report reads below remain live migration debt.
 The subsequent [runner endpoint](NATIVE_RUNNER_ENDPOINT_VALIDATION.md) and
 [supervisor client](NATIVE_RUNNER_CLIENT_VALIDATION.md) replace the historical
 supervisor-to-runner JSON socket hop below. Focused CPU lifecycle tests use the
-actual launcher and native endpoint. The public operator broker, HEART wrapper,
-calibration controls and readiness/status-file authority remain unmigrated;
-the original inventory below preserves their starting interfaces.
+actual launcher and native endpoint. The public operator broker, calibration controls and their readiness/status-file
+authority remain unmigrated. The subsequent native HEART implementation removes
+wrapper reset/status/preparation/connect/shutdown file IPC and mutable report
+health reads from its simulator/calibration/correction consumers. See the
+[HEART contract](NATIVE_HEART_CONTROL.md), [client evidence](NATIVE_HEART_CLIENT_VALIDATION.md)
+and [unchanged vendor process checks](NATIVE_HEART_VENDOR_VALIDATION.md).
+Installed HIL caller qualification remains open. The original inventory below
+preserves its historical starting interfaces and is not a description of the
+new wrapper's current live transport.
 
 ## HEART boundary recheck
 

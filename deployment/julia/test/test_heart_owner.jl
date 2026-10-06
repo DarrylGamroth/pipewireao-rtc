@@ -1,4 +1,4 @@
-using Test, JSON3
+using Test, JSON3, Sockets
 
 using PipeWireAODeployment
 const H = PipeWireAODeployment.HeartOwner
@@ -9,27 +9,52 @@ const HEART_REQUIREMENTS = Dict("runtime_requirements" => [
     Dict("block" => "tfcBlock", "control" => "ENABLE_HRT_FLAGS", "flags" =>
         Dict("enableInHoVect" => 1, "enableOutDmErrs" => 1))])
 
-@testset "HEART owner portable validation and request semantics" begin
+@testset "HEART owner portable validation and generation reports" begin
     mktempdir() do directory
         path = joinpath(directory, "requirements.json")
         write(path, JSON3.write(HEART_REQUIREMENTS))
         @test length(H.read_requirements(path)) == 4
         options = (; config=path, requirements=path, runtime=directory,
-            quit_request=joinpath(directory, "quit"))
+            )
         owner = H.Owner(options)
         original = owner.source_config_sha256
         write(path, "changed")
         H.report(owner)
         @test JSON3.read(read(owner.status_path, String))["source_config_sha256"] == original
-        request = Dict("version" => 1, "id" => 1, "operation" => "status")
-        @test H.control(owner, Vector{UInt8}(JSON3.write(request)))["ok"]
-        @test H.control(owner, Vector{UInt8}(JSON3.write(request)))["error"] == "stale request id"
-        request["id"] = 2
-        request["operation"] = "resume"
-        @test !H.control(owner, Vector{UInt8}(JSON3.write(request)))["ok"]
-        @test owner.last_id == 1
-        @test !H.control(owner, UInt8[0xff])["ok"]
-        @test !H.control(owner, fill(UInt8(' '), H.MAX_REQUEST_BYTES + 1))["ok"]
+        snapshot = H.snapshot(owner)
+        @test !snapshot.alive && snapshot.child_pid === nothing
+        @test snapshot.generation == 0 && snapshot.report_sha256 == ""
+        H.seal_generation!(owner)
+        @test owner.generation_report_sha256 == PipeWireAODeployment.Common.sha256_file(owner.generation_report)
+        sealed = read(owner.generation_report)
+        H.report(owner, "diagnostic failure")
+        @test read(owner.generation_report) == sealed
+        @test_throws ErrorException H.seal_generation!(owner)
+    end
+    mktempdir() do directory
+        path = joinpath(directory, "requirements.json")
+        write(path, JSON3.write(HEART_REQUIREMENTS))
+        owner = H.Owner((; config=path, requirements=path, runtime=directory))
+        child = run(`sleep 600`; wait=false)
+        owner.child = child
+        owner.child_pid = UInt32(getpid(child))
+        pid = owner.child_pid
+        try
+            kill(child)
+            wait(child)
+            stopped = H.snapshot(owner)
+            @test stopped.child_pid == pid
+            @test !stopped.alive
+            @test stopped.child_returncode !== nothing
+            H.report(owner)
+            saved = JSON3.read(read(owner.status_path, String))
+            @test saved.child_pid == pid
+            @test saved.child_returncode == stopped.child_returncode
+            @test !isdir("/proc/$pid")
+        finally
+            process_running(child) && kill(child, Base.SIGKILL)
+            wait(child)
+        end
     end
     mktempdir() do directory
         path = joinpath(directory, "requirements.json")
@@ -66,10 +91,10 @@ const HEART_REQUIREMENTS = Dict("runtime_requirements" => [
         write(input["config"], "CAL: \"@PACKAGE@/calibration\"\n")
         write(input["requirements"], JSON3.write(HEART_REQUIREMENTS))
         runtime = joinpath(directory, "runtime")
-        markers = Dict(name => joinpath(directory, name) for name in
-            ("prepared-event", "connect-request", "connect-reply", "quit-request",
-                "control-request", "control-reply"))
-        option_values = merge(input, markers, Dict("runtime" => runtime, "package" => package))
+        remote = joinpath(directory, "core.sock")
+        server = listen(remote)
+        option_values = merge(input, Dict("runtime" => runtime, "package" => package,
+            "remote" => remote, "control-node" => "fixture.heart", "control-instance" => "17"))
         argv = String[]
         for (name, path) in option_values
             append!(argv, ["--" * name, path])
@@ -89,5 +114,6 @@ const HEART_REQUIREMENTS = Dict("runtime_requirements" => [
         @test occursin(package, read(joinpath(options.runtime, "config/heart.yaml"), String))
         @test read(joinpath(options.runtime, "config/host.cpu"), String) == "fixture"
         @test_throws ArgumentError H.arguments(argv)
+        close(server)
     end
 end

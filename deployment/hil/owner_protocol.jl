@@ -12,7 +12,7 @@ const REQUIRED_OPTIONS = (
 """Parse the complete-frame simulator command line without loading a plant."""
 function parse_options(arguments)
     values = Dict("backend" => "cpu", "frames" => "16", "transport" => "scientific", "correction-diagnostics" => "false", "total-exchanges" => "0", "wall-rate" => "default", "control-node" => "simulator-wfs")
-    allowed = Set((REQUIRED_OPTIONS..., "backend", "frames", "transport", "controller-request", "controller-reply", "correction-diagnostics", "total-exchanges", "wall-rate", "control-node", "control-request", "control-reply"))
+    allowed = Set((REQUIRED_OPTIONS..., "backend", "frames", "transport", "controller-node", "controller-pid", "controller-instance", "correction-diagnostics", "total-exchanges", "wall-rate", "control-node", "control-request", "control-reply"))
     seen = Set{String}()
     iseven(length(arguments)) || throw(ArgumentError("each option requires one value"))
     for index in 1:2:length(arguments)
@@ -34,11 +34,16 @@ function parse_options(arguments)
     values["transport"] in ("scientific", "heart") || throw(ArgumentError("--transport must be scientific or heart"))
     values["correction-diagnostics"] in ("true", "false") || throw(ArgumentError("--correction-diagnostics must be true or false"))
     correction_diagnostics = values["correction-diagnostics"] == "true"
-    controller_keys = ("controller-request", "controller-reply")
+    controller_keys = ("controller-node", "controller-pid", "controller-instance")
     present = count(key -> haskey(values, key), controller_keys)
-    expected = values["transport"] == "heart" ? 2 : 0
-    present == expected || throw(ArgumentError("HEART requires both controller paths; scientific transport permits neither"))
-    controller_paths = present == 0 ? (nothing, nothing) : Tuple(abspath(values[key]) for key in controller_keys)
+    expected = values["transport"] == "heart" ? 3 : 0
+    present == expected || throw(ArgumentError("HEART requires a native controller name, PID and incarnation; scientific transport permits none"))
+    controller_node = present == 0 ? nothing : values["controller-node"]
+    controller_pid = present == 0 ? nothing : UInt32(parse_positive_integer(values["controller-pid"], "--controller-pid", typemax(UInt32)))
+    controller_instance = present == 0 ? nothing : Int64(parse_positive_integer(values["controller-instance"], "--controller-instance", typemax(Int64)))
+    controller_node === nothing || occursin(r"^[a-zA-Z0-9_.-]{1,128}$", controller_node) ||
+        throw(ArgumentError("invalid HEART controller node name"))
+    present == 0 || isabspath(values["remote"]) || throw(ArgumentError("HEART requires an explicit absolute private remote"))
     rate = parse_positive_integer(values["rate"], "--rate", 500)
     frames = parse_positive_integer(values["frames"], "--frames", 256)
     total_exchanges = values["total-exchanges"] == "0" ? frames : parse_positive_integer(values["total-exchanges"], "--total-exchanges", 65536)
@@ -61,7 +66,6 @@ function parse_options(arguments)
     control_paths = control_present == 0 ? (nothing,nothing) : Tuple(abspath(values[key]) for key in control_keys)
     occursin(r"^[a-zA-Z0-9_.-]{1,128}$", values["control-node"]) || throw(ArgumentError("invalid control node name"))
     append!(paths, [path for path in control_paths if path !== nothing])
-    append!(paths, [path for path in controller_paths if path !== nothing])
     prefix = endswith(paths[5],".json") ? paths[5][1:end-5] : paths[5]
     append!(paths,[prefix * ".frames.u16le",prefix * ".commands.f32le"])
     sustained && push!(paths,paths[5] * ".sustained.json")
@@ -70,7 +74,7 @@ function parse_options(arguments)
     return (
         profile=Symbol(values["profile"]), backend=Symbol(values["backend"]),
         correction_diagnostics, total_exchanges, wall_rate, wall_period_ns, sustained,
-        transport=Symbol(values["transport"]), controller_request=controller_paths[1], controller_reply=controller_paths[2],
+        transport=Symbol(values["transport"]), controller_node, controller_pid, controller_instance,
         graph=abspath(values["graph"]), rate=rate, period_ns=UInt64(period),
         exposure_ns=UInt64(exposure), frames=frames, remote=values["remote"],
         prepared_event=paths[1], connect_request=paths[2], connect_reply=paths[3],

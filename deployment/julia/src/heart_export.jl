@@ -70,6 +70,9 @@ function export_package(args; simulator_backend::String="cpu")
     output = abspath(args.output)
     !ispath(output) && !islink(output) || throw(ArgumentError("export output must be new"))
     specification = Deployment.profile(joinpath(base,"deployment.conf"),args.pipewire_prefix)
+    source = only(filter(owner -> owner["role"] == get(specification,"source-owner",nothing), specification["owners"]))
+    Deployment.native_source(source) ||
+        throw(ArgumentError("HEART HIL export requires a native-source HIL base; export a fresh base first"))
     provenance = Common.read_json(joinpath(base,"provenance.json"))
     get(provenance,"engine",nothing) == "fgn" ||
         throw(ArgumentError("HEART HIL export requires a corrected FGN HIL base"))
@@ -102,7 +105,7 @@ function export_package(args; simulator_backend::String="cpu")
             ScienceExport.copy_file(source,joinpath(package,"heart/bin",name))
         end
         ScienceExport.copy_file(args.rtc_binary,joinpath(package,"bin/pipewireao-rtc"))
-        for name in ("simulator.jl","owner_protocol.jl","heart_owner.jl")
+        for name in ("simulator.jl","owner_protocol.jl","heart_owner.jl","native_heart_control.jl")
             source = joinpath(ScienceExport.resource_root(),"hil",name)
             destination = joinpath(package,"hil",name)
             isfile(destination) && rm(destination)
@@ -155,7 +158,6 @@ function export_package(args; simulator_backend::String="cpu")
         ScienceExport.copy_file(joinpath(ScienceExport.package_root(),"assets/ryzen-6800h-classic.threads"),joinpath(package,"heart/host.threads"))
         Common.write_json(joinpath(package,"heart/placement.json"),Dict("cpus"=>[3,4,6,8,10,14],
             "allowed_priorities"=>[5,10,15,20],"workers"=>[Dict("name"=>name,"cpus"=>[cpu],"policy"=>1,"priority"=>15) for (name,cpu) in WORKERS]))
-        markers = Dict(name=>"heart."*name for name in ("prepared","connect","connected","quit"))
         executable = Sys.which("julia")
         executable === nothing && throw(ArgumentError("Julia executable is an unresolved HEART owner prerequisite"))
         argv = String[realpath(executable),"--startup-file=no","--project=@PACKAGE@/julia","@PACKAGE@/hil/heart_owner.jl",
@@ -163,17 +165,18 @@ function export_package(args; simulator_backend::String="cpu")
             "--config","@PACKAGE@/heart/config.yaml.in","--runtime","@RUNTIME@/heart/native",
             "--cpu-map","@PACKAGE@/heart/host.cpu","--thread-map","@PACKAGE@/heart/host.threads",
             "--requirements","@PACKAGE@/heart/requirements.json","--calibration-root","@PACKAGE@/heart/calibration",
-            "--placement","@PACKAGE@/heart/placement.json","--control-request","@RUNTIME@/heart.control.request",
-            "--control-reply","@RUNTIME@/heart.control.reply"]
-        for (option,key) in (("--prepared-event","prepared"),("--connect-request","connect"),
-                             ("--connect-reply","connected"),("--quit-request","quit"))
-            append!(argv,[option,"@RUNTIME@/"*markers[key]])
-        end
+            "--placement","@PACKAGE@/heart/placement.json","--remote","@RUNTIME@/@REMOTE@",
+            "--control-node","@HEART_OWNER_NODE@","--control-instance","@HEART_OWNER_INSTANCE@"]
         simulator = deepcopy(only([owner for owner in specification["owners"] if owner["role"] == specification["source-owner"]]))
-        append!(simulator["argv"],["--transport","heart","--controller-request","@RUNTIME@/heart.control.request",
-                                   "--controller-reply","@RUNTIME@/heart.control.reply"])
-        specification["owners"] = [merge(Dict{String,Any}("role"=>"heart","argv"=>argv,
-            "environment"=>Dict("HRT_MEMORY_HUGEPAGES"=>"0","HRT_DEFER_WFS_INGRESS"=>"0")),markers),simulator]
+        remote_option = findfirst(==("--remote"), simulator["argv"])
+        remote_option === nothing && throw(ArgumentError("simulator remote option is missing"))
+        simulator["argv"][remote_option + 1] = "@RUNTIME@/@REMOTE@"
+        append!(simulator["argv"],["--transport","heart","--controller-node","@HEART_OWNER_NODE@",
+            "--controller-pid","@HEART_OWNER_PID@","--controller-instance","@HEART_OWNER_INSTANCE@"])
+        specification["owners"] = [Dict{String,Any}("role"=>"heart","argv"=>argv,
+            "control-protocol"=>"pipewireao.rtc.heart/1",
+            "control-node"=>"pipewireao.rtc.heart.revolt-$instrument-heart-hil-$simulator_backend",
+            "environment"=>Dict("HRT_MEMORY_HUGEPAGES"=>"0","HRT_DEFER_WFS_INGRESS"=>"0")),simulator]
         specification["placement"]["simulator"] = Dict("cpus"=>[12],"leader-cpu"=>12,"rt-priority"=>0,"threads"=>Any[],"locked-bytes"=>0)
         specification["placement"]["heart"] = Dict("cpus"=>[3,4,6,8,10,14],"leader-cpu"=>3,"rt-priority"=>0,"threads"=>Any[],"locked-bytes"=>0)
         specification["client"]["heart"] = "client-simulator.conf.in"

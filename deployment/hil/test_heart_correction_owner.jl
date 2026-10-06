@@ -6,11 +6,11 @@ function correction_arguments(directory)
     arguments=String[]
     for name in Protocol.REQUIRED_OPTIONS
         value=name=="profile" ? "copper" : name=="rate" ? "500" :
-            name=="exposure-ns" ? "2000000" : name=="remote" ? "fixture" : joinpath(directory,name)
+            name=="exposure-ns" ? "2000000" : joinpath(directory,name)
         append!(arguments,["--$name",value])
     end
     append!(arguments,["--transport","heart","--correction-diagnostics","true",
-        "--controller-request",joinpath(directory,"controller-request"),"--controller-reply",joinpath(directory,"controller-reply"),
+        "--controller-node","fixture.heart","--controller-pid","123","--controller-instance","17",
         "--heart-client","/usr/bin/true","--heart-native-runtime",joinpath(directory,"native"),
         "--heart-probe-directory",joinpath(directory,"probes"),"--heart-telemetry-max-bytes","16777216",
         "--heart-active-contract",joinpath(directory,"contract.json"),"--heart-projection",joinpath(directory,"projection.f32le"),

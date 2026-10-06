@@ -76,7 +76,7 @@ function source_status_failure_fixture(mode)
             runner = D.DeploymentRunner((;), directory, Dict{String,Any}("owners" => [owner]),
                 Dict{String,String}(), Set{Int}(), children, pids, directory,
                 public_path, MockRunnerClient(native_events), broker, nothing, nothing, owner, nothing, 0, "running",
-                false, false, false, joinpath(directory, "state.json"), record)
+                false, false, false, joinpath(directory, "state.json"), record, nothing)
             if mode == :malformed
                 # Valid JSON with a matching ID/operation, but an invalid state.
                 D.atomic_record(joinpath(directory, "source.reply"), Dict(
@@ -154,6 +154,25 @@ end
         write(path, JSON3.write(spec))
         write(joinpath(directory, "session.conf.in"), "changed")
         @test_throws D.DeploymentError D.profile(path, "/unused")
+    end
+    mktempdir() do directory
+        spec = deployment_fixture(directory)
+        owner = Dict{String,Any}("role"=>"heart", "argv"=>["/bin/true"],
+            "environment"=>Dict{String,String}(), "control-protocol"=>"pipewireao.rtc.heart/1",
+            "control-node"=>"fixture.heart")
+        push!(spec["owners"], owner)
+        spec["placement"]["heart"] = deepcopy(spec["placement"]["rtc"])
+        spec["client"]["heart"] = "client.conf.in"
+        path = joinpath(directory,"deployment.conf")
+        write(path, JSON3.write(spec))
+        @test D.profile(path,"/unused") == spec
+        for (key,value) in (("prepared","heart.prepared"), ("control-node","invalid node"),
+                ("control-protocol","pipewireao.rtc.heart/99"))
+            invalid = deepcopy(spec)
+            invalid["owners"][1][key] = value
+            write(path,JSON3.write(invalid))
+            @test_throws D.DeploymentError D.profile(path,"/unused")
+        end
     end
     mktempdir() do directory
         escape = joinpath(directory, "escape")
@@ -430,7 +449,7 @@ runner = D.DeploymentRunner((;), runtime, spec, Dict{String,String}(), Set([cpu]
     Tuple{String,Base.Process}[], IdDict{Base.Process,Int}(), runtime,
     nothing, nothing, nothing, nothing, nothing, nothing, nothing, 0, nothing,
     false, false, false, nothing,
-    Dict{String,Any}("processes" => Dict{String,Any}()))
+    Dict{String,Any}("processes" => Dict{String,Any}()), nothing)
 child = D.spawn(runner, "core", ["sh", "-c", "printf supervised-child-diagnostic >&2"],
     Dict{String,String}(ENV))
 wait(child)
@@ -478,7 +497,7 @@ end
             Dict{String,String}(), Set{Int}(), Tuple{String,Base.Process}[],
             IdDict{Base.Process,Int}(), directory, nothing, nothing, nothing,
             nothing, nothing, owner, nothing, 0, "running", false, false, false,
-            nothing, record)
+            nothing, record, nothing)
         @test_throws D.DeploymentError D.source_control(runner, "pause")
         @test runner.source_client === nothing
         @test runner.source_id == 0

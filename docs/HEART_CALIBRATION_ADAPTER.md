@@ -208,14 +208,26 @@ The first native DM bucket must be zero with sync zero, and the first WFS
 bucket must be zero with sync one. A changed child or generation faults use.
 
 Run this owner with the usual calibration options and `--transport heart`,
-the paired `--controller-request` and `--controller-reply` paths, and:
+the explicit native wrapper identity, and:
 
 ```text
+--remote <absolute-private-PipeWire-socket>
+--controller-node <native-HEART-wrapper-node-name>
+--controller-pid <actual-spawned-wrapper-PID>
+--controller-instance <wrapper-incarnation>
 --heart-client <absolute-scaoTemplateCmdClient>
 --heart-native-runtime <supervised-native-runtime>
 --heart-probe-directory <fresh-absolute-private-directory>
 --heart-telemetry-max-bytes <finite-U64-byte-budget>
 ```
+
+The launcher supplies the wrapper PID and incarnation. Admission queries native
+Props on that exact remote; file reset requests and replies are not accepted.
+The full saved generation report is verified using the path and SHA-256 from
+a fresh native completion. Later health checks use subscribed native state and
+child identity. A completion without a snapshot requires a fresh status before
+health-authorized work can continue. See [the native wrapper
+contract](NATIVE_HEART_CONTROL.md).
 
 For Classic, declare `--heart-classic-order <188-U32_LE-indices>` and
 `--heart-slope-scale-x <finite-nonzero-scale>` /

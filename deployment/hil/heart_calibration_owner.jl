@@ -8,6 +8,7 @@ using PipeWireAO, AdaptiveOpticsSimPipeWireHIL, SHA, Sockets
 using AdaptiveOpticsSim.AlgorithmGraphs
 import ..CalibrationAcquisition, ..CalibrationServer, ..HeartCalibrationTelemetry
 import ..Protocol
+import ..HILHeartControl
 const Acquisition = CalibrationAcquisition
 const Telemetry = HeartCalibrationTelemetry
 
@@ -21,7 +22,12 @@ struct NativeHold
     admitted_frames::UInt64
     ingress_mode::String
     ingress_environment::String
+    snapshot::Union{Nothing,HILHeartControl.Codec.HeartSnapshot}
 end
+
+# Portable command/telemetry fixtures do not construct a live native endpoint.
+NativeHold(pid, generation, run, endpoints, command, digest, frames, mode, environment) =
+    NativeHold(pid, generation, run, endpoints, command, digest, frames, mode, environment, nothing)
 
 mutable struct Session{Plant,Driver,Source,Sink,Options,Domain,Service}
     plant::Plant
@@ -56,14 +62,9 @@ function require_usable(session)
     session.service()
     proof = session.native_controller_held
     if proof !== nothing
-        status_path = joinpath(session.options.heart_native_runtime, "heart-owner-status.json")
-        filesize(status_path) <= 64 * 1024 || error("native owner status exceeds its bound")
-        status = Protocol.JSON3.read(read(status_path, String))
-        get(status, :generation, nothing) == proof.generation &&
-            get(status, :child_pid, nothing) == proof.child_pid &&
-            status.native_ingress.mode == proof.ingress_mode &&
-            status.native_ingress.observed_environment == proof.ingress_environment &&
-            isdir("/proc/$(proof.child_pid)") || error("native HEART owner generation changed or exited")
+        proof.snapshot === nothing && error("native HEART hold has no admitted control snapshot")
+        HILHeartControl.Heart.require_ready(session.options.controller_control, proof.snapshot)
+        isdir("/proc/$(proof.child_pid)") || error("native HEART child exited")
     end
     return nothing
 end
@@ -204,9 +205,8 @@ end
 
 function hold_native!(session; timeout_ns::UInt64)
     until = Acquisition.deadline(timeout_ns)
-    status_path = joinpath(session.options.heart_native_runtime, "heart-owner-status.json")
-    filesize(status_path) <= 64 * 1024 || error("native owner status exceeds its bound")
-    status = Protocol.JSON3.read(read(status_path, String))
+    snapshot, status = HILHeartControl.Heart.generation_report(session.options.controller_control,
+        session.options.heart_native_runtime; deadline=Float64(until) / 1e9, check=session.service)
     get(status, :generation, nothing) === 1 && get(status, :sequence, nothing) === 0 &&
         get(status, :error, "missing") === nothing || error("calibration requires a fresh supervised HEART child")
     pid = get(status, :child_pid, nothing)
@@ -220,7 +220,7 @@ function hold_native!(session; timeout_ns::UInt64)
     native_command!(session, "RUN", String[], until)
     # In native RUN, WFS input/proc have f_running processing; TFC f_running
     # is NULL and CLWC f_running performs state changes without integration.
-    session.native_controller_held = NativeHold(Int(pid), 1, true, true, "startup CORRECT", enable_reply_sha256, 0, ingress_mode, observed_environment)
+    session.native_controller_held = NativeHold(Int(pid), 1, true, true, "startup CORRECT", enable_reply_sha256, 0, ingress_mode, observed_environment, snapshot)
     native_command!(session, "SET_TELM_RECORD", recording_arguments(), until)
     session.state.held = true
     return nothing
@@ -892,7 +892,9 @@ end
 function main(arguments=ARGS)
     prepared = options(arguments)
     Protocol.require_fresh_instance(prepared)
-    return Base.invokelatest(run_owner, prepared, Main.load_plant(prepared.profile), Main.load_target(prepared.backend))
+    return HILHeartControl.with_controller(prepared) do admitted
+        Base.invokelatest(run_owner, admitted, Main.load_plant(admitted.profile), Main.load_target(admitted.backend))
+    end
 end
 
 end

@@ -7,11 +7,11 @@ const NativeOwner = HeartCalibrationOwner
         arguments = String[]
         for name in Protocol.REQUIRED_OPTIONS
             value = name == "profile" ? "copper" : name == "rate" ? "100" :
-                name == "exposure-ns" ? "10000000" : name == "remote" ? "fixture" : joinpath(directory, name)
+                name == "exposure-ns" ? "10000000" : joinpath(directory, name)
             append!(arguments, ["--$name", value])
         end
-        append!(arguments, ["--transport", "heart", "--controller-request", joinpath(directory, "controller-request"),
-            "--controller-reply", joinpath(directory, "controller-reply"),
+        append!(arguments, ["--transport", "heart", "--controller-node", "fixture.heart",
+            "--controller-pid", "123", "--controller-instance", "17",
             "--calibration-socket", joinpath(directory, "calibration.sock"),
             "--heart-client", "/usr/bin/true", "--heart-native-runtime", joinpath(directory, "native"),
             "--heart-probe-directory", joinpath(directory, "probes"), "--heart-telemetry-max-bytes", "4096"])
