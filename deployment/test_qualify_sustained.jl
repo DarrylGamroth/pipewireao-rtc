@@ -60,6 +60,19 @@ end
     end
 end
 
+@testset "midrun controls follow the live acquisition cursor" begin
+    source=Dict("sequence"=>16,"completed"=>false)
+    @test !SQ.midrun_ready(source,16)
+    source["sequence"]=17
+    @test SQ.midrun_ready(source,16)
+    source["completed"]=true
+    @test !SQ.midrun_ready(source,16)
+    for value in (nothing,true,"17")
+        @test_throws ErrorException SQ.midrun_ready(Dict("sequence"=>value,"completed"=>false),16)
+    end
+    @test_throws ErrorException SQ.midrun_ready(Dict("sequence"=>17),16)
+end
+
 @testset "bounded memory sample ring" begin
     @test_throws ArgumentError SQ.SampleRing(0)
     ring = SQ.SampleRing(3)

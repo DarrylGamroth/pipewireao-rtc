@@ -1,0 +1,274 @@
+{
+  "version": 1,
+  "scope": "same-host installed foreground reset; not services, midrun, latency isolation, arbitrary late observers or hardware",
+  "runner_sha256": "7968051f1d4d591414f6cffb995f6efbacc4099ccb881bd3a268e67423f9a341",
+  "qualifier_sha256": "cdf43f9decc4bf87a54596235edadc58e1dc401dd02c574096b8db3354ef2e39",
+  "records": [
+    {
+      "package": "/home/dgamroth/.cache/rtc-native-final-deployment-20261006/classic-fgn-v6-installed",
+      "evidence": "/home/dgamroth/.cache/rtc-native-final-deployment-20261006/classic-fgn-v6-evidence.lifecycle.json",
+      "evidence_sha256": "0ef285aa8185e1f3f265e3d042b595e8f1d1d669bd9583fe48bba7ed26b1b760",
+      "coordinator_sha256": "cdf43f9decc4bf87a54596235edadc58e1dc401dd02c574096b8db3354ef2e39",
+      "descriptor_sha256": "f668db67d58672608a1f03126306fa7c0be2886fbec2015a7ecfe265422e5570",
+      "success": true,
+      "shutdown_confirmed": true,
+      "cleanup": "complete",
+      "runs": [
+        {
+          "run": "run-1",
+          "completed_frames": 512,
+          "completed_commands": 512,
+          "allocation": {
+            "gc_pauses": 0,
+            "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included",
+            "completed_exchanges": 496,
+            "allocations": {
+              "malloc": 0,
+              "realloc": 0,
+              "big": 0,
+              "pool": 0
+            },
+            "allocated_bytes": 0,
+            "gc_time_ns": 0,
+            "full_sweeps": 0
+          },
+          "detector": {
+            "maximum_adc": 452,
+            "upper_rail_pixels": 0,
+            "bits": 12,
+            "upper_rail_frames": 0
+          },
+          "prefix_frame_sha256": "3564e289278004d7120f044df3c0e1e2dfb3e7a925558e82dd898a7f543c6eca",
+          "prefix_command_sha256": "b374f9a064080d078d2a157d19105ab58e064b90a789d4c8ec95c83067d30a8f"
+        },
+        {
+          "run": "run-2",
+          "completed_frames": 512,
+          "completed_commands": 512,
+          "allocation": {
+            "gc_pauses": 0,
+            "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included",
+            "completed_exchanges": 496,
+            "allocations": {
+              "malloc": 0,
+              "realloc": 0,
+              "big": 0,
+              "pool": 0
+            },
+            "allocated_bytes": 0,
+            "gc_time_ns": 0,
+            "full_sweeps": 0
+          },
+          "detector": {
+            "maximum_adc": 452,
+            "upper_rail_pixels": 0,
+            "bits": 12,
+            "upper_rail_frames": 0
+          },
+          "prefix_frame_sha256": "3564e289278004d7120f044df3c0e1e2dfb3e7a925558e82dd898a7f543c6eca",
+          "prefix_command_sha256": "b374f9a064080d078d2a157d19105ab58e064b90a789d4c8ec95c83067d30a8f"
+        }
+      ]
+    },
+    {
+      "package": "/home/dgamroth/.cache/rtc-native-final-deployment-20261006/classic-jfg-v5-installed",
+      "evidence": "/home/dgamroth/.cache/rtc-native-final-deployment-20261006/classic-jfg-v5-evidence.lifecycle.json",
+      "evidence_sha256": "7a02a2c6a994abfdec7551e31f1c28fd6ec482c03e758a7fd1b4ac93c67ec0b6",
+      "coordinator_sha256": "cdf43f9decc4bf87a54596235edadc58e1dc401dd02c574096b8db3354ef2e39",
+      "descriptor_sha256": "a23d26a83984cdcf6263d40c425068e60f892068ab542ef7b4e721f5ae31b1ae",
+      "success": true,
+      "shutdown_confirmed": true,
+      "cleanup": "complete",
+      "runs": [
+        {
+          "run": "run-1",
+          "completed_frames": 512,
+          "completed_commands": 512,
+          "allocation": {
+            "gc_pauses": 0,
+            "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included",
+            "completed_exchanges": 496,
+            "allocations": {
+              "malloc": 0,
+              "realloc": 0,
+              "big": 0,
+              "pool": 0
+            },
+            "allocated_bytes": 0,
+            "gc_time_ns": 0,
+            "full_sweeps": 0
+          },
+          "detector": {
+            "maximum_adc": 452,
+            "upper_rail_pixels": 0,
+            "bits": 12,
+            "upper_rail_frames": 0
+          },
+          "prefix_frame_sha256": "a2df01fde34f8e00675504220f97ef3dc5426d40d862d5c8c501c91c76f458e3",
+          "prefix_command_sha256": "b69a4302af39bb7419f6d571a90d37dd24a852307cbe2086707b898dc8053ebd"
+        },
+        {
+          "run": "run-2",
+          "completed_frames": 512,
+          "completed_commands": 512,
+          "allocation": {
+            "gc_pauses": 0,
+            "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included",
+            "completed_exchanges": 496,
+            "allocations": {
+              "malloc": 0,
+              "realloc": 0,
+              "big": 0,
+              "pool": 0
+            },
+            "allocated_bytes": 0,
+            "gc_time_ns": 0,
+            "full_sweeps": 0
+          },
+          "detector": {
+            "maximum_adc": 452,
+            "upper_rail_pixels": 0,
+            "bits": 12,
+            "upper_rail_frames": 0
+          },
+          "prefix_frame_sha256": "a2df01fde34f8e00675504220f97ef3dc5426d40d862d5c8c501c91c76f458e3",
+          "prefix_command_sha256": "b69a4302af39bb7419f6d571a90d37dd24a852307cbe2086707b898dc8053ebd"
+        }
+      ]
+    },
+    {
+      "package": "/home/dgamroth/.cache/rtc-native-final-deployment-20261006/copper-fgn-v5-installed",
+      "evidence": "/home/dgamroth/.cache/rtc-native-final-deployment-20261006/copper-fgn-v5-evidence.lifecycle.json",
+      "evidence_sha256": "ec513eadd5d341d73a2742efa282d2d7850b7d9e135b542e3678ea5606af248d",
+      "coordinator_sha256": "cdf43f9decc4bf87a54596235edadc58e1dc401dd02c574096b8db3354ef2e39",
+      "descriptor_sha256": "8ee49f9bf67220d8ceb5380183bc00f8aa2b5745a9bd82631cbe87ab50809e3b",
+      "success": true,
+      "shutdown_confirmed": true,
+      "cleanup": "complete",
+      "runs": [
+        {
+          "run": "run-1",
+          "completed_frames": 512,
+          "completed_commands": 512,
+          "allocation": {
+            "gc_pauses": 0,
+            "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included",
+            "completed_exchanges": 496,
+            "allocations": {
+              "malloc": 0,
+              "realloc": 0,
+              "big": 0,
+              "pool": 0
+            },
+            "allocated_bytes": 0,
+            "gc_time_ns": 0,
+            "full_sweeps": 0
+          },
+          "detector": {
+            "maximum_adc": 16383,
+            "upper_rail_pixels": 2,
+            "bits": 14,
+            "upper_rail_frames": 2
+          },
+          "prefix_frame_sha256": "1147fd7ec68b5261bb2fb69ade098d31b2dbcf1304ffbb9516ece1ff912a5592",
+          "prefix_command_sha256": "76164c625f55ffe5d66b373bbb727d0fe09024be59d06949e2918fbf2acbe09c"
+        },
+        {
+          "run": "run-2",
+          "completed_frames": 512,
+          "completed_commands": 512,
+          "allocation": {
+            "gc_pauses": 0,
+            "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included",
+            "completed_exchanges": 496,
+            "allocations": {
+              "malloc": 0,
+              "realloc": 0,
+              "big": 0,
+              "pool": 0
+            },
+            "allocated_bytes": 0,
+            "gc_time_ns": 0,
+            "full_sweeps": 0
+          },
+          "detector": {
+            "maximum_adc": 16383,
+            "upper_rail_pixels": 2,
+            "bits": 14,
+            "upper_rail_frames": 2
+          },
+          "prefix_frame_sha256": "1147fd7ec68b5261bb2fb69ade098d31b2dbcf1304ffbb9516ece1ff912a5592",
+          "prefix_command_sha256": "76164c625f55ffe5d66b373bbb727d0fe09024be59d06949e2918fbf2acbe09c"
+        }
+      ]
+    },
+    {
+      "package": "/home/dgamroth/.cache/rtc-native-final-deployment-20261006/copper-jfg-v4-installed",
+      "evidence": "/home/dgamroth/.cache/rtc-native-final-deployment-20261006/copper-jfg-v4-evidence.lifecycle.json",
+      "evidence_sha256": "3a385202f0faf56e57d816370d35db8148652d32c054ec31c1ace0f6e1488cb1",
+      "coordinator_sha256": "cdf43f9decc4bf87a54596235edadc58e1dc401dd02c574096b8db3354ef2e39",
+      "descriptor_sha256": "481a4c624599e804f9dc0f16de70adc36a43b80125a8038097921e514ce82c62",
+      "success": true,
+      "shutdown_confirmed": true,
+      "cleanup": "complete",
+      "runs": [
+        {
+          "run": "run-1",
+          "completed_frames": 512,
+          "completed_commands": 512,
+          "allocation": {
+            "gc_pauses": 0,
+            "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included",
+            "completed_exchanges": 496,
+            "allocations": {
+              "malloc": 0,
+              "realloc": 0,
+              "big": 0,
+              "pool": 0
+            },
+            "allocated_bytes": 0,
+            "gc_time_ns": 0,
+            "full_sweeps": 0
+          },
+          "detector": {
+            "maximum_adc": 16383,
+            "upper_rail_pixels": 2,
+            "bits": 14,
+            "upper_rail_frames": 2
+          },
+          "prefix_frame_sha256": "677c5833233f0d9b5bfc7d3731dac3e5d52679e3825066516cd9909bd7b57577",
+          "prefix_command_sha256": "330545c53f70f4775b184704b2c01f99fc0157347625306e7669f8e11426eb2d"
+        },
+        {
+          "run": "run-2",
+          "completed_frames": 512,
+          "completed_commands": 512,
+          "allocation": {
+            "gc_pauses": 0,
+            "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included",
+            "completed_exchanges": 496,
+            "allocations": {
+              "malloc": 0,
+              "realloc": 0,
+              "big": 0,
+              "pool": 0
+            },
+            "allocated_bytes": 0,
+            "gc_time_ns": 0,
+            "full_sweeps": 0
+          },
+          "detector": {
+            "maximum_adc": 16383,
+            "upper_rail_pixels": 2,
+            "bits": 14,
+            "upper_rail_frames": 2
+          },
+          "prefix_frame_sha256": "677c5833233f0d9b5bfc7d3731dac3e5d52679e3825066516cd9909bd7b57577",
+          "prefix_command_sha256": "330545c53f70f4775b184704b2c01f99fc0157347625306e7669f8e11426eb2d"
+        }
+      ]
+    }
+  ],
+  "preserved_failed_evidence": "/home/dgamroth/.cache/rtc-native-final-deployment-20261006/copper-fgn-v4-evidence.lifecycle.json",
+  "failure_cause": "unknown; subsequent same-gate diagnostic run did not reproduce"
+}

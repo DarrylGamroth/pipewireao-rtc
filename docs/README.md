@@ -139,8 +139,8 @@ and records the remaining midrun-control and qualification limits.
 [independent review](LIVE_CONTROL_REVIEW.md) and
 [validation](LIVE_CONTROL_VALIDATION.md) record the selected SPA parameter
 transport and its separate installed midrun-control qualification. Saved JSON
-reports remain artifacts; the public supervisor socket and calibration controls
-are separate live transports still awaiting migration.
+reports remain artifacts. Selected supervisor and calibration controls now use
+native transport; fresh integrated installed qualification remains separate.
 
 [Native control migration design](NATIVE_CONTROL_MIGRATION_DESIGN.md), its
 [inventory](LIVE_CONTROL_INVENTORY.md),
@@ -197,11 +197,12 @@ The [cold lifecycle helper API](NATIVE_ACQUISITION_LIFECYCLE_HELPERS.md) records
 the runtime/client transport boundary and private-core fixture evidence.
 The [public supervisor codec foundation](NATIVE_SUPERVISOR_CONTROL.md) records
 the separate public profile, combined typed owner status, mutation reply capacity
-reservation and shared Julia/Rust fixtures. Public runtime ingress and installed
-qualification remain separate pending gates.
-The simulator source migration
-is complete; remaining native endpoints are implementation work, not implied
-by the proof or contract.
+reservation and shared Julia/Rust fixtures. Public runtime ingress is implemented;
+its installed qualification is separate. The [current retirement inventory](LIVE_CONTROL_INVENTORY.md)
+and [actual private-core validation](LIVE_CONTROL_RETIREMENT_PRIVATE_CORE_VALIDATION.md)
+record selected paths and retired ingress. [Fresh foreground qualification](NATIVE_FINAL_FOREGROUND_VALIDATION.md)
+passes four native FGN/JFG reset compositions; [remaining integrated checks](NATIVE_FINAL_QUALIFICATION_PLAN.md)
+include services, calibration, HEART and observation.
 
 ## Julia operational deployment
 

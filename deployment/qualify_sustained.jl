@@ -314,6 +314,16 @@ function qualification_mode(args)
     error("expected PACKAGE FRESH_RUNTIME FRESH_EVIDENCE [lifecycle|reset]")
 end
 
+# Use the authoritative acquisition cursor rather than coordinator memory
+# sampling cadence: short finite cohorts must exercise controls while active.
+function midrun_ready(source, retained_prefix_frames)
+    sequence=get(source,"sequence",nothing)
+    sequence isa Integer && !(sequence isa Bool) || error("native source sequence missing")
+    completed=get(source,"completed",nothing)
+    completed isa Bool || error("native source completion missing")
+    return !completed && sequence>retained_prefix_frames
+end
+
 function main(args)
     mode = qualification_mode(args)
     package,runtime,evidence = abspath.(args[1:3])
@@ -369,7 +379,7 @@ function main(args)
                             require_allocation_free(summary)
                             break
                         end
-                        if lifecycle && number == 1 && !paused && length(samples) >= 12
+                        if lifecycle && number == 1 && !paused && midrun_ready(observed["source"],retained_prefix_frames)
                             record["midrun_stop"] = native_control(client,["session-stop"];timeout=48)
                             first_status = native_control(client,["status"];timeout=48)
                             held = first_status["source"]
