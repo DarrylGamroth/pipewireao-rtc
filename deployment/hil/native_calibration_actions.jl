@@ -129,6 +129,27 @@ function _complete!(server, ticket, value)
     server.terminal = ticket
     return nothing
 end
+function _foreign_rejection!(server,ticket)
+    command=ticket.command
+    encode(code) = Client.encode_completion(Codec.PROFILE,_header(server,ticket,code),
+        server.endpoint.lifecycle,command.run,command.serial,Codec.Failed(Codec.InvalidEvidence),"")
+    try
+        Endpoint.complete!(server.endpoint,ticket,encode(Int32(0)))
+    catch primary
+        retired = with_thread_loop_lock(server.bridge.runtime.loop) do _
+            # Only the foreign ticket's expiry/removal is neutral. Core,
+            # publication or internal ticket failures still propagate.
+            Endpoint.operational(server.endpoint)
+            server.endpoint.pending === ticket && server.endpoint.applying || throw(primary)
+            Client.monotonic() >= ticket.deadline ||
+                !Endpoint.controller_present(server.endpoint,ticket.header.controller)
+        end
+        retired || rethrow()
+        Endpoint.complete!(server.endpoint,ticket,encode(Int32(-110)))
+    end
+    server.terminal=ticket
+    return nothing
+end
 _initial(::Union{Codec.Hold,Codec.Restore}) = true
 _initial(::Codec.Action) = false
 _recovery(::Union{Codec.Restore,Codec.Release}) = true
@@ -154,11 +175,7 @@ function apply!(server::ActionServer,owner,ticket; service_control=()->nothing,
         admission_enabled=()->true,io_timeout_ns::UInt64=owner.maximum_timeout_ns)
     command = ticket.command
     if server.controller !== nothing && ticket.header.controller != server.controller
-        Endpoint.complete!(server.endpoint,ticket,Client.encode_completion(Codec.PROFILE,
-            _header(server,ticket),server.endpoint.lifecycle,command.run,command.serial,
-            Codec.Failed(Codec.InvalidEvidence),""))
-        server.terminal = ticket
-        return nothing
+        return _foreign_rejection!(server,ticket)
     end
     if server.controller === nothing && !_initial(command.action)
         _complete!(server,ticket,(;kind="failed",reason="invalid_evidence"))
@@ -239,8 +256,9 @@ function serve!(server::ActionServer,owner::Server.Owner;
             end
             if terminal !== nothing && terminal !== server.terminal
                 server.terminal = terminal
-                server.controller === nothing && (server.controller=terminal.header.controller)
-                throw(Bridge.TransportFailure(ErrorException("calibration request expired before effect")))
+                if server.controller !== nothing && terminal.header.controller==server.controller
+                    throw(Bridge.TransportFailure(ErrorException("calibration request expired before effect")))
+                end
             end
             if ticket !== nothing
                 apply!(server,owner,ticket; service_control,admission_enabled,io_timeout_ns)

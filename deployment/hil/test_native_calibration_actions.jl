@@ -1,3 +1,6 @@
+if haskey(ENV,"PIPEWIREAO_TEST_SDK")
+    pushfirst!(LOAD_PATH,ENV["PIPEWIREAO_TEST_SDK"])
+end
 using Test, PipeWireAO, SHA
 pushfirst!(LOAD_PATH,normpath(joinpath(@__DIR__,"../julia")))
 using PipeWireAODeployment
@@ -55,6 +58,19 @@ end
 native_connect(test;run=typemax(UInt64),command_count=2) = Native.connect(test.binding,run,2_000_000_000;
     command_count,deadline=Generic.monotonic()+15,check=test.check)
 native_request(client,action,expected) = Native.request!(client,action,expected;deadline=Generic.monotonic()+5)
+function stage_native(test,client,action;budget_ns=Int64(5_000_000_000))
+    token=with_thread_loop_lock(test.bridge.runtime.loop) do _
+        test.actions.endpoint.last_token+1
+    end
+    header=PipeWireAODeployment.NativeControlCodec.RequestHeader(client.client.identity,
+        test.binding.instance,token,Codec.Client.operation_id(Codec.PROFILE,Codec.Command(client.run,UInt64(1),action)),budget_ns)
+    pod=Codec.Client.encode_request(Codec.PROFILE,header,Codec.Command(client.run,UInt64(1),action))
+    with_thread_loop_lock(client.client.loop) do _
+        set_param!(something(client.client.node),PipeWireAO.SPA.PARAM_PROPS,pod)
+    end
+    wait_proof(()->test.actions.endpoint.pending!==nothing,5,"native ticket staged")
+    return test.actions.endpoint.pending
+end
 function published_fault(test)
     lifecycle=PipeWireAODeployment.NativeAcquisitionLifecycleCodec
     observer=Generic.connect(lifecycle.CALIBRATION_PROFILE,test.binding.remote,
@@ -183,6 +199,90 @@ end
             @test !test.fixture.owner.restored
             @test test.bridge.runtime.endpoint.lifecycle===Lifecycle.Codec.Fault
             @test published_fault(test)
+        end
+    end
+end
+
+@testset "foreign ticket retirement preserves bound controller and SCI facts" begin
+    for scenario in (:expired_before_take,:removed_before_take,:expired_while_applying)
+        with_control_private_core() do socket,directory,daemon
+            blocked=Ref(false);entered=Ref(false)
+            gate=owner->begin
+                if blocked[]
+                    entered[]=true
+                    while blocked[];sleep(0.002);end
+                end
+                nothing
+            end
+            native_fixture(socket,daemon;io_ns=UInt64(20_000_000_000),service_control=gate) do test
+                first=native_connect(test);second=native_connect(test;run=UInt64(2))
+                try
+                    native_request(first,Codec.Hold(),"held")
+                    accepted=(test.fixture.owner.run,test.fixture.owner.serial,test.actions.controller,test.actions.last_activity)
+                    blocked[]=true
+                    wait_proof(()->entered[],5,"owner boundary gate")
+                    budget=scenario===:removed_before_take ? Int64(5_000_000_000) : Int64(500_000_000)
+                    ticket=stage_native(test,second,Codec.Restore(Float32[2,2],Codec.Immediate());budget_ns=budget)
+                    if scenario===:removed_before_take
+                        with_thread_loop_lock(second.client.loop) do _
+                            close(something(second.client.marker))
+                        end
+                        wait_proof(()->with_thread_loop_lock(test.bridge.runtime.loop) do _
+                            !Actions.Endpoint.controller_present(test.actions.endpoint,ticket.header.controller)
+                        end,5,"foreign controller removal")
+                    else
+                        if scenario===:expired_while_applying
+                            @test Actions.Endpoint.take!(test.actions.endpoint)===ticket
+                        end
+                        wait_proof(()->Generic.monotonic()>=ticket.deadline,5,"foreign request expiry")
+                        if scenario===:expired_while_applying
+                            @test Actions.apply!(test.actions,test.fixture.owner,ticket)===nothing
+                        end
+                    end
+                    blocked[]=false
+                    wait_proof(()->test.actions.terminal===ticket || test.failure[]!==nothing,5,"foreign terminal resolution")
+                    @test test.failure[]===nothing && !test.fixture.owner.faulted
+                    @test test.fixture.owner.phase===:held && test.fixture.owner.held && test.fixture.session.held
+                    @test (test.fixture.owner.run,test.fixture.owner.serial,test.actions.controller,test.actions.last_activity)==accepted
+                    @test isempty(test.fixture.session.adopted)
+                    native_request(first,Codec.Restore(Float32[0,0],Codec.Immediate()),"restored")
+                    native_request(first,Codec.Release(),"released")
+                finally
+                    blocked[]=false;close(second);close(first)
+                end
+            end
+        end
+    end
+end
+
+@testset "expired initial invalid ticket cannot bind action authority" begin
+    with_control_private_core() do socket,directory,daemon
+        blocked=Ref(false);entered=Ref(false)
+        gate=owner->begin
+            if blocked[]
+                entered[]=true
+                while blocked[];sleep(0.002);end
+            end
+            nothing
+        end
+        native_fixture(socket,daemon;service_control=gate) do test
+            first=native_connect(test);second=native_connect(test;run=UInt64(2))
+            try
+                blocked[]=true
+                wait_proof(()->entered[],5,"initial owner gate")
+                ticket=stage_native(test,second,Codec.Adopt(UInt32(0),Float32[1,2]);budget_ns=Int64(500_000_000))
+                wait_proof(()->Generic.monotonic()>=ticket.deadline,5,"initial ticket expiry")
+                blocked[]=false
+                wait_proof(()->test.actions.terminal===ticket || test.failure[]!==nothing,5,"initial terminal resolution")
+                @test test.failure[]===nothing && test.actions.controller===nothing
+                @test test.fixture.owner.run==0 && test.fixture.owner.serial==0 && !test.fixture.owner.faulted
+                @test !test.fixture.owner.held && isempty(test.fixture.session.adopted)
+                native_request(first,Codec.Hold(),"held")
+                native_request(first,Codec.Restore(Float32[0,0],Codec.Immediate()),"restored")
+                native_request(first,Codec.Release(),"released")
+            finally
+                blocked[]=false;close(second);close(first)
+            end
         end
     end
 end

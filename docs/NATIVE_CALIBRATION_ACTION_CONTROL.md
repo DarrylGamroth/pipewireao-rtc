@@ -224,6 +224,15 @@ effect time. Completion, malformed requests, wrong run/serial and another
 controller do not extend it. Accepted effect checks enforce both the ticket
 deadline and this inactivity bound.
 
+Foreign ticket expiry/removal is neutral to the bound run. Generic ingress may
+terminalize such a ticket before the SCI adapter takes it; the adapter records
+that terminal without binding authority or changing the bound run's activity,
+phase, hold, serial or effects. An expired initial invalid ticket likewise cannot
+bind action authority. If a foreign typed rejection loses its caller before
+publication, a negative transport completion resolves that ticket after checking
+that its expiry/removal is the sole cause. Core, publication and internal ticket
+failures and retirement of the bound controller remain failures of the active run.
+
 Successful replies carry an empty message, so native Collect preflight uses
 `message_bytes=0`. Request adapters inspect exact encoded figure capacity before
 copying dictionary figures. The encoder checks the final reply again. No new
@@ -270,3 +279,12 @@ SCI/server regressions and 107 native integration assertions). The focused SDK
 run passed 47 client, 66 campaign and 106 HEART export assertions, 219/219 total.
 `git diff --check` passed. These results do not close issue #7 or promote an
 installed scientific capability claim.
+
+Independent review NCAE-001 demonstrated a foreign controller's removal before
+take incorrectly faulting an already held bound run at baseline `323f767`
+(7 passing / 3 failing assertions). The same private-core discriminator passed
+12/12 after the scoped adapter fix, using the current source SDK
+`PipeWireAO.jl` rather than the prepared HIL project's vendored SDK. The source
+fixture additionally covers foreign expiry/removal before take, expiry while
+applying a foreign rejection, and an expired invalid initial ticket. No generic
+endpoint machinery or SCI numerical effects change in this remediation.
