@@ -1,7 +1,8 @@
 # Local RTC session discovery
 
-Status: selected bounded local listing contract; supervisor and GUI integration
-remain separate delivery gates.
+Status: bounded listing and exact native selection are implemented and have
+private-core fixture evidence. Supervisor publication, installed deployment
+and GUI integration remain separate delivery gates.
 
 This contract implements the listing boundary selected for RTC issue #4. A
 deployment supervisor publishes a local locator while it is alive. A locator
@@ -101,10 +102,20 @@ this selection verifier contract; the verifier's one fresh status query is
 read-only. Later operator controls remain explicit opt-in requests through the
 verified supervisor.
 
-The implementation exposes an injectable verifier now. The supervisor's
-native client and GUI adapter must supply and qualify the production callback
-as part of the native control and session-picker integrations. Unit tests with
-a verifier fixture establish the local contract only; they do not establish
-live endpoint discovery, cross-process status, GUI selection, Native/WASM
-portability, or application qualification. RTC issue #4 remains open until
-those integration gates pass.
+`NativeSessionClient.select_session` supplies the native verifier. It connects
+once to the exact recorded endpoint, sends one read-only Status, checks the
+fresh UUID/PID/incarnation and native global/serial identity, and retains that
+same client after selection for later explicit controls. A different fresh UUID
+is `Replaced`; a failed connection, including a rejected PID/incarnation match,
+is `Inaccessible`. Neither path parses failure messages or rebinds to another
+owner. Under an admitted supervisor, a READY or OFFLINE runner maps to
+`Stopped`, a RUNNING runner to `Ready`, and a faulted runner to `Fault`; these
+are discovery states rather than substitutes for the complete native status.
+
+Independent fixture checks pass 76 assertions for the bounded local contract
+and 26 against an actual private-core supervisor, in addition to 15 coordinator
+assertions. The [selection review](NATIVE_SESSION_SELECTION_REVIEW.md) records
+the exact file-permission correction and the failure classification limit.
+These checks do not establish deployment-owned publication, installed science,
+GUI selection, Native/WASM portability, or application qualification. RTC issue
+#4 remains open until those integration gates pass.

@@ -159,7 +159,6 @@ end
 decode_record(pod::Pod) = _decode_record(pod)
 
 _uid() = ccall(:geteuid, Cuint, ())
-_private(st) = (st.mode & 0o077) == 0
 function _diagnostic(value::AbstractString)
     message = replace(String(value), '\0' => ' ')
     ncodeunits(message) <= MAX_DETAIL_BYTES && return message
@@ -175,7 +174,7 @@ function _check_directory(path::AbstractString)
     isabspath(path) && ncodeunits(path) <= 4096 && !occursin('\0', path) ||
         throw(ArgumentError("discovery directory must be a bounded absolute path"))
     st = lstat(path)
-    isdir(st) && st.uid == _uid() && (st.mode & 0o700) == 0o700 && _private(st) ||
+    isdir(st) && st.uid == _uid() && (st.mode & 0o7777) == 0o700 ||
         throw(ArgumentError("discovery directory must be an owned, private, non-symlink directory"))
     return String(path)
 end
@@ -189,7 +188,7 @@ function _ensure_private_child(parent::String, name::String)
         end
     end
     st = lstat(path)
-    isdir(st) && st.uid == _uid() && (st.mode & 0o700) == 0o700 && _private(st) ||
+    isdir(st) && st.uid == _uid() && (st.mode & 0o7777) == 0o700 ||
         throw(ArgumentError("discovery path component must be an owned, private directory: $path"))
     return path
 end
@@ -212,7 +211,7 @@ function _check_file(path::String; absent_ok::Bool=false)
         throw(ArgumentError("discovery record does not exist"))
     end
     st = lstat(path)
-    isfile(st) && st.uid == _uid() && _private(st) && (st.mode & 0o400) == 0o400 ||
+    isfile(st) && st.uid == _uid() && (st.mode & 0o7777) == 0o600 ||
         throw(ArgumentError("discovery record must be an owned, private, non-symlink file"))
     st.size <= MAX_RECORD_BYTES || throw(ArgumentError("discovery record exceeds 4 KiB"))
     return st
@@ -237,7 +236,7 @@ function _with_registry_lock(f, directory::String)
         end
     end
     st = lstat(lockpath)
-    isfile(st) && st.uid == _uid() && _private(st) ||
+    isfile(st) && st.uid == _uid() && (st.mode & 0o7777) == 0o600 ||
         throw(ArgumentError("session discovery lock must be owned and private"))
     open(lockpath, "r+") do io
         ccall(:flock, Cint, (Cint, Cint), Base.fd(io), 6) == 0 ||

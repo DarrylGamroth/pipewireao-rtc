@@ -4,10 +4,7 @@ using Test
 using PipeWireAO
 using PipeWireAODeployment
 
-# Until the supervisor integration adopts this module, qualify its standalone
-# listing contract without mutating the loaded package's module graph.
-include(joinpath(dirname(@__DIR__), "src", "native_session_discovery.jl"))
-const Discovery = NativeSessionDiscovery
+const Discovery = PipeWireAODeployment.NativeSessionDiscovery
 const SPA = PipeWireAO.SPA
 const Pod = PipeWireAO.Pod
 const SESSION_A = "01234567-89ab-cdef-0123-456789abcdef"
@@ -73,6 +70,15 @@ directory(root) = Discovery.registry_directory(root)
             second_path = Discovery.publish!(registry, second)
             @test isfile(first_path) && isfile(second_path)
             @test (lstat(first_path).mode & 0o777) == 0o600
+            for mode in (0o400, 0o500, 0o700, 0o4600)
+                chmod(first_path, mode)
+                @test only(filter(entry -> entry.record === nothing,
+                    Discovery.list_sessions(registry))).verification === Discovery.Malformed
+            end
+            chmod(first_path, 0o600)
+            chmod(joinpath(registry,".lock"), 0o700)
+            @test_throws ArgumentError Discovery.publish!(registry, first)
+            chmod(joinpath(registry,".lock"), 0o600)
             open(joinpath(registry, ".lock"), "r+") do io
                 @test ccall(:flock, Cint, (Cint, Cint), Base.fd(io), 2) == 0
                 @test_throws ArgumentError Discovery.publish!(registry, record(SESSION_B))
