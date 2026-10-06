@@ -163,3 +163,48 @@ Final acceptance still requires the selected production helper to pass the
 signal child, explicit/nested callback exceptions, zero-byte lock/publication
 checks, GC lock/stop children and full relevant SDK suite. Installed clean-stop
 and whole-process SCI evidence remain separate gates.
+
+## Final selected-source verification
+
+The primary selected the normal helper with public `Base.disable_sigint`.
+Independent final review used the SDK's uncommitted patch above `6e4e1ee`, with
+RTC integration reference `32e55e7`. The production helper matches the tested
+candidate after normalizing its name, comments and whitespace. Its only call
+site is inside the public method's interrupt-protected scope. The diff changes
+only this ownership implementation/documentation and its regression tests;
+public arguments, callback results, native handles and prepared parameter
+representation remain unchanged.
+
+Reservation is made under the state lock while SIGINT is deferred. The outer
+finally decrements that reservation; the nested finally unlocks only after the
+native acquire returns. Explicit callback errors traverse both cleanups.
+Nested use retains recursive native locking and balanced counter increments.
+Pending asynchronous SIGINT is delivered after the protected scope releases
+ownership. Acquisition remains GC-safe. No additional ownership race was found
+in this bounded source review. Bounded callback execution is still required;
+this repair does not make an arbitrary blocking callback cancellable.
+
+Independent CPU15 execution against the selected production method passed
+**15/15**: ten lock-allocation/return/nested-error checks and five actual SIGINT
+ownership checks. Process exit was zero. The retained witness is
+`reserved=1 holder_thread=4`; the child reports `interrupted=true count=0
+main_thread=1`, successful cross-thread reacquisition and closed ownership.
+The primary's full-suite log independently counts **2,032/2,032 assertions in
+63 sets**, including 17 prepared-publication checks and four GC-participation
+checks, with final package-test success and no failure markers. Separate final
+GC lock and stop child logs both report completion. The full-suite log retains
+a stale-manifest dependency/compat warning; this review did not resolve or
+change dependencies. The displayed test environment selects this SDK worktree.
+
+Final source hashes, full-suite log, independent parent/child output and witness
+are recorded in the [final receipt](validation/thread-loop-review-20261006/final/receipt.json).
+The independent execution used:
+
+```text
+PIPEWIREAO_INTERRUPT_EVIDENCE=/tmp/rtc-sdk-final-independent-20261006 taskset -c 15 julia --startup-file=no --threads=2,0 --project=/home/dgamroth/workspaces/codex/pipewire/PipeWireAO-bootstrap-state -e 'using PipeWireAO, Test; include("test/thread_loop_allocations.jl"); include("test/thread_loop_interrupt.jl")'
+```
+
+**Disposition:** SDK-INT-R001 and SDK-INT-R002 are resolved for the reviewed
+cold SDK source and measured fixtures. This reviewer made no production edit
+and ran no SCI. Installed replay remains required; the exact interruption
+location in the historical service shutdown failure remains unproven.
