@@ -1,0 +1,279 @@
+{
+  "capture_completion": {
+    "bytes": 500504,
+    "cursor": {
+      "domain": 1,
+      "generation": 1,
+      "model_ns": 5896000,
+      "sequence": 3
+    },
+    "frames": 2,
+    "kind": "captured",
+    "manifest": "4/manifest.json",
+    "metadata_bytes": 2743,
+    "sha256": "9334441fb6907190a7047fa052c583f0902d4fc5ad52fdabac852dee4e123637"
+  },
+  "capture_manifest_sha256": "9334441fb6907190a7047fa052c583f0902d4fc5ad52fdabac852dee4e123637",
+  "capture_settings_sha256": "e0e4f3aaa3a64524e294452be71b596d0ee65e362ec8d4ca5e0d74e2134d2eec",
+  "cleanup": {
+    "groups": {
+      "core": {
+        "leader_pid": 4006907,
+        "leader_start_ticks": 208895919,
+        "observation": "group/session observations only; no numeric owner PID or group was signalled",
+        "observed_members": [],
+        "status": "complete"
+      },
+      "rtc": {
+        "leader_pid": 4007506,
+        "leader_start_ticks": 208903342,
+        "observation": "group/session observations only; no numeric owner PID or group was signalled",
+        "observed_members": [],
+        "status": "complete"
+      },
+      "simulator": {
+        "leader_pid": 4006911,
+        "leader_start_ticks": 208896061,
+        "observation": "group/session observations only; no numeric owner PID or group was signalled",
+        "observed_members": [],
+        "status": "complete"
+      }
+    },
+    "launcher_exited": true,
+    "scope": "tracked detached groups at the final observation; unknown identities cannot confirm cleanup",
+    "status": "complete"
+  },
+  "detector_diagnostics": {
+    "adc_upper_rail": 4095,
+    "frames": 4,
+    "invalid_frames": 0,
+    "maximum_adc": 1659,
+    "raw_available": true,
+    "scope": "all completed exposures including settling; descriptive ADC diagnostics, no scientific acceptance",
+    "upper_rail_frames": 0,
+    "upper_rail_pixels": 0
+  },
+  "evidence_path": "/tmp/rtc-main-nativecal-classic-lamp-capture-v1",
+  "files": {
+    "captured/4/1/flux.f32le": "6bf7bc321218d8f3db51b1385e2e25fe02911a2624bbf47225c430d6df44e93f",
+    "captured/4/1/raw.u16le": "5164ccb4c980602ff40eeaaafff0d3ef53b140c82d719d779023a15428c537b2",
+    "captured/4/1/slopes.f32le": "2aafeac843bb359baf8c0dad8dc1ebab684ef38aa1af4e9fca3780ab6389c358",
+    "captured/4/1/validity.u8": "04090c0ed1a3808cd3b8ad03503008eb4915bab3c5eedbc856b14cc8db543697",
+    "captured/4/2/flux.f32le": "f621fec4c6c95d57f862088d4f5f119bf023bfe1dac98992f18502c3bb48db4d",
+    "captured/4/2/raw.u16le": "a0b059769da043c9988778821afd5e69efc26c5f1fa6d915ca823defabdb641a",
+    "captured/4/2/slopes.f32le": "927e2535a3743cde3b5c53bcbe02c5eb39127051f5e745219e14ac7c743c3cc0",
+    "captured/4/2/validity.u8": "04090c0ed1a3808cd3b8ad03503008eb4915bab3c5eedbc856b14cc8db543697",
+    "captured/4/manifest.json": "9334441fb6907190a7047fa052c583f0902d4fc5ad52fdabac852dee4e123637",
+    "completed-owner-report.json": "39bf494bc71e1fbeee182afc3a80b776b4e924b7ec836218f76bfb366f5eb05a",
+    "deployment.log": "ab8d5c7029a05f9b28253f3b08df95c3b912ef41faabee76bd2323c0f58125c4",
+    "qualification.json": "d7516cf9b299a3929bae84829c92d3a3049fa9b26df08fb67c4ca0ad25812c4a"
+  },
+  "frames": [
+    {
+      "active_count": 184,
+      "files": {
+        "flux": {
+          "bytes": 752,
+          "element_type": "F32_LE",
+          "layout": "ROW_MAJOR",
+          "path": "flux.f32le",
+          "sha256": "6bf7bc321218d8f3db51b1385e2e25fe02911a2624bbf47225c430d6df44e93f",
+          "shape": [
+            188
+          ]
+        },
+        "raw": {
+          "bytes": 247808,
+          "element_type": "U16_LE",
+          "layout": "ROW_MAJOR",
+          "path": "raw.u16le",
+          "sha256": "5164ccb4c980602ff40eeaaafff0d3ef53b140c82d719d779023a15428c537b2",
+          "shape": [
+            352,
+            352
+          ]
+        },
+        "slopes": {
+          "bytes": 1504,
+          "element_type": "F32_LE",
+          "layout": "ROW_MAJOR",
+          "path": "slopes.f32le",
+          "sha256": "2aafeac843bb359baf8c0dad8dc1ebab684ef38aa1af4e9fca3780ab6389c358",
+          "shape": [
+            188,
+            2
+          ]
+        },
+        "validity": {
+          "bytes": 188,
+          "element_type": "BOOL8",
+          "layout": "ROW_MAJOR",
+          "path": "validity.u8",
+          "sha256": "04090c0ed1a3808cd3b8ad03503008eb4915bab3c5eedbc856b14cc8db543697",
+          "shape": [
+            188
+          ]
+        }
+      },
+      "flux_threshold": 1000,
+      "selected_flux_max": 12992.8125,
+      "selected_flux_min": 4918.5,
+      "selected_flux_min_over_threshold": 4.9185,
+      "sequence": 2,
+      "valid_selected_count": 184
+    },
+    {
+      "active_count": 184,
+      "files": {
+        "flux": {
+          "bytes": 752,
+          "element_type": "F32_LE",
+          "layout": "ROW_MAJOR",
+          "path": "flux.f32le",
+          "sha256": "f621fec4c6c95d57f862088d4f5f119bf023bfe1dac98992f18502c3bb48db4d",
+          "shape": [
+            188
+          ]
+        },
+        "raw": {
+          "bytes": 247808,
+          "element_type": "U16_LE",
+          "layout": "ROW_MAJOR",
+          "path": "raw.u16le",
+          "sha256": "a0b059769da043c9988778821afd5e69efc26c5f1fa6d915ca823defabdb641a",
+          "shape": [
+            352,
+            352
+          ]
+        },
+        "slopes": {
+          "bytes": 1504,
+          "element_type": "F32_LE",
+          "layout": "ROW_MAJOR",
+          "path": "slopes.f32le",
+          "sha256": "927e2535a3743cde3b5c53bcbe02c5eb39127051f5e745219e14ac7c743c3cc0",
+          "shape": [
+            188,
+            2
+          ]
+        },
+        "validity": {
+          "bytes": 188,
+          "element_type": "BOOL8",
+          "layout": "ROW_MAJOR",
+          "path": "validity.u8",
+          "sha256": "04090c0ed1a3808cd3b8ad03503008eb4915bab3c5eedbc856b14cc8db543697",
+          "shape": [
+            188
+          ]
+        }
+      },
+      "flux_threshold": 1000,
+      "selected_flux_max": 13099.6875,
+      "selected_flux_min": 4986.0625,
+      "selected_flux_min_over_threshold": 4.9860625,
+      "sequence": 3,
+      "valid_selected_count": 184
+    }
+  ],
+  "installed_runtime_sha256": {
+    "julia/Manifest.toml": "f1497ea557a4de9015d8623e4d6b30c0d86fe1dc2373c5be28762b407cc1cd84",
+    "julia/Project.toml": "4f1da1d2f2d52b24b115804c03d06879ccdce7cbcb7b7bbf43530e7bf937e3ae",
+    "julia/deploy_cli.jl": "46ddcf1b07eb25a2613542c671182523b60b35dce0bf6b62a9e21cafd98f43a2",
+    "julia/src/PipeWireAODeployment.jl": "69c88cb00beb8adc476b2b284ba0634f36c8f20fb2404a67c3b2498dc57b4b8f",
+    "julia/src/calibration_campaign.jl": "8dddfc5fbf391a8d5ff0bdc70ce418cde9be9317f52519b4e5029a8778d703eb",
+    "julia/src/calibration_export.jl": "8eb817425b1ddf55bce1853f1dc7b09ec78261ef2f5742bc47691f3b076466e1",
+    "julia/src/calibration_method.jl": "af75ddbc608a04f31d69cc1b6ba1893de3b4976865b1fd02ada2311942ed0951",
+    "julia/src/common.jl": "aeaf603fce95c25c166279947d946ef9e207a16f37f200d7e083863647dad328",
+    "julia/src/copper_quality.jl": "92daa9fce844153aabc25ba903291e2d784a59c5ebc17914fe75fbdd3f1b2a7b",
+    "julia/src/copper_reference.jl": "b0540ffa72c56fca9fc421c9ccb4f5cdc564367989f299a9e33b843ccbf7929a",
+    "julia/src/deploy.jl": "a950f1e25f0a1ebef815c932242652e4eb9f744f450fb28416ff5e4adf1e0782",
+    "julia/src/heart_calibration_export.jl": "ac27481fe7bad13efa2da62ff5b07462528aa1c8c0279a185b5ca5b632d890a6",
+    "julia/src/heart_classic_calibration.jl": "2d9cf94750b4c9ffb24a3fa1a2dee35bc8851b0b2e75f8726d3c568327bd1a9e",
+    "julia/src/heart_classic_correction.jl": "cc2e972c3bf52754faa5360594432e36976d063b2c916e36a410d13f62b0c53f",
+    "julia/src/heart_classic_transfer.jl": "fadbb60a90b63a29501e89cb82d36e05505c8bb801a4e0cf5c118b5881d045e9",
+    "julia/src/heart_configuration.jl": "0ff46ac75ee815b135a31a54ea4ecda0d99254bae3725a6c9a030e3414ef35f0",
+    "julia/src/heart_correction_export.jl": "0e1a2dfaa323323416737e50058eee71f36049f2cc05c7e6062d962de6b6fd4c",
+    "julia/src/heart_export.jl": "43af658d56816387283c59b2dba14f964c0ab6af11917001637e1abcca9b5f41",
+    "julia/src/heart_owner.jl": "ded603534f80adeca17bce32f4df78967149656ba4fd2e8cb953eca10f2bba09",
+    "julia/src/hil_export.jl": "c1fafab2b91d0a823b80972d1b1a4c829a8047d30774ccf3f12a499372a7809a",
+    "julia/src/native_acquisition_lifecycle_client.jl": "dc7f0dfffccce114e271b206e7d08753f8a2e05bf27e189212c1b00f0b69de1f",
+    "julia/src/native_acquisition_lifecycle_codec.jl": "fffc52738240ab8cd9c135176ff38ea28363c2de694113c846b00d3b7b7b559b",
+    "julia/src/native_acquisition_lifecycle_runtime.jl": "d0c91a9864ade6b68ef354b52443c1a3e831932927b8fa4fcf159462cf93e2e6",
+    "julia/src/native_calibration_action_client.jl": "ad05580caeb706f515ae447a8386f019570ccefe796f710d270052fe7447201e",
+    "julia/src/native_calibration_action_codec.jl": "7c3aaeb9474477397454146d6673b780589fdb4e6489c1e725c8c6c288bca1c6",
+    "julia/src/native_control_client.jl": "57d2066ff3638425932f9adf688723eaad1a7a0498f0fd1655c095fe98a952d4",
+    "julia/src/native_control_codec.jl": "bc1dff7a12ee132a67b135acdb2787188d4206bd54af6aa9017f1b19ca5b363c",
+    "julia/src/native_control_endpoint.jl": "230d06ed0f2fc8e2392b96e8c7f51ad8fa059bb15a374f30760a69bd4f157e98",
+    "julia/src/native_heart_client.jl": "e700d1aeb7932cbc0bce9ab0609c546b29f9ce9a90f89d33dbf42553e12ea4ba",
+    "julia/src/native_heart_codec.jl": "4178d916e125828014fcf1b742f036699ff59fa3e607a7c712db40478b36adaa",
+    "julia/src/native_owner_bootstrap_client.jl": "ce1b05c308d34d5200ca5d0ba337eb1616cd780bf77b5a593e8c5ad8b2df8224",
+    "julia/src/native_owner_bootstrap_codec.jl": "989c0598c711ae5c2c6964c5d7fa5f3e861603a2551dd38ccbe9d1a1b43c9413",
+    "julia/src/native_owner_bootstrap_runtime.jl": "472138a3128c6a693763f63f170ac66a3517b25a1c38d8b45ddc3169530185d4",
+    "julia/src/native_runner_client.jl": "f42fa39cf52598200f4b901f5b652f07a50dcb7162407c34c7445fc067a1bb6d",
+    "julia/src/native_runner_codec.jl": "e53b20369d413f164774aa2d649304f5b1781d01d2220af58ea9d938ad7d9607",
+    "julia/src/native_session_client.jl": "006ac878ca1cc98196a5f3e78ba27f322d08b5a522401963ae9d6a840025267e",
+    "julia/src/native_session_discovery.jl": "86b80d2da1e445a3bd7a93a8e4295da929e2c8484f1647800fec8e6b1ddbc331",
+    "julia/src/native_supervisor_client.jl": "48539942acada9dc0d07647ba3033277962776efde990793434eb75129280a75",
+    "julia/src/native_supervisor_codec.jl": "23c3a8ff21a85810073ceb7ff0226b7909e350dece0d4886b717483bb622c58b",
+    "julia/src/native_supervisor_runtime.jl": "9a2876674120d1faff65d023ad345a068fadee03e6f6ceac6dacfe75ac5d7d1d",
+    "julia/src/observation_boundary.jl": "afa7ef6d78983cd5cf3c1830d08fe69cdae3d0204adb3166d5aaa6a8e8192e23",
+    "julia/src/placement.jl": "e011bec3b7a437596b06e51381beb0b902eb660f0bb7590a5f004cad0cbacec5",
+    "julia/src/runner_commands.jl": "c2fd2a1ec460fd52942af7947db6f11242ec3f45835943d813675ec489aa43cd",
+    "julia/src/science_export.jl": "39292aa1f2bb1ffb4a10c212065b927b86baf0105f6aa1bc2bdaa6607427a3b6",
+    "julia/src/source_client.jl": "b4cbfc07689f70591117a51118d430d523f5213726eab4731fed8c0fec0b9db5",
+    "julia/src/supervisor_controls.jl": "2e58355997ae2c4394c0e7c402224e78283ce89b25d53cb7b72bc29499f0d0b6"
+  },
+  "native_runner_sha256": "7b302413c9f4b521c6e793f401025461c69abd51a1956a804eba36df81c171b2",
+  "owned_processes": {
+    "core": {
+      "absent_after_cleanup": true,
+      "pid": 4006907,
+      "start_ticks": 208895919
+    },
+    "rtc": {
+      "absent_after_cleanup": true,
+      "pid": 4007506,
+      "start_ticks": 208903342
+    },
+    "simulator": {
+      "absent_after_cleanup": true,
+      "pid": 4006911,
+      "start_ticks": 208896061
+    }
+  },
+  "package": "/tmp/classic-fgn-cal-lamp-v3-installed",
+  "package_deployment_sha256": "8ada3e8d58fa864f72db94785d09d5dbb69718e35cdece51c1989aa260bb6d9d",
+  "plan_sha256": "f6d8d2a29119ac437a0b36e60d0d88cbe986f4dce27c1691179f8ac1c181d011",
+  "private_instance_removed": true,
+  "qualifier_sha256": "ddd623832a9b73a9e16809070dd05221780a98de5cfd5fdc1a061b357e7ba106",
+  "release_confirmed": true,
+  "remaining_runtime_files": [
+    "control.json",
+    "deployment.lock",
+    "state.json"
+  ],
+  "reset_rejection": {
+    "after_cursor": {
+      "domain": 1,
+      "generation": 1,
+      "model_ns": 7896000,
+      "sequence": 4
+    },
+    "before_cursor": {
+      "domain": 1,
+      "generation": 1,
+      "model_ns": 7896000,
+      "sequence": 4
+    },
+    "facts_unchanged": true,
+    "instance": 2088958944668460,
+    "message": "calibration reset requires a fresh instance",
+    "result": -95,
+    "token": 9
+  },
+  "restoration_confirmed": true,
+  "scope": "Classic FGN CPU RTC / CUDA AOS installed native Capture functional check and descriptive flux margin; no inverse, numerical equivalence, allocation, cadence or latency qualification",
+  "shutdown_confirmed": true,
+  "success": true
+}

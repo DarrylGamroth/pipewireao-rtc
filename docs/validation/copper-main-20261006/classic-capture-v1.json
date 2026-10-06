@@ -1,0 +1,85 @@
+{
+  "cleanup": "complete",
+  "completed_owner_sha256": "e5e59050c9ad7ff8864e598be3e31394b621c1d1b76ed3ee13d18b7365d597fb",
+  "evidence_path": "/tmp/rtc-main-nativecal-classic-capture-v1",
+  "flux_threshold": 1000,
+  "frames": [
+    {
+      "active_min_flux": 971.5,
+      "capture_frame": 1,
+      "files_sha256": {
+        "flux.f32le": "fbb0c9a1fd267cee5b3cf422d212e858bafea90c624822967130df53e7084826",
+        "raw.u16le": "438a6dad49f04f4b3925669172bf17804661e340ad5333def7b49cbf717c03b3",
+        "slopes.f32le": "0435829cc2eaa139ca56a38ecd8aa2e247813e4058d12107911765b44b439606",
+        "validity.u8": "07b36eba1155997bc4665f7e7165fbae93b0dbbb3a810839a26612e26f599b30"
+      },
+      "invalid_active_rois": [
+        {
+          "flux": 981.0625,
+          "flux_threshold": 1000.0,
+          "intrinsic_valid": false,
+          "roi_1_based": 70
+        },
+        {
+          "flux": 993.8125,
+          "flux_threshold": 1000.0,
+          "intrinsic_valid": false,
+          "roi_1_based": 101
+        },
+        {
+          "flux": 971.5,
+          "flux_threshold": 1000.0,
+          "intrinsic_valid": false,
+          "roi_1_based": 119
+        }
+      ]
+    },
+    {
+      "active_min_flux": 952.8125,
+      "capture_frame": 2,
+      "files_sha256": {
+        "flux.f32le": "ca1b3e4674bd0319c6219d133813fa8e5e46fff62a82c52624ac0b1261cb659c",
+        "raw.u16le": "38ba4a162a0e4e581dec7b7c936c6dc8b5c3c3dc41f2bd416d8483d8bce9a36b",
+        "slopes.f32le": "697c72ca357904d6efba2b042d750e1e239aeee955ea846d1223eb1bece04575",
+        "validity.u8": "d602a49bf142be1f649c70c15124488d3c990942027f9886c7c92abe1012fd0d"
+      },
+      "invalid_active_rois": [
+        {
+          "flux": 952.8125,
+          "flux_threshold": 1000.0,
+          "intrinsic_valid": false,
+          "roi_1_based": 71
+        },
+        {
+          "flux": 986.25,
+          "flux_threshold": 1000.0,
+          "intrinsic_valid": false,
+          "roi_1_based": 85
+        },
+        {
+          "flux": 977.25,
+          "flux_threshold": 1000.0,
+          "intrinsic_valid": false,
+          "roi_1_based": 101
+        },
+        {
+          "flux": 981.9375,
+          "flux_threshold": 1000.0,
+          "intrinsic_valid": false,
+          "roi_1_based": 118
+        }
+      ]
+    }
+  ],
+  "manifest_sha256": "2bfae8211663fc2a021bb45032009ba6944d0780c581741ed41f73260a6f0ace",
+  "mask_active_count": 184,
+  "observed_cause": "positive measured flux below configured1000 threshold at selected ROIs makes intrinsic validity false; threshold/mask/noise unchanged",
+  "pixel_threshold": 20,
+  "qualification_sha256": "dada6304595335941fa0b1f106cf2f401bd1456fa0b2c73c360debfc2cfe805f",
+  "qualification_success": true,
+  "release_confirmed": true,
+  "restoration_confirmed": true,
+  "scope": "native Capture functional pass; captured WFS validity is science evidence, not scientific acceptance",
+  "shutdown_confirmed": true,
+  "version": 1
+}

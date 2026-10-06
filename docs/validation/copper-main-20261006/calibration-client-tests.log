@@ -1,0 +1,15 @@
+   Compiling pipewireao-rtc v0.1.0 (/tmp/rtc-copper-main-observer)
+    Finished `test` profile [unoptimized] target(s) in 0.50s
+warning: the following packages contain code that will be rejected by a future version of Rust: proc-macro-error2 v2.0.1
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running unittests src/bin/rtc-calibrate.rs (/tmp/rtc-maintenance-target-20261006/debug/deps/rtc_calibrate-7250265fb25f3fec)
+
+running 5 tests
+test tests::evidence_charges_nested_objects_and_exposure_temporaries ... ok
+test tests::explicit_binding_is_required_and_legacy_endpoint_has_no_fallback ... ok
+test tests::evidence_preflight_preserves_existing_file_and_overflow_is_reported ... ok
+test tests::aborted_journal_identifies_first_collect_or_second_adopt ... ok
+test tests::complete_native_wire_plan_preflight_precedes_connection_and_hold ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+

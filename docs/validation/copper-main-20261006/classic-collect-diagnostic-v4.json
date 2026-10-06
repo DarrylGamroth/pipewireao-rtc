@@ -1,0 +1,202 @@
+{
+  "calibrator_result": {
+    "failure": "InvalidEvidence",
+    "phase": "aborted",
+    "recovery_failure": null,
+    "responses": null,
+    "restoration_confirmed": true,
+    "resume_permitted": true,
+    "run": 82,
+    "version": 1
+  },
+  "calibrator_sha256": "2fdda3c6740e319d34fead7f86dd719d28a562d189175d1364d7394b9f6eb300",
+  "cleanup": {
+    "errors": [],
+    "fallback": true,
+    "groups": {
+      "core": {
+        "leader_pid": 3994664,
+        "leader_start_ticks": 208728492,
+        "observation": "group/session observations only; no numeric owner PID or group was signalled",
+        "observed_members": [],
+        "status": "complete"
+      },
+      "rtc": {
+        "leader_pid": 3995318,
+        "leader_start_ticks": 208735919,
+        "observation": "group/session observations only; no numeric owner PID or group was signalled",
+        "observed_members": [],
+        "status": "complete"
+      },
+      "simulator": {
+        "leader_pid": 3994683,
+        "leader_start_ticks": 208728643,
+        "observation": "group/session observations only; no numeric owner PID or group was signalled",
+        "observed_members": [],
+        "status": "complete"
+      }
+    },
+    "initial_wait": {
+      "elapsed_seconds": 1.330130898,
+      "launcher_exited": true,
+      "limit_seconds": 300.0
+    },
+    "launcher_exited": true,
+    "launcher_interrupted": false,
+    "launcher_killed": false,
+    "post_interrupt_wait": {
+      "attempted": false,
+      "elapsed_seconds": 0.0,
+      "launcher_exited": true,
+      "limit_seconds": 300.0
+    },
+    "post_kill_wait": {
+      "attempted": false,
+      "elapsed_seconds": 0.0,
+      "launcher_exited": true,
+      "limit_seconds": 5.0
+    },
+    "scope": "tracked detached groups at the final observation; unknown identities cannot confirm cleanup",
+    "status": "complete"
+  },
+  "detector_diagnostics": {
+    "adc_upper_rail": 4095,
+    "frames": 18,
+    "invalid_frames": 17,
+    "maximum_adc": 446,
+    "raw_available": true,
+    "scope": "all completed exposures including settling; descriptive ADC diagnostics, no scientific acceptance",
+    "upper_rail_frames": 0,
+    "upper_rail_pixels": 0
+  },
+  "evidence_path": "/tmp/rtc-main-nativecal-classic-collect-v4",
+  "files": {
+    "calibration-completions.jsonl": "0e341855701f930df73f1fd9bf89442d00957d631b65f316f8f42cdb9496f8a9",
+    "deployment.log": "d0c8e258119639753fe29316b0b2bafa9a1445a7db9a4ed807d4de27423b4b3a",
+    "failure-owner-report.json": "bb294d06a785351338dfcd6b650c30e1e3daa98bb686f360937990b8ff20d5a5",
+    "qualification.json": "396c1c475988fe0b29822a80c0f84ef276a87b1167b1e882094274c96b8a5f2c",
+    "rtc-calibrate.json": "245ac5426a0a62cf0c467490b742419ebad0d75ac6cea3448c54413e32fb2e07",
+    "rtc-calibrate.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "first_collect": {
+    "exposures_count": 16,
+    "sequences": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17
+    ],
+    "serial": 4,
+    "valid": false,
+    "values_count": 376,
+    "values_finite": true
+  },
+  "installed_package": "/tmp/classic-fgn-main-nativecal-v4-installed",
+  "owner_final": {
+    "completed": true,
+    "failure": null,
+    "phase": "released",
+    "restoration_confirmed": true,
+    "sequence": 18,
+    "state": "paused"
+  },
+  "qualification_success": false,
+  "reply_order": [
+    {
+      "kind": "held",
+      "run": 82,
+      "serial": 1,
+      "valid": null
+    },
+    {
+      "kind": "adopted",
+      "run": 82,
+      "serial": 2,
+      "valid": null
+    },
+    {
+      "kind": "settled",
+      "run": 82,
+      "serial": 3,
+      "valid": null
+    },
+    {
+      "kind": "responses",
+      "run": 82,
+      "serial": 4,
+      "valid": false
+    },
+    {
+      "kind": "restored",
+      "run": 82,
+      "serial": 5,
+      "valid": null
+    },
+    {
+      "kind": "released",
+      "run": 82,
+      "serial": 6,
+      "valid": null
+    }
+  ],
+  "request_order": [
+    {
+      "accepted": true,
+      "action_kind": "hold",
+      "probe": null,
+      "run": 82,
+      "serial": 1
+    },
+    {
+      "accepted": true,
+      "action_kind": "adopt",
+      "probe": 0,
+      "run": 82,
+      "serial": 2
+    },
+    {
+      "accepted": true,
+      "action_kind": "settle",
+      "probe": 0,
+      "run": 82,
+      "serial": 3
+    },
+    {
+      "accepted": true,
+      "action_kind": "collect",
+      "probe": 0,
+      "run": 82,
+      "serial": 4
+    },
+    {
+      "accepted": true,
+      "action_kind": "restore",
+      "probe": null,
+      "run": 82,
+      "serial": 5
+    },
+    {
+      "accepted": true,
+      "action_kind": "release",
+      "probe": null,
+      "run": 82,
+      "serial": 6
+    }
+  ],
+  "runtime_revision": "ca85db3",
+  "scope": "confirmed first Collect quality rejection; no individual ROI/physical cause established; decoded completions not raw protocol PODs",
+  "source_plan_sha256": "f6d8d2a29119ac437a0b36e60d0d88cbe986f4dce27c1691179f8ac1c181d011",
+  "version": 1
+}

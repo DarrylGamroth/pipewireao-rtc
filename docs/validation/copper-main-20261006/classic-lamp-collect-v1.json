@@ -1,0 +1,214 @@
+{
+  "batches": [
+    {
+      "all_values_finite": true,
+      "exposure_count": 16,
+      "first_sequence": 2,
+      "last_sequence": 17,
+      "probe": 0,
+      "valid": true,
+      "value_count": 376
+    },
+    {
+      "all_values_finite": true,
+      "exposure_count": 16,
+      "first_sequence": 19,
+      "last_sequence": 34,
+      "probe": 1,
+      "valid": true,
+      "value_count": 376
+    },
+    {
+      "all_values_finite": true,
+      "exposure_count": 16,
+      "first_sequence": 36,
+      "last_sequence": 51,
+      "probe": 2,
+      "valid": true,
+      "value_count": 376
+    },
+    {
+      "all_values_finite": true,
+      "exposure_count": 16,
+      "first_sequence": 53,
+      "last_sequence": 68,
+      "probe": 3,
+      "valid": true,
+      "value_count": 376
+    }
+  ],
+  "calibration_cli_sha256": "2fdda3c6740e319d34fead7f86dd719d28a562d189175d1364d7394b9f6eb300",
+  "calibrator_result": {
+    "failure": null,
+    "phase": "complete",
+    "recovery_failure": null,
+    "restoration_confirmed": true,
+    "resume_permitted": true,
+    "run": 82,
+    "version": 1
+  },
+  "cleanup": {
+    "groups": {
+      "core": {
+        "leader_pid": 4005879,
+        "leader_start_ticks": 208882989,
+        "observation": "group/session observations only; no numeric owner PID or group was signalled",
+        "observed_members": [],
+        "status": "complete"
+      },
+      "rtc": {
+        "leader_pid": 4006494,
+        "leader_start_ticks": 208890398,
+        "observation": "group/session observations only; no numeric owner PID or group was signalled",
+        "observed_members": [],
+        "status": "complete"
+      },
+      "simulator": {
+        "leader_pid": 4005889,
+        "leader_start_ticks": 208883133,
+        "observation": "group/session observations only; no numeric owner PID or group was signalled",
+        "observed_members": [],
+        "status": "complete"
+      }
+    },
+    "launcher_exited": true,
+    "scope": "tracked detached groups at the final observation; unknown identities cannot confirm cleanup",
+    "status": "complete"
+  },
+  "completion_journal_records": 32,
+  "detector_diagnostics": {
+    "adc_upper_rail": 4095,
+    "frames": 69,
+    "invalid_frames": 0,
+    "maximum_adc": 1691,
+    "raw_available": true,
+    "scope": "all completed exposures including settling; descriptive ADC diagnostics, no scientific acceptance",
+    "upper_rail_frames": 0,
+    "upper_rail_pixels": 0
+  },
+  "evidence_path": "/tmp/rtc-main-nativecal-classic-lamp-collect-v1",
+  "files": {
+    "calibration-completions.jsonl": "bcb05aeb4c031627b482ea3380ace19d0a167e9941c5b56cf06366bdcc0ee508",
+    "completed-owner-report.json": "87ea090665c02841be9c88858e8f7e7c95fc38299ef2b87263d8158bd1047a5d",
+    "deployment.log": "7b4198eb436f62ad7e300688ecbc2197c07af7e9c2c8e8fe0d191b73cee36c1e",
+    "qualification.json": "41acee8e5ac50c212cd593412b777f9d7aeb4e4b8c5175c8f94e04c6a9dfec91",
+    "rtc-calibrate.json": "d237e435593e15e92487fe5dc6153f9cb6a2c7316309f58b556ea9750334c2b1",
+    "rtc-calibrate.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "illumination_fixture": {
+    "coldproof_path": "/tmp/classic-fgn-cal-lamp-v3-coldproof.json",
+    "coldproof_sha256": "ff7fcb1b8ed815259682bdc10c92cc7058c909e40187d9f4a1eed13cab354133",
+    "detector_seed": 0,
+    "fixture_plant_sha256": "6df2ce6c542b3ba200363e02f9c1f53e340f0224ce55c7a8759d234321a5c882",
+    "installed_seal_count": 580,
+    "new_magnitude": 0.5,
+    "old_magnitude": 2.0,
+    "protected_file_count": 578,
+    "recipe_path": "/home/dgamroth/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/recipe.json",
+    "recipe_sha256": "8cbed58035ac2d38efde1238442883f69e6d79e5a9eb283d24fb8464af5d6b8e",
+    "source_descriptor_sha256": "d6e6271cd84d2d253f59cf00bd08535c39a14577cf5f785d6daf794bd4271051",
+    "source_package": "/tmp/classic-fgn-main-nativecal-v4-installed",
+    "source_plant_sha256": "b85632f5efcaf9371006d79f10276aa99986be4e188b29ce9e2c7a46e56da943"
+  },
+  "installed_runtime_sha256": {
+    "julia/Manifest.toml": "f1497ea557a4de9015d8623e4d6b30c0d86fe1dc2373c5be28762b407cc1cd84",
+    "julia/Project.toml": "4f1da1d2f2d52b24b115804c03d06879ccdce7cbcb7b7bbf43530e7bf937e3ae",
+    "julia/deploy_cli.jl": "46ddcf1b07eb25a2613542c671182523b60b35dce0bf6b62a9e21cafd98f43a2",
+    "julia/src/PipeWireAODeployment.jl": "69c88cb00beb8adc476b2b284ba0634f36c8f20fb2404a67c3b2498dc57b4b8f",
+    "julia/src/calibration_campaign.jl": "8dddfc5fbf391a8d5ff0bdc70ce418cde9be9317f52519b4e5029a8778d703eb",
+    "julia/src/calibration_export.jl": "8eb817425b1ddf55bce1853f1dc7b09ec78261ef2f5742bc47691f3b076466e1",
+    "julia/src/calibration_method.jl": "af75ddbc608a04f31d69cc1b6ba1893de3b4976865b1fd02ada2311942ed0951",
+    "julia/src/common.jl": "aeaf603fce95c25c166279947d946ef9e207a16f37f200d7e083863647dad328",
+    "julia/src/copper_quality.jl": "92daa9fce844153aabc25ba903291e2d784a59c5ebc17914fe75fbdd3f1b2a7b",
+    "julia/src/copper_reference.jl": "b0540ffa72c56fca9fc421c9ccb4f5cdc564367989f299a9e33b843ccbf7929a",
+    "julia/src/deploy.jl": "a950f1e25f0a1ebef815c932242652e4eb9f744f450fb28416ff5e4adf1e0782",
+    "julia/src/heart_calibration_export.jl": "ac27481fe7bad13efa2da62ff5b07462528aa1c8c0279a185b5ca5b632d890a6",
+    "julia/src/heart_classic_calibration.jl": "2d9cf94750b4c9ffb24a3fa1a2dee35bc8851b0b2e75f8726d3c568327bd1a9e",
+    "julia/src/heart_classic_correction.jl": "cc2e972c3bf52754faa5360594432e36976d063b2c916e36a410d13f62b0c53f",
+    "julia/src/heart_classic_transfer.jl": "fadbb60a90b63a29501e89cb82d36e05505c8bb801a4e0cf5c118b5881d045e9",
+    "julia/src/heart_configuration.jl": "0ff46ac75ee815b135a31a54ea4ecda0d99254bae3725a6c9a030e3414ef35f0",
+    "julia/src/heart_correction_export.jl": "0e1a2dfaa323323416737e50058eee71f36049f2cc05c7e6062d962de6b6fd4c",
+    "julia/src/heart_export.jl": "43af658d56816387283c59b2dba14f964c0ab6af11917001637e1abcca9b5f41",
+    "julia/src/heart_owner.jl": "ded603534f80adeca17bce32f4df78967149656ba4fd2e8cb953eca10f2bba09",
+    "julia/src/hil_export.jl": "c1fafab2b91d0a823b80972d1b1a4c829a8047d30774ccf3f12a499372a7809a",
+    "julia/src/native_acquisition_lifecycle_client.jl": "dc7f0dfffccce114e271b206e7d08753f8a2e05bf27e189212c1b00f0b69de1f",
+    "julia/src/native_acquisition_lifecycle_codec.jl": "fffc52738240ab8cd9c135176ff38ea28363c2de694113c846b00d3b7b7b559b",
+    "julia/src/native_acquisition_lifecycle_runtime.jl": "d0c91a9864ade6b68ef354b52443c1a3e831932927b8fa4fcf159462cf93e2e6",
+    "julia/src/native_calibration_action_client.jl": "ad05580caeb706f515ae447a8386f019570ccefe796f710d270052fe7447201e",
+    "julia/src/native_calibration_action_codec.jl": "7c3aaeb9474477397454146d6673b780589fdb4e6489c1e725c8c6c288bca1c6",
+    "julia/src/native_control_client.jl": "57d2066ff3638425932f9adf688723eaad1a7a0498f0fd1655c095fe98a952d4",
+    "julia/src/native_control_codec.jl": "bc1dff7a12ee132a67b135acdb2787188d4206bd54af6aa9017f1b19ca5b363c",
+    "julia/src/native_control_endpoint.jl": "230d06ed0f2fc8e2392b96e8c7f51ad8fa059bb15a374f30760a69bd4f157e98",
+    "julia/src/native_heart_client.jl": "e700d1aeb7932cbc0bce9ab0609c546b29f9ce9a90f89d33dbf42553e12ea4ba",
+    "julia/src/native_heart_codec.jl": "4178d916e125828014fcf1b742f036699ff59fa3e607a7c712db40478b36adaa",
+    "julia/src/native_owner_bootstrap_client.jl": "ce1b05c308d34d5200ca5d0ba337eb1616cd780bf77b5a593e8c5ad8b2df8224",
+    "julia/src/native_owner_bootstrap_codec.jl": "989c0598c711ae5c2c6964c5d7fa5f3e861603a2551dd38ccbe9d1a1b43c9413",
+    "julia/src/native_owner_bootstrap_runtime.jl": "472138a3128c6a693763f63f170ac66a3517b25a1c38d8b45ddc3169530185d4",
+    "julia/src/native_runner_client.jl": "f42fa39cf52598200f4b901f5b652f07a50dcb7162407c34c7445fc067a1bb6d",
+    "julia/src/native_runner_codec.jl": "e53b20369d413f164774aa2d649304f5b1781d01d2220af58ea9d938ad7d9607",
+    "julia/src/native_session_client.jl": "006ac878ca1cc98196a5f3e78ba27f322d08b5a522401963ae9d6a840025267e",
+    "julia/src/native_session_discovery.jl": "86b80d2da1e445a3bd7a93a8e4295da929e2c8484f1647800fec8e6b1ddbc331",
+    "julia/src/native_supervisor_client.jl": "48539942acada9dc0d07647ba3033277962776efde990793434eb75129280a75",
+    "julia/src/native_supervisor_codec.jl": "23c3a8ff21a85810073ceb7ff0226b7909e350dece0d4886b717483bb622c58b",
+    "julia/src/native_supervisor_runtime.jl": "9a2876674120d1faff65d023ad345a068fadee03e6f6ceac6dacfe75ac5d7d1d",
+    "julia/src/observation_boundary.jl": "afa7ef6d78983cd5cf3c1830d08fe69cdae3d0204adb3166d5aaa6a8e8192e23",
+    "julia/src/placement.jl": "e011bec3b7a437596b06e51381beb0b902eb660f0bb7590a5f004cad0cbacec5",
+    "julia/src/runner_commands.jl": "c2fd2a1ec460fd52942af7947db6f11242ec3f45835943d813675ec489aa43cd",
+    "julia/src/science_export.jl": "39292aa1f2bb1ffb4a10c212065b927b86baf0105f6aa1bc2bdaa6607427a3b6",
+    "julia/src/source_client.jl": "b4cbfc07689f70591117a51118d430d523f5213726eab4731fed8c0fec0b9db5",
+    "julia/src/supervisor_controls.jl": "2e58355997ae2c4394c0e7c402224e78283ce89b25d53cb7b72bc29499f0d0b6"
+  },
+  "journal_source_revision": "ca85db3; frozen before 8167bbe accounting correction; actual header max_bytes retained",
+  "native_runner_sha256": "7b302413c9f4b521c6e793f401025461c69abd51a1956a804eba36df81c171b2",
+  "owned_processes": {
+    "core": {
+      "absent_after_cleanup": true,
+      "pid": 4005879,
+      "start_ticks": 208882989
+    },
+    "rtc": {
+      "absent_after_cleanup": true,
+      "pid": 4006494,
+      "start_ticks": 208890398
+    },
+    "simulator": {
+      "absent_after_cleanup": true,
+      "pid": 4005889,
+      "start_ticks": 208883133
+    }
+  },
+  "package": "/tmp/classic-fgn-cal-lamp-v3-installed",
+  "package_deployment_sha256": "8ada3e8d58fa864f72db94785d09d5dbb69718e35cdece51c1989aa260bb6d9d",
+  "plan_sha256": "f6d8d2a29119ac437a0b36e60d0d88cbe986f4dce27c1691179f8ac1c181d011",
+  "private_instance_removed": true,
+  "qualifier_sha256": "ddd623832a9b73a9e16809070dd05221780a98de5cfd5fdc1a061b357e7ba106",
+  "release_confirmed": true,
+  "remaining_runtime_files": [
+    "control.json",
+    "deployment.lock",
+    "state.json"
+  ],
+  "reset_rejection": {
+    "after_cursor": {
+      "domain": 1,
+      "generation": 1,
+      "model_ns": 137896000,
+      "sequence": 69
+    },
+    "before_cursor": {
+      "domain": 1,
+      "generation": 1,
+      "model_ns": 137896000,
+      "sequence": 69
+    },
+    "facts_unchanged": true,
+    "instance": 2088829642063771,
+    "message": "calibration reset requires a fresh instance",
+    "result": -95,
+    "token": 9
+  },
+  "restoration_confirmed": true,
+  "scope": "Classic FGN CPU RTC / CUDA AOS installed native Collect functional check; no inverse, numerical equivalence, allocation, cadence or latency qualification",
+  "shutdown_confirmed": true,
+  "success": true
+}

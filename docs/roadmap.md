@@ -28,14 +28,16 @@ numerical, allocation and rate/latency qualification remain separate.
 | Julia SDK/bootstrap | SDK 0.6.17 source is pushed; deployment pins that exact own revision. Paired cold runtime checks pass 232 assertions. Refreshed installed Copper CUDA simulator / CPU JFG passes lifecycle and simulator heap gates; other selected profiles and SDK registration remain open. | [Bootstrap validation](BOOTSTRAP_CONTROLLER_SEAL_VALIDATION.md), [installed Copper evidence](validation/copper-main-20261006/README.md) |
 | GUI session selection | Actual same-label installed owners selected by exact native identities, including a stopped peer; read-only picker replay passed. GUI changes are on its local main. | GUI `docs/NATIVE_HIL_GUI_PROGRESS_VALIDATION.md` |
 | Observation independence | Classic FGN's six complete trajectories/reset runs match exactly across baseline, unattended and observer death/replacement. Refreshed Copper JFG also passes those six complete trajectories and one stalled-observer trajectory. Truth diagnostics were disabled and are not qualified. Two separate 512-exchange runs each measure 496 exchanges with zero simulator Julia heap allocation/GC. | [Progress adjudication](NATIVE_HIL_PROGRESS_REVIEW.md), [Copper evidence and independent review](validation/copper-main-20261006/README.md) |
-| Native calibration consumers | Classic startup's positional-timeout constructor defect is fixed in both RTC-owned wrappers (18 focused assertions); the fresh installed trial reaches Running. Collect then aborts with InvalidEvidence, confirms restoration and tracked cleanup. Its rejected completion was not retained; diagnosis and the other planned trials remain open. Earlier scientific calibration evidence retains its own scope. | [Consumer matrix](NATIVE_CALIBRATION_CONSUMER_MATRIX.md), [startup finding](validation/copper-main-20261006/README.md#calibration-startup-finding) |
+| Native calibration consumers | Startup's positional-timeout constructor defect is fixed in both RTC-owned wrappers (18 assertions). The dim Classic fixture's quality-invalid Collect remains preserved; Capture confirms flux below the sealed threshold. Fresh Classic FGN Collect/Capture using the existing recipe's lamp magnitude pass functional/lifecycle/cleanup gates. Collect has 69 quality-valid exposures; Capture's selected flux exceeds the sealed threshold by at least 4.9×. Neither run saturates the ADC. Seed, thresholds and all other scientific settings are unchanged. Other planned consumers remain open; earlier scientific matrix evidence retains its own scope. | [Consumer matrix](NATIVE_CALIBRATION_CONSUMER_MATRIX.md), [Classic diagnosis and fixture results](validation/copper-main-20261006/README.md#declared-illumination-fixture-and-collectcapture-results) |
 | Progressive throughput | JFG source/load characterization is on JFG main. Exact admitted-work accounting passed; the sustained 500 Hz strict offered-delivery trial failed with one whole-frame rejection. No target-rate claim follows. | JFG `docs/RTC_CONNECTED_LOAD_VALIDATION.md` and its independent review |
 
 ### Remaining order and acceptance
 
-1. Retain calibration action completions and final owner diagnostics, then repeat
-   the unchanged Classic trial once to identify the InvalidEvidence branch.
-   Continue Collect/Capture and correction consumers only with that evidence.
+1. Continue the other Collect/Capture and correction consumers. Reuse the fresh
+   Classic FGN functional results only within their declared scope. Keep the dim
+   fixture's quality rejection and captured flux/validity evidence; do not lower
+   thresholds or mask additional
+   ROIs to relabel the failed cohort as accepted.
 2. Reuse completed Copper observation/lifecycle and simulator heap checks while
    their dependencies/configuration remain unchanged. Separate JFG allocation
    and remaining installed profiles are not covered by simulator counters.
