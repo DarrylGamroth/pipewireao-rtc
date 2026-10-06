@@ -16,6 +16,10 @@ ps(fields...) = SPA.Struct(Pod[fields...])
 id(value) = Pod(SPA.Id(UInt32(value)))
 
 @testset "native acquisition lifecycle profiles" begin
+    @test "held" in Codec._phases(Codec.CALIBRATION_PROFILE)
+    @test !("held" in Codec._phases(Codec.CORRECTION_PROFILE))
+    @test "correcting" in Codec._phases(Codec.CORRECTION_PROFILE)
+    @test !("correcting" in Codec._phases(Codec.CALIBRATION_PROFILE))
     for (profile, prefix, phase, window) in ((Codec.CALIBRATION_PROFILE,
             "pipewireao.rtc.calibration-lifecycle", "held", nothing),
             (Codec.CORRECTION_PROFILE, "pipewireao.rtc.correction-lifecycle", "correcting", UInt64(2)))
@@ -94,6 +98,12 @@ id(value) = Pod(SPA.Id(UInt32(value)))
 
     valid = Codec.Snapshot(Codec.Classic, Codec.AcquisitionCursor(1, 1, 0, 0), nothing,
         false, false, "held", true, false, nothing)
+    @test Codec._validate_window(Codec.CALIBRATION_PROFILE, Codec.Connected, valid) === nothing
+    correction_initial = Codec.Snapshot(Codec.Classic, nothing, nothing,
+        false, false, "initial", false, false, nothing)
+    @test Codec._validate_window(Codec.CORRECTION_PROFILE, Codec.Prepared, correction_initial) === nothing
+    @test_throws ArgumentError Codec._validate_window(Codec.CORRECTION_PROFILE,
+        Codec.Connected, correction_initial)
     @test Client.decode_completion(Codec.CALIBRATION_PROFILE,
         Client.encode_completion(Codec.CALIBRATION_PROFILE, reply(1),
             Codec.Connected, valid, "")).snapshot.report_cursor === nothing

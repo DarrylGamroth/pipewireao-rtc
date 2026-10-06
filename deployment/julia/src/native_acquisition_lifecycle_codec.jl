@@ -140,19 +140,30 @@ const CALIBRATION_PHASES = ("initial", "held", "adopted", "settled", "collected"
     "restoring", "restored", "released", "fault")
 const CORRECTION_PHASES = ("initial", "startup_run", "correcting", "restore_run",
     "restored", "fault")
+_phases(::CalibrationLifecycleProfile) = CALIBRATION_PHASES
+_phases(::CorrectionLifecycleProfile) = CORRECTION_PHASES
+
+function _validate_window(::CalibrationLifecycleProfile, ::ColdLifecycle, snapshot::Snapshot)
+    snapshot.window === nothing || throw(ArgumentError("calibration has no window"))
+    return nothing
+end
+function _validate_window(::CorrectionLifecycleProfile, lifecycle::ColdLifecycle,
+        snapshot::Snapshot)
+    if lifecycle === Connected
+        snapshot.window !== nothing && snapshot.window > 0 ||
+            throw(ArgumentError("Connected correction requires a positive window"))
+    end
+    return nothing
+end
+
 function _validate(profile::Profile, lifecycle::ColdLifecycle, snapshot::Snapshot)
-    snapshot.phase in (profile isa CalibrationLifecycleProfile ? CALIBRATION_PHASES : CORRECTION_PHASES) ||
+    snapshot.phase in _phases(profile) ||
         throw(ArgumentError("phase/profile mismatch"))
     if lifecycle === Connected
         snapshot.cursor !== nothing && snapshot.cursor.generation > 0 ||
             throw(ArgumentError("Connected requires an acquisition cursor and generation"))
     end
-    if profile isa CalibrationLifecycleProfile
-        snapshot.window === nothing || throw(ArgumentError("calibration has no window"))
-    elseif lifecycle === Connected
-        snapshot.window !== nothing && snapshot.window > 0 ||
-            throw(ArgumentError("Connected correction requires a positive window"))
-    end
+    _validate_window(profile, lifecycle, snapshot)
     return snapshot
 end
 
