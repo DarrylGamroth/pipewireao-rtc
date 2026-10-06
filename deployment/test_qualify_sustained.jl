@@ -273,3 +273,16 @@ end
     @test_throws ErrorException SQ.verify_report_cursor(Dict("acquisition_generation"=>1,"sequence"=>32),(2,32))
     @test SQ.verify_report_cursor(Dict("acquisition_generation"=>2,"sequence"=>32),(2,32)) === nothing
 end
+
+@testset "native readiness locator handoff" begin
+    ready=Dict("control_locator"=>"/private/control.json","deployment_uuid"=>"0"^32)
+    client=(;observation=(;owner_pid=UInt32(42)))
+    observed=Ref{Any}(nothing)
+    connect=(path;deadline,expected_uuid)->begin
+        observed[]=(path,deadline,expected_uuid)
+        client
+    end
+    @test SQ.connect_supervisor(ready,42;deadline=123.0,connect) === client
+    @test observed[] == ("/private/control.json",123.0,"0"^32)
+    @test !haskey(ready,"socket")
+end

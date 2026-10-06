@@ -14,6 +14,15 @@ function native_control(client,argv;timeout=30,deadline=time_ns()/1e9+min(timeou
     rendered["ok"] || error("native control failed: $(rendered["error"])")
     return rendered
 end
+function connect_supervisor(ready,owner_pid;deadline,connect=N.connect_locator)
+    client=connect(ready["control_locator"];deadline,expected_uuid=ready["deployment_uuid"])
+    if client.observation.owner_pid != owner_pid
+        close(client)
+        error("qualification bound another supervisor")
+    end
+    return client
+end
+
 # The supervisor's serial owner cleanup and service stop allowance use 300 s.
 # Permit that bound before interruption for cleanup already underway, and again
 # after interruption before stopping the launcher itself.
@@ -321,8 +330,7 @@ function main(args)
         try
             ready = D.wait_state(runtime,state -> get(state,"admitted",false);timeout=900,process)
             record["ready"] = ready; instance = ready["private_runtime"]
-            client=N.connect_locator(ready["socket"];deadline=time_ns()/1e9+30)
-            client.observation.owner_pid == launcher_pid || error("qualification bound another supervisor")
+            client=connect_supervisor(ready,launcher_pid;deadline=time_ns()/1e9+30)
             identities = owned_process_identities(ready["processes"],launcher_pid)
             record["owned_process_identities"] = identities
             record["runtime_libraries"] = Dict(role=>filter(line->occursin("libpipewire-ao",line)||occursin("libspa-ao",line),readlines("/proc/$(entry["pid"])/maps")) for (role,entry) in ready["processes"])

@@ -121,3 +121,14 @@ these helpers and failed as recorded in `sustained-native-before-20261006.log`;
 that is implementation evidence, not a reproduced installed stale-report defect.
 Installed continuous/reset/midrun-control and inclusive allocation qualification
 remain required after the bootstrap allocation fix.
+
+### Verified locator handoff
+
+Independent review found that the sustained coordinator still used the removed
+`socket` key after `wait_state` returned `control_locator` (BOOT-R002). The
+coordinator now passes the verified deployment UUID and absolute deadline to
+the locator connection and checks the exact launcher PID. A mismatched client
+is closed before rejection. The focused coordinator suite passes 133/133;
+the independent handoff suite passes 6/6, including the wrong-PID cleanup case.
+Evidence: `sustained-locator-fixed-20261006.log` under the retained live-controls
+cache. These are software checks; installed scientific qualification is separate.
