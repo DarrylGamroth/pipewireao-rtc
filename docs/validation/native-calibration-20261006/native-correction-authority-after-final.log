@@ -1,0 +1,4 @@
+historical_source_sha256=cb99c372c01c5466ccdce7257e0232b874a5c52ef79acc5e8715418e3a6da39d
+historical_wait_sha256=04c5b6d17a44020e3d2520928b1181504802573f336fee16b21f7b9b9ee674db
+Test Summary:                                                             | Pass  Total  Time
+Correction must reject a saved complete report after native owner stopped |    2      2  3.0s

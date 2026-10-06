@@ -1,0 +1,28 @@
+{
+  "source_base": "cbadb5e",
+  "scope": "Cold qualification wiring and evidence/cleanup discriminators. No deployment, daemon, HEART child, scientific replay or SCI effects executed. Actual consumer gates remain pending.",
+  "tests": {
+    "calibration": 181,
+    "correction": 149,
+    "total": 330,
+    "native_authority_before": "1 pass / 1 fail",
+    "native_authority_after": "2/2"
+  },
+  "exact_historical_source_sha256": "cb99c372c01c5466ccdce7257e0232b874a5c52ef79acc5e8715418e3a6da39d",
+  "limitations": [
+    "Initial source hold is not observed; deployment auto-Resume precedes Running admission",
+    "Scientific coefficient/contracts and current actual native runtime qualification remain separate",
+    "External native evidence is preserved without large copying; filesystem capacity must be reserved before SCI"
+  ],
+  "command": "taskset -c15 julia --startup-file=no --compiled-modules=existing --project=deployment/julia -e include(test_cal);include(test_correction)",
+  "preliminary_logs_preserved": "/home/dgamroth/.cache/rtc-native-calibration-final-20261006/generic-cold-preliminary",
+  "sha256": {
+    "deployment/qualify_correction_native.jl": "62f06d0c50523bc0524ae31fc8df158dfaabc097313d47b33676b584534fce2a",
+    "deployment/julia/test/test_qualify_correction_native.jl": "67bc19aa13daaa6df7d0f60611f0dad1495ace5f999815d40810f65d5aeceac1",
+    "docs/NATIVE_CALIBRATION_CONSUMER_MATRIX.md": "1eae4532be32ab2fd59bd29a426bd31ef7ef2bc5803fd8a0c3f1863d4b003b10",
+    "docs/validation/native-calibration-20261006/native-correction-authority-after-final.log": "e66adb72af070e801347aae0aa5d21aa6f856329ceb9d5550f4147af59263b41",
+    "docs/validation/native-calibration-20261006/native-correction-authority-before-final.log": "d3c0110a9d825620ab083de05d2ee173d51bec89ddbc4b5d9e85d1677d6d6234",
+    "docs/validation/native-calibration-20261006/native-correction-authority-oracle.jl": "1a44be24b31e1bb093200ef7a80355036ead4496db2b370f60534fa8148da7a5",
+    "docs/validation/native-calibration-20261006/native-consumers-cold-final-v2.log": "cd7c976a8d4c5e3719e5835a86b47e0a9c85f09111ff9f592af639a91adf00ed"
+  }
+}

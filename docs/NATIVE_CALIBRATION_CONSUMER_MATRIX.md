@@ -273,12 +273,76 @@ binary hashes. Preserve source libraries, plant/calibration arrays, wisdom and
 startup flags. SDK/control refreshes must be explicit sealed provenance; do not
 regenerate darks, references, inverse matrices or vendor algorithms.
 
-The two HEART full256 correction consumers need a separate retained native
-CORRECTION-profile coordinator. Their source lifecycle, phases, window reports
-and supported stopped Reset already exist. Old marker-based launch scripts are
-historical algorithm/evidence inputs, not current live control commands. The
-primary agent approved implementing that bounded coordinator next. Its future
+The two HEART full256 correction consumers use
+[`deployment/qualify_correction_native.jl`](../deployment/qualify_correction_native.jl).
+Their source lifecycle, phases, window reports and supported stopped Reset
+already exist. Old marker-based launch scripts remain historical
+algorithm/evidence inputs. The coordinator's
 recipe will run both restored full256 windows and the existing analyzer against
 immutable reports after fresh native cursor publication, with generation+1 and
 distinct child identity at Reset. A failure of the retained scientific trajectory
 gate remains a failure, even if native transport and cleanup succeed.
+
+## Native correction coordinator and installed launch proof
+
+After a fresh sealed native correction export/install and an explicit SCI
+reservation, run each selected HEART fixture independently:
+
+```sh
+taskset -c 15 julia --startup-file=no --compiled-modules=existing \
+  --project="$RTC/deployment/julia" "$RTC/deployment/qualify_correction_native.jl" \
+  "$FRESH_CLASSIC_HEART_CORRECTION_INSTALLED" "$FRESH_CLASSIC_RUNTIME" "$FRESH_CLASSIC_OUTPUT"
+taskset -c 15 julia --startup-file=no --compiled-modules=existing \
+  --project="$RTC/deployment/julia" "$RTC/deployment/qualify_correction_native.jl" \
+  "$FRESH_COPPER_HEART_CORRECTION_INSTALLED" "$FRESH_COPPER_RUNTIME" "$FRESH_COPPER_OUTPUT"
+```
+
+These destination variables require the frozen full256 inputs listed above;
+they do not identify already prepared fresh packages. The coordinator loads
+its cold client code from the chosen tool project, launches the sealed installed
+`julia/deploy_cli.jl` with the installed project, and records the qualifier and
+installed runtime source/manifest hashes separately. The calibration qualifier
+now uses the same installed launch helper. The identical cold launch oracle
+fails before (1 pass / 1 fail) and passes after (2/2); it executes no deployment.
+
+Deployment acknowledges source Connect and automatically Resumes window1
+before announcing Running. The coordinator observes fresh window1 native
+Status and HEART generation/health; it does **not** claim to observe the initial
+hold or issue a second Resume. It waits for restored/unheld completion with
+report_cursor equal to cursor before reading the saved report. The 256 hashed
+native journal acquisition records must match the full UInt64 domain/generation,
+sequences and exposure-end model times of that current cursor. The historical
+report field `acquisition_generation=0` supplies no authority.
+
+The retained supervisor performs session-stop→Reset. Fresh native source Status
+must prove held window2, sequence0, unchanged domain and acquisition generation+1;
+fresh HEART Status must prove child generation2 and a distinct owned child, with
+the old process identity absent. Session-start admits window2. Its journal must
+retain the reset hold, acquisition generation and advancing lifetime probe
+token. Each original published owner report is copied with exact byte/hash
+identity before a later control can update the live report. External native
+evidence remains in the sealed fresh directory; large telemetry is not duplicated
+by this coordinator and must remain available for analysis and audit.
+
+Both restored windows must have identical ADC/command hashes and direct truth,
+as required by the retained correction fixture. After native Quit and exact
+owned-child/group cleanup, the maintained analyzer independently verifies the
+native startup/restore references, public flag ACKs, telemetry counts and
+payloads, detector policy, direct truth and frozen replay. The existing declared
+17:128 and 129:256 residual-to-atmosphere variance ratios must each remain <1.
+There is no new tolerance, inverse, gain or alternative acceptance criterion.
+Overall success also requires failure-free retained-client/log closure and all
+native cleanup facts; transport success cannot establish scientific convergence.
+
+The exact historical file-poll function accepts a complete saved report while
+the injected native owner is Stopped (1 pass / 1 fail). The same fixture under
+the native coordinator rejects before any report read (2/2). This establishes
+the authority discriminator in cold software; it is not an observed owner fault.
+Focused current tests pass181 calibration and149 correction assertions, covering
+both correction profiles, full-width cursor identities, missing publication,
+fault/stopped/wrong-window negatives, child replacement, unchanged reset/utility
+gates, exact report bytes and cleanup failures. Logs/oracles/source hashes are
+retained beside the earlier proofs in `validation/native-calibration-20261006`.
+Actual two-window correction, current native Collect/Capture and six installed
+consumer gates remain pending the reserved runs; no scientific pass follows
+from these cold tests.

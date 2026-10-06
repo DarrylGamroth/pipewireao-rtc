@@ -1,0 +1,25 @@
+ERROR: LoadError: Some tests did not pass: 1 passed, 1 failed, 0 errored, 0 broken.
+in expression starting at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/docs/validation/native-calibration-20261006/native-correction-authority-oracle.jl:21
+historical_source_sha256=cb99c372c01c5466ccdce7257e0232b874a5c52ef79acc5e8715418e3a6da39d
+historical_wait_sha256=04c5b6d17a44020e3d2520928b1181504802573f336fee16b21f7b9b9ee674db
+Correction must reject a saved complete report after native owner stopped: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/docs/validation/native-calibration-20261006/native-correction-authority-oracle.jl:52
+  Expression: rejected
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] (::var"#6#7")(directory::String)
+   @ Main ~/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/docs/validation/native-calibration-20261006/native-correction-authority-oracle.jl:52
+ [3] mktempdir(fn::var"#6#7", parent::String; prefix::String)
+   @ Base.Filesystem ./file.jl:941
+ [4] mktempdir(fn::Function, parent::String)
+   @ Base.Filesystem ./file.jl:937
+ [5] top-level scope
+   @ ~/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/docs/validation/native-calibration-20261006/native-correction-authority-oracle.jl:22
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [7] macro expansion
+   @ ~/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/docs/validation/native-calibration-20261006/native-correction-authority-oracle.jl:22 [inlined]
+Test Summary:                                                             | Pass  Fail  Total  Time
+Correction must reject a saved complete report after native owner stopped |    1     1      2  4.2s
+RNG of the outermost testset: Random.Xoshiro(0xb92b64cd4fca7958, 0x55531db086696726, 0x91b978a47edc111f, 0xd8227316eb1bc822, 0x7ab53eb5cb157d53)
