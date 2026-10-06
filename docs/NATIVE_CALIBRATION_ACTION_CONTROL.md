@@ -4,8 +4,9 @@ The phase E codec foundation implements the pure Julia and Rust profile
 `pipewireao.rtc.calibration-actions/1` under RTC-ARCH-024 / RTC-DEV-030. It does
 not by itself establish owner migration or installed qualification. The Julia
 integration described below migrates the selected action server and campaign
-client. The Rust endpoint and installed qualification remain pending; issue #7
-remains open. The existing effect implementation,
+client. The Rust coordinator endpoint and selected CLI also use this native
+profile. Installed qualification and final independent review remain pending;
+issue #7 remains open. The existing effect implementation,
 restoration fencing and scientific acquisition behavior remain authoritative.
 
 The [action inventory](NATIVE_CALIBRATION_ACTION_WIRE_INVENTORY.md),
@@ -190,11 +191,11 @@ reviewed codecs and phase D acquisition owners. Its selected source owners are
 | Bounded typed action ingress and responses | Existing envelope codec and `HILNativeCalibrationActions.ActionServer`; private-core synthetic acquisition tests | Implemented for Julia source owners |
 | Capacity before acquisition effects | Injected exact native Collect preflight in existing `CalibrationServer.execute!` / `effect!`; oversized Collect leaves exposure count zero | Implemented |
 | Preserve SCI numerical behavior and restoration | Typed adapter delegates all actions to the existing effects; full synthetic cycle and immutable capture test | Implemented, installed SCI evidence pending |
-| Exact owner and controller/run/serial identities | Explicit client Binding, fresh native NodeInfo/capability proof, actual controller fencing, full UInt64 payload identities | Implemented for Julia |
+| Exact owner and controller/run/serial identities | Explicit client Binding, fresh native NodeInfo/capability proof, actual controller fencing, full UInt64 payload identities | Implemented for Julia and Rust |
 | Sole owner Core and ThreadLoop | Action endpoint borrows the lifecycle Bridge core/loop; identity assertions and terminal cleanup tests | Implemented |
 | Lifecycle service during accepted effects | `safe=false` service checks defer Connect/Reset/Shutdown; safe owner boundary services them outside effects | Implemented; final independent review pending |
 | Finite disconnect/deadline failure and cleanup | Existing ticket deadlines and actual controller presence; action ingress closes before SCI cleanup; Release facts survive later transport abort | Implemented, expanded installed fault tests pending |
-| Selected Rust coordinator and CLI | Caller arguments use explicit `--remote`, `--node`, `--owner-pid`, `--owner-instance`; Rust endpoint migration follows this increment | Partial |
+| Selected Rust coordinator and CLI | `NativeCalibrationEndpoint` adapts the existing coordinator; `rtc-calibrate` requires explicit `--remote`, `--node`, `--owner-pid`, `--owner-instance`; actual Rust-to-Julia private-core cycle | Implemented, installed qualification pending |
 | Native supervisor identity handoff | Existing launcher readiness metadata supplies connection hints; fresh native proof remains mandatory | Partial, issue #8 owns replacement |
 | Installed exports and selected profiles | New source assets require parent integration and installed acceptance | Pending |
 
@@ -255,7 +256,8 @@ Use Julia 1.12.7 on CPU 15 with the already installed HIL project and source
 SDK; no dependency installation is needed:
 
 ```sh
-taskset -c 15 julia --startup-file=no \
+PIPEWIREAO_TEST_SDK=/home/dgamroth/workspaces/codex/pipewire/PipeWireAO.jl \
+  taskset -c 15 julia --startup-file=no \
   --project=/home/dgamroth/.cache/rtc-heart-native-20261006/classic-fgn-cpu-base/hil \
   deployment/hil/test_native_calibration_actions.jl
 
@@ -274,7 +276,8 @@ overlapping compilation. This software evidence does not qualify science
 cores, classic or Copper live acquisition, GPU, hardware or real-time latency.
 
 Observed on branch `work/native-calibration-actions-20261006`, Linux x86_64,
-Julia 1.12.7, CPU 15: the connected suite passed 646/646 assertions (539 existing
+Julia 1.12.7, CPU 15: the prepared HIL project's SDK connected suite passed
+646/646 assertions (539 existing
 SCI/server regressions and 107 native integration assertions). The focused SDK
 run passed 47 client, 66 campaign and 106 HEART export assertions, 219/219 total.
 `git diff --check` passed. These results do not close issue #7 or promote an
@@ -288,3 +291,68 @@ take incorrectly faulting an already held bound run at baseline `323f767`
 fixture additionally covers foreign expiry/removal before take, expiry while
 applying a foreign rejection, and an expired invalid initial ticket. No generic
 endpoint machinery or SCI numerical effects change in this remediation.
+
+## Rust coordinator endpoint
+
+`NativeCalibrationEndpoint` implements the existing `CalibrationEndpoint`
+trait. Its `submit` method validates the borrowed action, encodes a bounded
+request and queues `Node.set_param` without iterating or waiting. `receive`
+iterates the client's single PipeWire MainLoop with the coordinator's absolute
+deadline. No auxiliary client thread or second SCI state machine is introduced.
+Connection setup precedes Hold and has one finite absolute deadline derived
+from the plan's ownership timeout.
+
+The client exports an inactive controller node, binds exact owner and controller
+registry IDs/serials, validates full NodeInfo, and waits for the owner's native
+capability to prove that same controller identity. Typed capabilities, initial
+sentinels, completions and rejections are decoded with bounded SPA metadata
+checks. PID/incarnation mismatch, ambiguity, replacement, malformed evidence,
+timeout or unknown outcome retire the connection; there is no reconnect or
+JSON socket fallback. A timely matching completion observed before a later
+node retirement remains usable; conflicting or malformed terminals fail closed.
+A typed Failed result remains known coordinator evidence.
+
+`rtc-calibrate` reads ordinary saved plan JSON and preflights all figures,
+settling rules, request budgets and exact Collect reply capacity before native
+connection and Hold. Its only endpoint arguments are `--remote`, `--node`,
+`--owner-pid` and `--owner-instance`; `--endpoint` is rejected. The binary
+requires Cargo's `live` feature. The existing coordinator's acquisition,
+restoration and release algorithms are unchanged. Capture remains unavailable
+through that coordinator because its existing action type has no Capture member.
+
+The optional fixture `PIPEWIREAO_RTC_CALIBRATE_TEST_BINARY` runs the actual
+binary against the Julia synthetic owner. With the current source SDK it passed
+21/21 assertions: wrong PID and incarnation caused no SCI run/serial binding
+or Hold, and the valid binding completed the full cycle with UInt64-max run,
+three exposure records, restoration, release, terminal flush and action ingress
+closure. This is software interoperability evidence, not installed science or
+hardware validation.
+
+Rust pure verification passed 39 library tests with two existing private-core
+fixtures ignored and two `rtc-calibrate` argument/plan tests. Six new endpoint
+tests check capability grammar/identity bounds, matching-terminal ordering,
+retirement, wrong SCI identity, known failure recovery and borrowed-figure
+preflight. Existing cross-language binary fixtures remain part of the library
+run. These tests use the existing Cargo target, offline, on CPU 15.
+Clippy with warnings denied and `cargo fmt --all --check` passed.
+
+The current-source-SDK native fixture separately passed 161/161 assertions:
+140 Julia native checks, including 33 foreign-retirement checks, and the
+21 actual Rust coordinator checks. The focused invocation loads the existing
+synthetic fixture definitions without rerunning the legacy socket suite;
+the retained script and log are
+`~/.cache/rtc-live-controls-20261005/native-calibration-actions-focused-source{.jl,-final.log}`.
+The separate legacy server diagnostic passed 539/539 assertions.
+
+An initial full current-source-SDK run failed ten downstream assertions in the
+legacy Copper startup/priming test after its Capture returned Failed. The same
+539 server assertions subsequently passed with unchanged one-second request
+budgets on reserved CPU 15; test-only receipt logging showed a successful
+captured receipt at the earlier failure site. An isolated cold Capture took
+1.641 s including compilation, and subsequent calls took 0.325–0.368 ms.
+CPU contention/cold compilation is a plausible explanation, not a confirmed
+root cause: the first failure's detailed message was not logged. No scientific
+effect, coefficient or production timeout was changed. The initial failure log
+and diagnostic scripts are retained in
+`~/.cache/rtc-live-controls-20261005/native-calibration-actions-with-rust-final.log`
+and `native-calibration-copper-{cold,full}-diagnostic.{jl,log}`.

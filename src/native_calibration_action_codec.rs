@@ -312,6 +312,29 @@ fn args_size(a: &Action) -> Result<usize, CodecError> {
         }
     })
 }
+
+/// Check a borrowed Adopt (`None`) or Restore (`Some(rule)`) figure before copying.
+///
+/// # Errors
+/// Rejects nonfinite figures, invalid rules, or complete requests exceeding 16 KiB.
+pub fn preflight_figure_request(
+    values: &[f32],
+    settling: Option<Rule>,
+) -> Result<usize, CodecError> {
+    floats(values, 4096)?;
+    let overhead = if let Some(settling) = settling {
+        rule(settling)?;
+        add(8, rule_size(settling))?
+    } else {
+        24
+    };
+    let size = add(
+        base(false)?,
+        add(32, add(overhead, array_size(values.len(), 4)?)?)?,
+    )?;
+    bound(size, envelope::REQUEST_BOUND)?;
+    Ok(size)
+}
 fn id(v: u32) -> Value {
     Value::Id(Id(v))
 }

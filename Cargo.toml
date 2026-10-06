@@ -31,6 +31,11 @@ name = "pipewireao-rtc"
 path = "src/main.rs"
 required-features = ["live"]
 
+[[bin]]
+name = "rtc-calibrate"
+path = "src/bin/rtc-calibrate.rs"
+required-features = ["live"]
+
 [lints.rust]
 unsafe_code = "deny"
 

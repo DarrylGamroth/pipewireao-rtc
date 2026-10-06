@@ -424,3 +424,56 @@ end
         end
     end
 end
+
+if haskey(ENV,"PIPEWIREAO_RTC_CALIBRATE_TEST_BINARY")
+    @testset "Rust coordinator uses the exact native Julia action owner" begin
+        binary=ENV["PIPEWIREAO_RTC_CALIBRATE_TEST_BINARY"]
+        @test isfile(binary)
+        with_control_private_core() do socket,directory,daemon
+            native_fixture(socket,daemon;io_ns=UInt64(20_000_000_000)) do test
+                plan=Dict("version"=>1,"run"=>typemax(UInt64),"reference"=>Float32[0,0],
+                    "probes"=>[Float32[1,2]],"measurements"=>2,"frames_per_probe"=>3,
+                    "settling"=>Dict("kind"=>"immediate"),
+                    "timeouts_ns"=>Dict(name=>UInt64(5_000_000_000) for name in
+                        ("ownership","adoption","settling","collection","restoration")))
+                path=joinpath(directory,"plan.json")
+                PipeWireAODeployment.Common.write_json(path,plan)
+                output=joinpath(directory,"result.json");errors=joinpath(directory,"rust.stderr")
+                binding=test.binding
+                for (pid,instance) in ((binding.owner_pid+UInt32(1),binding.instance),
+                                       (binding.owner_pid,binding.instance+1))
+                    rejected=`$binary --remote $(binding.remote) --node $(binding.node) --owner-pid $pid --owner-instance $instance --plan $path`
+                    child=run(pipeline(ignorestatus(rejected);stdout=output,stderr=errors);wait=false)
+                    try
+                        wait_proof(()->process_exited(child),10,"Rust exact owner binding rejection")
+                        @test !success(child)
+                        @test test.fixture.owner.run==0 && test.fixture.owner.serial==0
+                        @test !test.fixture.owner.held && !test.fixture.owner.faulted
+                    finally
+                        stop_proof_child!(child,"Rust rejected calibration client")
+                    end
+                end
+                command=`$binary --remote $(binding.remote) --node $(binding.node) --owner-pid $(binding.owner_pid) --owner-instance $(binding.instance) --plan $path`
+                child=run(pipeline(command;stdout=output,stderr=errors);wait=false)
+                try
+                    wait_proof(()->process_exited(child),20,"Rust native calibration completion")
+                    @test success(child)
+                    success(child) || error(read(errors,String))
+                    result=PipeWireAODeployment.Common.read_json(output)
+                    @test result["run"]==typemax(UInt64) && result["phase"]=="complete"
+                    @test result["restoration_confirmed"] && result["resume_permitted"]
+                    @test only(result["responses"])["values"]==Float32[3,4]
+                    @test length(only(result["responses"])["exposures"])==3
+                    @test test.fixture.owner.run==typemax(UInt64) && test.fixture.owner.serial==6
+                    @test test.fixture.owner.phase===:released && !test.fixture.owner.held && !test.fixture.owner.faulted
+                    wait_proof(()->istaskdone(test.task),5,"owner terminal flush and ingress closure")
+                    @test test.failure[]===nothing
+                    @test test.actions.endpoint.closed && !test.bridge.runtime.endpoint.closed
+                    @test !ispath(joinpath(directory,"calibration.sock"))
+                finally
+                    stop_proof_child!(child,"Rust calibration client")
+                end
+            end
+        end
+    end
+end
