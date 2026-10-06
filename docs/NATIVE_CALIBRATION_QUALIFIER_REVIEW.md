@@ -129,3 +129,48 @@ installed Collect, Capture, restoration, unsupported Reset, immutable evidence
 and normal cleanup are still experimental gates. The first Classic FGN fixture
 does not silently replace the broader Classic/Copper, FGN/JFG and unchanged
 HEART consumer matrix.
+
+## Independent remediation verification
+
+Primary adjudicated both findings; the remediation worker independently
+confirmed them before modifying source. Final clean repair commit
+`f2ad4229a2b8d833b232191abe383ad070c31bf2` was independently inspected.
+
+- R001: success now follows the entire normal `wait_state` and log scope.
+  Primary errors and client/fallback cleanup errors explicitly clear success.
+  The final reducer requires no failure, restoration/release, shutdown,
+  launcher exit and a nonempty set of completely retired owned groups. Saved
+  success is normalized through that reducer before writing evidence; exit uses
+  the same reducer. Normal cleanup ordering remains unchanged.
+- R002: Reset now requires before/after Connected lifecycle equality and exact
+  nullable publication-cursor equality as well as the prior snapshot fields.
+  The current Snapshot has no separate failure field. Stopped, missing report
+  cursor and changed report cursor are each covered by discriminating fixtures.
+
+The retained close oracle uses an actual private-core native supervisor and
+`D.wait_state`. It injects `client.active=true` just before callback return so
+the real close method refuses cleanup; diagnostic cleanup then clears the flag
+and closes the client. The identical failure-containing record yields exit zero
+before the fix (two pass, one fail) and exit one under the corrected reducer
+(three pass). This proves the native close error and reducer behavior; complete
+`main` callback-scope ordering is verified by source, not a full installed run.
+The fixture printed registered SDK source `PipeWireAO/QRGDD`; it makes no
+allocation or installed-science claim. The repaired pure suite passes 44/44,
+including the previously failing Reset invariants and twelve reducer checks.
+
+Evidence is committed with the source under
+`docs/validation/native-calibration-20261006/`. All five file hashes in
+`remediation-receipt.json` were independently recomputed and matched, as did
+the repaired qualifier source hash
+`234adfc24695e1ff8a49eadf17587f0b8ab1d13816990ef5812512d17ee629f3`.
+The receipt correctly notes that the after log printed baseline `987297b` while
+running the then-uncommitted repair; the recorded source hash identifies the
+actual repaired bytes. This reviewer read source, fixtures, logs and hashes but
+did not rerun tests.
+
+**Final review disposition:** CAL-QUAL-R001 and CAL-QUAL-R002 are corrected and
+accepted by independent source/evidence review. No further confirmed qualifier
+blocker was found. The coordinator is ready for the primary's separately
+reserved functional SCI attempt; installed Collect/Capture and broader consumer
+qualification remain pending. This does not override independent runner
+availability findings in `NATIVE_RUNNER_MAINTENANCE_REVIEW.md`.
