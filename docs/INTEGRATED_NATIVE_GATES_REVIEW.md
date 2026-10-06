@@ -112,3 +112,17 @@ outputs, 505,484,527 bytes, in this project's native build cache. Executables,
 shared libraries, GUI build inputs, evidence and active unrelated workloads
 were preserved and hash-checked. The ledger explicitly records limited
 cross-user `/proc` visibility. No source or calibration recording was deleted.
+
+### Runtime refresh metadata ledger correction
+
+The original refresh helper intentionally rewrites `provenance.json` after
+checking protected input hashes. Its receipt nevertheless included that file
+in the declared unchanged count. The original receipts and installed packages
+remain intact. The [independent audit](validation/integrated-gates-review-20261006/preparation/runtime-refresh-metadata-audit.json)
+checks all seven refreshed packages against their original protected hashes:
+every nonmetadata protected file is unchanged. The corrected counts exclude
+the explicitly recorded provenance rewrite (for example, 390 rather than 391
+for the Classic FGN calibration package). The
+[version 2 helper](validation/integrated-gates-review-20261006/preparation/refresh_native_sdk_control_runtime_v2-20261006.jl)
+uses that exclusion for subsequent preparations. This corrects the evidence
+ledger; it changes neither scientific inputs nor acceptance thresholds.

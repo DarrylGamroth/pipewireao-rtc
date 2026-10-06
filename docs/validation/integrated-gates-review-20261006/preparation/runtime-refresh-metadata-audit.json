@@ -1,0 +1,96 @@
+{
+  "scope": "Correction to earlier helpers unchanged-byte ledger: provenance intentionally changed and now explicitly excluded; original receipts/packages preserved",
+  "packages": [
+    {
+      "installed": "/tmp/classic-fgn-sdk-interrupt-final-v1-installed",
+      "installed_descriptor_sha256": "885fbe6efa49a8f026732ad0effcb61ec1b3a59e63efc71116f61fcb954dcacb",
+      "original_declared_protected_count": 408,
+      "verified_unchanged_nonmetadata_count": 407,
+      "explicit_metadata_exception": {
+        "provenance.json": {
+          "original_sha256": "c490ccd3dd0151ec2adb6ec5f5670aabd0cbfddb3fd9065867266cda6f2c74dd",
+          "current_sha256": "09445a7081a8bab85d984a816ec4d90aa2d67a4dead94b03226d338d04b33d89",
+          "scope": "intentional runtime refresh provenance; excluded from unchanged scientific bytes"
+        }
+      }
+    },
+    {
+      "installed": "/tmp/classic-jfg-sdk-interrupt-final-v1-installed",
+      "installed_descriptor_sha256": "c7e3b7c35ae78619f58deaebf4d62632fdef085035063e66a4d73116a7a3edcb",
+      "original_declared_protected_count": 538,
+      "verified_unchanged_nonmetadata_count": 537,
+      "explicit_metadata_exception": {
+        "provenance.json": {
+          "original_sha256": "f013ae484cadacc5280e574dff435f99453cda9c51a837258915952e41a1a2ab",
+          "current_sha256": "d02b1a00ef4f03b09727774496dadc192f24fb114a5bc46ea08ac0d87402b946",
+          "scope": "intentional runtime refresh provenance; excluded from unchanged scientific bytes"
+        }
+      }
+    },
+    {
+      "installed": "/tmp/copper-fgn-sdk-interrupt-final-v1-installed",
+      "installed_descriptor_sha256": "8616edf23763d16ac2b09d5ffbe3d6bae2248769b3009dbd2500fe978b87842b",
+      "original_declared_protected_count": 398,
+      "verified_unchanged_nonmetadata_count": 397,
+      "explicit_metadata_exception": {
+        "provenance.json": {
+          "original_sha256": "0e5f7e19853ca34d122ab0897ed98fa21a063f07515e9d058413736f522cb296",
+          "current_sha256": "e8d469cdbe9e25616e2a3252c1d366f576cece1e36cda3b26b02cc6a10fe3cc1",
+          "scope": "intentional runtime refresh provenance; excluded from unchanged scientific bytes"
+        }
+      }
+    },
+    {
+      "installed": "/tmp/copper-jfg-sdk-interrupt-final-v1-installed",
+      "installed_descriptor_sha256": "2ff4eb51df2404b789bd55fcab8654e6a44d362c9064a8facd83f8cb93e48386",
+      "original_declared_protected_count": 527,
+      "verified_unchanged_nonmetadata_count": 526,
+      "explicit_metadata_exception": {
+        "provenance.json": {
+          "original_sha256": "0bad15db1a0138c0e89f432b2a84bce44546dcf0337aecf5cfdf43b5cba29211",
+          "current_sha256": "ddc91fc1865e7f3640102bf24380ba5ecae75cec0ff418f11ebea3150633c7d7",
+          "scope": "intentional runtime refresh provenance; excluded from unchanged scientific bytes"
+        }
+      }
+    },
+    {
+      "installed": "/tmp/classic-heart-sdk-interrupt-final-v2-installed",
+      "installed_descriptor_sha256": "2db714bc1dbc24bb252c5e5c6b84f4a4e1de1c4ec3a974db8de3ed7be307469e",
+      "original_declared_protected_count": 428,
+      "verified_unchanged_nonmetadata_count": 427,
+      "explicit_metadata_exception": {
+        "provenance.json": {
+          "original_sha256": "7e9733a90fad0fcaaf93ef013e1cc22fd406ac9e198e9153e9d0473b12c4a5cb",
+          "current_sha256": "2fecdc9c2c6f0f93d1c07ce823b46be834edfca065d14ddfc60aa7dc98c98d2f",
+          "scope": "intentional runtime refresh provenance; excluded from unchanged scientific bytes"
+        }
+      }
+    },
+    {
+      "installed": "/tmp/copper-heart-sdk-interrupt-final-v2-installed",
+      "installed_descriptor_sha256": "2e6eb44dccea4013d869a298df041d3d0b50a731d23a4c5c498cd750f3ee32b7",
+      "original_declared_protected_count": 428,
+      "verified_unchanged_nonmetadata_count": 427,
+      "explicit_metadata_exception": {
+        "provenance.json": {
+          "original_sha256": "0be83635096a7c109fcaa0f8e1b6c73576ddcdb38b17e0f0323bc518b56230fe",
+          "current_sha256": "38bbea928c3d93b28dda69fb1cd85e20d1b6b3c4f8db71c10c969af3cfc94675",
+          "scope": "intentional runtime refresh provenance; excluded from unchanged scientific bytes"
+        }
+      }
+    },
+    {
+      "installed": "/tmp/classic-fgn-nativecal-final-v2-installed",
+      "installed_descriptor_sha256": "360bb4ed545cfeefb42b480f45b0f27dc15cc5933c4ba12010dad0389e08d364",
+      "original_declared_protected_count": 391,
+      "verified_unchanged_nonmetadata_count": 390,
+      "explicit_metadata_exception": {
+        "provenance.json": {
+          "original_sha256": "56479f3c959e1b744b55118092777d67e9e3595866f6252d5a5ecd68288220c9",
+          "current_sha256": "52a1299732b5b7b6561af8b246922a13c7d25c0c5e0ef22886638f9f03b668d8",
+          "scope": "intentional runtime refresh provenance; excluded from unchanged scientific bytes"
+        }
+      }
+    }
+  ]
+}
