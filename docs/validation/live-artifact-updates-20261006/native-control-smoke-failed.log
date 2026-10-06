@@ -17,4 +17,3 @@ failures:
     rtc_adapter::live_tests::isolated_systemd_rtc_updates_and_reconnect
 
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 133 filtered out; finished in 1.29s
-
