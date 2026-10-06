@@ -61,6 +61,31 @@ function supervisor_fixture_snapshot(state=R.Running;source=true,sink="sink")
         C.SimulatorSnapshot(Int32(1),Int64(1),Int32(3),Int64(1),Int32(0),Int64(1),Int64(0),state===R.Running,false,Int64(1),Int64(0))) : nothing
     return C.Snapshot([C.OwnedProcess("rtc",UInt32(101)),C.OwnedProcess("source",UInt32(102))],runner,plant,nothing)
 end
+struct FailedRunnerStatusFixture end
+function PipeWireAODeployment.NativeRunnerClient.request!(::FailedRunnerStatusFixture,
+        command::R.RunnerCommand{:status}; deadline::Float64, check=()->nothing)
+    check()
+    header=E.ReplyHeader(E.ControllerIdentity(UInt32(7),UInt64(8),Int64(9)),
+        Int64(10),Int64(19),R.operation_id(command),Int32(-110))
+    return R.Completion(header,R.Running,nothing,
+        R.RunnerError("control.deadline","fixture required-object synchronization expired"))
+end
+@testset "supervisor preserves failed runner Status diagnostics" begin
+    deployment,_,_=supervisor_fixture(;source=false)
+    deployment.runner_client=FailedRunnerStatusFixture()
+    error=try
+        D.supervisor_snapshot(deployment;deadline=D.monotonic()+60,check=()->nothing)
+        nothing
+    catch failure
+        failure
+    end
+    @test error isa D.DeploymentError
+    message=sprint(showerror,error)
+    @test occursin("result=-110",message)
+    @test occursin("token=19",message)
+    @test occursin("control.deadline",message)
+    @test occursin("fixture required-object synchronization expired",message)
+end
 @testset "typed supervisor carries one absolute deadline through coordination" begin
     deployment,backend,plant=supervisor_fixture()
     deadline=D.monotonic()+60.0

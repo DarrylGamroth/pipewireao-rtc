@@ -92,7 +92,13 @@ end
 function supervisor_snapshot(deployment::DeploymentRunner;deadline::Float64,check)
     NativeControlClient.deadline_check(deadline,check)
     completion=runner_request(deployment,RunnerProtocol.RunnerCommand(:status);deadline,check)
-    completion.header.result==0&&completion.result!==nothing || fail("native runner Status failed")
+    if completion.header.result!=0 || completion.result===nothing
+        header=completion.header
+        detail=completion.error===nothing ? "missing Status result" :
+            "$(completion.error.field): $(completion.error.message)"
+        fail("native runner Status failed (result=$(header.result), lifecycle=$(completion.lifecycle), " *
+            "instance=$(header.endpoint_instance), token=$(header.token), operation=$(header.operation)): $detail")
+    end
     runner=Supervisor.RunnerObservation(control_binding(deployment.runner_client),completion.header.token,
         "native-runner-instance:$(completion.header.endpoint_instance)",
         Supervisor.RunnerRecord(completion.lifecycle,completion.result))
