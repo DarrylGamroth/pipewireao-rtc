@@ -292,6 +292,23 @@ function run_native_runner_deployment()
             @test !ispath(joinpath(run_directory, "native-control.sock"))
             @test !ispath(joinpath(run_directory, "control.sock"))
             @test isfile(admitted["control_locator"])
+            @test admitted["private_runtime"] == run_directory
+            @test admitted["observation_remote"] == joinpath(run_directory,admitted["remote"])
+            @test dirname(admitted["control_locator"]) != admitted["private_runtime"]
+            listed = only(filter(DeploymentTest.list_sessions()) do entry
+                entry.record !== nothing && entry.record.session_id == admitted["deployment_uuid"]
+            end)
+            @test listed.record.owner_pid == supervisor_pid
+            @test listed.record.incarnation == admitted["endpoint_instance"]
+            @test listed.record.remote == joinpath(run_directory,admitted["remote"])
+            selected = DeploymentTest.select_session(admitted["deployment_uuid"];
+                deadline=time_ns()/1e9+30)
+            try
+                @test selected.selected.status.lifecycle === :ready
+                @test selected.selected.status.session_id == admitted["deployment_uuid"]
+            finally
+                close(selected)
+            end
 
             locator = admitted["control_locator"]
             @test !haskey(admitted, "socket")
@@ -326,6 +343,8 @@ function run_native_runner_deployment()
             final = DeploymentTest.wait_final_report(runtime, supervisor;
                 owner_pid=supervisor_pid, timeout=180)
             @test final["phase"] == "stopped" && !final["admitted"]
+            @test !any(entry -> entry.record !== nothing &&
+                entry.record.session_id == admitted["deployment_uuid"],DeploymentTest.list_sessions())
             wait(supervisor)
             @test success(supervisor)
             @test final["runner"] == admitted["runner"]

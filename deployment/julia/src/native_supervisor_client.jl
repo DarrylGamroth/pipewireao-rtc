@@ -33,23 +33,41 @@ function live_uuid(client::Client)
     end
 end
 request!(args...; kwargs...) = NativeControlClient.request!(args...; kwargs...)
-export Client, UnknownOutcome, connect, request!, connect_locator, render, live_uuid
+export Client, UnknownOutcome, connect, request!, connect_locator, read_locator, Locator, render, live_uuid
 
-"The persisted locator supplies hints; exact bound metadata and fresh Status supply authority."
-function connect_locator(path::AbstractString; deadline::Float64, check=()->nothing, expected_uuid=nothing)
-    NativeControlClient.deadline_check(deadline, check)
+"An immutable copy of discovery hints, verified against the live endpoint on connect."
+struct Locator
+    remote::String
+    node::String
+    owner_pid::UInt32
+    instance::Int64
+end
+
+"Read bounded hints once; they do not establish a live lifecycle or identity."
+function read_locator(path::AbstractString)
     islink(path) && throw(ArgumentError("native control locator must not be a symlink"))
     hints = Common.read_json(path; maximum=4096)
     Set(keys(hints)) == Set(["version", "profile", "remote", "node", "owner_pid", "instance"]) &&
         get(hints,"version",nothing) === 1 && get(hints,"profile",nothing) == NativeControlClient.profile_name(PROFILE) ||
         throw(ArgumentError("unsupported native supervisor locator"))
-    hints["remote"] isa String && hints["node"] isa String &&
+    hints["remote"] isa String && isabspath(hints["remote"]) &&
+        0 < ncodeunits(hints["remote"]) <= 2048 && isvalid(hints["remote"]) && !occursin('\0',hints["remote"]) &&
+        hints["node"] isa String && 0 < ncodeunits(hints["node"]) <= 128 &&
+        isvalid(hints["node"]) && !occursin('\0',hints["node"]) &&
         typeof(hints["owner_pid"]) === Int && 0 < hints["owner_pid"] <= typemax(UInt32) &&
         typeof(hints["instance"]) === Int && hints["instance"] > 0 ||
         throw(ArgumentError("invalid native supervisor locator identity"))
-    # connect checks the actual private remote, actual registry/NodeInfo metadata,
-    # owner PID/incarnation/profile and this client's actual controller marker.
-    return connect(hints["remote"], hints["node"], hints["owner_pid"], hints["instance"]; deadline, check, expected_uuid)
+    return Locator(hints["remote"],hints["node"],UInt32(hints["owner_pid"]),Int64(hints["instance"]))
+end
+
+function connect(locator::Locator; kwargs...)
+    return connect(locator.remote,locator.node,locator.owner_pid,locator.instance;kwargs...)
+end
+
+"The persisted locator supplies hints; exact bound metadata and fresh Status supply authority."
+function connect_locator(path::AbstractString; deadline::Float64, check=()->nothing, expected_uuid=nothing)
+    NativeControlClient.deadline_check(deadline, check)
+    return connect(read_locator(path);deadline,check,expected_uuid)
 end
 
 function source_render(source::Codec.SourceObservation)

@@ -149,9 +149,11 @@ above remain the normative authority. The [fixed envelope](NATIVE_CONTROL_ENVELO
 [CPU validation](NATIVE_CONTROL_ENVELOPE_VALIDATION.md) record the common header
 and diagnostic interoperability separately from production owner migration.
 [Local RTC session discovery](NATIVE_SESSION_DISCOVERY.md) defines the bounded
-per-user native locator record and fresh-status selection boundary. Its module
-and fixture tests do not establish supervisor publication, native status
-integration, or the GUI session picker. The
+per-user native locator record and fresh-status selection boundary. The
+[publication and operator validation](NATIVE_SESSION_DEPLOYMENT_VALIDATION.md)
+records actual supervisor publication, independent duplicate-name sessions,
+fresh Julia CLI selection and explicit private-runtime bindings. GUI and
+installed scientific qualifications remain separate; the
 [integration handoff](DISCOVERY_INTEGRATION_HANDOFF.md) identifies those gates.
 
 [Calibration report publication](NATIVE_REPORT_PUBLICATION_VALIDATION.md) records

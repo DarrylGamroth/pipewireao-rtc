@@ -86,7 +86,7 @@ function acquisition_deployment_fixture(client)
     return Deployment.DeploymentRunner((;), "/unused", Dict{String,Any}("owners" => [source]),
         Dict{String,String}(), Set{Int}(), Tuple{String,Base.Process}[], IdDict{Base.Process,Int}(),
         nothing, nothing, nothing, nothing, nothing, nothing, source, client,
-        0, "paused", false, false, false, nothing, record, nothing, nothing)
+        0, "paused", false, false, false, nothing, record, nothing, nothing, nothing)
 end
 
 @testset "Acquisition caller preserves unsigned cursors and known rejection" begin
@@ -114,8 +114,23 @@ end
     @test !deployment.source_failed && deployment.record["admitted"]
     @test deployment.record["source"]["id"] == 3
     before = length(client.operations)
-    refused_reset = Deployment.coordinate(deployment, ["reset"], "reset-calibration")
-    @test !refused_reset["ok"] && refused_reset["error"]["field"] == "source.reset"
+    supervisor = PipeWireAODeployment.NativeSupervisorCodec
+    binding = supervisor.Binding("source","pipewireao.rtc.calibration-lifecycle/1",
+        UInt32(101),UInt32(21),UInt64(22),Int64(4))
+    snapshot = Codec.Snapshot(Codec.Classic,initial["cursor"],nothing,false,false,
+        "initial",false,false,nothing)
+    observation = supervisor.SourceObservation(binding,Int64(1),Codec.Connected,snapshot)
+    before_reset = supervisor.Snapshot([supervisor.OwnedProcess("source",UInt32(101))],
+        nothing,observation,nothing)
+    refused_reset = try
+        Deployment.coordinate(deployment,PipeWireAODeployment.NativeRunnerCodec.RunnerCommand(:reset),
+            before_reset;deadline=time_ns()/1e9+5,check=()->nothing)
+        nothing
+    catch error
+        error
+    end
+    @test refused_reset isa Deployment.CoordinationRejected
+    @test refused_reset.field == "source.reset"
     @test length(client.operations) == before
     client.rejected = false
     client.failure = true

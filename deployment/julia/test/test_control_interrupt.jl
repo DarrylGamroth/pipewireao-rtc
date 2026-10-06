@@ -11,7 +11,7 @@ function control_accept_fixture(broker)
     D.DeploymentRunner((;), "", Dict{String,Any}(), Dict{String,String}(), Set{Int}(),
         Tuple{String,Base.Process}[], IdDict{Base.Process,Int}(), nothing, nothing, nothing,
         broker, nothing, nothing, nothing, nothing, 0, nothing, false, false, false,
-        nothing, Dict{String,Any}(), nothing, nothing)
+        nothing, Dict{String,Any}(), nothing, nothing, nothing)
 end
 
 @testset "owned control accept interruption" begin

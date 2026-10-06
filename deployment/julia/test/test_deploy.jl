@@ -76,7 +76,7 @@ function source_status_failure_fixture(mode)
             runner = D.DeploymentRunner((;), directory, Dict{String,Any}("owners" => [owner]),
                 Dict{String,String}(), Set{Int}(), children, pids, directory,
                 public_path, MockRunnerClient(native_events), broker, nothing, nothing, owner, nothing, 0, "running",
-                false, false, false, joinpath(directory, "state.json"), record, nothing, nothing)
+                false, false, false, joinpath(directory, "state.json"), record, nothing, nothing, nothing)
             if mode == :malformed
                 # Valid JSON with a matching ID/operation, but an invalid state.
                 D.atomic_record(joinpath(directory, "source.reply"), Dict(
@@ -504,7 +504,7 @@ runner = D.DeploymentRunner((;), runtime, spec, Dict{String,String}(), Set([cpu]
     Tuple{String,Base.Process}[], IdDict{Base.Process,Int}(), runtime,
     nothing, nothing, nothing, nothing, nothing, nothing, nothing, 0, nothing,
     false, false, false, nothing,
-    Dict{String,Any}("processes" => Dict{String,Any}()), nothing, nothing)
+    Dict{String,Any}("processes" => Dict{String,Any}()), nothing, nothing, nothing)
 child = D.spawn(runner, "core", ["sh", "-c", "printf supervised-child-diagnostic >&2"],
     Dict{String,String}(ENV))
 wait(child)
@@ -552,7 +552,7 @@ end
             Dict{String,String}(), Set{Int}(), Tuple{String,Base.Process}[],
             IdDict{Base.Process,Int}(), directory, nothing, nothing, nothing,
             nothing, nothing, owner, nothing, 0, "running", false, false, false,
-            nothing, record, nothing, nothing)
+            nothing, record, nothing, nothing, nothing)
         @test_throws D.DeploymentError D.source_control(runner, "pause")
         @test runner.source_client === nothing
         @test runner.source_id == 0

@@ -1,4 +1,4 @@
-using Test, PipeWireAODeployment
+using Test, JSON3, PipeWireAODeployment
 include("test_native_supervisor_coordination.jl")
 include("native_control_private_core.jl")
 const SessionClient = PipeWireAODeployment.NativeSessionClient
@@ -11,6 +11,7 @@ function session_selection_proof(remote, directory, daemon)
     runtime = PublicRuntime.Runtime(C.PROFILE, remote, "test.discover.supervisor", Int64(42))
     deployment, backend, plant = supervisor_fixture()
     deployment.broker = runtime
+    deployment.spec["name"] = "Classic"
     running = Ref(true)
     owner = @async while running[]
         D.serve_control(deployment; snapshot_query=(deployment; deadline, check)->begin
@@ -20,15 +21,14 @@ function session_selection_proof(remote, directory, daemon)
         sleep(0.002)
     end
     connections = SessionClient.Connection[]
-    registry = Discovery.registry_directory(directory)
-    record = Discovery.SessionRecord("Classic", runtime.uuid, UInt32(getpid()),
-        Int64(42), remote, "test.discover.supervisor")
+    D.publish_discovery!(deployment,remote,"test.discover.supervisor")
+    registry, record = something(deployment.discovery)
     function choose(item)
         SessionClient.select_session(item; deadline=NativeClient.monotonic()+10)
     end
     try
-        Discovery.publish!(registry, record)
-        listed = only(Discovery.list_sessions(registry))
+        listed = only(filter(entry -> entry.record !== nothing &&
+            entry.record.session_id == runtime.uuid, Discovery.list_sessions(registry)))
         @test listed.verification === Discovery.Unverified
         @test isempty(backend.calls) && isempty(plant.calls)
         preparing = choose(listed)
@@ -72,17 +72,119 @@ function session_selection_proof(remote, directory, daemon)
         @test_throws NativeClient.UnknownOutcome SessionClient.request!(admitted,
             R.RunnerCommand(:session_start); deadline=NativeClient.monotonic()+5)
         @test (length(backend.calls), length(plant.calls)) == previous
-        @test Discovery.remove!(registry, record)
-        @test isempty(Discovery.list_sessions(registry))
+        D.retire_discovery!(deployment)
+        @test deployment.discovery === nothing
+        @test !ispath(joinpath(registry,"session-$(record.session_id).pod"))
     finally
         running[] = false
         istaskdone(owner) || wait(owner)
         foreach(close, reverse(connections))
         close(runtime)
-        Discovery.remove!(registry, record)
+        D.retire_discovery!(deployment)
     end
 end
 
 @testset "actual native RTC session selection and retained binding" begin
     with_control_private_core(session_selection_proof)
+end
+
+function session_fixture_worker(deployment, backend, running)
+    return @async while running[]
+        D.serve_control(deployment;snapshot_query=(d;deadline,check)->begin
+            check();supervisor_fixture_snapshot(backend.state)
+        end)
+        sleep(0.002)
+    end
+end
+
+function duplicate_sessions_proof(first_remote, first_directory, first_daemon)
+    chmod(dirname(first_remote),0o700)
+    with_control_private_core() do second_remote, second_directory, second_daemon
+        chmod(dirname(second_remote),0o700)
+        mktempdir(prefix="rtc-session-catalogue-") do user_runtime
+            chmod(user_runtime,0o700)
+            withenv("XDG_RUNTIME_DIR"=>user_runtime) do
+                deployments = []
+                runtimes = PublicRuntime.Runtime[]
+                connections = SessionClient.Connection[]
+                workers = Task[]
+                running = Ref(true)
+                try
+                    for (i,remote) in enumerate((first_remote,second_remote))
+                        runtime = PublicRuntime.Runtime(C.PROFILE,remote,
+                            "test.duplicate.supervisor",Int64(42+i))
+                        push!(runtimes,runtime)
+                        deployment,backend,plant = supervisor_fixture()
+                        deployment.broker = runtime
+                        deployment.spec["name"] = "Classic"
+                        # One session is actively running; the other is stopped
+                        # but its supervisor remains available for selection.
+                        backend.state = i == 1 ? R.Running : R.Ready
+                        plant.running = i == 1
+                        PublicRuntime.lifecycle!(runtime,C.Admitted)
+                        D.publish_discovery!(deployment,remote,"test.duplicate.supervisor")
+                        push!(deployments,deployment)
+                        push!(workers,session_fixture_worker(deployment,backend,running))
+                    end
+                    listing = D.list_sessions()
+                    @test length(listing) == 2
+                    @test all(entry -> entry.verification === Discovery.Unverified,listing)
+                    @test all(entry -> entry.record.label == "Classic",listing)
+                    @test length(unique(entry.record.session_id for entry in listing)) == 2
+                    @test length(unique(entry.record.remote for entry in listing)) == 2
+                    for (i,runtime) in enumerate(runtimes)
+                        connection = D.select_session(runtime.uuid;deadline=NativeClient.monotonic()+10)
+                        push!(connections,connection)
+                        @test connection.selected.status.lifecycle === (i == 1 ? :ready : :stopped)
+                        @test connection.selected.status.remote == (i == 1 ? first_remote : second_remote)
+                    end
+                    # Exercise the actual Julia operator CLI in a fresh process.
+                    project = PipeWireAODeployment.package_root()
+                    cli = joinpath(project,"deploy_cli.jl")
+                    executable = Base.julia_cmd().exec[1]
+                    listed = PipeWireAODeployment.Common.run_checked([
+                        executable,"--startup-file=no","--project=$project",cli,"sessions"];
+                        timeout=30,maximum_output_bytes=16_384)
+                    @test listed.returncode == 0
+                    rendered_listing = JSON3.read(listed.stdout)
+                    @test length(rendered_listing) == 2
+                    @test all(entry -> entry.verification == "Unverified",rendered_listing)
+                    selected = PipeWireAODeployment.Common.run_checked([
+                        executable,"--startup-file=no","--project=$project",cli,
+                        "select-session","--session",runtimes[2].uuid];
+                        timeout=40,maximum_output_bytes=16_384)
+                    @test selected.returncode == 0
+                    rendered_status = JSON3.read(selected.stdout)
+                    @test rendered_status.session_id == runtimes[2].uuid
+                    @test rendered_status.lifecycle == "stopped"
+                    @test rendered_status.authority == "deployment_supervisor"
+                    @test rendered_status.remote == second_remote
+                    @test rendered_status.native_token > 0
+                    gui_binary=get(ENV,"NATIVE_SESSION_GUI_TEST_BINARY","")
+                    if !isempty(gui_binary)
+                        isfile(gui_binary) || error("GUI qualification binary is absent")
+                        gui = withenv("PIPEWIREAO_GUI_NATIVE_SESSION_UUID"=>runtimes[2].uuid) do
+                            PipeWireAODeployment.Common.run_checked([gui_binary,"--ignored","--exact",
+                                "rtc_adapter::live_tests::native_supervisor_session_selection_and_read_only_status",
+                                "--nocapture"];timeout=40,maximum_output_bytes=32_768)
+                        end
+                        @test gui.returncode == 0
+                        @test occursin("1 passed",gui.stdout)
+                        println("ACTUAL_GUI_NATIVE_SESSION_PROOF=",gui.stdout)
+                    end
+                finally
+                    running[] = false
+                    foreach(wait,workers)
+                    foreach(close,reverse(connections))
+                    foreach(close,reverse(runtimes))
+                    foreach(D.retire_discovery!,reverse(deployments))
+                end
+                @test isempty(D.list_sessions())
+            end
+        end
+    end
+end
+
+@testset "independent duplicate-name sessions and actual read-only Julia CLI" begin
+    with_control_private_core(duplicate_sessions_proof)
 end

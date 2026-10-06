@@ -16,6 +16,8 @@ import ..NativeRunnerCodec
 import ..NativeSupervisorCodec
 import ..NativeSupervisorClient
 import ..NativeSupervisorRuntime
+import ..NativeSessionDiscovery
+import ..NativeSessionClient
 import ..NativeControlEndpoint
 import ..NativeControlCodec
 import ..NativeHeartCodec
@@ -394,6 +396,7 @@ mutable struct DeploymentRunner
     record::Dict{String,Any}
     heart_client::Union{Nothing,NativeControlClient.Client}
     observation_boundary::Any
+    discovery::Union{Nothing,Tuple{String,NativeSessionDiscovery.SessionRecord}}
 end
 
 function owner_preparation_timeout(seconds)
@@ -413,7 +416,7 @@ function DeploymentRunner(options::NamedTuple)
         "owner_preparation_timeout_seconds" => preparation_timeout)
     DeploymentRunner(options, dirname(deployment), spec, installed_paths(options.pipewire_prefix),
         Placement.inherited_cpus(), Tuple{String,Base.Process}[], IdDict{Base.Process,Int}(), nothing, nothing, nothing,
-        nothing, nothing, nothing, owner, nothing, 0, nothing, false, false, false, nothing, record, nothing, nothing)
+        nothing, nothing, nothing, owner, nothing, 0, nothing, false, false, false, nothing, record, nothing, nothing, nothing)
 end
 
 function preflight(deployment::DeploymentRunner)
@@ -1088,10 +1091,11 @@ end
 
 function stop(deployment::DeploymentRunner)
     deployment.record["admitted"] = false
-    if deployment.broker isa NativeSupervisorRuntime.Runtime && !deployment.broker.closed
-        close(deployment.broker)
-    end
     errors = Any[]
+    if deployment.broker isa NativeSupervisorRuntime.Runtime && !deployment.broker.closed
+        try close(deployment.broker) catch error push!(errors,error) end
+    end
+    try retire_discovery!(deployment) catch error push!(errors,error) end
     try notify("STOPPING=1\nSTATUS=Stopping RTC deployment") catch error push!(errors, error) end
     _stop_processes(deployment, errors; source=deployment.source_owner !== nothing)
     close_observation!(deployment,errors)
@@ -1100,6 +1104,82 @@ function stop(deployment::DeploymentRunner)
         deployment.latency_io = nothing
     end
     isempty(errors) || fail("deployment cleanup failed: $(sprint(showerror, first(errors)))")
+end
+
+"Publish only the existing supervisor endpoint's immutable native identity."
+function publish_discovery!(deployment::DeploymentRunner, remote, node_name)
+    supervisor = deployment.broker::NativeSupervisorRuntime.Runtime
+    directory = NativeSessionDiscovery.registry_directory()
+    record = NativeSessionDiscovery.SessionRecord(deployment.spec["name"],
+        supervisor.uuid, UInt32(getpid()), supervisor.endpoint.instance, remote, node_name)
+    # Retain the identity before publication so cleanup can also remove a record
+    # if an error occurs after the atomic rename.
+    deployment.discovery = (directory,record)
+    deployment.record["discovery_locator"] = NativeSessionDiscovery.publish!(directory,record)
+    return nothing
+end
+
+"Remove only this supervisor incarnation; a replacement publication survives."
+function retire_discovery!(deployment::DeploymentRunner)
+    publication = deployment.discovery
+    publication === nothing && return nothing
+    directory, record = publication
+    NativeSessionDiscovery.remove!(directory,record)
+    deployment.discovery = nothing
+    return nothing
+end
+
+"List unverified local hints without querying or controlling any endpoint."
+function list_sessions()
+    directory = NativeSessionDiscovery.registry_directory()
+    return NativeSessionDiscovery.list_sessions(directory)
+end
+
+function session_entry(session_id::AbstractString)
+    NativeSupervisorCodec.validate_uuid(String(session_id))
+    entries = filter(list_sessions()) do entry
+        entry.record !== nothing && entry.record.session_id == session_id
+    end
+    length(entries) == 1 || fail("selected RTC session is absent from the local listing")
+    return only(entries)
+end
+
+session_connection(connection::NativeSessionClient.Connection) = connection
+session_connection(entry::NativeSessionDiscovery.DiscoveryEntry) =
+    fail("selected RTC session is $(entry.verification): $(entry.detail)")
+
+"Explicit session selection retains the exact client used for its read-only Status."
+function select_session(session_id::AbstractString; deadline=monotonic()+30)
+    return session_connection(NativeSessionClient.select_session(session_entry(session_id);
+        deadline=Float64(deadline)))
+end
+
+function session_status(connection::NativeSessionClient.Connection)
+    selected = connection.selected
+    status = selected.status
+    return Dict("label"=>selected.record.label,"session_id"=>status.session_id,
+        "owner_pid"=>status.owner_pid,"instance"=>status.incarnation,
+        "remote"=>status.remote,"node"=>status.node_name,
+        "global_id"=>status.global_id,"serial"=>status.object_serial,
+        "native_token"=>status.query_token,"lifecycle"=>String(status.lifecycle),
+        "authority"=>String(status.authority))
+end
+
+function control_session(session_id::AbstractString, argv; timeout=30)
+    require(isfinite(timeout) && timeout>0,"control timeout must be finite and positive")
+    # Validate the explicit command before establishing a connection.
+    command = RunnerCommands.parse(argv)
+    deadline = monotonic()+timeout
+    connection = select_session(session_id;deadline)
+    try
+        completion = NativeSessionClient.request!(connection,command;deadline)
+        reply = NativeSupervisorClient.render(completion;
+            owner_pid=connection.selected.status.owner_pid)
+        reply["deployment_uuid"] = connection.selected.status.session_id
+        return reply
+    finally
+        close(connection)
+    end
 end
 
 function close_observation!(deployment::DeploymentRunner, errors=Any[])
@@ -1238,6 +1318,7 @@ function _run_locked(deployment::DeploymentRunner, base)
             "remote"=>remote,"node"=>supervisor_node,"owner_pid"=>getpid(),"instance"=>supervisor_instance))
         deployment.record["supervisor_endpoint"] = Dict("node"=>supervisor_node,"instance"=>supervisor_instance,
             "profile"=>NativeControlClient.profile_name(NativeSupervisorCodec.PROFILE),"uuid"=>deployment.broker.uuid)
+        publish_discovery!(deployment,remote,supervisor_node)
         atomic_record(deployment.state_path,deployment.record)
         for owner in deployment.spec["owners"]
             role = owner["role"]
@@ -1370,18 +1451,19 @@ function wait_state(runtime::AbstractString, predicate; timeout=30, process=noth
     deadline=monotonic()+timeout
     locator=joinpath(runtime,"control.json")
     hints = nothing
+    owner_pid = process === nothing ? nothing : getpid(process)
     while true
         process!==nothing&&!process_running(process) && fail("deployment launcher exited before requested native state")
         NativeControlClient.deadline_check(deadline,()->nothing)
         if isfile(locator)
-            hints=Common.read_json(locator;maximum=4096)
-            if process===nothing || get(hints,"owner_pid",nothing)==getpid(process)
+            hints=NativeSupervisorClient.read_locator(locator)
+            if owner_pid===nothing || hints.owner_pid==owner_pid
                 break
             end
         end
         sleep(min(0.05,max(0.0,deadline-monotonic())))
     end
-    client=NativeSupervisorClient.connect_locator(locator;deadline)
+    client=NativeSupervisorClient.connect(hints;deadline)
     try
         uuid=NativeSupervisorClient.live_uuid(client)
         while true
@@ -1390,8 +1472,10 @@ function wait_state(runtime::AbstractString, predicate; timeout=30, process=noth
             state=NativeSupervisorClient.render(completion;owner_pid=client.observation.owner_pid)
             state["deployment_uuid"]=uuid
             state["control_locator"]=locator
-            state["instance"]=basename(dirname(hints["remote"]))
-            state["remote"]=basename(hints["remote"])
+            state["private_runtime"]=dirname(hints.remote)
+            state["observation_remote"]=hints.remote
+            state["instance"]=basename(state["private_runtime"])
+            state["remote"]=basename(hints.remote)
             if haskey(state,"runner_endpoint")
                 state["runner"]=Dict("node"=>state["runner_endpoint"]["node"],"instance"=>state["runner_endpoint"]["instance"])
             end
@@ -1586,9 +1670,9 @@ function install(options::NamedTuple)
 end
 
 function _options(argv)
-    isempty(argv) && fail("expected install, preflight, run or control")
+    isempty(argv) && fail("expected install, preflight, run, control, sessions or select-session")
     command = first(argv)
-    command in ("install", "preflight", "run", "control") || fail("unknown command: $command")
+    command in ("install", "preflight", "run", "control", "sessions", "select-session") || fail("unknown command: $command")
     positionals = String[]
     parsed = Dict{String,String}()
     index = 2
@@ -1609,7 +1693,9 @@ function _options(argv)
         end
     end
     allowed = command == "install" ? Set(["--package", "--destination", "--pipewire-prefix", "--julia-executable"]) :
-        command == "control" ? Set(["--runtime"]) :
+        command == "control" ? Set(["--runtime", "--session"]) :
+        command == "sessions" ? Set{String}() :
+        command == "select-session" ? Set(["--session"]) :
         Set(["--deployment", "--pipewire-prefix", "--fits", "--runtime"])
     command == "run" && push!(allowed, "--owner-preparation-timeout-seconds")
     isempty(setdiff(Set(keys(parsed)), allowed)) || fail("unsupported option for $command")
@@ -1620,6 +1706,7 @@ function _options(argv)
         runtime=get(parsed, "--runtime", joinpath(get(ENV, "XDG_RUNTIME_DIR", "/run/user/$(ccall(:getuid, Cuint, ()))"), "pipewireao-rtc")),
         fits=get(parsed, "--fits", nothing), package=get(parsed, "--package", ""),
         destination=get(parsed, "--destination", ""), argv=positionals,
+        session_id=get(parsed,"--session",nothing),
         julia_executable=get(parsed, "--julia-executable", Base.julia_cmd().exec[1]),
         owner_preparation_timeout_seconds=preparation_timeout)
     if command == "install"
@@ -1628,8 +1715,12 @@ function _options(argv)
     elseif command in ("preflight", "run")
         isempty(options.deployment) && fail("missing --deployment")
     elseif command == "control"
-        haskey(parsed, "--runtime") || fail("missing --runtime")
+        xor(haskey(parsed,"--runtime"),haskey(parsed,"--session")) ||
+            fail("control requires exactly one of --runtime or --session")
+    elseif command == "select-session"
+        options.session_id === nothing && fail("missing --session")
     end
+    options.session_id === nothing || NativeSupervisorCodec.validate_uuid(options.session_id)
     options
 end
 
@@ -1638,8 +1729,21 @@ function main(argv=ARGS)
         options = _options(argv)
         if options.command == "install"
             install(options)
+        elseif options.command == "sessions"
+            println(JSON3.write([Dict("verification"=>string(entry.verification),
+                "detail"=>entry.detail,"record"=>entry.record) for entry in list_sessions()]))
+        elseif options.command == "select-session"
+            connection = select_session(options.session_id)
+            try
+                println(JSON3.write(session_status(connection)))
+            finally
+                close(connection)
+            end
         elseif options.command == "control"
-            println(JSON3.write(control(joinpath(options.runtime,"control.json"),options.argv;timeout=30)))
+            reply = options.session_id === nothing ?
+                control(joinpath(options.runtime,"control.json"),options.argv;timeout=30) :
+                control_session(options.session_id,options.argv;timeout=30)
+            println(JSON3.write(reply))
         else
             deployment = DeploymentRunner(options)
             if options.command == "preflight"

@@ -50,7 +50,7 @@ function supervisor_fixture(;source=true)
     record=Dict{String,Any}("phase"=>"running","admitted"=>true,"error"=>nothing)
     deployment=D.DeploymentRunner((;),"",Dict{String,Any}("owners"=>Any[]),Dict{String,String}(),Set{Int}(),
         Tuple{String,Base.Process}[],IdDict{Base.Process,Int}(),nothing,nothing,backend,nothing,nothing,nothing,
-        owner,plant,0,"running",false,false,false,nothing,record,nothing,nothing)
+        owner,plant,0,"running",false,false,false,nothing,record,nothing,nothing,nothing)
     return deployment,backend,plant
 end
 function supervisor_fixture_snapshot(state=R.Running;source=true,sink="sink")

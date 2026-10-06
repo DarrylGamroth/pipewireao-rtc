@@ -304,10 +304,9 @@ const EndpointBinding = NativeCalibrationActionClient.Binding
 function endpoint_binding(ready)
     source = ready["source_endpoint"]
     role = ready["source-owner"]
-    instance = dirname(ready["control_locator"])
     # Launcher metadata supplies hints only. Native connect verifies the exact
     # live PID, incarnation, profile, NodeInfo and capability before requests.
-    return EndpointBinding(joinpath(instance, ready["remote"]), source["node"] * ".actions",
+    return EndpointBinding(ready["observation_remote"], source["node"] * ".actions",
         ready["processes"][role]["pid"], source["instance"])
 end
 endpoint_connect(binding::EndpointBinding, run, timeout_ns; kwargs...) =
@@ -482,7 +481,7 @@ function run_stage(package,output,runtime,recipe,stage;frames=nothing,batches=no
             result["timing_ns"]["startup_readiness"]=ready_ns-startup_started
             result["timing_confirmed"]["startup_readiness"]=true
             acquisition_started=ready_ns
-            instance=dirname(ready["control_locator"])
+            instance=ready["private_runtime"]
             result["ready"]=ready
             result["startup_report"]=read_json(joinpath(instance,"simulator-result.json"))
             if frames!==nothing || normalized!==nothing

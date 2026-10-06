@@ -51,6 +51,25 @@ function supervisor_endpoint_proof(remote,directory,daemon)
         matched=Public.connect(remote,"test.public.supervisor",getpid(),42;deadline=Client.monotonic()+30,expected_uuid=runtime.uuid)
         close(matched)
         @test_throws Client.UnknownOutcome Public.connect(remote,"test.public.supervisor",getpid(),42;deadline=Client.monotonic()+5,expected_uuid="00000000-0000-0000-0000-000000000001")
+        locator_path=joinpath(directory,"supervisor-hints.json")
+        PipeWireAODeployment.Common.write_json(locator_path,Dict("version"=>1,
+            "profile"=>"pipewireao.rtc.deployment-supervisor/1","remote"=>remote,
+            "node"=>"test.public.supervisor","owner_pid"=>getpid(),"instance"=>42))
+        copied_locator=Public.read_locator(locator_path)
+        # An atomically replaced file cannot redirect this already copied binding.
+        PipeWireAODeployment.Common.write_json(locator_path,Dict("version"=>1,
+            "profile"=>"pipewireao.rtc.deployment-supervisor/1","remote"=>remote,
+            "node"=>"foreign.supervisor","owner_pid"=>getpid()+1,"instance"=>43);atomic=true)
+        retained=Public.connect(copied_locator;deadline=Client.monotonic()+30)
+        try
+            @test Public.live_uuid(retained)==runtime.uuid
+            status=Public.request!(retained,R.RunnerCommand(:status);deadline=Client.monotonic()+10)
+            @test status.header.result==0
+            @test retained.observation.owner_pid==getpid()
+            @test retained.observation.instance==42
+        finally
+            close(retained)
+        end
         @test clients[1].identity!=clients[2].identity
         @test clients[1].global_id==clients[2].global_id
         @test Client.profile_name(clients[1].observation.profile)=="pipewireao.rtc.deployment-supervisor/1"

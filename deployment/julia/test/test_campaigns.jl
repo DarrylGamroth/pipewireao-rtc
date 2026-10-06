@@ -178,10 +178,14 @@ end
 
 @testset "Campaign requires an explicit native action binding" begin
     ready=Dict("source_endpoint"=>Dict("node"=>"owner","instance"=>Int64(42)),
-        "source-owner"=>"simulator", "control_locator"=>"/tmp/private/run/control.json",
+        "source-owner"=>"simulator", "control_locator"=>"/tmp/private/control.json",
+        "private_runtime"=>"/tmp/private/run", "observation_remote"=>"/tmp/private/run/pw",
         "remote"=>"pw", "processes"=>Dict("simulator"=>Dict("pid"=>UInt32(17))))
     binding=A.endpoint_binding(ready)
     @test binding.remote=="/tmp/private/run/pw"
+    @test binding.remote != joinpath(dirname(ready["control_locator"]),ready["remote"])
+    unverified=copy(ready);delete!(unverified,"observation_remote")
+    @test_throws KeyError A.endpoint_binding(unverified)
     @test binding.node=="owner.actions"
     @test binding.owner_pid==17 && binding.instance==42
     @test_throws ArgumentError A.endpoint_connect("/tmp/legacy.sock",1,1_000_000_000)

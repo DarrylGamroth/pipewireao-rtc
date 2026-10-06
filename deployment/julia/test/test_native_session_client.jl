@@ -5,6 +5,7 @@ const D = PipeWireAODeployment.NativeSessionDiscovery
 const C = PipeWireAODeployment.NativeSupervisorCodec
 const E = PipeWireAODeployment.NativeControlCodec
 const R = PipeWireAODeployment.NativeRunnerCodec
+const Deployment = PipeWireAODeployment.Deployment
 
 const identity = E.ControllerIdentity(UInt32(7), UInt64(8), Int64(9))
 const header = E.ReplyHeader(identity, Int64(10), Int64(11), UInt32(3), Int32(0))
@@ -47,5 +48,44 @@ end
     @test S.select_session(retired; deadline=0.0) === retired
     unverified = D.DiscoveryEntry(record, D.Unverified, "hint")
     @test S.select_session(unverified; deadline=0.0).verification === D.Inaccessible
+end
+
+@testset "explicit deployment session command selection" begin
+    uuid = "01234567-89ab-cdef-0123-456789abcdef"
+    @test Deployment._options(["sessions"]).command == "sessions"
+    @test Deployment._options(["select-session","--session",uuid]).session_id == uuid
+    @test Deployment._options(["control","--session",uuid,"--","status"]).argv == ["status"]
+    @test Deployment._options(["control","--runtime","/tmp/rtc","--","status"]).session_id === nothing
+    @test_throws Deployment.DeploymentError Deployment._options(["control","--","status"])
+    @test_throws Deployment.DeploymentError Deployment._options([
+        "control","--session",uuid,"--runtime","/tmp/rtc","--","status"])
+    @test_throws Deployment.DeploymentError Deployment._options(["select-session"])
+    @test_throws ArgumentError Deployment._options(["select-session","--session","broken"])
+    @test_throws Deployment.DeploymentError Deployment._options(["sessions","--runtime","/tmp/rtc"])
+end
+@testset "native locator has one immutable bounded hint copy" begin
+    P=PipeWireAODeployment.NativeSupervisorClient
+    Common=PipeWireAODeployment.Common
+    mktempdir() do directory
+        path=joinpath(directory,"control.json")
+        hints=Dict("version"=>1,"profile"=>"pipewireao.rtc.deployment-supervisor/1",
+            "remote"=>joinpath(directory,"private","pw"),"node"=>"supervisor",
+            "owner_pid"=>getpid(),"instance"=>Int64(19))
+        Common.write_json(path,hints)
+        copied=P.read_locator(path)
+        hints["owner_pid"]=getpid()+1;hints["remote"]=joinpath(directory,"replacement","pw")
+        Common.write_json(path,hints;atomic=true)
+        @test copied.owner_pid==getpid()
+        @test copied.remote==joinpath(directory,"private","pw")
+        @test copied.instance==19
+        @test P.read_locator(path).remote==hints["remote"]
+        for (field,value) in (("remote","relative"),("remote","bad\0path"),
+                ("node",repeat("x",129)),("owner_pid",true),("instance",false))
+            malformed=copy(hints);malformed[field]=value;Common.write_json(path,malformed)
+            @test_throws ArgumentError P.read_locator(path)
+        end
+        alias=joinpath(directory,"alias");symlink(path,alias)
+        @test_throws ArgumentError P.read_locator(alias)
+    end
 end
 end # module NativeSessionClientTests

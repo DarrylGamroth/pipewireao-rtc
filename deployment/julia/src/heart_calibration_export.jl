@@ -391,7 +391,7 @@ function run_pilot(runtime::AbstractString, output::AbstractString; frames::Int=
     output = abspath(output)
     !ispath(output) && !islink(output) && isdir(dirname(output)) || throw(ArgumentError("pilot evidence output must be fresh"))
     ready = Deployment.wait_state(runtime, state -> get(state, "admitted", false); timeout=30)
-    instance = dirname(ready["control_locator"])
+    instance = ready["private_runtime"]
     mkdir(output; mode=0o700)
     deadline = Base.checked_add(time_ns(), UInt64(stage_timeout_seconds) * UInt64(1_000_000_000))
     endpoint = CalibrationCampaign.endpoint_connect(CalibrationCampaign.endpoint_binding(ready), 1, request_timeout_ns)
@@ -480,7 +480,7 @@ function run_plan(package::AbstractString, runtime::AbstractString, output::Abst
     output = abspath(output)
     !ispath(output) && !islink(output) && isdir(dirname(output)) || throw(ArgumentError("native plan evidence must be fresh"))
     ready = Deployment.wait_state(runtime, state -> get(state, "admitted", false); timeout=30)
-    instance = dirname(ready["control_locator"])
+    instance = ready["private_runtime"]
     startup = Common.read_json(joinpath(instance, "simulator-result.json"))
     if provenance["profile"] == "classic"
         startup["profile"] == "classic" && startup["backend"] == provenance["hil"]["backend"] ||
