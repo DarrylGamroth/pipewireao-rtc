@@ -1,0 +1,22 @@
+julia_version=1.12.7 julia_threads=1 blas_threads=1 gc_enabled=true
+package=FilterGraphAlgorithms version=0.5.5 source=/tmp/copper-jfg-main-noobs-v2-installed/jfg/julia/FilterGraphAlgorithms/src/FilterGraphAlgorithms.jl
+package=FilterGraphPipeWire version=0.1.1 source=/tmp/copper-jfg-main-noobs-v2-installed/jfg/julia/FilterGraphPipeWire/src/FilterGraphPipeWire.jl
+package=JuliaFilterGraph version=0.2.3 source=/tmp/copper-jfg-main-noobs-v2-installed/jfg/julia/JuliaFilterGraph/src/JuliaFilterGraph.jl
+package=PipeWireAO version=0.6.17 source=/tmp/copper-jfg-main-noobs-v2-installed/hil/packages/PipeWireAO/src/PipeWireAO.jl
+source_sha256 graph_node.jl=322bef4688afd3900237cd577161e033263293a1b71a325050003413e8b38aac
+source_sha256 parameters.jl=2ce5de82a798601ef992d3a0bafb35161097818ede5dca44fff44b21316516b9
+source_sha256 graph.jl=44c47652987c1de27e282f480ea930b09018f79b1236f1b80134db839a17b899
+source_sha256 algorithms/wavefront_sensor/pyramid_pupil_reconstruction.jl=582629e9791df4e496664263d9a312fab43b9a2bba5605baa6412bc2cac91ad0
+source_sha256 algorithms/wavefront_sensor/dense_reconstruction.jl=a63a994bd3ef2f237542bf057083d46d057115215bfad0cde4cdaebf67d969bb
+calibration=/tmp/copper-jfg-main-noobs-v2-installed/calibration/parameter-reconstructor.f32 bytes=3643200 sha256=8cfeba562c55ff99de362e77d5046cbb1d4011c21bce334b93ab50912596c043 layout=row-major element_type=F32_LE
+plan_type=DenseReconstructorPlan{Float32, Matrix{Float32}} workspace_type=DenseReconstructorWorkspace{Float32, Vector{Float32}} parameter_transaction_type=JuliaFilterGraph.PreparedParameterTransaction{Tuple{DenseReconstructorPlan{Float32, Matrix{Float32}}}, Tuple{Bool}}
+graph_nodes=1 algorithm=PyramidPupilReconstructorF32 input_type=@NamedTuple{var"reconstruction-pixels"::Matrix{Float32}} output_type=@NamedTuple{reconstructed::Vector{Float32}}
+control_reconstructor_staging samples=64 min_bytes=3644376 max_bytes=3644376 sum_bytes=233240064
+reconstructor_adoption samples=64 min_bytes=0 max_bytes=0 sum_bytes=0
+full_admitted_graph_process samples=64 min_bytes=0 max_bytes=0 sum_bytes=0
+full_public_graph_process samples=64 min_bytes=0 max_bytes=0 sum_bytes=0
+reconstructor_adoption_and_full_graph_process samples=64 min_bytes=0 max_bytes=0 sum_bytes=0
+matrix_shape=(253, 3600) input_shape=(4, 900) scales=(1.0,0.99) warm_sequences=32 measured_sequences=64 numerical_checks_before_final_cycle=289 max_abs_error=6.147889811813911e-5
+before_scale1 first5=Float32[0.0, 0.0, 0.0, -3.1809916, 2.0678244] l2_norm=506.77902
+after_scale0.99 first5=Float32[0.0, 0.0, 0.0, -3.1491818, 2.0471447] l2_norm=501.71118 difference_l2_norm=5.0678377
+SUCCESS

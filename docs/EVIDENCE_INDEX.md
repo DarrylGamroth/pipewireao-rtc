@@ -249,6 +249,14 @@ minimal-PATH foreground/static-user-unit checks, and the adjacent owned-accept
 SIGINT correction. Its [evidence ledger](JULIA_SYSTEMD_RUNTIME_EVIDENCE.json)
 keeps executable lookup and functional cleanup separate from scientific claims.
 
+## Artifact update allocation checks
+
+The [2026-10-06 CPU update probes](validation/live-artifact-updates-20261006/README.md)
+measure warmed gain/projection adoption and the actual Copper 253 × 3,600
+reconstructor adoption plus minimal-graph processing at zero heap bytes.
+Control preparation allocations are recorded separately. Live continuity,
+native callback ingress and update-time GC/jitter remain outside their scope.
+
 ## Inactive design archive
 
 The [archived full-RTC design](archive/full-rtc/README.md) preserves prior work

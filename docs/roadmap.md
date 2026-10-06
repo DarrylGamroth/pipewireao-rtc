@@ -59,21 +59,27 @@ calibration campaigns solely to validate control transport.
 
 ### Remaining order and acceptance
 
-1. Check the new native-control boundary for the remaining short Collect/Capture
+1. Qualify artifact loading and live gain/same-shape reconstructor updates before
+   further calibration campaigns. Reuse prior numerical update evidence; test
+   the changed native-control boundary and live continuity. The
+   [CPU adoption probes](validation/live-artifact-updates-20261006/README.md)
+   pass their warmed zero-allocation and numerical checks; control preparation
+   allocations and their possible process-wide GC effects remain separate.
+2. Check the new native-control boundary for the remaining short Collect/Capture
    consumers and retained correction fixtures. Earlier calibration/correction
    results above remain scoped passes. Reuse the fresh Classic FGN functional
    results within their declared scope. Keep the dim
    fixture's quality rejection and captured flux/validity evidence; do not lower
    thresholds or mask additional
    ROIs to relabel the failed cohort as accepted.
-2. Reuse completed Copper observation/lifecycle and simulator heap checks while
+3. Reuse completed Copper observation/lifecycle and simulator heap checks while
    their dependencies/configuration remain unchanged. Separate JFG allocation
    and remaining installed profiles are not covered by simulator counters.
-3. Reconcile existing foreground/service receipts against the selected
+4. Reconcile existing foreground/service receipts against the selected
    Classic/Copper × FGN/JFG/unchanged HEART matrix and operator adoption clauses.
    Complete only missing or affected native-control checks. Reuse unchanged
    clause-specific results; omitted profiles remain explicit.
-4. Complete SDK registration/release and final inventory/source review. Continue
+5. Complete SDK registration/release and final inventory/source review. Continue
    CPU progressive performance work after functional installed gates; CUDA/HIP
    RTC executor investigation remains a separate deferred JFG issue.
 

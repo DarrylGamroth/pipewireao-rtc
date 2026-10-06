@@ -1,0 +1,16 @@
+{
+  "passed": false,
+  "scope": "Existing GUI native client versus recorded installed Copper FGN fixture; not a timing or allocation test",
+  "harness_result": "/tmp/pipewireao-gui-rtc-evidence-h2lkf9kt/result.json",
+  "client_log": "native-control-smoke-failed.log",
+  "observation": "Live properties and initial generation queries pass; the client panics on missing reply session identity during the rejected-command loop, before accepted gain or matrix updates",
+  "cleanup": {
+    "unit": "gui-rtc-79099c9e131c.service",
+    "scenario": "updates",
+    "runtime": "/run/user/1000/gui-rtc-79099c9e131c",
+    "passed": false,
+    "service_stopped": true,
+    "runtime_removed": true
+  },
+  "root_cause": "Unresolved; frozen fixture/client compatibility must be checked before changing production source"
+}
