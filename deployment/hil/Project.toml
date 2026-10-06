@@ -8,6 +8,7 @@ REVOLTClassicSim = "c09822aa-3d1e-4a1e-903c-d4d0f13badd1"
 REVOLTCopperSim = "1e096dfd-8d59-466f-967d-e58cf577fca9"
 SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
+ThreadPinning = "811555cd-349b-4f26-b7bc-1f208b848042"
 
 [compat]
 AdaptiveOpticsSim = "0.1"
@@ -19,4 +20,5 @@ REVOLTClassicSim = "0.1"
 REVOLTCopperSim = "0.1"
 SHA = "0.7"
 TOML = "1"
+ThreadPinning = "1"
 julia = "1.12"

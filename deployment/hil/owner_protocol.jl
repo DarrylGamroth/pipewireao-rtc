@@ -18,9 +18,11 @@ const LEGACY_CONTROL_OPTIONS = (
 )
 
 """Parse the complete-frame simulator command line without loading a plant."""
-function parse_options(arguments; native_lifecycle::Bool=false)
+function parse_options(arguments; native_lifecycle::Bool=false, native_bootstrap::Bool=false)
+    native_lifecycle && native_bootstrap && throw(ArgumentError("lifecycle and bootstrap profiles are distinct"))
+    native = native_lifecycle || native_bootstrap
     values = Dict("backend" => "cpu", "frames" => "16", "transport" => "scientific", "correction-diagnostics" => "false", "detector-observation" => "false", "total-exchanges" => "0", "wall-rate" => "default", "control-node" => "simulator-wfs")
-    allowed = Set((LEGACY_REQUIRED_OPTIONS..., "backend", "frames", "transport", "controller-node", "controller-pid", "controller-instance", "correction-diagnostics", "detector-observation", "total-exchanges", "wall-rate", "control-node", "control-instance", "control-request", "control-reply"))
+    allowed = Set((LEGACY_REQUIRED_OPTIONS..., "backend", "frames", "transport", "controller-node", "controller-pid", "controller-instance", "correction-diagnostics", "detector-observation", "total-exchanges", "wall-rate", "control-node", "control-instance", "bootstrap-node", "bootstrap-instance", "control-request", "control-reply"))
     seen = Set{String}()
     iseven(length(arguments)) || throw(ArgumentError("each option requires one value"))
     for index in 1:2:length(arguments)
@@ -34,17 +36,27 @@ function parse_options(arguments; native_lifecycle::Bool=false)
         push!(seen, key)
         values[key] = value
     end
-    for key in (native_lifecycle ? NATIVE_REQUIRED_OPTIONS : LEGACY_REQUIRED_OPTIONS)
+    required = native_bootstrap ? ("profile", "graph", "rate", "exposure-ns", "remote", "control-node", "bootstrap-node", "bootstrap-instance", "output") :
+        native_lifecycle ? NATIVE_REQUIRED_OPTIONS : LEGACY_REQUIRED_OPTIONS
+    for key in required
         haskey(values, key) || throw(ArgumentError("missing --$key"))
     end
-    if native_lifecycle
+    if native
         any(key -> key in seen, LEGACY_CONTROL_OPTIONS) &&
-            throw(ArgumentError("native lifecycle forbids marker and file-control options"))
+            throw(ArgumentError("native owner forbids marker and file-control options"))
         "control-node" in seen || throw(ArgumentError("native lifecycle requires explicit --control-node"))
         isabspath(values["remote"]) || throw(ArgumentError("native lifecycle requires an absolute private remote"))
-    else
-        "control-instance" in seen && throw(ArgumentError("--control-instance requires native lifecycle"))
     end
+    native_lifecycle || !("control-instance" in seen) || throw(ArgumentError("--control-instance requires native lifecycle"))
+    native_bootstrap || !any(key -> key in seen, ("bootstrap-node", "bootstrap-instance")) ||
+        throw(ArgumentError("bootstrap options require the bootstrap profile"))
+    bootstrap_node = native_bootstrap ? values["bootstrap-node"] : nothing
+    bootstrap_node === nothing || occursin(r"^[a-zA-Z0-9_.-]{1,128}$", bootstrap_node) ||
+        throw(ArgumentError("invalid bootstrap node name"))
+    bootstrap_node === nothing || bootstrap_node != values["control-node"] ||
+        throw(ArgumentError("bootstrap and scientific source nodes must differ"))
+    bootstrap_instance = native_bootstrap ? Int64(parse_positive_integer(
+        values["bootstrap-instance"], "--bootstrap-instance", typemax(Int64))) : nothing
     control_instance = native_lifecycle ? Int64(parse_positive_integer(
         values["control-instance"], "--control-instance", typemax(Int64))) : nothing
     values["profile"] in ("classic", "copper") || throw(ArgumentError("--profile must be classic or copper"))
@@ -76,13 +88,13 @@ function parse_options(arguments; native_lifecycle::Bool=false)
     wall_period_ns = wall_rate == 0 ? UInt64(0) : UInt64(rounded_period(wall_rate))
     period = rounded_period(rate)
     exposure = parse_positive_integer(values["exposure-ns"], "--exposure-ns", period)
-    marker_paths = native_lifecycle ? (nothing, nothing, nothing, nothing) :
+    marker_paths = native ? (nothing, nothing, nothing, nothing) :
         Tuple(abspath(values[key]) for key in LEGACY_CONTROL_OPTIONS[1:4])
     output = abspath(values["output"])
     control_keys = ("control-request", "control-reply")
     control_present = count(key -> haskey(values,key), control_keys)
     control_present in (0,2) || throw(ArgumentError("calibration controls require both file paths"))
-    control_paths = native_lifecycle || control_present == 0 ? (nothing,nothing) :
+    control_paths = native || control_present == 0 ? (nothing,nothing) :
         Tuple(abspath(values[key]) for key in control_keys)
     occursin(r"^[a-zA-Z0-9_.-]{1,128}$", values["control-node"]) || throw(ArgumentError("invalid control node name"))
     paths = String[path for path in (marker_paths..., control_paths..., output) if path !== nothing]
@@ -99,7 +111,7 @@ function parse_options(arguments; native_lifecycle::Bool=false)
         exposure_ns=UInt64(exposure), frames=frames, remote=values["remote"],
         prepared_event=marker_paths[1], connect_request=marker_paths[2], connect_reply=marker_paths[3],
         quit_request=marker_paths[4], control_request=control_paths[1], control_reply=control_paths[2],
-        control_node=values["control-node"], control_instance, output,
+        control_node=values["control-node"], control_instance, bootstrap_node, bootstrap_instance, output,
     )
 end
 

@@ -250,8 +250,11 @@ end
         client.fail = true
         @test_throws ErrorException reset_controller!(options,7;timeout_seconds=0.1)
         @test_throws ErrorException reset_controller!(options,8;timeout_seconds=0)
-        touch(options.quit_request)
-        @test_throws ErrorException reset_controller!(options,9;timeout_seconds=0.1)
+        client.fail = false
+        cancelled = merge(options, (; owner_check=() -> error("native owner cancelled")))
+        before = length(client.deadlines)
+        @test_throws ErrorException reset_controller!(cancelled,9;timeout_seconds=0.1)
+        @test length(client.deadlines) == before
     end
 end
 
