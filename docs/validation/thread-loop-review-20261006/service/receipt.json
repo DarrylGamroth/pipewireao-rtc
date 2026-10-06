@@ -1,0 +1,45 @@
+{
+  "sdk_commit": "d514d6b",
+  "runner_sha256": "750059d1ee71783b63d1fbb96a6bc92cd9be436f551d1b450688a6aae2c2d5cb",
+  "descriptor_sha256": "885fbe6efa49a8f026732ad0effcb61ec1b3a59e63efc71116f61fcb954dcacb",
+  "success": true,
+  "gui_qualification": false,
+  "evidence_cache": "/home/dgamroth/.cache/rtc-native-final-deployment-20261006/gui-hil-service-classic-fgn-control-allocation-v2",
+  "service_invocation": "fa1779aebb7843f18f2928751cd57e99",
+  "source_arguments": {
+    "--backend": "cuda",
+    "--rate": "500",
+    "--exposure-ns": "1896000",
+    "--total-exchanges": "512",
+    "--wall-rate": "100",
+    "--correction-diagnostics": "false",
+    "--profile": "classic"
+  },
+  "evidence_sha256": {
+    "classic-fgn-sdk-interrupt-final-v1-proof.json": "65629ec19fa6bc88d992cdb6117b76ac7a39b199fe3e43561fdc1838952dc654",
+    "deployment.log": "07bba5cfcb9ae713daf353bcb463257bf223ef7b2a5b1b35c050c2cb4fb94011",
+    "failed-v1-cleanup-owned-journal.log": "19c4e28b2f54ea8f217db4e622b0a5c758efa7b77ce2dc0394b6d159568c0b2e",
+    "failed-v1-cleanup-owned-proof.json": "e36f539c86bdb461427dd65a72f9f2dda75ed60ffae76b951912f5c5ba1912ba",
+    "failed-v1-cleanup-owned-unit-show.txt": "419421d30ae41010eb1311a0eebbd5bcd9917ccfbf081e4140596a2a89a3eef2",
+    "refresh_native_sdk_control_runtime-20261006.jl": "6bf45628466fb045b6eb1fbb7b52cbb19db967d8624762adcf8bc78d7bbef78e",
+    "result.json": "ed7a4dda5f11f1dd172cc5f72d37377af15e2f157f2f2639eff2a9abf3838c72",
+    "run-1/simulator-result.json": "f4bf38d3251eae9b0f3fb2ee1f3a20515dab18fb888817a9c668446000ce3da4",
+    "run-1/sustained-result.json": "240625721c2920ae9f6c8d5cec50ce470f7bfae8f1a3cae69cfda2ed995a67ee",
+    "run-2/simulator-result.json": "7232321355c820a3821501911343093aa370575589d699e000325e4cbea2abb4",
+    "run-2/sustained-result.json": "c5c05400234800ab9a64d3c3a44ad6e46c952a605f1a4b04a6253210193fe727"
+  },
+  "raw_evidence_sha256": {
+    "deployment.log": "07bba5cfcb9ae713daf353bcb463257bf223ef7b2a5b1b35c050c2cb4fb94011",
+    "result.json": "ed7a4dda5f11f1dd172cc5f72d37377af15e2f157f2f2639eff2a9abf3838c72",
+    "run-1/archives.json": "e30c6a04a19c224f2fb6f364b7bec77f680c0a02909c69d01e37652693164a36",
+    "run-1/command.bin.gz": "c1ea12b953bd81ca4e73fc41731546c31898ba25bd0de39fe790a443aba5f53b",
+    "run-1/frame.bin.gz": "9ae046d3593a4c79b6f312fb97d5251c4f36c59706d1dc35e7ec6bef00a43b5a",
+    "run-1/simulator-result.json": "f4bf38d3251eae9b0f3fb2ee1f3a20515dab18fb888817a9c668446000ce3da4",
+    "run-1/sustained-result.json": "240625721c2920ae9f6c8d5cec50ce470f7bfae8f1a3cae69cfda2ed995a67ee",
+    "run-2/archives.json": "b951e1b856f87703e8c1959c42c1a8b17e24a48f93409c01c38ffebacfa87b0b",
+    "run-2/command.bin.gz": "0a32510324b2124814836ac157a83492cfd15c64e498bd916b2dad5a065ab02e",
+    "run-2/frame.bin.gz": "907a8fd1585c37c4b5dbca04f8d3e313bc19d1fc7299e0a6a9485c22299e451d",
+    "run-2/simulator-result.json": "7232321355c820a3821501911343093aa370575589d699e000325e4cbea2abb4",
+    "run-2/sustained-result.json": "c5c05400234800ab9a64d3c3a44ad6e46c952a605f1a4b04a6253210193fe727"
+  }
+}

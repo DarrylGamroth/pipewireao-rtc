@@ -1,0 +1,22 @@
+{
+  "unit": "gui-hil-5751fe72-dd4c-4549-9060-fb79049c8d07.service",
+  "invocation_id": "d412ad9e74c6496b920cfcae9f486857",
+  "owned_pids": [
+    3860886,
+    3860997,
+    3861023,
+    3861706
+  ],
+  "related_processes": [],
+  "private_runtime_absent": "/run/user/1000/gui-hil-service-classic-fgn-control-allocation-v1/run-dFehZ9",
+  "original_result_sha256": "0944dd3f14fd072cf5e7624dc7464d0524e77804bfb6a409198dcfe38638b0f6",
+  "result_preserved": true,
+  "xdg": "/run/user/1000/gui-xdg-hKflGN",
+  "removed_xdg_entries": [
+    "pipewireao-rtc",
+    "pipewireao-rtc/sessions",
+    "pipewireao-rtc/sessions/.lock"
+  ],
+  "failed_unit_reset": true,
+  "xdg_removed": true
+}

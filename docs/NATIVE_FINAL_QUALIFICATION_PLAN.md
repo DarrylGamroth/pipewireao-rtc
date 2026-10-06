@@ -33,9 +33,11 @@ bounded SDK repair addresses interrupted native-lock ownership. The initial
 closure introduced prepared-parameter allocations; helper extraction restores
 the unchanged zero-allocation checks. SDK `d514d6b` passes 2,032 assertions and
 independent SIGINT, recursive-lock and GC checks. See
-[the reviewed verification](THREAD_LOOP_INTERRUPT_REVIEW.md). Installed service
-replay remains open. Refresh packages from this verified source before batching
-the required checks against one frozen revision.
+[the reviewed verification](THREAD_LOOP_INTERRUPT_REVIEW.md). The Classic FGN
+installed shutdown reproducer now passes two exact cohorts, zero measured
+allocations and normal service exit; it omits the temporary selection client
+and does not qualify GUI attachment. Refresh the other packages from this
+verified source before batching the remaining checks against one frozen revision.
 
 Defer the CUDA/HIP **RTC executor** investigation in JFG31 for this increment;
 retain its unresolved obligations rather than counting them as completed.

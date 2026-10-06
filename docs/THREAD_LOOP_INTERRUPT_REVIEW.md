@@ -208,3 +208,29 @@ PIPEWIREAO_INTERRUPT_EVIDENCE=/tmp/rtc-sdk-final-independent-20261006 taskset -c
 cold SDK source and measured fixtures. This reviewer made no production edit
 and ran no SCI. Installed replay remains required; the exact interruption
 location in the historical service shutdown failure remains unproven.
+
+## Installed replay after the SDK repair
+
+The primary repeated the `control-allocation` user-service scenario with SDK
+main `d514d6b`, unchanged runner `750059d1…d5cb`, CUDA AOS and CPU Classic FGN.
+The fresh installed descriptor is `885fbe6e…dcacb`; all 579 seals verify. The
+refresh preserves every scientific artifact and every other SDK file; only
+`hil/packages/PipeWireAO/src/thread_loop.jl` changes in the staged SDK.
+
+Both cohorts complete exactly 512 frames and commands. Both measured
+496-exchange intervals have zero heap allocations and GC activity, including
+the midrun controls. Stopped reset preserves the identical frame/command
+prefix and truth. The service exits normally with status zero and confirmed
+owned cleanup, invocation `fa1779aebb7843f18f2928751cd57e99`.
+The [service receipt](validation/thread-loop-review-20261006/service/receipt.json)
+retains reports, the preparation recipe, source identities and hashes of the
+compressed recordings preserved in the cache. The earlier failed result and
+its owned cleanup proof remain retained.
+
+This passes the previously failed installed shutdown reproducer. It does not
+pinpoint the historical interrupt location. The scenario deliberately omits
+the temporary selection client and reports `gui_qualification=false`; neither
+arbitrary GUI attachment nor the full receiver matrix is qualified here.
+The log retains precompilation/version warnings and the private-core missing
+D-Bus support warning. This is functional/allocation evidence, not an isolated
+cadence or latency measurement.
