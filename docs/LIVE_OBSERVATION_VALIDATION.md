@@ -752,3 +752,37 @@ latency or maximum cadence, qualify the new native supervisor, change production
 FFT planning, or establish live GUI acceptance. The reader runs ordinary
 non-RT Julia callbacks; it does not enable unsupported Julia `RT_PROCESS`
 callbacks.
+
+## Native GUI worker follow-up, 2026-10-06
+
+The selected GUI changes are now isolated in
+`pipewireao-gui-native-rtc`, rather than imported from the mixed candidate.
+The strict `cl-gui-settle` replay exposed GNO-001: state-only NodeInfo updates
+replaced cached full properties with the native transport's empty dictionary.
+The source lost its cached `node.loop.name`, and observation reconciliation
+recreated the capture repeatedly (serials 63, 66, 69 and 72). The three-second
+placement discriminator failed; the required science path nevertheless retained
+all 256 frames and commands. The native NodeInfo property change mask, rather
+than the presence of an empty dictionary, identifies a property update.
+
+GUI commit `052f265` honors that mask. The same live fixture in
+`cl-gui-mask-fixed` passed without extending its deadline or weakening the
+placement check. The source (global/serial 18) and capture (global/serial 57)
+both reported full properties and `observer-loop`; the source driver ID was 57.
+The two owned GUI payloads, revisions 1 and 2, matched required science frames
+1 and 2 exactly. GUI and supervisor exited 0. All 256 required frames and
+commands were byte-identical to `cl-wisdom-off`, with the pixel and command
+digests reported above. No owned process, runtime child or allocator error
+remained.
+
+The independent GUI review at commit `4465e79` verified the mask handling,
+27 focused assertions, both payloads and the complete science comparison.
+The cohort retains `gui-validation.json`, `comparison.json`, full NodeInfo
+observations and payloads alongside the failed discriminator history.
+
+This qualifies the native worker's two complete-image samples and the strict
+placement discriminator. It does not demonstrate a rendered panel, Acquisition
+metadata in the GUI, placement over the full run, or the remaining GUI
+stall/disconnect/reconnect acceptance cases. The frozen development cohort
+uses its original installed control harness and does not qualify the new
+native public supervisor. Issue #3 remains open for those integrated gates.
