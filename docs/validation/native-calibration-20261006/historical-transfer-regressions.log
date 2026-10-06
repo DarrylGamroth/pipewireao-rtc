@@ -1,0 +1,15 @@
+Test Summary:                                                             | Pass  Total  Time
+Classic admission requires retained helpers and its actual decode closure |   10     10  0.2s
+Test Summary:                                        | Pass  Total  Time
+Classic transfer admission precedes helper execution |   10     10  4.3s
+Test Summary:                                            | Pass  Total  Time
+maintained Classic cold worker is contained and recorded |    4      4  0.1s
+Test Summary:                                                       | Pass  Total  Time
+Public source status failures revoke ingress and clean owned groups |   46     46  7.0s
+/tmp/jl_TueZJG/destination
+/tmp/jl_CEWjeE/installed with spaces
+/tmp/jl_RADQeR/installed
+Test Summary:                                    | Pass  Total     Time
+Julia deployment portable admission and protocol |  214    214  2m36.2s
+Test Summary:                                            | Pass  Total  Time
+native source preparation cannot become a live reconnect |    7      7  0.1s

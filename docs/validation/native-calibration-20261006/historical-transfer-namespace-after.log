@@ -1,0 +1,7 @@
+host_mount_namespace= mnt:[4026531841]
+private_mount_namespace= mnt:[4026532765]
+private_evidence_entries=205
+loaded_source_sha256=fadbb60a90b63a29501e89cb82d36e05505c8bb801a4e0cf5c118b5881d045e9
+Test Summary:                                   | Pass  Total   Time
+immutable historical Classic transfer admission |   13     13  12.2s
+host_evidence_unchanged_entries=202

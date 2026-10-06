@@ -38,9 +38,11 @@ function admit(package,evidence,lifecycle)
     files=D.CalibrationCampaign.file_identity(package)
     check(files==preparation["package_files_sha256"],"package/helper/dependency identity differs from actual preparation")
     validate_helpers(files)
-    # Use the public deployment seal/profile checker in this trusted SDK before
-    # importing any target HIL helper or starting its project environment.
-    specification=D.Deployment.profile(joinpath(package,"deployment.conf"),"/opt/pipewireao")
+    # This immutable historical package is replay input, already bound to its
+    # actual launch/preparation hashes above. Validate its original export seal
+    # before loading a helper; fresh exports and runtime admission stay strict.
+    specification=D.Deployment.profile(joinpath(package,"deployment.conf"),"/opt/pipewireao";
+        legacy_export_input=true)
     check(specification["artifacts"]==Dict(name=>hash for (name,hash) in files if name!="deployment.conf"),
         "descriptor does not seal every actual package file")
     provenance=document(joinpath(package,"provenance.json"))

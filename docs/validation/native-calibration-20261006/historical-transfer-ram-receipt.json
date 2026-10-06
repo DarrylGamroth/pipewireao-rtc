@@ -1,0 +1,1656 @@
+{
+  "root": "/dev/shm/rtc-classic-transfer-q6anwxha",
+  "destination": "/dev/shm/rtc-classic-transfer-q6anwxha/classic-native-transfer-v2-evidence",
+  "scope": "cold exact historical evidence copy; no SCI",
+  "archive_manifest_sha256": "144a04b29ed7539af3e559bf086726c03d61942edbab65c9dedb4b8efe38c890",
+  "expanded_bytes": 1175417302,
+  "entries": {
+    "native-evidence-verification.json": {
+      "sha256": "b4dbb379b87cc40faeb39f06dc1a8a9901de95542f808d132b33e630b31febe4",
+      "size": 315,
+      "mode": 436,
+      "mtime_ns": 1791126454066774074,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-evidence-manifest.json": {
+      "sha256": "c54142caa900c6312f14b9dbab50a162089fe568046692d2a4a3a338a27739a4",
+      "size": 22865,
+      "mode": 436,
+      "mtime_ns": 1791126460306747494,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-record-counts.json": {
+      "sha256": "6eb7bf6fbca0cb28f2cf0670d17859bb767078cb122b8639dc23895407ef6619",
+      "size": 196,
+      "mode": 436,
+      "mtime_ns": 1791126443122820701,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "simulator-result.json": {
+      "sha256": "f0b7ae45582e9e67610f976127000d415742ef3f901ce559949a534e00e0e220",
+      "size": 4145,
+      "mode": 384,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "public-result-validation.json": {
+      "sha256": "82c641a2503de7f353a436e109a3821481142f3f8d85fef59d90458b0c684ec8",
+      "size": 137,
+      "mode": 436,
+      "mtime_ns": 1791126440674831133,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-plan-result.json": {
+      "sha256": "f83775613a937aa99bc8c3d0cb5eef155796ec2ba4fc2db115ca8d8cb2de9d2a",
+      "size": 9983,
+      "mode": 436,
+      "mtime_ns": 1791126460306747494,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-association.jsonl": {
+      "sha256": "22e26ae2116c8d0249718ff1a0a1211e01c87d226c10096ba9b630f6ec4c428a",
+      "size": 9352136,
+      "mode": 436,
+      "mtime_ns": 1791126443906817359,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-evidence-verification.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126444234815961,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "calibration.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126399707005844,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "calibration-result.json": {
+      "sha256": "11a344ca00036b744a3b171668721ed8494629f0506bb57720b0a6aa1ed315c8",
+      "size": 333836,
+      "mode": 436,
+      "mtime_ns": 1791126435946851282,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-runtime-identity.json": {
+      "sha256": "258e8d1de1c7a73893ea2dd389e4cda19570aa9c732209488021adc43522be7d",
+      "size": 561,
+      "mode": 436,
+      "mtime_ns": 1791126444002816950,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/relay-19-source-ack.json": {
+      "sha256": "4a65ab035765696af7a7cb9b09168aa2445649a5d19aa8d846cf5d2b3447464c",
+      "size": 128,
+      "mode": 384,
+      "mtime_ns": 1791126443918817308,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-22.log.json": {
+      "sha256": "166d49b3bb8f9377001cf2bb1cc8109617fd87dead5c9b6d9f3b560f40d558c7",
+      "size": 875,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-1.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443910817343,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/probe-19.csv": {
+      "sha256": "2fe329717075d230b3512e47344f6a98901dcb654ce5033c66d2e0d422002d69",
+      "size": 1122,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-4.log.json": {
+      "sha256": "1a314bf60bf3836d66ea41878c348c1dc6f807e501d29aeb792383d4d5a28b22",
+      "size": 873,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/probe-18.csv": {
+      "sha256": "2fe329717075d230b3512e47344f6a98901dcb654ce5033c66d2e0d422002d69",
+      "size": 1122,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-2.log.json": {
+      "sha256": "63293dbb3725a43c8a69ff04a58a444815a0ac4b8a17db293ef52a33d1892e1f",
+      "size": 895,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/relay-20-source-ack.json": {
+      "sha256": "5a8abf7d3b63890ec081cc87103974610227978740876a6b4083b09aa3dda829",
+      "size": 128,
+      "mode": 384,
+      "mtime_ns": 1791126443918817308,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/startup-CORRECT.log": {
+      "sha256": "60d6660f5efb150e0838f7b8201b5a5db31b980940b8d3c739e9baddd2ed1089",
+      "size": 239,
+      "mode": 436,
+      "mtime_ns": 1791126443918817308,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/probe-25.csv": {
+      "sha256": "2fe329717075d230b3512e47344f6a98901dcb654ce5033c66d2e0d422002d69",
+      "size": 1122,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/probe-15.csv": {
+      "sha256": "e2b1041be5ac3e3411c569a1265a4a8eea76670ee89c529a32c09231c810a7a4",
+      "size": 3480,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/relay-6-source-ack.json": {
+      "sha256": "5bba35e94c84a8abfe32539c4494759c97b54a7ff9ebe58fce01a71fd179e1dc",
+      "size": 126,
+      "mode": 384,
+      "mtime_ns": 1791126443918817308,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-20.log": {
+      "sha256": "bddaac4517383d7d161a388cf888fe919375486736ae74ecba5cd6dfc081bd43",
+      "size": 350,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-16.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-27.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-12.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/probe-24.csv": {
+      "sha256": "2fe329717075d230b3512e47344f6a98901dcb654ce5033c66d2e0d422002d69",
+      "size": 1122,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/relay-21-source-ack.json": {
+      "sha256": "8d67e60243a2c1fad5cba6321e233891356ef4414a6208057c9222ca327cdd5e",
+      "size": 128,
+      "mode": 384,
+      "mtime_ns": 1791126443918817308,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-15.log.json": {
+      "sha256": "b537c35469349c402dfe2882aac887aa6637e2a94b5b1bc2dbc8f46c25c0ad2e",
+      "size": 875,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-23.log.json": {
+      "sha256": "2f6003cdb3b36f12654aa0288414b8c160d99b0e94162600259c4db33fd618b9",
+      "size": 875,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-12.log.json": {
+      "sha256": "74075e2bc80bfd4a5bb7285bb98e73ec30463ca54a12e6299cd860f71b48b9a6",
+      "size": 875,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/relay-2-source-ack.json": {
+      "sha256": "d00ffa3dc6e48d042dd1678e18ff8f0431d9ce70c627e91dd1838930bb817037",
+      "size": 126,
+      "mode": 384,
+      "mtime_ns": 1791126443918817308,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-19.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-2.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-25.log.json": {
+      "sha256": "273ff89417311f10e785e4e6d773b3e92e7c62780a0524fc011f1364757836b3",
+      "size": 875,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-8.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/relay-13-source-ack.json": {
+      "sha256": "b05fdd669d25ce394f4a85b2cdf91a6cfcf42d8f7f950deb26565a02e1d56051",
+      "size": 128,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/relay-14-source-ack.json": {
+      "sha256": "ca8fec5eac1de148c7b0bfe2ad443b7644cb89274b3ade676120b9f009dc4ef5",
+      "size": 128,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-13.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-17.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/relay-17-source-ack.json": {
+      "sha256": "2795e77afc71da547493fc13069fd8f26c1c54c391b2a9e325f0ea55ee6d618b",
+      "size": 128,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-15.log": {
+      "sha256": "bddaac4517383d7d161a388cf888fe919375486736ae74ecba5cd6dfc081bd43",
+      "size": 350,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-6.log": {
+      "sha256": "bddaac4517383d7d161a388cf888fe919375486736ae74ecba5cd6dfc081bd43",
+      "size": 350,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/relay-15-source-ack.json": {
+      "sha256": "a357589435d15412f5f9943b04c27c70a581298c59a18a312ca6f34e58a307ff",
+      "size": 128,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-9.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-7.log.json": {
+      "sha256": "20e2b133e34451f06b2df38994d7ecc2c74dc0bd27e658ab1aab0d09d4ec9cb7",
+      "size": 873,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-1.log.json": {
+      "sha256": "1a94580dced67391e274677210d9671b943c30d635960a7901444b47553aa761",
+      "size": 603,
+      "mode": 384,
+      "mtime_ns": 1791126443910817343,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/relay-25-source-ack.json": {
+      "sha256": "5ed4d4287209471797a5af57f1a28a412b26f1f715ae79b5091be0010ef59deb",
+      "size": 128,
+      "mode": 384,
+      "mtime_ns": 1791126443918817308,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-17.log.json": {
+      "sha256": "b5d982c3debe56150a723ffc72fde2b5122abc83a36e08c302726d310564aef2",
+      "size": 875,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-22.log": {
+      "sha256": "bddaac4517383d7d161a388cf888fe919375486736ae74ecba5cd6dfc081bd43",
+      "size": 350,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/relay-24-source-ack.json": {
+      "sha256": "5e773b405b95b1009d1462aebb924a4275c4d0c1a4ef8fe5376373121965d856",
+      "size": 128,
+      "mode": 384,
+      "mtime_ns": 1791126443918817308,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-18.log.json": {
+      "sha256": "929aaf645bf5480a725b0bbb0584bff96db80399cefabf1b6273f70e659e1c93",
+      "size": 875,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-20.log.json": {
+      "sha256": "18d38b11068d4b9bed94b3911adb11cf184c79cdd0c7e78528fc1d088c65bd2d",
+      "size": 875,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/startup-owner-status.json": {
+      "sha256": "c813aaa72de2bfe81ac8a86b33941f38d9539d959822f9aed64c5b2b9e33287c",
+      "size": 3845,
+      "mode": 384,
+      "mtime_ns": 1791126443918817308,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/probe-13.csv": {
+      "sha256": "2fe329717075d230b3512e47344f6a98901dcb654ce5033c66d2e0d422002d69",
+      "size": 1122,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/probe-20.csv": {
+      "sha256": "ad8ff9c54f0ead158b639575ff0d680164ea3bb8fdd3ca28728a721444e0c0fe",
+      "size": 3481,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-18.log": {
+      "sha256": "bddaac4517383d7d161a388cf888fe919375486736ae74ecba5cd6dfc081bd43",
+      "size": 350,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-11.log.json": {
+      "sha256": "0dad78da3ffb2ebd1f1e56312faa9632bf0fb7b915579d632a3ac7ed4fde2330",
+      "size": 874,
+      "mode": 384,
+      "mtime_ns": 1791126443910817343,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-10.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443910817343,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/relay-4-source-ack.json": {
+      "sha256": "18f140a6473616dc7eaab3a24bf12961c0751fc03c4e4b19eb392ed775c803ad",
+      "size": 126,
+      "mode": 384,
+      "mtime_ns": 1791126443918817308,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/relay-22-source-ack.json": {
+      "sha256": "7cc68279a106725b8d14ec6a5f62d7c9edf19d7d068688f57b1149072464d84f",
+      "size": 128,
+      "mode": 384,
+      "mtime_ns": 1791126443918817308,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-11.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443910817343,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-14.log.json": {
+      "sha256": "5f5dfb688b4eab58ffea7aa469a9d920a990e247acc762625f8cbe12a3e0a92b",
+      "size": 875,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/probe-6.csv": {
+      "sha256": "2fe329717075d230b3512e47344f6a98901dcb654ce5033c66d2e0d422002d69",
+      "size": 1122,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/probe-14.csv": {
+      "sha256": "b0a5511d8eaed9d6a22a82e27671a7b0212e8a7d44752446a641fcab54aafb7d",
+      "size": 3473,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-27.log": {
+      "sha256": "bddaac4517383d7d161a388cf888fe919375486736ae74ecba5cd6dfc081bd43",
+      "size": 350,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-12.log": {
+      "sha256": "bddaac4517383d7d161a388cf888fe919375486736ae74ecba5cd6dfc081bd43",
+      "size": 350,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-5.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/relay-11-source-ack.json": {
+      "sha256": "27e8119a7d288256b39e888cfad14e18536aafbb9c12e7c2422f81d71a5b10ac",
+      "size": 128,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-13.log": {
+      "sha256": "bddaac4517383d7d161a388cf888fe919375486736ae74ecba5cd6dfc081bd43",
+      "size": 350,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/relay-8-source-ack.json": {
+      "sha256": "78c78b53df487370872c4d7378b1c2777c2085114a8d7475470a303741a447b9",
+      "size": 126,
+      "mode": 384,
+      "mtime_ns": 1791126443918817308,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/probe-10.csv": {
+      "sha256": "9cf0f312e0c2f9e488bfedee07506165c6b70877f82ae8206e1aee3b3f7940d4",
+      "size": 1610,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/relay-10-source-ack.json": {
+      "sha256": "7556604257010726777fc3e6d342ad8fdcd5796cc34f4d65f8410dba9cbc6df5",
+      "size": 128,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/probe-5.csv": {
+      "sha256": "a8ccd7b9897abec18facd634bf0b6ecd1fbea68fcbc1b1576f8565ba6d02ab74",
+      "size": 1597,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-18.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-11.log": {
+      "sha256": "bddaac4517383d7d161a388cf888fe919375486736ae74ecba5cd6dfc081bd43",
+      "size": 350,
+      "mode": 436,
+      "mtime_ns": 1791126443910817343,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/probe-11.csv": {
+      "sha256": "081ecac19e48b781214a8cec50d74856d5d46631b08c4f95a1ccafb2f41601e0",
+      "size": 1835,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/relay-23-source-ack.json": {
+      "sha256": "c72a6b63c318c278f186f9b93aca95b4129aa6696ac179967558f1a48898b674",
+      "size": 128,
+      "mode": 384,
+      "mtime_ns": 1791126443918817308,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-16.log": {
+      "sha256": "bddaac4517383d7d161a388cf888fe919375486736ae74ecba5cd6dfc081bd43",
+      "size": 350,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-8.log.json": {
+      "sha256": "11c4ab479b5315c0a41b0c85659810db5eb250d0933c34cda1cfbbf31d52dc97",
+      "size": 873,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/relay-16-source-ack.json": {
+      "sha256": "e279e1fb13c2f2d08fbe69bb772a4f4118a8439bd408fc6df344796806e9edee",
+      "size": 128,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/relay-9-source-ack.json": {
+      "sha256": "fbf429e11c0c5bbb925896885c30a0b3467a74a83e129a8bdb71b452a2a20793",
+      "size": 126,
+      "mode": 384,
+      "mtime_ns": 1791126443918817308,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-4.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-9.log.json": {
+      "sha256": "dc07fb658bdf943862f2a4b0351157ef8e32fbe9ee308528c943e40ed48371b8",
+      "size": 873,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/relay-5-source-ack.json": {
+      "sha256": "e01775d40c31598cbe51c91c2097d8af926ba219294bd0eea283eac1177feb37",
+      "size": 126,
+      "mode": 384,
+      "mtime_ns": 1791126443918817308,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/relay-18-source-ack.json": {
+      "sha256": "45bd7b18f7bceca1ad73cde884e498212be0886df0bed16e3d630d70ba30b2ed",
+      "size": 128,
+      "mode": 384,
+      "mtime_ns": 1791126443918817308,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-7.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/relay-1-source-ack.json": {
+      "sha256": "8d36861a33655d63081fb46960b349b67f77997f31af0fc48c4755d43fcf3760",
+      "size": 126,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-22.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-26.log": {
+      "sha256": "bddaac4517383d7d161a388cf888fe919375486736ae74ecba5cd6dfc081bd43",
+      "size": 350,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/probe-21.csv": {
+      "sha256": "4a96e26ed96d73ab9ceea1446951ab6812635e5fddf7c69189c21bc94a7d30a0",
+      "size": 3458,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-15.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-24.log.json": {
+      "sha256": "ce7a304bde1f4e2447c78dc453be1a0b3a8d9d05cd45461acb6b48789133a330",
+      "size": 875,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-24.log": {
+      "sha256": "bddaac4517383d7d161a388cf888fe919375486736ae74ecba5cd6dfc081bd43",
+      "size": 350,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-1.log": {
+      "sha256": "472037f512d77b45b4ec3c258deeae3b8c32dadb56facc622ec4b6aaf8550e87",
+      "size": 231,
+      "mode": 436,
+      "mtime_ns": 1791126443910817343,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/probe-12.csv": {
+      "sha256": "2fe329717075d230b3512e47344f6a98901dcb654ce5033c66d2e0d422002d69",
+      "size": 1122,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-26.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-13.log.json": {
+      "sha256": "f55b4a3070dfb48e8a1c80da27c0315b3238d76e65d79b5e01b379aaeb9b1d50",
+      "size": 875,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-14.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/probe-1.csv": {
+      "sha256": "2fe329717075d230b3512e47344f6a98901dcb654ce5033c66d2e0d422002d69",
+      "size": 1122,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-17.log": {
+      "sha256": "bddaac4517383d7d161a388cf888fe919375486736ae74ecba5cd6dfc081bd43",
+      "size": 350,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/probe-7.csv": {
+      "sha256": "2fe329717075d230b3512e47344f6a98901dcb654ce5033c66d2e0d422002d69",
+      "size": 1122,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/probe-17.csv": {
+      "sha256": "b0a5511d8eaed9d6a22a82e27671a7b0212e8a7d44752446a641fcab54aafb7d",
+      "size": 3473,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-6.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-19.log": {
+      "sha256": "bddaac4517383d7d161a388cf888fe919375486736ae74ecba5cd6dfc081bd43",
+      "size": 350,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-25.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/probe-4.csv": {
+      "sha256": "9cc07f20ab544f5c820535adc4f3804efa98b5a10cfecc60ee6d5765f5e05548",
+      "size": 1822,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-3.log.json": {
+      "sha256": "e6b59f64b849fc544b99f99664bd6f8cdb6cccdb097d3e6f250582b6bb4eb5da",
+      "size": 873,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-8.log": {
+      "sha256": "bddaac4517383d7d161a388cf888fe919375486736ae74ecba5cd6dfc081bd43",
+      "size": 350,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-16.log.json": {
+      "sha256": "9f69b0555c8e6b7b389dbc9b3a6acf93870de7d31e24b8df2d109f44595c96ea",
+      "size": 875,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-14.log": {
+      "sha256": "bddaac4517383d7d161a388cf888fe919375486736ae74ecba5cd6dfc081bd43",
+      "size": 350,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-19.log.json": {
+      "sha256": "68bf5e463334123efb38e0d2797fa8e3b8801c47754bb3f2267f859e2b9e4a5a",
+      "size": 875,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-25.log": {
+      "sha256": "bddaac4517383d7d161a388cf888fe919375486736ae74ecba5cd6dfc081bd43",
+      "size": 350,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-6.log.json": {
+      "sha256": "d60b1d39db8e91e5853f7f2a0a42ce55d5b61169f7f77156f6dec265e7525a34",
+      "size": 873,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-4.log": {
+      "sha256": "bddaac4517383d7d161a388cf888fe919375486736ae74ecba5cd6dfc081bd43",
+      "size": 350,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-9.log": {
+      "sha256": "bddaac4517383d7d161a388cf888fe919375486736ae74ecba5cd6dfc081bd43",
+      "size": 350,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-10.log": {
+      "sha256": "bddaac4517383d7d161a388cf888fe919375486736ae74ecba5cd6dfc081bd43",
+      "size": 350,
+      "mode": 436,
+      "mtime_ns": 1791126443910817343,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/relay-7-source-ack.json": {
+      "sha256": "558037ef4acfc73b31ae552562389ee4f0e9e827cbe787834eedc471f6ecea7d",
+      "size": 126,
+      "mode": 384,
+      "mtime_ns": 1791126443918817308,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-10.log.json": {
+      "sha256": "3900b8adb37a1a71cb95d0846db20e28a674af10732f32d4c82e172c9542e9d4",
+      "size": 874,
+      "mode": 384,
+      "mtime_ns": 1791126443910817343,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/probe-8.csv": {
+      "sha256": "081ecac19e48b781214a8cec50d74856d5d46631b08c4f95a1ccafb2f41601e0",
+      "size": 1835,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-21.log": {
+      "sha256": "bddaac4517383d7d161a388cf888fe919375486736ae74ecba5cd6dfc081bd43",
+      "size": 350,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/probe-2.csv": {
+      "sha256": "a8ccd7b9897abec18facd634bf0b6ecd1fbea68fcbc1b1576f8565ba6d02ab74",
+      "size": 1597,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-23.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/probe-16.csv": {
+      "sha256": "e2b1041be5ac3e3411c569a1265a4a8eea76670ee89c529a32c09231c810a7a4",
+      "size": 3480,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-26.log.json": {
+      "sha256": "e3de3f467a98b8c5ce9391c4ccffbcab950c32722764e46ea4a45376715cfd15",
+      "size": 875,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/startup-CORRECT.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443918817308,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-3.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/probe-23.csv": {
+      "sha256": "ad8ff9c54f0ead158b639575ff0d680164ea3bb8fdd3ca28728a721444e0c0fe",
+      "size": 3481,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/relay-3-source-ack.json": {
+      "sha256": "51ed0f14d960d8fc381cc642c193d4ba4077f0889912de0cac2cd18e34a76086",
+      "size": 126,
+      "mode": 384,
+      "mtime_ns": 1791126443918817308,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/probe-3.csv": {
+      "sha256": "9cc07f20ab544f5c820535adc4f3804efa98b5a10cfecc60ee6d5765f5e05548",
+      "size": 1822,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-21.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-3.log": {
+      "sha256": "bddaac4517383d7d161a388cf888fe919375486736ae74ecba5cd6dfc081bd43",
+      "size": 350,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/probe-9.csv": {
+      "sha256": "9cf0f312e0c2f9e488bfedee07506165c6b70877f82ae8206e1aee3b3f7940d4",
+      "size": 1610,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-27.log.json": {
+      "sha256": "a1595dd45a46ef8beb090b45c348c1adbc687a7fd06e770c33b0029f2c4dffa3",
+      "size": 875,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-7.log": {
+      "sha256": "bddaac4517383d7d161a388cf888fe919375486736ae74ecba5cd6dfc081bd43",
+      "size": 350,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/relay-12-source-ack.json": {
+      "sha256": "114b17ea09b5720625888a48135f34d62e1ad5ef5900d614c3def00bbff32fb7",
+      "size": 128,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-24.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-5.log": {
+      "sha256": "bddaac4517383d7d161a388cf888fe919375486736ae74ecba5cd6dfc081bd43",
+      "size": 350,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-23.log": {
+      "sha256": "bddaac4517383d7d161a388cf888fe919375486736ae74ecba5cd6dfc081bd43",
+      "size": 350,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-2.log": {
+      "sha256": "0023d7df69b92a12cf787e743a7b9b0aa64337db2ebe97365f9b74bd59470eab",
+      "size": 397,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-20.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-5.log.json": {
+      "sha256": "331128af8336841f8ed09ef2e5ee46e75954939a7848b47c67c9a152465fa1cc",
+      "size": 873,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/probe-22.csv": {
+      "sha256": "4a96e26ed96d73ab9ceea1446951ab6812635e5fddf7c69189c21bc94a7d30a0",
+      "size": 3458,
+      "mode": 436,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "native-control/command-21.log.json": {
+      "sha256": "d93ccba8203ea16a15cf7afe051b6cf39863fa037c9bdeee13f744159f0a0775",
+      "size": 875,
+      "mode": 384,
+      "mtime_ns": 1791126443914817325,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-CLWFC-enableDmDither-0.log": {
+      "sha256": "70d5a52a6502c3b5b2e31df7502fbc0ffec4880c5524bfef850aea5e6b7a3578",
+      "size": 359,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-CLWFC-enableUnctrlModeFeedback-0.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-RUN.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-TFC-enableLoCmdAggre-0.log": {
+      "sha256": "9b7118c99a85d69a10ac81d9a041783db3f42c15c030914373f70e6cca20cbaa",
+      "size": 359,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-TFC-enableLoOptimization-0.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-TFC-enableInHoVect-1.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-CLWFC-enableTtDisturbance-0.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-TFC-enableInLotVect-0.log": {
+      "sha256": "f176c2cddb4651c792bcbb65028ded1692799a8748a89b0b37a60f6dce8cd432",
+      "size": 358,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-INIT.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-TFC-enableOutDmErrs-1.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-TFC-enableLGSDefocus-0.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-CLWFC-enablePOLFeedback-0.log": {
+      "sha256": "edc1ab73887c649d91b7425007dd7a1f1d9b2305cd06219cb9775fe07f766201",
+      "size": 362,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-TFC-enableHoOptimization-0.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-CLWFC-enableDmOffset-0.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-CLWFC-enableClippingFeedback-1.log": {
+      "sha256": "8cc8c1a3731b45e409b515f738335ad848be7e585176c60a2f23adf442f7e051",
+      "size": 367,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-TFC-enableInLotVect-0.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-TFC-enableInHotVect-0.log": {
+      "sha256": "16379df37cc17e383ef3c7d438f024753e776018cb3199bb086f6d41fa949264",
+      "size": 358,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-RUN.log": {
+      "sha256": "472037f512d77b45b4ec3c258deeae3b8c32dadb56facc622ec4b6aaf8550e87",
+      "size": 231,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-CLWFC-enableTtDisturbance-0.log": {
+      "sha256": "d44fce0163173c1434f4af8ff0329e244fbdcc008ee0199bdebfa7fef728e24e",
+      "size": 364,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-CLWFC-enableWCOptimize-0.log": {
+      "sha256": "4dde249bd0c28c489736b98eb9039ae1b0fd004c2fca03095c3b60230f2ef8ab",
+      "size": 361,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-TFC-enableLoCmdAggre-0.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-TFC-enableHoOptimization-0.log": {
+      "sha256": "d7c2e4e0f6abd858e156a0abcb35778978635b647057544d694c1f997261537f",
+      "size": 363,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-TFC-enableKalman-0.log": {
+      "sha256": "8e6549f7627b3a9b79b8df28eb480d1c9072a75b1a53957a3a56d60d4f0d1c73",
+      "size": 355,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-CLWFC-enableWCOptimize-0.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-TFC-enableInLoVect-0.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-CLWFC-enableNotClearingIntg-0.log": {
+      "sha256": "aea71bc6a44182ec3eb145379db3e11f075234bd41ea02d2a0f1d5eb3971ba38",
+      "size": 366,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-TFC-enableLoOptimization-0.log": {
+      "sha256": "8066a3fa3f58bb8f63eff30e7fd3a62b78eba2f5250412c3724f4226b36b0598",
+      "size": 363,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-CLWFC-enableLoCmdAggre-0.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-CLWFC-enableDmDisturbance-0.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-TFC-enableFieldRotation-0.log": {
+      "sha256": "7dcedc8c378b1e510b5eeb7e9ab376220d1ea7b101aec53a660262ebf0739911",
+      "size": 362,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/heart-1.log": {
+      "sha256": "957720f5a0a5ec1889f52a5b444481e737c8a438d092b6fdf6f253eb0ae33ea9",
+      "size": 73728,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-CORRECT.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-TFC-enableKalman-0.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/heart-owner-status.json": {
+      "sha256": "c813aaa72de2bfe81ac8a86b33941f38d9539d959822f9aed64c5b2b9e33287c",
+      "size": 3845,
+      "mode": 384,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-CLWFC-enableUnctrlModeFeedback-0.log": {
+      "sha256": "1ef835827f9d3b7dff6e762bf2bbe9adb0a2bdb52b48d245cb02186f4564c3d1",
+      "size": 369,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-CLWFC-enableDmOffset-0.log": {
+      "sha256": "263c8e25abd3347f2c4ed14bc9f99fa51d09a3a9f0db6e12c1c594f2f97c5987",
+      "size": 359,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-CLWFC-enableTtOffset-0.log": {
+      "sha256": "355b56efde163461b1ce3bae2ffc0d899c9c8ae4f01d8aaafff163978c81822f",
+      "size": 359,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-CLWFC-enableDmDither-0.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-TFC-enableLGSDefocus-0.log": {
+      "sha256": "649d5631f2d1ad39caf01d4d2c61eae3141ca4edea3063ceb8a57f18e7165523",
+      "size": 359,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-TFC-enableInHoVect-1.log": {
+      "sha256": "6b1878678464af63317f9b6dc6031fbc8a0e36f27b593df6841618d96a2a6e61",
+      "size": 357,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-CLWFC-enableNotClearingIntg-0.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-TFC-enablePOLFeedback-0.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-TFC-enableInHotVect-0.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-CORRECT.log": {
+      "sha256": "60d6660f5efb150e0838f7b8201b5a5db31b980940b8d3c739e9baddd2ed1089",
+      "size": 239,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-TFC-enableFieldRotation-0.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-CLWFC-enableFigureDmVector-0.log": {
+      "sha256": "aa96124241f797ae4a15b0c7da873c9b7d45b3b19200373d6790565ba3434f01",
+      "size": 365,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-INIT.log": {
+      "sha256": "d06dfb69d21b5e6e3396537ef753e17a4e70dc1a2ccddf95da53f7b4a4fe5e37",
+      "size": 249,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-TFC-enableOutDmErrs-1.log": {
+      "sha256": "1015e6f09ee8dcf8110a6b0f0fcdd6617578d0f8703475c91cb552ac7c2fddc8",
+      "size": 358,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-TFC-enablePOLFeedback-0.log": {
+      "sha256": "a4164849a4b960a72d6c2dc5a2c213c338313fcf0a047c0e5150132ba94a9ac4",
+      "size": 360,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-CLWFC-enablePOLFeedback-0.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-CLWFC-enableFigureDmVector-0.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-CLWFC-enableDmDisturbance-0.log": {
+      "sha256": "470024d52715193f798117bc30644537f1a01f796481e8ea262ac783c716c902",
+      "size": 364,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-CLWFC-enableClippingFeedback-1.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-CLWFC-enableLoCmdAggre-0.log": {
+      "sha256": "1ed27e84d6980109b5733ec638dae9aadfd210d387b33cba02db3a5f613fcdfa",
+      "size": 361,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/2026-10-04_08-05-22_cbDmCmd0_RUNNING_20261004T080633.658065.tel": {
+      "sha256": "7be8fd8545b9c848b895ab955e31f711119191ed4fe74b11dbf6ee1a52574232",
+      "size": 31424,
+      "mode": 420,
+      "mtime_ns": 1791126443274820052,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-CLWFC-enableTtOffset-0.log.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/command-1-ENABLE_HRT_FLAGS-TFC-enableInLoVect-0.log": {
+      "sha256": "18b15d24c951b17383a0a46e6b2bc75ffd5b971c3ceac6163a9354f63ce27d0f",
+      "size": 357,
+      "mode": 436,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/2026-10-04_08-05-22_cbHoGrad0_RUNNING_20261004T080633.658014.tel": {
+      "sha256": "a99effbbb19ca71bab46a9fda51faeeeadd3d44f71908fee6a715454842e9d1c",
+      "size": 4796416,
+      "mode": 420,
+      "mtime_ns": 1791126443278820036,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/2026-10-04_08-05-22_cbHoPixelsCalib0_RUNNING_20261004T080633.658105.tel": {
+      "sha256": "4555cf28fbdb50ca25cf05c3fbbdab7725bc5a8fd4d7eb7ad720997190f90abb",
+      "size": 773757504,
+      "mode": 420,
+      "mtime_ns": 1791126443694818263,
+      "uid": 1000,
+      "gid": 1000
+    },
+    "heart/native/2026-10-04_08-05-22_cbHoPixelsRaw0_RUNNING_20261004T080633.658087.tel": {
+      "sha256": "c1ac68d57f1c325fb1c37d8e677f4293a665b6e4469ce4b9baac32ebdac738a0",
+      "size": 386929216,
+      "mode": 420,
+      "mtime_ns": 1791126443902817377,
+      "uid": 1000,
+      "gid": 1000
+    }
+  },
+  "verified": true,
+  "ramfs_free_after": 12885630976,
+  "cleanup": {
+    "owned_ram_copy_removed": true,
+    "original_evidence_expanded_entries": 202,
+    "ramfs_free_after_cleanup": 14061527040
+  }
+}

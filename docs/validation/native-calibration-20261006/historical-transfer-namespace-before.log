@@ -1,0 +1,43 @@
+host_mount_namespace= mnt:[4026531841]
+private_mount_namespace= mnt:[4026532765]
+private_evidence_entries=205
+ERROR: LoadError: Some tests did not pass: 9 passed, 2 failed, 0 errored, 0 broken.
+in expression starting at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/docs/validation/native-calibration-20261006/historical-transfer-oracle.jl:14
+loaded_source_sha256=8e2c1e03579bce954edc7e9bb3b0f9e518e893391383ab08c34074a4e03013af
+admission_failure=ordinary owner requires native bootstrap; regenerate the deployment from its sealed artifacts
+immutable historical Classic transfer admission: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/docs/validation/native-calibration-20261006/historical-transfer-oracle.jl:26
+  Expression: admitted !== nothing
+   Evaluated: nothing !== nothing
+
+Stacktrace:
+ [1] top-level scope
+   @ ~/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/docs/validation/native-calibration-20261006/historical-transfer-oracle.jl:15
+ [2] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [3] macro expansion
+   @ ~/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/docs/validation/native-calibration-20261006/historical-transfer-oracle.jl:26 [inlined]
+ [4] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+immutable historical Classic transfer admission: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/docs/validation/native-calibration-20261006/historical-transfer-oracle.jl:53
+  Expression: occursin("quit must be a marker basename", sprint(showerror, failure))
+   Evaluated: occursin("quit must be a marker basename", "HEART owner requires the native control profile")
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] (::var"#3#4")(temporary::String)
+   @ Main ~/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/docs/validation/native-calibration-20261006/historical-transfer-oracle.jl:53
+ [3] mktempdir(fn::var"#3#4", parent::String; prefix::String)
+   @ Base.Filesystem ./file.jl:941
+ [4] mktempdir(fn::Function, parent::String)
+   @ Base.Filesystem ./file.jl:937
+ [5] top-level scope
+   @ ~/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/docs/validation/native-calibration-20261006/historical-transfer-oracle.jl:15
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [7] macro expansion
+   @ ~/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/docs/validation/native-calibration-20261006/historical-transfer-oracle.jl:33 [inlined]
+Test Summary:                                   | Pass  Fail  Total  Time
+immutable historical Classic transfer admission |    9     2     11  6.1s
+RNG of the outermost testset: Random.Xoshiro(0x0f869d5cd39c84ea, 0xb709d79587ab74c0, 0xfbfcc992c80c56ac, 0x22da3176b285eec7, 0x148b6e3a34861bf7)
+host_evidence_unchanged_entries=202

@@ -1,0 +1,42 @@
+{
+  "source_base_commit": "abae2d3",
+  "source_state": "two reviewed production edits plus evidence/docs; uncommitted when measured",
+  "cpu": 15,
+  "julia_version": "1.12.7",
+  "namespace_before_exit": 1,
+  "namespace_after_exit": 0,
+  "same_frozen_input": true,
+  "before": {
+    "pass": 9,
+    "fail": 2
+  },
+  "after": {
+    "pass": 13,
+    "fail": 0
+  },
+  "pure_regressions": 291,
+  "strict_native_output": 2,
+  "sci_execution": false,
+  "scientific_score_replay": false,
+  "files_sha256": {
+    "deployment/julia/src/deploy.jl": "a950f1e25f0a1ebef815c932242652e4eb9f744f450fb28416ff5e4adf1e0782",
+    "deployment/julia/src/heart_classic_transfer.jl": "fadbb60a90b63a29501e89cb82d36e05505c8bb801a4e0cf5c118b5881d045e9",
+    "docs/NATIVE_CALIBRATION_CONSUMER_MATRIX.md": "4b841688b7c21196c864b91fd5941b50051ea14c7774f5dbb96f4fb2635d7636",
+    "docs/validation/native-calibration-20261006/historical-transfer-namespace-after.log": "21d19c6858f983dbeba262efca1b4ad0a1109953fccda3034fbdcfa04567023d",
+    "docs/validation/native-calibration-20261006/historical-transfer-namespace-before.log": "f3c955a00246d783d6607edbbde4ecefd09c5ed30413266156d3b7f7ff6fda4e",
+    "docs/validation/native-calibration-20261006/historical-transfer-oracle.jl": "c470bb293a728aaf644238561fa46e0e8f28a347451d70e639d3363fd8a8d3b3",
+    "docs/validation/native-calibration-20261006/historical-transfer-ram-receipt.json": "3a7e1867a8bb4c9c25e8f13cc4712f19cc3e77b0d1bada31a3f598576dba8c0c",
+    "docs/validation/native-calibration-20261006/historical-transfer-regressions.log": "f79771e358c33c8e02db44ec6fdaf7189c510aa1edc4ae1a225160ecd6cd6dca",
+    "docs/validation/native-calibration-20261006/historical-transfer-restore.log": "fd88ca4b0a9e7fa938f48668732e36f574f4ca58ebb67e81f241877e7aac9dec",
+    "docs/validation/native-calibration-20261006/namespace-transfer-oracle.py": "a90715ea6b0e5fe9b074011c1c526ae0c2f1a546cc9e6e13d4e9b2f48ae1a073",
+    "docs/validation/native-calibration-20261006/restore-transfer-evidence.py": "9c23c2c83fa7f787a50ae726e2957dd19caf38d4a894784a9d0e498a90d0b10c",
+    "docs/validation/native-calibration-20261006/strict-native-output-after.log": "920ed4391fe0db7cca40b37cd0e6b6b4a179054afeef7b2a7c1817b0a4a925ae",
+    "docs/validation/native-calibration-20261006/strict-native-output-oracle.jl": "3c98ce64afc8db4a665b45da7cd8109e7707b085c8b28c42b49111a170b77629"
+  },
+  "ram_cleanup": {
+    "owned_ram_copy_removed": true,
+    "original_evidence_expanded_entries": 202,
+    "ramfs_free_after_cleanup": 14061527040
+  },
+  "preliminary_logs_preserved": "/home/dgamroth/.cache/rtc-native-calibration-final-20261006/historical-transfer-preliminary-logs"
+}

@@ -143,7 +143,7 @@ The final 16-retained/512-total packages and JFG engines do not meet that gate.
 
 | HEART correction | Frozen ready input and accepted proof |
 | --- | --- |
-| Classic | Normal base `$OLD/backend-bases/classic-fgn-cuda-selected-v3`; prepared scientific assets `$OLD/heart-native-classic-correction-prepared-v5`; actual transfer package `$OLD/classic-native-transfer-v2`, evidence directory with suffix `-evidence`, lifecycle `$OLD/classic-native-transfer-v2-evidence.lifecycle.json`, score `$OLD/classic-native-transfer-v2-score-characterization-v6.json` (SHA `1f51e4914936491a61f950815037d5911b9ca1e31b2e94de4179a2167d29363a`); forward `$QUALITY/method-selection-analysis/hadamard-forward.f64le`, accepted preparation beside it. |
+| Classic | Normal base `$OLD/backend-bases/classic-fgn-cuda-selected-v3`; prepared scientific assets `$OLD/heart-native-classic-correction-prepared-v5`; actual transfer package `$OLD/classic-native-transfer-v2`, evidence directory with suffix `-evidence`, lifecycle `$OLD/classic-native-transfer-v2-evidence.lifecycle.json`, score `$OLD/classic-native-transfer-managed-v5.json` (directly hashed SHA `1f51e4914936491a61f950815037d5911b9ca1e31b2e94de4179a2167d29363a`); forward `$QUALITY/method-selection-analysis/hadamard-forward.f64le`, accepted preparation beside it. |
 | Copper | Normal base `$OLD/backend-bases/copper-fgn-cuda`; prepared scientific assets `$OLD/heart-native-correction-prepared-v6`; locked utility `$OLD/native-locked-v1/locked-test.json` SHA `fa3f23719478ed21b6807d99c9ad3788902dba20d5e834aefbaf8a37f7b4627c`, selecting native controller SHA `7b65491be869943e8b56f05ecba792950fdbcdf795d0bdd38927f323c6144858`. |
 
 Fresh control-only upgrade must preserve full plant, matrices, gains/poles,
@@ -162,12 +162,14 @@ source configuration is `JuliaFilterGraph.jl/benchmark/heart/copper_config_aos_m
 Use the frozen unchanged vendor tree/hash and actual sealed backend; do not
 force CPU onto a frozen CUDA base.
 
-Cold replay compatibility prerequisite: `HeartClassicTransfer.admit` calls
-strict `Deployment.profile` on the historical transfer package, which has no
-native owner protocols and must remain unchanged to preserve its historical
-launch seal. Investigate using the existing explicit offline legacy-input
-profile option at that replay-only seam. Fresh outputs and runtime remain
-strict. This is source evidence, not a reproduced test at this checkpoint.
+Cold replay compatibility was confirmed and corrected separately:
+`HeartClassicTransfer.admit` used strict `Deployment.profile` on the historical
+transfer package, which has no native owner protocols and must remain unchanged
+to preserve its historical launch seal. Its replay-only validation now explicitly
+uses the existing offline legacy-input mode; that mode also admits the original
+HEART marker schema. Default profile validation, fresh output and runtime stay
+strict. The unchanged actual historical package/evidence passes admission after
+the fix; see the proof below. This is cold admission, not a new score replay.
 
 Minimum actual correction check: fresh native child readiness; lifecycle
 Connect (held window1)→Start; finite 256-frame completion and immutable
@@ -200,3 +202,37 @@ retained-client closes, shutdown and all owned process groups complete.
 Fault/hold on unknown effects remains a failed gate, never cleanup Release.
 No inverse computation, new tolerance, vendor change, physical-device or cadence
 claim follows from these functional consumer checks.
+
+## Historical replay compatibility proof
+
+The exact managed-v5 score path/hash above was recovered from
+`$OLD/native-classic-correction-public-preparation-v5-root-command.json` and
+directly hashed. The differently named characterization-v6 score has SHA
+`8af4dc82...01ebb9` and cannot replace it.
+
+The historical transfer's 514 package files still match its actual preparation
+ledger. Three large telemetry files are preserved in
+`$OLD/historical-telemetry-archive-20261005`, leaving 202 expanded evidence files
+in the original directory. A fresh RAM copy restored those three archived blobs
+and copied the 202 present files: all 205 hashes, sizes, modes, UID/GID and mtimes
+verified, 1,175,417,302 bytes total. A private user/mount namespace bound that
+copy read-only at the original evidence path, preserving absolute launch identity.
+The host tree remained unchanged. No daemon, vendor child or scientific helper
+was started. The owned RAM copy was removed after proof; the archive and all
+original files remain.
+
+The same cold oracle fails before (9 pass / 2 fail, exit1: native-bootstrap
+admission and masked malformed-marker validation) and passes after (13/13,
+exit0). It also checks strict-default rejection of the old HEART package;
+tampered launch-driver, preparation and descriptor hashes; malformed marker
+rejection; immutable package and exact score hash retention. Existing Classic
+transfer tests pass24/24 and portable deployment tests pass267/267. The current
+installed calibration and native HEART packages also retain default strict
+profile admission (2/2).
+
+Receipts, exact oracle scripts and logs are in
+[`validation/native-calibration-20261006`](validation/native-calibration-20261006).
+`historical-transfer-namespace-before.log` and
+`historical-transfer-namespace-after.log` are the same fully restored fixture
+comparison; `historical-transfer-ram-receipt.json` records restoration identity.
+This does not pass a new full transfer, score-replay or active-correction gate.

@@ -1,0 +1,2 @@
+Test Summary:                                                   | Pass  Total  Time
+fresh installed native outputs retain strict profile validation |    2      2  9.0s

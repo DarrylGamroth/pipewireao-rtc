@@ -234,7 +234,8 @@ function profile(path::AbstractString, prefix::AbstractString; legacy_export_inp
         end
         require(Set(keys(owner)) == fields, "external owner fields do not match the deployment contract")
         role = owner["role"]
-        require(role != "heart" || native_heart(owner), "HEART owner requires the native control profile")
+        require(role != "heart" || native_heart(owner) || legacy_export_input,
+            "HEART owner requires the native control profile")
         require(role isa String && !(role in roles) && occursin(r"^[a-z][a-z0-9-]{0,31}$", role),
             "external owner role must be unique and filesystem-safe")
         push!(roles, role)
