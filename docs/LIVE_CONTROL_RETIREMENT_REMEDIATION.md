@@ -18,6 +18,11 @@ scientific algorithm, saved artifact format or sibling source changed.
   `CalibrationSocketEndpoint` implementation. Its socket-only integration tests
   no longer exercise a supported API and were removed with it. This deliberately
   breaks downstream callers of the retired adapter.
+- Replaced the additional obsolete JSON peer fixture in
+  `tests/calibration_cli.rs` with native argument rejection and saved-plan
+  preflight tests. Its old Unix accept loop would wait for a connection that the
+  already-native CLI rejects. Invalid/oversized saved-plan checks are preserved
+  using actual native binding arguments before connection.
 - Preserved the console reader, typed command preparation/execution, sole
   serialized dispatcher, console line bound and local JSON response rendering.
   Public native control/runner/calibration clients and codecs are unchanged.
@@ -66,13 +71,59 @@ Completed checks on CPU11:
   advertises `--control-socket` under `--help`, violating the new help test's
   exact retirement criterion. This invocation did not connect a core or owner.
 
+## Focused build and pass-after verification
+
+After verified archival provided space, the primary agent authorized focused
+offline Cargo qualification. All commands ran on CPU11, one job, in the existing
+`~/.cache/rtc-live-controls-20261005/native-filter-target`; no new target directory
+or dependency download. Environment: `CARGO_INCREMENTAL=0`,
+`CARGO_PROFILE_DEV_DEBUG=0`, `CARGO_PROFILE_TEST_DEBUG=0`, empty `RUSTFLAGS`,
+`PKG_CONFIG_PATH=/opt/pipewireao/lib/x86_64-linux-gnu/pkgconfig` and
+`LD_LIBRARY_PATH=/opt/pipewireao/lib/x86_64-linux-gnu`. A process-group guard
+would stop Cargo below 60 MiB free; it never triggered (approximately 200 MiB
+free after qualification).
+
+```text
+cargo test --offline --features live -j 1 --lib --bin pipewireao-rtc
+cargo test --offline --features live -j 1 --bin rtc-calibrate \
+  --test retired_ingress --test calibration --test calibration_cli
+cargo clippy --offline --features live -j 1 --no-deps --lib --bins \
+  --test retired_ingress --test calibration --test calibration_cli -- -D warnings
+```
+
+Results: **130 passed** (library 86, runner 18, calibration CLI unit 2,
+transport-neutral calibration 19, native CLI preflight 3, retired runner ingress
+2). Seven actual private-core fixtures remain explicitly ignored; they were not
+run or counted as passes. Clippy passed with no repository lint warnings. Cargo
+retains the existing dependency future-incompatibility notice for
+`proc-macro-error2 v2.0.1`; no unrelated dependency change was made.
+
+The actual rebuilt runner rejects both retired flag spellings without creating
+a socket or reading configuration, and its help passes the same criterion that
+the retained binary failed. The rebuilt `rtc-calibrate` rejects `--endpoint`
+before plan read/connection and validates saved plans before native connection.
+
+Retained cache evidence: `retirement-rust-lib-bin-20261006.{log,json}`,
+`retirement-rust-cli-calibration-20261006.{log,json}` and
+`retirement-rust-clippy-20261006.{log,json}`. Production source is `d46cf6e`;
+the second test ledger records the exact changed calibration CLI fixture hash.
+`retirement-rust-evidence-sha256-20261006.json` hashes logs, ledgers and rebuilt
+executables.
+Original 46,343,832-byte runner was losslessly archived before overwriting the
+shared executable, with decompressed SHA verified:
+`retirement-before-pipewireao-rtc-f4f8adf-20261006.gz` (compressed SHA256
+`282918d31ccb754958c0ae7b7052b41ee24e2976762e46a2cfa9f4840fd339de`).
+`retirement-before-runner-20261006.json` records its original path/inode/link
+count and known SHA; its original build revision was not reconstructed.
+
+Updated shared `debug/pipewireao-rtc` SHA256:
+`7968051f1d4d591414f6cffb995f6efbacc4099ccb881bd3a268e67423f9a341`.
+Updated shared `debug/rtc-calibrate` SHA256:
+`ce0ba26cf04f64ea1cb730c4b89309592c5097843cc326d867c4ddd1bfe9b1cb`.
+
 ## Remaining gates
 
-Low disk space prevented a new Cargo build during this increment. The new main,
-native endpoint and real CLI tests have not yet been compiled/run together;
-the fail-before help criterion has not yet been demonstrated against a rebuilt
-runner. Required follow-up: focused live Rust tests/check/Clippy, actual updated
-runner native foreground/service qualification, and independent diff review.
-No installed runtime, scientific allocation, numerical, performance or hardware
-qualification is claimed here. NRET-003 through NRET-006 remain outside this
-approved removal.
+Actual updated-runner native foreground/service qualification and independent
+diff review remain required. No installed runtime, scientific allocation,
+numerical, performance or hardware qualification is claimed here. NRET-003
+through NRET-006 remain outside this approved removal.
