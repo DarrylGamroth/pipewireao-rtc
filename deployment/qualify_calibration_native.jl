@@ -15,6 +15,20 @@ const Native = PipeWireAODeployment.NativeControlClient
 
 require(value, message) = value === true || error(message)
 cursor(c) = (c.domain, c.generation, c.sequence, c.model_ns)
+cursor(::Nothing) = nothing
+
+"Accept success only with all required effects, cleanup, and no recorded failure."
+function qualification_exit_code(record)
+    Q.qualification_exit_code(record) == 0 || return 1
+    all(get(record,key,false) === true for key in ("restoration_confirmed","release_confirmed")) || return 1
+    get(record,"client_cleanup_failure",nothing) === nothing || return 1
+    get(record,"cleanup_failure",nothing) === nothing || return 1
+    cleanup = get(record,"cleanup",Dict())
+    get(cleanup,"launcher_exited",false) === true || return 1
+    groups = get(cleanup,"groups",Dict())
+    !isempty(groups) && all(get(group,"status","unknown") == "complete" for group in values(groups)) || return 1
+    return 0
+end
 function verified_report(connection, path, startup; deadline, check,
         status=Lifecycle.status, read_report=Campaign.completed_owner_report)
     while true
@@ -90,7 +104,8 @@ function verify_reset_rejection(connection, before; deadline,check,
         occursin("fresh instance",rejected.message),"calibration Reset was not explicitly unsupported")
     after = status(connection;deadline,check)
     a,b = before.snapshot,after.snapshot
-    require(cursor(a.cursor) == cursor(b.cursor) && a.phase == b.phase &&
+    require(before.lifecycle === L.Connected && after.lifecycle === before.lifecycle &&
+        cursor(a.cursor) == cursor(b.cursor) && cursor(a.report_cursor) == cursor(b.report_cursor) && a.phase == b.phase &&
         a.held == b.held && a.restored == b.restored && a.completed == b.completed &&
         a.running == b.running,"rejected Reset changed owner facts")
     return Dict("result"=>rejected.header.result,"message"=>rejected.message,
@@ -224,7 +239,6 @@ function main(args=ARGS)
                     record["shutdown_confirmed"] = true
                     record["cleanup"] = Q.observed_cleanup(process,identities)
                     require(record["cleanup"]["status"] == "complete","owned child cleanup unresolved")
-                    record["success"] = true
                 finally
                     if process_running(process)
                         # Use the retained admitted client while it is available.
@@ -243,22 +257,32 @@ function main(args=ARGS)
                 end
             end
         end
+        # wait_state owns the retained client's finally-close. That entire
+        # scope and the log close must return before success becomes possible.
+        record["success"] = true
     catch primary
+        record["success"] = false
         record["failure"] = sprint(showerror,primary)
     finally
         # Unknown outcomes retain owner hold/fault; this coordinator never sends
         # speculative Restore/Release after a lost action completion.
         for client in (endpoint,lifecycle)
             client === nothing && continue
-            try close(client) catch cleanup; record["client_cleanup_failure"] = sprint(showerror,cleanup) end
+            try close(client) catch cleanup
+                record["success"] = false
+                record["client_cleanup_failure"] = sprint(showerror,cleanup)
+            end
         end
         if process !== nothing && process_running(process)
-            record["cleanup"] = Q.fallback_cleanup(process,identities)
+            record["success"] = false
+            try record["cleanup"] = Q.fallback_cleanup(process,identities)
+            catch cleanup; record["cleanup_failure"] = sprint(showerror,cleanup) end
         end
+        record["success"] = qualification_exit_code(record) == 0
         C.write_json(joinpath(output,"qualification.json"),record)
     end
     println(joinpath(output,"qualification.json"))
-    return record["success"] ? 0 : 1
+    return qualification_exit_code(record)
 end
 end
 abspath(PROGRAM_FILE) == (@__FILE__) && exit(NativeCalibrationQualification.main(ARGS))

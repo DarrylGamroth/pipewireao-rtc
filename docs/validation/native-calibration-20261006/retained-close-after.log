@@ -1,0 +1,6 @@
+SOURCE_REVISION=987297ba5fc6a9a358b19a2be2347ee6784c0586
+SDK_SOURCE=/home/dgamroth/.julia/packages/PipeWireAO/QRGDD/src/PipeWireAO.jl
+CLOSE_FAILURE_RECORD=Dict{String, Any}("shutdown_confirmed" => true, "release_confirmed" => true, "success" => true, "restoration_confirmed" => true, "cleanup" => Dict{String, Any}("groups" => Dict("simulator" => Dict("status" => "complete")), "status" => "complete", "launcher_exited" => true), "failure" => "ArgumentError: serialize close after the active native operation")
+QUALIFICATION_EXIT_CODE=1
+Test Summary:                                 | Pass  Total  Time
+calibration postcallback native close failure |    3      3  6.6s

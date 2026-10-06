@@ -1,0 +1,75 @@
+ERROR: LoadError: Some tests did not pass: 8 passed, 3 failed, 0 errored, 0 broken.
+in expression starting at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/deployment/julia/test/test_qualify_calibration_native.jl:74
+Test Summary:                                          | Pass  Total  Time
+Release completion waits for native report publication |    4      4  0.5s
+Test Summary:                                  | Pass  Total  Time
+Installed native calibration retained evidence |   17     17  1.3s
+Unsupported Reset retains calibration owner facts: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/deployment/julia/test/test_qualify_calibration_native.jl:97
+  Expression: CQ.verify_reset_rejection(nothing, before; deadline = 1.0, check = (()->begin
+                #= /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/deployment/julia/test/test_qualify_calibration_native.jl:98 =#
+                nothing
+            end), request, status = (begin
+                c
+                #= /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/deployment/julia/test/test_qualify_calibration_native.jl:98 =#
+                kwargs...
+            end->begin
+                #= /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/deployment/julia/test/test_qualify_calibration_native.jl:98 =#
+                after
+            end))
+    Expected: ErrorException
+  No exception thrown
+
+Stacktrace:
+ [1] top-level scope
+   @ ~/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/deployment/julia/test/test_qualify_calibration_native.jl:75
+ [2] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [3] macro expansion
+   @ ~/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/deployment/julia/test/test_qualify_calibration_native.jl:97 [inlined]
+Unsupported Reset retains calibration owner facts: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/deployment/julia/test/test_qualify_calibration_native.jl:97
+  Expression: CQ.verify_reset_rejection(nothing, before; deadline = 1.0, check = (()->begin
+                #= /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/deployment/julia/test/test_qualify_calibration_native.jl:98 =#
+                nothing
+            end), request, status = (begin
+                c
+                #= /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/deployment/julia/test/test_qualify_calibration_native.jl:98 =#
+                kwargs...
+            end->begin
+                #= /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/deployment/julia/test/test_qualify_calibration_native.jl:98 =#
+                after
+            end))
+    Expected: ErrorException
+  No exception thrown
+
+Stacktrace:
+ [1] top-level scope
+   @ ~/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/deployment/julia/test/test_qualify_calibration_native.jl:75
+ [2] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [3] macro expansion
+   @ ~/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/deployment/julia/test/test_qualify_calibration_native.jl:97 [inlined]
+Unsupported Reset retains calibration owner facts: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/deployment/julia/test/test_qualify_calibration_native.jl:97
+  Expression: CQ.verify_reset_rejection(nothing, before; deadline = 1.0, check = (()->begin
+                #= /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/deployment/julia/test/test_qualify_calibration_native.jl:98 =#
+                nothing
+            end), request, status = (begin
+                c
+                #= /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/deployment/julia/test/test_qualify_calibration_native.jl:98 =#
+                kwargs...
+            end->begin
+                #= /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/deployment/julia/test/test_qualify_calibration_native.jl:98 =#
+                after
+            end))
+    Expected: ErrorException
+  No exception thrown
+
+Stacktrace:
+ [1] top-level scope
+   @ ~/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/deployment/julia/test/test_qualify_calibration_native.jl:75
+ [2] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [3] macro expansion
+   @ ~/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/deployment/julia/test/test_qualify_calibration_native.jl:97 [inlined]
+Test Summary:                                     | Pass  Fail  Total  Time
+Unsupported Reset retains calibration owner facts |    8     3     11  1.4s
+RNG of the outermost testset: Random.Xoshiro(0xa5d1be91f4ef0bb1, 0x4c1a0135ceadf051, 0xa6454100954818c3, 0x78e92a173e00233c, 0x17da2dd8fd624f17)

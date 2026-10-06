@@ -1,0 +1,15 @@
+{
+  "baseline_commit": "987297ba5fc6a9a358b19a2be2347ee6784c0586",
+  "before_qualifier_sha256": "280f078e60106e867c61615788fe3a599b677a33e600c42c0312ed49f3e9da26",
+  "after_qualifier_sha256": "234adfc24695e1ff8a49eadf17587f0b8ab1d13816990ef5812512d17ee629f3",
+  "after_source_status": "uncommitted reviewed remediation on baseline987297b during retained-close-after log; SOURCE_REVISION line identifies base commit, not a clean-source claim",
+  "cpu": 11,
+  "scope": "Pure evidence reducer/oracle and actual cold public native control endpoint only; no SCI or package copy",
+  "files": {
+    "retained-close-after.log": "3d3328b8127c670347f11352c799cf3ccb2659424df5502f2423b3b2af65abf6",
+    "reset-invariance-before.log": "0b6cf7fb1eedd8290e05a4c0b7054f5b1e6252f2624b2e88640a40f04bb0d9aa",
+    "retained-close-oracle.jl": "b63b2d25d3c1f7c0fcc6286c71eda7e5549c5ee686db81c1334114cd0e6699a0",
+    "retained-close-before.log": "4811d71dc4b33ec272fcb8447ce77efc7c180550ff8c0fa1ecef7c97e952974f",
+    "cold-remediation-after.log": "33d1db9fa9c2ab6cf9997c28948d06bea1dae43a2a2f60fda81411c8088ce93d"
+  }
+}

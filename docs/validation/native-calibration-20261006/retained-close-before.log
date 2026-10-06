@@ -1,0 +1,22 @@
+ERROR: LoadError: Some tests did not pass: 2 passed, 1 failed, 0 errored, 0 broken.
+in expression starting at /home/dgamroth/.cache/rtc-native-calibration-final-20261006/retained-calibration-close-oracle.jl:59
+SOURCE_REVISION=987297ba5fc6a9a358b19a2be2347ee6784c0586
+SDK_SOURCE=/home/dgamroth/.julia/packages/PipeWireAO/QRGDD/src/PipeWireAO.jl
+CLOSE_FAILURE_RECORD=Dict{String, Any}("shutdown_confirmed" => true, "release_confirmed" => true, "success" => true, "restoration_confirmed" => true, "cleanup" => Dict{String, Any}("groups" => Dict("simulator" => Dict("status" => "complete")), "status" => "complete", "launcher_exited" => true), "failure" => "ArgumentError: serialize close after the active native operation")
+QUALIFICATION_EXIT_CODE=0
+calibration postcallback native close failure: Test Failed at /home/dgamroth/.cache/rtc-native-calibration-final-20261006/retained-calibration-close-oracle.jl:53
+  Expression: code == 1
+   Evaluated: 0 == 1
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] macro expansion
+   @ ~/.cache/rtc-native-calibration-final-20261006/retained-calibration-close-oracle.jl:53 [inlined]
+ [3] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [4] proof(remote::String, directory::String, daemon::Base.Process)
+   @ Main ~/.cache/rtc-native-calibration-final-20261006/retained-calibration-close-oracle.jl:33
+Test Summary:                                 | Pass  Fail  Total  Time
+calibration postcallback native close failure |    2     1      3  7.6s
+RNG of the outermost testset: Random.Xoshiro(0x46f7e9f080a10206, 0x9ff906b80721885b, 0x92a2e2d63073183a, 0x03eb42808ec59c56, 0x1f803dcb6fac5a93)

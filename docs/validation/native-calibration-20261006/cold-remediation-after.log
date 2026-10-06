@@ -1,0 +1,8 @@
+Test Summary:                                                  | Pass  Total  Time
+Native calibration success requires failure-free owned cleanup |   12     12  0.4s
+Test Summary:                                          | Pass  Total  Time
+Release completion waits for native report publication |    4      4  1.0s
+Test Summary:                                  | Pass  Total  Time
+Installed native calibration retained evidence |   17     17  2.5s
+Test Summary:                                     | Pass  Total  Time
+Unsupported Reset retains calibration owner facts |   11     11  0.7s

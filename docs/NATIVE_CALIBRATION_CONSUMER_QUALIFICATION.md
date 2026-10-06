@@ -75,7 +75,8 @@ the same exact owner and action profile; saved metadata supplies hints only.
 
 ## Cold verification and pending installed runs
 
-Focused pure evidence tests passed **26/26** on CPU11. They discriminate wrong
+Focused pure evidence tests passed **44/44** on CPU11 after the independently
+reviewed oracle corrections below. They discriminate wrong
 run, incomplete restoration, invalid/nonfinite/wrong-length responses, stale,
 duplicate, overlapping, wrong-domain/generation/duration and overflowing exposure
 records, missing settling gaps, Reset changing retained owner facts, and waiting
@@ -111,3 +112,49 @@ Actual effect, capture, Reset and cleanup gates remain **pending** until those
 separate fresh runs have been observed. Broader Classic/Copper FGN/JFG and
 unchanged HEART consumers follow after this first installed discriminator;
 this artifact does not silently reduce that matrix.
+
+## Adjudicated qualifier review corrections
+
+Independent review IDs **CAL-QUAL-R001** and **CAL-QUAL-R002** were accepted
+by the primary agent. These concern qualification validity; they do not show
+an installed owner mutating scientific or lifecycle facts incorrectly.
+
+**R001, confirmed false-green:** the initial callback assigned success before
+`Deployment.wait_state` performed its retained-client finally-close. A close
+exception then reached a catch that recorded failure without clearing success;
+the main return expression checked only success. The correction assigns success
+after the entire callback/client/log scope returns, clears it on primary or
+cleanup failures, and uses the existing sustained qualifier reducer plus
+restoration, release, failure-free client cleanup, launcher exit and complete
+owned-group requirements. Remaining cleanup normalizes the saved success flag
+through that reducer before publication.
+
+The unchanged [native close oracle](validation/native-calibration-20261006/retained-close-oracle.jl)
+uses a real cold private-core supervisor and `wait_state` client. It deliberately
+marks the client's native request active immediately before callback return,
+causing the actual close method to refuse it; diagnostic cleanup clears that
+flag and closes the client. This is an injected error branch, not an observed
+normal installed failure. With otherwise successful restoration/release/shutdown
+and group facts, the baseline accepted `success=true` plus the close error as
+**exit 0** ([before](validation/native-calibration-20261006/retained-close-before.log),
+2 pass/1 fail). The corrected reducer returns **exit 1** with the same record
+([after](validation/native-calibration-20261006/retained-close-after.log), 3/3).
+The receipt records exact source hashes; the after log's baseline commit label
+does not imply a clean source tree during remediation.
+
+**R002, confirmed evidence gap:** Reset validation compared acquisition cursor,
+phase, hold, restoration, completion and running facts but omitted lifecycle
+and publication cursor. It now requires the previously admitted Connected
+lifecycle and an equal nullable report cursor. The current Snapshot has no
+separate failure field. Stopped lifecycle, lost publication cursor and changed
+publication cursor all failed the expected-rejection test before the correction
+([before](validation/native-calibration-20261006/reset-invariance-before.log))
+and reject afterward. The final pure suite is **44/44**
+([after](validation/native-calibration-20261006/cold-remediation-after.log)).
+The -95 unsupported Reset contract and existing owner behavior are unchanged.
+
+Accepted evidence limit: an intermediate failed Capture retains primary failure
+and known cleanup facts but its completed-action sequence is not copied into
+qualification JSON until `capture!` returns successfully. This limits diagnostics
+of a failed run; it does not permit that run to pass. No broader remediation was
+selected in this increment. Actual installed SCI qualification remains pending.

@@ -19,6 +19,31 @@ function collect_fixture()
     return result,plan,startup
 end
 
+@testset "Native calibration success requires failure-free owned cleanup" begin
+    complete = Dict{String,Any}("success"=>true,"restoration_confirmed"=>true,
+        "release_confirmed"=>true,"shutdown_confirmed"=>true,
+        "cleanup"=>Dict("status"=>"complete","launcher_exited"=>true,
+            "groups"=>Dict("simulator"=>Dict("status"=>"complete"))))
+    @test CQ.qualification_exit_code(complete) == 0
+    for name in ("success","restoration_confirmed","release_confirmed","shutdown_confirmed")
+        bad = deepcopy(complete); bad[name] = false
+        @test CQ.qualification_exit_code(bad) == 1
+    end
+    for name in ("failure","client_cleanup_failure","cleanup_failure")
+        bad = deepcopy(complete); bad[name] = "deliberate close failure after effects"
+        @test CQ.qualification_exit_code(bad) == 1
+    end
+    for mutate! in (
+        r->(r["cleanup"]["status"]="unresolved"),
+        r->(r["cleanup"]["launcher_exited"]=false),
+        r->empty!(r["cleanup"]["groups"]),
+        r->(r["cleanup"]["groups"]["simulator"]["status"]="unknown"),
+    )
+        bad = deepcopy(complete); mutate!(bad)
+        @test CQ.qualification_exit_code(bad) == 1
+    end
+end
+
 @testset "Release completion waits for native report publication" begin
     header = HCQ.ReplyHeader(HCQ.ControllerIdentity(UInt32(1234),UInt64(8),Int64(1)),
         Int64(7),Int64(3),UInt32(1),Int32(0))
@@ -87,4 +112,14 @@ end
         LCQ.Snapshot(LCQ.Classic,moved,moved,false,true,"released",false,true,nothing),"")
     @test_throws ErrorException CQ.verify_reset_rejection(nothing,before;
         deadline=1.0,check=()->nothing,request,status=(c;kwargs...)->changed)
+    for after in (
+        LCQ.Completion(header,LCQ.Stopped,snapshot,""),
+        LCQ.Completion(header,LCQ.Connected,
+            LCQ.Snapshot(LCQ.Classic,cursor,nothing,false,true,"released",false,true,nothing),""),
+        LCQ.Completion(header,LCQ.Connected,
+            LCQ.Snapshot(LCQ.Classic,cursor,moved,false,true,"released",false,true,nothing),""),
+    )
+        @test_throws ErrorException CQ.verify_reset_rejection(nothing,before;
+            deadline=1.0,check=()->nothing,request,status=(c;kwargs...)->after)
+    end
 end
