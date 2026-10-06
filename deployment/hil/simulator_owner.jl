@@ -236,7 +236,8 @@ function write_binary_atomic(path, values)
     return bytes2hex(open(sha256, path))
 end
 
-function write_report(options, science, recorder, state; failure=nothing, sustained_run=nothing)
+function write_report(options, science, recorder, state; failure=nothing, sustained_run=nothing,
+                      acquisition_generation::UInt64=UInt64(0))
     transport = transport_contract(options)
     count = recorder.count
     prefix = endswith(options.output, ".json") ? options.output[1:end-5] : options.output
@@ -253,7 +254,7 @@ function write_report(options, science, recorder, state; failure=nothing, sustai
     components_at_limit = Base.count(value -> abs(value / COMMAND_TO_METRES) >= limit_threshold_um, recorded_command)
     nonzero_components = Base.count(!iszero, recorded_command)
     report = (
-        version=1, profile=String(options.profile), backend=String(options.backend),
+        version=1, acquisition_generation, profile=String(options.profile), backend=String(options.backend),
         graph_execution=string(typeof(graph_execution_policy(science.graph))),
         remote=options.remote, graph=options.graph, graph_sha256=bytes2hex(open(sha256, options.graph)),
         target=(type=string(typeof(science.target)),
@@ -295,7 +296,7 @@ function write_report(options, science, recorder, state; failure=nothing, sustai
         report = merge(report,(; recording_scope="completed contiguous prefix of sustained run; owner state and total delivery in companion report",
             owner_sequence=state.sequence, sustained_report=options.output * ".sustained.json"))
         details = SustainedRun.report(sustained_run)
-        summary = (; version=2, profile=String(options.profile), backend=String(options.backend),
+        summary = (; version=2, acquisition_generation, profile=String(options.profile), backend=String(options.backend),
             completed=state.completed && sustained_run.metrics.count == options.total_exchanges,
             failure, state=state.running ? "running" : "paused", sequence=state.sequence,
             requested_exchanges=options.total_exchanges, completed_frames=sustained_run.metrics.count,
@@ -446,7 +447,8 @@ function run_prepared_owner!(options, science, recorder, state, sustained_run, p
         sustained_run === nothing || SustainedRun.reset!(sustained_run)
         heart && start!(pipewire)
     end
-    report_owner! = () -> write_report(options, science, recorder, state; sustained_run)
+    report_owner! = () -> write_report(options, science, recorder, state; sustained_run,
+        acquisition_generation=UInt64(frame_acquisition_generation(pipewire)))
     try
         ticket = Bootstrap.take_connect!(options.bootstrap_runtime)
         Bootstrap.check_connect!(options.bootstrap_runtime, ticket)
@@ -528,7 +530,7 @@ function run_prepared_owner!(options, science, recorder, state, sustained_run, p
                 state.completed = true
                 state.deadline_ns = 0
                 sustained_run === nothing || (sustained_run.allocation_finish = Base.gc_num())
-                write_report(options, science, recorder, state; sustained_run)
+                report_owner!()
                 SourceControl.report_ready!(source_control,
                     Int64(frame_acquisition_generation(pipewire)), state.sequence)
             end
@@ -549,7 +551,8 @@ function run_prepared_owner!(options, science, recorder, state, sustained_run, p
             if sustained_run !== nothing && sustained_run.allocation_finish === nothing
                 sustained_run.allocation_finish = Base.gc_num()
             end
-            write_report(options, science, recorder, state; failure, sustained_run)
+            write_report(options, science, recorder, state; failure, sustained_run,
+                acquisition_generation=UInt64(frame_acquisition_generation(pipewire)))
         end
     end
     return nothing

@@ -98,3 +98,26 @@ log is retained. Both fixtures used unchanged runner SHA-256
 `f4f8adf29a28aea11a915d929b671ac1bffec0fbc569d6d4e3766aa5a228f430`.
 This is launcher/transport verification, not an installed scientific or
 systemd qualification.
+
+## Sustained qualification report authority
+
+The selected sustained qualification coordinator now retains its verified native
+supervisor client through the run. Fresh SourceControl Status supplies completed,
+paused, acquisition generation, sequence and matching report-ready cursor; saved
+report presence is never polled for completion. Reset qualification observes the
+native generation advance and zero cursor before restarting. The simulator's
+cold report writer records the actual acquisition generation in prefix and
+sustained artifacts, checked against that native publication before payload hashes
+are verified. Its frame computation and allocation measurement boundaries are
+unchanged. Private runtime comes from the verified deployment observation rather
+than the public locator's parent directory.
+
+Focused coordinator checks pass 130/130, including stale report-generation and
+cursor rejection. Scientific report/unit checks pass with the new generation
+field; these are software fixtures, not installed SCI qualification. Logs:
+`~/.cache/rtc-live-controls-20261005/sustained-native-final-20261006.log` and
+`simulator-report-cursor-20261006.log`. The initial new coordinator tests lacked
+these helpers and failed as recorded in `sustained-native-before-20261006.log`;
+that is implementation evidence, not a reproduced installed stale-report defect.
+Installed continuous/reset/midrun-control and inclusive allocation qualification
+remain required after the bootstrap allocation fix.

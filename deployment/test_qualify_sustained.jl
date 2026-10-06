@@ -258,3 +258,18 @@ end
         end
     end
 end
+
+@testset "saved reports cannot establish native completion" begin
+    source=Dict("ok"=>true,"operation"=>"status","id"=>Int64(5),
+        "instance"=>Int64(7),"state"=>"paused","generation"=>Int64(2),
+        "sequence"=>Int64(32),"completed"=>true,"report-ready"=>true,
+        "report-generation"=>Int64(2),"report-sequence"=>Int64(32))
+    @test SQ.native_completed_source(source,Int64(2)) == (Int64(2),Int64(32))
+    pending=deepcopy(source);pending["completed"]=false
+    @test SQ.native_completed_source(pending,Int64(2)) === nothing
+    stale=deepcopy(source);stale["report-generation"]=Int64(1)
+    @test SQ.native_completed_source(stale,Int64(2)) === nothing
+    @test_throws ErrorException SQ.native_completed_source(source,Int64(3))
+    @test_throws ErrorException SQ.verify_report_cursor(Dict("acquisition_generation"=>1,"sequence"=>32),(2,32))
+    @test SQ.verify_report_cursor(Dict("acquisition_generation"=>2,"sequence"=>32),(2,32)) === nothing
+end

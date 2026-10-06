@@ -277,11 +277,12 @@ end
             SustainedRun.observe!(run,sequence,Int64((sequence-1)*options.period_ns),options.period_ns,timing,UInt64(200),command,frame)
         end
         state = Protocol.OwnerState();state.sequence = 3;state.completed = true
-        write_report(options,science,recorder,state;sustained_run=run)
+        write_report(options,science,recorder,state;sustained_run=run,acquisition_generation=UInt64(9))
         prefix = Protocol.JSON3.read(read(options.output,String))
         summary = Protocol.JSON3.read(read(options.output * ".sustained.json",String))
         @test prefix.version == 1 && prefix.completed
         @test prefix.requested_frames == prefix.completed_frames == prefix.sequence == 1
+        @test prefix.acquisition_generation == summary.acquisition_generation == 9
         @test prefix.owner_sequence == 3
         @test summary.version == 2 && summary.completed
         @test summary.completed_frames == summary.completed_commands == summary.sequence == 3
