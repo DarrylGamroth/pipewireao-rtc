@@ -1,0 +1,593 @@
+{
+  "cases": {
+    "alloc": {
+      "cleanup_confirmed": true,
+      "descriptor_sha256": "48b0a434ea51f7a164fe6754c2349744326a70c82ed41e0e80ac8151c044d86a",
+      "evidence_path": "/tmp/gui-copper-main-alloc-v1",
+      "gui_sha256": "311308864f52b9ea36dfbc86b1c648d072677aada73a3cd45e7d05061c9563d9",
+      "harness_sha256": "c14711a9cfee14549bbc29f900a44a60e75dc23109572ff105504f4233822e5c",
+      "mode": "systemd",
+      "owner_pid": 3971558,
+      "package": "/tmp/copper-jfg-main-alloc-v1-installed",
+      "result_sha256": "3fa8a07c32ef3f8a975d516ffd71ca38519ca666b766af4d2c32db2ca5449089",
+      "scenario": "baseline",
+      "science": {
+        "run-1": {
+          "allocation": {
+            "allocated_bytes": 0,
+            "allocations": {
+              "big": 0,
+              "malloc": 0,
+              "pool": 0,
+              "realloc": 0
+            },
+            "completed_exchanges": 496,
+            "full_sweeps": 0,
+            "gc_pauses": 0,
+            "gc_time_ns": 0,
+            "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included"
+          },
+          "command_sha256": "330545c53f70f4775b184704b2c01f99fc0157347625306e7669f8e11426eb2d",
+          "completed": true,
+          "completed_commands": 512,
+          "completed_frames": 512,
+          "failure": null,
+          "frame_sha256": "677c5833233f0d9b5bfc7d3731dac3e5d52679e3825066516cd9909bd7b57577",
+          "generation": 1,
+          "recorded_frames": 16,
+          "requested_exchanges": 512,
+          "retained_prefix_frames": 16,
+          "sequence": 512,
+          "summary_sha256": "7c2df2719d56d54054eabc057d0cf2ad8ec70c1ca0def44e4039ffe126fa1963",
+          "truth_enabled": false,
+          "wall_rate_hz": 100,
+          "whole_trajectory": false
+        },
+        "run-2": {
+          "allocation": {
+            "allocated_bytes": 0,
+            "allocations": {
+              "big": 0,
+              "malloc": 0,
+              "pool": 0,
+              "realloc": 0
+            },
+            "completed_exchanges": 496,
+            "full_sweeps": 0,
+            "gc_pauses": 0,
+            "gc_time_ns": 0,
+            "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included"
+          },
+          "command_sha256": "330545c53f70f4775b184704b2c01f99fc0157347625306e7669f8e11426eb2d",
+          "completed": true,
+          "completed_commands": 512,
+          "completed_frames": 512,
+          "failure": null,
+          "frame_sha256": "677c5833233f0d9b5bfc7d3731dac3e5d52679e3825066516cd9909bd7b57577",
+          "generation": 2,
+          "recorded_frames": 16,
+          "requested_exchanges": 512,
+          "retained_prefix_frames": 16,
+          "sequence": 512,
+          "summary_sha256": "7316a2575666a8742d1cd9e049a85072ca60862189dce79e313e162b1bf63a8a",
+          "truth_enabled": false,
+          "wall_rate_hz": 100,
+          "whole_trajectory": false
+        }
+      },
+      "service_exit": {
+        "exit_code": "exited",
+        "exit_status": "0",
+        "invocation": "b15d1d8ca7f14355a8d7dd38037a2ead",
+        "result": "success"
+      },
+      "service_exit_properties": {
+        "ExecMainCode": "0",
+        "ExecMainStatus": "0",
+        "Result": "success"
+      },
+      "service_invocation": "b15d1d8ca7f14355a8d7dd38037a2ead",
+      "source_arguments": {
+        "--backend": "cuda",
+        "--correction-diagnostics": "false",
+        "--exposure-ns": "2000000",
+        "--profile": "copper",
+        "--rate": "500",
+        "--total-exchanges": "512",
+        "--wall-rate": "100"
+      },
+      "success": true,
+      "unit_file_removed": true
+    },
+    "baseline": {
+      "cleanup_confirmed": true,
+      "descriptor_sha256": "d13ed9d2fb4d88917355a7b163f062d5d3554804fb13070156eabf5eeef99ce4",
+      "evidence_path": "/tmp/gui-copper-main-baseline-v1",
+      "gui_sha256": "311308864f52b9ea36dfbc86b1c648d072677aada73a3cd45e7d05061c9563d9",
+      "harness_sha256": "c14711a9cfee14549bbc29f900a44a60e75dc23109572ff105504f4233822e5c",
+      "mode": "systemd",
+      "owner_pid": 3961536,
+      "package": "/tmp/copper-jfg-main-noobs-v2-installed",
+      "result_sha256": "f336074e90527cc14f3a516f1b342c8b9c7a38e5893d4978ea4b730660d395ce",
+      "scenario": "trajectory-baseline",
+      "science": {
+        "run-1": {
+          "allocation": {
+            "allocated_bytes": 0,
+            "allocations": {
+              "big": 0,
+              "malloc": 0,
+              "pool": 0,
+              "realloc": 0
+            },
+            "completed_exchanges": 0,
+            "full_sweeps": 0,
+            "gc_pauses": 0,
+            "gc_time_ns": 0,
+            "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included"
+          },
+          "command_sha256": "349c6f6105a780236cd6bc402c8fc849293fdd300838e3f1d74706ed4f12e27f",
+          "completed": true,
+          "completed_commands": 256,
+          "completed_frames": 256,
+          "failure": null,
+          "frame_sha256": "b47321140763e9ba4c0eb6a7d56102aff54835a6ce2ba83418511b70270e71c0",
+          "generation": 1,
+          "recorded_frames": 256,
+          "requested_exchanges": 256,
+          "retained_prefix_frames": 256,
+          "sequence": 256,
+          "summary_sha256": "331830c9b5885163a323595bd8dcf8823b6d296cd41f8906956441a4dd2ee190",
+          "truth_enabled": false,
+          "wall_rate_hz": 10,
+          "whole_trajectory": true
+        },
+        "run-2": {
+          "allocation": {
+            "allocated_bytes": 0,
+            "allocations": {
+              "big": 0,
+              "malloc": 0,
+              "pool": 0,
+              "realloc": 0
+            },
+            "completed_exchanges": 0,
+            "full_sweeps": 0,
+            "gc_pauses": 0,
+            "gc_time_ns": 0,
+            "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included"
+          },
+          "command_sha256": "349c6f6105a780236cd6bc402c8fc849293fdd300838e3f1d74706ed4f12e27f",
+          "completed": true,
+          "completed_commands": 256,
+          "completed_frames": 256,
+          "failure": null,
+          "frame_sha256": "b47321140763e9ba4c0eb6a7d56102aff54835a6ce2ba83418511b70270e71c0",
+          "generation": 2,
+          "recorded_frames": 256,
+          "requested_exchanges": 256,
+          "retained_prefix_frames": 256,
+          "sequence": 256,
+          "summary_sha256": "28837a98bd875807d1c8b530355afb097987d312687cb4297a17f5c1f7d9cae0",
+          "truth_enabled": false,
+          "wall_rate_hz": 10,
+          "whole_trajectory": true
+        }
+      },
+      "service_exit": {
+        "exit_code": "exited",
+        "exit_status": "0",
+        "invocation": "f61b14eeff174721b9fa6fe7b7dd143e",
+        "result": "success"
+      },
+      "service_exit_properties": {
+        "ExecMainCode": "0",
+        "ExecMainStatus": "0",
+        "Result": "success"
+      },
+      "service_invocation": "f61b14eeff174721b9fa6fe7b7dd143e",
+      "source_arguments": {
+        "--backend": "cuda",
+        "--correction-diagnostics": "false",
+        "--exposure-ns": "2000000",
+        "--profile": "copper",
+        "--rate": "500",
+        "--total-exchanges": "256",
+        "--wall-rate": "10"
+      },
+      "success": true,
+      "unit_file_removed": true
+    },
+    "death": {
+      "cleanup_confirmed": true,
+      "descriptor_sha256": "dcb6766e6bdb864af38446745a97a9f135d256cff3d1da6ea347cc320e191fb4",
+      "evidence_path": "/tmp/gui-copper-main-death-v1",
+      "gui_sha256": "311308864f52b9ea36dfbc86b1c648d072677aada73a3cd45e7d05061c9563d9",
+      "harness_sha256": "c14711a9cfee14549bbc29f900a44a60e75dc23109572ff105504f4233822e5c",
+      "mode": "systemd",
+      "owner_pid": 3966775,
+      "package": "/tmp/copper-jfg-main-obs-v1-installed",
+      "result_sha256": "ac307f305e909e3d0dc16f710eeb58de304c29edab5e8c2476479ec0f5cae53d",
+      "scenario": "render-death",
+      "science": {
+        "run-1": {
+          "allocation": {
+            "allocated_bytes": 0,
+            "allocations": {
+              "big": 0,
+              "malloc": 0,
+              "pool": 0,
+              "realloc": 0
+            },
+            "completed_exchanges": 0,
+            "full_sweeps": 0,
+            "gc_pauses": 0,
+            "gc_time_ns": 0,
+            "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included"
+          },
+          "command_sha256": "349c6f6105a780236cd6bc402c8fc849293fdd300838e3f1d74706ed4f12e27f",
+          "completed": true,
+          "completed_commands": 256,
+          "completed_frames": 256,
+          "failure": null,
+          "frame_sha256": "b47321140763e9ba4c0eb6a7d56102aff54835a6ce2ba83418511b70270e71c0",
+          "generation": 1,
+          "recorded_frames": 256,
+          "requested_exchanges": 256,
+          "retained_prefix_frames": 256,
+          "sequence": 256,
+          "summary_sha256": "1551aaeb7460c167b9a9bced41a447e7b85ea1acde43bf11e0ce8e76c6a75adf",
+          "truth_enabled": false,
+          "wall_rate_hz": 10,
+          "whole_trajectory": true
+        },
+        "run-2": {
+          "allocation": {
+            "allocated_bytes": 0,
+            "allocations": {
+              "big": 0,
+              "malloc": 0,
+              "pool": 0,
+              "realloc": 0
+            },
+            "completed_exchanges": 0,
+            "full_sweeps": 0,
+            "gc_pauses": 0,
+            "gc_time_ns": 0,
+            "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included"
+          },
+          "command_sha256": "349c6f6105a780236cd6bc402c8fc849293fdd300838e3f1d74706ed4f12e27f",
+          "completed": true,
+          "completed_commands": 256,
+          "completed_frames": 256,
+          "failure": null,
+          "frame_sha256": "b47321140763e9ba4c0eb6a7d56102aff54835a6ce2ba83418511b70270e71c0",
+          "generation": 2,
+          "recorded_frames": 256,
+          "requested_exchanges": 256,
+          "retained_prefix_frames": 256,
+          "sequence": 256,
+          "summary_sha256": "0af2b287d34e1a0639789c2ad27ae33cd12ea410f08bb473911246b1c30e0438",
+          "truth_enabled": false,
+          "wall_rate_hz": 10,
+          "whole_trajectory": true
+        }
+      },
+      "service_exit": {
+        "exit_code": "exited",
+        "exit_status": "0",
+        "invocation": "35e7f675ee534f5f882536ecb9119a15",
+        "result": "success"
+      },
+      "service_exit_properties": {
+        "ExecMainCode": "0",
+        "ExecMainStatus": "0",
+        "Result": "success"
+      },
+      "service_invocation": "35e7f675ee534f5f882536ecb9119a15",
+      "source_arguments": {
+        "--backend": "cuda",
+        "--correction-diagnostics": "false",
+        "--exposure-ns": "2000000",
+        "--profile": "copper",
+        "--rate": "500",
+        "--total-exchanges": "256",
+        "--wall-rate": "10"
+      },
+      "success": true,
+      "unit_file_removed": true
+    },
+    "stall": {
+      "cleanup_confirmed": true,
+      "descriptor_sha256": "dcb6766e6bdb864af38446745a97a9f135d256cff3d1da6ea347cc320e191fb4",
+      "evidence_path": "/tmp/gui-copper-main-stall-v1",
+      "gui_sha256": "311308864f52b9ea36dfbc86b1c648d072677aada73a3cd45e7d05061c9563d9",
+      "harness_sha256": "c14711a9cfee14549bbc29f900a44a60e75dc23109572ff105504f4233822e5c",
+      "mode": "systemd",
+      "owner_pid": 3969184,
+      "package": "/tmp/copper-jfg-main-obs-v1-installed",
+      "result_sha256": "ece6eb4c4f9df6cdf4a7cb6a2dadfe4583a513d25bcfd3d9589283086937e4ec",
+      "scenario": "render",
+      "science": {
+        "run-1": {
+          "allocation": {
+            "allocated_bytes": 0,
+            "allocations": {
+              "big": 0,
+              "malloc": 0,
+              "pool": 0,
+              "realloc": 0
+            },
+            "completed_exchanges": 0,
+            "full_sweeps": 0,
+            "gc_pauses": 0,
+            "gc_time_ns": 0,
+            "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included"
+          },
+          "command_sha256": "349c6f6105a780236cd6bc402c8fc849293fdd300838e3f1d74706ed4f12e27f",
+          "completed": true,
+          "completed_commands": 256,
+          "completed_frames": 256,
+          "failure": null,
+          "frame_sha256": "b47321140763e9ba4c0eb6a7d56102aff54835a6ce2ba83418511b70270e71c0",
+          "generation": 1,
+          "recorded_frames": 256,
+          "requested_exchanges": 256,
+          "retained_prefix_frames": 256,
+          "sequence": 256,
+          "summary_sha256": "cecd6f68e0370d038b45743b99c8b8baf3eff76b8903ffd6c4b9fa3a9a905fc1",
+          "truth_enabled": false,
+          "wall_rate_hz": 10,
+          "whole_trajectory": true
+        }
+      },
+      "service_exit": {
+        "exit_code": "exited",
+        "exit_status": "0",
+        "invocation": "9d1c4fe480bb4e189061e2080ce1ea9d",
+        "result": "success"
+      },
+      "service_exit_properties": {
+        "ExecMainCode": "0",
+        "ExecMainStatus": "0",
+        "Result": "success"
+      },
+      "service_invocation": "9d1c4fe480bb4e189061e2080ce1ea9d",
+      "source_arguments": {
+        "--backend": "cuda",
+        "--correction-diagnostics": "false",
+        "--exposure-ns": "2000000",
+        "--profile": "copper",
+        "--rate": "500",
+        "--total-exchanges": "256",
+        "--wall-rate": "10"
+      },
+      "success": true,
+      "unit_file_removed": true
+    },
+    "unattended": {
+      "cleanup_confirmed": true,
+      "descriptor_sha256": "dcb6766e6bdb864af38446745a97a9f135d256cff3d1da6ea347cc320e191fb4",
+      "evidence_path": "/tmp/gui-copper-main-unattended-v1",
+      "gui_sha256": "311308864f52b9ea36dfbc86b1c648d072677aada73a3cd45e7d05061c9563d9",
+      "harness_sha256": "c14711a9cfee14549bbc29f900a44a60e75dc23109572ff105504f4233822e5c",
+      "mode": "systemd",
+      "owner_pid": 3964720,
+      "package": "/tmp/copper-jfg-main-obs-v1-installed",
+      "result_sha256": "a0c14225cc1fa86474722689a9f0a199508d7a22f76e39e4e03c4689f31aa17e",
+      "scenario": "trajectory-unattended",
+      "science": {
+        "run-1": {
+          "allocation": {
+            "allocated_bytes": 0,
+            "allocations": {
+              "big": 0,
+              "malloc": 0,
+              "pool": 0,
+              "realloc": 0
+            },
+            "completed_exchanges": 0,
+            "full_sweeps": 0,
+            "gc_pauses": 0,
+            "gc_time_ns": 0,
+            "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included"
+          },
+          "command_sha256": "349c6f6105a780236cd6bc402c8fc849293fdd300838e3f1d74706ed4f12e27f",
+          "completed": true,
+          "completed_commands": 256,
+          "completed_frames": 256,
+          "failure": null,
+          "frame_sha256": "b47321140763e9ba4c0eb6a7d56102aff54835a6ce2ba83418511b70270e71c0",
+          "generation": 1,
+          "recorded_frames": 256,
+          "requested_exchanges": 256,
+          "retained_prefix_frames": 256,
+          "sequence": 256,
+          "summary_sha256": "ba9c709edd80bdb535b24c295134f739ee146cd4995f68be5325f02599818459",
+          "truth_enabled": false,
+          "wall_rate_hz": 10,
+          "whole_trajectory": true
+        },
+        "run-2": {
+          "allocation": {
+            "allocated_bytes": 0,
+            "allocations": {
+              "big": 0,
+              "malloc": 0,
+              "pool": 0,
+              "realloc": 0
+            },
+            "completed_exchanges": 0,
+            "full_sweeps": 0,
+            "gc_pauses": 0,
+            "gc_time_ns": 0,
+            "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included"
+          },
+          "command_sha256": "349c6f6105a780236cd6bc402c8fc849293fdd300838e3f1d74706ed4f12e27f",
+          "completed": true,
+          "completed_commands": 256,
+          "completed_frames": 256,
+          "failure": null,
+          "frame_sha256": "b47321140763e9ba4c0eb6a7d56102aff54835a6ce2ba83418511b70270e71c0",
+          "generation": 2,
+          "recorded_frames": 256,
+          "requested_exchanges": 256,
+          "retained_prefix_frames": 256,
+          "sequence": 256,
+          "summary_sha256": "aab921f25c535194bf0ef025c78ada3a4df4566437cf4e87f67c3c5c54a11ec1",
+          "truth_enabled": false,
+          "wall_rate_hz": 10,
+          "whole_trajectory": true
+        }
+      },
+      "service_exit": {
+        "exit_code": "exited",
+        "exit_status": "0",
+        "invocation": "b481ad06f67f4d9e896b8284763c8ab7",
+        "result": "success"
+      },
+      "service_exit_properties": {
+        "ExecMainCode": "0",
+        "ExecMainStatus": "0",
+        "Result": "success"
+      },
+      "service_invocation": "b481ad06f67f4d9e896b8284763c8ab7",
+      "source_arguments": {
+        "--backend": "cuda",
+        "--correction-diagnostics": "false",
+        "--exposure-ns": "2000000",
+        "--profile": "copper",
+        "--rate": "500",
+        "--total-exchanges": "256",
+        "--wall-rate": "10"
+      },
+      "success": true,
+      "unit_file_removed": true
+    }
+  },
+  "cleanup_ledger": {
+    "path": "/tmp/rtc-merged-live-target-20261001",
+    "removed": [
+      {
+        "file_bytes": 94079291,
+        "path": "/tmp/rtc-merged-live-target-20261001/debug/build"
+      },
+      {
+        "file_bytes": 214839211,
+        "path": "/tmp/rtc-merged-live-target-20261001/debug/deps"
+      },
+      {
+        "file_bytes": 0,
+        "path": "/tmp/rtc-merged-live-target-20261001/debug/incremental"
+      },
+      {
+        "file_bytes": 173577,
+        "path": "/tmp/rtc-merged-live-target-20261001/debug/.fingerprint"
+      }
+    ],
+    "retained_executable": "/tmp/rtc-merged-live-target-20261001/debug/pipewireao-rtc",
+    "sha256": "f4f7c72041ac05f6736f3541819d4827fb426a0dfdfb36c59cf76436225b6449"
+  },
+  "comparator_regression": {
+    "checks": 108,
+    "log_sha256": "85a5512aafcff092ebb74f12124f82bb40518b21652e93c30ec7c9d3aa723e6b"
+  },
+  "date": "2026-10-06",
+  "full_record_comparison": {
+    "command_equal": true,
+    "frame_equal": true,
+    "hashes": {
+      "command": [
+        "349c6f6105a780236cd6bc402c8fc849293fdd300838e3f1d74706ed4f12e27f",
+        "349c6f6105a780236cd6bc402c8fc849293fdd300838e3f1d74706ed4f12e27f",
+        "349c6f6105a780236cd6bc402c8fc849293fdd300838e3f1d74706ed4f12e27f",
+        "349c6f6105a780236cd6bc402c8fc849293fdd300838e3f1d74706ed4f12e27f",
+        "349c6f6105a780236cd6bc402c8fc849293fdd300838e3f1d74706ed4f12e27f",
+        "349c6f6105a780236cd6bc402c8fc849293fdd300838e3f1d74706ed4f12e27f"
+      ],
+      "frame": [
+        "b47321140763e9ba4c0eb6a7d56102aff54835a6ce2ba83418511b70270e71c0",
+        "b47321140763e9ba4c0eb6a7d56102aff54835a6ce2ba83418511b70270e71c0",
+        "b47321140763e9ba4c0eb6a7d56102aff54835a6ce2ba83418511b70270e71c0",
+        "b47321140763e9ba4c0eb6a7d56102aff54835a6ce2ba83418511b70270e71c0",
+        "b47321140763e9ba4c0eb6a7d56102aff54835a6ce2ba83418511b70270e71c0",
+        "b47321140763e9ba4c0eb6a7d56102aff54835a6ce2ba83418511b70270e71c0"
+      ]
+    },
+    "paths": [
+      "/tmp/gui-copper-main-baseline-v1",
+      "/tmp/gui-copper-main-unattended-v1",
+      "/tmp/gui-copper-main-death-v1"
+    ],
+    "requested_exchanges": 256,
+    "scope": "strict exact full detector/command trajectories across disabled, unattended and observer death; truth diagnostics disabled and not evaluated; no allocation or timing claim",
+    "success": true,
+    "truth_equal": null,
+    "truth_evaluated": false,
+    "version": 1
+  },
+  "gui_comparator_revision": "59cb08782b419b477f284ba00fff17f68e78dc02",
+  "observer_death_replacement": [
+    {
+      "disposition": "kill",
+      "pid": 3968408,
+      "sequence_after": 37,
+      "sequence_before": 29,
+      "signal": 9
+    },
+    {
+      "disposition": "release",
+      "pid": 3968431,
+      "sequence_after": 50,
+      "sequence_before": 44,
+      "signal": 0
+    }
+  ],
+  "proofs": {
+    "allocation": {
+      "helper_sha256": "21d79412b14bc0052aeb06874efc55c517bda86341b900b416fd8c9bb78c2438",
+      "installed": "/tmp/copper-jfg-main-alloc-v1-installed",
+      "installed_descriptor_sha256": "48b0a434ea51f7a164fe6754c2349744326a70c82ed41e0e80ac8151c044d86a",
+      "installed_seal_count": 717,
+      "original": "/tmp/copper-jfg-sdk-interrupt-final-v1-installed",
+      "proof_sha256": "eb85305d8b04b3a0525b24076121dd0410f91d42de362154ab442e12738fa006",
+      "protected_count": 513,
+      "rtc_revision": "ef8ead2233270260986b7c68b1865239a0cf09ba",
+      "runner_sha256": "7b302413c9f4b521c6e793f401025461c69abd51a1956a804eba36df81c171b2",
+      "sdk_revision": "1417b69656b94e146e600c7201bc4d3b34d2cea4"
+    },
+    "baseline": {
+      "helper_sha256": "21d79412b14bc0052aeb06874efc55c517bda86341b900b416fd8c9bb78c2438",
+      "installed": "/tmp/copper-jfg-main-noobs-v2-installed",
+      "installed_descriptor_sha256": "d13ed9d2fb4d88917355a7b163f062d5d3554804fb13070156eabf5eeef99ce4",
+      "installed_seal_count": 717,
+      "original": "/tmp/copper-jfg-cuda-observation-disabled-v1-installed",
+      "proof_sha256": "8adbc54cceaffdfa51f2216c7b4b24fdaba3ad3f2104a52a26d55a790b1662c2",
+      "protected_count": 513,
+      "rtc_revision": "ef8ead2233270260986b7c68b1865239a0cf09ba",
+      "runner_sha256": "7b302413c9f4b521c6e793f401025461c69abd51a1956a804eba36df81c171b2",
+      "sdk_revision": "1417b69656b94e146e600c7201bc4d3b34d2cea4"
+    },
+    "observation": {
+      "helper_sha256": "21d79412b14bc0052aeb06874efc55c517bda86341b900b416fd8c9bb78c2438",
+      "installed": "/tmp/copper-jfg-main-obs-v1-installed",
+      "installed_descriptor_sha256": "dcb6766e6bdb864af38446745a97a9f135d256cff3d1da6ea347cc320e191fb4",
+      "installed_seal_count": 717,
+      "original": "/tmp/copper-jfg-cuda-observation-enabled-v1-installed",
+      "proof_sha256": "7c12f924c3901f3bf6536d032e4a10646070a6fbc3d080e409813576032f4e15",
+      "protected_count": 513,
+      "rtc_revision": "ef8ead2233270260986b7c68b1865239a0cf09ba",
+      "runner_sha256": "7b302413c9f4b521c6e793f401025461c69abd51a1956a804eba36df81c171b2",
+      "sdk_revision": "1417b69656b94e146e600c7201bc4d3b34d2cea4"
+    }
+  },
+  "runtime_main_revision": "ef8ead2233270260986b7c68b1865239a0cf09ba",
+  "scope": "installed functional CUDA AOS / CPU JFG Copper qualification; no rate, latency, hardware, visible-window, full-JFG allocation or inverse-science qualification",
+  "sdk_revision": "1417b69656b94e146e600c7201bc4d3b34d2cea4",
+  "stall": {
+    "generation": 1,
+    "owned_observer_pid": 3970848,
+    "sequence_after": 34,
+    "sequence_before": 29
+  }
+}

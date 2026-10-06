@@ -25,19 +25,20 @@ numerical, allocation and rate/latency qualification remain separate.
 | Area | Current disposition | Evidence to read if affected |
 | --- | --- | --- |
 | Native control implementation | Reviewed changes merged to RTC main; live controls use typed native requests. Saved JSON is artifact/configuration only. | [Inventory](LIVE_CONTROL_INVENTORY.md), [integration snapshot](MAIN_INTEGRATION_20261006.md) |
-| Julia SDK/bootstrap | SDK 0.6.17 source is pushed; deployment pins that exact own revision. Paired cold runtime checks pass 232 assertions. SDK registration and fresh installed SCI/allocation qualification remain open. | [Bootstrap decision/validation](BOOTSTRAP_CONTROLLER_SEAL_VALIDATION.md), [integration receipt](validation/bootstrap-seal-20261006/integration-receipt.json) |
+| Julia SDK/bootstrap | SDK 0.6.17 source is pushed; deployment pins that exact own revision. Paired cold runtime checks pass 232 assertions. Refreshed installed Copper CUDA simulator / CPU JFG passes lifecycle and simulator heap gates; other selected profiles and SDK registration remain open. | [Bootstrap validation](BOOTSTRAP_CONTROLLER_SEAL_VALIDATION.md), [installed Copper evidence](validation/copper-main-20261006/README.md) |
 | GUI session selection | Actual same-label installed owners selected by exact native identities, including a stopped peer; read-only picker replay passed. GUI changes are on its local main. | GUI `docs/NATIVE_HIL_GUI_PROGRESS_VALIDATION.md` |
-| Observation independence | Classic FGN's six complete trajectories/reset runs match exactly across baseline, unattended and observer death/replacement. Copper JFG baseline passed; matching observation/death and explicit stall gates remain open. | [Progress oracle adjudication](NATIVE_HIL_PROGRESS_REVIEW.md), GUI progress validation |
-| Native calibration consumers | First installed Classic Collect trial failed before admission. Typed failure diagnostics are merged; the other three planned trials were not run. Earlier scientific calibration evidence retains its own scope. | [Consumer matrix](NATIVE_CALIBRATION_CONSUMER_MATRIX.md), [failed trial](validation/native-calibration-20261006/actual-four-functional/classic-collect-v1-qualification.json) |
+| Observation independence | Classic FGN's six complete trajectories/reset runs match exactly across baseline, unattended and observer death/replacement. Refreshed Copper JFG also passes those six complete trajectories and one stalled-observer trajectory. Truth diagnostics were disabled and are not qualified. Two separate 512-exchange runs each measure 496 exchanges with zero simulator Julia heap allocation/GC. | [Progress adjudication](NATIVE_HIL_PROGRESS_REVIEW.md), [Copper evidence and independent review](validation/copper-main-20261006/README.md) |
+| Native calibration consumers | Classic startup's positional-timeout constructor defect is fixed in both RTC-owned wrappers (18 focused assertions); the fresh installed trial reaches Running. Collect then aborts with InvalidEvidence, confirms restoration and tracked cleanup. Its rejected completion was not retained; diagnosis and the other planned trials remain open. Earlier scientific calibration evidence retains its own scope. | [Consumer matrix](NATIVE_CALIBRATION_CONSUMER_MATRIX.md), [startup finding](validation/copper-main-20261006/README.md#calibration-startup-finding) |
 | Progressive throughput | JFG source/load characterization is on JFG main. Exact admitted-work accounting passed; the sustained 500 Hz strict offered-delivery trial failed with one whole-frame rejection. No target-rate claim follows. | JFG `docs/RTC_CONNECTED_LOAD_VALIDATION.md` and its independent review |
 
 ### Remaining order and acceptance
 
-1. Finish current Copper observer comparisons and unchanged installed paired
-   runtime lifecycle/allocation checks; do not repeat completed Classic/picker
-   checks unless relevant source/dependency assumptions change.
-2. Diagnose the preserved calibration startup failure with one bounded native
-   diagnostic trial before continuing Collect/Capture and correction consumers.
+1. Retain calibration action completions and final owner diagnostics, then repeat
+   the unchanged Classic trial once to identify the InvalidEvidence branch.
+   Continue Collect/Capture and correction consumers only with that evidence.
+2. Reuse completed Copper observation/lifecycle and simulator heap checks while
+   their dependencies/configuration remain unchanged. Separate JFG allocation
+   and remaining installed profiles are not covered by simulator counters.
 3. Finish the selected unchanged-HEART and Classic/Copper × FGN/JFG/HEART
    foreground/service matrix and operator adoption gates. Existing valid
    clause-specific results may be reused; omitted profiles remain explicit.

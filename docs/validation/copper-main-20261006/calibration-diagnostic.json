@@ -1,0 +1,142 @@
+{
+  "constructor_fix_commit": "310257f46a99068833cb75c630fa1e952609c04a",
+  "constructor_test_assertions": 18,
+  "constructor_test_log_sha256": "d313aedda8a8e6381c3f5309699dbc55924a5afba64490d11582df6fc4675819",
+  "installed_descriptor_sha256": "dc6cbcf30dee29411e22c18c995e877613f7178d3acc691d4b100ae443674f4f",
+  "installed_package": "/tmp/classic-fgn-main-nativecal-v3-installed",
+  "open_failure": "InvalidEvidence has no retained rejected completion; leading validity hypothesis unconfirmed",
+  "original_package": "/tmp/classic-fgn-nativecal-final-v2-installed",
+  "protected_file_count": 376,
+  "scope": "Classic functional calibration diagnostic; no matrix/scientific acceptance",
+  "sdk_revision": "1417b69656b94e146e600c7201bc4d3b34d2cea4",
+  "trial3_plan_sha256": "f6d8d2a29119ac437a0b36e60d0d88cbe986f4dce27c1691179f8ac1c181d011",
+  "trials": [
+    {
+      "cleanup": null,
+      "failure": "deployment launcher exited before requested native state",
+      "files": {
+        "deployment.log": "98c8479f07ad01db7e33e23e10b192f46c08d57e41edf4888d7a5d7a0b8cc723",
+        "qualification.json": "14bd1efe152d13f9685d1c575bbd945142458fa6eb955322b27fcfeda7b84be4"
+      },
+      "path": "/tmp/rtc-main-nativecal-classic-collect-v1",
+      "qualification_sha256": "14bd1efe152d13f9685d1c575bbd945142458fa6eb955322b27fcfeda7b84be4",
+      "recorded_owned_pids_absent_at_receipt": {},
+      "success": false
+    },
+    {
+      "cleanup": {
+        "errors": [],
+        "fallback": true,
+        "groups": {},
+        "initial_wait": {
+          "elapsed_seconds": 0.307540103,
+          "launcher_exited": true,
+          "limit_seconds": 300.0
+        },
+        "launcher_exited": true,
+        "launcher_interrupted": false,
+        "launcher_killed": false,
+        "post_interrupt_wait": {
+          "attempted": false,
+          "elapsed_seconds": 0.0,
+          "launcher_exited": true,
+          "limit_seconds": 300.0
+        },
+        "post_kill_wait": {
+          "attempted": false,
+          "elapsed_seconds": 0.0,
+          "launcher_exited": true,
+          "limit_seconds": 5.0
+        },
+        "scope": "tracked detached groups at the final observation; unknown identities cannot confirm cleanup",
+        "status": "unknown"
+      },
+      "failure": "native control outcome unknown: owner proxy was removed",
+      "files": {
+        "deployment.log": "6d5972ff0c60a79e5bcd20ca22a293b48faaf28fc98e73f13e56f205ceffb64e",
+        "qualification.json": "191c7fb6e5c41f150dd71012062f2d9234e885b4731867cfec8450c611e67281"
+      },
+      "path": "/tmp/rtc-main-nativecal-classic-collect-v2",
+      "qualification_sha256": "191c7fb6e5c41f150dd71012062f2d9234e885b4731867cfec8450c611e67281",
+      "recorded_owned_pids_absent_at_receipt": {},
+      "success": false
+    },
+    {
+      "calibrator_result": {
+        "failure": "InvalidEvidence",
+        "phase": "aborted",
+        "recovery_failure": null,
+        "responses": null,
+        "restoration_confirmed": true,
+        "resume_permitted": true,
+        "run": 82,
+        "version": 1
+      },
+      "cleanup": {
+        "errors": [],
+        "fallback": true,
+        "groups": {
+          "core": {
+            "leader_pid": 3981023,
+            "leader_start_ticks": 208623617,
+            "observation": "group/session observations only; no numeric owner PID or group was signalled",
+            "observed_members": [],
+            "status": "complete"
+          },
+          "rtc": {
+            "leader_pid": 3981601,
+            "leader_start_ticks": 208631102,
+            "observation": "group/session observations only; no numeric owner PID or group was signalled",
+            "observed_members": [],
+            "status": "complete"
+          },
+          "simulator": {
+            "leader_pid": 3981028,
+            "leader_start_ticks": 208623756,
+            "observation": "group/session observations only; no numeric owner PID or group was signalled",
+            "observed_members": [],
+            "status": "complete"
+          }
+        },
+        "initial_wait": {
+          "elapsed_seconds": 1.330092164,
+          "launcher_exited": true,
+          "limit_seconds": 300.0
+        },
+        "launcher_exited": true,
+        "launcher_interrupted": false,
+        "launcher_killed": false,
+        "post_interrupt_wait": {
+          "attempted": false,
+          "elapsed_seconds": 0.0,
+          "launcher_exited": true,
+          "limit_seconds": 300.0
+        },
+        "post_kill_wait": {
+          "attempted": false,
+          "elapsed_seconds": 0.0,
+          "launcher_exited": true,
+          "limit_seconds": 5.0
+        },
+        "scope": "tracked detached groups at the final observation; unknown identities cannot confirm cleanup",
+        "status": "complete"
+      },
+      "failure": "Rust calibration process failed",
+      "files": {
+        "deployment.log": "fe0ac57c2478fce6d984eccebb6f2eec3b07904ec2d6db694c0df51917d50dc3",
+        "qualification.json": "81b1f8babefcf50d1f5a9e6e023311a59217ec7308a014b980de431e6f6f7ec2",
+        "rtc-calibrate.json": "245ac5426a0a62cf0c467490b742419ebad0d75ac6cea3448c54413e32fb2e07",
+        "rtc-calibrate.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "path": "/tmp/rtc-main-nativecal-classic-collect-v3",
+      "qualification_sha256": "81b1f8babefcf50d1f5a9e6e023311a59217ec7308a014b980de431e6f6f7ec2",
+      "recorded_owned_pids_absent_at_receipt": {
+        "core": true,
+        "rtc": true,
+        "simulator": true
+      },
+      "success": false
+    }
+  ],
+  "version": 1
+}
