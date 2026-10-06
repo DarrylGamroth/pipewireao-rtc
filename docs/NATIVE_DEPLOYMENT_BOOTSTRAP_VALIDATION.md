@@ -168,3 +168,49 @@ an explicit absence-of-world-age-warning check. Its earlier cache-only harness
 had a quoting error before the child was launched; the corrected harness and
 both logs remain retained under the final-deployment cache. No frame-path code
 or algorithm was changed by this warning correction.
+
+## Fresh Classic FGN scientific run and failed allocation gate
+
+The installed `classic-fgn-v5-installed` development package completed 512
+frame/command exchanges through the native deployment supervisor. All 512
+commands were nonzero; none hit the 0.8 µm OPD command rails. The observed maximum
+absolute command was 0.396975 µm OPD. Native shutdown completed and all tracked
+owned groups were absent at the final observation. This is functional evidence,
+not a passed deployment gate: after the unchanged 16-frame retained prefix, the
+inclusive simulator measurement recorded **3,862,872 allocated bytes, 73,836
+pool allocations and 17 malloc allocations**. It recorded zero GC pauses. The
+coordinator correctly failed before beginning the second reset cohort.
+
+Evidence is retained under
+`~/.cache/rtc-native-final-deployment-20261006/`: the
+`classic-fgn-v5-evidence.lifecycle.json` record, associated deployment log and
+`classic-fgn-v5-evidence/run-1/` reports and retained binary products. Scientific
+files remain protected by the preparation manifest. The source transport was
+upgraded to native runner SHA-256
+`eb7f6c2b9728b209766d280fd70e23d24231c6c0e83a817c37bc26aae50d8bd0`;
+this stripped copy has all 31 allocated ELF sections byte-identical to the
+previously tested native runner. The original executable and section verification
+are retained. The other three installed FGN/JFG packages have passed cold
+preparation and artifact checks only; they have not yet passed fresh SCI gates.
+
+A separate diagnostic copy sampled allocations at probability 0.02 over the
+same prefix and measured interval. It produced 1,451 samples representing
+74,701 sampled bytes. Its flat and tree profiles contain bootstrap controller
+discovery, registry snapshots, proxy binding/closing and compiler inference;
+they do not establish an allocating optics exchange. This sampled attribution
+is not an exhaustive absence proof. The bootstrap listener wakes on every
+registry addition/removal, including unrelated objects, and refresh scans and
+binds controller candidates. The initial `wait_state` client is closed and a
+second retained supervisor client is connected after source release; the first
+admitted observation in the uninstrumented run was already sequence 28. These
+are observed call paths and timing facts. Their contribution to startup-only
+versus continuing allocations still needs a discriminating experiment.
+
+The profile, instrumentation identities and output digest are recorded in
+`classic-fgn-v5-sampled-allocations.txt` and
+`allocation-profile-instrumentation.json`. The latter retains the earlier owner
+digest before the diagnostic output path was made persistent. Profiling has
+overhead and cannot qualify timing or allocation success. The host has unrelated
+Julia processes on cores used by this functional layout; no isolated latency,
+tail or frame-rate claim is made. The inclusive measurement boundary and GC
+policy have not been relaxed.
