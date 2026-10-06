@@ -1,0 +1,29 @@
+{
+  "scope": "read-only exact installed HIL graph/source and retained failed report; no SCI/test/build",
+  "package": "/tmp/classic-fgn-cuda-observation-enabled-v1-installed",
+  "sources_sha256": {
+    "/tmp/classic-fgn-cuda-observation-enabled-v1-installed/session.conf.in": "18cad34deab91fa40604f499b3abb6aacce231169bfb7aedfef1c0fc466bc320",
+    "/tmp/classic-fgn-cuda-observation-enabled-v1-installed/hil/simulator_owner.jl": "7b9265db8a449660554679fbd9719bc4549a32bfa3ed5eadf0cb5183f23112f9",
+    "/tmp/classic-fgn-cuda-observation-enabled-v1-installed/hil/source_control.jl": "8e6953c05b071eed6548113094789a8077b93ca9d87e89c8f3fad3f6fb785a91",
+    "/tmp/classic-fgn-cuda-observation-enabled-v1-installed/hil/packages/AdaptiveOpticsSimPipeWireHIL/src/exchange.jl": "b73f9a6924eb9cf9d291d40f66f27aaf1a94856759e22214552965e01026549f",
+    "/tmp/gui-classic-render-death-v1/result.json": "5c15bcaa8a6615af66a47b907ea1277fa9880473d6c0c34984ee0f1ed5d90602",
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-controls/src/live.rs": "ccf20e38500aef85d79fdaeffb880154c8a33c3b88925267b4ada3764bae8288"
+  },
+  "package_files_match_seal": {
+    "session.conf.in": true,
+    "hil/simulator_owner.jl": true,
+    "hil/source_control.jl": true,
+    "hil/packages/AdaptiveOpticsSimPipeWireHIL/src/exchange.jl": true
+  },
+  "actual_result": {
+    "success": false,
+    "failure": "required science did not progress after observer process exit",
+    "cleanup_failure": null,
+    "admission_discarded": 0,
+    "admission_discarded_by_sink": {},
+    "final_sequence": 38,
+    "final_discarded": 0
+  },
+  "before_after_interval_witness_retained": false,
+  "disposition": "invalid owned-discard progress requirement confirmed; complete source exchange sequence is authoritative for selected HIL graph"
+}
