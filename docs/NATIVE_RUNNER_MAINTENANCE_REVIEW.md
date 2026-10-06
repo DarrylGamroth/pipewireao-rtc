@@ -178,3 +178,40 @@ actual newly-arriving-during-blocked-monitor timeout fixture.
 **Disposition:** reported to primary immediately during precommit review;
 source remediation remains primary-owned and unaccepted until this ambiguity
 is addressed.
+
+### Revised separate-limit design: source acceptance
+
+The next primary draft replaces the ambiguous minimum with `ControlDeadline`
+containing independent `scope` and `admission` fields, shared through
+`Arc<Mutex<_>>` to satisfy the actual native filter listener's Send bound.
+The effective deadline is their minimum. Admission updates its own monotone
+cap only while a lexical scope is active. An inner guard restores its parent's
+lexical state while carrying the admission cap; the outermost guard restores
+the prior inactive state. Consequently an admission cap hidden by a shorter
+inner scope is preserved. Source review accepts this correction of R003.
+
+The inspected test matrix covers inner 100/250/500 ms scopes with a 250 ms
+admission cap, ordinary lexical restoration, inactive admission, inability to
+extend a cap, and scope cleanup. An additional admission-before-unwind followed
+by a fresh unrelated scope is recommended to make the lifetime invariant
+explicit; the inspected outermost Drop already implements it.
+
+Lock ordering was reviewed: production request staging takes Stage then briefly
+takes the deadline mutex. Deadline reads/restoration release their lock before
+native waiting or callback dispatch, and no inverse held-lock path was found.
+The production callback still only stages data and adjusts the cap; it performs
+no Runner effect. These locks are in cold control paths, not scientific frame
+callbacks.
+
+Every production `wait_for_callbacks` call site in `src/live.rs` was checked.
+They handle false by exiting/breaking or subsequently enter a bounded roundtrip.
+The former ignored-false roundtrip now exits on false and re-reads the effective
+deadline on each loop. No remaining ignored-false spin was identified. The
+existing maximum five-millisecond callback-wait quantum remains; this source
+review is not a hard execution-time measurement.
+
+**Disposition:** revised source design accepted, with actual delayed admission
+inside an already-running monitor and retained regression evidence still
+required before final remediation verification. This is a review of the dirty
+primary source, not an assertion about a yet-uncommitted final hash. No build,
+test rerun or SCI was performed by the reviewer.
