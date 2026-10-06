@@ -38,6 +38,7 @@ end
     result = Export.owner_arguments(argv; stage="nativepilot", illumination="lamp", capture_max_bytes=100000, telemetry_max_bytes=64000, evidence_directory="/fresh/persistent-owner-evidence")
     @test argv[2] == "@PACKAGE@/hil/simulator.jl"
     @test result[2] == "@PACKAGE@/hil/heart_calibration_owner.jl"
+    @test !("--calibration-socket" in result)
     @test result[findfirst(==("--heart-native-runtime"), result) + 1] == "@RUNTIME@/heart/native"
     @test result[findfirst(==("--heart-probe-directory"), result) + 1] == "/fresh/persistent-owner-evidence"
     @test result[findfirst(==("--capture-directory"), result) + 1] == "@RUNTIME@/captured"

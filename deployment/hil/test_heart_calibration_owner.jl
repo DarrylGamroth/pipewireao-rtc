@@ -14,7 +14,6 @@ const NativeOwner = HeartCalibrationOwner
         end
         append!(arguments, ["--transport", "heart", "--controller-node", "fixture.heart",
             "--controller-pid", "123", "--controller-instance", "17",
-            "--calibration-socket", joinpath(directory, "calibration.sock"),
             "--heart-client", "/usr/bin/true", "--heart-native-runtime", joinpath(directory, "native"),
             "--heart-probe-directory", joinpath(directory, "probes"), "--heart-telemetry-max-bytes", "4096"])
         options = NativeOwner.options(arguments)

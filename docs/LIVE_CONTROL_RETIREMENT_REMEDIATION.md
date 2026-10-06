@@ -128,3 +128,20 @@ Actual updated-runner native foreground/service qualification and independent
 diff review remain required. No installed runtime, scientific allocation,
 numerical, performance or hardware qualification is claimed here. NRET-003
 through NRET-006 remain outside this approved removal.
+
+## Retire the unused calibration socket argument
+
+2026-10-06: selected calibration and HEART calibration owners no longer
+require or return `calibration_socket`; exporters no longer emit
+`--calibration-socket`. The native action server already binds the exact
+acquisition control node. The former argument was an unused path validation,
+not an active fallback, but could misleadingly fail native startup on a stale
+filesystem path. Legacy arguments now receive an explicit unknown-option
+rejection before owner preparation. Capture and WFS artifact conflict checks
+retain their applicable native paths.
+
+The positive native owner options fixture failed before removal with
+`missing --calibration-socket`. Afterward its 30 checks pass, including retired
+option rejection and no socket creation. HEART owner and export regression
+logs are retained in `~/.cache/rtc-native-final-deployment-20261006/`;
+this is option/export verification, not an installed acquisition result.

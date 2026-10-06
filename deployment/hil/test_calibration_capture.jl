@@ -5,7 +5,7 @@ function capture_owner_arguments(root)
     return ["--profile", "classic", "--graph", joinpath(root, "plant.toml"),
         "--rate", "500", "--exposure-ns", "2000000", "--remote", joinpath(root,"isolated-core"),
         "--control-node", "fixture.calibration", "--control-instance", "17",
-        "--output", joinpath(root, "result.json"), "--calibration-socket", joinpath(root, "calibration.sock")]
+        "--output", joinpath(root, "result.json")]
 end
 
 @testset "calibration owner startup campaign options" begin
@@ -14,6 +14,9 @@ end
         defaults = calibration_options(arguments)
         @test defaults.illumination === :lamp && defaults.calibration_stage == "calibration"
         @test defaults.capture_directory === nothing && defaults.capture_max_bytes === nothing
+        @test !hasproperty(defaults,:calibration_socket)
+        @test_throws ArgumentError calibration_options([arguments; "--calibration-socket"; joinpath(root,"calibration.sock")])
+        @test !ispath(joinpath(root,"calibration.sock"))
         directory = joinpath(root, "capture")
         capture = ["--capture-directory", directory, "--capture-max-bytes", "4004032"]
         selected = calibration_options([arguments; capture; "--illumination"; "dark"; "--calibration-stage"; "dark-training"])

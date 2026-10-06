@@ -285,7 +285,7 @@ function deployment_descriptor(package,base,specification,records,profile,engine
     i = findfirst(arg -> endswith(arg,"/hil/simulator.jl"),argv)
     i === nothing && throw(ArgumentError("HIL source owner has no maintained simulator entrypoint"))
     argv[i] = "@PACKAGE@/hil/calibration_owner.jl"
-    append!(argv,["--calibration-socket","@RUNTIME@/calibration.sock","--illumination",illumination,"--calibration-stage",stage])
+    append!(argv,["--illumination",illumination,"--calibration-stage",stage])
     capture_max_bytes === nothing || append!(argv,["--capture-directory","@RUNTIME@/captured","--capture-max-bytes",string(capture_max_bytes)])
     profile == "classic" && append!(argv,["--wfs-active","@PACKAGE@/calibration/wfs-active.u8"])
     simulator["argv"] = argv

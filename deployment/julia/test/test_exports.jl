@@ -213,6 +213,7 @@ end
         @test provenance["owner_transport_conversion"]["helpers_sha256"]["simulator_owner.jl"] ==
             ExportFixture.Common.sha256_file(joinpath(deployed,"hil/simulator_owner.jl"))
         @test selected["argv"][findfirst(==("--control-instance"), selected["argv"]) + 1] == "@SOURCE_OWNER_INSTANCE@"
+        @test !("--calibration-socket" in selected["argv"])
         @test selected["argv"][findfirst(==("--remote"), selected["argv"]) + 1] == "@RUNTIME@/@REMOTE@"
         @test isempty(intersect(Set(keys(selected)), Set(("prepared", "connect", "connected", "quit", "control-request", "control-reply"))))
     end

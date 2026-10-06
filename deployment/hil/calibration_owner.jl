@@ -10,7 +10,6 @@ using Sockets
 function calibration_options(arguments; required_transport::Symbol=:scientific)
     length(arguments) % 2 == 0 || throw(ArgumentError("each option requires one value"))
     ordinary = String[]
-    endpoint = nothing
     active_path = nothing
     illumination = :lamp
     capture_directory = nothing
@@ -18,11 +17,7 @@ function calibration_options(arguments; required_transport::Symbol=:scientific)
     calibration_stage = "calibration"
     seen_campaign = Set{String}()
     for index in 1:2:length(arguments)
-        if arguments[index] == "--calibration-socket"
-            endpoint === nothing || throw(ArgumentError("duplicate --calibration-socket"))
-            isempty(arguments[index + 1]) && throw(ArgumentError("empty calibration socket"))
-            endpoint = abspath(arguments[index + 1])
-        elseif arguments[index] == "--wfs-active"
+        if arguments[index] == "--wfs-active"
             active_path === nothing || throw(ArgumentError("duplicate --wfs-active"))
             isempty(arguments[index + 1]) && throw(ArgumentError("empty WFS active path"))
             active_path = abspath(arguments[index + 1])
@@ -49,18 +44,12 @@ function calibration_options(arguments; required_transport::Symbol=:scientific)
             push!(ordinary, arguments[index], arguments[index + 1])
         end
     end
-    endpoint === nothing && throw(ArgumentError("missing --calibration-socket"))
     options = Protocol.parse_options(ordinary; native_lifecycle=true)
     options.transport === required_transport || throw(ArgumentError("calibration transport differs from the selected owner"))
-    ncodeunits(endpoint) < 108 || throw(ArgumentError("calibration socket path exceeds the Unix limit"))
-    endpoint in (options.graph, options.prepared_event, options.connect_request,
-        options.connect_reply, options.quit_request, options.control_request,
-        options.control_reply, options.output) && throw(ArgumentError("calibration socket path conflicts"))
-    ispath(endpoint) && throw(ArgumentError("calibration socket already exists"))
     if active_path !== nothing
         options.profile === :classic || throw(ArgumentError("--wfs-active is Classic only"))
         isfile(active_path) || throw(ArgumentError("WFS active artifact is missing"))
-        active_path in (endpoint, options.graph, options.prepared_event, options.connect_request,
+        active_path in (options.graph, options.prepared_event, options.connect_request,
             options.connect_reply, options.quit_request, options.control_request,
             options.control_reply, options.output) && throw(ArgumentError("WFS active path conflicts"))
     end
@@ -71,11 +60,11 @@ function calibration_options(arguments; required_transport::Symbol=:scientific)
         (ispath(capture_directory) || islink(capture_directory)) &&
             throw(ArgumentError("capture directory must be fresh"))
         isdir(dirname(capture_directory)) || throw(ArgumentError("capture directory parent is missing"))
-        capture_directory in (endpoint, options.graph, options.prepared_event, options.connect_request,
+        capture_directory in (options.graph, options.prepared_event, options.connect_request,
             options.connect_reply, options.quit_request, options.control_request,
             options.control_reply, options.output, active_path) && throw(ArgumentError("capture directory path conflicts"))
     end
-    return merge(options, (; calibration_socket=endpoint, active_path,
+    return merge(options, (; active_path,
         illumination, capture_directory, capture_max_bytes, calibration_stage))
 end
 

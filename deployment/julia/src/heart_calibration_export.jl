@@ -76,7 +76,7 @@ function owner_arguments(argv; stage, illumination, capture_max_bytes, telemetry
     positions = findall(arg -> endswith(arg, "/hil/simulator.jl"), result)
     length(positions) == 1 || throw(ArgumentError("HEART base requires the maintained simulator owner"))
     result[only(positions)] = "@PACKAGE@/hil/heart_calibration_owner.jl"
-    append!(result, ["--calibration-socket", "@RUNTIME@/calibration.sock", "--calibration-stage", stage,
+    append!(result, ["--calibration-stage", stage,
         "--illumination", illumination, "--capture-directory", "@RUNTIME@/captured",
         "--capture-max-bytes", string(capture_max_bytes),
         "--heart-client", "@PACKAGE@/heart/bin/scaoTemplateCmdClient",
