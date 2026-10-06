@@ -1,0 +1,35 @@
+{
+  "scope": "cold runner native control admission/deadline; no SCI or performance qualification",
+  "sources": {
+    "src/live.rs": "ccf20e38500aef85d79fdaeffb880154c8a33c3b88925267b4ada3764bae8288",
+    "src/native_runner_endpoint.rs": "259c0b6c87207920c7a8a91ef671d1f3564c2087ab6cc3556a143d1e80f58b6e",
+    "src/native_runner_mailbox.rs": "976cfe339f482ce12ad8efb3af8c57f904908672e38422803854ad31a3374336",
+    "src/native_runner_endpoint_tests.rs": "d9074dd312c7083d3a41be54ac6281611981a0c1ef111ca9e0a4468b33451b19",
+    "deployment/julia/test/native_runner_monitor.jl": "5720ab9aa2da369f62039444cbe0c553f1d1f6c26b154dde9ffd08ceb952ae3e"
+  },
+  "evidence": {
+    "arriving_budget-final.log": "95dba1c8b9458ba1a616fe8a695a85cde190dce646bf9ec2fa9d513ae430ea3b",
+    "queued_budget-final.log": "b22bb6c6ea81837d65b49aab16ae671d4f98f673243c36041c3f6371935a509f",
+    "loss-final.log": "3071871fedb773e0b8894d0b7413707333e4fbfce43da3ccbe0586f0fddb1c7f",
+    "queued_loss.log": "bb421d2cd4037bd8e2b0579926c337f967a485674ad259391086c6cee7e0c603",
+    "maintenance-admission-before.log": "de4fe25172143c813a27a5c57e4848eb76fb058128a1906be126cf08acc3f5b2",
+    "maintenance-workspace-final.log": "deb0ef87d30f09c9e00cea6bc9bbc86cca061056ee5ca0235a6df78838d5ec58",
+    "budget-final.log": "1749822359a9f82d7dcb2dac4f4ed4bf19eb00ff95acf66d97cf649414f9a35c",
+    "maintenance-private-core-after.log": "e32ce86902ac802f7d7c2e13b5cda924e830b4778e93dc5c3b97fc2c1275c09d",
+    "budget.log": "8d48332e725d243ed147898049ba4ae8b004972cfbc73d3a602178ecb5a6368f",
+    "maintenance-private-core-final.log": "b19458be899384d85b193a65da3cd430e601c77e054684a1a96dedb06711af7c",
+    "queued_loss-final.log": "3d2034d9ac66b19a413fd83e56081b4bdd21c2f53cf331cb4132eec56e4a76b9",
+    "arriving_budget.log": "67e8420a6f1c239672b05707b5519d4494ecfcc408b5fbcfafc4794e07ef1aa4",
+    "loss.log": "01c7de5573e178164b72fe61cb0b3b2183582f4b527025da8368b89b6532f841",
+    "queued_budget.log": "9ddbeffa73bc6ca46ad6ded15d337e6c75895069c371a094a6cbe33a726b4d48",
+    "maintenance-clippy-v2.log": "67fb6102bad3f9c20afe0a7181ab9533a602462de0e0854203efc13a507d6a64"
+  },
+  "workspace_tests_passed": 198,
+  "private_core_assertions": 15,
+  "arriving_test": "synthetic callback admission 40 ms after actual stalled-core monitor entry; 250 ms original request budget, elapsed 290510021 ns; Ready, no SessionStart effect, correlated local ETIMEDOUT; no remote observation while core stopped",
+  "native_runner_sha256": "750059d1ee71783b63d1fbb96a6bc92cd9be436f551d1b450688a6aae2c2d5cb",
+  "native_build_target": "/tmp/rtc-maintenance-target-20261006",
+  "old_v3_branch_attribution": "busy correlated, occupied versus maintenance not directly traced; deterministic source rejection fixed",
+  "installed_service_qualification": "pending",
+  "test_binary_sha256": "1f5f57e3579fb5c242c2e5ae3c4e7d3c889167ca0ddb5e35b7718bae6c120a92"
+}

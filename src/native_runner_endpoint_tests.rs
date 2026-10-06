@@ -159,17 +159,23 @@ fn required_object_loss(queued: bool) {
 #[test]
 #[ignore = "requires the native runner stalled-core budget fixture"]
 fn accepted_runner_request_inherits_stalled_core_budget() {
-    stalled_core_budget(false);
+    stalled_core_budget(false, false);
 }
 
 #[test]
 #[ignore = "requires the native runner queued-request stalled-core budget fixture"]
 fn queued_request_bounds_due_monitor() {
-    stalled_core_budget(true);
+    stalled_core_budget(true, false);
+}
+
+#[test]
+#[ignore = "requires the native runner queued-request stalled-core budget fixture"]
+fn arriving_request_bounds_already_running_monitor() {
+    stalled_core_budget(true, true);
 }
 
 #[allow(clippy::too_many_lines)]
-fn stalled_core_budget(queued_monitor: bool) {
+fn stalled_core_budget(queued_monitor: bool, arriving: bool) {
     let remote = std::env::var("PIPEWIREAO_MONITOR_PROOF_REMOTE").unwrap();
     let config = PathBuf::from(std::env::var_os("PIPEWIREAO_MONITOR_PROOF_CONFIG").unwrap());
     let directory = PathBuf::from(std::env::var_os("PIPEWIREAO_MONITOR_PROOF_DIRECTORY").unwrap());
@@ -216,7 +222,9 @@ fn stalled_core_budget(queued_monitor: bool) {
     };
     let request =
         crate::native_runner_codec::encode_request(&header, &Command::SessionStart).unwrap();
-    let accepted = {
+    let accepted = if arriving {
+        None
+    } else {
         let mut stage = endpoint.stage.lock().unwrap();
         assert_eq!(stage.stage(&request, Instant::now()), Admission::Accepted);
         if queued_monitor {
@@ -225,6 +233,23 @@ fn stalled_core_budget(queued_monitor: bool) {
             stage.take_pending()
         }
     };
+    // A timer runs on the sole owner main loop while monitoring is already
+    // inside its stalled roundtrip. Use the same callback admission helper.
+    let main_loop = runner.executor().main_loop();
+    let timer = arriving.then(|| {
+        let stage = Arc::clone(&endpoint.stage);
+        let limit = runner.executor().control_deadline_limiter();
+        main_loop.loop_().add_timer(move |_| {
+            assert!(stage.lock().unwrap().maintenance);
+            stage_request(&stage, &limit, &request, Instant::now());
+        })
+    });
+    if let Some(timer) = &timer {
+        timer
+            .update_timer(Some(Duration::from_millis(40)), None)
+            .into_result()
+            .unwrap();
+    }
     let started = Instant::now();
     let expected_state = if queued_monitor {
         let monitored = monitor_required_objects(&mut runner, &mut endpoint, &mut None);
@@ -262,6 +287,7 @@ fn stalled_core_budget(queued_monitor: bool) {
     assert!(endpoint.stage.lock().unwrap().occupied.is_none());
     assert!(endpoint.stage.lock().unwrap().pending.is_none());
     assert!(!endpoint.stage.lock().unwrap().maintenance);
+    assert_eq!(endpoint.stage.lock().unwrap().last_token, 1);
     std::fs::write(
         directory.join("budget-elapsed-ns"),
         elapsed.as_nanos().to_string(),
@@ -276,7 +302,7 @@ fn stalled_core_budget(queued_monitor: bool) {
         );
         std::thread::sleep(Duration::from_millis(2));
     }
-    println!("NATIVE_RUNNER_BUDGET elapsed_ns={} queued_monitor={queued_monitor} timeout=true lifecycle={expected_state:?} session_start_effects=false local_negative_publication=true synthetic_admission=true remote_observation=false", elapsed.as_nanos());
+    println!("NATIVE_RUNNER_BUDGET elapsed_ns={} queued_monitor={queued_monitor} arriving_during_monitor={arriving} timeout=true lifecycle={expected_state:?} session_start_effects=false local_negative_publication=true synthetic_admission=true remote_observation=false", elapsed.as_nanos());
     drop(endpoint);
     runner.with_control_deadline(Instant::now() + Duration::from_secs(5), |runner| {
         assert_eq!(
@@ -287,7 +313,7 @@ fn stalled_core_budget(queued_monitor: bool) {
 }
 
 #[test]
-fn maintenance_rejects_new_admission_without_changing_accepted_identity() {
+fn maintenance_accepts_one_pending_request_without_changing_its_deadline() {
     let controller = ControllerIdentity {
         global_id: 7,
         serial: 91,
@@ -305,15 +331,13 @@ fn maintenance_rejects_new_admission_without_changing_accepted_identity() {
     let mut stage = Stage::new(41);
     assert!(stage.add_controller(controller));
     stage.maintenance = true;
-    assert_eq!(stage.stage(&request, Instant::now()), Admission::Rejected);
+    let now = Instant::now();
+    assert_eq!(stage.stage(&request, now), Admission::Accepted);
     assert_eq!(
-        stage.rejection.as_ref().unwrap().header.result,
-        -libc::EBUSY
+        stage.pending.as_ref().unwrap().deadline,
+        now + Duration::from_secs(1)
     );
-    assert_eq!(stage.last_token, 0);
-    assert!(stage.pending.is_none() && stage.occupied.is_none());
-    stage.maintenance = false;
-    assert_eq!(stage.stage(&request, Instant::now()), Admission::Accepted);
+    assert_eq!(stage.last_token, 1);
     let accepted = stage.take_pending().unwrap();
     stage.maintenance = true;
     assert_eq!(stage.stage(&request, Instant::now()), Admission::Duplicate);
@@ -340,4 +364,54 @@ fn maintenance_rejects_new_admission_without_changing_accepted_identity() {
         -libc::ESTALE
     );
     assert_eq!(stage.last_token, 2);
+}
+
+#[test]
+fn only_new_admission_during_maintenance_limits_the_wait() {
+    let controller = ControllerIdentity {
+        global_id: 7,
+        serial: 91,
+        instance: 11,
+    };
+    let header = RequestHeader {
+        version: envelope::VERSION,
+        endpoint_instance: 41,
+        controller,
+        token: 1,
+        operation: 3,
+        budget_ns: 1_000_000_000,
+    };
+    let stage = Mutex::new(Stage::new(41));
+    assert!(stage.lock().unwrap().add_controller(controller));
+    stage.lock().unwrap().maintenance = true;
+    let observed = Cell::new(None);
+    let limit = |deadline| observed.set(Some(deadline));
+    let now = Instant::now();
+    let request = crate::native_runner_codec::encode_request(&header, &Command::Status).unwrap();
+    stage_request(&stage, &limit, &request, now);
+    assert_eq!(observed.get(), Some(now + Duration::from_secs(1)));
+    let duplicate = crate::native_runner_codec::encode_request(
+        &RequestHeader {
+            budget_ns: 1,
+            ..header
+        },
+        &Command::Status,
+    )
+    .unwrap();
+    stage_request(&stage, &limit, &duplicate, now + Duration::from_millis(10));
+    assert_eq!(observed.get(), Some(now + Duration::from_secs(1)));
+    let collision = crate::native_runner_codec::encode_request(
+        &RequestHeader { token: 2, ..header },
+        &Command::Status,
+    )
+    .unwrap();
+    stage_request(&stage, &limit, &collision, now + Duration::from_millis(20));
+    assert_eq!(observed.get(), Some(now + Duration::from_secs(1)));
+    let accepted = stage.lock().unwrap().take_pending().unwrap();
+    assert!(stage.lock().unwrap().complete(&accepted));
+    stage.lock().unwrap().maintenance = false;
+    observed.set(None);
+    stage_request(&stage, &limit, &collision, now);
+    assert_eq!(observed.get(), None);
+    assert_eq!(stage.lock().unwrap().last_token, 2);
 }

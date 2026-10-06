@@ -45,6 +45,7 @@ function run_native_monitor_fixture(mode::Symbol)
         queued_loss="queued_request_is_fenced_by_required_object_loss",
         budget="accepted_runner_request_inherits_stalled_core_budget",
         queued_budget="queued_request_bounds_due_monitor",
+        arriving_budget="arriving_request_bounds_already_running_monitor",
     )
     with_control_private_core() do socket, directory, daemon
         binary = ENV["NATIVE_RUNNER_BIN_TEST_BINARY"]
@@ -166,7 +167,7 @@ function run_native_monitor_fixture(mode::Symbol)
 end
 
 @testset "native runner monitor and owner budget" begin
-    cases = (:loss, :queued_loss, :budget, :queued_budget)
+    cases = (:loss, :queued_loss, :budget, :queued_budget, :arriving_budget)
     selected = get(ENV, "NATIVE_RUNNER_MONITOR_CASE", "all")
     if selected != "all"
         Symbol(selected) in cases || error("unknown monitor fixture case $selected")

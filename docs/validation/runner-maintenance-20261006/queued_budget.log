@@ -1,0 +1,7 @@
+
+running 1 test
+test native_runner_endpoint::tests::queued_request_bounds_due_monitor ... NATIVE_RUNNER_BUDGET elapsed_ns=250196380 queued_monitor=true arriving_during_monitor=false timeout=true lifecycle=Ready session_start_effects=false local_negative_publication=true synthetic_admission=true remote_observation=false
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 22 filtered out; finished in 0.26s
+

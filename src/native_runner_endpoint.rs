@@ -347,6 +347,28 @@ fn pod(bytes: &[u8]) -> Result<&Pod, ScientificDiagnostic> {
     Pod::from_bytes(bytes).ok_or_else(|| diagnostic("internal serialized POD is incomplete"))
 }
 
+// Callback admission only reserves the existing single slot. The owner loop
+// dispatches after monitoring. Shorten its wait for a reentrant accepted ticket.
+fn stage_request(
+    stage: &Mutex<Stage>,
+    limit_deadline: &impl Fn(Instant),
+    bytes: &[u8],
+    now: Instant,
+) {
+    let mut stage = stage.lock().expect("native mailbox poisoned");
+    if stage.stage(bytes, now) == crate::native_runner_mailbox::Admission::Accepted
+        && stage.maintenance
+    {
+        limit_deadline(
+            stage
+                .pending
+                .as_ref()
+                .expect("accepted pending request")
+                .deadline,
+        );
+    }
+}
+
 impl Endpoint {
     fn new(
         runner: &Runner<LiveGraphAdapter>,
@@ -385,6 +407,7 @@ impl Endpoint {
         )
         .map_err(diagnostic)?;
         let callback = Arc::clone(&stage);
+        let limit_deadline = runner.executor().control_deadline_limiter();
         let fatal = Arc::new(Mutex::new(None));
         let filter_failure = Arc::clone(&fatal);
         let listener = filter
@@ -392,10 +415,7 @@ impl Endpoint {
             .param_changed(move |_, (), port, id, param| {
                 if port.is_none() && id == pw::spa::param::ParamType::Props.as_raw() {
                     if let Some(param) = param {
-                        callback
-                            .lock()
-                            .expect("native mailbox poisoned")
-                            .stage(param.as_bytes(), Instant::now());
+                        stage_request(&callback, &limit_deadline, param.as_bytes(), Instant::now());
                     }
                 }
             })
@@ -749,9 +769,8 @@ fn monitor_required_objects(
             self.0.lock().expect("native mailbox poisoned").maintenance = false;
         }
     }
-    // A callback may already have accepted queued work. Inherit that budget
-    // too. While monitoring has no accepted request, reject reentrant arrivals
-    // as busy rather than admitting them behind a fresh maintenance wait.
+    // Inherit already queued work. Reentrant admission reserves the same slot
+    // and shortens the active adapter scope; no effect dispatch occurs here.
     let request_deadline = {
         let mut stage = endpoint.stage.lock().expect("native mailbox poisoned");
         stage.maintenance = true;
@@ -772,6 +791,20 @@ fn monitor_required_objects(
         use pipewireao_rtc::EffectExecutor;
         runner.executor_mut().check_required_objects()
     });
+    // Include a request admitted by a nested callback after monitor entry.
+    let request_deadline = current
+        .as_ref()
+        .map(|accepted| accepted.deadline)
+        .or_else(|| {
+            endpoint
+                .stage
+                .lock()
+                .expect("native mailbox poisoned")
+                .pending
+                .as_ref()
+                .map(|accepted| accepted.deadline)
+        });
+    let deadline = request_deadline.map_or(deadline, |request| deadline.min(request));
     if request_deadline.is_some_and(|deadline| Instant::now() >= deadline) {
         let accepted = current.take().or_else(|| {
             endpoint

@@ -200,7 +200,6 @@ impl Stage {
             return Admission::Rejected;
         }
         if self.occupied.is_some()
-            || self.maintenance
             || (matches!(command, Command::Parameter { .. }) && self.worker_busy)
         {
             self.reject(

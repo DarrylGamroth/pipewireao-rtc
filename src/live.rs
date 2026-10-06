@@ -25,7 +25,7 @@ use std::io::Cursor;
 use std::mem::size_of;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 const SPA_NODE_FACTORY: &str = "spa-node-factory";
@@ -40,10 +40,35 @@ const FORMAT_ENUM_SEQUENCE: i32 = 0x4654;
 const CALLBACK_TIMEOUT: Duration = Duration::from_secs(5);
 
 // These scopes are private and lexically nested on the sole adapter owner.
-// Own the Cell handle so a scope does not prevent mutable adapter operations.
+// Admission and lexical limits are separate: a request's limit must survive
+// return from an inner scope even when that scope already has a shorter limit.
+#[derive(Clone, Copy, Default)]
+struct ControlDeadline {
+    scope: Option<Instant>,
+    admission: Option<Instant>,
+}
+
+impl ControlDeadline {
+    fn effective(self) -> Option<Instant> {
+        match (self.scope, self.admission) {
+            (Some(scope), Some(admission)) => Some(scope.min(admission)),
+            (scope, admission) => scope.or(admission),
+        }
+    }
+
+    fn limit(&mut self, deadline: Instant) {
+        if self.scope.is_some() {
+            self.admission = Some(
+                self.admission
+                    .map_or(deadline, |current| current.min(deadline)),
+            );
+        }
+    }
+}
+
 struct DeadlineGuard {
-    current: Rc<Cell<Option<Instant>>>,
-    previous: Option<Instant>,
+    current: Arc<Mutex<ControlDeadline>>,
+    previous: ControlDeadline,
 }
 
 impl crate::Runner<LiveGraphAdapter> {
@@ -62,61 +87,126 @@ impl crate::Runner<LiveGraphAdapter> {
 }
 
 impl DeadlineGuard {
-    fn new(current: Rc<Cell<Option<Instant>>>, deadline: Instant) -> Self {
-        let previous = current.get();
-        current.set(Some(previous.map_or(deadline, |outer| outer.min(deadline))));
+    fn new(current: Arc<Mutex<ControlDeadline>>, deadline: Instant) -> Self {
+        let previous = {
+            let mut active = current.lock().expect("control deadline poisoned");
+            let previous = *active;
+            active.scope = Some(previous.scope.map_or(deadline, |outer| outer.min(deadline)));
+            previous
+        };
         Self { current, previous }
     }
 }
 
 impl Drop for DeadlineGuard {
     fn drop(&mut self) {
-        self.current.set(self.previous);
+        let mut active = self.current.lock().expect("control deadline poisoned");
+        let admission = active.admission;
+        *active = self.previous;
+        // Only an inner scope carries reentrant admission limits to its parent.
+        // The outermost scope restores all prior state, including after unwind.
+        if active.scope.is_some() {
+            if let Some(admission) = admission {
+                active.limit(admission);
+            }
+        }
     }
 }
 
 #[cfg(test)]
 mod deadline_tests {
-    use super::{Cell, DeadlineGuard, Duration, Instant, Rc};
+    use super::{Arc, Cell, ControlDeadline, DeadlineGuard, Duration, Instant, Mutex, Rc};
 
     #[test]
     fn nested_scopes_preserve_the_earliest_deadline() {
-        let current = Rc::new(Cell::new(None));
+        let current = Arc::new(Mutex::new(ControlDeadline::default()));
         let early = Instant::now() + Duration::from_secs(1);
         let late = early + Duration::from_secs(1);
-        let outer = DeadlineGuard::new(Rc::clone(&current), early);
+        let outer = DeadlineGuard::new(Arc::clone(&current), early);
         {
-            let _inner = DeadlineGuard::new(Rc::clone(&current), late);
-            assert_eq!(current.get(), Some(early));
+            let _inner = DeadlineGuard::new(Arc::clone(&current), late);
+            assert_eq!(current.lock().unwrap().effective(), Some(early));
         }
-        assert_eq!(current.get(), Some(early));
+        assert_eq!(current.lock().unwrap().effective(), Some(early));
         drop(outer);
-        assert_eq!(current.get(), None);
+        assert_eq!(current.lock().unwrap().effective(), None);
     }
 
     #[test]
     fn inner_earlier_deadline_restores_parent_on_return() {
-        let current = Rc::new(Cell::new(None));
+        let current = Arc::new(Mutex::new(ControlDeadline::default()));
         let early = Instant::now();
         let late = early + Duration::from_secs(1);
-        let _outer = DeadlineGuard::new(Rc::clone(&current), late);
+        let _outer = DeadlineGuard::new(Arc::clone(&current), late);
         {
-            let _inner = DeadlineGuard::new(Rc::clone(&current), early);
-            assert_eq!(current.get(), Some(early));
+            let _inner = DeadlineGuard::new(Arc::clone(&current), early);
+            assert_eq!(current.lock().unwrap().effective(), Some(early));
         }
-        assert_eq!(current.get(), Some(late));
+        assert_eq!(current.lock().unwrap().effective(), Some(late));
     }
 
     #[test]
     fn deadline_is_restored_on_unwind() {
-        let current = Rc::new(Cell::new(None));
+        let current = Arc::new(Mutex::new(ControlDeadline::default()));
         let deadline = Instant::now();
         let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            let _scope = DeadlineGuard::new(Rc::clone(&current), deadline);
+            let _scope =
+                DeadlineGuard::new(Arc::clone(&current), deadline + Duration::from_secs(1));
+            current.lock().unwrap().limit(deadline);
             panic!("diagnostic unwind");
         }));
         assert!(outcome.is_err());
-        assert_eq!(current.get(), None);
+        assert_eq!(current.lock().unwrap().effective(), None);
+        let fresh = deadline + Duration::from_secs(2);
+        let _scope = DeadlineGuard::new(Arc::clone(&current), fresh);
+        assert_eq!(current.lock().unwrap().effective(), Some(fresh));
+    }
+
+    #[test]
+    fn admission_limit_survives_a_shorter_or_equal_inner_scope() {
+        for milliseconds in [100, 250, 500] {
+            let current = Arc::new(Mutex::new(ControlDeadline::default()));
+            let now = Instant::now();
+            let outer = DeadlineGuard::new(Arc::clone(&current), now + Duration::from_secs(5));
+            {
+                let _inner = DeadlineGuard::new(
+                    Arc::clone(&current),
+                    now + Duration::from_millis(milliseconds),
+                );
+                current
+                    .lock()
+                    .unwrap()
+                    .limit(now + Duration::from_millis(250));
+                assert_eq!(
+                    current.lock().unwrap().effective(),
+                    Some(now + Duration::from_millis(milliseconds.min(250)))
+                );
+            }
+            assert_eq!(
+                current.lock().unwrap().effective(),
+                Some(now + Duration::from_millis(250))
+            );
+            drop(outer);
+            assert_eq!(current.lock().unwrap().effective(), None);
+        }
+    }
+
+    #[test]
+    fn admission_limit_is_inactive_without_a_scope_and_cannot_extend_it() {
+        let current = Arc::new(Mutex::new(ControlDeadline::default()));
+        let now = Instant::now();
+        current.lock().unwrap().limit(now);
+        assert_eq!(current.lock().unwrap().effective(), None);
+        let _scope = DeadlineGuard::new(Arc::clone(&current), now + Duration::from_secs(1));
+        current
+            .lock()
+            .unwrap()
+            .limit(now + Duration::from_millis(250));
+        current.lock().unwrap().limit(now + Duration::from_secs(2));
+        assert_eq!(
+            current.lock().unwrap().effective(),
+            Some(now + Duration::from_millis(250))
+        );
     }
 
     // The companion Julia fixture stops only its private daemon after READY.
@@ -669,7 +759,7 @@ pub struct LiveGraphAdapter {
     status: LiveGraphStatus,
     globals: Rc<RefCell<BTreeMap<u32, GlobalObject<PropertiesBox>>>>,
     errors: Rc<RefCell<Vec<String>>>,
-    callback_deadline: Rc<Cell<Option<Instant>>>,
+    callback_deadline: Arc<Mutex<ControlDeadline>>,
     _registry_listener: pw::registry::Listener,
     _core_listener: pw::core::Listener,
     registry: pw::registry::RegistryRc,
@@ -786,7 +876,7 @@ impl LiveGraphAdapter {
             status: LiveGraphStatus::default(),
             globals,
             errors,
-            callback_deadline: Rc::new(Cell::new(None)),
+            callback_deadline: Arc::new(Mutex::new(ControlDeadline::default())),
             _registry_listener: registry_listener,
             _core_listener: core_listener,
             registry,
@@ -814,6 +904,20 @@ impl LiveGraphAdapter {
     #[must_use]
     pub fn control_core(&self) -> pw::core::CoreRc {
         self.core.clone()
+    }
+
+    /// Returns an owner-thread callback that can only shorten an active cold
+    /// deadline. Use it when admitting a request during a nested PipeWire wait.
+    /// It has no effect outside a lexical control scope.
+    #[doc(hidden)]
+    pub fn control_deadline_limiter(&self) -> impl Fn(Instant) + 'static {
+        let current = Arc::clone(&self.callback_deadline);
+        move |deadline| {
+            current
+                .lock()
+                .expect("control deadline poisoned")
+                .limit(deadline);
+        }
     }
 
     #[must_use]
@@ -3384,7 +3488,9 @@ impl LiveGraphAdapter {
     ) -> Result<bool, ScientificDiagnostic> {
         let deadline = self
             .callback_deadline
-            .get()
+            .lock()
+            .expect("control deadline poisoned")
+            .effective()
             .map_or(deadline, |outer| outer.min(deadline));
         let remaining = deadline.saturating_duration_since(Instant::now());
         if remaining.is_zero() {
@@ -3403,14 +3509,16 @@ impl LiveGraphAdapter {
     }
 
     fn scoped_deadline(&self, deadline: Instant) -> DeadlineGuard {
-        DeadlineGuard::new(Rc::clone(&self.callback_deadline), deadline)
+        DeadlineGuard::new(Arc::clone(&self.callback_deadline), deadline)
     }
 
     fn roundtrip_until(&self, deadline: Instant, field: &str) -> Result<(), ScientificDiagnostic> {
         let _deadline = self.scoped_deadline(deadline);
         let deadline = self
             .callback_deadline
-            .get()
+            .lock()
+            .expect("control deadline poisoned")
+            .effective()
             .expect("deadline scope installed");
         if Instant::now() >= deadline {
             return Err(ScientificDiagnostic::new(
@@ -3433,6 +3541,14 @@ impl LiveGraphAdapter {
             })
             .register();
         loop {
+            // Admission during iterate_callbacks can shorten the shared scope.
+            // Re-read it instead of retaining a five-second entry snapshot.
+            let deadline = self
+                .callback_deadline
+                .lock()
+                .expect("control deadline poisoned")
+                .effective()
+                .map_or(deadline, |active| active.min(deadline));
             let errors = std::mem::take(&mut *self.errors.borrow_mut());
             if !errors.is_empty() {
                 return Err(ScientificDiagnostic::new(
@@ -3449,7 +3565,12 @@ impl LiveGraphAdapter {
             if completed.get() {
                 return Ok(());
             }
-            self.wait_for_callbacks(deadline, field)?;
+            if !self.wait_for_callbacks(deadline, field)? {
+                return Err(ScientificDiagnostic::new(
+                    field,
+                    "PipeWire synchronization deadline expired; completion is unknown",
+                ));
+            }
         }
     }
 
