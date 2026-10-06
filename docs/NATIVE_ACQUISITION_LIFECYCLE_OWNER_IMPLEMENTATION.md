@@ -32,7 +32,9 @@ calibration action JSON framing, science graphs or the vendor HEART process.
   recorded in the saved report; source Stopped says source resources closed and
   does not claim the vendor wrapper was restored. Correction Shutdown requires
   `owner.retained` after successful restore-run zero adoption, telemetry
-  validation and archival.
+  validation and archival. Retained restoration and source command ownership
+  are separate facts: a Connected restored window can still have `held=true`
+  until the source session closes.
 - An accepted Shutdown ticket is completed only after the session and action
   listener are closed. Stopped is synchronized with the private core under
   that ticket's remaining deadline. Failure or deadline expiry retains unknown
@@ -63,6 +65,9 @@ or Pause does not extend its input lifetime.
   assertions for preaccept cleanup, an accepted Hold followed by lifecycle
   loss, and a lost lifecycle completion after Release. This is a server
   protocol test, not a scientific or installed-owner qualification.
+- Selected calibration capture and HEART owner option fixtures now supply
+  explicit native control identity and an absolute private remote. A focused
+  correction test checks held/restored independence before and after closure.
 
 The local HIL project has no Manifest and cannot load its declared JSON3 and
 AdaptiveOpticsSim packages. The primary integration worktree must run selected

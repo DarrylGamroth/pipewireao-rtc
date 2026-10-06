@@ -5,9 +5,11 @@ const NativeOwner = HeartCalibrationOwner
 @testset "native owner options preserve the selected transport" begin
     mktempdir() do directory
         arguments = String[]
-        for name in Protocol.REQUIRED_OPTIONS
+        for name in Protocol.NATIVE_REQUIRED_OPTIONS
             value = name == "profile" ? "copper" : name == "rate" ? "100" :
-                name == "exposure-ns" ? "10000000" : joinpath(directory, name)
+                name == "exposure-ns" ? "10000000" :
+                name == "control-node" ? "fixture.calibration" :
+                name == "control-instance" ? "19" : joinpath(directory, name)
             append!(arguments, ["--$name", value])
         end
         append!(arguments, ["--transport", "heart", "--controller-node", "fixture.heart",

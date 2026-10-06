@@ -4,9 +4,11 @@ const CorrectionOwner=HeartCorrectionOwner
 
 function correction_arguments(directory)
     arguments=String[]
-    for name in Protocol.REQUIRED_OPTIONS
+    for name in Protocol.NATIVE_REQUIRED_OPTIONS
         value=name=="profile" ? "copper" : name=="rate" ? "500" :
-            name=="exposure-ns" ? "2000000" : joinpath(directory,name)
+            name=="exposure-ns" ? "2000000" :
+            name=="control-node" ? "fixture.correction" :
+            name=="control-instance" ? "23" : joinpath(directory,name)
         append!(arguments,["--$name",value])
     end
     append!(arguments,["--transport","heart","--correction-diagnostics","true",
@@ -30,6 +32,16 @@ mutable struct AdmissionFixture
     completed_correct::Union{Nothing,Bool}
     retained::Bool
     window::Int
+end
+
+@testset "correction source hold and restored archive remain independent" begin
+    state=(;closed=false,held=true)
+    owner=(;session=(;state,native_controller_held=nothing),active=nothing,retained=true)
+    @test CorrectionOwner.lifecycle_held(owner)
+    closed=merge(owner,(;session=merge(owner.session,(;state=(;closed=true,held=true)))))
+    @test !CorrectionOwner.lifecycle_held(closed)
+    unheld=merge(owner,(;session=merge(owner.session,(;state=(;closed=false,held=false)))))
+    @test !CorrectionOwner.lifecycle_held(unheld)
 end
 
 @testset "initial and reset actuation require public resume after links" begin

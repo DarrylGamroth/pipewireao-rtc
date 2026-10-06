@@ -100,6 +100,13 @@ mutable struct Owner{Session,Contract,Projection}
     retained::Bool
 end
 
+"""Report actual source command ownership independently from archive restoration."""
+function lifecycle_held(owner)
+    session=owner.session
+    return !session.state.closed &&
+        (session.state.held || session.native_controller_held!==nothing || owner.active!==nothing)
+end
+
 function bounded_json(path)
     !islink(path) && filesize(path) <= 1024*1024 || error("native correction JSON exceeds its bound")
     return Protocol.JSON3.read(read(path,String))
@@ -606,8 +613,7 @@ function run_owner_native(options,bridge,plant_module,target)
     current_cursor()=owner===nothing ? nothing : Acquisition.cursor(session)
     current_phase()=owner===nothing ? "initial" : owner.retained ? "restored" :
         session.service.phases.current===nothing ? "initial" : String(session.service.phases.current)
-    current_held()=owner!==nothing && !owner.retained &&
-        (session.state.held || session.native_controller_held!==nothing || owner.active!==nothing)
+    current_held()=owner!==nothing && lifecycle_held(owner)
     current_snapshot()=Lifecycle.snapshot(bridge,state,current_cursor();phase=current_phase(),
         held=current_held(),restored=owner!==nothing && owner.retained,
         window=owner===nothing ? nothing : UInt64(owner.window))

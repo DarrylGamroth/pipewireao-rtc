@@ -3,10 +3,8 @@ include("calibration_owner.jl")
 
 function capture_owner_arguments(root)
     return ["--profile", "classic", "--graph", joinpath(root, "plant.toml"),
-        "--rate", "500", "--exposure-ns", "2000000", "--remote", "isolated-core",
-        "--prepared-event", joinpath(root, "prepared"), "--connect-request", joinpath(root, "connect-request"),
-        "--connect-reply", joinpath(root, "connect-reply"), "--quit-request", joinpath(root, "quit"),
-        "--control-request", joinpath(root, "request.json"), "--control-reply", joinpath(root, "reply.json"),
+        "--rate", "500", "--exposure-ns", "2000000", "--remote", joinpath(root,"isolated-core"),
+        "--control-node", "fixture.calibration", "--control-instance", "17",
         "--output", joinpath(root, "result.json"), "--calibration-socket", joinpath(root, "calibration.sock")]
 end
 
