@@ -88,4 +88,25 @@ end
         @test_throws ArgumentError P.read_locator(alias)
     end
 end
+@testset "operator discovery never creates its registry" begin
+    mktempdir() do directory
+        chmod(directory,0o700)
+        withenv("XDG_RUNTIME_DIR"=>directory) do
+            @test isempty(Deployment.list_sessions())
+            @test isempty(readdir(directory))
+            @test D.existing_registry_directory() === nothing
+            app=joinpath(directory,"pipewireao-rtc");mkdir(app;mode=0o700)
+            @test isempty(Deployment.list_sessions())
+            @test isempty(readdir(app))
+            registry=D.registry_directory()
+            before=sort(readdir(registry))
+            @test isempty(Deployment.list_sessions())
+            @test readdir(registry)==before
+            @test !ispath(joinpath(registry,".lock"))
+            chmod(registry,0o755)
+            @test_throws ArgumentError Deployment.list_sessions()
+            chmod(registry,0o700)
+        end
+    end
+end
 end # module NativeSessionClientTests

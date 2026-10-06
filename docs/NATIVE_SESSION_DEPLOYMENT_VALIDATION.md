@@ -67,6 +67,17 @@ inherited CPUs 14/15 and explicit owner CPU 14. It submits **zero scientific
 frames** and arms no ndarray sinks. The original earlier failed fixtures and
 intermediate test setup mistakes remain retained.
 
+## Independent read-only listing correction
+
+The reviewer found that listing sessions used the publication directory helper,
+which created missing directories. The reader now checks existing owned private
+directories and returns an empty list when the registry is absent. It creates
+no directories or lock files. The unchanged discriminator passed 5 assertions
+and failed 3 before the correction, then passed all 8 afterward. The expanded
+pure suite passed 104 assertions. Evidence is retained in
+`native-session-publication-review-20261006/readonly-{before,after}.log` and
+`native-session-read-only-root-20261006.log`.
+
 ## Remaining delivery gates
 
 Independent review of publication and the locator correction, rendered GUI/picker and reconnect isolation, installed Classic/Copper FGN/JFG/unchanged HEART,

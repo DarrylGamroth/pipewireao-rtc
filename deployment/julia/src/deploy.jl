@@ -1131,7 +1131,8 @@ end
 
 "List unverified local hints without querying or controlling any endpoint."
 function list_sessions()
-    directory = NativeSessionDiscovery.registry_directory()
+    directory = NativeSessionDiscovery.existing_registry_directory()
+    directory === nothing && return NativeSessionDiscovery.DiscoveryEntry[]
     return NativeSessionDiscovery.list_sessions(directory)
 end
 

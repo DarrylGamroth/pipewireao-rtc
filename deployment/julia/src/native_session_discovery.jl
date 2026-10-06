@@ -16,7 +16,7 @@ const RECORD_SUFFIX = ".pod"
 const RECORD_PREFIX = "session-"
 
 export SessionRecord, Verification, DiscoveryEntry, FreshSupervisorStatus,
-    SelectedSession, registry_directory, encode_record, decode_record,
+    SelectedSession, registry_directory, existing_registry_directory, encode_record, decode_record,
     publish!, remove!, list_sessions, select_session
 
 @enum Verification::UInt8 Unverified=1 Verified=2 Inaccessible=3 Replaced=4 Malformed=5
@@ -199,6 +199,18 @@ function registry_directory(runtime_dir::AbstractString=get(ENV, "XDG_RUNTIME_DI
     root = _check_directory(runtime_dir)
     app = _ensure_private_child(root, "pipewireao-rtc")
     return _ensure_private_child(app, "sessions")
+end
+
+"Validate an existing registry without creating directories or lock files."
+function existing_registry_directory(runtime_dir::AbstractString=get(ENV,"XDG_RUNTIME_DIR",""))
+    isempty(runtime_dir) && throw(ArgumentError("XDG_RUNTIME_DIR is required for local session discovery"))
+    parent = _check_directory(runtime_dir)
+    for name in ("pipewireao-rtc","sessions")
+        path = joinpath(parent,name)
+        !ispath(path) && !islink(path) && return nothing
+        parent = _check_directory(path)
+    end
+    return parent
 end
 
 function _check_registry(path::AbstractString)
