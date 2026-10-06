@@ -197,7 +197,7 @@ end
         @test isfile(joinpath(deployed,"julia/assets/deployment/hil/calibration_campaign_analysis.jl"))
         @test isfile(joinpath(deployed,"julia/assets/deployment/hil/Project.toml"))
         for name in ("owner_protocol.jl", "native_acquisition_lifecycle.jl", "calibration_server.jl",
-                "native_calibration_actions.jl", "simulator.jl", "simulator_owner.jl",
+                "native_calibration_actions.jl", "native_heart_control.jl", "simulator.jl", "simulator_owner.jl",
                 "native_owner_bootstrap.jl", "jfg_owner.jl")
             @test read(joinpath(deployed,"hil",name)) ==
                 read(joinpath(ExportFixture.resource_root(),"hil",name))

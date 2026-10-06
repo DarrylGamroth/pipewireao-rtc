@@ -132,3 +132,24 @@ is closed before rejection. The focused coordinator suite passes 133/133;
 the independent handoff suite passes 6/6, including the wrong-PID cleanup case.
 Evidence: `sustained-locator-fixed-20261006.log` under the retained live-controls
 cache. These are software checks; installed scientific qualification is separate.
+
+### Installed preparation closure
+
+The first fresh Classic FGN cache conversion stopped before science because its
+manual helper list omitted `native_heart_control.jl`, included by the new
+simulator body. The normal HIL exporter already copies this helper. A focused
+calibration-export check reproduced the same missing file in its explicit
+refresh list; that exporter now refreshes the included helper as well. The
+original test failed with a missing-file error after 30 passing calibration
+checks; the same export case passes 31/31 after correction, and the entire
+export fixture passes 277 checks. Logs are `calibration-helper-{before,after}.log`
+under `~/.cache/rtc-native-final-deployment-20261006/`.
+
+The second cache conversion exposed a separate dependency mismatch before
+science: current simulator code calls `frame_buffers`, but canonical HIL adapter
+main still held 0.1.1 without that keyword. The already qualified 0.1.2 adapter
+increment `15fd37d` was fast-forwarded to its clean main. Its actual transport
+tests pass 182/182, including default two-buffer cardinality, bounded optional
+cardinality and borrowed-buffer behavior. The normal HIL exporter already
+rejects adapter versions below 0.1.2. These failed installed preparations and
+their final status artifacts remain retained; neither submitted science frames.
