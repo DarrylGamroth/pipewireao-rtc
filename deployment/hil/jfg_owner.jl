@@ -55,8 +55,8 @@ function main(arguments=ARGS; owner_script=normpath(joinpath(@__DIR__, "..", "jf
         admitted.owner_check()
         include(owner_script)
         admitted.owner_check()
-        options = Base.invokelatest(parse_arguments, graph_arguments)
-        Base.invokelatest(run_native_graph, options, admitted.bootstrap_runtime)
+        options = Base.invokelatest(() -> parse_arguments(graph_arguments))
+        Base.invokelatest(() -> run_native_graph(options, admitted.bootstrap_runtime))
     end
 end
 abspath(PROGRAM_FILE) == (@__FILE__) && main()

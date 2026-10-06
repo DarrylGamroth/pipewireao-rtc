@@ -153,3 +153,18 @@ tests pass 182/182, including default two-buffer cardinality, bounded optional
 cardinality and borrowed-buffer behavior. The normal HIL exporter already
 rejects adapter versions below 0.1.2. These failed installed preparations and
 their final status artifacts remain retained; neither submitted science frames.
+
+The subsequent installed run prepared and connected its simulator, then rejected
+the retained historical runner binary: its CLI did not support `--control-node`.
+The cache conversion now selects the native runner already exercised by the
+launcher tests, with its original and selected hashes recorded separately from
+the protected scientific files. This is a transport upgrade and requires fresh
+end-to-end qualification; binary byte identity is not claimed.
+
+Julia 1.12 also reported access to include-loaded global function bindings from
+an older world. Both ordinary wrappers now access those bindings inside a cold
+`invokelatest` closure. The actual external JFG bootstrap passes 9/9, including
+an explicit absence-of-world-age-warning check. Its earlier cache-only harness
+had a quoting error before the child was launched; the corrected harness and
+both logs remain retained under the final-deployment cache. No frame-path code
+or algorithm was changed by this warning correction.

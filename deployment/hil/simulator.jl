@@ -8,7 +8,7 @@ function main(arguments=ARGS)
         admitted.owner_check()
         include(joinpath(@__DIR__, "simulator_owner.jl"))
         admitted.owner_check()
-        Base.invokelatest(run_owner_main, admitted)
+        Base.invokelatest(() -> run_owner_main(admitted))
     end
 end
 if abspath(PROGRAM_FILE) == (@__FILE__)
