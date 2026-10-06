@@ -1,0 +1,2 @@
+┌ Warning: Assignment to `client` in soft scope is ambiguous because a global variable by the same name exists: `client` will be treated as a new local. Disambiguate by using `local client` to suppress this warning or `global client` to assign to the existing global variable.
+└ @ /tmp/gui-source-allocation-diagnostic-20261006/cold-discriminator/late_controller.jl:11

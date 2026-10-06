@@ -1,0 +1,20 @@
+{
+  "base_package": "/tmp/classic-jfg-sdk-interrupt-final-v1-installed",
+  "base_descriptor_sha256": "c7e3b7c35ae78619f58deaebf4d62632fdef085035063e66a4d73116a7a3edcb",
+  "diagnostic_descriptor_sha256": "6f606ace494e1cd03b154ba330785f3ba4ac88e209751bb9696b50bc6cd29316",
+  "unchanged_declared_artifacts": 708,
+  "sample_rate": 0.005,
+  "group_limit": 32,
+  "stack_frames": 8,
+  "prefix": 16,
+  "attach_min_sequence": 17,
+  "diagnostic_harness_sha256": "47980fe591b6030a0f3d9300e0d56af2b9fbc3a7bb09917e1d94bb9d461292a3",
+  "instrumentation": {
+    "hil/simulator_owner.jl": "b8e0d4638fbf71a3ae9aeaee6d3a36dd5dbf06742b7356ec3ad1e6fd762b23e8",
+    "hil/alloc_diagnostic.jl": "1d701cb07324adb1acb283aaa5b8bab09969b60552e606cd79f44a783eeb6c32"
+  },
+  "scope": "diagnostic only; global GC budget unchanged; no final report serialization profiled",
+  "attempt": 2,
+  "cache_state": "after failed first attempt; prepared SDK/package/profiler caches warmed; same512 rate100 prefix16 baseline ordering",
+  "external_profile_directory": "/tmp/gui-source-allocation-diagnostic-20261006/profiles-attempt-2"
+}

@@ -1,0 +1,26 @@
+[
+  {
+    "source": "/tmp/gui-hil-service-classic-jfg-final-v1/result.json",
+    "saved": "/tmp/gui-source-allocation-diagnostic-20261006/baseline-result.json",
+    "bytes": 81863,
+    "sha256": "a8c57a9c7a6a77a4ec8fdc6dc8f0b51cd41aca0eff678682a2cbafd8a512e131"
+  },
+  {
+    "source": "/tmp/gui-hil-service-classic-jfg-final-v1/deployment.log",
+    "saved": "/tmp/gui-source-allocation-diagnostic-20261006/baseline-deployment.log",
+    "bytes": 10742,
+    "sha256": "9fec659ea8db8323f3e632fbf53785384a9aef7d831cc48065813a4e81a5068d"
+  },
+  {
+    "source": "/tmp/gui-hil-service-classic-jfg-final-v1/run-1/sustained-result.json",
+    "saved": "/tmp/gui-source-allocation-diagnostic-20261006/baseline-run-1-sustained-result.json",
+    "bytes": 4393,
+    "sha256": "da0199ad5eeb74340168833e2c9038af5597941bc7b5a337d4913bb4d11acd33"
+  },
+  {
+    "source": "/tmp/gui-hil-service-classic-jfg-final-v1/run-2/sustained-result.json",
+    "saved": "/tmp/gui-source-allocation-diagnostic-20261006/baseline-run-2-sustained-result.json",
+    "bytes": 4369,
+    "sha256": "38af9e8712520d47c37b458df6eb465f7a3ad7b8c9fa9b6375b3078d0e05477a"
+  }
+]

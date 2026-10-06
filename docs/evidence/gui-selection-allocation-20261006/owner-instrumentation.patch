@@ -1,0 +1,18 @@
+--- /tmp/classic-jfg-sdk-interrupt-final-v1-installed/hil/simulator_owner.jl
++++ /tmp/gui-source-allocation-diagnostic-20261006/package/hil/simulator_owner.jl
+@@ -11,0 +12 @@
++include("alloc_diagnostic.jl")
+@@ -396,0 +398 @@
++    SourceAllocationDiagnostic.warm!()
+@@ -512 +514,4 @@
+-                sequence == options.frames && (sustained_run.allocation_start = Base.gc_num())
++                if sequence == options.frames
++                    SourceAllocationDiagnostic.begin!()
++                    sustained_run.allocation_start = Base.gc_num()
++                end
+@@ -532,0 +538,3 @@
++                SourceAllocationDiagnostic.stop!()
++                SourceAllocationDiagnostic.save!(options.output,frame_acquisition_generation(pipewire),
++                    sustained_run===nothing ? nothing : SustainedRun.allocation_report(sustained_run))
+@@ -545,0 +554 @@
++        SourceAllocationDiagnostic.stop!()

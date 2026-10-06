@@ -1,0 +1,57 @@
+{
+  "generation-1.json": {
+    "original_path": "/tmp/gui-source-allocation-diagnostic-20261006/profiles-attempt-2/source-3902691-generation-1.json",
+    "bytes": 30175,
+    "sha256": "88aca074dbc31c3daa869de51fdd10ded5cc01451baa138dd41ba915162a1405"
+  },
+  "generation-2.json": {
+    "original_path": "/tmp/gui-source-allocation-diagnostic-20261006/profiles-attempt-2/source-3902691-generation-2.json",
+    "bytes": 737,
+    "sha256": "11b7fcb29e19f7b1a3e60d9441077240ebe5ea342b8e28229cc6c70474db84cd"
+  },
+  "experiment-provenance.json": {
+    "original_path": "/tmp/gui-source-allocation-diagnostic-20261006/experiment-provenance-attempt-2.json",
+    "bytes": 1096,
+    "sha256": "0587da43b144cb861c0cc0df2e7ad67b7d42bcba58c704e4ba17fc49d82599c3"
+  },
+  "baseline-preservation.json": {
+    "original_path": "/tmp/gui-source-allocation-diagnostic-20261006/baseline-preservation.json",
+    "bytes": 1131,
+    "sha256": "8a7167044a41d0f9fd912b93451827bd2e402f1d00c548a621d1a6a3cd76e762"
+  },
+  "alloc_diagnostic.jl": {
+    "original_path": "/tmp/gui-source-allocation-diagnostic-20261006/package/hil/alloc_diagnostic.jl",
+    "bytes": 3415,
+    "sha256": "1d701cb07324adb1acb283aaa5b8bab09969b60552e606cd79f44a783eeb6c32"
+  },
+  "cold-owner.jl": {
+    "original_path": "/tmp/gui-source-allocation-diagnostic-20261006/cold-discriminator/owner.jl",
+    "bytes": 4010,
+    "sha256": "13f567405fcd9abf0c3fb433b1feb5a0b9e4f7ea6599685ff98cc4779ced806d"
+  },
+  "cold-late-controller.jl": {
+    "original_path": "/tmp/gui-source-allocation-diagnostic-20261006/cold-discriminator/late_controller.jl",
+    "bytes": 775,
+    "sha256": "63b27c8de384ac4f2bd8b41997d5392b1d0695928043c370886879541fef9e71"
+  },
+  "cold-result.json": {
+    "original_path": "/tmp/gui-source-allocation-diagnostic-20261006/cold-discriminator/result.json",
+    "bytes": 4021,
+    "sha256": "c0cd1cac420902f40a935c0f8f266daa0e5127dce1249342ce383fd30325f986"
+  },
+  "cold-compile.log": {
+    "original_path": "/tmp/gui-source-allocation-diagnostic-20261006/cold-discriminator/compile.log",
+    "bytes": 118649,
+    "sha256": "bb266d1e970fb3d39148e7b386a36a41c0026b6770af844c21fe04df479b25ce"
+  },
+  "cold-stdout.log": {
+    "original_path": "/tmp/gui-source-allocation-diagnostic-20261006/cold-discriminator/owner.stdout.log",
+    "bytes": 18,
+    "sha256": "cbb7434745ea393e50a52da7affccf7035f8ccd5fa4b0319efc4320e6ae68017"
+  },
+  "cold-client-stderr.log": {
+    "original_path": "/tmp/gui-source-allocation-diagnostic-20261006/cold-discriminator/late-controller.stderr.log",
+    "bytes": 373,
+    "sha256": "6d10f01b156e322016e31b1920874a8d5d8de3fed7b07a69cb89df6d96aeadf4"
+  }
+}

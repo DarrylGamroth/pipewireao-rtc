@@ -1,0 +1,31 @@
+{
+  "backend": "cuda",
+  "profile": "classic",
+  "completed": true,
+  "state": "paused",
+  "sequence": 512,
+  "requested_exchanges": 512,
+  "completed_frames": 512,
+  "completed_commands": 512,
+  "retained_prefix_frames": 16,
+  "wall_rate_hz": 100,
+  "model_period_ns": 2000000,
+  "allocation": {
+    "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included",
+    "completed_exchanges": 496,
+    "allocated_bytes": 0,
+    "gc_time_ns": 0,
+    "gc_pauses": 0,
+    "full_sweeps": 0,
+    "allocations": {
+      "pool": 0,
+      "big": 0,
+      "malloc": 0,
+      "realloc": 0
+    }
+  },
+  "full_report": {
+    "path": "/tmp/gui-source-allocation-diagnostic-20261006/baseline-run-2-sustained-result.json",
+    "sha256": "38af9e8712520d47c37b458df6eb465f7a3ad7b8c9fa9b6375b3078d0e05477a"
+  }
+}

@@ -1,0 +1,188 @@
+[
+  {
+    "success": true,
+    "cleanup_confirmed": true,
+    "service_exit": {
+      "exit_status": "0",
+      "exit_code": "exited",
+      "invocation": "78f3e3d181fd46a084d8bfb7bc63d5e6",
+      "result": "success"
+    },
+    "service_exit_properties": {
+      "Result": "success",
+      "ExecMainCode": "0",
+      "ExecMainStatus": "0"
+    },
+    "service_invocation": "78f3e3d181fd46a084d8bfb7bc63d5e6",
+    "owner_pid": 3891917,
+    "descriptor_sha256": "c7e3b7c35ae78619f58deaebf4d62632fdef085035063e66a4d73116a7a3edcb",
+    "harness_sha256": "4b82934cd529f12465a225aae00c433396979619131cf002f695e526f04befd7",
+    "source_arguments": {
+      "--backend": "cuda",
+      "--rate": "500",
+      "--exposure-ns": "1896000",
+      "--total-exchanges": "512",
+      "--wall-rate": "100",
+      "--correction-diagnostics": "false",
+      "--profile": "classic"
+    },
+    "scope": "native GUI functional control/observation and retained scientific records; no inclusive zero-allocation or timing claim",
+    "full_receipt": {
+      "path": "/tmp/gui-source-allocation-diagnostic-20261006/baseline-result.json",
+      "bytes": 81863,
+      "sha256": "a8c57a9c7a6a77a4ec8fdc6dc8f0b51cd41aca0eff678682a2cbafd8a512e131"
+    },
+    "science": {
+      "recorded_frames": 16,
+      "whole_trajectory": false,
+      "recording": "gzip",
+      "generation": 1,
+      "frame_sha256": "a2df01fde34f8e00675504220f97ef3dc5426d40d862d5c8c501c91c76f458e3",
+      "command_sha256": "b69a4302af39bb7419f6d571a90d37dd24a852307cbe2086707b898dc8053ebd",
+      "requested_exchanges": 512
+    },
+    "science_after_reset": {
+      "recorded_frames": 16,
+      "whole_trajectory": false,
+      "recording": "gzip",
+      "generation": 2,
+      "frame_sha256": "a2df01fde34f8e00675504220f97ef3dc5426d40d862d5c8c501c91c76f458e3",
+      "command_sha256": "b69a4302af39bb7419f6d571a90d37dd24a852307cbe2086707b898dc8053ebd",
+      "requested_exchanges": 512
+    },
+    "owned_processes": {
+      "julia": {
+        "pid": 3892022
+      },
+      "core": {
+        "pid": 3892002
+      },
+      "simulator": {
+        "pid": 3892518
+      },
+      "rtc": {
+        "pid": 3893386
+      }
+    },
+    "diagnostic_attach_sequence": null
+  },
+  {
+    "success": false,
+    "cleanup_confirmed": true,
+    "service_exit": {
+      "exit_status": "0",
+      "exit_code": "exited",
+      "invocation": "377d99d27532456baa0794070709d81c",
+      "result": "success"
+    },
+    "service_exit_properties": {
+      "Result": "success",
+      "ExecMainCode": "0",
+      "ExecMainStatus": "0"
+    },
+    "service_invocation": "377d99d27532456baa0794070709d81c",
+    "owner_pid": 3898992,
+    "descriptor_sha256": "152d31a16a4093ff3f5b427171e2c97a7be96f5956fb7d19ac8419e379593c5e",
+    "harness_sha256": "353dd7613837fcf4949dccd76e030f3dcc5c420558c49411682d52885990ba1d",
+    "source_arguments": {
+      "--backend": "cuda",
+      "--rate": "500",
+      "--exposure-ns": "1896000",
+      "--total-exchanges": "512",
+      "--wall-rate": "100",
+      "--correction-diagnostics": "false",
+      "--profile": "classic"
+    },
+    "scope": "native GUI functional control/observation and retained scientific records; no inclusive zero-allocation or timing claim",
+    "full_receipt": {
+      "path": "/tmp/gui-source-allocation-diagnostic-20261006/evidence/result.json",
+      "bytes": 75561,
+      "sha256": "4cf42fc8804d6ee3bb6cc337169d136773eb7edbfe10295c5b19c28c686da535"
+    },
+    "science": {},
+    "science_after_reset": {},
+    "owned_processes": {
+      "julia": {
+        "pid": 3899237
+      },
+      "core": {
+        "pid": 3899217
+      },
+      "simulator": {
+        "pid": 3899745
+      },
+      "rtc": {
+        "pid": 3900623
+      }
+    },
+    "diagnostic_attach_sequence": 327
+  },
+  {
+    "success": true,
+    "cleanup_confirmed": true,
+    "service_exit": {
+      "exit_status": "0",
+      "exit_code": "exited",
+      "invocation": "f69647c7e0494abb81b06024b0f7fe24",
+      "result": "success"
+    },
+    "service_exit_properties": {
+      "Result": "success",
+      "ExecMainCode": "0",
+      "ExecMainStatus": "0"
+    },
+    "service_invocation": "f69647c7e0494abb81b06024b0f7fe24",
+    "owner_pid": 3902122,
+    "descriptor_sha256": "6f606ace494e1cd03b154ba330785f3ba4ac88e209751bb9696b50bc6cd29316",
+    "harness_sha256": "47980fe591b6030a0f3d9300e0d56af2b9fbc3a7bb09917e1d94bb9d461292a3",
+    "source_arguments": {
+      "--backend": "cuda",
+      "--rate": "500",
+      "--exposure-ns": "1896000",
+      "--total-exchanges": "512",
+      "--wall-rate": "100",
+      "--correction-diagnostics": "false",
+      "--profile": "classic"
+    },
+    "scope": "native GUI functional control/observation and retained scientific records; no inclusive zero-allocation or timing claim",
+    "trajectory_gate": false,
+    "full_receipt": {
+      "path": "/tmp/gui-source-allocation-diagnostic-20261006/evidence-attempt-2/result.json",
+      "bytes": 83083,
+      "sha256": "4dd8f40a0445b8a67cdef5035c20a68ba83ba36dc2a9423dc4abb6badd217725"
+    },
+    "science": {
+      "recorded_frames": 16,
+      "whole_trajectory": false,
+      "recording": "gzip",
+      "generation": 1,
+      "frame_sha256": "a2df01fde34f8e00675504220f97ef3dc5426d40d862d5c8c501c91c76f458e3",
+      "command_sha256": "b69a4302af39bb7419f6d571a90d37dd24a852307cbe2086707b898dc8053ebd",
+      "requested_exchanges": 512
+    },
+    "science_after_reset": {
+      "recorded_frames": 16,
+      "whole_trajectory": false,
+      "recording": "gzip",
+      "generation": 2,
+      "frame_sha256": "a2df01fde34f8e00675504220f97ef3dc5426d40d862d5c8c501c91c76f458e3",
+      "command_sha256": "b69a4302af39bb7419f6d571a90d37dd24a852307cbe2086707b898dc8053ebd",
+      "requested_exchanges": 512
+    },
+    "owned_processes": {
+      "julia": {
+        "pid": 3902231
+      },
+      "core": {
+        "pid": 3902212
+      },
+      "simulator": {
+        "pid": 3902691
+      },
+      "rtc": {
+        "pid": 3903397
+      }
+    },
+    "diagnostic_attach_sequence": 162
+  }
+]

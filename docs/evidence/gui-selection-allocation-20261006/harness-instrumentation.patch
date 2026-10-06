@@ -1,0 +1,15 @@
+--- /tmp/pipewireao-gui-qualification-gates/scripts/check_native_hil_gui.jl
++++ /tmp/gui-source-allocation-diagnostic-20261006/check_diagnostic.jl
+@@ -439,0 +440,3 @@
++    profiles=filter(path -> endswith(path,"-generation-"*string(generation)*".json"),readdir("/tmp/gui-source-allocation-diagnostic-20261006/profiles-attempt-2";join=true))
++    require(length(profiles)==1,"diagnostic source profile missing or ambiguous")
++    cp(only(profiles),joinpath(evidence,"allocation-profile.json"))
+@@ -605,0 +609,8 @@
++                attach_deadline=monotonic()+30
++                attach_state=native_status(client)
++                while attach_state["source"]["sequence"]<17
++                    require(monotonic()<attach_deadline && !attach_state["source"]["completed"],"diagnostic late attach boundary missed")
++                    sleep(0.005)
++                    attach_state=native_status(client)
++                end
++                record["diagnostic_attach_before"] = attach_state
