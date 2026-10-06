@@ -1,0 +1,65 @@
+     Cloning git-repo `https://github.com/DarrylGamroth/PipeWireAO.jl.git`
+ERROR: failed to clone from https://github.com/DarrylGamroth/PipeWireAO.jl.git, error: GitError(Code:EUSER, Class:Callback, Aborting, user cancelled credential request.)
+Stacktrace:
+  [1] pkgerror(msg::String)
+    @ Pkg.Types ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Pkg/src/Types.jl:68
+  [2] clone(io::IOContext{IO}, url::String, source_path::String; header::Nothing, credentials::Nothing, isbare::Bool, kwargs::@Kwargs{})
+    @ Pkg.GitTools ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Pkg/src/GitTools.jl:139
+  [3] clone
+    @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Pkg/src/GitTools.jl:93 [inlined]
+  [4] #ensure_clone#2
+    @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Pkg/src/GitTools.jl:79 [inlined]
+  [5] handle_repo_add!(ctx::Pkg.Types.Context, pkg::PackageSpec)
+    @ Pkg.Types ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Pkg/src/Types.jl:988
+  [6] handle_repos_add!(ctx::Pkg.Types.Context, pkgs::Vector{PackageSpec})
+    @ Pkg.Types ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Pkg/src/Types.jl:1064
+  [7] add(ctx::Pkg.Types.Context, pkgs::Vector{PackageSpec}; preserve::PreserveLevel, platform::Base.BinaryPlatforms.Platform, target::Symbol, allow_autoprecomp::Bool, kwargs::@Kwargs{io::IOContext{IO}})
+    @ Pkg.API ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Pkg/src/API.jl:333
+  [8] add(pkgs::Vector{PackageSpec}; io::IOContext{IO}, kwargs::@Kwargs{preserve::PreserveLevel})
+    @ Pkg.API ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Pkg/src/API.jl:169
+  [9] #add#21
+    @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Pkg/src/API.jl:156 [inlined]
+ [10] top-level scope
+    @ none:1
+ [11] eval(m::Module, e::Any)
+    @ Core ./boot.jl:489
+ [12] exec_options(opts::Base.JLOptions)
+    @ Base ./client.jl:283
+ [13] _start()
+    @ Base ./client.jl:550
+
+caused by: GitError(Code:EUSER, Class:Callback, Aborting, user cancelled credential request.)
+Stacktrace:
+  [1] macro expansion
+    @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/LibGit2/src/error.jl:124 [inlined]
+  [2] clone(repo_url::SubString{String}, repo_path::String, clone_opts::LibGit2.CloneOptions)
+    @ LibGit2 ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/LibGit2/src/repository.jl:470
+  [3] clone(repo_url::SubString{String}, repo_path::String; branch::String, isbare::Bool, remote_cb::Ptr{Nothing}, credentials::LibGit2.CachedCredentials, callbacks::Dict{Symbol, Tuple{Ptr{Nothing}, Any}})
+    @ LibGit2 ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/LibGit2/src/LibGit2.jl:584
+  [4] clone
+    @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/LibGit2/src/LibGit2.jl:557 [inlined]
+  [5] clone(io::IOContext{IO}, url::String, source_path::String; header::Nothing, credentials::Nothing, isbare::Bool, kwargs::@Kwargs{})
+    @ Pkg.GitTools ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Pkg/src/GitTools.jl:128
+  [6] clone
+    @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Pkg/src/GitTools.jl:93 [inlined]
+  [7] #ensure_clone#2
+    @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Pkg/src/GitTools.jl:79 [inlined]
+  [8] handle_repo_add!(ctx::Pkg.Types.Context, pkg::PackageSpec)
+    @ Pkg.Types ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Pkg/src/Types.jl:988
+  [9] handle_repos_add!(ctx::Pkg.Types.Context, pkgs::Vector{PackageSpec})
+    @ Pkg.Types ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Pkg/src/Types.jl:1064
+ [10] add(ctx::Pkg.Types.Context, pkgs::Vector{PackageSpec}; preserve::PreserveLevel, platform::Base.BinaryPlatforms.Platform, target::Symbol, allow_autoprecomp::Bool, kwargs::@Kwargs{io::IOContext{IO}})
+    @ Pkg.API ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Pkg/src/API.jl:333
+ [11] add(pkgs::Vector{PackageSpec}; io::IOContext{IO}, kwargs::@Kwargs{preserve::PreserveLevel})
+    @ Pkg.API ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Pkg/src/API.jl:169
+ [12] #add#21
+    @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Pkg/src/API.jl:156 [inlined]
+ [13] top-level scope
+    @ none:1
+ [14] eval(m::Module, e::Any)
+    @ Core ./boot.jl:489
+ [15] exec_options(opts::Base.JLOptions)
+    @ Base ./client.jl:283
+ [16] _start()
+    @ Base ./client.jl:550
+Private key location for 'ssh://git@github.com' [/home/dgamroth/.ssh/id_rsa]: 

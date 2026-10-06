@@ -1,0 +1,21 @@
+     Cloning git-repo `https://github.com/DarrylGamroth/PipeWireAO.jl.git`
+    Updating registry at `~/.julia/registries/DarrylGamrothRegistry`
+    Updating git-repo `ssh://git@github.com/DarrylGamroth/PackageRegistry.git`
+    Updating registry at `~/.julia/registries/General.toml`
+   Resolving package versions...
+    Updating `~/workspaces/codex/pipewire/pipewireao-rtc-native-controls/deployment/julia/Project.toml`
+  [5d815c25] ~ PipeWireAO v0.6.16 ⇒ v0.6.17 `https://github.com/DarrylGamroth/PipeWireAO.jl.git#1417b69`
+    Updating `~/workspaces/codex/pipewire/pipewireao-rtc-native-controls/deployment/julia/Manifest.toml`
+  [5d815c25] ~ PipeWireAO v0.6.16 ⇒ v0.6.17 `https://github.com/DarrylGamroth/PipeWireAO.jl.git#1417b69`
+Project PipeWireAODeployment v0.1.0
+Status `~/workspaces/codex/pipewire/pipewireao-rtc-native-controls/deployment/julia/Project.toml`
+  [0f8b85d8] JSON3 v1.14.3
+  [bac558e1] OrderedCollections v2.0.2
+  [5d815c25] PipeWireAO v0.6.17 `https://github.com/DarrylGamroth/PipeWireAO.jl.git#1417b69`
+  [856f2bd8] StructTypes v1.11.0
+  [811555cd] ThreadPinning v1.1.1
+  [ddb6d928] YAML v0.4.17
+  [ea8e919c] SHA v0.7.0
+  [6462fe0b] Sockets v1.11.0
+  [fa267f1f] TOML v1.0.3
+  [cf7118a7] UUIDs v1.11.0

@@ -1,0 +1,15 @@
+{
+  "scope": "Reviewed source integration against own published SDK 0.6.17; no scientific frames or GPU execution",
+  "sdk_commit": "1417b69",
+  "sdk_tree": "4b859fef04b1b77e3a6451d1c22b2a3e0e5bc5ee",
+  "rtc_candidate": "323dcaf",
+  "focused_assertions": 232,
+  "files_sha256": {
+    "merged-sdk-rtc-regression.log": "321c52ccbea44a8961a09a9914dac83e577b50f8b60f5bdd8e82b9a3543f0d6c",
+    "run_merged_sdk_rtc.jl": "5de4cf0a90e1809afa89002650fc575bf98d3cb3cf30f39327b471f3ebc39b08",
+    "sdk-resolve-libgit-auth-failure.log": "9b75df0cf7b947f81936d1f45d696ee15e4852a6b6b848bb15394e7229433af0",
+    "sdk-resolve-cli.log": "d8387d886d31c2c0670a0a01f208a654f88a99595e9bdee72dbd6b8af68ce251",
+    "sdk-load.log": "01a6a5aa2f2e994b5b5653eb4bfd1c627f6dcd1d5d6bc1c12d32134b00079bdd",
+    "INDEPENDENT_REVIEW.md": "ef063ae6361f233caba2e00bcbf1e79d134a7a15af6e7793865298c95e7f8b6f"
+  }
+}

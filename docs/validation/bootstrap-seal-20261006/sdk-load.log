@@ -1,0 +1,13 @@
+     Project No packages added to or removed from `~/workspaces/codex/pipewire/pipewireao-rtc-native-controls/deployment/julia/Project.toml`
+    Manifest No packages added to or removed from `~/workspaces/codex/pipewire/pipewireao-rtc-native-controls/deployment/julia/Manifest.toml`
+Precompiling packages...
+   3625.4 ms  ✓ PipeWireAO
+  1 dependency successfully precompiled in 4 seconds. 8 already precompiled.
+  3 dependencies precompiled but different versions are currently loaded (Dates, Printf and TOML). Restart julia to access the new versions. Otherwise, 4 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+Precompiling packages...
+   4656.0 ms  ✓ PipeWireAODeployment
+  1 dependency successfully precompiled in 5 seconds. 32 already precompiled.
+  11 dependencies precompiled but different versions are currently loaded (Base64, Dates, JLLWrappers, PipeWireAO, PipeWireAO_jll, Preferences, Printf, TOML, UUIDs, UnsafeArrays and Zlib_jll). Restart julia to access the new versions. Otherwise, 15 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+SDK_VERSION=0.6.17
+SDK_SOURCE=/home/dgamroth/.julia/packages/PipeWireAO/COtNz/src/PipeWireAO.jl
+DEPLOYMENT_LOAD_OK

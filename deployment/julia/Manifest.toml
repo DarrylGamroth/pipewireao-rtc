@@ -2,7 +2,7 @@
 
 julia_version = "1.12.7"
 manifest_format = "2.0"
-project_hash = "57fcbf9ff5fa08ef670b643c0926b03b063ccd31"
+project_hash = "8c54929c7480bc458fd4997a16fd2c1b644b3826"
 
 [[deps.Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
@@ -125,9 +125,11 @@ version = "2.8.8"
 
 [[deps.PipeWireAO]]
 deps = ["PipeWireAO_jll", "UnsafeArrays"]
-git-tree-sha1 = "09c5b1a7cf7869dcf9c252651e7c9569bf7bcbdb"
+git-tree-sha1 = "4b859fef04b1b77e3a6451d1c22b2a3e0e5bc5ee"
+repo-rev = "1417b69"
+repo-url = "https://github.com/DarrylGamroth/PipeWireAO.jl.git"
 uuid = "5d815c25-fdf3-4508-8205-db8be38ea5d0"
-version = "0.6.16"
+version = "0.6.17"
 
 [[deps.PipeWireAODeployment]]
 deps = ["JSON3", "OrderedCollections", "PipeWireAO", "SHA", "Sockets", "StructTypes", "TOML", "ThreadPinning", "UUIDs", "YAML"]
