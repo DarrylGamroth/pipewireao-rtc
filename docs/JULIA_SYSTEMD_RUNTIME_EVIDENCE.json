@@ -12,7 +12,8 @@
     "production_source": {
       "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-systemd-julia/deployment/julia/src/deploy.jl",
       "sha256": "84e5d1506fea1307e1a56782729a949c50f69196212be6d3ac3126f9ede63af5"
-    }
+    },
+    "sigint_fix_commit": "d92531d5ee5f9e675df048c8ad9db53095889a96"
   },
   "cpu": 12,
   "manager_path": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin",
@@ -49,7 +50,6 @@
         "export_hil": "62b13483e81e4bbafc3c469d675f7114fdbed915b92961977a6fb6a85b3c883a",
         "calibration_method": "da251cc9859e80fa2012c16d01e31a42f27eeb1355f313d7da57bd1c7cd9656e",
         "export_calibration": "8087fd094df0de5c27edb16ea5fa887c5b6d4a9ef2d66e2901b03937a70c6449",
-        "pipewireao-rtc@.service.in": "14474212156609ae312aa27619621167098bf641c7294360165f0fa7726199d8",
         "copper_reference": "c3264533630d0432c9f6531064caf34fed3b5312151843103a667cd2dfa94031",
         "export_heart_calibration": "a63c2f479ad66fd1cbabfd4292303b85209e1586422727c376260bd6958cc9e5"
       }
@@ -81,7 +81,6 @@
         "export_hil": "09660cfd3b86a57aaa57f49bc635912e235674b55421434b435dc432d9267ffb",
         "calibration_method": "221b8fceaf757fcd6d9d2ac7b338bff1c108e3b07a16a48a481f2ca1d7db41e5",
         "export_calibration": "4463dc257fbcb1ec50461a87dda59ca6529e29e04a8fd1d2718aef353e8ea3e7",
-        "pipewireao-rtc@.service.in": "14474212156609ae312aa27619621167098bf641c7294360165f0fa7726199d8",
         "copper_reference": "75fbf71c2868d18816bc313792f5069329e41873ff1d011b29f8b5036003abd1",
         "export_heart_calibration": "a28e2159b7322e991755530cf320560ebed28de25434f9bf99577f585182c3c2"
       }
@@ -113,7 +112,6 @@
         "export_hil": "09660cfd3b86a57aaa57f49bc635912e235674b55421434b435dc432d9267ffb",
         "calibration_method": "221b8fceaf757fcd6d9d2ac7b338bff1c108e3b07a16a48a481f2ca1d7db41e5",
         "export_calibration": "4463dc257fbcb1ec50461a87dda59ca6529e29e04a8fd1d2718aef353e8ea3e7",
-        "pipewireao-rtc@.service.in": "14474212156609ae312aa27619621167098bf641c7294360165f0fa7726199d8",
         "copper_reference": "75fbf71c2868d18816bc313792f5069329e41873ff1d011b29f8b5036003abd1",
         "export_heart_calibration": "a28e2159b7322e991755530cf320560ebed28de25434f9bf99577f585182c3c2"
       }
