@@ -1,4 +1,4 @@
-# Native deployment supervisor codec foundation
+# Native deployment supervisor control
 
 2026-10-06, issue #8, phase F of the
 [native control migration design](NATIVE_CONTROL_MIGRATION_DESIGN.md), under
@@ -6,12 +6,14 @@ RTC-ARCH-024 / RTC-DEV-030. Worktree `pipewireao-rtc-native-supervisor`, branch
 `rtc-native-supervisor`, starting revision
 `1eba8edc48cde64a72be532d03530156d583b3c9`; the starting tree was clean.
 
-This increment implements Julia/Rust codecs, the shared Julia client profile,
-reply capacity reservation and cross-language fixtures. It does not yet replace
-`DeploymentRunner.control/serve_control/coordinate`, operator socket discovery,
-live status files, the Rust CLI or GUI callers. It makes no installed deployment,
-scientific convergence, frame allocation, timing or hardware qualification claim.
-The existing DeploymentRunner remains the sole supervisor.
+The codec foundation implements Julia/Rust codecs, the shared Julia client
+profile, reply capacity reservation and cross-language fixtures. The Julia runtime
+integration replaces the selected `DeploymentRunner.control/serve_control/coordinate`
+path with an inactive native endpoint on the same private core, published before
+owner preparation. The existing DeploymentRunner remains the sole supervisor.
+Rust CLI/GUI integration and installed scientific qualification remain separate
+gates. These cold software tests make no scientific convergence, frame allocation,
+timing or hardware qualification claim.
 
 ## Endpoint and request contract
 
@@ -191,3 +193,83 @@ busy/stale/duplicate/removal/expiry cases; CLI/GUI migration; public socket and
 live status/readiness-file removal; installed startup/control/cleanup and the
 selected scientific/HIL checks. Discovery hints must be followed by exact fresh
 native supervisor profile/PID/incarnation and Status verification.
+
+
+## Julia runtime integration evidence (2026-10-06)
+
+Production integration started clean at merge `8c914592e12f96790c2ea5cf304640cb1ed0f66d`
+(root baseline `9055db3`). `NativeSupervisorRuntime` publishes no ports and stages
+callbacks through the common Endpoint. The same DeploymentRunner services Preparing
+Status at its existing health/wait boundaries with a recursion guard; Preparing
+mutations are rejected and no owner observations are exposed. Coherent admission
+changes phase to Admitted only after existing preparation/start completes.
+
+`control.json` is a bounded saved locator with version/profile/private remote/node/
+owner PID/incarnation. It supplies hints to a fresh exact native bind followed by
+Status. `state["socket"]` temporarily aliases this locator for dirname/path callers;
+it is not a Unix socket and must retire with issue #9. Saved phase/admitted, owner
+bindings and scientific reports are never control authority. `wait_state` observes
+native live state; `wait_final_report` reads a saved final report only after observing
+the actual owned launcher exit and matching its PID. Former JSON helpers have
+explicit `fixture_` names and are absent from the selected production path.
+
+Every accepted ticket uses its one absolute deadline for fresh runner/source/HEART
+queries, source pause/reset/resume, typed runner coordination and terminal flush.
+No new 8/16/30-second budget is started inside public coordination. The unchanged
+Simulator SourceControlV1 schema has no owner deadline field: the supervisor's
+source wait uses the accepted deadline, while the source owner's existing nested
+HEART reset uses its pre-existing internal budget. This is an explicit existing
+wire limitation; full owner-to-owner deadline propagation is not claimed for V1.
+Expiry or lost identity fails closed without reconnect/retry/fallback. Before any
+mutation, the supervisor reserves the combined header, future snapshot, closed
+runner result and bounded error alternative. Future snapshot allowance includes
+optional acquisition cursors/window, longest closed source phase and HEART's
+4096-byte report path/64-byte digest/optional child fields. The admitted runner
+sink/process/binding catalogs are fixed by the realized deployment: these public
+commands cannot load a new graph or owner. Read-only catalog queries can reject
+actual reply overflow. Successful Quit carries the fresh snapshot taken immediately
+before its effect (operation-defined ordering, rendered as `before_quit_effect`)
+and synchronizes the terminal publication before cleanup.
+
+Cold tests ran with Julia 1.12.7 on CPU15. `native_supervisor_endpoint.jl` passed
+43 assertions on an actual private PipeWire core with two real native clients:
+Preparing, no ports, normal stop/reset/start, exact accepted deadline across mock
+nested runner/source calls, selected locator control, duplicate/conflicting/stale
+requests, malformed requests, busy rejection, overflow before effects, accepted
+expiry, actual controller removal, quit flush, endpoint removal and exact immutable UUID match/rejection. Nested science
+clients in this test are explicit mocks; it does not qualify installed science.
+`test_native_supervisor_coordination.jl` passed 9 deadline/effect assertions and
+6 optional observation placement assertions. Independent final runtime review and
+installed Preparing/admission/cleanup qualification remain required by NSCR-004.
+
+### Optional observation admission (OBSR-001)
+
+Observed defect: HILExport adds the observer-loop count1 requirement even when
+optional detector observation cannot bind; the prior admission path then required
+that absent observer loop. The admission placement selector now omits only the
+`observer-loop` count1 entry for the core when detector observation was selected
+and its boundary is unavailable. Available/default paths use the original contract.
+Other thread counts (including observer-loop count2), envelope, policy, leader and
+memlock fields are preserved; the specification is unchanged. The six cold tests
+confirm this selection and preservation. Fresh installed missing-queue qualification
+is a separate root-owned gate.
+
+
+## Immutable deployment identity for discovery
+
+The public Runtime creates one nonzero UUID per endpoint lifetime and publishes
+`pipewireao.rtc.deployment-supervisor.session-uuid` in actual bound NodeInfo. This
+identity remains stable across Preparing, admission and runner state transitions;
+it does not replace the runner session ID. Generic Endpoint `properties_extra`
+cannot replace any common identity key. The generic Client profile identity hook
+validates the public UUID on every full bound NodeInfo update and rechecks the
+retained exact bound identity at every request health boundary. Public `live_uuid`
+returns only that healthy native binding; optional `expected_uuid` requires an
+exact discovery hint match. No saved UUID can establish admission without fresh
+native Status. Endpoint removal retires live authority; final saved reports do not
+provide a live Stopped endpoint.
+
+Adjacent cold suites also passed native client23, supervisor codec197, typed
+supervisor coordination15 and legacy fixture runner coordination39 assertions.
+The broader portable deployment/control-interruption suites were still running
+at this integration commit and are not included in that pass claim.

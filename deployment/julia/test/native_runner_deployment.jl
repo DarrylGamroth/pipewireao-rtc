@@ -263,8 +263,7 @@ function run_native_runner_deployment()
         DeploymentTest.atomic_record(deployment_path, spec)
         @test DeploymentTest.profile(deployment_path, prefix) == spec
 
-        # Keep the Unix control socket within its 108-byte pathname limit while
-        # retaining package, process and report evidence under the requested E/.
+        # Retain package, process and report evidence under the requested E/.
         runtime = mktempdir("/tmp"; prefix="nrd-")
         chmod(runtime, 0o700)
         supervisor_log_path = joinpath(evidence, "supervisor.log")
@@ -289,7 +288,8 @@ function run_native_runner_deployment()
             @test isfile(joinpath(run_directory, "toy.prepared"))
             @test isfile(joinpath(run_directory, "toy.connected"))
             @test !ispath(joinpath(run_directory, "native-control.sock"))
-            @test ispath(joinpath(run_directory, "control.sock")) # public broker remains phase-F JSON
+            @test !ispath(joinpath(run_directory, "control.sock"))
+            @test isfile(admitted["control_locator"])
 
             socket = admitted["socket"]
             invalid = DeploymentTest.control(socket, ["session-start", "extra"];
@@ -320,9 +320,8 @@ function run_native_runner_deployment()
             quit = DeploymentTest.control(socket, ["quit"]; request_id="native-quit", timeout=30)
             @test quit["ok"] && quit["result"]["shutdown"]
 
-            final = DeploymentTest.wait_state(runtime,
-                state -> get(state, "phase", nothing) == "stopped" && get(state, "admitted", true) === false;
-                timeout=180, process=supervisor)
+            final = DeploymentTest.wait_final_report(runtime, supervisor; timeout=180)
+            @test final["phase"] == "stopped" && !final["admitted"]
             wait(supervisor)
             @test success(supervisor)
             @test final["runner"] == admitted["runner"]

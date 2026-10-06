@@ -54,7 +54,7 @@ end
                 peer = connect(path)
                 try
                     write(peer, JSON3.write(Dict("version" => 1, "id" => string(index), "argv" => argv)) * "\n")
-                    serving = @async D.serve_control(runner)
+                    serving = @async D.fixture_serve_control(runner)
                     reply = JSON3.read(String(D._read_line_bounded(peer, D.MAX_REPLY_BYTES,
                         D.monotonic() + 5)), Dict{String,Any})
                     @test reply["id"] == string(index)
@@ -76,7 +76,7 @@ end
             "control-reply" => "missing.reply")
         source_runner = coordination_runner(directory, client; source)
         for argv in (["stop", ""], ["start", ""], ["parameter", "g", "p", "F32_LE", "0", "", "file"])
-            reply = D.coordinate(source_runner, argv, "invalid")
+            reply = D.fixture_coordinate(source_runner, argv, "invalid")
             @test reply["ok"] === false
             @test source_runner.source_id == 0
             @test source_runner.source_state == "running"

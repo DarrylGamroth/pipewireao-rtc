@@ -12,6 +12,14 @@ import ..NativeControlClient
 import ..NativeAcquisitionLifecycleCodec
 import ..NativeAcquisitionLifecycleClient
 import ..RunnerCommands
+import ..NativeRunnerCodec
+import ..NativeSupervisorCodec
+import ..NativeSupervisorClient
+import ..NativeSupervisorRuntime
+import ..NativeControlEndpoint
+import ..NativeControlCodec
+import ..NativeHeartCodec
+using PipeWireAO: with_thread_loop_lock
 
 export DeploymentError, digest, installed_paths, decode, profile, relative_asset,
     substitute, control, atomic_record, validate_source_reply, validate_control_request,
@@ -298,7 +306,7 @@ function _read_line_bounded(socket, maximum, deadline)
     fetch(reader)
 end
 
-function control(path::AbstractString, argv::AbstractVector; timeout=8,
+function fixture_socket_control(path::AbstractString, argv::AbstractVector; timeout=8,
                  request_id=nothing, allow_rejection=false, check=nothing)
     require(all(arg -> arg isa AbstractString, argv), "control argv must be a string list")
     require(isfinite(timeout) && timeout > 0, "control timeout must be finite and positive")
@@ -497,6 +505,10 @@ function check_processes(deployment::DeploymentRunner; ignore_roles=())
 end
 
 function check(deployment::DeploymentRunner)
+    if deployment.broker isa NativeSupervisorRuntime.Runtime && !deployment.broker.closed &&
+            deployment.broker.endpoint.lifecycle === NativeSupervisorCodec.Preparing
+        serve_control(deployment)
+    end
     deployment.stopping && throw(InterruptException())
     check_processes(deployment)
 end
@@ -522,20 +534,20 @@ function (probe::SourceHealth)()
 end
 
 function source_control(deployment::DeploymentRunner, operation::AbstractString;
-                        initial=false, shutdown=false, allow_rejection=false)
+                        initial=false, shutdown=false, allow_rejection=false, deadline=nothing, check=nothing)
     deployment.source_owner !== nothing || fail("source owner is not configured")
     native_acquisition(deployment.source_owner) && return acquisition_control(deployment, operation;
-        initial, shutdown, allow_rejection)
+        initial, shutdown, allow_rejection, deadline, check)
     native_source(deployment.source_owner) || return source_file_control(deployment,operation;
         initial,shutdown,allow_rejection)
     operation in ("resume", "pause", "reset", "status") || fail("invalid source control operation")
-    check_owner = SourceHealth(deployment, shutdown)
+    check_owner = check === nothing ? SourceHealth(deployment, shutdown) : check
     try
         deployment.source_failed && fail("source coordination already failed; source outcome unknown")
         if deployment.source_client === nothing
             initial || fail("native source client was not prepared; source outcome unknown")
-            preparation_deadline = monotonic() +
-                get(deployment.options, :owner_preparation_timeout_seconds, 90)
+            preparation_deadline = deadline === nothing ? monotonic() +
+                get(deployment.options, :owner_preparation_timeout_seconds, 90) : deadline
             owner_pid = deployment.record["processes"][deployment.source_owner["role"]]["pid"]
             deployment.source_client = NativeSourceClient.connect(joinpath(something(deployment.runtime), deployment.record["remote"]),
                 deployment.source_owner["control-node"],owner_pid;
@@ -545,7 +557,7 @@ function source_control(deployment::DeploymentRunner, operation::AbstractString;
         end
         # Cold discovery and compilation are bounded preparation, while the
         # source is held. Every real control starts a fresh finite budget.
-        deadline = monotonic() + (operation == "reset" ? 16 : 8)
+        deadline === nothing && (deadline = monotonic() + (operation == "reset" ? 16 : 8))
         deployment.source_id = Base.checked_add(deployment.source_id,1)
         reply = NativeSourceClient.request!(deployment.source_client,String(operation),
             Int64(deployment.source_id);deadline,check=check_owner)
@@ -599,15 +611,15 @@ function acquisition_reply(completion, operation, id)
 end
 
 function acquisition_control(deployment::DeploymentRunner, operation::AbstractString;
-        initial=false, shutdown=false, allow_rejection=false)
+        initial=false, shutdown=false, allow_rejection=false, deadline=nothing, check=nothing)
     operation in ("resume", "pause", "reset", "status") || fail("invalid acquisition operation")
     try
         deployment.source_failed && fail("source coordination already failed; source outcome unknown")
         deployment.source_client === nothing && fail("acquisition lifecycle client was not prepared")
-        deadline = monotonic() + (operation == "reset" ? 30 : 8)
+        deadline === nothing && (deadline = monotonic() + (operation == "reset" ? 30 : 8))
         deployment.source_id = Base.checked_add(deployment.source_id, 1)
         completion = NativeAcquisitionLifecycleClient.request!(deployment.source_client,
-            Symbol(operation); deadline, check=SourceHealth(deployment, shutdown))
+            Symbol(operation); deadline, check=check === nothing ? SourceHealth(deployment, shutdown) : check)
         reply = acquisition_reply(completion, operation, deployment.source_id)
         if !reply["ok"]
             allow_rejection || fail("source $operation rejected: $(reply["error"])")
@@ -700,18 +712,18 @@ function source_file_control(deployment::DeploymentRunner, operation::AbstractSt
 end
 
 function native_control(deployment::DeploymentRunner, argv; request_id=nothing, shutdown=false,
-        command=RunnerCommands.parse(argv))
+        command=RunnerCommands.parse(argv), deadline=monotonic() + 8, check=nothing)
     deployment.runner_client === nothing && fail("native runner client was not prepared")
     ignore_roles = argv in (["quit"], ["exit"]) ? ("rtc",) : ()
-    check_fn = shutdown ? (() -> check_processes(deployment; ignore_roles)) :
+    check_fn = check !== nothing ? check : shutdown ? (() -> check_processes(deployment; ignore_roles)) :
         argv in (["quit"], ["exit"]) ?
-            (() -> check_processes(deployment; ignore_roles)) : (() -> check(deployment))
+            (() -> check_processes(deployment; ignore_roles)) : (() -> Deployment.check(deployment))
     reply = NativeRunnerClient.request!(deployment.runner_client, command;
-        deadline=monotonic() + 8, check=check_fn)
+        deadline, check=check_fn)
     return RunnerCommands.render(reply; request_id)
 end
 
-function coordinate(deployment::DeploymentRunner, argv, request_id)
+function fixture_coordinate(deployment::DeploymentRunner, argv, request_id)
     command = try
         RunnerCommands.parse(argv)
     catch error
@@ -778,7 +790,7 @@ function coordinate(deployment::DeploymentRunner, argv, request_id)
     reply
 end
 
-function serve_control(deployment::DeploymentRunner)
+function fixture_serve_control(deployment::DeploymentRunner)
     broker = something(deployment.broker)
     deployment.broker_accept === nothing && (deployment.broker_accept = @async begin
         try
@@ -803,7 +815,7 @@ function serve_control(deployment::DeploymentRunner)
         request = validate_control_request(payload)
         request_id = request["id"]
         reply = try
-            coordinate(deployment, request["argv"], request_id)
+            fixture_coordinate(deployment, request["argv"], request_id)
         catch error
             failure = error
             control_error(request_id, "control.outcome", sprint(showerror, error))
@@ -826,6 +838,8 @@ function serve_control(deployment::DeploymentRunner)
     end
     failure === nothing || throw(failure)
 end
+
+include("supervisor_controls.jl")
 
 function notify(message)
     haskey(ENV, "NOTIFY_SOCKET") || return
@@ -1074,6 +1088,9 @@ end
 
 function stop(deployment::DeploymentRunner)
     deployment.record["admitted"] = false
+    if deployment.broker isa NativeSupervisorRuntime.Runtime && !deployment.broker.closed
+        close(deployment.broker)
+    end
     errors = Any[]
     try notify("STOPPING=1\nSTATUS=Stopping RTC deployment") catch error push!(errors, error) end
     _stop_processes(deployment, errors; source=deployment.source_owner !== nothing)
@@ -1126,6 +1143,18 @@ function observe_boundary!(deployment::DeploymentRunner)
     return nothing
 end
 
+"Select the admitted placement without making an absent optional observer mandatory."
+function admission_placement(deployment::DeploymentRunner, role::AbstractString)
+    contract = deployment.spec["placement"][role]
+    role == "core" && get(deployment.spec,"detector-observation",false) &&
+        deployment.observation_boundary === nothing || return contract
+    selected = copy(contract)
+    selected["threads"] = filter(contract["threads"]) do thread
+        !(get(thread,"name",nothing) == "observer-loop" && get(thread,"count",nothing) === 1)
+    end
+    return selected
+end
+
 function _render(deployment, bindings)
     runtime = something(deployment.runtime)
     for role in keys(deployment.spec["placement"])
@@ -1162,8 +1191,7 @@ function _run_locked(deployment::DeploymentRunner, base)
     primary_error = nothing
     try
         runtime = something(deployment.runtime)
-        deployment.socket = joinpath(runtime, "control.sock")
-        ncodeunits(deployment.socket) < 108 || fail("runtime path is too long for a Unix control socket")
+        deployment.socket = joinpath(base, "control.json")
         bindings = Dict("PACKAGE" => deployment.package,
             "PREFIX" => abspath(deployment.options.pipewire_prefix),
             "RUNTIME" => runtime, "REMOTE" => "rtc-" * first(replace(string(uuid4()), "-" => ""), 12))
@@ -1181,7 +1209,7 @@ function _run_locked(deployment::DeploymentRunner, base)
         end
         deployment.source_owner === nothing && (bindings["FITS"] = realpath(deployment.options.fits))
         merge!(deployment.record, Dict("instance" => basename(runtime), "socket" => deployment.socket,
-            "remote" => bindings["REMOTE"]))
+            "remote" => bindings["REMOTE"], "control_locator" => deployment.socket))
         if deployment.source_owner === nothing
             deployment.record["fits_sha256"] = digest(deployment.options.fits)
         else
@@ -1201,6 +1229,16 @@ function _run_locked(deployment::DeploymentRunner, base)
         spawn(deployment, "core", [deployment.paths["daemon"], "-c", "daemon.conf"],
             environment(deployment, "core", bindings))
         wait_until(deployment, () -> _is_socket(joinpath(runtime, bindings["REMOTE"])), "private core")
+        supervisor_node = "pipewireao.rtc.deployment-supervisor.$(deployment.spec["name"])"
+        supervisor_instance = NativeControlClient.next_instance()
+        remote = joinpath(runtime,bindings["REMOTE"])
+        deployment.broker = NativeSupervisorRuntime.Runtime(NativeSupervisorCodec.PROFILE,remote,
+            supervisor_node,supervisor_instance)
+        atomic_record(deployment.socket,Dict("version"=>1,"profile"=>NativeControlClient.profile_name(NativeSupervisorCodec.PROFILE),
+            "remote"=>remote,"node"=>supervisor_node,"owner_pid"=>getpid(),"instance"=>supervisor_instance))
+        deployment.record["supervisor_endpoint"] = Dict("node"=>supervisor_node,"instance"=>supervisor_instance,
+            "profile"=>NativeControlClient.profile_name(NativeSupervisorCodec.PROFILE),"uuid"=>deployment.broker.uuid)
+        atomic_record(deployment.state_path,deployment.record)
         for owner in deployment.spec["owners"]
             role = owner["role"]
             env = environment(deployment, role, bindings)
@@ -1246,7 +1284,7 @@ function _run_locked(deployment::DeploymentRunner, base)
         prepare_observation!(deployment)
         placements = Dict{String,Any}()
         for (role, process) in deployment.processes
-            placements[role] = Placement.snapshot(getpid(process), deployment.spec["placement"][role])
+            placements[role] = Placement.snapshot(getpid(process), admission_placement(deployment, role))
         end
         check(deployment)
         merge!(deployment.record, Dict("phase" => "prepared", "placement" => placements, "ready" => ready))
@@ -1255,18 +1293,17 @@ function _run_locked(deployment::DeploymentRunner, base)
         if deployment.source_owner !== nothing
             source_control(deployment, "resume")
         end
-        ispath(deployment.socket) && fail("public control path already exists")
-        deployment.broker = listen(deployment.socket)
-        chmod(deployment.socket, 0o600)
+        NativeSupervisorRuntime.lifecycle!(deployment.broker,NativeSupervisorCodec.Admitted)
         merge!(deployment.record, Dict("phase" => "running", "admitted" => true, "start" => started))
         atomic_record(deployment.state_path, deployment.record)
-        println("DEPLOYMENT_READY name=$(deployment.spec["name"]) socket=$(deployment.socket)")
+        println("DEPLOYMENT_READY name=$(deployment.spec["name"]) control_locator=$(deployment.socket)")
         flush(stdout)
         notify("READY=1\nSTATUS=RTC admitted; local control available")
         while !deployment.stopping
             check(deployment)
             observe_boundary!(deployment)
             serve_control(deployment)
+            sleep(0.005)
         end
     catch error
         if !(error isa InterruptException)
@@ -1329,33 +1366,80 @@ function run(deployment::DeploymentRunner)
 end
 
 function wait_state(runtime::AbstractString, predicate; timeout=30, process=nothing)
-    isfinite(timeout) && timeout > 0 || fail("state wait timeout must be finite and positive")
-    deadline = monotonic() + timeout
-    state_path = joinpath(runtime, "state.json")
-    while monotonic() < deadline
-        if isfile(state_path)
-            state = Common.read_json(state_path; maximum=MAX_REPLY_BYTES)
-            predicate(state) && return state
+    isfinite(timeout)&&timeout>0 || fail("state wait timeout must be finite and positive")
+    deadline=monotonic()+timeout
+    locator=joinpath(runtime,"control.json")
+    while true
+        process!==nothing&&!process_running(process) && fail("deployment launcher exited before requested native state")
+        NativeControlClient.deadline_check(deadline,()->nothing)
+        if isfile(locator)
+            hints=Common.read_json(locator;maximum=4096)
+            if process===nothing || get(hints,"owner_pid",nothing)==getpid(process)
+                break
+            end
         end
-        if process !== nothing && !process_running(process)
-            fail("deployment launcher exited before requested state")
+        sleep(min(0.05,max(0.0,deadline-monotonic())))
+    end
+    client=NativeSupervisorClient.connect_locator(locator;deadline)
+    try
+        uuid=NativeSupervisorClient.live_uuid(client)
+        while true
+            process!==nothing&&!process_running(process) && fail("deployment launcher exited before requested native state")
+            completion=NativeSupervisorClient.request!(client,NativeRunnerCodec.RunnerCommand(:status);deadline)
+            state=NativeSupervisorClient.render(completion;owner_pid=client.observation.owner_pid)
+            state["deployment_uuid"]=uuid
+            state["control_locator"]=locator
+            state["socket"]=locator # transitional locator alias, never a Unix control socket
+            state["instance"]=basename(dirname(hints["remote"]))
+            state["remote"]=basename(hints["remote"])
+            if haskey(state,"runner_endpoint")
+                state["runner"]=Dict("node"=>state["runner_endpoint"]["node"],"instance"=>state["runner_endpoint"]["instance"])
+            end
+            # Preserve non-live qualification/configuration facts as artifacts;
+            # every live identity/state/source/phase value comes from this query.
+            report_path=joinpath(runtime,"state.json")
+            if isfile(report_path)
+                artifacts=Common.read_json(report_path;maximum=MAX_REPLY_BYTES)
+                for key in ("placement","supervisor_placement","credentials","fits_sha256","name","detector-observation","source-owner")
+                    haskey(artifacts,key)&&(state[key]=artifacts[key])
+                end
+            end
+            state["ok"]||fail("native supervisor Status failed: $(state["error"])")
+            predicate(state)&&return state
+            sleep(min(0.05,max(0.0,deadline-monotonic())))
         end
+    finally
+        close(client)
+    end
+end
+
+"Read a final saved report only after observing this owned launcher's exit."
+function wait_final_report(runtime::AbstractString,process::Base.Process;timeout=30)
+    isfinite(timeout)&&timeout>0 || fail("final report wait must be finite and positive")
+    deadline=monotonic()+timeout
+    while process_running(process)
+        monotonic()<deadline || fail("deployment launcher did not exit")
         sleep(0.05)
     end
-    fail("timed out waiting for deployment state")
+    wait(process)
+    final=Common.read_json(joinpath(runtime,"state.json");maximum=MAX_REPLY_BYTES)
+    get(final,"pid",nothing)==getpid(process) || fail("final report belongs to another launcher")
+    return final
 end
 
 function shutdown(runtime::AbstractString, process::Base.Process; timeout=30)
     isfinite(timeout) && timeout > 0 || fail("shutdown timeout must be finite and positive")
     deadline = monotonic() + timeout
-    state_path = joinpath(runtime, "state.json")
-    state = Common.read_json(state_path; maximum=MAX_REPLY_BYTES)
-    if get(state, "admitted", false)
-        socket = state["socket"]
-        observed = control(socket, ["status"]; timeout=min(8, max(0.1, deadline-monotonic())))
-        observed["state"] == "Running" &&
-            control(socket, ["session-stop"]; timeout=min(8, max(0.1, deadline-monotonic())))
-        control(socket, ["quit"]; timeout=min(8, max(0.1, deadline-monotonic())))
+    state_path = joinpath(runtime,"state.json")
+    locator=joinpath(runtime,"control.json")
+    if process_running(process)
+        observed=control(locator,["status"];deadline)
+        if observed["admitted"]
+            observed["state"]=="Running" && control(locator,["session-stop"];deadline)
+            control(locator,["quit"];deadline)
+        else
+            fail("native supervisor was not admitted for public shutdown")
+        end
     end
     while process_running(process) && monotonic() < deadline
         sleep(0.05)
@@ -1552,11 +1636,7 @@ function main(argv=ARGS)
         if options.command == "install"
             install(options)
         elseif options.command == "control"
-            state = Common.read_json(joinpath(options.runtime, "state.json"); maximum=MAX_REPLY_BYTES)
-            get(state, "admitted", false) ||
-                fail("deployment is not admitted; inspect state.json for startup error")
-            println(JSON3.write(control(state["socket"], options.argv;
-                timeout=haskey(state, "source-owner") ? 48 : 8)))
+            println(JSON3.write(control(joinpath(options.runtime,"control.json"),options.argv;timeout=30)))
         else
             deployment = DeploymentRunner(options)
             if options.command == "preflight"

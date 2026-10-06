@@ -87,7 +87,7 @@ function source_status_failure_fixture(mode)
             write(client, JSON3.write(Dict("version" => 1, "id" => "source-status-fault",
                 "argv" => ["status"])) * "\n")
             supervisor = @async try
-                D.serve_control(runner)
+                D.fixture_serve_control(runner)
                 nothing
             catch exception
                 exception
@@ -441,7 +441,7 @@ with open(sys.argv[3], 'w') as output:
                 "ok" => true, "state" => "Ready")) * "\n")
             close(peer)
         end
-        @test D.control(path, ["status"])["state"] == "Ready"
+        @test D.fixture_socket_control(path, ["status"])["state"] == "Ready"
         wait(responder)
         close(server)
     end
@@ -459,7 +459,7 @@ with open(sys.argv[3], 'w') as output:
                 close(peer)
             end
             code = "using PipeWireAODeployment; D=PipeWireAODeployment.Deployment; " *
-                "@assert D.control(ARGS[1], [\"status\"])[\"state\"]==\"Ready\""
+                "@assert D.fixture_socket_control(ARGS[1], [\"status\"])[\"state\"]==\"Ready\""
             child = PipeWireAODeployment.Common.run_checked([
                 Base.julia_cmd().exec[1], "--startup-file=no", "--project=" * PipeWireAODeployment.package_root(),
                 "-e", code, path]; timeout=30)

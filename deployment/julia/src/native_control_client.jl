@@ -28,6 +28,8 @@ encode_failure(profile::Profile, header, lifecycle, command) =
 reply_endpoint(::Profile) = :lifecycle
 reply_bound(profile::Profile) = Envelope._limit(Val(:reply), reply_endpoint(profile))
 maximum_budget(::Profile) = 30.0
+"Profile-specific immutable bound NodeInfo identity; common profiles have none."
+node_identity(::Profile, properties, previous) = nothing
 
 const INSTANCE_LOCK = ReentrantLock()
 const NEXT_INSTANCE = Ref(Int64(0))
@@ -70,6 +72,8 @@ mutable struct Observation{P<:Profile,L,C,R}
     profile::P
     instance::Int64
     owner_pid::UInt32
+    node_identity::Union{Nothing,String}
+    identity_properties::Union{Nothing,Dict{String,String}}
     capability::Union{Nothing,Capability{L}}
     completion::Union{Nothing,ObservedReply{C}}
     rejection::Union{Nothing,ObservedReply{R}}
@@ -86,7 +90,7 @@ end
 
 function Observation(profile::P, instance::Int64, pid::UInt32) where {P<:Profile}
     return Observation{P,lifecycle_type(profile),completion_type(profile),rejection_type(profile)}(
-        profile, instance, pid, nothing, nothing, nothing, false, false, 0,
+        profile, instance, pid, nothing, nothing, nothing, nothing, nothing, false, false, 0,
         nothing, Inf, nothing, nothing, nothing, nothing)
 end
 
@@ -315,6 +319,11 @@ function healthy(client::Client)
             serial(owner.properties, client.node_name) == client.serial ||
             throw(UnknownOutcome("owner incarnation disappeared or changed"))
     end
+    if client.owner_ready
+        node_identity(client.observation.profile, something(client.observation.identity_properties),
+            client.observation.node_identity) == client.observation.node_identity ||
+            throw(UnknownOutcome("bound owner identity changed"))
+    end
     if client.identity !== nothing
         marker = candidate(client, client.marker_name)
         marker !== nothing && marker.id == client.identity.global_id &&
@@ -359,7 +368,14 @@ function node_info!(client::Client, info::NodeInfo; marker::Bool)
         )
             get(info.properties, key, nothing) == expected || throw(UnknownOutcome("control metadata changed: $key"))
         end
-        marker ? (client.marker_ready = true) : (client.owner_ready = true)
+        if marker
+            client.marker_ready = true
+        else
+            client.observation.node_identity = node_identity(client.observation.profile,
+                info.properties, client.observation.node_identity)
+            client.observation.identity_properties = info.properties
+            client.owner_ready = true
+        end
     catch error
         fail!(client.observation, sprint(showerror, error))
     end

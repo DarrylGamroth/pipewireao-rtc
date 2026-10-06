@@ -1,7 +1,7 @@
 """Closed public deployment supervisor profile; encoding performs no owner effects."""
 module NativeSupervisorCodec
 
-using PipeWireAO
+using PipeWireAO, UUIDs
 import ..NativeControlCodec
 import ..NativeControlClient
 import ..NativeRunnerCodec
@@ -27,6 +27,20 @@ export SupervisorProfile, PROFILE, Phase, Preparing, Admitted, Failed, Stopping,
 struct SupervisorProfile <: Client.Profile end
 const PROFILE = SupervisorProfile()
 Client.profile_name(::SupervisorProfile) = "pipewireao.rtc.deployment-supervisor/1"
+const UUID_PROPERTY = "pipewireao.rtc.deployment-supervisor.session-uuid"
+function validate_uuid(value)
+    value isa String && ncodeunits(value)==36 && isvalid(value) ||
+        throw(ArgumentError("supervisor UUID must be canonical bounded text"))
+    parsed = tryparse(UUID,value)
+    parsed !== nothing && string(parsed)==value && parsed!=UUID(0) ||
+        throw(ArgumentError("supervisor UUID must be a nonzero canonical UUID"))
+    return value
+end
+function Client.node_identity(::SupervisorProfile,properties,previous)
+    value=validate_uuid(get(properties,UUID_PROPERTY,nothing))
+    previous===nothing || value==previous || throw(Client.UnknownOutcome("supervisor UUID changed"))
+    return value
+end
 Client.capability_names(::SupervisorProfile) = Tuple("pipewireao.rtc.deployment-supervisor." * suffix
     for suffix in ("version", "instance", "owner-pid", "lifecycle", "last-token", "controllers"))
 @enum Phase::UInt32 Preparing=1 Admitted=2 Failed=3 Stopping=4 Stopped=5

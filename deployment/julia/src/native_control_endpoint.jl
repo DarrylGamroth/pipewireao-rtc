@@ -254,7 +254,7 @@ end
 "Create an inactive no-port endpoint on the owner's existing Core/ThreadLoop."
 function Endpoint(profile::P, ::Type{C}, loop::ThreadLoop, core::CoreConnection,
         name::AbstractString, instance::Int64, lifecycle::L;
-        publisher=update_params!) where {P<:Client.Profile,C,L}
+        publisher=update_params!, properties_extra=Dict{String,String}()) where {P<:Client.Profile,C,L}
     instance > 0 || throw(ArgumentError("native owner instance must be positive"))
     0 < ncodeunits(name) <= 128 && isvalid(name) && !occursin('\0', name) ||
         throw(ArgumentError("native owner name must be bounded nonempty UTF-8"))
@@ -267,12 +267,16 @@ function Endpoint(profile::P, ::Type{C}, loop::ThreadLoop, core::CoreConnection,
     try
         with_thread_loop_lock(loop) do _
             endpoint.registry = Registry(core)
-            endpoint.filter = Filter(core, String(name); properties=Dict(
+            properties = Dict(
                 "node.name" => String(name), "media.class" => "Control",
                 "pipewireao.rtc-control.protocol" => Client.PROTOCOL,
                 "pipewireao.rtc-control.profile" => Client.profile_name(profile),
                 "pipewireao.rtc-control.instance" => string(instance),
-                "pipewireao.rtc-control.owner-pid" => string(getpid())),
+                "pipewireao.rtc-control.owner-pid" => string(getpid()))
+            any(key -> haskey(properties,key),keys(properties_extra)) &&
+                throw(ArgumentError("extra native properties cannot replace common identity"))
+            merge!(properties,properties_extra)
+            endpoint.filter = Filter(core, String(name); properties,
                 on_param_changed=(filter, port, id, pod) -> begin
                     if port === nothing && id == SPA.PARAM_PROPS && pod !== nothing
                         stage!(endpoint, pod)
