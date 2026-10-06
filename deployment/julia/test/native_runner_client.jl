@@ -6,6 +6,7 @@ using SHA
 module RunnerClientModules
 include(joinpath(@__DIR__, "..", "src", "native_control_codec.jl"))
 include(joinpath(@__DIR__, "..", "src", "native_runner_codec.jl"))
+include(joinpath(@__DIR__, "..", "src", "native_control_client.jl"))
 include(joinpath(@__DIR__, "..", "src", "native_runner_client.jl"))
 end
 const ClientEnvelope = RunnerClientModules.NativeControlCodec
