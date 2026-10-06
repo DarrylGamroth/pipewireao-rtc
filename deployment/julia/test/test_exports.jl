@@ -477,15 +477,96 @@ end
         mkpath(joinpath(root,"jfg/deployment"))
         path = joinpath(root,"jfg/deployment/Project.toml")
         write(path,"[deps]\nJSON3 = \"0f8b85d8-7281-11e9-16c2-39a750bddbf1\"\n[sources]\n[compat]\nJSON3 = \"1\"\n")
+        sdk = joinpath(root,"hil/packages/PipeWireAO")
+        mkpath(sdk)
+        write(joinpath(sdk,"Project.toml"),
+            "name = \"PipeWireAO\"\nuuid = \"5d815c25-fdf3-4508-8205-db8be38ea5d0\"\nversion = \"0.6.16\"\n")
         HIL.julia_owner_environment(root)
         definition = HIL.TOML.parsefile(path)
         @test definition["deps"]["ThreadPinning"] == "811555cd-349b-4f26-b7bc-1f208b848042"
         @test definition["compat"]["ThreadPinning"] == "1"
         @test definition["sources"]["PipeWireAO"]["path"] == "../../hil/packages/PipeWireAO"
         @test definition["compat"]["JSON3"] == "1"
+        @test definition["compat"]["PipeWireAO"] == "=0.6.16"
         @test_throws ArgumentError HIL.julia_owner_environment(root)
         HIL.julia_owner_environment(root;refresh=true)
         @test HIL.TOML.parsefile(path) == definition
+    end
+end
+
+@testset "JFG owner compatibility follows only the validated staged SDK" begin
+    mktempdir() do root
+        owner_path = joinpath(root,"jfg/deployment/Project.toml")
+        sdk_path = joinpath(root,"hil/packages/PipeWireAO/Project.toml")
+        mkpath(dirname(owner_path)); mkpath(dirname(sdk_path))
+        write_project(path,definition) = open(path,"w") do io
+            HIL.TOML.print(io,definition;sorted=true)
+        end
+        uuid = "5d815c25-fdf3-4508-8205-db8be38ea5d0"
+        sdk = Dict("name"=>"PipeWireAO","uuid"=>uuid,"version"=>"0.6.16")
+        original = Dict{String,Any}(
+            "deps"=>Dict("PipeWireAO"=>uuid,"JSON3"=>"0f8b85d8-7281-11e9-16c2-39a750bddbf1"),
+            "compat"=>Dict("PipeWireAO"=>"=0.6.13","JSON3"=>"1","julia"=>"1.12",
+                           "PipeWireAO_jll"=>"=1.7.0"),
+            "sources"=>Dict("Other"=>Dict("path"=>"../other")),
+            "metadata"=>Dict("fixture"=>"preserved"))
+        write_project(owner_path,original); write_project(sdk_path,sdk)
+        HIL.julia_owner_environment(root)
+        definition = HIL.TOML.parsefile(owner_path)
+        @test definition["compat"]["PipeWireAO"] == "=0.6.16"
+        @test filter(pair->first(pair) != "ThreadPinning",definition["deps"]) == original["deps"]
+        @test filter(pair->!(first(pair) in ("PipeWireAO","ThreadPinning")),definition["compat"]) ==
+              filter(pair->first(pair) != "PipeWireAO",original["compat"])
+        @test definition["sources"]["Other"] == original["sources"]["Other"]
+        @test definition["metadata"] == original["metadata"]
+        @test definition["sources"]["PipeWireAO"] == Dict("path"=>"../../hil/packages/PipeWireAO")
+        before = read(owner_path)
+        @test_throws ArgumentError HIL.julia_owner_environment(root)
+        @test read(owner_path) == before
+        HIL.julia_owner_environment(root;refresh=true)
+        @test HIL.TOML.parsefile(owner_path) == definition
+        sdk["version"] = "0.6.17"
+        write_project(sdk_path,sdk)
+        HIL.julia_owner_environment(root;refresh=true)
+        refreshed = HIL.TOML.parsefile(owner_path)
+        @test refreshed["compat"]["PipeWireAO"] == "=0.6.17"
+        @test refreshed["deps"] == definition["deps"]
+        @test refreshed["sources"] == definition["sources"]
+
+        for (field,value) in (("name","Other"),("uuid","00000000-0000-0000-0000-000000000000"),
+                              ("version","invalid"),("version",""),("version",16))
+            invalid = Dict{String,Any}(sdk); invalid[field] = value
+            write_project(sdk_path,invalid)
+            before = read(owner_path)
+            @test_throws ArgumentError HIL.julia_owner_environment(root;refresh=true)
+            @test read(owner_path) == before
+        end
+        for field in ("name","uuid","version")
+            invalid = copy(sdk); delete!(invalid,field)
+            write_project(sdk_path,invalid)
+            before = read(owner_path)
+            @test_throws ArgumentError HIL.julia_owner_environment(root;refresh=true)
+            @test read(owner_path) == before
+        end
+        rm(sdk_path)
+        @test_throws ArgumentError HIL.julia_owner_environment(root;refresh=true)
+        @test HIL.TOML.parsefile(owner_path) == refreshed
+        write_project(sdk_path,sdk)
+        for override in (Dict("path"=>"../../other"),Dict("path"=>"../../hil/packages/PipeWireAO/"),
+                         Dict("url"=>"https://example.invalid/PipeWireAO"))
+            invalid = deepcopy(refreshed); invalid["sources"]["PipeWireAO"] = override
+            write_project(owner_path,invalid)
+            before = read(owner_path)
+            @test_throws ArgumentError HIL.julia_owner_environment(root)
+            @test_throws ArgumentError HIL.julia_owner_environment(root;refresh=true)
+            @test read(owner_path) == before
+        end
+        invalid = deepcopy(refreshed)
+        invalid["deps"]["PipeWireAO"] = "00000000-0000-0000-0000-000000000000"
+        write_project(owner_path,invalid)
+        before = read(owner_path)
+        @test_throws ArgumentError HIL.julia_owner_environment(root;refresh=true)
+        @test read(owner_path) == before
     end
 end
 

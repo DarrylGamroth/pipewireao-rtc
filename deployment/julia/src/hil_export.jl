@@ -427,6 +427,20 @@ function julia_owner_environment(package::AbstractString; refresh=false)
     expected = Dict("path"=>"../../hil/packages/PipeWireAO")
     (!haskey(sources,"PipeWireAO") || (refresh && sources["PipeWireAO"] == expected)) ||
         throw(ArgumentError("base Julia owner already overrides PipeWireAO"))
+    sdk_path = joinpath(package,"hil/packages/PipeWireAO/Project.toml")
+    isfile(sdk_path) || throw(ArgumentError("staged PipeWireAO Project.toml is missing"))
+    sdk = TOML.parsefile(sdk_path)
+    uuid = "5d815c25-fdf3-4508-8205-db8be38ea5d0"
+    get(sdk,"name",nothing) == "PipeWireAO" && get(sdk,"uuid",nothing) == uuid ||
+        throw(ArgumentError("staged PipeWireAO package identity differs"))
+    version_text = get(sdk,"version",nothing)
+    version = version_text isa AbstractString ? tryparse(VersionNumber,version_text) : nothing
+    version === nothing && throw(ArgumentError("staged PipeWireAO version is invalid"))
+    dependencies = get!(definition,"deps",Dict{String,Any}())
+    get(dependencies,"PipeWireAO",uuid) == uuid ||
+        throw(ArgumentError("Julia owner PipeWireAO dependency identity differs"))
+    dependencies["PipeWireAO"] = uuid
+    get!(definition,"compat",Dict{String,Any}())["PipeWireAO"] = "=" * string(version)
     sources["PipeWireAO"] = expected
     open(path,"w") do io
         TOML.print(io,definition;sorted=true)

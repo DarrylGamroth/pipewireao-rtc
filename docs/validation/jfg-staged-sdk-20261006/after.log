@@ -1,0 +1,5 @@
+Precompiling packages...
+   4590.5 ms  ✓ PipeWireAODeployment
+  1 dependency successfully precompiled in 5 seconds. 32 already precompiled.
+  5 dependencies precompiled but different versions are currently loaded (Base64, Dates, Printf, Serialization and TOML). Restart julia to access the new versions. Otherwise, 19 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+staged SDK version=0.6.16, exported compatibility==0.6.16

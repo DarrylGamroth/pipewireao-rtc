@@ -1,0 +1,11 @@
+Precompiling packages...
+   4755.4 ms  ✓ PipeWireAODeployment
+  1 dependency successfully precompiled in 5 seconds. 32 already precompiled.
+  5 dependencies precompiled but different versions are currently loaded (Base64, Dates, Printf, Serialization and TOML). Restart julia to access the new versions. Otherwise, 19 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+ERROR: LoadError: There was an error during testing
+in expression starting at /home/dgamroth/.cache/rtc-live-controls-20261005/jfg-staged-sdk-discriminator.jl:3
+staged SDK version=0.6.16, exported compatibility==0.6.13
+Test Failed at /home/dgamroth/.cache/rtc-live-controls-20261005/jfg-staged-sdk-discriminator.jl:24
+  Expression: (actual["compat"])["PipeWireAO"] == "=" * staged["version"]
+   Evaluated: "=0.6.13" == "=0.6.16"
+
