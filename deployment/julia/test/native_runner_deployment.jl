@@ -34,7 +34,9 @@ links = [
 """
 
 const DEPLOYMENT_TOY_OWNER = raw"""
-using PipeWireAO
+using PipeWireAO, PipeWireAODeployment
+const Bootstrap=PipeWireAODeployment.NativeOwnerBootstrapRuntime
+const options=Dict(ARGS[index]=>ARGS[index+1] for index in 1:2:length(ARGS))
 
 const runtime = ENV["PIPEWIREAO_RUNTIME_DIR"]
 const remote = joinpath(runtime, ENV["PIPEWIREAO_REMOTE"])
@@ -42,7 +44,7 @@ const frame = NdArrayFormat(NdArray.U16_LE, (2,); layout=NdArray.ROW_MAJOR,
     rate=PipeWireAO.SPA.Fraction(100, 1))
 const command = NdArrayFormat(NdArray.F32_LE, (2,); layout=NdArray.ROW_MAJOR,
     rate=PipeWireAO.SPA.Fraction(100, 1))
-touch(name) = open(joinpath(runtime, name), "w") do _; nothing; end
+bootstrap=Bootstrap.Runtime(options["--remote"],options["--bootstrap-node"],parse(Int64,options["--bootstrap-instance"]))
 
 loop = ThreadLoop("fixture.deployment.endpoints")
 context = core = nothing
@@ -66,19 +68,19 @@ try
         time_ns() / 1e9 < deadline || error("toy ndarray nodes did not register")
         sleep(0.01)
     end
-    touch("toy.prepared")
-    while !isfile(joinpath(runtime, "toy.connect"))
-        time_ns() / 1e9 < deadline || error("supervisor did not release toy endpoint connection")
-        sleep(0.01)
-    end
+    Bootstrap.prepared!(bootstrap)
+    ticket=Bootstrap.take_connect!(bootstrap)
+    Bootstrap.check_connect!(bootstrap,ticket)
     foreach(start!, endpoints)
     all(isrunning, endpoints) || error("toy ndarray endpoints did not become active")
-    touch("toy.connected")
-    while !isfile(joinpath(runtime, "toy.quit")) && ispath(remote)
+    Bootstrap.connected!(bootstrap,ticket)
+    Bootstrap.await_connected!(bootstrap,ticket)
+    while !Bootstrap.cancelled(bootstrap) && ispath(remote)
         time_ns() / 1e9 < deadline + 360 || error("toy endpoint owner exceeded lifecycle bound")
         sleep(0.02)
     end
 finally
+    Bootstrap.finishing!(bootstrap)
     for endpoint in reverse(endpoints)
         try close(endpoint) catch end
     end
@@ -87,6 +89,7 @@ finally
         try close(resource) catch end
     end
     try close(loop) catch end
+    try Bootstrap.finish!(bootstrap) finally close(bootstrap) end
 end
 """
 
@@ -239,9 +242,10 @@ function run_native_runner_deployment()
         project = PipeWireAODeployment.package_root()
         julia = Base.julia_cmd().exec[1]
         owner = Dict{String,Any}("role"=>"toy", "argv"=>[julia, "--startup-file=no",
-            "--threads=1", "--project=$project", toy], "environment"=>Dict{String,String}(),
-            "prepared"=>"toy.prepared", "connect"=>"toy.connect", "connected"=>"toy.connected",
-            "quit"=>"toy.quit")
+            "--threads=2,0", "--project=$project", toy,
+            "--bootstrap-node","fixture.toy.bootstrap","--bootstrap-instance","@BOOTSTRAP_INSTANCE_TOY@",
+            "--remote","@RUNTIME@/@REMOTE@"], "environment"=>Dict{String,String}(),
+            "bootstrap-protocol"=>"pipewireao.rtc.owner-bootstrap/1","bootstrap-node"=>"fixture.toy.bootstrap")
         files = Dict("session.conf.in"=>DEPLOYMENT_RUNNER_CONFIG,
             "core.conf.in"=>DEPLOYMENT_CORE_CONFIG,
             "client.conf.in"=>DEPLOYMENT_CLIENT_CONFIG)
@@ -252,6 +256,8 @@ function run_native_runner_deployment()
         write(dummy_fits, UInt8[])
         clients = Dict("core"=>"client.conf.in", "rtc"=>"client.conf.in", "toy"=>"client.conf.in")
         placements = Dict(role=>deployment_placement(cpu) for role in ("core", "rtc", "toy"))
+        push!(placements["toy"]["threads"], Dict("cpus"=>[cpu],"policy"=>"other",
+            "priority"=>0,"count"=>1,"name"=>"rtc-bootstrap"))
         artifacts = Dict(name=>deployment_artifact(joinpath(package, name)) for name in keys(files))
         artifacts["toy_owner.jl"] = deployment_artifact(toy)
         artifacts["bin/pipewireao-rtc"] = deployment_artifact(joinpath(package, "bin/pipewireao-rtc"))
@@ -287,8 +293,14 @@ function run_native_runner_deployment()
             @test admitted["runner"]["node"] == "pipewireao.rtc.runner.native-runner-deployment"
             @test admitted["runner"]["instance"] isa Integer && admitted["runner"]["instance"] > 0
             run_directory = joinpath(runtime, admitted["instance"])
-            @test isfile(joinpath(run_directory, "toy.prepared"))
-            @test isfile(joinpath(run_directory, "toy.connected"))
+            @test !ispath(joinpath(run_directory,"toy.prepared"))
+            @test !ispath(joinpath(run_directory,"toy.connect"))
+            @test !ispath(joinpath(run_directory,"toy.connected"))
+            @test !ispath(joinpath(run_directory,"toy.quit"))
+            bootstrap_threads=filter(thread->thread["name"]=="rtc-bootstrap",admitted["placement"]["toy"]["threads"])
+            @test length(bootstrap_threads)==1
+            @test only(bootstrap_threads)["cpus"]==[cpu]
+            @test only(bootstrap_threads)["policy"]==0 && only(bootstrap_threads)["priority"]==0
             @test !ispath(joinpath(run_directory, "native-control.sock"))
             @test !ispath(joinpath(run_directory, "control.sock"))
             @test isfile(admitted["control_locator"])

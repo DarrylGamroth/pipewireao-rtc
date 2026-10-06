@@ -78,3 +78,23 @@ These checks submit **zero scientific frames**.
 Exporter conversion, independent review and fresh installed Classic/Copper
 science, allocation, placement and systemd checks remain required before
 issue #9 can close.
+
+### Actual deployment owner handshake
+
+The real launcher fixture now uses native bootstrap for its four non-scientific
+ndarray endpoints. The final run passed **59/59**, including native owner
+preparation/Connect, absence of all four lifecycle markers, exact publication
+and retained session controls, cleanup and final artifact checks. Placement
+observed exactly one `rtc-bootstrap` native thread on CPU 14 with SCHED_OTHER
+and priority zero. The inherited launcher envelope was CPUs 14/15. No
+scientific frames were submitted or ndarray sinks armed.
+
+Evidence: `native-bootstrap-real-launcher-final-20261006.log` and
+`native-runner-deployment-2056760444664516`, under the same retained cache.
+The first migrated fixture passed 56 checks and failed one obsolete assertion
+that still required `toy.connected` to exist. The fixture now checks native
+placement and explicitly checks that lifecycle files do not exist; that failed
+log is retained. Both fixtures used unchanged runner SHA-256
+`f4f8adf29a28aea11a915d929b671ac1bffec0fbc569d6d4e3766aa5a228f430`.
+This is launcher/transport verification, not an installed scientific or
+systemd qualification.
