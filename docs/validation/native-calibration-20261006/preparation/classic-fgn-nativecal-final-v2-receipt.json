@@ -1,0 +1,52 @@
+{
+  "capture_two_frames_payload_bytes": 500504,
+  "checkpoint": "35c9f46f7705cdd3d87582b49344371048864aa3",
+  "collect_reply_empty_message_bytes": 2568,
+  "files_sha256": {
+    "/tmp/classic-fgn-nativecal-final-v2-native-help.txt": "ec1fdfcc518c92e76eaff1c9889d38e2c4059d4abe0e2319e5e474915ec31f08",
+    "/tmp/classic-fgn-nativecal-final-v2-preflight-v4.log": "b3279b2fabbe28552b72176be88c3913b3fac2664e570f5e7648a5fc7b68f56e",
+    "/tmp/classic-fgn-nativecal-final-v2-preflight.jl": "3e7f913af6435a0a24d0acd7e7ffbb5b3b1ad57848b42077c9249b841e019b1e",
+    "/tmp/classic-fgn-nativecal-final-v2-preflight.json": "f032b4cdceab3ae0794864a3f73009813db2fa82289bcda03e4fbb8dc452e0a1",
+    "/tmp/classic-fgn-nativecal-final-v2-prepare.log": "3c77a694f65a2361961568056d4987c1c671bf391101fbf73612c9773894e53c",
+    "/tmp/classic-fgn-nativecal-final-v2-proof.json": "6443b19a594260867518a524607ee3b9164de948dd391a7da60174d8648c8fcb",
+    "/tmp/refresh_native_sdk_control_runtime-20261006.jl": "6bf45628466fb045b6eb1fbb7b52cbb19db967d8624762adcf8bc78d7bbef78e"
+  },
+  "installed": "/tmp/classic-fgn-nativecal-final-v2-installed",
+  "installed_seal_count": 575,
+  "plan_sha256": "f6d8d2a29119ac437a0b36e60d0d88cbe986f4dce27c1691179f8ac1c181d011",
+  "protected_metadata_exception": "provenance.json rewritten by the refresh helper after its original hash was recorded",
+  "protected_unchanged_count": 390,
+  "recipes": {
+    "capture": [
+      "/home/dgamroth/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/bin/julia",
+      "--startup-file=no",
+      "--compiled-modules=existing",
+      "--project=/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-controls/deployment/julia",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-controls/deployment/qualify_calibration_native.jl",
+      "/tmp/classic-fgn-nativecal-final-v2-installed",
+      "/tmp/classic-fgn-nativecal-final-v2-capture-runtime",
+      "/tmp/classic-fgn-nativecal-final-v2-capture-evidence",
+      "/home/dgamroth/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/canonical-plan.json",
+      "capture"
+    ],
+    "collect": [
+      "/home/dgamroth/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/bin/julia",
+      "--startup-file=no",
+      "--compiled-modules=existing",
+      "--project=/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-controls/deployment/julia",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-controls/deployment/qualify_calibration_native.jl",
+      "/tmp/classic-fgn-nativecal-final-v2-installed",
+      "/tmp/classic-fgn-nativecal-final-v2-collect-runtime",
+      "/tmp/classic-fgn-nativecal-final-v2-collect-evidence",
+      "/home/dgamroth/.cache/rtc-calibration-quality-20261003/method-smoke-reverse-v2/canonical-plan.json",
+      "collect"
+    ]
+  },
+  "rootfs_free_bytes": 546680832,
+  "run": 82,
+  "runner_sha256": "750059d1ee71783b63d1fbb96a6bc92cd9be436f551d1b450688a6aae2c2d5cb",
+  "scope": "cold preparation only; no SCI, action effects, hardware or numerical qualification",
+  "sdk_revision": "d514d6b0d76a1dcac359ec23943876343b7bb205",
+  "stage_plus_installed_logical_bytes": 49614707,
+  "tmp_free_bytes": 961503232
+}

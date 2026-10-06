@@ -1,0 +1,5 @@
+Usage: pipewireao-rtc --config PATH [--remote CORE] [--hold] [--start-paused]
+Native: --remote PRIVATE_SOCKET --start-paused --control-node NAME --control-instance POSITIVE
+Loads, starts, stops, and unloads one non-actuating complete-frame session.
+--start-paused loads to READY without starting; native mode does not read stdin.
+Client: pipewireao-rtc control --locator PATH -- COMMAND [ARG ...]

@@ -1,0 +1,116 @@
+{
+  "archive": {
+    "archive": "/tmp/copper-fgn-nativecal-final-v1-installed.tar.gz",
+    "archive_bytes": 5449368,
+    "archive_sha256": "5f3e08faa22953153c58f063413b060f2dcf5a9d808a8b742e6e148aba9532ae",
+    "restore_argv": [
+      "tar",
+      "-xzf",
+      "/tmp/copper-fgn-nativecal-final-v1-installed.tar.gz",
+      "-C",
+      "/tmp"
+    ],
+    "scope": "only owned closed cold v1-installed duplicate archived; frozen base, stage and original scientific inputs unchanged",
+    "source": "/tmp/copper-fgn-nativecal-final-v1-installed",
+    "uncompressed_removed_after_exact_archive_verification": true,
+    "verified_entries": 655
+  },
+  "base": "/tmp/copper-fgn-sdk-interrupt-final-v1-installed",
+  "calibration_cli_sha256": "ce0ba26cf04f64ea1cb730c4b89309592c5097843cc326d867c4ddd1bfe9b1cb",
+  "capture_two_frame_payload_bytes": 45192,
+  "collect_reply_empty_message_bytes": 14904,
+  "files_sha256": {
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-controls/docs/validation/integrated-gates-review-20261006/preparation/runtime-refresh-metadata-audit.json": "8fed7d4b9932370d0682677854ef86e472403bd054b735f814f358c5912490b8",
+    "/tmp/archive_copper_fgn_nativecal_v1_installed-20261006.py": "54f6f561a2279cc661548f959ab16119c09934e8b505d6707ab9095dbfdf8920",
+    "/tmp/copper-fgn-nativecal-final-v1-archive.log": "d39a223196bd2aafc0ff2a04964bc264f1c7a17301e0469c1ecab4d43e0630e5",
+    "/tmp/copper-fgn-nativecal-final-v1-installed-archive-ledger.json": "f49523166d75517964bce32af8c5762fc245e0b05d416daf942461a8e7df4057",
+    "/tmp/copper-fgn-nativecal-final-v1-pre-normalization-Manifest.toml": "06a30f1718c607ba58e812f122f9d6772164884e642c2faebf3f15b282ab6a73",
+    "/tmp/copper-fgn-nativecal-final-v1-pre-normalization-proof.json": "f1f871c56d67502dd616a135070ebf6c5b93264d88a6bbdfc57162a6038534a6",
+    "/tmp/copper-fgn-nativecal-final-v1-prepare-after.log": "ec8f2eb11e3eca09ab074fb4d687aae06c281aad816d4ae45a92c3f9571f464b",
+    "/tmp/copper-fgn-nativecal-final-v2-loaded-sdk.log": "3722f46ecf7ef0bd47401f211d9aaa7b98c8d3618eb7b70da20b411f72bc50cd",
+    "/tmp/copper-fgn-nativecal-final-v2-native-help.txt": "ec1fdfcc518c92e76eaff1c9889d38e2c4059d4abe0e2319e5e474915ec31f08",
+    "/tmp/copper-fgn-nativecal-final-v2-normalize.log": "7245b32c4e94a5eb94a991cd531819bb36940db8b9632c0517e226b6f4ec39b1",
+    "/tmp/copper-fgn-nativecal-final-v2-proof.json": "a2e4a42ad8c2cc85a5174e3eb40946362f859dcad527e9d398af1ae93c1e51e6",
+    "/tmp/normalize_copper_fgn_nativecal_runtime_v2-20261006.jl": "a018b19ed0a5963fd254dd5432d54c447f2d7073c4e1ed377f73dffbd94f4446",
+    "/tmp/prepare_copper_fgn_nativecal_final_v1-20261006.jl": "5f0bc1d93558ec8052ee5db6496c2a9e1d6f4511a93d48ca70752d81acfba336",
+    "/tmp/refresh_native_sdk_control_runtime_v2-20261006.jl": "62c6a1c9acd89544ca7242036838230e961da533ddcbf6828fd31f1bf1fe9410"
+  },
+  "frames_per_probe": 2,
+  "future_qualification_argv": {
+    "capture": [
+      "/home/dgamroth/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/bin/julia",
+      "--startup-file=no",
+      "--compiled-modules=existing",
+      "--project=/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/deployment/julia",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/deployment/qualify_calibration_native.jl",
+      "/tmp/copper-fgn-nativecal-final-v2-installed",
+      "/tmp/copper-fgn-nativecal-final-v2-capture-runtime",
+      "/tmp/copper-fgn-nativecal-final-v2-capture-evidence",
+      "/home/dgamroth/.cache/rtc-calibration-completion-20261003/heart-calibration-copper-nondebug-n2-prepared1/heart-calibration-plan.json",
+      "capture"
+    ],
+    "collect": [
+      "/home/dgamroth/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/bin/julia",
+      "--startup-file=no",
+      "--compiled-modules=existing",
+      "--project=/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/deployment/julia",
+      "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/deployment/qualify_calibration_native.jl",
+      "/tmp/copper-fgn-nativecal-final-v2-installed",
+      "/tmp/copper-fgn-nativecal-final-v2-collect-runtime",
+      "/tmp/copper-fgn-nativecal-final-v2-collect-evidence",
+      "/home/dgamroth/.cache/rtc-calibration-completion-20261003/heart-calibration-copper-nondebug-n2-prepared1/heart-calibration-plan.json",
+      "collect"
+    ]
+  },
+  "installed": "/tmp/copper-fgn-nativecal-final-v2-installed",
+  "installed_descriptor_sha256": "0fcde35858ef50cd6907973679e2861c087491515f616e482ff5f4a4353f7581",
+  "installed_seal_count": 565,
+  "loaded_sdk_path": "/tmp/copper-fgn-nativecal-final-v2-installed/hil/packages/PipeWireAO/src/PipeWireAO.jl",
+  "measurements": 3600,
+  "metadata_policy": "generated graph split, descriptor, deployment runtime and provenance excluded from unchanged scientific ledger; original base remains intact",
+  "output": "/tmp/copper-fgn-nativecal-final-v1",
+  "plan": "/home/dgamroth/.cache/rtc-calibration-completion-20261003/heart-calibration-copper-nondebug-n2-prepared1/heart-calibration-plan.json",
+  "plan_sha256": "043cfdaef6896fbf09ed2a477a771026cb7045f4cf8b8aa68bf1a14deb990fc5",
+  "probes": 2,
+  "production_manifest_limitation": "Public export control Manifest selects registry SDK tree09c5; this generated stage was explicitly rebound/resealed to stagedd514, not a production exporter correction.",
+  "qualifier_sha256": "bd82f3200414e4a1952ed85466583c13ff27cf5baa613655cf908f354ba15e63",
+  "resource_floor_bytes": 62914560,
+  "retained_scientific_count": 355,
+  "rootfs_free_bytes": 514117632,
+  "run": 1,
+  "runner_sha256": "750059d1ee71783b63d1fbb96a6bc92cd9be436f551d1b450688a6aae2c2d5cb",
+  "runtime_manifest_binding": {
+    "helper_sha256": "a018b19ed0a5963fd254dd5432d54c447f2d7073c4e1ed377f73dffbd94f4446",
+    "original_dependency": {
+      "deps": [
+        "PipeWireAO_jll",
+        "UnsafeArrays"
+      ],
+      "git-tree-sha1": "09c5b1a7cf7869dcf9c252651e7c9569bf7bcbdb",
+      "uuid": "5d815c25-fdf3-4508-8205-db8be38ea5d0",
+      "version": "0.6.16"
+    },
+    "original_manifest_sha256": "06a30f1718c607ba58e812f122f9d6772164884e642c2faebf3f15b282ab6a73",
+    "scope": "generated control-runtime Manifest binds already sealed d514 SDK; no production exporter fix or scientific-byte change",
+    "sdk_source_revision": "d514d6b0d76a1dcac359ec23943876343b7bb205",
+    "sdk_thread_loop_sha256": "d622115599605017b251addf6f23c96d85c272d3c360c46b4048f2fb7eaed420",
+    "selected_dependency": {
+      "deps": [
+        "PipeWireAO_jll",
+        "UnsafeArrays"
+      ],
+      "path": "../hil/packages/PipeWireAO",
+      "uuid": "5d815c25-fdf3-4508-8205-db8be38ea5d0",
+      "version": "0.6.16"
+    },
+    "selected_manifest_sha256": "e011379ce97f31d9d31af064bf3c9135a6bd92da395cd72bbec9fa4bfc2673b2"
+  },
+  "science_qualification": "not performed; original calibration/scientific acceptance unchanged",
+  "scientific_ledger_sha256": "a2e4a42ad8c2cc85a5174e3eb40946362f859dcad527e9d398af1ae93c1e51e6",
+  "scope": "cold public calibration export/install and action preflight only; no SCI, numerical or hardware qualification",
+  "source_checkpoint": "74d008320197a07542babe38d1016844b48a0049",
+  "source_descriptor_sha256": "8616edf23763d16ac2b09d5ffbe3d6bae2248769b3009dbd2500fe978b87842b",
+  "source_original_seal_count": 581,
+  "tmp_free_bytes": 729128960,
+  "total_task_owned_stage_install_archive_receipts_bytes": 54800420
+}
