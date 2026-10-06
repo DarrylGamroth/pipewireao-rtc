@@ -1,0 +1,8 @@
+Precompiling packages...
+   6492.1 ms  ✓ PipeWireAODeployment
+  1 dependency successfully precompiled in 7 seconds. 32 already precompiled.
+  8 dependencies precompiled but different versions are currently loaded (Dates, JLLWrappers, PipeWireAO, PipeWireAO_jll, Preferences, Printf, TOML and UnsafeArrays). Restart julia to access the new versions. Otherwise, 15 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+Test Summary:                         | Pass  Total  Time
+actual native retained callback scope |   11     11  5.2s
+CLOSE_FAILURE_RECORD Dict{String, Any}("shutdown_confirmed" => true, "failure" => "ArgumentError: serialize close after the active native operation", "success" => true, "cleanup" => Dict("status" => "complete"))
+CURRENT_EXIT_CODE 0

@@ -1,0 +1,8 @@
+Precompiling packages...
+   4697.0 ms  ✓ PipeWireAODeployment
+  1 dependency successfully precompiled in 5 seconds. 32 already precompiled.
+  8 dependencies precompiled but different versions are currently loaded (Dates, JLLWrappers, PipeWireAO, PipeWireAO_jll, Preferences, Printf, TOML and UnsafeArrays). Restart julia to access the new versions. Otherwise, 15 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+SDK=/home/dgamroth/workspaces/codex/pipewire/PipeWireAO.jl/src/PipeWireAO.jl
+DEPLOYMENT=/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-controls/deployment/julia/src/PipeWireAODeployment.jl
+FIRST (quiet = 0, wake = 8384, snapshot = 8384, publication = 13840)
+SECOND (quiet = 0, wake = 8384, snapshot = 8384, publication = 13840)
