@@ -286,3 +286,21 @@ end
     @test observed[] == ("/private/control.json",123.0,"0"^32)
     @test !haskey(ready,"socket")
 end
+
+@testset "retained native admission identity" begin
+    ready=Dict("deployment_uuid"=>"0"^32)
+    client=(;observation=(;owner_pid=UInt32(42)))
+    live_uuid=client -> "0"^32
+    @test SQ.verify_admission_client(client,ready,42;live_uuid) === client
+    @test_throws ErrorException SQ.verify_admission_client(client,ready,43;live_uuid)
+    @test_throws ErrorException SQ.verify_admission_client(client,
+        Dict("deployment_uuid"=>"1"^32),42;live_uuid)
+end
+
+@testset "recorded failure cannot pass after cleanup" begin
+    record=Dict("success"=>true,"shutdown_confirmed"=>true,
+        "cleanup"=>Dict("status"=>"complete"))
+    @test SQ.qualification_exit_code(record) == 0
+    record["failure"]="admission client close failed"
+    @test SQ.qualification_exit_code(record) == 1
+end

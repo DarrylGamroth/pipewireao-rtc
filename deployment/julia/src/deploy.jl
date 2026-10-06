@@ -1443,7 +1443,12 @@ function run(deployment::DeploymentRunner)
     end
 end
 
-function wait_state(runtime::AbstractString, predicate; timeout=30, process=nothing)
+"Observe a native state, then close the verified client before returning it."
+wait_state(runtime::AbstractString, predicate; kwargs...) =
+    wait_state((state, client) -> state, runtime, predicate; kwargs...)
+
+"Run a callback with the observed state and its retained client; close on return or failure."
+function wait_state(f::Function, runtime::AbstractString, predicate; timeout=30, process=nothing)
     isfinite(timeout)&&timeout>0 || fail("state wait timeout must be finite and positive")
     deadline=monotonic()+timeout
     locator=joinpath(runtime,"control.json")
@@ -1486,7 +1491,7 @@ function wait_state(runtime::AbstractString, predicate; timeout=30, process=noth
                 end
             end
             state["ok"]||fail("native supervisor Status failed: $(state["error"])")
-            predicate(state)&&return state
+            predicate(state)&&return f(state,client)
             sleep(min(0.05,max(0.0,deadline-monotonic())))
         end
     finally

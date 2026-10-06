@@ -23,6 +23,12 @@ function connect_supervisor(ready,owner_pid;deadline,connect=N.connect_locator)
     return client
 end
 
+function verify_admission_client(client,ready,owner_pid;live_uuid=N.live_uuid)
+    client.observation.owner_pid == owner_pid || error("qualification bound another supervisor")
+    live_uuid(client) == ready["deployment_uuid"] || error("qualification deployment identity changed")
+    return client
+end
+
 # The supervisor's serial owner cleanup and service stop allowance use 300 s.
 # Permit that bound before interruption for cleanup already underway, and again
 # after interruption before stopping the launcher itself.
@@ -190,6 +196,7 @@ function shutdown_qualification!(record,runtime,process,identities; shutdown=D.s
     return record
 end
 qualification_exit_code(record) = get(record,"success",false) &&
+    get(record,"failure",nothing) === nothing &&
     get(record,"shutdown_confirmed",false) && get(get(record,"cleanup",Dict()),"status","unknown") == "complete" ? 0 : 1
 
 function memory_sample(processes)
@@ -328,80 +335,84 @@ function main(args)
         launcher_pid = getpid(process)
         client = nothing
         try
-            ready = D.wait_state(runtime,state -> get(state,"admitted",false);timeout=900,process)
-            record["ready"] = ready; instance = ready["private_runtime"]
-            client=connect_supervisor(ready,launcher_pid;deadline=time_ns()/1e9+30)
-            identities = owned_process_identities(ready["processes"],launcher_pid)
-            record["owned_process_identities"] = identities
-            record["runtime_libraries"] = Dict(role=>filter(line->occursin("libpipewire-ao",line)||occursin("libspa-ao",line),readlines("/proc/$(entry["pid"])/maps")) for (role,entry) in ready["processes"])
-            push!(boundaries,Dict("phase"=>"admitted","monotonic_ns"=>time_ns(),"processes"=>memory_sample(ready["processes"]),"device"=>device_sample(ready["processes"])))
-            sample_interval = 2.0
-            for number in 1:(repeated ? 2 : 1)
-                initial=native_control(client,["status"];timeout=30)
-                generation=Int64(initial["source"]["generation"])
-                deadline = time_ns() + UInt64(900_000_000_000)
-                sample_deadline = time_ns()
-                paused = false
-                while true
-                    process_running(process) || error("launcher exited before completion")
-                    time_ns() < deadline || error("sustained completion timed out")
-                    if time_ns() >= sample_deadline
-                        sample = Dict("monotonic_ns"=>time_ns(),"run"=>number,"processes"=>memory_sample(ready["processes"]))
-                        retain_sample!(samples,sample)
-                        sample_deadline = time_ns()+UInt64(round(Int,sample_interval*1e9))
+            D.wait_state(runtime,state -> get(state,"admitted",false);timeout=900,process) do ready, admitted_client
+                record["ready"] = ready; instance = ready["private_runtime"]
+                client=verify_admission_client(admitted_client,ready,launcher_pid)
+                identities = owned_process_identities(ready["processes"],launcher_pid)
+                record["owned_process_identities"] = identities
+                record["runtime_libraries"] = Dict(role=>filter(line->occursin("libpipewire-ao",line)||occursin("libspa-ao",line),readlines("/proc/$(entry["pid"])/maps")) for (role,entry) in ready["processes"])
+                push!(boundaries,Dict("phase"=>"admitted","monotonic_ns"=>time_ns(),"processes"=>memory_sample(ready["processes"]),"device"=>device_sample(ready["processes"])))
+                sample_interval = 2.0
+                for number in 1:(repeated ? 2 : 1)
+                    initial=native_control(client,["status"];timeout=30)
+                    generation=Int64(initial["source"]["generation"])
+                    deadline = time_ns() + UInt64(900_000_000_000)
+                    sample_deadline = time_ns()
+                    paused = false
+                    while true
+                        process_running(process) || error("launcher exited before completion")
+                        time_ns() < deadline || error("sustained completion timed out")
+                        if time_ns() >= sample_deadline
+                            sample = Dict("monotonic_ns"=>time_ns(),"run"=>number,"processes"=>memory_sample(ready["processes"]))
+                            retain_sample!(samples,sample)
+                            sample_deadline = time_ns()+UInt64(round(Int,sample_interval*1e9))
+                        end
+                        observed=native_control(client,["status"];
+                            deadline=Float64(min(deadline/1e9,time_ns()/1e9+30)))
+                        cursor=native_completed_source(observed["source"],generation)
+                        if cursor !== nothing
+                            lifecycle && number == 1 && !paused && error("run completed before the requested midrun lifecycle check")
+                            prefix,summary = preserve_report(instance,evidence,number,cursor)
+                            push!(boundaries,Dict("phase"=>"completed-$number","monotonic_ns"=>time_ns(),"processes"=>memory_sample(ready["processes"]),"device"=>device_sample(ready["processes"])))
+                            record["run-$number"] = Dict("summary"=>summary,"native_completion"=>observed,
+                                "prefix_frame_sha256"=>prefix["frame"]["sha256"],"prefix_command_sha256"=>prefix["command"]["sha256"])
+                            require_allocation_free(summary)
+                            break
+                        end
+                        if lifecycle && number == 1 && !paused && length(samples) >= 12
+                            record["midrun_stop"] = native_control(client,["session-stop"];timeout=48)
+                            first_status = native_control(client,["status"];timeout=48)
+                            held = first_status["source"]
+                            !held["completed"] && held["sequence"] > retained_prefix_frames ||
+                                error("pause did not observe a continuing run")
+                            first_status["source"]["state"] == "paused" || error("source pause not observed")
+                            sleep(0.1)
+                            still = native_control(client,["status"];timeout=48)
+                            still["source"]["state"] == "paused" && still["source"]["sequence"] == first_status["source"]["sequence"] == held["sequence"] || error("source advanced while held")
+                            record["held_status_before"] = first_status
+                            record["held_status_after"] = still
+                            record["held_sequence"] = held["sequence"]
+                            record["midrun_resume"] = native_control(client,["session-start"];timeout=48)
+                            paused = true
+                        end
+                        sleep(0.05)
                     end
-                    observed=native_control(client,["status"];
-                        deadline=Float64(min(deadline/1e9,time_ns()/1e9+30)))
-                    cursor=native_completed_source(observed["source"],generation)
-                    if cursor !== nothing
-                        lifecycle && number == 1 && !paused && error("run completed before the requested midrun lifecycle check")
-                        prefix,summary = preserve_report(instance,evidence,number,cursor)
-                        push!(boundaries,Dict("phase"=>"completed-$number","monotonic_ns"=>time_ns(),"processes"=>memory_sample(ready["processes"]),"device"=>device_sample(ready["processes"])))
-                        record["run-$number"] = Dict("summary"=>summary,"native_completion"=>observed,
-                            "prefix_frame_sha256"=>prefix["frame"]["sha256"],"prefix_command_sha256"=>prefix["command"]["sha256"])
-                        require_allocation_free(summary)
-                        break
+                    if repeated && number == 1
+                        record["stop"] = native_control(client,["session-stop"];timeout=48)
+                        record["reset"] = native_control(client,["reset"];timeout=48)
+                        reset = native_control(client,["status"];timeout=30)["source"]
+                        reset["sequence"] == 0 && !reset["completed"] &&
+                            reset["generation"] > generation && reset["report-ready"] &&
+                            reset["report-generation"] == reset["generation"] && reset["report-sequence"] == 0 ||
+                            error("native source reset differs")
+                        push!(boundaries,Dict("phase"=>"reset","monotonic_ns"=>time_ns(),"processes"=>memory_sample(ready["processes"]),"device"=>device_sample(ready["processes"])))
+                        record["restart"] = native_control(client,["session-start"];timeout=48)
                     end
-                    if lifecycle && number == 1 && !paused && length(samples) >= 12
-                        record["midrun_stop"] = native_control(client,["session-stop"];timeout=48)
-                        first_status = native_control(client,["status"];timeout=48)
-                        held = first_status["source"]
-                        !held["completed"] && held["sequence"] > retained_prefix_frames ||
-                            error("pause did not observe a continuing run")
-                        first_status["source"]["state"] == "paused" || error("source pause not observed")
-                        sleep(0.1)
-                        still = native_control(client,["status"];timeout=48)
-                        still["source"]["state"] == "paused" && still["source"]["sequence"] == first_status["source"]["sequence"] == held["sequence"] || error("source advanced while held")
-                        record["held_status_before"] = first_status
-                        record["held_status_after"] = still
-                        record["held_sequence"] = held["sequence"]
-                        record["midrun_resume"] = native_control(client,["session-start"];timeout=48)
-                        paused = true
-                    end
-                    sleep(0.05)
                 end
-                if repeated && number == 1
-                    record["stop"] = native_control(client,["session-stop"];timeout=48)
-                    record["reset"] = native_control(client,["reset"];timeout=48)
-                    reset = native_control(client,["status"];timeout=30)["source"]
-                    reset["sequence"] == 0 && !reset["completed"] &&
-                        reset["generation"] > generation && reset["report-ready"] &&
-                        reset["report-generation"] == reset["generation"] && reset["report-sequence"] == 0 ||
-                        error("native source reset differs")
-                    push!(boundaries,Dict("phase"=>"reset","monotonic_ns"=>time_ns(),"processes"=>memory_sample(ready["processes"]),"device"=>device_sample(ready["processes"])))
-                    record["restart"] = native_control(client,["session-start"];timeout=48)
+                if repeated
+                    a,b = record["run-1"],record["run-2"]
+                    a["prefix_frame_sha256"] == b["prefix_frame_sha256"] && a["prefix_command_sha256"] == b["prefix_command_sha256"] || error("reset prefix differs")
+                    a["summary"]["truth"] == b["summary"]["truth"] || error("continuous truth differs across reset")
                 end
-            end
-            if repeated
-                a,b = record["run-1"],record["run-2"]
-                a["prefix_frame_sha256"] == b["prefix_frame_sha256"] && a["prefix_command_sha256"] == b["prefix_command_sha256"] || error("reset prefix differs")
-                a["summary"]["truth"] == b["summary"]["truth"] || error("continuous truth differs across reset")
             end
             record["success"] = true
         catch exception
+            record["success"] = false
             record["failure"] = sprint(showerror,exception)
         finally
-            client === nothing || close(client)
+            # wait_state owns the admission client and closes it after the
+            # complete cohort, including callback failure. Never reconnect
+            # or retire a controller while measuring science allocations.
             shutdown_qualification!(record,runtime,process,identities)
             record["memory_samples"] = retained_samples(samples)
             record["memory_sample_count"] = samples.count

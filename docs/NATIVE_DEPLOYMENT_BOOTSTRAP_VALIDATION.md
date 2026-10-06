@@ -214,3 +214,55 @@ overhead and cannot qualify timing or allocation success. The host has unrelated
 Julia processes on cores used by this functional layout; no isolated latency,
 tail or frame-rate claim is made. The inclusive measurement boundary and GC
 policy have not been relaxed.
+
+### Retained admission client: fail-before/pass-after
+
+The diagnostic reset continued after preserving the first allocation failure.
+Its first cohort reproduced the same 3,862,872 bytes; its second cohort measured
+zero bytes, zero allocation counts and zero GC activity over 496 exchanges.
+The two retained frame and command products were byte-identical. This separates
+continuing quiet/scientific work from the first-cohort controller handoff under
+this fixed-connection workload; it does not prove arbitrary control ingress is
+allocation-free. The diagnostic remains marked failed and nonqualifying.
+
+`Deployment.wait_state` now has a callback overload that borrows its verified
+client within its existing `finally` scope. Its ordinary return-state API still
+closes before returning. The sustained coordinator keeps that same admission
+client through the complete cohort and verifies its live deployment UUID and
+launcher PID. It no longer closes it and creates another controller after
+source release. Client cleanup occurs after the callback or its failure. No
+simulation, source control, scientific algorithm, warmup, allocation boundary
+or GC setting changed.
+
+The fresh unchanged installed Classic FGN package then passed **both 512-frame
+reset cohorts**, including both inclusive 496-exchange allocation intervals:
+zero bytes, zero pool/big/malloc/realloc counts, zero GC time/pauses/sweeps.
+All commands remained nonzero, neither cohort hit command rails, and native
+shutdown confirmed all tracked groups absent. Both retained frame hashes are
+`3564e289278004d7120f044df3c0e1e2dfb3e7a925558e82dd898a7f543c6eca`;
+both retained command hashes are
+`b374f9a064080d078d2a157d19105ab58e064b90a789d4c8ec95c83067d30a8f`,
+matching the earlier failed allocation run. Evidence prefix:
+`classic-fgn-v5-retained-client-evidence` in the same final-deployment cache.
+The exact launched coordinator is retained as
+`qualify_sustained-retained-client-launch.jl`, SHA-256
+`47cf143cd4dba226b3c4f851c593e7d3654c7238dea55828d62dc01a8a9d515f`.
+
+Independent review subsequently found that a client-close exception after the
+callback could leave its already-set success flag true. Success is now assigned
+only after `wait_state` returns; the catch clears it, and the exit reducer rejects
+any recorded failure even after successful shutdown. The focused suite failed
+the new exit assertion before the reducer correction and passes **138/138**
+after it. An actual native callback-scope fixture passes 11/11, including another
+Status through the borrowed client, callback return/throw and ordinary API
+cleanup. A real native close-error injection yielded exit zero before the
+correction and exit one afterward. These defensive edits were made after the
+successful installed normal-path run; that run does not establish the injected
+failure path. Independent evidence is maintained in the allocation review.
+
+The public SDK still materializes allocating registry events, and native
+bootstrap ticket/parameter publication is cold allocating work. The qualified
+interval therefore establishes the fixed retained-connection scientific workload
+only. Late controller creation, arbitrary GUI attachment and general cold native
+requests need separate containment and behavior checks; this result is not a
+whole-application zero-allocation promise.
