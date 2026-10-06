@@ -36,12 +36,42 @@ function request!(connection::Connection, operation::Symbol;
         Codec.LifecycleCommand(operation); deadline, check))
 end
 
+_snapshot_detail(reply::Codec.Completion) = reply.snapshot === nothing ? "absent" : "present"
+_snapshot_detail(::Codec.Rejection) = "rejection"
+
+function _reply_failure(context, reply::Union{Codec.Completion,Codec.Rejection})
+    header = reply.header
+    error("$context (result=$(header.result), lifecycle=$(reply.lifecycle), " *
+        "instance=$(header.endpoint_instance), token=$(header.token), operation=$(header.operation), " *
+        "snapshot=$(_snapshot_detail(reply))): message=$(repr(reply.message))")
+end
+
+function _require_status(reply::Codec.Completion)
+    reply.header.result == 0 && reply.snapshot !== nothing ||
+        _reply_failure("acquisition lifecycle status was not successful", reply)
+    return reply
+end
+_require_status(reply::Codec.Rejection) =
+    _reply_failure("acquisition lifecycle status was not successful", reply)
+
+function _require_ready(reply::Codec.Completion)
+    reply.lifecycle in (Codec.Prepared, Codec.Connected) ||
+        _reply_failure("acquisition owner changed readiness during discovery", reply)
+    return reply
+end
+
+function _require_connected(reply::Codec.Completion)
+    reply.header.result == 0 && reply.lifecycle === Codec.Connected && reply.snapshot !== nothing ||
+        _reply_failure("acquisition owner Connect did not complete", reply)
+    return reply
+end
+_require_connected(reply::Codec.Rejection) =
+    _reply_failure("acquisition owner Connect did not complete", reply)
+
 """Return a fresh successful status completion from this exact owner."""
 function status(connection::Connection; deadline::Float64, check=()->nothing)
     reply = request!(connection, :status; deadline, check)
-    reply isa Codec.Completion && reply.header.result == 0 && reply.snapshot !== nothing ||
-        error("acquisition lifecycle status was not successful")
-    return reply
+    return _require_status(reply)
 end
 
 """Discover Prepared or Connected, then require a fresh matching Status result."""
@@ -60,8 +90,7 @@ function connect(profile::P, remote::AbstractString, node::AbstractString,
             return true
         end
         reply = status(connection; deadline, check)
-        reply.lifecycle in (Codec.Prepared, Codec.Connected) ||
-            error("acquisition owner changed readiness during discovery")
+        _require_ready(reply)
         return connection
     catch primary
         try close(connection) catch cleanup; throw(CompositeException([primary, cleanup])) end
@@ -72,10 +101,7 @@ end
 """Apply Connect and require a truthful Connected completion."""
 function connect_owner!(connection::Connection; deadline::Float64, check=()->nothing)
     reply = request!(connection, :connect; deadline, check)
-    reply isa Codec.Completion && reply.header.result == 0 &&
-        reply.lifecycle === Codec.Connected && reply.snapshot !== nothing ||
-        error("acquisition owner Connect did not complete")
-    return reply
+    return _require_connected(reply)
 end
 
 Base.close(connection::Connection) = close(connection.client)

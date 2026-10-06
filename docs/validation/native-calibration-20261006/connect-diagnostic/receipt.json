@@ -1,0 +1,41 @@
+{
+  "artifact_sha256": {
+    "native-acquisition-connect-diagnostic-before-20261006.log": "4f844f1b82270a12d3113320798ddc25d2dfa7d968db214ba166c038113d839a",
+    "native-acquisition-connect-diagnostic-core-regressions-20261006.log": "fa0ce115d624782593a9dd082763646bd750589e3190e39a1f2090f077d976b9",
+    "native-acquisition-connect-diagnostic-oracle-after-20261006.log": "868c0a50e3bd62e06a52e8ef6c8853b3f0e608539294db94917ff4d7c7de9b1a",
+    "native-acquisition-connect-diagnostic-qualifier-regressions-20261006.log": "3cd24ec0c162cdbf6d100c009e6e87d3397bad70e35eff2d978b80a4c4fc327a",
+    "native-acquisition-connect-diagnostic-regressions-20261006.log": "dedc61355d213d20b6e1844d4f745604753272106a918212747c08c7226c3ded",
+    "native_acquisition_connect_diagnostic_oracle-20261006.jl": "f2571366dd350b3f369adf95abbf4280425e8aaa14d2f3a5fae56a537f20387d"
+  },
+  "cold_calibration_correction_qualifiers": {
+    "exit_code": 0,
+    "fail": 0,
+    "pass": 330
+  },
+  "cold_client_codec_deployment": {
+    "exit_code": 0,
+    "fail": 0,
+    "pass": 329
+  },
+  "harness_failure": "First ad-hoc combined runner used Module(name) without defining include for qualifier suites; already completed329checks passed but qualifierinclude failed. Correct Julia module wrappers ran330/330 separately; unchanged core rerun329/329. Original harness log retained.",
+  "invariants": "exact typed transport/correlation unchanged; Connect still requires Completion/result0/Connected/nonemptySnapshot; status and fresh readiness conditions unchanged; no retries or ownership effects",
+  "oracle_before": {
+    "exit_code": 1,
+    "fail": 6,
+    "pass": 1
+  },
+  "retained_fail_before_source": "docs/validation/native-calibration-20261006/actual-four-functional/native_acquisition_lifecycle_client-e01.jl",
+  "retained_fail_before_source_sha256": "2d2d26302ef93bf23c0f3afbce16deb698faea152dc63fa5e25db31cca4142d5",
+  "same_oracle_after": {
+    "exit_code": 0,
+    "fail": 0,
+    "pass": 7
+  },
+  "scope": "cold failure diagnostic only; no SCI launch/installed package mutation/native transport effects",
+  "test_source_sha256": {
+    "deployment/julia/src/native_acquisition_lifecycle_client.jl": "dc7f0dfffccce114e271b206e7d08753f8a2e05bf27e189212c1b00f0b69de1f",
+    "deployment/julia/test/runtests.jl": "e6f2457cb71e22fefaca78615ac28545a39a2a9bd5562582d303516e82d8d07f",
+    "deployment/julia/test/test_native_acquisition_lifecycle_client.jl": "34465b3350ccf2e282293b98a146bcb4dffbf3bae62008887f5fd8d7a143e0fa"
+  },
+  "underlying_actual_failure": "not identified; fresh sealed diagnostic package and parent reservation required before any SCI retry"
+}

@@ -1,0 +1,4 @@
+retained_source_sha256=2d2d26302ef93bf23c0f3afbce16deb698faea152dc63fa5e25db31cca4142d5
+failure=acquisition owner Connect did not complete (result=-5, lifecycle=Fault, instance=42, token=19, operation=5, snapshot=absent): message="owned Connect effect: original failure"
+Test Summary:                                                | Pass  Total  Time
+same injected failed Connect preserves known native evidence |    7      7  0.3s

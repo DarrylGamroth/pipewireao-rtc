@@ -1,0 +1,10 @@
+Test Summary:                                     | Pass  Total  Time
+acquisition Connect retains typed failure details |   52     52  0.3s
+Test Summary:                                                                 | Pass  Total  Time
+fresh acquisition readiness preserves Status requirements and failure details |   37     37  0.1s
+Test Summary:                         | Pass  Total  Time
+native acquisition lifecycle profiles |  174    174  2.0s
+Test Summary:                                           | Pass  Total  Time
+Native acquisition descriptor has no live file fallback |   44     44  4.9s
+Test Summary:                                                     | Pass  Total  Time
+Acquisition caller preserves unsigned cursors and known rejection |   22     22  2.7s

@@ -1,0 +1,26 @@
+ERROR: LoadError: UndefVarError: `include` not defined in `Main.Diagnostic_qualify_calibration_native`
+Suggestion: check for spelling errors or missing imports.
+Stacktrace:
+ [1] top-level scope
+   @ ~/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/deployment/julia/test/test_qualify_calibration_native.jl:2
+ [2] include(mod::Module, _path::String)
+   @ Base ./Base.jl:306
+ [3] top-level scope
+   @ ./none:1
+ [4] eval(m::Module, e::Any)
+   @ Core ./boot.jl:489
+ [5] exec_options(opts::Base.JLOptions)
+   @ Base ./client.jl:283
+ [6] _start()
+   @ Base ./client.jl:550
+in expression starting at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/deployment/julia/test/test_qualify_calibration_native.jl:2
+Test Summary:                                     | Pass  Total  Time
+acquisition Connect retains typed failure details |   52     52  0.4s
+Test Summary:                                                                 | Pass  Total  Time
+fresh acquisition readiness preserves Status requirements and failure details |   37     37  0.1s
+Test Summary:                         | Pass  Total  Time
+native acquisition lifecycle profiles |  174    174  2.7s
+Test Summary:                                           | Pass  Total  Time
+Native acquisition descriptor has no live file fallback |   44     44  6.9s
+Test Summary:                                                     | Pass  Total  Time
+Acquisition caller preserves unsigned cursors and known rejection |   22     22  3.8s
