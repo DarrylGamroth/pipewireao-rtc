@@ -181,3 +181,21 @@ foreground/service qualification remain separate gates. No scientific
 convergence, allocation, sustained throughput, uninstrumented latency, physical
 hardware or full issue #7/#8/#9 completion is claimed. Other retirement findings
 remain outside this approved increment.
+
+## Bounded stale build cleanup
+
+After qualification, the primary authorized removal of confirmed superseded
+Cargo outputs. Five old profile artifacts (two old library test executables,
+one old library rlib, old runner and old calibration executable) reclaimed
+206,160,664 bytes. The old runner exactly matched the previously verified
+`f4f8adf` lossless archive. Source revisions of other old builds were not
+reconstructed; hashes, inodes, link counts, Cargo profile JSON and source
+dep-info were recorded before removal. Their metadata/fingerprints were kept.
+No active process executed the removed outputs.
+
+Current runner, calibration executable, all current test executables, the
+synchronization example, current libraries, shared dependencies, diagnostic
+logs and earlier compressed archives remain available. No broad target cleanup
+was performed. Free space rose from approximately 100 MiB to 291 MiB.
+Ledger: `~/.cache/rtc-live-controls-20261005/retirement-stale-cargo-cleanup-20261006.json`,
+SHA256 `12727e28136a44e2fb4aa6762274eb5bb7be0b9d83acc11fed451b46564c891c`.
