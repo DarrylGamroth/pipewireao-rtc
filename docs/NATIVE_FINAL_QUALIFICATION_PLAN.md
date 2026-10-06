@@ -29,10 +29,13 @@ separate.
 
 Only RTC issue 2 is closed. Committed native control implementations and
 focused fixtures do not close the nine remaining acceptance gates. The current
-bounded SDK repair addresses interrupted native-lock ownership; its SIGINT and
-GC fixtures pass, but the full suite exposes prepared-parameter allocations
-and the repair is not ready for deployment. Finish that repair before refreshing
-installed packages, then batch the required checks against one frozen revision.
+bounded SDK repair addresses interrupted native-lock ownership. The initial
+closure introduced prepared-parameter allocations; helper extraction restores
+the unchanged zero-allocation checks. SDK `d514d6b` passes 2,032 assertions and
+independent SIGINT, recursive-lock and GC checks. See
+[the reviewed verification](THREAD_LOOP_INTERRUPT_REVIEW.md). Installed service
+replay remains open. Refresh packages from this verified source before batching
+the required checks against one frozen revision.
 
 Defer the CUDA/HIP **RTC executor** investigation in JFG31 for this increment;
 retain its unresolved obligations rather than counting them as completed.
