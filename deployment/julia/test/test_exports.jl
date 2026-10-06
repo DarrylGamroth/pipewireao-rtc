@@ -163,6 +163,10 @@ end
         @test isfile(joinpath(deployed,"julia/assets/deployment/templates/client-simulator.conf.in"))
         @test isfile(joinpath(deployed,"julia/assets/deployment/hil/calibration_campaign_analysis.jl"))
         @test isfile(joinpath(deployed,"julia/assets/deployment/hil/Project.toml"))
+        for name in ("owner_protocol.jl", "native_acquisition_lifecycle.jl", "calibration_server.jl")
+            @test read(joinpath(deployed,"hil",name)) ==
+                read(joinpath(ExportFixture.resource_root(),"hil",name))
+        end
         @test isfile(joinpath(deployed,"julia/assets/ryzen-6800h-classic.cpu"))
         @test length(read(joinpath(deployed,"calibration/wfs-active.u8"))) == 188
         @test !occursin(".py",join(ExportFixture.Common.read_json(joinpath(deployed,"deployment.conf"))["owners"][1]["argv"]))

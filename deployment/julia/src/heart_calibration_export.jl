@@ -8,6 +8,7 @@ export export_package, run_pilot, run_plan, reduce_plan, plan_limits, main
 
 const TELEMETRY_TAGS = ("cbHoPixelsRaw#", "cbHoPixelsCalib#", "cbHoGrad#", "cbDmCmd#")
 const HELPERS = ("simulator.jl", "owner_protocol.jl", "correction_truth.jl",
+    "native_heart_control.jl", "native_acquisition_lifecycle.jl",
     "calibration_acquisition.jl", "calibration_server.jl", "calibration_owner.jl",
     "heart_calibration_owner.jl", "heart_calibration_telemetry.jl", "heart_calibration_verify.jl", "heart_calibration_method.jl", "heart_calibration_evidence.jl", "calibration_client.jl")
 option(args, name, default=nothing) = HeartExport.option(args, name, default)

@@ -354,9 +354,10 @@ function export_package(args)
             isfile(joinpath(base,"hil/calibration_acquisition.jl")) || throw(ArgumentError("calibration deployment descriptor requires calibration_acquisition.jl in the HIL package"))
             ScienceExport.copy_deployment_runtime(package)
             ScienceExport.copy_tree(joinpath(base,"hil"),joinpath(package,"hil"))
-            for filename in ("calibration_owner.jl","calibration_acquisition.jl","calibration_server.jl","calibration_client.jl")
+            for filename in ("calibration_owner.jl","calibration_acquisition.jl","calibration_server.jl",
+                    "calibration_client.jl","owner_protocol.jl","native_acquisition_lifecycle.jl")
                 source = joinpath(ScienceExport.resource_root(),"hil",filename)
-                isfile(source) && cp(source,joinpath(package,"hil",filename);force=true)
+                ScienceExport.copy_file(source,joinpath(package,"hil",filename))
             end
             mkpath(joinpath(package,"bin"))
             calibration_command = copy_calibration_binary(package,calibration_binary)
