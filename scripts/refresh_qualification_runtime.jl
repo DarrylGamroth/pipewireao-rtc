@@ -44,7 +44,7 @@ function resolve_environment(package, relative, sdk_path)
         error("dependency other than SDK changed: $relative")
 end
 
-function main(args)
+function main(args; calibration_owner=nothing)
     length(args) in (5, 6) || error("usage: SOURCE FRESH_OUTPUT RUNNER SDK RTC_ROOT [CALIBRATOR]")
     source, output, runner, sdk, rtc = abspath.(args[1:5])
     calibrator = length(args) == 6 ? abspath(args[6]) : nothing
@@ -54,9 +54,18 @@ function main(args)
     before = C.read_json(joinpath(source, "deployment.conf"))
     D.profile(joinpath(source, "deployment.conf"), "/opt/pipewireao")
     verify_seals(source, before)
+    owner_path = "hil/calibration_owner.jl"
+    if calibration_owner !== nothing
+        selected = only(filter(owner -> owner["role"] == before["source-owner"], before["owners"]))
+        selected["control-protocol"] == "pipewireao.rtc.calibration-lifecycle/1" &&
+            "@PACKAGE@/" * owner_path in selected["argv"] || error("requires the declared calibration owner")
+        haskey(before["artifacts"], owner_path) && isfile(calibration_owner) || error("calibration owner source required")
+    end
+    allowed_runtime(path) = runtime_file(path) || (calibration_owner !== nothing && path == owner_path)
     cp(source, output)
     S.copy_deployment_runtime(output)
     H.replace_staged_package(sdk, output, "PipeWireAO")
+    calibration_owner === nothing || cp(calibration_owner, joinpath(output, owner_path); force=true)
     cp(runner, joinpath(output, "bin/pipewireao-rtc"); force=true)
     chmod(joinpath(output, "bin/pipewireao-rtc"), 0o755)
     if calibrator !== nothing
@@ -70,14 +79,14 @@ function main(args)
         resolve_environment(output, "jfg/deployment", "../../hil/packages/PipeWireAO")
     end
     isdir(joinpath(output, "systemd")) && rm(joinpath(output, "systemd"); recursive=true)
-    protected = Dict(path => hash for (path, hash) in before["artifacts"] if !runtime_file(path))
+    protected = Dict(path => hash for (path, hash) in before["artifacts"] if !allowed_runtime(path))
     verify_seals(output, Dict("artifacts" => protected))
     after = H._package_artifacts(output)
     changes = [Dict("path" => path, "before" => get(before["artifacts"], path, nothing),
         "after" => get(after, path, nothing))
         for path in sort!(collect(union(keys(before["artifacts"]), keys(after))))
         if get(before["artifacts"], path, nothing) != get(after, path, nothing)]
-    all(change -> runtime_file(change["path"]), changes) || error("change outside declared runtime scope")
+    all(change -> allowed_runtime(change["path"]), changes) || error("change outside declared runtime scope")
     provenance = C.read_json(joinpath(output, "provenance.json"))
     previous_bindings = Dict{String,Any}()
     for (key, path) in (("rtc_runner", "bin/pipewireao-rtc"), ("calibration_command", "bin/rtc-calibrate"))
@@ -100,6 +109,8 @@ function main(args)
         "helper_sha256" => C.sha256_file(@__FILE__),
         "runner_sha256" => C.sha256_file(runner),
         "calibrator_sha256" => calibrator === nothing ? nothing : C.sha256_file(calibrator),
+        "calibration_owner_source" => calibration_owner === nothing ? nothing : Dict(
+            "path" => abspath(calibration_owner), "sha256" => C.sha256_file(calibration_owner)),
         "protected_count" => length(protected),
         "protected_files" => protected, "runtime_changes" => changes,
         "scope" => "deployment/runtime/SDK only; all other sealed bytes unchanged")
@@ -123,4 +134,4 @@ function main(args)
     println(installed)
 end
 
-main(ARGS)
+abspath(PROGRAM_FILE) == (@__FILE__) && main(ARGS)
