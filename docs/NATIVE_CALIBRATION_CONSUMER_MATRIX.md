@@ -346,3 +346,75 @@ retained beside the earlier proofs in `validation/native-calibration-20261006`.
 Actual two-window correction, current native Collect/Capture and six installed
 consumer gates remain pending the reserved runs; no scientific pass follows
 from these cold tests.
+
+## Current CUDA package inventory (read-only)
+
+The following existing installed packages pass strict descriptor validation and
+all sealed artifact hashes. Cold graph splitting also passes for all four
+ordinary bases. This inventory started at qualifier commit `ed943b3`; exact
+descriptor, provenance, plant, runner and plan hashes are in
+[`current-consumer-inventory.json`](validation/native-calibration-20261006/current-consumer-inventory.json).
+
+| Current ordinary/unchanged HEART base | Artifacts | Needed calibration preparation |
+| --- | ---: | --- |
+| `/tmp/classic-fgn-sdk-interrupt-final-v1-installed` | 579 | fresh public CalibrationExport; Classic run82 caller; Capture budget500504 |
+| `/tmp/classic-jfg-sdk-interrupt-final-v1-installed` | 709 | fresh public CalibrationExport; same Classic run82/budget |
+| `/tmp/copper-fgn-sdk-interrupt-final-v1-installed` | 581 | fresh public CalibrationExport; Copper run1 caller; Capture budget45192 |
+| `/tmp/copper-jfg-sdk-interrupt-final-v1-installed` | 710 | fresh public CalibrationExport; same Copper run1/budget |
+| `/tmp/classic-heart-sdk-interrupt-final-v2-installed` | 601 | ordinary HEART scope only; use current Classic FGN base for public frozen-transfer calibration export |
+| `/tmp/copper-heart-sdk-interrupt-final-v2-installed` | 601 | ordinary HEART scope only; use current Copper FGN base for public native calibration export |
+
+All six carry SDK0.6.16 with the current interrupt-safe thread-loop source
+(`d6221155...ed420`), adapter0.1.2, CUDA plants and runner
+`750059d1ee71783b63d1fbb96a6bc92cd9be436f551d1b450688a6aae2c2d5cb`.
+They are SourceControlV1 packages, not CALIBRATION/CORRECTION-profile packages.
+The shared Cargo target's runner still hashes `7968051f...9a341`; select the
+verified750 binary explicitly from a current package/retained build, while
+`rtc-calibrate` remains `ce0ba26cf04f64ea1cb730c4b89309592c5097843cc326d867c4ddd1bfe9b1cb`.
+
+The already native `$CAL/classic-fgn-native-calibration-v1-installed` can be
+refreshed into a new sealed destination with current SDK, runtime/HIL helpers and
+runner750; its Classic CUDA plant, calibration files, split graphs, WFS/command
+libraries, stage `native-functional`, called run82 and budget500504 stay exact.
+Its argv already has no retired calibration socket flag. This is the one current
+native calibration package located by the bounded cache inventory. The other
+three ordinary calibration packages need the public export above from the
+current bases; this copies/splits frozen graphs and does no matrix/background
+acquisition. Do not relabel any ordinary package as calibration without that
+descriptor/endpoint conversion and a fresh seal/install.
+
+The current Classic FGN base passes `classic_transfer_inputs` against the exact
+frozen run98 corpus and accepted inverse `bb9aa683...5813`. A fresh public HEART
+calibration export therefore has a cold-admitted input without running the
+transfer. Specify the original policy hash, full run98 plan, seed98, streaming
+ingress and lamp0.5 contract; call the separate run82 small plan afterwards.
+The existing `$OLD/classic-native-transfer-v2` remains an alternative immutable
+scientific blueprint (plant SHA `eee98c18...a98b8`, original run98/24×64). Its
+marker descriptor requires explicit native migration and new seals; replacing
+only SDK bytes would leave an invalid live package.
+
+For current Copper CUDA calibration, the current FGN base already retains the
+selected 100× lamp magnitude0.752574989159953. A public native pilot export can
+bind the exact existing two-probe run1 plan and original pilot detector seed700,
+explicit CUDA backend, current SDK/adapter/750 runner and ce0b calibration CLI.
+The declared plan's four accepted payloads require budget90384 (the standalone
+two-frame Capture requires45192); telemetry bounds come from public plan_limits.
+Label this a CUDA native action functional run, distinct from the historical
+CPU pilot acceptance. The old CUDA
+`$OLD/heart-calibration-copper-zonal-cuda-prepared4` is also a frozen scientific
+blueprint: plant SHA `887ee920...6ee93`, seed531, declared554×16 plan SHA
+`dfd2c32b...4ab1c`. A small caller on it cannot qualify that full method/inverse.
+The old n2 native pilot uses CPU; an SDK refresh alone cannot make it CUDA.
+
+Use the common five-argument `qualify_calibration_native.jl` recipe for each
+of the six selected fresh calibration packages, with the table's called plan,
+separate `collect` and `capture` admissions and fresh runtime/output names.
+Both current HEART normal bases retain the same ordinary plant hashes as their
+FGN equivalents, but they supply no full-transfer or active-correction authority.
+The frozen correction packages listed earlier still have marker descriptors,
+SDK0.6.12/adapter0.1.0 and runner490f; they need explicit native descriptor/helper
+migration and current SDK/runner sealing before the new correction coordinator
+can run. Preserve their active contracts, selected inverse/reference files and
+immutable admission ledgers exactly. This inventory creates no packages and
+starts no SCI; allocation/cleanup, calibration effects and correction utility
+remain actual-run gates.
