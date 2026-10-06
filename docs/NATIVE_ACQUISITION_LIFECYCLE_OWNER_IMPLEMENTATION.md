@@ -76,8 +76,14 @@ or Pause does not extend its input lifetime.
 
 The worktree HIL project has no Manifest. Source option tests can use the
 existing sealed CPU HIL environment without changing its dependencies.
-Integration passed 2,178 deployment assertions across 78 test sets, the 103
-protocol assertions and adjacent private-core endpoint and bridge tests.
+  Integration passed 2,178 deployment assertions across 78 test sets, the 103
+  protocol assertions and adjacent private-core endpoint and bridge tests.
+  Loading the current source through the existing sealed CPU HIL environment
+  also passed 27 calibration-owner, 87 HEART calibration-owner and 86 HEART
+  correction-owner assertions. The correction fixture verifies that the
+  accepted absolute deadline reaches the window-admission callback. The added
+  completed-cursor store alone allocates zero Julia heap bytes after warmup;
+  this does not qualify the complete scientific path's allocation boundary.
 The [independent owner review](NATIVE_ACQUISITION_LIFECYCLE_OWNER_REVIEW.md)
 records the report-cursor correction's fail-before/pass-after evidence.
 The primary integration worktree must still run selected installed

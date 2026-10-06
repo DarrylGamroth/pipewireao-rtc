@@ -50,7 +50,9 @@ end
         owner=AdmissionFixture(nothing,nothing,false,generation)
         events=Symbol[:held_native_run,:connect_reply]
         links_active=Ref(false)
-        begin_native=function (candidate,expected)
+        observed_deadline=Ref{Union{Nothing,Float64}}(nothing)
+        begin_native=function (candidate,expected;deadline=nothing)
+            observed_deadline[]=deadline
             links_active[] && state.running || error("native receipt cannot complete before public admission")
             @test expected==generation
             push!(events,:zero_adopted)
@@ -67,7 +69,9 @@ end
         reply=Protocol.control!(state,"{\"version\":1,\"id\":1,\"operation\":\"resume\"}",UInt64(10),UInt64(2),()->nothing)
         @test reply.ok && state.running
         push!(events,:public_source_resume)
-        @test CorrectionOwner.admit_active_window!(owner,state;begin_window=begin_native)
+        deadline=Main.HILHeartControl.Client.monotonic()+10.0
+        @test CorrectionOwner.admit_active_window!(owner,state;begin_window=begin_native,deadline)
+        @test observed_deadline[]===deadline
         push!(events,:first_exposure)
         @test events==[:held_native_run,:connect_reply,:rtc_session_start,:public_source_resume,:zero_adopted,:native_correct,:first_exposure]
         @test CorrectionOwner.admit_active_window!(owner,state;begin_window=begin_native)
