@@ -95,3 +95,47 @@ it to a confirmed defect.
 This artifact records source concurrency analysis and existing retained
 integration evidence. It does not claim a new interleaving experiment or a
 successful service qualification.
+
+## Bounded admission design adjudication
+
+Primary accepted the source mechanism and proposed allowing a request into the
+existing single pending slot during maintenance, with dispatch suppressed until
+monitoring returns. Independent design review accepts the ownership model:
+nested callbacks only stage/validate owned request data, while the sole Runner
+dispatcher remains outside the nested monitor. Existing occupied, controller,
+token and Parameter-worker guards must remain. Required-object failure takes
+and negatively completes current or pending work before continuation; subsequent
+dispatch checks expiration and live controller identity again. Dirty capability
+state is covered by terminal publication or the next normal publication tick.
+
+### RUNNER-MAINT-R002 — Entry-only deadline snapshot misses a new queued request
+
+**Severity:** high for the proposed liveness guarantee. **Confidence:** high.
+**Classification:** derived from existing source control flow; no new runtime
+experiment. **Affected:** proposed maintenance admission change and existing
+`monitor_required_objects` / `LiveGraphAdapter` wait scopes.
+
+The current monitor captures `request_deadline` only before entering its nested
+callbacks. If initially idle, it chooses a five-second maintenance deadline.
+A new 250 ms request admitted during those callbacks would be absent from the
+snapshot. With a stalled core the monitor could continue for five seconds;
+later dispatch checks prevent expired effects, but do not preserve the existing
+request-bounded monitor liveness. The existing queued-budget fixture admits
+before monitor entry and does not cover this new interleaving.
+
+Simply shortening the shared callback-deadline Cell is also insufficient by
+itself: `roundtrip_until` snapshots a local deadline once, while its calls to
+`wait_for_callbacks` ignore a false return. A dynamically shortened deadline
+could stop each wait without ending the outer loop, causing it to spin until
+the older local deadline. Deadline changes must be re-read and acted on through
+the nested wait loops, or supplied through an equivalent explicitly checked
+scope. Do not introduce a second effect dispatcher.
+
+**Required validation:** admit a short-budget request after monitoring has
+started; stall or delay synchronization; require bounded timeout publication,
+unchanged original admission deadline, no dispatched effects, no busy-spin and
+no false required-object fault. Preserve the existing queued-before-monitor,
+required-loss, controller-removal and true second-request-busy checks.
+**Disposition:** reported before production remediation; primary owns the
+minimal design selection. A post-monitor deadline re-read alone establishes
+effect safety, not the already-blocked monitor's liveness bound.
