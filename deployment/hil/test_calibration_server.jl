@@ -6,6 +6,7 @@ include("calibration_acquisition.jl")
 include("calibration_server.jl")
 const Server = CalibrationServer
 
+
 # Typed synthetic acquisition evidence tests protocol/lifecycle behavior only.
 # These fixtures do not qualify deployed optics, WFS processing or endpoints.
 mutable struct ServerTestSession
@@ -958,4 +959,55 @@ end
         @test fetch(server) === owner && !owner.faulted && owner.restored
         close(client)
     end
+end
+
+@testset "lifecycle boundary abort preserves action authority" begin
+    mktempdir() do directory
+        fixture=server_fixture()
+        listener=listen(joinpath(directory,"unadmitted.sock"))
+        waiting=@async try
+            Server.serve!(fixture.owner,listener;admission_enabled=() -> false,
+                service_boundary=() -> throw(Server.OwnerServiceAbort(nothing)))
+        catch error
+            error
+        end
+        @test timedwait(() -> istaskdone(waiting),2;pollint=0.005)==:ok
+        @test fetch(waiting) isa Server.OwnerServiceAbort
+        @test !fixture.owner.faulted && !fixture.owner.held && !fixture.session.failed
+        @test !isopen(listener)
+    end
+
+    mktempdir() do directory
+        fixture=server_fixture()
+        listener=listen(joinpath(directory,"accepted.sock"))
+        latched=Ref(false)
+        running=@async try
+            Server.serve!(fixture.owner,listener;
+                service_control=() -> (fixture.owner.effect_started &&
+                    fixture.owner.phase===:held && (latched[]=true);nothing),
+                service_boundary=() -> (latched[] &&
+                    throw(Server.OwnerServiceAbort(ErrorException("lifecycle transport lost")));nothing))
+        catch error
+            error
+        end
+        client=connect(joinpath(directory,"accepted.sock"))
+        @test send_action(client,(;kind="hold");serial=1).result.kind=="held"
+        @test timedwait(() -> istaskdone(running),2;pollint=0.005)==:ok
+        @test fetch(running) isa Server.OwnerServiceAbort
+        @test latched[] && fixture.owner.phase===:held && fixture.owner.held
+        @test !fixture.owner.faulted && !fixture.session.failed
+        close(client)
+    end
+
+    fixture=server_fixture()
+    owner=fixture.owner
+    @test apply_server!(owner,(;kind="hold")).result.kind=="held"
+    @test apply_server!(owner,(;kind="restore",figure=Float32[0,0],
+        rule=(;kind="immediate"));serial=2).result.kind=="restored"
+    @test_throws Server.OwnerServiceAbort Server.execute!(owner,
+        server_request((;kind="release");serial=3);
+        check_connection=() -> (owner.phase===:released &&
+            throw(Server.OwnerServiceAbort(ErrorException("expired lifecycle completion")))))
+    @test owner.phase===:released && owner.restored && !owner.held
+    @test !owner.faulted && !fixture.session.failed && !fixture.session.held
 end

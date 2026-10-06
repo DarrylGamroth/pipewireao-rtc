@@ -12,6 +12,7 @@ using AdaptiveOpticsSim.AlgorithmGraphs
 import ..HeartCalibrationOwner, ..HeartCorrectionTelemetry, ..Protocol
 import ..HeartCalibrationCoordinates
 import ..HeartCorrectionProfiles
+import ..HILNativeAcquisitionLifecycle
 const Profiles=HeartCorrectionProfiles
 import ..HeartCorrectionPhases
 const Phases=HeartCorrectionPhases
@@ -37,14 +38,20 @@ struct NativeActive
     snapshot::Main.HILHeartControl.Codec.HeartSnapshot
 end
 
-struct QuitService{Options,Store}
+struct QuitService{Options,Store,Control}
     options::Options
     phases::Store
     response::Base.RefValue{Union{Nothing,Telemetry.TelemetryFrame}}
     thresholds::Union{Nothing,Vector{Float32}}
     diagnostics::Profiles.ResponseDiagnostics
+    control::Control
 end
-(service::QuitService)() = isfile(service.options.quit_request) ? error("native correction shutdown requested") : nothing
+QuitService(options, phases, response, thresholds, diagnostics) =
+    QuitService(options, phases, response, thresholds, diagnostics, () -> nothing)
+function (service::QuitService)()
+    service.control()
+    return nothing
+end
 
 # This specialization is installed only by the active correction owner. The
 # frozen held-calibration session and default reader remain unchanged.
@@ -114,7 +121,7 @@ function options(arguments)
         end
     end
     all(haskey(native,name) for name in names) || error("missing native correction option")
-    prepared=Protocol.parse_options(ordinary)
+    prepared=Protocol.parse_options(ordinary; native_lifecycle=true)
     prepared.transport===:heart && prepared.correction_diagnostics ||
         error("active native owner requires HEART and direct truth diagnostics")
     spec=Profiles.descriptor(prepared.profile)
@@ -193,10 +200,24 @@ function read_native_extrapolation(options,contract)
     return Profiles.sparse_extrapolation(path)
 end
 
-function startup_proof(owner,expected_generation)
+function bounded_until(deadline::Union{Nothing,Float64}, maximum::UInt64=TIMEOUT_NS)
+    deadline === nothing && return Acquisition.deadline(maximum)
+    remaining = deadline - Main.HILHeartControl.Client.monotonic()
+    remaining > 0 || error("native correction lifecycle deadline expired")
+    return Acquisition.deadline(min(maximum,
+        UInt64(max(1, floor(Int64, min(remaining, Float64(maximum) / 1e9) * 1e9)))))
+end
+function require_lifecycle_deadline(deadline::Union{Nothing,Float64})
+    deadline===nothing || Main.HILHeartControl.Client.deadline_check(deadline,()->nothing)
+    return nothing
+end
+
+function startup_proof(owner,expected_generation; deadline::Union{Nothing,Float64}=nothing)
     session=owner.session; options=session.options
+    status_deadline=deadline===nothing ? Main.HILHeartControl.Client.monotonic()+30.0 :
+        min(deadline,Main.HILHeartControl.Client.monotonic()+30.0)
     snapshot,status=Main.HILHeartControl.Heart.generation_report(options.controller_control,
-        options.heart_native_runtime;deadline=Main.HILHeartControl.Client.monotonic()+30.0,check=session.service)
+        options.heart_native_runtime;deadline=status_deadline,check=session.service)
     status.generation==expected_generation && status.sequence==0 && status.state=="paused" &&
         status.error===nothing && status.child_returncode===nothing && isdir("/proc/$(status.child_pid)") ||
         error("active correction requires the owned successfully initialized native generation")
@@ -242,20 +263,20 @@ function startup_proof(owner,expected_generation)
     return (;status,snapshot,flags,observed,rendered_sha256=digest(status.rendered_config))
 end
 
-function hold_window!(owner,expected_generation)
+function hold_window!(owner,expected_generation; deadline::Union{Nothing,Float64}=nothing)
     session=owner.session
-    proof=startup_proof(owner,expected_generation)
-    Native.native_command!(session,"RUN",String[],Acquisition.deadline(TIMEOUT_NS))
+    proof=startup_proof(owner,expected_generation; deadline)
+    Native.native_command!(session,"RUN",String[],bounded_until(deadline))
     session.native_controller_held=Native.NativeHold(Int(proof.status.child_pid),expected_generation,true,true,
         "startup CORRECT",proof.flags["CORRECT"],0,session.options.heart_native_ingress_mode,proof.observed,proof.snapshot)
     session.state.held=true
     return nothing
 end
 
-function begin_window!(owner,expected_generation)
+function begin_window!(owner,expected_generation; deadline::Union{Nothing,Float64}=nothing)
     session=owner.session
-    proof=startup_proof(owner,expected_generation)
-    until=Acquisition.deadline(TIMEOUT_NS)
+    proof=startup_proof(owner,expected_generation; deadline)
+    until=bounded_until(deadline)
     Native.native_command!(session,"RUN",String[],until)
     session.native_controller_held=Native.NativeHold(Int(proof.status.child_pid),expected_generation,true,true,
         "startup CORRECT",proof.flags["CORRECT"],0,session.options.heart_native_ingress_mode,proof.observed,proof.snapshot)
@@ -282,10 +303,11 @@ The connect reply advertises ports so deployment can realize session links.
 It does not authorize a DM publication. A paused reset also prepares only the
 held native generation; zero adoption and CORRECT require the next resume.
 """
-function admit_active_window!(owner,state; begin_window=begin_window!)
+function admit_active_window!(owner,state; begin_window=begin_window!,
+        deadline::Union{Nothing,Float64}=nothing)
     state.running || return false
     if owner.active===nothing && owner.completed_correct===nothing && !owner.retained
-        begin_window(owner,owner.window)
+        begin_window(owner,owner.window; deadline)
     end
     owner.active!==nothing || error("public resume has no active native window")
     return true
@@ -420,12 +442,14 @@ function finish_window!(owner)
     return nothing
 end
 
-function snapshot!(owner,label)
+function snapshot!(owner,label;deadline::Union{Nothing,Float64}=nothing)
+    require_lifecycle_deadline(deadline)
     session=owner.session;root=joinpath(session.options.heart_probe_directory,label)
     !ispath(root) || error("native window snapshot already exists")
     mkdir(root;mode=0o700)
     files=Dict{String,String}()
     for path in readdir(session.options.heart_native_runtime;join=true)
+        require_lifecycle_deadline(deadline)
         name=basename(path)
         (endswith(name,".tel") || name=="heart-owner-status.json" ||
             startswith(name,"command-") || occursin(r"^heart-[0-9]+\.log$",name)) || continue
@@ -440,6 +464,7 @@ function snapshot!(owner,label)
     end
     Protocol.write_json_atomic(joinpath(root,"snapshot.json"),(;version=1,window=owner.window,label,
         scope="owned finite native window; before-reset snapshot may precede file close metadata",files))
+    require_lifecycle_deadline(deadline)
     return root
 end
 
@@ -497,30 +522,39 @@ function begin_evidence_window!(session,directory)
     return nothing
 end
 
-function reset_window!(owner,options,science,recorder,request_id)
+function reset_window!(owner,options,science,recorder,request_id;
+        deadline::Union{Nothing,Float64}=nothing)
+    require_lifecycle_deadline(deadline)
     owner.retained && owner.active===nothing || error("reset requires a completed retained native window")
     owner.window==1 || error("only two declared native correction windows are supported")
     session=owner.session
+    status_deadline=deadline===nothing ? Main.HILHeartControl.Client.monotonic()+14.0 :
+        min(deadline,Main.HILHeartControl.Client.monotonic()+14.0)
     status=Main.HILHeartControl.Heart.status(options.controller_control;
-        deadline=Main.HILHeartControl.Client.monotonic()+14.0,check=session.service)
+        deadline=status_deadline,check=session.service)
     old_pid=Int(status.child_pid);old_generation=Int(status.generation)
+    require_lifecycle_deadline(deadline)
     stop!(session.plant)
-    Main.reset_controller!(options,request_id)
+    Main.reset_controller!(options,request_id; deadline)
     !isdir("/proc/$old_pid") || error("previous native child remains after public reset")
     # The new generation has not recorded or admitted a frame. Preserve the
     # closed old files before any new SET_TELM_RECORD command is issued.
-    archive=snapshot!(owner,"after-native-exit")
+    archive=snapshot!(owner,"after-native-exit";deadline)
     closed_records=verify_closed_window(archive,options.frames,options.heart_telemetry_max_bytes;profile=options.profile,active=session.active,thresholds=session.service.thresholds)
+    require_lifecycle_deadline(deadline)
     Native.record_evidence!(session,(;kind="closed_native_generation",window=owner.window,
         old_child_pid=old_pid,old_generation,old_child_absent=true,closed_records))
     for path in readdir(options.heart_native_runtime;join=true)
+        require_lifecycle_deadline(deadline)
         endswith(path,".tel") || continue
         digest(path)==digest(joinpath(archive,basename(path))) || error("closed native telemetry changed during reset retention")
         mv(path,joinpath(session.options.heart_probe_directory,"closed-"*basename(path)))
     end
+    require_lifecycle_deadline(deadline)
     foreach(close,values(session.readers));empty!(session.readers)
     session.service.phases.current=nothing;empty!(session.service.phases.paths)
     lifetime_token=session.state.probe_sequence
+    require_lifecycle_deadline(deadline)
     reset_pipewire_calibration!(session.plant,science.driver)
     session.state=Acquisition.AcquisitionState()
     session.state.probe_sequence=lifetime_token
@@ -533,11 +567,13 @@ function reset_window!(owner,options,science,recorder,request_id)
     session.native_controller_held=nothing
     owner.window=2;owner.retained=false;owner.completed_correct=nothing
     directory=joinpath(options.heart_probe_directory,"window-2")
+    require_lifecycle_deadline(deadline)
     mkdir(directory;mode=0o700)
     begin_evidence_window!(session,directory)
     Main.reset_recorder!(recorder)
+    require_lifecycle_deadline(deadline)
     start!(session.plant)
-    hold_window!(owner,old_generation+1)
+    hold_window!(owner,old_generation+1; deadline)
     Native.record_evidence!(session,(;kind="reset",old_child_pid=old_pid,old_generation,
         old_child_absent=true,new_native_hold=session.native_controller_held,pending_public_resume=true,
         acquisition_generation=Acquisition.cursor(session).generation,
@@ -553,51 +589,111 @@ function prepare_boundary(science,profile::Symbol)
     return boundary
 end
 
-function run_owner(options,plant_module,target)
+function run_owner_native(options,bridge,plant_module,target)
+    Lifecycle=HILNativeAcquisitionLifecycle
+    Codec=Lifecycle.Codec
     contract,projection=load_contract(options)
     mkdir(options.heart_probe_directory;mode=0o700)
     directory=joinpath(options.heart_probe_directory,"window-1");mkdir(directory;mode=0o700)
     original=Main.prepare_science(options,plant_module,target)
-    # Reuse the exact prepared normal graph. Only the external completion
-    # boundary changes; the turbulent graph and all scientific nodes remain.
     boundary=prepare_boundary(original,options.profile)
     science=merge(original,(;boundary))
     recorder=Main.Recorder(options,boundary;truth=Main.prepare_correction_truth(options,science))
     state=Protocol.OwnerState()
-    Protocol.write_json_atomic(options.prepared_event,(;version=1,state="prepared",sequence=0))
-    Main.wait_for_connect(options) || return nothing
-    configuration=PipeWireHILConfiguration(remote=options.remote,frame_node_name="simulator-wfs",command_node_name="simulator-command",
-        frame_schema="org.heart.std-wfs.raw-pixels/1",command_schema="org.heart.std-dm.actuator-command/1",
-        rate=SPA.Fraction(UInt32(options.rate),UInt32(1)),exposure_duration_ns=options.exposure_ns,
-        frame_encoding=:uint16,command_scale=1.0f0,timeout_ns=TIMEOUT_NS)
-    plant=prepare_pipewire_calibration(boundary,configuration)
-    session=nothing;owner=nothing;failure=nothing;last_payload=nothing
-    try
+    plant=session=owner=shutdown_ticket=nothing
+    primary=control_failure=nothing
+    in_effect=false
+    current_cursor()=owner===nothing ? nothing : Acquisition.cursor(session)
+    current_phase()=owner===nothing ? "initial" : owner.retained ? "restored" :
+        session.service.phases.current===nothing ? "initial" : String(session.service.phases.current)
+    current_held()=owner!==nothing && !owner.retained &&
+        (session.state.held || session.native_controller_held!==nothing || owner.active!==nothing)
+    current_snapshot()=Lifecycle.snapshot(bridge,state,current_cursor();phase=current_phase(),
+        held=current_held(),restored=owner!==nothing && owner.retained,
+        window=owner===nothing ? nothing : UInt64(owner.window))
+    function save_report!()
+        owner===nothing && return nothing
+        cursor=current_cursor()
+        HeartCorrectionOwner.publish_report!(options,science,recorder,state,owner)
+        Lifecycle.report_published!(bridge,cursor)
+        return nothing
+    end
+    function connect_effect!(ticket)
+        configuration=PipeWireHILConfiguration(remote=options.remote,frame_node_name="simulator-wfs",
+            command_node_name="simulator-command",frame_schema="org.heart.std-wfs.raw-pixels/1",
+            command_schema="org.heart.std-dm.actuator-command/1",
+            rate=SPA.Fraction(UInt32(options.rate),UInt32(1)),exposure_duration_ns=options.exposure_ns,
+            frame_encoding=:uint16,command_scale=1.0f0,timeout_ns=Acquisition.remaining(bounded_until(ticket.deadline)))
+        plant=prepare_pipewire_calibration(boundary,configuration)
         session_options=merge(options,(;heart_probe_directory=directory))
         active=options.profile===:classic ? Main.calibration_active(options) : nothing
-        session=Native.prepare_session(plant,science.driver,session_options;active,adc_bits=Profiles.descriptor(options.profile).adc_bits,service=QuitService(options,Phases.PhaseStore(options.profile),
+        service=QuitService(options,Phases.PhaseStore(options.profile),
             Ref{Union{Nothing,Telemetry.TelemetryFrame}}(nothing),
-            Profiles.read_response_thresholds(dirname(options.heart_active_contract),contract,options.profile),Profiles.ResponseDiagnostics(options.profile)))
+            Profiles.read_response_thresholds(dirname(options.heart_active_contract),contract,options.profile),
+            Profiles.ResponseDiagnostics(options.profile),
+            () -> begin
+                !in_effect && owner!==nothing && Lifecycle.has_pending(bridge;safe=false) &&
+                    service_control(;safe=false)
+                nothing
+            end)
+        session=Native.prepare_session(plant,science.driver,session_options;active,
+            adc_bits=Profiles.descriptor(options.profile).adc_bits,service)
         owner=Owner(session,contract,projection,nothing,nothing,1,false)
         Native.start_session!(session)
-        # RUN acknowledges held native control before the connect reply, without
-        # publishing any command before deployment realizes the public links.
-        hold_window!(owner,1)
-        publish_report!(options,science,recorder,state,owner)
-        Protocol.write_json_atomic(options.connect_reply,(;version=1,state="connected",sequence=0))
-        while !isfile(options.quit_request)
-            if isfile(options.control_request)
-                payload=open(io->String(read(io,Protocol.MAX_REQUEST_BYTES+1)),options.control_request)
-                if payload!=last_payload
-                    last_payload=payload
-                    reply=Protocol.control!(state,payload,time_ns(),options.period_ns,
-                        ()->reset_window!(owner,options,science,recorder,state.last_request_id))
-                    publish_report!(options,science,recorder,state,owner)
-                    Protocol.write_json_atomic(options.control_reply,reply)
-                end
+        hold_window!(owner,1;deadline=ticket.deadline)
+        save_report!()
+        return nothing
+    end
+    function resume_effect!(ticket)
+        owner===nothing && error("correction Resume requires an owned window")
+        admit_active_window!(owner,state;deadline=ticket.deadline)
+        save_report!()
+        return nothing
+    end
+    function reset_effect!(ticket)
+        owner===nothing && return (Int32(-22),"correction Reset requires an owned window")
+        reset_window!(owner,options,science,recorder,state.last_request_id;deadline=ticket.deadline)
+        state.sequence=UInt64(0)
+        state.completed=false
+        state.deadline_ns=UInt64(0)
+        save_report!()
+        return (Int32(0),"")
+    end
+    function service_control(;safe::Bool)
+        if control_failure!==nothing
+            safe && throw(control_failure)
+            return nothing
+        end
+        Lifecycle.has_pending(bridge;safe) || return nothing
+        try
+            in_effect=true
+            terminal=Lifecycle.dispatch!(bridge,state;safe,period_ns=options.period_ns,
+                snapshot! = current_snapshot,connect! = connect_effect!,reset! = reset_effect!,
+                resume! = resume_effect!,allow_shutdown=() -> owner===nothing ||
+                    (owner.retained && owner.active===nothing))
+            terminal===nothing || (shutdown_ticket=terminal)
+        catch error
+            if !safe && error isa Lifecycle.TransportFailure
+                control_failure=error
+                state.running=false
+                return nothing
             end
-            isfile(options.quit_request) && break
-            if !admit_active_window!(owner,state)
+            rethrow()
+        finally
+            in_effect=false
+        end
+        return nothing
+    end
+    Lifecycle.lifecycle!(bridge,Codec.Prepared)
+    try
+        while owner===nothing && shutdown_ticket===nothing
+            service_control(;safe=true)
+            sleep(0.005)
+        end
+        while shutdown_ticket===nothing
+            service_control(;safe=true)
+            shutdown_ticket===nothing || break
+            if !state.running
                 sleep(0.005);continue
             end
             now=time_ns()
@@ -608,41 +704,81 @@ function run_owner(options,plant_module,target)
             exposure=exchange!(owner)
             finished=time_ns();sequence=exposure.identity.sequence
             state.sequence=sequence
-            timing=(;sequence,source_published_nanoseconds=Int64(started),command_received_nanoseconds=Int64(finished),
-                end_to_end_latency_nanoseconds=finished-started)
-            Main.record!(recorder,boundary,sequence,science.driver,model_nanoseconds(exposure.timestamp),timing,finished-started,started,finished)
+            timing=(;sequence,source_published_nanoseconds=Int64(started),
+                command_received_nanoseconds=Int64(finished),end_to_end_latency_nanoseconds=finished-started)
+            Main.record!(recorder,boundary,sequence,science.driver,model_nanoseconds(exposure.timestamp),
+                timing,finished-started,started,finished)
             Main.record_correction_truth!(recorder,science,sequence,model_nanoseconds(exposure.timestamp))
-            state.deadline_ns,missed=Protocol.next_deadline(state.deadline_ns,options.period_ns,time_ns())
-            recorder.missed_wall_periods+=missed
+            if state.running
+                state.deadline_ns,missed=Protocol.next_deadline(state.deadline_ns,options.period_ns,time_ns())
+                recorder.missed_wall_periods+=missed
+            end
             if recorder.count==options.frames
                 state.running=false;state.completed=true;state.deadline_ns=0
                 finish_window!(owner)
-                publish_report!(options,science,recorder,state,owner)
+                save_report!()
             end
         end
-    catch exception
-        failure=sprint(showerror,exception)
-        println(stderr,"NATIVE_CORRECTION_FAILURE ",failure);flush(stderr)
-        rethrow()
-    finally
-        state.running=false
-        try
-            if owner!==nothing
-                !owner.retained && snapshot!(owner,"failure-or-shutdown")
-                publish_report!(options,science,recorder,state,owner;failure)
-            end
-        finally
-            session===nothing ? close(plant) : Acquisition.close_session!(session)
+    catch error
+        primary=error
+        if !(error isa Lifecycle.TransportFailure)
+            try Lifecycle.lifecycle!(bridge,Codec.Fault) catch end
         end
     end
+    state.running=false
+    stopped_cursor=try current_cursor() catch; nothing end
+    cleanup=Exception[]
+    if owner!==nothing
+        try
+            !owner.retained && snapshot!(owner,"failure-or-shutdown")
+            report=primary===nothing ? nothing : sprint(showerror,primary)
+            HeartCorrectionOwner.publish_report!(options,science,recorder,state,owner;failure=report)
+            Lifecycle.report_published!(bridge,stopped_cursor)
+        catch error
+            push!(cleanup,error)
+        end
+    end
+    if session!==nothing
+        try Acquisition.close_session!(session) catch error;push!(cleanup,error) end
+    elseif plant!==nothing
+        try close(plant) catch error;push!(cleanup,error) end
+    end
+    if shutdown_ticket!==nothing && primary===nothing && isempty(cleanup)
+        try
+            Lifecycle.lifecycle!(bridge,Codec.Stopped)
+            final=Lifecycle.snapshot(bridge,state,stopped_cursor;phase=current_phase(),
+                held=current_held(),restored=owner!==nothing && owner.retained,
+                window=owner===nothing ? nothing : UInt64(owner.window))
+            Lifecycle.complete!(bridge,shutdown_ticket,Codec.Stopped,final)
+            Lifecycle.flush_terminal!(bridge,shutdown_ticket.deadline)
+        catch error
+            push!(cleanup,error)
+        end
+    end
+    primary===nothing || throw(isempty(cleanup) ? primary : CompositeException([primary;cleanup]))
+    isempty(cleanup) || throw(CompositeException(cleanup))
     return nothing
 end
 
 function main(arguments=ARGS)
     prepared=options(arguments)
     Protocol.require_fresh_instance(prepared)
-    return Main.HILHeartControl.with_controller(prepared) do admitted
-        Base.invokelatest(run_owner,admitted,Main.load_plant(admitted.profile),Main.load_target(admitted.backend))
+    bridge=HILNativeAcquisitionLifecycle.Bridge(prepared,
+        HILNativeAcquisitionLifecycle.Codec.CORRECTION_PROFILE)
+    try
+        return Main.HILHeartControl.with_controller(prepared) do admitted
+            Base.invokelatest(run_owner_native,admitted,bridge,
+                Main.load_plant(admitted.profile),Main.load_target(admitted.backend))
+        end
+    catch error
+        if !(error isa HILNativeAcquisitionLifecycle.TransportFailure) &&
+                bridge.runtime.endpoint.lifecycle!==HILNativeAcquisitionLifecycle.Codec.Stopped
+            try HILNativeAcquisitionLifecycle.lifecycle!(bridge,
+                HILNativeAcquisitionLifecycle.Codec.Fault) catch end
+        end
+        rethrow()
+    finally
+        close(bridge)
     end
 end
 

@@ -46,6 +46,28 @@ end
         native = Protocol.parse_options([native_options; "--control-node"; "simulator-source"])
         @test native.control_request === nothing && native.control_reply === nothing
         @test native.control_node == "simulator-source"
+        lifecycle_arguments = String[]
+        for index in 1:2:length(arguments)
+            arguments[index] in ("--prepared-event", "--connect-request", "--connect-reply",
+                "--quit-request", "--control-request", "--control-reply") && continue
+            append!(lifecycle_arguments, arguments[index:index + 1])
+        end
+        append!(lifecycle_arguments, ["--control-node", "calibration.lifecycle",
+            "--control-instance", string(typemax(Int64))])
+        lifecycle = Protocol.parse_options(lifecycle_arguments; native_lifecycle=true)
+        @test lifecycle.control_instance == typemax(Int64)
+        @test lifecycle.prepared_event === nothing && lifecycle.connect_request === nothing
+        @test lifecycle.connect_reply === nothing && lifecycle.quit_request === nothing
+        @test lifecycle.control_request === nothing && lifecycle.control_reply === nothing
+        @test Protocol.require_fresh_instance(lifecycle) === nothing
+        @test_throws ArgumentError Protocol.parse_options(arguments; native_lifecycle=true)
+        @test_throws ArgumentError Protocol.parse_options(lifecycle_arguments[1:end-2]; native_lifecycle=true)
+        @test_throws ArgumentError Protocol.parse_options([lifecycle_arguments; "--quit-request"; "x"];
+            native_lifecycle=true)
+        relative = copy(lifecycle_arguments)
+        relative[findfirst(==("--remote"), relative) + 1] = "relative-remote"
+        @test_throws ArgumentError Protocol.parse_options(relative; native_lifecycle=true)
+        @test_throws ArgumentError Protocol.parse_options([arguments; "--control-instance"; "1"])
         @test_throws ArgumentError Protocol.parse_options([native_options; "--control-request"; "only-one"])
         @test Protocol.rounded_period(3) == 333_333_333
         @test Protocol.parse_options([arguments; "--frames"; "256"]).frames == 256

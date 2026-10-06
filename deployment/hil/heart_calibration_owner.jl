@@ -9,6 +9,7 @@ using AdaptiveOpticsSim.AlgorithmGraphs
 import ..CalibrationAcquisition, ..CalibrationServer, ..HeartCalibrationTelemetry
 import ..Protocol
 import ..HILHeartControl
+import ..HILNativeAcquisitionLifecycle
 const Acquisition = CalibrationAcquisition
 const Telemetry = HeartCalibrationTelemetry
 
@@ -791,52 +792,82 @@ function report(options, science, state, owner; failure=nothing)
         qualification="native operational calibration evidence; scientific agreement and rate require separate acceptance"))
 end
 
-function run_owner(options, plant_module, target)
+function run_owner_native(options, bridge, plant_module, target)
+    Lifecycle = HILNativeAcquisitionLifecycle
+    Codec = Lifecycle.Codec
     mkdir(options.heart_probe_directory; mode=0o700)
     science = Acquisition.prepare_science(options.graph, plant_module, target, options.profile;
         period_ns=options.period_ns, illumination=options.illumination)
     Acquisition.validate_exposure_duration(science.detector_config, options.exposure_ns)
-    active = Main.calibration_active(options)
-    active = Acquisition.prepare_active(Val(options.profile), active)
-    Protocol.write_json_atomic(options.prepared_event, (; version=1, state="prepared", sequence=0))
-    Main.wait_for_connect(options) || return nothing
-    configuration = PipeWireHILConfiguration(remote=options.remote, frame_node_name="simulator-wfs",
-        command_node_name="simulator-command", frame_schema="org.heart.std-wfs.raw-pixels/1",
-        command_schema="org.heart.std-dm.actuator-command/1", rate=SPA.Fraction(UInt32(options.rate), UInt32(1)),
-        exposure_duration_ns=options.exposure_ns, frame_encoding=:uint16, command_scale=1.0f0,
-        timeout_ns=30_000_000_000)
-    plant = prepare_pipewire_calibration(science.boundary, configuration)
-    session = owner = listener = nothing
+    active = Acquisition.prepare_active(Val(options.profile), Main.calibration_active(options))
     state = Protocol.OwnerState()
-    failure = nothing
-    last_payload = Ref{Union{Nothing,String}}(nothing)
-    service_control = () -> begin
-        isfile(options.control_request) || return nothing
-        payload = open(options.control_request) do io
-            String(read(io, Protocol.MAX_REQUEST_BYTES + 1))
-        end
-        payload == last_payload[] && return nothing
-        last_payload[] = payload
-        state.sequence = Acquisition.cursor(session).sequence
-        reply = try
-            Protocol.control!(state, payload, time_ns(), options.period_ns,
-                () -> error("native calibration reset requires a fresh instance"))
-        catch exception
-            Protocol.response(state, state.last_request_id, "reset"; error=sprint(showerror, exception))
-        end
-        Protocol.write_json_atomic(options.control_reply, reply)
+    plant = session = owner = listener = shutdown_ticket = nothing
+    primary = control_failure = nothing
+    current_cursor() = owner === nothing ? nothing : Acquisition.cursor(session)
+    current_snapshot() = Lifecycle.snapshot(bridge, state, current_cursor();
+        phase=owner === nothing ? "initial" : String(owner.phase),
+        held=owner === nothing ? false : owner.held,
+        restored=owner === nothing ? false : owner.restored)
+    function publish_report!()
+        owner === nothing && return nothing
+        cursor = current_cursor()
         Protocol.write_json_atomic(options.output, report(options, science, state, owner))
-        nothing
+        Lifecycle.report_published!(bridge, cursor)
+        return nothing
+    end
+    function service_control(; safe::Bool)
+        if control_failure !== nothing
+            safe && throw(control_failure)
+            return nothing
+        end
+        Lifecycle.has_pending(bridge; safe) || return nothing
+        try
+            terminal = Lifecycle.dispatch!(bridge, state; safe, period_ns=options.period_ns,
+                snapshot! = current_snapshot, connect! = connect_effect!,
+                reset! = ticket -> (Int32(-95), "native calibration reset requires a fresh instance"),
+                allow_shutdown=() -> owner === nothing ||
+                    (!owner.held && owner.phase === :initial) ||
+                    (owner.phase === :released && owner.restored && !owner.held))
+            terminal === nothing || (shutdown_ticket = terminal)
+        catch error
+            if !safe && error isa Lifecycle.TransportFailure
+                control_failure = error
+                state.running = false
+                return nothing
+            end
+            rethrow()
+        end
+        return nothing
+    end
+    function service_boundary()
+        try service_control(; safe=true)
+        catch error
+            error isa Lifecycle.TransportFailure || rethrow()
+            throw(CalibrationServer.OwnerServiceAbort(error))
+        end
+        shutdown_ticket === nothing || throw(CalibrationServer.OwnerServiceAbort(nothing))
+        return nothing
     end
     service = () -> begin
-        isfile(options.quit_request) && error("native calibration interrupted by shutdown")
-        owner === nothing || service_control()
+        owner === nothing || service_control(; safe=false)
         nothing
     end
-    try
-        session = prepare_session(plant, science.driver, options; active, adc_bits=science.detector_config["bits"], service)
+    function connect_effect!(ticket)
+        remaining = ticket.deadline - Lifecycle.NativeControlClient.monotonic()
+        remaining > 0 || error("native calibration Connect deadline expired")
+        timeout_ns = UInt64(max(1, floor(Int64, min(remaining, 30.0) * 1e9)))
+        configuration = PipeWireHILConfiguration(remote=options.remote, frame_node_name="simulator-wfs",
+            command_node_name="simulator-command", frame_schema="org.heart.std-wfs.raw-pixels/1",
+            command_schema="org.heart.std-dm.actuator-command/1", rate=SPA.Fraction(UInt32(options.rate), UInt32(1)),
+            exposure_duration_ns=options.exposure_ns, frame_encoding=:uint16, command_scale=1.0f0,
+            timeout_ns)
+        plant = prepare_pipewire_calibration(science.boundary, configuration)
+        session = prepare_session(plant, science.driver, options; active,
+            adc_bits=science.detector_config["bits"], service)
         start_session!(session)
-        hold_native!(session; timeout_ns=UInt64(30_000_000_000))
+        remaining = ticket.deadline - Lifecycle.NativeControlClient.monotonic()
+        remaining > 0 || error("native calibration Connect deadline expired before HEART hold")
+        hold_native!(session; timeout_ns=UInt64(max(1, floor(Int64, min(remaining, 30.0) * 1e9))))
         capture = options.capture_directory === nothing ? nothing : CalibrationServer.CaptureStore(
             options.capture_directory; maximum_bytes=options.capture_max_bytes, profile=options.profile,
             stage=options.calibration_stage, illumination=options.illumination,
@@ -845,55 +876,113 @@ function run_owner(options, plant_module, target)
                 wfs_active_sha256=active === nothing ? nothing : bytes2hex(sha256(UInt8.(active)))))
         owner = CalibrationServer.Owner(session; native_controller_held=true,
             measurement_count=options.profile === :classic ? 376 : 3600,
-            maximum_timeout_ns=UInt64(30_000_000_000), capture)
+            maximum_timeout_ns=timeout_ns, capture)
         mkpath(dirname(options.calibration_socket))
         listener = listen(options.calibration_socket)
-        Protocol.write_json_atomic(options.output, report(options, science, state, owner))
-        Protocol.write_json_atomic(options.connect_reply, (; version=1, state="connected", sequence=0))
-        CalibrationServer.serve!(owner, listener; accept_timeout_ns=UInt64(30_000_000_000),
-            should_stop=() -> isfile(options.quit_request), service_control, admission_enabled=() -> state.running)
-        state.running = false
-        state.completed = true
-        state.sequence = Acquisition.cursor(session).sequence
-        Protocol.write_json_atomic(options.output, report(options, science, state, owner))
-        while !isfile(options.quit_request)
-            service_control()
+        publish_report!()
+        return nothing
+    end
+    Lifecycle.lifecycle!(bridge, Codec.Prepared)
+    try
+        while owner === nothing && shutdown_ticket === nothing
+            service_control(; safe=true)
             sleep(0.005)
         end
-    catch exception
-        failure = sprint(showerror, exception)
-        owner === nothing || CalibrationServer.fault!(owner)
-        owner === nothing && retain_startup_failure(options, exception; session)
-        rethrow()
-    finally
-        state.running = false
+        if owner !== nothing
+            CalibrationServer.serve!(owner, listener; accept_timeout_ns=UInt64(30_000_000_000),
+                should_stop=() -> false, service_control=() -> service_control(; safe=false),
+                service_boundary,
+                admission_enabled=() -> state.running)
+            if shutdown_ticket === nothing
+                state.running = false
+                state.completed = true
+                state.sequence = current_cursor().sequence
+                publish_report!()
+                while shutdown_ticket === nothing
+                    service_control(; safe=true)
+                    sleep(0.005)
+                end
+            end
+        end
+    catch error
+        primary = error isa CalibrationServer.OwnerServiceAbort ? error.cause : error
+        if primary !== nothing && !(primary isa Lifecycle.TransportFailure) &&
+                owner !== nothing && owner.phase !== :released
+            CalibrationServer.fault!(owner)
+        end
+        if primary !== nothing && !(primary isa Lifecycle.TransportFailure)
+            try Lifecycle.lifecycle!(bridge, Codec.Fault) catch end
+        end
+        owner === nothing && retain_startup_failure(options, error; session)
+    end
+    state.running = false
+    stopped_cursor = try current_cursor() catch; nothing end
+    cleanup = Exception[]
+    try
+        retain_native_telemetry(options)
+        retain_native_logs(options)
+    catch error
+        push!(cleanup, error)
+    end
+    if owner !== nothing
         try
-            try
-                retain_native_telemetry(options)
-                retain_native_logs(options)
-            catch exception
-                Protocol.write_json_atomic(joinpath(options.heart_probe_directory, "telemetry-retention-failure.json"),
-                    (; failure=sprint(showerror, exception)))
-            end
-            if owner !== nothing
-                final_report = report(options, science, state, owner; failure)
-                Protocol.write_json_atomic(options.output, final_report)
-                Protocol.write_json_atomic(joinpath(options.heart_probe_directory, "owner-report.json"), final_report)
-            end
-        finally
-            listener === nothing || close(listener)
-            ispath(options.calibration_socket) && rm(options.calibration_socket)
-            session === nothing ? close(plant) : Acquisition.close_session!(session)
+            report_value = report(options, science, state, owner;
+                failure=primary === nothing ? nothing : sprint(showerror, primary))
+            Protocol.write_json_atomic(options.output, report_value)
+            Protocol.write_json_atomic(joinpath(options.heart_probe_directory, "owner-report.json"), report_value)
+            Lifecycle.report_published!(bridge, stopped_cursor)
+        catch error
+            push!(cleanup, error)
         end
     end
+    for resource in (listener, session === nothing ? plant : session)
+        resource === nothing && continue
+        try
+            resource === session ? Acquisition.close_session!(session) : close(resource)
+        catch error
+            push!(cleanup, error)
+        end
+    end
+    if ispath(options.calibration_socket)
+        try rm(options.calibration_socket) catch error; push!(cleanup, error) end
+    end
+    if shutdown_ticket !== nothing && primary === nothing && isempty(cleanup)
+        try
+            Lifecycle.lifecycle!(bridge, Codec.Stopped)
+            final = Lifecycle.snapshot(bridge, state, stopped_cursor;
+                phase=owner === nothing ? "initial" : String(owner.phase),
+                held=owner === nothing ? false : owner.held,
+                restored=owner === nothing ? false : owner.restored)
+            Lifecycle.complete!(bridge, shutdown_ticket, Codec.Stopped, final)
+            Lifecycle.flush_terminal!(bridge, shutdown_ticket.deadline)
+        catch error
+            push!(cleanup, error)
+        end
+    end
+    primary === nothing || throw(isempty(cleanup) ? primary : CompositeException([primary; cleanup]))
+    isempty(cleanup) || throw(CompositeException(cleanup))
     return nothing
 end
 
 function main(arguments=ARGS)
     prepared = options(arguments)
     Protocol.require_fresh_instance(prepared)
-    return HILHeartControl.with_controller(prepared) do admitted
-        Base.invokelatest(run_owner, admitted, Main.load_plant(admitted.profile), Main.load_target(admitted.backend))
+    bridge = HILNativeAcquisitionLifecycle.Bridge(prepared,
+        HILNativeAcquisitionLifecycle.Codec.CALIBRATION_PROFILE)
+    try
+        return HILHeartControl.with_controller(prepared) do admitted
+            Base.invokelatest(run_owner_native, admitted, bridge,
+                Main.load_plant(admitted.profile), Main.load_target(admitted.backend))
+        end
+    catch error
+        if !(error isa HILNativeAcquisitionLifecycle.TransportFailure) &&
+                bridge.runtime.endpoint.lifecycle !== HILNativeAcquisitionLifecycle.Codec.Stopped
+            try HILNativeAcquisitionLifecycle.lifecycle!(bridge,
+                HILNativeAcquisitionLifecycle.Codec.Fault) catch end
+        end
+        rethrow()
+    finally
+        close(bridge)
     end
 end
 

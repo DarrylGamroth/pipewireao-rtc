@@ -32,10 +32,11 @@ function transport_contract(options)
         command_scale=COMMAND_TO_METRES, command_units="micrometre OPD")
 end
 
-function reset_controller!(options, request_id; timeout_seconds=14)
+function reset_controller!(options, request_id; timeout_seconds=14,
+        deadline::Union{Nothing,Float64}=nothing)
     get(options, :transport, :scientific) === :heart || return nothing
     # Native tokens belong to the bound controller, not the legacy request id.
-    return HILHeartControl.reset!(options; timeout_seconds)
+    return HILHeartControl.reset!(options; timeout_seconds, deadline)
 end
 
 function load_plant(profile)

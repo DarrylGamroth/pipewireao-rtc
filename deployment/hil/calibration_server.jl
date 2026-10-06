@@ -189,6 +189,13 @@ function fault!(owner::Owner)
     return nothing
 end
 
+"""Leave an idle action boundary without changing actual action ownership."""
+struct OwnerServiceAbort <: Exception
+    cause::Union{Nothing,Exception}
+end
+Base.showerror(io::IO, error::OwnerServiceAbort) =
+    error.cause === nothing ? print(io,"owner service stopped at an action boundary") : showerror(io,error.cause)
+
 _fields(value::JSON3.Object, names) = length(value) == length(names) &&
     Set(String.(keys(value))) == Set(names) ? nothing : throw(InvalidRequest())
 _fields(value, names) = throw(InvalidRequest())
@@ -618,6 +625,10 @@ function execute!(owner::Owner, request; started::UInt64=time_ns(), check_connec
         check_connection()
         return (; version=1, run=request.run, serial=request.serial, result)
     catch exception
+        if exception isa OwnerServiceAbort
+            discard_pending_manifest!(owner)
+            rethrow()
+        end
         reason = failure_reason!(owner, exception)
         discard_pending_manifest!(owner)
         return failure(reason)
@@ -693,6 +704,7 @@ end
 """Serve one client/run; socket readers observe I/O only, never AOS state."""
 function serve_connection!(owner::Owner, socket; io_timeout_ns::UInt64=owner.maximum_timeout_ns,
     should_stop=() -> false, service_control=() -> nothing, admission_enabled=() -> true,
+    service_boundary=service_control,
 )
     reader = @async read_record(socket; timeout_ns=io_timeout_ns)
     check_connection = () -> begin
@@ -701,7 +713,7 @@ function serve_connection!(owner::Owner, socket; io_timeout_ns::UInt64=owner.max
     end
     try
         while owner.phase != :released
-            payload = wait_io(reader, should_stop, service_control)
+            payload = wait_io(reader, should_stop, service_boundary)
             started = time_ns()
             request = parse_request(payload)
             until = Base.checked_add(started, request.timeout_ns)
@@ -728,8 +740,8 @@ function serve_connection!(owner::Owner, socket; io_timeout_ns::UInt64=owner.max
             end
         end
         return owner
-    catch
-        fault!(owner)
+    catch exception
+        exception isa OwnerServiceAbort || fault!(owner)
         rethrow()
     finally
         close(socket)
@@ -747,25 +759,26 @@ function serve!(owner::Owner, listener::Sockets.PipeServer;
     0 < accept_timeout_ns <= UInt64(typemax(Int64)) || throw(ArgumentError("invalid accept timeout"))
     should_stop = get(kwargs, :should_stop, () -> false)
     service_control = get(kwargs, :service_control, () -> nothing)
+    service_boundary = get(kwargs, :service_boundary, service_control)
     admission_enabled = get(kwargs, :admission_enabled, () -> true)
     timer = pending = nothing
     try
         # The launcher bounds graph preparation and keeps acquisition paused.
         # Publishing the listener is readiness evidence, not client admission.
         while !admission_enabled()
-            service_owner!(should_stop, service_control)
+            service_owner!(should_stop, service_boundary)
             sleep(0.005)
         end
-        service_owner!(should_stop, service_control)
+        service_owner!(should_stop, service_boundary)
         timer = Timer(Float64(accept_timeout_ns) / 1e9) do _
             close(listener)
         end
         pending = @async accept(listener)
-        socket = wait_io(pending, should_stop, service_control)
+        socket = wait_io(pending, should_stop, service_boundary)
         close(timer)
         return serve_connection!(owner, socket; kwargs...)
-    catch
-        fault!(owner)
+    catch exception
+        exception isa OwnerServiceAbort || fault!(owner)
         rethrow()
     finally
         timer === nothing || close(timer)

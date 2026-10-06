@@ -4,15 +4,23 @@ using JSON3
 
 const MAX_REQUEST_BYTES = 16 * 1024
 const MAX_REPLY_BYTES = 64 * 1024
-const REQUIRED_OPTIONS = (
+const LEGACY_REQUIRED_OPTIONS = (
     "profile", "graph", "rate", "exposure-ns", "remote", "prepared-event",
     "connect-request", "connect-reply", "quit-request", "output",
 )
+const NATIVE_REQUIRED_OPTIONS = (
+    "profile", "graph", "rate", "exposure-ns", "remote", "control-node",
+    "control-instance", "output",
+)
+const LEGACY_CONTROL_OPTIONS = (
+    "prepared-event", "connect-request", "connect-reply", "quit-request",
+    "control-request", "control-reply",
+)
 
 """Parse the complete-frame simulator command line without loading a plant."""
-function parse_options(arguments)
+function parse_options(arguments; native_lifecycle::Bool=false)
     values = Dict("backend" => "cpu", "frames" => "16", "transport" => "scientific", "correction-diagnostics" => "false", "total-exchanges" => "0", "wall-rate" => "default", "control-node" => "simulator-wfs")
-    allowed = Set((REQUIRED_OPTIONS..., "backend", "frames", "transport", "controller-node", "controller-pid", "controller-instance", "correction-diagnostics", "total-exchanges", "wall-rate", "control-node", "control-request", "control-reply"))
+    allowed = Set((LEGACY_REQUIRED_OPTIONS..., "backend", "frames", "transport", "controller-node", "controller-pid", "controller-instance", "correction-diagnostics", "total-exchanges", "wall-rate", "control-node", "control-instance", "control-request", "control-reply"))
     seen = Set{String}()
     iseven(length(arguments)) || throw(ArgumentError("each option requires one value"))
     for index in 1:2:length(arguments)
@@ -26,9 +34,19 @@ function parse_options(arguments)
         push!(seen, key)
         values[key] = value
     end
-    for key in REQUIRED_OPTIONS
+    for key in (native_lifecycle ? NATIVE_REQUIRED_OPTIONS : LEGACY_REQUIRED_OPTIONS)
         haskey(values, key) || throw(ArgumentError("missing --$key"))
     end
+    if native_lifecycle
+        any(key -> key in seen, LEGACY_CONTROL_OPTIONS) &&
+            throw(ArgumentError("native lifecycle forbids marker and file-control options"))
+        "control-node" in seen || throw(ArgumentError("native lifecycle requires explicit --control-node"))
+        isabspath(values["remote"]) || throw(ArgumentError("native lifecycle requires an absolute private remote"))
+    else
+        "control-instance" in seen && throw(ArgumentError("--control-instance requires native lifecycle"))
+    end
+    control_instance = native_lifecycle ? Int64(parse_positive_integer(
+        values["control-instance"], "--control-instance", typemax(Int64))) : nothing
     values["profile"] in ("classic", "copper") || throw(ArgumentError("--profile must be classic or copper"))
     values["backend"] in ("cpu", "cuda", "amdgpu") || throw(ArgumentError("--backend must be cpu, cuda or amdgpu"))
     values["transport"] in ("scientific", "heart") || throw(ArgumentError("--transport must be scientific or heart"))
@@ -56,19 +74,19 @@ function parse_options(arguments)
     wall_period_ns = wall_rate == 0 ? UInt64(0) : UInt64(rounded_period(wall_rate))
     period = rounded_period(rate)
     exposure = parse_positive_integer(values["exposure-ns"], "--exposure-ns", period)
-    paths = [abspath(values[key]) for key in (
-        "prepared-event", "connect-request", "connect-reply", "quit-request",
-        "output",
-    )]
+    marker_paths = native_lifecycle ? (nothing, nothing, nothing, nothing) :
+        Tuple(abspath(values[key]) for key in LEGACY_CONTROL_OPTIONS[1:4])
+    output = abspath(values["output"])
     control_keys = ("control-request", "control-reply")
     control_present = count(key -> haskey(values,key), control_keys)
     control_present in (0,2) || throw(ArgumentError("calibration controls require both file paths"))
-    control_paths = control_present == 0 ? (nothing,nothing) : Tuple(abspath(values[key]) for key in control_keys)
+    control_paths = native_lifecycle || control_present == 0 ? (nothing,nothing) :
+        Tuple(abspath(values[key]) for key in control_keys)
     occursin(r"^[a-zA-Z0-9_.-]{1,128}$", values["control-node"]) || throw(ArgumentError("invalid control node name"))
-    append!(paths, [path for path in control_paths if path !== nothing])
-    prefix = endswith(paths[5],".json") ? paths[5][1:end-5] : paths[5]
+    paths = String[path for path in (marker_paths..., control_paths..., output) if path !== nothing]
+    prefix = endswith(output,".json") ? output[1:end-5] : output
     append!(paths,[prefix * ".frames.u16le",prefix * ".commands.f32le"])
-    sustained && push!(paths,paths[5] * ".sustained.json")
+    sustained && push!(paths,output * ".sustained.json")
     length(unique(paths)) == length(paths) || throw(ArgumentError("marker, control and output paths must differ"))
     abspath(values["graph"]) in paths && throw(ArgumentError("plant graph must differ from marker, control and output paths"))
     return (
@@ -77,9 +95,9 @@ function parse_options(arguments)
         transport=Symbol(values["transport"]), controller_node, controller_pid, controller_instance,
         graph=abspath(values["graph"]), rate=rate, period_ns=UInt64(period),
         exposure_ns=UInt64(exposure), frames=frames, remote=values["remote"],
-        prepared_event=paths[1], connect_request=paths[2], connect_reply=paths[3],
-        quit_request=paths[4], control_request=control_paths[1], control_reply=control_paths[2],
-        control_node=values["control-node"], output=paths[5],
+        prepared_event=marker_paths[1], connect_request=marker_paths[2], connect_reply=marker_paths[3],
+        quit_request=marker_paths[4], control_request=control_paths[1], control_reply=control_paths[2],
+        control_node=values["control-node"], control_instance, output,
     )
 end
 

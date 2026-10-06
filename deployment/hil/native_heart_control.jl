@@ -15,7 +15,8 @@ const Codec = NativeHeartCodec
 
 function with_controller(f, options)
     get(options, :transport, :scientific) === :heart || return f(options)
-    check = () -> (isfile(options.quit_request) && error("HEART controller admission cancelled"))
+    check = () -> (options.quit_request !== nothing && isfile(options.quit_request) &&
+        error("HEART controller admission cancelled"))
     client = Heart.connect(options.remote, options.controller_node, options.controller_pid,
         options.controller_instance; deadline=Client.monotonic() + 14.0, check)
     try
@@ -25,9 +26,10 @@ function with_controller(f, options)
     end
 end
 
-function reset!(options; timeout_seconds=14)
-    deadline = Client.monotonic() + timeout_seconds
-    check = () -> (isfile(options.quit_request) && error("shutdown requested while resetting HEART"))
+function reset!(options; timeout_seconds=14, deadline::Union{Nothing,Float64}=nothing)
+    deadline = deadline === nothing ? Client.monotonic() + timeout_seconds : deadline
+    check = () -> (options.quit_request !== nothing && isfile(options.quit_request) &&
+        error("shutdown requested while resetting HEART"))
     previous = Heart.status(options.controller_control; deadline, check)
     return Heart.reset!(options.controller_control, previous; deadline, check)
 end
