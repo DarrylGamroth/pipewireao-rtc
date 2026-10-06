@@ -1,0 +1,52 @@
+{
+  "review": "bounded independent source and retained evidence; no builds, tests or SCI rerun",
+  "gui_head": "cc512863099ee74fbe46e395376d73a0df697a9c",
+  "gui_increment": "ed2de43227d4001f00beb187f026305b5d9f5bf2",
+  "rtc_head": "456a77291cab1dbeae5a4be62df6e6f940e954c0",
+  "source_sha256": {
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-gui-native-hil/scripts/check_native_hil_gui.jl": "4211fc02fed35eca9fff720887e05af8ffc6b212c2fa24c7ba9f390358e4e24a",
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-gui-native-hil/scripts/test_native_hil_gui.jl": "9db0256a73092c7261c40a33dd161894439e086df5d75e1e3975ee4d1d45d72e",
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-gui-native-hil/src/rtc_adapter/live_tests.rs": "75b7d5b75d8ac7485d6ae6dca78f785d698ef33beb9df4a7da9e7773839d96a9",
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-gui-native-hil/docs/NATIVE_HIL_GUI_GATES.md": "0e00cc6a992acc2c300b65147af9f6a601d63d6737e3c85acc2c14d116e68cf1",
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-controls/deployment/qualify_calibration_native.jl": "270ec5de12a64272519e0c62bf4a847fa692509b77d244b87f5db9fc156301b8",
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-controls/deployment/julia/test/test_qualify_calibration_native.jl": "fd1ed0f9db45fbb5dfda99a93e7c0d0873d64974fc08a248973a19c6a078c88f",
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-controls/deployment/julia/src/native_heart_client.jl": "e700d1aeb7932cbc0bce9ab0609c546b29f9ce9a90f89d33dbf42553e12ea4ba",
+    "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-controls/docs/NATIVE_CALIBRATION_CONSUMER_MATRIX.md": "afa8afe0ea2cac56f0247e6a95f6584d9a30805910f5a64d9966c3fc5440e87f"
+  },
+  "evidence": {
+    "/tmp/gui-native-gates-root-cold-20261006.log": {
+      "sha256": "101cb44f465837c7211713f7bf0d8996c0054010c0c6b0f0b9dc720d202d43b9",
+      "sets": 9,
+      "pass": 83,
+      "total": 83,
+      "failure_markers": []
+    },
+    "/tmp/rtc-native-calibration-root-cold-20261006.log": {
+      "sha256": "304422570f07a248c00cf287cdb05a68f788236840a4186aa37fca1e6e640ca5",
+      "sets": 9,
+      "pass": 175,
+      "total": 175,
+      "failure_markers": []
+    },
+    "/tmp/gui-native-gates-build/tests.log": {
+      "sha256": "2a98758c1c13ad80b70acc31ae7871784a122c48b3bc0516d0c6c0d78b54ab59"
+    },
+    "/tmp/gui-native-gates-build/clippy.log": {
+      "sha256": "7efbf656b288032f4c9b3ebacef93076e36682d679457f1a7ce1cf1c7599aa84"
+    },
+    "/tmp/gui-native-gates-build/fmt.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "/tmp/gui-native-gates-build/hook-after-list.log": {
+      "sha256": "a175a10ab8291a2b122df370dd4529595852edcf0472e4d3af16822334706955"
+    },
+    "/tmp/gui-native-gates-build/missing-hook-before.log": {
+      "sha256": "24178ba1ed448860a22eed15cef98da238205e7f7407b66f6e11fe1abc671f57"
+    }
+  },
+  "executable": {
+    "path": "/tmp/gui-native-gates-build/gui-native-gates-test-13ef605bcf1e6d614702190911e35d3c44bb8f02aeced5abe300b06cd3dc1ac0",
+    "bytes": 56599880,
+    "sha256": "13ef605bcf1e6d614702190911e35d3c44bb8f02aeced5abe300b06cd3dc1ac0"
+  }
+}
