@@ -183,14 +183,15 @@ was clean at that commit. No Rust source or binary changed in this remediation.
   explicitly leaves descendant cleanup proof separate.
 - Service mode creates a fresh runtime user-unit file after checking both
   loaded-unit and path absence. Only successful file creation assigns cleanup
-  ownership. SIGINT matches the generated RTC template. Exit properties remain
-  available and must be exactly `Result=success`, `ExecMainCode=1` (CLD_EXITED),
+  ownership. SIGINT matches the generated RTC template. This version assumes
+  exit properties remain available and requires `Result=success`, `ExecMainCode=1` (CLD_EXITED),
   `ExecMainStatus=0` before final-report acceptance. Only the owned inactive or
   failed unit file is removed, followed by bounded daemon reload.
 - Service manager commands use `C.run_checked`; polling passes its remaining
-  budget. On this host `DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus`
-  remains inherited, so manager calls inside the private-XDG scope address the
-  intended existing user manager. Preserve that explicit environment assumption.
+  budget. The initial review inferred that inherited
+  `DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus` would preserve manager
+  access inside the private-XDG scope. **The actual failed service trial refutes
+  this inference.** The correction and exit-property limitation are below.
 
 The primary's retained `~/.cache/gui-native-hil-qualification-20261006/cleanup-after.log`
 was read independently: 34 assertions pass, including actual owned `sleep 60`
@@ -217,3 +218,84 @@ may proceed with the coordinated fresh service cohort. That execution, actual
 descendant cleanup, native systemd startup/exit, complete GUI stress/trajectory
 matrix and overall issue acceptance remain experimental gates. No test was
 independently rerun by this reviewer and no SCI success is claimed here.
+
+## Actual service failure and independent follow-up review
+
+The first real service trial at `9afc44a` failed. Its retained
+`~/.cache/rtc-native-final-deployment-20261006/gui-hil-service-classic-fgn-v1/result.json`
+records both operation and cleanup errors: `Failed to connect to user scope bus
+via local transport: No such file or directory`. It retains `success=false`
+and the active owned unit rather than removing its file. This is actual
+integration evidence, stronger than the earlier environment inference.
+
+### GUI-HIL-R005 — Private registry context prevents user-manager access
+
+**Severity:** high. **Confidence:** high. **Classification:** observed actual
+failure plus source. **Affected:** all cold service-manager commands inside
+the private `XDG_RUNTIME_DIR` scope.
+
+The inherited D-Bus address did not make these commands reach the manager.
+Primary remediation `0e21a58ad082171481d741b174e800ed8f49066e` captures the original
+user-manager XDG directory at module load and applies that override through
+the bounded command helper. All service-manager calls use the helper, and the
+runtime unit file uses the same original directory. The launched deployment
+retains its separate private registry environment.
+
+**Validation:** focused fixture enters a different private-XDG scope and checks
+that the helper's subprocess receives the captured original value. Source
+routing was independently inspected. **Disposition:** source and focused
+software remediation accepted; actual fresh service success remains pending.
+
+### GUI-HIL-R006 — Persistent unit file does not retain main-process exit fields
+
+**Severity:** high for service qualification. **Confidence:** high.
+**Classification:** observed integration behavior; conservative rejection,
+not an observed false green. **Affected:** service exit evidence after stop.
+
+After primary manually stopped exactly the owned failed-v1 service with SIGINT,
+the manager reported inactive, PID zero, `Result=success`, `ExecMainCode=0`,
+`ExecMainStatus=0`. A persistent unit file did not prevent collection of the
+main-process exit statistics. Code zero cannot be accepted as an observed
+normal exit. The retained `manual-cleanup.json` separately records four absent
+owned PIDs, no remaining group/session members, absent private instance and
+removal of the owned unit and XDG directory. It explicitly preserves failed
+qualification; this supplemental cleanup does not rewrite the original result.
+
+At `0e21a58`, the unit has an `ExecStopPost` direct absolute `printf` command.
+It writes a tagged receipt using manager-provided invocation/exit/result
+variables to the fresh owned deployment log. Admission first captures the live
+32-hex-digit InvocationID alongside MainPID. After bounded stop/inactive
+confirmation, acceptance requires exactly one complete newline-terminated
+receipt for that invocation with `exited 0 success`. Missing, duplicate, partial,
+other-invocation, signal and nonzero-exit receipts fail. Saved state remains a
+cleanup cross-check, not live readiness authority.
+
+Independently reviewing the draft exposed a weaker branch that ignored Result
+and status whenever code was zero. The primary corrected it before commit.
+Final source requires either exact retained success `(success,1,0)` or exact
+unretained neutral `(success,0,0)`, **in addition to** the valid receipt. A
+code-zero timeout or nonzero status is rejected. The neutral triple supplies no
+affirmative exit evidence of its own.
+
+**Validation:** independently inspected final source and negative fixtures.
+The retained manager-context suite has 46 passing assertions. Generated-unit
+`systemd-analyze` parse validation is retained separately. Neither constitutes
+an actual invocation receipt from a successful SCI service.
+**Disposition:** remediation accepted for a fresh coordinated integration
+attempt; actual manager receipt and complete owner cleanup remain to validate.
+
+Exact follow-up evidence hashes:
+
+| Artifact at `0e21a58` | SHA-256 |
+| --- | --- |
+| Harness | `6d0ac855e9b0608a02174bfe1481d57a7c39520a6f4417b83f3a6545c790e7f1` |
+| Tests | `368c91cc3828010ae3adf31a80a48d9896f1692f4dc2155195eb0bb05ac15134` |
+| `manager-context-after.log` | `a38f1425268c1b03a53b7bf6777bda568715c7341fe8c070337409006f902f8b` |
+| `unit-parse-check.log` | `a4bd95e0773042fd8e95881029bbd2d59b47c7ebfc76cf84b4f27668d7ac42a9` |
+
+Both logs are under `~/.cache/gui-native-hil-qualification-20261006/`; hashes
+and test totals were independently checked. Review worktree started clean at
+`61995f7`. Only this review document changed. The source worktree contained the
+primary's additional uncommitted FFTW-wisdom provenance inclusion during the
+final inspection; the table identifies committed `0e21a58` exactly. No new
+build, test execution, service-manager action or SCI was run by this reviewer.
