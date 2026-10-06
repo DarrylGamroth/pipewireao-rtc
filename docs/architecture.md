@@ -393,7 +393,7 @@ Required-dependency loss fails the whole deployment and revokes ingress. An
 explicit restart rebuilds and revalidates all owned processes; no mutation or
 RUNNING state is replayed automatically.
 
-The local Unix control endpoint and console share one typed command executor.
+The private native PipeWire control endpoint and console share one typed command executor.
 Reader/preparation/writer work stays outside the sole owner. Requests, clients,
 queues, parameter bytes and reply sizes have finite bounds. Replies distinguish
 submission, requested generation and observed active generation. Existing

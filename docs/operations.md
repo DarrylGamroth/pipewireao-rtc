@@ -675,8 +675,9 @@ unit and verify recovery and fresh active generations separately.
 The launcher MUST prepare the private core, scientific owners and stopped RTC
 session before ingress. It MUST verify exact READY topology and requested
 effective per-thread affinity, scheduler and memory/QoS prerequisites before
-explicit start/source release. Readiness markers MUST belong to the current
-launch instance; stale markers MUST NOT admit ingress. An external source MUST
+explicit start/source release. Readiness observations MUST identify the current
+native owner incarnation; stale locators, markers and saved status files MUST
+NOT admit ingress. An external source MUST
 remain held until release and MUST stop when admission is revoked. A source
 without a hold contract MUST be rejected for deployment admission.
 
@@ -697,7 +698,8 @@ source silence before admission and clean shutdown in both launch modes.
 The console and private native PipeWire endpoint MUST use one typed command
 executor on the sole lifecycle owner. Parameter decoding and parameter-file
 preparation MUST run outside effect handlers. RTC-DEV-030 selects the native
-transport; the existing Unix endpoint remains explicit migration debt. The endpoint MUST admit at most one prepared request at a
+transport; legacy JSON socket helpers remain fixture support and MUST NOT be
+selectable by installed deployments. The endpoint MUST admit at most one prepared request at a
 time, limit a request to 16 KiB and 128 fields, a parameter payload to 512 MiB,
 and a reply to 64 KiB. Parameter dimensions/type/byte length MUST be checked
 before reading the payload. Client read/write deadlines MUST be finite.
@@ -991,23 +993,22 @@ HEART interfaces require observed support without source modifications.
 
 ### Calibration completion channel
 
-The prototype `CalibrationSocketEndpoint` uses a preconnected local Unix stream
-with one bounded pending request, outside processing callbacks. It does not
-establish command ownership itself. The endpoint server MUST serialize effects,
+The selected `NativeCalibrationEndpoint` uses the exact private-core acquisition
+owner with one bounded pending native request, outside processing callbacks.
+It does not establish command ownership itself. The endpoint server MUST serialize effects,
 fence prior work before restoration, and retain the hold or fault the deployment
-on an unknown outcome or disconnect. Installed acquisition profiles now select this server; its transport remains
-explicit migration debt.
+on an unknown outcome or disconnect. Installed acquisition profiles select the
+native action server. The former public JSON socket adapter has been retired.
 
-The unmigrated prototype uses newline-terminated JSON, with requests bounded
-to 16 KiB and server/Rust replies to 128 KiB, including the delimiter. Its Julia
-capture reader still has a divergent 64 KiB bound. RTC-DEV-030 supersedes this
-transport with native PODs and one shared 128 KiB calibration completion bound;
-the field/action semantics below remain applicable. Requests carry `version = 1`, positive integer
-`run` and `serial`, positive relative `timeout_ns`, and an `action` object. Host
+Requests use typed native PODs bounded to 16 KiB; both clients and the server
+share the 128 KiB calibration completion bound under RTC-DEV-030. The
+field/action semantics below remain applicable. Requests carry the common
+controller/endpoint/token/operation envelope, positive integer `run` and `serial`,
+a positive remaining relative budget and the typed action payload. Host
 monotonic `Instant` deadlines remain authoritative at the coordinator; the
 relative budget does not synchronize process clocks or extend that deadline.
-Submission enqueues one request without socket I/O or waiting for queue space;
-the receiving caller drives nonblocking I/O and waits for readiness with the
+Submission stages one request without executing acquisition effects or waiting
+for queue space; the receiving caller observes native completion with the
 same deadline. There is no reconnect or operation retry after an unknown outcome.
 
 | Action kind | Additional fields | Completion result kind / fields |

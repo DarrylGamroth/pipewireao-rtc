@@ -1,4 +1,44 @@
-# Remaining live JSON control transports
+# Live control inventory and retirement
+
+## Current selected paths — 2026-10-06
+
+Source checkpoint: RTC `e36d395`, GUI canonical `eaa659b`, PipeWireAO.jl
+`6e4e1ee`, HIL adapter `15fd37d`. Selection is a source fact; installed
+qualification is recorded separately. Neither source migration nor a green
+transport test closes the integrated gates.
+
+| Authority | Selected native implementation | Retirement and remaining qualification |
+| --- | --- | --- |
+| Operator → deployment supervisor | `supervisor_controls.jl`, `native_supervisor_{codec,client,runtime}.jl`; public session discovery verifies fresh exact owner Status | Production Julia CLI and canonical GUI select native control. JSON broker/client helpers are explicitly fixtures. GUI software/WASM checks pass; installed GUI attachment and control gates remain. |
+| Supervisor → runner | `native_runner_client.jl`, Rust `native_runner_endpoint.rs`; existing serialized dispatcher | Rust `--control-socket`, its server and wire type have been removed. Rebuilt CLI rejects that ingress before effects. Console commands and local JSON rendering remain. Updated installed runner qualification is underway. |
+| Calibration/correction owner lifecycle | `native_acquisition_lifecycle_{codec,client,runtime}.jl` and HIL native bridge | Selected exporters/owners use preparing/connect/status/pause/resume/shutdown with exact native identity and cursor. Old file options are rejected by production profiles. Fresh installed calibration/restoration gates remain. |
+| Calibration actions | `native_calibration_action_{codec,client}.jl`, Rust native calibration endpoint, `native_calibration_actions.jl` | Server and both selected clients use typed PODs. Public Rust `CalibrationSocketEndpoint` and CLI selection are removed. Julia JSON serving helpers remain fixture support only. Actual installed action/capture/restoration qualification remains separate from codec checks. |
+| HEART wrapper and health consumers | `native_heart_{codec,client,runtime}.jl`, `heart_owner.jl` | Wrapper lifecycle/reset/health is native; consumers use fresh child identity/generation before verifying immutable reports. HEART vendor source, TCP command client and SPA stdWfs/stdDM UDP interfaces are unchanged. Fresh integrated HEART SCI gates remain. |
+| Ordinary simulator/JFG bootstrap | `native_owner_bootstrap_{codec,client,runtime}.jl` and wrappers | Production owners use native preparation/connect/connected/quit rather than marker files. Fresh Classic FGN and JFG reset qualification passes after retaining the admission client. Copper and services remain to qualify. |
+| Scientific simulator control | Prepared SourceControl V1 in `source_control.jl` and `source_client.jl` | Its existing prepared native run/reset/query path is preserved. Cold registry/controller ingress must not be confused with this allocation-free fixed-connection path. |
+| Completion/report authority | Fresh native owner completion and acquisition generation/sequence/report-ready cursor | Saved reports are read as verified artifacts after native completion or owned process exit. Locator files are discovery hints; saved status or old report bytes cannot establish readiness. |
+
+The [retirement audit](LIVE_CONTROL_RETIREMENT_AUDIT.md),
+[Rust remediation](LIVE_CONTROL_RETIREMENT_REMEDIATION.md),
+[independent review](LIVE_CONTROL_RETIREMENT_INDEPENDENT_REVIEW.md),
+[Python CLI retirement](PYTHON_LIVE_CONTROL_RETIREMENT.md) and
+[bootstrap qualification](NATIVE_DEPLOYMENT_BOOTSTRAP_VALIDATION.md) retain
+source identities, negative evidence and remaining gates. Direct historical
+Python live-control CLIs now fail closed; imported development fixtures and
+offline exporters remain explicitly historical. Exported legacy owner
+descriptors are not a production fallback. Saved JSON configuration, recipes,
+reports and provenance remain supported.
+
+Standalone JFG's captured DM supervisor still has its own marker lifecycle
+outside the selected RTC wrapper. It is not a selected RTC fallback and is not
+claimed retired here. Its separate authority/caller boundary is recorded in the
+retirement audit; it must not be deleted as an unused fixture.
+
+## Historical starting inventory — 2026-10-05
+
+The remainder is the frozen inventory that identified migration obligations.
+Its file/line references, removed types and descriptions of then-current JSON
+paths describe that source checkpoint, not the current checkout.
 
 Read-only source inventory, 2026-10-05. RTC worktree:
 `/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-live-controls`, HEAD

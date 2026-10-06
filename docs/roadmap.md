@@ -1032,7 +1032,7 @@ change is needed; preservation of a running integrator remains a later gate.
 | Graph asset export | [Exporter](../deployment/export_calibration.py) preserves selected full-frame Classic/Copper FGN/JFG WFS and command node declarations, startup arrays and source provenance; all four exports checked. Four native graphs prepared against a private installed core with exact ports, including Classic validity; no frames or run requests | Assets have no runnable deployment descriptor; native live processing and actual WFS acquisition remain unqualified |
 | Julia graph preparation | Both WFS and command graphs prepared with the real owner for Classic and Copper; no connection was made | Live response acquisition and numerical agreement |
 | Validity transport | RTC configuration and live format validation admit `BOOL8` alongside F32/U16 data; mismatched links and non-F32 runtime parameters still reject | Actual linked Classic validity delivery |
-| Completion IPC | [Unix stream endpoint](../src/calibration_socket.rs) queues bounded requests without I/O in submit; eight focused socket tests include kernel queue saturation and late adoption during restoration | Serialized operational server, restoration fences and deployment fault integration |
+| Completion IPC | Historical Unix stream endpoint (now retired) queued bounded requests without I/O in submit; eight focused socket tests included kernel queue saturation and late adoption during restoration | Serialized operational server, restoration fences and deployment fault integration |
 | AOS held-probe boundary | Separate boundary advances probe and exposure identities independently; CPU algorithm-graph selector passes 596 assertions, including inference, zero warmed allocations and alias rejection | GPU qualification and deployed scientific acquisition |
 | Held-probe transport | Private-core fixture passes 278 assertions: delayed first probe, returned-buffer reuse, exhaustion recovery without another model step, 16 exposures plus reset and four further exposures, full-identity completion fences | Actual deployed WFS collection and command/clipping feedback; operational session and estimator |
 | Calibration session and estimator | Existing WFS/constraint algorithms and AdaptiveOpticsCalibration retain their ownership | Operational backgrounds/references, associated responses, AOC matrices, installation and correction checks; unchanged HEART interface qualification |
@@ -1438,53 +1438,38 @@ inclusive heap/GC activity, unchanged frozen prefixes, public shutdown and
 owned cleanup. This closes the selected committed-main integration check;
 JFG and Copper release-installed reruns are not implied.
 
-The source-owner migration does not complete native public supervisor,
-supervisor-to-Rust, calibration action or HEART wrapper control interfaces.
-Their current JSON transport must be replaced in separately reviewed,
-dependency-ordered increments, preserving restoration fencing, identities,
-bounded payloads and completion semantics. Saved JSON artifacts are distinct.
+## Native live control integration — 2026-10-06
 
-## Remaining native live control migration
+RTC-ARCH-024 and RTC-DEV-030 select native serialization for live local
+controls, following the [reviewed design](NATIVE_CONTROL_MIGRATION_DESIGN.md).
+The [current inventory](LIVE_CONTROL_INVENTORY.md) distinguishes selected
+production paths from retained fixture APIs and historical transports.
 
-RTC-ARCH-024 and RTC-DEV-030 select native serialization for the remaining
-local controls, following the [reviewed design](NATIVE_CONTROL_MIGRATION_DESIGN.md).
-The [inventory](LIVE_CONTROL_INVENTORY.md) is the explicit retirement checklist.
-The completed source path remains separate. Keep its zero-allocation and causal
-adoption checks intact.
+The supervisor-to-runner, source, HEART wrapper, public operator and
+calibration action paths now use typed native requests and completions.
+Readiness and admission use verified live owner identity; locators and saved
+reports do not provide authority. Installed calibration actions use the common
+bounded envelope and preserve restoration and inactivity fencing. Rust no
+longer accepts `--control-socket` and no longer exports the JSON calibration
+socket endpoint. Replaced Python live-control CLIs fail closed with diagnostics
+identifying maintained Julia entrypoints. Saved configuration and reports may
+continue using JSON.
 
-1. Validate a fixed shared identity/deadline envelope and exact owner-specific
-   payloads with CPU Julia↔Rust no-port Filter tests. The Julia-only and Julia↔Rust scalar proofs cover the primitive. The fixed
-   header now has 66 Julia checks, ten Rust test groups and a 42-check native
-   diagnostic exchange; [validation](NATIVE_CONTROL_ENVELOPE_VALIDATION.md)
-   keeps actual caller authority and owner integration gates open.
-2. Bound Rust inner synchronization and replace runner socket ingress while
-   preserving the single Statig dispatcher and existing operation outcomes.
-   The [local synchronization prerequisite](NATIVE_CONTROL_SYNC_VALIDATION.md)
-   now passes stalled-core, late-done, expiry, disconnect and empty-cleanup checks.
-   The [runner profile](NATIVE_RUNNER_CONTROL.md) now has closed typed dispatcher
-   results and an exact native request codec, with
-   [compatibility/boundary validation](NATIVE_RUNNER_CONTROL_VALIDATION.md).
-   The native endpoint now passes a two-actual-caller private-core lifecycle
-   fixture; [endpoint validation](NATIVE_RUNNER_ENDPOINT_VALIDATION.md) records
-   deadline/preparation gates separately. The supervisor-to-runner caller now
-   uses the native endpoint; its [client validation](NATIVE_RUNNER_CLIENT_VALIDATION.md)
-   records actual launcher admission/control/cleanup. Legacy public socket
-   callers remain explicitly unmigrated until their replacements qualify.
-3. Migrate supervisor-to-runner and HEART wrapper readiness/reset/health through
-   native completions without changing HEART's scientific implementation.
-   The supervisor-to-runner hop has focused CPU qualification; HEART wrapper
-   controls and health consumers remain the next implementation boundary.
-4. Migrate calibration/correction source admission and the calibration action
-   server plus both clients, preserving restoration and inactivity fencing.
-5. Replace public operator requests and remaining live readiness/status-file
-   authority. Retire JSON control transports after their native callers pass;
-   retain saved evidence and artifact verification.
+Source implementation, independent reviews and focused tests are complete for
+these changes. Fresh integrated installed, systemd user-service, calibration,
+HEART and GUI checks remain acceptance gates; earlier transport fixtures do
+not close them. See [retirement validation](LIVE_CONTROL_RETIREMENT_REMEDIATION.md),
+[the retirement review](LIVE_CONTROL_RETIREMENT_INDEPENDENT_REVIEW.md) and
+[Python entrypoint retirement](PYTHON_LIVE_CONTROL_RETIREMENT.md).
 
-Each phase needs focused CPU behavioral verification and independent review
-before affected installed science/allocation campaigns. The current transport
-proof is CPU software evidence and is not a hard real-time or complete deployment
-claim. See [review dispositions](NATIVE_CONTROL_MIGRATION_REVIEW.md) for the
-confirmed prerequisites and still-open implementation validation.
+The fresh native-only runner has passed Classic FGN and JFG foreground
+512-exchange runs followed by stopped reset and a second 512-exchange run.
+Both measured 496-exchange intervals per implementation have zero simulator
+process heap allocations and GC activity. These checks reuse the admitted
+client for the full cohort; closing and reconnecting after release previously
+introduced registry and compiler allocations. The first failed gate is
+retained. This evidence does not establish arbitrary late observer attachment
+as allocation-free, nor an isolated scheduling or tail-latency claim.
 
 ## Live HIL detector observation increment — 2026-10-05
 
@@ -1500,7 +1485,7 @@ detector surface; it creates no scientific overlay or DM publication contract.
 | Optional lifecycle and exact ownership | Deployment-owned passive input link outside required-object monitoring | SDK identity/delta/cleanup checks and finite link-loss/replacement checks pass; retirement is permanent within one lifecycle |
 | Observer execution isolation | Explicit queue capture/playback loops and independent public reader driver | Actual loop/thread placement and supported selector checks pass; no timing-isolation claim |
 | Scientific and lifecycle equivalence | Complete 256-frame disabled, unattended, stalled, terminated and reattached cohorts, plus complete paired reset | Controlled common public FFTW wisdom cases pass; default cold whole-trajectory comparisons retain failures and remain open |
-| GUI binding | Ordinary rank-two ndarray view of declared queue output | Original candidate functional evidence retained; selected native parser/loop fixes remain read-only and unmerged in this increment |
+| GUI binding | Ordinary rank-two ndarray view of declared queue output | Selected native GUI source is integrated into its canonical checkout with software and WASM checks; fresh installed rendering and stalled-observer qualification remain open |
 | Package reproducibility | Compatible committed owners and resolved, sealed task-owned exports | Source, native binary, queue module and unchanged scientific artifact identities recorded; current AOS development HEAD remains incompatible with the admitted HIL adapter |
 
 This increment does not close RTC issue #3. The previous RTC-DEV-006
