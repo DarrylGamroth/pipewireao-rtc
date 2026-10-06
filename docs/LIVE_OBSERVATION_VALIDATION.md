@@ -702,10 +702,9 @@ integration. **RTC issue #3 remains open:**
 - Selected GUI native parser/loop fixes remain in the original read-only
   candidate. Historical GUI tests and pixel display are not metadata-aware
   acceptance or a newly qualified selected integration.
-- The recorded Julia async-reader EIO/zero-delivery configuration remains an
-  unresolved compatibility finding. Native public C instrumentation establishes
-  the stated queue/metadata behavior without replacing RTC science or claiming
-  all Julia Stream configurations unsupported.
+- The original Julia async-reader failures are preserved. The follow-up below
+  identifies two development-reader configuration errors and verifies current
+  metadata delivery through the corrected public Stream configuration.
 - Achieved-rate, latency, hard real-time isolation, convergence and physical
   hardware validation are not established by these finite paced CPU cases.
 
@@ -713,3 +712,43 @@ Optional link loss retires this lifecycle permanently. Only a fresh admitted
 lifecycle recreates the boundary; no automatic repair has been implemented or
 qualified. All live cohorts have ended and the assigned science CPU window is
 released. No unrelated operator services or source candidates were changed.
+
+## Julia public Stream follow-up, 2026-10-06
+
+The installed QRA001 queue alone did not fix the cached Julia reader. The
+`cl-julia-qra-repeat` case still negotiated but failed at
+`pw_stream_trigger_process` with EIO and recorded zero samples. Removing only
+`STREAM_TRIGGER`, while retaining `STREAM_DRIVER`, allowed the callback to run
+in `cl-julia-no-trigger`; that run exposed a separate wrong argument order in
+the development reader's release call. The public API is
+`queue_buffer!(buffer, stream)`. These are observed reader configuration and
+call-site defects; they do not establish an SDK or scientific graph defect.
+
+With both reader corrections, `cl-julia-fixed` recorded 252 consecutive samples
+(sequences 5–256). The stricter `cl-julia-current` repeated the check with the
+public Acquisition helpers: exactly 96 bytes of metadata, MONOTONIC timebase,
+generation 1, acquisition/header sequence agreement, valid flags, zero
+uncertainty, exposure start equal to Header PTS and the owner's recorded source
+publication timestamp, and owner-defined exposure duration. All 251 received
+samples also matched the full retained pixel payload hash. The latter optional
+capacity-one latest reader did not observe sequences 1–4 and 206; its records
+are strictly increasing with no duplicate or mixed-generation sample. This is
+not an exact-delivery claim for an optional observer.
+
+Both corrected runs retained all 256 required science frames and commands,
+byte for byte identical to `cl-wisdom-off`. The dataset SHA-256 values remain
+`f82e5dd1e51d2ee13d65f38cec9da8422eac1d0ca15265f8ada0830082db5b76`
+(pixels) and
+`1ff66afad726e94aef7549b361c73720a8bfc28fad804eeb8b42c5c874040a11`
+(commands). Observer and supervisor exited 0, with no surviving owned process,
+private runtime child or allocator error. Each cohort retains logs, comparison
+records and `julia-reader-validation.json` in the task cache above. Failed runs
+and the original reader remain available for the same-test comparison.
+
+This uses the frozen installed Classic FGN reference, common public FFTW wisdom,
+500 Hz model settings and 10 Hz wall pacing. It qualifies this optional reader
+configuration and current metadata in a functional replay. It does not measure
+latency or maximum cadence, qualify the new native supervisor, change production
+FFT planning, or establish live GUI acceptance. The reader runs ordinary
+non-RT Julia callbacks; it does not enable unsupported Julia `RT_PROCESS`
+callbacks.

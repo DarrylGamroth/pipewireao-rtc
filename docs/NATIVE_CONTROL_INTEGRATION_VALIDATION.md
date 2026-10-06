@@ -47,10 +47,13 @@ and passes in the final export run. Julia emitted the existing loaded versus
 precompiled Base64 version notice; all selected final checks exited successfully.
 
 The [action endpoint review](NATIVE_CALIBRATION_ACTION_ENDPOINT_REVIEW.md)
-records a confirmed foreign-controller retirement defect awaiting remediation.
+records the corrected foreign-controller retirement defect and 92 independent
+pass-after checks, including bound-controller and core-loss failures.
 The [supervisor review](NATIVE_SUPERVISOR_CODEC_REVIEW.md) leaves production
 endpoint, caller and deadline integration open. The
 [observation ledger](LIVE_OBSERVATION_VALIDATION.md) retains its controlled FFTW
-wisdom qualification and unresolved default cold reproducibility, Julia reader
-and selected GUI gates. Installed science, inclusive frame allocations,
+wisdom qualification and unresolved default cold reproducibility. Its Julia
+reader follow-up distinguishes two development-reader configuration errors from
+the successfully delivered current metadata. Selected GUI source checks have
+passed; live GUI qualification remains separate. Installed science, inclusive frame allocations,
 cadence, latency, accelerator and physical-device validation remain separate.
