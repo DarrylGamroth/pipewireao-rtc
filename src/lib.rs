@@ -20,6 +20,10 @@ pub mod native_control_codec;
 pub mod native_runner_codec;
 #[cfg(feature = "live")]
 pub mod native_runner_result;
+#[cfg(all(feature = "live", not(target_arch = "wasm32")))]
+pub mod native_session_client;
+#[cfg(all(feature = "live", not(target_arch = "wasm32")))]
+pub mod native_session_discovery;
 #[cfg(feature = "live")]
 pub mod native_supervisor_client;
 #[cfg(feature = "live")]

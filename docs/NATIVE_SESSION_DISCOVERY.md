@@ -119,3 +119,33 @@ the exact file-permission correction and the failure classification limit.
 These checks do not establish deployment-owned publication, installed science,
 GUI selection, Native/WASM portability, or application qualification. RTC issue
 #4 remains open until those integration gates pass.
+
+## Rust reader and retained native selection
+
+The RTC library exposes `native_session_discovery` and `native_session_client`
+under its native `live` feature. The Rust reader validates the existing runtime,
+application and sessions directories without creating them. It checks exact
+0700/0600 permissions including special bits, opens record files with
+`O_NOFOLLOW | O_NONBLOCK`, checks ownership/regular-file bounds and rejects hard
+links. Directory and record identity are checked across listing/read; listing
+is bounded before collecting more than 128 candidates. Diagnostics stay within
+512 UTF-8 bytes. The flat decoder validates all extents, types, scalar widths,
+strings and the closed seven-field grammar before allocating field strings.
+
+Explicit `select_session(record, deadline)` uses the public supervisor client
+to connect once and query Status once with the same absolute deadline. Its
+`Connection` retains that exact client; later `request` calls do not reconnect.
+The returned `SelectedSession` carries actual global ID, full unsigned serial,
+positive fresh query token and immutable live UUID. Preparing has no invented
+runner session or owners. Discovery readiness maps fresh Running to Ready,
+fresh Ready/Offline to Stopped, configuring/preparing to Preparing, and faults
+to Fault; these discovery states do not rename the independently reported
+runner lifecycle. An unknown later request remains explicit `UnknownOutcome`
+and retires the public client permanently.
+
+The Rust pure contract tests cover the Julia-emitted 192-byte fixture, every
+truncation, field/type/version/bounds errors, special permission bits, symlink
+and hard-link rejection, missing-directory read-only behavior, 128/129 candidate
+capacity, exact identity mismatches, full unsigned serials and Preparing
+semantics. These tests do not establish installed discovery or GUI attachment;
+those remain primary-agent system qualification gates.
