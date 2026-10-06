@@ -1,0 +1,41 @@
+{
+  "reviewed_commit": "f51cc3a632ed95db857ec4db456ddd5e0431ce87",
+  "scope": "read-only helper source, maintained recipe/API and actual seal checks; no SCI/build/tests/dependency changes",
+  "helpers_sha256": {
+    "prepare_cuda_observation_cohort-20261006.jl": "fc4aa6eb87c3a41f9620677bb7908ede8516a06130c0f54cf55719f5aec91f20",
+    "export_native_cuda_heart-20261006.jl": "2b417137f3427ca926a71bcc92f4d613b7398dfb82b7f715f90343bab74b16d1",
+    "prepare_native_recorded_gui_fixture-20261006.jl": "eb75f9fea15c030c15b3bcd2b469050ac7ef4739db145f79498cf630591c2d66"
+  },
+  "installed_checks": [
+    {
+      "proof": "classic-fgn-cuda-observation-disabled-v1-proof.json",
+      "proof_sha256": "6ddf3013e84d426be357d430ee17f15e2c02746617b8f1b0cadc05e3a446114d",
+      "installed": "/tmp/classic-fgn-cuda-observation-disabled-v1-installed",
+      "descriptor_sha256": "46e6b48e2810cb91344517378136f7c3c48e5da450e4e0beb797823c35263cd1",
+      "descriptor_matches": true,
+      "artifacts_hashed": 579,
+      "mismatches": [],
+      "protected_declaration_changes": []
+    },
+    {
+      "proof": "classic-fgn-cuda-observation-enabled-v1-proof.json",
+      "proof_sha256": "e790122697326d62f823ffc8228a523de3369ce7539104040aec9f3d47678023",
+      "installed": "/tmp/classic-fgn-cuda-observation-enabled-v1-installed",
+      "descriptor_sha256": "a69536b8733e50e17753a9acb9376af3cedc372f226f7e1f54e76609d1eec974",
+      "descriptor_matches": true,
+      "artifacts_hashed": 579,
+      "mismatches": [],
+      "protected_declaration_changes": []
+    },
+    {
+      "proof": "copper-jfg-cuda-observation-disabled-v1-proof.json",
+      "proof_sha256": "f78abe0d6bce40e8b44e7867a417bed38de0c7b1342b95d82a2b32f56d2b2a9b",
+      "installed": "/tmp/copper-jfg-cuda-observation-disabled-v1-installed",
+      "descriptor_sha256": "c2d01428040272420444f25a0db4944f619a41640b6927b13868d6cd42799247",
+      "descriptor_matches": true,
+      "artifacts_hashed": 710,
+      "mismatches": [],
+      "protected_declaration_changes": []
+    }
+  ]
+}
