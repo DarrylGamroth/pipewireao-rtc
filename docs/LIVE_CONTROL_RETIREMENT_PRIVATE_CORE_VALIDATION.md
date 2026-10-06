@@ -199,3 +199,22 @@ logs and earlier compressed archives remain available. No broad target cleanup
 was performed. Free space rose from approximately 100 MiB to 291 MiB.
 Ledger: `~/.cache/rtc-live-controls-20261005/retirement-stale-cargo-cleanup-20261006.json`,
 SHA256 `12727e28136a44e2fb4aa6762274eb5bb7be0b9d83acc11fed451b46564c891c`.
+
+## Lossless historical recording compression
+
+Four closed historical Classic FGN detector recordings were compressed after
+qualification: failed native-v7 run 1, allocation-profile-v8 run 1, and native-v9
+runs 1 and 2. Each original 63,438,848-byte file became a 15,446,917-byte gzip
+archive. Full decoding reproduced its original SHA256 and byte count before
+the source file was removed, reclaiming 191,967,724 bytes. Source inode and
+modification time were checked again before removal.
+
+Reports, command recordings, diagnostic logs and acceptance outcomes are
+unchanged. The failed v7 recording remains available losslessly; compression
+does not convert its failed allocation result into a pass. The accepted
+main-v13 recordings were not changed. Per-file restoration ledgers are in
+`~/.cache/rtc-live-controls-20261005/verified-historical-recording-compression-20261006/`.
+They record original and archive paths, decoded hashes, byte counts, mode,
+UID/GID and modification time. Restore and verify the original path before
+using a historical report that references it. This is storage maintenance,
+not new scientific or deployment validation.
