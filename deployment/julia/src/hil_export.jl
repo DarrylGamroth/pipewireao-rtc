@@ -355,12 +355,30 @@ function hil_session(base::AbstractDict)
     return value
 end
 
-function hil_core(base::AbstractDict)
-    value = deepcopy(base)
+function hil_core(base::AbstractDict; detector_observation::Bool=false)
+    value = Dict{String,Any}(deepcopy(base))
+    value["context.properties"] = Dict{String,Any}(value["context.properties"])
     loops = value["context.properties"]["context.data-loops"]
     Set(loop["loop.name"] for loop in loops) == Set(["rtc-data-loop","source-loop","sink-loop"]) ||
         throw(ArgumentError("base core requires the maintained RTC, source and sink loops"))
-    filter!(loop -> loop["loop.name"] == "rtc-data-loop",loops)
+    loops = Any[loop for loop in loops if loop["loop.name"] == "rtc-data-loop"]
+    value["context.properties"]["context.data-loops"] = loops
+    if detector_observation
+        # Generic acquisition compares the raw default class string as well
+        # as its parsed classes. Scalar data.rt scores above the observer's
+        # empty class list; explicit names still select either loop.
+        only(loops)["loop.class"] = "data.rt"
+        push!(loops, Dict("loop.name"=>"observer-loop", "thread.name"=>"observer-loop",
+            "loop.class"=>String[], "loop.idle"=>"eventfd", "loop.rt-prio"=>83,
+            "thread.affinity"=>[14]))
+        push!(value["context.modules"], Dict("name"=>"libpipewire-module-queue", "args"=>Dict(
+            "queue.max-buffers"=>1, "queue.overflow"=>"drop-oldest", "queue.storage"=>"copy",
+            "queue.media"=>"application/ndarray",
+            "capture.props"=>Dict("node.name"=>"simulator-detector-queue-input","node.loop.name"=>"rtc-data-loop"),
+            "playback.props"=>Dict("node.name"=>"simulator-detector-queue-output",
+                "media.name"=>"detector-image", "media.class"=>"Data/Source",
+                "device.api"=>"pipewireao.queue", "node.loop.name"=>"observer-loop"))))
+    end
     return value
 end
 
@@ -711,6 +729,10 @@ end
 function export_package(args)
     output = abspath(args.output)
     !ispath(output) && !islink(output) || throw(ArgumentError("export output must be new"))
+    adapter_project = TOML.parsefile(joinpath(args.adapter_root,"Project.toml"))
+    adapter_version = tryparse(VersionNumber,get(adapter_project,"version",""))
+    adapter_version !== nothing && adapter_version >= v"0.1.2" ||
+        throw(ArgumentError("HIL export requires AdaptiveOpticsSimPipeWireHIL 0.1.2 or newer for the explicit source buffer contract"))
     args.rate_hz isa Int && 1 <= args.rate_hz <= 500 && args.frames isa Int && 1 <= args.frames <= 256 ||
         throw(ArgumentError("rate must be 1..500 Hz and finite batch 1..256 frames"))
     total = option(args,:total_exchanges,args.frames)
@@ -719,7 +741,6 @@ function export_package(args)
     wall_rate isa AbstractString || throw(ArgumentError("wall rate must be default, unpaced or an integer rate"))
     wall_rate in ("default","unpaced") || (occursin(r"^[0-9]+$",wall_rate) && tryparse(Int,wall_rate) !== nothing && 1 <= parse(Int,wall_rate) <= args.rate_hz) ||
         throw(ArgumentError("paced wall rate must be 1..model rate"))
-    total > args.frames || wall_rate == "default" || throw(ArgumentError("separate wall pacing requires sustained total"))
     args.dark_frames isa Int && 1 <= args.dark_frames <= 4096 || throw(ArgumentError("dark calibration must use 1..4096 exposures"))
     args.backend in ("cpu","cuda","amdgpu") || throw(ArgumentError("unsupported HIL backend"))
     base = realpath(args.base_package)
@@ -730,6 +751,8 @@ function export_package(args)
     !haskey(provenance,"hil") || throw(ArgumentError("base must be a recorded-input package, not a previous HIL export"))
     correction = option(args,:correction_diagnostics,false)
     correction isa Bool || throw(ArgumentError("correction diagnostics must be a Boolean"))
+    detector_observation = option(args,:detector_observation,false)
+    detector_observation isa Bool || throw(ArgumentError("detector observation must be a Boolean"))
     operational = option(args,:operational_calibration)
     if operational !== nothing
         provenance["profile"] == "classic" && args.backend == "cpu" && provenance["engine"] in ("fgn","jfg") ||
@@ -810,7 +833,9 @@ function export_package(args)
                       "--rate",string(args.rate_hz),"--exposure-ns",string(exposure),"--frames",string(args.frames),
                       "--remote","@REMOTE@","--output","@RUNTIME@/simulator-result.json", "--control-node","simulator-wfs"]
         correction && append!(argv,["--correction-diagnostics","true"])
-        total > args.frames && append!(argv,["--total-exchanges",string(total),"--wall-rate",wall_rate])
+        detector_observation && append!(argv,["--detector-observation","true"])
+        (total > args.frames || wall_rate != "default") &&
+            append!(argv,["--total-exchanges",string(total),"--wall-rate",wall_rate])
         for (option,marker) in (("--prepared-event","prepared"),("--connect-request","connect"),("--connect-reply","connected"),
                                 ("--quit-request","quit"))
             append!(argv,[option,"@RUNTIME@/"*markers[marker]])
@@ -819,11 +844,14 @@ function export_package(args)
             "environment"=>simulator_environment(args.backend),"control-protocol"=>"pipewireao.source-control/1",
             "control-node"=>"simulator-wfs"),markers))
         specification["source-owner"] = "simulator"
+        detector_observation && (specification["detector-observation"] = true)
         specification["name"] = "revolt-$instrument-$(provenance["engine"])-hil-$(args.backend)"
         specification["placement"]["simulator"] = Dict("cpus"=>[6,14],"leader-cpu"=>6,"rt-priority"=>0,"threads"=>Any[],"locked-bytes"=>0)
         specification["placement"]["core"] = ScienceExport.placement([2,14],provenance["engine"] == "fgn" ? [2] : Int[])
+        detector_observation && push!(specification["placement"]["core"]["threads"],
+            Dict("cpus"=>[14], "policy"=>"fifo", "priority"=>83, "count"=>1, "name"=>"observer-loop"))
         core_path = joinpath(package,specification["core"])
-        ScienceExport.write_spa_config(core_path,hil_core(Deployment.decode(core_path,args.pipewire_prefix)))
+        ScienceExport.write_spa_config(core_path,hil_core(Deployment.decode(core_path,args.pipewire_prefix);detector_observation))
         specification["client"]["simulator"] = "client-simulator.conf.in"
         ScienceExport.copy_file(joinpath(ScienceExport.resource_root(),"templates/client-simulator.conf.in"),joinpath(package,"client-simulator.conf.in"))
         provenance["hil"] = Dict{String,Any}("backend"=>args.backend,"wall_rate_hz"=>(wall_rate == "default" ? args.rate_hz : wall_rate == "unpaced" ? 0 : parse(Int,wall_rate)),"model_rate_hz"=>args.rate_hz,
@@ -841,6 +869,7 @@ function export_package(args)
             (operational === nothing ? "simulated_calibration" : "operational_calibration")=>calibration,
             "scientific_convergence"=>"not established by deployment exchange")
         correction && (provenance["hil"]["correction_diagnostics"] = "direct public OPD witness; source diagnostic overhead excludes cadence qualification")
+        detector_observation && (provenance["hil"]["detector_observation"] = "raw transported ADC behind capacity-one copy/drop-oldest queue; optional observer")
         provenance["runtime_requires"] = ["selected PipeWireAO prefix","Julia resolved HIL environment","selected simulator device"]
         Common.write_json(joinpath(package,"provenance.json"),provenance)
         specification["artifacts"] = _package_artifacts(package)
@@ -854,9 +883,11 @@ end
 function main(argv=ARGS)
     options = Common.cli_arguments(argv;required=["output","base-package","aoc-root","aos-root","plant-root",
         "adapter-root","pipewireao-jl-root","calibration-algorithms-root"],flags=["correction-diagnostics"],
-        allowed=["operational-calibration","pipewire-prefix","total-exchanges","wall-rate"],defaults=(backend="cpu",rate_hz="10",frames="16",dark_frames="256"))
+        allowed=["operational-calibration","pipewire-prefix","total-exchanges","wall-rate","detector-observation"],defaults=(backend="cpu",rate_hz="10",frames="16",dark_frames="256"))
+    observation = hasproperty(options,:detector_observation) ? options.detector_observation : "false"
+    observation in ("true","false") || throw(ArgumentError("--detector-observation must be true or false"))
     args = merge(options,(rate_hz=parse(Int,options.rate_hz),frames=parse(Int,options.frames),
-                          dark_frames=parse(Int,options.dark_frames),
+                          dark_frames=parse(Int,options.dark_frames),detector_observation=observation == "true",
                           total_exchanges=hasproperty(options,:total_exchanges) ? parse(Int,options.total_exchanges) : parse(Int,options.frames),
                           wall_rate=hasproperty(options,:wall_rate) ? options.wall_rate : "default",
                           pipewire_prefix=hasproperty(options,:pipewire_prefix) ? options.pipewire_prefix : "/opt/pipewireao"))

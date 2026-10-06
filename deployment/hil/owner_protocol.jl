@@ -19,8 +19,8 @@ const LEGACY_CONTROL_OPTIONS = (
 
 """Parse the complete-frame simulator command line without loading a plant."""
 function parse_options(arguments; native_lifecycle::Bool=false)
-    values = Dict("backend" => "cpu", "frames" => "16", "transport" => "scientific", "correction-diagnostics" => "false", "total-exchanges" => "0", "wall-rate" => "default", "control-node" => "simulator-wfs")
-    allowed = Set((LEGACY_REQUIRED_OPTIONS..., "backend", "frames", "transport", "controller-node", "controller-pid", "controller-instance", "correction-diagnostics", "total-exchanges", "wall-rate", "control-node", "control-instance", "control-request", "control-reply"))
+    values = Dict("backend" => "cpu", "frames" => "16", "transport" => "scientific", "correction-diagnostics" => "false", "detector-observation" => "false", "total-exchanges" => "0", "wall-rate" => "default", "control-node" => "simulator-wfs")
+    allowed = Set((LEGACY_REQUIRED_OPTIONS..., "backend", "frames", "transport", "controller-node", "controller-pid", "controller-instance", "correction-diagnostics", "detector-observation", "total-exchanges", "wall-rate", "control-node", "control-instance", "control-request", "control-reply"))
     seen = Set{String}()
     iseven(length(arguments)) || throw(ArgumentError("each option requires one value"))
     for index in 1:2:length(arguments)
@@ -52,6 +52,9 @@ function parse_options(arguments; native_lifecycle::Bool=false)
     values["transport"] in ("scientific", "heart") || throw(ArgumentError("--transport must be scientific or heart"))
     values["correction-diagnostics"] in ("true", "false") || throw(ArgumentError("--correction-diagnostics must be true or false"))
     correction_diagnostics = values["correction-diagnostics"] == "true"
+    values["detector-observation"] in ("true", "false") || throw(ArgumentError("--detector-observation must be true or false"))
+    detector_observation = values["detector-observation"] == "true"
+    detector_observation && values["transport"] != "scientific" && throw(ArgumentError("detector observation requires scientific transport"))
     controller_keys = ("controller-node", "controller-pid", "controller-instance")
     present = count(key -> haskey(values, key), controller_keys)
     expected = values["transport"] == "heart" ? 3 : 0
@@ -70,7 +73,6 @@ function parse_options(arguments; native_lifecycle::Bool=false)
     wall_rate <= rate || throw(ArgumentError("wall rate must not exceed model rate"))
     sustained = total_exchanges != frames || wall_rate != rate
     sustained && values["transport"] != "scientific" && throw(ArgumentError("sustained mode requires scientific transport"))
-    sustained && total_exchanges <= frames && throw(ArgumentError("sustained mode requires total exchanges greater than retained frames"))
     wall_period_ns = wall_rate == 0 ? UInt64(0) : UInt64(rounded_period(wall_rate))
     period = rounded_period(rate)
     exposure = parse_positive_integer(values["exposure-ns"], "--exposure-ns", period)
@@ -91,7 +93,7 @@ function parse_options(arguments; native_lifecycle::Bool=false)
     abspath(values["graph"]) in paths && throw(ArgumentError("plant graph must differ from marker, control and output paths"))
     return (
         profile=Symbol(values["profile"]), backend=Symbol(values["backend"]),
-        correction_diagnostics, total_exchanges, wall_rate, wall_period_ns, sustained,
+        correction_diagnostics, detector_observation, total_exchanges, wall_rate, wall_period_ns, sustained,
         transport=Symbol(values["transport"]), controller_node, controller_pid, controller_instance,
         graph=abspath(values["graph"]), rate=rate, period_ns=UInt64(period),
         exposure_ns=UInt64(exposure), frames=frames, remote=values["remote"],

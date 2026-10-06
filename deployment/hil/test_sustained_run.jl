@@ -50,8 +50,12 @@ end
         for invalid in ("0", "501", "-1", "100.5", "fast")
             @test_throws ArgumentError parse([prefix; "--wall-rate"; invalid])
         end
-        @test_throws ArgumentError parse(["--wall-rate", "unpaced"])
-        @test_throws ArgumentError parse(["--wall-rate", "100"])
+        for wall_rate in ("unpaced", "100")
+            retained = parse(["--wall-rate", wall_rate])
+            @test retained.sustained && retained.total_exchanges == retained.frames == 16
+            @test retained.period_ns == SR_PERIOD_NS && retained.exposure_ns == 1_896_000
+            @test retained.wall_period_ns == (wall_rate == "unpaced" ? 0 : 10_000_000)
+        end
         heart = ["--transport", "heart", "--controller-node", "fixture.heart",
             "--controller-pid", "123", "--controller-instance", "17"]
         @test !parse(heart).sustained
@@ -80,6 +84,30 @@ end
 function sr_observe!(run, command, frame, sequence=run.metrics.count + 1)
     return SustainedRun.observe!(run, UInt64(sequence), Int64(sequence - 1) * Int64(SR_PERIOD_NS),
         SR_PERIOD_NS, sr_timing(sequence), UInt64(200_000), command, frame)
+end
+
+@testset "all-retained finite pacing keeps bounded exchange accounting" begin
+    for total in (1, 16, 256)
+        options = (;profile=:classic, total_exchanges=total, frames=total,
+            wall_period_ns=UInt64(100_000_000))
+        run = SustainedRun.Run(options, nothing)
+        command = zeros(Float32, 277)
+        frame = zeros(UInt16, 2, 2)
+        for sequence in 1:total
+            sr_observe!(run, command, frame, sequence)
+        end
+        result = SustainedRun.report(run)
+        @test result.metrics.completed && result.metrics.count == total
+        @test result.metrics.warmup_count == total && result.metrics.measured_count == 0
+        @test result.metrics.model_period_nanoseconds == SR_PERIOD_NS
+        @test result.metrics.wall_period_nanoseconds == 100_000_000
+        @test result.metrics.source_to_command.count == result.metrics.exchange.count == 0
+        @test result.allocation === nothing && isempty(result.truth.samples)
+        @test_throws ArgumentError sr_observe!(run, command, frame, total + 1)
+        @test run.metrics.count == total
+        SustainedRun.reset!(run)
+        @test run.metrics.count == run.metrics.measured_count == 0
+    end
 end
 
 function observe_allocation(run, command, frame)

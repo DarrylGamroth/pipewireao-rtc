@@ -489,6 +489,30 @@ Verification intent (informative): run the same input sequence with no
 observer and with an observer that attaches, stalls, disconnects, and
 reattaches; compare graph results and lifecycle transitions.
 
+Selected HIL detector-view allocation (informative, selected increment):
+an opt-in deployment branch uses the existing PipeWireAO capacity-one
+`copy`/`drop-oldest` queue for complete raw detector ndarrays. The HIL owner
+prepares three source buffers before required-link admission. The deployment
+owns a passive source-to-queue link, independent of GUI attachment, and places
+queue playback on a separate observation data loop. Neither queue endpoint nor
+the optional link is a required runner object. Observation failure cannot be
+treated as a source pause/reset or session-stop request. The ordinary GUI
+rank-two viewer consumes only the queue output, without scientific overlays.
+This allocation adds no AO sample-projection or control wire contract.
+
+This deployment surface needs separate evidence from the existing recorded
+fixture: compare accepted detector/command payloads and identities with the
+branch disabled, enabled without a consumer, and with a stalled, terminated,
+and reattached consumer; remove/recreate only the optional input link; repeat
+after stopped reset; check bounded ownership, actual loop/driver placement,
+and exact cleanup. Retained pre-reset detector pixels remain last-sample data,
+not an observation of the new generation. Generic GUI pixels currently lack
+Acquisition identity; use an independent metadata-aware observer for that
+acceptance check. No latency, scientific convergence, or hardware claim follows
+from a successful view. Complete controlled-preparation CPU evidence and
+remaining default cold repeatability/GUI limits are recorded in
+[LIVE_OBSERVATION_VALIDATION.md](LIVE_OBSERVATION_VALIDATION.md).
+
 ### RTC-DEV-007 — Numerical and state equivalence
 
 For every maintained development fixture, the test harness MUST feed the same

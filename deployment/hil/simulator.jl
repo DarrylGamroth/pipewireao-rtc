@@ -423,6 +423,7 @@ function run_owner(options, plant, target)
     println("SIMULATOR_CONNECTING remote=$(options.remote)")
     flush(stdout)
     pipewire = prepare_pipewire_hil(science.boundary, configuration;
+        frame_buffers=get(options,:detector_observation,false) ? 3 : 2,
         frame_properties=SourceControl.source_properties(source_control),
         frame_params=source_control.parameters.params,
         on_frame_param_changed=SourceControl.ParameterChanged(source_control),

@@ -1485,3 +1485,28 @@ before affected installed science/allocation campaigns. The current transport
 proof is CPU software evidence and is not a hard real-time or complete deployment
 claim. See [review dispositions](NATIVE_CONTROL_MIGRATION_REVIEW.md) for the
 confirmed prerequisites and still-open implementation validation.
+
+## Live HIL detector observation increment — 2026-10-05
+
+Selected delivery baseline: canonical RTC `f3f0815`, clean HIL adapter
+`15fd37d` and compatible scientific owners documented in the validation ledger.
+The original RTC/GUI observation candidates remain preserved separately. The
+selected RTC increment applies RTC-DEV-006 to the installed Classic/Copper HIL
+detector surface; it creates no scientific overlay or DM publication contract.
+
+| Obligation | Allocation | Verification and present disposition |
+| --- | --- | --- |
+| Finite non-gating capacity | Existing PipeWireAO queue, capacity one, copy/drop-oldest; HIL source prepared with three buffers | Preparation/cardinality checks pass; installed public metadata reader uses the corrected QRA001 queue |
+| Optional lifecycle and exact ownership | Deployment-owned passive input link outside required-object monitoring | SDK identity/delta/cleanup checks and finite link-loss/replacement checks pass; retirement is permanent within one lifecycle |
+| Observer execution isolation | Explicit queue capture/playback loops and independent public reader driver | Actual loop/thread placement and supported selector checks pass; no timing-isolation claim |
+| Scientific and lifecycle equivalence | Complete 256-frame disabled, unattended, stalled, terminated and reattached cohorts, plus complete paired reset | Controlled common public FFTW wisdom cases pass; default cold whole-trajectory comparisons retain failures and remain open |
+| GUI binding | Ordinary rank-two ndarray view of declared queue output | Original candidate functional evidence retained; selected native parser/loop fixes remain read-only and unmerged in this increment |
+| Package reproducibility | Compatible committed owners and resolved, sealed task-owned exports | Source, native binary, queue module and unchanged scientific artifact identities recorded; current AOS development HEAD remains incompatible with the admitted HIL adapter |
+
+This increment does not close RTC issue #3. The previous RTC-DEV-006
+recorded-fixture ledger remains scoped to its named fixture. Source timing,
+calibration artifacts and optical model units remain owner-defined. Recorded
+wisdom is development experiment conditioning, not a production planning-policy
+change. These finite cohorts have zero post-prefix timing samples and establish
+no achieved-rate, latency, convergence or physical hardware qualification.
+See [review and validation evidence](LIVE_OBSERVATION_VALIDATION.md).

@@ -25,6 +25,13 @@ end
         @test options.profile === :classic
         @test options.backend === :cpu
         @test !options.correction_diagnostics
+        @test !options.detector_observation
+        @test Protocol.parse_options([arguments;"--detector-observation";"true"]).detector_observation
+        @test !Protocol.parse_options([arguments;"--detector-observation";"false"]).detector_observation
+        @test_throws ArgumentError Protocol.parse_options([arguments;"--detector-observation";"yes"])
+        @test_throws ArgumentError Protocol.parse_options([arguments;"--detector-observation";"true";
+            "--transport";"heart";"--controller-request";joinpath(root,"heart.request");
+            "--controller-reply";joinpath(root,"heart.reply")])
         @test Protocol.parse_options([arguments; "--correction-diagnostics"; "true"]).correction_diagnostics
         @test !Protocol.parse_options([arguments; "--correction-diagnostics"; "false"]).correction_diagnostics
         @test_throws ArgumentError Protocol.parse_options([arguments; "--correction-diagnostics"; "yes"])

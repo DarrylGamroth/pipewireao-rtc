@@ -5,6 +5,7 @@ using ..Common
 using ..Placement
 using ..ScienceExport
 import ..NativeSourceClient
+import ..ObservationBoundary
 import ..NativeRunnerClient
 import ..NativeHeartClient
 import ..NativeControlClient
@@ -136,8 +137,8 @@ end
 
 function profile(path::AbstractString, prefix::AbstractString)
     value = decode(path, prefix)
-    require(value isa AbstractDict && Set(keys(value)) in (REQUIRED_KEYS,
-        union(REQUIRED_KEYS, Set(["source-owner"]))) && get(value, "version", nothing) === 1,
+    require(value isa AbstractDict && REQUIRED_KEYS ⊆ Set(keys(value)) ⊆
+        union(REQUIRED_KEYS, Set(["source-owner","detector-observation"])) && get(value, "version", nothing) === 1,
         "expected version 1 deployment with the documented fields")
     require(value["name"] isa String && occursin(r"^[a-z0-9][a-z0-9-]{0,39}$", value["name"]),
         "deployment name must use 1..40 lowercase letters, digits or hyphens")
@@ -207,6 +208,11 @@ function profile(path::AbstractString, prefix::AbstractString)
     end
     require(source_role === nothing || source_role in (owner["role"] for owner in owners),
         "source-owner must name an existing external owner")
+    require(!haskey(value,"detector-observation") || value["detector-observation"] isa Bool,
+        "detector-observation must be a Boolean")
+    require(!get(value,"detector-observation",false) || source_role !== nothing &&
+        native_source(only(filter(owner->owner["role"] == source_role,owners))),
+        "detector observation requires an admitted native source owner")
     reserved = union(roles, Set(["control.sock", "native-control.sock", "native-prefix", "julia-depot"]))
     require(isempty(intersect(markers, reserved)), "owner markers conflict with deployment runtime paths")
     source = source_role === nothing ? nothing : only(filter(owner -> owner["role"] == source_role, owners))
@@ -379,6 +385,7 @@ mutable struct DeploymentRunner
     state_path::Union{Nothing,String}
     record::Dict{String,Any}
     heart_client::Union{Nothing,NativeControlClient.Client}
+    observation_boundary::Any
 end
 
 function owner_preparation_timeout(seconds)
@@ -398,7 +405,7 @@ function DeploymentRunner(options::NamedTuple)
         "owner_preparation_timeout_seconds" => preparation_timeout)
     DeploymentRunner(options, dirname(deployment), spec, installed_paths(options.pipewire_prefix),
         Placement.inherited_cpus(), Tuple{String,Base.Process}[], IdDict{Base.Process,Int}(), nothing, nothing, nothing,
-        nothing, nothing, nothing, owner, nothing, 0, nothing, false, false, false, nothing, record, nothing)
+        nothing, nothing, nothing, owner, nothing, 0, nothing, false, false, false, nothing, record, nothing, nothing)
 end
 
 function preflight(deployment::DeploymentRunner)
@@ -415,6 +422,8 @@ function preflight(deployment::DeploymentRunner)
         fits !== nothing && isfile(fits) || fail("recorded FITS source is missing: $fits")
     end
     dependencies = [("RTC", joinpath(deployment.package, "bin/pipewireao-rtc"))]
+    get(deployment.spec,"detector-observation",false) && push!(dependencies,
+        ("bounded detector queue module",joinpath(deployment.paths["modules"],"libpipewire-module-queue.so")))
     if deployment.source_owner === nothing
         append!(dependencies, [("FITS plugin", joinpath(deployment.paths["spa"], "fits/libspa-fits.so")),
             ("discard plugin", joinpath(deployment.paths["spa"], "discard/libspa-pipewireao-discard.so"))])
@@ -973,6 +982,7 @@ function _stop_processes(deployment, errors; source=false)
                 end
             end
         end
+        revoked && close_observation!(deployment,errors)
         # A revoked private core cannot carry a native request. Process-group
         # cleanup remains available when no live native endpoint can respond.
         if paused && deployment.runner_client !== nothing
@@ -1067,11 +1077,53 @@ function stop(deployment::DeploymentRunner)
     errors = Any[]
     try notify("STOPPING=1\nSTATUS=Stopping RTC deployment") catch error push!(errors, error) end
     _stop_processes(deployment, errors; source=deployment.source_owner !== nothing)
+    close_observation!(deployment,errors)
     if deployment.latency_io !== nothing
         try close(deployment.latency_io) catch error push!(errors, error) end
         deployment.latency_io = nothing
     end
     isempty(errors) || fail("deployment cleanup failed: $(sprint(showerror, first(errors)))")
+end
+
+function close_observation!(deployment::DeploymentRunner, errors=Any[])
+    boundary = deployment.observation_boundary
+    deployment.observation_boundary = nothing
+    boundary === nothing && return nothing
+    try close(boundary) catch failure push!(errors,failure) end
+    return nothing
+end
+
+function prepare_observation!(deployment::DeploymentRunner)
+    get(deployment.spec,"detector-observation",false) || return nothing
+    source = something(deployment.source_client)
+    try
+        deployment.observation_boundary = ObservationBoundary.connect(
+            joinpath(something(deployment.runtime),deployment.record["remote"]),
+            source.node_name,source.global_id,source.serial;
+            deadline=monotonic()+8,check=SourceHealth(deployment,false))
+        deployment.record["detector-observation"] = Dict("state"=>"available",
+            "node"=>ObservationBoundary.OUTPUT_NAME,"media"=>"detector-image")
+    catch failure
+        failure isa InterruptException && rethrow()
+        # A required-owner loss still fails normal admission. Only the optional
+        # boundary's own preparation failure is contained here.
+        check(deployment)
+        deployment.record["detector-observation"] = Dict("state"=>"unavailable","error"=>sprint(showerror,failure))
+    end
+    return nothing
+end
+
+function observe_boundary!(deployment::DeploymentRunner)
+    boundary = deployment.observation_boundary
+    boundary === nothing && return nothing
+    failure = ObservationBoundary.failure(boundary)
+    failure === nothing && return nothing
+    errors = Any[]
+    close_observation!(deployment,errors)
+    deployment.record["detector-observation"] = Dict("state"=>"unavailable","error"=>failure)
+    isempty(errors) || (deployment.record["detector-observation"]["cleanup_errors"] = sprint.(showerror,errors))
+    deployment.state_path === nothing || atomic_record(deployment.state_path,deployment.record)
+    return nothing
 end
 
 function _render(deployment, bindings)
@@ -1189,6 +1241,9 @@ function _run_locked(deployment::DeploymentRunner, base)
             deadline=monotonic() + 90, check=() -> check(deployment))
         deployment.record["runner"] = Dict("node" => runner_node, "instance" => runner_instance)
         ready = runner_admission(native_control(deployment, ["status"]), "Ready")
+        # Negotiate required links before the optional passive boundary, with
+        # source ingress still held and native runner admission preserved.
+        prepare_observation!(deployment)
         placements = Dict{String,Any}()
         for (role, process) in deployment.processes
             placements[role] = Placement.snapshot(getpid(process), deployment.spec["placement"][role])
@@ -1210,6 +1265,7 @@ function _run_locked(deployment::DeploymentRunner, base)
         notify("READY=1\nSTATUS=RTC admitted; local control available")
         while !deployment.stopping
             check(deployment)
+            observe_boundary!(deployment)
             serve_control(deployment)
         end
     catch error

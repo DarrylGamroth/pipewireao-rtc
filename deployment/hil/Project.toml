@@ -11,7 +11,7 @@ TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 
 [compat]
 AdaptiveOpticsSim = "0.1"
-AdaptiveOpticsSimPipeWireHIL = "0.1.1"
+AdaptiveOpticsSimPipeWireHIL = "0.1.2"
 FilterGraphAlgorithms = "0.5.5"
 JSON3 = "1"
 PipeWireAO = "0.6.16"

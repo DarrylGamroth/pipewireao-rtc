@@ -40,7 +40,7 @@ function coordination_runner(directory, client; source=nothing, broker=nothing)
         Dict{String,String}(), Set{Int}(), Tuple{String,Base.Process}[],
         IdDict{Base.Process,Int}(), directory, nothing, client, broker, nothing,
         nothing, source, nothing, 0, source === nothing ? nothing : "running",
-        false, false, false, nothing, record, nothing)
+        false, false, false, nothing, record, nothing, nothing)
 end
 
 @testset "invalid runner commands do not terminate or pause a deployment" begin

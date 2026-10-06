@@ -76,7 +76,7 @@ function source_status_failure_fixture(mode)
             runner = D.DeploymentRunner((;), directory, Dict{String,Any}("owners" => [owner]),
                 Dict{String,String}(), Set{Int}(), children, pids, directory,
                 public_path, MockRunnerClient(native_events), broker, nothing, nothing, owner, nothing, 0, "running",
-                false, false, false, joinpath(directory, "state.json"), record, nothing)
+                false, false, false, joinpath(directory, "state.json"), record, nothing, nothing)
             if mode == :malformed
                 # Valid JSON with a matching ID/operation, but an invalid state.
                 D.atomic_record(joinpath(directory, "source.reply"), Dict(
@@ -188,6 +188,15 @@ end
         path = joinpath(directory, "deployment.conf")
         write(path, JSON3.write(spec))
         @test D.profile(path, "/unused") == spec
+        spec["detector-observation"] = false
+        write(path,JSON3.write(spec))
+        @test D.profile(path,"/unused") == spec
+        for invalid in ("false",0,nothing,true)
+            spec["detector-observation"] = invalid
+            write(path,JSON3.write(spec))
+            @test_throws D.DeploymentError D.profile(path,"/unused")
+        end
+        delete!(spec,"detector-observation")
         spec["placement"]["rtc"]["cpus"] = [0, 2]
         write(path, JSON3.write(spec))
         @test_throws P.PlacementError D.profile(path, "/unused")
@@ -495,7 +504,7 @@ runner = D.DeploymentRunner((;), runtime, spec, Dict{String,String}(), Set([cpu]
     Tuple{String,Base.Process}[], IdDict{Base.Process,Int}(), runtime,
     nothing, nothing, nothing, nothing, nothing, nothing, nothing, 0, nothing,
     false, false, false, nothing,
-    Dict{String,Any}("processes" => Dict{String,Any}()), nothing)
+    Dict{String,Any}("processes" => Dict{String,Any}()), nothing, nothing)
 child = D.spawn(runner, "core", ["sh", "-c", "printf supervised-child-diagnostic >&2"],
     Dict{String,String}(ENV))
 wait(child)
@@ -543,7 +552,7 @@ end
             Dict{String,String}(), Set{Int}(), Tuple{String,Base.Process}[],
             IdDict{Base.Process,Int}(), directory, nothing, nothing, nothing,
             nothing, nothing, owner, nothing, 0, "running", false, false, false,
-            nothing, record, nothing)
+            nothing, record, nothing, nothing)
         @test_throws D.DeploymentError D.source_control(runner, "pause")
         @test runner.source_client === nothing
         @test runner.source_id == 0

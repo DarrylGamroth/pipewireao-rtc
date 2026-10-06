@@ -27,6 +27,36 @@ const HIL = ExportFixture.HILExport
 const Calibration = ExportFixture.CalibrationExport
 const Heart = ExportFixture.HeartExport
 
+@testset "optional detector core placement and queue configuration" begin
+    base = Dict("context.properties"=>Dict("context.data-loops"=>[
+        Dict("loop.name"=>name) for name in ("rtc-data-loop","source-loop","sink-loop")]),
+        "context.modules"=>Any[])
+    original = deepcopy(base)
+    plain = HIL.hil_core(base)
+    @test only(plain["context.properties"]["context.data-loops"])["loop.name"] == "rtc-data-loop"
+    @test isempty(plain["context.modules"])
+    observed = HIL.hil_core(base;detector_observation=true)
+    loops = observed["context.properties"]["context.data-loops"]
+    @test Set(loop["loop.name"] for loop in loops) == Set(["rtc-data-loop","observer-loop"])
+    playback_loop = only(filter(loop->loop["loop.name"] == "observer-loop",loops))
+    @test isempty(playback_loop["loop.class"])
+    @test only(filter(loop->loop["loop.name"] == "rtc-data-loop",loops))["loop.class"] == "data.rt"
+    @test playback_loop["thread.name"] == "observer-loop"
+    @test all(ncodeunits(loop["loop.name"]) <= 15 for loop in loops)
+    @test playback_loop["thread.affinity"] == [14]
+    @test playback_loop["loop.rt-prio"] == 83 && playback_loop["loop.idle"] == "eventfd"
+    queue = only(observed["context.modules"])
+    @test queue["name"] == "libpipewire-module-queue"
+    args = queue["args"]
+    @test args["queue.max-buffers"] == 1 && args["queue.overflow"] == "drop-oldest" && args["queue.storage"] == "copy"
+    @test args["queue.media"] == "application/ndarray"
+    @test args["capture.props"] == Dict("node.name"=>"simulator-detector-queue-input","node.loop.name"=>"rtc-data-loop")
+    @test args["playback.props"] == Dict("node.name"=>"simulator-detector-queue-output",
+        "media.name"=>"detector-image","media.class"=>"Data/Source","device.api"=>"pipewireao.queue","node.loop.name"=>"observer-loop")
+    @test !any(haskey(args[key],"pipewireao.queue.id") || haskey(args[key],"node.group") for key in ("capture.props","playback.props"))
+    @test base == original
+end
+
 @testset "native SPA config writer preserves data and separates object arrays" begin
     mktempdir() do root
         modules = [Dict("name"=>"libpipewire-module-rt", "args"=>Dict("rt.prio"=>83)),
@@ -282,7 +312,7 @@ end
         ExportFixture.Common.write_json(joinpath(base, "provenance.json"),
             Dict("mode"=>"frame", "profile"=>"classic", "engine"=>"fgn", "parameters"=>Any[]))
         core = Dict("context.properties"=>Dict("context.data-loops"=>[
-            Dict("loop.name"=>name) for name in ("rtc-data-loop", "source-loop", "sink-loop")]))
+            Dict("loop.name"=>name) for name in ("rtc-data-loop", "source-loop", "sink-loop")]),"context.modules"=>Any[])
         ExportFixture.Common.write_json(joinpath(base, "core.conf.in"), core)
         specification = Dict("owners"=>Any[], "core"=>"core.conf.in",
             "placement"=>Dict{String,Any}(), "client"=>Dict{String,Any}())
@@ -292,7 +322,7 @@ end
                      "PipeWireAO", "FilterGraphAlgorithms", "REVOLTClassicSim")
             path = joinpath(root, "sources", name)
             mkpath(joinpath(path, "src"))
-            write(joinpath(path, "Project.toml"), "name = \"$name\"\n")
+            write(joinpath(path, "Project.toml"), "name = \"$name\"\nversion = \"0.1.2\"\n")
             write(joinpath(path, "src", name * ".jl"), "module $name end\n")
             packages[name] = path
         end
@@ -314,6 +344,12 @@ end
             aos_root=packages["AdaptiveOpticsSim"], aoc_root=packages["AdaptiveOpticsCalibration"],
             adapter_root=packages["AdaptiveOpticsSimPipeWireHIL"], pipewireao_jl_root=packages["PipeWireAO"],
             calibration_algorithms_root=packages["FilterGraphAlgorithms"], plant_root=plant)
+        adapter_project = joinpath(packages["AdaptiveOpticsSimPipeWireHIL"],"Project.toml")
+        project = read(adapter_project,String)
+        write(adapter_project,replace(project,"0.1.2"=>"0.1.1"))
+        @test_throws ArgumentError HIL.export_package(arguments)
+        @test !ispath(arguments.output)
+        write(adapter_project,project)
         argument(argv, option) = argv[only(findall(==(option), argv)) + 1]
         for (wall_rate, effective) in (("default", 500), ("100", 100), ("unpaced", 0))
             output = joinpath(root, "export-" * wall_rate)
@@ -341,13 +377,35 @@ end
         @test metadata["wall_rate_hz"] == metadata["model_rate_hz"] == 500
         @test metadata["frames"] == metadata["total_exchanges"] == 16
         @test !("--total-exchanges" in owner["argv"]) && !("--wall-rate" in owner["argv"])
+        @test !("--detector-observation" in owner["argv"])
+        observed = joinpath(root,"observed")
+        HIL.export_package(merge(arguments,(;output=observed,detector_observation=true)))
+        deployment = ExportFixture.Common.read_json(joinpath(observed,"deployment.conf"))
+        @test deployment["detector-observation"] === true
+        owner = only(deployment["owners"])
+        @test argument(owner["argv"],"--detector-observation") == "true"
+        @test only(filter(thread->get(thread,"name",nothing) == "observer-loop",deployment["placement"]["core"]["threads"]))["cpus"] == [14]
+        @test ExportFixture.Common.read_json(joinpath(observed,"session.conf.in")) == ExportFixture.Common.read_json(joinpath(finite,"session.conf.in"))
+        for invalid in ("true",1,nothing)
+            @test_throws ArgumentError HIL.export_package(merge(arguments,(;detector_observation=invalid)))
+        end
         for total in (0, 255, 65537, true, 1024.0)
             @test_throws ArgumentError HIL.export_package(merge(arguments, (; total_exchanges=total)))
         end
         for rate in ("0", "501", "-1", "100.5", "fast", "999999999999999999999999", 100, true)
             @test_throws ArgumentError HIL.export_package(merge(arguments, (; wall_rate=rate)))
         end
-        @test_throws ArgumentError HIL.export_package(merge(arguments, (; total_exchanges=256, wall_rate="unpaced")))
+        for wall_rate in ("10", "unpaced")
+            output = joinpath(root, "all-retained-" * wall_rate)
+            HIL.export_package(merge(arguments, (; output, total_exchanges=256, wall_rate)))
+            metadata = ExportFixture.Common.read_json(joinpath(output, "provenance.json"))["hil"]
+            @test metadata["frames"] == metadata["total_exchanges"] == 256
+            @test metadata["model_rate_hz"] == 500
+            @test metadata["wall_rate_hz"] == (wall_rate == "10" ? 10 : 0)
+            owner = only(ExportFixture.Common.read_json(joinpath(output, "deployment.conf"))["owners"])
+            @test argument(owner["argv"], "--total-exchanges") == "256"
+            @test argument(owner["argv"], "--wall-rate") == wall_rate
+        end
         @test_throws ArgumentError HIL.export_package(merge(arguments, (; rate_hz=501)))
         @test !ispath(arguments.output)
     end
