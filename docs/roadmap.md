@@ -31,19 +31,48 @@ numerical, allocation and rate/latency qualification remain separate.
 | Native calibration consumers | Startup's positional-timeout constructor defect is fixed in both RTC-owned wrappers (18 assertions). The dim Classic fixture's quality-invalid Collect remains preserved; Capture confirms flux below the sealed threshold. Fresh Classic FGN Collect/Capture using the existing recipe's lamp magnitude pass functional/lifecycle/cleanup gates. Collect has 69 quality-valid exposures; Capture's selected flux exceeds the sealed threshold by at least 4.9×. Neither run saturates the ADC. Seed, thresholds and all other scientific settings are unchanged. Other planned consumers remain open; earlier scientific matrix evidence retains its own scope. | [Consumer matrix](NATIVE_CALIBRATION_CONSUMER_MATRIX.md), [Classic diagnosis and fixture results](validation/copper-main-20261006/README.md#declared-illumination-fixture-and-collectcapture-results) |
 | Progressive throughput | JFG source/load characterization is on JFG main. Exact admitted-work accounting passed; the sustained 500 Hz strict offered-delivery trial failed with one whole-frame rejection. No target-rate claim follows. | JFG `docs/RTC_CONNECTED_LOAD_VALIDATION.md` and its independent review |
 
+### Reuse completed evidence
+
+Earlier passes remain completed within their recorded source/configuration
+boundaries:
+
+- [All eight FGN/JFG installed frame/row profiles](DEPLOYMENT_VALIDATION.md#final-installed-profile-checks)
+  passed command delivery, placement, reset and cleanup.
+- [Classic and Copper HEART foreground/user-service checks](HEART_HIL_VALIDATION.md)
+  passed their recorded lifecycle and finite exchange gates.
+- [Copper calibration comparisons](CALIBRATION_COMPLETION_PLAN.md#progress)
+  include byte-identical FGN/JFG zonal and Hadamard matrices and response
+  documents. [HEART calibration and correction](HEART_CALIBRATION_ADAPTER.md)
+  also have completed, scoped scientific results.
+- [Native foreground FGN/JFG checks](NATIVE_FINAL_FOREGROUND_VALIDATION.md)
+  already pass two 512-exchange windows, reset, simulator heap/GC counters and
+  cleanup for all four instrument/engine combinations.
+
+The subsequent native-control migration changes discovery/bootstrap, lifecycle
+requests and live report authority. A pending check of those new boundaries is
+not an unimplemented algorithm or a withdrawal of prior scientific evidence.
+For each remaining clause, identify the existing receipt, the relevant changed
+source/configuration and the smallest missing check before executing it. A new
+revision/hash or documentation edit alone does not require a full replay.
+Reuse unchanged evidence; do not reacquire interaction matrices or repeat full
+calibration campaigns solely to validate control transport.
+
 ### Remaining order and acceptance
 
-1. Continue the other Collect/Capture and correction consumers. Reuse the fresh
-   Classic FGN functional results only within their declared scope. Keep the dim
+1. Check the new native-control boundary for the remaining short Collect/Capture
+   consumers and retained correction fixtures. Earlier calibration/correction
+   results above remain scoped passes. Reuse the fresh Classic FGN functional
+   results within their declared scope. Keep the dim
    fixture's quality rejection and captured flux/validity evidence; do not lower
    thresholds or mask additional
    ROIs to relabel the failed cohort as accepted.
 2. Reuse completed Copper observation/lifecycle and simulator heap checks while
    their dependencies/configuration remain unchanged. Separate JFG allocation
    and remaining installed profiles are not covered by simulator counters.
-3. Finish the selected unchanged-HEART and Classic/Copper × FGN/JFG/HEART
-   foreground/service matrix and operator adoption gates. Existing valid
-   clause-specific results may be reused; omitted profiles remain explicit.
+3. Reconcile existing foreground/service receipts against the selected
+   Classic/Copper × FGN/JFG/unchanged HEART matrix and operator adoption clauses.
+   Complete only missing or affected native-control checks. Reuse unchanged
+   clause-specific results; omitted profiles remain explicit.
 4. Complete SDK registration/release and final inventory/source review. Continue
    CPU progressive performance work after functional installed gates; CUDA/HIP
    RTC executor investigation remains a separate deferred JFG issue.

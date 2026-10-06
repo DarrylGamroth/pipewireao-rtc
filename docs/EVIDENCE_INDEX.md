@@ -15,9 +15,10 @@ gates. It does not declare deployment or scientific qualification complete.
 [Installed Copper qualification, 2026-10-06](validation/copper-main-20261006/README.md)
 records refreshed main-runtime/SDK detector and DM trajectories, observer
 death/replacement and stall, simulator Julia heap counters and independent
-review. It also records the separate fixed Classic calibration startup defect
-and the subsequent unresolved Collect failure. No maximum-rate or optical-truth
-claim follows from these checks.
+review. It also records the fixed Classic calibration startup defect, the dim
+fixture's preserved Collect failure, and passed Collect/Capture with the
+recorded recipe's illumination. No maximum-rate or optical-truth claim follows
+from these checks.
 
 The maintained baseline starts with one non-actuating, complete-frame
 FGN/PipeWireAO development graph, then extends the same runner into a
