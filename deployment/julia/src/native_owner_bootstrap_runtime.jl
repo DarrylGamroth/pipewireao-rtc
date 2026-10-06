@@ -93,14 +93,21 @@ end
 """Cold ingress hint, including Core error."""
 @inline has_pending(runtime::Transport) = runtime.wake[]
 
-function poll!(runtime::Transport)
-    runtime.wake[] = false
-    return Endpoint.poll!(runtime.endpoint)
-end
+poll!(runtime::Transport) = Endpoint.poll!(runtime.endpoint)
+take!(runtime::Transport) = Endpoint.take!(runtime.endpoint)
 
-function take!(runtime::Transport)
-    runtime.wake[] = false
-    return Endpoint.take!(runtime.endpoint)
+"Check quiet transport health without registry traversal; consume only the old wake."
+function _poll_ready!(runtime::Transport)
+    wake = Base.Threads.atomic_xchg!(runtime.wake, false)
+    pending = with_thread_loop_lock(runtime.loop) do _
+        Endpoint.operational(runtime.endpoint)
+        runtime.endpoint.pending !== nothing
+    end
+    if wake || pending
+        poll!(runtime)
+        return true
+    end
+    return false
 end
 function lifecycle!(runtime::Transport, lifecycle::Codec.Lifecycle)
     Endpoint.state!(runtime.endpoint, lifecycle)
@@ -331,9 +338,14 @@ function _ready(runtime::Runtime)
         runtime.connect_done || (runtime.hooks !== nothing && Base.invokelatest(runtime.hooks.ready))
     end
 end
+struct Facts
+    prepared::Bool
+    finished::Bool
+    error::Union{Nothing,Exception}
+end
 function _facts(runtime::Runtime)
     lock(runtime.lock) do
-        (prepared=runtime.prepare_done, finished=runtime.main_finished, error=runtime.main_error)
+        Facts(runtime.prepare_done, runtime.main_finished, runtime.main_error)
     end
 end
 function _apply!(runtime::Runtime, ticket, ::Codec.Command{:status}, lifecycle)
@@ -412,7 +424,7 @@ function serve!(runtime::Runtime)
     lifecycle = Codec.Preparing
     try
         while true
-            Endpoint.poll!(transport.endpoint)
+            ingress = _poll_ready!(transport)
             facts = _facts(runtime)
             if facts.error !== nothing && lifecycle !== Codec.Fault
                 lifecycle = Codec.Fault
@@ -421,7 +433,7 @@ function serve!(runtime::Runtime)
                 lifecycle = Codec.Prepared
                 lifecycle!(transport, lifecycle)
             end
-            if active === nothing
+            if active === nothing && ingress
                 ticket = take!(transport)
                 ticket === nothing || (active = _apply!(runtime, ticket, ticket.command, lifecycle))
             end

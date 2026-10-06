@@ -148,3 +148,52 @@ taskset -c 9 julia --startup-file=no --project=deployment/julia -e 'using PipeWi
 ```
 
 The strict descriptor suite contributes 12 assertions; the split JFG wrapper suite contributes 18. Earlier `exporters-fixture-error.log` retains a test-only dictionary-pair sorting error corrected by selecting `by=first`; no production remediation was inferred from it. Temporary revision fixtures emit existing `git` diagnostics for paths outside a repository; all final test summaries pass and the process exits zero.
+
+## BOOT-R001 allocation remediation
+
+The independent review established continuous quiet-monitor allocation. The
+unchanged GC-enabled private-core oracle reproduced it locally on CPU15:
+baseline zero, quiet Connected 500 ms windows 1,714,944 and 1,773,408 bytes.
+Suppressing registry traversal alone reduced this to about 4.4 KB per window,
+which still failed the zero-byte requirement. Profile.Allocs attributed the
+remaining per-cycle allocations to dynamically constructed facts (32 bytes)
+and the public SDK filter-state error-pointer reference (16 bytes). A concrete
+`Facts` record makes the facts read allocation free. The paired SDK remedy is
+PipeWireAO commit `6e4e1ee`; its public getter retains callback/closed/native-error
+checks and queries healthy state without allocating error-output scratch.
+
+The monitor now atomically consumes the previous wake with `atomic_xchg!`.
+Neither `poll!` nor `take!` clears a later signal. Every duty cycle still checks
+endpoint health and pending state under the native ThreadLoop lock and reads
+main facts. Registry poll/take runs only for a consumed wake or pending ticket.
+Accepted Connect/Quit retains `Endpoint.check_ticket` on every cycle, including
+expiry/removal without new ingress. Core errors, registry additions/removals,
+controller-info/revocation and accepted/negative publications produce wakes
+through the existing callbacks/publisher. A callback after the atomic exchange
+leaves its signal for the next cycle; an already-staged ticket independently
+forces work through the locked pending check. Fault cleanup and terminal sync
+budgets are unchanged.
+
+With both remedies, the original reviewer oracle observes **zero bytes and
+zero pool allocations** in both quiet Connected 500 ms windows, matching its
+zero baseline. Direct cold `Endpoint.poll!` still allocates 9,712 bytes; deliberate
+cold control work is not suppressed or relabelled as quiet operation.
+
+| Focused software verification | Result | Scope |
+| --- | --- | --- |
+| Actual quiet monitor regression | 12/12 | Same GC-enabled whole-process windows, wake preservation across poll/take, zero direct quiet/facts reads, and a reported health failure with no wake. |
+| Existing actual private-core lifecycle | 49/49 | Previous 47 assertions plus staged pending-ticket checks with a consumed hint; freshness, foreign expiry neutrality, busy, original-thread effect, accepted deadline/removal, Fault, cleanup and flush. |
+| Actual external JFG SDK | 7/7 | Existing public construction/connect/run/quit and original-thread close seams, zero SCI frames. |
+| SDK state getter | 10/10 plus existing filter 143/143 | Cache-only original-getter reversal fails the unchanged zero test (9 pass / 1 fail; 16,000 bytes per 1,000 healthy queries); corrected getter preserves callback identity, native error code/detail and closure. |
+
+Evidence and exact scripts are retained in
+`~/.cache/rtc-native-owner-bootstrap-remedy-20261006/`: `idle-before.log`,
+`idle-after-final.log`, `idle_diagnostic.jl`, `idle-facts-diagnostic.log`,
+`run_actual_proofs.jl`, `actual-runtime-final.log`, and the SDK proof/logs.
+The proof selects the fixed source SDK explicitly; the deployment registry
+version 0.6.16 still has the old getter. The existing deployment Manifest was
+copied into the ignored SDK Manifest to use installed JLL +19; no dependency
+resolution/download occurred. Initial standalone fixture invocations lacked
+full-suite helper/module setup and were corrected; they establish no production
+failure. Independent review and installed inclusive scientific/allocation and
+measured placement qualification remain required.

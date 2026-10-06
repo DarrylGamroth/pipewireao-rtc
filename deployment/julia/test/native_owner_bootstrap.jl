@@ -50,6 +50,13 @@ function bootstrap_proof(remote, directory, daemon)
                 error
             end
             main_gate(Cuint(200_000))
+            # A staged ticket requires discovery/admission work even if its
+            # publication hint has already been consumed by another duty cycle.
+            with_thread_loop_lock(runtime.transport.loop) do _
+                @test runtime.transport.endpoint.pending !== nothing
+                Base.Threads.atomic_xchg!(runtime.transport.wake,false)
+            end
+            @test R._poll_ready!(runtime.transport)
         finally
             unlock(runtime.lock)
         end
