@@ -171,6 +171,9 @@ The [HEART profile](NATIVE_HEART_CONTROL.md),
 [independent review](NATIVE_HEART_REVIEW.md) record wrapper preparation,
 connection, reset, health and shutdown migration separately from pending
 installed HIL caller qualification.
+The [acquisition lifecycle codec contract](NATIVE_ACQUISITION_LIFECYCLE_CONTROL.md)
+records the bounded calibration and correction phase D foundation; owner
+integration remains pending.
 The simulator source migration
 is complete; remaining native endpoints are implementation work, not implied
 by the proof or contract.
