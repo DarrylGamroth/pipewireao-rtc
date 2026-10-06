@@ -139,3 +139,42 @@ required-loss, controller-removal and true second-request-busy checks.
 **Disposition:** reported before production remediation; primary owns the
 minimal design selection. A post-monitor deadline re-read alone establishes
 effect safety, not the already-blocked monitor's liveness bound.
+
+## Initial concrete remediation review
+
+The primary supplied an uncommitted four-file repair on RTC `635990f`:
+one pending request is admitted during monitoring; production callback admission
+shortens an owner-thread deadline Cell; roundtrip waits re-read the cap and act
+on false wait returns; monitoring re-reads pending deadline before applying its
+observation. Original duplicate/occupied/controller/worker guards and terminal
+publication order remain. This addresses the identified entry-snapshot and
+ignored-wait problems, subject to the nested-scope issue below. No reviewer
+build or test execution accompanied this source pass.
+
+### RUNNER-MAINT-R003 — Nested lexical minimum can hide a callback deadline
+
+**Severity:** high for the proposed deadline guarantee. **Confidence:** high.
+**Classification:** derived directly from the proposed Cell transitions;
+not an observed installed failure. **Affected:** draft `DeadlineGuard::drop`
+and `control_deadline_limiter` in `src/live.rs`.
+
+The initial repair detects a callback reduction only when the current deadline
+is earlier than the deadline installed by that lexical guard. Consider an outer
+five-second scope, a nested 100 ms lexical scope, and a newly admitted request
+whose deadline is 250 ms. The limiter stores `min(100 ms,250 ms)`, leaving the
+Cell unchanged. Inner Drop sees no reduction and restores the outer five-second
+deadline, losing the admitted request's 250 ms cap. Equal callback/inner
+deadlines have the same ambiguity. The minimum alone does not retain enough
+information to distinguish lexical limits from callback admission limits.
+
+**Proposed remediation:** retain callback/admission cap separately, or retain
+an equivalent requested deadline and change identity, so a cap hidden by an
+earlier lexical deadline survives restoration to its parent. Clear the
+admission cap when the outermost operation scope ends; it must not leak into
+later unrelated operations. **Required validation:** hidden and equal callback
+caps, tighter callback cap, ordinary lexical restoration, unwind/outermost
+cleanup, and no cap changes for rejected or duplicate admissions. Preserve the
+actual newly-arriving-during-blocked-monitor timeout fixture.
+**Disposition:** reported to primary immediately during precommit review;
+source remediation remains primary-owned and unaccepted until this ambiguity
+is addressed.
