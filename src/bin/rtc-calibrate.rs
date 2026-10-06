@@ -19,6 +19,8 @@ use std::time::{Duration, Instant};
 const MAX_PLAN_BYTES: usize = 16 * 1024 * 1024;
 const MAX_EVIDENCE_BYTES: usize = 64 * 1024 * 1024;
 const EVIDENCE_ERROR_RESERVE: usize = 256;
+const EVIDENCE_RECORD_CHARGE: usize = 8192;
+const EVIDENCE_EXPOSURE_CHARGE: usize = 2048;
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -243,7 +245,7 @@ fn action_charge(action: &CalibrationAction) -> usize {
         }
         _ => 0,
     };
-    1024 + figure * 64
+    EVIDENCE_RECORD_CHARGE + figure * 64
 }
 
 fn completion_charge(completion: &CalibrationCompletion) -> usize {
@@ -255,9 +257,9 @@ fn completion_charge(completion: &CalibrationCompletion) -> usize {
         ) => (figure.len(), 0),
         _ => (0, 0),
     };
-    1024_usize
+    EVIDENCE_RECORD_CHARGE
         .saturating_add(values.saturating_mul(64))
-        .saturating_add(exposures.saturating_mul(1024))
+        .saturating_add(exposures.saturating_mul(EVIDENCE_EXPOSURE_CHARGE))
 }
 
 /// Cold-side memory journal, written to JSONL after acquisition. The native
@@ -297,7 +299,7 @@ impl EvidenceJournal {
             .open(path)
             .map_err(|e| format!("cannot create evidence file: {e}"))?;
         let header = format!(
-            "{{\"event\":\"header\",\"version\":1,\"probe_count\":{probes},\"max_bytes\":{limit}}}\n"
+            "{{\"event\":\"header\",\"version\":1,\"probe_count\":{probes},\"max_charged_bytes\":{limit}}}\n"
         );
         file.write_all(header.as_bytes())
             .and_then(|()| file.flush())
@@ -315,8 +317,9 @@ impl EvidenceJournal {
         if self.error.is_some() {
             return;
         }
-        // Reserve for decoded scalars, JSON text and Value allocation without
-        // serializing or writing on the endpoint control path.
+        // Charge nested JSON objects and construction temporaries before
+        // retaining records. This is a conservative budget, not measured RSS
+        // or an allocator-independent heap limit. No file I/O occurs here.
         if let Some(next) = self
             .retained
             .checked_add(charge)
@@ -400,19 +403,21 @@ impl<E: CalibrationEndpoint> CalibrationEndpoint for EvidenceEndpoint<E> {
             };
         } else if let Err(failure) = &result {
             self.journal.record(
-                1024,
+                EVIDENCE_RECORD_CHARGE,
                 || json!({"event":"receive_failure","failure":format!("{failure:?}")}),
             );
         } else {
-            self.journal
-                .record(1024, || json!({"event":"receive_timeout"}));
+            self.journal.record(
+                EVIDENCE_RECORD_CHARGE,
+                || json!({"event":"receive_timeout"}),
+            );
         }
         result
     }
 
     fn fault(&mut self, failure: CalibrationFailure) {
         self.journal.record(
-            1024,
+            EVIDENCE_RECORD_CHARGE,
             || json!({"event":"fault","failure":format!("{failure:?}")}),
         );
         self.inner.fault(failure);
@@ -491,7 +496,7 @@ fn run() -> Result<i32, String> {
         };
         let coordinator =
             acquire_calibration(&mut endpoint, run, plan).map_err(|error| error.to_string())?;
-        endpoint.journal.record(1024, || {
+        endpoint.journal.record(EVIDENCE_RECORD_CHARGE, || {
             json!({"event":"coordinator","run":run,"phase":phase_name(coordinator.phase()),
                 "failure":output_failure(coordinator.failure()),
                 "recovery_failure":output_failure(coordinator.recovery_failure()),
@@ -599,6 +604,37 @@ mod tests {
         let mut budget = valid;
         budget["timeouts_ns"]["ownership"] = json!(u64::MAX);
         assert!(parse_plan(&serde_json::to_vec(&budget).unwrap()).is_err());
+    }
+
+    #[test]
+    fn evidence_charges_nested_objects_and_exposure_temporaries() {
+        let after = AcquisitionCursor {
+            domain: 1,
+            generation: 1,
+            sequence: 1,
+            model_ns: 1,
+        };
+        let action = CalibrationAction::Settle {
+            probe: 0,
+            after,
+            rule: SettlingRule::Immediate,
+        };
+        assert_eq!(action_charge(&action), 8192);
+        let completion = CalibrationCompletion {
+            request: pipewireao_rtc::calibration::CalibrationRequest { run: 1, serial: 1 },
+            result: Ok(CalibrationEvidence::Responses(ResponseBatch {
+                values: vec![1.0],
+                exposures: vec![Exposure {
+                    domain: 1,
+                    generation: 1,
+                    sequence: 2,
+                    start_model_ns: 1,
+                    duration_ns: 1,
+                }],
+                valid: true,
+            })),
+        };
+        assert_eq!(completion_charge(&completion), 8192 + 64 + 2048);
     }
 
     #[test]
