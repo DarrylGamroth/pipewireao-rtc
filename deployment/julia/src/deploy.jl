@@ -8,6 +8,8 @@ import ..NativeSourceClient
 import ..NativeRunnerClient
 import ..NativeHeartClient
 import ..NativeControlClient
+import ..NativeAcquisitionLifecycleCodec
+import ..NativeAcquisitionLifecycleClient
 import ..RunnerCommands
 
 export DeploymentError, digest, installed_paths, decode, profile, relative_asset,
@@ -101,6 +103,37 @@ native_heart(owner) = get(owner, "control-protocol", nothing) == "pipewireao.rtc
 
 native_source(owner) = get(owner, "control-protocol", nothing) == "pipewireao.source-control/1"
 
+native_acquisition(owner) = get(owner, "control-protocol", nothing) in
+    ("pipewireao.rtc.calibration-lifecycle/1", "pipewireao.rtc.correction-lifecycle/1")
+
+function acquisition_profile(owner)
+    protocol = owner["control-protocol"]
+    protocol == "pipewireao.rtc.calibration-lifecycle/1" &&
+        return NativeAcquisitionLifecycleCodec.CalibrationLifecycleProfile()
+    protocol == "pipewireao.rtc.correction-lifecycle/1" &&
+        return NativeAcquisitionLifecycleCodec.CorrectionLifecycleProfile()
+    fail("unsupported acquisition lifecycle profile")
+end
+
+acquisition_instrument(owner) = owner["instrument"] == "classic" ?
+    NativeAcquisitionLifecycleCodec.Classic : NativeAcquisitionLifecycleCodec.Copper
+
+function validate_acquisition_arguments(owner)
+    argv = owner["argv"]
+    for flag in ("--prepared-event", "--connect-request", "--connect-reply", "--quit-request",
+            "--control-request", "--control-reply")
+        require(!(flag in argv), "native acquisition cannot use live file controls")
+    end
+    for (flag, value) in (("--control-node", owner["control-node"]),
+            ("--control-instance", "@SOURCE_OWNER_INSTANCE@"),
+            ("--profile", owner["instrument"]), ("--remote", "@RUNTIME@/@REMOTE@"))
+        indices = findall(==(flag), argv)
+        require(length(indices) == 1 && only(indices) < length(argv) && argv[only(indices) + 1] == value,
+            "native acquisition requires the exact $flag binding")
+    end
+    return nothing
+end
+
 function profile(path::AbstractString, prefix::AbstractString)
     value = decode(path, prefix)
     require(value isa AbstractDict && Set(keys(value)) in (REQUIRED_KEYS,
@@ -119,8 +152,18 @@ function profile(path::AbstractString, prefix::AbstractString)
     markers = Set{String}()
     for owner in owners
         require(owner isa AbstractDict, "external owner fields do not match the deployment contract")
-        fields = native_heart(owner) ? Set(["role", "argv", "environment", "control-protocol", "control-node"]) :
+        fields = native_heart(owner) || native_acquisition(owner) ? Set(["role", "argv", "environment", "control-protocol", "control-node"]) :
             Set(["role", "argv", "environment", "prepared", "connect", "connected", "quit"])
+        if native_acquisition(owner)
+            push!(fields, "instrument")
+            require(get(owner, "role", nothing) == source_role,
+                "native acquisition lifecycle must be the selected source owner")
+            require(get(owner, "instrument", nothing) in ("classic", "copper"),
+                "native acquisition requires an explicit Classic or Copper instrument")
+            node = get(owner, "control-node", nothing)
+            require(node isa String && occursin(r"^[a-zA-Z0-9_.-]{1,128}$", node),
+                "native acquisition requires a bounded exact node name")
+        end
         if native_heart(owner)
             require(get(owner, "role", nothing) == "heart", "native HEART profile requires the heart role")
             node = get(owner, "control-node", nothing)
@@ -128,8 +171,8 @@ function profile(path::AbstractString, prefix::AbstractString)
                 "native HEART requires a bounded exact node name")
         end
         if source_role !== nothing && get(owner, "role", nothing) == source_role
-            union!(fields, native_source(owner) ? ["control-protocol", "control-node"] :
-                ["control-request", "control-reply"])
+            native_acquisition(owner) || union!(fields, native_source(owner) ?
+                ["control-protocol", "control-node"] : ["control-request", "control-reply"])
             if native_source(owner)
                 node = get(owner,"control-node",nothing)
                 require(node isa String && occursin(r"^[a-zA-Z0-9_.-]{1,128}$",node),
@@ -146,10 +189,12 @@ function profile(path::AbstractString, prefix::AbstractString)
         require(argv isa AbstractVector && 1 <= length(argv) <= 256 &&
             all(arg -> arg isa String && !occursin('\0', arg), argv) && !isempty(argv[1]),
             "owner argv must be a nonempty bounded string list")
+        native_acquisition(owner) && validate_acquisition_arguments(owner)
         validate_environment(owner["environment"], "owner $role")
         names = Set{String}()
-        marker_keys = native_heart(owner) ? String[] : ["prepared", "connect", "connected", "quit"]
-        role == source_role && !native_source(owner) && append!(marker_keys, ["control-request", "control-reply"])
+        marker_keys = native_heart(owner) || native_acquisition(owner) ? String[] : ["prepared", "connect", "connected", "quit"]
+        role == source_role && !native_source(owner) && !native_acquisition(owner) &&
+            append!(marker_keys, ["control-request", "control-reply"])
         for key in marker_keys
             marker = owner[key]
             require(marker isa String && !(marker in (".", "..")) &&
@@ -164,8 +209,8 @@ function profile(path::AbstractString, prefix::AbstractString)
         "source-owner must name an existing external owner")
     reserved = union(roles, Set(["control.sock", "native-control.sock", "native-prefix", "julia-depot"]))
     require(isempty(intersect(markers, reserved)), "owner markers conflict with deployment runtime paths")
-    if source_role !== nothing && !native_source(only(filter(owner -> owner["role"] == source_role, owners)))
-        source = only(filter(owner -> owner["role"] == source_role, owners))
+    source = source_role === nothing ? nothing : only(filter(owner -> owner["role"] == source_role, owners))
+    if source !== nothing && !native_source(source) && !native_acquisition(source)
         staging = splitext(source["control-request"])[1] * ".new"
         require(!(staging in markers || staging in reserved), "source request staging path conflicts with runtime paths")
     end
@@ -470,6 +515,8 @@ end
 function source_control(deployment::DeploymentRunner, operation::AbstractString;
                         initial=false, shutdown=false, allow_rejection=false)
     deployment.source_owner !== nothing || fail("source owner is not configured")
+    native_acquisition(deployment.source_owner) && return acquisition_control(deployment, operation;
+        initial, shutdown, allow_rejection)
     native_source(deployment.source_owner) || return source_file_control(deployment,operation;
         initial,shutdown,allow_rejection)
     operation in ("resume", "pause", "reset", "status") || fail("invalid source control operation")
@@ -516,6 +563,66 @@ function source_control(deployment::DeploymentRunner, operation::AbstractString;
         end
         deployment.state_path !== nothing && atomic_record(deployment.state_path,deployment.record)
         fail("source coordination failed: $(sprint(showerror,error))")
+    end
+end
+
+acquisition_snapshot(completion::NativeAcquisitionLifecycleCodec.Completion) = completion.snapshot
+acquisition_snapshot(::NativeAcquisitionLifecycleCodec.Rejection) = nothing
+
+function acquisition_reply(completion, operation, id)
+    snapshot = acquisition_snapshot(completion)
+    cursor = snapshot === nothing ? nothing : snapshot.cursor
+    report_cursor = snapshot === nothing ? nothing : snapshot.report_cursor
+    return Dict{String,Any}("version" => 1, "id" => id, "operation" => operation,
+        "native_token" => completion.header.token,
+        "endpoint_instance" => completion.header.endpoint_instance,
+        "ok" => completion.header.result == 0,
+        "error" => completion.header.result == 0 ? nothing : completion.message,
+        "state" => snapshot === nothing ? nothing : snapshot.running ? "running" : "paused",
+        "sequence" => cursor === nothing ? nothing : cursor.sequence,
+        "completed" => snapshot === nothing ? nothing : snapshot.completed,
+        "cursor" => cursor, "report_cursor" => report_cursor,
+        "phase" => snapshot === nothing ? nothing : snapshot.phase,
+        "held" => snapshot === nothing ? nothing : snapshot.held,
+        "restored" => snapshot === nothing ? nothing : snapshot.restored,
+        "window" => snapshot === nothing ? nothing : snapshot.window,
+        "lifecycle" => string(completion.lifecycle))
+end
+
+function acquisition_control(deployment::DeploymentRunner, operation::AbstractString;
+        initial=false, shutdown=false, allow_rejection=false)
+    operation in ("resume", "pause", "reset", "status") || fail("invalid acquisition operation")
+    try
+        deployment.source_failed && fail("source coordination already failed; source outcome unknown")
+        deployment.source_client === nothing && fail("acquisition lifecycle client was not prepared")
+        deadline = monotonic() + (operation == "reset" ? 30 : 8)
+        deployment.source_id = Base.checked_add(deployment.source_id, 1)
+        completion = NativeAcquisitionLifecycleClient.request!(deployment.source_client,
+            Symbol(operation); deadline, check=SourceHealth(deployment, shutdown))
+        reply = acquisition_reply(completion, operation, deployment.source_id)
+        if !reply["ok"]
+            allow_rejection || fail("source $operation rejected: $(reply["error"])")
+            return reply
+        end
+        completion.lifecycle === NativeAcquisitionLifecycleCodec.Connected ||
+            fail("source $operation changed acquisition readiness")
+        expected = operation == "resume" ? "running" : operation == "status" ? reply["state"] : "paused"
+        reply["state"] == expected || fail("source $operation ACK has wrong state")
+        (initial || operation == "reset") && reply["sequence"] != 0 &&
+            fail("source admission/reset requires sequence zero")
+        deployment.source_state = reply["state"]
+        deployment.record["source"] = reply
+        return reply
+    catch error
+        deployment.source_failed = true
+        merge!(deployment.record, Dict("phase" => "failed", "admitted" => false))
+        if deployment.record["error"] === nothing
+            deployment.record["error"] = sprint(showerror, error)
+        else
+            push!(get!(deployment.record, "cleanup_errors", String[]), sprint(showerror, error))
+        end
+        deployment.state_path !== nothing && atomic_record(deployment.state_path, deployment.record)
+        fail("source coordination failed: $(sprint(showerror, error))")
     end
 end
 
@@ -619,6 +726,10 @@ function coordinate(deployment::DeploymentRunner, argv, request_id)
         length(argv) == 2 && argv[1] == "stop"
     starting = argv == ["session-start"] || length(argv) == 2 && argv[1] == "start"
     resetting = argv == ["reset"]
+    if resetting && native_acquisition(deployment.source_owner) &&
+            deployment.source_owner["control-protocol"] == "pipewireao.rtc.calibration-lifecycle/1"
+        return control_error(request_id, "source.reset", "calibration reset requires a fresh instance")
+    end
     (stopping || starting || resetting) || return native_control(deployment, argv; request_id, command)
     observed = native_control(deployment, ["status"])
     if !observed["ok"] || resetting && observed["state"] != "Ready"
@@ -817,6 +928,17 @@ function stop_owner!(deployment::DeploymentRunner, owner)
         client === nothing && return nothing
         NativeHeartClient.shutdown!(client; deadline=monotonic() + 30,
             check=() -> nothing)
+    elseif native_acquisition(owner)
+        child = findfirst(pair -> first(pair) == owner["role"], deployment.processes)
+        child === nothing && return nothing
+        process_running(last(deployment.processes[child])) || return nothing
+        client = deployment.source_client
+        client === nothing && return nothing
+        completion = NativeAcquisitionLifecycleClient.request!(client, :shutdown;
+            deadline=monotonic() + 30, check=() -> nothing)
+        completion.header.result == 0 &&
+            completion.lifecycle === NativeAcquisitionLifecycleCodec.Stopped ||
+            fail("acquisition owner shutdown was not completed: $(completion.message)")
     else
         _touch(joinpath(something(deployment.runtime), owner["quit"]))
     end
@@ -998,6 +1120,13 @@ function _run_locked(deployment::DeploymentRunner, base)
             bindings["HEART_OWNER_NODE"] = heart["control-node"]
             bindings["HEART_OWNER_INSTANCE"] = string(Int64(time_ns() % UInt64(typemax(Int64) - 1)) + 1)
         end
+        if deployment.source_owner !== nothing && native_acquisition(deployment.source_owner)
+            bindings["SOURCE_OWNER_INSTANCE"] = string(Int64(time_ns() % UInt64(typemax(Int64) - 1)) + 1)
+            deployment.record["source_endpoint"] = Dict("node" => deployment.source_owner["control-node"],
+                "instance" => parse(Int64, bindings["SOURCE_OWNER_INSTANCE"]),
+                "profile" => deployment.source_owner["control-protocol"],
+                "instrument" => deployment.source_owner["instrument"])
+        end
         deployment.source_owner === nothing && (bindings["FITS"] = realpath(deployment.options.fits))
         merge!(deployment.record, Dict("instance" => basename(runtime), "socket" => deployment.socket,
             "remote" => bindings["REMOTE"]))
@@ -1032,6 +1161,14 @@ function _run_locked(deployment::DeploymentRunner, base)
                     bindings["HEART_OWNER_NODE"], getpid(process), parse(Int64, bindings["HEART_OWNER_INSTANCE"]);
                     deadline, check=() -> check(deployment))
                 NativeHeartClient.connect!(deployment.heart_client; deadline, check=() -> check(deployment))
+            elseif native_acquisition(owner)
+                deadline = monotonic() + get(deployment.options, :owner_preparation_timeout_seconds, 90)
+                deployment.source_client = NativeAcquisitionLifecycleClient.connect(acquisition_profile(owner),
+                    joinpath(runtime, bindings["REMOTE"]), owner["control-node"], getpid(process),
+                    parse(Int64, bindings["SOURCE_OWNER_INSTANCE"]), acquisition_instrument(owner);
+                    deadline, check=() -> check(deployment))
+                NativeAcquisitionLifecycleClient.connect_owner!(deployment.source_client;
+                    deadline, check=() -> check(deployment))
             else
                 wait_until(deployment, () -> isfile(joinpath(runtime, owner["prepared"])), "$role preparation";
                     timeout=get(deployment.options, :owner_preparation_timeout_seconds, 90))

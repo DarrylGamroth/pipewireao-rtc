@@ -5,6 +5,8 @@ module ExportFixture
 using PipeWireAODeployment: package_root, resource_root, source_relative_path
 using PipeWireAODeployment
 const Common = PipeWireAODeployment.Common
+const NativeControlClient = PipeWireAODeployment.NativeControlClient
+const NativeAcquisitionLifecycleCodec = PipeWireAODeployment.NativeAcquisitionLifecycleCodec
 module Deployment
 using ..Common
 native_source(owner) = get(owner, "control-protocol", nothing) == "pipewireao.source-control/1"
@@ -130,10 +132,11 @@ end
         ExportFixture.Common.write_json(joinpath(base,"session.conf.in"),Dict("execution"=>"complete-frame","rate"=>"10/1"))
         provenance = Dict("profile"=>"classic","engine"=>"fgn","mode"=>"frame","parameters"=>Any[])
         ExportFixture.Common.write_json(joinpath(base,"provenance.json"),provenance)
-        owner = Dict("role"=>"simulator","argv"=>["julia","@PACKAGE@/hil/simulator.jl"],
+        owner = Dict("role"=>"simulator","argv"=>["julia","@PACKAGE@/hil/simulator.jl",
+            "--profile","classic","--remote","@REMOTE@","--control-node","simulator-wfs"],
             "environment"=>Dict(),"prepared"=>"simulator.prepared","connect"=>"simulator.connect",
             "connected"=>"simulator.connected","quit"=>"simulator.quit",
-            "control-request"=>"simulator.control.request","control-reply"=>"simulator.control.reply")
+            "control-protocol"=>"pipewireao.source-control/1","control-node"=>"simulator-wfs")
         placement = Dict("cpus"=>[1],"leader-cpu"=>1,"rt-priority"=>0,"threads"=>Any[],"locked-bytes"=>0)
         specification = Dict{String,Any}("name"=>"fixture","session"=>"session.conf.in","core"=>"core.conf.in",
             "client"=>Dict("core"=>"client-simulator.conf.in","rtc"=>"client-simulator.conf.in","simulator"=>"client-simulator.conf.in"),
@@ -163,7 +166,39 @@ end
         @test isfile(joinpath(deployed,"julia/assets/ryzen-6800h-classic.cpu"))
         @test length(read(joinpath(deployed,"calibration/wfs-active.u8"))) == 188
         @test !occursin(".py",join(ExportFixture.Common.read_json(joinpath(deployed,"deployment.conf"))["owners"][1]["argv"]))
+        selected = only(ExportFixture.Common.read_json(joinpath(deployed,"deployment.conf"))["owners"])
+        @test selected["control-protocol"] == "pipewireao.rtc.calibration-lifecycle/1"
+        @test selected["instrument"] == "classic"
+        @test selected["argv"][findfirst(==("--control-instance"), selected["argv"]) + 1] == "@SOURCE_OWNER_INSTANCE@"
+        @test selected["argv"][findfirst(==("--remote"), selected["argv"]) + 1] == "@RUNTIME@/@REMOTE@"
+        @test isempty(intersect(Set(keys(selected)), Set(("prepared", "connect", "connected", "quit", "control-request", "control-reply"))))
     end
+end
+
+@testset "acquisition export selects only the matching native owner" begin
+    function base_source(instrument)
+        Dict{String,Any}("role" => "simulator", "argv" => ["julia", "owner.jl",
+            "--profile", instrument, "--remote", "@REMOTE@", "--control-node", "simulator-wfs",
+            "--prepared-event", "old.prepared", "--connect-request", "old.connect",
+            "--connect-reply", "old.connected", "--quit-request", "old.quit"],
+            "environment" => Dict(), "control-protocol" => "pipewireao.source-control/1",
+            "control-node" => "simulator-wfs", "prepared" => "old.prepared", "connect" => "old.connect",
+            "connected" => "old.connected", "quit" => "old.quit")
+    end
+    for instrument in ("classic", "copper"), select! in
+            (Calibration.calibration_source_control!, Calibration.correction_source_control!)
+        source = base_source(instrument)
+        select!(source, instrument)
+        @test source["instrument"] == instrument
+        @test source["argv"][findfirst(==("--control-node"), source["argv"]) + 1] == source["control-node"]
+        @test !any(flag -> flag in source["argv"], ("--prepared-event", "--quit-request", "--control-request"))
+        @test_throws ArgumentError select!(source, instrument)
+    end
+    @test_throws ArgumentError Calibration.calibration_source_control!(base_source("classic"), "copper")
+    @test_throws ArgumentError Calibration.calibration_source_control!(base_source("classic"), "unknown")
+    bad = base_source("classic")
+    append!(bad["argv"], ["--control-node", "duplicate"])
+    @test_throws ArgumentError Calibration.calibration_source_control!(bad, "classic")
 end
 
 @testset "calibration graph split" begin

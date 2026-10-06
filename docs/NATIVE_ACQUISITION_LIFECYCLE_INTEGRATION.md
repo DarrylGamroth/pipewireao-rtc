@@ -81,3 +81,41 @@ JFG and HEART packages. Preserve unsupported reset, held/restored state, fresh
 cursor queries, expiry/removal, competing callers and finite cleanup evidence.
 Scientific equivalence and inclusive steady-state allocation checks remain
 separate from cold lifecycle transport checks.
+
+## Launcher and exporter increment
+
+The launcher selects a calibration or correction lifecycle descriptor containing
+exactly `role`, `argv`, `environment`, `control-protocol`, `control-node` and
+`instrument`. The instrument is `classic` or `copper`. It validates the selected
+profile, exact argument bindings and absence of live file-control arguments.
+The selected source receives an absolute private remote and
+`--control-instance @SOURCE_OWNER_INSTANCE@`; the launcher creates that
+incarnation before spawn and binds the actual spawned PID. Discovery and
+Connect share the finite preparation deadline. Initial Pause, runner admission
+and source Resume retain their existing ordering.
+
+Selected exporters require a fresh ordinary native-source base and remove its
+preparation, connection, quit and request/reply marker fields and arguments.
+Saved scientific reports remain unchanged artifacts. Calibration Reset is
+rejected before mutating the runner; a fresh calibration instance is required.
+Cleanup requests native Shutdown and requires Stopped, then retains the existing
+owned-process-group cleanup when preparation or transport has failed. A rejected
+Shutdown does not claim restoration or release.
+
+Root checks on Julia 1.12.7, CPU 15, 2026-10-06: 44 descriptor checks, 21 caller
+checks, 150 portable export checks and 74 private-core helper checks passed.
+The caller fixtures test unsigned cursors, no invented snapshot for known
+rejection, no reconnect after owner loss and rejection of calibration Reset
+before effects. The first descriptor test fixture omitted its own client files;
+that setup failure is retained separately from the corrected passing fixture.
+Evidence is under `~/.cache/rtc-live-controls-20261005/` in
+`acquisition-deployment-root-final2-20261006.log` and
+`acquisition-export-helper-root-20261006.log`.
+The preceding complete deployment suite passed 1,974/1,974 checks in 76 sets;
+`acquisition-deployment-suite-root-20261006.log` retains its output. The final
+focused caller rerun additionally checks the recorded native token/incarnation
+and preservation of unsigned cursors through saved JSON reports.
+
+This increment is caller and exporter implementation. The actual scientific and
+HEART acquisition-owner migration and fresh installed qualification remain
+pending; it does not complete issue #6 or establish scientific equivalence.

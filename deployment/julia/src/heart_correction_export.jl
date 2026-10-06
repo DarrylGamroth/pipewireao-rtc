@@ -10,6 +10,7 @@ module HeartCorrectionExport
 using SHA, TOML
 using ..Common, ..Deployment, ..ScienceExport, ..HILExport, ..HeartConfiguration
 using ..HeartExport, ..HeartCalibrationExport, ..HeartOwner, ..CalibrationCampaign, ..HeartClassicTransfer
+import ..CalibrationExport
 
 const CLASSIC_GEOMETRY_RESOURCE=joinpath(ScienceExport.resource_root(),"hil/heart_classic_projection.jl")
 Base.include_dependency(CLASSIC_GEOMETRY_RESOURCE)
@@ -242,6 +243,7 @@ function export_package(args)
         ingress=HeartCalibrationExport.ingress_contract("deferred","copper",wfs,joinpath(package,"heart/bin/scaoTemplate");source_revision=staged_provenance["heart"]["revision"])
         native["environment"]["HRT_DEFER_WFS_INGRESS"]="1";append!(native["argv"],["--native-ingress-mode","deferred"])
         simulator=only(filter(owner->owner["role"]==staged["source-owner"],staged["owners"]))
+        CalibrationExport.correction_source_control!(simulator, "copper")
         simulator["argv"]=owner_arguments(simulator["argv"],evidence,16*1024*1024)
         Common.write_json(joinpath(package,"session.conf.in"),HeartCalibrationExport.calibration_session(provenance["hil"]["wall_rate_hz"]))
         runtime_inputs=Dict(basename(path)=>digest(path) for path in readdir(joinpath(package,"heart/calibration");join=true))

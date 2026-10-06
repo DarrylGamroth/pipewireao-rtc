@@ -4,6 +4,8 @@ using JSON3
 using ..Common
 using ..Deployment
 using ..ScienceExport
+import ..NativeControlClient
+import ..NativeAcquisitionLifecycleCodec
 
 const REQUESTED_SCHEMA = "org.calculon.ao.requested-pdm-command/1"
 const FEEDBACK_SCHEMA = "org.calculon.ao.pdm-constraint-feedback/1"
@@ -228,25 +230,48 @@ function _artifacts(package; include_deployment=false)
     return result
 end
 
-"Retain the separate calibration owner's restoration and report file contract."
-function calibration_source_control!(source)
-    Deployment.native_source(source) || return source
+"Select the sole acquisition owner's native cold lifecycle, retaining saved reports."
+function acquisition_source_control!(source, profile, instrument::AbstractString)
+    Deployment.native_source(source) || throw(ArgumentError("acquisition export requires a fresh native-source base"))
+    instrument in ("classic", "copper") || throw(ArgumentError("unsupported acquisition instrument"))
     argv = source["argv"]
-    index = findfirst(==("--control-node"),argv)
-    index === nothing || deleteat!(argv,index:(index+1))
-    delete!(source,"control-node")
-    delete!(source,"control-protocol")
-    source["control-request"] = "simulator.control.request"
-    source["control-reply"] = "simulator.control.reply"
-    append!(argv,["--control-request","@RUNTIME@/simulator.control.request",
-                  "--control-reply","@RUNTIME@/simulator.control.reply"])
+    profiles = findall(==("--profile"), argv)
+    length(profiles) == 1 && only(profiles) < length(argv) && argv[only(profiles) + 1] == instrument ||
+        throw(ArgumentError("source instrument differs from acquisition deployment"))
+    remotes = findall(==("--remote"), argv)
+    length(remotes) == 1 && only(remotes) < length(argv) ||
+        throw(ArgumentError("acquisition source requires one explicit remote"))
+    argv[only(remotes) + 1] = "@RUNTIME@/@REMOTE@"
+    for flag in ("--prepared-event", "--connect-request", "--connect-reply", "--quit-request",
+            "--control-request", "--control-reply", "--control-node", "--control-instance")
+        positions = findall(==(flag), argv)
+        length(positions) <= 1 || throw(ArgumentError("duplicate source option $flag"))
+        isempty(positions) && continue
+        index = only(positions)
+        index < length(argv) || throw(ArgumentError("missing source option value $flag"))
+        deleteat!(argv, index:(index + 1))
+    end
+    for key in ("prepared", "connect", "connected", "quit", "control-request", "control-reply")
+        delete!(source, key)
+    end
+    source["control-protocol"] = NativeControlClient.profile_name(profile)
+    source["control-node"] = "pipewireao.rtc.acquisition.$(source["role"])"
+    source["instrument"] = String(instrument)
+    append!(argv, ["--control-node", source["control-node"],
+        "--control-instance", "@SOURCE_OWNER_INSTANCE@"])
     return source
 end
+
+calibration_source_control!(source, instrument::AbstractString) =
+    acquisition_source_control!(source, NativeAcquisitionLifecycleCodec.CALIBRATION_PROFILE, instrument)
+
+correction_source_control!(source, instrument::AbstractString) =
+    acquisition_source_control!(source, NativeAcquisitionLifecycleCodec.CORRECTION_PROFILE, instrument)
 
 function deployment_descriptor(package,base,specification,records,profile,engine,session,prefix;
                                illumination="lamp",stage="interaction",capture_max_bytes=nothing)
     simulator = only([owner for owner in specification["owners"] if owner["role"] == get(specification,"source-owner",nothing)])
-    calibration_source_control!(simulator)
+    calibration_source_control!(simulator, profile)
     if engine == "fgn"
         environment = get!(specification,"environment",Dict{String,Any}())
         environment["PIPEWIREAO_RTC_GRAPH_CALIBRATION_WFS"] = "@RUNTIME@/wfs.conf"

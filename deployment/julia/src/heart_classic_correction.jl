@@ -95,6 +95,7 @@ function export_classic_package(args,base,output,backend,specification,provenanc
         native=only(filter(owner->owner["role"]=="heart",staged["owners"]))
         native["environment"]["HRT_DEFER_WFS_INGRESS"]="0";append!(native["argv"],["--native-ingress-mode","streaming"])
         simulator=only(filter(owner->owner["role"]==staged["source-owner"],staged["owners"]))
+        CalibrationExport.correction_source_control!(simulator, "classic")
         simulator["argv"]=owner_arguments(simulator["argv"],evidence,128*1024*1024;profile="classic")
         Common.write_json(joinpath(package,"session.conf.in"),HeartCalibrationExport.calibration_session(provenance["hil"]["wall_rate_hz"];profile="classic"))
         core=Deployment.decode(joinpath(package,staged["core"]),args.pipewire_prefix)

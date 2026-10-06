@@ -296,7 +296,7 @@ function export_package(args)
         rate = staged_provenance["hil"]["wall_rate_hz"]
         Common.write_json(joinpath(package, "session.conf.in"), calibration_session(rate; profile))
         source = only(filter(owner -> owner["role"] == specification["source-owner"], specification["owners"]))
-        CalibrationExport.calibration_source_control!(source)
+        CalibrationExport.calibration_source_control!(source, profile)
         source["argv"] = owner_arguments(source["argv"]; stage, illumination,
             capture_max_bytes=capture_budget, telemetry_max_bytes=telemetry_budget, evidence_directory, ingress_mode, profile)
         native_owner = only(filter(owner -> owner["role"] == "heart", specification["owners"]))
