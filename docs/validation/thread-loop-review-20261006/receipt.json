@@ -1,0 +1,31 @@
+{
+  "classification": "cold independent diagnostic, no SCI, temporary method redefinition only",
+  "sdk_starting_commit": "6e4e1eebf8bd160f01a532dcfc7284dec92de61b",
+  "julia": "1.12.7",
+  "cpu": 15,
+  "sdk_dirty_source_sha256": {
+    "src/thread_loop.jl": "e7eebc0b94588a566f26a3d179191f9043530102dad42a8c9caeb37e9a023ba4",
+    "src/stream.jl": "dd347ae418a672ac7f9fbbc322706258ca0a3cc8c82c3969c9513fcdf3e9b01a",
+    "test/native_control_private_core.jl": "cd29c8e4207e082b565d0c163be05408e65fff73a619fa658e2b0ea186c5cc13"
+  },
+  "files_sha256": {
+    "review-loop-codegen-fixture.jl": "3e1f4c96968b6355174bba18940308729c75f23a2320d9507b237d74fc7e5511",
+    "review-loop-before.ir": "a0fc7f0d32ee9500706bf1b573c89cbe0f9de77ce72d7ff377732a0f46716cef",
+    "review-loop-before.ir.ll": "d9cfd79eb8561cc2147ced1e4959db981a3fcf2f459abfbc2dba6ed4c542ac72",
+    "review-loop-before.log": "57ee60d4873cebc6e43e8001636e8964dc38f40a3f1bbcb1d971922150c6d4a9",
+    "review-loop-fixed.ir": "a99347944cbf278d1015b5f063195c8fff52f262f7b56b9eed0968d8d56338cf",
+    "review-loop-fixed.ir.ll": "e5d7921ea76fb9b5cc5ca2a6d91709d4fa0d6709d4086d5a7027aa4c894004ed",
+    "review-loop-fixed.log": "6183de3852a0fa8b25d4317a001d093c44a4485b6d91e17885c550112a2982bf",
+    "review-loop-noinline-trial.jl": "c4b1921bb23251aaec949f9232a4f4a7f63edcd65c707f72acc9eada3a6d46b6",
+    "review-loop-noinline.log": "8ed7aa0171a09f22a6b26d998089226b2ca9952dd36c988f58f30605d682cf0c",
+    "review-loop-fields-trial.jl": "c4d61a10824b5a8d0851e127e58e0676d052a06f9feb84580bff08d6b1580b4c",
+    "review-loop-fields.log": "a3c3929a76eb90a36fd33ef302d8b065b6bcc88f6dab7a4244f3a7cfebb5fa27",
+    "review-loop-flat-trial.jl": "71986ca42b81c4a01f8557e4cd455d2f9dfb9b106a72b61742dddaea98888052",
+    "review-loop-flat.log": "57ee60d4873cebc6e43e8001636e8964dc38f40a3f1bbcb1d971922150c6d4a9",
+    "review-loop-flat.ir.ll": "3809e2dbbbf241863c2faf8a8ce15ce39b287229d6b8f9849778ec60939b5391",
+    "review-loop-helper-trial.jl": "505eec453b1eb2b58a6207980bfa0bd50b553fb04ef61bb48942df291261574d",
+    "review-loop-helper.log": "e4abfabdb55cc4104dd2e53901885adc4b5ba57ecf7db3a4db6b74e2a66289a9",
+    "review-loop-helper-exact.jl": "9cf2d415727ee04e202e497f55c007dd0182d0aa4331dca41f0c6fa2bbb2674a",
+    "review-loop-helper-exact.log": "6f752e22cc49e73a025b11ec468b721f1431bb193c9a36c9bb2a3f10ccb2a265"
+  }
+}

@@ -89,3 +89,77 @@ fix until the focused signal oracle and relevant allocation/GC checks pass.
 Historical installed failure remains a hypothesis about signal timing until
 correlated evidence distinguishes it; even a reproduced SDK defect does not
 retroactively prove the exact interrupt location in that service run.
+
+## Cold ownership proof and allocation discriminator
+
+Independent follow-up reviewed the primary's dirty SDK worktree at baseline
+`6e4e1ee`, before production helper extraction. The unchanged child oracle fails
+before (2 pass / 3 fail, `interrupted=true count=1`) and passes with the complete
+`disable_sigint` scope (5/5, `count=0`, closed and cross-thread reacquired).
+The actual holder is a native loop callback, whose native mutex ownership does
+not reserve the SDK counter: the correct waiting witness is **one** SDK
+reservation, not the two-reservation arrangement proposed above. Its callback
+uses GC-safe native sleep and does not migrate while holding the mutex. The
+parent sends one signal only after the reservation/holder witness, and bounds
+the owned child. Independent source inspection and retained child output support
+the ownership conclusion. Existing lock allocation checks pass 6/6, and both
+GC-participation children report completion for lock and stop.
+
+### SDK-INT-R002 — initial protected closure regresses prepared publication
+
+**Severity:** high against the existing zero-allocation contract.
+**Confidence/classification:** confirmed by unchanged cold native fixture.
+**Affected:** initial `with_thread_loop_lock` interrupt patch and its prepared
+parameter publication callers. **Disposition:** initial closure form rejected;
+minimal helper candidate independently passes the original fixture, pending
+the primary's complete ownership/GC suite on the resulting production source.
+
+Canonical source passes all 17 private-core prepared-publication assertions.
+The initial protected closure passes 12 and fails all five allocation checks:
+16/32/48/64/48 bytes for empty/single/four/mixed/repeated prepared sets. Retained
+allocation profiles identify `PreparedParams{N}` objects, **not `Core.Box`**.
+PreparedParams remains concretely typed; calling this a type-inference failure
+or blaming its immutable GC root is not established.
+
+Independent CPU15 diagnostics used Julia 1.12.7, the existing SDK environments
+and actual disposable private-core fixture. No SCI, build, production edit or
+new dependency was involved. Results:
+
+| Temporary variant | Result | Interpretation |
+| --- | --- | --- |
+| Canonical / initial protected closure | 17/17 / 12/17 | Independent reproduction |
+| `@noinline` protected method | 12/17 | Restoring the outer call boundary alone is insufficient |
+| Preserve extracted params/pointers owners | 12/17 | Does not justify changing parameter storage/preservation |
+| Flat sigatomic begin/end around identical body | 17/17 | Structural discriminator; not the chosen API |
+| `disable_sigint` calls normal protected-body helper | **17/17 unchanged fixture** | Small candidate retaining supported wrapper and ownership scope |
+
+The candidate extracts reservation, GC-safe acquire, callback, native unlock
+and reservation decrement into one ordinary internal helper. The public method
+invokes that helper from `Base.disable_sigint`; no arbitrary inline annotation,
+parameter representation change, pointer API or interrupt-policy relaxation is
+needed. The helper must remain internal and called only within that protected
+scope. The primary owns production implementation and final verification.
+
+**Reflection limit:** LLVM shows canonical `publish_batch` calling the lock
+method while the initial patch inlines the signal wrapper and calls its inner
+closure. However a temporary fixture that asks `code_llvm` to compile the single
+parameter specialization *before measurement* changes the helper candidate's
+result to one 32-byte failure for that inspected specialization. The unchanged
+fixture passes all 17. Reflection output is evidence about that compiled method,
+not proof that an ordinary caller retains identical optimization. The extracted
+owner and noinline experiments do not establish the exact compiler root cause.
+
+Scripts, logs, representative IR and SHA-256 receipt are retained under
+[`validation/thread-loop-review-20261006`](validation/thread-loop-review-20261006/receipt.json).
+The exact helper acceptance command was:
+
+```text
+taskset -c 15 julia --startup-file=no --project=/home/dgamroth/workspaces/codex/pipewire/PipeWireAO-bootstrap-state /tmp/review-loop-helper-exact.jl
+```
+
+The retained script temporarily redefines the methods in a fresh process and
+includes the original `test/native_control_private_core.jl` by absolute path.
+Final acceptance still requires the selected production helper to pass the
+signal child, explicit/nested callback exceptions, zero-byte lock/publication
+checks, GC lock/stop children and full relevant SDK suite. Installed clean-stop
+and whole-process SCI evidence remain separate gates.
