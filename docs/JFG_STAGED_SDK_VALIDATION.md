@@ -16,6 +16,8 @@ helper leaves `=0.6.13`, failing the exact-version assertion. The same fixture
 passes after the correction, with `=0.6.16`. Original before/after output and the
 fixture are retained under
 [validation/jfg-staged-sdk-20261006](validation/jfg-staged-sdk-20261006).
+The tracked before-log copy removes one terminal blank line; the unchanged
+original cache capture hash and this normalization are recorded in the manifest.
 
 The historical cached `classic-jfg-native-v10/jfg/deployment/Project.toml` also
 retains `=0.6.13` while its staged SDK Project declares 0.6.15. That cache is

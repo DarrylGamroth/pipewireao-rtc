@@ -8,6 +8,8 @@
     "discriminator.jl": "2d08fc94f190e33e774c3a2e1e4d06d1215763eb95d5fc1a332862e9d07ff140",
     "after.log": "064beaaadea3216131f10664d9063e45a498b4fd2db75897db885d5985b7bf62",
     "exports.log": "02f21cc2a221ca25d3d160c81cc00d1941a7edbadabd9e9ca895d70af78485c2",
-    "before.log": "d51726a101afac73f6388acf603bed1e3dd0b6bbca6c4deb17dedf8db0072b4a"
-  }
+    "before.log": "0e790007213230573f192957b9b3761fca4502bac563f417b3247fe778c692af"
+  },
+  "original_before_log_sha256": "d51726a101afac73f6388acf603bed1e3dd0b6bbca6c4deb17dedf8db0072b4a",
+  "before_log_normalization": "Removed one terminal blank line from tracked copy; original cache jfg-staged-sdk-before.log is unchanged."
 }

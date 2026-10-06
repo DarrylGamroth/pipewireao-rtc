@@ -8,4 +8,3 @@ staged SDK version=0.6.16, exported compatibility==0.6.13
 Test Failed at /home/dgamroth/.cache/rtc-live-controls-20261005/jfg-staged-sdk-discriminator.jl:24
   Expression: (actual["compat"])["PipeWireAO"] == "=" * staged["version"]
    Evaluated: "=0.6.13" == "=0.6.16"
-
