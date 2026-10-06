@@ -215,3 +215,52 @@ inside an already-running monitor and retained regression evidence still
 required before final remediation verification. This is a review of the dirty
 primary source, not an assertion about a yet-uncommitted final hash. No build,
 test rerun or SCI was performed by the reviewer.
+
+## Final independent verification: d92128a
+
+Final clean production source
+`d92128a06ed1e3a0f26ea35582819ab90dbc94a5` was independently inspected, including
+the timer-arrival fixture and the final scope/admission tests. No additional
+confirmed defect was found in this bounded review.
+
+| Finding | Final disposition |
+| --- | --- |
+| RUNNER-MAINT-R001 | Corrected: one request is admitted during maintenance; true occupied-slot rejection and identity/duplicate/worker guards remain. Same admission assertion fails before (`Rejected`, expected `Accepted`) and passes after. |
+| RUNNER-MAINT-R002 | Corrected: production callback shortens the active wait, nested roundtrips observe it, and monitor rechecks newly pending work before applying observations. Actual delayed-admission fixture verifies the bound and absence of command effects. |
+| RUNNER-MAINT-R003 | Corrected: independent scope/admission state preserves hidden and equal admission caps; tests cover restoration, unwind and a fresh unrelated scope. |
+
+The delayed fixture creates a real private core, stops that owned daemon, and
+enters monitoring with no admitted request. A timer on the same owner loop fires
+after 40 ms and calls the production `stage_request` helper with a 250 ms
+SessionStart budget. The callback asserts maintenance is active. The final log
+records **290,510,021 ns** elapsed from monitor entry, correlated local
+ETIMEDOUT, Ready lifecycle, no SessionStart effects, no occupied/pending slot
+and last-token one. This distinguishes the five-second entry-budget problem
+from the required admission deadline. It uses synthetic controller admission;
+no remote timeout observation is claimed while the daemon is stopped.
+
+Independently read final evidence confirms all five actual private-core monitor
+fixtures and 15 Julia assertions: pending-preparation loss, queued loss,
+accepted-request budget, queued-before-monitor budget and delayed-arrival
+budget. The Rust workspace log totals 198 passing tests; live cases ignored by
+that workspace run were exercised separately as above. Retained Clippy output
+has no project warning and reports the existing `proc-macro-error2` dependency
+future-compatibility notice. Formatting success is reported by the primary;
+this reviewer did not rerun formatting, builds, tests or SCI.
+
+The committed receipt is
+`docs/validation/runner-maintenance-20261006/receipt.json`, SHA-256
+`13fb4620f3348c761864ef95d3c1b8c7891eb724bd3c2820c3bb706c0c104608`.
+All **five source hashes and fifteen evidence hashes** were independently
+recomputed with zero mismatches. Current artifacts were also hashed directly:
+
+| Artifact | Independently matched SHA-256 |
+| --- | --- |
+| `/tmp/rtc-maintenance-target-20261006/debug/pipewireao-rtc` | `750059d1ee71783b63d1fbb96a6bc92cd9be436f551d1b450688a6aae2c2d5cb` |
+| `debug/deps/pipewireao_rtc-efaa902bedb6b6fe` under that target | `1f5f57e3579fb5c242c2e5ae3c4e7d3c889167ca0ddb5e35b7718bae6c120a92` |
+
+**Final disposition:** R001–R003 are closed for this source remediation and cold
+verification scope. The exact historical v3 occupied-versus-maintenance branch
+remains untraced. Installed service/GUI/calibration/HEART success and scientific
+resource qualification remain separate; no installed pass is inferred from the
+new binary or cold fixtures. Failed service v1/v2/v3 evidence remains failed.
