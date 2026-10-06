@@ -110,6 +110,9 @@ pub fn verify_identity(
     record: &SessionRecord,
     fresh: FreshSupervisorStatus,
 ) -> Result<SelectedSession, DiscoveryEntry> {
+    record.validate().map_err(|detail| {
+        DiscoveryEntry::new(Some(record.clone()), Verification::Malformed, &detail)
+    })?;
     if fresh.global_id == 0
         || fresh.global_id == u32::MAX
         || fresh.object_serial == 0
@@ -261,6 +264,14 @@ mod tests {
                 Verification::Inaccessible
             );
         }
+        let mut invalid = record.clone();
+        invalid.owner_pid = 0;
+        assert_eq!(
+            verify_identity(&invalid, fresh(&invalid))
+                .unwrap_err()
+                .verification,
+            Verification::Malformed
+        );
     }
     #[test]
     fn preparing_has_no_runner_and_lifecycle_never_comes_from_record() {
