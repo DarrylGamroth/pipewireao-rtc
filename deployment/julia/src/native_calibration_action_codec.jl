@@ -174,7 +174,16 @@ function _array(pod, T)
     _check(eltype(array.values) === T, "wrong Array child type")
     return array.values
 end
-_float_pod(values, maximum) = Pod(SPA.Array(_vector(values, maximum)))
+_float_pod(values::Vector{Float32}, maximum) = Pod(SPA.Array(_vector(values, maximum)))
+function _float_pod(values::AbstractVector{Float32}, maximum)
+    _vector(values, maximum)
+    # Wire positions enumerate values; host index labels are not transmitted.
+    owned = Vector{Float32}(undef, length(values))
+    for (position, value) in enumerate(values)
+        owned[position] = value
+    end
+    return Pod(SPA.Array(owned))
+end
 _decode_float(pod, maximum) = _vector(_array(pod, Float32), maximum)
 _validate(::Immediate) = nothing
 _validate(rule::DiscardExposures) = _frames(rule.frames)
@@ -373,6 +382,11 @@ function Client.decode_completion(::CalibrationActionProfile, input::Union{Pod,A
     message = _string(f[5]; limit=8192)
     _completion(header, run, serial, result); _result_size(result)
     return Completion(header, lifecycle, run, serial, result, message)
+end
+function Client.encode_failure(profile::CalibrationActionProfile, header::Envelope.ReplyHeader,
+        lifecycle::ColdLifecycle, command::Command)
+    return Client.encode_completion(profile, header, lifecycle, command.run,
+        command.serial, nothing, "request expired or controller disappeared")
 end
 function Client.encode_rejection(::CalibrationActionProfile, header::Envelope.ReplyHeader,
         lifecycle::ColdLifecycle, message::AbstractString="request rejected")

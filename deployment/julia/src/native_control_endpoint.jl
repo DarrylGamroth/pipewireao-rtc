@@ -313,7 +313,7 @@ function take!(endpoint::Endpoint)
         if monotonic() >= ticket.deadline || !controller_present(endpoint, ticket.header.controller)
             header = Envelope.ReplyHeader(ticket.header.controller, endpoint.instance,
                 ticket.header.token, ticket.header.operation, Int32(-110))
-            endpoint.completion = Client.encode_failure(endpoint.profile, header, endpoint.lifecycle)
+            endpoint.completion = Client.encode_failure(endpoint.profile, header, endpoint.lifecycle, ticket.command)
             publish!(endpoint)
             endpoint.terminal_request = ticket
             endpoint.pending = nothing

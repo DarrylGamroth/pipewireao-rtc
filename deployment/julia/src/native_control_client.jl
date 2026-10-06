@@ -23,6 +23,8 @@ function decode_request end
 function encode_completion end
 function encode_rejection end
 function encode_failure end
+encode_failure(profile::Profile, header, lifecycle, command) =
+    encode_failure(profile, header, lifecycle)
 reply_endpoint(::Profile) = :lifecycle
 reply_bound(profile::Profile) = Envelope._limit(Val(:reply), reply_endpoint(profile))
 maximum_budget(::Profile) = 30.0

@@ -56,6 +56,13 @@ and computes their padded extent before constructing or copying array PODs.
 An owner still validates its exact command and measurement contracts before
 any action effect.
 
+Float32 vector axes enumerate the wire values; their host index labels are not
+scientific coordinates in this profile. CPU vectors supporting scalar iteration
+may have shifted axes, strided views or reinterpret wrappers. The encoder
+materializes a dense owned wire vector after encoded-capacity preflight when the
+host wrapper cannot be passed directly to the SPA constructor. These are cold
+control allocations; device-array scalar iteration is not a supported contract.
+
 ## Completions and rejections
 
 Every correlated action completion payload is exactly:

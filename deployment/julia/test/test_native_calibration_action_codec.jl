@@ -30,10 +30,61 @@ function bad_reply(name, op, result; lifecycle=UInt32(3))
     fixture("bad-reply-" * name, pod)
     @test_throws ArgumentError Client.decode_completion(profile, pod)
 end
+
+struct ShiftedVector{T} <: AbstractVector{T}
+    values::Vector{T}
+    offset::Int
+end
+Base.size(values::ShiftedVector) = size(values.values)
+Base.axes(values::ShiftedVector) = (values.offset:(values.offset + length(values) - 1),)
+Base.IndexStyle(::Type{<:ShiftedVector}) = IndexCartesian()
+function Base.getindex(values::ShiftedVector, index::Int)
+    checkbounds(values, index)
+    return values.values[index - values.offset + 1]
+end
+Base.iterate(values::ShiftedVector, state=1) = iterate(values.values, state)
+
+@testset "native calibration vectors use iteration order" begin
+    raw = Float32[0, -0.0, 1.25]
+    strided = view(Float32[0, 9, -0.0, 9, 1.25], 1:2:5)
+    wrappers = (raw, strided, reinterpret(Float32, copy(reinterpret(UInt32, raw))),
+        ShiftedVector(copy(raw), 0), ShiftedVector(copy(raw), -3))
+    @test typeof(wrappers[3]) <: Base.ReinterpretArray
+    for values in wrappers
+        original_axes = axes(values)
+        for action in (Codec.Adopt(UInt32(0), values), Codec.Restore(values, Codec.Immediate()))
+            command = Codec.Command(UInt64(1), UInt64(1), action)
+            op = Client.operation_id(profile, command)
+            encoded = Client.encode_request(profile, request(op), command)
+            decoded = Client.decode_request(profile, encoded)[2]
+            @test reinterpret(UInt32, decoded.action.figure) == reinterpret(UInt32, raw)
+        end
+        for (op, result) in ((2, Codec.Adopted(cursor, values, false)),
+                (4, Codec.Responses(values, ShiftedVector([exposure], -2), true)),
+                (6, Codec.Restored(values, false)))
+            encoded = Client.encode_completion(profile, reply(op), Lifecycle.Connected,
+                UInt64(1), UInt64(1), result, "")
+            decoded = Client.decode_completion(profile, encoded).result
+            decoded_values = op == 4 ? decoded.values : decoded.figure
+            @test reinterpret(UInt32, decoded_values) == reinterpret(UInt32, raw)
+        end
+        @test axes(values) == original_axes
+    end
+    oversized = Codec.Command(UInt64(1), UInt64(1),
+        Codec.Adopt(UInt32(0), ShiftedVector(zeros(Float32, 4096), -3)))
+    @test_throws ArgumentError Client.encode_request(profile, request(2), oversized)
+end
+
 @testset "native calibration action codec" begin
     @test Client.profile_name(profile) == "pipewireao.rtc.calibration-actions/1"
     @test Client.reply_endpoint(profile) == :calibration
     @test Client.lifecycle_type(profile) === Lifecycle.ColdLifecycle
+    expired_command = Codec.Command(typemax(UInt64), UInt64(1) << 63, Codec.Hold())
+    expired = Client.encode_failure(profile, reply(1; result=Int32(-110)),
+        Lifecycle.Connected, expired_command)
+    expired_reply = Client.decode_completion(profile, expired)
+    @test expired_reply.run == expired_command.run && expired_reply.serial == expired_command.serial
+    @test expired_reply.header.result == -110 && expired_reply.result === nothing
     for value in (UInt64(1), UInt64(typemax(Int64)), UInt64(1)<<63, typemax(UInt64))
         command = Codec.Command(value, value, Codec.Hold())
         decoded = Client.decode_request(profile, Client.encode_request(profile, request(1), command))[2]
