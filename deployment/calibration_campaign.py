@@ -130,7 +130,7 @@ def validate_detector_rail(detector, recipe):
 
 
 class Endpoint:
-    """One pending request, one connection, finite I/O; never retry unknown effects."""
+    """Legacy JSON endpoint retained for imported campaign fixtures."""
     def __init__(self, path, run, timeout_ns):
         self.socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.socket.settimeout(timeout_ns / 1e9)
@@ -638,4 +638,5 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(
+        "Python live calibration control is retired; use deployment/julia/src/calibration_campaign.jl")

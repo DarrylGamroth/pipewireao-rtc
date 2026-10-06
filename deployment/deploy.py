@@ -200,6 +200,7 @@ def substitute(value: str, bindings: dict[str, str], *, quoted: bool = False) ->
 
 def control(path: Path, argv: list[str], timeout: float = 8, *, request_id=None,
             allow_rejection: bool = False, check=None) -> dict:
+    """Legacy JSON client retained for imported development fixtures."""
     if not isinstance(argv, list) or not all(isinstance(arg, str) for arg in argv):
         raise DeploymentError("control argv must be a string list")
     if not math.isfinite(timeout) or timeout <= 0:
@@ -578,6 +579,7 @@ class Deployment:
             raise failure
 
     def run(self) -> None:
+        """Run the historical Python fixture launcher; the active CLI rejects it."""
         self.record["credentials"] = self.preflight()
         os.sched_setaffinity(0, {self.spec["placement"]["rtc"]["leader-cpu"]})
         if self.args.runtime.is_symlink():
@@ -930,15 +932,11 @@ def parser() -> argparse.ArgumentParser:
 def main() -> int:
     args = parser().parse_args()
     try:
+        if args.command in ("run", "control"):
+            raise DeploymentError(
+                "Python live deployment control is retired; use deployment/julia/deploy_cli.jl")
         if args.command == "install":
             install(args)
-        elif args.command == "control":
-            state = json.loads((args.runtime / "state.json").read_text())
-            if not state.get("admitted"):
-                raise DeploymentError("deployment is not admitted; inspect state.json for startup error")
-            argv = args.argv[1:] if args.argv[:1] == ["--"] else args.argv
-            print(json.dumps(control(Path(state["socket"]), argv,
-                                     timeout=48 if "source-owner" in state else 8)))
         else:
             deployment = Deployment(args)
             if args.command == "preflight":

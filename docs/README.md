@@ -49,6 +49,9 @@ production language boundary and completed replacement gates; its delivery
 record retains the historical Python evidence.
 The selected operational entrypoints and their installed dependencies now use
 Julia; scientific calibration acceptance remains separate.
+The [Python live-control CLI retirement](PYTHON_LIVE_CONTROL_RETIREMENT.md)
+records the bounded fail-closed entrypoints and the legacy fixture APIs that
+remain available to tests.
 
 [Calibration endpoint evidence](CALIBRATION_ENDPOINT_EVIDENCE.json) records
 the initial graph preparation, held-probe transport checks, independently

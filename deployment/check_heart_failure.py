@@ -2,7 +2,6 @@
 """Kill the owned native HEART child before admission and check fault cleanup."""
 from __future__ import annotations
 
-import argparse
 import json
 import os
 from pathlib import Path
@@ -63,11 +62,6 @@ def check(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--deployment", type=Path, required=True)
-    parser.add_argument("--pipewire-prefix", type=Path, default=Path("/opt/pipewireao"))
-    parser.add_argument("--runtime", type=Path, required=True)
-    parser.add_argument("--output", type=Path, required=True)
-    args = parser.parse_args()
-    args.fits = None
-    check(args)
+    raise SystemExit(
+        "Python live HEART failure qualification is retired; use deployment/julia/deploy_cli.jl "
+        "for deployment control (this focused check has no Julia counterpart).")

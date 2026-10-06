@@ -233,4 +233,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(
+        "Python live HIL qualification is retired; use deployment/julia/deploy_cli.jl "
+        "for deployment control (this focused check has no Julia counterpart).")
