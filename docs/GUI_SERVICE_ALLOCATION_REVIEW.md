@@ -134,3 +134,30 @@ removal, or dropping required requests would not satisfy the existing gate.
 The current functional baseline is useful evidence. Its allocation failure
 must remain visible while the primary decides and verifies the required
 combined interaction/resource scope.
+
+## Completed selection discriminator
+
+The primary subsequently ran
+`gui-hil-service-classic-fgn-control-allocation-v1` on the same v11 package.
+The diagnostic omits temporary native selection, retains filesystem/native
+identity checks on the existing client, and repeats midrun pause/resume in both
+cohorts. Independently inspected reports show both 512-frame cohorts retain
+the original prefix 16 and inclusive 496-exchange interval with **zero allocated
+bytes, every allocation count zero and zero GC**. Both `midrun` and
+`midrun_after_reset` are retained in its result.
+
+This isolates the omitted selection route as the discriminating change for
+the allocation failure in this setup; first midrun controls did not reproduce
+it. Exact compiler-versus-registry byte attribution remains unmeasured, but
+another SCI allocation profile is not required merely to repeat that decision.
+Arbitrary attachment still has the independently demonstrated recurring SDK
+registry costs described above.
+
+The diagnostic is **not an overall successful service qualification**:
+`success=false`, no primary failure, and cleanup rejects service status
+`Result=exit-code`, `ExecMainCode=1`, `ExecMainStatus=1`. The deployment log
+reports a thread-loop native-lock reservation still in use at close. The
+independent [interrupt review](THREAD_LOOP_INTERRUPT_REVIEW.md) treats its
+possible SIGINT mechanism separately. Zero science allocations do not excuse
+failed owned shutdown, and that cleanup failure does not erase the measured
+allocation discriminator.
