@@ -9,6 +9,8 @@ mod lifecycle;
 #[cfg(feature = "live")]
 mod live;
 #[cfg(feature = "live")]
+pub mod native_calibration_action_codec;
+#[cfg(feature = "live")]
 pub mod native_control_codec;
 mod runner;
 
