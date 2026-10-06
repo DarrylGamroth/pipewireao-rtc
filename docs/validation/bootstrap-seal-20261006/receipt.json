@@ -1,0 +1,71 @@
+{
+  "date": "2026-10-06",
+  "julia": "1.12.7",
+  "starting_revision": "a31b6529d67ea7da3dabedf029f9b548bbf2794e",
+  "baseline_rtc": "92444413e4930e1191821b8a402301307fbaca2a",
+  "sdk_candidate": "dbc377e6c6c37a86f658c08cdb145fc167933309",
+  "worktree": "/tmp/pipewireao-rtc-bootstrap-seal",
+  "branch": "fix/bootstrap-controller-seal-20261006",
+  "cpu": 15,
+  "rlimit_rtprio": 0,
+  "science_frames": 0,
+  "gpu_used": false,
+  "oracle": {
+    "baseline_bytes": 3765232,
+    "candidate_bytes": 0,
+    "final_repository_fixture_bytes": 0,
+    "baseline_assertions": {
+      "pass": 8,
+      "fail": 1
+    },
+    "after_assertions": 9,
+    "gc": 0,
+    "birth_and_removal_inside_window": true,
+    "all_owned_cleanup_confirmed": true,
+    "client_processes": "External Julia peers, source process owns runtime only."
+  },
+  "cold_suite": {
+    "retained_authority": 66,
+    "existing_bootstrap": 49,
+    "idle": 12,
+    "generic_dynamic_endpoint_profiles_and_faults": 105,
+    "total": 232,
+    "exit_code": 0
+  },
+  "commands": {
+    "before": "prlimit --rtprio=0:0 taskset -c 15 env JULIA_PKG_OFFLINE=true OPENBLAS_NUM_THREADS=1 julia --startup-file=no --compiled-modules=existing --threads=2,0 --project=/tmp/classic-jfg-sdk-interrupt-final-v1-installed/julia /tmp/gui-source-allocation-diagnostic-20261006/candidate-cold-tests/controller_churn.jl /home/dgamroth/workspaces/codex/pipewire/PipeWireAO.jl /tmp/rtc-gui-selection-allocation-review/deployment/julia /tmp/gui-source-allocation-diagnostic-20261006/candidate-cold-tests/churn-before-valid",
+    "after": "Same command, SDK_ROOT=/tmp/pipewireao-sdk-bootstrap-seal, RTC_JULIA_PROJECT=/tmp/pipewireao-rtc-bootstrap-seal/deployment/julia, OUTPUT_DIRECTORY=.../churn-after",
+    "final_repository_fixture": "prlimit --rtprio=0:0 taskset -c 15 env JULIA_PKG_OFFLINE=true OPENBLAS_NUM_THREADS=1 julia --startup-file=no --compiled-modules=existing --threads=2,0 --project=/tmp/classic-jfg-sdk-interrupt-final-v1-installed/julia deployment/julia/test/native_owner_bootstrap_churn.jl /tmp/pipewireao-sdk-bootstrap-seal /tmp/pipewireao-rtc-bootstrap-seal/deployment/julia /tmp/gui-source-allocation-diagnostic-20261006/candidate-cold-tests/churn-final",
+    "cold_suite": "prlimit --rtprio=0:0 taskset -c 15 env JULIA_PKG_OFFLINE=true OPENBLAS_NUM_THREADS=1 julia --startup-file=no --compiled-modules=existing --threads=2,0 --project=/tmp/classic-jfg-sdk-interrupt-final-v1-installed/julia /tmp/gui-source-allocation-diagnostic-20261006/candidate-cold-tests/run_rtc_final.jl"
+  },
+  "source_sha256": {
+    "deployment/julia/src/native_control_endpoint.jl": "230d06ed0f2fc8e2392b96e8c7f51ad8fa059bb15a374f30760a69bd4f157e98",
+    "deployment/julia/src/native_owner_bootstrap_runtime.jl": "472138a3128c6a693763f63f170ac66a3517b25a1c38d8b45ddc3169530185d4",
+    "deployment/julia/test/native_owner_bootstrap_sealed.jl": "80e393981283f17e42d37a78663ad7454dbdd07b0b748dad95c4032047fbedee",
+    "deployment/julia/test/native_owner_bootstrap_churn.jl": "1b27dfe69bd39658551ac95e3b26d773ad1cf727f2b8127a66dd0ade34a9ec0c",
+    "deployment/julia/test/native_owner_bootstrap_churn_peer.jl": "fb56771b897ab97e96bb78c28936badf6c5c48de277b088d3031c213c0786200"
+  },
+  "evidence_sha256": {
+    "run_rtc_final.jl": "1d661b9cc96455c12957befa1fbcf69826e03aef3c548da40e12685a2f01ab3f",
+    "controller_peer.jl": "1ca5d69fe8c0db02cab520ab9a34cb4283bf3f557fc633f802b9c7928963008f",
+    "controller_churn.jl": "517ab842ddfd71d022af9b750bbbb44dbdb1bb5585c9127e80d873f286a955aa",
+    "rtc-final.log": "30309c8ac68845ba654d4e0e1e6bd0aeb232099bac7f2cb856e05e68bc54f231",
+    "rtc-final-module-setup-failure.log": "2eabd8f699439ba2d46ac068caecc38dde05eeb9a06c0f2f936d7e6b0dc50e32",
+    "churn-final.log": "9d1ee7fd3cc992fde59a5d2941b925795539bd1b47e3187eeb8063b81028f461",
+    "churn-after.log": "e1c70507314dad028d234764a60062f9333099f1b309ada7dae3d665eba03c1e",
+    "churn-before-valid.log": "4fadc4cd4498711548903827351506bb3651c8a0e9665b4144e91ca6770a37b1",
+    "churn-before-fixed.log": "8c31037924f211d50580a732c88f092c05bd1b23784223301157abfbec1643aa",
+    "churn-before.log": "f6981c01e28ea3ced5b481e5303410efe163b9d398ae5c242ed0ad7acab436ec"
+  },
+  "failed_setup_disposition": {
+    "churn-before.log": "Foreign helper top-level captured variable assignment failed real publication/removal witnesses; allocation number not accepted. Cleanup exercised but wrong-context warnings make this an invalid oracle. Preserved.",
+    "churn-before-fixed.log": "Output directory absent; no churn measurement. Preserved.",
+    "rtc-final-module-setup-failure.log": "Generated fixture module lacked include; fixed only test runner, no production code change."
+  },
+  "remaining_gates": [
+    "Independent source review before integration.",
+    "Align SDK release/minimum dependency and freeze fresh installed packages.",
+    "Unchanged installed SCI496-exchange inclusive allocation gate with late independent GUI attach/retire.",
+    "Existing full trajectory/reset/observer death/duplicate picker qualification owned by primary."
+  ]
+}

@@ -1,0 +1,35 @@
+OWNER_CHURN bytes=3765232 pool=73084 malloc=16 gc=0 quiet=0 window=2080324200348731:2080326331506950 publisher=PUBLISHED 17 17 2080324928505074 removal=REMOVED 2080326117980259
+ERROR: LoadError: Some tests did not pass: 8 passed, 1 failed, 0 errored, 0 broken.
+in expression starting at /tmp/gui-source-allocation-diagnostic-20261006/candidate-cold-tests/controller_churn.jl:56
+unrelated native controller churn owner-process allocation: Test Failed at /tmp/gui-source-allocation-diagnostic-20261006/candidate-cold-tests/controller_churn.jl:45
+  Expression: observed.allocd == 0
+   Evaluated: 3765232 == 0
+
+Stacktrace:
+  [1] macro expansion
+    @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+  [2] churn(remote::String, directory::String, daemon::Base.Process)
+    @ Main /tmp/gui-source-allocation-diagnostic-20261006/candidate-cold-tests/controller_churn.jl:45
+  [3] (::var"#14#15"{String, String, typeof(churn)})()
+    @ Main /tmp/rtc-gui-selection-allocation-review/deployment/julia/test/native_control_private_core.jl:78
+  [4] withenv(::var"#14#15"{String, String, typeof(churn)}, ::Pair{String, String}, ::Vararg{Pair{String, String}})
+    @ Base ./env.jl:283
+  [5] (::var"#10#11"{Bool, typeof(churn), String, String})(directory::String)
+    @ Main /tmp/rtc-gui-selection-allocation-review/deployment/julia/test/native_control_private_core.jl:77
+  [6] mktempdir(fn::var"#10#11"{Bool, typeof(churn), String, String}, parent::String; prefix::String)
+    @ Base.Filesystem ./file.jl:941
+  [7] mktempdir (repeats 2 times)
+    @ ./file.jl:937 [inlined]
+  [8] with_control_private_core(f::typeof(churn); check_running::Bool)
+    @ Main /tmp/rtc-gui-selection-allocation-review/deployment/julia/test/native_control_private_core.jl:33
+  [9] with_control_private_core(f::Function)
+    @ Main /tmp/rtc-gui-selection-allocation-review/deployment/julia/test/native_control_private_core.jl:28
+ [10] top-level scope
+    @ /tmp/gui-source-allocation-diagnostic-20261006/candidate-cold-tests/controller_churn.jl:57
+ [11] macro expansion
+    @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [12] macro expansion
+    @ /tmp/gui-source-allocation-diagnostic-20261006/candidate-cold-tests/controller_churn.jl:57 [inlined]
+Test Summary:                                              | Pass  Fail  Total   Time
+unrelated native controller churn owner-process allocation |    8     1      9  32.3s
+RNG of the outermost testset: Random.Xoshiro(0x2aae3c3ef5008797, 0x723843b497d4dca8, 0x241b4745980d2ead, 0x16605b612c496ad0, 0xd281eb60eac2f2a0)

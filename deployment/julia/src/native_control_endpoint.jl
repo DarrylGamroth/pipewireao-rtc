@@ -47,6 +47,7 @@ mutable struct Endpoint{P<:Client.Profile,C,L,F}
     rejection::Pod
     failure::Union{Nothing,String}
     closed::Bool
+    retained_controller::Union{Nothing,Envelope.ControllerIdentity}
 end
 
 function metadata(identity::Envelope.ControllerIdentity, pid::UInt32)
@@ -131,6 +132,7 @@ end
 
 function refresh_controllers!(endpoint::Endpoint)
     healthy(endpoint)
+    endpoint.retained_controller === nothing || return nothing
     registry = something(endpoint.registry)
     globals = find_globals(registry; interface="PipeWire:Interface:Node")
     changed = false
@@ -191,6 +193,28 @@ function refresh_controllers!(endpoint::Endpoint)
         changed = true
     end
     changed && publish!(endpoint)
+    return nothing
+end
+
+"Retain the accepted controller and stop discovery before ordinary-owner science."
+function retain_controller!(endpoint::Endpoint, ticket::Ticket)
+    with_thread_loop_lock(endpoint.loop) do _
+        check_ticket(endpoint, ticket)
+        identity = ticket.header.controller
+        if endpoint.retained_controller !== nothing
+            endpoint.retained_controller == identity ||
+                throw(ArgumentError("native endpoint already retained another controller"))
+            return nothing
+        end
+        for controller in endpoint.controllers
+            controller.identity == identity && continue
+            controller.node === nothing || close(controller.node)
+        end
+        filter!(controller -> controller.identity == identity, endpoint.controllers)
+        length(endpoint.controllers) == 1 || error("accepted native controller was not unique")
+        stop_global_tracking!(something(endpoint.registry))
+        endpoint.retained_controller = identity
+    end
     return nothing
 end
 
@@ -263,7 +287,7 @@ function Endpoint(profile::P, ::Type{C}, loop::ThreadLoop, core::CoreConnection,
         endpoint=Client.reply_endpoint(profile))
     rejected = Client.encode_rejection(profile, Envelope.ReplyHeader(instance, Int32(-22)), lifecycle)
     endpoint = Endpoint{P,C,L,typeof(publisher)}(profile, loop, nothing, nothing, instance, lifecycle, publisher, Controller[],
-        nothing, false, 0, nothing, initial, rejected, nothing, false)
+        nothing, false, 0, nothing, initial, rejected, nothing, false, nothing)
     try
         with_thread_loop_lock(loop) do _
             endpoint.registry = Registry(core)

@@ -101,6 +101,9 @@ function _poll_ready!(runtime::Transport)
     wake = Base.Threads.atomic_xchg!(runtime.wake, false)
     pending = with_thread_loop_lock(runtime.loop) do _
         Endpoint.operational(runtime.endpoint)
+        retained = runtime.endpoint.retained_controller
+        retained === nothing || Endpoint.controller_present(runtime.endpoint, retained) ||
+            error("retained native bootstrap controller was revoked")
         runtime.endpoint.pending !== nothing
     end
     if wake || pending
@@ -383,6 +386,15 @@ function _advance!(runtime, ticket, ::Codec.Command{:connect}, facts, lifecycle)
         complete!(runtime.transport, ticket, lifecycle; result=Int32(-5), message)
         return nothing, lifecycle, false
     elseif _ready(runtime)
+        # The supervisor retains this exact connection through reset and Quit.
+        # Remove global discovery before publishing Connected; main cannot enter
+        # science until the accepted ticket has completed below. Bound controller
+        # proxies still report removal/error and exact NodeInfo proof changes.
+        with_thread_loop_lock(runtime.transport.loop) do _
+            Endpoint.check_ticket(runtime.transport.endpoint, ticket)
+            close(runtime.transport.registry_listener)
+            Endpoint.retain_controller!(runtime.transport.endpoint, ticket)
+        end
         lifecycle = Codec.Connected
         lifecycle!(runtime.transport, lifecycle)
         complete!(runtime.transport, ticket, lifecycle)

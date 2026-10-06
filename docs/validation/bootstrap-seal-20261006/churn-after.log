@@ -1,0 +1,4 @@
+OWNER_CHURN bytes=0 pool=0 malloc=0 gc=0 quiet=0 window=2080369052910443:2080370983047854 publisher=PUBLISHED 17 17 2080369751532059 removal=REMOVED 2080370887528289
+Test Summary:                                              | Pass  Total   Time
+unrelated native controller churn owner-process allocation |    9      9  30.4s
+CLEANUP_CONFIRMED
