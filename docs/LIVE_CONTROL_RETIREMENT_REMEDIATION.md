@@ -93,8 +93,9 @@ cargo clippy --offline --features live -j 1 --no-deps --lib --bins \
 
 Results: **130 passed** (library 86, runner 18, calibration CLI unit 2,
 transport-neutral calibration 19, native CLI preflight 3, retired runner ingress
-2). Seven actual private-core fixtures remain explicitly ignored; they were not
-run or counted as passes. Clippy passed with no repository lint warnings. Cargo
+2). At this build stage, seven actual private-core fixtures were explicitly ignored
+and were not counted as passes. Their later execution and actual native caller
+evidence are recorded in [the private-core follow-up](LIVE_CONTROL_RETIREMENT_PRIVATE_CORE_VALIDATION.md). Clippy passed with no repository lint warnings. Cargo
 retains the existing dependency future-incompatibility notice for
 `proc-macro-error2 v2.0.1`; no unrelated dependency change was made.
 
