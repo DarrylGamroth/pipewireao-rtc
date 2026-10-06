@@ -279,7 +279,9 @@ affirmative exit evidence of its own.
 
 **Validation:** independently inspected final source and negative fixtures.
 The retained manager-context suite has 46 passing assertions. Generated-unit
-`systemd-analyze` parse validation is retained separately. Neither constitutes
+`systemd-analyze` exit-status validation is retained separately; its unchecked
+stderr made the original parse-success interpretation too strong, as the v2
+trial below demonstrates. Neither constitutes
 an actual invocation receipt from a successful SCI service.
 **Disposition:** remediation accepted for a fresh coordinated integration
 attempt; actual manager receipt and complete owner cleanup remain to validate.
@@ -299,3 +301,53 @@ and test totals were independently checked. Review worktree started clean at
 primary's additional uncommitted FFTW-wisdom provenance inclusion during the
 final inspection; the table identifies committed `0e21a58` exactly. No new
 build, test execution, service-manager action or SCI was run by this reviewer.
+
+## Structured output correction after actual v2
+
+### GUI-HIL-R007 — Warning-only unit parse error discards receipt destination
+
+**Severity:** high for service qualification. **Confidence:** high.
+**Classification:** observed actual journal plus source. **Affected:**
+`create_unit` StandardOutput serialization and prelaunch verification.
+
+The second actual service journal reports `Failed to parse output specifier,
+ignoring` for the quoted `"append:/.../deployment.log"`. The unit verifier's
+zero exit code did not mean it accepted every property; earlier verification
+did not inspect stderr. The v2 result remains failed: a native owner Status
+request returned the generic native runner Status failure, and cleanup could
+not open the missing deployment log. The underlying runner error is unresolved;
+the output formatting defect does not establish or repair its cause.
+
+The same journal independently demonstrates that the manager actually supplied
+the exit variables: it records invocation
+`bf506e48830d4d0dad0ca1a4d779a7c1`, matching the admitted result, followed by
+`exited 1 exit-code`. Systemd also records the main process's status 1. This is
+actual failed-exit receipt evidence, not proof of a successful service cohort
+or receipt delivery to the intended file.
+
+Primary remediation `7995709f763a33832a70ea90189d03968637f274` was independently
+inspected in the clean GUI worktree. The structured directive is now emitted
+as unquoted `StandardOutput=append:PATH`; `%` is escaped for systemd specifiers,
+and CR, newline and NUL are rejected. Before reload/start, a bounded verifier
+subprocess runs with the captured manager environment. Its return code, stdout
+and stderr are retained in the result, and admission requires exit zero **and
+empty stderr**. Warning-only parser rejection therefore prevents SCI launch.
+The invocation-bound receipt and strict property-consistency checks remain
+unchanged.
+
+**Validation:** source inspection; independently read retained 50-assertion
+focused log, including generated-unit verification exit and empty stderr.
+Log `~/.cache/gui-native-hil-qualification-20261006/standard-output-after.log`
+has independently checked SHA-256
+`0cc3d7086d5fa460fbd448ce253a0e03f1b40359c35582ca6de04eeb619fbccf`.
+Committed harness SHA-256 is
+`a63861971b80ae6f108118eccb528b6cf13c2b2a1bbf7abcf575e67457fd6c87`.
+Actual v2 evidence is under the same final-deployment cache as v1, in
+`gui-hil-service-classic-fgn-v2/{result.json,journal.log}`.
+
+**Disposition:** source correction accepted for a fresh v3 attempt. Actual
+successful receipt delivery, native runner completion and normal owned cleanup
+remain integration gates. A diagnostic SDK clone may improve error attribution;
+it must retain its own package/source provenance and cannot retrospectively
+qualify v2. No build, test rerun, service invocation or SCI execution was
+performed by this reviewer for this addendum.
