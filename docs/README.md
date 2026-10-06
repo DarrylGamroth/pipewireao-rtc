@@ -158,6 +158,10 @@ integration, or the GUI session picker. The
 the stale-generation rejection and migration of the selected campaign and HEART
 export consumers to fresh native completion before reading saved reports.
 
+[Native deployment bootstrap](NATIVE_DEPLOYMENT_BOOTSTRAP_VALIDATION.md) records
+actual public-control fixture corrections, locator alias retirement and
+post-exit report verification with the captured launcher PID.
+
 The [synchronization prerequisite](NATIVE_CONTROL_SYNC_VALIDATION.md) and its
 [independent review](NATIVE_CONTROL_SYNC_REVIEW.md) record the corrected inner
 wait and stalled-core evidence, separately from native runner ingress.

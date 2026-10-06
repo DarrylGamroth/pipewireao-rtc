@@ -1208,7 +1208,7 @@ function _run_locked(deployment::DeploymentRunner, base)
                 "instrument" => deployment.source_owner["instrument"])
         end
         deployment.source_owner === nothing && (bindings["FITS"] = realpath(deployment.options.fits))
-        merge!(deployment.record, Dict("instance" => basename(runtime), "socket" => deployment.socket,
+        merge!(deployment.record, Dict("instance" => basename(runtime),
             "remote" => bindings["REMOTE"], "control_locator" => deployment.socket))
         if deployment.source_owner === nothing
             deployment.record["fits_sha256"] = digest(deployment.options.fits)
@@ -1369,6 +1369,7 @@ function wait_state(runtime::AbstractString, predicate; timeout=30, process=noth
     isfinite(timeout)&&timeout>0 || fail("state wait timeout must be finite and positive")
     deadline=monotonic()+timeout
     locator=joinpath(runtime,"control.json")
+    hints = nothing
     while true
         process!==nothing&&!process_running(process) && fail("deployment launcher exited before requested native state")
         NativeControlClient.deadline_check(deadline,()->nothing)
@@ -1389,7 +1390,6 @@ function wait_state(runtime::AbstractString, predicate; timeout=30, process=noth
             state=NativeSupervisorClient.render(completion;owner_pid=client.observation.owner_pid)
             state["deployment_uuid"]=uuid
             state["control_locator"]=locator
-            state["socket"]=locator # transitional locator alias, never a Unix control socket
             state["instance"]=basename(dirname(hints["remote"]))
             state["remote"]=basename(hints["remote"])
             if haskey(state,"runner_endpoint")
@@ -1414,8 +1414,11 @@ function wait_state(runtime::AbstractString, predicate; timeout=30, process=noth
 end
 
 "Read a final saved report only after observing this owned launcher's exit."
-function wait_final_report(runtime::AbstractString,process::Base.Process;timeout=30)
+function wait_final_report(runtime::AbstractString,process::Base.Process;
+        owner_pid::Integer, timeout=30)
     isfinite(timeout)&&timeout>0 || fail("final report wait must be finite and positive")
+    !(owner_pid isa Bool) && 0 < owner_pid <= typemax(UInt32) ||
+        fail("final report requires the PID captured from the owned launcher")
     deadline=monotonic()+timeout
     while process_running(process)
         monotonic()<deadline || fail("deployment launcher did not exit")
@@ -1423,7 +1426,7 @@ function wait_final_report(runtime::AbstractString,process::Base.Process;timeout
     end
     wait(process)
     final=Common.read_json(joinpath(runtime,"state.json");maximum=MAX_REPLY_BYTES)
-    get(final,"pid",nothing)==getpid(process) || fail("final report belongs to another launcher")
+    get(final,"pid",nothing)==owner_pid || fail("final report belongs to another launcher")
     return final
 end
 

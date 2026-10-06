@@ -196,9 +196,9 @@ function kill_fixture_tree!(runtime, supervisor, identities)
     state_path = joinpath(runtime, "state.json")
     if !process_exited(supervisor) && process_running(supervisor) && isfile(state_path)
         state = JSON3.read(read(state_path, String), Dict{String,Any})
-        socket = get(state, "socket", nothing)
-        if get(state, "admitted", false) && socket isa String && ispath(socket)
-            try DeploymentTest.control(socket, ["quit"]; timeout=8, allow_rejection=true) catch end
+        locator = get(state, "control_locator", nothing)
+        if get(state, "admitted", false) && locator isa String && ispath(locator)
+            try DeploymentTest.control(locator, ["quit"]; timeout=8, allow_rejection=true) catch end
         end
     end
     if !process_exited(supervisor)
@@ -278,9 +278,11 @@ function run_native_runner_deployment()
         owned_identities = NamedTuple[]
         try
             supervisor = Base.run(pipeline(command; stdout=supervisor_log, stderr=supervisor_log); wait=false)
+            supervisor_pid = getpid(supervisor)
             admitted = DeploymentTest.wait_state(runtime,
                 state -> get(state, "phase", nothing) == "running" && get(state, "admitted", false);
                 timeout=180, process=supervisor)
+            @test admitted["pid"] == supervisor_pid
             owned_identities = deployment_owned_identities(admitted)
             @test admitted["runner"]["node"] == "pipewireao.rtc.runner.native-runner-deployment"
             @test admitted["runner"]["instance"] isa Integer && admitted["runner"]["instance"] > 0
@@ -291,16 +293,17 @@ function run_native_runner_deployment()
             @test !ispath(joinpath(run_directory, "control.sock"))
             @test isfile(admitted["control_locator"])
 
-            socket = admitted["socket"]
-            invalid = DeploymentTest.control(socket, ["session-start", "extra"];
+            locator = admitted["control_locator"]
+            @test !haskey(admitted, "socket")
+            invalid = DeploymentTest.control(locator, ["session-start", "extra"];
                 request_id="native-invalid-command", timeout=30, allow_rejection=true)
             @test invalid["id"] == "native-invalid-command"
             @test invalid["ok"] === false
-            after_invalid = DeploymentTest.control(socket, ["status"];
+            after_invalid = DeploymentTest.control(locator, ["status"];
                 request_id="native-status-after-invalid", timeout=30)
             @test after_invalid["ok"] && after_invalid["state"] == "Running"
-            first_status = DeploymentTest.control(socket, ["status"]; request_id="native-status-1", timeout=30)
-            second_status = DeploymentTest.control(socket, ["status"]; request_id="native-status-2", timeout=30)
+            first_status = DeploymentTest.control(locator, ["status"]; request_id="native-status-1", timeout=30)
+            second_status = DeploymentTest.control(locator, ["status"]; request_id="native-status-2", timeout=30)
             for status in (first_status, second_status)
                 @test status["ok"]
                 @test status["state"] == "Running"
@@ -311,16 +314,17 @@ function run_native_runner_deployment()
             @test first_status["id"] == "native-status-1"
             @test second_status["id"] == "native-status-2"
 
-            stopped = DeploymentTest.control(socket, ["session-stop"]; request_id="native-stop", timeout=30)
+            stopped = DeploymentTest.control(locator, ["session-stop"]; request_id="native-stop", timeout=30)
             @test stopped["ok"] && stopped["state"] == "Ready"
-            reset = DeploymentTest.control(socket, ["reset"]; request_id="native-reset", timeout=30)
+            reset = DeploymentTest.control(locator, ["reset"]; request_id="native-reset", timeout=30)
             @test reset["ok"] && reset["state"] == "Ready"
-            started = DeploymentTest.control(socket, ["session-start"]; request_id="native-start", timeout=30)
+            started = DeploymentTest.control(locator, ["session-start"]; request_id="native-start", timeout=30)
             @test started["ok"] && started["state"] == "Running"
-            quit = DeploymentTest.control(socket, ["quit"]; request_id="native-quit", timeout=30)
+            quit = DeploymentTest.control(locator, ["quit"]; request_id="native-quit", timeout=30)
             @test quit["ok"] && quit["result"]["shutdown"]
 
-            final = DeploymentTest.wait_final_report(runtime, supervisor; timeout=180)
+            final = DeploymentTest.wait_final_report(runtime, supervisor;
+                owner_pid=supervisor_pid, timeout=180)
             @test final["phase"] == "stopped" && !final["admitted"]
             wait(supervisor)
             @test success(supervisor)
