@@ -71,6 +71,17 @@ select the package's Julia project and load its packaged modules. Packages carry
 their cold export resources separately from the resolved simulator environment;
 preparing another package does not replace its plant or local dependencies.
 
+Use optional `--julia-executable /absolute/path/to/julia` to select the runtime.
+The default is the executable of the Julia process running the installer.
+Installation validates Julia ≥ 1.12 and < 2 before creating the destination and
+resolves juliaup selection to its reported managed runtime. Each generated
+wrapper records the same absolute executable, so foreground and generated user
+units work with a `PATH` that excludes Julia. Retain the selected runtime on the
+host. Reinstall to a fresh destination to choose another runtime. Unsealed
+installed wrappers are regenerated; incompatible sealed wrappers are rejected
+with instructions to export a fresh SDK. The user manager environment requires
+no changes.
+
 All four campaigns require a sealed scientist-authored complete-frame
 `--base-package`. Existing Python generators and audits remain development
 tools for creating or inspecting those inputs. They are not invoked by the

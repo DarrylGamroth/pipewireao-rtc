@@ -660,11 +660,21 @@ end
 
 function serve_control(deployment::DeploymentRunner)
     broker = something(deployment.broker)
-    deployment.broker_accept === nothing && (deployment.broker_accept = @async accept(broker))
+    deployment.broker_accept === nothing && (deployment.broker_accept = @async begin
+        try
+            accept(broker)
+        catch error
+            # SIGINT may arrive in this owned task rather than the lifecycle
+            # owner. Propagate only interruption as a graceful-stop signal.
+            error isa InterruptException || rethrow()
+            nothing
+        end
+    end)
     status = timedwait(() -> istaskdone(deployment.broker_accept), 0.1; pollint=0.005)
     status == :timed_out && return
     client = fetch(deployment.broker_accept)
     deployment.broker_accept = nothing
+    client === nothing && throw(InterruptException())
     failure = nothing
     request_id = nothing
     try
@@ -1208,6 +1218,42 @@ function validate_runtime(root::AbstractString)
     return root
 end
 
+function selected_julia_executable(path::AbstractString)
+    isabspath(path) && !occursin('\0', path) && !occursin('\n', path) &&
+        !occursin('\r', path) || fail("--julia-executable must be an absolute executable path")
+    isfile(path) && isexecutable(path) || fail("selected Julia executable is missing or not executable: $path")
+    executable = realpath(path)
+    probe = try
+        Common.run_checked([executable, "--startup-file=no", "--history-file=no", "-e",
+            "print(VERSION, '\\n', Base.julia_cmd().exec[1])"];
+            timeout=15, maximum_output_bytes=4096)
+    catch error
+        fail("cannot validate selected Julia executable $path: $(sprint(showerror, error))")
+    end
+    fields = split(strip(probe.stdout), '\n')
+    version = tryparse(VersionNumber, first(fields))
+    probe.returncode == 0 && version !== nothing && v"1.12" <= version < v"2" ||
+        fail("selected Julia executable must run Julia >= 1.12 and < 2: $path")
+    length(fields) == 2 && isabspath(fields[2]) && isfile(fields[2]) && isexecutable(fields[2]) ||
+        fail("selected Julia executable did not report its absolute runtime executable: $path")
+    # Pin the managed runtime itself when selection was through juliaup.
+    return realpath(fields[2])
+end
+
+shell_quote(value::AbstractString) = "'" * replace(value, "'" => "'\"'\"'") * "'"
+
+function installed_wrappers(julia::AbstractString)
+    executable = shell_quote(julia)
+    scripts = Dict("pipewireao-rtc-deploy" => "#!/bin/sh\nexec $executable --startup-file=no --project=\"\$(dirname \"\$0\")/../julia\" \"\$(dirname \"\$0\")/../julia/deploy_cli.jl\" \"\$@\"\n")
+    for (name, owner) in INSTALLED_ENTRYPOINTS
+        scripts[name] = "#!/bin/sh\njulia_dir=\"\$(dirname \"\$0\")/../julia\"\n" *
+            "exec $executable --startup-file=no --project=\"\$julia_dir\" -e " *
+            "'using PipeWireAODeployment; " *
+            "exit(PipeWireAODeployment.$owner.main(ARGS))' -- \"\$@\"\n"
+    end
+    return scripts
+end
+
 function install(options::NamedTuple)
     source = realpath(options.package)
     destination = abspath(options.destination)
@@ -1215,6 +1261,15 @@ function install(options::NamedTuple)
     source_spec = profile(joinpath(source, "deployment.conf"), options.pipewire_prefix)
     source_runtime = joinpath(source, "julia")
     isdir(source_runtime) && validate_runtime(source_runtime)
+    julia = selected_julia_executable(get(options, :julia_executable, Base.julia_cmd().exec[1]))
+    scripts = installed_wrappers(julia)
+    for (name, script) in scripts
+        relative = "bin/$name"
+        if haskey(source_spec["artifacts"], relative)
+            read(joinpath(source, relative), String) == script ||
+                fail("sealed $relative does not use the selected Julia executable; export a fresh SDK without installed wrappers and install it with --julia-executable $julia")
+        end
+    end
     cp(source, destination; force=false, follow_symlinks=true)
     installed_julia = joinpath(destination, "julia")
     isdir(installed_julia) || ScienceExport.copy_deployment_runtime(destination; copy_service=false)
@@ -1222,27 +1277,13 @@ function install(options::NamedTuple)
     bin = joinpath(destination, "bin")
     mkpath(bin)
     wrapper = joinpath(bin, "pipewireao-rtc-deploy")
-    if !isfile(wrapper)
-        write(wrapper, "#!/bin/sh\nexec julia --startup-file=no --project=\"\$(dirname \"\$0\")/../julia\" \"\$(dirname \"\$0\")/../julia/deploy_cli.jl\" \"\$@\"\n")
-        chmod(wrapper, 0o755)
-    else
-        occursin("julia/deploy_cli.jl", read(wrapper, String)) ||
-            fail("existing sealed launcher is not a Julia deployment entrypoint")
-    end
-    # Exported Julia entrypoints are sealed artifacts. Preserve their exact bytes.
-    for (name, owner) in INSTALLED_ENTRYPOINTS
+    # Installation owns unsealed wrappers; sealed artifacts retain their bytes.
+    for (name, script) in scripts
         entrypoint = joinpath(bin, name)
-        if !isfile(entrypoint)
-            script = "#!/bin/sh\njulia_dir=\"\$(dirname \"\$0\")/../julia\"\n" *
-                "exec julia --startup-file=no --project=\"\$julia_dir\" -e " *
-                "'using PipeWireAODeployment; " *
-                "exit(PipeWireAODeployment.$owner.main(ARGS))' -- \"\$@\"\n"
+        if !haskey(source_spec["artifacts"], "bin/$name")
             write(entrypoint, script)
-            chmod(entrypoint, 0o755)
-        else
-            occursin("PipeWireAODeployment.$owner.main", read(entrypoint, String)) ||
-                fail("existing sealed $name entrypoint is not a Julia CLI")
         end
+        chmod(entrypoint, 0o755)
     end
     template = joinpath(installed_julia, "assets", "deployment", "pipewireao-rtc@.service.in")
     bin_template = joinpath(bin, basename(template))
@@ -1287,7 +1328,7 @@ function _options(argv)
             index += 1
         end
     end
-    allowed = command == "install" ? Set(["--package", "--destination", "--pipewire-prefix"]) :
+    allowed = command == "install" ? Set(["--package", "--destination", "--pipewire-prefix", "--julia-executable"]) :
         command == "control" ? Set(["--runtime"]) :
         Set(["--deployment", "--pipewire-prefix", "--fits", "--runtime"])
     command == "run" && push!(allowed, "--owner-preparation-timeout-seconds")
@@ -1299,6 +1340,7 @@ function _options(argv)
         runtime=get(parsed, "--runtime", joinpath(get(ENV, "XDG_RUNTIME_DIR", "/run/user/$(ccall(:getuid, Cuint, ()))"), "pipewireao-rtc")),
         fits=get(parsed, "--fits", nothing), package=get(parsed, "--package", ""),
         destination=get(parsed, "--destination", ""), argv=positionals,
+        julia_executable=get(parsed, "--julia-executable", Base.julia_cmd().exec[1]),
         owner_preparation_timeout_seconds=preparation_timeout)
     if command == "install"
         isempty(options.package) && fail("missing --package")

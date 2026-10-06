@@ -194,6 +194,12 @@ and results. Selected finite simulation calibration gates are complete; physical
 ordinary Copper streaming and wall-clock rate qualification remain separate.
 Historical Python evidence continues to identify its original producer.
 
+[Installed Julia executable validation](JULIA_SYSTEMD_RUNTIME_VALIDATION.md)
+records issue #2, absolute runtime selection for every installed wrapper,
+minimal-PATH foreground/static-user-unit checks, and the adjacent owned-accept
+SIGINT correction. Its [evidence ledger](JULIA_SYSTEMD_RUNTIME_EVIDENCE.json)
+keeps executable lookup and functional cleanup separate from scientific claims.
+
 ## Inactive design archive
 
 The [archived full-RTC design](archive/full-rtc/README.md) preserves prior work
