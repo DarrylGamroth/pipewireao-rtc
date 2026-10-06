@@ -1,142 +1,73 @@
 # Repository agent instructions
 
-## Purpose and active scope
+## Start here
 
-This repository currently owns a small headless PipeWireAO development runner.
-The first executable loads one simulated or recorded complete-frame source,
-one `fgn-native` graph, and one non-actuating sink from a standard
-PipeWire configuration. The active RTCW extension composes multiple existing
-filter-graph instances and exact PipeWire links under the same session
-lifecycle. Named execution groups add selective start and stop control without
-adding another graph-authoring format, scheduler, or ownership lifecycle.
+- Inspect the branch, revision and complete worktree status. Preserve unrelated
+  edits and processes; keep substantial work on a dedicated branch/worktree.
+- Read [the task index](docs/README.md) and only the requirement/design sections
+  relevant to the change. Use `rg` for IDs/headings before opening long files.
+  The index links current work; do not reconstruct status from old reports.
+- Architecture, requirements and delivery order are authoritative in
+  `docs/architecture.md`, `docs/operations.md` and `docs/roadmap.md`, respectively.
+  Preserve `RTC-ARCH-*`/`RTC-DEV-*` identities and meanings. Evidence is not a
+  requirement, and documentation is not implementation or qualification.
+- Read a historical review/receipt only for an affected finding or claim. Reuse
+  verified results while their source, dependency, configuration and measurement
+  assumptions still apply; rerun affected gates when those assumptions change.
 
-Runtime implementation is underway and remains incomplete. Documentation is
-not implementation or qualification evidence.
+## Scope and owners
 
-The selected deployment increment adds installed Classic/Copper native and
-external Julia profiles, a bounded local control interface, and foreground and
-systemd user-service launchers. It delegates full-frame and row-block execution
-to the graph owners. Read RTC-ARCH-020 and RTC-DEV-020 through RTC-DEV-023 before
-changing deployment code. The selected AOS/HIL increment is RTC-ARCH-021 and
-RTC-DEV-024 through RTC-DEV-027: installed complete-frame Classic/Copper science
-with an explicitly selected CPU, CUDA or AMDGPU simulator. Keep its functional
-deployment checks separate from scientific convergence and rate qualification.
-HIL detector backgrounds, Classic reference slopes and Copper PDM flat offsets
-must come from the simulated plant; retaining measured matrices remains an
-explicitly hybrid calibration.
-RTC-ARCH-022 and RTC-DEV-028 add an unchanged supervised HEART owner through
-the SPA Standard WFS sink and Standard DM source. External-RTC sessions own
-links and lifecycle without loading an FGN/JFG processing graph. CPU finite
-exchange checks precede GPU or paced-readout characterization.
+- This repository owns the non-actuating development RTC: configuration, exact
+  session/links, lifecycle, execution groups, deployment supervision, diagnostics
+  and system tests. Optional GUI/CLI clients do not own the science lifecycle.
+- PipeWireAO owns ndarray/FGN transport, graph hosting, properties, parameters,
+  metadata, polling, row blocks, progressive scheduling, buffers and workers.
+- Scientific packages own transport-neutral Algorithms and declarations;
+  device-plugin repositories own adapters. External Julia owners run their own
+  graphs. Use public versioned contracts, never daemon-private layouts/callbacks.
+- Current backend/qualification selections are in the roadmap's **Current work**
+  section. Functional, numerical, allocation, cadence and latency evidence are
+  separate. Simulated offsets come from the plant; measured matrices imply a
+  declared hybrid calibration. HEART remains an unchanged external owner.
+- Physical devices/authority, durable recording, remote access, RTC-owned data
+  scheduling and target-host qualification remain deferred. Do not load or
+  promote `docs/archive/full-rtc/` without an explicit scope decision.
+- Sibling edits need task scope and must preserve unrelated changes.
 
-RTC-ARCH-023 and RTC-DEV-029 select operational interaction calibration through
-the deployed DM/WFS paths, initially against AOS. Reuse AdaptiveOpticsCalibration
-and retain normal detector acquisition; ideal direct-physics helpers are
-diagnostic references. Physical endpoint operation remains deferred.
+## Implementation
 
-Physical devices, correction authority, durable recording, remote access,
-RTC-owned progressive scheduling, and target-host qualification are not active
-scope. Their former proposals are preserved
-under `docs/archive/full-rtc/` as inactive design input. Do not load, cite, or
-implement that archive unless the user explicitly asks to promote one deferred
-capability. Never reactivate the archive wholesale.
+- Rust is the runner language; use Statig's blocking API, private Statig types
+  and one serialized dispatcher. Handlers emit typed effects; blocking work
+  executes outside handlers and returns typed completions.
+- Production calibration orchestration uses Julia and the existing acquisition,
+  protocol, analysis and AdaptiveOpticsCalibration APIs. Python remains allowed
+  for development/validation tooling, not new operational dependencies.
+- Live controls use native PipeWire serialization (`RTC-ARCH-024`/`RTC-DEV-030`).
+  Saved reports/configuration may use JSON. Saved files never prove live readiness.
+- Use maintained standard PipeWire relaxed SPA-JSON configuration/generators.
+  Do not introduce another configuration language or operational bundle format.
+- Keep the runner outside frame processing. Scientists declare typed Algorithms,
+  ports, properties, parameters, shapes and schemas; they do not write SPA
+  callbacks, pointer/errno handling, publication or worker machinery.
+- Algorithms must remain array-testable and usable by other executors. Support
+  declared full-frame/row-block owners without adding an RTC data scheduler.
+- Follow the relevant roadmap dependencies unless the user changes their order.
 
-Before making changes, read `docs/README.md` and the relevant active document:
+## Validation and documentation
 
-- `docs/architecture.md` for scope and component boundaries;
-- `docs/operations.md` for RTC-DEV requirements and lifecycle; and
-- `docs/roadmap.md` for implementation order and completion evidence.
-
-## Authority boundaries
-
-- PipeWireAO owns generic SPA/PipeWire ndarray transport, the FGN ABI and
-  graph host, properties, parameters, metadata, polling, row-block transport,
-  and progressive execution.
-- Scientific Algorithm packages own transport-neutral implementations and
-  portable declarations.
-- This repository owns development configuration, exact graph realization,
-  runner lifecycle, deployment process supervision, diagnostics, and
-  system-level tests. External Julia processes execute their own graphs.
-- Device-plugin repositories own camera, deformable-mirror, file-source, and
-  other adapters.
-- `pipewireao-gui` and command-line tools are ordinary optional observers.
-
-Use public, versioned interfaces across these boundaries. Do not depend on
-PipeWire daemon-private pointers, object layouts, or undocumented callback
-behavior. Link to low-level contracts instead of copying them. Changes in a
-sibling repository require explicit task scope and must preserve unrelated
-worktree changes.
-
-## Implementation constraints
-
-- Operational calibration orchestration and scripts selected for production
-  deployment must use Julia. Reuse the existing Julia acquisition, protocol
-  and analysis modules and AdaptiveOpticsCalibration; do not introduce new
-  Python dependencies into that operational path. Existing Python exporters,
-  campaign owners and qualification scripts remain development tooling and
-  validation references until Julia parity is demonstrated. The selected
-  migration is recorded in `docs/JULIA_CALIBRATION_MIGRATION.md`.
-- Rust is the default language for the small headless runner.
-- Implement the lifecycle with Statig's blocking state-machine API and one
-  serialized dispatcher from the first increment. Keep Statig types private.
-  State handlers emit typed effects; potentially blocking PipeWire,
-  configuration, and filesystem work executes outside the handlers and returns
-  as typed completion events.
-- Use the existing standard PipeWire relaxed SPA-JSON configuration and
-  maintained generator. Do not add TOML, YAML, a database, or an operational
-  bundle format to the development runner without an approved scope change.
-- Keep the runner outside frame processing. FGN and PipeWireAO own scheduling,
-  buffers, property publication, parameter adoption, and worker mechanisms.
-- Scientists declare ordinary typed Algorithms, ports, properties,
-  parameters, shapes, and schemas. They must not write SPA callbacks, raw-
-  pointer handling, errno translation, publication machinery, worker code, or
-  central adapter-registry entries.
-- Keep the scientific implementation directly testable with ordinary arrays
-  and usable by a non-PipeWire graph executor.
-- Deployment profiles remain non-actuating. The selected user-service and
-  external-owner management support existing full-frame and row-block graphs;
-  they do not introduce an RTC data scheduler or physical authority.
-- Add implementation only in the dependency order in `docs/roadmap.md` unless
-  the user explicitly changes that order.
-
-## Documentation rules
-
-- `docs/README.md` is the maintained authority map.
-- The active set contains only `docs/architecture.md`, `docs/operations.md`,
-  and `docs/roadmap.md`.
-- Preserve active `RTC-ARCH-*` and `RTC-DEV-*` identities. Do not reuse an
-  archived identity or change its historical meaning.
-- A deferred capability needs a new active architecture decision and a small
-  reviewed contract before implementation. Archived wording is design input,
-  not current authority.
-- Distinguish observed capability, planned behavior, test evidence, benchmark
-  observations, and qualification claims.
-- Keep Mermaid diagrams compatible with VS Code's built-in renderer. Diagrams
-  explain relationships; prose and tables remain authoritative.
-
-## Change and validation discipline
-
-- Inspect the complete worktree before editing. Existing changes belong to the
-  user unless the task clearly includes them.
-- Keep commits focused and exclude unrelated files. Do not rewrite published
-  history unless explicitly requested.
-- For documentation changes, check local links, trailing whitespace, final
-  newlines, unique active and archived requirement definitions, and Markdown
-  rendering.
-- Mermaid CLI is available through the local Podman image
-  `ghcr.io/mermaid-js/mermaid-cli/mermaid-cli:latest`. Render every changed
-  Mermaid document, preferably by mounting the repository read-only and
-  writing output to a temporary directory. For example:
-
-  ```sh
-  podman run --rm -v "$PWD:/work:ro,Z" \
-    ghcr.io/mermaid-js/mermaid-cli/mermaid-cli:latest \
-    -i /work/docs/architecture.md -o /tmp/architecture.md \
-    -a /tmp/architecture
-  ```
-
-- Once a Rust workspace exists, run formatting, focused tests, workspace
-  tests, and Clippy in proportion to the change.
-- The development performance comparison is characterization only. Do not
-  infer a deadline, tail-latency, physical-loop, safety, or real-time claim
-  from a functional test or microbenchmark.
+- Keep commits focused; never rewrite published history without authorization.
+- Choose checks for the changed behavior. Rust code: formatting, focused tests,
+  workspace tests and Clippy in proportion to the change. Live/hardware gates
+  are opt-in; do not stop an existing daemon, instrument or experiment.
+- Documentation-only changes: local links/anchors, whitespace, final newlines,
+  requirement-ID preservation and Markdown structure. No runtime rebuild is
+  needed solely because prose or navigation changed.
+- Render changed Mermaid diagrams with the local Podman image
+  `ghcr.io/mermaid-js/mermaid-cli/mermaid-cli:latest`; mount source read-only and
+  write temporary output. Keep diagrams VS Code-compatible; prose is authoritative.
+- Keep observed, derived and unconfirmed conclusions distinct. A functional
+  check/microbenchmark does not establish deadline, tail-latency, physical-loop,
+  safety or real-time qualification. Preserve failed gates and their scope.
+- Maintain current work in the roadmap's **Current work** section. Keep dated
+  integration/review/validation records as evidence, indexed in
+  `docs/EVIDENCE_INDEX.md`; do not append another competing status narrative.

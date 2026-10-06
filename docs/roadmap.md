@@ -1,8 +1,60 @@
 # PipeWireAO development roadmap
 
-Status: active implementation plan
+Status: active implementation plan; current status is maintained below
 
-Review date: 2026-09-04
+Initial plan date: 2026-09-04
+
+## Current work
+
+Updated 2026-10-06. This section is the current delivery summary. Later sections
+preserve the original dependency sequence and dated increments; their “next”,
+“in progress”, “pending” and “complete” labels describe those recorded stages.
+Use the [task index](README.md) to read the affected contracts, not the whole
+chronology. Architecture/requirement decisions remain authoritative.
+
+### Selected scope
+
+Complete the native-control/deployment increment and provide a stable base for
+GUI development. AOS uses CUDA; FGN/JFG RTC execution remains CPU. Classic and
+Copper, full-frame and existing row-block owners remain selected. CPU0/1 are
+excluded. Keep HEART unchanged and all profiles non-actuating. Functional,
+numerical, allocation and rate/latency qualification remain separate.
+
+### Observed progress
+
+| Area | Current disposition | Evidence to read if affected |
+| --- | --- | --- |
+| Native control implementation | Reviewed changes merged to RTC main; live controls use typed native requests. Saved JSON is artifact/configuration only. | [Inventory](LIVE_CONTROL_INVENTORY.md), [integration snapshot](MAIN_INTEGRATION_20261006.md) |
+| Julia SDK/bootstrap | SDK 0.6.17 source is pushed; deployment pins that exact own revision. Paired cold runtime checks pass 232 assertions. SDK registration and fresh installed SCI/allocation qualification remain open. | [Bootstrap decision/validation](BOOTSTRAP_CONTROLLER_SEAL_VALIDATION.md), [integration receipt](validation/bootstrap-seal-20261006/integration-receipt.json) |
+| GUI session selection | Actual same-label installed owners selected by exact native identities, including a stopped peer; read-only picker replay passed. GUI changes are on its local main. | GUI `docs/NATIVE_HIL_GUI_PROGRESS_VALIDATION.md` |
+| Observation independence | Classic FGN's six complete trajectories/reset runs match exactly across baseline, unattended and observer death/replacement. Copper JFG baseline passed; matching observation/death and explicit stall gates remain open. | [Progress oracle adjudication](NATIVE_HIL_PROGRESS_REVIEW.md), GUI progress validation |
+| Native calibration consumers | First installed Classic Collect trial failed before admission. Typed failure diagnostics are merged; the other three planned trials were not run. Earlier scientific calibration evidence retains its own scope. | [Consumer matrix](NATIVE_CALIBRATION_CONSUMER_MATRIX.md), [failed trial](validation/native-calibration-20261006/actual-four-functional/classic-collect-v1-qualification.json) |
+| Progressive throughput | JFG source/load characterization is on JFG main. Exact admitted-work accounting passed; the sustained 500 Hz strict offered-delivery trial failed with one whole-frame rejection. No target-rate claim follows. | JFG `docs/RTC_CONNECTED_LOAD_VALIDATION.md` and its independent review |
+
+### Remaining order and acceptance
+
+1. Finish current Copper observer comparisons and unchanged installed paired
+   runtime lifecycle/allocation checks; do not repeat completed Classic/picker
+   checks unless relevant source/dependency assumptions change.
+2. Diagnose the preserved calibration startup failure with one bounded native
+   diagnostic trial before continuing Collect/Capture and correction consumers.
+3. Finish the selected unchanged-HEART and Classic/Copper × FGN/JFG/HEART
+   foreground/service matrix and operator adoption gates. Existing valid
+   clause-specific results may be reused; omitted profiles remain explicit.
+4. Complete SDK registration/release and final inventory/source review. Continue
+   CPU progressive performance work after functional installed gates; CUDA/HIP
+   RTC executor investigation remains a separate deferred JFG issue.
+
+The [qualification plan](NATIVE_FINAL_QUALIFICATION_PLAN.md) retains issue-level
+acceptance clauses and historical commands. Merging does not close its remaining
+gates. Older AOS calibration-boundary and HIL fault-test branches were not swept
+into main; they need current-source compatibility and validation before merge.
+Record new progress here and link a dated result only when needed as evidence.
+
+## Earlier dependency sequence and delivery records
+
+The sections below preserve the plan and completed/reviewed increments. Read
+only the dependency or dated result relevant to the current change.
 
 ## Goal
 

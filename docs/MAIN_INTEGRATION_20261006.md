@@ -1,5 +1,8 @@
 # Main integration — 2026-10-06
 
+This is a dated integration snapshot. Subsequent work is tracked in the roadmap's
+[current work](roadmap.md#current-work), not by extending this record.
+
 Reviewed native-control and deployment work is integrated from
 `work/native-control-planes-20261005` into main. This is a development baseline;
 the merge does not establish completion of every installed or scientific gate.
