@@ -1,5 +1,15 @@
 # Minimum remaining integrated native qualification
 
+## Main integration update — 2026-10-06
+
+The reviewed source is now on project main branches. See
+[the integration record](MAIN_INTEGRATION_20261006.md) for exact SDK dependency,
+fresh paired-runtime cold checks and outstanding installed gates. Classic's six
+whole observation trajectories and the installed duplicate-session picker replay
+passed; Copper's baseline passed. The historical review below records the earlier
+inspection state, not a request to repeat already completed checks. No issue is
+closed merely by this merge.
+
 2026-10-06. Independent read-only adjudication; execution plan only, no closure.
 Reviewed RTC `e36d395e4d2f6cb29c8b59573295f75aae518cb9`, GUI
 `eaa659b4b50178f30cc2db10a55a7eb29f791631`, and the current cache records.

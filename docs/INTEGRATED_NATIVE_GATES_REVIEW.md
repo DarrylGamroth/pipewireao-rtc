@@ -1,5 +1,12 @@
 # Integrated native GUI and calibration gate review
 
+Integration note, 2026-10-06: the observer discard-counter requirement recorded
+in this historical source review was subsequently rejected for external HIL
+command sinks. [The progress adjudication](NATIVE_HIL_PROGRESS_REVIEW.md) and
+[main integration record](MAIN_INTEGRATION_20261006.md) describe the corrected
+completed-exchange oracle and current results. The original review below remains
+unchanged evidence of its inspected revision.
+
 2026-10-06. Bounded independent review of GUI `ed2de43` + `cc51286`
 in `pipewireao-gui-native-hil` and RTC `456a772` in
 `pipewireao-rtc-native-controls`. Both reviewed trees were clean. This artifact

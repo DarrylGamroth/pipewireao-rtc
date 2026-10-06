@@ -1,5 +1,9 @@
 # PipeWireAO RTC document set
 
+[Main integration](MAIN_INTEGRATION_20261006.md) records the 2026-10-06 source
+merge, paired SDK dependency, GUI handoff evidence and remaining qualification
+gates. It does not declare deployment or scientific qualification complete.
+
 The maintained baseline starts with one non-actuating, complete-frame
 FGN/PipeWireAO development graph, then extends the same runner into a
 small RTC workstation (RTCW) that can compose multiple ordinary PipeWireAO
