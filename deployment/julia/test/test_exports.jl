@@ -7,6 +7,7 @@ using PipeWireAODeployment
 const Common = PipeWireAODeployment.Common
 const NativeControlClient = PipeWireAODeployment.NativeControlClient
 const NativeAcquisitionLifecycleCodec = PipeWireAODeployment.NativeAcquisitionLifecycleCodec
+const NativeCalibrationActionClient = PipeWireAODeployment.NativeCalibrationActionClient
 module Deployment
 using ..Common
 native_source(owner) = get(owner, "control-protocol", nothing) == "pipewireao.source-control/1"
@@ -193,7 +194,8 @@ end
         @test isfile(joinpath(deployed,"julia/assets/deployment/templates/client-simulator.conf.in"))
         @test isfile(joinpath(deployed,"julia/assets/deployment/hil/calibration_campaign_analysis.jl"))
         @test isfile(joinpath(deployed,"julia/assets/deployment/hil/Project.toml"))
-        for name in ("owner_protocol.jl", "native_acquisition_lifecycle.jl", "calibration_server.jl")
+        for name in ("owner_protocol.jl", "native_acquisition_lifecycle.jl", "calibration_server.jl",
+                "native_calibration_actions.jl")
             @test read(joinpath(deployed,"hil",name)) ==
                 read(joinpath(ExportFixture.resource_root(),"hil",name))
         end

@@ -355,7 +355,8 @@ function export_package(args)
             ScienceExport.copy_deployment_runtime(package)
             ScienceExport.copy_tree(joinpath(base,"hil"),joinpath(package,"hil"))
             for filename in ("calibration_owner.jl","calibration_acquisition.jl","calibration_server.jl",
-                    "calibration_client.jl","owner_protocol.jl","native_acquisition_lifecycle.jl")
+                    "calibration_client.jl","owner_protocol.jl","native_acquisition_lifecycle.jl",
+                    "native_calibration_actions.jl")
                 source = joinpath(ScienceExport.resource_root(),"hil",filename)
                 ScienceExport.copy_file(source,joinpath(package,"hil",filename))
             end

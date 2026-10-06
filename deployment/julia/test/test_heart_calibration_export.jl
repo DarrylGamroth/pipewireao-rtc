@@ -2,6 +2,12 @@ using Test, TOML, PipeWireAODeployment
 const Export = PipeWireAODeployment.HeartCalibrationExport
 const Common = PipeWireAODeployment.Common
 
+@testset "native HEART calibration exports the action server adapter" begin
+    @test "native_calibration_actions.jl" in Export.HELPERS
+    @test all(name -> isfile(joinpath(PipeWireAODeployment.resource_root(), "hil", name)),
+        Export.HELPERS)
+end
+
 @testset "HEART calibration session has exact relay links" begin
     session = Export.calibration_session(500)
     @test session["execution"] == "external-rtc"
