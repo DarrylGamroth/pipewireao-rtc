@@ -1,18 +1,10 @@
-using Test, JSON3, Sockets
+using Test, JSON3
 
 using PipeWireAODeployment
 const CampaignTestModules=PipeWireAODeployment
 const A=CampaignTestModules.CalibrationCampaign
 const M=CampaignTestModules.CalibrationMethod
 const C=CampaignTestModules.Common
-
-mutable struct PromptCloseSocket <: IO
-    reply::IOBuffer
-    sent::Vector{String}
-end
-Base.write(socket::PromptCloseSocket,payload::String)=(push!(socket.sent,payload);ncodeunits(payload))
-Base.read(socket::PromptCloseSocket,::Type{UInt8})=read(socket.reply,UInt8)
-Base.flush(::PromptCloseSocket)=throw(ErrorException("peer closed after released reply"))
 
 classic_recipe()=Dict{String,Any}(
     "version"=>1,"dark_frames"=>8,"training_frames"=>8,"qualification_frames"=>8,
@@ -184,111 +176,15 @@ end
     end
 end
 
-@testset "Endpoint rejects malformed and unknown completions" begin
-    cases=(
-        ("endpoint failure", req->Dict("version"=>1,"run"=>1,"serial"=>1,
-            "result"=>Dict("kind"=>"failed","reason"=>"endpoint"))),
-        ("wrong run", req->Dict("version"=>1,"run"=>2,"serial"=>1,
-            "result"=>Dict("kind"=>"held","cursor"=>Dict("domain"=>1,"generation"=>1,
-                "sequence"=>1,"model_ns"=>1)))),
-        ("missing cursor", req->Dict("version"=>1,"run"=>1,"serial"=>1,
-            "result"=>Dict("kind"=>"held"))),
-    )
-    for (name,response) in cases
-        mktempdir() do root
-            path=joinpath(root,"endpoint.sock")
-            server=listen(path)
-            task=@async begin
-                socket=accept(server)
-                request=JSON3.read(readline(socket),Dict{String,Any})
-                write(socket,JSON3.write(response(request))*"\n")
-                close(socket);close(server)
-            end
-            client=A.endpoint_connect(path,1,1_000_000_000)
-            @test_throws ArgumentError A.request!(client,Dict("kind"=>"hold"),"held")
-            @test !client.can_restore
-            close(client.socket);wait(task)
-        end
-    end
-    for mode in ("truncated","oversized","timeout")
-        mktempdir() do root
-            path=joinpath(root,"endpoint.sock")
-            server=listen(path)
-            task=@async begin
-                socket=accept(server)
-                readline(socket)
-                if mode=="truncated"
-                    write(socket,"{\"version\":")
-                elseif mode=="oversized"
-                    write(socket,repeat("x",65538)*"\n")
-                else
-                    sleep(0.05)
-                end
-                close(socket);close(server)
-            end
-            client=A.endpoint_connect(path,1,mode=="timeout" ? 10_000_000 : 1_000_000_000)
-            @test_throws Exception A.request!(client,Dict("kind"=>"hold"),"held")
-            @test !client.can_restore
-            isopen(client.socket) && close(client.socket)
-            wait(task)
-        end
-    end
-end
-
-@testset "Endpoint known and unknown outcomes" begin
-    mktempdir() do root
-        path=joinpath(root,"endpoint.sock")
-        server=listen(path)
-        task=@async begin
-            for (serial,answer) in ((1,Dict("kind"=>"failed","reason"=>"invalid_evidence")),
-                                    (2,Dict("kind"=>"held","cursor"=>Dict("domain"=>1,
-                                        "generation"=>1,"sequence"=>1,"model_ns"=>1))))
-                socket=accept(server)
-                request=JSON3.read(readline(socket),Dict{String,Any})
-                write(socket,JSON3.write(Dict("version"=>1,"run"=>1,"serial"=>serial,
-                    "result"=>answer))*"\n")
-                close(socket)
-            end
-            close(server)
-        end
-        first=A.endpoint_connect(path,1,1_000_000_000)
-        @test_throws ArgumentError A.request!(first,Dict("kind"=>"hold"),"held")
-        @test first.can_restore
-        close(first.socket)
-        second=A.endpoint_connect(path,1,1_000_000_000)
-        @test_throws ArgumentError A.request!(second,Dict("kind"=>"hold"),"held")
-        @test !second.can_restore
-        close(second.socket)
-        wait(task)
-    end
-end
-
-@testset "Prompt-close released completion" begin
-    reply=JSON3.write(Dict("version"=>1,"run"=>1,"serial"=>1,
-        "result"=>Dict("kind"=>"released")))*"\n"
-    socket=PromptCloseSocket(IOBuffer(reply),String[])
-    endpoint=A.Endpoint(socket,1,0,1_000_000_000,Any[],false)
-    @test A.request!(endpoint,Dict("kind"=>"release"),"released")["kind"]=="released"
-    @test C.parse_json(only(socket.sent))==Dict("version"=>1,"run"=>1,"serial"=>1,
-        "timeout_ns"=>1_000_000_000,"action"=>Dict("kind"=>"release"))
-    @test length(endpoint.records)==1
-    mktempdir() do root
-        path=joinpath(root,"endpoint.sock")
-        server=listen(path)
-        task=@async begin
-            socket=accept(server)
-            request=JSON3.read(readline(socket),Dict{String,Any})
-            write(socket,JSON3.write(Dict("version"=>1,"run"=>request["run"],
-                "serial"=>request["serial"],"result"=>Dict("kind"=>"released")))*"\n")
-            close(socket)
-            close(server)
-        end
-        client=A.endpoint_connect(path,1,1_000_000_000)
-        @test A.request!(client,Dict("kind"=>"release"),"released")["kind"]=="released"
-        @test length(client.records)==1
-        close(client.socket)
-        wait(task)
-    end
+@testset "Campaign requires an explicit native action binding" begin
+    ready=Dict("source_endpoint"=>Dict("node"=>"owner","instance"=>Int64(42)),
+        "source-owner"=>"simulator", "socket"=>"/tmp/private/run/control.sock",
+        "remote"=>"pw", "processes"=>Dict("simulator"=>Dict("pid"=>UInt32(17))))
+    binding=A.endpoint_binding(ready)
+    @test binding.remote=="/tmp/private/run/pw"
+    @test binding.node=="owner.actions"
+    @test binding.owner_pid==17 && binding.instance==42
+    @test_throws ArgumentError A.endpoint_connect("/tmp/legacy.sock",1,1_000_000_000)
 end
 
 @testset "Interaction result output bound follows the sealed plan" begin

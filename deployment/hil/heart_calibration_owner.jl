@@ -795,13 +795,15 @@ end
 function run_owner_native(options, bridge, plant_module, target)
     Lifecycle = HILNativeAcquisitionLifecycle
     Codec = Lifecycle.Codec
+    Actions = Main.HILNativeCalibrationActions
+    actions = Actions.ActionServer(bridge,options.control_node)
     mkdir(options.heart_probe_directory; mode=0o700)
     science = Acquisition.prepare_science(options.graph, plant_module, target, options.profile;
         period_ns=options.period_ns, illumination=options.illumination)
     Acquisition.validate_exposure_duration(science.detector_config, options.exposure_ns)
     active = Acquisition.prepare_active(Val(options.profile), Main.calibration_active(options))
     state = Protocol.OwnerState()
-    plant = session = owner = listener = shutdown_ticket = nothing
+    plant = session = owner = shutdown_ticket = nothing
     primary = control_failure = nothing
     current_cursor() = owner === nothing ? nothing : Acquisition.cursor(session)
     current_snapshot() = Lifecycle.snapshot(bridge, state, current_cursor();
@@ -877,8 +879,6 @@ function run_owner_native(options, bridge, plant_module, target)
         owner = CalibrationServer.Owner(session; native_controller_held=true,
             measurement_count=options.profile === :classic ? 376 : 3600,
             maximum_timeout_ns=timeout_ns, capture)
-        mkpath(dirname(options.calibration_socket))
-        listener = listen(options.calibration_socket)
         publish_report!()
         return nothing
     end
@@ -889,7 +889,7 @@ function run_owner_native(options, bridge, plant_module, target)
             sleep(0.005)
         end
         if owner !== nothing
-            CalibrationServer.serve!(owner, listener; accept_timeout_ns=UInt64(30_000_000_000),
+            Actions.serve!(actions, owner; accept_timeout_ns=UInt64(30_000_000_000),
                 should_stop=() -> false, service_control=() -> service_control(; safe=false),
                 service_boundary,
                 admission_enabled=() -> state.running)
@@ -935,16 +935,13 @@ function run_owner_native(options, bridge, plant_module, target)
             push!(cleanup, error)
         end
     end
-    for resource in (listener, session === nothing ? plant : session)
+    for resource in (session === nothing ? plant : session,)
         resource === nothing && continue
         try
             resource === session ? Acquisition.close_session!(session) : close(resource)
         catch error
             push!(cleanup, error)
         end
-    end
-    if ispath(options.calibration_socket)
-        try rm(options.calibration_socket) catch error; push!(cleanup, error) end
     end
     if shutdown_ticket !== nothing && primary === nothing && isempty(cleanup)
         try

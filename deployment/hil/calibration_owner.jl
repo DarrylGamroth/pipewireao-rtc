@@ -4,6 +4,7 @@ include("simulator.jl")
 include("calibration_acquisition.jl")
 include("calibration_server.jl")
 include("native_acquisition_lifecycle.jl")
+include("native_calibration_actions.jl")
 using Sockets
 
 function calibration_options(arguments; required_transport::Symbol=:scientific)
@@ -114,6 +115,8 @@ end
 function run_calibration_owner_native(options, bridge, plant_module, target)
     Lifecycle = HILNativeAcquisitionLifecycle
     Codec = Lifecycle.Codec
+    Actions = HILNativeCalibrationActions
+    actions = Actions.ActionServer(bridge,options.control_node)
     science = CalibrationAcquisition.prepare_science(options.graph, plant_module,
         target, options.profile; period_ns=options.period_ns, illumination=options.illumination)
     CalibrationAcquisition.validate_exposure_duration(science.detector_config, options.exposure_ns)
@@ -125,7 +128,7 @@ function run_calibration_owner_native(options, bridge, plant_module, target)
             graph_sha256=bytes2hex(open(sha256, options.graph)),
             wfs_active_sha256=active === nothing ? nothing : bytes2hex(sha256(UInt8.(active)))))
     state = Protocol.OwnerState()
-    plant = session = owner = listener = shutdown_ticket = nothing
+    plant = session = owner = shutdown_ticket = nothing
     primary = control_failure = nothing
     current_cursor() = owner === nothing ? nothing : CalibrationAcquisition.cursor(session)
     current_snapshot() = Lifecycle.snapshot(bridge, state, current_cursor();
@@ -155,8 +158,6 @@ function run_calibration_owner_native(options, bridge, plant_module, target)
             measurement_count=options.profile === :classic ? 376 : 3600,
             maximum_timeout_ns=timeout_ns, capture)
         CalibrationAcquisition.start_session!(session)
-        mkpath(dirname(options.calibration_socket))
-        listener = listen(options.calibration_socket)
         publish_report!()
         return nothing
     end
@@ -200,7 +201,7 @@ function run_calibration_owner_native(options, bridge, plant_module, target)
             sleep(0.005)
         end
         if owner !== nothing
-            CalibrationServer.serve!(owner, listener; accept_timeout_ns=UInt64(30_000_000_000),
+            Actions.serve!(actions, owner; accept_timeout_ns=UInt64(30_000_000_000),
                 should_stop=() -> false, service_control=() -> service_control(; safe=false),
                 service_boundary,
                 admission_enabled=() -> state.running)
@@ -231,16 +232,13 @@ function run_calibration_owner_native(options, bridge, plant_module, target)
     if owner !== nothing
         try publish_report!() catch error; push!(cleanup, error) end
     end
-    for resource in (listener, session === nothing ? plant : session)
+    for resource in (session === nothing ? plant : session,)
         resource === nothing && continue
         try
             resource === session ? CalibrationAcquisition.close_session!(session) : close(resource)
         catch error
             push!(cleanup, error)
         end
-    end
-    if ispath(options.calibration_socket)
-        try rm(options.calibration_socket) catch error; push!(cleanup, error) end
     end
     if shutdown_ticket !== nothing && primary === nothing && isempty(cleanup)
         try

@@ -10,6 +10,7 @@ include(joinpath(SOURCE, "native_control_codec.jl"))
 include(joinpath(SOURCE, "native_control_client.jl"))
 include(joinpath(SOURCE, "native_control_endpoint.jl"))
 include(joinpath(SOURCE, "native_acquisition_lifecycle_codec.jl"))
+include(joinpath(SOURCE, "native_calibration_action_codec.jl"))
 include(joinpath(SOURCE, "native_acquisition_lifecycle_runtime.jl"))
 
 const Codec = NativeAcquisitionLifecycleCodec
@@ -32,7 +33,10 @@ mutable struct Bridge{P<:Profile,R}
     instrument::Codec.Instrument
     report_cursor::Union{Nothing,Codec.AcquisitionCursor}
     deferred::Bool
+    action_endpoint::Union{Nothing,Endpoint.Endpoint}
 end
+Bridge(profile, runtime, instrument, report_cursor, deferred) =
+    Bridge(profile, runtime, instrument, report_cursor, deferred, nothing)
 
 function Bridge(options, profile::P) where {P<:Profile}
     instrument = options.profile === :classic ? Codec.Classic :
@@ -78,6 +82,7 @@ end
 
 function lifecycle!(bridge::Bridge, state::Codec.ColdLifecycle)
     Runtime.lifecycle!(bridge.runtime, state)
+    bridge.action_endpoint === nothing || Endpoint.state!(bridge.action_endpoint, state)
     return nothing
 end
 
@@ -207,6 +212,18 @@ end
 flush_terminal!(bridge::Bridge, deadline::Float64; check=()->nothing) =
     Runtime.flush_terminal!(bridge.runtime, deadline; check)
 
-Base.close(bridge::Bridge) = close(bridge.runtime)
+function Base.close(bridge::Bridge)
+    primary = nothing
+    if bridge.action_endpoint !== nothing
+        try close(bridge.action_endpoint) catch error; primary = error end
+        bridge.action_endpoint = nothing
+    end
+    try close(bridge.runtime)
+    catch error
+        primary === nothing ? rethrow() : throw(CompositeException([primary,error]))
+    end
+    primary === nothing || throw(primary)
+    return nothing
+end
 
 end # module HILNativeAcquisitionLifecycle

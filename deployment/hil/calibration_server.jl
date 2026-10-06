@@ -383,12 +383,17 @@ function adopted!(owner, figure, until, check_connection)
     return result
 end
 
-function collect!(owner, action, until, check_connection)
+function json_collect_reply_preflight(action)
+    512 + 16 * action.measurements + 180 * action.frames <= MAX_REPLY_BYTES || throw(InvalidRequest())
+    return nothing
+end
+
+function collect!(owner, action, until, check_connection; reply_preflight=json_collect_reply_preflight)
     require_measurement_ready(owner.profile, owner)
     action.measurements == owner.measurement_count || throw(InvalidRequest())
-    # Worst-case finite Float32 tokens and UInt64 identity fields fit the reply
-    # before any model side effect. The encoded bound is checked again below.
-    512 + 16 * action.measurements + 180 * action.frames <= MAX_REPLY_BYTES || throw(InvalidRequest())
+    # The selected transport checks capacity before any acquisition effect.
+    # Its encoder independently checks the complete reply extent.
+    reply_preflight(action)
     sums = zeros(Float64, owner.measurement_count)
     exposures = Vector{Exposure}(undef, Int(action.frames))
     valid = true
@@ -524,7 +529,7 @@ function capture!(owner, action, until, check_connection)
         frames=action.frames, bytes, metadata_bytes=ncodeunits(encoded))
 end
 
-function effect!(owner, action, until, check_connection)
+function effect!(owner, action, until, check_connection; reply_preflight=json_collect_reply_preflight)
     kind = action.kind
     if kind == "hold"
         owner.phase == :initial || throw(InvalidRequest())
@@ -592,7 +597,7 @@ function effect!(owner, action, until, check_connection)
         return (; kind="settled", cursor)
     elseif kind == "collect"
         owner.phase == :settled || throw(InvalidRequest())
-        result = collect!(owner, action, until, check_connection)
+        result = collect!(owner, action, until, check_connection; reply_preflight)
         owner.phase = :collected
         return result
     elseif kind == "capture"
@@ -604,7 +609,8 @@ function effect!(owner, action, until, check_connection)
     throw(InvalidRequest())
 end
 
-function execute!(owner::Owner, request; started::UInt64=time_ns(), check_connection=() -> nothing)
+function execute!(owner::Owner, request; started::UInt64=time_ns(), check_connection=() -> nothing,
+        reply_preflight=json_collect_reply_preflight)
     failure(reason) = (; version=1, run=request.run, serial=request.serial,
         result=(; kind="failed", reason))
     owner.faulted && return failure("endpoint")
@@ -620,7 +626,7 @@ function execute!(owner::Owner, request; started::UInt64=time_ns(), check_connec
         until = Base.checked_add(started, request.timeout_ns)
         remaining(until)
         check_connection()
-        result = effect!(owner, request.action, until, check_connection)
+        result = effect!(owner, request.action, until, check_connection; reply_preflight)
         remaining(until)
         check_connection()
         return (; version=1, run=request.run, serial=request.serial, result)

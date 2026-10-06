@@ -1,11 +1,12 @@
 module CalibrationCampaign
 
-using JSON3, Sockets, TOML
+using JSON3, TOML
 import ..Common: read_json, write_json, sha256_file, run_checked, cli_arguments
 import ..Deployment
 import ..CalibrationExport
 import ..HILExport
 import ..Common
+import ..NativeCalibrationActionClient
 
 export validate_recipe, positive_integer, wire_float32, same_figure, validate_batches,
        verify_capture, run_stage, stage_base, campaign, main, copy_tree, file_identity,
@@ -296,76 +297,27 @@ function verify_capture(root,completion;run,serial,stage,frames,after,startup,pr
     return manifest
 end
 
-mutable struct Endpoint
-    socket::IO
-    run::Int
-    serial::Int
-    timeout_ns::Int
-    records::Vector{Any}
-    can_restore::Bool
-end
+const Endpoint = NativeCalibrationActionClient.Connection
+const EndpointBinding = NativeCalibrationActionClient.Binding
 
-function endpoint_connect(path,run,timeout_ns)
-    task=@async Sockets.connect(path)
-    status=timedwait(() -> istaskdone(task), timeout_ns/1e9;pollint=0.001)
-    status==:ok || throw(ErrorException("calibration socket connection timed out"))
-    return Endpoint(fetch(task),run,0,timeout_ns,Any[],false)
+function endpoint_binding(ready)
+    source = ready["source_endpoint"]
+    role = ready["source-owner"]
+    instance = dirname(ready["socket"])
+    # Launcher metadata supplies hints only. Native connect verifies the exact
+    # live PID, incarnation, profile, NodeInfo and capability before requests.
+    return EndpointBinding(joinpath(instance, ready["remote"]), source["node"] * ".actions",
+        ready["processes"][role]["pid"], source["instance"])
 end
-
-function request!(endpoint::Endpoint,action,expected)
-    endpoint.can_restore=false
-    endpoint.serial+=1
-    sent=Dict{String,Any}("version"=>1,"run"=>endpoint.run,"serial"=>endpoint.serial,
-                          "timeout_ns"=>endpoint.timeout_ns,"action"=>action)
-    payload=JSON3.write(sent)*"\n"
-    ncodeunits(payload)<=16384 || throw(ArgumentError("calibration request exceeds protocol limit"))
-    started=time_ns()
-    task=@async begin
-        write(endpoint.socket,payload)
-        reply=UInt8[]
-        while length(reply)<65536
-            byte=read(endpoint.socket,UInt8)
-            push!(reply,byte)
-            byte==0x0a && return reply
-        end
-        throw(ArgumentError("oversized calibration completion"))
-    end
-    status=timedwait(() -> istaskdone(task),endpoint.timeout_ns/1e9;pollint=0.001)
-    if status!=:ok
-        close(endpoint.socket)
-        throw(ErrorException("calibration request expired; outcome unknown"))
-    end
-    reply=fetch(task)
-    Int128(time_ns())-Int128(started) < endpoint.timeout_ns ||
-        throw(ErrorException("late calibration completion; outcome unknown"))
-    document=Common.parse_json(String(reply))
-    fields(document,("version","run","serial","result"),"completion")
-    for key in ("version","run","serial")
-        isint(document[key]) && document[key]==sent[key] || throw(ArgumentError("uncorrelated completion; outcome unknown"))
-    end
-    push!(endpoint.records,Dict("request"=>sent,"reply"=>document))
-    result=document["result"]
-    result isa AbstractDict || throw(ArgumentError("malformed completion; outcome unknown"))
-    if get(result,"kind",nothing)=="failed"
-        if Set(keys(result))==Set(["kind","reason"]) && result["reason"]=="invalid_evidence"
-            endpoint.can_restore=true
-        end
-        throw(ArgumentError("calibration rejected $(action["kind"]): $(result)"))
-    end
-    shapes=Dict("held"=>("kind","cursor"),"adopted"=>("kind","cursor","figure","clipped"),
-        "settled"=>("kind","cursor"),"captured"=>("kind","cursor","manifest","sha256","frames","bytes","metadata_bytes"),
-        "restored"=>("kind","figure","clipped"),"released"=>("kind",))
-    haskey(shapes,expected) || throw(ArgumentError("unknown completion kind"))
-    get(result,"kind",nothing)==expected && Set(keys(result))==Set(shapes[expected]) ||
-        throw(ArgumentError("malformed completion; outcome unknown"))
-    haskey(result,"cursor") && cursor(result["cursor"])
-    if haskey(result,"clipped")
-        result["clipped"] isa Bool && result["figure"] isa AbstractVector && length(result["figure"])==277 &&
-            all(number,result["figure"]) || throw(ArgumentError("malformed command completion"))
-    end
-    endpoint.can_restore=expected!="restored" || !result["clipped"]
-    return result
-end
+endpoint_connect(binding::EndpointBinding, run, timeout_ns; kwargs...) =
+    NativeCalibrationActionClient.connect(binding, run, timeout_ns; kwargs...)
+endpoint_connect(remote::AbstractString, node::AbstractString, pid::Integer,
+        instance::Integer, run::Integer, timeout_ns::Integer; kwargs...) =
+    endpoint_connect(EndpointBinding(remote,node,pid,instance),run,timeout_ns; kwargs...)
+endpoint_connect(::AbstractString, run, timeout_ns) =
+    throw(ArgumentError("calibration requires an explicit native endpoint binding"))
+request!(endpoint::Endpoint, action, expected; kwargs...) =
+    NativeCalibrationActionClient.request!(endpoint,action,expected; kwargs...)
 
 function stage_remaining(deadline,limit)
     remaining=(Int128(deadline)-Int128(time_ns()))/1e9
@@ -502,7 +454,7 @@ function run_stage(package,output,runtime,recipe,stage;frames=nothing,batches=no
             result["startup_report"]=read_json(joinpath(instance,"simulator-result.json"))
             if frames!==nothing || normalized!==nothing
                 limit=Int(recipe["request_timeout_ns"])
-                endpoint=endpoint_connect(joinpath(instance,"calibration.sock"),1,
+                endpoint=endpoint_connect(endpoint_binding(ready),1,
                     Int(floor(stage_remaining(deadline,limit/1e9)*1e9)))
                 request=(action,expected)->begin
                     endpoint.timeout_ns=max(1,Int(floor(stage_remaining(deadline,limit/1e9)*1e9)))
@@ -543,7 +495,7 @@ function run_stage(package,output,runtime,recipe,stage;frames=nothing,batches=no
                 result["timing_ns"]["acquisition"]=time_ns()-acquisition_started
                 result["timing_confirmed"]["acquisition"]=true
                 result["requests"]=endpoint.records
-                close(endpoint.socket)
+                close(endpoint)
                 endpoint=nothing
                 if normalized===nothing
                     copy_tree(joinpath(instance,"captured"),joinpath(output,"captured"))
@@ -553,7 +505,10 @@ function run_stage(package,output,runtime,recipe,stage;frames=nothing,batches=no
                     result["capture"]=item["completion"]
                 end
             else
-                argv=[joinpath(package,"bin","rtc-calibrate"),"--endpoint",joinpath(instance,"calibration.sock"),
+                binding=endpoint_binding(ready)
+                argv=[joinpath(package,"bin","rtc-calibrate"),"--remote",binding.remote,
+                      "--node",binding.node,"--owner-pid",string(binding.owner_pid),
+                      "--owner-instance",string(binding.instance),
                       "--plan",joinpath(dirname(output),"interaction-plan.json")]
                 response=run_checked(argv;timeout=stage_remaining(deadline,recipe["stage_timeout_seconds"]),
                     maximum_output_bytes=interaction_result_output_limit_bytes(joinpath(dirname(output),"interaction-plan.json")))
@@ -626,7 +581,7 @@ function run_stage(package,output,runtime,recipe,stage;frames=nothing,batches=no
         rethrow()
     finally
         if endpoint!==nothing
-            try close(endpoint.socket) catch end
+            try close(endpoint) catch end
         end
         if process!==nothing
             if !process_exited(process)

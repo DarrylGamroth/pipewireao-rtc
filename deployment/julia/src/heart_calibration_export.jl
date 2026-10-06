@@ -394,7 +394,7 @@ function run_pilot(runtime::AbstractString, output::AbstractString; frames::Int=
     instance = dirname(ready["socket"])
     mkdir(output; mode=0o700)
     deadline = Base.checked_add(time_ns(), UInt64(stage_timeout_seconds) * UInt64(1_000_000_000))
-    endpoint = CalibrationCampaign.endpoint_connect(joinpath(instance, "calibration.sock"), 1, request_timeout_ns)
+    endpoint = CalibrationCampaign.endpoint_connect(CalibrationCampaign.endpoint_binding(ready), 1, request_timeout_ns)
     request = (action, expected) -> begin
         endpoint.timeout_ns = max(1, Int(floor(CalibrationCampaign.stage_remaining(deadline, request_timeout_ns / 1e9) * 1e9)))
         CalibrationCampaign.request!(endpoint, action, expected)
@@ -426,9 +426,9 @@ function run_pilot(runtime::AbstractString, output::AbstractString; frames::Int=
         result["restoration_confirmed"] = true
         request(Dict("kind"=>"release"), "released")
         result["release_confirmed"] = true
-        # Serving Release closes the finite connection and joins its pending
-        # reader. Close our end before waiting for the final owner report.
-        close(endpoint.socket)
+        # Release flushes its native terminal reply and revokes action ingress.
+        # Close our controller before waiting for the final owner report.
+        close(endpoint)
         # The source reports completion after handling Release; wait for that
         # bounded publication before copying its final diagnostic report.
         report_path = joinpath(instance, "simulator-result.json")
@@ -445,7 +445,7 @@ function run_pilot(runtime::AbstractString, output::AbstractString; frames::Int=
         result["failure"] = sprint(showerror, exception)
         rethrow()
     finally
-        close(endpoint.socket)
+        close(endpoint)
         result["requests"] = endpoint.records
         try
             result["retained_bytes"] = retain_pilot(instance, output, maximum_evidence_bytes)
@@ -509,8 +509,10 @@ function run_plan(package::AbstractString, runtime::AbstractString, output::Abst
     phase_name = "acquisition_including_first_call"
     try
         response_path = joinpath(output, "calibration-result.json")
-        response = Common.run_checked([joinpath(package, "bin/rtc-calibrate"), "--endpoint",
-            joinpath(instance, "calibration.sock"), "--plan", plan_path];
+        binding = CalibrationCampaign.endpoint_binding(ready)
+        response = Common.run_checked([joinpath(package, "bin/rtc-calibrate"), "--remote", binding.remote,
+            "--node", binding.node, "--owner-pid", string(binding.owner_pid),
+            "--owner-instance", string(binding.instance), "--plan", plan_path];
             timeout=CalibrationCampaign.stage_remaining(deadline, stage_timeout_seconds),
             stdout_path=response_path, stderr_path=joinpath(output, "calibration.stderr"),
             maximum_output_bytes=limits["result_max_output_bytes"])

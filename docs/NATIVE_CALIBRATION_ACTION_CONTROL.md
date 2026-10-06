@@ -1,9 +1,11 @@
-# Native calibration action codec foundation
+# Native calibration action control
 
-This phase E foundation implements the pure Julia and Rust profile
+The phase E codec foundation implements the pure Julia and Rust profile
 `pipewireao.rtc.calibration-actions/1` under RTC-ARCH-024 / RTC-DEV-030. It does
-not migrate an owner, action server, Rust endpoint, campaign client, deployed
-profile or export. Issue #7 remains open. The existing effect implementation,
+not by itself establish owner migration or installed qualification. The Julia
+integration described below migrates the selected action server and campaign
+client. The Rust endpoint and installed qualification remain pending; issue #7
+remains open. The existing effect implementation,
 restoration fencing and scientific acquisition behavior remain authoritative.
 
 The [action inventory](NATIVE_CALIBRATION_ACTION_WIRE_INVENTORY.md),
@@ -117,8 +119,8 @@ result and correlated or all-zero uncorrelated identity rules.
 
 `collect_reply_size` computes the complete successful Responses envelope from
 measurement count, frame count and the known message UTF-8 byte count, without
-allocating dummy arrays. `preflight_collect_reply` also enforces 128 KiB. Future
-owner integration must call this before acquisition effects and use the same
+allocating dummy arrays. `preflight_collect_reply` also enforces 128 KiB. The
+native owner calls this before acquisition effects and uses the same
 message size or reserve the maximum possible size.
 
 For a SPA body of b bytes, padded POD extent is `(b + 15) & ~7`. A Float Array
@@ -141,7 +143,7 @@ wrong arity/type, unknown IDs, nonfinite arrays and invalid exposure ends.
 Focused tests also check complete request/reply capacity and exact Collect
 extent at the 128 KiB boundary.
 
-These are pure CPU serialization checks. They establish neither native owner
+These foundation results are pure CPU serialization checks. They establish neither native owner
 migration nor restoration, disconnect, deadline, capture artifact, installed
 science, GPU, hardware or real-time qualification. Capture remains a codec-local
 Rust action/result because the existing Rust coordinator has no Capture type;
@@ -176,3 +178,95 @@ fixtures, and the library regression passed 33 tests with two existing
 private-core fixtures ignored. Clippy with warnings denied and formatting
 passed. Cargo reports an existing future compatibility warning in dependency
 `proc-macro-error2` 2.0.1; this foundation changes no dependencies.
+
+## Julia action server and client integration
+
+The integration baseline is commit `eb9d738` on 2026-10-06, including the
+reviewed codecs and phase D acquisition owners. Its selected source owners are
+`calibration_owner.jl` and `heart_calibration_owner.jl`.
+
+| RTC-ARCH-024 / RTC-DEV-030 obligation | Allocation and current evidence | State |
+| --- | --- | --- |
+| Bounded typed action ingress and responses | Existing envelope codec and `HILNativeCalibrationActions.ActionServer`; private-core synthetic acquisition tests | Implemented for Julia source owners |
+| Capacity before acquisition effects | Injected exact native Collect preflight in existing `CalibrationServer.execute!` / `effect!`; oversized Collect leaves exposure count zero | Implemented |
+| Preserve SCI numerical behavior and restoration | Typed adapter delegates all actions to the existing effects; full synthetic cycle and immutable capture test | Implemented, installed SCI evidence pending |
+| Exact owner and controller/run/serial identities | Explicit client Binding, fresh native NodeInfo/capability proof, actual controller fencing, full UInt64 payload identities | Implemented for Julia |
+| Sole owner Core and ThreadLoop | Action endpoint borrows the lifecycle Bridge core/loop; identity assertions and terminal cleanup tests | Implemented |
+| Lifecycle service during accepted effects | `safe=false` service checks defer Connect/Reset/Shutdown; safe owner boundary services them outside effects | Implemented; final independent review pending |
+| Finite disconnect/deadline failure and cleanup | Existing ticket deadlines and actual controller presence; action ingress closes before SCI cleanup; Release facts survive later transport abort | Implemented, expanded installed fault tests pending |
+| Selected Rust coordinator and CLI | Caller arguments use explicit `--remote`, `--node`, `--owner-pid`, `--owner-instance`; Rust endpoint migration follows this increment | Partial |
+| Native supervisor identity handoff | Existing launcher readiness metadata supplies connection hints; fresh native proof remains mandatory | Partial, issue #8 owns replacement |
+| Installed exports and selected profiles | New source assets require parent integration and installed acceptance | Pending |
+
+The action node is the lifecycle node with `.actions` appended. It shares the
+owner PID and positive incarnation with that lifecycle node. `Binding` carries
+an explicit remote, action node, expected PID and incarnation. Native connect
+must prove all four, profile and capability before actions; a saved report or
+node name cannot authorize an endpoint. A replacement owner requires a new
+explicit binding. Unknown outcomes retire the Julia connection without retry.
+Saved plans, capture manifests and reports remain ordinary JSON evidence.
+
+Selected owners create no calibration Unix listener and perform no JSON socket
+action I/O. Compatibility parsing of `--calibration-socket` remains temporarily
+for the parent export migration; it creates no selected fallback. Legacy socket
+helpers remain available only to their existing development fixtures.
+
+The first accepted Hold or Restore binds the actual common-envelope controller.
+Logical figure and measurement extents and exact Collect capacity are checked
+before controller or SCI run/serial binding. Rejected dimensions leave prior
+SCI identity and probe association intact.
+The existing SCI owner validates its run, increasing serial, phase, figure,
+cursor, settling and restoration rules. Another controller receives a typed
+InvalidEvidence result without effects. Paused admission returns typed
+Cancelled for ordinary actions while Restore and Release remain available.
+The inactivity clock starts at receipt of an owned admitted request and includes
+effect time. Completion, malformed requests, wrong run/serial and another
+controller do not extend it. Accepted effect checks enforce both the ticket
+deadline and this inactivity bound.
+
+Successful replies carry an empty message, so native Collect preflight uses
+`message_bytes=0`. Request adapters inspect exact encoded figure capacity before
+copying dictionary figures. The encoder checks the final reply again. No new
+SCI state machine, acquisition math or timing coefficients are introduced.
+
+Release flushes its terminal reply through the existing Bridge Core sync before
+closing only action ingress. The lifecycle endpoint remains alive for final
+Shutdown and stopped publication. If transport aborts after the actual Release
+effect, cleanup retains the released, restored, unheld SCI facts even when the
+client cannot establish the outcome.
+When the existing SCI effect or accepted-action failure has actually faulted the
+owner, the adapter publishes lifecycle Fault before action ingress closes while
+the Core remains usable. Publication failure is retained with the primary
+failure. A transport exception after Release does not create an SCI fault or
+publish lifecycle Fault.
+
+### Reproducible software verification
+
+Use Julia 1.12.7 on CPU 15 with the already installed HIL project and source
+SDK; no dependency installation is needed:
+
+```sh
+taskset -c 15 julia --startup-file=no \
+  --project=/home/dgamroth/.cache/rtc-heart-native-20261006/classic-fgn-cpu-base/hil \
+  deployment/hil/test_native_calibration_actions.jl
+
+taskset -c 15 julia --startup-file=no --project=deployment/julia \
+  -e 'include("deployment/julia/test/test_native_calibration_action_client.jl"); include("deployment/julia/test/test_campaigns.jl"); include("deployment/julia/test/test_heart_calibration_export.jl")'
+```
+
+The native fixture starts only disposable private PipeWire cores and synthetic
+acquisition sessions. It checks owner PID/incarnation mismatch, full UInt64
+run/serial, Hold/Adopt/Settle/Collect/Restore/Release, exact native reply capacity,
+controller fencing, paused admission, held disconnect, immutable Capture,
+malformed POD rejection, action ingress revocation and post-Release transport
+abort, logical instrument dimensions, and long-effect inactivity. It reuses the existing server's development regressions. Run these cold
+fixtures serially on CPU 15: legacy 500 ms socket fixtures can expire under
+overlapping compilation. This software evidence does not qualify science
+cores, classic or Copper live acquisition, GPU, hardware or real-time latency.
+
+Observed on branch `work/native-calibration-actions-20261006`, Linux x86_64,
+Julia 1.12.7, CPU 15: the connected suite passed 646/646 assertions (539 existing
+SCI/server regressions and 107 native integration assertions). The focused SDK
+run passed 47 client, 66 campaign and 106 HEART export assertions, 219/219 total.
+`git diff --check` passed. These results do not close issue #7 or promote an
+installed scientific capability claim.
