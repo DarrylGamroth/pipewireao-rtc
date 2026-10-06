@@ -819,6 +819,12 @@ and documented; asynchronous adoption is a later design option, not an implied
 
 [Deployment validation](DEPLOYMENT_VALIDATION.md) and its
 [artifact/placement record](deployment-evidence.json) retain the evidence.
+
+The [installed Julia executable correction](JULIA_SYSTEMD_RUNTIME_VALIDATION.md)
+records issue #2 and the selected absolute runtime boundary for foreground and
+generated user units. Its focused gates also cover the owned-accept SIGINT
+interruption found during fresh lifecycle qualification; scientific and timing
+acceptance remain separate.
 The [recorded-FITS restart correction](UI_RESTART_ISSUE_1.md) adds fresh
 Classic/Copper regressions for RTC-DEV-004, RTC-DEV-011 and RTC-DEV-022 after a
 broad topology query. Owned discard sinks disable parameter caching so later

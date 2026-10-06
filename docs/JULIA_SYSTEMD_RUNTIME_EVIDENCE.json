@@ -1,0 +1,243 @@
+{
+  "version": 1,
+  "recorded_at": "2026-10-06T05:59:38.025734+00:00",
+  "issue": "https://github.com/DarrylGamroth/pipewireao-rtc/issues/2",
+  "source": {
+    "starting_commit": "03f72c1f8ef1f10b574f46735d7b7a5e7f4fe027",
+    "installer_commit": "b30811606b02d9da39ff4a204ac98972a1835cf2",
+    "branch": "work/systemd-julia-runtime-20261005",
+    "worktree": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-systemd-julia",
+    "starting_worktree_clean": true,
+    "sigint_fix_tested_as_worktree_patch": true,
+    "production_source": {
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-systemd-julia/deployment/julia/src/deploy.jl",
+      "sha256": "84e5d1506fea1307e1a56782729a949c50f69196212be6d3ac3126f9ede63af5"
+    }
+  },
+  "cpu": 12,
+  "manager_path": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin",
+  "julia_executable": {
+    "path": "/home/dgamroth/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/bin/julia",
+    "sha256": "582718c20c563d824b88a08e2a9d0afcf5015b3053f425697cecc79ec4e9ea36"
+  },
+  "julia_version": "1.12.7",
+  "cohorts": [
+    {
+      "name": "issue2-julia-before",
+      "package": "/home/dgamroth/.config/pipewireao-rtc/issue2-julia-before",
+      "recorded_source": {
+        "rtc_commit": "03f72c1f8ef1f10b574f46735d7b7a5e7f4fe027",
+        "julia": "/home/dgamroth/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/bin/julia",
+        "julia_version": "1.12.7",
+        "wrapper_sha256": "ba04af6eb7eea29221ab328c0c00b17e591c96e144d8a557591ada235af10821",
+        "runner_sha256": "71549afe3ca2f235c1264dafc0f18602936de861ad5e549cbc1b70c7c330fb4d",
+        "runtime_project": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc/deployment/julia",
+        "descriptor_sha256": "9a425065eca83ace83c5b24be3cccd3688dff670dcb2878a4375d67af8907e53",
+        "unit_sha256": "10dfa6d1cf5702560c85609a4dba9d388598f377b031cbf04edee203172f2bd2"
+      },
+      "deployment_runtime": {
+        "path": "/home/dgamroth/.config/pipewireao-rtc/issue2-julia-before/julia/src/deploy.jl",
+        "sha256": "9be47542acc9109c5d2c514670911bd2d27989b6d8b1e750280b7932d69432c6"
+      },
+      "sealed_descriptor_assets_verified": true,
+      "generated_wrappers": {
+        "export_heart_hil": "9b4885a4a56db87db98c6dd2a9206acb8af8dd47355782c405b0bd2719ea4c49",
+        "pipewireao-rtc-deploy": "ba04af6eb7eea29221ab328c0c00b17e591c96e144d8a557591ada235af10821",
+        "calibration_campaign": "3cc841675ef5ed36bc57e2331ee8a125ab4197792e29a752e09c72e29926e385",
+        "export_heart_correction": "b5e593eba5bff3fbc28afa5247d4bb6b7da458cfc8c00b5efee585b0882c9eec",
+        "copper_quality": "af469018dd6a68dd051838d4a2e40aa23bb1d2175a1edf306d28e8e69e7a2fd1",
+        "export_hil": "62b13483e81e4bbafc3c469d675f7114fdbed915b92961977a6fb6a85b3c883a",
+        "calibration_method": "da251cc9859e80fa2012c16d01e31a42f27eeb1355f313d7da57bd1c7cd9656e",
+        "export_calibration": "8087fd094df0de5c27edb16ea5fa887c5b6d4a9ef2d66e2901b03937a70c6449",
+        "pipewireao-rtc@.service.in": "14474212156609ae312aa27619621167098bf641c7294360165f0fa7726199d8",
+        "copper_reference": "c3264533630d0432c9f6531064caf34fed3b5312151843103a667cd2dfa94031",
+        "export_heart_calibration": "a63c2f479ad66fd1cbabfd4292303b85209e1586422727c376260bd6958cc9e5"
+      }
+    },
+    {
+      "name": "issue2-julia-after",
+      "package": "/home/dgamroth/.config/pipewireao-rtc/issue2-julia-after",
+      "recorded_source": {
+        "rtc_commit": "03f72c1f8ef1f10b574f46735d7b7a5e7f4fe027",
+        "julia": "/home/dgamroth/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/bin/julia",
+        "julia_version": "1.12.7",
+        "wrapper_sha256": "647cc6945506a4f569b340246f72ed4a920c68813e2c5e01cd6ddfc13a8b1bc3",
+        "runner_sha256": "71549afe3ca2f235c1264dafc0f18602936de861ad5e549cbc1b70c7c330fb4d",
+        "runtime_project": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-systemd-julia/deployment/julia",
+        "descriptor_sha256": "69375688c28d4ae8b583f8a56c75d7026e33c15b0622b5923e6672737d878c73",
+        "unit_sha256": "fd5fe7e690028ecaca112e79b69336c7b239d84a0317fafab1450d1871e68935"
+      },
+      "deployment_runtime": {
+        "path": "/home/dgamroth/.config/pipewireao-rtc/issue2-julia-after/julia/src/deploy.jl",
+        "sha256": "62a800349559b386f5395c4238f2119ee406bba3a9f34205c47974bf543d3862"
+      },
+      "sealed_descriptor_assets_verified": true,
+      "generated_wrappers": {
+        "export_heart_hil": "10446be1d57d9a55f059d71cdc9d3337fc607511c7d1fccca65ec5d84f41bdae",
+        "pipewireao-rtc-deploy": "647cc6945506a4f569b340246f72ed4a920c68813e2c5e01cd6ddfc13a8b1bc3",
+        "calibration_campaign": "0f3fee3b4cce238a47bbcb255d6b70af3792a55a6128cbc9215a74666e356d9b",
+        "export_heart_correction": "0c0e8b4b1dd9e8944ae0ee444a2a469243c5d92b4eab1dc553e3e90a35fa773e",
+        "copper_quality": "9be6cafd1ffebf36737d41f968ad3157806c1887c040cfdb0b92dc30a439e9b7",
+        "export_hil": "09660cfd3b86a57aaa57f49bc635912e235674b55421434b435dc432d9267ffb",
+        "calibration_method": "221b8fceaf757fcd6d9d2ac7b338bff1c108e3b07a16a48a481f2ca1d7db41e5",
+        "export_calibration": "4463dc257fbcb1ec50461a87dda59ca6529e29e04a8fd1d2718aef353e8ea3e7",
+        "pipewireao-rtc@.service.in": "14474212156609ae312aa27619621167098bf641c7294360165f0fa7726199d8",
+        "copper_reference": "75fbf71c2868d18816bc313792f5069329e41873ff1d011b29f8b5036003abd1",
+        "export_heart_calibration": "a28e2159b7322e991755530cf320560ebed28de25434f9bf99577f585182c3c2"
+      }
+    },
+    {
+      "name": "issue2-julia-fixed",
+      "package": "/home/dgamroth/.config/pipewireao-rtc/issue2-julia-fixed",
+      "recorded_source": {
+        "rtc_commit": "b30811606b02d9da39ff4a204ac98972a1835cf2",
+        "julia": "/home/dgamroth/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/bin/julia",
+        "julia_version": "1.12.7",
+        "wrapper_sha256": "647cc6945506a4f569b340246f72ed4a920c68813e2c5e01cd6ddfc13a8b1bc3",
+        "runner_sha256": "71549afe3ca2f235c1264dafc0f18602936de861ad5e549cbc1b70c7c330fb4d",
+        "runtime_project": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-systemd-julia/deployment/julia",
+        "descriptor_sha256": "49b37718d450c512bc6db39f34552dc2a3487d9a9bbc35d144fd2dbcdb6ab500",
+        "unit_sha256": "e8c464ba56e561707ced791796ec378d8bccef5060fddf1151e4f464c0fc50ec"
+      },
+      "deployment_runtime": {
+        "path": "/home/dgamroth/.config/pipewireao-rtc/issue2-julia-fixed/julia/src/deploy.jl",
+        "sha256": "84e5d1506fea1307e1a56782729a949c50f69196212be6d3ac3126f9ede63af5"
+      },
+      "sealed_descriptor_assets_verified": true,
+      "generated_wrappers": {
+        "export_heart_hil": "10446be1d57d9a55f059d71cdc9d3337fc607511c7d1fccca65ec5d84f41bdae",
+        "pipewireao-rtc-deploy": "647cc6945506a4f569b340246f72ed4a920c68813e2c5e01cd6ddfc13a8b1bc3",
+        "calibration_campaign": "0f3fee3b4cce238a47bbcb255d6b70af3792a55a6128cbc9215a74666e356d9b",
+        "export_heart_correction": "0c0e8b4b1dd9e8944ae0ee444a2a469243c5d92b4eab1dc553e3e90a35fa773e",
+        "copper_quality": "9be6cafd1ffebf36737d41f968ad3157806c1887c040cfdb0b92dc30a439e9b7",
+        "export_hil": "09660cfd3b86a57aaa57f49bc635912e235674b55421434b435dc432d9267ffb",
+        "calibration_method": "221b8fceaf757fcd6d9d2ac7b338bff1c108e3b07a16a48a481f2ca1d7db41e5",
+        "export_calibration": "4463dc257fbcb1ec50461a87dda59ca6529e29e04a8fd1d2718aef353e8ea3e7",
+        "pipewireao-rtc@.service.in": "14474212156609ae312aa27619621167098bf641c7294360165f0fa7726199d8",
+        "copper_reference": "75fbf71c2868d18816bc313792f5069329e41873ff1d011b29f8b5036003abd1",
+        "export_heart_calibration": "a28e2159b7322e991755530cf320560ebed28de25434f9bf99577f585182c3c2"
+      }
+    }
+  ],
+  "gates": {
+    "baseline_foreground_preflight_exit": 127,
+    "baseline_static_service_exit": 127,
+    "installer_assertions_passed": 256,
+    "accept_interrupt_before": {
+      "passed": 2,
+      "failed": 2
+    },
+    "accept_interrupt_after": {
+      "passed": 4,
+      "failed": 0
+    },
+    "fresh_minimal_path_preflight": "pass",
+    "fresh_foreground_sigint": {
+      "phase": "stopped",
+      "exit": 0,
+      "cleanup_errors": []
+    },
+    "fresh_static_service_stop": {
+      "result": "success",
+      "exit": 0
+    },
+    "same_actual_julia_executable": true,
+    "owned_processes_removed": true,
+    "instance_runtime_directories_removed": true,
+    "task_owned_unit_files_removed": true,
+    "manager_environment_unchanged": true,
+    "exact_links": 2,
+    "ndarray_frames_submitted": 0,
+    "scientific_sinks_armed": 0,
+    "explicit_juliaup_selection": "pass"
+  },
+  "qualification_limits": [
+    "Functional installation, admission, control and shutdown only.",
+    "No scientific convergence, throughput, timing or physical hardware claim.",
+    "Toy NdArray endpoints emit existing mixer warnings without submitting frames."
+  ],
+  "commands": {
+    "installer_test": "taskset -c 12 julia --startup-file=no --project=deployment/julia -e 'include(\"deployment/julia/test/test_deploy.jl\")'",
+    "interrupt_test": "taskset -c 12 julia --startup-file=no --project=deployment/julia deployment/julia/test/test_control_interrupt.jl",
+    "fixture_prepare": "taskset -c 12 julia --startup-file=no --project=deployment/julia ~/.cache/rtc-systemd-julia-20261005/prepare.jl <source-repo> <fresh-instance>",
+    "installed_qualification": "python3 ~/.cache/rtc-systemd-julia-20261005/qualify_fixed.py"
+  },
+  "reports": [
+    {
+      "path": "/home/dgamroth/.cache/rtc-systemd-julia-20261005/prepare.jl",
+      "sha256": "37bb577996e1b6280a17c69761b8c32845d37f0db8252bfec8ddb250a8d42e97"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-systemd-julia-20261005/qualify.py",
+      "sha256": "e6f355341b244b6ab3438696af834f2778f2d71d74905d5bfe884bdfcce636fd"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-systemd-julia-20261005/qualify_fixed.py",
+      "sha256": "67ac8d4e6d28a753b0df483ae912c28c7719ee4b13aaacb073cc2f0d3661ac7d"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-systemd-julia-20261005/portable-test-final-installer.log",
+      "sha256": "32d327c99298a1a0373baa799b2b73b1d4fb08b609779a9346c2f753b6dcaa10"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-systemd-julia-20261005/accept-interrupt-before.log",
+      "sha256": "05faf3ca7718267ca52cf05cbd02b696f0c6c418db4dffd8f88b7b447b5527bc"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-systemd-julia-20261005/accept-interrupt-after.log",
+      "sha256": "5ffc3dfaa3d04cb008db075197c1995a9b5ece54d05729ebfb9ef96bc4dc98b5"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-systemd-julia-20261005/issue2-julia-before/foreground.log",
+      "sha256": "7f61951b98dd7954d3294214f0443f3a81a6fc5136640fe75120f6e51a3ce475"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-systemd-julia-20261005/issue2-julia-before/service-journal.log",
+      "sha256": "7b8d1da3bf956a6a3e9f0e9e41d8083275e18c37fe41875fecd9a9a2f79d8731"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-systemd-julia-20261005/issue2-julia-before/service-properties.txt",
+      "sha256": "bb7a3d1f04e75714217c0061a54e3c403dc7ad449496deb80e95470dca460022"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-systemd-julia-20261005/issue2-julia-after/foreground.log",
+      "sha256": "b7c87109bb714e5a8bda06e38440916449820296197504c10b7d79f6a4485430"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-systemd-julia-20261005/issue2-julia-after/foreground-state.json",
+      "sha256": "67647e463e92948f56eb0b4776ccbe21d30b0b09952459ae037beb9d7e157f57"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-systemd-julia-20261005/issue2-julia-after/qualification.json",
+      "sha256": "5e857a06d38db0a22bee915ef36445f304c4b852d24fb19ac9a9c30b6563df7f"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-systemd-julia-20261005/issue2-julia-fixed/qualification.json",
+      "sha256": "91e89e11753e94f4c69e8e5f0d5ad23ba3293299f37e889a507c6d5ce46b85c4"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-systemd-julia-20261005/issue2-julia-fixed/foreground-sigint.log",
+      "sha256": "c4d8d190412acc7bb0302e2241f7b7bf92647315d2b776a00192640df7b85726"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-systemd-julia-20261005/issue2-julia-fixed/foreground-sigint-state.json",
+      "sha256": "b9f318fd0162e48fa95553a2888da5ba08e7e269ae50779a58a298f3ec45075c"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-systemd-julia-20261005/issue2-julia-fixed/service-journal.log",
+      "sha256": "3ef6882b16cd8d7a754ab13b8286b0fdce3209170ce015de4a8d3039123fb0c1"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-systemd-julia-20261005/issue2-julia-fixed/manager-environment-before.txt",
+      "sha256": "1ff73460f0d2554498e0b05b316eec6a5e3d78bbad79236a000cd6d38bb2cd9a"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-systemd-julia-20261005/issue2-julia-fixed/manager-environment-after.txt",
+      "sha256": "1ff73460f0d2554498e0b05b316eec6a5e3d78bbad79236a000cd6d38bb2cd9a"
+    },
+    {
+      "path": "/home/dgamroth/.cache/rtc-systemd-julia-20261005/juliaup-selection.log",
+      "sha256": "2ab61c08d92ab303c815d6f75c122ae8e0eb820141dda06a945b38b0a9e90a61"
+    }
+  ]
+}

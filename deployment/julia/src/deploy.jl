@@ -647,11 +647,21 @@ end
 
 function serve_control(deployment::DeploymentRunner)
     broker = something(deployment.broker)
-    deployment.broker_accept === nothing && (deployment.broker_accept = @async accept(broker))
+    deployment.broker_accept === nothing && (deployment.broker_accept = @async begin
+        try
+            accept(broker)
+        catch error
+            # SIGINT may arrive in this owned task rather than the lifecycle
+            # owner. Propagate only interruption as a graceful-stop signal.
+            error isa InterruptException || rethrow()
+            nothing
+        end
+    end)
     status = timedwait(() -> istaskdone(deployment.broker_accept), 0.1; pollint=0.005)
     status == :timed_out && return
     client = fetch(deployment.broker_accept)
     deployment.broker_accept = nothing
+    client === nothing && throw(InterruptException())
     failure = nothing
     request_id = nothing
     try
