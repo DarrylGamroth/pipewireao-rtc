@@ -19,6 +19,24 @@ require(value, message) = value === true || error(message)
 cursor(c) = (c.domain, c.generation, c.sequence, c.model_ns)
 cursor(::Nothing) = nothing
 
+"Launch the sealed installed deployment SDK, retaining the current Julia executable."
+function installed_command(package,runtime;owner_preparation_timeout_seconds=300)
+    Campaign.positive_integer(owner_preparation_timeout_seconds,"owner preparation timeout seconds",3600)
+    sdk=joinpath(package,"julia")
+    return [Base.julia_cmd().exec[1],"--startup-file=no","--project="*sdk,
+        joinpath(sdk,"deploy_cli.jl"),"run","--deployment",joinpath(package,"deployment.conf"),
+        "--runtime",runtime,"--pipewire-prefix","/opt/pipewireao",
+        "--owner-preparation-timeout-seconds",string(owner_preparation_timeout_seconds)]
+end
+
+function runtime_receipt(package)
+    sdk=joinpath(package,"julia")
+    files=[joinpath(sdk,name) for name in ("Project.toml","Manifest.toml","deploy_cli.jl")]
+    append!(files,filter(path->endswith(path,".jl"),readdir(joinpath(sdk,"src");join=true)))
+    require(all(path->!islink(path) && isfile(path),files),"installed runtime source is absent or linked")
+    return Dict(relpath(path,package)=>C.sha256_file(path) for path in sort!(files))
+end
+
 function owner_argument(owner, name)
     positions = findall(==(name),owner["argv"])
     require(length(positions) == 1 && only(positions) < length(owner["argv"]),
@@ -324,11 +342,12 @@ function main(args=ARGS)
         "exporter_full_plan_gate"=>"not evaluated; separate functional action caller",
         "package_deployment_sha256"=>C.sha256_file(joinpath(package,"deployment.conf")),
         "qualifier_sha256"=>C.sha256_file(@__FILE__),
+        "installed_runtime_sha256"=>runtime_receipt(package),
         "native_runner_sha256"=>C.sha256_file(joinpath(package,"bin/pipewireao-rtc")),
         "calibration_cli_sha256"=>C.sha256_file(joinpath(package,"bin/rtc-calibrate")),
         "restoration_confirmed"=>false,"release_confirmed"=>false,
         "shutdown_confirmed"=>false,"success"=>false)
-    command = Campaign.stage_command(package,runtime;owner_preparation_timeout_seconds=300)
+    command = installed_command(package,runtime;owner_preparation_timeout_seconds=300)
     record["run_argv"] = command
     process = endpoint = lifecycle = heart = nothing
     heart_initial = child_identity = nothing

@@ -1,0 +1,14 @@
+{
+  "source_base": "8e77548",
+  "scope": "Installed launch command and runtime receipt only; no deployment/SCI started",
+  "proof": "Same helper oracle1pass/1fail before,2/2 after; current calibration pure181/181; actual sealed installed package runtime/source receipt construction passed",
+  "command": "taskset -c15 julia --startup-file=no --compiled-modules=existing --project=deployment/julia docs/validation/native-calibration-20261006/installed-consumer-launch-oracle.jl",
+  "sha256": {
+    "deployment/qualify_calibration_native.jl": "bd82f3200414e4a1952ed85466583c13ff27cf5baa613655cf908f354ba15e63",
+    "deployment/julia/test/test_qualify_calibration_native.jl": "8e573cea0e12900972fd83770391e638c0e61a7af09441fd3df3d38376b446b4",
+    "docs/validation/native-calibration-20261006/installed-consumer-actual-cold.log": "b66a228fcf0215da0542838bf6221a5e8c352886bbafba6cbf8198c1285b8211",
+    "docs/validation/native-calibration-20261006/installed-consumer-launch-after.log": "005ecde121fff93c778790f87a3c6e3e62d6e89f1c6821633e9a0774ed740701",
+    "docs/validation/native-calibration-20261006/installed-consumer-launch-before.log": "9bf6e659f8da66cfe45ee1dca197a02c521daa7b251fa42a8e77655f84456c92",
+    "docs/validation/native-calibration-20261006/installed-consumer-launch-oracle.jl": "d0c854a7fdde6cdde6c6a323b512cd0148a8fd3657ece43b9c6c7c17ce42084e"
+  }
+}

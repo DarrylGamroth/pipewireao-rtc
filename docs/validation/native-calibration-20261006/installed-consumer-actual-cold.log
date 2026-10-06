@@ -1,0 +1,3 @@
+installed_source_entries=46
+installed_launch=["/home/dgamroth/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/bin/julia","--startup-file=no","--project=/home/dgamroth/.cache/rtc-native-calibration-final-20261006/classic-fgn-native-calibration-v1-installed/julia","/home/dgamroth/.cache/rtc-native-calibration-final-20261006/classic-fgn-native-calibration-v1-installed/julia/deploy_cli.jl","run","--deployment","/home/dgamroth/.cache/rtc-native-calibration-final-20261006/classic-fgn-native-calibration-v1-installed/deployment.conf","--runtime","/fresh/not-launched","--pipewire-prefix","/opt/pipewireao","--owner-preparation-timeout-seconds","300"]
+deployment_sha256=568ff1576b343b3094d7ce43830619c8eed27b72ba5a9d71aa4f829623a00c7f

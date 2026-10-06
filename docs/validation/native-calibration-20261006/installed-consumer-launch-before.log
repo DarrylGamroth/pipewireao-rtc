@@ -1,0 +1,19 @@
+ERROR: LoadError: Some tests did not pass: 1 passed, 1 failed, 0 errored, 0 broken.
+in expression starting at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/docs/validation/native-calibration-20261006/installed-consumer-launch-oracle.jl:4
+argv=["/home/dgamroth/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/bin/julia","--startup-file=no","--project=/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/deployment/julia","/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/deployment/julia/deploy_cli.jl","run","--deployment","/sealed/package/deployment.conf","--runtime","/fresh/runtime","--pipewire-prefix","/opt/pipewireao","--owner-preparation-timeout-seconds","900"]
+Installed consumer launches sealed SDK rather than source tools: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/docs/validation/native-calibration-20261006/installed-consumer-launch-oracle.jl:11
+  Expression: command[3:4] == ["--project=/sealed/package/julia", "/sealed/package/julia/deploy_cli.jl"]
+   Evaluated: ["--project=/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/deployment/julia", "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/deployment/julia/deploy_cli.jl"] == ["--project=/sealed/package/julia", "/sealed/package/julia/deploy_cli.jl"]
+
+Stacktrace:
+ [1] top-level scope
+   @ ~/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/docs/validation/native-calibration-20261006/installed-consumer-launch-oracle.jl:5
+ [2] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [3] macro expansion
+   @ ~/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer/docs/validation/native-calibration-20261006/installed-consumer-launch-oracle.jl:11 [inlined]
+ [4] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+Test Summary:                                                   | Pass  Fail  Total  Time
+Installed consumer launches sealed SDK rather than source tools |    1     1      2  1.4s
+RNG of the outermost testset: Random.Xoshiro(0xa5a5aac05794335e, 0x9eb03ac499125a2e, 0x1c436d26ed5a18db, 0x7add6d5586de947d, 0x6b157a2775a3cd9a)

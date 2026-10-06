@@ -4,6 +4,24 @@ const CQ = NativeCalibrationQualification
 const LCQ = CQ.L
 const HCQ = CQ.PipeWireAODeployment.NativeControlCodec
 
+@testset "Native qualifiers launch the sealed installed runtime" begin
+    command=CQ.installed_command("/sealed/package","/fresh/runtime";owner_preparation_timeout_seconds=900)
+    @test command[3:4] == ["--project=/sealed/package/julia","/sealed/package/julia/deploy_cli.jl"]
+    @test command[end-1:end] == ["--owner-preparation-timeout-seconds","900"]
+    @test_throws ArgumentError CQ.installed_command("unused","unused";owner_preparation_timeout_seconds=true)
+    mktempdir() do package
+        sdk=joinpath(package,"julia");mkpath(joinpath(sdk,"src"))
+        for name in ("Project.toml","Manifest.toml","deploy_cli.jl","src/deploy.jl","src/native_control_client.jl")
+            write(joinpath(sdk,name),name)
+        end
+        receipt=CQ.runtime_receipt(package)
+        @test length(receipt) == 5
+        @test receipt["julia/src/deploy.jl"] == CQ.C.sha256_file(joinpath(sdk,"src/deploy.jl"))
+        rm(joinpath(sdk,"src/deploy.jl"));symlink("../deploy_cli.jl",joinpath(sdk,"src/deploy.jl"))
+        @test_throws ErrorException CQ.runtime_receipt(package)
+    end
+end
+
 function collect_fixture()
     plan = Dict("version"=>1,"run"=>82,"reference"=>zeros(Float32,277),
         "probes"=>[zeros(Float32,277) for _ in 1:4],"measurements"=>376,
