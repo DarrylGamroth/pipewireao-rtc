@@ -91,7 +91,8 @@ simplified scientific substitute is introduced.
 julia --startup-file=no --project=deployment/julia deployment/deploy.jl install \
   --package /absolute/new-package \
   --destination "$HOME/.config/pipewireao-rtc/revolt-classic-jfg-frame" \
-  --pipewire-prefix /opt/pipewireao
+  --pipewire-prefix /opt/pipewireao \
+  --julia-executable /absolute/path/to/julia
 
 # Supply the recorded source separately.
 cp /absolute/classic-input.fits \
@@ -101,6 +102,18 @@ cp /absolute/classic-input.fits \
 Installation refuses an existing destination. The installed launcher and its
 service template are relocatable. The descriptor is standard SPA-JSON; JSON
 emitted by the exporter is its strict subset. Artifact tampering fails preflight.
+The optional `--julia-executable` selects an absolute executable; the default is
+the Julia runtime executing the installer. Installation checks that it runs
+Julia ≥ 1.12 and < 2 before copying the package. Selection through juliaup pins
+the reported managed runtime executable. All generated operational wrappers use
+that absolute executable, including foreground and user-service launch, so the
+user manager does not need Julia in `PATH`. Keep that runtime installed; select
+another executable by installing to a fresh destination.
+
+Installation regenerates wrappers that are outside the sealed artifact list.
+A sealed wrapper must already match the selected executable; otherwise install
+rejects it before copying and requests a fresh exported SDK. Scientific assets,
+sealed SDK sources and their recorded hashes retain their original bytes.
 
 ```sh
 package="$HOME/.config/pipewireao-rtc/revolt-classic-jfg-frame"

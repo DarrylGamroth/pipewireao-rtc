@@ -141,6 +141,47 @@ end
 end
 
 @testset "Julia deployment portable admission and protocol" begin
+    minimal_path = Dict("PATH" => "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin")
+    julia = realpath(Base.julia_cmd().exec[1])
+    @test D.selected_julia_executable(julia) == julia
+    @test D._options(["install", "--package", "source", "--destination", "destination",
+        "--julia-executable", julia]).julia_executable == julia
+    @test_throws D.DeploymentError D.selected_julia_executable("julia")
+    @test_throws D.DeploymentError D.selected_julia_executable("/missing/julia")
+    quoted = "executable with spaces and 'quote'"
+    @test read(`sh -c $("printf '%s' " * D.shell_quote(quoted))`, String) == quoted
+    mktempdir() do directory
+        source = joinpath(directory, "source")
+        mkdir(source)
+        spec = deployment_fixture(source)
+        write(joinpath(source, "deployment.conf"), JSON3.write(spec))
+        for version in ("1.11.9", "2.0.0", "invalid")
+            executable = joinpath(directory, "invalid Julia")
+            write(executable, "#!/bin/sh\nprintf '%s' '$version'\n")
+            chmod(executable, 0o755)
+            destination = joinpath(directory, "destination")
+            @test_throws D.DeploymentError D.install((;package=source, destination,
+                pipewire_prefix="/unused", julia_executable=executable))
+            @test !ispath(destination)
+        end
+        wrapper = joinpath(source, "bin/pipewireao-rtc-deploy")
+        mkpath(dirname(wrapper))
+        write(wrapper, "#!/bin/sh\nexec julia sealed-wrapper\n")
+        spec["artifacts"]["bin/pipewireao-rtc-deploy"] = D.digest(wrapper)
+        write(joinpath(source, "deployment.conf"), JSON3.write(spec))
+        destination = joinpath(directory, "destination")
+        @test_throws D.DeploymentError D.install((;package=source, destination,
+            pipewire_prefix="/unused", julia_executable=julia))
+        @test !ispath(destination)
+        @test D.digest(wrapper) == spec["artifacts"]["bin/pipewireao-rtc-deploy"]
+        write(wrapper, D.installed_wrappers(julia)["pipewireao-rtc-deploy"])
+        spec["artifacts"]["bin/pipewireao-rtc-deploy"] = D.digest(wrapper)
+        write(joinpath(source, "deployment.conf"), JSON3.write(spec))
+        D.install((;package=source, destination, pipewire_prefix="/unused",
+            julia_executable=julia))
+        @test D.digest(joinpath(destination, "bin/pipewireao-rtc-deploy")) ==
+            spec["artifacts"]["bin/pipewireao-rtc-deploy"]
+    end
     @test D.INSTALLED_ENTRYPOINTS["export_heart_correction"] == "HeartCorrectionExport"
     mktempdir() do directory
         spec = deployment_fixture(directory)
@@ -172,8 +213,12 @@ end
         end
         write(joinpath(source, "deployment.conf"), JSON3.write(spec))
         destination = joinpath(directory, "installed with spaces")
-        D.install((; package=source, destination, pipewire_prefix="/unused prefix"))
+        executable = joinpath(directory, "selected Julia with spaces and 'quote'")
+        symlink(julia, executable)
+        D.install((; package=source, destination, pipewire_prefix="/unused prefix",
+            julia_executable=executable))
         @test isfile(joinpath(destination, "bin/pipewireao-rtc-deploy"))
+        @test occursin("exec " * D.shell_quote(julia), read(joinpath(destination, "bin/pipewireao-rtc-deploy"), String))
         @test isfile(joinpath(destination, "julia/Project.toml"))
         @test isfile(joinpath(destination, "julia/assets/deployment/hil/heart_owner.jl"))
         @test isfile(joinpath(destination, "julia/assets/deployment/templates/client-simulator.conf.in"))
@@ -208,7 +253,8 @@ end
             @test isfile(entrypoint)
             @test (stat(entrypoint).mode & 0o111) != 0
             @test occursin("PipeWireAODeployment.$owner.main", read(entrypoint, String))
-            result = PipeWireAODeployment.Common.run_checked([entrypoint]; timeout=30)
+            @test occursin("exec " * D.shell_quote(julia), read(entrypoint, String))
+            result = PipeWireAODeployment.Common.run_checked([entrypoint]; env=minimal_path, timeout=30)
             @test result.returncode == 1
             @test occursin("missing --", result.stderr)
             flagged = PipeWireAODeployment.Common.run_checked([entrypoint, "--base-package", "fixture"]; timeout=30)
@@ -236,7 +282,7 @@ end
         result = PipeWireAODeployment.Common.run_checked([
             joinpath(relocated, "bin/pipewireao-rtc-deploy"), "install",
             "--package", relocated, "--destination", second,
-            "--pipewire-prefix", "/unused prefix"]; timeout=120)
+            "--pipewire-prefix", "/unused prefix"]; env=minimal_path, timeout=120)
         @test result.returncode == 0
         @test isfile(joinpath(second, "bin/pipewireao-rtc-deploy"))
         @test D.profile(joinpath(second, "deployment.conf"), "/unused prefix") == spec
