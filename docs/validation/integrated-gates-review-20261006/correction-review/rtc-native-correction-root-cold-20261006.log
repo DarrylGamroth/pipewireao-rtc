@@ -1,0 +1,14 @@
+Test Summary:                                            | Pass  Total  Time
+Native correction fixture keeps sealed 256-frame profile |   18     18  0.8s
+Test Summary:                                          | Pass  Total  Time
+Native correction lifecycle gates precede report reads |   19     19  0.5s
+Test Summary:                                                               | Pass  Total  Time
+Retained native correction journal binds full-width cursor and safe release |   68     68  4.9s
+Test Summary:                                                        | Pass  Total  Time
+Correction reset and unchanged scientific acceptance remain required |   16     16  0.5s
+Test Summary:                                                                    | Pass  Total  Time
+Fresh HEART correction checkpoints distinguish deliberate generation replacement |    8      8  0.4s
+Test Summary:                                                     | Pass  Total  Time
+Correction success remains false after missing effects or cleanup |   15     15  0.3s
+Test Summary:                                               | Pass  Total  Time
+Correction report retention preserves exact published bytes |    5      5  0.3s

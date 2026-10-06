@@ -1,0 +1,24 @@
+{
+  "rtc_head": "92444413e4930e1191821b8a402301307fbaca2a",
+  "installed_launcher_commit": "68001993c68fa924ccdb4e30289beb3f1fe19220",
+  "scope": "independent bounded source and retained cold evidence review; no test rerun/build/SCI",
+  "source_sha256": {
+    "deployment/qualify_correction_native.jl": "62f06d0c50523bc0524ae31fc8df158dfaabc097313d47b33676b584534fce2a",
+    "deployment/qualify_calibration_native.jl": "bd82f3200414e4a1952ed85466583c13ff27cf5baa613655cf908f354ba15e63",
+    "deployment/julia/test/test_qualify_correction_native.jl": "67bc19aa13daaa6df7d0f60611f0dad1495ace5f999815d40810f65d5aeceac1",
+    "deployment/hil/heart_correction_analysis.jl": "f7f56708ac168435f63fdd5cd29ca908d6cc7a5a4cb300d42c90180496000e6a",
+    "deployment/hil/analyze_correction.jl": "b9cac5e62f1bfa546c293169ab7a53c383c9f6535f8f876e45fc49670970fcea",
+    "docs/validation/native-calibration-20261006/native-correction-receipt.json": "20121a60caa63e18d026207bac10e962239881601074cb3fd5ab115ad8f7ae4a"
+  },
+  "root_cold_log": {
+    "path": "/tmp/rtc-native-correction-root-cold-20261006.log",
+    "sha256": "945291648216871fa1be2c15d00eab82b16e19d4f731eb97b4678a206f428095",
+    "pass": 149,
+    "total": 149,
+    "sets": 7,
+    "failure_markers": []
+  },
+  "producer_receipt_files_verified": 7,
+  "producer_receipt_mismatches": [],
+  "disposition": "approved for planned installed correction execution; initial hold not directly observed; actual scientific acceptance pending"
+}
