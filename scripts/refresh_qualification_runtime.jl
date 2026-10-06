@@ -10,7 +10,7 @@ const D = PipeWireAODeployment.Deployment
 
 runtime_file(path) = startswith(path, "julia/") ||
     startswith(path, "systemd/") || startswith(path, "hil/packages/PipeWireAO/") ||
-    path in ("provenance.json", "bin/pipewireao-rtc", "pipewireao-rtc@.service.in",
+    path in ("provenance.json", "bin/pipewireao-rtc", "bin/rtc-calibrate", "pipewireao-rtc@.service.in",
         "hil/Project.toml", "hil/Manifest.toml",
         "jfg/deployment/Project.toml", "jfg/deployment/Manifest.toml")
 
@@ -45,9 +45,11 @@ function resolve_environment(package, relative, sdk_path)
 end
 
 function main(args)
-    length(args) == 5 || error("usage: SOURCE FRESH_OUTPUT RUNNER SDK RTC_ROOT")
-    source, output, runner, sdk, rtc = abspath.(args)
+    length(args) in (5, 6) || error("usage: SOURCE FRESH_OUTPUT RUNNER SDK RTC_ROOT [CALIBRATOR]")
+    source, output, runner, sdk, rtc = abspath.(args[1:5])
+    calibrator = length(args) == 6 ? abspath(args[6]) : nothing
     isfile(runner) || error("runner executable required")
+    calibrator === nothing || isfile(calibrator) || error("calibrator executable required")
     !ispath(output) && !ispath(output * "-installed") || error("fresh output required")
     before = C.read_json(joinpath(source, "deployment.conf"))
     D.profile(joinpath(source, "deployment.conf"), "/opt/pipewireao")
@@ -57,9 +59,16 @@ function main(args)
     H.replace_staged_package(sdk, output, "PipeWireAO")
     cp(runner, joinpath(output, "bin/pipewireao-rtc"); force=true)
     chmod(joinpath(output, "bin/pipewireao-rtc"), 0o755)
+    if calibrator !== nothing
+        haskey(before["artifacts"], "bin/rtc-calibrate") || error("source has no sealed calibrator")
+        cp(calibrator, joinpath(output, "bin/rtc-calibrate"); force=true)
+        chmod(joinpath(output, "bin/rtc-calibrate"), 0o755)
+    end
     resolve_environment(output, "julia", "../hil/packages/PipeWireAO")
     resolve_environment(output, "hil", "packages/PipeWireAO")
-    resolve_environment(output, "jfg/deployment", "../../hil/packages/PipeWireAO")
+    if any(owner -> owner["role"] == "julia", before["owners"])
+        resolve_environment(output, "jfg/deployment", "../../hil/packages/PipeWireAO")
+    end
     isdir(joinpath(output, "systemd")) && rm(joinpath(output, "systemd"); recursive=true)
     protected = Dict(path => hash for (path, hash) in before["artifacts"] if !runtime_file(path))
     verify_seals(output, Dict("artifacts" => protected))
@@ -70,12 +79,28 @@ function main(args)
         if get(before["artifacts"], path, nothing) != get(after, path, nothing)]
     all(change -> runtime_file(change["path"]), changes) || error("change outside declared runtime scope")
     provenance = C.read_json(joinpath(output, "provenance.json"))
+    previous_bindings = Dict{String,Any}()
+    for (key, path) in (("rtc_runner", "bin/pipewireao-rtc"), ("calibration_command", "bin/rtc-calibrate"))
+        haskey(provenance, key) || continue
+        provenance[key]["path"] == path || error("unexpected runtime provenance binding: $key")
+        previous_bindings[key] = copy(provenance[key])
+        provenance[key] = Dict("path" => path, "sha256" => C.sha256_file(joinpath(output, path)))
+    end
+    if haskey(provenance, "artifacts")
+        # Descriptor and provenance cannot recursively seal one another. Their
+        # final hashes live in the external installation receipt.
+        provenance["artifacts"] = Dict(path => hash for (path, hash) in after if path != "provenance.json")
+    end
     receipt = Dict("original" => source,
         "original_descriptor_sha256" => C.sha256_file(joinpath(source, "deployment.conf")),
+        "original_provenance_sha256" => C.sha256_file(joinpath(source, "provenance.json")),
+        "previous_runtime_bindings" => previous_bindings,
         "rtc_revision" => readchomp(`git -C $rtc rev-parse HEAD`),
         "sdk_revision" => readchomp(`git -C $sdk rev-parse HEAD`),
         "helper_sha256" => C.sha256_file(@__FILE__),
-        "runner_sha256" => C.sha256_file(runner), "protected_count" => length(protected),
+        "runner_sha256" => C.sha256_file(runner),
+        "calibrator_sha256" => calibrator === nothing ? nothing : C.sha256_file(calibrator),
+        "protected_count" => length(protected),
         "protected_files" => protected, "runtime_changes" => changes,
         "scope" => "deployment/runtime/SDK only; all other sealed bytes unchanged")
     provenance["native_control_runtime_refresh"] = receipt
@@ -92,6 +117,8 @@ function main(args)
     receipt["installed"] = installed
     receipt["installed_seal_count"] = length(sealed["artifacts"])
     receipt["installed_descriptor_sha256"] = C.sha256_file(joinpath(installed, "deployment.conf"))
+    receipt["installed_provenance_sha256"] = C.sha256_file(joinpath(installed, "provenance.json"))
+    receipt["runtime_changes_scope"] = "file deltas before writing provenance; final provenance is separately sealed"
     C.write_json(output * "-proof.json", receipt)
     println(installed)
 end
