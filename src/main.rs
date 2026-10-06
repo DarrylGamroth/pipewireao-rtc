@@ -1,8 +1,11 @@
 mod control;
 mod control_socket;
-// Request codec is compiled before production endpoint wiring is selected.
-#[allow(dead_code)]
+#[allow(dead_code)] // Encoder/client entrypoints remain until CLI migration.
 mod native_runner_codec;
+mod native_runner_endpoint;
+mod native_runner_mailbox;
+#[allow(dead_code)]
+mod native_runner_result;
 
 use crate::control::{state_name, Command, ControlError, ControlErrorResponse, ControlResponse};
 use crate::control_socket::ControlSocketServer;
@@ -35,6 +38,7 @@ struct Arguments {
     hold: bool,
     start_paused: bool,
     control_socket: Option<PathBuf>,
+    native_control: Option<native_runner_endpoint::Options>,
 }
 
 fn main() {
@@ -51,7 +55,7 @@ fn main() {
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     let arguments = parse_arguments()?;
-    let socket_mode = arguments.control_socket.is_some();
+    let socket_mode = arguments.control_socket.is_some() || arguments.native_control.is_some();
     let session_id = session_id();
     let adapter = LiveGraphAdapter::connect(arguments.remote)?;
     let mut runner = Runner::new(adapter);
@@ -73,7 +77,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let mut control_socket = None;
-    let control_result = if arguments.hold || arguments.start_paused || socket_mode {
+    let control_result = if let Some(options) = &arguments.native_control {
+        native_runner_endpoint::run(&mut runner, options)
+    } else if arguments.hold || arguments.start_paused || socket_mode {
         control_session(
             &mut runner,
             arguments.control_socket.as_deref(),
@@ -87,24 +93,28 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(socket) = &control_socket {
         socket.shutdown();
     }
-    let stop_result = if runner.state() == LifecycleState::Running {
-        let result = require_state(&mut runner, LifecycleEvent::Stop, LifecycleState::Ready);
-        if result.is_ok() && !socket_mode {
-            println!("READY {:?}", runner.executor().status());
-        }
-        result
-    } else {
-        Ok(())
-    };
-    let unload_result = if runner.state() == LifecycleState::Offline {
-        Ok(())
-    } else {
-        let result = require_state(&mut runner, LifecycleEvent::Unload, LifecycleState::Offline);
-        if result.is_ok() && !socket_mode {
-            println!("OFFLINE {:?}", runner.executor().status());
-        }
-        result
-    };
+    let (stop_result, unload_result) =
+        runner.with_control_deadline(Instant::now() + Duration::from_secs(5), |runner| {
+            let stop_result = if runner.state() == LifecycleState::Running {
+                let result = require_state(runner, LifecycleEvent::Stop, LifecycleState::Ready);
+                if result.is_ok() && !socket_mode {
+                    println!("READY {:?}", runner.executor().status());
+                }
+                result
+            } else {
+                Ok(())
+            };
+            let unload_result = if runner.state() == LifecycleState::Offline {
+                Ok(())
+            } else {
+                let result = require_state(runner, LifecycleEvent::Unload, LifecycleState::Offline);
+                if result.is_ok() && !socket_mode {
+                    println!("OFFLINE {:?}", runner.executor().status());
+                }
+                result
+            };
+            (stop_result, unload_result)
+        });
 
     drop(control_socket);
     unload_result?;
@@ -395,6 +405,8 @@ fn parse_arguments() -> Result<Arguments, ScientificDiagnostic> {
     let mut hold = false;
     let mut start_paused = false;
     let mut control_socket = None;
+    let mut control_name = None;
+    let mut control_instance = None;
     let mut arguments = std::env::args().skip(1);
     while let Some(argument) = arguments.next() {
         match argument.as_str() {
@@ -415,9 +427,35 @@ fn parse_arguments() -> Result<Arguments, ScientificDiagnostic> {
                     ScientificDiagnostic::new("command", "--control-socket requires a path")
                 })?));
             }
+            "--control-node" => {
+                control_name = Some(arguments.next().ok_or_else(|| {
+                    ScientificDiagnostic::new("command", "--control-node requires a name")
+                })?);
+            }
+            "--control-instance" => {
+                let value = arguments.next().ok_or_else(|| {
+                    ScientificDiagnostic::new(
+                        "command",
+                        "--control-instance requires a positive integer",
+                    )
+                })?;
+                control_instance = Some(
+                    value
+                        .parse::<i64>()
+                        .ok()
+                        .filter(|value| *value > 0)
+                        .ok_or_else(|| {
+                            ScientificDiagnostic::new(
+                                "command",
+                                "--control-instance requires a positive Int64",
+                            )
+                        })?,
+                );
+            }
             "--help" | "-h" => {
                 println!(
                     "Usage: pipewireao-rtc --config PATH [--remote CORE] [--hold] [--start-paused] [--control-socket PATH]\n\
+                     Native: --remote PRIVATE_SOCKET --start-paused --control-node NAME --control-instance POSITIVE\n\
                      Loads, starts, stops, and unloads one non-actuating complete-frame session.\n\
                      --start-paused loads to READY without starting; socket mode does not read stdin.\n\
                      Client: pipewireao-rtc control --socket PATH -- COMMAND [ARG ...]"
@@ -432,6 +470,27 @@ fn parse_arguments() -> Result<Arguments, ScientificDiagnostic> {
             }
         }
     }
+    let native_control = match (control_name, control_instance) {
+        (None, None) => None,
+        (Some(name), Some(instance)) => {
+            if control_socket.is_some()
+                || !start_paused
+                || name.is_empty()
+                || name.len() > 128
+                || name.contains('\0')
+            {
+                return Err(ScientificDiagnostic::new("command", "native ingress needs a bounded node name and --start-paused, and excludes --control-socket"));
+            }
+            remote = native_runner_endpoint::validate_remote(&remote)?;
+            Some(native_runner_endpoint::Options { name, instance })
+        }
+        _ => {
+            return Err(ScientificDiagnostic::new(
+                "command",
+                "--control-node and --control-instance must be supplied together",
+            ))
+        }
+    };
     Ok(Arguments {
         config: config
             .ok_or_else(|| ScientificDiagnostic::new("command", "--config PATH is required"))?,
@@ -439,6 +498,7 @@ fn parse_arguments() -> Result<Arguments, ScientificDiagnostic> {
         hold,
         start_paused,
         control_socket,
+        native_control,
     })
 }
 

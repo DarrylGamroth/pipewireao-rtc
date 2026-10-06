@@ -3,6 +3,26 @@ using Test, JSON3, Sockets
 using PipeWireAODeployment
 const D = PipeWireAODeployment.Deployment
 const P = PipeWireAODeployment.Placement
+const NRC = PipeWireAODeployment.NativeRunnerCodec
+const NRE = PipeWireAODeployment.NativeControlCodec
+
+struct MockRunnerClient
+    events::Vector{Symbol}
+end
+
+function PipeWireAODeployment.NativeRunnerClient.request!(client::MockRunnerClient,
+        command::NRC.RunnerCommand; deadline::Float64, check=()->nothing)
+    check()
+    operation = NRC.operation_id(command)
+    operation == 3 || error("fixture only supports an authoritative runner status query")
+    push!(client.events, :status)
+    details = (running=false, owned_nodes=UInt64(1), owned_links=UInt64(0),
+        discarded_buffers=UInt64(0), discarded_by_sink=Dict{String,UInt64}())
+    result = NRC.RunnerResult{:status,typeof(details)}(NRC.Observed, details)
+    header = NRE.ReplyHeader(NRE.ControllerIdentity(UInt32(7), UInt64(8), Int64(9)),
+        Int64(10), Int64(1), operation, Int32(0))
+    return NRC.Completion(header, NRC.Ready, result, nothing)
+end
 
 function deployment_fixture(directory)
     for name in ("session.conf.in", "core.conf.in", "client.conf.in")
@@ -25,16 +45,15 @@ function source_status_failure_fixture(mode)
         owner = Dict("role" => "simulator", "control-request" => "source.request",
             "control-reply" => "source.reply", "quit" => "source.quit")
         public_path = joinpath(directory, "public.sock")
-        native_path = joinpath(directory, "native.sock")
-        broker, native = listen(public_path), listen(native_path)
+        broker = listen(public_path)
         children = Tuple{String,Base.Process}[]
         pids = IdDict{Base.Process,Int}()
         descendant_path = joinpath(directory, "descendant.pid")
-        native_events = String[]
-        native_task = nothing
+        rtc_order_path = joinpath(directory, "rtc-exit-order")
+        native_events = Symbol[]
         client = nothing
         try
-            for role in ("core", "simulator", "rtc")
+            for role in ("core", "simulator")
                 argv = role == "simulator" ? ["sh", "-c",
                     "sleep 60 & echo \$! > \"\$1\"; wait", "source", descendant_path] : ["sleep", "60"]
                 child = Base.run(Cmd(Cmd(argv); detach=true); wait=false)
@@ -43,44 +62,26 @@ function source_status_failure_fixture(mode)
             end
             @test timedwait(() -> isfile(descendant_path), 5; pollint=0.01) == :ok
             descendant = parse(Int, strip(read(descendant_path, String)))
+            # The simulated RTC process exits only after the supervisor has
+            # revoked the private core/source groups and reaped the source child.
+            rtc_script = joinpath(directory, "rtc-wait-for-revocation.sh")
+            write(rtc_script, "while test -e /proc/$(pids[children[1][2]]) || " *
+                "test -e /proc/$(pids[children[2][2]]) || test -e /proc/$descendant; do sleep 0.01; done\n" *
+                "echo revoked > \"$rtc_order_path\"\n")
+            rtc = Base.run(Cmd(Cmd(["sh", rtc_script]); detach=true); wait=false)
+            push!(children, ("rtc", rtc))
+            pids[rtc] = getpid(rtc)
             record = Dict{String,Any}("phase" => "running", "admitted" => true,
                 "error" => nothing, "processes" => Dict{String,Any}())
             runner = D.DeploymentRunner((;), directory, Dict{String,Any}("owners" => [owner]),
                 Dict{String,String}(), Set{Int}(), children, pids, directory,
-                public_path, native_path, broker, nothing, nothing, owner, nothing, 0, "running",
+                public_path, MockRunnerClient(native_events), broker, nothing, nothing, owner, nothing, 0, "running",
                 false, false, false, joinpath(directory, "state.json"), record)
             if mode == :malformed
                 # Valid JSON with a matching ID/operation, but an invalid state.
                 D.atomic_record(joinpath(directory, "source.reply"), Dict(
                     "version" => 1, "id" => 1, "operation" => "status", "ok" => true,
                     "state" => "unknown", "sequence" => 1, "completed" => false, "error" => nothing))
-            end
-            native_task = @async begin
-                for request_number in 1:3
-                    peer = accept(native)
-                    try
-                        request = JSON3.read(readline(peer), Dict{String,Any})
-                        operation = only(request["argv"])
-                        push!(native_events, operation)
-                        if request_number > 1
-                            # Consumer control must follow ingress revocation.
-                            for (role, child) in children
-                                if role in ("core", "simulator")
-                                    @test !process_running(child)
-                                    @test isempty(D._live_owned_orphans(pids[child]))
-                                end
-                            end
-                            @test !ispath("/proc/$descendant")
-                        end
-                        if operation == "quit"
-                            kill(only(child for (role, child) in children if role == "rtc"))
-                        end
-                        write(peer, JSON3.write(Dict("version" => 1, "id" => request["id"],
-                            "ok" => true, "state" => "Ready")) * "\n")
-                    finally
-                        close(peer)
-                    end
-                end
             end
             client = connect(public_path)
             write(client, JSON3.write(Dict("version" => 1, "id" => "source-status-fault",
@@ -101,7 +102,6 @@ function source_status_failure_fixture(mode)
             @test reply["id"] == "source-status-fault"
             @test reply["error"]["field"] == "control.outcome"
             @test fetch(supervisor) isa D.DeploymentError
-            wait(native_task)
             @test runner.source_failed
             @test runner.source_id == 1
             @test runner.record["admitted"] === false
@@ -109,8 +109,10 @@ function source_status_failure_fixture(mode)
             persisted = JSON3.read(read(runner.state_path, String), Dict{String,Any})
             @test persisted["admitted"] === false && persisted["phase"] == "failed"
             @test occursin(mode == :missing ? "ACK timed out" : "invalid source", runner.record["error"])
-            @test native_events == ["status", "status", "quit"]
+            @test native_events == [:status]
             @test !isfile(joinpath(directory, "source.reply")) || mode == :malformed
+            @test isfile(rtc_order_path)
+            @test strip(read(rtc_order_path, String)) == "revoked"
             for (_, child) in children
                 @test !process_running(child)
                 @test isempty(D._live_owned_orphans(pids[child]))
@@ -119,11 +121,9 @@ function source_status_failure_fixture(mode)
         finally
             client === nothing || close(client)
             close(broker)
-            close(native)
             for (_, child) in reverse(children)
                 D._owned_wait(child, pids[child], 0)
             end
-            native_task === nothing || try wait(native_task) catch end
         end
     end
 end

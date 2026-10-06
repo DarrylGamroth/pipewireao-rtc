@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "date": "2026-10-05",
+  "branch": "work/native-control-planes-20261005",
+  "starting_commit": "0377007",
+  "scope": "native runner endpoint and supervisor-to-runner caller; remaining live controls unmigrated",
+  "binary": {
+    "path": "/home/dgamroth/.cache/rtc-live-controls-20261005/native-filter-target/debug/pipewireao-rtc",
+    "sha256": "71549afe3ca2f235c1264dafc0f18602936de861ad5e549cbc1b70c7c330fb4d",
+    "profile": "debug",
+    "features": [
+      "live"
+    ]
+  },
+  "environment": {
+    "cpu": 14,
+    "julia": "1.12.7",
+    "PipeWireAO": "0.6.16",
+    "prefix": "/opt/pipewireao",
+    "BLAS_threads": 1,
+    "requested_rt_priority": 0,
+    "requested_locked_memory_budget": 0
+  },
+  "sources": {
+    "src/native_runner_endpoint.rs": "52b6b79d21e99ec878f9ac5ce2f2dfd37059738ed7ca201f00631055ebe02d2e",
+    "src/native_runner_mailbox.rs": "d1dd17ab33d6c483a43a11298af28d87755cfe0ec7196d493c399331a1ddde19",
+    "src/native_runner_result.rs": "626711be250cbba325f1257ea85452f95d6e01fe62c7ec9e0bce6738b4b1fc47",
+    "src/native_runner_codec.rs": "aa3c0cb51730f43422745546a4bc443107d95dc12ea33b0917ea73b00c243a41",
+    "src/native_control_codec.rs": "44c72ef1087fcf597239366fe6b272efe88c59ae279208e94e5e981866ce9d40",
+    "src/main.rs": "f86850ca9e4fb297a4a92ccaa8a2036679eede2d40a819df158f93f8918f78e5",
+    "src/live.rs": "b4813cd8200bfbee94f0cf222dd9c8ff108bf4be0005c097b5dc1c31abd166c5",
+    "src/runner.rs": "9c35184edb041ebfac6ed4d6cc20c52a336b977cafcf248126adb05ae09e2077",
+    "deployment/julia/src/PipeWireAODeployment.jl": "5d8147a82a7fb193b22f211792fbc68a1afd8a19f332a12270739dcc5ed15de2",
+    "deployment/julia/src/deploy.jl": "9be47542acc9109c5d2c514670911bd2d27989b6d8b1e750280b7932d69432c6",
+    "deployment/julia/src/native_control_codec.jl": "bc1dff7a12ee132a67b135acdb2787188d4206bd54af6aa9017f1b19ca5b363c",
+    "deployment/julia/src/native_runner_codec.jl": "be239b081f970d85278e747c2abb41dd015d06eac3b7cb506eb05584c9a08473",
+    "deployment/julia/src/native_runner_client.jl": "1e03b0516202c834029d9ab56a29dde8cd72b446d548ad19b3d0c151a11e0bf1",
+    "deployment/julia/src/runner_commands.jl": "c2fd2a1ec460fd52942af7947db6f11242ec3f45835943d813675ec489aa43cd",
+    "src/native_runner_endpoint_tests.rs": "b148f155d1d6c3e1ac2a8ce99ddb87c3ab06da80096a02aeec05c8d40ff187dd",
+    "deployment/julia/test/native_runner_endpoint.jl": "0ee3ed6760457fcde406b5b08a68235dda6f84eade290ac12f7c6e87d88d3fa1",
+    "deployment/julia/test/native_runner_client.jl": "2c39b9b613fc6495a32dabcc652daff8444287a59983bac9d0ea6e50b7c3e81f",
+    "deployment/julia/test/native_runner_monitor.jl": "ad3456e2232055325abfccd66e50186d5ab260c6ddba83cb200e7b644b8e423e",
+    "deployment/julia/test/native_runner_deployment.jl": "2bbdf3aa765fd4349e68b8a67f8d7e624eb5d9eeb53eb684c6aa106f7f60a2f3",
+    "deployment/julia/test/test_native_runner_coordination.jl": "10bacf283e9e626849b4459d166426b969b911eef587e527bb28841646d74eb4",
+    "deployment/julia/test/runtests.jl": "30fc34bdf8cbd23bcdc9581190d1122158b3692509bebd5c207229b1817f7618"
+  },
+  "evidence_root": "/home/dgamroth/.cache/rtc-live-controls-20261005",
+  "logs": {
+    "native-runner-final-build.log": "4679713b26cbdba2b169f560a5bd2f5f6796466c4d712b7beeb780b515f36c1d",
+    "native-runner-julia-sealed-regression.log": "99b4e280179da06583086cb7286c5f2d245a18fb0041a8f70b7724aa39425281",
+    "native-runner-endpoint-sealed.log": "d0bb7da04f32770e71723efe2cfa7cac32c59db3a2b81f6fa71d568c96522fed",
+    "native-runner-client-sealed-serial.log": "8878c5b9d01cb0482b2d25cf7766f75598c3f1f8289be9ccc154d99cabbf2716",
+    "native-runner-monitor-sealed.log": "44b5b0ab261d17fbba93966f35dff2a1d624eeb8dad83a42920f4c8ed4d70824",
+    "native-runner-deployment-sealed.log": "752fd1a3f36bbea88ca7a414fa666ef1a925f055c331df692cbe0303d9898729",
+    "native-runner-coordination-before-corrected-fixture.log": "02dae95381c178220117f646d6f3be9223b4bab15d9336eae487938ecc576ab3",
+    "native-runner-coordination-after-final.log": "6c8417d0992b0b2a9f258426e49a575846d089843f64e70ba47f2bfad26dd715",
+    "native-runner-client-sealed.log": "c4658c2a71757a27e1653ce2d37df9c387ec32d678795b06bd6fa7571fea9b9d",
+    "native-runner-drop-before/rust.log": "3ffd61ea6af3f286675a3c3316f722348865dcc3ec3badfb9aa84fee8588f887",
+    "native-runner-drop-after/rust.log": "5b9cb86b1d742236fb6ef500547355c1816fd58ea3ec6e4168b58bdefb2571a1",
+    "native-runner-queued-monitor-before/queued_budget/rust.log": "549a1d6e75e9800b6a7dd81d40d9a6d0cb200c9dcbca0d3ec260518e77a97432"
+  },
+  "passing_checks": {
+    "Rust_workspace": {
+      "passed": 184,
+      "failed": 0,
+      "ignored": 9
+    },
+    "Julia_full_regression": {
+      "assertions": 1791,
+      "test_sets": 69,
+      "failed": 0
+    },
+    "actual_endpoint": 143,
+    "actual_client_and_observation_units": 104,
+    "monitor_assertions": 12,
+    "supervisor": 41,
+    "coordination_and_admission": 39
+  },
+  "limits": [
+    "No ndarray submissions or sink arms in endpoint/launcher fixtures.",
+    "No science, frame allocation, physical hardware, throughput or hard real-time qualification.",
+    "Source-owner launcher branch not exercised by the no-source-owner actual supervisor fixture.",
+    "Forced live-descendant cleanup not experimentally qualified.",
+    "Earlier concurrent client replay had pre-binding link synchronization timeout; unchanged serial replay passed, cause unresolved.",
+    "Expiry during multi-stage science, Running finite completion and blocked artifact I/O not experimentally qualified."
+  ],
+  "remaining_migration": [
+    "HEART wrapper readiness/reset/health",
+    "calibration and correction source admission",
+    "calibration action endpoint and Rust/Julia clients",
+    "public operator requests",
+    "live readiness/status-file authority"
+  ]
+}

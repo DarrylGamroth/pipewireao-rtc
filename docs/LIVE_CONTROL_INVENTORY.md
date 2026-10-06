@@ -12,10 +12,17 @@ for current implementation status. A 2026-10-05 read-only recheck of the HEART
 wrapper and callers at `e57b2e5403bd8b90b6a2ebbaa7fbefe6c4ccfada` confirmed that
 reset/status files and health-report reads below remain live migration debt.
 
+The subsequent [runner endpoint](NATIVE_RUNNER_ENDPOINT_VALIDATION.md) and
+[supervisor client](NATIVE_RUNNER_CLIENT_VALIDATION.md) replace the historical
+supervisor-to-runner JSON socket hop below. Focused CPU lifecycle tests use the
+actual launcher and native endpoint. The public operator broker, HEART wrapper,
+calibration controls and readiness/status-file authority remain unmigrated;
+the original inventory below preserves their starting interfaces.
+
 ## HEART boundary recheck
 
 No HEART source change is needed for this migration. Our `heart_owner.jl`
-wrapper supplies the new native endpoint, and our exporter, simulator,
+wrapper will supply the new native endpoint, and our exporter, simulator,
 calibration and correction callers consume it. The wrapper's vendor TCP command
 client and SPA Standard WFS/DM UDP bridges remain their existing interfaces.
 

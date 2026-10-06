@@ -848,6 +848,7 @@ mod tests {
         ExecutionGroupState, LifecycleState, LiveGraphStatus, ParameterGeneration,
         PropertyGeneration, ScalarValue,
     };
+    use std::collections::BTreeMap;
     use std::fs;
 
     fn assert_legacy(result: &ExecutionResult, outcome: Outcome, expected: &str) {
@@ -878,7 +879,7 @@ mod tests {
         );
         assert_legacy(
             &ExecutionResult::Groups {
-                groups: Default::default(),
+                groups: BTreeMap::default(),
             },
             Outcome::Observed,
             r#"{"outcome":"observed","groups":{}}"#,
@@ -955,7 +956,7 @@ mod tests {
         assert_legacy(
             &ExecutionResult::Properties {
                 graph: "g".into(),
-                properties: Default::default(),
+                properties: BTreeMap::default(),
             },
             Outcome::Observed,
             r#"{"outcome":"observed","graph":"g","properties":{}}"#,

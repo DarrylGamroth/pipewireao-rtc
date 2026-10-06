@@ -283,6 +283,12 @@ include their actual costs in that gate.
 
 Each phase exposes one reviewable contract and a CPU integration gate before an
 installed scientific campaign. No all-at-once graph/owner rewrite is needed.
+Phase B now has [endpoint evidence](NATIVE_RUNNER_ENDPOINT_VALIDATION.md).
+The supervisor-to-runner portion of phase C has
+[actual launcher/client evidence](NATIVE_RUNNER_CLIENT_VALIDATION.md); HEART
+wrapper reset/health and the following phases remain unfinished. The legacy
+public broker and readiness files are explicitly retained only as unmigrated
+interfaces, not native fallbacks.
 RTC-DEV-030 now specifies native local live controls; the remaining calibration
 JSON implementation is migration debt rather than admitted native capability. Hardware/GPU,
 allocation and installed qualification remain separate required evidence when their
@@ -298,8 +304,8 @@ affected paths are implemented.
   admission, calibration hold/disconnect/inactivity handling or production effects.
 - The fixed header and unsigned bit-pattern representation are specified in
   [the common envelope](NATIVE_CONTROL_ENVELOPE.md) and exercised across Julia/Rust.
-  Production owner-specific enums, payload/catalog identity and authenticated
-  controller lifetime remain implementation and integration gates.
+  Production owner-specific enums, payload/catalog identity and registry-bound
+  controller lifetime remain owner-specific implementation and integration gates.
 - Rust inner synchronization is now locally bounded with separate
   [failure evidence](NATIVE_CONTROL_SYNC_VALIDATION.md). Full finite control still
   requires whole-request budget integration; timing out a client is insufficient.

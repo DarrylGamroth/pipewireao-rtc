@@ -430,7 +430,7 @@ mod tests {
             parameter: "n:matrix".into(),
             element_type: "F32_LE".into(),
             shape,
-            schema: "".into(),
+            schema: String::new(),
             path: PathBuf::from("/path/not/opened/by/codec"),
         }
     }
@@ -473,7 +473,7 @@ mod tests {
             ScalarValue::float(-0.0),
             ScalarValue::double(-0.0),
             ScalarValue::Id(u32::MAX),
-            ScalarValue::String("".into()),
+            ScalarValue::String(String::new()),
         ];
         for value in values {
             let command =
@@ -494,7 +494,7 @@ mod tests {
             (3, vec![Value::Bool(true)]),
             (4, vec![]),
             (4, vec![Value::Int(1)]),
-            (4, vec![Value::String("".into())]),
+            (4, vec![Value::String(String::new())]),
             (5, vec![Value::String("g".into())]),
             (13, vec![Value::String("g".into()), Value::Struct(vec![])]),
             (
@@ -625,7 +625,7 @@ mod tests {
                 Value::String("n:matrix".into()),
                 Value::String("F32_LE".into()),
                 Value::ValueArray(ValueArray::Id(vec![Id(1); rank])),
-                Value::String("".into()),
+                Value::String(String::new()),
                 Value::String("/path/not/opened/by/codec".into()),
             ];
             assert_eq!(

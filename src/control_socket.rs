@@ -113,7 +113,7 @@ impl Drop for OwnedSocketPath {
     }
 }
 
-fn validate_socket_path(path: &Path) -> io::Result<PathBuf> {
+pub(crate) fn validate_socket_path(path: &Path) -> io::Result<PathBuf> {
     if !path.is_absolute() {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
@@ -153,7 +153,7 @@ fn remove_owned_socket(path: &Path) {
     }
 }
 
-fn effective_uid() -> io::Result<u32> {
+pub(crate) fn effective_uid() -> io::Result<u32> {
     fs::read_to_string("/proc/self/status")?
         .lines()
         .find_map(|line| line.strip_prefix("Uid:"))

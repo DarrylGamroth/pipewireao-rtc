@@ -106,7 +106,29 @@ impl<E: EffectExecutor> Runner<E> {
         ) {
             return Ok(self.state());
         }
-        match self.executor.check_required_objects() {
+        let observation = self.executor.check_required_objects();
+        self.apply_required_object_observation(observation)
+    }
+
+    /// Applies a completed cold health observation through the sole dispatcher.
+    /// Callers must discard observations whose sampling budget expired rather
+    /// than treating control-request expiry as evidence of a session fault.
+    ///
+    /// # Errors
+    ///
+    /// Returns a dispatcher error if the corresponding lifecycle event fails.
+    #[doc(hidden)]
+    pub fn apply_required_object_observation(
+        &mut self,
+        observation: Result<RequiredObjectStatus, ScientificDiagnostic>,
+    ) -> Result<LifecycleState, DispatchError> {
+        if !matches!(
+            self.state(),
+            LifecycleState::Ready | LifecycleState::Running
+        ) {
+            return Ok(self.state());
+        }
+        match observation {
             Ok(RequiredObjectStatus::FiniteSourceCompleted)
                 if self.state() == LifecycleState::Running =>
             {

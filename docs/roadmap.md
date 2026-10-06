@@ -1458,9 +1458,16 @@ adoption checks intact.
    The [runner profile](NATIVE_RUNNER_CONTROL.md) now has closed typed dispatcher
    results and an exact native request codec, with
    [compatibility/boundary validation](NATIVE_RUNNER_CONTROL_VALIDATION.md).
-   Production native ingress and a whole-request budget remain open.
+   The native endpoint now passes a two-actual-caller private-core lifecycle
+   fixture; [endpoint validation](NATIVE_RUNNER_ENDPOINT_VALIDATION.md) records
+   deadline/preparation gates separately. The supervisor-to-runner caller now
+   uses the native endpoint; its [client validation](NATIVE_RUNNER_CLIENT_VALIDATION.md)
+   records actual launcher admission/control/cleanup. Legacy public socket
+   callers remain explicitly unmigrated until their replacements qualify.
 3. Migrate supervisor-to-runner and HEART wrapper readiness/reset/health through
    native completions without changing HEART's scientific implementation.
+   The supervisor-to-runner hop has focused CPU qualification; HEART wrapper
+   controls and health consumers remain the next implementation boundary.
 4. Migrate calibration/correction source admission and the calibration action
    server plus both clients, preserving restoration and inactivity fencing.
 5. Replace public operator requests and remaining live readiness/status-file

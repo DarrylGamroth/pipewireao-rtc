@@ -5,6 +5,8 @@ using ..Common
 using ..Placement
 using ..ScienceExport
 import ..NativeSourceClient
+import ..NativeRunnerClient
+import ..RunnerCommands
 
 export DeploymentError, digest, installed_paths, decode, profile, relative_asset,
     substitute, control, atomic_record, validate_source_reply, validate_control_request,
@@ -306,7 +308,7 @@ mutable struct DeploymentRunner
     owned_pids::IdDict{Base.Process,Int}
     runtime::Union{Nothing,String}
     socket::Union{Nothing,String}
-    native_socket::Union{Nothing,String}
+    runner_client::Any
     broker::Any
     broker_accept::Any
     latency_io::Any
@@ -568,15 +570,35 @@ function source_file_control(deployment::DeploymentRunner, operation::AbstractSt
     end
 end
 
-function native_control(deployment::DeploymentRunner, argv; request_id=nothing)
-    check_fn = argv in (["quit"], ["exit"]) ?
-        (() -> check_processes(deployment; ignore_roles=("rtc",))) : (() -> check(deployment))
-    control(something(deployment.native_socket), argv; request_id, allow_rejection=true, check=check_fn)
+function native_control(deployment::DeploymentRunner, argv; request_id=nothing, shutdown=false,
+        command=RunnerCommands.parse(argv))
+    deployment.runner_client === nothing && fail("native runner client was not prepared")
+    ignore_roles = argv in (["quit"], ["exit"]) ? ("rtc",) : ()
+    check_fn = shutdown ? (() -> check_processes(deployment; ignore_roles)) :
+        argv in (["quit"], ["exit"]) ?
+            (() -> check_processes(deployment; ignore_roles)) : (() -> check(deployment))
+    reply = NativeRunnerClient.request!(deployment.runner_client, command;
+        deadline=monotonic() + 8, check=check_fn)
+    return RunnerCommands.render(reply; request_id)
 end
 
 function coordinate(deployment::DeploymentRunner, argv, request_id)
+    command = try
+        RunnerCommands.parse(argv)
+    catch error
+        error isa ArgumentError || rethrow()
+        return control_error(request_id, "control.command", sprint(showerror, error))
+    end
+    if deployment.source_owner === nothing
+        reply = native_control(deployment, argv; request_id, command)
+        if reply["ok"] && argv in (["quit"], ["exit"])
+            deployment.native_shutdown = true
+            deployment.stopping = true
+        end
+        return reply
+    end
     if argv == ["status"]
-        reply = native_control(deployment,argv;request_id)
+        reply = native_control(deployment,argv;request_id,command)
         reply["ok"] && (reply["source"] = source_control(deployment,"status"))
         return reply
     end
@@ -584,10 +606,10 @@ function coordinate(deployment::DeploymentRunner, argv, request_id)
         length(argv) == 2 && argv[1] == "stop"
     starting = argv == ["session-start"] || length(argv) == 2 && argv[1] == "start"
     resetting = argv == ["reset"]
-    (stopping || starting || resetting) || return native_control(deployment, argv; request_id)
+    (stopping || starting || resetting) || return native_control(deployment, argv; request_id, command)
     observed = native_control(deployment, ["status"])
     if !observed["ok"] || resetting && observed["state"] != "Ready"
-        return native_control(deployment, argv; request_id)
+        return native_control(deployment, argv; request_id, command)
     end
     source = source_control(deployment, "status")
     if starting && source["completed"]
@@ -599,7 +621,7 @@ function coordinate(deployment::DeploymentRunner, argv, request_id)
     end
     was_running = source["state"] == "running"
     stopping && (source = source_control(deployment, "pause"))
-    reply = native_control(deployment, argv; request_id)
+    reply = native_control(deployment, argv; request_id, command)
     if reply["ok"]
         if starting && reply["state"] == "Running"
             resumed = source_control(deployment, "resume"; allow_rejection=true)
@@ -789,14 +811,16 @@ function _stop_processes(deployment, errors; source=false)
                 end
             end
         end
-        if revoked && deployment.native_socket !== nothing && ispath(deployment.native_socket)
+        # A revoked private core cannot carry a native request. Process-group
+        # cleanup remains available when no live native endpoint can respond.
+        if paused && deployment.runner_client !== nothing
             try
-                observed = control(deployment.native_socket, ["status"])
-                observed["state"] == "Running" && control(deployment.native_socket, ["session-stop"])
+                observed = native_control(deployment, ["status"]; shutdown=true)
+                observed["state"] == "Running" && native_control(deployment, ["session-stop"]; shutdown=true)
             catch
             end
             try
-                control(deployment.native_socket, ["quit"])
+                native_control(deployment, ["quit"]; shutdown=true)
             catch
             end
         end
@@ -837,16 +861,16 @@ function _stop_processes(deployment, errors; source=false)
             end
         end
     else
-        ingress_stopped = false
-        if deployment.socket !== nothing && ispath(deployment.socket)
+        ingress_stopped = deployment.native_shutdown
+        if deployment.runner_client !== nothing && !deployment.native_shutdown
             try
-                observed = control(deployment.socket, ["status"])
+                observed = native_control(deployment, ["status"]; shutdown=true)
                 observed["state"] == "Running" &&
-                    (observed = control(deployment.socket, ["session-stop"]))
+                    (observed = native_control(deployment, ["session-stop"]; shutdown=true))
                 ingress_stopped = observed["state"] == "Ready"
             catch
             end
-            try control(deployment.socket, ["quit"]) catch end
+            try native_control(deployment, ["quit"]; shutdown=true) catch end
         end
         for (role, process) in deployment.processes
             if role == "rtc"
@@ -911,6 +935,12 @@ function _render(deployment, bindings)
     end
 end
 
+function runner_admission(reply, expected_state)
+    require(get(reply, "ok", false) === true && get(reply, "state", nothing) == expected_state,
+        "RTC admission requires a successful $expected_state completion")
+    return reply
+end
+
 function _run_locked(deployment::DeploymentRunner, base)
     deployment.state_path = joinpath(base, "state.json")
     deployment.runtime = mktempdir(base; prefix="run-")
@@ -919,9 +949,7 @@ function _run_locked(deployment::DeploymentRunner, base)
     try
         runtime = something(deployment.runtime)
         deployment.socket = joinpath(runtime, "control.sock")
-        deployment.native_socket = deployment.source_owner === nothing ?
-            deployment.socket : joinpath(runtime, "native-control.sock")
-        ncodeunits(deployment.native_socket) < 108 || fail("runtime path is too long for a Unix control socket")
+        ncodeunits(deployment.socket) < 108 || fail("runtime path is too long for a Unix control socket")
         bindings = Dict("PACKAGE" => deployment.package,
             "PREFIX" => abspath(deployment.options.pipewire_prefix),
             "RUNTIME" => runtime, "REMOTE" => "rtc-" * first(replace(string(uuid4()), "-" => ""), 12))
@@ -958,13 +986,18 @@ function _run_locked(deployment::DeploymentRunner, base)
             wait_until(deployment, () -> isfile(joinpath(runtime, owner["connected"])), "$role connection")
         end
         deployment.source_owner !== nothing && source_control(deployment, "pause"; initial=true)
-        spawn(deployment, "rtc", [joinpath(deployment.package, "bin/pipewireao-rtc"),
-            "--config", joinpath(runtime, "rtc/session.conf"), "--remote", bindings["REMOTE"],
-            "--start-paused", "--control-socket", deployment.native_socket],
+        runner_node = "pipewireao.rtc.runner.$(deployment.spec["name"])"
+        runner_instance = Int64(time_ns() % UInt64(typemax(Int64) - 1)) + 1
+        remote = joinpath(runtime, bindings["REMOTE"])
+        rtc = spawn(deployment, "rtc", [joinpath(deployment.package, "bin/pipewireao-rtc"),
+            "--config", joinpath(runtime, "rtc/session.conf"), "--remote", remote,
+            "--start-paused", "--control-node", runner_node,
+            "--control-instance", string(runner_instance)],
             environment(deployment, "rtc", bindings))
-        wait_until(deployment, () -> _is_socket(deployment.native_socket), "RTC control endpoint")
-        ready = control(deployment.native_socket, ["status"])
-        ready["state"] == "Ready" || fail("RTC admission requires Ready, observed $(ready["state"])")
+        deployment.runner_client = NativeRunnerClient.connect(remote, runner_node, getpid(rtc), runner_instance;
+            deadline=monotonic() + 90, check=() -> check(deployment))
+        deployment.record["runner"] = Dict("node" => runner_node, "instance" => runner_instance)
+        ready = runner_admission(native_control(deployment, ["status"]), "Ready")
         placements = Dict{String,Any}()
         for (role, process) in deployment.processes
             placements[role] = Placement.snapshot(getpid(process), deployment.spec["placement"][role])
@@ -972,14 +1005,13 @@ function _run_locked(deployment::DeploymentRunner, base)
         check(deployment)
         merge!(deployment.record, Dict("phase" => "prepared", "placement" => placements, "ready" => ready))
         atomic_record(deployment.state_path, deployment.record)
-        started = control(deployment.native_socket, ["session-start"])
-        started["state"] == "Running" || fail("RTC did not admit session start")
+        started = runner_admission(native_control(deployment, ["session-start"]), "Running")
         if deployment.source_owner !== nothing
             source_control(deployment, "resume")
-            ispath(deployment.socket) && fail("public control path already exists")
-            deployment.broker = listen(deployment.socket)
-            chmod(deployment.socket, 0o600)
         end
+        ispath(deployment.socket) && fail("public control path already exists")
+        deployment.broker = listen(deployment.socket)
+        chmod(deployment.socket, 0o600)
         merge!(deployment.record, Dict("phase" => "running", "admitted" => true, "start" => started))
         atomic_record(deployment.state_path, deployment.record)
         println("DEPLOYMENT_READY name=$(deployment.spec["name"]) socket=$(deployment.socket)")
@@ -987,11 +1019,7 @@ function _run_locked(deployment::DeploymentRunner, base)
         notify("READY=1\nSTATUS=RTC admitted; local control available")
         while !deployment.stopping
             check(deployment)
-            if deployment.source_owner !== nothing
-                serve_control(deployment)
-            else
-                sleep(0.1)
-            end
+            serve_control(deployment)
         end
     catch error
         if !(error isa InterruptException)
@@ -1009,6 +1037,12 @@ function _run_locked(deployment::DeploymentRunner, base)
             deployment.record["error"] === nothing && (deployment.record["error"] = sprint(showerror, error))
             primary_error === nothing && rethrow()
         finally
+            try
+                deployment.runner_client !== nothing && close(deployment.runner_client)
+            catch error
+                push!(get!(deployment.record,"cleanup_errors",String[]),sprint(showerror,error))
+                deployment.record["error"] === nothing && (deployment.record["error"] = sprint(showerror,error))
+            end
             try
                 deployment.source_client !== nothing && close(deployment.source_client)
             catch error

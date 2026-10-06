@@ -46,6 +46,21 @@ struct DeadlineGuard {
     previous: Option<Instant>,
 }
 
+impl crate::Runner<LiveGraphAdapter> {
+    /// Executes cold control work with one inherited adapter deadline.
+    /// Scope restoration is lexical, including return and panic unwinding.
+    /// This bounds nested PipeWire waits, not arbitrary filesystem/native calls.
+    #[doc(hidden)]
+    pub fn with_control_deadline<T>(
+        &mut self,
+        deadline: Instant,
+        operation: impl FnOnce(&mut Self) -> T,
+    ) -> T {
+        let _scope = self.executor().scoped_deadline(deadline);
+        operation(self)
+    }
+}
+
 impl DeadlineGuard {
     fn new(current: Rc<Cell<Option<Instant>>>, deadline: Instant) -> Self {
         let previous = current.get();
@@ -178,6 +193,30 @@ mod deadline_tests {
         // release for populated arrays is source-reviewed, not measured here.
         assert!(
             adapter.links.is_empty() && adapter.spa_nodes.is_empty() && adapter.modules.is_empty()
+        );
+    }
+
+    #[test]
+    #[ignore = "requires the native runner destructor private-core fixture"]
+    fn dropped_clean_adapter_does_not_start_new_sync() {
+        let remote = std::env::var("PIPEWIREAO_DROP_PROOF_REMOTE").unwrap();
+        let directory =
+            std::path::PathBuf::from(std::env::var_os("PIPEWIREAO_DROP_PROOF_DIRECTORY").unwrap());
+        let mut adapter = super::LiveGraphAdapter::connect(remote).unwrap();
+        adapter.cleanup(None).unwrap();
+        std::fs::write(directory.join("ready"), "").unwrap();
+        let deadline = Instant::now() + Duration::from_secs(15);
+        while !directory.join("drop").is_file() {
+            assert!(Instant::now() < deadline, "fixture did not release drop");
+            std::thread::sleep(Duration::from_millis(2));
+        }
+        let started = Instant::now();
+        drop(adapter);
+        let elapsed = started.elapsed();
+        std::fs::write(directory.join("elapsed-ns"), elapsed.as_nanos().to_string()).unwrap();
+        assert!(
+            elapsed < Duration::from_millis(250),
+            "already-clean adapter destructor started another synchronization budget: {elapsed:?}"
         );
     }
 }
@@ -767,6 +806,14 @@ impl LiveGraphAdapter {
     #[must_use]
     pub fn main_loop(&self) -> pw::main_loop::MainLoopRc {
         self.main_loop.clone()
+    }
+
+    /// Shares the existing public connection with a cold control endpoint.
+    /// The endpoint must use this adapter's sole owner thread and main loop.
+    #[doc(hidden)]
+    #[must_use]
+    pub fn control_core(&self) -> pw::core::CoreRc {
+        self.core.clone()
     }
 
     #[must_use]
@@ -3761,7 +3808,18 @@ impl EffectExecutor for LiveGraphAdapter {
 
 impl Drop for LiveGraphAdapter {
     fn drop(&mut self) {
-        let _ = self.cleanup(None);
+        // Explicit cleanup already released these local handles even when
+        // remote removal could not be confirmed. Do not start a fresh sync
+        // budget after the caller's Stop/Unload cleanup scope has ended.
+        if !self.links.is_empty()
+            || !self.controlled_graphs.is_empty()
+            || !self.latest_hold_nodes.is_empty()
+            || !self.spa_nodes.is_empty()
+            || !self.parameter_publishers.is_empty()
+            || !self.modules.is_empty()
+        {
+            let _ = self.cleanup(None);
+        }
     }
 }
 

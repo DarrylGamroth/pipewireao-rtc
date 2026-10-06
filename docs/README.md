@@ -154,8 +154,17 @@ wait and stalled-core evidence, separately from native runner ingress.
 The [runner request profile](NATIVE_RUNNER_CONTROL.md), its
 [independent review](NATIVE_RUNNER_CONTROL_REVIEW.md) and
 [validation](NATIVE_RUNNER_CONTROL_VALIDATION.md) record closed typed dispatcher
-results and exact native request encoding; production endpoint wiring remains
-open.
+results and exact native request encoding. The subsequent
+[endpoint validation](NATIVE_RUNNER_ENDPOINT_VALIDATION.md) and
+[endpoint review](NATIVE_RUNNER_ENDPOINT_REVIEW.md) record actual caller
+admission, lifecycle and cleanup checks; migration of remaining production callers and
+other owners remains open.
+The [native runner client validation](NATIVE_RUNNER_CLIENT_VALIDATION.md) and
+[independent client review](NATIVE_RUNNER_CLIENT_REVIEW.md) record the implemented
+supervisor-to-runner hop. HEART, calibration, public operator and remaining live
+readiness/status-file controls are still awaiting migration.
+The [sealed source/evidence identities](NATIVE_RUNNER_CONTROL_EVIDENCE.json)
+bind the passing runner/caller checks and preserve their remaining limits.
 The simulator source migration
 is complete; remaining native endpoints are implementation work, not implied
 by the proof or contract.
