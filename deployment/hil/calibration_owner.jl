@@ -135,7 +135,7 @@ function run_calibration_owner_native(options, bridge, plant_module, target)
         remaining = ticket.deadline - Lifecycle.NativeControlClient.monotonic()
         remaining > 0 || error("calibration Connect deadline expired")
         timeout_ns = UInt64(max(1, floor(Int64, min(remaining, 30.0) * 1e9)))
-        configuration = PipeWireHILConfiguration(
+        configuration = PipeWireHILConfiguration(;
             remote=options.remote, frame_node_name="simulator-wfs", command_node_name="simulator-command",
             frame_schema=RAW_SCHEMA, command_schema=COMMAND_SCHEMA,
             rate=SPA.Fraction(UInt32(options.rate), UInt32(1)), exposure_duration_ns=options.exposure_ns,

@@ -858,7 +858,7 @@ function run_owner_native(options, bridge, plant_module, target)
         remaining = ticket.deadline - Lifecycle.NativeControlClient.monotonic()
         remaining > 0 || error("native calibration Connect deadline expired")
         timeout_ns = UInt64(max(1, floor(Int64, min(remaining, 30.0) * 1e9)))
-        configuration = PipeWireHILConfiguration(remote=options.remote, frame_node_name="simulator-wfs",
+        configuration = PipeWireHILConfiguration(; remote=options.remote, frame_node_name="simulator-wfs",
             command_node_name="simulator-command", frame_schema="org.heart.std-wfs.raw-pixels/1",
             command_schema="org.heart.std-dm.actuator-command/1", rate=SPA.Fraction(UInt32(options.rate), UInt32(1)),
             exposure_duration_ns=options.exposure_ns, frame_encoding=:uint16, command_scale=1.0f0,
