@@ -153,7 +153,7 @@ function qualify_vendor_failure(socket, directory, daemon, scenario::Symbol)
                     deadline=HCC.monotonic()+20)
             elseif scenario === :child_exit
                 result = HCO.run_checked([paths["client"], "-cmdName", "SHUTDOWN",
-                    "-address", "127.0.0.1", "-port", "5001"]; timeout=5,
+                    "-address", "127.0.0.1", "-port", "5001"]; timeout=5, cwd=destination,
                     stdout_path=joinpath(destination,"child-shutdown.log"),
                     stderr_path=joinpath(destination,"child-shutdown.stderr"))
                 @test result.returncode == 0
