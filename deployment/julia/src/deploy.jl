@@ -7,6 +7,8 @@ using ..ScienceExport
 import ..NativeSourceClient
 import ..ObservationBoundary
 import ..NativeRunnerClient
+import ..NativeOwnerBootstrapClient
+import ..NativeOwnerBootstrapCodec
 import ..NativeHeartClient
 import ..NativeControlClient
 import ..NativeAcquisitionLifecycleCodec
@@ -110,6 +112,9 @@ function valid_cpu_list(value)
     Placement.cpu_set(value)
 end
 
+native_bootstrap(owner) = get(owner, "bootstrap-protocol", nothing) == NativeControlClient.profile_name(NativeOwnerBootstrapCodec.PROFILE)
+bootstrap_instance_key(role::AbstractString) = "BOOTSTRAP_INSTANCE_" * replace(uppercase(role), "-"=>"_")
+
 native_heart(owner) = get(owner, "control-protocol", nothing) == "pipewireao.rtc.heart/1"
 
 native_source(owner) = get(owner, "control-protocol", nothing) == "pipewireao.source-control/1"
@@ -145,7 +150,33 @@ function validate_acquisition_arguments(owner)
     return nothing
 end
 
-function profile(path::AbstractString, prefix::AbstractString)
+function validate_bootstrap_arguments(owner)
+    argv=owner["argv"]
+    for flag in ("--prepared-event","--connect-request","--connect-reply","--quit-request",
+            "--control-request","--control-reply")
+        require(!any(arg->first(split(arg,'=';limit=2))==flag,argv),"native bootstrap cannot use live file controls")
+    end
+    for (flag,value) in (("--bootstrap-node",owner["bootstrap-node"]),
+            ("--bootstrap-instance","@" * bootstrap_instance_key(owner["role"]) * "@"),
+            ("--remote","@RUNTIME@/@REMOTE@"))
+        indices=findall(arg->first(split(arg,'=';limit=2))==flag,argv)
+        require(length(indices)==1 && argv[only(indices)]==flag && only(indices)<length(argv) && argv[only(indices)+1]==value,
+            "native bootstrap requires the exact $flag binding")
+    end
+    if native_source(owner)
+        flag="--control-node"
+        indices=findall(arg->first(split(arg,'=';limit=2))==flag,argv)
+        require(length(indices)==1 && argv[only(indices)]==flag && only(indices)<length(argv) &&
+            argv[only(indices)+1]==owner["control-node"],"native source requires the exact --control-node binding")
+        require(owner["bootstrap-node"] != owner["control-node"],"source and bootstrap nodes must differ")
+    end
+    thread_flags=filter(arg->startswith(arg,"--threads="),argv)
+    require(length(thread_flags)==1 && occursin(r"^--threads=([2-9]|[1-9][0-9]+),0$",only(thread_flags)),
+        "native bootstrap requires at least two default Julia threads and zero interactive threads")
+    return nothing
+end
+
+function profile(path::AbstractString, prefix::AbstractString; legacy_export_input::Bool=false)
     value = decode(path, prefix)
     require(value isa AbstractDict && REQUIRED_KEYS ⊆ Set(keys(value)) ⊆
         union(REQUIRED_KEYS, Set(["source-owner","detector-observation"])) && get(value, "version", nothing) === 1,
@@ -163,8 +194,17 @@ function profile(path::AbstractString, prefix::AbstractString)
     markers = Set{String}()
     for owner in owners
         require(owner isa AbstractDict, "external owner fields do not match the deployment contract")
-        fields = native_heart(owner) || native_acquisition(owner) ? Set(["role", "argv", "environment", "control-protocol", "control-node"]) :
+        ordinary = !native_heart(owner) && !native_acquisition(owner)
+        require(!ordinary || native_bootstrap(owner) || legacy_export_input,
+            "ordinary owner requires native bootstrap; regenerate the deployment from its sealed artifacts")
+        fields = !ordinary ? Set(["role", "argv", "environment", "control-protocol", "control-node"]) :
+            native_bootstrap(owner) ? Set(["role", "argv", "environment", "bootstrap-protocol", "bootstrap-node"]) :
             Set(["role", "argv", "environment", "prepared", "connect", "connected", "quit"])
+        if native_bootstrap(owner)
+            node = get(owner,"bootstrap-node",nothing)
+            require(node isa String && occursin(r"^[a-zA-Z0-9_.-]{1,128}$",node),
+                "native bootstrap requires a bounded exact node name")
+        end
         if native_acquisition(owner)
             push!(fields, "instrument")
             require(get(owner, "role", nothing) == source_role,
@@ -182,6 +222,8 @@ function profile(path::AbstractString, prefix::AbstractString)
                 "native HEART requires a bounded exact node name")
         end
         if source_role !== nothing && get(owner, "role", nothing) == source_role
+            require(native_acquisition(owner) || native_source(owner) || legacy_export_input,
+                "source owner requires a native source control profile")
             native_acquisition(owner) || union!(fields, native_source(owner) ?
                 ["control-protocol", "control-node"] : ["control-request", "control-reply"])
             if native_source(owner)
@@ -201,9 +243,10 @@ function profile(path::AbstractString, prefix::AbstractString)
             all(arg -> arg isa String && !occursin('\0', arg), argv) && !isempty(argv[1]),
             "owner argv must be a nonempty bounded string list")
         native_acquisition(owner) && validate_acquisition_arguments(owner)
+        native_bootstrap(owner) && validate_bootstrap_arguments(owner)
         validate_environment(owner["environment"], "owner $role")
         names = Set{String}()
-        marker_keys = native_heart(owner) || native_acquisition(owner) ? String[] : ["prepared", "connect", "connected", "quit"]
+        marker_keys = native_heart(owner) || native_acquisition(owner) || native_bootstrap(owner) ? String[] : ["prepared", "connect", "connected", "quit"]
         role == source_role && !native_source(owner) && !native_acquisition(owner) &&
             append!(marker_keys, ["control-request", "control-reply"])
         for key in marker_keys
@@ -397,6 +440,7 @@ mutable struct DeploymentRunner
     heart_client::Union{Nothing,NativeControlClient.Client}
     observation_boundary::Any
     discovery::Union{Nothing,Tuple{String,NativeSessionDiscovery.SessionRecord}}
+    bootstrap_clients::Dict{String,NativeOwnerBootstrapClient.Connection}
 end
 
 function owner_preparation_timeout(seconds)
@@ -416,7 +460,7 @@ function DeploymentRunner(options::NamedTuple)
         "owner_preparation_timeout_seconds" => preparation_timeout)
     DeploymentRunner(options, dirname(deployment), spec, installed_paths(options.pipewire_prefix),
         Placement.inherited_cpus(), Tuple{String,Base.Process}[], IdDict{Base.Process,Int}(), nothing, nothing, nothing,
-        nothing, nothing, nothing, owner, nothing, 0, nothing, false, false, false, nothing, record, nothing, nothing, nothing)
+        nothing, nothing, nothing, owner, nothing, 0, nothing, false, false, false, nothing, record, nothing, nothing, nothing, Dict{String,NativeOwnerBootstrapClient.Connection}())
 end
 
 function preflight(deployment::DeploymentRunner)
@@ -541,8 +585,7 @@ function source_control(deployment::DeploymentRunner, operation::AbstractString;
     deployment.source_owner !== nothing || fail("source owner is not configured")
     native_acquisition(deployment.source_owner) && return acquisition_control(deployment, operation;
         initial, shutdown, allow_rejection, deadline, check)
-    native_source(deployment.source_owner) || return source_file_control(deployment,operation;
-        initial,shutdown,allow_rejection)
+    native_source(deployment.source_owner) || fail("source owner requires native control")
     operation in ("resume", "pause", "reset", "status") || fail("invalid source control operation")
     check_owner = check === nothing ? SourceHealth(deployment, shutdown) : check
     try
@@ -637,70 +680,6 @@ function acquisition_control(deployment::DeploymentRunner, operation::AbstractSt
         deployment.source_state = reply["state"]
         deployment.record["source"] = reply
         return reply
-    catch error
-        deployment.source_failed = true
-        merge!(deployment.record, Dict("phase" => "failed", "admitted" => false))
-        if deployment.record["error"] === nothing
-            deployment.record["error"] = sprint(showerror, error)
-        else
-            push!(get!(deployment.record, "cleanup_errors", String[]), sprint(showerror, error))
-        end
-        deployment.state_path !== nothing && atomic_record(deployment.state_path, deployment.record)
-        fail("source coordination failed: $(sprint(showerror, error))")
-    end
-end
-
-function source_file_control(deployment::DeploymentRunner, operation::AbstractString;
-                        initial=false, shutdown=false, allow_rejection=false)
-    operation in ("resume", "pause", "reset", "status") && deployment.source_owner !== nothing ||
-        fail("invalid source control operation")
-    deployment.source_id += 1
-    request = Dict("version" => 1, "id" => deployment.source_id, "operation" => operation)
-    deadline = monotonic() + (operation == "reset" ? 16 : 8)
-    try
-        atomic_record(joinpath(something(deployment.runtime), deployment.source_owner["control-request"]), request)
-        reply_path = joinpath(something(deployment.runtime), deployment.source_owner["control-reply"])
-        while true
-            shutdown ? check_processes(deployment; ignore_roles=("rtc",)) : check(deployment)
-            monotonic() < deadline || fail("source $operation ACK timed out")
-            if !ispath(reply_path)
-                sleep(0.05)
-                continue
-            end
-            # O_NOFOLLOW binds validation and reading to the same opened inode.
-            flags = Base.Filesystem.JL_O_RDONLY | Base.Filesystem.JL_O_NOFOLLOW |
-                Base.Filesystem.JL_O_NONBLOCK
-            io = Base.Filesystem.open(reply_path, flags)
-            payload = try
-                info = stat(io)
-                info.uid == ccall(:getuid, Cuint, ()) &&
-                    (info.mode & 0o170000) == 0o100000 ||
-                    fail("source reply must be an owner-owned regular file")
-                read(io, MAX_REPLY_BYTES + 1)
-            finally
-                close(io)
-            end
-            reply = validate_source_reply(payload)
-            if reply["id"] < deployment.source_id
-                sleep(0.05)
-                continue
-            end
-            reply["id"] == deployment.source_id && reply["operation"] == operation ||
-                fail("source ACK does not match request identity/operation")
-            expected = operation == "resume" ? "running" : operation == "status" ? reply["state"] : "paused"
-            if !reply["ok"] && allow_rejection
-                deployment.source_state = reply["state"]
-                deployment.record["source"] = reply
-                return reply
-            end
-            reply["ok"] && reply["state"] == expected || fail("source $operation rejected: $(reply["error"])")
-            (initial || operation == "reset") && reply["sequence"] != 0 &&
-                fail("source admission/reset requires sequence zero")
-            monotonic() < deadline || fail("source $operation ACK timed out")
-            deployment.source_state = reply["state"]
-            deployment.record["source"] = reply
-            return reply
-        end
     catch error
         deployment.source_failed = true
         merge!(deployment.record, Dict("phase" => "failed", "admitted" => false))
@@ -929,11 +908,6 @@ function _owned_wait(process::Base.Process, group_pid::Integer, grace::Real)
     _reap_owned_orphans(group_pid)
 end
 
-function _touch(path)
-    flags = Base.Filesystem.JL_O_WRONLY | Base.Filesystem.JL_O_CREAT | Base.Filesystem.JL_O_EXCL
-    close(Base.Filesystem.open(path, flags, 0o600))
-end
-
 function _is_socket(path)
     islink(path) && return false
     try
@@ -965,8 +939,15 @@ function stop_owner!(deployment::DeploymentRunner, owner)
         completion.header.result == 0 &&
             completion.lifecycle === NativeAcquisitionLifecycleCodec.Stopped ||
             fail("acquisition owner shutdown was not completed: $(completion.message)")
+    elseif native_bootstrap(owner)
+        child = findfirst(pair -> first(pair) == owner["role"], deployment.processes)
+        child === nothing && return nothing
+        process_running(last(deployment.processes[child])) || return nothing
+        client = get(deployment.bootstrap_clients,owner["role"],nothing)
+        client === nothing && return nothing
+        NativeOwnerBootstrapClient.quit!(client; deadline=monotonic()+30,check=()->nothing)
     else
-        _touch(joinpath(something(deployment.runtime), owner["quit"]))
+        fail("owner shutdown requires a native lifecycle")
     end
     return nothing
 end
@@ -1276,6 +1257,10 @@ function _run_locked(deployment::DeploymentRunner, base)
         bindings = Dict("PACKAGE" => deployment.package,
             "PREFIX" => abspath(deployment.options.pipewire_prefix),
             "RUNTIME" => runtime, "REMOTE" => "rtc-" * first(replace(string(uuid4()), "-" => ""), 12))
+        for owner in deployment.spec["owners"]
+            native_bootstrap(owner) || continue
+            bindings[bootstrap_instance_key(owner["role"])] = string(NativeControlClient.next_instance())
+        end
         if any(owner -> owner["role"] == "heart", deployment.spec["owners"])
             heart = only(filter(native_heart, deployment.spec["owners"]))
             bindings["HEART_OWNER_NODE"] = heart["control-node"]
@@ -1341,11 +1326,15 @@ function _run_locked(deployment::DeploymentRunner, base)
                     deadline, check=() -> check(deployment))
                 NativeAcquisitionLifecycleClient.connect_owner!(deployment.source_client;
                     deadline, check=() -> check(deployment))
+            elseif native_bootstrap(owner)
+                deadline = monotonic() + get(deployment.options,:owner_preparation_timeout_seconds,90)
+                client = NativeOwnerBootstrapClient.connect(joinpath(runtime,bindings["REMOTE"]),
+                    owner["bootstrap-node"],getpid(process),parse(Int64,bindings[bootstrap_instance_key(role)]);
+                    deadline,check=()->check(deployment))
+                deployment.bootstrap_clients[role] = client
+                NativeOwnerBootstrapClient.connect_owner!(client; deadline,check=()->check(deployment))
             else
-                wait_until(deployment, () -> isfile(joinpath(runtime, owner["prepared"])), "$role preparation";
-                    timeout=get(deployment.options, :owner_preparation_timeout_seconds, 90))
-                _touch(joinpath(runtime, owner["connect"]))
-                wait_until(deployment, () -> isfile(joinpath(runtime, owner["connected"])), "$role connection")
+                fail("ordinary owner requires native bootstrap")
             end
         end
         deployment.source_owner !== nothing && source_control(deployment, "pause"; initial=true)
@@ -1421,6 +1410,13 @@ function _run_locked(deployment::DeploymentRunner, base)
                 push!(get!(deployment.record,"cleanup_errors",String[]),sprint(showerror,error))
                 deployment.record["error"] === nothing && (deployment.record["error"] = sprint(showerror,error))
             end
+            for client in values(deployment.bootstrap_clients)
+                try close(client) catch error
+                    push!(get!(deployment.record,"cleanup_errors",String[]),sprint(showerror,error))
+                    deployment.record["error"] === nothing && (deployment.record["error"]=sprint(showerror,error))
+                end
+            end
+            empty!(deployment.bootstrap_clients)
             deployment.broker !== nothing && close(deployment.broker)
             merge!(deployment.record, Dict("phase" => deployment.record["error"] === nothing ? "stopped" : "failed",
                 "admitted" => false))

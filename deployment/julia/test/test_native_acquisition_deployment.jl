@@ -86,7 +86,7 @@ function acquisition_deployment_fixture(client)
     return Deployment.DeploymentRunner((;), "/unused", Dict{String,Any}("owners" => [source]),
         Dict{String,String}(), Set{Int}(), Tuple{String,Base.Process}[], IdDict{Base.Process,Int}(),
         nothing, nothing, nothing, nothing, nothing, nothing, source, client,
-        0, "paused", false, false, false, nothing, record, nothing, nothing, nothing)
+        0, "paused", false, false, false, nothing, record, nothing, nothing, nothing, Dict{String,PipeWireAODeployment.NativeOwnerBootstrapClient.Connection}())
 end
 
 @testset "Acquisition caller preserves unsigned cursors and known rejection" begin

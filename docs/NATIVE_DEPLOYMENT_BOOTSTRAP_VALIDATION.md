@@ -46,3 +46,35 @@ This fixture uses an external toy owner and arms no ndarray sinks. It does not
 qualify installed Classic/Copper science, simulator allocations, systemd user
 services, calibration restoration or target-host latency. Those gates remain
 separate under issue #9.
+
+## Ordinary-owner deployment integration (2026-10-06)
+
+The runtime now requires the distinct native bootstrap profile for ordinary
+simulator and external graph owners. It validates exact node, per-role
+incarnation placeholder and absolute private remote bindings, requires at least
+two default Julia threads with no interactive pool, and rejects lifecycle
+markers and live file controls. SourceControlV1 remains the separate ordinary
+scientific source endpoint.
+
+Startup retains one exact native client for each owner and uses one absolute
+preparation deadline for discovery, fresh Status and Connect. Cleanup uses that
+retained client for Quit and closes it; missing or uncertain clients are never
+reconnected during cleanup. Existing finite process-group revocation remains
+available. No runtime marker touches or source JSON request/reply files remain.
+`legacy_export_input=true` only permits validating old sealed inputs during
+explicit offline export conversion; the runtime constructor uses strict
+validation.
+
+Focused schema checks passed **40/40**. Six existing deployment, runner,
+acquisition, supervisor, observation and interruption suites passed **432**
+assertions, including fresh installed wrapper imports with paths containing
+spaces. The first integration run failed cleanup because the new predicate
+compared a protocol string with the typed Profile object; using its canonical
+profile name corrected that implementation mistake. The original failed log
+is retained. Evidence is under `rtc-live-controls-20261005`, in
+`native-bootstrap-deploy-{first,second}-20261006.log` and the focused schema log.
+These checks submit **zero scientific frames**.
+
+Exporter conversion, independent review and fresh installed Classic/Copper
+science, allocation, placement and systemd checks remain required before
+issue #9 can close.

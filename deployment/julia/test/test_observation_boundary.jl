@@ -130,7 +130,7 @@ O.failure(::OptionalResource) = "optional queue disappeared"
     record = Dict{String,Any}("admitted"=>true,"phase"=>"running","error"=>nothing)
     runner = D.DeploymentRunner((;),"",Dict{String,Any}(),Dict{String,String}(),Set{Int}(),
         Tuple{String,Base.Process}[],IdDict{Base.Process,Int}(),nothing,nothing,nothing,nothing,
-        nothing,nothing,nothing,nothing,0,"running",false,false,false,nothing,record,nothing,resource,nothing)
+        nothing,nothing,nothing,nothing,0,"running",false,false,false,nothing,record,nothing,resource,nothing, Dict{String,PipeWireAODeployment.NativeOwnerBootstrapClient.Connection}())
     D.close_observation!(runner)
     D.close_observation!(runner)
     @test resource.closes == 1

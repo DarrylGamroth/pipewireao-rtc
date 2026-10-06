@@ -38,12 +38,23 @@ function deployment_fixture(directory)
         "artifacts" => Dict("session.conf.in" => D.digest(joinpath(directory, "session.conf.in"))))
 end
 
+struct MockSourceStatusFailure
+    mode::Symbol
+end
+function PipeWireAODeployment.NativeSourceClient.request!(client::MockSourceStatusFailure,
+        operation::String,id::Int64;deadline::Float64,check=()->nothing)
+    check()
+    error(client.mode == :missing ? "source status ACK timed out" : "invalid source status ACK")
+end
+Base.close(::MockSourceStatusFailure)=nothing
+
 # Focused source-status failure fixture; no PipeWire or scientific owner is used.
 function source_status_failure_fixture(mode)
     mktempdir() do directory
         D._enable_subreaper()
-        owner = Dict("role" => "simulator", "control-request" => "source.request",
-            "control-reply" => "source.reply", "quit" => "source.quit")
+        owner = Dict("role"=>"simulator", "control-protocol"=>"pipewireao.source-control/1",
+            "control-node"=>"source", "bootstrap-protocol"=>"pipewireao.rtc.owner-bootstrap/1",
+            "bootstrap-node"=>"source.bootstrap")
         public_path = joinpath(directory, "public.sock")
         broker = listen(public_path)
         children = Tuple{String,Base.Process}[]
@@ -75,14 +86,8 @@ function source_status_failure_fixture(mode)
                 "error" => nothing, "processes" => Dict{String,Any}())
             runner = D.DeploymentRunner((;), directory, Dict{String,Any}("owners" => [owner]),
                 Dict{String,String}(), Set{Int}(), children, pids, directory,
-                public_path, MockRunnerClient(native_events), broker, nothing, nothing, owner, nothing, 0, "running",
-                false, false, false, joinpath(directory, "state.json"), record, nothing, nothing, nothing)
-            if mode == :malformed
-                # Valid JSON with a matching ID/operation, but an invalid state.
-                D.atomic_record(joinpath(directory, "source.reply"), Dict(
-                    "version" => 1, "id" => 1, "operation" => "status", "ok" => true,
-                    "state" => "unknown", "sequence" => 1, "completed" => false, "error" => nothing))
-            end
+                public_path, MockRunnerClient(native_events), broker, nothing, nothing, owner, MockSourceStatusFailure(mode), 0, "running",
+                false, false, false, joinpath(directory, "state.json"), record, nothing, nothing, nothing, Dict{String,PipeWireAODeployment.NativeOwnerBootstrapClient.Connection}())
             client = connect(public_path)
             write(client, JSON3.write(Dict("version" => 1, "id" => "source-status-fault",
                 "argv" => ["status"])) * "\n")
@@ -110,7 +115,8 @@ function source_status_failure_fixture(mode)
             @test persisted["admitted"] === false && persisted["phase"] == "failed"
             @test occursin(mode == :missing ? "ACK timed out" : "invalid source", runner.record["error"])
             @test native_events == [:status]
-            @test !isfile(joinpath(directory, "source.reply")) || mode == :malformed
+            @test !ispath(joinpath(directory,"source.request"))
+            @test !ispath(joinpath(directory,"source.reply"))
             @test isfile(rtc_order_path)
             @test strip(read(rtc_order_path, String)) == "revoked"
             for (_, child) in children
@@ -504,7 +510,7 @@ runner = D.DeploymentRunner((;), runtime, spec, Dict{String,String}(), Set([cpu]
     Tuple{String,Base.Process}[], IdDict{Base.Process,Int}(), runtime,
     nothing, nothing, nothing, nothing, nothing, nothing, nothing, 0, nothing,
     false, false, false, nothing,
-    Dict{String,Any}("processes" => Dict{String,Any}()), nothing, nothing, nothing)
+    Dict{String,Any}("processes" => Dict{String,Any}()), nothing, nothing, nothing, Dict{String,PipeWireAODeployment.NativeOwnerBootstrapClient.Connection}())
 child = D.spawn(runner, "core", ["sh", "-c", "printf supervised-child-diagnostic >&2"],
     Dict{String,String}(ENV))
 wait(child)
@@ -552,7 +558,7 @@ end
             Dict{String,String}(), Set{Int}(), Tuple{String,Base.Process}[],
             IdDict{Base.Process,Int}(), directory, nothing, nothing, nothing,
             nothing, nothing, owner, nothing, 0, "running", false, false, false,
-            nothing, record, nothing, nothing, nothing)
+            nothing, record, nothing, nothing, nothing, Dict{String,PipeWireAODeployment.NativeOwnerBootstrapClient.Connection}())
         @test_throws D.DeploymentError D.source_control(runner, "pause")
         @test runner.source_client === nothing
         @test runner.source_id == 0
