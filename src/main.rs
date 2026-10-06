@@ -6,6 +6,8 @@ mod native_runner_endpoint;
 mod native_runner_mailbox;
 #[allow(dead_code)]
 mod native_runner_result;
+#[allow(dead_code)] // Public supervisor integration follows this codec foundation.
+mod native_supervisor_codec;
 
 use crate::control::{state_name, Command, ControlError, ControlErrorResponse, ControlResponse};
 use crate::control_socket::ControlSocketServer;

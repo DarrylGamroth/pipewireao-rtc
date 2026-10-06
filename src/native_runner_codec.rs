@@ -148,7 +148,7 @@ fn string_size(value: &str) -> Result<usize, ControlError> {
 
 // Inspect borrowed fields before cloning any variable-size input. Every nested
 // Struct contributes its eight-byte POD header; array child metadata adds eight.
-fn preflight(header: &RequestHeader, command: &Command) -> Result<(), ControlError> {
+pub(crate) fn preflight(header: &RequestHeader, command: &Command) -> Result<(), ControlError> {
     use Command as C;
     header
         .validate()

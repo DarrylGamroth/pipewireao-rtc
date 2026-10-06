@@ -176,6 +176,10 @@ records the bounded calibration and correction phase D foundation; owner
 integration remains pending.
 The [cold lifecycle helper API](NATIVE_ACQUISITION_LIFECYCLE_HELPERS.md) records
 the runtime/client transport boundary and private-core fixture evidence.
+The [public supervisor codec foundation](NATIVE_SUPERVISOR_CONTROL.md) records
+the separate public profile, combined typed owner status, mutation reply capacity
+reservation and shared Julia/Rust fixtures. Public runtime ingress and installed
+qualification remain separate pending gates.
 The simulator source migration
 is complete; remaining native endpoints are implementation work, not implied
 by the proof or contract.

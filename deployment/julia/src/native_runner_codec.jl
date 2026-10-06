@@ -175,7 +175,7 @@ function _scalar_pod(value::RunnerScalar; finite::Bool)
     elseif k === :id
         return _pod(SPA.Id(v::UInt32))
     elseif k === :string
-        return _pod(_string_check(v::String; empty=true, limit=16 * 1024))
+        return _pod(_string_check(v::String; empty=true, limit=finite ? 16 * 1024 : 64 * 1024))
     end
     return _pod(v)
 end
@@ -307,6 +307,47 @@ function encode_request(header::RequestHeader, command::RunnerCommand)
     base = sizeof(Envelope.encode_request(header, _struct()))
     _preflight_request(command, base)
     return Envelope.encode_request(header, _request_fields(command, command.args))
+end
+
+"Decode the closed runner request schema without preparing artifacts or applying effects."
+function decode_request(header::RequestHeader, payload::SPA.Struct)
+    op = Int(header.operation)
+    1 <= op <= length(OPERATIONS) || throw(ArgumentError("unknown runner operation"))
+    operation = OPERATIONS[op]
+    f = payload.values
+    command = if op in (1, 2, 3, 9, 10, 11, 12)
+        _arity(f, 0); RunnerCommand(operation)
+    elseif op in (4, 7, 8)
+        _arity(f, 1); RunnerCommand(operation, _name(f[1]))
+    elseif op in (5, 6)
+        _arity(f, 2); RunnerCommand(operation, _name(f[1]), _name(f[2]))
+    elseif op == 13
+        _arity(f, 2)
+        rows = _fields(f[2])
+        1 <= length(rows) <= MAX_PROPERTIES || throw(ArgumentError("invalid property count"))
+        properties = Dict{String,RunnerScalar}()
+        for row in rows
+            r = _arity(_fields(row), 2); name = _name(r[1])
+            haskey(properties, name) && throw(ArgumentError("duplicate property name"))
+            properties[name] = _scalar_value(r[2]; finite=true)
+        end
+        RunnerCommand(operation, _name(f[1]), properties)
+    else
+        _arity(f, 6)
+        PipeWireAO.pod_type(f[4]) == SPA.POD_ARRAY || throw(ArgumentError("expected dimension Array"))
+        array = PipeWireAO.pod_value(SPA.Array{SPA.Id}, f[4])
+        shape = UInt32[x.value for x in array.values]
+        RunnerCommand(operation, _name(f[1]), _name(f[2]), _string(f[3]), shape,
+            _string(f[5]), _name(f[6]))
+    end
+    # Share the request bounds, exact scalar and parameter checks with encoding.
+    _preflight_request(command, sizeof(Envelope.encode_request(header, _struct())))
+    _request_fields(command, command.args)
+    return command
+end
+function decode_request(input::Union{Pod,AbstractVector{UInt8}})
+    header, payload = Envelope.decode_request(input)
+    return header, decode_request(header, payload)
 end
 
 function _generation_pair(row)

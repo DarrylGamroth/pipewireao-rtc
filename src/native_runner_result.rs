@@ -333,7 +333,7 @@ fn base_size(header: &ReplyHeader, kind: ReplyKind) -> Result<usize, ControlErro
         .map_err(|e| invalid(e.to_string()))
 }
 
-fn completion_size(
+pub(crate) fn completion_size(
     header: &ReplyHeader,
     state: LifecycleState,
     result: &ExecutionResult,
