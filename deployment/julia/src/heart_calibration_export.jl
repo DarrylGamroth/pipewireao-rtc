@@ -19,7 +19,7 @@ function calibration_name(name, profile)
         return replace(name,"-heart-hil-"=>"-heart-cal-"; count=1)
     end
     profile == "copper" || throw(ArgumentError("unsupported native calibration name profile"))
-    return name * "-calibration"
+    return CalibrationExport.calibration_name(name)
 end
 
 function calibration_session(rate::Integer; profile="copper")

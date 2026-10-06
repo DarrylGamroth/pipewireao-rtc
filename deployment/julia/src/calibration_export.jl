@@ -13,6 +13,8 @@ const FEEDBACK_SCHEMA = "org.calculon.ao.pdm-constraint-feedback/1"
 
 option(args, name::Symbol, default=nothing) = hasproperty(args, name) ? getproperty(args, name) : default
 
+calibration_name(name::AbstractString) = first(name, 28) * "-calibration"
+
 function validate_capture_budget(profile, maximum_bytes, deployment)
     maximum_bytes === nothing && return nothing
     payload_bytes = get(Dict("classic" => 250252, "copper" => 22596), profile, nothing)
@@ -289,7 +291,7 @@ function deployment_descriptor(package,base,specification,records,profile,engine
     capture_max_bytes === nothing || append!(argv,["--capture-directory","@RUNTIME@/captured","--capture-max-bytes",string(capture_max_bytes)])
     profile == "classic" && append!(argv,["--wfs-active","@PACKAGE@/calibration/wfs-active.u8"])
     simulator["argv"] = argv
-    specification["name"] *= "-calibration"
+    specification["name"] = calibration_name(specification["name"])
     specification["session"] = "session.conf.in"
     get!(specification["client"],"simulator","client-simulator.conf.in")
     for file in ("client-simulator.conf.in","core.conf.in")

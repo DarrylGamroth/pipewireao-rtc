@@ -1,0 +1,29 @@
+ERROR: LoadError: deployment name must use 1..40 lowercase letters, digits or hyphens
+Stacktrace:
+  [1] fail(message::String)
+    @ PipeWireAODeployment.Deployment ~/workspaces/codex/pipewire/pipewireao-rtc-native-controls/deployment/julia/src/deploy.jl:56
+  [2] require
+    @ ~/workspaces/codex/pipewire/pipewireao-rtc-native-controls/deployment/julia/src/deploy.jl:57 [inlined]
+  [3] profile(path::String, prefix::String; legacy_export_input::Bool)
+    @ PipeWireAODeployment.Deployment ~/workspaces/codex/pipewire/pipewireao-rtc-native-controls/deployment/julia/src/deploy.jl:184
+  [4] profile
+    @ ~/workspaces/codex/pipewire/pipewireao-rtc-native-controls/deployment/julia/src/deploy.jl:179 [inlined]
+  [5] deployment_descriptor(package::String, base::String, specification::Dict{String, Any}, records::Vector{Any}, profile::String, engine::String, session::Dict{String, Any}, prefix::String; illumination::String, stage::String, capture_max_bytes::Int64)
+    @ PipeWireAODeployment.CalibrationExport ~/workspaces/codex/pipewire/pipewireao-rtc-native-controls/deployment/julia/src/calibration_export.jl:328
+  [6] deployment_descriptor
+    @ ~/workspaces/codex/pipewire/pipewireao-rtc-native-controls/deployment/julia/src/calibration_export.jl:274 [inlined]
+  [7] (::PipeWireAODeployment.CalibrationExport.var"#export_package##0#export_package##1"{@NamedTuple{base_package::String, output::String, pipewire_prefix::String, deployment::Bool, rtc_binary::String, calibration_binary::String, illumination::String, calibration_stage::String, capture_max_bytes::Int64}, Dict{String, Any}, String, Dict{String, Any}, Bool, Int64, String, String, String, String, Dict{String, Any}, Dict{String, Any}, String, String, String, String})(temporary::String)
+    @ PipeWireAODeployment.CalibrationExport ~/workspaces/codex/pipewire/pipewireao-rtc-native-controls/deployment/julia/src/calibration_export.jl:442
+  [8] mktempdir(fn::PipeWireAODeployment.CalibrationExport.var"#export_package##0#export_package##1"{@NamedTuple{base_package::String, output::String, pipewire_prefix::String, deployment::Bool, rtc_binary::String, calibration_binary::String, illumination::String, calibration_stage::String, capture_max_bytes::Int64}, Dict{String, Any}, String, Dict{String, Any}, Bool, Int64, String, String, String, String, Dict{String, Any}, Dict{String, Any}, String, String, String, String}, parent::String; prefix::String)
+    @ Base.Filesystem ./file.jl:941
+  [9] export_package(args::@NamedTuple{base_package::String, output::String, pipewire_prefix::String, deployment::Bool, rtc_binary::String, calibration_binary::String, illumination::String, calibration_stage::String, capture_max_bytes::Int64})
+    @ PipeWireAODeployment.CalibrationExport ~/workspaces/codex/pipewire/pipewireao-rtc-native-controls/deployment/julia/src/calibration_export.jl:356
+ [10] top-level scope
+    @ /tmp/prepare_copper_fgn_nativecal_final_v1-20261006.jl:28
+ [11] include(mod::Module, _path::String)
+    @ Base ./Base.jl:306
+ [12] exec_options(opts::Base.JLOptions)
+    @ Base ./client.jl:317
+ [13] _start()
+    @ Base ./client.jl:550
+in expression starting at /tmp/prepare_copper_fgn_nativecal_final_v1-20261006.jl:28
