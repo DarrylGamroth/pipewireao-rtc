@@ -7,6 +7,7 @@ import ..CalibrationExport
 import ..HILExport
 import ..Common
 import ..NativeCalibrationActionClient
+import ..NativeAcquisitionLifecycleCodec
 
 export validate_recipe, positive_integer, wire_float32, same_figure, validate_batches,
        verify_capture, run_stage, stage_base, campaign, main, copy_tree, file_identity,
@@ -303,7 +304,7 @@ const EndpointBinding = NativeCalibrationActionClient.Binding
 function endpoint_binding(ready)
     source = ready["source_endpoint"]
     role = ready["source-owner"]
-    instance = dirname(ready["socket"])
+    instance = dirname(ready["control_locator"])
     # Launcher metadata supplies hints only. Native connect verifies the exact
     # live PID, incarnation, profile, NodeInfo and capability before requests.
     return EndpointBinding(joinpath(instance, ready["remote"]), source["node"] * ".actions",
@@ -363,36 +364,68 @@ function interaction_result_output_limit_bytes(plan_path::AbstractString)
     return interaction_result_output_limit_bytes(length(probes),Int(measurements),Int(frames))
 end
 
-function completed_owner_report(path,sequence;timeout)
-    isfinite(timeout) && timeout>0 || throw(ArgumentError("invalid owner report timeout"))
-    deadline=time_ns()+round(Int,timeout*1e9)
-    while time_ns()<deadline
-        if isfile(path)
-            report=read_json(path)
-            if get(report,"state",nothing)=="paused" && get(report,"sequence",nothing)==sequence
-                get(report,"ownership_held",nothing)===false &&
-                    get(report,"restoration_confirmed",nothing)===true &&
-                    get(report,"failure",nothing)===nothing ||
-                    throw(ArgumentError("completed calibration owner remains held or failed"))
-                return report
-            end
-        end
-        sleep(0.01)
-    end
-    throw(ArgumentError("timed out waiting for completed calibration owner report"))
+report_cursor(value::NativeAcquisitionLifecycleCodec.AcquisitionCursor) =
+    (value.domain,value.generation,value.sequence,value.model_ns)
+report_cursor(value) = throw(ArgumentError("owner status requires a typed acquisition cursor"))
+
+"A fresh native source query establishes readiness; saved report bytes cannot."
+function completed_report_cursor(source)
+    get(source,"ok",nothing)===true && get(source,"operation",nothing)=="status" &&
+        positive_integer(get(source,"native_token",nothing),"source status token",typemax(Int64))==
+            get(source,"id",nothing) &&
+        positive_integer(get(source,"endpoint_instance",nothing),"source incarnation",typemax(Int64))>0 &&
+        get(source,"lifecycle",nothing)=="Connected" && get(source,"state",nothing)=="paused" ||
+        throw(ArgumentError("completed report requires a fresh successful paused owner query"))
+    get(source,"held",nothing)===false && get(source,"restored",nothing)===true &&
+        get(source,"phase",nothing)=="released" ||
+        throw(ArgumentError("completed calibration owner remains held or unrestored"))
+    current=report_cursor(get(source,"cursor",nothing))
+    get(source,"completed",nothing)===true || return nothing
+    published=get(source,"report_cursor",nothing)
+    published===nothing && return nothing
+    return report_cursor(published)==current ? current : nothing
 end
 
-function paused_source_cursor(package,instance)
-    specification=read_json(joinpath(package,"deployment.conf"))
-    source_owner=only(filter(item->item["role"]==specification["source-owner"],
-        specification["owners"]))
-    # state.json is a lifecycle snapshot; the operation ACK is the current
-    # source cursor and can advance without rewriting that snapshot.
-    paused=read_json(joinpath(instance,source_owner["control-reply"]))
-    paused["ok"]===true && paused["operation"]=="pause" && paused["state"]=="paused" &&
-        isint(paused["sequence"]) && paused["sequence"]>=0 ||
-        throw(ArgumentError("missing current source pause acknowledgement"))
-    return paused["sequence"]
+"Wait only on fresh native status, keeping the stage's absolute deadline."
+function wait_completed_source(locator;deadline::Float64,
+        query=(path,limit)->Deployment.control(path,["status"];deadline=limit))
+    isfinite(deadline) || throw(ArgumentError("report deadline must be finite"))
+    while time_ns()/1e9<deadline
+        reply=query(locator,deadline)
+        time_ns()/1e9<deadline || throw(ArgumentError("completed owner report deadline expired"))
+        get(reply,"ok",nothing)===true || throw(ArgumentError("owner status query failed"))
+        endpoint=get(reply,"source_endpoint",Dict())
+        get(endpoint,"profile",nothing)=="pipewireao.rtc.calibration-lifecycle/1" ||
+            throw(ArgumentError("report query selected another owner authority"))
+        source=get(reply,"source",Dict())
+        completed_report_cursor(source)===nothing || return source
+        sleep(min(0.01,max(0.0,deadline-time_ns()/1e9)))
+    end
+    throw(ArgumentError("completed owner report deadline expired"))
+end
+
+"Read saved bytes once after native publication, then verify their full cursor."
+function completed_owner_report(path,source,startup)
+    current=completed_report_cursor(source)
+    current===nothing && throw(ArgumentError("owner has not committed its completed report"))
+    report=read_json(regular(path))
+    domain=get(report,"acquisition_domain_mapping",Dict())
+    isint(get(report,"version",nothing)) && report["version"]==1 && get(report,"state",nothing)=="paused" &&
+        get(report,"completed",nothing)===true && get(report,"phase",nothing)=="released" &&
+        get(report,"ownership_held",nothing)===false &&
+        get(report,"restoration_confirmed",nothing)===true && get(report,"failure",nothing)===nothing ||
+        throw(ArgumentError("saved calibration report is not completed and restored"))
+    (positive_integer(get(domain,"opaque_domain",nothing),"report domain",typemax(UInt64)),
+        positive_integer(get(report,"acquisition_generation",nothing),"report generation",typemax(UInt64)),
+        positive_integer(get(report,"sequence",nothing),"report sequence",typemax(UInt64);minimum=0),
+        positive_integer(get(report,"cursor_model_ns",nothing),"report model time",typemax(UInt64);minimum=0))==current ||
+        throw(ArgumentError("saved report differs from the native committed acquisition cursor"))
+    domain==get(startup,"acquisition_domain_mapping",nothing) &&
+        get(report,"profile",nothing)==get(startup,"profile",nothing) &&
+        get(report,"backend",nothing)==get(startup,"backend",nothing) &&
+        get(report,"graph_sha256",nothing)==get(startup,"graph_sha256",nothing) ||
+        throw(ArgumentError("saved report differs from the admitted plant and graph identity"))
+    return report
 end
 
 function stage_command(package,runtime;owner_preparation_timeout_seconds=90)
@@ -449,7 +482,7 @@ function run_stage(package,output,runtime,recipe,stage;frames=nothing,batches=no
             result["timing_ns"]["startup_readiness"]=ready_ns-startup_started
             result["timing_confirmed"]["startup_readiness"]=true
             acquisition_started=ready_ns
-            instance=dirname(ready["socket"])
+            instance=dirname(ready["control_locator"])
             result["ready"]=ready
             result["startup_report"]=read_json(joinpath(instance,"simulator-result.json"))
             if frames!==nothing || normalized!==nothing
@@ -525,13 +558,12 @@ function run_stage(package,output,runtime,recipe,stage;frames=nothing,batches=no
             end
             # The instance is removed by public shutdown. Pause admission and
             # retain the completed owner's report while it is still available.
-            stopped=Deployment.control(ready["socket"],["session-stop"];
+            stopped=Deployment.control(ready["control_locator"],["session-stop"];
                 timeout=stage_remaining(deadline,8.0))
             stopped["ok"]===true || throw(ArgumentError("stage admission pause failed"))
-            sequence=paused_source_cursor(package,instance)
+            source=wait_completed_source(ready["control_locator"];deadline=Float64(deadline)/1e9)
             report_path=joinpath(instance,"simulator-result.json")
-            completed_report=completed_owner_report(report_path,sequence;
-                timeout=stage_remaining(deadline,8.0))
+            completed_report=completed_owner_report(report_path,source,result["startup_report"])
             result["completed_report"]=completed_report
             write_json(joinpath(output,"completed-owner-report.json"),completed_report)
             shutdown_started=time_ns()
@@ -566,7 +598,7 @@ function run_stage(package,output,runtime,recipe,stage;frames=nothing,batches=no
         end
         endpoint===nothing || (result["requests"]=endpoint.records)
         if process!==nothing && result["release_confirmed"] && !result["shutdown_confirmed"] &&
-                !process_exited(process) && isfile(joinpath(runtime,"state.json"))
+                !process_exited(process)
             try
                 shutdown_started=time_ns()
                 grace=min(55.0,max(5.0,(deadline-Int128(time_ns()))/1e9))

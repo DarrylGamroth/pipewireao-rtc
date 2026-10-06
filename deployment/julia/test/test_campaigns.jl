@@ -178,7 +178,7 @@ end
 
 @testset "Campaign requires an explicit native action binding" begin
     ready=Dict("source_endpoint"=>Dict("node"=>"owner","instance"=>Int64(42)),
-        "source-owner"=>"simulator", "socket"=>"/tmp/private/run/control.sock",
+        "source-owner"=>"simulator", "control_locator"=>"/tmp/private/run/control.json",
         "remote"=>"pw", "processes"=>Dict("simulator"=>Dict("pid"=>UInt32(17))))
     binding=A.endpoint_binding(ready)
     @test binding.remote=="/tmp/private/run/pw"

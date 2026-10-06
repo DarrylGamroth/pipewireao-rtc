@@ -4,33 +4,63 @@ using Test, TOML, PipeWireAODeployment
     campaign=PipeWireAODeployment.CalibrationCampaign
     method=PipeWireAODeployment.CalibrationMethod
     common=PipeWireAODeployment.Common
-    report=Dict{String,Any}("state"=>"paused","sequence"=>35,"ownership_held"=>false,
-        "restoration_confirmed"=>true,"failure"=>nothing,"detector_diagnostics"=>
-        Dict{String,Any}("raw_available"=>true,"adc_upper_rail"=>16383,"frames"=>35,
-            "upper_rail_pixels"=>0,"upper_rail_frames"=>0))
+    lifecycle=PipeWireAODeployment.NativeAcquisitionLifecycleCodec
+    current=lifecycle.AcquisitionCursor(UInt64(1),UInt64(2),UInt64(35),UInt64(70))
+    source=Dict{String,Any}("ok"=>true,"operation"=>"status","id"=>21,"native_token"=>21,
+        "endpoint_instance"=>100,"lifecycle"=>"Connected","state"=>"paused",
+        "held"=>false,"restored"=>true,"phase"=>"released","completed"=>true,
+        "cursor"=>current,"report_cursor"=>current)
+    report=Dict{String,Any}("version"=>1,"profile"=>"copper","backend"=>"cpu",
+        "graph_sha256"=>"graph","state"=>"paused","sequence"=>35,"completed"=>true,
+        "phase"=>"released","acquisition_generation"=>2,"cursor_model_ns"=>70,
+        "acquisition_domain_mapping"=>Dict("opaque_domain"=>1,"complete_domain"=>ones(Int,16)),
+        "ownership_held"=>false,"restoration_confirmed"=>true,"failure"=>nothing,
+        "detector_diagnostics"=>Dict{String,Any}("raw_available"=>true,"adc_upper_rail"=>16383,
+            "frames"=>35,"upper_rail_pixels"=>0,"upper_rail_frames"=>0))
     mktempdir() do directory
         path=joinpath(directory,"report.json")
         common.write_json(path,report)
-        @test campaign.completed_owner_report(path,35;timeout=1)==report
-        @test_throws ArgumentError campaign.completed_owner_report(path,34;timeout=.02)
-        @test_throws ArgumentError campaign.completed_owner_report(path,35;timeout=0)
-        common.write_json(joinpath(directory,"deployment.conf"),Dict("source-owner"=>"simulator",
-            "owners"=>[Dict("role"=>"simulator","control-reply"=>"source.reply")]))
-        common.write_json(joinpath(directory,"state.json"),Dict("source"=>Dict("sequence"=>0)))
-        pause=Dict("ok"=>true,"operation"=>"pause","state"=>"paused","sequence"=>35)
-        common.write_json(joinpath(directory,"source.reply"),pause)
-        @test campaign.paused_source_cursor(directory,directory)==35
-        for (key,value) in (("ok",false),("operation","status"),("state","running"),("sequence",true))
-            invalid=deepcopy(pause);invalid[key]=value
-            common.write_json(joinpath(directory,"source.reply"),invalid)
-            @test_throws ArgumentError campaign.paused_source_cursor(directory,directory)
+        @test campaign.completed_report_cursor(source)==(UInt64(1),UInt64(2),UInt64(35),UInt64(70))
+        @test campaign.completed_owner_report(path,source,report)==report
+        # Identical sequence alone must never accept another generation.
+        for (field,value) in (("acquisition_generation",1),("cursor_model_ns",69),
+                ("sequence",34),("version",true),("acquisition_generation",true),
+                ("profile","classic"),("backend","cuda"),("graph_sha256","other"),
+                ("ownership_held",true),("restoration_confirmed",false),
+                ("failure","unknown outcome"))
+            invalid=deepcopy(report);invalid[field]=value;common.write_json(path,invalid)
+            @test_throws ArgumentError campaign.completed_owner_report(path,source,report)
         end
-        for field in ("ownership_held","restoration_confirmed","failure")
-            invalid=deepcopy(report)
-            invalid[field]=field=="failure" ? "unknown outcome" : !invalid[field]
-            common.write_json(path,invalid)
-            @test_throws ArgumentError campaign.completed_owner_report(path,35;timeout=1)
+        common.write_json(path,report)
+        for (field,value) in (("ok",false),("operation","pause"),("id",22),
+                ("native_token",true),("endpoint_instance",0),("lifecycle","Prepared"),
+                ("state","running"),("held",true),("restored",false),("phase","fault"),
+                ("cursor",Dict("domain"=>1,"generation"=>2,"sequence"=>35,"model_ns"=>70)))
+            invalid=deepcopy(source);invalid[field]=value
+            @test_throws ArgumentError campaign.completed_report_cursor(invalid)
         end
+        pending=deepcopy(source);pending["completed"]=false
+        unpublished=deepcopy(source);unpublished["report_cursor"]=nothing
+        older=deepcopy(source);older["report_cursor"]=lifecycle.AcquisitionCursor(1,1,35,70)
+        @test campaign.completed_report_cursor(pending)===nothing
+        @test campaign.completed_report_cursor(unpublished)===nothing
+        @test campaign.completed_report_cursor(older)===nothing
+        endpoint=Dict("profile"=>"pipewireao.rtc.calibration-lifecycle/1")
+        calls=Float64[];responses=[pending,older,source];limit=time_ns()/1e9+5
+        selected=campaign.wait_completed_source("locator";deadline=limit,query=(path,deadline)->begin
+            @test path=="locator";push!(calls,deadline)
+            Dict("ok"=>true,"source_endpoint"=>endpoint,"source"=>responses[length(calls)])
+        end)
+        @test selected===source && calls==fill(limit,3)
+        invoked=Ref(0)
+        @test_throws ArgumentError campaign.wait_completed_source("locator";deadline=time_ns()/1e9-1,
+            query=(args...)->(invoked[]+=1))
+        @test invoked[]==0
+        @test_throws ErrorException campaign.wait_completed_source("locator";deadline=time_ns()/1e9+5,
+            query=(args...)->begin invoked[]+=1;error("native outcome unknown") end)
+        @test invoked[]==1 # no automatic retry or saved-file fallback
+        @test_throws ArgumentError campaign.wait_completed_source("locator";deadline=time_ns()/1e9+5,
+            query=(args...)->Dict("ok"=>true,"source_endpoint"=>Dict("profile"=>"standalone"),"source"=>source))
     end
     @test method.validate_detector_completion(Dict("completed_report"=>report))==report["detector_diagnostics"]
     @test_throws ArgumentError method.validate_detector_completion(Dict())
@@ -48,6 +78,8 @@ using PipeWireAODeployment: package_root
 using PipeWireAODeployment
 const Common=PipeWireAODeployment.Common
 const CalibrationExport=PipeWireAODeployment.CalibrationExport
+const NativeCalibrationActionClient=PipeWireAODeployment.NativeCalibrationActionClient
+const NativeAcquisitionLifecycleCodec=PipeWireAODeployment.NativeAcquisitionLifecycleCodec
 const ScienceExport=PipeWireAODeployment.ScienceExport
 module Deployment
 using ..Common

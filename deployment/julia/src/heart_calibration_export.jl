@@ -391,7 +391,7 @@ function run_pilot(runtime::AbstractString, output::AbstractString; frames::Int=
     output = abspath(output)
     !ispath(output) && !islink(output) && isdir(dirname(output)) || throw(ArgumentError("pilot evidence output must be fresh"))
     ready = Deployment.wait_state(runtime, state -> get(state, "admitted", false); timeout=30)
-    instance = dirname(ready["socket"])
+    instance = dirname(ready["control_locator"])
     mkdir(output; mode=0o700)
     deadline = Base.checked_add(time_ns(), UInt64(stage_timeout_seconds) * UInt64(1_000_000_000))
     endpoint = CalibrationCampaign.endpoint_connect(CalibrationCampaign.endpoint_binding(ready), 1, request_timeout_ns)
@@ -432,15 +432,10 @@ function run_pilot(runtime::AbstractString, output::AbstractString; frames::Int=
         # The source reports completion after handling Release; wait for that
         # bounded publication before copying its final diagnostic report.
         report_path = joinpath(instance, "simulator-result.json")
-        while true
-            CalibrationCampaign.stage_remaining(deadline, stage_timeout_seconds)
-            final = Common.read_json(report_path)
-            if get(final, "completed", false)
-                result["final_owner_report"] = final
-                break
-            end
-            sleep(0.001)
-        end
+        source = CalibrationCampaign.wait_completed_source(ready["control_locator"];
+            deadline=Float64(deadline)/1e9)
+        result["final_owner_report"] = CalibrationCampaign.completed_owner_report(
+            report_path,source,result["startup_owner_report"])
     catch exception
         result["failure"] = sprint(showerror, exception)
         rethrow()
@@ -485,7 +480,7 @@ function run_plan(package::AbstractString, runtime::AbstractString, output::Abst
     output = abspath(output)
     !ispath(output) && !islink(output) && isdir(dirname(output)) || throw(ArgumentError("native plan evidence must be fresh"))
     ready = Deployment.wait_state(runtime, state -> get(state, "admitted", false); timeout=30)
-    instance = dirname(ready["socket"])
+    instance = dirname(ready["control_locator"])
     startup = Common.read_json(joinpath(instance, "simulator-result.json"))
     if provenance["profile"] == "classic"
         startup["profile"] == "classic" && startup["backend"] == provenance["hil"]["backend"] ||
@@ -519,18 +514,13 @@ function run_plan(package::AbstractString, runtime::AbstractString, output::Abst
         response.returncode == 0 || throw(ArgumentError("public native calibration client failed: $(response.returncode)"))
         result["cli_result_sha256"] = ScienceExport.sha256(response_path)
         report_path = joinpath(instance, "simulator-result.json")
-        while true
-            CalibrationCampaign.stage_remaining(deadline, stage_timeout_seconds)
-            final = Common.read_json(report_path)
-            if get(final, "completed", false)
-                final["failure"] === nothing && final["sequence"] == limits["completed_exposures"] &&
-                    final["detector_diagnostics"]["frames"] == limits["completed_exposures"] ||
-                    throw(ArgumentError("native completed owner count or fault differs from frozen plan"))
-                result["final_owner_report"] = final
-                break
-            end
-            sleep(0.001)
-        end
+        source = CalibrationCampaign.wait_completed_source(ready["control_locator"];
+            deadline=Float64(deadline)/1e9)
+        final = CalibrationCampaign.completed_owner_report(report_path,source,startup)
+        final["sequence"] == limits["completed_exposures"] &&
+            final["detector_diagnostics"]["frames"] == limits["completed_exposures"] ||
+            throw(ArgumentError("native completed owner count differs from frozen plan"))
+        result["final_owner_report"] = final
         result["phase_elapsed_ns"][phase_name] = time_ns()-phase_started
         phase_name = "public_means_and_native_count_validation"
         phase_started = time_ns()

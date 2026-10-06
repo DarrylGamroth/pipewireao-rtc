@@ -154,6 +154,10 @@ and fixture tests do not establish supervisor publication, native status
 integration, or the GUI session picker. The
 [integration handoff](DISCOVERY_INTEGRATION_HANDOFF.md) identifies those gates.
 
+[Calibration report publication](NATIVE_REPORT_PUBLICATION_VALIDATION.md) records
+the stale-generation rejection and migration of the selected campaign and HEART
+export consumers to fresh native completion before reading saved reports.
+
 The [synchronization prerequisite](NATIVE_CONTROL_SYNC_VALIDATION.md) and its
 [independent review](NATIVE_CONTROL_SYNC_REVIEW.md) record the corrected inner
 wait and stalled-core evidence, separately from native runner ingress.
