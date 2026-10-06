@@ -174,6 +174,8 @@ installed HIL caller qualification.
 The [acquisition lifecycle codec contract](NATIVE_ACQUISITION_LIFECYCLE_CONTROL.md)
 records the bounded calibration and correction phase D foundation; owner
 integration remains pending.
+The [cold lifecycle helper API](NATIVE_ACQUISITION_LIFECYCLE_HELPERS.md) records
+the runtime/client transport boundary and private-core fixture evidence.
 The simulator source migration
 is complete; remaining native endpoints are implementation work, not implied
 by the proof or contract.
