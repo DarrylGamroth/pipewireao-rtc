@@ -420,13 +420,13 @@ function main(args=ARGS)
                         argv = [joinpath(package,"bin/rtc-calibrate"),"--remote",binding.remote,
                             "--node",binding.node,"--owner-pid",string(binding.owner_pid),
                             "--owner-instance",string(binding.instance),"--plan",plan_path,
-                            "--evidence",joinpath(output,"calibration-completions.json")]
+                            "--evidence",joinpath(output,"calibration-completions.jsonl")]
                         record["calibration_argv"] = argv
                         response = Campaign.run_checked(argv;timeout=180,
                             maximum_output_bytes=Campaign.interaction_result_output_limit_bytes(plan_path))
                         write(joinpath(output,"rtc-calibrate.json"),response.stdout)
                         write(joinpath(output,"rtc-calibrate.stderr"),response.stderr)
-                        evidence_path = joinpath(output,"calibration-completions.json")
+                        evidence_path = joinpath(output,"calibration-completions.jsonl")
                         if isfile(evidence_path) && !islink(evidence_path)
                             record["calibration_completions_evidence"] = Dict(
                                 "path"=>evidence_path,"sha256"=>C.sha256_file(evidence_path))
