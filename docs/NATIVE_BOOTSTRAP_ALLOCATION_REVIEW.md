@@ -43,8 +43,10 @@ be added as independent allocation totals or extrapolated into a unique cause.
 
 **Severity:** high for the required whole-process allocation gate.
 **Confidence:** high. **Evidence:** observed source and independent diagnostic.
-**Disposition:** confirmed; primary-agent design/adjudication required. No
-production change made.
+**Disposition:** confirmed recurring ingress cost; the primary's retained-client
+remediation passes the unchanged installed cohort gate as recorded below.
+Registry materialization itself is unchanged. No production change was made by
+this reviewer.
 
 Affected code:
 
@@ -196,9 +198,36 @@ has an active request at close.
 
 The primary moved success assignment after `wait_state` returns and explicitly
 sets success false in the catch. This preserves close failures as qualification
-failures. A defensive reducer check for any recorded failure is also planned.
-The separate first-cohort installed allocation replay is owned by the primary;
-the native scope fixture alone does not validate the allocation repair.
+failures. The final reducer additionally rejects any non-null recorded failure.
+The same real native close-error fixture was rerun independently: the unchanged
+callback-scope checks passed 11/11 and the same inconsistent injected record
+now returned **exit 1**, versus **exit 0** before. This is direct fail-before /
+pass-after evidence for the defensive reducer; the normal close and callback
+throw paths also continue to pass.
+
+Final independently tested source hashes:
+
+- `deploy.jl`: `f75a7082a579b5a034371b21d3d0ddcfc028661924e9d5f145eda120548ba6de`
+- `qualify_sustained.jl`: `cdf43f9decc4bf87a54596235edadc58e1dc401dd02c574096b8db3354ef2e39`
+
+### Unchanged first-cohort installed replay
+
+The primary's official retained-client run used the same sealed v5 installed
+science package, fixed 16-frame prefix and inclusive accounting. The reviewer
+inspected `classic-fgn-v5-retained-client-evidence.lifecycle.json`: both cohorts
+have 496 measured exchanges, zero allocated bytes, all allocation counts zero,
+zero GC, and the same frame/command prefix hashes retained above. Overall
+success and native shutdown are confirmed. The evidence file SHA-256 is
+`afdd3bd754fb31673ff83c414faa2f3a1475adbe1e9140a914aa28c5565cdc2e`.
+
+The actual launch coordinator hash is
+`47cf143cd4dba226b3c4f851c593e7d3654c7238dea55828d62dc01a8a9d515f`.
+The reviewer independently hashed the primary's retained
+`qualify_sustained-retained-client-launch.jl` and verified this match. That
+installed run predates the later failure-only success-assignment/reducer edits;
+its normal close path succeeded. The installed allocation proof and the final
+native close-error proof therefore cover explicitly different source versions.
+Neither changes the scope limit concerning arbitrary new GUI/native ingress.
 
 ## Diagnostic evidence
 

@@ -1,0 +1,10 @@
+Precompiling packages...
+   4557.8 ms  ✓ PipeWireAODeployment
+  1 dependency successfully precompiled in 5 seconds. 32 already precompiled.
+  8 dependencies precompiled but different versions are currently loaded (Dates, JLLWrappers, PipeWireAO, PipeWireAO_jll, Preferences, Printf, TOML and UnsafeArrays). Restart julia to access the new versions. Otherwise, 15 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+SOURCE_SHA256 f75a7082a579b5a034371b21d3d0ddcfc028661924e9d5f145eda120548ba6de /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-controls/deployment/julia/src/deploy.jl
+SOURCE_SHA256 cdf43f9decc4bf87a54596235edadc58e1dc401dd02c574096b8db3354ef2e39 /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-controls/deployment/qualify_sustained.jl
+Test Summary:                         | Pass  Total  Time
+actual native retained callback scope |   11     11  4.7s
+CLOSE_FAILURE_RECORD Dict{String, Any}("shutdown_confirmed" => true, "failure" => "ArgumentError: serialize close after the active native operation", "success" => true, "cleanup" => Dict("status" => "complete"))
+CURRENT_EXIT_CODE 1
