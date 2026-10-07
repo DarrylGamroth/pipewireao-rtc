@@ -1,0 +1,10 @@
+
+running 1 test
+RUST_MARKER_LOSS_PENDING_LINK_OBSERVED marker=19:19 link=20:20
+RUST_MARKER_LOSS_UNKNOWN_RETAINED marker=19:19 correlated_links=0 error=WirePlumber realization withdrawal: PipeWire synchronization deadline expired; completion is unknown
+RUST_MARKER_LOSS_NEXT_REALIZATION_FENCED
+RUST_MARKER_LOSS_MANAGER_GONE_CLEANUP manager=17:17
+test live::wireplumber::tests::unexpected_marker_loss_cannot_acknowledge_pending_withdrawal ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 112 filtered out; finished in 5.01s
+

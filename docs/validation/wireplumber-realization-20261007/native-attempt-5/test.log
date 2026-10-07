@@ -1,0 +1,72 @@
+ERROR: LoadError: Some tests did not pass: 28 passed, 1 failed, 1 errored, 0 broken.
+in expression starting at /tmp/rtc-wireplumber-realization-20261007/deployment/wireplumber/test_realization_links.jl:241
+Native realization links and withdrawal: Test Failed at /tmp/rtc-wireplumber-realization-20261007/deployment/wireplumber/test_realization_links.jl:178
+  Expression: get(link_global.properties, "link.passive", "false") == string(passive)
+   Evaluated: "false" == "true"
+
+Stacktrace:
+  [1] macro expansion
+    @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+  [2] probe(remote::String, directory::String, daemon::Base.Process)
+    @ Main /tmp/rtc-wireplumber-realization-20261007/deployment/wireplumber/test_realization_links.jl:178
+  [3] (::var"#14#15"{String, String, typeof(probe)})()
+    @ Main /tmp/rtc-wireplumber-realization-20261007/deployment/julia/test/native_control_private_core.jl:78
+  [4] withenv(::var"#14#15"{String, String, typeof(probe)}, ::Pair{String, String}, ::Vararg{Pair{String, String}})
+    @ Base ./env.jl:283
+  [5] (::var"#10#11"{Bool, typeof(probe), String, String})(directory::String)
+    @ Main /tmp/rtc-wireplumber-realization-20261007/deployment/julia/test/native_control_private_core.jl:77
+  [6] mktempdir(fn::var"#10#11"{Bool, typeof(probe), String, String}, parent::String; prefix::String)
+    @ Base.Filesystem ./file.jl:941
+  [7] mktempdir (repeats 2 times)
+    @ ./file.jl:937 [inlined]
+  [8] with_control_private_core(f::typeof(probe); check_running::Bool)
+    @ Main /tmp/rtc-wireplumber-realization-20261007/deployment/julia/test/native_control_private_core.jl:33
+  [9] with_control_private_core(f::Function)
+    @ Main /tmp/rtc-wireplumber-realization-20261007/deployment/julia/test/native_control_private_core.jl:28
+ [10] top-level scope
+    @ /tmp/rtc-wireplumber-realization-20261007/deployment/wireplumber/test_realization_links.jl:242
+ [11] macro expansion
+    @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [12] macro expansion
+    @ /tmp/rtc-wireplumber-realization-20261007/deployment/wireplumber/test_realization_links.jl:242 [inlined]
+Native realization links and withdrawal: Error During Test at /tmp/rtc-wireplumber-realization-20261007/deployment/wireplumber/test_realization_links.jl:241
+  Got exception outside of a @test
+  finite private-core fixture deadline expired: marker acknowledgement and zero links
+  Stacktrace:
+    [1] error(s::String)
+      @ Base ./error.jl:44
+    [2] wait_proof(predicate::var"#probe##58#probe##59"{var"#saw#probe##25", var"#markers#probe##24", String}, seconds::Int64, label::String; check::var"#healthy#probe##10"{Base.Process, ThreadLoop})
+      @ Main /tmp/rtc-wireplumber-realization-20261007/deployment/julia/test/native_control_private_core.jl:9
+    [3] wait_proof
+      @ /tmp/rtc-wireplumber-realization-20261007/deployment/julia/test/native_control_private_core.jl:4 [inlined]
+    [4] probe(remote::String, directory::String, daemon::Base.Process)
+      @ Main /tmp/rtc-wireplumber-realization-20261007/deployment/wireplumber/test_realization_links.jl:204
+    [5] (::var"#14#15"{String, String, typeof(probe)})()
+      @ Main /tmp/rtc-wireplumber-realization-20261007/deployment/julia/test/native_control_private_core.jl:78
+    [6] withenv(::var"#14#15"{String, String, typeof(probe)}, ::Pair{String, String}, ::Vararg{Pair{String, String}})
+      @ Base ./env.jl:283
+    [7] (::var"#10#11"{Bool, typeof(probe), String, String})(directory::String)
+      @ Main /tmp/rtc-wireplumber-realization-20261007/deployment/julia/test/native_control_private_core.jl:77
+    [8] mktempdir(fn::var"#10#11"{Bool, typeof(probe), String, String}, parent::String; prefix::String)
+      @ Base.Filesystem ./file.jl:941
+    [9] mktempdir (repeats 2 times)
+      @ ./file.jl:937 [inlined]
+   [10] with_control_private_core(f::typeof(probe); check_running::Bool)
+      @ Main /tmp/rtc-wireplumber-realization-20261007/deployment/julia/test/native_control_private_core.jl:33
+   [11] with_control_private_core(f::Function)
+      @ Main /tmp/rtc-wireplumber-realization-20261007/deployment/julia/test/native_control_private_core.jl:28
+   [12] top-level scope
+      @ /tmp/rtc-wireplumber-realization-20261007/deployment/wireplumber/test_realization_links.jl:242
+   [13] macro expansion
+      @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+   [14] macro expansion
+      @ /tmp/rtc-wireplumber-realization-20261007/deployment/wireplumber/test_realization_links.jl:242 [inlined]
+   [15] include(mod::Module, _path::String)
+      @ Base ./Base.jl:306
+   [16] exec_options(opts::Base.JLOptions)
+      @ Base ./client.jl:317
+   [17] _start()
+      @ Base ./client.jl:550
+Test Summary:                           | Pass  Fail  Error  Total   Time
+Native realization links and withdrawal |   28     1      1     30  19.2s
+RNG of the outermost testset: Random.Xoshiro(0x6fc38b6ac3c84daa, 0xf225b559203866d1, 0xc47d2af1de984276, 0xe34673ed018841f3, 0x5393adaa88249c10)

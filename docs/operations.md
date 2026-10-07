@@ -103,6 +103,18 @@ PipeWire introspection. On unload or failed configuration, it MUST remove the
 nodes and links it owns and MUST NOT stop or mutate an unrelated shared
 PipeWire object.
 
+A deployment MAY explicitly select one exact WirePlumber creator client for
+session links on its isolated private core. In that mode, the runner MUST
+project only the declared topology through the native realization contract,
+validate the actual manager-owned Links before `READY`, and retain scientific
+readiness and acquisition authority. Cleanup MUST observe acknowledged
+withdrawal and absence of every correlated Link before reporting success or
+admitting a new realization. Exact selected-manager client disappearance plus
+absence of every correlated Link MAY serve as the alternate resource-lifetime
+fence; a replacement manager MUST NOT adopt the old generation. Unknown cleanup
+MUST remain a fault. The default
+runner-owned link path MUST retain its existing semantics.
+
 Verification intent (informative): run beside unrelated nodes, fail creation
 after each owned object, and verify exact topology, visible introspection,
 complete owned-object cleanup, and preservation of unrelated objects.
@@ -320,7 +332,10 @@ alone MUST NOT establish a compatible port contract.
 The external WFS source and simulated correction-command sink MUST already be
 inspectable on the selected private PipeWire core before the session reaches
 `READY`. The runner MUST NOT create, destroy, or claim ownership of either node.
-It MUST own and remove only its FGN graphs and declared links. Unload,
+It MUST own and remove only its FGN graphs and, in the default link mode,
+its declared links. When RTC-DEV-003 explicitly selects WirePlumber link
+ownership, it MUST retain borrowed Link observations and require the manager
+to withdraw that exact realization before completing cleanup. Unload,
 failed configuration, and retry MUST leave the adapter nodes intact. Loss or
 incompatible mutation of either required endpoint while `READY` or `RUNNING`
 MUST move the session to `FAULT` through the existing serialized dispatcher.
@@ -1098,6 +1113,26 @@ blocking lifecycle effects. Cold no-port inactive Filter endpoints MAY allocate;
 the measured scientific source MUST retain its prepared control storage and
 inclusive allocation boundary. No new scientific scheduler or graph-authoring
 contract is introduced.
+
+The sole RTC owner MAY export one inactive, no-port realization Filter per
+session-link generation under RTC-DEV-003. This is an intent projection, not a
+caller command endpoint: it MUST accept no caller commands, caller tokens or
+scientific controls. Its bounded typed Props snapshot MUST identify the exact
+runtime and selected manager clients, ordered endpoint identities and passive
+flags. Prepared, Realize and Withdraw phases MUST be monotonic; the immutable
+cohort MUST NOT change. Once Realize publication is attempted, withdrawal MUST
+fence pending link activations before the manager synchronizes its own Core
+and destroys the exact Filter as acknowledgement. RTC MUST observe that
+removal and absence of the correlated Link cohort, or exact selected-manager
+client disappearance with no correlated Links. Marker disappearance already
+observed before Withdraw publication MUST NOT be treated as its acknowledgement
+while the manager remains alive. Its own Core sync alone MUST
+NOT substitute for the manager fence. Manager replacement MUST NOT adopt an
+old projection. RTC MUST validate node incarnations and actual client
+provenance before projection, before admission and while admitted. WirePlumber
+MUST validate exact Port and Client incarnations without subscribing to
+scientific Node Props. This selected trusted private-core projection does not
+establish an untrusted publisher or physical-device admission contract.
 
 The following common-envelope and retained-completion rules apply to the new
 cold owner endpoints. The already completed supervisor-exclusive scientific

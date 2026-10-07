@@ -1,0 +1,9 @@
+
+running 1 test
+BOOTSTRAP_NODE_PARAMS [(ParamType::PropInfo, ParamInfoFlags(0x0)), (ParamType::Props, ParamInfoFlags(WRITE)), (ParamType::ProcessLatency, ParamInfoFlags(0x0)), (ParamType::EnumFormat, ParamInfoFlags(0x0)), (ParamType::Format, ParamInfoFlags(WRITE))]
+BOOTSTRAP_NODE_PARAMS [(ParamType::PropInfo, ParamInfoFlags(0x0)), (ParamType::Props, ParamInfoFlags(SERIAL | READ | WRITE)), (ParamType::ProcessLatency, ParamInfoFlags(0x0)), (ParamType::EnumFormat, ParamInfoFlags(0x0)), (ParamType::Format, ParamInfoFlags(WRITE))]
+BOOTSTRAP_PREPARED_PROPS_VERIFIED marker=19:19
+test live::wireplumber::tests::empty_marker_then_prepared_props_are_public_and_policy_recognized ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 111 filtered out; finished in 0.01s
+

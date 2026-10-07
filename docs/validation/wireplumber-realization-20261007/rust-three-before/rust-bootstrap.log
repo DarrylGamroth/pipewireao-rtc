@@ -1,0 +1,18 @@
+
+running 1 test
+BOOTSTRAP_NODE_PARAMS [(ParamType::PropInfo, ParamInfoFlags(0x0)), (ParamType::Props, ParamInfoFlags(WRITE)), (ParamType::ProcessLatency, ParamInfoFlags(0x0)), (ParamType::EnumFormat, ParamInfoFlags(0x0)), (ParamType::Format, ParamInfoFlags(WRITE))]
+BOOTSTRAP_INTENT links=3 encoded_bytes=1160
+BOOTSTRAP_NODE_PARAMS [(ParamType::PropInfo, ParamInfoFlags(0x0)), (ParamType::Props, ParamInfoFlags(SERIAL | READ | WRITE)), (ParamType::ProcessLatency, ParamInfoFlags(0x0)), (ParamType::EnumFormat, ParamInfoFlags(0x0)), (ParamType::Format, ParamInfoFlags(WRITE))]
+
+thread 'live::wireplumber::tests::empty_marker_then_prepared_props_are_public_and_policy_recognized' (476163) panicked at src/live/wireplumber.rs:873:22:
+called `Result::unwrap()` on an `Err` value: ScientificDiagnostic { field: "Prepared marker Props enumeration", message: "PipeWire synchronization deadline expired; completion is unknown" }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test live::wireplumber::tests::empty_marker_then_prepared_props_are_public_and_policy_recognized ... FAILED
+
+failures:
+
+failures:
+    live::wireplumber::tests::empty_marker_then_prepared_props_are_public_and_policy_recognized
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 111 filtered out; finished in 5.02s
+

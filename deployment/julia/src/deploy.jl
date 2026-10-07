@@ -179,7 +179,7 @@ end
 function profile(path::AbstractString, prefix::AbstractString; legacy_export_input::Bool=false)
     value = decode(path, prefix)
     require(value isa AbstractDict && REQUIRED_KEYS ⊆ Set(keys(value)) ⊆
-        union(REQUIRED_KEYS, Set(["source-owner","detector-observation"])) && get(value, "version", nothing) === 1,
+        union(REQUIRED_KEYS, Set(["source-owner","detector-observation","session-manager"])) && get(value, "version", nothing) === 1,
         "expected version 1 deployment with the documented fields")
     require(value["name"] isa String && occursin(r"^[a-z0-9][a-z0-9-]{0,39}$", value["name"]),
         "deployment name must use 1..40 lowercase letters, digits or hyphens")
@@ -188,6 +188,10 @@ function profile(path::AbstractString, prefix::AbstractString; legacy_export_inp
         "deployment permits at most four external owners")
     validate_environment(value["environment"], "deployment")
     roles = Set(["core", "rtc"])
+    if haskey(value,"session-manager")
+        validate_session_manager(value["session-manager"])
+        push!(roles,"wireplumber")
+    end
     source_role = get(value, "source-owner", nothing)
     require(source_role === nothing || source_role isa String && !isempty(source_role),
         "source-owner must name an existing external owner")
@@ -1370,10 +1374,11 @@ function _run_locked(deployment::DeploymentRunner, base)
         runner_node = "pipewireao.rtc.runner.$(deployment.spec["name"])"
         runner_instance = Int64(time_ns() % UInt64(typemax(Int64) - 1)) + 1
         remote = joinpath(runtime, bindings["REMOTE"])
+        manager_arguments = start_session_manager!(deployment, bindings)
         rtc = spawn(deployment, "rtc", [joinpath(deployment.package, "bin/pipewireao-rtc"),
             "--config", joinpath(runtime, "rtc/session.conf"), "--remote", remote,
             "--start-paused", "--control-node", runner_node,
-            "--control-instance", string(runner_instance)],
+            "--control-instance", string(runner_instance), manager_arguments...],
             environment(deployment, "rtc", bindings))
         deployment.runner_client = NativeRunnerClient.connect(remote, runner_node, getpid(rtc), runner_instance;
             deadline=monotonic() + 90, check=() -> check(deployment))
@@ -1805,5 +1810,7 @@ function main(argv=ARGS)
         return 1
     end
 end
+
+include("session_manager.jl")
 
 end

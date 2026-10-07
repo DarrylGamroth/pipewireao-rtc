@@ -1,3 +1,12 @@
+#[path = "live/link_format.rs"]
+mod link_format;
+#[path = "live/realization.rs"]
+mod realization;
+#[path = "live/realization_marker.rs"]
+mod realization_marker;
+#[path = "live/wireplumber.rs"]
+mod wireplumber;
+
 use crate::{
     ConfigurationInput, DevelopmentConfig, EffectExecutor, EffectToken, EndpointFactory,
     GraphFactory, LifecycleEffect, LifecycleEffectSuccess, NdArrayParameterValue,
@@ -681,6 +690,60 @@ struct LiveLink {
     global_id: Rc<Cell<Option<u32>>>,
     removed: Rc<Cell<bool>>,
     state: Rc<RefCell<LinkAdmissionState>>,
+    contract: Rc<RefCell<Option<LinkContract>>>,
+}
+
+#[derive(Clone)]
+struct LinkContract {
+    output_node: u32,
+    output_port: u32,
+    input_node: u32,
+    input_port: u32,
+    passive: Option<String>,
+    linger: Option<String>,
+    format: Option<Result<PodObject, String>>,
+}
+
+impl LinkContract {
+    fn observe(info: &pw::link::LinkInfoRef, previous: Option<Self>) -> Self {
+        let passive = info
+            .props()
+            .and_then(|properties| properties.get("link.passive"))
+            .map(str::to_owned)
+            .or_else(|| {
+                (!info.change_mask().contains(pw::link::LinkChangeMask::PROPS))
+                    .then(|| previous.as_ref().and_then(|info| info.passive.clone()))
+                    .flatten()
+            });
+        let linger = info
+            .props()
+            .and_then(|properties| properties.get("object.linger"))
+            .map(str::to_owned)
+            .or_else(|| {
+                (!info.change_mask().contains(pw::link::LinkChangeMask::PROPS))
+                    .then(|| previous.as_ref().and_then(|info| info.linger.clone()))
+                    .flatten()
+            });
+        let format = info
+            .format()
+            .map(|pod| link_format::decode(pod.as_bytes()))
+            .or_else(|| {
+                (!info
+                    .change_mask()
+                    .contains(pw::link::LinkChangeMask::FORMAT))
+                .then(|| previous.and_then(|info| info.format))
+                .flatten()
+            });
+        Self {
+            output_node: info.output_node_id(),
+            output_port: info.output_port_id(),
+            input_node: info.input_node_id(),
+            input_port: info.input_port_id(),
+            passive,
+            linger,
+            format,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -715,7 +778,9 @@ impl LiveLink {
                 bound_id.set(Some(id));
                 removal_watches
                     .borrow_mut()
-                    .insert(id, Rc::downgrade(&bound_removed));
+                    .entry(id)
+                    .or_default()
+                    .push(Rc::downgrade(&bound_removed));
             })
             .removed(move || {
                 proxy_removed.set(true);
@@ -725,10 +790,14 @@ impl LiveLink {
                 );
             })
             .register();
+        let contract = Rc::new(RefCell::new(None::<LinkContract>));
+        let observed_contract = Rc::clone(&contract);
         let callback_passive = Rc::clone(observed_passive);
         let listener = proxy
             .add_listener_local()
             .info(move |info| {
+                let previous = observed_contract.borrow().clone();
+                *observed_contract.borrow_mut() = Some(LinkContract::observe(info, previous));
                 if let Some(value) = info
                     .props()
                     .and_then(|properties| properties.get("link.passive"))
@@ -757,16 +826,19 @@ impl LiveLink {
             global_id,
             removed,
             state,
+            contract,
         }
     }
 }
 
 // Registry IDs are reusable; required incarnations retain their removal event.
-type RequiredGlobalRemovals = BTreeMap<u32, Weak<Cell<bool>>>;
+type RequiredGlobalRemovals = BTreeMap<u32, Vec<Weak<Cell<bool>>>>;
 
 fn observe_required_global_removal(watches: &mut RequiredGlobalRemovals, id: u32) {
-    if let Some(removed) = watches.remove(&id).and_then(|watch| watch.upgrade()) {
-        removed.set(true);
+    if let Some(observers) = watches.remove(&id) {
+        for removed in observers.into_iter().filter_map(|watch| watch.upgrade()) {
+            removed.set(true);
+        }
     }
 }
 
@@ -782,13 +854,27 @@ mod required_monitor_tests {
     use super::*;
 
     #[test]
+    fn one_global_removal_revokes_all_required_snapshots() {
+        let realization = Rc::new(Cell::new(false));
+        let external = Rc::new(Cell::new(false));
+        let mut watches = BTreeMap::from([(
+            42,
+            vec![Rc::downgrade(&realization), Rc::downgrade(&external)],
+        )]);
+        observe_required_global_removal(&mut watches, 42);
+        assert!(realization.get());
+        assert!(external.get());
+        assert!(watches.is_empty());
+    }
+
+    #[test]
     fn removal_cannot_be_hidden_by_same_id_replacement() {
         let removed = Rc::new(Cell::new(false));
-        let mut watches = BTreeMap::from([(42, Rc::downgrade(&removed))]);
+        let mut watches = BTreeMap::from([(42, vec![Rc::downgrade(&removed)])]);
         observe_required_global_removal(&mut watches, 42);
         // Re-registering the reused ID admits a new incarnation only after load.
         let replacement_removed = Rc::new(Cell::new(false));
-        watches.insert(42, Rc::downgrade(&replacement_removed));
+        watches.insert(42, vec![Rc::downgrade(&replacement_removed)]);
         assert!(
             removed.get(),
             "same-ID replacement concealed required removal"
@@ -863,6 +949,8 @@ pub struct LiveGraphAdapter {
     spa_nodes: Vec<pw::node::Node>,
     parameter_publishers: Vec<ParameterPublisher>,
     links: Vec<LiveLink>,
+    wireplumber: Option<wireplumber::Selection>,
+    wireplumber_session: Option<wireplumber::Session>,
     controlled_graphs: Vec<ControlledGraph>,
     latest_hold_nodes: Vec<LatestHoldNode>,
     owned_node_names: Vec<String>,
@@ -985,6 +1073,8 @@ impl LiveGraphAdapter {
             spa_nodes: Vec::new(),
             parameter_publishers: Vec::new(),
             links: Vec::new(),
+            wireplumber: None,
+            wireplumber_session: None,
             controlled_graphs: Vec::new(),
             latest_hold_nodes: Vec::new(),
             owned_node_names: Vec::new(),
@@ -1055,7 +1145,11 @@ impl LiveGraphAdapter {
     pub fn status(&self) -> LiveGraphStatus {
         let mut status = self.status.clone();
         status.owned_nodes = self.count_owned_nodes();
-        status.owned_links = self.links.len();
+        status.owned_links = if self.wireplumber.is_some() {
+            0
+        } else {
+            self.links.len()
+        };
         status
     }
 
@@ -1182,6 +1276,16 @@ impl LiveGraphAdapter {
         token: EffectToken,
     ) -> Result<(), ScientificDiagnostic> {
         config.validate()?;
+        if self.wireplumber.is_some()
+            && config.graphs.iter().any(|graph| {
+                graph.realization == ObjectRealization::Factory(GraphFactory::NdarrayLatestHold)
+            })
+        {
+            return Err(ScientificDiagnostic::new(
+                "WirePlumber realization",
+                "latest/hold realization is not supported by this opt-in path",
+            ));
+        }
         self.cleanup(Some(token))?;
         self.clear_errors();
         self.created_resources = 0;
@@ -1242,10 +1346,14 @@ impl LiveGraphAdapter {
         }
 
         self.status.owned_nodes = self.count_owned_nodes();
-        self.status.owned_links = self.links.len();
+        self.status.owned_links = if self.wireplumber.is_some() {
+            0
+        } else {
+            self.links.len()
+        };
         if self.status.owned_nodes != self.expected_objects
             || self.count_required_nodes() != self.required_node_names.len()
-            || self.status.owned_links != self.expected_links
+            || self.links.len() != self.expected_links
         {
             let diagnostic = ScientificDiagnostic::new(
                 "topology",
@@ -1256,11 +1364,15 @@ impl LiveGraphAdapter {
                     self.expected_links,
                     self.status.owned_nodes,
                     self.count_required_nodes(),
-                    self.status.owned_links
+                    self.links.len()
                 ),
             );
             let _ = self.cleanup(Some(token));
             return Err(diagnostic);
+        }
+        if let Err(error) = self.check_wireplumber_cohort() {
+            let _ = self.cleanup(Some(token));
+            return Err(error);
         }
         Ok(())
     }
@@ -1441,15 +1553,20 @@ impl LiveGraphAdapter {
                 node_order[output_node],
             )
         });
-        for (index, link) in links {
-            self.create_link(index, &link.output, &link.input, link.passive)?;
-            self.finish_creation_point(&format!("links[{index}]"))?;
+        if self.wireplumber.is_some() {
+            self.realize_wireplumber_links(config, &links)?;
+        } else {
+            for (index, link) in links {
+                self.create_link(index, &link.output, &link.input, link.passive)?;
+                self.finish_creation_point(&format!("links[{index}]"))?;
+            }
         }
         self.required_external_objects = self.capture_required_external_objects(config)?;
         Ok(())
     }
 
     fn start(&mut self, token: EffectToken) -> Result<(), ScientificDiagnostic> {
+        self.check_wireplumber_cohort()?;
         if self.count_owned_nodes() != self.expected_objects
             || self.count_required_nodes() != self.required_node_names.len()
             || self.links.len() != self.expected_links
@@ -1480,6 +1597,7 @@ impl LiveGraphAdapter {
             "start latest/hold nodes",
         )?;
         self.wait_for_links_active("start scientific session")?;
+        self.check_wireplumber_cohort()?;
         self.trigger_pending_parameters()?;
         self.status.running = true;
         self.status.discarded_by_sink = if self.has_external_source {
@@ -1519,6 +1637,7 @@ impl LiveGraphAdapter {
         name: &str,
         token: EffectToken,
     ) -> Result<(), ScientificDiagnostic> {
+        self.check_wireplumber_cohort()?;
         let nodes = self
             .execution_group_nodes
             .get(name)
@@ -2322,13 +2441,15 @@ impl LiveGraphAdapter {
         }
         self.status.running = false;
         self.clear_errors();
+        // Unknown remote withdrawal retains every local session handle. A later
+        // load must pass this fence before it can publish another generation.
+        self.withdraw_wireplumber()?;
         for link in self.links.drain(..) {
             drop(link.listener);
             drop(link.proxy_listener);
-            // These links deliberately do not set object.linger. Destroying
-            // their client proxies therefore removes the server resources;
-            // additionally asking Core::destroy_object would race that
-            // automatic removal and report an unknown resource.
+            // Direct RTC links have no object.linger; their creator proxies
+            // remove the server resources on drop. Borrowed WirePlumber proxies
+            // only release observation, after the confirmed withdrawal above.
             drop(link.proxy);
         }
         if let Err(error) = self.roundtrip("runner-owned link cleanup") {
@@ -3293,7 +3414,9 @@ impl LiveGraphAdapter {
         let removed = Rc::new(Cell::new(false));
         self.required_global_removals
             .borrow_mut()
-            .insert(id, Rc::downgrade(&removed));
+            .entry(id)
+            .or_default()
+            .push(Rc::downgrade(&removed));
         removed
     }
 
@@ -3833,6 +3956,15 @@ fn validate_ndarray_port(
     expected_rate: Fraction,
 ) -> Result<(), ScientificDiagnostic> {
     validate_format_object(object, role, &port.name)?;
+    validate_ndarray_format(object, role, port, expected_rate)
+}
+
+fn validate_ndarray_format(
+    object: &PodObject,
+    role: ObjectRole,
+    port: &PortSpec,
+    expected_rate: Fraction,
+) -> Result<(), ScientificDiagnostic> {
     let observed =
         NdArrayFormat::<Vec<u32>>::from_properties(&object.properties).map_err(|error| {
             ScientificDiagnostic::new(
@@ -4062,6 +4194,7 @@ impl EffectExecutor for LiveGraphAdapter {
     fn check_required_objects(&mut self) -> Result<RequiredObjectStatus, ScientificDiagnostic> {
         self.check_external_object_contracts()?;
         self.check_required_links()?;
+        self.check_wireplumber_cohort()?;
         for publisher in &self.parameter_publishers {
             if let Some(error) = &publisher.state.borrow().failure {
                 return Err(ScientificDiagnostic::new(
@@ -4094,7 +4227,8 @@ impl Drop for LiveGraphAdapter {
         // Explicit cleanup already released these local handles even when
         // remote removal could not be confirmed. Do not start a fresh sync
         // budget after the caller's Stop/Unload cleanup scope has ended.
-        if !self.links.is_empty()
+        if self.wireplumber_session.is_some()
+            || !self.links.is_empty()
             || !self.controlled_graphs.is_empty()
             || !self.latest_hold_nodes.is_empty()
             || !self.spa_nodes.is_empty()

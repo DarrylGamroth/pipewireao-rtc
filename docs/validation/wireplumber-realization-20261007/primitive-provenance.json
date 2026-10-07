@@ -1,0 +1,12 @@
+{
+  "baseline": "8886d6ac35c41f71b532f610a15c36f4f63c40be",
+  "scope": "public native primitives and cold callback ordering only; no deployed RTC qualification",
+  "sha256": {
+    "deployment/wireplumber/realization.lua": "1b03ef4fb26dbd9f90d69e90502ad6ae12bddddd5a1c82419387b06507fa0ed8",
+    "deployment/wireplumber/test_realization.lua": "4dbb9ccf1351e27fc202fd47a4b2401aca5d1305280d4049f34cabb3478bee19",
+    "deployment/wireplumber/test_realization_links.jl": "74ec4c1084827859a489ef7636e91b2b8da37cad5abd9103839d4342abcc6661",
+    "deployment/wireplumber/test_realization_lifetime.jl": "743c3b461ded75573a8ff08e953804d8c1c7aaa3dfce195b041d00e2cde601cd",
+    "deployment/julia/test/native_control_private_core.jl": "78153f6ddc3577e7b7b67a388da801c07114bbc35e81b2e68cdba72eb77b7777",
+    "src/live/realization.rs": "ac6f5263c130a83d0372266f90225dc4e1c49008465315787fb439cc29f84940"
+  }
+}

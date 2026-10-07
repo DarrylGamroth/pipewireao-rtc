@@ -1,0 +1,25 @@
+[
+  {
+    "sha256": "25a168c13746d1f12abf6c4cb0b42fae6d4a4a674ab4ffe8b6a94fe3a3ef59cf",
+    "snapshot": "snapshots/25a168c13746d1f12abf6c4cb0b42fae6d4a4a674ab4ffe8b6a94fe3a3ef59cf.lua",
+    "aliases": [
+      "native-marker-loss/loaded-realization.lua",
+      "native-pending/loaded-realization.lua"
+    ]
+  },
+  {
+    "sha256": "1b03ef4fb26dbd9f90d69e90502ad6ae12bddddd5a1c82419387b06507fa0ed8",
+    "snapshot": "snapshots/1b03ef4fb26dbd9f90d69e90502ad6ae12bddddd5a1c82419387b06507fa0ed8.lua",
+    "aliases": [
+      "native-marker-loss/realization.lua",
+      "native-bootstrap-two/loaded-realization.lua",
+      "native-bootstrap-two/realization.lua",
+      "native-bootstrap-single/loaded-realization.lua",
+      "native-bootstrap-single/realization.lua",
+      "native-pending/realization.lua",
+      "native-current/realization.lua",
+      "native-current/loaded-realization.lua",
+      "native-attempt-7/realization.lua"
+    ]
+  }
+]

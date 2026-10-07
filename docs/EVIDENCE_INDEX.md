@@ -320,3 +320,11 @@ contracts remain authoritative in the
 Portable scientific Algorithm implementations and declarations remain
 authoritative in their owning packages. This repository states only the RTC
 runner behavior that connects those pieces.
+
+## WirePlumber pre-admission realization — 2026-10-07
+
+[Primitive evidence and independent review](validation/wireplumber-realization-20261007/README.md)
+cover native intent updates, real Links, generation withdrawal, delayed
+completion, selected Copper FGN/JFG clean/retry/loss/fresh-admission checks
+and the narrow WirePlumber POD-filter capacity correction. Systemd supervision
+and broader timing/physical-device qualification remain separate.

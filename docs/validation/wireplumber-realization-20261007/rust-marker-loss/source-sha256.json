@@ -1,0 +1,17 @@
+{
+  "starting_revision": "8886d6ac35c41f71b532f610a15c36f4f63c40be",
+  "worktree": "/tmp/rtc-wireplumber-realization-20261007",
+  "branch": "work/wireplumber-realization-20261007",
+  "hashes": {
+    "test_realization_links.jl": "139661aba7465451a80e112e8a1ce95e12a0a6245532c2cd8deef3ddcd7800aa",
+    "realization.lua": "1b03ef4fb26dbd9f90d69e90502ad6ae12bddddd5a1c82419387b06507fa0ed8",
+    "loaded-realization.lua": "25a168c13746d1f12abf6c4cb0b42fae6d4a4a674ab4ffe8b6a94fe3a3ef59cf",
+    "native_control_private_core.jl": "78153f6ddc3577e7b7b67a388da801c07114bbc35e81b2e68cdba72eb77b7777",
+    "wireplumber-rust-source.rs": "35b965c8ae5485147e136071c15300942b06e9ed64373a51dc8e590a327dbe2b"
+  },
+  "rust_binary_sha256": "6aab0184af5f100be69deaf90465a3be8a8cba04bbee76de1b836b6da2dffee2",
+  "receipt_present": true,
+  "wireplumber_library": "/tmp/WirePlumberAO-pod-filter-20261007/build/lib/wp/libwireplumber-0.5.so.0.518.0",
+  "wireplumber_library_sha256": "3b2d21a37cad4863f63d2643c1ce78481299dffd9025ea4786dd79bd13c66766",
+  "helper_snapshot_note": "captured at finalization; helper unchanged during these runs"
+}

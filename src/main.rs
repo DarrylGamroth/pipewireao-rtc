@@ -35,6 +35,7 @@ struct Arguments {
     hold: bool,
     start_paused: bool,
     native_control: Option<native_runner_endpoint::Options>,
+    wireplumber: Option<(u32, u64, String)>,
 }
 
 fn main() {
@@ -53,7 +54,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let arguments = parse_arguments()?;
     let native_mode = arguments.native_control.is_some();
     let session_id = session_id();
-    let adapter = LiveGraphAdapter::connect(arguments.remote)?;
+    let adapter = match arguments.wireplumber {
+        Some((id, serial, name)) => {
+            LiveGraphAdapter::connect_with_wireplumber(arguments.remote, id, serial, name)?
+        }
+        None => LiveGraphAdapter::connect(arguments.remote)?,
+    };
     let mut runner = Runner::new(adapter);
 
     require_state(
@@ -398,6 +404,8 @@ fn parse_arguments_from(
     let mut start_paused = false;
     let mut control_name = None;
     let mut control_instance = None;
+    let mut manager = None;
+    let mut realization_name = None;
     while let Some(argument) = arguments.next() {
         match argument.as_str() {
             "--config" => {
@@ -437,12 +445,33 @@ fn parse_arguments_from(
                         })?,
                 );
             }
+            "--wireplumber-client" => {
+                if manager.is_some() {
+                    return Err(ScientificDiagnostic::new(
+                        "command",
+                        "duplicate --wireplumber-client",
+                    ));
+                }
+                manager = Some(parse_manager_client(&mut arguments)?);
+            }
+            "--realization-node" => {
+                if realization_name.is_some() {
+                    return Err(ScientificDiagnostic::new(
+                        "command",
+                        "duplicate --realization-node",
+                    ));
+                }
+                realization_name = Some(arguments.next().ok_or_else(|| {
+                    ScientificDiagnostic::new("command", "--realization-node requires a name")
+                })?);
+            }
             "--help" | "-h" => {
                 println!(
                     "Usage: pipewireao-rtc --config PATH [--remote CORE] [--hold] [--start-paused]\n\
                      Native: --remote PRIVATE_SOCKET --start-paused --control-node NAME --control-instance POSITIVE\n\
                      Loads, starts, stops, and unloads one non-actuating complete-frame session.\n\
                      --start-paused loads to READY without starting; native mode does not read stdin.\n\
+                     WirePlumber: --wireplumber-client ID SERIAL --realization-node NAME (requires native mode)\n\
                      Client: pipewireao-rtc control --locator PATH -- COMMAND [ARG ...]"
                 );
                 std::process::exit(0);
@@ -455,7 +484,26 @@ fn parse_arguments_from(
             }
         }
     }
-    let native_control = match (control_name, control_instance) {
+    let native_control = native_options(control_name, control_instance, start_paused, &mut remote)?;
+    let wireplumber = manager_selection(manager, realization_name, native_control.is_some())?;
+    Ok(Arguments {
+        config: config
+            .ok_or_else(|| ScientificDiagnostic::new("command", "--config PATH is required"))?,
+        remote,
+        hold,
+        start_paused,
+        native_control,
+        wireplumber,
+    })
+}
+
+fn native_options(
+    control_name: Option<String>,
+    control_instance: Option<i64>,
+    start_paused: bool,
+    remote: &mut String,
+) -> Result<Option<native_runner_endpoint::Options>, ScientificDiagnostic> {
+    Ok(match (control_name, control_instance) {
         (None, None) => None,
         (Some(name), Some(instance)) => {
             if !start_paused || name.is_empty() || name.len() > 128 || name.contains('\0') {
@@ -464,7 +512,7 @@ fn parse_arguments_from(
                     "native ingress needs a bounded node name and --start-paused",
                 ));
             }
-            remote = native_runner_endpoint::validate_remote(&remote)?;
+            *remote = native_runner_endpoint::validate_remote(remote)?;
             Some(native_runner_endpoint::Options { name, instance })
         }
         _ => {
@@ -473,15 +521,46 @@ fn parse_arguments_from(
                 "--control-node and --control-instance must be supplied together",
             ))
         }
-    };
-    Ok(Arguments {
-        config: config
-            .ok_or_else(|| ScientificDiagnostic::new("command", "--config PATH is required"))?,
-        remote,
-        hold,
-        start_paused,
-        native_control,
     })
+}
+
+fn parse_manager_client(
+    arguments: &mut impl Iterator<Item = String>,
+) -> Result<(u32, u64), ScientificDiagnostic> {
+    let id = arguments
+        .next()
+        .and_then(|v| v.parse::<u32>().ok())
+        .filter(|id| *id > 0 && *id < u32::MAX)
+        .ok_or_else(|| {
+            ScientificDiagnostic::new(
+                "command",
+                "--wireplumber-client requires a valid client ID and serial",
+            )
+        })?;
+    let serial = arguments
+        .next()
+        .and_then(|v| v.parse::<u64>().ok())
+        .filter(|serial| *serial > 0)
+        .ok_or_else(|| {
+            ScientificDiagnostic::new(
+                "command",
+                "--wireplumber-client requires a nonzero UInt64 serial",
+            )
+        })?;
+    Ok((id, serial))
+}
+
+fn manager_selection(
+    manager: Option<(u32, u64)>,
+    name: Option<String>,
+    native: bool,
+) -> Result<Option<(u32, u64, String)>, ScientificDiagnostic> {
+    match (manager, name) {
+        (None, None) => Ok(None),
+        (Some((id, serial)), Some(name)) if native && !name.is_empty() && name.len() <= 128
+            && name.bytes().all(|b| b.is_ascii_alphanumeric() || b"_.-".contains(&b)) => Ok(Some((id, serial, name))),
+        _ => Err(ScientificDiagnostic::new("command", "WirePlumber selection requires native mode, exact client ID/serial and a bounded realization name")),
+    }
 }
 
 fn session_id() -> String {
@@ -500,6 +579,96 @@ mod tests {
     use std::rc::Rc;
     use std::sync::mpsc;
     use std::time::{Duration, Instant};
+
+    #[test]
+    fn wireplumber_requires_exact_native_binding() {
+        use std::os::unix::fs::PermissionsExt;
+        let directory = tempfile::tempdir().unwrap();
+        std::fs::set_permissions(directory.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
+        let socket = directory.path().join("core.sock");
+        let _listener = std::os::unix::net::UnixListener::bind(&socket).unwrap();
+        let base = vec![
+            "--config".to_owned(),
+            "session.conf".to_owned(),
+            "--remote".to_owned(),
+            socket.to_str().unwrap().to_owned(),
+            "--start-paused".to_owned(),
+            "--control-node".to_owned(),
+            "test".to_owned(),
+            "--control-instance".to_owned(),
+            "1".to_owned(),
+        ];
+        let options = [
+            "--wireplumber-client",
+            "17",
+            "18446744073709551615",
+            "--realization-node",
+            "test.realization",
+        ];
+        let parsed =
+            super::parse_arguments_from(base.iter().cloned().chain(options.map(str::to_owned)))
+                .unwrap();
+        assert_eq!(
+            parsed.wireplumber,
+            Some((17, u64::MAX, "test.realization".into()))
+        );
+        for options in [
+            vec![
+                "--wireplumber-client",
+                "0",
+                "2",
+                "--realization-node",
+                "test",
+            ],
+            vec![
+                "--wireplumber-client",
+                "17",
+                "0",
+                "--realization-node",
+                "test",
+            ],
+            vec!["--wireplumber-client", "17", "2"],
+            vec!["--realization-node", "test"],
+            vec![
+                "--wireplumber-client",
+                "17",
+                "2",
+                "--realization-node",
+                "bad/name",
+            ],
+            vec![
+                "--wireplumber-client",
+                "17",
+                "2",
+                "--wireplumber-client",
+                "17",
+                "2",
+                "--realization-node",
+                "test",
+            ],
+        ] {
+            assert!(super::parse_arguments_from(
+                base.iter()
+                    .cloned()
+                    .chain(options.into_iter().map(str::to_owned))
+            )
+            .is_err());
+        }
+        assert!(super::parse_arguments_from(
+            [
+                "--config",
+                "session.conf",
+                "--wireplumber-client",
+                "17",
+                "2",
+                "--realization-node",
+                "test"
+            ]
+            .map(str::to_owned)
+            .into_iter()
+        )
+        .is_err());
+    }
 
     #[test]
     fn retired_socket_argument_is_rejected_before_native_or_console_selection() {

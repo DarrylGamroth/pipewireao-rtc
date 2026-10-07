@@ -1,5 +1,10 @@
 # WirePlumber declared connection policy
 
+This records the observer/monitor increment before link ownership transfer.
+Use the [current roadmap](roadmap.md#current-work) and
+[realization design](WIREPLUMBER_REALIZATION_DESIGN.md) for the subsequent
+pre-admission opt-in integration; the baseline states below are historical.
+
 Baseline: RTC `e605831`, clean dedicated branch
 `feat/wireplumber-connection-policy-20261007` at
 `/tmp/rtc-wireplumber-policy-20261007`. CPU FGN/JFG with CUDA AOS, Copper

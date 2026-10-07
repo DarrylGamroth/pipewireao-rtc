@@ -1,0 +1,21 @@
+TAP version 14
+# random seed: R02S397bf26e364f178ea9e2d66813cdbe1e
+1..14
+# Start of wp tests
+# Start of spa-pod tests
+ok 1 /wp/spa-pod/basic
+ok 2 /wp/spa-pod/choice
+ok 3 /wp/spa-pod/array
+ok 4 /wp/spa-pod/object
+ok 5 /wp/spa-pod/struct
+ok 6 /wp/spa-pod/sequence
+ok 7 /wp/spa-pod/iterator
+ok 8 /wp/spa-pod/unique-owner
+ok 9 /wp/spa-pod/port-config
+ok 10 /wp/spa-pod/filter-small
+ok 11 /wp/spa-pod/filter-large
+ok 12 /wp/spa-pod/filter-large-mismatch
+ok 13 /wp/spa-pod/filter-large-copy
+ok 14 /wp/spa-pod/filter-large-ownership
+# End of spa-pod tests
+# End of wp tests

@@ -1,0 +1,12 @@
+ninja: Entering directory `/tmp/WirePlumberAO-pod-filter-20261007/build'
+ninja: no work to do.
+1/1 test-spa-pod OK              0.01s
+
+Ok:                 1   
+Expected Fail:      0   
+Fail:               0   
+Unexpected Pass:    0   
+Skipped:            0   
+Timeout:            0   
+
+Full log written to /tmp/WirePlumberAO-pod-filter-20261007/build/meson-logs/testlog.txt

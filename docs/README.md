@@ -21,7 +21,7 @@ claim; do not infer completion from prose.
 
 | Task | Relevant contract/design | Working guide or evidence |
 | --- | --- | --- |
-| Ecosystem integration/session-manager reuse | [System boundary](architecture.md#system-boundary), [configuration](architecture.md#configuration-boundary) | [PipeWireAO, FGN/JFG, AOS/AOC and proposed WirePlumber integration](ECOSYSTEM_INTEGRATION.md), [declared connection policy](WIREPLUMBER_CONNECTION_POLICY.md) |
+| Ecosystem integration/session-manager reuse | [System boundary](architecture.md#system-boundary), [configuration](architecture.md#configuration-boundary) | [PipeWireAO, FGN/JFG, AOS/AOC and proposed WirePlumber integration](ECOSYSTEM_INTEGRATION.md), [declared connection policy](WIREPLUMBER_CONNECTION_POLICY.md), [realization/withdrawal design](WIREPLUMBER_REALIZATION_DESIGN.md) |
 | Runner/configuration/ownership | [System boundary](architecture.md#system-boundary), [configuration](architecture.md#configuration-boundary); RTC-DEV-001–004, 009–013 | [Operations](operations.md#requirements) and the matching source/tests |
 | Graph properties/parameters | RTC-DEV-005, 010–012; [update classes](operations.md#update-classes) | [Native controls](NATIVE_CONTROL_MIGRATION_DESIGN.md), [public supervisor](NATIVE_SUPERVISOR_CONTROL.md) |
 | Native controls/discovery/bootstrap | RTC-ARCH-024; [RTC-DEV-030](operations.md#rtc-dev-030--native-local-live-controls) | [Live-control inventory](LIVE_CONTROL_INVENTORY.md), [session discovery](NATIVE_SESSION_DISCOVERY.md), [bootstrap decision](NATIVE_OWNER_BOOTSTRAP_DESIGN.md) |

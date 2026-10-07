@@ -379,7 +379,10 @@ the duplication.
 
 The isolated FITS/discard compatibility and Copper runtime-owned-link
 coexistence steps pass within their recorded scopes. Explicit WirePlumber link
-realization and separate owner service supervision are still pending. The
+realization now passes native, deployed clean, same-process adapter retry,
+all eight required-loss and fresh-admission checks for Copper CPU FGN/JFG
+with CUDA AOS. See the [scoped acceptance](validation/wireplumber-realization-20261007/README.md).
+Separate owner service supervision remains pending. The
 [current roadmap](roadmap.md#current-work) owns delivery order:
 
 1. Source fault disposal/report completion now passes the preserved Copper
@@ -395,7 +398,8 @@ realization and separate owner service supervision are still pending. The
    transferring link lifetime. Define who owns each link during the transition.
    Use CUDA AOS with each CPU executor and existing artifacts; source-to-discard
    alone does not establish HIL participation or scientific equivalence.
-3. Migrate process supervision separately to systemd user services, including
+3. After the selected link-transfer failure gates pass, migrate process
+   supervision separately to systemd user services, including
    optional AOS activation on the same core. Preserve required-owner failure
    handling, held startup, fresh readmission and actual per-thread placement.
    Check start, stop, reset, owner failure and GUI/CLI absence before claiming

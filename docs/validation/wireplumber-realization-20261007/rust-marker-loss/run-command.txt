@@ -1,0 +1,3 @@
+# Run from /tmp/rtc-wireplumber-realization-20261007; use a new evidence directory.
+# Match the repository test script and Rust binary to the recorded snapshot hashes.
+env PIPEWIREAO_REALIZATION_TEST_NAME=live::wireplumber::tests::unexpected_marker_loss_cannot_acknowledge_pending_withdrawal PIPEWIREAO_REALIZATION_POLICY_SOURCE=/tmp/rtc-wp-realization-rust-marker-loss-20261007-final/realization.lua JULIA_PKG_OFFLINE=true OPENBLAS_NUM_THREADS=1 JULIA_NUM_THREADS=2,0 taskset -c 6,12 julia --startup-file=no --compiled-modules=existing --project=deployment/julia deployment/wireplumber/test_realization_links.jl /tmp/WirePlumberAO-pod-filter-20261007 /tmp/WirePlumberAO-pod-filter-20261007/build /tmp/rtc-wp-realization-rust-marker-loss-REPRO-FRESH rust-marker-loss

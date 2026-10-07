@@ -1,0 +1,63 @@
+[W][489616][14:12:25.914864] pw.context   | [       context.c:  548 pw_context_new()] 0x55e48de81aa0: can't load dbus library: support/libspa-dbus
+SIMULATOR_PREPARING profile=copper backend=cuda
+SIMULATOR_CONNECTING remote=/tmp/rtc-wp-realization-jfg-retry-runtime-20261007-attempt1/run-z2hXhM/rtc-3d48e5b7480a
+SIMULATOR_CONNECTED sequence=0 held=true
+
+running 1 test
+test live::wireplumber::tests::same_process_unload_fences_before_next_realization ... RTC_REALIZATION_PREPARED 51:52
+RTC_REALIZATION_LINKS_READY 51:52
+REALIZATION_ADMITTED generation=1 marker=51:52 runtime=48:49 links=3
+RTC_REALIZATION_WITHDRAW 51:52 requested
+RTC_REALIZATION_WITHDRAWN 51:52
+REALIZATION_WITHDRAWN generation=1 marker=51:52 correlated_links=0
+RTC_REALIZATION_LINKS_READY 51:59
+REALIZATION_ADMITTED generation=2 marker=51:59 runtime=48:49 links=3
+RTC_REALIZATION_WITHDRAW 51:59 requested
+RTC_REALIZATION_WITHDRAWN 51:59
+REALIZATION_WITHDRAWN generation=2 marker=51:59 correlated_links=0
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 112 filtered out; finished in 0.19s
+
+SIMULATOR_REPORT_WRITTEN sequence=0 recorded_frames=0 failed=false
+Precompiling packages...
+   3623.0 ms  ✓ PipeWireAO
+  1 dependency successfully precompiled in 4 seconds. 8 already precompiled.
+  4 dependencies precompiled but different versions are currently loaded (Dates, Preferences, Printf and TOML). Restart julia to access the new versions. Otherwise, 3 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+Precompiling packages...
+  11315.1 ms  ✓ AdaptiveOpticsSim
+  1 dependency successfully precompiled in 12 seconds. 72 already precompiled.
+  9 dependencies precompiled but different versions are currently loaded (Dates, JLLWrappers, PrecompileTools, Preferences, Printf, Serialization, TOML, UUIDs and Zlib_jll). Restart julia to access the new versions. Otherwise, 27 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+Precompiling packages...
+   1096.9 ms  ✓ AdaptiveOpticsSim → AdaptiveOpticsSimJSON3Ext
+  1 dependency successfully precompiled in 1 seconds. 77 already precompiled.
+  57 dependencies precompiled but different versions are currently loaded (AbstractFFTs, Adapt, Adapt → AdaptSparseArraysExt, Adapt → AdaptStaticArraysExt, AdaptiveOpticsSim, Atomix, Base64, Collects, CommonSubexpressions, CompilerSupportLibraries_jll, Dates, DiffResults, DiffRules, DocStringExtensions, FFTW, FFTW_jll, FixedSizeArrays, FixedSizeArrays → FixedSizeArraysAdaptExt, FixedSizeArrays → FixedSizeArraysRandomExt, ForwardDiff, ForwardDiff → ForwardDiffStaticArraysExt, InteractiveUtils, IrrationalConstants, JLLWrappers, JSON3, JuliaSyntaxHighlighting, KernelAbstractions, KernelAbstractions → LinearAlgebraExt, KernelAbstractions → SparseArraysExt, LogExpFunctions, Logging, MacroTools, Markdown, Mmap, NaNMath, OpenLibm_jll, OpenSpecFun_jll, Parsers, PrecompileTools, Preferences, Printf, Reexport, Serialization, SparseArrays, SpecialFunctions, StaticArrays, StaticArrays → StaticArraysStatisticsExt, StaticArraysCore, Statistics, Statistics → SparseArraysExt, StructTypes, StyledStrings, SuiteSparse_jll, TOML, UUIDs, UnsafeAtomics and Zlib_jll). Restart julia to access the new versions. Otherwise, 12 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+Precompiling packages...
+   2233.9 ms  ✓ AdaptiveOpticsSimPipeWireHIL
+  1 dependency successfully precompiled in 2 seconds. 76 already precompiled.
+  56 dependencies precompiled but different versions are currently loaded (AbstractFFTs, Adapt, Adapt → AdaptSparseArraysExt, Adapt → AdaptStaticArraysExt, AdaptiveOpticsSim, Atomix, Base64, Collects, CommonSubexpressions, CompilerSupportLibraries_jll, Dates, DiffResults, DiffRules, DocStringExtensions, FFTW, FFTW_jll, FixedSizeArrays, FixedSizeArrays → FixedSizeArraysAdaptExt, FixedSizeArrays → FixedSizeArraysRandomExt, ForwardDiff, ForwardDiff → ForwardDiffStaticArraysExt, InteractiveUtils, IrrationalConstants, JLLWrappers, JuliaSyntaxHighlighting, KernelAbstractions, KernelAbstractions → LinearAlgebraExt, KernelAbstractions → SparseArraysExt, LogExpFunctions, Logging, MacroTools, Markdown, NaNMath, OpenLibm_jll, OpenSpecFun_jll, PipeWireAO, PipeWireAO_jll, PrecompileTools, Preferences, Printf, Reexport, Serialization, SparseArrays, SpecialFunctions, StaticArrays, StaticArrays → StaticArraysStatisticsExt, StaticArraysCore, Statistics, Statistics → SparseArraysExt, StyledStrings, SuiteSparse_jll, TOML, UUIDs, UnsafeArrays, UnsafeAtomics and Zlib_jll). Restart julia to access the new versions. Otherwise, 12 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+Precompiling packages...
+   1091.6 ms  ✓ REVOLTCopperSim
+  1 dependency successfully precompiled in 1 seconds. 73 already precompiled.
+  53 dependencies precompiled but different versions are currently loaded (AbstractFFTs, Adapt, Adapt → AdaptSparseArraysExt, Adapt → AdaptStaticArraysExt, AdaptiveOpticsSim, Atomix, Base64, Collects, CommonSubexpressions, CompilerSupportLibraries_jll, Dates, DiffResults, DiffRules, DocStringExtensions, FFTW, FFTW_jll, FixedSizeArrays, FixedSizeArrays → FixedSizeArraysAdaptExt, FixedSizeArrays → FixedSizeArraysRandomExt, ForwardDiff, ForwardDiff → ForwardDiffStaticArraysExt, InteractiveUtils, IrrationalConstants, JLLWrappers, JuliaSyntaxHighlighting, KernelAbstractions, KernelAbstractions → LinearAlgebraExt, KernelAbstractions → SparseArraysExt, LogExpFunctions, Logging, MacroTools, Markdown, NaNMath, OpenLibm_jll, OpenSpecFun_jll, PrecompileTools, Preferences, Printf, Reexport, Serialization, SparseArrays, SpecialFunctions, StaticArrays, StaticArrays → StaticArraysStatisticsExt, StaticArraysCore, Statistics, Statistics → SparseArraysExt, StyledStrings, SuiteSparse_jll, TOML, UUIDs, UnsafeAtomics and Zlib_jll). Restart julia to access the new versions. Otherwise, 12 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+Precompiling packages...
+   1066.4 ms  ✓ AdaptiveOpticsSim → AdaptiveOpticsSimTablesExt
+  1 dependency successfully precompiled in 1 seconds. 79 already precompiled.
+  75 dependencies precompiled but different versions are currently loaded (AbstractFFTs, Adapt, Adapt → AdaptSparseArraysExt, Adapt → AdaptStaticArraysExt, AdaptiveOpticsSim, ArgTools, Atomix, Base64, Collects, CommonSubexpressions, CompilerSupportLibraries_jll, DataAPI, DataValueInterfaces, Dates, DiffResults, DiffRules, DocStringExtensions, Downloads, FFTW, FFTW_jll, FixedSizeArrays, FixedSizeArrays → FixedSizeArraysAdaptExt, FixedSizeArrays → FixedSizeArraysRandomExt, ForwardDiff, ForwardDiff → ForwardDiffStaticArraysExt, InteractiveUtils, IrrationalConstants, IteratorInterfaceExtensions, JLLWrappers, JuliaSyntaxHighlighting, KernelAbstractions, KernelAbstractions → LinearAlgebraExt, KernelAbstractions → SparseArraysExt, LazyArtifacts, LibCURL, LibCURL_jll, LibGit2, LibGit2_jll, LibSSH2_jll, LogExpFunctions, Logging, MacroTools, Markdown, MozillaCACerts_jll, NaNMath, NetworkOptions, OpenLibm_jll, OpenSSL_jll, OpenSpecFun_jll, OrderedCollections, Pkg, PrecompileTools, Preferences, Printf, Reexport, Serialization, SparseArrays, SpecialFunctions, StaticArrays, StaticArrays → StaticArraysStatisticsExt, StaticArraysCore, Statistics, Statistics → SparseArraysExt, StyledStrings, SuiteSparse_jll, TOML, TableTraits, Tables, Tar, UUIDs, Unicode, UnsafeAtomics, Zlib_jll, nghttp2_jll and p7zip_jll). Restart julia to access the new versions. Otherwise, 5 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+Precompiling packages...
+   4190.0 ms  ✓ AdaptiveOpticsSim → AdaptiveOpticsSimCUDAExt
+  1 dependency successfully precompiled in 5 seconds. 133 already precompiled.
+  125 dependencies precompiled but different versions are currently loaded (AbstractFFTs, Adapt, Adapt → AdaptSparseArraysExt, Adapt → AdaptStaticArraysExt, AdaptiveOpticsSim, AdaptiveOpticsSim → AdaptiveOpticsSimTablesExt, ArgTools, Atomix, Atomix → AtomixCUDAExt, BFloat16s, Base64, CEnum, CUDA, CUDACore, CUDACore → SpecialFunctionsExt, CUDATools, CUDA_Compiler_jll, CUDA_Driver_jll, CUDA_Runtime_jll, CUPTI, Collects, CommonSubexpressions, CompilerCaching, CompilerSupportLibraries_jll, Crayons, DataAPI, DataValueInterfaces, Dates, DiffResults, DiffRules, DocStringExtensions, Downloads, ExprTools, FFTW, FFTW_jll, FixedSizeArrays, FixedSizeArrays → FixedSizeArraysAdaptExt, FixedSizeArrays → FixedSizeArraysRandomExt, ForwardDiff, ForwardDiff → ForwardDiffStaticArraysExt, GPUArrays, GPUArraysCore, GPUCompiler, GPUToolbox, InteractiveUtils, IrrationalConstants, IteratorInterfaceExtensions, JLLWrappers, JuliaNVTXCallbacks_jll, JuliaSyntaxHighlighting, KernelAbstractions, KernelAbstractions → LinearAlgebraExt, KernelAbstractions → SparseArraysExt, LLVM, LLVM → BFloat16sExt, LLVMExtra_jll, LLVMLoopInfo, LMDB, LMDB_jll, LaTeXStrings, LazyArtifacts, LibCURL, LibCURL_jll, LibGit2, LibGit2_jll, LibSSH2_jll, LogExpFunctions, Logging, MacroTools, Markdown, MozillaCACerts_jll, NVML, NVPTX_LLVM_Backend_jll, NVTX, NVTX_jll, NaNMath, NetworkOptions, OpenLibm_jll, OpenSSL_jll, OpenSpecFun_jll, OrderedCollections, Pkg, Pkg → REPLExt, PrecompileTools, Preferences, PrettyTables, Printf, REPL, Random123, RandomNumbers, Reexport, ScopedValues, Scratch, Serialization, SparseArrays, SpecialFunctions, StaticArrays, StaticArrays → StaticArraysStatisticsExt, StaticArraysCore, Statistics, Statistics → SparseArraysExt, StringManipulation, StyledStrings, SuiteSparse_jll, TOML, TableTraits, Tables, Tar, UUIDs, Unicode, UnsafeAtomics, UnsafeAtomics → UnsafeAtomicsLLVM, Zlib_jll, cuBLAS, cuFFT, cuRAND, cuSOLVER, cuSPARSE, demumble_jll, nghttp2_jll, p7zip_jll, tree_sitter_gcn_jll, tree_sitter_llvm_jll, tree_sitter_ptx_jll and tree_sitter_spirv_jll). Restart julia to access the new versions. Otherwise, 7 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+Precompiling packages...
+   5185.6 ms  ✓ PipeWireAO
+  1 dependency successfully precompiled in 5 seconds. 8 already precompiled.
+Precompiling packages...
+   9147.4 ms  ✓ FilterGraphAlgorithms
+  1 dependency successfully precompiled in 9 seconds. 44 already precompiled.
+  6 dependencies precompiled but different versions are currently loaded (Dates, JLLWrappers, Preferences, Printf, TOML and Zlib_jll). Restart julia to access the new versions. Otherwise, 16 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+Precompiling packages...
+   1372.7 ms  ✓ JuliaFilterGraph
+   1768.5 ms  ✓ FilterGraphPipeWire
+  2 dependencies successfully precompiled in 3 seconds. 62 already precompiled.
+  37 dependencies precompiled but different versions are currently loaded (AbstractFFTs, AdaptiveOpticsCalibration, CEnum, CompilerSupportLibraries_jll, Dates, DelimitedFiles, DocStringExtensions, FFTW, FFTW_jll, FilterGraphAlgorithms, GenericLinearAlgebra, Hwloc, Hwloc_jll, IrrationalConstants, JLLWrappers, Libiconv_jll, LogExpFunctions, Mmap, OpenLibm_jll, OpenSpecFun_jll, PipeWireAO, PipeWireAO_jll, PrecompileTools, Preferences, Printf, Reexport, Serialization, SpecialFunctions, StableTasks, SysInfo, TOML, ThreadPinning, ThreadPinningCore, UnsafeArrays, XML2_jll, Xorg_libpciaccess_jll and Zlib_jll). Restart julia to access the new versions. Otherwise, 12 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+pipewireao-rtc-deploy: native control outcome unknown: connection failed during controller identity: native control outcome unknown: supervision check failed: required rtc exited with status 0

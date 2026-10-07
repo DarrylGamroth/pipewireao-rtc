@@ -1,0 +1,124 @@
+[W][496119][14:18:44.313743] pw.context   | [       context.c:  548 pw_context_new()] 0x55cc8fee8a90: can't load dbus library: support/libspa-dbus
+SIMULATOR_PREPARING profile=copper backend=cuda
+SIMULATOR_CONNECTING remote=/tmp/rtc-wp-realization-fgn-manager-runtime-20261007-attempt1/run-WUKy5c/rtc-84ec691e467f
+SIMULATOR_CONNECTED sequence=0 held=true
+RTC_REALIZATION_LINKS_READY 50:51
+DEPLOYMENT_READY name=rtc-graph-updates-fgn-baseline-20261006 control_locator=/tmp/rtc-wp-realization-fgn-manager-runtime-20261007-attempt1/control.json
+pipewireao-rtc: links[2]: required link disappeared or was replaced
+Precompiling packages...
+   8031.6 ms  ✓ PipeWireAO
+  1 dependency successfully precompiled in 8 seconds. 8 already precompiled.
+  4 dependencies precompiled but different versions are currently loaded (Dates, Preferences, Printf and TOML). Restart julia to access the new versions. Otherwise, 3 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+Precompiling packages...
+  23263.7 ms  ✓ AdaptiveOpticsSim
+  1 dependency successfully precompiled in 24 seconds. 72 already precompiled.
+  9 dependencies precompiled but different versions are currently loaded (Dates, JLLWrappers, PrecompileTools, Preferences, Printf, Serialization, TOML, UUIDs and Zlib_jll). Restart julia to access the new versions. Otherwise, 27 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+Precompiling packages...
+   2308.6 ms  ✓ AdaptiveOpticsSim → AdaptiveOpticsSimJSON3Ext
+  1 dependency successfully precompiled in 3 seconds. 77 already precompiled.
+  57 dependencies precompiled but different versions are currently loaded (AbstractFFTs, Adapt, Adapt → AdaptSparseArraysExt, Adapt → AdaptStaticArraysExt, AdaptiveOpticsSim, Atomix, Base64, Collects, CommonSubexpressions, CompilerSupportLibraries_jll, Dates, DiffResults, DiffRules, DocStringExtensions, FFTW, FFTW_jll, FixedSizeArrays, FixedSizeArrays → FixedSizeArraysAdaptExt, FixedSizeArrays → FixedSizeArraysRandomExt, ForwardDiff, ForwardDiff → ForwardDiffStaticArraysExt, InteractiveUtils, IrrationalConstants, JLLWrappers, JSON3, JuliaSyntaxHighlighting, KernelAbstractions, KernelAbstractions → LinearAlgebraExt, KernelAbstractions → SparseArraysExt, LogExpFunctions, Logging, MacroTools, Markdown, Mmap, NaNMath, OpenLibm_jll, OpenSpecFun_jll, Parsers, PrecompileTools, Preferences, Printf, Reexport, Serialization, SparseArrays, SpecialFunctions, StaticArrays, StaticArrays → StaticArraysStatisticsExt, StaticArraysCore, Statistics, Statistics → SparseArraysExt, StructTypes, StyledStrings, SuiteSparse_jll, TOML, UUIDs, UnsafeAtomics and Zlib_jll). Restart julia to access the new versions. Otherwise, 12 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+Precompiling packages...
+   4782.0 ms  ✓ AdaptiveOpticsSimPipeWireHIL
+  1 dependency successfully precompiled in 5 seconds. 76 already precompiled.
+  56 dependencies precompiled but different versions are currently loaded (AbstractFFTs, Adapt, Adapt → AdaptSparseArraysExt, Adapt → AdaptStaticArraysExt, AdaptiveOpticsSim, Atomix, Base64, Collects, CommonSubexpressions, CompilerSupportLibraries_jll, Dates, DiffResults, DiffRules, DocStringExtensions, FFTW, FFTW_jll, FixedSizeArrays, FixedSizeArrays → FixedSizeArraysAdaptExt, FixedSizeArrays → FixedSizeArraysRandomExt, ForwardDiff, ForwardDiff → ForwardDiffStaticArraysExt, InteractiveUtils, IrrationalConstants, JLLWrappers, JuliaSyntaxHighlighting, KernelAbstractions, KernelAbstractions → LinearAlgebraExt, KernelAbstractions → SparseArraysExt, LogExpFunctions, Logging, MacroTools, Markdown, NaNMath, OpenLibm_jll, OpenSpecFun_jll, PipeWireAO, PipeWireAO_jll, PrecompileTools, Preferences, Printf, Reexport, Serialization, SparseArrays, SpecialFunctions, StaticArrays, StaticArrays → StaticArraysStatisticsExt, StaticArraysCore, Statistics, Statistics → SparseArraysExt, StyledStrings, SuiteSparse_jll, TOML, UUIDs, UnsafeArrays, UnsafeAtomics and Zlib_jll). Restart julia to access the new versions. Otherwise, 12 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+Precompiling packages...
+   2392.1 ms  ✓ REVOLTCopperSim
+  1 dependency successfully precompiled in 3 seconds. 73 already precompiled.
+  53 dependencies precompiled but different versions are currently loaded (AbstractFFTs, Adapt, Adapt → AdaptSparseArraysExt, Adapt → AdaptStaticArraysExt, AdaptiveOpticsSim, Atomix, Base64, Collects, CommonSubexpressions, CompilerSupportLibraries_jll, Dates, DiffResults, DiffRules, DocStringExtensions, FFTW, FFTW_jll, FixedSizeArrays, FixedSizeArrays → FixedSizeArraysAdaptExt, FixedSizeArrays → FixedSizeArraysRandomExt, ForwardDiff, ForwardDiff → ForwardDiffStaticArraysExt, InteractiveUtils, IrrationalConstants, JLLWrappers, JuliaSyntaxHighlighting, KernelAbstractions, KernelAbstractions → LinearAlgebraExt, KernelAbstractions → SparseArraysExt, LogExpFunctions, Logging, MacroTools, Markdown, NaNMath, OpenLibm_jll, OpenSpecFun_jll, PrecompileTools, Preferences, Printf, Reexport, Serialization, SparseArrays, SpecialFunctions, StaticArrays, StaticArrays → StaticArraysStatisticsExt, StaticArraysCore, Statistics, Statistics → SparseArraysExt, StyledStrings, SuiteSparse_jll, TOML, UUIDs, UnsafeAtomics and Zlib_jll). Restart julia to access the new versions. Otherwise, 12 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+Precompiling packages...
+   2185.7 ms  ✓ AdaptiveOpticsSim → AdaptiveOpticsSimTablesExt
+  1 dependency successfully precompiled in 2 seconds. 79 already precompiled.
+  75 dependencies precompiled but different versions are currently loaded (AbstractFFTs, Adapt, Adapt → AdaptSparseArraysExt, Adapt → AdaptStaticArraysExt, AdaptiveOpticsSim, ArgTools, Atomix, Base64, Collects, CommonSubexpressions, CompilerSupportLibraries_jll, DataAPI, DataValueInterfaces, Dates, DiffResults, DiffRules, DocStringExtensions, Downloads, FFTW, FFTW_jll, FixedSizeArrays, FixedSizeArrays → FixedSizeArraysAdaptExt, FixedSizeArrays → FixedSizeArraysRandomExt, ForwardDiff, ForwardDiff → ForwardDiffStaticArraysExt, InteractiveUtils, IrrationalConstants, IteratorInterfaceExtensions, JLLWrappers, JuliaSyntaxHighlighting, KernelAbstractions, KernelAbstractions → LinearAlgebraExt, KernelAbstractions → SparseArraysExt, LazyArtifacts, LibCURL, LibCURL_jll, LibGit2, LibGit2_jll, LibSSH2_jll, LogExpFunctions, Logging, MacroTools, Markdown, MozillaCACerts_jll, NaNMath, NetworkOptions, OpenLibm_jll, OpenSSL_jll, OpenSpecFun_jll, OrderedCollections, Pkg, PrecompileTools, Preferences, Printf, Reexport, Serialization, SparseArrays, SpecialFunctions, StaticArrays, StaticArrays → StaticArraysStatisticsExt, StaticArraysCore, Statistics, Statistics → SparseArraysExt, StyledStrings, SuiteSparse_jll, TOML, TableTraits, Tables, Tar, UUIDs, Unicode, UnsafeAtomics, Zlib_jll, nghttp2_jll and p7zip_jll). Restart julia to access the new versions. Otherwise, 5 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+Precompiling packages...
+   8772.9 ms  ✓ AdaptiveOpticsSim → AdaptiveOpticsSimCUDAExt
+  1 dependency successfully precompiled in 9 seconds. 133 already precompiled.
+  125 dependencies precompiled but different versions are currently loaded (AbstractFFTs, Adapt, Adapt → AdaptSparseArraysExt, Adapt → AdaptStaticArraysExt, AdaptiveOpticsSim, AdaptiveOpticsSim → AdaptiveOpticsSimTablesExt, ArgTools, Atomix, Atomix → AtomixCUDAExt, BFloat16s, Base64, CEnum, CUDA, CUDACore, CUDACore → SpecialFunctionsExt, CUDATools, CUDA_Compiler_jll, CUDA_Driver_jll, CUDA_Runtime_jll, CUPTI, Collects, CommonSubexpressions, CompilerCaching, CompilerSupportLibraries_jll, Crayons, DataAPI, DataValueInterfaces, Dates, DiffResults, DiffRules, DocStringExtensions, Downloads, ExprTools, FFTW, FFTW_jll, FixedSizeArrays, FixedSizeArrays → FixedSizeArraysAdaptExt, FixedSizeArrays → FixedSizeArraysRandomExt, ForwardDiff, ForwardDiff → ForwardDiffStaticArraysExt, GPUArrays, GPUArraysCore, GPUCompiler, GPUToolbox, InteractiveUtils, IrrationalConstants, IteratorInterfaceExtensions, JLLWrappers, JuliaNVTXCallbacks_jll, JuliaSyntaxHighlighting, KernelAbstractions, KernelAbstractions → LinearAlgebraExt, KernelAbstractions → SparseArraysExt, LLVM, LLVM → BFloat16sExt, LLVMExtra_jll, LLVMLoopInfo, LMDB, LMDB_jll, LaTeXStrings, LazyArtifacts, LibCURL, LibCURL_jll, LibGit2, LibGit2_jll, LibSSH2_jll, LogExpFunctions, Logging, MacroTools, Markdown, MozillaCACerts_jll, NVML, NVPTX_LLVM_Backend_jll, NVTX, NVTX_jll, NaNMath, NetworkOptions, OpenLibm_jll, OpenSSL_jll, OpenSpecFun_jll, OrderedCollections, Pkg, Pkg → REPLExt, PrecompileTools, Preferences, PrettyTables, Printf, REPL, Random123, RandomNumbers, Reexport, ScopedValues, Scratch, Serialization, SparseArrays, SpecialFunctions, StaticArrays, StaticArrays → StaticArraysStatisticsExt, StaticArraysCore, Statistics, Statistics → SparseArraysExt, StringManipulation, StyledStrings, SuiteSparse_jll, TOML, TableTraits, Tables, Tar, UUIDs, Unicode, UnsafeAtomics, UnsafeAtomics → UnsafeAtomicsLLVM, Zlib_jll, cuBLAS, cuFFT, cuRAND, cuSOLVER, cuSPARSE, demumble_jll, nghttp2_jll, p7zip_jll, tree_sitter_gcn_jll, tree_sitter_llvm_jll, tree_sitter_ptx_jll and tree_sitter_spirv_jll). Restart julia to access the new versions. Otherwise, 7 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+SIMULATOR_FAILURE correction_command.sequence: sequence 30 did not complete before the development timeout
+SIMULATOR_REPORT_WRITTEN sequence=29 recorded_frames=29 failed=true
+
+[496123] signal 15: Terminated
+in expression starting at none:0
+unknown function (ip: 0x7fae1b6b072c) at /lib/x86_64-linux-gnu/libc.so.6
+unknown function (ip: 0x7fae1b6a5387) at /lib/x86_64-linux-gnu/libc.so.6
+unknown function (ip: 0x7fae1b6a59ab) at /lib/x86_64-linux-gnu/libc.so.6
+pthread_cond_wait at /lib/x86_64-linux-gnu/libc.so.6 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+ijl_task_get_next at /cache/build/builder-amdci5-2/julialang/julia-ci/src/scheduler.c:523
+poptask at ./task.jl:1216
+wait at ./task.jl:1228
+#wait#406 at ./condition.jl:141
+wait at ./condition.jl:136 [inlined]
+take! at /home/dgamroth/.julia/packages/CUDACore/yn2cv/lib/cudadrv/synchronization.jl:53
+synchronization_worker at /home/dgamroth/.julia/packages/CUDACore/yn2cv/lib/cudadrv/synchronization.jl:119
+julia_synchronization_worker_31596_gfthunk at /home/dgamroth/.julia/compiled/v1.12/CUDACore/mcKyc_qSI4B.so (unknown line)
+jlcapi_synchronization_worker_26251 at /home/dgamroth/.julia/compiled/v1.12/CUDACore/mcKyc_qSI4B.so (unknown line)
+unknown function (ip: 0x7fae1b6a88ba) at /lib/x86_64-linux-gnu/libc.so.6
+unknown function (ip: 0x7fae1b726537) at /lib/x86_64-linux-gnu/libc.so.6
+unknown function (ip: (nil)) at (unknown file)
+unknown function (ip: 0x7fae1b6b072c) at /lib/x86_64-linux-gnu/libc.so.6
+unknown function (ip: 0x7fae1b6a5387) at /lib/x86_64-linux-gnu/libc.so.6
+unknown function (ip: 0x7fae1b6a59ab) at /lib/x86_64-linux-gnu/libc.so.6
+pthread_cond_wait at /lib/x86_64-linux-gnu/libc.so.6 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+jl_parallel_gc_threadfun at /cache/build/builder-amdci5-2/julialang/julia-ci/src/gc-stock.c:3645
+unknown function (ip: 0x7fae1b6a88ba) at /lib/x86_64-linux-gnu/libc.so.6
+unknown function (ip: 0x7fae1b726537) at /lib/x86_64-linux-gnu/libc.so.6
+unknown function (ip: (nil)) at (unknown file)
+unknown function (ip: 0x7fae1b6b072c) at /lib/x86_64-linux-gnu/libc.so.6
+unknown function (ip: 0x7fae1b6a5387) at /lib/x86_64-linux-gnu/libc.so.6
+unknown function (ip: 0x7fae1b6a59ab) at /lib/x86_64-linux-gnu/libc.so.6
+pthread_cond_wait at /lib/x86_64-linux-gnu/libc.so.6 (unknown line)
+uv_cond_wait at /workspace/srcdir/libuv/src/unix/thread.c:822
+ijl_task_get_next at /cache/build/builder-amdci5-2/julialang/julia-ci/src/scheduler.c:523
+poptask at ./task.jl:1216
+wait at ./task.jl:1228
+task_done_hook at ./task.jl:868
+jfptr_task_done_hook_71323.1 at /home/dgamroth/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/lib/julia/sys.so (unknown line)
+jl_apply at /cache/build/builder-amdci5-2/julialang/julia-ci/src/julia.h:2394 [inlined]
+jl_finish_task at /cache/build/builder-amdci5-2/julialang/julia-ci/src/task.c:342
+start_task at /cache/build/builder-amdci5-2/julialang/julia-ci/src/task.c:1264
+unknown function (ip: (nil)) at (unknown file)
+_ZNK4llvm8CallBase25hasFnAttrOnCalledFunctionENS_9Attribute8AttrKindE at /home/dgamroth/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/bin/../lib/julia/libLLVM.so.18.1jl (unknown line)
+_ZN4llvm31wouldInstructionBeTriviallyDeadEPKNS_11InstructionEPKNS_17TargetLibraryInfoE at /home/dgamroth/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/bin/../lib/julia/libLLVM.so.18.1jl (unknown line)
+_ZL17eliminateDeadCodeRN4llvm8FunctionEPNS_17TargetLibraryInfoE at /home/dgamroth/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/bin/../lib/julia/libLLVM.so.18.1jl (unknown line)
+_ZN4llvm7DCEPass3runERNS_8FunctionERNS_15AnalysisManagerIS1_JEEE at /home/dgamroth/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/bin/../lib/julia/libLLVM.so.18.1jl (unknown line)
+run at /cache/build/builder-amdci5-2/julialang/julia-ci/usr/include/llvm/IR/PassManagerInternal.h:89
+run at /cache/build/builder-amdci5-2/julialang/julia-ci/usr/include/llvm/IR/PassManager.h:543 [inlined]
+run at /cache/build/builder-amdci5-2/julialang/julia-ci/usr/include/llvm/IR/PassManagerInternal.h:89
+_ZN4llvm27ModuleToFunctionPassAdaptor3runERNS_6ModuleERNS_15AnalysisManagerIS1_JEEE at /home/dgamroth/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/bin/../lib/julia/libLLVM.so.18.1jl (unknown line)
+run at /cache/build/builder-amdci5-2/julialang/julia-ci/usr/include/llvm/IR/PassManagerInternal.h:89
+_ZN4llvm11PassManagerINS_6ModuleENS_15AnalysisManagerIS1_JEEEJEE3runERS1_RS3_ at /home/dgamroth/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/bin/../lib/julia/libLLVM.so.18.1jl (unknown line)
+run at /cache/build/builder-amdci5-2/julialang/julia-ci/src/pipeline.cpp:741
+operator() at /cache/build/builder-amdci5-2/julialang/julia-ci/src/jitlayers.cpp:1459
+withModuleDo<(anonymous namespace)::sizedOptimizerT<N>::operator()(llvm::orc::ThreadSafeModule) [with long unsigned int N = 4]::<lambda(llvm::Module&)> > at /cache/build/builder-amdci5-2/julialang/julia-ci/usr/include/llvm/ExecutionEngine/Orc/ThreadSafeModule.h:136 [inlined]
+operator() at /cache/build/builder-amdci5-2/julialang/julia-ci/src/jitlayers.cpp:1420 [inlined]
+operator() at /cache/build/builder-amdci5-2/julialang/julia-ci/src/jitlayers.cpp:1572 [inlined]
+addModule at /cache/build/builder-amdci5-2/julialang/julia-ci/src/jitlayers.cpp:2043
+jl_compile_codeinst_now at /cache/build/builder-amdci5-2/julialang/julia-ci/src/jitlayers.cpp:626
+jl_compile_codeinst_impl at /cache/build/builder-amdci5-2/julialang/julia-ci/src/jitlayers.cpp:824
+jl_compile_method_internal at /cache/build/builder-amdci5-2/julialang/julia-ci/src/gf.c:3528
+_jl_invoke at /cache/build/builder-amdci5-2/julialang/julia-ci/src/gf.c:4006 [inlined]
+ijl_apply_generic at /cache/build/builder-amdci5-2/julialang/julia-ci/src/gf.c:4214
+#showerror#848 at ./errorshow.jl:117
+showerror at ./errorshow.jl:115
+unknown function (ip: 0x7fade392d648) at (unknown file)
+show_exception_stack at ./errorshow.jl:1016
+display_error at ./client.jl:110
+unknown function (ip: 0x7fade392a246) at (unknown file)
+display_error at ./client.jl:113
+jfptr_display_error_68238.1 at /home/dgamroth/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/lib/julia/sys.so (unknown line)
+jl_apply at /cache/build/builder-amdci5-2/julialang/julia-ci/src/julia.h:2394 [inlined]
+jl_f_invokelatest at /cache/build/builder-amdci5-2/julialang/julia-ci/src/builtins.c:881
+exec_options at ./client.jl:320
+_start at ./client.jl:550
+jfptr__start_65616.1 at /home/dgamroth/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/lib/julia/sys.so (unknown line)
+jl_apply at /cache/build/builder-amdci5-2/julialang/julia-ci/src/julia.h:2394 [inlined]
+true_main at /cache/build/builder-amdci5-2/julialang/julia-ci/src/jlapi.c:985
+jl_repl_entrypoint at /cache/build/builder-amdci5-2/julialang/julia-ci/src/jlapi.c:1153
+main at /cache/build/builder-amdci5-2/julialang/julia-ci/cli/loader_exe.c:58
+unknown function (ip: 0x7fae1b63fca7) at /lib/x86_64-linux-gnu/libc.so.6
+__libc_start_main at /lib/x86_64-linux-gnu/libc.so.6 (unknown line)
+unknown function (ip: 0x4010b8) at /workspace/srcdir/glibc-2.17/csu/../sysdeps/x86_64/start.S
+unknown function (ip: (nil)) at (unknown file)
+Allocations: 204367553 (Pool: 204365187; Big: 2366); GC: 59
+pipewireao-rtc-deploy: required wireplumber exited with status 0

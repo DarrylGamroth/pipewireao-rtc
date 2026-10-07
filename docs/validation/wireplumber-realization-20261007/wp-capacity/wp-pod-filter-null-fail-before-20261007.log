@@ -1,0 +1,30 @@
+ninja: Entering directory `/tmp/WirePlumberAO-pod-filter-20261007/build'
+ninja: no work to do.
+1/1 test-spa-pod FAIL            0.00s   killed by signal 6 SIGABRT
+>>> XDG_STATE_HOME=/tmp/WirePlumberAO-pod-filter-20261007/build/tests/.local/state FILE_MONITOR_DIR=/tmp/WirePlumberAO-pod-filter-20261007/build/tests/.local/file_monitor HOME=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' XDG_CONFIG_HOME=/tmp/WirePlumberAO-pod-filter-20261007/build/tests/.config G_TEST_SRCDIR=/tmp/WirePlumberAO-pod-filter-20261007/tests/wp LD_LIBRARY_PATH=/tmp/WirePlumberAO-pod-filter-20261007/build/lib/wp WIREPLUMBER_MODULE_DIR=/tmp/WirePlumberAO-pod-filter-20261007/build/tests/../modules UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp MESON_TEST_ITERATION=1 G_TEST_BUILDDIR=/tmp/WirePlumberAO-pod-filter-20261007/build/tests/wp XDG_RUNTIME_DIR=/invalid ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 MALLOC_PERTURB_=212 WIREPLUMBER_DATA_DIR=/tmp/WirePlumberAO-pod-filter-20261007/tests/../src /tmp/WirePlumberAO-pod-filter-20261007/build/tests/wp/test-spa-pod -p /wp/spa-pod/filter-large-copy
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02S672ddeb62c3f4765301970e8bcad6a6f
+# Start of wp tests
+# Start of spa-pod tests
+not ok /wp/spa-pod/filter-large-copy - tests:ERROR:../tests/wp/spa-pod.c:1092:test_spa_pod_filter_large_copy: 'result' should not be NULL
+Bail out!
+stderr:
+**
+tests:ERROR:../tests/wp/spa-pod.c:1092:test_spa_pod_filter_large_copy: 'result' should not be NULL
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+
+Summary of Failures:
+
+1/1 test-spa-pod FAIL            0.00s   killed by signal 6 SIGABRT
+
+Ok:                 0   
+Expected Fail:      0   
+Fail:               1   
+Unexpected Pass:    0   
+Skipped:            0   
+Timeout:            0   
+
+Full log written to /tmp/WirePlumberAO-pod-filter-20261007/build/meson-logs/testlog.txt

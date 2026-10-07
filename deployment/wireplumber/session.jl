@@ -58,7 +58,7 @@ function verify_links(objects, original)
     end
 end
 
-function manifest(objects, ready, package; prefix="/opt/pipewireao")
+function manifest(objects, ready, package; prefix="/opt/pipewireao", link_owner_pid=ready["processes"]["rtc"]["pid"])
     session = D.decode(joinpath(package,"session.conf.in"),prefix)
     names = Set(v["node.name"] for group in ("sources","graphs","sinks") for v in session[group])
     nodes = filter(object -> object["type"] == "PipeWire:Interface:Node" &&
@@ -96,8 +96,8 @@ function manifest(objects, ready, package; prefix="/opt/pipewireao")
     port_entries = Dict{Int,Any}()
     owner_entries = Dict{Int,Any}()
     for object in required
-        require(clients[properties(object)["client.id"]]["application.process.id"]==ready["processes"]["rtc"]["pid"],
-            "Link is not owned by the RTC runner")
+        require(clients[properties(object)["client.id"]]["application.process.id"]==link_owner_pid,
+            "Link is not owned by the selected creator process")
         require(object["info"]["state"] in ("active","paused"), "Link negotiation incomplete")
         info = object["info"]
         require(info["format"]["mediaSubtype"] == "ndarray", "Non-NDArray link")

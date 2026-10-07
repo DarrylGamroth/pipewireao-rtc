@@ -48,11 +48,22 @@ passes living-source failure report completion and owned cleanup for both
 executors, followed by fresh admission and two 512-command runs each. Retained
 prefixes remain exact and simulator tails remain at zero Julia heap/GC.
 Expected native/transport fault diagnostics are preserved; fresh fault-time pause
-acknowledgements and source-revocation latency remain unqualified. Step 4 (link
-transfer) remains unproved, so existing link-management code stays in place and
-broad cleanup is deferred.
-RTC/AOS session ownership transfer remains unimplemented and unqualified;
-current deployment and controls remain in use.
+acknowledgements and source-revocation latency remain unqualified. The [pre-admission realization increment](validation/wireplumber-realization-20261007/README.md)
+now passes typed intent, real Link negotiation/withdrawal and delayed-completion
+fencing, clean Copper CPU FGN/JFG with CUDA AOS, same-process adapter retry,
+all eight required-link/manager/runtime/Core loss cases and fresh admission
+with two further 512-command runs per engine. WirePlumber owns the three
+declared links in this opt-in path; RTC retains science readiness and source
+authority. Numerical prefixes and simulator-tail zero heap/GC remain preserved.
+Unknown fault-time withdrawal/source outcomes stay faults; these checks do not
+qualify native caller reload, other profiles/latest/hold, target timing or
+physical actuation. The isolated WirePlumber POD-filter capacity correction is
+a required dependency for the 1160-byte three-link projection, with its inherited
+SPA allocation-failure limitation preserved in review. The next increment is
+separate systemd user-service supervision. Default direct ownership and existing
+supervision/link code remain until their respective replacements pass parity.
+Separate RTC/AOS process-supervision transfer remains unimplemented and
+unqualified; current deployment and native controls remain in use.
 
 [Adversarial architecture review](APPLICATION_ARCHITECTURE_REVIEW.md) identifies
 conditional link/process ownership migration gates and separate timing questions.

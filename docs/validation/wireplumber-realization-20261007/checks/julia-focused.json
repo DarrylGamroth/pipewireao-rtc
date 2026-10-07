@@ -1,0 +1,22 @@
+{
+  "success": true,
+  "scope": "focused Julia SDK source-failure, portable admission, session manager and fault teardown software tests; no science timing claim",
+  "command": "env JULIA_PKG_OFFLINE=true OPENBLAS_NUM_THREADS=1 JULIA_NUM_THREADS=2,0 taskset -c 12 julia --startup-file=no --compiled-modules=existing --project=deployment/julia -e 'using Test, PipeWireAODeployment; for name in (\"deploy\", \"session_manager\", \"fault_teardown\"); Base.include(Module(Symbol(\"Final_\", name)), joinpath(\"deployment/julia/test\", \"test_\" * name * \".jl\")); end'",
+  "observation": "exit 0 and test summaries captured from exec session 19084; counts transcribed from that output, not a fabricated raw log",
+  "passes": {
+    "source_status_failure": 46,
+    "deployment_admission_protocol": 214,
+    "no_live_reconnect": 7,
+    "session_manager_config": 9,
+    "exited_source": 20,
+    "owned_descendants": 12,
+    "unknown_live_source_report_grace": 13
+  },
+  "source_sha256": {
+    "deployment/julia/src/deploy.jl": "6a03e444a451d7a88a65920af7a3aa58035336a92711d43fa8ced64ae70d3cbb",
+    "deployment/julia/src/session_manager.jl": "54903d955a0292ddeb45687732c4804485af14b1e4ca6a20d4fd6c8f25ce55e4",
+    "deployment/julia/test/test_deploy.jl": "b4b01bb973fc1bce55cc45e8ddfbec473aa44d3af914dd45f905619eae733af5",
+    "deployment/julia/test/test_session_manager.jl": "680ae9f198ce6db1b2bc41669895c18c673322ccd890f6be3a2d9e1a60302785",
+    "deployment/julia/test/test_fault_teardown.jl": "a057b0d491060c8c34430b877dc723ca09c1b7dfa758154b0e76cf307bed5990"
+  }
+}

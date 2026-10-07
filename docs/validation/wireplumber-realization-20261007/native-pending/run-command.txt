@@ -1,0 +1,1 @@
+JULIA_PKG_OFFLINE=true OPENBLAS_NUM_THREADS=1 JULIA_NUM_THREADS=2,0 taskset -c 6,12 julia --startup-file=no --compiled-modules=existing --project=deployment/julia deployment/wireplumber/test_realization_links.jl /home/dgamroth/workspaces/codex/pipewire/wireplumber /tmp/wp-ao-pilot-20261006/build /tmp/rtc-wp-realization-pending-20261007-attempt2 delay-completion

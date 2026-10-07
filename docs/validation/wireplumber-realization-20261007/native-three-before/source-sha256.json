@@ -1,0 +1,14 @@
+{
+  "snapshots": {
+    "realization.lua": "1b03ef4fb26dbd9f90d69e90502ad6ae12bddddd5a1c82419387b06507fa0ed8",
+    "loaded-realization.lua": "1b03ef4fb26dbd9f90d69e90502ad6ae12bddddd5a1c82419387b06507fa0ed8",
+    "test_realization_links.jl": "5fd7f585c2f6771625eeabc221311ed3b54b57c775c80744679b149cad6ef908"
+  },
+  "wireplumber_libraries": [
+    {
+      "path": "/tmp/wp-ao-pilot-20261006/build/lib/wp/libwireplumber-0.5.so.0",
+      "resolved": "/tmp/wp-ao-pilot-20261006/build/lib/wp/libwireplumber-0.5.so.0.518.0",
+      "sha256": "3ff3f4a16a42e2545d76b9c85e7e1f87374381e2b4269bf714504367383283ba"
+    }
+  ]
+}
