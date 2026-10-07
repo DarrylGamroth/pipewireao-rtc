@@ -127,6 +127,15 @@ limits. The runtime consumes actual session state to admit acquisition and handl
 required-object failures. Session links have one designated owner; the runtime,
 GUI and WirePlumber must not independently manage the same required link.
 
+The [adversarial architecture review](APPLICATION_ARCHITECTURE_REVIEW.md)
+requires link ownership and process supervision to migrate as separate parity
+steps. Existing admitted-session link ownership remains valid if transfer does
+not simplify the maintained responsibilities. Any transfer preserves exact
+owner identities, link negotiation/passive semantics, runtime-loss cleanup and
+held fresh readmission. The initial pilot retains established FGN hosting and
+separate JFG processes; optional WirePlumber-hosted FGN needs its own resource
+and failure qualification.
+
 This selects the ownership boundary for the next integration increment. It does
 not claim WirePlumber compatibility or alter the implementation evidence for the
 existing runner/supervisor. See [ecosystem integration](ECOSYSTEM_INTEGRATION.md)

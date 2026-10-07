@@ -12,6 +12,11 @@ validation files, logs and receipts remain at their existing paths.
 merge, paired SDK dependency, GUI handoff evidence and remaining qualification
 gates. It does not declare deployment or scientific qualification complete.
 
+[Application architecture adversarial review](APPLICATION_ARCHITECTURE_REVIEW.md)
+records independent system/real-time reviews, their consolidated dispositions,
+and the resulting ownership and migration recommendations. It is source review,
+not new runtime, timing or hardware qualification.
+
 [Installed Copper qualification, 2026-10-06](validation/copper-main-20261006/README.md)
 records refreshed main-runtime/SDK detector and DM trajectories, observer
 death/replacement and stall, simulator Julia heap counters and independent

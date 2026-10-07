@@ -29,6 +29,11 @@ native controls; WirePlumberAO supplies discovery and connection policy.
 WirePlumber compatibility and that transfer are not implemented or qualified;
 current deployment and controls remain in use.
 
+[Adversarial architecture review](APPLICATION_ARCHITECTURE_REVIEW.md) identifies
+conditional link/process ownership migration gates and separate timing questions.
+The pilot retains current FGN/JFG hosting and native controls; transfer is chosen
+only after compatibility, behavioral parity and reduced maintained responsibility.
+
 ### Observed progress
 
 | Area | Current disposition | Evidence to read if affected |

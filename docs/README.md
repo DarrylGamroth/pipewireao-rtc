@@ -40,6 +40,8 @@ finding or result rather than loading the entire delivery catalog.
 
 - [Delivery evidence catalog](EVIDENCE_INDEX.md): preserved index of reviews,
   reports and receipts; historical wording does not define current status.
+- [Application architecture adversarial review](APPLICATION_ARCHITECTURE_REVIEW.md):
+  ownership-transfer findings and qualification boundaries for WirePlumber reuse.
 - [Main integration snapshot](MAIN_INTEGRATION_20261006.md): exact source/dependency
   merge and its qualification limits on 2026-10-06.
 - [Inactive full-RTC archive](archive/full-rtc/README.md): non-normative deferred

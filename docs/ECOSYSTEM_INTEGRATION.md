@@ -97,6 +97,14 @@ It does not become the scientific lifecycle owner. The runtime retains readiness
 source hold/release, reset coordination, artifact admission and required-owner
 failure handling. Scientific owners still perform preparation and adoption.
 
+The [adversarial architecture review](APPLICATION_ARCHITECTURE_REVIEW.md) makes
+link-ownership transfer conditional on preserving admission, negotiation and
+failure behavior. The first pilot retains established FGN hosting and separate
+JFG processes. `module-rt` supplies participating PipeWire thread scheduling;
+it does not launch JFG or place every executor worker. WirePlumber's
+`pw-module-client` hosting is an optional FGN deployment choice sharing its
+process lifetime, not a prerequisite for integration.
+
 ### GUI and command-line control
 
 The GUI edits the project and controls a running session. Command-line tools
@@ -243,7 +251,8 @@ and module paths. It should not replace or disturb the desktop audio session.
 | Work | Current owner | Proposed owner |
 | --- | --- | --- |
 | Private core and child-process startup, termination and reaping | Julia deployment supervisor | systemd services, with existing admission coordination retained |
-| Registry tracking and realization of declared session links | Rust RTC runner | WirePlumber object and policy infrastructure |
+| Instrument discovery and connection policy | Rust RTC runner/session configuration | WirePlumber object and policy infrastructure |
+| Realization and lifetime of admitted session links | Rust RTC runner | One designated owner; transfer to WirePlumber only after admission/failure parity |
 | Scientific readiness, source hold/release and reset coordination | RTC supervisor/runner and scientific owners | Headless RTC runtime and scientific owners |
 | NDArray buffers, scheduling and internal graph execution | PipeWireAO, FGN and JFG | Same existing components |
 | Plant simulation and instrument calibration | AOS/adapter and Julia acquisition application/AOC | Same existing components |
@@ -251,10 +260,13 @@ and module paths. It should not replace or disturb the desktop audio session.
 
 Only one component should own each session link and lifecycle action during
 migration. Preserve existing controls until their replacement is demonstrated.
-The runtime declares the required session; WirePlumberAO realizes its connections
-under AO policy and reports actual object/link state. The runtime uses those
-observations for admission and failure handling. Neither GUI nor CLI owns links
-that the admitted session depends on.
+The runtime declares the required session and uses actual object/link state for
+admission and failure handling. If WirePlumber owns a session's links, runtime
+loss must revoke that realization and a restarted owner must remain held until
+fresh admission. If the transfer adds more coordination than it removes, retain
+runtime ownership of admitted links and use WirePlumber for instrument discovery
+and availability policy. Neither GUI nor CLI owns links that the admitted session
+depends on.
 
 Breaking the large Rust source files into modules is useful after establishing
 this boundary; copying all their responsibilities into a new manager would retain
@@ -265,18 +277,27 @@ the duplication.
 1. Prove WirePlumber compatibility with an isolated PipeWireAO instance and a
    small existing NDArray source-to-sink graph. Check discovery, negotiated
    formats, explicit links and teardown. Leave the desktop session untouched.
-2. Substitute WirePlumber discovery/link ownership for one existing Copper RTC
-   session. Preserve native controls, held-source admission and readiness. Reuse
-   existing artifacts and compare outputs; no new calibration campaign is needed
-   just to establish session-manager compatibility.
-3. Express the resulting composition through systemd user services, including
-   optional AOS activation on the same core. Check start, stop, reset, owner
-   failure, GUI absence and actual placement before claiming deployment parity.
+2. Pilot explicit connection realization for one existing Copper RTC session.
+   Preserve exact owner identities, negotiation order/passive links, native
+   controls and held-source admission. Check pending withdrawal, owner replacement
+   and runtime/WirePlumber loss before transferring link lifetime. Reuse existing
+   artifacts and compare outputs; no new calibration campaign is needed just to
+   establish session-manager compatibility. Judge whether the transfer reduces
+   maintained responsibility before selecting it.
+3. Migrate process supervision separately to systemd user services, including
+   optional AOS activation on the same core. Preserve required-owner failure
+   handling, held startup, fresh readmission and actual per-thread placement.
+   Check start, stop, reset, owner failure and GUI/CLI absence before claiming
+   deployment parity. Process restart alone never authorizes acquisition.
 4. Remove redundant supervision and registry/link code only after that parity.
    Keep the existing scientific packages and graph configurations intact.
 
 This increment is proposed, not completed. Existing qualification results retain
 their recorded scope; see [current work](roadmap.md#current-work).
+Timing qualification remains a separate gate: define the offered camera/readout
+pattern, age/loss/overload contract and resource budget, and measure concurrent
+owner-reaching controls as well as independently paced ingress. Lockstep HIL
+remains scientific/lifecycle evidence.
 
 ## Source pointers
 
