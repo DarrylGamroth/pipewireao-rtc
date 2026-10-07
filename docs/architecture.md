@@ -121,25 +121,49 @@ completion semantics. Scientific readiness, source admission, reset and artifact
 adoption remain runtime/owner responsibilities; client presence does not gate
 processing or own the lifecycle.
 
-The selected WirePlumberAO direction supplies instrument discovery, availability
-and declared connection policy. Systemd supplies process supervision and resource
-limits. The runtime consumes actual session state to admit acquisition and handle
-required-object failures. Session links have one designated owner; the runtime,
-GUI and WirePlumber must not independently manage the same required link.
+On 2026-10-07 the user clarified that each component should serve its intended
+purpose. The selected target assigns declared external session-link realization
+and lifetime to WirePlumberAO, and process supervision to systemd. The RTC's
+current link realization and child supervision are migration responsibilities;
+the optional post-admission WirePlumber observer is an intermediate step.
+
+| Component | Selected target responsibility |
+| --- | --- |
+| systemd | Start, stop, reap and supervise service processes; apply configured cgroup/resource and scheduling policy through user units and administrator-provisioned permissions. |
+| WirePlumberAO profile | Discover instrument/session objects, apply declared connection policy, and create, monitor and withdraw external session links. |
+| Headless RTC runtime | Coordinate scientific preparation, validate actual session readiness, hold/release acquisition, coordinate reset and artifact adoption, and handle required-object failure. |
+| PipeWireAO | Negotiate and transport NDArray buffers, schedule published nodes, expose native controls and host FGN. |
+| FGN/JFG | Prepare and execute internal scientific graphs, manage workspaces and executor workers, and expose processing ports and controls. |
+| AOS and its HIL adapter | Simulate instrument physics, own model time and frame/command causality, and publish the declared sources and sinks. |
+| AOC and acquisition application | AOC owns calibration algorithms and estimates; the acquisition application coordinates probes and measurements through deployed endpoints and RTC controls. |
+| GUI and CLI | Edit configurations, request operations and observe status as clients of the headless runtime and native owner controls. |
+
+WirePlumber's link policy operates between published nodes. Internal FGN/JFG
+graph connections and worker placement remain executor responsibilities. Systemd
+sets service resource policy; PipeWire and executors configure their participating
+threads within that policy. Service startup and successful link creation alone
+do not authorize acquisition. The RTC consumes actual session state before
+release and on required-object failure. Each link has one designated owner;
+the runtime, GUI and WirePlumber must not independently manage the same link.
 
 The [adversarial architecture review](APPLICATION_ARCHITECTURE_REVIEW.md)
 requires link ownership and process supervision to migrate as separate parity
-steps. Existing admitted-session link ownership remains valid if transfer does
-not simplify the maintained responsibilities. Any transfer preserves exact
-owner identities, link negotiation/passive semantics, runtime-loss cleanup and
-held fresh readmission. The initial pilot retains established FGN hosting and
-separate JFG processes; optional WirePlumber-hosted FGN needs its own resource
-and failure qualification.
+steps. Transfer preserves exact owner identities, negotiation/passive semantics,
+runtime-loss withdrawal and held fresh readmission. Current ownership stays in
+place until those gates pass. A transfer that adds coordination without removing
+maintained responsibilities needs explicit architectural reconsideration; the
+current observer's startup order alone does not establish that conclusion.
+The initial pilot retains established FGN hosting and separate JFG processes;
+optional WirePlumber-hosted FGN needs its own resource and failure qualification.
 
-This selects the ownership boundary for the next integration increment. It does
-not claim WirePlumber compatibility or alter the implementation evidence for the
-existing runner/supervisor. See [ecosystem integration](ECOSYSTEM_INTEGRATION.md)
-for the proposed transfer and its compatibility checks.
+This is the selected target, not a claim that ownership has transferred or that
+all WirePlumber integration is qualified. The current system boundary below
+continues to describe the working runner/supervisor. The current operating
+contract remains in force. Before enabling a replacement, the transfer increment
+must explicitly revise affected ownership allocations, including RTC-DEV-003
+and RTC-DEV-013, while preserving their admission, cleanup and failure obligations.
+See [ecosystem integration](ECOSYSTEM_INTEGRATION.md) for the migration and
+[current work](roadmap.md#current-work) for completed gates.
 
 ## Active scope
 

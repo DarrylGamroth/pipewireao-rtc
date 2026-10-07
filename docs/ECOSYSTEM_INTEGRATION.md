@@ -1,10 +1,11 @@
 # PipeWireAO ecosystem integration
 
 Direction requested on 2026-10-06. This document explains the existing components
-and a proposed integration with WirePlumber. It does not claim that WirePlumber
-has been qualified with PipeWireAO or that the current deployment supervisor has
-been replaced. The [architecture](architecture.md) and
-[operating contract](operations.md) remain authoritative for implemented behavior.
+and the selected target integration with WirePlumber. The responsibility table
+and target diagram describe intended ownership; the current-implementation table
+and [roadmap](roadmap.md#current-work) distinguish completed checks from pending
+transfers. The [architecture](architecture.md) and
+[operating contract](operations.md) remain authoritative.
 
 ## Component responsibilities
 
@@ -93,10 +94,10 @@ runtime-to-WirePlumber interface remains to be selected using existing
 WirePlumber facilities. It is not a proposed new private control protocol.
 
 The accepted split keeps RTC lifecycle logic in the headless runtime.
-WirePlumberAO supplies instrument discovery, availability and connection policy.
-It does not become the scientific lifecycle owner. The runtime retains readiness,
-source hold/release, reset coordination, artifact admission and required-owner
-failure handling. Scientific owners still perform preparation and adoption.
+WirePlumberAO supplies instrument discovery, availability and declared external
+session-link realization and lifetime. The headless runtime owns the scientific
+lifecycle. The runtime retains readiness, source hold/release, reset
+coordination, artifact admission and required-owner failure handling. Scientific owners still perform preparation and adoption.
 
 The [adversarial architecture review](APPLICATION_ARCHITECTURE_REVIEW.md) makes
 link-ownership transfer conditional on preserving admission, negotiation and
@@ -340,8 +341,10 @@ removal/failure and latches external endpoint removal. Both selected Copper
 paths pass link/simulator loss, bounded cleanup and fresh admission with matching
 baseline prefixes. This observer remains optional and has no repair or source
 authority. Its current startup cannot replace initial RTC link realization;
-the pre-admission realization/withdrawal interface is still missing. Retaining
-RTC-owned links follows the architecture review's conditional transfer decision.
+the pre-admission realization/withdrawal interface is still missing. RTC-owned
+links remain the working migration state until the transfer gates pass. This
+startup arrangement is not an architectural reason to keep link realization in
+the RTC permanently.
 
 ## Current implementation and proposed transfer
 
@@ -349,7 +352,7 @@ RTC-owned links follows the architecture review's conditional transfer decision.
 | --- | --- | --- |
 | Private core and child-process startup, termination and reaping | Julia deployment supervisor | systemd services, with existing admission coordination retained |
 | Instrument discovery and connection policy | Rust RTC runner/session configuration | WirePlumber object and policy infrastructure |
-| Realization and lifetime of admitted session links | Rust RTC runner | One designated owner; transfer to WirePlumber only after admission/failure parity |
+| Realization and lifetime of external session links | Rust RTC runner | WirePlumberAO policy, after admission/failure parity; one owner throughout migration |
 | Scientific readiness, source hold/release and reset coordination | RTC supervisor/runner and scientific owners | Headless RTC runtime and scientific owners |
 | NDArray buffers, scheduling and internal graph execution | PipeWireAO, FGN and JFG | Same existing components |
 | Plant simulation and instrument calibration | AOS/adapter and Julia acquisition application/AOC | Same existing components |
@@ -360,10 +363,13 @@ migration. Preserve existing controls until their replacement is demonstrated.
 The runtime declares the required session and uses actual object/link state for
 admission and failure handling. If WirePlumber owns a session's links, runtime
 loss must revoke that realization and a restarted owner must remain held until
-fresh admission. If the transfer adds more coordination than it removes, retain
-runtime ownership of admitted links and use WirePlumber for instrument discovery
-and availability policy. Neither GUI nor CLI owns links that the admitted session
-depends on.
+fresh admission. The selected target uses each component for its intended
+purpose: systemd supervises processes, WirePlumber manages session connections,
+and the RTC coordinates scientific readiness and acquisition. Internal executor
+graphs remain with FGN/JFG. If the transfer adds more coordination than it
+removes, record that evidence for architectural reconsideration; do not treat
+the current observer-only implementation as the final target. Neither GUI nor
+CLI owns links that the admitted session depends on.
 
 Breaking the large Rust source files into modules is useful after establishing
 this boundary; copying all their responsibilities into a new manager would retain
@@ -371,35 +377,34 @@ the duplication.
 
 ## Next implementation increment
 
-1. Prove WirePlumber compatibility with an isolated PipeWireAO instance and a
-   small existing NDArray source-to-sink graph. Check discovery, negotiated
-   formats, explicit links and teardown. Leave the desktop session untouched.
-2. Pilot explicit connection realization for one existing Copper RTC session.
-   The runtime-owned-link coexistence stage passes for CUDA AOS with each CPU
-   executor; see the evidence above. Explicit WirePlumber realization and its
-   ownership-transfer gates below are not implemented.
-   Preserve exact owner identities, negotiation order/passive links, native
-   controls and held-source admission. Check pending withdrawal, owner replacement
-   and runtime/WirePlumber loss before transferring link lifetime. Reuse existing
-   artifacts and compare outputs; no new calibration campaign is needed just to
-   establish session-manager compatibility. Judge whether the transfer reduces
-   maintained responsibility before selecting it.
-   Include AOS HIL on that same core with both CPU FGN and CPU JFG using existing
-   artifacts. Check matched frame/command sequences, units, pause/reset, GUI/CLI
-   absence, stale/duplicate commands across reset and simulator/endpoint loss.
-   A source-to-discard test alone does not establish HIL participation.
+The isolated FITS/discard compatibility and Copper runtime-owned-link
+coexistence steps pass within their recorded scopes. Explicit WirePlumber link
+realization and separate owner service supervision are still pending. The
+[current roadmap](roadmap.md#current-work) owns delivery order:
+
+1. Correct graceful fault teardown using the preserved link/owner-loss cases.
+   Existing bounded cleanup is not a claim of graceful owner shutdown.
+2. Qualify WirePlumber connection realization before RTC admission for one
+   existing Copper session. Use existing WirePlumber/PipeWire facilities and
+   native control contracts. Preserve exact owner identities, negotiation order,
+   passive links and held-source admission. Check pending withdrawal, unload/retry,
+   delayed callbacks, owner replacement and runtime/WirePlumber/core loss before
+   transferring link lifetime. Define who owns each link during the transition.
+   Use CUDA AOS with each CPU executor and existing artifacts; source-to-discard
+   alone does not establish HIL participation or scientific equivalence.
 3. Migrate process supervision separately to systemd user services, including
    optional AOS activation on the same core. Preserve required-owner failure
    handling, held startup, fresh readmission and actual per-thread placement.
    Check start, stop, reset, owner failure and GUI/CLI absence before claiming
    deployment parity. Process restart alone never authorizes acquisition.
-4. Remove redundant supervision and registry/link code only after that parity.
-   Keep the existing scientific packages and graph configurations intact.
+4. Remove redundant supervision and registry/link code after the respective
+   parity gates. Keep scientific packages, graph configurations and native
+   controls intact. Leave the desktop session and unchanged HEART untouched.
 
-The first isolated FITS/discard step passes within its recorded scope. The RTC/AOS
-connection pilot and ownership transfers remain proposed, not completed. Existing
-qualification results retain their recorded scope; see
-[current work](roadmap.md#current-work).
+No new graph language, private command bus or frame scheduler is selected by
+this responsibility split. General multiple-endpoint AOS and timing qualification
+retain their separate gates.
+
 Timing qualification remains a separate gate: define the offered camera/readout
 pattern, age/loss/overload contract and resource budget, and measure concurrent
 owner-reaching controls as well as independently paced ingress. Lockstep HIL

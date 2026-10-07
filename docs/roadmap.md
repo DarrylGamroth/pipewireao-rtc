@@ -25,7 +25,10 @@ general process/session infrastructure, with AOS activated as the simulated
 instrument. [Ecosystem integration](ECOSYSTEM_INTEGRATION.md) describes existing
 ownership and the proposed transfer. The accepted application split keeps RTC
 lifecycle logic in a headless runtime, with GUI and CLI clients using the same
-native controls; WirePlumberAO supplies discovery and connection policy.
+native controls. The selected target assigns external session-link realization
+and lifetime to WirePlumberAO, and service supervision to systemd. RTC link
+creation and child supervision remain the working migration state until their
+separate parity gates pass; the observer-only pilot is not the final target.
 The isolated complete-frame WirePlumber compatibility fixture passes discovery,
 format/metadata parsing, explicit linking, exact delivery and basic teardown.
 The Copper CUDA AOS pilot also passes coexistence with CPU FGN and CPU JFG,
@@ -49,8 +52,10 @@ current deployment and controls remain in use.
 
 [Adversarial architecture review](APPLICATION_ARCHITECTURE_REVIEW.md) identifies
 conditional link/process ownership migration gates and separate timing questions.
-The pilot retains current FGN/JFG hosting and native controls; transfer is chosen
+The pilot retains current FGN/JFG hosting and native controls; ownership changes
 only after compatibility, behavioral parity and reduced maintained responsibility.
+The current observer startup order is an implementation boundary to address,
+not evidence that WirePlumber cannot manage the declared session links.
 The pilot must also admit the existing AOS HIL owner on the same core with both
 CPU FGN and CPU JFG, preserving matched endpoint identities, frame/command
 sequencing, coordinated controls and required-owner failure handling.
@@ -58,6 +63,26 @@ AOS instances may provide multiple sources and sinks. Admit the declared require
 endpoint set by exact owner and role; optional observation endpoints must not
 gate progress. The existing single-exchange simulation does not qualify a general
 multiple-endpoint adapter or mixed-rate plant synchronization.
+
+### Next integration increment
+
+Use each component for its intended purpose as selected in the
+[architecture boundary](architecture.md#accepted-workstation-integration-boundary).
+
+1. Fix graceful fault teardown against the preserved required-link/owner-loss
+   cases; bounded process cleanup has passed, graceful shutdown has not.
+2. Qualify pre-admission WirePlumber realization and realization-scoped withdrawal
+   for the existing Copper CPU FGN/JFG sessions with CUDA AOS. Preserve held
+   sources, exact identities, negotiation/passive semantics, native controls and
+   fresh admission; check cancellation, unload/retry and manager/runtime/core loss.
+3. Move child-process supervision to systemd user services as a separate parity
+   step. RTC scientific readiness and acquisition coordination remain in the
+   headless runtime. A restarted process does not imply scientific readiness.
+4. Remove redundant link/supervision code only after its replacement passes the
+   corresponding gates. Keep existing scientific configurations and artifacts.
+
+The remaining qualification list below stays applicable; reuse existing evidence
+and execute only checks affected by each responsibility transfer.
 
 ### Observed progress
 
