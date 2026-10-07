@@ -28,7 +28,8 @@ format.
 | **AOC** | Prepare probes, estimate interaction matrices, construct reconstructors and calculate calibration diagnostics | Numerical plans, workspaces and results; acquisition uses the deployed instrument endpoints |
 | **WirePlumber / proposed WirePlumberAO profile** | Discover objects, apply session policy and realize declared links using the existing WirePlumber framework | PipeWire registry, properties, SPA POD parameters and links |
 | **systemd** | Start, stop and supervise processes; apply resource and scheduling limits | User services and, where configured, administrator-provisioned resources |
-| **RTC application and workstation GUI** | Select the instrument and graph, coordinate readiness and acquisition, expose domain controls and show status | Existing native controls; the GUI remains optional |
+| **Headless RTC runtime** | Own the RTC lifecycle, scientific readiness, acquisition coordination and artifact adoption | Existing native controls; operation continues without a GUI or CLI client |
+| **Workstation GUI and CLI tools** | Edit/select configurations, request lifecycle and property/parameter changes, and observe status | Clients of the same headless runtime and native control contracts |
 
 FGN and JFG are alternative implementations of a processing role. A session can
 contain either or both when their port contracts agree. Matching algorithms,
@@ -72,25 +73,56 @@ flowchart TD
     Systemd["systemd user services"]
     Core["Selected PipeWireAO core"]
     WP["WirePlumber with AO profile"]
-    Owners["RTC and optional AOS processes"]
-    Controller["Thin RTC domain controller"]
-    Clients["Optional GUI and calibration client"]
+    Owners["FGN/JFG and optional AOS owners"]
+    Runtime["Headless RTC runtime"]
+    Clients["GUI, CLI and calibration clients"]
     Systemd --> Core
     Systemd --> WP
     Systemd --> Owners
-    Clients --> Controller
-    Controller --> WP
-    Controller --> Owners
+    Systemd --> Runtime
+    Clients --> Runtime
+    Runtime --> WP
+    Runtime --> Owners
     WP --> Core
     Owners --> Core
 ```
 
 This is a target ownership diagram, not the current process topology. The
-controller-to-WirePlumber interface remains to be selected using existing
+runtime-to-WirePlumber interface remains to be selected using existing
 WirePlumber facilities. It is not a proposed new private control protocol.
-The thin controller means the retained RTC admission and lifecycle logic, not
-a requirement to add another daemon. Its placement in the existing application
-or AO policy should follow the compatibility experiment.
+
+The accepted split keeps RTC lifecycle logic in the headless runtime.
+WirePlumberAO supplies instrument discovery, availability and connection policy.
+It does not become the scientific lifecycle owner. The runtime retains readiness,
+source hold/release, reset coordination, artifact admission and required-owner
+failure handling. Scientific owners still perform preparation and adoption.
+
+### GUI and command-line control
+
+The GUI edits the project and controls a running session. Command-line tools
+must be able to select that same session and use the same native operations,
+admission checks and completion semantics. There is one lifecycle owner across
+both clients. Disconnecting or terminating either client does not stop an
+otherwise running RTC. Clients request a stop through an explicit lifecycle
+operation.
+
+Lifecycle, status, properties and parameter publication already have native
+contracts. The existing `pipewireao-rtc-deploy` CLI exposes `sessions`,
+`select-session` and `control`; see [deployment usage](JULIA_DEPLOYMENT_USAGE.md)
+and [supervisor controls](NATIVE_SUPERVISOR_CONTROL.md). For example, the existing
+installed CLI can list sessions and query one exact session, with
+`RTC_SESSION_UUID` set to the selected session's UUID:
+
+```sh
+pipewireao-rtc-deploy sessions
+pipewireao-rtc-deploy control --session "$RTC_SESSION_UUID" -- status
+```
+
+This records an existing interface, not a claim that every desired operator
+workflow has been qualified. Future GUI and CLI actions should extend the same
+public contracts. Saved project edits do not silently modify an active graph;
+the runtime must admit and report the requested change. Live controls use native
+PipeWire serialization even when a CLI renders its result as JSON.
 
 ### Running an RTC
 
@@ -113,7 +145,7 @@ and linking into WirePlumber should preserve these semantics.
 `After=` orders systemd service startup. It does not establish that a graph has
 prepared its reconstructor, completed Julia warmup or negotiated its ports.
 WirePlumber object activation likewise does not establish scientific readiness.
-The RTC application retains that domain-level admission responsibility.
+The headless RTC runtime retains that domain-level admission responsibility.
 
 Systemd can provide the process CPU envelope and scheduling/memory-lock limits.
 Executor code retains per-thread placement and verifies its actual workers.
@@ -212,13 +244,18 @@ and module paths. It should not replace or disturb the desktop audio session.
 | --- | --- | --- |
 | Private core and child-process startup, termination and reaping | Julia deployment supervisor | systemd services, with existing admission coordination retained |
 | Registry tracking and realization of declared session links | Rust RTC runner | WirePlumber object and policy infrastructure |
-| Scientific readiness, source hold/release and reset coordination | RTC supervisor/runner and scientific owners | Thin RTC domain controller and scientific owners |
+| Scientific readiness, source hold/release and reset coordination | RTC supervisor/runner and scientific owners | Headless RTC runtime and scientific owners |
 | NDArray buffers, scheduling and internal graph execution | PipeWireAO, FGN and JFG | Same existing components |
 | Plant simulation and instrument calibration | AOS/adapter and Julia acquisition application/AOC | Same existing components |
-| Optional operator interface | Workstation GUI | Same GUI using native controls and session observation |
+| Optional operator interface | Workstation GUI and existing CLI | GUI and CLI clients of the same headless runtime using native controls |
 
 Only one component should own each session link and lifecycle action during
 migration. Preserve existing controls until their replacement is demonstrated.
+The runtime declares the required session; WirePlumberAO realizes its connections
+under AO policy and reports actual object/link state. The runtime uses those
+observations for admission and failure handling. Neither GUI nor CLI owns links
+that the admitted session depends on.
+
 Breaking the large Rust source files into modules is useful after establishing
 this boundary; copying all their responsibilities into a new manager would retain
 the duplication.

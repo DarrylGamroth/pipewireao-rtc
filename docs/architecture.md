@@ -112,6 +112,26 @@ boundary to ordinary PipeWire nodes. The RTC may place either the maintained
 between those endpoints without knowing how the plant or controller is
 implemented.
 
+## Accepted workstation integration boundary
+
+On 2026-10-06 the user selected a headless runtime as the RTC lifecycle owner,
+with the GUI acting as its editor/controller and command-line tools providing
+the same control access. Clients use the existing native control contracts and
+completion semantics. Scientific readiness, source admission, reset and artifact
+adoption remain runtime/owner responsibilities; client presence does not gate
+processing or own the lifecycle.
+
+The selected WirePlumberAO direction supplies instrument discovery, availability
+and declared connection policy. Systemd supplies process supervision and resource
+limits. The runtime consumes actual session state to admit acquisition and handle
+required-object failures. Session links have one designated owner; the runtime,
+GUI and WirePlumber must not independently manage the same required link.
+
+This selects the ownership boundary for the next integration increment. It does
+not claim WirePlumber compatibility or alter the implementation evidence for the
+existing runner/supervisor. See [ecosystem integration](ECOSYSTEM_INTEGRATION.md)
+for the proposed transfer and its compatibility checks.
+
 ## Active scope
 
 The active implementation begins with:
@@ -160,8 +180,7 @@ The following are not part of the active baseline:
 - row-block, region-block, fixed-worker, or multi-batch scheduling;
 - runner-hosted Julia graph execution;
 - remote control, a web gateway, or WebRTC preview;
-- WirePlumber-specific application logic, host-wide scheduling changes,
-  NUMA policy, or strict-island qualification; and
+- host-wide scheduling changes, NUMA policy, or strict-island qualification; and
 - operational, safety, deadline, tail-latency, or target-host qualification
   claims.
 

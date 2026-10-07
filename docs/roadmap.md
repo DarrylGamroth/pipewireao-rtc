@@ -23,8 +23,11 @@ numerical, allocation and rate/latency qualification remain separate.
 The user-selected integration direction is to reuse systemd and WirePlumber for
 general process/session infrastructure, with AOS activated as the simulated
 instrument. [Ecosystem integration](ECOSYSTEM_INTEGRATION.md) describes existing
-ownership and the proposed transfer. WirePlumber compatibility and that transfer
-are not implemented or qualified; current deployment and controls remain in use.
+ownership and the proposed transfer. The accepted application split keeps RTC
+lifecycle logic in a headless runtime, with GUI and CLI clients using the same
+native controls; WirePlumberAO supplies discovery and connection policy.
+WirePlumber compatibility and that transfer are not implemented or qualified;
+current deployment and controls remain in use.
 
 ### Observed progress
 
