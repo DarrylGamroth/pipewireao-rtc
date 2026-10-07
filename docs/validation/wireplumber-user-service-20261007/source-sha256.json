@@ -1,0 +1,8 @@
+{
+  "deployment/qualify_wireplumber_service.jl": "4c86200d13267741747de33cfb19d581f64504b0d04ba260b41f30e31f3889d0",
+  "deployment/wireplumber/service.jl": "9f4d946320c9c3a140251fd5f2efe53cb4d609fae7ae8ad3ace5451c4b9af233",
+  "deployment/wireplumber/session.jl": "bacffd3a424259e5c345cec060b6a846a576af92c89e3b1839d94bef4dc85ee6",
+  "deployment/wireplumber/hil-observer.lua": "a123cb7887e3aff77b00fc60d8a6e1dbb0d65c9d3f1687875edc9b93513793bc",
+  "deployment/wireplumber/pipewireao-wireplumber@.service.in": "6dd9b54e50e6da0beb10ca5e3fc65edb61cf80b5bd237638030d82f151081778",
+  "jfg-tested-coordinator.jl": "5bdd73890d7c77b918c83f02e4f8d1242360f6800acd669d2016801cfe603d9f"
+}

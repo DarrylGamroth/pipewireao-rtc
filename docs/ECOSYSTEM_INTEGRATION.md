@@ -324,6 +324,15 @@ held startup. Such an observer must not stop the RTC when it exits or authorize
 source release when it restarts. Separate scientific-owner units retain the
 failure-cohort gates in the architecture review.
 
+The [optional Copper user-service increment](validation/wireplumber-user-service-20261007/README.md)
+now implements that boundary. A copied companion runs upstream WirePlumber
+directly under systemd; its Julia ExecStartPre adapter binds fresh configuration
+to the active RTC MainPID, exact native incarnation and admitted topology.
+`BindsTo`/`After`/`PartOf` propagate RTC lifecycle to the observer without reverse
+control. Both CPU executors with CUDA AOS pass the scoped lifecycle, prefix and
+cleanup gates. The runtime still supervises its scientific owners and owns all
+links; separate owner units and connection policy transfer remain unimplemented.
+
 ## Current implementation and proposed transfer
 
 | Work | Current owner | Proposed owner |

@@ -28,6 +28,14 @@ preserved runtime-owned links after optional WirePlumber loss. Simulator tails
 report zero Julia heap allocation/GC. Required-owner failure, process/link
 ownership transfer and rate/latency qualification remain separate.
 
+[Optional WirePlumber user service, 2026-10-07](validation/wireplumber-user-service-20261007/README.md)
+records the installed Copper observer companion for CPU FGN/JFG with CUDA AOS.
+Both executors pass automatic observer restart with the existing RTC unit,
+observer stop/death independence, two 512-exchange incarnations, exact retained
+baseline prefixes, zero simulator heap/GC tails and cleanup after whole-cohort
+exit. It does not transfer link/scientific ownership or newly qualify isolated
+required-owner loss, multiple endpoints, release packaging or rate/latency.
+
 [Installed Copper qualification, 2026-10-06](validation/copper-main-20261006/README.md)
 records refreshed main-runtime/SDK detector and DM trajectories, observer
 death/replacement and stall, simulator Julia heap counters and independent

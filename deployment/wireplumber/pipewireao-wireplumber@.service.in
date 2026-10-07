@@ -1,0 +1,27 @@
+[Unit]
+Description=PipeWireAO WirePlumber observer %i
+BindsTo=pipewireao-rtc@%i.service
+After=pipewireao-rtc@%i.service
+PartOf=pipewireao-rtc@%i.service
+
+[Service]
+Type=simple
+ExecStartPre=@PREPARE@ prepare @PACKAGE@ %t/pipewireao-rtc-%i pipewireao-rtc@%i.service %t/pipewireao-wireplumber-%i @PREFIX@
+ExecStart=@EXECUTABLE@ -c wireplumber.conf -p ao-hil
+RuntimeDirectory=pipewireao-wireplumber-%i
+RuntimeDirectoryMode=0700
+UMask=0077
+CPUAffinity=@CPU@
+Environment=@LIBRARIES@
+Environment=@MODULES@
+Environment=@DATA@
+Environment=@AO_MODULES@
+Environment=@AO_SPA@
+Environment=WIREPLUMBER_CONFIG_DIR=%t/pipewireao-wireplumber-%i
+Environment=WIREPLUMBER_DEBUG=W
+Environment=OPENBLAS_NUM_THREADS=1 JULIA_NUM_THREADS=1,0 JULIA_PKG_OFFLINE=true
+UnsetEnvironment=PIPEWIRE_REMOTE PIPEWIREAO_REMOTE PIPEWIREAO_RUNTIME_DIR NOTIFY_SOCKET
+KillMode=control-group
+TimeoutStartSec=120
+TimeoutStopSec=15
+Restart=no

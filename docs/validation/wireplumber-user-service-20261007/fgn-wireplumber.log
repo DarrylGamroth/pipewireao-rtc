@@ -1,0 +1,1272 @@
+Starting pipewireao-wireplumber@wp-fgn-20261007-v3.service - PipeWireAO WirePlumber observer wp-fgn-20261007-v3...
+WIREPLUMBER_PREPARED unit=pipewireao-rtc@wp-fgn-20261007-v3.service owner=143996 uuid=e61737f9-9220-419c-b449-35ae79aab748
+Started pipewireao-wireplumber@wp-fgn-20261007-v3.service - PipeWireAO WirePlumber observer wp-fgn-20261007-v3.
+pw.context: 0x55bf615f9c30: can't load dbus library: support/libspa-dbus
+HIL_OBSERVER_STARTED 9
+HIL_OBJECT link-47 47 47
+HIL_OBJECT link-48 48 48
+HIL_OBJECT link-49 49 49
+HIL_FORMAT port-24
+	elementType:
+		1: U16_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-24 schema
+HIL_REJECTED port-24 shape
+HIL_REJECTED port-24 elementType
+HIL_REJECTED port-24 layout
+HIL_REJECTED port-24 rate
+HIL_OBJECT port-24 24 24
+HIL_FORMAT port-26
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-26 schema
+HIL_REJECTED port-26 shape
+HIL_REJECTED port-26 elementType
+HIL_REJECTED port-26 layout
+HIL_REJECTED port-26 rate
+HIL_OBJECT port-26 26 26
+HIL_FORMAT port-30
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		denom: 1
+		num: 500
+		pod_type: Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-30 schema
+HIL_REJECTED port-30 shape
+HIL_REJECTED port-30 elementType
+HIL_REJECTED port-30 layout
+HIL_REJECTED port-30 rate
+HIL_OBJECT port-30 30 30
+HIL_FORMAT port-33
+	elementType:
+		1: U16_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-33 schema
+HIL_REJECTED port-33 shape
+HIL_REJECTED port-33 elementType
+HIL_REJECTED port-33 layout
+HIL_REJECTED port-33 rate
+HIL_OBJECT port-33 33 33
+HIL_FORMAT port-38
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		denom: 1
+		num: 500
+		pod_type: Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-38 schema
+HIL_REJECTED port-38 shape
+HIL_REJECTED port-38 elementType
+HIL_REJECTED port-38 layout
+HIL_REJECTED port-38 rate
+HIL_OBJECT port-38 38 38
+HIL_FORMAT port-46
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-46 schema
+HIL_REJECTED port-46 shape
+HIL_REJECTED port-46 elementType
+HIL_REJECTED port-46 layout
+HIL_REJECTED port-46 rate
+HIL_OBJECT port-46 46 46
+HIL_COHORT_READY
+Stopping pipewireao-wireplumber@wp-fgn-20261007-v3.service - PipeWireAO WirePlumber observer wp-fgn-20261007-v3...
+HIL_COHORT_LOST link-49
+HIL_COHORT_LOST link-48
+HIL_COHORT_LOST link-47
+HIL_COHORT_LOST port-46
+HIL_COHORT_LOST port-38
+HIL_COHORT_LOST port-33
+HIL_COHORT_LOST port-30
+HIL_COHORT_LOST port-26
+HIL_COHORT_LOST port-24
+Stopped pipewireao-wireplumber@wp-fgn-20261007-v3.service - PipeWireAO WirePlumber observer wp-fgn-20261007-v3.
+pipewireao-wireplumber@wp-fgn-20261007-v3.service: Consumed 15.536s CPU time, 575.7M memory peak.
+Starting pipewireao-wireplumber@wp-fgn-20261007-v3.service - PipeWireAO WirePlumber observer wp-fgn-20261007-v3...
+WIREPLUMBER_PREPARED unit=pipewireao-rtc@wp-fgn-20261007-v3.service owner=143996 uuid=e61737f9-9220-419c-b449-35ae79aab748
+Started pipewireao-wireplumber@wp-fgn-20261007-v3.service - PipeWireAO WirePlumber observer wp-fgn-20261007-v3.
+pw.context: 0x55d0b1c9dc30: can't load dbus library: support/libspa-dbus
+HIL_OBSERVER_STARTED 9
+HIL_OBJECT link-47 47 47
+HIL_OBJECT link-48 48 48
+HIL_OBJECT link-49 49 49
+HIL_FORMAT port-24
+	elementType:
+		1: U16_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-24 schema
+HIL_REJECTED port-24 shape
+HIL_REJECTED port-24 elementType
+HIL_REJECTED port-24 layout
+HIL_REJECTED port-24 rate
+HIL_OBJECT port-24 24 24
+HIL_FORMAT port-26
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-26 schema
+HIL_REJECTED port-26 shape
+HIL_REJECTED port-26 elementType
+HIL_REJECTED port-26 layout
+HIL_REJECTED port-26 rate
+HIL_OBJECT port-26 26 26
+HIL_FORMAT port-30
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		denom: 1
+		num: 500
+		pod_type: Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-30 schema
+HIL_REJECTED port-30 shape
+HIL_REJECTED port-30 elementType
+HIL_REJECTED port-30 layout
+HIL_REJECTED port-30 rate
+HIL_OBJECT port-30 30 30
+HIL_FORMAT port-33
+	elementType:
+		1: U16_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-33 schema
+HIL_REJECTED port-33 shape
+HIL_REJECTED port-33 elementType
+HIL_REJECTED port-33 layout
+HIL_REJECTED port-33 rate
+HIL_OBJECT port-33 33 33
+HIL_FORMAT port-38
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		denom: 1
+		num: 500
+		pod_type: Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-38 schema
+HIL_REJECTED port-38 shape
+HIL_REJECTED port-38 elementType
+HIL_REJECTED port-38 layout
+HIL_REJECTED port-38 rate
+HIL_OBJECT port-38 38 38
+HIL_FORMAT port-46
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-46 schema
+HIL_REJECTED port-46 shape
+HIL_REJECTED port-46 elementType
+HIL_REJECTED port-46 layout
+HIL_REJECTED port-46 rate
+HIL_OBJECT port-46 46 46
+HIL_COHORT_READY
+pipewireao-wireplumber@wp-fgn-20261007-v3.service: Sent signal SIGKILL to main process 146051 (wireplumber) on client request.
+pipewireao-wireplumber@wp-fgn-20261007-v3.service: Main process exited, code=killed, status=9/KILL
+pipewireao-wireplumber@wp-fgn-20261007-v3.service: Failed with result 'signal'.
+pipewireao-wireplumber@wp-fgn-20261007-v3.service: Consumed 15.563s CPU time, 584.2M memory peak.
+Starting pipewireao-wireplumber@wp-fgn-20261007-v3.service - PipeWireAO WirePlumber observer wp-fgn-20261007-v3...
+WIREPLUMBER_PREPARED unit=pipewireao-rtc@wp-fgn-20261007-v3.service owner=143996 uuid=e61737f9-9220-419c-b449-35ae79aab748
+Started pipewireao-wireplumber@wp-fgn-20261007-v3.service - PipeWireAO WirePlumber observer wp-fgn-20261007-v3.
+pw.context: 0x5595b1500c30: can't load dbus library: support/libspa-dbus
+HIL_OBSERVER_STARTED 9
+HIL_OBJECT link-47 47 47
+HIL_OBJECT link-48 48 48
+HIL_OBJECT link-49 49 49
+HIL_FORMAT port-24
+	elementType:
+		1: U16_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-24 schema
+HIL_REJECTED port-24 shape
+HIL_REJECTED port-24 elementType
+HIL_REJECTED port-24 layout
+HIL_REJECTED port-24 rate
+HIL_OBJECT port-24 24 24
+HIL_FORMAT port-26
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-26 schema
+HIL_REJECTED port-26 shape
+HIL_REJECTED port-26 elementType
+HIL_REJECTED port-26 layout
+HIL_REJECTED port-26 rate
+HIL_OBJECT port-26 26 26
+HIL_FORMAT port-30
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		denom: 1
+		num: 500
+		pod_type: Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-30 schema
+HIL_REJECTED port-30 shape
+HIL_REJECTED port-30 elementType
+HIL_REJECTED port-30 layout
+HIL_REJECTED port-30 rate
+HIL_OBJECT port-30 30 30
+HIL_FORMAT port-33
+	elementType:
+		1: U16_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-33 schema
+HIL_REJECTED port-33 shape
+HIL_REJECTED port-33 elementType
+HIL_REJECTED port-33 layout
+HIL_REJECTED port-33 rate
+HIL_OBJECT port-33 33 33
+HIL_FORMAT port-38
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		denom: 1
+		num: 500
+		pod_type: Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-38 schema
+HIL_REJECTED port-38 shape
+HIL_REJECTED port-38 elementType
+HIL_REJECTED port-38 layout
+HIL_REJECTED port-38 rate
+HIL_OBJECT port-38 38 38
+HIL_FORMAT port-46
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-46 schema
+HIL_REJECTED port-46 shape
+HIL_REJECTED port-46 elementType
+HIL_REJECTED port-46 layout
+HIL_REJECTED port-46 rate
+HIL_OBJECT port-46 46 46
+HIL_COHORT_READY
+HIL_COHORT_LOST link-49
+Stopping pipewireao-wireplumber@wp-fgn-20261007-v3.service - PipeWireAO WirePlumber observer wp-fgn-20261007-v3...
+HIL_COHORT_LOST link-48
+HIL_COHORT_LOST link-47
+HIL_COHORT_LOST port-46
+HIL_COHORT_LOST port-38
+HIL_COHORT_LOST port-33
+HIL_COHORT_LOST port-30
+HIL_COHORT_LOST port-26
+HIL_COHORT_LOST port-24
+Stopped pipewireao-wireplumber@wp-fgn-20261007-v3.service - PipeWireAO WirePlumber observer wp-fgn-20261007-v3.
+pipewireao-wireplumber@wp-fgn-20261007-v3.service: Consumed 15.603s CPU time, 584.5M memory peak.
+Starting pipewireao-wireplumber@wp-fgn-20261007-v3.service - PipeWireAO WirePlumber observer wp-fgn-20261007-v3...
+WIREPLUMBER_PREPARED unit=pipewireao-rtc@wp-fgn-20261007-v3.service owner=146277 uuid=a18060ca-4899-4f1c-a617-dc9f779b7741
+Started pipewireao-wireplumber@wp-fgn-20261007-v3.service - PipeWireAO WirePlumber observer wp-fgn-20261007-v3.
+pw.context: 0x56497c99fc30: can't load dbus library: support/libspa-dbus
+HIL_OBSERVER_STARTED 9
+HIL_OBJECT link-47 47 47
+HIL_OBJECT link-48 48 48
+HIL_OBJECT link-50 50 50
+HIL_FORMAT port-24
+	elementType:
+		1: U16_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-24 schema
+HIL_REJECTED port-24 shape
+HIL_REJECTED port-24 elementType
+HIL_REJECTED port-24 layout
+HIL_REJECTED port-24 rate
+HIL_OBJECT port-24 24 24
+HIL_FORMAT port-26
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-26 schema
+HIL_REJECTED port-26 shape
+HIL_REJECTED port-26 elementType
+HIL_REJECTED port-26 layout
+HIL_REJECTED port-26 rate
+HIL_OBJECT port-26 26 26
+HIL_FORMAT port-30
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		denom: 1
+		num: 500
+		pod_type: Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-30 schema
+HIL_REJECTED port-30 shape
+HIL_REJECTED port-30 elementType
+HIL_REJECTED port-30 layout
+HIL_REJECTED port-30 rate
+HIL_OBJECT port-30 30 30
+HIL_FORMAT port-33
+	elementType:
+		1: U16_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-33 schema
+HIL_REJECTED port-33 shape
+HIL_REJECTED port-33 elementType
+HIL_REJECTED port-33 layout
+HIL_REJECTED port-33 rate
+HIL_OBJECT port-33 33 33
+HIL_FORMAT port-38
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		denom: 1
+		num: 500
+		pod_type: Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-38 schema
+HIL_REJECTED port-38 shape
+HIL_REJECTED port-38 elementType
+HIL_REJECTED port-38 layout
+HIL_REJECTED port-38 rate
+HIL_OBJECT port-38 38 38
+HIL_FORMAT port-46
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-46 schema
+HIL_REJECTED port-46 shape
+HIL_REJECTED port-46 elementType
+HIL_REJECTED port-46 layout
+HIL_REJECTED port-46 rate
+HIL_OBJECT port-46 46 46
+HIL_COHORT_READY
+HIL_COHORT_LOST link-50
+Stopping pipewireao-wireplumber@wp-fgn-20261007-v3.service - PipeWireAO WirePlumber observer wp-fgn-20261007-v3...
+HIL_COHORT_LOST link-48
+HIL_COHORT_LOST link-47
+HIL_COHORT_LOST port-46
+HIL_COHORT_LOST port-38
+HIL_COHORT_LOST port-33
+HIL_COHORT_LOST port-30
+HIL_COHORT_LOST port-26
+HIL_COHORT_LOST port-24
+Stopped pipewireao-wireplumber@wp-fgn-20261007-v3.service - PipeWireAO WirePlumber observer wp-fgn-20261007-v3.
+pipewireao-wireplumber@wp-fgn-20261007-v3.service: Consumed 16.036s CPU time, 613.8M memory peak.
+Starting pipewireao-wireplumber@wp-fgn-20261007-v3.service - PipeWireAO WirePlumber observer wp-fgn-20261007-v3...
+WIREPLUMBER_PREPARED unit=pipewireao-rtc@wp-fgn-20261007-v3.service owner=146277 uuid=a18060ca-4899-4f1c-a617-dc9f779b7741
+Started pipewireao-wireplumber@wp-fgn-20261007-v3.service - PipeWireAO WirePlumber observer wp-fgn-20261007-v3.
+pw.context: 0x55fa3041ec30: can't load dbus library: support/libspa-dbus
+HIL_OBSERVER_STARTED 9
+HIL_OBJECT link-47 47 47
+HIL_OBJECT link-48 48 48
+HIL_OBJECT link-50 50 50
+HIL_FORMAT port-24
+	elementType:
+		1: U16_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-24 schema
+HIL_REJECTED port-24 shape
+HIL_REJECTED port-24 elementType
+HIL_REJECTED port-24 layout
+HIL_REJECTED port-24 rate
+HIL_OBJECT port-24 24 24
+HIL_FORMAT port-26
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-26 schema
+HIL_REJECTED port-26 shape
+HIL_REJECTED port-26 elementType
+HIL_REJECTED port-26 layout
+HIL_REJECTED port-26 rate
+HIL_OBJECT port-26 26 26
+HIL_FORMAT port-30
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		denom: 1
+		num: 500
+		pod_type: Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-30 schema
+HIL_REJECTED port-30 shape
+HIL_REJECTED port-30 elementType
+HIL_REJECTED port-30 layout
+HIL_REJECTED port-30 rate
+HIL_OBJECT port-30 30 30
+HIL_FORMAT port-33
+	elementType:
+		1: U16_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-33 schema
+HIL_REJECTED port-33 shape
+HIL_REJECTED port-33 elementType
+HIL_REJECTED port-33 layout
+HIL_REJECTED port-33 rate
+HIL_OBJECT port-33 33 33
+HIL_FORMAT port-38
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		denom: 1
+		num: 500
+		pod_type: Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-38 schema
+HIL_REJECTED port-38 shape
+HIL_REJECTED port-38 elementType
+HIL_REJECTED port-38 layout
+HIL_REJECTED port-38 rate
+HIL_OBJECT port-38 38 38
+HIL_FORMAT port-46
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-46 schema
+HIL_REJECTED port-46 shape
+HIL_REJECTED port-46 elementType
+HIL_REJECTED port-46 layout
+HIL_REJECTED port-46 rate
+HIL_OBJECT port-46 46 46
+HIL_COHORT_READY
+pipewireao-wireplumber@wp-fgn-20261007-v3.service: Sent signal SIGKILL to main process 148543 (wireplumber) on client request.
+pipewireao-wireplumber@wp-fgn-20261007-v3.service: Main process exited, code=killed, status=9/KILL
+pipewireao-wireplumber@wp-fgn-20261007-v3.service: Failed with result 'signal'.
+pipewireao-wireplumber@wp-fgn-20261007-v3.service: Consumed 15.863s CPU time, 578.7M memory peak.
+Starting pipewireao-wireplumber@wp-fgn-20261007-v3.service - PipeWireAO WirePlumber observer wp-fgn-20261007-v3...
+WIREPLUMBER_PREPARED unit=pipewireao-rtc@wp-fgn-20261007-v3.service owner=146277 uuid=a18060ca-4899-4f1c-a617-dc9f779b7741
+Started pipewireao-wireplumber@wp-fgn-20261007-v3.service - PipeWireAO WirePlumber observer wp-fgn-20261007-v3.
+pw.context: 0x563c32656c30: can't load dbus library: support/libspa-dbus
+HIL_OBSERVER_STARTED 9
+HIL_OBJECT link-47 47 47
+HIL_OBJECT link-48 48 48
+HIL_OBJECT link-50 50 50
+HIL_FORMAT port-24
+	elementType:
+		1: U16_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-24 schema
+HIL_REJECTED port-24 shape
+HIL_REJECTED port-24 elementType
+HIL_REJECTED port-24 layout
+HIL_REJECTED port-24 rate
+HIL_OBJECT port-24 24 24
+HIL_FORMAT port-26
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-26 schema
+HIL_REJECTED port-26 shape
+HIL_REJECTED port-26 elementType
+HIL_REJECTED port-26 layout
+HIL_REJECTED port-26 rate
+HIL_OBJECT port-26 26 26
+HIL_FORMAT port-30
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		denom: 1
+		num: 500
+		pod_type: Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-30 schema
+HIL_REJECTED port-30 shape
+HIL_REJECTED port-30 elementType
+HIL_REJECTED port-30 layout
+HIL_REJECTED port-30 rate
+HIL_OBJECT port-30 30 30
+HIL_FORMAT port-33
+	elementType:
+		1: U16_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-33 schema
+HIL_REJECTED port-33 shape
+HIL_REJECTED port-33 elementType
+HIL_REJECTED port-33 layout
+HIL_REJECTED port-33 rate
+HIL_OBJECT port-33 33 33
+HIL_FORMAT port-38
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		denom: 1
+		num: 500
+		pod_type: Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-38 schema
+HIL_REJECTED port-38 shape
+HIL_REJECTED port-38 elementType
+HIL_REJECTED port-38 layout
+HIL_REJECTED port-38 rate
+HIL_OBJECT port-38 38 38
+HIL_FORMAT port-46
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-46 schema
+HIL_REJECTED port-46 shape
+HIL_REJECTED port-46 elementType
+HIL_REJECTED port-46 layout
+HIL_REJECTED port-46 rate
+HIL_OBJECT port-46 46 46
+HIL_COHORT_READY
+HIL_COHORT_LOST link-50
+HIL_COHORT_LOST link-48
+HIL_COHORT_LOST link-47
+HIL_COHORT_LOST port-46
+HIL_COHORT_LOST port-38
+HIL_COHORT_LOST port-33
+HIL_COHORT_LOST port-30
+HIL_COHORT_LOST port-26
+HIL_COHORT_LOST port-24
+pipewireao-wireplumber@wp-fgn-20261007-v3.service: Consumed 15.724s CPU time, 592.4M memory peak.

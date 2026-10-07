@@ -1,0 +1,27 @@
+[Unit]
+Description=PipeWireAO WirePlumber observer %i
+BindsTo=pipewireao-rtc@%i.service
+After=pipewireao-rtc@%i.service
+PartOf=pipewireao-rtc@%i.service
+
+[Service]
+Type=simple
+ExecStartPre="/home/dgamroth/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/bin/julia" "--startup-file=no" "--compiled-modules=existing" "--project=/tmp/rtc-graph-updates-fgn-baseline-20261006/julia" "/tmp/rtc-wp-service-fgn-v4-20261007/service.jl" prepare "/tmp/rtc-graph-updates-fgn-baseline-20261006" %t/pipewireao-rtc-%i pipewireao-rtc@%i.service %t/pipewireao-wireplumber-%i "/opt/pipewireao"
+ExecStart="/tmp/rtc-wp-service-fgn-v4-20261007/wireplumber" -c wireplumber.conf -p ao-hil
+RuntimeDirectory=pipewireao-wireplumber-%i
+RuntimeDirectoryMode=0700
+UMask=0077
+CPUAffinity=6
+Environment="LD_LIBRARY_PATH=/tmp/rtc-wp-service-fgn-v4-20261007/lib:/opt/pipewireao/lib/x86_64-linux-gnu"
+Environment="WIREPLUMBER_MODULE_DIR=/tmp/rtc-wp-service-fgn-v4-20261007/modules"
+Environment="WIREPLUMBER_DATA_DIR=/tmp/rtc-wp-service-fgn-v4-20261007"
+Environment="PIPEWIREAO_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3"
+Environment="PIPEWIREAO_SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2"
+Environment=WIREPLUMBER_CONFIG_DIR=%t/pipewireao-wireplumber-%i
+Environment=WIREPLUMBER_DEBUG=W
+Environment=OPENBLAS_NUM_THREADS=1 JULIA_NUM_THREADS=1,0 JULIA_PKG_OFFLINE=true
+UnsetEnvironment=PIPEWIRE_REMOTE PIPEWIREAO_REMOTE PIPEWIREAO_RUNTIME_DIR NOTIFY_SOCKET
+KillMode=control-group
+TimeoutStartSec=120
+TimeoutStopSec=15
+Restart=no

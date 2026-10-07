@@ -79,3 +79,58 @@ remains the scientific admission authority.
 See the [coexistence evidence](../../docs/validation/wireplumber-hil-coexistence-20261006/README.md)
 for exact allocation, numerical and ownership limits. Focused cold manifest checks
 are in `deployment/test_qualify_wireplumber_hil.jl`.
+
+## Optional user service
+
+The companion installer supports installed Copper HIL packages with an AOS
+`simulator` owner and optional `julia` graph owner. Other profiles/layouts are
+rejected for this increment. It copies the qualified upstream WirePlumber
+executable, libraries, modules and scripts, plus its Julia preparer and Lua
+observer, into a fresh destination. Execution uses those copied resources and
+the selected package's installed SDK, without repository/worktree paths.
+This private AO build selection is not a WirePlumber release package.
+
+```sh
+julia --startup-file=no --project=/path/to/installed-package/julia \
+  deployment/wireplumber/service.jl install \
+  /path/to/installed-package /path/to/wireplumber /tmp/wp-ao-pilot/build \
+  /path/to/new-companion-install /opt/pipewireao 6
+```
+
+Install the RTC's existing user unit first. Use the same instance name for its
+optional observer, with a companion installed for that exact package:
+
+```sh
+ln -s /path/to/new-companion-install/pipewireao-wireplumber@.service \
+  "$HOME/.config/systemd/user/pipewireao-wireplumber@copper-fgn.service"
+systemctl --user daemon-reload
+systemctl --user start pipewireao-wireplumber@copper-fgn.service
+systemctl --user status pipewireao-wireplumber@copper-fgn.service
+journalctl --user -u pipewireao-wireplumber@copper-fgn.service -b
+systemctl --user stop pipewireao-wireplumber@copper-fgn.service
+```
+
+`BindsTo` also starts `pipewireao-rtc@copper-fgn.service` if needed. The RTC's
+existing admission/release sequence owns that start. Its READY notification
+follows source release, so observer discovery happens after admission. Stopping
+or restarting the RTC propagates to WirePlumber; stopping, failing or restarting
+WirePlumber has no reverse lifecycle effect. `Restart=no` prevents automatic
+observer retry. Nothing is enabled at login by these commands.
+
+Every observer start queries the active RTC unit's MainPID and exact native
+supervisor incarnation, checks its selected package and admitted cohort, and
+atomically writes fresh standard WirePlumber configuration in a private
+RuntimeDirectory. No saved status file grants admission. The runtime retains
+all links, scientific format admission and source controls. The preparer runs
+only during ExecStartPre; systemd runs WirePlumber directly afterward.
+`Type=simple` active state is not cohort readiness: the current incarnation's
+`HIL_COHORT_READY` journal marker indicates completed discovery. A lost cohort
+is reported with `HIL_COHORT_LOST`; it is not automatically reconnected by name.
+
+See [service design and coverage](SERVICE_DESIGN.md) and the
+[user-service qualification](../../docs/validation/wireplumber-user-service-20261007/README.md).
+Cold service checks are in
+`test_service.jl`; `deployment/qualify_wireplumber_service.jl` uses fresh private
+user units and requires an independently qualified baseline receipt. It verifies
+observer lifecycle, native reset, an actual RTC restart transaction and unexpected
+RTC cohort exit. It does not stop unrelated services or promote timing claims.

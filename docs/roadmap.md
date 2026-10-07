@@ -6,7 +6,7 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-10-06. This section is the current delivery summary. Later sections
+Updated 2026-10-07. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
@@ -31,6 +31,10 @@ format/metadata parsing, explicit linking, exact delivery and basic teardown.
 The Copper CUDA AOS pilot also passes coexistence with CPU FGN and CPU JFG,
 held startup, native stop/reset/resume and optional WirePlumber loss while the
 runtime retains all links. Recorded prefixes match the corresponding baselines.
+An optional instance-scoped WirePlumber user service now passes both executor
+checks, including automatic restart with the existing RTC unit, observer failure
+independence, exact retained prefixes and cleanup after whole-cohort exit.
+It uses post-admission ordering; it does not change source release or link policy.
 RTC/AOS session ownership transfer remains unimplemented and unqualified;
 current deployment and controls remain in use.
 
@@ -51,6 +55,7 @@ multiple-endpoint adapter or mixed-rate plant synchronization.
 | Area | Current disposition | Evidence to read if affected |
 | --- | --- | --- |
 | WirePlumber compatibility | Unmodified 0.5.18 built against AO passes the isolated FITS/discard fixture. Copper CUDA AOS with each CPU executor passes two 512-command runs, held discovery, native stop/reset/resume, unchanged runtime-owned links after WirePlumber SIGKILL, and exact 256-frame baseline/reset prefixes. Simulator measured tails report zero Julia heap allocation/GC. Link/process ownership transfer, required-owner loss and general multiple-endpoint qualification remain open. | [Compatibility fixture](validation/wireplumber-compatibility-20261006/README.md), [Copper coexistence](validation/wireplumber-hil-coexistence-20261006/README.md) |
+| Optional WirePlumber user service | Installed companion uses the existing RTC unit's exact native incarnation. Both Copper CPU executors with CUDA AOS pass two 512-exchange incarnations, automatic observer restart after an actual RTC restart, observer stop/death independence, exact retained baseline prefixes, zero simulator heap/GC tails and cleanup after whole-cohort exit. Focused cold checks pass 33 service and 9 topology assertions. No independent-owner unit or release qualification follows. | [User-service evidence](validation/wireplumber-user-service-20261007/README.md), [service design](../deployment/wireplumber/SERVICE_DESIGN.md) |
 | Native control implementation | Reviewed changes merged to RTC main; live controls use typed native requests. Saved JSON is artifact/configuration only. | [Inventory](LIVE_CONTROL_INVENTORY.md), [integration snapshot](MAIN_INTEGRATION_20261006.md) |
 | Julia SDK/bootstrap | SDK 0.6.17 source is pushed; deployment pins that exact own revision. Paired cold runtime checks pass 232 assertions. Refreshed installed Copper CUDA simulator / CPU JFG passes lifecycle and simulator heap gates; other selected profiles and SDK registration remain open. | [Bootstrap validation](BOOTSTRAP_CONTROLLER_SEAL_VALIDATION.md), [installed Copper evidence](validation/copper-main-20261006/README.md) |
 | GUI session selection | Actual same-label installed owners selected by exact native identities, including a stopped peer; read-only picker replay passed. GUI changes are on its local main. | GUI `docs/NATIVE_HIL_GUI_PROGRESS_VALIDATION.md` |
