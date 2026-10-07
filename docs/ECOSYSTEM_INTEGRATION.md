@@ -168,6 +168,29 @@ model configuration for Classic, Copper or another supported instrument. The
 RTC graph remains an RTC graph. Its instrument binding and applicable calibration
 artifacts must match the simulated sensor, mirror and coordinate conventions.
 
+AOS HIL is a first-class session participant. It is optional when selecting the
+instrument provider, but required for the admitted session once selected. Its
+WFS source and command sink belong to the same exact simulator owner; discovery
+must not pair endpoints from different instances just because their names match.
+
+| Session concern | AOS HIL participation |
+| --- | --- |
+| Process and core | An independently supervised Julia owner joins the selected PipeWireAO core through the existing HIL adapter |
+| Preparation | Prepare/warm the selected model, backend and transport while acquisition is held; verify both endpoints and resource placement |
+| Connections | Simulated WFS source → FGN or JFG graph → simulated DM command sink, with exact shape, encoding, coordinates, units and identities |
+| Acquisition | The source is the existing lockstep graph driver; release only after complete session admission |
+| Control | GUI and CLI request coordinated start/pause/reset/stop through the headless runtime and existing native owner controls |
+| Loss/restart | Simulator or required endpoint loss revokes admission; restart prepares a fresh instance and requires readmission |
+
+Command/frame feedback stays inside the simulator owner. The external PipeWire
+plant exchange path remains acyclic: source → processor → sink. A transport
+feedback link is not needed to advance the plant; declared scientific feedback
+and observation paths retain their existing contracts. For this exchange, frame `n`
+accepts its matching command, which AOS applies to frame `n + 1`. Coordinate
+pause/reset at a completed exchange and preserve coordinated drain/reset behavior.
+The pilot must verify that stale or duplicate commands, including commands from
+before reset/restart, cannot be adopted into a new acquisition generation.
+
 The simulation process prepares the model and adapter before releasing pixels.
 The existing HIL adapter publishes WFS arrays, receives a matching DM command and
 uses it to advance the next simulated frame. Model time and wall-clock pacing
@@ -184,6 +207,18 @@ Enabling the simulator should become a workstation action backed by lifecycle
 controls and systemd services. It should not require a second RTC implementation,
 a second session core or optics calculations inside WirePlumber. The GUI can
 disconnect while the admitted RTC and simulation continue.
+
+The current supervisor already launches this owner on its selected remote with
+native bootstrap and held acquisition (`deployment/hil/simulator.jl`,
+`simulator_owner.jl`). WirePlumber/systemd integration must preserve that behavior;
+publishing two nodes alone is not sufficient HIL admission. Calibration uses the
+existing held-probe/exposure path and its selected session topology.
+
+The pilot checks cross-instance pairing with duplicate endpoint names, zero
+publication while held and actual source-driver selection. It also checks
+pause/reset during a pending exchange, completion or bounded failure, delayed
+commands across reset, independent endpoint loss and fresh held owner restart.
+These are functional participation gates, not additional timing claims.
 
 ### Using AOC for calibration
 
@@ -284,6 +319,10 @@ the duplication.
    artifacts and compare outputs; no new calibration campaign is needed just to
    establish session-manager compatibility. Judge whether the transfer reduces
    maintained responsibility before selecting it.
+   Include AOS HIL on that same core with both CPU FGN and CPU JFG using existing
+   artifacts. Check matched frame/command sequences, units, pause/reset, GUI/CLI
+   absence, stale/duplicate commands across reset and simulator/endpoint loss.
+   A source-to-discard test alone does not establish HIL participation.
 3. Migrate process supervision separately to systemd user services, including
    optional AOS activation on the same core. Preserve required-owner failure
    handling, held startup, fresh readmission and actual per-thread placement.

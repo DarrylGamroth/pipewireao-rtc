@@ -312,3 +312,12 @@ Final verification: both reviewers checked the applied integration/architecture
 amendments and confirmed no regression or veto. A source-path correction and the
 initial-calibration scope correction were applied. This final check did not run
 code or services.
+
+Follow-up AOS participation check: the primary agent and Sol verified the
+existing adapter's shared core/exchange state, source-driven complete-frame
+lockstep, held owner start and quiescent reset. The integration pilot now includes
+AOS with both CPU FGN and CPU JFG, exact endpoint pairing, pending exchanges and
+endpoint/owner loss. Sequence checks alone do not prove rejection of commands
+from an earlier acquisition generation; preserve coordinated reset/drain behavior
+and validate delayed commands. The acyclic statement describes the plant exchange
+path, not a restriction on declared scientific feedback. No runtime test was run.

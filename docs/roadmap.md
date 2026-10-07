@@ -33,6 +33,9 @@ current deployment and controls remain in use.
 conditional link/process ownership migration gates and separate timing questions.
 The pilot retains current FGN/JFG hosting and native controls; transfer is chosen
 only after compatibility, behavioral parity and reduced maintained responsibility.
+The pilot must also admit the existing AOS HIL owner on the same core with both
+CPU FGN and CPU JFG, preserving matched endpoint identities, frame/command
+sequencing, coordinated controls and required-owner failure handling.
 
 ### Observed progress
 

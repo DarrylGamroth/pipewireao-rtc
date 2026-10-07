@@ -447,6 +447,15 @@ is selected independently of the RTC graph owner.
 CPU, CUDA and AMDGPU select explicit AOS execution targets; an unavailable
 selected device fails preparation rather than falling back to CPU.
 
+In the selected workstation/WirePlumber integration, AOS HIL is an optional
+instrument provider that becomes a required session participant when selected.
+Its WFS source and command sink share the exact simulator owner and selected
+PipeWireAO core. The headless runtime admits both endpoints and coordinates
+native acquisition/lifecycle controls; simulator or required endpoint loss
+revokes admission. The compatibility pilot includes the existing HIL path with
+both CPU FGN and CPU JFG, not only a recorded source and discard sink. This is
+a migration obligation, not a claim that WirePlumber HIL integration is complete.
+
 The simulator alone owns model time, seeded optical/detector state and one
 frame/command exchange. AOS stages completed GPU products to host before the
 transport callback and copies an accepted command back to its exact execution
