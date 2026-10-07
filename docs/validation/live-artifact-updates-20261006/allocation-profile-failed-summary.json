@@ -1,0 +1,66 @@
+{
+  "receipt_sha256": "a60dac048b5e58b2f4a3ce71d7547eddf084d02d887fdb492879abc1812c49a1",
+  "completed_commands": 512,
+  "overall_success": false,
+  "shutdown_confirmed": false,
+  "shutdown_failure": "deployment launcher exited unsuccessfully",
+  "cleanup": {
+    "groups": {
+      "julia": {
+        "leader_pid": 4115859,
+        "status": "complete",
+        "leader_start_ticks": 209939626,
+        "observed_members": [],
+        "observation": "group/session observations only; no numeric owner PID or group was signalled"
+      },
+      "core": {
+        "leader_pid": 4115840,
+        "status": "complete",
+        "leader_start_ticks": 209939480,
+        "observed_members": [],
+        "observation": "group/session observations only; no numeric owner PID or group was signalled"
+      },
+      "simulator": {
+        "leader_pid": 4116279,
+        "status": "complete",
+        "leader_start_ticks": 209945296,
+        "observed_members": [],
+        "observation": "group/session observations only; no numeric owner PID or group was signalled"
+      },
+      "rtc": {
+        "leader_pid": 4117017,
+        "status": "complete",
+        "leader_start_ticks": 209954106,
+        "observed_members": [],
+        "observation": "group/session observations only; no numeric owner PID or group was signalled"
+      }
+    },
+    "initial_wait": {
+      "limit_seconds": 300.0,
+      "elapsed_seconds": 2e-07,
+      "launcher_exited": true
+    },
+    "status": "complete",
+    "post_kill_wait": {
+      "attempted": false,
+      "limit_seconds": 5.0,
+      "elapsed_seconds": 0.0,
+      "launcher_exited": true
+    },
+    "post_interrupt_wait": {
+      "attempted": false,
+      "limit_seconds": 300.0,
+      "elapsed_seconds": 0.0,
+      "launcher_exited": true
+    },
+    "launcher_exited": true,
+    "launcher_interrupted": false,
+    "scope": "tracked detached groups at the final observation; unknown identities cannot confirm cleanup",
+    "fallback": true,
+    "errors": [],
+    "launcher_killed": false
+  },
+  "scope": "failed post-stop diagnostic serialization; excluded from passing live-update cohort",
+  "partial_profile_sha256": "6d62267a37abcae3500b91ed52eeea111ea8f95af376d73a96e700eeb9112411",
+  "partial_profile_not_used_for_allocation_claims": true
+}

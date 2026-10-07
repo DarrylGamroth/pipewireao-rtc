@@ -1,0 +1,9 @@
+{
+  "overall_success": false,
+  "shutdown_failure": "deployment launcher exited unsuccessfully",
+  "completed_commands": 512,
+  "partial_profile_bytes": 1114534066,
+  "partial_profile_sha256": "d40659fe8a5200cb16e043069b88d23a48c783ae11d02a09d27838f5bf7565b5",
+  "partial_profile_not_used_for_allocation_claims": true,
+  "disposition": "duplicate full-stack dump cannot finish inside shutdown deadline; replaced with aggregate all-sample counts plus frame sites; partial TSV removed after recording hash"
+}

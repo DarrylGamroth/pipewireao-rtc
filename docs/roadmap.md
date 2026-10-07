@@ -29,6 +29,7 @@ numerical, allocation and rate/latency qualification remain separate.
 | GUI session selection | Actual same-label installed owners selected by exact native identities, including a stopped peer; read-only picker replay passed. GUI changes are on its local main. | GUI `docs/NATIVE_HIL_GUI_PROGRESS_VALIDATION.md` |
 | Observation independence | Classic FGN's six complete trajectories/reset runs match exactly across baseline, unattended and observer death/replacement. Refreshed Copper JFG also passes those six complete trajectories and one stalled-observer trajectory. Truth diagnostics were disabled and are not qualified. Two separate 512-exchange runs each measure 496 exchanges with zero simulator Julia heap allocation/GC. | [Progress adjudication](NATIVE_HIL_PROGRESS_REVIEW.md), [Copper evidence and independent review](validation/copper-main-20261006/README.md) |
 | Native calibration consumers | Startup's positional-timeout constructor defect is fixed in both RTC-owned wrappers (18 assertions). The dim Classic fixture's quality-invalid Collect remains preserved; Capture confirms flux below the sealed threshold. Fresh Classic FGN Collect/Capture using the existing recipe's lamp magnitude pass functional/lifecycle/cleanup gates. Collect has 69 quality-valid exposures; Capture's selected flux exceeds the sealed threshold by at least 4.9×. Neither run saturates the ADC. Seed, thresholds and all other scientific settings are unchanged. Other planned consumers remain open; earlier scientific matrix evidence retains its own scope. | [Consumer matrix](NATIVE_CALIBRATION_CONSUMER_MATRIX.md), [Classic diagnosis and fixture results](validation/copper-main-20261006/README.md#declared-illumination-fixture-and-collectcapture-results) |
+| Artifact loading/live updates | Copper CPU JFG/FGN baseline and gain/same-shape reconstructor runs each deliver 512 commands with CUDA AOS and clean up. JFG recorded outputs match replay bitwise; FGN differences are approximately 5 pm. Warm public JFG processing and minimal adoption measure 0 B; cold control preparation is separate. Native GUI controls pass after a test-only negative-completion identity fix. | [Live update evidence](validation/live-artifact-updates-20261006/README.md) |
 | Progressive throughput | JFG source/load characterization is on JFG main. Exact admitted-work accounting passed; the sustained 500 Hz strict offered-delivery trial failed with one whole-frame rejection. No target-rate claim follows. | JFG `docs/RTC_CONNECTED_LOAD_VALIDATION.md` and its independent review |
 
 ### Reuse completed evidence
@@ -59,12 +60,12 @@ calibration campaigns solely to validate control transport.
 
 ### Remaining order and acceptance
 
-1. Qualify artifact loading and live gain/same-shape reconstructor updates before
-   further calibration campaigns. Reuse prior numerical update evidence; test
-   the changed native-control boundary and live continuity. The
-   [CPU adoption probes](validation/live-artifact-updates-20261006/README.md)
-   pass their warmed zero-allocation and numerical checks; control preparation
-   allocations and their possible process-wide GC effects remain separate.
+1. Reuse the completed Copper CPU FGN/JFG artifact loading and native live-update
+   checks in [the dated evidence](validation/live-artifact-updates-20261006/README.md).
+   Continue simulator/RTC operation with those accepted artifacts and controls;
+   cold preparation, warmed frame processing, numerical differences and rate
+   qualification retain their separate recorded scopes. Other instrument/owner
+   profiles are not silently covered by this Copper full-frame cohort.
 2. Check the new native-control boundary for the remaining short Collect/Capture
    consumers and retained correction fixtures. Earlier calibration/correction
    results above remain scoped passes. Reuse the fresh Classic FGN functional

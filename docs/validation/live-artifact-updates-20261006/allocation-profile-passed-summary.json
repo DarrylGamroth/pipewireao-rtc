@@ -1,0 +1,33 @@
+{
+  "success": true,
+  "receipt_sha256": "7bc82ad53880b98ac90d229ec9f489efcb83fa722b452bbdd691e64039622c30",
+  "capture_sample_rate": 1.0,
+  "capture_samples": 440504,
+  "categories": [
+    {
+      "category": "frame",
+      "count": "0",
+      "bytes": "0"
+    },
+    {
+      "category": "other",
+      "count": "431621",
+      "bytes": "22721735"
+    },
+    {
+      "category": "property_control",
+      "count": "8883",
+      "bytes": "696749"
+    }
+  ],
+  "frame_sites_rows": 0,
+  "callback_count": 512,
+  "process_wide_bytes_during_measured_span": 4210552,
+  "process_wide_gc_pauses_during_measured_span": 0,
+  "completed_commands": 512,
+  "cleanup": "complete",
+  "scope": "Julia allocation samples from after owner preparation through loop exit; includes initial unmeasured run, bootstrap waiting and control queries; frame category matches named processing/adoption stack functions, other is not fully attributed; excludes native C/Rust allocator and post-stop writer",
+  "timestamp_scope": "Profile timestamp values retained raw; not asserted to be nanoseconds or aligned with callback clock",
+  "timing_scope": "Diagnostic capture only; timing excluded from ordinary comparisons",
+  "positive_control": "allocation-writer-positive-control.jl detects deliberately introduced frame and parameter-preparation allocations"
+}

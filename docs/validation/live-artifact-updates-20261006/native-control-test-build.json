@@ -1,0 +1,25 @@
+{
+  "executable": "/tmp/gui-native-gates-build/gui-rtc-controls-test-f1da3f7a7ef6a294e8e6c5108a7da90bb6169cdacc9fb069e0e0485e15132dcf",
+  "sha256": "f1da3f7a7ef6a294e8e6c5108a7da90bb6169cdacc9fb069e0e0485e15132dcf",
+  "bytes": 56655192,
+  "source_revision": "59cb08782b419b477f284ba00fff17f68e78dc02",
+  "source_diff_sha256": "4c7a44303b331079b5478b632365517ba41947f48b0a8ec9d54e961d362bebcc",
+  "branch": "work/rtc-controls-test-20261006",
+  "source_scope": ["src/rtc_adapter/live_tests.rs"],
+  "build_command": "cargo test --offline -j1 --bin pipewireao-gui identity_validation -- --nocapture",
+  "build_environment": {
+    "cpu_affinity": "6",
+    "CARGO_TARGET_DIR": "/tmp/rtc-gui-controls-target-20261006",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_PROFILE_TEST_DEBUG": "0",
+    "PKG_CONFIG_PATH": "/opt/pipewireao/lib/x86_64-linux-gnu/pkgconfig",
+    "LD_LIBRARY_PATH": "/opt/pipewireao/lib/x86_64-linux-gnu"
+  },
+  "verification": {
+    "cargo_fmt_check": "passed",
+    "focused_tests": "4 passed; 0 failed; 134 filtered out",
+    "live_tests_run": false,
+    "cargo_warning": "Existing proc-macro-error2 2.0.1 future-incompatibility notice"
+  }
+}

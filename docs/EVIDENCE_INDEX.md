@@ -251,11 +251,14 @@ keeps executable lookup and functional cleanup separate from scientific claims.
 
 ## Artifact update allocation checks
 
-The [2026-10-06 CPU update probes](validation/live-artifact-updates-20261006/README.md)
-measure warmed gain/projection adoption and the actual Copper 253 × 3,600
-reconstructor adoption plus minimal-graph processing at zero heap bytes.
-Control preparation allocations are recorded separately. Live continuity,
-native callback ingress and update-time GC/jitter remain outside their scope.
+The [2026-10-06 artifact/update checks](validation/live-artifact-updates-20261006/README.md)
+retain warmed zero-allocation adoption probes, the repaired native GUI test and
+four passing Copper CPU FGN/JFG baseline/update runs with CUDA AOS. Each delivers
+512 commands through live gain/reconstructor changes and cleans up. JFG's
+256-frame replay is bitwise identical; FGN differences are characterized at
+approximately 5 pm. Full public JFG processing measures zero warmed bytes;
+control preparation and process-wide GC observations remain separately scoped.
+The finite closed-loop experiment is not a loss-free capacity/deadline claim.
 
 ## Inactive design archive
 
