@@ -165,6 +165,15 @@ and RTC-DEV-013, while preserving their admission, cleanup and failure obligatio
 See [ecosystem integration](ECOSYSTEM_INTEGRATION.md) for the migration and
 [current work](roadmap.md#current-work) for completed gates.
 
+The opt-in [separate owner service backend](SYSTEMD_OWNER_DESIGN.md) implements
+the systemd process allocation for selected private deployments. Its headless
+coordinator retains native science admission. systemd owns each process cgroup
+and a cold coordinator `ExecStopPost` revokes the private core before disposing
+the remaining cohort after abrupt exit. Source/graph applications continue to
+own their nodes under RTC-DEV-013; the explicit WirePlumber creator continues to
+own session links under RTC-DEV-003. Default direct-mode supervision remains
+necessary for existing foreground and other unqualified profiles.
+
 ## Active scope
 
 The active implementation begins with:

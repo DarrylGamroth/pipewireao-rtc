@@ -58,7 +58,7 @@ function start_session_manager!(deployment, bindings)
         require(snapshot.returncode == 0, "session-manager registry inspection failed")
         matches = filter(Common.parse_json(snapshot.stdout)) do object
             object["type"] == "PipeWire:Interface:Client" &&
-                string(get(object["info"]["props"], "application.process.id", "")) == string(getpid(process))
+                string(get(object["info"]["props"], "application.process.id", "")) == string(owner_pid(process))
         end
         require(length(matches) <= 1, "session-manager published multiple creator clients")
         isempty(matches) || (observed = only(matches))
@@ -69,7 +69,7 @@ function start_session_manager!(deployment, bindings)
     require(id isa Integer && !(id isa Bool) && 0 < id < typemax(UInt32) &&
         serial !== nothing && tryparse(UInt64,string(serial)) !== nothing && parse(UInt64,string(serial)) > 0,
         "session-manager has an invalid exact client identity")
-    deployment.record["session_manager"] = Dict("id"=>id,"serial"=>serial,"pid"=>getpid(process),
+    deployment.record["session_manager"] = Dict("id"=>id,"serial"=>serial,"pid"=>owner_pid(process),
         "marker"=>manager["marker-node"])
     return ["--wireplumber-client", string(id), string(serial), "--realization-node", manager["marker-node"]]
 end

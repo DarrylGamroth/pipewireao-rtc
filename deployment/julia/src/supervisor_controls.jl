@@ -105,8 +105,8 @@ function supervisor_snapshot(deployment::DeploymentRunner;deadline::Float64,chec
     source=source_observation(deployment;deadline,check)
     heart=heart_observation(deployment;deadline,check)
     NativeControlClient.deadline_check(deadline,check)
-    processes=Supervisor.OwnedProcess[Supervisor.OwnedProcess(role,UInt32(deployment.owned_pids[process]))
-        for (role,process) in deployment.processes if process_running(process)]
+    processes=Supervisor.OwnedProcess[Supervisor.OwnedProcess(role,UInt32(owner_pid(process)))
+        for (role,process) in deployment.processes if owner_running(process)]
     return Supervisor.validate_snapshot(Supervisor.Admitted,true,Supervisor.Snapshot(processes,runner,source,heart))
 end
 

@@ -3,6 +3,7 @@ module Deployment
 using JSON3, Sockets, UUIDs, TOML
 using ..Common
 using ..Placement
+import ..SystemdOwners
 using ..ScienceExport
 import ..NativeSourceClient
 import ..ObservationBoundary
@@ -425,7 +426,7 @@ mutable struct DeploymentRunner
     spec::Dict{String,Any}
     paths::Dict{String,String}
     inherited_cpus::Set{Int}
-    processes::Vector{Tuple{String,Base.Process}}
+    processes::Vector{Tuple{String,Union{Base.Process,SystemdOwners.Service}}}
     owned_pids::IdDict{Base.Process,Int}
     runtime::Union{Nothing,String}
     socket::Union{Nothing,String}
@@ -448,6 +449,23 @@ mutable struct DeploymentRunner
     bootstrap_clients::Dict{String,NativeOwnerBootstrapClient.Connection}
 end
 
+function process_supervisor(options)
+    backend = get(options, :process_supervisor, "direct")
+    backend in ("direct", "systemd") || fail("process supervisor requires direct or systemd")
+    backend == "systemd" && isempty(get(options, :supervisor_unit, "")) &&
+        fail("systemd process supervision requires --supervisor-unit")
+    backend
+end
+
+owner_pid(process::Base.Process) = getpid(process)
+owner_pid(service::SystemdOwners.Service) = SystemdOwners.pid(service)
+owner_running(process::Base.Process) = process_running(process)
+owner_running(service::SystemdOwners.Service) = SystemdOwners.alive(service)
+owner_failure(process::Base.Process) = "exit code $(process.exitcode), signal $(process.termsignal)"
+owner_failure(service::SystemdOwners.Service) = SystemdOwners.failure(service)
+verify_owner(::Base.Process) = nothing
+verify_owner(service::SystemdOwners.Service) = SystemdOwners.verify!(service)
+
 function owner_preparation_timeout(seconds)
     seconds isa Integer && !(seconds isa Bool) && 1 <= seconds <= 3600 ||
         fail("owner preparation timeout requires integer seconds in 1..3600")
@@ -462,9 +480,10 @@ function DeploymentRunner(options::NamedTuple)
     owner = source === nothing ? nothing : only(filter(o -> o["role"] == source, spec["owners"]))
     record = Dict{String,Any}("version" => 1, "name" => spec["name"], "phase" => "preflight",
         "pid" => getpid(), "admitted" => false, "processes" => Dict{String,Any}(), "error" => nothing,
-        "owner_preparation_timeout_seconds" => preparation_timeout)
+        "owner_preparation_timeout_seconds" => preparation_timeout,
+        "process_supervisor" => process_supervisor(options))
     DeploymentRunner(options, dirname(deployment), spec, installed_paths(options.pipewire_prefix),
-        Placement.inherited_cpus(), Tuple{String,Base.Process}[], IdDict{Base.Process,Int}(), nothing, nothing, nothing,
+        Placement.inherited_cpus(), Tuple{String,Union{Base.Process,SystemdOwners.Service}}[], IdDict{Base.Process,Int}(), nothing, nothing, nothing,
         nothing, nothing, nothing, owner, nothing, 0, nothing, false, false, false, nothing, record, nothing, nothing, nothing, Dict{String,NativeOwnerBootstrapClient.Connection}())
 end
 
@@ -534,6 +553,20 @@ function prepare_julia_override(deployment::DeploymentRunner)
 end
 
 function spawn(deployment::DeploymentRunner, role, argv, env)
+    if process_supervisor(deployment.options) == "systemd"
+        service = SystemdOwners.Service(deployment.options.systemd_coordinator, role)
+        # Record intent before submitting a manager request. A lost launch reply
+        # must leave a cleanup target, rather than an untracked live service.
+        push!(deployment.processes, (role, service))
+        deployment.record["processes"][role] = SystemdOwners.record(service)
+        try
+            SystemdOwners.launch!(service, argv, env,
+                joinpath(something(deployment.runtime), role), deployment.spec["placement"][role])
+        finally
+            deployment.record["processes"][role] = SystemdOwners.record(service)
+        end
+        return service
+    end
     cpu = string(deployment.spec["placement"][role]["leader-cpu"])
     command = Cmd(Cmd(["taskset", "--cpu-list", cpu, argv...]);
         dir=joinpath(something(deployment.runtime), role), detach=true)
@@ -550,8 +583,8 @@ end
 
 function check_processes(deployment::DeploymentRunner; ignore_roles=())
     for (role, process) in deployment.processes
-        if !(role in ignore_roles) && !process_running(process)
-            fail("required $role exited with status $(process.exitcode)")
+        if !(role in ignore_roles) && !owner_running(process)
+            fail("required $role stopped: $(owner_failure(process))")
         end
     end
 end
@@ -880,6 +913,14 @@ function _reap_owned_orphans(group_pid::Integer)
     end
 end
 
+function _owned_wait(deployment::DeploymentRunner, service::SystemdOwners.Service, grace::Real)
+    try
+        SystemdOwners.stop!(service, grace)
+    finally
+        deployment.record["processes"][service.role] = SystemdOwners.record(service)
+    end
+end
+
 _owned_wait(deployment::DeploymentRunner, process::Base.Process, grace::Real) =
     _owned_wait(process, deployment.owned_pids[process], grace)
 
@@ -926,7 +967,7 @@ function stop_owner!(deployment::DeploymentRunner, owner)
     if native_heart(owner)
         child = findfirst(pair -> first(pair) == owner["role"], deployment.processes)
         child === nothing && return nothing
-        process_running(last(deployment.processes[child])) || return nothing
+        owner_running(last(deployment.processes[child])) || return nothing
         client = deployment.heart_client
         # Failed preparation cannot be reconnected during cleanup. The final
         # owned-process-group pass still revokes any children in that case.
@@ -936,7 +977,7 @@ function stop_owner!(deployment::DeploymentRunner, owner)
     elseif native_acquisition(owner)
         child = findfirst(pair -> first(pair) == owner["role"], deployment.processes)
         child === nothing && return nothing
-        process_running(last(deployment.processes[child])) || return nothing
+        owner_running(last(deployment.processes[child])) || return nothing
         client = deployment.source_client
         client === nothing && return nothing
         completion = NativeAcquisitionLifecycleClient.request!(client, :shutdown;
@@ -947,7 +988,7 @@ function stop_owner!(deployment::DeploymentRunner, owner)
     elseif native_bootstrap(owner)
         child = findfirst(pair -> first(pair) == owner["role"], deployment.processes)
         child === nothing && return nothing
-        process_running(last(deployment.processes[child])) || return nothing
+        owner_running(last(deployment.processes[child])) || return nothing
         client = get(deployment.bootstrap_clients,owner["role"],nothing)
         client === nothing && return nothing
         NativeOwnerBootstrapClient.quit!(client; deadline=monotonic()+30,check=()->nothing)
@@ -967,7 +1008,7 @@ function _stop_processes(deployment, errors; source=false)
         # also be revoked/reaped. Successful owned-group cleanup proves that
         # this source cannot publish again, without tearing down a healthy core.
         for (role, process) in deployment.processes
-            if role == owner["role"] && !process_running(process)
+            if role == owner["role"] && !owner_running(process)
                 try
                     _owned_wait(deployment, process, 0)
                     source_closed = true
@@ -986,7 +1027,7 @@ function _stop_processes(deployment, errors; source=false)
             end
         end
         revoked = source_closed || paused
-        core_running() = any(role == "core" && process_running(process)
+        core_running() = any(role == "core" && owner_running(process)
             for (role, process) in deployment.processes)
         if !revoked
             # Unknown source outcome still requires immediate ingress revocation.
@@ -1012,7 +1053,11 @@ function _stop_processes(deployment, errors; source=false)
                 end
             end
         end
-        revoked && close_observation!(deployment,errors)
+        if !revoked
+            push!(errors, DeploymentError("ingress revocation is unconfirmed; preserving consumers"))
+            return nothing
+        end
+        close_observation!(deployment,errors)
         # Revocation by source exit leaves native cleanup available. A dead
         # private core cannot carry any runner or owner request.
         if revoked && core_running() && deployment.runner_client !== nothing
@@ -1064,7 +1109,8 @@ function _stop_processes(deployment, errors; source=false)
             end
         end
     else
-        ingress_stopped = deployment.native_shutdown
+        ingress_stopped = deployment.native_shutdown ||
+            !any(role == "core" for (role, _) in deployment.processes)
         if deployment.runner_client !== nothing && !deployment.native_shutdown
             try
                 observed = native_control(deployment, ["status"]; shutdown=true)
@@ -1072,12 +1118,6 @@ function _stop_processes(deployment, errors; source=false)
                     (observed = native_control(deployment, ["session-stop"]; shutdown=true))
                 ingress_stopped = observed["state"] == "Ready"
             catch
-            end
-            try native_control(deployment, ["quit"]; shutdown=true) catch end
-        end
-        for (role, process) in deployment.processes
-            if role == "rtc"
-                try _owned_wait(deployment, process, 8) catch error push!(errors, error) end
             end
         end
         if !ingress_stopped
@@ -1090,6 +1130,19 @@ function _stop_processes(deployment, errors; source=false)
                         push!(errors, error)
                     end
                 end
+            end
+        end
+        if !ingress_stopped
+            push!(errors, DeploymentError("ingress revocation is unconfirmed; preserving consumers"))
+            return nothing
+        end
+        if deployment.runner_client !== nothing && any(role == "core" && owner_running(process)
+                for (role, process) in deployment.processes)
+            try native_control(deployment, ["quit"]; shutdown=true) catch end
+        end
+        for (role, process) in deployment.processes
+            if role == "rtc"
+                try _owned_wait(deployment, process, 8) catch error push!(errors, error) end
             end
         end
         if runtime !== nothing && ingress_stopped
@@ -1279,9 +1332,57 @@ function runner_admission(reply, expected_state)
     return reply
 end
 
+function _finalize_record!(deployment::DeploymentRunner)
+    record = deployment.record
+    cleanup_errors = get(record, "cleanup_errors", String[])
+    if !isempty(cleanup_errors) && record["error"] === nothing
+        record["error"] = first(cleanup_errors)
+    end
+    failed = record["error"] !== nothing || !isempty(cleanup_errors) ||
+        get(record, "phase", "") == "failed"
+    record["phase"] = failed ? "failed" : "stopped"
+    record["admitted"] = false
+    runtime = deployment.runtime
+    if !isempty(cleanup_errors) && runtime !== nothing
+        record["retained_runtime"] = runtime
+    end
+    deployment.state_path === nothing || atomic_record(deployment.state_path, record)
+    if isempty(cleanup_errors) && runtime !== nothing && ispath(runtime)
+        try
+            rm(runtime; recursive=true, force=true)
+        catch error
+            message = "runtime removal failed: " * sprint(showerror, error)
+            push!(get!(record, "cleanup_errors", String[]), message)
+            record["error"] === nothing && (record["error"] = message)
+            record["phase"] = "failed"
+            record["retained_runtime"] = runtime
+            deployment.state_path === nothing || atomic_record(deployment.state_path, record)
+            failed || rethrow()
+        end
+    end
+    return nothing
+end
+
+function _emergency_cleanup!(deployment::DeploymentRunner, completed::Base.RefValue{Bool})
+    completed[] && return nothing
+    runtime = deployment.runtime
+    runtime !== nothing && ispath(runtime) || return nothing
+    try
+        stop(deployment)
+    catch error
+        message = sprint(showerror, error)
+        push!(get!(deployment.record, "cleanup_errors", String[]), message)
+        deployment.record["error"] === nothing && (deployment.record["error"] = message)
+    end
+    _finalize_record!(deployment)
+    return nothing
+end
+
 function _run_locked(deployment::DeploymentRunner, base)
     deployment.state_path = joinpath(base, "state.json")
-    deployment.runtime = mktempdir(base; prefix="run-")
+    # Deployment cleanup owns this directory; Julia's process-exit temporary
+    # cleanup must not erase diagnostics deliberately retained after a failure.
+    deployment.runtime = mktempdir(base; prefix="run-", cleanup=false)
     chmod(deployment.runtime, 0o700)
     primary_error = nothing
     try
@@ -1345,16 +1446,16 @@ function _run_locked(deployment::DeploymentRunner, base)
             merge!(env, Dict(key => substitute(value, bindings) for (key, value) in owner["environment"]))
             process = spawn(deployment, role, [substitute(arg, bindings) for arg in owner["argv"]], env)
             if native_heart(owner)
-                bindings["HEART_OWNER_PID"] = string(getpid(process))
+                bindings["HEART_OWNER_PID"] = string(owner_pid(process))
                 deadline = monotonic() + get(deployment.options, :owner_preparation_timeout_seconds, 90)
                 deployment.heart_client = NativeHeartClient.connect(joinpath(runtime, bindings["REMOTE"]),
-                    bindings["HEART_OWNER_NODE"], getpid(process), parse(Int64, bindings["HEART_OWNER_INSTANCE"]);
+                    bindings["HEART_OWNER_NODE"], owner_pid(process), parse(Int64, bindings["HEART_OWNER_INSTANCE"]);
                     deadline, check=() -> check(deployment))
                 NativeHeartClient.connect!(deployment.heart_client; deadline, check=() -> check(deployment))
             elseif native_acquisition(owner)
                 deadline = monotonic() + get(deployment.options, :owner_preparation_timeout_seconds, 90)
                 deployment.source_client = NativeAcquisitionLifecycleClient.connect(acquisition_profile(owner),
-                    joinpath(runtime, bindings["REMOTE"]), owner["control-node"], getpid(process),
+                    joinpath(runtime, bindings["REMOTE"]), owner["control-node"], owner_pid(process),
                     parse(Int64, bindings["SOURCE_OWNER_INSTANCE"]), acquisition_instrument(owner);
                     deadline, check=() -> check(deployment))
                 NativeAcquisitionLifecycleClient.connect_owner!(deployment.source_client;
@@ -1362,7 +1463,7 @@ function _run_locked(deployment::DeploymentRunner, base)
             elseif native_bootstrap(owner)
                 deadline = monotonic() + get(deployment.options,:owner_preparation_timeout_seconds,90)
                 client = NativeOwnerBootstrapClient.connect(joinpath(runtime,bindings["REMOTE"]),
-                    owner["bootstrap-node"],getpid(process),parse(Int64,bindings[bootstrap_instance_key(role)]);
+                    owner["bootstrap-node"],owner_pid(process),parse(Int64,bindings[bootstrap_instance_key(role)]);
                     deadline,check=()->check(deployment))
                 deployment.bootstrap_clients[role] = client
                 NativeOwnerBootstrapClient.connect_owner!(client; deadline,check=()->check(deployment))
@@ -1380,7 +1481,7 @@ function _run_locked(deployment::DeploymentRunner, base)
             "--start-paused", "--control-node", runner_node,
             "--control-instance", string(runner_instance), manager_arguments...],
             environment(deployment, "rtc", bindings))
-        deployment.runner_client = NativeRunnerClient.connect(remote, runner_node, getpid(rtc), runner_instance;
+        deployment.runner_client = NativeRunnerClient.connect(remote, runner_node, owner_pid(rtc), runner_instance;
             deadline=monotonic() + 90, check=() -> check(deployment))
         deployment.record["runner"] = Dict("node" => runner_node, "instance" => runner_instance)
         ready = runner_admission(native_control(deployment, ["status"]), "Ready")
@@ -1389,7 +1490,8 @@ function _run_locked(deployment::DeploymentRunner, base)
         prepare_observation!(deployment)
         placements = Dict{String,Any}()
         for (role, process) in deployment.processes
-            placements[role] = Placement.snapshot(getpid(process), admission_placement(deployment, role))
+            verify_owner(process)
+            placements[role] = Placement.snapshot(owner_pid(process), admission_placement(deployment, role))
         end
         check(deployment)
         merge!(deployment.record, Dict("phase" => "prepared", "placement" => placements, "ready" => ready))
@@ -1451,18 +1553,27 @@ function _run_locked(deployment::DeploymentRunner, base)
                 end
             end
             empty!(deployment.bootstrap_clients)
-            deployment.broker !== nothing && close(deployment.broker)
-            merge!(deployment.record, Dict("phase" => deployment.record["error"] === nothing ? "stopped" : "failed",
-                "admitted" => false))
-            atomic_record(deployment.state_path, deployment.record)
-            rm(something(deployment.runtime); recursive=true, force=true)
+            try
+                deployment.broker !== nothing && close(deployment.broker)
+            catch error
+                push!(get!(deployment.record, "cleanup_errors", String[]), sprint(showerror, error))
+                deployment.record["error"] === nothing &&
+                    (deployment.record["error"] = sprint(showerror, error))
+            end
+            _finalize_record!(deployment)
         end
     end
 end
 
 function run(deployment::DeploymentRunner)
     deployment.record["credentials"] = preflight(deployment)
-    _enable_subreaper()
+    if process_supervisor(deployment.options) == "systemd"
+        coordinator = SystemdOwners.coordinator(deployment.options.supervisor_unit;
+            launcher=joinpath(deployment.package,"bin/pipewireao-rtc-deploy"))
+        deployment.options = merge(deployment.options, (; systemd_coordinator=coordinator))
+    else
+        _enable_subreaper()
+    end
     cpu = deployment.spec["placement"]["rtc"]["leader-cpu"]
     deployment.record["supervisor_placement"] = Placement.pin_supervisor(cpu)
     base = abspath(deployment.options.runtime)
@@ -1482,12 +1593,18 @@ wait_state(runtime::AbstractString, predicate; kwargs...) =
     wait_state((state, client) -> state, runtime, predicate; kwargs...)
 
 "Run a callback with the observed state and its retained client; close on return or failure."
-function wait_state(f::Function, runtime::AbstractString, predicate; timeout=30, process=nothing)
+function wait_state(f::Function, runtime::AbstractString, predicate; timeout=30,
+        process=nothing, expected_owner_pid=nothing)
     isfinite(timeout)&&timeout>0 || fail("state wait timeout must be finite and positive")
     deadline=monotonic()+timeout
     locator=joinpath(runtime,"control.json")
     hints = nothing
-    owner_pid = process === nothing ? nothing : getpid(process)
+    expected_owner_pid === nothing ||
+        (expected_owner_pid isa Integer && !(expected_owner_pid isa Bool) &&
+         0 < expected_owner_pid <= typemax(UInt32)) || fail("invalid expected supervisor PID")
+    owner_pid = process === nothing ? expected_owner_pid : getpid(process)
+    expected_owner_pid === nothing || owner_pid == expected_owner_pid ||
+        fail("expected supervisor PID differs from launcher")
     while true
         process!==nothing&&!process_running(process) && fail("deployment launcher exited before requested native state")
         NativeControlClient.deadline_check(deadline,()->nothing)
@@ -1701,14 +1818,26 @@ function install(options::NamedTuple)
     systemd = joinpath(destination, "systemd")
     mkpath(systemd)
     write(joinpath(systemd, "pipewireao-rtc@.service"), unit)
+    # Older sealed SDKs retain their existing service. New exports additionally
+    # offer the opt-in systemd owner backend; installing never starts either.
+    owner_template = joinpath(dirname(template), "pipewireao-rtc-systemd@.service.in")
+    if isfile(owner_template)
+        owner_unit = replace(read(owner_template, String),
+            "@LAUNCHER@" => quote_unit(wrapper),
+            "@PIPEWIRE_PREFIX@" => quote_unit(abspath(options.pipewire_prefix)),
+            "@CPUS@" => join(cpus, " "),
+            "@FITS_ARGUMENT@" => (haskey(spec, "source-owner") ? "" :
+                " --fits %h/.config/pipewireao-rtc/%i/input.fits"))
+        write(joinpath(systemd, "pipewireao-rtc-systemd@.service"), owner_unit)
+    end
     println(destination)
     destination
 end
 
 function _options(argv)
-    isempty(argv) && fail("expected install, preflight, run, control, sessions or select-session")
+    isempty(argv) && fail("expected install, preflight, run, control, sessions, select-session or cleanup-systemd-owners")
     command = first(argv)
-    command in ("install", "preflight", "run", "control", "sessions", "select-session") || fail("unknown command: $command")
+    command in ("install", "preflight", "run", "control", "sessions", "select-session", "cleanup-systemd-owners") || fail("unknown command: $command")
     positionals = String[]
     parsed = Dict{String,String}()
     index = 2
@@ -1732,8 +1861,9 @@ function _options(argv)
         command == "control" ? Set(["--runtime", "--session"]) :
         command == "sessions" ? Set{String}() :
         command == "select-session" ? Set(["--session"]) :
+        command == "cleanup-systemd-owners" ? Set(["--invocation"]) :
         Set(["--deployment", "--pipewire-prefix", "--fits", "--runtime"])
-    command == "run" && push!(allowed, "--owner-preparation-timeout-seconds")
+    command == "run" && union!(allowed, Set(["--owner-preparation-timeout-seconds", "--process-supervisor", "--supervisor-unit"]))
     isempty(setdiff(Set(keys(parsed)), allowed)) || fail("unsupported option for $command")
     preparation_timeout = tryparse(Int, get(parsed, "--owner-preparation-timeout-seconds", "90"))
     owner_preparation_timeout(preparation_timeout)
@@ -1743,6 +1873,9 @@ function _options(argv)
         fits=get(parsed, "--fits", nothing), package=get(parsed, "--package", ""),
         destination=get(parsed, "--destination", ""), argv=positionals,
         session_id=get(parsed,"--session",nothing),
+        process_supervisor=get(parsed,"--process-supervisor","direct"),
+        supervisor_unit=get(parsed,"--supervisor-unit",""),
+        invocation=get(parsed,"--invocation",""),
         julia_executable=get(parsed, "--julia-executable", Base.julia_cmd().exec[1]),
         owner_preparation_timeout_seconds=preparation_timeout)
     if command == "install"
@@ -1756,6 +1889,7 @@ function _options(argv)
     elseif command == "select-session"
         options.session_id === nothing && fail("missing --session")
     end
+    process_supervisor(options)
     options.session_id === nothing || NativeSupervisorCodec.validate_uuid(options.session_id)
     options
 end
@@ -1763,7 +1897,9 @@ end
 function main(argv=ARGS)
     try
         options = _options(argv)
-        if options.command == "install"
+        if options.command == "cleanup-systemd-owners"
+            SystemdOwners.cleanup_invocation(options.invocation)
+        elseif options.command == "install"
             install(options)
         elseif options.command == "sessions"
             println(JSON3.write([Dict("verification"=>string(entry.verification),
@@ -1786,22 +1922,19 @@ function main(argv=ARGS)
                 println(JSON3.write(preflight(deployment)))
             else
                 Base.exit_on_sigint(false)
+                completed = Ref(false)
                 atexit() do
-                    if deployment.runtime !== nothing && ispath(deployment.runtime)
-                        try
-                            stop(deployment)
-                            deployment.record["phase"] = "stopped"
-                        catch error
-                            deployment.record["phase"] = "failed"
-                            deployment.record["error"] = sprint(showerror, error)
-                        finally
-                            deployment.record["admitted"] = false
-                            try atomic_record(something(deployment.state_path), deployment.record) catch end
-                            try rm(deployment.runtime; recursive=true, force=true) catch end
-                        end
+                    try
+                        _emergency_cleanup!(deployment, completed)
+                    catch error
+                        println(stderr, "pipewireao-rtc-deploy: emergency cleanup failed: ", sprint(showerror, error))
                     end
                 end
-                run(deployment)
+                try
+                    run(deployment)
+                finally
+                    completed[] = true
+                end
             end
         end
         return 0

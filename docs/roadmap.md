@@ -62,8 +62,10 @@ a required dependency for the 1160-byte three-link projection, with its inherite
 SPA allocation-failure limitation preserved in review. The next increment is
 separate systemd user-service supervision. Default direct ownership and existing
 supervision/link code remain until their respective replacements pass parity.
-Separate RTC/AOS process-supervision transfer remains unimplemented and
-unqualified; current deployment and native controls remain in use.
+Separate RTC/AOS process-supervision transfer is implemented as an opt-in user
+service backend. Independent private service/identity/failure checks pass; final
+Copper CPU FGN/JFG scientific-cohort qualification is in progress. Current direct
+deployment remains available. See [the owner-service design](SYSTEMD_OWNER_DESIGN.md).
 
 [Adversarial architecture review](APPLICATION_ARCHITECTURE_REVIEW.md) identifies
 conditional link/process ownership migration gates and separate timing questions.

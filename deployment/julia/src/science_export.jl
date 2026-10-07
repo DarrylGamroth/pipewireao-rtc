@@ -95,6 +95,9 @@ function copy_deployment_runtime(package::AbstractString; copy_service=true)
     service_source = joinpath(resource_root(), "pipewireao-rtc@.service.in")
     copy_file(service_source, joinpath(target, "assets/deployment/pipewireao-rtc@.service.in"))
     copy_service && copy_file(service_source, joinpath(package, "pipewireao-rtc@.service.in"))
+    owner_service = joinpath(resource_root(), "pipewireao-rtc-systemd@.service.in")
+    isfile(owner_service) && copy_file(owner_service,
+        joinpath(target, "assets/deployment/pipewireao-rtc-systemd@.service.in"))
     return target
 end
 

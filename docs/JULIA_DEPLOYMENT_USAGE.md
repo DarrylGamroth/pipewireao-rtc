@@ -94,6 +94,29 @@ checks the configured CPU envelopes, worker policies and resource limits;
 the supervisor pins every existing Julia native thread before starting children.
 This is functional deployment behavior, not a scheduler-latency qualification.
 
+## Separate systemd owner services
+
+New SDK exports also install `systemd/pipewireao-rtc-systemd@.service`. This opt-in
+unit starts a headless coordinator and separate transient user services for the
+private core, source, optional Julia graph, WirePlumber and RTC runner. Native
+GUI/CLI controls and scientific configurations remain the same. Installation
+does not link, enable or start a service. The default `pipewireao-rtc@.service`
+and foreground command retain direct process ownership.
+
+Install the package at `~/.config/pipewireao-rtc/<instance>`, link its opt-in
+template with `systemctl --user link`, reload the user manager, then explicitly
+start `pipewireao-rtc-systemd@<instance>.service`. Stop or restart the coordinator
+unit as a whole; independently restarting an owner under the same unit name is
+unsupported. A restart creates and validates a fresh scientific cohort.
+The coordinator verifies its exact cleanup executable and arguments before
+starting any owners. `ActiveState=active` alone does not establish RTC admission.
+
+The unit preserves its private runtime directory for final reports and uncertain
+cleanup diagnostics. Remove a stopped instance's retained runtime only after its
+owner cgroups are empty. The initial backend verifies actual per-thread placement;
+this host's accepted `AllowedCPUs` property is insufficient to establish a cgroup
+cpuset restriction. See [design and qualification scope](SYSTEMD_OWNER_DESIGN.md).
+
 ## Qualified scientific dependencies
 
 Scientific source inputs must form a compatible set. The selected CPU HEART

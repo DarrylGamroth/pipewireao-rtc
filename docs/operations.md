@@ -329,6 +329,10 @@ node and port names, direction, `F32_LE` element type, complete shape, and
 scientific schema before creating a link. A node name or descriptive label
 alone MUST NOT establish a compatible port contract.
 
+A deployment MAY start external applications as separate systemd user services.
+Process supervision MUST NOT transfer ownership of their published nodes to the
+runner or change the external endpoint compatibility contract.
+
 The external WFS source and simulated correction-command sink MUST already be
 inspectable on the selected private PipeWire core before the session reaches
 `READY`. The runner MUST NOT create, destroy, or claim ownership of either node.
@@ -703,6 +707,18 @@ unloading consumers and terminate only owned processes with finite deadlines.
 The deployment MUST support both foreground and systemd user-unit operation
 through the same commands/configuration. User units MUST NOT elevate the whole
 control or Julia process to FIFO or assume unavailable inherited rights.
+
+An explicitly selected systemd owner backend MAY delegate owner creation,
+termination, reaping and cgroup containment to the user manager. The headless
+coordinator MUST retain scientific readiness and acquisition coordination.
+Service activation MUST NOT authorize ingress. A fresh coordinator invocation
+MUST use fresh owner unit names, disable automatic owner restart, and bind native
+owners to verified MainPIDs and process incarnations. Normal and abrupt
+coordinator shutdown MUST confirm ingress revocation before consumer teardown;
+an unknown revocation MUST remain a cleanup fault. User-manager operations MUST
+have finite bounds. The selected backend MUST verify its installed cleanup hook
+before owner creation and MUST reconcile uncertain launches and pending starts.
+Name-based stop requests MUST NOT be described as atomic incarnation fences.
 
 Verification intent: delayed owner, wrong contract, bad placement/rights,
 stale marker, partial launch failure, dependency death and repeated restart;
