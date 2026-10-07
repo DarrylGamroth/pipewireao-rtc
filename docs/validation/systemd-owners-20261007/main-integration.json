@@ -1,0 +1,7 @@
+{
+  "integrated_commit": "a010975",
+  "implementation_commit": "c088103",
+  "focused_assertions_passed": 215,
+  "source_changes_after_selected_qualification": false,
+  "scope": "clean canonical main SDK focused regression; reuses sealed selected installed science and lifecycle evidence"
+}

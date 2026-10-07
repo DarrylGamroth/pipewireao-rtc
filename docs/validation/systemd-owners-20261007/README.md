@@ -106,6 +106,13 @@ Other selected cases are `core`, `simulator`, `manager`, `rtc`, `julia` (JFG onl
 `coordinator` and `clean`. The entrypoint pins its own threads to CPU6, creates
 only private unique units, and removes its unit files after preserving evidence.
 
+## Main integration
+
+Clean canonical main fast-forwarded to `a010975`. Its focused SDK regression
+passes [215/215 assertions](merged-main-focused.log);
+[the integration record](main-integration.json) binds that check to the unchanged
+qualified implementation. No additional scientific or timing claim follows.
+
 ## Limits and reuse
 
 These checks qualify the selected process-supervision/link-owner composition
