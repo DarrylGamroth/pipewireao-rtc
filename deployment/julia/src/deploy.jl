@@ -958,8 +958,22 @@ function _stop_processes(deployment, errors; source=false)
     if source
         owner = deployment.source_owner
         source_started = any(role == owner["role"] for (role, _) in deployment.processes)
+        source_closed = !source_started
+        # A dead leader alone is insufficient: its adopted descendants must
+        # also be revoked/reaped. Successful owned-group cleanup proves that
+        # this source cannot publish again, without tearing down a healthy core.
+        for (role, process) in deployment.processes
+            if role == owner["role"] && !process_running(process)
+                try
+                    _owned_wait(deployment, process, 0)
+                    source_closed = true
+                catch error
+                    push!(errors, error)
+                end
+            end
+        end
         paused = deployment.native_shutdown && deployment.source_state == "paused"
-        if source_started && !deployment.source_failed && !paused
+        if !source_closed && !deployment.source_failed && !paused
             try
                 source_control(deployment, "pause"; shutdown=true)
                 paused = true
@@ -967,31 +981,44 @@ function _stop_processes(deployment, errors; source=false)
                 push!(errors, error)
             end
         end
-        revoked = paused
-        if !paused
-            revoked = true
+        revoked = source_closed || paused
+        core_running() = any(role == "core" && process_running(process)
+            for (role, process) in deployment.processes)
+        if !revoked
+            # Unknown source outcome still requires immediate ingress revocation.
+            # Stop the core first; once it is gone, a surviving source may finish
+            # its failure report within the existing owner grace period.
             for (role, process) in deployment.processes
-                if role in (owner["role"], "core")
-                    try
-                        _owned_wait(deployment, process, 0)
-                    catch error
-                        revoked = false
-                        push!(errors, error)
-                    end
+                role == "core" || continue
+                try
+                    _owned_wait(deployment, process, 0)
+                    revoked = true
+                catch error
+                    push!(errors, error)
+                end
+            end
+            for (role, process) in deployment.processes
+                role == owner["role"] || continue
+                try
+                    _owned_wait(deployment, process, revoked ? 8 : 0)
+                    source_closed = true
+                    revoked = true
+                catch error
+                    push!(errors, error)
                 end
             end
         end
         revoked && close_observation!(deployment,errors)
-        # A revoked private core cannot carry a native request. Process-group
-        # cleanup remains available when no live native endpoint can respond.
-        if paused && deployment.runner_client !== nothing
+        # Revocation by source exit leaves native cleanup available. A dead
+        # private core cannot carry any runner or owner request.
+        if revoked && core_running() && deployment.runner_client !== nothing
             try
-                observed = native_control(deployment, ["status"]; shutdown=true)
-                observed["state"] == "Running" && native_control(deployment, ["session-stop"]; shutdown=true)
+                observed = native_control(deployment, ["status"]; shutdown=true, check=() -> nothing)
+                observed["state"] == "Running" && native_control(deployment, ["session-stop"]; shutdown=true, check=() -> nothing)
             catch
             end
             try
-                native_control(deployment, ["quit"]; shutdown=true)
+                native_control(deployment, ["quit"]; shutdown=true, check=() -> nothing)
             catch
             end
         end
@@ -1000,23 +1027,24 @@ function _stop_processes(deployment, errors; source=false)
                 try _owned_wait(deployment, process, 8) catch error push!(errors, error) end
             end
         end
-        source_closed = !source_started
         if runtime !== nothing && revoked
-            try
-                stop_owner!(deployment, owner)
-                for (role, process) in deployment.processes
-                    role == owner["role"] && _owned_wait(deployment, process, 8)
+            if !source_closed && core_running()
+                try
+                    stop_owner!(deployment, owner)
+                    for (role, process) in deployment.processes
+                        role == owner["role"] && _owned_wait(deployment, process, 8)
+                    end
+                    source_closed = true
+                catch error
+                    push!(errors, error)
                 end
-                source_closed = true
-            catch error
-                push!(errors, error)
             end
-            if source_closed
+            if source_closed && core_running()
                 for other in deployment.spec["owners"]
                     other === owner && continue
                     try stop_owner!(deployment, other) catch error push!(errors, error) end
                 end
-            else
+            elseif !source_closed
                 for (role, process) in deployment.processes
                     if role in ("core", owner["role"])
                         try _owned_wait(deployment, process, 0) catch error push!(errors, error) end

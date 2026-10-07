@@ -237,7 +237,7 @@ function write_binary_atomic(path, values)
 end
 
 function write_report(options, science, recorder, state; failure=nothing, sustained_run=nothing,
-                      acquisition_generation::UInt64=UInt64(0))
+                      acquisition_generation::UInt64=UInt64(0), warmup::Bool=false)
     transport = transport_contract(options)
     count = recorder.count
     prefix = endswith(options.output, ".json") ? options.output[1:end-5] : options.output
@@ -308,8 +308,24 @@ function write_report(options, science, recorder, state; failure=nothing, sustai
             missed_wall_periods=sustained_run.missed_wall_periods,
             source_sha256=bytes2hex(open(sha256,joinpath(@__DIR__,"simulator.jl"))), details...)
     end
-    Protocol.write_json_atomic(options.output, report; maximum=256 * 1024)
-    summary === nothing || Protocol.write_json_atomic(options.output * ".sustained.json",summary;maximum=256 * 1024)
+    if warmup
+        # Private cold serializer warmup: populated timing and failure fields
+        # change the concrete NamedTuple type even with the same report schema.
+        # Recorder/plant state is never changed, and these files are removed.
+        for message in (nothing, "report writer warmup"), achieved_rate in (nothing, 0.0)
+            payload = merge(report, (; failure=message, achieved_cycle_rate_hz=achieved_rate))
+            Protocol.write_json_atomic(options.output, payload; maximum=256 * 1024)
+        end
+        if summary !== nothing
+            for message in (nothing, "report writer warmup")
+                payload = merge(summary, (; failure=message))
+                Protocol.write_json_atomic(options.output * ".sustained.json",payload;maximum=256 * 1024)
+            end
+        end
+    else
+        Protocol.write_json_atomic(options.output, report; maximum=256 * 1024)
+        summary === nothing || Protocol.write_json_atomic(options.output * ".sustained.json",summary;maximum=256 * 1024)
+    end
     return nothing
 end
 
@@ -317,12 +333,13 @@ function warm_report_writer!(options, science, recorder, state; sustained_run=no
     recorder.count == 0 && state.sequence == 0 && !state.running || throw(
         ArgumentError("report warmup requires the initial paused owner"),
     )
-    # A String failure changes the report's concrete type and JSON serializer.
-    # Compile that path privately; the public record describes the actual owner.
+    # Compile all configured report field types privately. The public record
+    # still describes only the actual paused owner and its empty recorder.
     mkpath(dirname(options.output))
     mktempdir(dirname(options.output); prefix=".report-warmup-") do directory
         warm_options = merge(options, (; output=joinpath(directory, "result.json")))
         write_report(warm_options, science, recorder, state; failure="report writer warmup", sustained_run)
+        write_report(warm_options, science, recorder, state; failure="report writer warmup", sustained_run, warmup=true)
     end
     write_report(options, science, recorder, state; sustained_run)
     return nothing
@@ -553,6 +570,8 @@ function run_prepared_owner!(options, science, recorder, state, sustained_run, p
             end
             write_report(options, science, recorder, state; failure, sustained_run,
                 acquisition_generation=UInt64(frame_acquisition_generation(pipewire)))
+            println("SIMULATOR_REPORT_WRITTEN sequence=$(state.sequence) recorded_frames=$(recorder.count) failed=$(failure !== nothing)")
+            flush(stdout)
         end
     end
     return nothing

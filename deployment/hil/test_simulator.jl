@@ -299,3 +299,47 @@ end
         @test !failed.completed && failed.failure == "injected late failure"
     end
 end
+
+
+@testset "report warmup covers populated timing without changing plant records" begin
+    plant = load_plant(:classic)
+    mktempdir() do root
+        options = (profile=:classic, backend=:cpu, graph=Base.invokelatest(plant.graph_path, :grid_gaussian),
+            rate=500, period_ns=UInt64(2_000_000), exposure_ns=UInt64(1_896_000), frames=1,
+            remote="no-transport", output=joinpath(root, "warm.json"), total_exchanges=3,
+            wall_rate=500, wall_period_ns=UInt64(2_000_000), sustained=true)
+        science = Base.invokelatest(prepare_science, options, plant, load_target(:cpu))
+        recorder = Recorder(options, science.boundary)
+        run = SustainedRun.Run(options, nothing; detector_bits=installed_detector_bits(options))
+        state = Protocol.OwnerState()
+        field_types = Set{Tuple{DataType,DataType}}()
+        summary_types = Set{DataType}()
+        REPORT_PUBLICATION_OBSERVER[] = function (stage, path, value)
+            stage === :before || return nothing
+            dirname(path) == root && return nothing
+            @test value.completed_frames == 0
+            @test value.sequence == 0
+            if endswith(path, ".sustained.json")
+                push!(summary_types, typeof(value.failure))
+            else
+                push!(field_types, (typeof(value.failure), typeof(value.achieved_cycle_rate_hz)))
+            end
+            return nothing
+        end
+        try
+            warm_report_writer!(options, science, recorder, state; sustained_run=run)
+        finally
+            REPORT_PUBLICATION_OBSERVER[] = nothing
+        end
+        @test field_types == Set([(Nothing, Nothing), (Nothing, Float64),
+            (String, Nothing), (String, Float64)])
+        @test summary_types == Set([Nothing, String])
+        @test recorder.count == 0 && state.sequence == 0 && !state.running
+        @test run.metrics.count == 0
+        report = Protocol.JSON3.read(read(options.output, String))
+        @test report.failure === nothing && report.achieved_cycle_rate_hz === nothing
+        @test report.completed_frames == 0 && isempty(report.sequences)
+        @test isempty(read(report.frame.file)) && isempty(read(report.command.file))
+        @test !any(name -> startswith(name, ".report-warmup-"), readdir(root))
+    end
+end
