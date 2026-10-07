@@ -1,0 +1,81 @@
+   Compiling libloading v0.8.9
+   Compiling anstyle v1.0.14
+   Compiling version-compare v0.2.1
+   Compiling libc v0.2.189
+   Compiling regex-automata v0.4.18
+   Compiling either v1.18.0
+   Compiling unicode-width v0.2.2
+   Compiling heck v0.5.0
+   Compiling bindgen v0.72.1
+   Compiling bitflags v2.13.1
+   Compiling cexpr v0.6.0
+   Compiling rustc-hash v2.1.3
+   Compiling shlex v1.3.0
+   Compiling rustix v1.1.4
+   Compiling linux-raw-sys v0.12.1
+   Compiling serde_core v1.0.229
+   Compiling itertools v0.13.0
+   Compiling system-deps v7.0.8
+   Compiling proc-macro-error-attr2 v2.0.0
+   Compiling zmij v1.0.23
+   Compiling annotate-snippets v0.11.5
+   Compiling getrandom v0.4.3
+   Compiling syn v3.0.4
+   Compiling nom v8.0.0
+   Compiling cookie-factory v0.3.3
+   Compiling serde v1.0.229
+   Compiling serde_json v1.0.151
+   Compiling signal-hook v0.3.18
+   Compiling proc-macro-error2 v2.0.1
+   Compiling pipewireao-rtc v0.1.0 (/tmp/rtc-wireplumber-policy-20261007)
+   Compiling fastrand v2.5.0
+   Compiling itoa v1.0.18
+   Compiling statig_macro v0.4.0
+   Compiling once_cell v1.21.4
+   Compiling libspa-ao v0.10.1 (https://github.com/DarrylGamroth/PipeWireAO-rs.git?rev=f2d8689#f2d86899)
+   Compiling clang-sys v1.9.1
+   Compiling errno v0.3.14
+   Compiling signal-hook-registry v1.4.8
+   Compiling regex v1.13.1
+   Compiling statig v0.4.1
+   Compiling serde_derive v1.0.229
+   Compiling tempfile v3.27.0
+   Compiling libspa-ao-sys v0.10.1 (https://github.com/DarrylGamroth/PipeWireAO-rs.git?rev=f2d8689#f2d86899)
+   Compiling pipewire-ao-sys v0.10.1 (https://github.com/DarrylGamroth/PipeWireAO-rs.git?rev=f2d8689#f2d86899)
+   Compiling pipewire-ao v0.10.1 (https://github.com/DarrylGamroth/PipeWireAO-rs.git?rev=f2d8689#f2d86899)
+warning: unused import: `Weak`
+    --> src/live.rs:4531:23
+     |
+4531 |     use std::rc::{Rc, Weak};
+     |                       ^^^^
+     |
+     = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `pipewireao-rtc` (lib test) generated 1 warning (run `cargo fix --lib -p pipewireao-rtc --tests` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 17.25s
+warning: the following packages contain code that will be rejected by a future version of Rust: proc-macro-error2 v2.0.1
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running unittests src/lib.rs (/tmp/rtc-maintenance-target-20261006/debug/deps/pipewireao_rtc-2f0604f3af7551f2)
+
+running 2 tests
+
+thread 'live::required_monitor_tests::admitted_link_failure_is_permanent_until_reload' (161708) panicked at src/live.rs:724:13:
+assertion `left == right` failed
+  left: Active
+ right: Failed("required link unlinked")
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'live::required_monitor_tests::removal_cannot_be_hidden_by_same_id_replacement' (161709) panicked at src/live.rs:713:9:
+same-ID replacement concealed required removal
+test live::required_monitor_tests::admitted_link_failure_is_permanent_until_reload ... FAILED
+test live::required_monitor_tests::removal_cannot_be_hidden_by_same_id_replacement ... FAILED
+
+failures:
+
+failures:
+    live::required_monitor_tests::admitted_link_failure_is_permanent_until_reload
+    live::required_monitor_tests::removal_cannot_be_hidden_by_same_id_replacement
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 94 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`

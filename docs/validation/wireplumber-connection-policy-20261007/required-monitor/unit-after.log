@@ -1,0 +1,21 @@
+   Compiling pipewireao-rtc v0.1.0 (/tmp/rtc-wireplumber-policy-20261007)
+warning: unused import: `Weak`
+    --> src/live.rs:4633:23
+     |
+4633 |     use std::rc::{Rc, Weak};
+     |                       ^^^^
+     |
+     = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `pipewireao-rtc` (lib test) generated 1 warning (run `cargo fix --lib -p pipewireao-rtc --tests` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.27s
+warning: the following packages contain code that will be rejected by a future version of Rust: proc-macro-error2 v2.0.1
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running unittests src/lib.rs (/tmp/rtc-maintenance-target-20261006/debug/deps/pipewireao_rtc-2f0604f3af7551f2)
+
+running 2 tests
+test live::required_monitor_tests::admitted_link_failure_is_permanent_until_reload ... ok
+test live::required_monitor_tests::removal_cannot_be_hidden_by_same_id_replacement ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 94 filtered out; finished in 0.00s
+

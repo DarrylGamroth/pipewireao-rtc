@@ -6,6 +6,7 @@ use crate::{
 };
 use pipewire as pw;
 use pw::properties::PropertiesBox;
+use pw::proxy::ProxyT;
 use pw::registry::GlobalObject;
 use pw::reset_control::{self, ResetControlError, ResetControlStatus};
 use pw::run_control::{self, RunControlError, RunControlStatus, RunState};
@@ -24,7 +25,7 @@ use std::ffi::CString;
 use std::io::Cursor;
 use std::mem::size_of;
 use std::path::{Path, PathBuf};
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -673,8 +674,12 @@ mod latest_hold_control_tests {
 }
 
 struct LiveLink {
+    index: usize,
     listener: pw::link::LinkListener,
+    proxy_listener: pw::proxy::ProxyListener,
     proxy: pw::link::Link,
+    global_id: Rc<Cell<Option<u32>>>,
+    removed: Rc<Cell<bool>>,
     state: Rc<RefCell<LinkAdmissionState>>,
 }
 
@@ -687,8 +692,128 @@ enum LinkAdmissionState {
     Failed(String),
 }
 
+impl LiveLink {
+    fn observe(
+        index: usize,
+        proxy: pw::link::Link,
+        required_global_removals: &Rc<RefCell<RequiredGlobalRemovals>>,
+        observed_passive: &Rc<RefCell<Option<String>>>,
+    ) -> Self {
+        let state = Rc::new(RefCell::new(LinkAdmissionState::Unknown));
+        let observed = Rc::clone(&state);
+        let global_id = Rc::new(Cell::new(None));
+        let removed = Rc::new(Cell::new(false));
+        let bound_id = Rc::clone(&global_id);
+        let bound_removed = Rc::clone(&removed);
+        let removal_watches = Rc::clone(required_global_removals);
+        let proxy_removed = Rc::clone(&removed);
+        let removed_state = Rc::clone(&state);
+        let proxy_listener = proxy
+            .upcast_ref()
+            .add_listener_local()
+            .bound(move |id| {
+                bound_id.set(Some(id));
+                removal_watches
+                    .borrow_mut()
+                    .insert(id, Rc::downgrade(&bound_removed));
+            })
+            .removed(move || {
+                proxy_removed.set(true);
+                observe_link_state(
+                    &mut removed_state.borrow_mut(),
+                    LinkAdmissionState::Failed("required link proxy was removed".to_owned()),
+                );
+            })
+            .register();
+        let callback_passive = Rc::clone(observed_passive);
+        let listener = proxy
+            .add_listener_local()
+            .info(move |info| {
+                if let Some(value) = info
+                    .props()
+                    .and_then(|properties| properties.get("link.passive"))
+                {
+                    *callback_passive.borrow_mut() = Some(value.to_owned());
+                }
+                let next_state = match info.state() {
+                    pw::link::LinkState::Error(error) => {
+                        LinkAdmissionState::Failed(error.to_owned())
+                    }
+                    pw::link::LinkState::Unlinked => {
+                        LinkAdmissionState::Failed("link became unlinked".to_owned())
+                    }
+                    pw::link::LinkState::Paused => LinkAdmissionState::Paused,
+                    pw::link::LinkState::Active => LinkAdmissionState::Active,
+                    pending => LinkAdmissionState::Pending(format!("{pending:?}")),
+                };
+                observe_link_state(&mut observed.borrow_mut(), next_state);
+            })
+            .register();
+        Self {
+            index,
+            listener,
+            proxy_listener,
+            proxy,
+            global_id,
+            removed,
+            state,
+        }
+    }
+}
+
+// Registry IDs are reusable; required incarnations retain their removal event.
+type RequiredGlobalRemovals = BTreeMap<u32, Weak<Cell<bool>>>;
+
+fn observe_required_global_removal(watches: &mut RequiredGlobalRemovals, id: u32) {
+    if let Some(removed) = watches.remove(&id).and_then(|watch| watch.upgrade()) {
+        removed.set(true);
+    }
+}
+
+fn observe_link_state(state: &mut LinkAdmissionState, observed: LinkAdmissionState) {
+    // Error/Unlinked revoke this admission even if a later callback recovers.
+    if !matches!(state, LinkAdmissionState::Failed(_)) {
+        *state = observed;
+    }
+}
+
+#[cfg(test)]
+mod required_monitor_tests {
+    use super::*;
+
+    #[test]
+    fn removal_cannot_be_hidden_by_same_id_replacement() {
+        let removed = Rc::new(Cell::new(false));
+        let mut watches = BTreeMap::from([(42, Rc::downgrade(&removed))]);
+        observe_required_global_removal(&mut watches, 42);
+        // Re-registering the reused ID admits a new incarnation only after load.
+        let replacement_removed = Rc::new(Cell::new(false));
+        watches.insert(42, Rc::downgrade(&replacement_removed));
+        assert!(
+            removed.get(),
+            "same-ID replacement concealed required removal"
+        );
+        assert!(!replacement_removed.get());
+        observe_required_global_removal(&mut watches, 42);
+        assert!(replacement_removed.get());
+    }
+
+    #[test]
+    fn admitted_link_failure_is_permanent_until_reload() {
+        for next in [LinkAdmissionState::Active, LinkAdmissionState::Paused] {
+            let mut state = LinkAdmissionState::Failed("required link unlinked".to_owned());
+            observe_link_state(&mut state, next);
+            assert_eq!(
+                state,
+                LinkAdmissionState::Failed("required link unlinked".to_owned())
+            );
+        }
+    }
+}
+
 struct RequiredExternalPort {
     global_id: u32,
+    removed: Rc<Cell<bool>>,
     specification: PortSpec,
     expected_rate: Fraction,
 }
@@ -697,6 +822,7 @@ struct RequiredExternalObject {
     role: ObjectRole,
     node_name: String,
     global_id: u32,
+    removed: Rc<Cell<bool>>,
     ports: Vec<RequiredExternalPort>,
 }
 
@@ -758,6 +884,7 @@ pub struct LiveGraphAdapter {
     created_resources: usize,
     status: LiveGraphStatus,
     globals: Rc<RefCell<BTreeMap<u32, GlobalObject<PropertiesBox>>>>,
+    required_global_removals: Rc<RefCell<RequiredGlobalRemovals>>,
     errors: Rc<RefCell<Vec<String>>>,
     callback_deadline: Arc<Mutex<ControlDeadline>>,
     _registry_listener: pw::registry::Listener,
@@ -829,6 +956,8 @@ impl LiveGraphAdapter {
         let globals = Rc::new(RefCell::new(BTreeMap::new()));
         let added = Rc::clone(&globals);
         let removed = Rc::clone(&globals);
+        let required_global_removals = Rc::new(RefCell::new(BTreeMap::new()));
+        let removal_watches = Rc::clone(&required_global_removals);
         let registry_listener = registry
             .add_listener_local()
             .global(move |global| {
@@ -836,6 +965,7 @@ impl LiveGraphAdapter {
             })
             .global_remove(move |id| {
                 removed.borrow_mut().remove(&id);
+                observe_required_global_removal(&mut removal_watches.borrow_mut(), id);
             })
             .register();
 
@@ -875,6 +1005,7 @@ impl LiveGraphAdapter {
             created_resources: 0,
             status: LiveGraphStatus::default(),
             globals,
+            required_global_removals,
             errors,
             callback_deadline: Arc::new(Mutex::new(ControlDeadline::default())),
             _registry_listener: registry_listener,
@@ -2193,6 +2324,7 @@ impl LiveGraphAdapter {
         self.clear_errors();
         for link in self.links.drain(..) {
             drop(link.listener);
+            drop(link.proxy_listener);
             // These links deliberately do not set object.linger. Destroying
             // their client proxies therefore removes the server resources;
             // additionally asking Core::destroy_object would race that
@@ -2218,6 +2350,7 @@ impl LiveGraphAdapter {
         self.owned_node_names.clear();
         self.required_node_names.clear();
         self.required_external_objects.clear();
+        self.required_global_removals.borrow_mut().clear();
         self.finite_source_names.clear();
         self.has_external_source = false;
         self.graph_order.clear();
@@ -3139,6 +3272,7 @@ impl LiveGraphAdapter {
                         )?;
                         Ok(RequiredExternalPort {
                             global_id: port.id,
+                            removed: self.watch_required_global(port.id),
                             specification: specification.clone(),
                             expected_rate: configured_port_rate(config, specification)?,
                         })
@@ -3148,10 +3282,59 @@ impl LiveGraphAdapter {
                     role,
                     node_name: node_name.clone(),
                     global_id: node.id,
+                    removed: self.watch_required_global(node.id),
                     ports,
                 })
             })
             .collect()
+    }
+
+    fn watch_required_global(&self, id: u32) -> Rc<Cell<bool>> {
+        let removed = Rc::new(Cell::new(false));
+        self.required_global_removals
+            .borrow_mut()
+            .insert(id, Rc::downgrade(&removed));
+        removed
+    }
+
+    fn check_required_links(&self) -> Result<(), ScientificDiagnostic> {
+        if self.links.is_empty() {
+            return Ok(());
+        }
+        self.clear_errors();
+        let synchronization_error = self.roundtrip("required link monitor").err();
+        for link in &self.links {
+            let field = format!("links[{}]", link.index);
+            if link.removed.get()
+                || !link.global_id.get().is_some_and(|id| {
+                    self.globals
+                        .borrow()
+                        .get(&id)
+                        .is_some_and(|global| global.type_ == ObjectType::Link)
+                })
+            {
+                return Err(ScientificDiagnostic::new(
+                    field,
+                    "required link disappeared or was replaced",
+                ));
+            }
+            match &*link.state.borrow() {
+                LinkAdmissionState::Active | LinkAdmissionState::Paused => {}
+                LinkAdmissionState::Failed(error) => {
+                    return Err(ScientificDiagnostic::new(field, error.clone()));
+                }
+                pending => {
+                    return Err(ScientificDiagnostic::new(
+                        field,
+                        format!("required link is not usable: {pending:?}"),
+                    ))
+                }
+            }
+        }
+        match synchronization_error {
+            Some(error) => Err(error),
+            None => Ok(()),
+        }
     }
 
     fn check_external_object_contracts(&mut self) -> Result<(), ScientificDiagnostic> {
@@ -3166,7 +3349,7 @@ impl LiveGraphAdapter {
                 .borrow()
                 .get(&object.global_id)
                 .map(GlobalObject::to_owned)
-                .filter(|global| is_node_named(global, &object.node_name))
+                .filter(|global| !object.removed.get() && is_node_named(global, &object.node_name))
                 .ok_or_else(|| {
                     ScientificDiagnostic::new(
                         format!("{} {}.node.name", object.role.name(), object.node_name),
@@ -3184,7 +3367,7 @@ impl LiveGraphAdapter {
                     .get(&required_port.global_id)
                     .map(GlobalObject::to_owned)
                     .filter(|global| {
-                        if global.type_ != ObjectType::Port {
+                        if required_port.removed.get() || global.type_ != ObjectType::Port {
                             return false;
                         }
                         let Some(properties) = global.props.as_ref() else {
@@ -3315,37 +3498,15 @@ impl LiveGraphAdapter {
                     format!("link factory rejected creation: {error}"),
                 )
             })?;
-        let state = Rc::new(RefCell::new(LinkAdmissionState::Unknown));
-        let observed = Rc::clone(&state);
         let observed_passive = Rc::new(RefCell::new(None));
-        let callback_passive = Rc::clone(&observed_passive);
-        let listener = link
-            .add_listener_local()
-            .info(move |info| {
-                if let Some(value) = info
-                    .props()
-                    .and_then(|properties| properties.get("link.passive"))
-                {
-                    *callback_passive.borrow_mut() = Some(value.to_owned());
-                }
-                *observed.borrow_mut() = match info.state() {
-                    pw::link::LinkState::Error(error) => {
-                        LinkAdmissionState::Failed(error.to_owned())
-                    }
-                    pw::link::LinkState::Unlinked => {
-                        LinkAdmissionState::Failed("link became unlinked".to_owned())
-                    }
-                    pw::link::LinkState::Paused => LinkAdmissionState::Paused,
-                    pw::link::LinkState::Active => LinkAdmissionState::Active,
-                    pending => LinkAdmissionState::Pending(format!("{pending:?}")),
-                };
-            })
-            .register();
-        self.links.push(LiveLink {
-            listener,
-            proxy: link,
-            state: Rc::clone(&state),
-        });
+        let link = LiveLink::observe(
+            index,
+            link,
+            &self.required_global_removals,
+            &observed_passive,
+        );
+        let state = Rc::clone(&link.state);
+        self.links.push(link);
 
         let label = format!("links[{index}] {output} -> {input}");
         let deadline = Instant::now() + Duration::from_millis(500);
@@ -3900,6 +4061,7 @@ impl EffectExecutor for LiveGraphAdapter {
 
     fn check_required_objects(&mut self) -> Result<RequiredObjectStatus, ScientificDiagnostic> {
         self.check_external_object_contracts()?;
+        self.check_required_links()?;
         for publisher in &self.parameter_publishers {
             if let Some(error) = &publisher.state.borrow().failure {
                 return Err(ScientificDiagnostic::new(

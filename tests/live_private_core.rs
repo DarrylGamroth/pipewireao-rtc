@@ -2,6 +2,8 @@
 
 #[path = "live_private_core/fits_discard.rs"]
 mod fits_discard;
+#[path = "live_private_core/required_monitor.rs"]
+mod required_monitor;
 #[path = "live_private_core/stepped_topology.rs"]
 mod stepped_topology;
 
@@ -476,6 +478,20 @@ fn private_core_transport_and_all_rtc_session_topologies_run_and_clean_up() {
     let scope = std::env::var("PIPEWIREAO_RTC_LIVE_SCOPE");
     let topology_only = matches!(scope.as_deref(), Ok("topologies" | "topologies-revolt"));
     match scope.as_deref() {
+        Ok("required-external-replacement") => {
+            required_monitor::external_replacement(
+                &repository,
+                &pipewire_build,
+                &environment,
+                &core_name,
+                &external_fgn_graph,
+            );
+            return;
+        }
+        Ok("required-monitor") => {
+            required_monitor::run(&repository, &pipewire_build, &environment, &core_name);
+            return;
+        }
         Ok("revolt-lockstep") => {
             run_revolt_classic_lockstep_case(
                 &repository,
