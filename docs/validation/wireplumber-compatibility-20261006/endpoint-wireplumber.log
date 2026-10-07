@@ -1,0 +1,30 @@
+W 23:36:38.039994         pw.context ../src/pipewire/context.c:548:pw_context_new: 0x56134715e160: can't load dbus library: support/libspa-dbus
+PILOT_OBJECT 15 15
+PILOT_OBJECT 17 17
+PILOT_OBJECT 13 13
+PILOT_OBJECT 14 14
+PILOT_OBJECT 16 16
+PILOT_FORMAT
+	elementType: U16_LE
+	layout: COLUMN_MAJOR
+	mediaSubtype: ndarray
+	mediaType: application
+	rate:
+		denom: 1
+		num: 100
+		pod_type: Fraction
+	schema: org.pipewireao.test.wireplumber/1
+	shape:
+		1: 4
+		2: 3
+		pod_type: Array
+		value_type: Spa:Int
+PILOT_META Header 32
+PILOT_LINK_STATE init
+PILOT_LINK_STATE paused
+PILOT_LINK_STATE active
+PILOT_LINK_BOUND 19
+PILOT_ENDPOINT_LOST source
+PILOT_ENDPOINT_LOST output
+PILOT_ENDPOINT_LOST input
+PILOT_ENDPOINT_LOST sink

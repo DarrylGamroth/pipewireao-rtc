@@ -1,0 +1,329 @@
+{
+  "scope": "functional source/discard compatibility; no RTC admission or timing claim",
+  "base_revisions": {
+    "rtc": "c89ff6c4fe120b4e19a5026fe13009d46d08d0fc",
+    "wireplumber": "bdc17eb2c419cbe41dbb248cf20cbe93370ee2f7",
+    "pipewireao": "29da2d6699d24fff77a693d3988ad6432594ef81"
+  },
+  "platform": "Linux-6.12.107+deb13-amd64-x86_64-with-glibc2.41",
+  "python": "3.13.5",
+  "verification": "all four accepted runs invoked python3 -O",
+  "source_hashes": {
+    "scripts/build_wireplumber_pilot.sh": "b56ba28379e1eb1da87e1c7e097227ac0625064683f525ab7df3ca0f1c59385a",
+    "scripts/qualify_wireplumber.py": "07b029579c3f80f22c7008e2d7860ef5f52eeb52f435b7b7e128d8c09fe529b8",
+    "deployment/wireplumber/ndarray-pilot.lua": "f2238e67a6f10bbfd41a8c473c4ada299b5e3cb168f7229d5f0703a48d79989a"
+  },
+  "library_hashes": {
+    "/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0": "083da9b7c347a40e8ce03cc1332c06774cbf766fdd71fe36010233e6d9096387",
+    "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/fits/libspa-fits.so": "3f3fb042201afb2cf646fd76a468103d8f57609e0630eef065b332fe03e14e2a",
+    "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/discard/libspa-pipewireao-discard.so": "5ffcb1339e65e3eee48597b62bb42843b22ab8b293f65736aaa57074d50338b0"
+  },
+  "cases": {
+    "graceful": {
+      "scope": "isolated FITS \u2192 discard compatibility; no RTC admission or timing claim",
+      "cpu": 6,
+      "frames": 32,
+      "passed": true,
+      "stale_serial": false,
+      "termination": "graceful",
+      "identities": {
+        "source.id": 14,
+        "source.serial": 14,
+        "sink.id": 16,
+        "sink.serial": 16,
+        "output.id": 15,
+        "output.serial": 15,
+        "input.id": 17,
+        "input.serial": 17
+      },
+      "requested_identities": {
+        "source.id": 14,
+        "source.serial": 14,
+        "sink.id": 16,
+        "sink.serial": 16,
+        "output.id": 15,
+        "output.serial": 15,
+        "input.id": 17,
+        "input.serial": 17
+      },
+      "discard": {
+        "id-01000000": 32,
+        "id-01000001": 32,
+        "id-01000002": 768,
+        "id-01000003": 0,
+        "id-01000004": 32,
+        "id-01000005": 8808077142377848178,
+        "id-01000006": 768
+      },
+      "link": {
+        "id": 20,
+        "type": "PipeWire:Interface:Link",
+        "version": 3,
+        "permissions": [
+          "r",
+          "x"
+        ],
+        "info": {
+          "output-node-id": 14,
+          "output-port-id": 15,
+          "input-node-id": 16,
+          "input-port-id": 17,
+          "change-mask": [
+            "state",
+            "format",
+            "props"
+          ],
+          "state": "active",
+          "error": null,
+          "format": {
+            "mediaType": "application",
+            "mediaSubtype": "ndarray",
+            "schema": "org.pipewireao.test.wireplumber/1",
+            "elementType": "U16_LE",
+            "shape": [
+              4,
+              3
+            ],
+            "layout": "COLUMN_MAJOR",
+            "rate": {
+              "num": 100,
+              "denom": 1
+            }
+          },
+          "props": {
+            "client.id": 19,
+            "factory.id": 12,
+            "link.input.node": 16,
+            "link.input.port": 17,
+            "link.output.node": 14,
+            "link.output.port": 15,
+            "object.id": 20,
+            "object.linger": false,
+            "object.serial": 22
+          }
+        }
+      },
+      "termination_returncode": 0,
+      "run_directory": "/tmp/wp-compatibility-20261006-final-graceful-pinned",
+      "retained_logs": {
+        "core": "graceful-core.log",
+        "wireplumber": "graceful-wireplumber.log"
+      }
+    },
+    "kill": {
+      "scope": "isolated FITS \u2192 discard compatibility; no RTC admission or timing claim",
+      "cpu": 6,
+      "frames": 32,
+      "passed": true,
+      "stale_serial": false,
+      "termination": "kill",
+      "identities": {
+        "source.id": 14,
+        "source.serial": 14,
+        "sink.id": 16,
+        "sink.serial": 16,
+        "output.id": 15,
+        "output.serial": 15,
+        "input.id": 17,
+        "input.serial": 17
+      },
+      "requested_identities": {
+        "source.id": 14,
+        "source.serial": 14,
+        "sink.id": 16,
+        "sink.serial": 16,
+        "output.id": 15,
+        "output.serial": 15,
+        "input.id": 17,
+        "input.serial": 17
+      },
+      "discard": {
+        "id-01000000": 32,
+        "id-01000001": 32,
+        "id-01000002": 768,
+        "id-01000003": 0,
+        "id-01000004": 32,
+        "id-01000005": 8808077142377848178,
+        "id-01000006": 768
+      },
+      "link": {
+        "id": 20,
+        "type": "PipeWire:Interface:Link",
+        "version": 3,
+        "permissions": [
+          "r",
+          "x"
+        ],
+        "info": {
+          "output-node-id": 14,
+          "output-port-id": 15,
+          "input-node-id": 16,
+          "input-port-id": 17,
+          "change-mask": [
+            "state",
+            "format",
+            "props"
+          ],
+          "state": "active",
+          "error": null,
+          "format": {
+            "mediaType": "application",
+            "mediaSubtype": "ndarray",
+            "schema": "org.pipewireao.test.wireplumber/1",
+            "elementType": "U16_LE",
+            "shape": [
+              4,
+              3
+            ],
+            "layout": "COLUMN_MAJOR",
+            "rate": {
+              "num": 100,
+              "denom": 1
+            }
+          },
+          "props": {
+            "client.id": 19,
+            "factory.id": 12,
+            "link.input.node": 16,
+            "link.input.port": 17,
+            "link.output.node": 14,
+            "link.output.port": 15,
+            "object.id": 20,
+            "object.linger": false,
+            "object.serial": 22
+          }
+        }
+      },
+      "termination_returncode": -9,
+      "run_directory": "/tmp/wp-compatibility-20261006-final-kill-pinned",
+      "retained_logs": {
+        "core": "kill-core.log",
+        "wireplumber": "kill-wireplumber.log"
+      }
+    },
+    "endpoint": {
+      "scope": "isolated FITS \u2192 discard compatibility; no RTC admission or timing claim",
+      "cpu": 6,
+      "frames": 32,
+      "passed": true,
+      "stale_serial": false,
+      "termination": "endpoint-loss",
+      "identities": {
+        "source.id": 14,
+        "source.serial": 14,
+        "sink.id": 16,
+        "sink.serial": 16,
+        "output.id": 15,
+        "output.serial": 15,
+        "input.id": 17,
+        "input.serial": 17
+      },
+      "requested_identities": {
+        "source.id": 14,
+        "source.serial": 14,
+        "sink.id": 16,
+        "sink.serial": 16,
+        "output.id": 15,
+        "output.serial": 15,
+        "input.id": 17,
+        "input.serial": 17
+      },
+      "discard": {
+        "id-01000000": 32,
+        "id-01000001": 32,
+        "id-01000002": 768,
+        "id-01000003": 0,
+        "id-01000004": 32,
+        "id-01000005": 8808077142377848178,
+        "id-01000006": 768
+      },
+      "link": {
+        "id": 19,
+        "type": "PipeWire:Interface:Link",
+        "version": 3,
+        "permissions": [
+          "r",
+          "x"
+        ],
+        "info": {
+          "output-node-id": 14,
+          "output-port-id": 15,
+          "input-node-id": 16,
+          "input-port-id": 17,
+          "change-mask": [
+            "state",
+            "format",
+            "props"
+          ],
+          "state": "active",
+          "error": null,
+          "format": {
+            "mediaType": "application",
+            "mediaSubtype": "ndarray",
+            "schema": "org.pipewireao.test.wireplumber/1",
+            "elementType": "U16_LE",
+            "shape": [
+              4,
+              3
+            ],
+            "layout": "COLUMN_MAJOR",
+            "rate": {
+              "num": 100,
+              "denom": 1
+            }
+          },
+          "props": {
+            "client.id": 20,
+            "factory.id": 12,
+            "link.input.node": 16,
+            "link.input.port": 17,
+            "link.output.node": 14,
+            "link.output.port": 15,
+            "object.id": 19,
+            "object.linger": false,
+            "object.serial": 22
+          }
+        }
+      },
+      "termination_returncode": null,
+      "run_directory": "/tmp/wp-compatibility-20261006-final-endpoint-pinned",
+      "retained_logs": {
+        "core": "endpoint-core.log",
+        "wireplumber": "endpoint-wireplumber.log"
+      }
+    },
+    "stale": {
+      "scope": "isolated FITS \u2192 discard compatibility; no RTC admission or timing claim",
+      "cpu": 6,
+      "frames": 32,
+      "passed": true,
+      "stale_serial": true,
+      "termination": "graceful",
+      "identities": {
+        "source.id": 14,
+        "source.serial": 14,
+        "sink.id": 16,
+        "sink.serial": 16,
+        "output.id": 15,
+        "output.serial": 15,
+        "input.id": 17,
+        "input.serial": 17
+      },
+      "requested_identities": {
+        "source.id": 14,
+        "source.serial": 1014,
+        "sink.id": 16,
+        "sink.serial": 16,
+        "output.id": 15,
+        "output.serial": 15,
+        "input.id": 17,
+        "input.serial": 17
+      },
+      "run_directory": "/tmp/wp-compatibility-20261006-final-stale-pinned",
+      "retained_logs": {
+        "core": "stale-core.log",
+        "wireplumber": "stale-wireplumber.log"
+      }
+    }
+  }
+}

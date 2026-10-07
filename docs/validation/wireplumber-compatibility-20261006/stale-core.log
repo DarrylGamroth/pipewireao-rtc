@@ -1,0 +1,1 @@
+[W][86058][23:36:38.524025] pw.context   | [       context.c:  548 pw_context_new()] 0x55b5a749fa70: can't load dbus library: support/libspa-dbus

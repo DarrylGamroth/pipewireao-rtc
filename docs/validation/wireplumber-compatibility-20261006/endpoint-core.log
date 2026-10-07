@@ -1,0 +1,7 @@
+[W][86027][23:36:38.017293] pw.context   | [       context.c:  548 pw_context_new()] 0x562d844b6a70: can't load dbus library: support/libspa-dbus
+[W][86027][23:36:38.043708] pw.port      | [     impl-port.c: 2443 pw_impl_port_set_param()] can't setup mixer
+[E][86027][23:36:38.375717] pw.port      | [     impl-port.c: 2606 pw_impl_port_use_buffers()] 0x562d8454c660: negotiate buffers on node: -16 (Device or resource busy)
+[E][86027][23:36:38.375724] pw.port      | [     impl-port.c:  290 pw_impl_port_update_state()] 0x562d8454c660: state ready -> error (can't negotiate buffers on port)
+[E][86027][23:36:38.375727] pw.link      | [     impl-link.c:  107 link_update_state()] (14.0.0 -> 16.0.0) negotiating -> error can't negotiate buffers on port (-5) (paused-error)
+[W][86027][23:36:38.375748] pw.port      | [     impl-port.c: 1978 pw_impl_port_suspend()] 0x562d8453d820: error unset format: Device or resource busy
+[W][86027][23:36:38.383248] pw.port      | [     impl-port.c: 1978 pw_impl_port_suspend()] 0x562d8454c660: error unset format: Device or resource busy

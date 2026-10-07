@@ -1,0 +1,10 @@
+W 23:36:38.544837         pw.context ../src/pipewire/context.c:548:pw_context_new: 0x559a8d674160: can't load dbus library: support/libspa-dbus
+PILOT_OBJECT 15 15
+PILOT_OBJECT 17 17
+PILOT_OBJECT 13 13
+PILOT_OBJECT 14 14
+PILOT_OBJECT 16 16
+PILOT_NO_LINK
+PILOT_ENDPOINT_LOST input
+PILOT_ENDPOINT_LOST sink
+PILOT_ENDPOINT_LOST output

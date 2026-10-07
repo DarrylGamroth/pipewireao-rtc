@@ -26,7 +26,9 @@ instrument. [Ecosystem integration](ECOSYSTEM_INTEGRATION.md) describes existing
 ownership and the proposed transfer. The accepted application split keeps RTC
 lifecycle logic in a headless runtime, with GUI and CLI clients using the same
 native controls; WirePlumberAO supplies discovery and connection policy.
-WirePlumber compatibility and that transfer are not implemented or qualified;
+The isolated complete-frame WirePlumber compatibility fixture passes discovery,
+format/metadata parsing, explicit linking, exact delivery and basic teardown.
+RTC/AOS session ownership transfer remains unimplemented and unqualified;
 current deployment and controls remain in use.
 
 [Adversarial architecture review](APPLICATION_ARCHITECTURE_REVIEW.md) identifies
@@ -45,6 +47,7 @@ multiple-endpoint adapter or mixed-rate plant synchronization.
 
 | Area | Current disposition | Evidence to read if affected |
 | --- | --- | --- |
+| WirePlumber compatibility | Unmodified 0.5.18 source built against AO using private dependency aliases. The isolated FITS/discard fixture passes 32-buffer ordered delivery, metadata/format parsing, stale-serial rejection and link cleanup after graceful exit, SIGKILL and source loss. Copper/AOS admission and link/process ownership transfer remain open. | [Compatibility fixture](validation/wireplumber-compatibility-20261006/README.md) |
 | Native control implementation | Reviewed changes merged to RTC main; live controls use typed native requests. Saved JSON is artifact/configuration only. | [Inventory](LIVE_CONTROL_INVENTORY.md), [integration snapshot](MAIN_INTEGRATION_20261006.md) |
 | Julia SDK/bootstrap | SDK 0.6.17 source is pushed; deployment pins that exact own revision. Paired cold runtime checks pass 232 assertions. Refreshed installed Copper CUDA simulator / CPU JFG passes lifecycle and simulator heap gates; other selected profiles and SDK registration remain open. | [Bootstrap validation](BOOTSTRAP_CONTROLLER_SEAL_VALIDATION.md), [installed Copper evidence](validation/copper-main-20261006/README.md) |
 | GUI session selection | Actual same-label installed owners selected by exact native identities, including a stopped peer; read-only picker replay passed. GUI changes are on its local main. | GUI `docs/NATIVE_HIL_GUI_PROGRESS_VALIDATION.md` |

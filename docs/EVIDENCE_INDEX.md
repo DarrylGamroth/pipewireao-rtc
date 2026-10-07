@@ -17,6 +17,10 @@ records independent system/real-time reviews, their consolidated dispositions,
 and the resulting ownership and migration recommendations. It is source review,
 not new runtime, timing or hardware qualification.
 
+[WirePlumber compatibility, 2026-10-06](validation/wireplumber-compatibility-20261006/README.md)
+records the isolated complete-frame NDArray fixture, exact delivery and basic
+link cleanup. It does not qualify RTC/AOS admission or transfer ownership.
+
 [Installed Copper qualification, 2026-10-06](validation/copper-main-20261006/README.md)
 records refreshed main-runtime/SDK detector and DM trajectories, observer
 death/replacement and stall, simulator Julia heap counters and independent

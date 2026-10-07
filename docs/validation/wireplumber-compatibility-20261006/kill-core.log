@@ -1,0 +1,3 @@
+[W][85996][23:36:37.512306] pw.context   | [       context.c:  548 pw_context_new()] 0x55adf9401a70: can't load dbus library: support/libspa-dbus
+[W][85996][23:36:37.539457] pw.port      | [     impl-port.c: 2443 pw_impl_port_set_param()] can't setup mixer
+[W][85996][23:36:37.876686] pw.port      | [     impl-port.c: 1978 pw_impl_port_suspend()] 0x55adf9488820: error unset format: Device or resource busy

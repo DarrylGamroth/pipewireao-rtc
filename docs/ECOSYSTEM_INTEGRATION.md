@@ -283,7 +283,14 @@ policy/configuration alongside upstream WirePlumber. Native changes are justifie
 only by a demonstrated NDArray integration gap. There is no established need for
 another session-manager framework or a permanently divergent fork.
 
-Two compatibility questions remain open:
+The [initial compatibility fixture](validation/wireplumber-compatibility-20261006/README.md)
+now passes with unmodified WirePlumber source built against AO through private
+build dependency aliases. Generic discovery, NDArray format/metadata parsing and
+explicit linking work for that complete-frame FITS/discard path. This requires
+no native WirePlumber patch; a maintained build/release selection and additional
+AO contracts still need qualification.
+
+The broader compatibility questions retain these scopes:
 
 1. WirePlumber currently requests `libpipewire-0.3` and `libspa-0.2` through
    pkg-config; PipeWireAO uses an AO library namespace. Determine whether stock
@@ -347,8 +354,10 @@ the duplication.
 4. Remove redundant supervision and registry/link code only after that parity.
    Keep the existing scientific packages and graph configurations intact.
 
-This increment is proposed, not completed. Existing qualification results retain
-their recorded scope; see [current work](roadmap.md#current-work).
+The first isolated FITS/discard step passes within its recorded scope. The RTC/AOS
+connection pilot and ownership transfers remain proposed, not completed. Existing
+qualification results retain their recorded scope; see
+[current work](roadmap.md#current-work).
 Timing qualification remains a separate gate: define the offered camera/readout
 pattern, age/loss/overload contract and resource budget, and measure concurrent
 owner-reaching controls as well as independently paced ingress. Lockstep HIL
