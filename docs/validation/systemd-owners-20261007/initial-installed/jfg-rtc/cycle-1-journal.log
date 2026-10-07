@@ -1,0 +1,2 @@
+[2182811.785199] rtc-devel pipewireao-rtc-deploy[557585]: DEPLOYMENT_READY name=rtc-graph-updates-jfg-baseline-20261006 control_locator=/run/user/1000/rtc-sd-jfg-rtc-20261007-retry2/control.json
+[2182821.968336] rtc-devel pipewireao-rtc-deploy[557585]: pipewireao-rtc-deploy: required rtc stopped: owner process identity exited or left its cgroup; Result=signal, ExecMainCode=2, ExecMainStatus=9

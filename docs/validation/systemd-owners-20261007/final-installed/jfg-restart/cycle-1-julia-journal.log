@@ -1,0 +1,12 @@
+[2184362.241353] rtc-devel julialauncher[583122]: Precompiling packages...
+[2184369.168923] rtc-devel julialauncher[583122]:    6918.7 ms  ✓ PipeWireAO
+[2184369.169619] rtc-devel julialauncher[583122]:   1 dependency successfully precompiled in 7 seconds. 8 already precompiled.
+[2184375.607018] rtc-devel julialauncher[583122]: Precompiling packages...
+[2184386.113522] rtc-devel julialauncher[583122]:   10506.5 ms  ✓ FilterGraphAlgorithms
+[2184386.113992] rtc-devel julialauncher[583122]:   1 dependency successfully precompiled in 11 seconds. 44 already precompiled.
+[2184386.113992] rtc-devel julialauncher[583122]:   6 dependencies precompiled but different versions are currently loaded (Dates, JLLWrappers, Preferences, Printf, TOML and Zlib_jll). Restart julia to access the new versions. Otherwise, 16 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+[2184386.487834] rtc-devel julialauncher[583122]: Precompiling packages...
+[2184388.124397] rtc-devel julialauncher[583122]:    1636.5 ms  ✓ JuliaFilterGraph
+[2184390.176806] rtc-devel julialauncher[583122]:    2051.9 ms  ✓ FilterGraphPipeWire
+[2184390.177409] rtc-devel julialauncher[583122]:   2 dependencies successfully precompiled in 4 seconds. 62 already precompiled.
+[2184390.177409] rtc-devel julialauncher[583122]:   37 dependencies precompiled but different versions are currently loaded (AbstractFFTs, AdaptiveOpticsCalibration, CEnum, CompilerSupportLibraries_jll, Dates, DelimitedFiles, DocStringExtensions, FFTW, FFTW_jll, FilterGraphAlgorithms, GenericLinearAlgebra, Hwloc, Hwloc_jll, IrrationalConstants, JLLWrappers, Libiconv_jll, LogExpFunctions, Mmap, OpenLibm_jll, OpenSpecFun_jll, PipeWireAO, PipeWireAO_jll, PrecompileTools, Preferences, Printf, Reexport, Serialization, SpecialFunctions, StableTasks, SysInfo, TOML, ThreadPinning, ThreadPinningCore, UnsafeArrays, XML2_jll, Xorg_libpciaccess_jll and Zlib_jll). Restart julia to access the new versions. Otherwise, 12 dependents of these packages may trigger further precompilation to work with the unexpected versions.

@@ -1,0 +1,2 @@
+[2182997.787094] rtc-devel pipewireao-rtc-deploy[559349]: DEPLOYMENT_READY name=rtc-graph-updates-jfg-baseline-20261006 control_locator=/run/user/1000/rtc-sd-jfg-julia-20261007-retry2/control.json
+[2183009.758124] rtc-devel pipewireao-rtc-deploy[559349]: pipewireao-rtc-deploy: required julia stopped: owner process identity exited or left its cgroup; Result=signal, ExecMainCode=2, ExecMainStatus=9

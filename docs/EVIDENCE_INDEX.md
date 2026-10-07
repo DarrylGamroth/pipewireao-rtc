@@ -328,3 +328,14 @@ cover native intent updates, real Links, generation withdrawal, delayed
 completion, selected Copper FGN/JFG clean/retry/loss/fresh-admission checks
 and the narrow WirePlumber POD-filter capacity correction. Systemd supervision
 and broader timing/physical-device qualification remain separate.
+
+## Separate systemd owner services — 2026-10-07
+
+[Qualification and independent review](validation/systemd-owners-20261007/README.md)
+record opt-in service supervision for Copper CPU FGN/JFG with CUDA AOS. All 11
+selected owner/coordinator loss cases, final retained failure diagnostics and
+fresh whole-session restart pass. Each engine delivers 2,048 final commands with
+exact retained per-engine prefixes, zero simulator inclusive heap/GC tails and
+empty owner cgroups. The headless RTC keeps native science/source authority and
+WirePlumber keeps external links. Direct foreground, other profiles, target
+timing, general multiple endpoints and physical actuation retain separate scopes.

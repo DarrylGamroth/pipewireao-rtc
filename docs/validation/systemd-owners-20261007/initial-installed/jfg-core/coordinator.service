@@ -1,0 +1,23 @@
+[Unit]
+Description=PipeWireAO RTC coordinator with separate owner services %i
+
+[Service]
+Type=notify
+NotifyAccess=main
+ExecStart="/tmp/rtc-systemd-jfg-20261007-package/bin/pipewireao-rtc-deploy" run --pipewire-prefix "/opt/pipewireao" --deployment "/tmp/rtc-systemd-jfg-20261007-package/deployment.conf" --runtime "/run/user/1000/rtc-sd-jfg-core-20261007-retry2" --owner-preparation-timeout-seconds 900 --process-supervisor systemd --supervisor-unit %n
+ExecStopPost="/tmp/rtc-systemd-jfg-20261007-package/bin/pipewireao-rtc-deploy" cleanup-systemd-owners --invocation ${INVOCATION_ID}
+RuntimeDirectory=pipewireao-rtc-systemd-%i
+RuntimeDirectoryMode=0700
+RuntimeDirectoryPreserve=yes
+UMask=0077
+LimitRTPRIO=95
+LimitMEMLOCK=4294967296
+CPUAffinity=2 4 6 10 12 14
+KillMode=mixed
+KillSignal=SIGINT
+TimeoutStartSec=900
+TimeoutStopSec=300
+Restart=no
+
+[Install]
+WantedBy=default.target

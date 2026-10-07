@@ -1,0 +1,40 @@
+Test Summary:                                      | Pass  Total  Time
+systemd owner names and exact invocation discovery |    8      8  0.9s
+Test Summary:                                                               | Pass  Total  Time
+owner command preserves arguments and strips coordinator notification state |   12     12  1.3s
+Test Summary:                                         | Pass  Total  Time
+retained owner identity and recursive cgroup evidence |   21     21  0.5s
+Test Summary:                             | Pass  Total  Time
+deployment process supervisor CLI options |   10     10  0.4s
+Test Summary:                                             | Pass  Total  Time
+Service admission wait skips another supervisor's locator |    2      2  9.5s
+Test Summary:                                    | Pass  Total  Time
+opt-in systemd coordinator template and SDK copy |   14     14  0.3s
+Test Summary:                           | Pass  Total  Time
+Unconfirmed ingress preserves consumers |   12     12  0.7s
+Test Summary:                                | Pass  Total  Time
+completed run has no second terminal cleanup |    4      4  4.1s
+Test Summary:                                                   | Pass  Total  Time
+emergency cleanup preserves prior failure and uncertain runtime |    8      8  0.2s
+Test Summary:                                                  | Pass  Total  Time
+successful emergency stop does not erase a prior owner failure |    4      4  0.2s
+Test Summary:                                                    | Pass  Total  Time
+emergency cleanup failure retains the original cause and runtime |    6      6  0.2s
+Test Summary:                              | Pass  Total  Time
+confirmed emergency cleanup records a stop |    5      5  0.1s
+Test Summary:                                    | Pass  Total  Time
+Exited source is revoked without a pause request |   20     20  1.5s
+Test Summary:                                       | Pass  Total  Time
+Exited source revokes its adopted owned descendants |   12     12  0.5s
+Test Summary:                                               | Pass  Total  Time
+Unknown live source gets report grace after core revocation |   13     13  0.7s
+Test Summary:                                         | Pass  Total  Time
+supervisor preserves failed runner Status diagnostics |    5      5  0.6s
+Test Summary:                                                       | Pass  Total  Time
+typed supervisor carries one absolute deadline through coordination |    9      9  0.9s
+Test Summary:                                                           | Pass  Total  Time
+unavailable optional observation preserves required admission placement |    6      6  0.6s
+Test Summary:                                              | Pass  Total  Time
+runner admission requires a successful matching completion |   10     10  0.0s
+Test Summary:                                                  | Pass  Total  Time
+invalid runner commands do not terminate or pause a deployment |   29     29  2.2s

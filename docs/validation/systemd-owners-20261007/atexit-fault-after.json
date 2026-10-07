@@ -1,0 +1,71 @@
+{
+  "observed_utc": "2026-10-07T23:00:28.776413+00:00",
+  "source_receipt": "/tmp/rtc-sd-fgn-core-20261007-retry2/receipt.json",
+  "source_sha256": "431013b5f3ce14883e02860e41fab4c816d64bf86114a5be8c692b3aa0664768",
+  "success": true,
+  "case": "core",
+  "unit": "pipewireao-rtc-systemd@sd-fgn-7b918082bf4f.service",
+  "descriptor_sha256": "67ecdec5f4eef2a5b951071282465042f60ffab700f628b68e30a523ee6d08de",
+  "coordinator_sha256": "206bc83da169cc5bb08a123433423c4ed1360132d02b5081fb531c18795b2cec",
+  "deployment_source_sha256": "cd5981cae82b87abe096d25375ba732485fedb4fad2e6e854e8235833eaf6d40",
+  "installed_source_matches_worktree": true,
+  "cleanup_confirmed": true,
+  "final": {
+    "Result": "exit-code",
+    "Id": "pipewireao-rtc-systemd@sd-fgn-7b918082bf4f.service",
+    "ExecMainCode": "1",
+    "InvocationID": "830798556436446da662c5a8db26343d",
+    "SubState": "failed",
+    "LoadState": "loaded",
+    "ControlGroup": "",
+    "ExecMainStatus": "1",
+    "ActiveState": "failed",
+    "MainPID": "0"
+  },
+  "saved_report": {
+    "phase": "failed",
+    "admitted": false,
+    "error": "required core stopped: owner process identity exited or left its cgroup; Result=signal, ExecMainCode=2, ExecMainStatus=9",
+    "cleanup_errors": [
+      "required core stopped: owner process identity exited or left its cgroup; Result=signal, ExecMainCode=2, ExecMainStatus=9",
+      "deployment cleanup failed: source coordination failed: required core stopped: owner process identity exited or left its cgroup; Result=signal, ExecMainCode=2, ExecMainStatus=9"
+    ],
+    "retained_runtime": "/run/user/1000/rtc-sd-fgn-core-20261007-retry2/run-rdtQpc"
+  },
+  "independent_owner_checks": {
+    "core": {
+      "state": {
+        "MainPID": "0",
+        "Id": "pipewireao-owner-830798556436446da662c5a8db26343d-core.service",
+        "ActiveState": "failed"
+      },
+      "cgroup_events": "absent"
+    },
+    "wireplumber": {
+      "state": {
+        "MainPID": "0",
+        "Id": "pipewireao-owner-830798556436446da662c5a8db26343d-wireplumber.service",
+        "ActiveState": "inactive"
+      },
+      "cgroup_events": "absent"
+    },
+    "simulator": {
+      "state": {
+        "MainPID": "0",
+        "Id": "pipewireao-owner-830798556436446da662c5a8db26343d-simulator.service",
+        "ActiveState": "failed"
+      },
+      "cgroup_events": "absent"
+    },
+    "rtc": {
+      "state": {
+        "MainPID": "0",
+        "Id": "pipewireao-owner-830798556436446da662c5a8db26343d-rtc.service",
+        "ActiveState": "failed"
+      },
+      "cgroup_events": "absent"
+    }
+  },
+  "retained_runtime_exists_at_later_check": false,
+  "on_disk_state_matches_receipt": true
+}

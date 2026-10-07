@@ -1,0 +1,1 @@
+[2183715.726623] rtc-devel pipewire-ao[567988]: [W][567988][16:30:05.596894] pw.context   | [       context.c:  548 pw_context_new()] 0x563e8a930230: can't load dbus library: support/libspa-dbus

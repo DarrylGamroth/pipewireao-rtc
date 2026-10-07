@@ -1,0 +1,32 @@
+{
+  "source_receipt": "/tmp/rtc-sd-fgn-core-20261007/receipt.json",
+  "source_sha256": "4c8dff1866b53925bec8909c891d23428c3da2b9f81a9d320fe4091f0496a5ad",
+  "success": false,
+  "error": "owner loss did not revoke admission",
+  "case": "core",
+  "unit": "pipewireao-rtc-systemd@sd-fgn-ebe1c662e38d.service",
+  "descriptor_sha256": "0c3232c31ec860a50a16ef3d92d7c71c50f9df2014a7a7be1e655f626ab7c209",
+  "cleanup_confirmed": true,
+  "final": {
+    "Result": "exit-code",
+    "Id": "pipewireao-rtc-systemd@sd-fgn-ebe1c662e38d.service",
+    "ExecMainCode": "1",
+    "InvocationID": "ffe567f8279744aa8fecbad9d38dd808",
+    "SubState": "failed",
+    "LoadState": "loaded",
+    "ControlGroup": "",
+    "ExecMainStatus": "1",
+    "ActiveState": "failed",
+    "MainPID": "0"
+  },
+  "saved_report": {
+    "phase": "stopped",
+    "admitted": false,
+    "error": "required core stopped: owner process identity exited or left its cgroup; Result=signal, ExecMainCode=2, ExecMainStatus=9",
+    "cleanup_errors": [
+      "required core stopped: owner process identity exited or left its cgroup; Result=signal, ExecMainCode=2, ExecMainStatus=9",
+      "deployment cleanup failed: source coordination failed: required core stopped: owner process identity exited or left its cgroup; Result=signal, ExecMainCode=2, ExecMainStatus=9"
+    ],
+    "retained_runtime": "/run/user/1000/rtc-sd-fgn-core-20261007/run-u3NTXa"
+  }
+}

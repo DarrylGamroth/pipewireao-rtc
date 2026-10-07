@@ -1,0 +1,5 @@
+[2181376.351135] rtc-devel pipewireao-rtc-deploy[544159]: Precompiling packages...
+[2181381.249692] rtc-devel pipewireao-rtc-deploy[544159]:    4893.5 ms  ✓ PipeWireAODeployment
+[2181381.250318] rtc-devel pipewireao-rtc-deploy[544159]:   1 dependency successfully precompiled in 5 seconds. 32 already precompiled.
+[2181489.219364] rtc-devel pipewireao-rtc-deploy[544159]: DEPLOYMENT_READY name=rtc-graph-updates-fgn-baseline-20261006 control_locator=/run/user/1000/rtc-sd-fgn-core-20261007-retry2/control.json
+[2181508.540392] rtc-devel pipewireao-rtc-deploy[544159]: pipewireao-rtc-deploy: required core stopped: owner process identity exited or left its cgroup; Result=signal, ExecMainCode=2, ExecMainStatus=9

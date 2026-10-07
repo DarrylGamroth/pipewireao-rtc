@@ -1,6 +1,6 @@
 # Separate systemd owner services
 
-Status: implemented; selected scientific-cohort qualification in progress. Baseline `dde0bf4`, branch
+Status: implemented; selected Copper CPU FGN/JFG + CUDA AOS parity gates pass. Baseline `dde0bf4`, branch
 `work/systemd-owners-20261007`, worktree `/tmp/rtc-systemd-owners-20261007`.
 The starting tree was clean. Existing desktop and GUI services are outside scope.
 
@@ -63,6 +63,11 @@ An uncertain unit identity fences destructive cleanup and remains an explicit
 cleanup failure; it must not silently stop a replacement incarnation.
 
 ## Selected closure and evidence
+
+[Installed qualification and independent review](validation/systemd-owners-20261007/README.md)
+record the completed selected gates, exact source/artifact identities, original
+failures and remaining scope. Runtime directories use explicit lifecycle cleanup;
+Julia process-exit temporary cleanup cannot delete deliberately retained failures.
 
 | Contract | Changed allocation / required check | Initial scope |
 | --- | --- | --- |

@@ -1,0 +1,12 @@
+Test Summary:                                | Pass  Total  Time
+completed run has no second terminal cleanup |    4      4  5.3s
+Test Summary:                                                   | Pass  Total  Time
+emergency cleanup preserves prior failure and uncertain runtime |    8      8  1.9s
+Test Summary:                                                  | Pass  Total  Time
+successful emergency stop does not erase a prior owner failure |    4      4  0.2s
+Test Summary:                                                    | Pass  Total  Time
+emergency cleanup failure retains the original cause and runtime |    6      6  0.2s
+Test Summary:                              | Pass  Total  Time
+confirmed emergency cleanup records a stop |    5      5  0.1s
+Test Summary:                                               | Pass  Total   Time
+retained _run_locked diagnostics survive Julia process exit |    5      5  12.4s

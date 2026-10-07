@@ -1,0 +1,1 @@
+Confirmed original substring check accepts /bin/echo; current exact launcher check rejects it.

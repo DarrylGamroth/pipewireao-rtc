@@ -1,0 +1,5 @@
+[2182280.034338] rtc-devel pipewire-ao[553685]: [W][553685][16:06:09.907861] pw.context   | [       context.c:  548 pw_context_new()] 0x5640a2584230: can't load dbus library: support/libspa-dbus
+[2182430.148172] rtc-devel pipewire-ao[553685]: [E][553685][16:08:40.021693] pw.core      | [     impl-core.c:  259 core_error()] 0x5640a2584230: error -32 for resource 2: retained ndarray buffer removed before processing completed: Broken pipe
+[2182430.148172] rtc-devel pipewire-ao[553685]: [E][553685][16:08:40.021705] mod.client-node | [   client-node.c: 1304 client_node_resource_error()] 0x5640a262f2a0: error seq:126 -32 (retained ndarray buffer removed before processing completed: Broken pipe)
+[2182430.148172] rtc-devel pipewire-ao[553685]: [E][553685][16:08:40.021708] pw.core      | [     impl-core.c:  259 core_error()] 0x5640a2584230: error -32 for resource 2: port_set_param(Spa:Enum:ParamId:Format) failed: Broken pipe
+[2182430.148172] rtc-devel pipewire-ao[553685]: [E][553685][16:08:40.021711] mod.client-node | [   client-node.c: 1304 client_node_resource_error()] 0x5640a262f2a0: error seq:128 -32 (port_set_param(Spa:Enum:ParamId:Format) failed: Broken pipe)

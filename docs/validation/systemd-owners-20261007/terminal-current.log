@@ -1,0 +1,9 @@
+terminal_helpers_sha256=7d2138faab07e718ae7b16dfd12cfdc59d81340a98b28e9b28ca86ca9d8a1b64
+Test Summary:                                | Pass  Total  Time
+completed run has no second terminal cleanup |    4      4  4.7s
+Test Summary:                                                   | Pass  Total  Time
+emergency cleanup preserves prior failure and uncertain runtime |    8      8  1.7s
+Test Summary:                                                  | Pass  Total  Time
+successful emergency stop does not erase a prior owner failure |    4      4  0.1s
+Test Summary:                              | Pass  Total  Time
+confirmed emergency cleanup records a stop |    5      5  0.1s

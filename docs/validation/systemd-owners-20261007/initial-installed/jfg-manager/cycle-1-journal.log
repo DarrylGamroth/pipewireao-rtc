@@ -1,0 +1,2 @@
+[2182623.636177] rtc-devel pipewireao-rtc-deploy[555759]: DEPLOYMENT_READY name=rtc-graph-updates-jfg-baseline-20261006 control_locator=/run/user/1000/rtc-sd-jfg-manager-20261007-retry2/control.json
+[2182635.617147] rtc-devel pipewireao-rtc-deploy[555759]: pipewireao-rtc-deploy: required wireplumber stopped: owner process identity exited or left its cgroup; Result=signal, ExecMainCode=2, ExecMainStatus=9

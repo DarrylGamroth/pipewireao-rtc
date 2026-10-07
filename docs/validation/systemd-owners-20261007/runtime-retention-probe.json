@@ -1,0 +1,12 @@
+{
+  "current_default": {
+    "directory": "/tmp/rtc-review-runtime-retention-resadp_j/run-QJFubw",
+    "exists_after_julia_exit": false,
+    "diagnostic_exists": false
+  },
+  "explicit_lifecycle": {
+    "directory": "/tmp/rtc-review-runtime-retention-resadp_j/run-eihrSa",
+    "exists_after_julia_exit": true,
+    "diagnostic_exists": true
+  }
+}

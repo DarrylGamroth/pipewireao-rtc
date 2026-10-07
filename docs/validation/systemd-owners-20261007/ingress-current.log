@@ -1,0 +1,6 @@
+Precompiling packages...
+   4652.6 ms  ✓ PipeWireAODeployment
+  1 dependency successfully precompiled in 5 seconds. 32 already precompiled.
+revision=current function_sha256=78e92ef3b32bd137368f81bdae58e103550466ac95c7288a397fdb3d6cbda887
+Test Summary:                           | Pass  Total  Time
+Unconfirmed ingress preserves consumers |   12     12  0.5s

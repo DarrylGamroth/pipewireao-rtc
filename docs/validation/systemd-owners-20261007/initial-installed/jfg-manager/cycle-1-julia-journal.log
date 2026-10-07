@@ -1,0 +1,31 @@
+[2182481.563183] rtc-devel julialauncher[555931]: Precompiling packages...
+[2182488.065818] rtc-devel julialauncher[555931]:    6493.8 ms  ✓ PipeWireAO
+[2182488.066494] rtc-devel julialauncher[555931]:   1 dependency successfully precompiled in 7 seconds. 8 already precompiled.
+[2182494.024438] rtc-devel julialauncher[555931]: Precompiling packages...
+[2182503.619453] rtc-devel julialauncher[555931]:    9595.0 ms  ✓ FilterGraphAlgorithms
+[2182503.620145] rtc-devel julialauncher[555931]:   1 dependency successfully precompiled in 10 seconds. 44 already precompiled.
+[2182503.620145] rtc-devel julialauncher[555931]:   6 dependencies precompiled but different versions are currently loaded (Dates, JLLWrappers, Preferences, Printf, TOML and Zlib_jll). Restart julia to access the new versions. Otherwise, 16 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+[2182503.973083] rtc-devel julialauncher[555931]: Precompiling packages...
+[2182505.410731] rtc-devel julialauncher[555931]:    1437.6 ms  ✓ JuliaFilterGraph
+[2182507.254268] rtc-devel julialauncher[555931]:    1843.1 ms  ✓ FilterGraphPipeWire
+[2182507.254831] rtc-devel julialauncher[555931]:   2 dependencies successfully precompiled in 3 seconds. 62 already precompiled.
+[2182507.254831] rtc-devel julialauncher[555931]:   37 dependencies precompiled but different versions are currently loaded (AbstractFFTs, AdaptiveOpticsCalibration, CEnum, CompilerSupportLibraries_jll, Dates, DelimitedFiles, DocStringExtensions, FFTW, FFTW_jll, FilterGraphAlgorithms, GenericLinearAlgebra, Hwloc, Hwloc_jll, IrrationalConstants, JLLWrappers, Libiconv_jll, LogExpFunctions, Mmap, OpenLibm_jll, OpenSpecFun_jll, PipeWireAO, PipeWireAO_jll, PrecompileTools, Preferences, Printf, Reexport, Serialization, SpecialFunctions, StableTasks, SysInfo, TOML, ThreadPinning, ThreadPinningCore, UnsafeArrays, XML2_jll, Xorg_libpciaccess_jll and Zlib_jll). Restart julia to access the new versions. Otherwise, 12 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+[2182627.763365] rtc-devel julialauncher[555931]: ERROR: LoadError: pw_ndarray_filter_run failed: Broken pipe (-32)
+[2182627.763365] rtc-devel julialauncher[555931]: Stacktrace:
+[2182627.788209] rtc-devel julialauncher[555931]:  [1] with_owner(f::var"#9#10"{String, Vector{String}}, options::@NamedTuple{remote::String, bootstrap_node::String, bootstrap_instance::Int64})
+[2182627.788389] rtc-devel julialauncher[555931]:    @ Main.HILNativeOwnerBootstrap /tmp/rtc-systemd-jfg-20261007-package/hil/native_owner_bootstrap.jl:29
+[2182627.789289] rtc-devel julialauncher[555931]:  [2] main(arguments::Vector{String}; owner_script::String)
+[2182627.789340] rtc-devel julialauncher[555931]:    @ Main /tmp/rtc-systemd-jfg-20261007-package/hil/jfg_owner.jl:75
+[2182627.789340] rtc-devel julialauncher[555931]:  [3] main
+[2182627.789392] rtc-devel julialauncher[555931]:    @ /tmp/rtc-systemd-jfg-20261007-package/hil/jfg_owner.jl:73 [inlined]
+[2182627.789392] rtc-devel julialauncher[555931]:  [4] main()
+[2182627.789438] rtc-devel julialauncher[555931]:    @ Main /tmp/rtc-systemd-jfg-20261007-package/hil/jfg_owner.jl:73
+[2182627.789438] rtc-devel julialauncher[555931]:  [5] top-level scope
+[2182627.789494] rtc-devel julialauncher[555931]:    @ /tmp/rtc-systemd-jfg-20261007-package/hil/jfg_owner.jl:83
+[2182627.789494] rtc-devel julialauncher[555931]:  [6] include(mod::Module, _path::String)
+[2182627.789545] rtc-devel julialauncher[555931]:    @ Base ./Base.jl:306
+[2182627.789545] rtc-devel julialauncher[555931]:  [7] exec_options(opts::Base.JLOptions)
+[2182627.789608] rtc-devel julialauncher[555931]:    @ Base ./client.jl:317
+[2182627.789633] rtc-devel julialauncher[555931]:  [8] _start()
+[2182627.808545] rtc-devel julialauncher[555931]:    @ Base ./client.jl:550
+[2182627.808545] rtc-devel julialauncher[555931]: in expression starting at /tmp/rtc-systemd-jfg-20261007-package/hil/jfg_owner.jl:83

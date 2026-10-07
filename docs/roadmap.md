@@ -26,9 +26,11 @@ instrument. [Ecosystem integration](ECOSYSTEM_INTEGRATION.md) describes existing
 ownership and the proposed transfer. The accepted application split keeps RTC
 lifecycle logic in a headless runtime, with GUI and CLI clients using the same
 native controls. The selected target assigns external session-link realization
-and lifetime to WirePlumberAO, and service supervision to systemd. RTC link
-creation and child supervision remain the working migration state until their
-separate parity gates pass; the observer-only pilot is not the final target.
+and lifetime to WirePlumberAO, and service supervision to systemd. The selected
+opt-in Copper composition
+now passes those responsibility transfers. RTC-owned external links and direct
+child supervision remain for foreground operation and unqualified profiles;
+the observer-only pilot is retained evidence rather than the selected target.
 The isolated complete-frame WirePlumber compatibility fixture passes discovery,
 format/metadata parsing, explicit linking, exact delivery and basic teardown.
 The Copper CUDA AOS pilot also passes coexistence with CPU FGN and CPU JFG,
@@ -59,23 +61,24 @@ Unknown fault-time withdrawal/source outcomes stay faults; these checks do not
 qualify native caller reload, other profiles/latest/hold, target timing or
 physical actuation. The isolated WirePlumber POD-filter capacity correction is
 a required dependency for the 1160-byte three-link projection, with its inherited
-SPA allocation-failure limitation preserved in review. The next increment is
-separate systemd user-service supervision. Default direct ownership and existing
-supervision/link code remain until their respective replacements pass parity.
-Separate RTC/AOS process-supervision transfer is implemented as an opt-in user
-service backend. Independent private service/identity/failure checks pass; final
-Copper CPU FGN/JFG scientific-cohort qualification is in progress. Current direct
-deployment remains available. See [the owner-service design](SYSTEMD_OWNER_DESIGN.md).
+SPA allocation-failure limitation preserved in review. The subsequent
+[systemd owner-service increment](validation/systemd-owners-20261007/README.md)
+passes the selected Copper CPU FGN/JFG with CUDA AOS composition: all 11 distinct
+owner/coordinator loss cases, final core-loss diagnostic retention, fresh
+incarnations and four 512-command runs per engine. Per-engine retained prefixes
+remain exact, simulator inclusive tails remain at zero heap/GC, and every owner
+cgroup is empty after shutdown. systemd owns process lifetime; WirePlumber owns
+external links; RTC retains science readiness and source authority. Direct-mode
+and graph-internal link code still have supported callers. Other profiles,
+timing and physical actuation are not covered. See [the owner-service
+design](SYSTEMD_OWNER_DESIGN.md).
 
 [Adversarial architecture review](APPLICATION_ARCHITECTURE_REVIEW.md) identifies
-conditional link/process ownership migration gates and separate timing questions.
-The pilot retains current FGN/JFG hosting and native controls; ownership changes
-only after compatibility, behavioral parity and reduced maintained responsibility.
-The current observer startup order is an implementation boundary to address,
-not evidence that WirePlumber cannot manage the declared session links.
-The pilot must also admit the existing AOS HIL owner on the same core with both
-CPU FGN and CPU JFG, preserving matched endpoint identities, frame/command
-sequencing, coordinated controls and required-owner failure handling.
+conditional ownership-transfer gates and separate timing questions. The selected
+Copper path now passes both transfers while retaining FGN/JFG hosting, native
+controls and RTC scientific readiness. CUDA AOS participates on the same private
+core with both CPU engines; exact endpoint identities, frame/command sequencing,
+coordinated controls and required-owner failure handling are preserved.
 AOS instances may provide multiple sources and sinks. Admit the declared required
 endpoint set by exact owner and role; optional observation endpoints must not
 gate progress. The existing single-exchange simulation does not qualify a general
@@ -86,19 +89,17 @@ multiple-endpoint adapter or mixed-rate plant synchronization.
 Use each component for its intended purpose as selected in the
 [architecture boundary](architecture.md#accepted-workstation-integration-boundary).
 
-1. Source fault disposal/report completion now passes the preserved Copper
-   required-link/owner-loss cases for both CPU executors with CUDA AOS. Reuse
-   [that scoped evidence](validation/fault-teardown-20261007/README.md); it does
-   not establish fault-time pause acknowledgements or revocation latency.
-2. Qualify pre-admission WirePlumber realization and realization-scoped withdrawal
-   for the existing Copper CPU FGN/JFG sessions with CUDA AOS. Preserve held
-   sources, exact identities, negotiation/passive semantics, native controls and
-   fresh admission; check cancellation, unload/retry and manager/runtime/core loss.
-3. Move child-process supervision to systemd user services as a separate parity
-   step. RTC scientific readiness and acquisition coordination remain in the
-   headless runtime. A restarted process does not imply scientific readiness.
-4. Remove redundant link/supervision code only after its replacement passes the
-   corresponding gates. Keep existing scientific configurations and artifacts.
+1. Reuse the completed selected Copper ownership-transfer evidence above. Keep
+   science, native GUI/CLI controls and accepted artifacts unchanged.
+2. Extend the opt-in WirePlumber link/systemd service composition to remaining
+   Classic and existing row-block profiles with only the affected short native
+   lifecycle/placement checks. Reuse their existing scientific evidence.
+3. Retire pilot or legacy paths only when they have no supported callers. Keep
+   direct foreground operation and graph-internal link creation where required;
+   do not remove working profiles based on Copper-only evidence.
+4. Reconcile selected installed profiles and release packaging before changing
+   the default backend. General multi-endpoint AOS and target timing remain
+   separate decisions and gates.
 
 The remaining qualification list below stays applicable; reuse existing evidence
 and execute only checks affected by each responsibility transfer.
@@ -107,10 +108,11 @@ and execute only checks affected by each responsibility transfer.
 
 | Area | Current disposition | Evidence to read if affected |
 | --- | --- | --- |
-| WirePlumber compatibility | Unmodified 0.5.18 built against AO passes the isolated FITS/discard test. Copper CUDA AOS with each CPU executor passes two 512-command runs, held discovery, native stop/reset/resume, unchanged runtime-owned links after WirePlumber SIGKILL, and exact 256-frame baseline/reset prefixes. Simulator measured tails report zero Julia heap allocation/GC. Link/process ownership transfer and general multiple-endpoint qualification remain open. | [Compatibility test](validation/wireplumber-compatibility-20261006/README.md), [Copper coexistence](validation/wireplumber-hil-coexistence-20261006/README.md) |
-| Declared connection policy / required loss | Configured Formats, passive links and exact role-owner clients are checked continuously by the optional observer. Corrected RTC monitoring latches required-link and external endpoint loss. Both Copper CPU executors with CUDA AOS pass link/simulator loss, complete owned cleanup and fresh admission with exact baseline prefixes and zero simulator heap/GC tails. General multi-output AOS remains unqualified; step 4 has not transferred link ownership. | [Policy design](WIREPLUMBER_CONNECTION_POLICY.md), [qualification and independent review](validation/wireplumber-connection-policy-20261007/README.md) |
+| WirePlumber compatibility | Unmodified 0.5.18 built against AO passes the isolated FITS/discard test. Copper CUDA AOS with each CPU executor passes two 512-command runs, held discovery, native stop/reset/resume, unchanged runtime-owned links after WirePlumber SIGKILL, and exact 256-frame baseline/reset prefixes. Simulator measured tails report zero Julia heap allocation/GC. The later owner-service row records selected ownership transfer; general multiple-endpoint qualification remains open. | [Compatibility test](validation/wireplumber-compatibility-20261006/README.md), [Copper coexistence](validation/wireplumber-hil-coexistence-20261006/README.md) |
+| Declared connection policy / required loss | Configured Formats, passive links and exact role-owner clients are checked continuously by the optional observer. Corrected RTC monitoring latches required-link and external endpoint loss. Both Copper CPU executors with CUDA AOS pass link/simulator loss, complete owned cleanup and fresh admission with exact baseline prefixes and zero simulator heap/GC tails. General multi-output AOS remains unqualified; later selected ownership-transfer evidence is recorded below. | [Policy design](WIREPLUMBER_CONNECTION_POLICY.md), [qualification and independent review](validation/wireplumber-connection-policy-20261007/README.md) |
 | Source fault disposal/report completion | Exited source groups are revoked/reaped before native cleanup; unknown live outcomes revoke the core before source report grace. Both CPU executors with CUDA AOS pass link/simulator loss, final living-source report publication, complete owned cleanup and fresh two-run admission. Baseline prefixes and zero simulator heap/GC tails are preserved. Expected fault diagnostics remain; no fault-time pause acknowledgement or revocation-latency claim follows. | [Qualification and independent review](validation/fault-teardown-20261007/README.md) |
 | Optional WirePlumber user service | Installed companion uses the existing RTC unit's exact native incarnation. Both Copper CPU executors with CUDA AOS pass two 512-exchange incarnations, automatic observer restart after an actual RTC restart, observer stop/death independence, exact retained baseline prefixes, zero simulator heap/GC tails and cleanup after whole-cohort exit. Focused cold checks pass 33 service and 9 topology assertions. No independent-owner unit or release qualification follows. | [User-service evidence](validation/wireplumber-user-service-20261007/README.md), [service design](../deployment/wireplumber/SERVICE_DESIGN.md) |
+| Separate systemd owner services | Selected Copper CPU FGN/JFG + CUDA AOS passes 11 distinct loss cases, final retained diagnostics, fresh whole-session restart, 2,048 commands per engine, exact per-engine prefixes, zero simulator inclusive heap/GC tails and empty owner cgroups. Services own process lifetime; RTC retains native science authority. Default direct and other profiles remain supported. | [Qualification and review](validation/systemd-owners-20261007/README.md), [design](SYSTEMD_OWNER_DESIGN.md) |
 | Native control implementation | Reviewed changes merged to RTC main; live controls use typed native requests. Saved JSON is artifact/configuration only. | [Inventory](LIVE_CONTROL_INVENTORY.md), [integration snapshot](MAIN_INTEGRATION_20261006.md) |
 | Julia SDK/bootstrap | SDK 0.6.17 source is pushed; deployment pins that exact own revision. Paired cold runtime checks pass 232 assertions. Refreshed installed Copper CUDA simulator / CPU JFG passes lifecycle and simulator heap gates; other selected profiles and SDK registration remain open. | [Bootstrap validation](BOOTSTRAP_CONTROLLER_SEAL_VALIDATION.md), [installed Copper evidence](validation/copper-main-20261006/README.md) |
 | GUI session selection | Actual same-label installed owners selected by exact native identities, including a stopped peer; read-only picker replay passed. GUI changes are on its local main. | GUI `docs/NATIVE_HIL_GUI_PROGRESS_VALIDATION.md` |

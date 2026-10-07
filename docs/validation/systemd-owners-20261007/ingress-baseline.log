@@ -1,0 +1,155 @@
+ERROR: LoadError: Some tests did not pass: 2 passed, 10 failed, 0 errored, 0 broken.
+in expression starting at /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:27
+in expression starting at /tmp/rtc-systemd-owners-20261007/docs/validation/systemd-owners-20261007/check_ingress.jl:11
+revision=baseline function_sha256=10c3bb29d4fd73a2106557650910487286485fd90bd98c5720a3c8a0cb8a85cb
+Unconfirmed ingress preserves consumers: Test Failed at /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:38
+  Expression: !("rtc" in deployment.attempts)
+   Evaluated: !("rtc" in ["core", "simulator", "rtc", "rtc", "simulator", "core"])
+
+Stacktrace:
+ [1] top-level scope
+   @ /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:28
+ [2] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [3] macro expansion
+   @ /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:38 [inlined]
+ [4] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+Unconfirmed ingress preserves consumers: Test Failed at /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:39
+  Expression: deployment.attempts == if source
+        ["core", "simulator"]
+    else
+        ["core"]
+    end
+   Evaluated: ["core", "simulator", "rtc", "rtc", "simulator", "core"] == ["core", "simulator"]
+
+Stacktrace:
+ [1] top-level scope
+   @ /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:28
+ [2] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [3] macro expansion
+   @ /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:39 [inlined]
+ [4] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+Unconfirmed ingress preserves consumers: Test Failed at /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:40
+  Expression: any((error->begin
+            #= /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:40 =#
+            occursin("preserving consumers", sprint(showerror, error))
+        end), errors)
+
+Stacktrace:
+ [1] top-level scope
+   @ /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:28
+ [2] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [3] macro expansion
+   @ /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:40 [inlined]
+ [4] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+Unconfirmed ingress preserves consumers: Test Failed at /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:38
+  Expression: !("rtc" in deployment.attempts)
+   Evaluated: !("rtc" in ["rtc", "core", "rtc", "simulator", "core"])
+
+Stacktrace:
+ [1] top-level scope
+   @ /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:28
+ [2] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [3] macro expansion
+   @ /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:38 [inlined]
+ [4] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+Unconfirmed ingress preserves consumers: Test Failed at /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:39
+  Expression: deployment.attempts == if source
+        ["core", "simulator"]
+    else
+        ["core"]
+    end
+   Evaluated: ["rtc", "core", "rtc", "simulator", "core"] == ["core"]
+
+Stacktrace:
+ [1] top-level scope
+   @ /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:28
+ [2] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [3] macro expansion
+   @ /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:39 [inlined]
+ [4] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+Unconfirmed ingress preserves consumers: Test Failed at /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:40
+  Expression: any((error->begin
+            #= /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:40 =#
+            occursin("preserving consumers", sprint(showerror, error))
+        end), errors)
+
+Stacktrace:
+ [1] top-level scope
+   @ /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:28
+ [2] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [3] macro expansion
+   @ /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:40 [inlined]
+ [4] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+Unconfirmed ingress preserves consumers: Test Failed at /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:38
+  Expression: !("rtc" in deployment.attempts)
+   Evaluated: !("rtc" in ["rtc", "core", "rtc", "simulator", "core"])
+
+Stacktrace:
+ [1] top-level scope
+   @ /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:28
+ [2] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [3] macro expansion
+   @ /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:38 [inlined]
+ [4] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+Unconfirmed ingress preserves consumers: Test Failed at /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:39
+  Expression: deployment.attempts == if source
+        ["core", "simulator"]
+    else
+        ["core"]
+    end
+   Evaluated: ["rtc", "core", "rtc", "simulator", "core"] == ["core"]
+
+Stacktrace:
+ [1] top-level scope
+   @ /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:28
+ [2] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [3] macro expansion
+   @ /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:39 [inlined]
+ [4] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+Unconfirmed ingress preserves consumers: Test Failed at /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:40
+  Expression: any((error->begin
+            #= /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:40 =#
+            occursin("preserving consumers", sprint(showerror, error))
+        end), errors)
+
+Stacktrace:
+ [1] top-level scope
+   @ /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:28
+ [2] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [3] macro expansion
+   @ /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:40 [inlined]
+ [4] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+Unconfirmed ingress preserves consumers: Test Failed at /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:41
+  Expression: !("quit" in deployment.native_attempts)
+   Evaluated: !("quit" in ["status", "quit"])
+
+Stacktrace:
+ [1] top-level scope
+   @ /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:28
+ [2] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [3] macro expansion
+   @ /tmp/rtc-systemd-owners-20261007/deployment/julia/test/test_ingress_cleanup.jl:41 [inlined]
+ [4] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+Test Summary:                           | Pass  Fail  Total  Time
+Unconfirmed ingress preserves consumers |    2    10     12  1.8s
+RNG of the outermost testset: Random.Xoshiro(0xfe528964ff2e726f, 0x47ef162bf79cf7c4, 0x1c6c3c7abd3a323f, 0xc607b42297d9d8d4, 0xce72e740bf1d42c2)

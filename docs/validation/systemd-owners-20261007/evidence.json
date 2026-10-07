@@ -1,0 +1,1069 @@
+{
+  "version": 1,
+  "source_commit": "c088103b30fadc629cfb4d0d072da08dc56723ae",
+  "starting_commit": "dde0bf44eb074ee1583e9fe5adbd2da411c1ecd6",
+  "scope": "Copper complete-frame CPU FGN/JFG + CUDA AOS; native lifecycle, exact per-engine prefixes, simulator inclusive heap/GC tails and owned service cleanup",
+  "exclusions": [
+    "timing/deadlines/maximum rate",
+    "physical actuation",
+    "other profiles",
+    "general multiple-endpoint AOS",
+    "whole RTC process allocation"
+  ],
+  "source_sha256": {
+    "deployment/julia/src/deploy.jl": "b93855c7446ced6d8e747b7ddaa79ffe0071289fe48d115f130917e564e49e90",
+    "deployment/julia/src/systemd_owners.jl": "31d0f7343b23708bbf43a467936a5d66cea2d4d14217f639c16cfaa6e26cc342",
+    "deployment/qualify_systemd_owners.jl": "bc37e435ccce8f0454d891542ed05816910bdb3aa93df66611f09bccda864a52",
+    "deployment/pipewireao-rtc-systemd@.service.in": "832eeb1b621fef5ea9762c4936287b673b6badad12d8b3fef06dc9df5cd06744"
+  },
+  "baseline_prefix_sha256": {
+    "fgn": {
+      "simulator-result.frames.u16le": "e206f4cd44096b6d020090e5bb44ee2dd1b62226e0ebe14fcdd6e6cb33075f59",
+      "simulator-result.commands.f32le": "946e1cb5dc5be9f3ee9059db5597fef1fa02020c2d81ba2aa51c208aacc8554a"
+    },
+    "jfg": {
+      "simulator-result.frames.u16le": "b47321140763e9ba4c0eb6a7d56102aff54835a6ce2ba83418511b70270e71c0",
+      "simulator-result.commands.f32le": "349c6f6105a780236cd6bc402c8fc849293fdd300838e3f1d74706ed4f12e27f"
+    }
+  },
+  "baseline_run_directories": {
+    "fgn": "/tmp/rtc-wp-policy-fgn-readmission-20261007/run-1",
+    "jfg": "/tmp/rtc-wp-policy-jfg-readmission-20261007/run-1"
+  },
+  "cases": [
+    {
+      "receipt": "final-installed/fgn-core/receipt.json",
+      "sha256": "7278f42ce5f7027edec0f14b98cb59c544604f2715b84f0cf1d3ede2a7dc09bb",
+      "case": "core",
+      "cycles": 1,
+      "cleanup_confirmed": true,
+      "completed_commands": 0,
+      "measured_simulator_exchanges": 0
+    },
+    {
+      "receipt": "final-installed/fgn-restart/receipt.json",
+      "sha256": "cd947b192889964c47710cf7c9c6d19e90045ed914340b3e29b87f70425eac59",
+      "case": "restart",
+      "cycles": 2,
+      "cleanup_confirmed": true,
+      "completed_commands": 2048,
+      "measured_simulator_exchanges": 1024
+    },
+    {
+      "receipt": "final-installed/jfg-core/receipt.json",
+      "sha256": "faa7ad57f9983db77e4b518c0e95236417c48fe0a7c68466a83447d3911ffe0c",
+      "case": "core",
+      "cycles": 1,
+      "cleanup_confirmed": true,
+      "completed_commands": 0,
+      "measured_simulator_exchanges": 0
+    },
+    {
+      "receipt": "final-installed/jfg-restart/receipt.json",
+      "sha256": "f70ecaebe376b53206bdae1d686172a8d4c45d2b6c6dde59d20859649c1111e2",
+      "case": "restart",
+      "cycles": 2,
+      "cleanup_confirmed": true,
+      "completed_commands": 2048,
+      "measured_simulator_exchanges": 1024
+    },
+    {
+      "receipt": "initial-installed/fgn-coordinator/receipt.json",
+      "sha256": "80d39c01fe0cc78ad52bde951bcd0a84af86adb1de51576b8ce305f5b92b7aba",
+      "case": "coordinator",
+      "cycles": 1,
+      "cleanup_confirmed": true,
+      "completed_commands": 0,
+      "measured_simulator_exchanges": 0
+    },
+    {
+      "receipt": "initial-installed/fgn-core/receipt.json",
+      "sha256": "431013b5f3ce14883e02860e41fab4c816d64bf86114a5be8c692b3aa0664768",
+      "case": "core",
+      "cycles": 1,
+      "cleanup_confirmed": true,
+      "completed_commands": 0,
+      "measured_simulator_exchanges": 0
+    },
+    {
+      "receipt": "initial-installed/fgn-manager/receipt.json",
+      "sha256": "84198baef949815092ab2ceb5c305708ecd34da41235547fb09923df8ef6804e",
+      "case": "manager",
+      "cycles": 1,
+      "cleanup_confirmed": true,
+      "completed_commands": 0,
+      "measured_simulator_exchanges": 0
+    },
+    {
+      "receipt": "initial-installed/fgn-rtc/receipt.json",
+      "sha256": "c9110cd55bc1cd26882b96cad7ed1a595818995246e5d8d6f42a16cec4a37e1b",
+      "case": "rtc",
+      "cycles": 1,
+      "cleanup_confirmed": true,
+      "completed_commands": 0,
+      "measured_simulator_exchanges": 0
+    },
+    {
+      "receipt": "initial-installed/fgn-simulator/receipt.json",
+      "sha256": "c74368595b8f2a3108e67503589ba9c27aa76529338855f92d98003e787cc22a",
+      "case": "simulator",
+      "cycles": 1,
+      "cleanup_confirmed": true,
+      "completed_commands": 0,
+      "measured_simulator_exchanges": 0
+    },
+    {
+      "receipt": "initial-installed/jfg-coordinator/receipt.json",
+      "sha256": "0db5ecd980afca35b98eacc6c63c6b9afc438e0f00c40b2d68434f160190be42",
+      "case": "coordinator",
+      "cycles": 1,
+      "cleanup_confirmed": true,
+      "completed_commands": 0,
+      "measured_simulator_exchanges": 0
+    },
+    {
+      "receipt": "initial-installed/jfg-core/receipt.json",
+      "sha256": "ce92df3f89405132b0021378135dc2482d78f6f66aa5f004deb7dfd5cdeb9664",
+      "case": "core",
+      "cycles": 1,
+      "cleanup_confirmed": true,
+      "completed_commands": 0,
+      "measured_simulator_exchanges": 0
+    },
+    {
+      "receipt": "initial-installed/jfg-julia/receipt.json",
+      "sha256": "8c1f52dc67c90aebc8a553f721dada0b7e6c3898ed3354a55622f8c7a573c684",
+      "case": "julia",
+      "cycles": 1,
+      "cleanup_confirmed": true,
+      "completed_commands": 0,
+      "measured_simulator_exchanges": 0
+    },
+    {
+      "receipt": "initial-installed/jfg-manager/receipt.json",
+      "sha256": "b5c9995b7786d554e77587212c584b106db282255f8ff7cff56926925f6924c1",
+      "case": "manager",
+      "cycles": 1,
+      "cleanup_confirmed": true,
+      "completed_commands": 0,
+      "measured_simulator_exchanges": 0
+    },
+    {
+      "receipt": "initial-installed/jfg-restart/receipt.json",
+      "sha256": "ed67f9e2b56fc8401d092eb95fbc159772cd6ac2a90b37407c5dd110c28915a9",
+      "case": "restart",
+      "cycles": 2,
+      "cleanup_confirmed": true,
+      "completed_commands": 2048,
+      "measured_simulator_exchanges": 1024
+    },
+    {
+      "receipt": "initial-installed/jfg-rtc/receipt.json",
+      "sha256": "8e4ab6f5ce7ae1c1547497be6f82158dd818ff0b43c26a096ba0975c04ca88fe",
+      "case": "rtc",
+      "cycles": 1,
+      "cleanup_confirmed": true,
+      "completed_commands": 0,
+      "measured_simulator_exchanges": 0
+    },
+    {
+      "receipt": "initial-installed/jfg-simulator/receipt.json",
+      "sha256": "b2ea80be1be5668d39d71cffe17344e01eefee985af8ef705f18bbba2ed1cb21",
+      "case": "simulator",
+      "cycles": 1,
+      "cleanup_confirmed": true,
+      "completed_commands": 0,
+      "measured_simulator_exchanges": 0
+    }
+  ],
+  "files": {
+    "README.md": {
+      "sha256": "7015342670b53259a1f4167b0ed2c1b2bc79585a04d038acdd235e3735d23569",
+      "bytes": 7466
+    },
+    "REVIEW.md": {
+      "sha256": "daff83a50e7ed12d4c362a7d7e141c7026d26a31bd77ff2c77039191d9cb1df6",
+      "bytes": 37408
+    },
+    "atexit-fault-after.json": {
+      "sha256": "88a3c7003b432b89914378969221a2a60e07d7d2df1a736f9d4f45268bf246ac",
+      "bytes": 2664
+    },
+    "atexit-fault-before.json": {
+      "sha256": "c301b2ab787dc73a418aa3274e55f871aab8f69b4f4d02756891067e4d58dfc1",
+      "bytes": 1401
+    },
+    "check_ingress.jl": {
+      "sha256": "8651156ea869a6e9f6811377204e58b15919a247371675e030b9ea0816e4a660",
+      "bytes": 821
+    },
+    "check_terminal.jl": {
+      "sha256": "5f250f192b22963a92cd5dffeb3e39423a0b7a04c80da37d1ce1f3cafee856ea",
+      "bytes": 667
+    },
+    "final-installed/fgn-core/coordinator.service": {
+      "sha256": "21f1103184eb3a89bb211a750cb69f189ce239391ef66eb52a55d4e93896419a",
+      "bytes": 872
+    },
+    "final-installed/fgn-core/cycle-1-core-journal.log": {
+      "sha256": "40615741c8374eaa71c78f6494fdf067f86d3b08f65e14a47713c076aae91308",
+      "bytes": 195
+    },
+    "final-installed/fgn-core/cycle-1-journal.log": {
+      "sha256": "8a30d26e8ce74788968177a58cd6e4f21325c663c435997cbaad739a1963a98e",
+      "bytes": 713
+    },
+    "final-installed/fgn-core/cycle-1-rtc-journal.log": {
+      "sha256": "45c62c8d7f4891eb1bdf1aa10d1b60d1833ce3a4c7298f6a9d96541c1e034d63",
+      "bytes": 165
+    },
+    "final-installed/fgn-core/cycle-1-simulator-journal.log": {
+      "sha256": "6681f6e2d5134a7bd9b40ca08855c26c06fa4a90952699ba4e729c8d38de596a",
+      "bytes": 13466
+    },
+    "final-installed/fgn-core/cycle-1-wireplumber-journal.log": {
+      "sha256": "748bd3f635493d88494bdbf165d884e09ed39023ae4e912444747a5ee68a95cd",
+      "bytes": 174
+    },
+    "final-installed/fgn-core/receipt.json": {
+      "sha256": "7278f42ce5f7027edec0f14b98cb59c544604f2715b84f0cf1d3ede2a7dc09bb",
+      "bytes": 18103
+    },
+    "final-installed/fgn-core/unit-validation.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "final-installed/fgn-package/deployment.conf": {
+      "sha256": "d6797d2daba6508bbb95223b13ac539a9e8acc0decc12b058c4fe7afb1644d30",
+      "bytes": 109240
+    },
+    "final-installed/fgn-package/provenance.json": {
+      "sha256": "305c71b8397a4b9e2f73bb9a4e92d231bc98a033304e25814e8906716d460be3",
+      "bytes": 270539
+    },
+    "final-installed/fgn-package/sealed-artifacts.json": {
+      "sha256": "1d63585466f65c8cefa5468973cc8f479537437b2248966d1c5e027d6a8b9b72",
+      "bytes": 110297
+    },
+    "final-installed/fgn-package/systemd-refresh.json": {
+      "sha256": "87a403941ec3c101f419f15ced76efa82bb115d71f692e90c39e40d0a78d52bd",
+      "bytes": 264
+    },
+    "final-installed/fgn-restart/coordinator.service": {
+      "sha256": "9ac31d4cb4f4f529521430f3102fbc3b654327d4127794635d0ab80286b0538f",
+      "bytes": 875
+    },
+    "final-installed/fgn-restart/cycle-1-core-journal.log": {
+      "sha256": "96b500dd2b6b570b7d61294679d156a26b8cd154e71773ef56a3167ba5b5013d",
+      "bytes": 195
+    },
+    "final-installed/fgn-restart/cycle-1-journal.log": {
+      "sha256": "2a9020fd7b4ed81316913b1d5f8f2055eef117e37888530dde54702dfd26e9b3",
+      "bytes": 198
+    },
+    "final-installed/fgn-restart/cycle-1-rtc-journal.log": {
+      "sha256": "19c4e28b2f54ea8f217db4e622b0a5c758efa7b77ce2dc0394b6d159568c0b2e",
+      "bytes": 17
+    },
+    "final-installed/fgn-restart/cycle-1-simulator-journal.log": {
+      "sha256": "6d0b8f4f28cf13d83e3c193c8eda9b13fe761bf30f3f8d36a34def1b7635bf2d",
+      "bytes": 10942
+    },
+    "final-installed/fgn-restart/cycle-1-wireplumber-journal.log": {
+      "sha256": "cad9bdbc65805a265f0326a07b4df8cf814316f0002a110f005f468a7d8db357",
+      "bytes": 251
+    },
+    "final-installed/fgn-restart/cycle-2-core-journal.log": {
+      "sha256": "02d7e57151d4bb3999ec5fec7619dfc059d26689576d8f61448d62f15e8e5f56",
+      "bytes": 195
+    },
+    "final-installed/fgn-restart/cycle-2-journal.log": {
+      "sha256": "ac44d57a08352733e67426669d2208721c30be21b34b31e1511b563bb036a663",
+      "bytes": 198
+    },
+    "final-installed/fgn-restart/cycle-2-rtc-journal.log": {
+      "sha256": "19c4e28b2f54ea8f217db4e622b0a5c758efa7b77ce2dc0394b6d159568c0b2e",
+      "bytes": 17
+    },
+    "final-installed/fgn-restart/cycle-2-simulator-journal.log": {
+      "sha256": "e1ad99d9fa9711c969808f35f1798553f55aa1773cfafc6f19d589832eb1943a",
+      "bytes": 10942
+    },
+    "final-installed/fgn-restart/cycle-2-wireplumber-journal.log": {
+      "sha256": "f49e87fbea2a0bd4b16a389eb8d27b40594fdb29869f634345d1273bb8aa6c84",
+      "bytes": 251
+    },
+    "final-installed/fgn-restart/receipt.json": {
+      "sha256": "cd947b192889964c47710cf7c9c6d19e90045ed914340b3e29b87f70425eac59",
+      "bytes": 49688
+    },
+    "final-installed/fgn-restart/run-1/simulator-result.json": {
+      "sha256": "60bc06c2d5eca8666754fd44f4a0974b399b63cb5928de60003959c92a415b38",
+      "bytes": 18883
+    },
+    "final-installed/fgn-restart/run-1/sustained-result.json": {
+      "sha256": "47d063cc035b7974422c28d18a9a1a1cf9cdfe518730d7f8c6b5531e0d833b54",
+      "bytes": 4355
+    },
+    "final-installed/fgn-restart/run-2/simulator-result.json": {
+      "sha256": "40bdc523c270d611ace1e0db5d00c553144e73979df2f9c9813e3efdd332d098",
+      "bytes": 18883
+    },
+    "final-installed/fgn-restart/run-2/sustained-result.json": {
+      "sha256": "d7d3a187088b6c22c83d73bb8b1dcc68466bcf60956d259c800badcb9cd093dd",
+      "bytes": 4357
+    },
+    "final-installed/fgn-restart/run-3/simulator-result.json": {
+      "sha256": "55dd86b97ec9e5bc37953d5c88ce5391861302d326e2f2e93c0ba6b5526adde9",
+      "bytes": 18883
+    },
+    "final-installed/fgn-restart/run-3/sustained-result.json": {
+      "sha256": "de7696364338b73d68b5027a4a0836aa5d31af8a68b722953c1ff9ab98a9f83c",
+      "bytes": 4355
+    },
+    "final-installed/fgn-restart/run-4/simulator-result.json": {
+      "sha256": "cf43e23d2e52a4e21bd638401f52ceaaccb802ba5935fa7ec70142b9ed105026",
+      "bytes": 18883
+    },
+    "final-installed/fgn-restart/run-4/sustained-result.json": {
+      "sha256": "f7bb7624fec4fd7d5c47c3bb005e70d6e6b83fee01e85fca810113bd99bc0b6b",
+      "bytes": 4355
+    },
+    "final-installed/fgn-restart/unit-validation.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "final-installed/jfg-core/coordinator.service": {
+      "sha256": "e34ebfce8c84b80a4668dc65d9ddccaef331201bdb3c6f5f329d4932afa592b5",
+      "bytes": 877
+    },
+    "final-installed/jfg-core/cycle-1-core-journal.log": {
+      "sha256": "44cd26c847bd6093a6ca497848516e57a0079266f658ff7c746f9c659a168c76",
+      "bytes": 195
+    },
+    "final-installed/jfg-core/cycle-1-journal.log": {
+      "sha256": "57a31b2070d57ab63a1e99274573ab8be9476e16ba9a719443fd71c9203bcf8c",
+      "bytes": 713
+    },
+    "final-installed/jfg-core/cycle-1-julia-journal.log": {
+      "sha256": "034323b190528f5d1ebabfec165e26b831605364388239842a0b8b705e94e260",
+      "bytes": 4208
+    },
+    "final-installed/jfg-core/cycle-1-rtc-journal.log": {
+      "sha256": "48a4bd6fde0c366ea9d465f1a2c6c421f7fb099a0d011d13213566253db82a81",
+      "bytes": 165
+    },
+    "final-installed/jfg-core/cycle-1-simulator-journal.log": {
+      "sha256": "262b88ebde96ef4a64970201b26066892679b079c26d6ba9c99bc2bedfe265d4",
+      "bytes": 13466
+    },
+    "final-installed/jfg-core/cycle-1-wireplumber-journal.log": {
+      "sha256": "da489e6c6ea14e5f68d220e3b82b43038c389345db69a3c28729a3007768c715",
+      "bytes": 174
+    },
+    "final-installed/jfg-core/receipt.json": {
+      "sha256": "faa7ad57f9983db77e4b518c0e95236417c48fe0a7c68466a83447d3911ffe0c",
+      "bytes": 20165
+    },
+    "final-installed/jfg-core/unit-validation.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "final-installed/jfg-package/deployment.conf": {
+      "sha256": "bdef0578f8c83817f13541017f548643dc69b208709f1d2f7a59b5086029da54",
+      "bytes": 111497
+    },
+    "final-installed/jfg-package/provenance.json": {
+      "sha256": "abaf5b2b4aa2814dc584557363a17125abe38b09d4bf660357f63167b752ac03",
+      "bytes": 270599
+    },
+    "final-installed/jfg-package/sealed-artifacts.json": {
+      "sha256": "d6a88c979c9f46d22e657e2e59f2ee4ba53dfbe2f4fbb2d4f1b6284b811b247b",
+      "bytes": 110194
+    },
+    "final-installed/jfg-package/systemd-refresh.json": {
+      "sha256": "72fe63e63ec2cf21b9ac0435192096b3255fe49905037e704a8a904d695d3b23",
+      "bytes": 266
+    },
+    "final-installed/jfg-restart/coordinator.service": {
+      "sha256": "835c269918c35eb89b8d1bd3f4a402ad3acf6d260440409cf904c1db8af583fe",
+      "bytes": 880
+    },
+    "final-installed/jfg-restart/cycle-1-core-journal.log": {
+      "sha256": "d992060573ba58658d73ea3944d46883105bad882f8be8cf8430c4a5749622cb",
+      "bytes": 195
+    },
+    "final-installed/jfg-restart/cycle-1-journal.log": {
+      "sha256": "523964322c3cb4fc0bdb4399a57f905a76d6887c54a14b8c7699914d168f6b7e",
+      "bytes": 198
+    },
+    "final-installed/jfg-restart/cycle-1-julia-journal.log": {
+      "sha256": "e98626dcd5e31a616259983a27a5384ee78d65bd1bce10c0d9da44c3b0ca97ce",
+      "bytes": 2114
+    },
+    "final-installed/jfg-restart/cycle-1-rtc-journal.log": {
+      "sha256": "19c4e28b2f54ea8f217db4e622b0a5c758efa7b77ce2dc0394b6d159568c0b2e",
+      "bytes": 17
+    },
+    "final-installed/jfg-restart/cycle-1-simulator-journal.log": {
+      "sha256": "037dabff54669db9800ca87a106d31d3a9786bbc3b7ce33cea1f8ba872ca39d2",
+      "bytes": 10942
+    },
+    "final-installed/jfg-restart/cycle-1-wireplumber-journal.log": {
+      "sha256": "6fc8526c70af856b3a6eece2a7496fc3217f5c57739404654f3e178dc648aa07",
+      "bytes": 251
+    },
+    "final-installed/jfg-restart/cycle-2-core-journal.log": {
+      "sha256": "dea8a31d4835beffb800558a6f0af4bb42a4b5ca4691275ad323e6b61efcdec2",
+      "bytes": 195
+    },
+    "final-installed/jfg-restart/cycle-2-journal.log": {
+      "sha256": "6bdf49b5078a8cdc5b3a0b8b060c533aac64aaa695fcc4b1c246f2ae2bc586fa",
+      "bytes": 198
+    },
+    "final-installed/jfg-restart/cycle-2-julia-journal.log": {
+      "sha256": "cc72f25d964692a8c4899e9ef2a506cee5ccfc7ef751fecfb2cba0a4b5991a31",
+      "bytes": 2114
+    },
+    "final-installed/jfg-restart/cycle-2-rtc-journal.log": {
+      "sha256": "19c4e28b2f54ea8f217db4e622b0a5c758efa7b77ce2dc0394b6d159568c0b2e",
+      "bytes": 17
+    },
+    "final-installed/jfg-restart/cycle-2-simulator-journal.log": {
+      "sha256": "a63e7e0ca21b7035d94def60c47a802cbd08342c1d8abd4747cf3e13ccbdd27b",
+      "bytes": 10942
+    },
+    "final-installed/jfg-restart/cycle-2-wireplumber-journal.log": {
+      "sha256": "a74ee9ec93fab376f72a5c7d6a71981b854a709cc6ab060169fa2e57960edaae",
+      "bytes": 251
+    },
+    "final-installed/jfg-restart/receipt.json": {
+      "sha256": "f70ecaebe376b53206bdae1d686172a8d4c45d2b6c6dde59d20859649c1111e2",
+      "bytes": 53694
+    },
+    "final-installed/jfg-restart/run-1/simulator-result.json": {
+      "sha256": "6687ca4c46096401bab6630b70c46e0ceecc260644b5a3a6309a4a08fcd32ac7",
+      "bytes": 18883
+    },
+    "final-installed/jfg-restart/run-1/sustained-result.json": {
+      "sha256": "24c571e366b01c763ad9485e665a2f496625609aab24ddbc53599681de51ffb4",
+      "bytes": 4355
+    },
+    "final-installed/jfg-restart/run-2/simulator-result.json": {
+      "sha256": "b4e763febe789768cc558011ec7fe714fdf41487c6b77dd9be8d6cfc3416ae9a",
+      "bytes": 18883
+    },
+    "final-installed/jfg-restart/run-2/sustained-result.json": {
+      "sha256": "d0799ecfdfcf7b6fe74b0b041f3e00591668c61340f00123981b09e6554f83ed",
+      "bytes": 4355
+    },
+    "final-installed/jfg-restart/run-3/simulator-result.json": {
+      "sha256": "758933b45911105c41e9bb51bbdc135e5d5a6c618f5468ce7c0d557315406526",
+      "bytes": 18882
+    },
+    "final-installed/jfg-restart/run-3/sustained-result.json": {
+      "sha256": "d064ad3c3b8182c8ed54ed70f2ac5b76f86412abea56d5111b5747bcd3b7cedb",
+      "bytes": 4355
+    },
+    "final-installed/jfg-restart/run-4/simulator-result.json": {
+      "sha256": "4b040b523bbcdc9527b03d42bb42a2047338292bd96cadc0a72f238134d0b1fe",
+      "bytes": 18883
+    },
+    "final-installed/jfg-restart/run-4/sustained-result.json": {
+      "sha256": "af10b9689863cf164fba4feb61d3d49b1cbe552ab7da6f6607e078dba8a17406",
+      "bytes": 4357
+    },
+    "final-installed/jfg-restart/unit-validation.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "final-series.log": {
+      "sha256": "04c26013d4c479543195d455eebe9eef934aa219515e71db48a5326116221582",
+      "bytes": 304
+    },
+    "focused-tests-final.log": {
+      "sha256": "9b50f7479c174e24fe41d47ca89c9670ea1039dc708375c7f9b333c053cf26c3",
+      "bytes": 3216
+    },
+    "focused-tests.log": {
+      "sha256": "d4d97d3437a66507693eb4f54b6446e5444ad8b6434d65573fd81db0aafb08fa",
+      "bytes": 3054
+    },
+    "hook-verification.log": {
+      "sha256": "9cf135babf8f031dea30b0c0d578b402e306f49a2ef7c18ee218ac4a58f9ff9e",
+      "bytes": 95
+    },
+    "ingress-baseline.log": {
+      "sha256": "547cf3b51128999ecc76118ae98012151fd92e1a7d01fc95056f5f6acee07916",
+      "bytes": 8733
+    },
+    "ingress-current.log": {
+      "sha256": "c64900c8cc2d554ab266b4b303fb847478236164c05f69a4559c59b31e7ea748",
+      "bytes": 360
+    },
+    "initial-installed/fgn-coordinator/coordinator.service": {
+      "sha256": "d0224271d591e5c8eac1394ea589cff9cf31e9590f24651cc5c322d51bbdb79d",
+      "bytes": 880
+    },
+    "initial-installed/fgn-coordinator/cycle-1-core-journal.log": {
+      "sha256": "d616eec692846bbf07f4d76aebd357a868009c74c2efd195cad6a695aeb042bb",
+      "bytes": 195
+    },
+    "initial-installed/fgn-coordinator/cycle-1-journal.log": {
+      "sha256": "d8ad87c7580650eb781628abaabbf6c7154be4b4574d04704aa5280d9c4e37d8",
+      "bytes": 203
+    },
+    "initial-installed/fgn-coordinator/cycle-1-rtc-journal.log": {
+      "sha256": "71cc24c33b1ced1a6e0d58603dcb29b9247360dc5758cece8d53961c8b2d5934",
+      "bytes": 168
+    },
+    "initial-installed/fgn-coordinator/cycle-1-simulator-journal.log": {
+      "sha256": "14a5aa346a669ba3c345c232a534e4b1aef0ff55f386b91bd4c70df1e8d37d66",
+      "bytes": 13203
+    },
+    "initial-installed/fgn-coordinator/cycle-1-wireplumber-journal.log": {
+      "sha256": "b548b13ee7ecc1b730a2cf908472fa38a859ec71c5c9db584b6c3210be33e68a",
+      "bytes": 254
+    },
+    "initial-installed/fgn-coordinator/receipt.json": {
+      "sha256": "80d39c01fe0cc78ad52bde951bcd0a84af86adb1de51576b8ce305f5b92b7aba",
+      "bytes": 16226
+    },
+    "initial-installed/fgn-coordinator/unit-validation.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "initial-installed/fgn-core/coordinator.service": {
+      "sha256": "a530170ba737a66ccfb2a469f17b4c268591c5f1af79d0e790ad29681843413d",
+      "bytes": 873
+    },
+    "initial-installed/fgn-core/cycle-1-core-journal.log": {
+      "sha256": "a41c17d7501800fb1af2efcc23bb82564f6458e91930d6785f490f0375135468",
+      "bytes": 195
+    },
+    "initial-installed/fgn-core/cycle-1-journal.log": {
+      "sha256": "e7105f8e2892823d1ccc3c386fdd7070f3aa077f3160e6c4f44095e5eea4cfc4",
+      "bytes": 714
+    },
+    "initial-installed/fgn-core/cycle-1-rtc-journal.log": {
+      "sha256": "450f03a1144f03f4c0cb5238b5629a854f70c1f3a20ffbbdd7614d3c349bfe4d",
+      "bytes": 165
+    },
+    "initial-installed/fgn-core/cycle-1-simulator-journal.log": {
+      "sha256": "ccd6f98e4401758870b693622f6f9cbd458473cd30a1d83370e17e0f27527ca7",
+      "bytes": 13517
+    },
+    "initial-installed/fgn-core/cycle-1-wireplumber-journal.log": {
+      "sha256": "cf1ab7d5a98d1b746ca49071a83e01d96ff98bbfd6d1554c70fb7b4d24166718",
+      "bytes": 174
+    },
+    "initial-installed/fgn-core/receipt.json": {
+      "sha256": "431013b5f3ce14883e02860e41fab4c816d64bf86114a5be8c692b3aa0664768",
+      "bytes": 16811
+    },
+    "initial-installed/fgn-core/unit-validation.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "initial-installed/fgn-manager/coordinator.service": {
+      "sha256": "59fb54f885c63c4b899386335656767c0537d4ee0fa54233827039759b684365",
+      "bytes": 876
+    },
+    "initial-installed/fgn-manager/cycle-1-core-journal.log": {
+      "sha256": "df591238ce1434d2b955e4a988b1761e956731255a49f88b1ca97dc29b51a238",
+      "bytes": 195
+    },
+    "initial-installed/fgn-manager/cycle-1-journal.log": {
+      "sha256": "56969b3cd4cedc7a200d192f74068d3276609fff60603ee47531feaf25214e65",
+      "bytes": 408
+    },
+    "initial-installed/fgn-manager/cycle-1-rtc-journal.log": {
+      "sha256": "572db4b969210cc2d2b0c6f7d8f3f70ba65e1a8a642edcd5f2afa74e9d1d80f2",
+      "bytes": 119
+    },
+    "initial-installed/fgn-manager/cycle-1-simulator-journal.log": {
+      "sha256": "03d90a5580fadb1ee9b1abbe265f4c9d14b2e7f3a7a327979d58b0a2965b9833",
+      "bytes": 13470
+    },
+    "initial-installed/fgn-manager/cycle-1-wireplumber-journal.log": {
+      "sha256": "a877d2d6de5a171f9144b21f1364c523da56c131ff3980b50c7315cb0e47b142",
+      "bytes": 82
+    },
+    "initial-installed/fgn-manager/receipt.json": {
+      "sha256": "84198baef949815092ab2ceb5c305708ecd34da41235547fb09923df8ef6804e",
+      "bytes": 16850
+    },
+    "initial-installed/fgn-manager/unit-validation.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "initial-installed/fgn-package/deployment.conf": {
+      "sha256": "67ecdec5f4eef2a5b951071282465042f60ffab700f628b68e30a523ee6d08de",
+      "bytes": 109240
+    },
+    "initial-installed/fgn-package/provenance.json": {
+      "sha256": "305c71b8397a4b9e2f73bb9a4e92d231bc98a033304e25814e8906716d460be3",
+      "bytes": 270539
+    },
+    "initial-installed/fgn-package/sealed-artifacts.json": {
+      "sha256": "0f3bcdfabf7e1ca4bfe8bb90b756ffee28c21c62eab091ef2be6b70aea7a2494",
+      "bytes": 110297
+    },
+    "initial-installed/fgn-package/systemd-refresh.json": {
+      "sha256": "87a403941ec3c101f419f15ced76efa82bb115d71f692e90c39e40d0a78d52bd",
+      "bytes": 264
+    },
+    "initial-installed/fgn-rtc/coordinator.service": {
+      "sha256": "f688f47f53fcb05d32436d408f9ab49941f9d39c6a8b17eff62aacb89f2833f8",
+      "bytes": 872
+    },
+    "initial-installed/fgn-rtc/cycle-1-core-journal.log": {
+      "sha256": "da90b316ca4867ede62e3358425627546683ce52f57c1c827036e783fce9d411",
+      "bytes": 195
+    },
+    "initial-installed/fgn-rtc/cycle-1-journal.log": {
+      "sha256": "8de67958304daa8ba65f35d27dc7340def0d74752e0d508816ac7799a224bc11",
+      "bytes": 396
+    },
+    "initial-installed/fgn-rtc/cycle-1-rtc-journal.log": {
+      "sha256": "19c4e28b2f54ea8f217db4e622b0a5c758efa7b77ce2dc0394b6d159568c0b2e",
+      "bytes": 17
+    },
+    "initial-installed/fgn-rtc/cycle-1-simulator-journal.log": {
+      "sha256": "bf69712d5673697279d0e7c33eb0270eaaff9456a5a7005065b0fb7e06738859",
+      "bytes": 13448
+    },
+    "initial-installed/fgn-rtc/cycle-1-wireplumber-journal.log": {
+      "sha256": "792031beb0f1f143e45a5b5c41ad298c3b35d4264291a8a7eb7bf02a38d302b3",
+      "bytes": 254
+    },
+    "initial-installed/fgn-rtc/receipt.json": {
+      "sha256": "c9110cd55bc1cd26882b96cad7ed1a595818995246e5d8d6f42a16cec4a37e1b",
+      "bytes": 16660
+    },
+    "initial-installed/fgn-rtc/unit-validation.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "initial-installed/fgn-simulator/coordinator.service": {
+      "sha256": "5c4ce1582ca381704ef8552aa8799a22b5704e67eb9a5b50eb2c2f3ef1096a8d",
+      "bytes": 878
+    },
+    "initial-installed/fgn-simulator/cycle-1-core-journal.log": {
+      "sha256": "c54194624cd91bcf582d90f87b968a287127cdaa061e0668514e09f979e3e1b6",
+      "bytes": 195
+    },
+    "initial-installed/fgn-simulator/cycle-1-journal.log": {
+      "sha256": "699ad96f85fb0bb2f23f49534c17689260057784be21c2f07070304852f5897a",
+      "bytes": 408
+    },
+    "initial-installed/fgn-simulator/cycle-1-rtc-journal.log": {
+      "sha256": "ad7a253fe04ed6516fd0ec6831873c7778d2159d7491c7d6b92ba092393c232e",
+      "bytes": 168
+    },
+    "initial-installed/fgn-simulator/cycle-1-simulator-journal.log": {
+      "sha256": "bf9a37f5dac3e89b47f514640464f26edafb10932c2cf1c796c0b55bcbbc02eb",
+      "bytes": 10824
+    },
+    "initial-installed/fgn-simulator/cycle-1-wireplumber-journal.log": {
+      "sha256": "bb42bd3a8e83a3aa71a2bd42bfe650b29fc126439b028480fec84175ddd6fa06",
+      "bytes": 254
+    },
+    "initial-installed/fgn-simulator/receipt.json": {
+      "sha256": "c74368595b8f2a3108e67503589ba9c27aa76529338855f92d98003e787cc22a",
+      "bytes": 16442
+    },
+    "initial-installed/fgn-simulator/unit-validation.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "initial-installed/jfg-coordinator/coordinator.service": {
+      "sha256": "02249203d1e5b013fedd2616a35ffed923ba0c6fed58b768aa6feafd42c79c0b",
+      "bytes": 885
+    },
+    "initial-installed/jfg-coordinator/cycle-1-core-journal.log": {
+      "sha256": "1589100c38630437b4347f2966a7a08a8b7137cc8d0407d41eb83ac77ad6fa71",
+      "bytes": 195
+    },
+    "initial-installed/jfg-coordinator/cycle-1-journal.log": {
+      "sha256": "25262617b25255a5aeed253956ebfa1f006fa40a699959261e7b9f2001e9e407",
+      "bytes": 203
+    },
+    "initial-installed/jfg-coordinator/cycle-1-julia-journal.log": {
+      "sha256": "c045cb27f24888dc56523f104ee42f545b51d38c3fc588e0a918055ee2a3c3cf",
+      "bytes": 4021
+    },
+    "initial-installed/jfg-coordinator/cycle-1-rtc-journal.log": {
+      "sha256": "7a0e8c26bca2bf57a28d1c83019a207417e0f7cece41e4db90ce970324ca79d6",
+      "bytes": 168
+    },
+    "initial-installed/jfg-coordinator/cycle-1-simulator-journal.log": {
+      "sha256": "81135aa07e92f0b14c64e3c5f3302453b1c27d9f52f880839c3dfe9ba43b19f8",
+      "bytes": 13203
+    },
+    "initial-installed/jfg-coordinator/cycle-1-wireplumber-journal.log": {
+      "sha256": "cfea2cbdfc73cc65dfba7c908b4c0cfea2509c1f25a53c42c2df9305ebadced8",
+      "bytes": 254
+    },
+    "initial-installed/jfg-coordinator/receipt.json": {
+      "sha256": "0db5ecd980afca35b98eacc6c63c6b9afc438e0f00c40b2d68434f160190be42",
+      "bytes": 17963
+    },
+    "initial-installed/jfg-coordinator/unit-validation.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "initial-installed/jfg-core/coordinator.service": {
+      "sha256": "bf49726fe5455a3368810890ef0610eae11ba5eb9e8e4973d6bc5ca48097f371",
+      "bytes": 878
+    },
+    "initial-installed/jfg-core/cycle-1-core-journal.log": {
+      "sha256": "03e7f9b517c2892c9c9787cc8f3952525f81b0b21002e8290b808ddea4734ddd",
+      "bytes": 195
+    },
+    "initial-installed/jfg-core/cycle-1-journal.log": {
+      "sha256": "a3ffd1ce10aaf5702c891b9736ae54ffba2aa6df95859e0d344c43ecb8556c3d",
+      "bytes": 714
+    },
+    "initial-installed/jfg-core/cycle-1-julia-journal.log": {
+      "sha256": "377a1352614033822fb8e1879b72d8b5c394f3b36aaa13fcddd57eb0eb6f14e3",
+      "bytes": 4208
+    },
+    "initial-installed/jfg-core/cycle-1-rtc-journal.log": {
+      "sha256": "1f6084e7788969a8d42acd131c527858c72b0ab6259107a14e9c8a3e5c98f5f1",
+      "bytes": 165
+    },
+    "initial-installed/jfg-core/cycle-1-simulator-journal.log": {
+      "sha256": "3018b57397fc2d311e274997dddc284901d10c96ce9c6449814bfceaad0e60cf",
+      "bytes": 13517
+    },
+    "initial-installed/jfg-core/cycle-1-wireplumber-journal.log": {
+      "sha256": "bd7bd991c9923cc151e3db64530939a6f9ac6888117f263e7e8f85ee7907e8ba",
+      "bytes": 174
+    },
+    "initial-installed/jfg-core/receipt.json": {
+      "sha256": "ce92df3f89405132b0021378135dc2482d78f6f66aa5f004deb7dfd5cdeb9664",
+      "bytes": 18548
+    },
+    "initial-installed/jfg-core/unit-validation.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "initial-installed/jfg-julia/coordinator.service": {
+      "sha256": "60a479759d1ca52df1125b606877c80af3b96c4def96cb7c6066ddea18a6b176",
+      "bytes": 879
+    },
+    "initial-installed/jfg-julia/cycle-1-core-journal.log": {
+      "sha256": "36a8a4345aecc38e27584588ef31fb0afdb8ac8a89c0419173ac4d8f137cb6af",
+      "bytes": 195
+    },
+    "initial-installed/jfg-julia/cycle-1-journal.log": {
+      "sha256": "8b41675dcf50082059c97d15e784e5241e9b959d76def5f13ccb6c5c87a5e534",
+      "bytes": 400
+    },
+    "initial-installed/jfg-julia/cycle-1-julia-journal.log": {
+      "sha256": "eb9adb8eaccb1d1025ee10a16782b4e1b0cbba4ddd8d6012b5ed49f10ab8a4a4",
+      "bytes": 2114
+    },
+    "initial-installed/jfg-julia/cycle-1-rtc-journal.log": {
+      "sha256": "489fc5657b4d0073441cd730b8303dfc1c3633d967871a3a19610ed3cc696d0f",
+      "bytes": 184
+    },
+    "initial-installed/jfg-julia/cycle-1-simulator-journal.log": {
+      "sha256": "965b30856680491cb0481b4700af7b7ac1d9c944e53b016157c98d2201000729",
+      "bytes": 13468
+    },
+    "initial-installed/jfg-julia/cycle-1-wireplumber-journal.log": {
+      "sha256": "04025ca4b87b9e39e102ad39682acf33e98f0bbcd4cca63e681ac4cccc7bb60d",
+      "bytes": 254
+    },
+    "initial-installed/jfg-julia/receipt.json": {
+      "sha256": "8c1f52dc67c90aebc8a553f721dada0b7e6c3898ed3354a55622f8c7a573c684",
+      "bytes": 18557
+    },
+    "initial-installed/jfg-julia/unit-validation.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "initial-installed/jfg-manager/coordinator.service": {
+      "sha256": "268506a1532dae9fd1b8c0871de05dc2db8b76151b46af5ec1c29d9bf44303e6",
+      "bytes": 881
+    },
+    "initial-installed/jfg-manager/cycle-1-core-journal.log": {
+      "sha256": "1cb9cd6aafde2bf1a516dc9e59bc2f788959cbb644b4c3aeeadae7cc82ae1ee6",
+      "bytes": 2838
+    },
+    "initial-installed/jfg-manager/cycle-1-journal.log": {
+      "sha256": "7b038153a91cd3a28ec1ff3ead2c09a82a950294948fc6285820359188ab251a",
+      "bytes": 408
+    },
+    "initial-installed/jfg-manager/cycle-1-julia-journal.log": {
+      "sha256": "9c557ae7784812d2cdde4ae12ebd4aeb4010d63d4364fbf45d12d014a39a3ace",
+      "bytes": 4020
+    },
+    "initial-installed/jfg-manager/cycle-1-rtc-journal.log": {
+      "sha256": "6777af04437da8740472df98a7820f864fcf5b3f2eede5702bc9b46b1a4792d0",
+      "bytes": 170
+    },
+    "initial-installed/jfg-manager/cycle-1-simulator-journal.log": {
+      "sha256": "46181b7d7cc75225e3856dd1cc7382116d2893fea76a51d8c52f829523ac052b",
+      "bytes": 13470
+    },
+    "initial-installed/jfg-manager/cycle-1-wireplumber-journal.log": {
+      "sha256": "5bf7295e00173f2564802766e0b61b188eb9505cd8d856162e3c8e2661cf625a",
+      "bytes": 82
+    },
+    "initial-installed/jfg-manager/receipt.json": {
+      "sha256": "b5c9995b7786d554e77587212c584b106db282255f8ff7cff56926925f6924c1",
+      "bytes": 18587
+    },
+    "initial-installed/jfg-manager/unit-validation.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "initial-installed/jfg-package/deployment.conf": {
+      "sha256": "edc16af9a147f06be8983692b503c3c2f7f24dd4c40e47272dad55ac66c1f378",
+      "bytes": 111497
+    },
+    "initial-installed/jfg-package/provenance.json": {
+      "sha256": "abaf5b2b4aa2814dc584557363a17125abe38b09d4bf660357f63167b752ac03",
+      "bytes": 270599
+    },
+    "initial-installed/jfg-package/sealed-artifacts.json": {
+      "sha256": "4290c769b830a0b21a1bd732f8de2d63329bb7bfe85119a300e16fa1463a3bdd",
+      "bytes": 110194
+    },
+    "initial-installed/jfg-package/systemd-refresh.json": {
+      "sha256": "72fe63e63ec2cf21b9ac0435192096b3255fe49905037e704a8a904d695d3b23",
+      "bytes": 266
+    },
+    "initial-installed/jfg-restart/coordinator.service": {
+      "sha256": "2ce9905cb73cbf5c27cabc3bd6bde987d1e5190f829a2dbec905037035d3940b",
+      "bytes": 881
+    },
+    "initial-installed/jfg-restart/cycle-1-core-journal.log": {
+      "sha256": "5c5380ab972da02d28d02aa5fdbf49f71f7c244e5cc21bf580d4c67307c89c15",
+      "bytes": 195
+    },
+    "initial-installed/jfg-restart/cycle-1-journal.log": {
+      "sha256": "4495f45da2e398b761724c2708589a335114b6da735f0348b9e936b7b8e3851c",
+      "bytes": 199
+    },
+    "initial-installed/jfg-restart/cycle-1-julia-journal.log": {
+      "sha256": "c5b2a52392a06ea0f6bd1d3c319f99ed368f08060a5c93ab590b35d56a6b860d",
+      "bytes": 2114
+    },
+    "initial-installed/jfg-restart/cycle-1-rtc-journal.log": {
+      "sha256": "19c4e28b2f54ea8f217db4e622b0a5c758efa7b77ce2dc0394b6d159568c0b2e",
+      "bytes": 17
+    },
+    "initial-installed/jfg-restart/cycle-1-simulator-journal.log": {
+      "sha256": "e7381eb3391f5110fcee9f28bb23ad43751e82d68d291db6310363438e391470",
+      "bytes": 10943
+    },
+    "initial-installed/jfg-restart/cycle-1-wireplumber-journal.log": {
+      "sha256": "9a32edc552dd453fd40c502f5e4d031f6d09f1715150fe6f017a8ba197f37149",
+      "bytes": 330
+    },
+    "initial-installed/jfg-restart/cycle-2-core-journal.log": {
+      "sha256": "3789fb4c735679a31031b2c4a1bf3a0b4ab9850fc543cdefc873820279c483c5",
+      "bytes": 195
+    },
+    "initial-installed/jfg-restart/cycle-2-journal.log": {
+      "sha256": "93668b8e6775a7723dc0cd1f8c10fe59bc56433523387f30301e6980596df8b5",
+      "bytes": 199
+    },
+    "initial-installed/jfg-restart/cycle-2-julia-journal.log": {
+      "sha256": "266589fcfe83d6f89c87a8750565e59842cad20dc28fb4dd7bcbfb8f37191a50",
+      "bytes": 2114
+    },
+    "initial-installed/jfg-restart/cycle-2-rtc-journal.log": {
+      "sha256": "19c4e28b2f54ea8f217db4e622b0a5c758efa7b77ce2dc0394b6d159568c0b2e",
+      "bytes": 17
+    },
+    "initial-installed/jfg-restart/cycle-2-simulator-journal.log": {
+      "sha256": "d0d3bd82aaa0ff6fefc66505852d5aefcd85b8363792050edd0cd4c24053739e",
+      "bytes": 10943
+    },
+    "initial-installed/jfg-restart/cycle-2-wireplumber-journal.log": {
+      "sha256": "4696eaa5c4997d420f3f47b24a35ad33cb015a58f05416ee6f05fa520d229782",
+      "bytes": 251
+    },
+    "initial-installed/jfg-restart/receipt.json": {
+      "sha256": "ed67f9e2b56fc8401d092eb95fbc159772cd6ac2a90b37407c5dd110c28915a9",
+      "bytes": 50779
+    },
+    "initial-installed/jfg-restart/run-1/simulator-result.json": {
+      "sha256": "1dda56cbe7577a9ce9fd41ced8c94574ab62fe309530161732f40ad099cce0a2",
+      "bytes": 18889
+    },
+    "initial-installed/jfg-restart/run-1/sustained-result.json": {
+      "sha256": "68fac36b1ae9d5fe535d537c34366788fb1c5c319087fc94056dfd240a80c29c",
+      "bytes": 4358
+    },
+    "initial-installed/jfg-restart/run-2/simulator-result.json": {
+      "sha256": "beaf3bc2c210b479877314e24f4a3088e83caf276b5aff7c50e1c2e2704868d4",
+      "bytes": 18889
+    },
+    "initial-installed/jfg-restart/run-2/sustained-result.json": {
+      "sha256": "c1684e39d91a5bdbd3c3a9bde224b633d2485a4b5f52f4d1399523d2e054b9a7",
+      "bytes": 4356
+    },
+    "initial-installed/jfg-restart/run-3/simulator-result.json": {
+      "sha256": "ad3d6664b14325f37437815420747e33f0076bbfa757eafb670fef661266bac8",
+      "bytes": 18889
+    },
+    "initial-installed/jfg-restart/run-3/sustained-result.json": {
+      "sha256": "9065a84986daf038a49669ba159aa25eeafeb1da2612d9b2f2392cdbeafe226a",
+      "bytes": 4356
+    },
+    "initial-installed/jfg-restart/run-4/simulator-result.json": {
+      "sha256": "5a7c1c2750280c7e08879f2be2201ccc530c38b6ad4a85e0816f230fa15c48d6",
+      "bytes": 18889
+    },
+    "initial-installed/jfg-restart/run-4/sustained-result.json": {
+      "sha256": "c4ebe29966368eb0f2f2d065f6e331c2c9bfd57eaf9617a3f1b9061723d08567",
+      "bytes": 4358
+    },
+    "initial-installed/jfg-restart/unit-validation.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "initial-installed/jfg-rtc/coordinator.service": {
+      "sha256": "a7332fbcad0c027eeb10885ae222371e8e739bbee45a63a33ac7701d11d90281",
+      "bytes": 877
+    },
+    "initial-installed/jfg-rtc/cycle-1-core-journal.log": {
+      "sha256": "e6e791b56dd10112dd49fd7b0ebb27d23add44b32a817c4aacb83751c6a9c782",
+      "bytes": 1882
+    },
+    "initial-installed/jfg-rtc/cycle-1-journal.log": {
+      "sha256": "3f9ddfaa89e025a5fb8db3a850c02d3f3dd0931242242f267637c6f78a55e1c9",
+      "bytes": 396
+    },
+    "initial-installed/jfg-rtc/cycle-1-julia-journal.log": {
+      "sha256": "65413bfb8a1682ff63b24abe59e664f2bf3831a86324ab14b54edc7f97ef9805",
+      "bytes": 4020
+    },
+    "initial-installed/jfg-rtc/cycle-1-rtc-journal.log": {
+      "sha256": "19c4e28b2f54ea8f217db4e622b0a5c758efa7b77ce2dc0394b6d159568c0b2e",
+      "bytes": 17
+    },
+    "initial-installed/jfg-rtc/cycle-1-simulator-journal.log": {
+      "sha256": "9624f56a31c91d9001228fffdc71122830b064c6fb000aaf6f68dcb780ed31cd",
+      "bytes": 13516
+    },
+    "initial-installed/jfg-rtc/cycle-1-wireplumber-journal.log": {
+      "sha256": "d5b36e2a43cb8aeb989995a0dcedeec19723652c6e5009f69ca6231e0671ef17",
+      "bytes": 254
+    },
+    "initial-installed/jfg-rtc/receipt.json": {
+      "sha256": "8e4ab6f5ce7ae1c1547497be6f82158dd818ff0b43c26a096ba0975c04ca88fe",
+      "bytes": 18649
+    },
+    "initial-installed/jfg-rtc/unit-validation.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "initial-installed/jfg-simulator/coordinator.service": {
+      "sha256": "9df0428aa58970d524197885626e846d1ea5068b9eb8475e3e8044eff1389ca1",
+      "bytes": 883
+    },
+    "initial-installed/jfg-simulator/cycle-1-core-journal.log": {
+      "sha256": "b1f62d90b821151593d117d9a32feacc8f6473085ed87963b47c8f0d5e084096",
+      "bytes": 1175
+    },
+    "initial-installed/jfg-simulator/cycle-1-journal.log": {
+      "sha256": "0a9e8e8cb2476cbcaa11186ebda0cce234e6f01306832adb94826b7f715564c7",
+      "bytes": 408
+    },
+    "initial-installed/jfg-simulator/cycle-1-julia-journal.log": {
+      "sha256": "939923c484a35282691e0b492f828aeba626ea75201bdb903630b87765ded116",
+      "bytes": 4020
+    },
+    "initial-installed/jfg-simulator/cycle-1-rtc-journal.log": {
+      "sha256": "e6e101fe187556b47c2eb608c6a42fd17829e8f264d30eb4c4c8d5b83af39b05",
+      "bytes": 165
+    },
+    "initial-installed/jfg-simulator/cycle-1-simulator-journal.log": {
+      "sha256": "3d7c23a7e0b2889ff0ef3093470f206c5f273e7d5e6316c02360a2ad095cc0f5",
+      "bytes": 10824
+    },
+    "initial-installed/jfg-simulator/cycle-1-wireplumber-journal.log": {
+      "sha256": "4f34b5b44ed6e7637e17aad5b8c35df41c80da22e211be5da9d884d291850343",
+      "bytes": 254
+    },
+    "initial-installed/jfg-simulator/receipt.json": {
+      "sha256": "b2ea80be1be5668d39d71cffe17344e01eefee985af8ef705f18bbba2ed1cb21",
+      "bytes": 18179
+    },
+    "initial-installed/jfg-simulator/unit-validation.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "investigate.jl": {
+      "sha256": "6a03afee360836b27f38cfdf097841c18e473d2f3c56e8108255d76d8d72e567",
+      "bytes": 9243
+    },
+    "investigation-results/consumer-marker-ca4fbb16feb848e3bfa3f5f015258cdf": {
+      "sha256": "5ad38304b535c2987dbd24657c1a11b884984ff600d9f389deb0d4e634fee792",
+      "bytes": 6
+    },
+    "investigation-results/consumer-marker-d30652f9b4de4a8a8cb6d1e19256f85f": {
+      "sha256": "5ad38304b535c2987dbd24657c1a11b884984ff600d9f389deb0d4e634fee792",
+      "bytes": 6
+    },
+    "investigation-results/consumer-marker-ec3d02601cdc42979882843eb25ab889": {
+      "sha256": "5ad38304b535c2987dbd24657c1a11b884984ff600d9f389deb0d4e634fee792",
+      "bytes": 6
+    },
+    "investigation-results/core-marker-ca4fbb16feb848e3bfa3f5f015258cdf": {
+      "sha256": "e2769c269c7ae8a60e9e738944dc360a75fc670448c20d1c880a54d738e8dd2e",
+      "bytes": 12
+    },
+    "investigation-results/core-marker-d30652f9b4de4a8a8cb6d1e19256f85f": {
+      "sha256": "e2769c269c7ae8a60e9e738944dc360a75fc670448c20d1c880a54d738e8dd2e",
+      "bytes": 12
+    },
+    "investigation-results/core-marker-ec3d02601cdc42979882843eb25ab889": {
+      "sha256": "e2769c269c7ae8a60e9e738944dc360a75fc670448c20d1c880a54d738e8dd2e",
+      "bytes": 12
+    },
+    "investigation-results/crash-consumer-8b3b5e9c00934e46bffe6d7336164805": {
+      "sha256": "5ad38304b535c2987dbd24657c1a11b884984ff600d9f389deb0d4e634fee792",
+      "bytes": 6
+    },
+    "investigation-results/crash-ready.json": {
+      "sha256": "2d24e4285f5e8e63b821d8cdee9638bfe15ebb85523b314ffaa220a6c79ef14b",
+      "bytes": 946
+    },
+    "investigation-results/receipt.json": {
+      "sha256": "d9a1d349592321abc059a66bf2386b52b700716f9fd6c1f97b92d9b9f52d365c",
+      "bytes": 4176
+    },
+    "investigation-results/unknown-reply.json": {
+      "sha256": "dfa75a9b50a470ce7126f24a3ffa9ac7066a7d6d53a093519e84e91d6a6a00fa",
+      "bytes": 818
+    },
+    "investigation.log": {
+      "sha256": "ebbffdd4e184f1c7fb8013d5b8c1d0ac962b9272562b1e4d37e709f9f509ad63",
+      "bytes": 131
+    },
+    "runtime-retention-probe.json": {
+      "sha256": "f2d7340be9cffeb31fe6899d8aae72b767abad2627938ea698a7973042c8ed46",
+      "bytes": 346
+    },
+    "terminal-current.log": {
+      "sha256": "0713ebd7e4655e597163cdef0f3e520883815325bfa444a71128e3519d29de4a",
+      "bytes": 679
+    },
+    "terminal-retention-current.log": {
+      "sha256": "2c2c7e53b120e8a5b82d9c707a8cc387b25f1b91c728e5593c4dbc0ac77c753c",
+      "bytes": 922
+    },
+    "unit-probe.md": {
+      "sha256": "fd6b4e9434296286229b80948677f467d1eaf3097bc60efbafbe1d09a5eff7c7",
+      "bytes": 3153
+    }
+  }
+}

@@ -1,0 +1,2 @@
+[2181632.061112] rtc-devel pipewireao-rtc-deploy[545683]: DEPLOYMENT_READY name=rtc-graph-updates-fgn-baseline-20261006 control_locator=/run/user/1000/rtc-sd-fgn-simulator-20261007-retry2/control.json
+[2181652.225638] rtc-devel pipewireao-rtc-deploy[545683]: pipewireao-rtc-deploy: required simulator stopped: owner process identity exited or left its cgroup; Result=signal, ExecMainCode=2, ExecMainStatus=9

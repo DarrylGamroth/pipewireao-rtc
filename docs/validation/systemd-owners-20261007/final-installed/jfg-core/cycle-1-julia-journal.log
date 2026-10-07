@@ -1,0 +1,33 @@
+[2184162.891328] rtc-devel julialauncher[573619]: Precompiling packages...
+[2184169.558555] rtc-devel julialauncher[573619]:    6658.7 ms  ✓ PipeWireAO
+[2184169.559222] rtc-devel julialauncher[573619]:   1 dependency successfully precompiled in 7 seconds. 8 already precompiled.
+[2184175.440256] rtc-devel julialauncher[573619]: Precompiling packages...
+[2184184.937152] rtc-devel julialauncher[573619]:    9496.8 ms  ✓ FilterGraphAlgorithms
+[2184184.937759] rtc-devel julialauncher[573619]:   1 dependency successfully precompiled in 10 seconds. 44 already precompiled.
+[2184184.937759] rtc-devel julialauncher[573619]:   6 dependencies precompiled but different versions are currently loaded (Dates, JLLWrappers, Preferences, Printf, TOML and Zlib_jll). Restart julia to access the new versions. Otherwise, 16 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+[2184185.246336] rtc-devel julialauncher[573619]: Precompiling packages...
+[2184186.651159] rtc-devel julialauncher[573619]:    1404.8 ms  ✓ JuliaFilterGraph
+[2184188.543537] rtc-devel julialauncher[573619]:    1891.9 ms  ✓ FilterGraphPipeWire
+[2184188.544149] rtc-devel julialauncher[573619]:   2 dependencies successfully precompiled in 3 seconds. 62 already precompiled.
+[2184188.544149] rtc-devel julialauncher[573619]:   37 dependencies precompiled but different versions are currently loaded (AbstractFFTs, AdaptiveOpticsCalibration, CEnum, CompilerSupportLibraries_jll, Dates, DelimitedFiles, DocStringExtensions, FFTW, FFTW_jll, FilterGraphAlgorithms, GenericLinearAlgebra, Hwloc, Hwloc_jll, IrrationalConstants, JLLWrappers, Libiconv_jll, LogExpFunctions, Mmap, OpenLibm_jll, OpenSpecFun_jll, PipeWireAO, PipeWireAO_jll, PrecompileTools, Preferences, Printf, Reexport, Serialization, SpecialFunctions, StableTasks, SysInfo, TOML, ThreadPinning, ThreadPinningCore, UnsafeArrays, XML2_jll, Xorg_libpciaccess_jll and Zlib_jll). Restart julia to access the new versions. Otherwise, 12 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+[2184311.537360] rtc-devel julialauncher[573619]: ERROR: LoadError: InvalidStateException: native endpoint failed: pw_core failed: connection error (-32)
+[2184311.537360] rtc-devel julialauncher[573619]: ...and 1 more exception.
+[2184311.537360] rtc-devel julialauncher[573619]: ...and 1 more exception.
+[2184311.546024] rtc-devel julialauncher[573619]: Stacktrace:
+[2184311.572112] rtc-devel julialauncher[573619]:  [1] with_owner(f::var"#9#10"{String, Vector{String}}, options::@NamedTuple{remote::String, bootstrap_node::String, bootstrap_instance::Int64})
+[2184311.572300] rtc-devel julialauncher[573619]:    @ Main.HILNativeOwnerBootstrap /tmp/rtc-systemd-jfg-20261007-package/hil/native_owner_bootstrap.jl:29
+[2184311.573168] rtc-devel julialauncher[573619]:  [2] main(arguments::Vector{String}; owner_script::String)
+[2184311.573273] rtc-devel julialauncher[573619]:    @ Main /tmp/rtc-systemd-jfg-20261007-package/hil/jfg_owner.jl:75
+[2184311.573273] rtc-devel julialauncher[573619]:  [3] main
+[2184311.573273] rtc-devel julialauncher[573619]:    @ /tmp/rtc-systemd-jfg-20261007-package/hil/jfg_owner.jl:73 [inlined]
+[2184311.573273] rtc-devel julialauncher[573619]:  [4] main()
+[2184311.573273] rtc-devel julialauncher[573619]:    @ Main /tmp/rtc-systemd-jfg-20261007-package/hil/jfg_owner.jl:73
+[2184311.573273] rtc-devel julialauncher[573619]:  [5] top-level scope
+[2184311.573524] rtc-devel julialauncher[573619]:    @ /tmp/rtc-systemd-jfg-20261007-package/hil/jfg_owner.jl:83
+[2184311.573524] rtc-devel julialauncher[573619]:  [6] include(mod::Module, _path::String)
+[2184311.573524] rtc-devel julialauncher[573619]:    @ Base ./Base.jl:306
+[2184311.573524] rtc-devel julialauncher[573619]:  [7] exec_options(opts::Base.JLOptions)
+[2184311.573524] rtc-devel julialauncher[573619]:    @ Base ./client.jl:317
+[2184311.573524] rtc-devel julialauncher[573619]:  [8] _start()
+[2184311.592721] rtc-devel julialauncher[573619]:    @ Base ./client.jl:550
+[2184311.592721] rtc-devel julialauncher[573619]: in expression starting at /tmp/rtc-systemd-jfg-20261007-package/hil/jfg_owner.jl:83
