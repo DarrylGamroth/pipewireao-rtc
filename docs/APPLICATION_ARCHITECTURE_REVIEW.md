@@ -321,3 +321,9 @@ endpoint/owner loss. Sequence checks alone do not prove rejection of commands
 from an earlier acquisition generation; preserve coordinated reset/drain behavior
 and validate delayed commands. The acyclic statement describes the plant exchange
 path, not a restriction on declared scientific feedback. No runtime test was run.
+
+The subsequent user clarification permits multiple sources and sinks per AOS
+instance. Session admission therefore concerns a declared required endpoint set,
+with exact owner/role bindings and optional non-gating observation endpoints.
+The inspected single WFS/command exchange remains a fixture, not a provider
+cardinality limit or evidence that a general mixed-rate adapter is implemented.

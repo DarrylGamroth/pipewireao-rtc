@@ -173,6 +173,8 @@ graph; the following substitution fixture uses an externally owned
 `JuliaFilterGraph.jl` node with the same public contract. The integration
 package, not AdaptiveOpticsSim, owns PipeWire stream and acquisition-metadata
 mapping.
+These minimal-fixture endpoint counts do not limit an AOS application's sources
+or sinks.
 
 The first maintained fixture is the minimal complete-frame source → graph →
 discard path. The AdaptiveOpticsSim HIL reference follows the RTCW composition
@@ -449,16 +451,24 @@ selected device fails preparation rather than falling back to CPU.
 
 In the selected workstation/WirePlumber integration, AOS HIL is an optional
 instrument provider that becomes a required session participant when selected.
-Its WFS source and command sink share the exact simulator owner and selected
-PipeWireAO core. The headless runtime admits both endpoints and coordinates
-native acquisition/lifecycle controls; simulator or required endpoint loss
-revokes admission. The compatibility pilot includes the existing HIL path with
+An instance may provide multiple sensor/diagnostic sources and command sinks on
+the selected PipeWireAO core. The session declares endpoint roles, exact owner
+identities, per-endpoint contracts and required/optional status. The headless
+runtime admits the required endpoint set and coordinates native acquisition and
+lifecycle controls; simulator or required endpoint loss revokes admission.
+The compatibility pilot includes the existing HIL path with
 both CPU FGN and CPU JFG, not only a recorded source and discard sink. This is
 a migration obligation, not a claim that WirePlumber HIL integration is complete.
 
-The simulator alone owns model time, seeded optical/detector state and one
-frame/command exchange. AOS stages completed GPU products to host before the
-transport callback and copies an accepted command back to its exact execution
+AOS retains shared plant state, model-time advancement and declared sensor/command
+coherence. Optional observation endpoints do not gate required simulation progress.
+The current adapter's one-source/one-sink complete-frame exchange remains the
+selected fixture; general multiple-endpoint adapter behavior and timing require
+separate implementation/qualification.
+
+For this fixture, the simulator alone owns model time, seeded optical/detector
+state and one frame/command exchange. AOS stages completed GPU products to host
+before the transport callback and copies an accepted command back to its exact execution
 target. PipeWire callbacks do not execute optics or GPU synchronization. The
 transport adapter declares UInt16 ADC encoding and a fixed conversion from the
 RTC's micrometre OPD command to the plant's metre OPD command. HSDM277 order is

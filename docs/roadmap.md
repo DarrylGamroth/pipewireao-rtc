@@ -36,6 +36,10 @@ only after compatibility, behavioral parity and reduced maintained responsibilit
 The pilot must also admit the existing AOS HIL owner on the same core with both
 CPU FGN and CPU JFG, preserving matched endpoint identities, frame/command
 sequencing, coordinated controls and required-owner failure handling.
+AOS instances may provide multiple sources and sinks. Admit the declared required
+endpoint set by exact owner and role; optional observation endpoints must not
+gate progress. The existing single-exchange fixture does not qualify a general
+multiple-endpoint adapter or mixed-rate plant synchronization.
 
 ### Observed progress
 

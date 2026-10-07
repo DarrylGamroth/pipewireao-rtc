@@ -24,7 +24,7 @@ format.
 | **PipeWireAO** | PipeWire with NDArray formats, buffers, ports, metadata and scheduling; the native FGN graph host | Typed NDArray ports, explicit links, native properties and parameters |
 | **FGN** | Execute a prepared scientific graph through the native graph host; Rust algorithms come from `calculon-algorithms` and its FGN adapter | An ordinary PipeWire processing node exposing declared ports and controls |
 | **JFG** | Prepare and execute Julia scientific graphs; `FilterGraphAlgorithms` supplies algorithms and `FilterGraphPipeWire` publishes the graph | The same kind of ordinary processing node, implemented in Julia |
-| **AOS** | Simulate the instrument: atmosphere, optics, mirrors, wavefront sensors and detectors | `AdaptiveOpticsSimPipeWireHIL.jl` exposes simulated WFS output and DM command input |
+| **AOS** | Simulate the instrument: atmosphere, optics, mirrors, wavefront sensors and detectors | An owner may publish multiple sources and sinks; the current HIL adapter exposes one WFS/command exchange |
 | **AOC** | Prepare probes, estimate interaction matrices, construct reconstructors and calculate calibration diagnostics | Numerical plans, workspaces and results; acquisition uses the deployed instrument endpoints |
 | **WirePlumber / proposed WirePlumberAO profile** | Discover objects, apply session policy and realize declared links using the existing WirePlumber framework | PipeWire registry, properties, SPA POD parameters and links |
 | **systemd** | Start, stop and supervise processes; apply resource and scheduling limits | User services and, where configured, administrator-provisioned resources |
@@ -54,7 +54,8 @@ flowchart LR
     Instrument --> WFS --> RTC --> DM --> Instrument
 ```
 
-The arrows are the scientific data path through PipeWireAO ports and links.
+This diagram shows one WFS/command path, not a limit on an instrument's endpoint
+count. The arrows show its scientific path through PipeWireAO ports and links.
 Calibration, telemetry and science-camera nodes can be attached through their
 declared ports. A real device adapter may use its device protocol internally;
 the RTC algorithms still consume and produce their declared array types.
@@ -169,24 +170,39 @@ RTC graph remains an RTC graph. Its instrument binding and applicable calibratio
 artifacts must match the simulated sensor, mirror and coordinate conventions.
 
 AOS HIL is a first-class session participant. It is optional when selecting the
-instrument provider, but required for the admitted session once selected. Its
-WFS source and command sink belong to the same exact simulator owner; discovery
-must not pair endpoints from different instances just because their names match.
+instrument provider, but required for the admitted session once selected. One
+AOS instance may publish multiple sources and sinks, such as several WFS and
+science-camera outputs and several mirror or other controllable-optic inputs.
+The session binds each declared endpoint to its exact owner instance and role;
+discovery must not mix instances or interchangeable-looking endpoints by name.
+
+The session declares which endpoints are required for its operating mode and
+which are optional observation products. Each has its own shape, encoding,
+coordinates, units and rate. Optional observers do not become required simulation
+dependencies. The AOS owner retains model-time advancement, shared plant state
+and synchronization between sensors and commands; source count does not imply
+independent optical stepping or a mandatory one-source/one-sink pairing.
 
 | Session concern | AOS HIL participation |
 | --- | --- |
 | Process and core | An independently supervised Julia owner joins the selected PipeWireAO core through the existing HIL adapter |
-| Preparation | Prepare/warm the selected model, backend and transport while acquisition is held; verify both endpoints and resource placement |
-| Connections | Simulated WFS source → FGN or JFG graph → simulated DM command sink, with exact shape, encoding, coordinates, units and identities |
-| Acquisition | The source is the existing lockstep graph driver; release only after complete session admission |
+| Preparation | Prepare/warm the selected model, backend and transport while acquisition is held; verify all required endpoints and resource placement |
+| Connections | Bind the declared sensor, command and observation paths through FGN/JFG and other session nodes using each endpoint's exact contract |
+| Acquisition | Declare drivers, rates and command/exposure association for the selected model; release only after complete session admission |
 | Control | GUI and CLI request coordinated start/pause/reset/stop through the headless runtime and existing native owner controls |
 | Loss/restart | Simulator or required endpoint loss revokes admission; restart prepares a fresh instance and requires readmission |
 
-Command/frame feedback stays inside the simulator owner. The external PipeWire
-plant exchange path remains acyclic: source → processor → sink. A transport
-feedback link is not needed to advance the plant; declared scientific feedback
-and observation paths retain their existing contracts. For this exchange, frame `n`
-accepts its matching command, which AOS applies to frame `n + 1`. Coordinate
+The currently implemented complete-frame fixture has one WFS source and one
+command sink. Its source is the lockstep graph driver. This is a supported
+fixture, not an architectural limit on the number of endpoints an AOS instance
+can provide. A general multiple-endpoint adapter and its timing/coherence
+contracts are not claimed implemented by this fixture.
+
+For that fixture, command/frame feedback stays inside the simulator owner. The
+external PipeWire plant exchange path remains acyclic: source → processor → sink.
+A transport feedback link is not needed to advance the plant; declared scientific
+feedback and observation paths retain their existing contracts. For this exchange,
+frame `n` accepts its matching command, which AOS applies to frame `n + 1`. Coordinate
 pause/reset at a completed exchange and preserve coordinated drain/reset behavior.
 The pilot must verify that stale or duplicate commands, including commands from
 before reset/restart, cannot be adopted into a new acquisition generation.
@@ -208,11 +224,11 @@ controls and systemd services. It should not require a second RTC implementation
 a second session core or optics calculations inside WirePlumber. The GUI can
 disconnect while the admitted RTC and simulation continue.
 
-The current supervisor already launches this owner on its selected remote with
-native bootstrap and held acquisition (`deployment/hil/simulator.jl`,
+The current supervisor already launches the single-exchange owner on its selected
+remote with native bootstrap and held acquisition (`deployment/hil/simulator.jl`,
 `simulator_owner.jl`). WirePlumber/systemd integration must preserve that behavior;
-publishing two nodes alone is not sufficient HIL admission. Calibration uses the
-existing held-probe/exposure path and its selected session topology.
+publishing endpoint nodes alone is not sufficient HIL admission. Calibration uses
+the existing held-probe/exposure path and its selected session topology.
 
 The pilot checks cross-instance pairing with duplicate endpoint names, zero
 publication while held and actual source-driver selection. It also checks
