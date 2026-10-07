@@ -313,6 +313,17 @@ Its user-unit template currently binds to `pipewire.service`. An AO deployment
 must bind to the intended AO core and select the correct remote, configuration
 and module paths. It should not replace or disturb the desktop audio session.
 
+RTC already provides a generated `pipewireao-rtc@.service`: systemd starts its
+Julia supervisor, which prepares the private core and required scientific owners,
+admits the session and retains their cleanup. There are no independent core,
+AOS or JFG units in that package. Keep this service as the first integration
+boundary and add WirePlumber as an optional instance-scoped service. The current
+RTC `READY` notification follows source release, so `After=pipewireao-rtc@…`
+can order post-admission observation but cannot establish observation during
+held startup. Such an observer must not stop the RTC when it exits or authorize
+source release when it restarts. Separate scientific-owner units retain the
+failure-cohort gates in the architecture review.
+
 ## Current implementation and proposed transfer
 
 | Work | Current owner | Proposed owner |
