@@ -49,4 +49,33 @@ PipeWire/WirePlumber APIs. Operational calibration remains Julia.
 
 See the [evidence](../../docs/validation/wireplumber-compatibility-20261006/README.md)
 and [integration direction](../../docs/ECOSYSTEM_INTEGRATION.md) for current scope
-and the remaining Copper/AOS admission and ownership-transfer gates.
+and the remaining ownership-transfer gates.
+
+## Copper HIL coexistence
+
+The Julia development qualifier reuses an installed Copper CUDA AOS / CPU FGN
+or CPU JFG package. It runs the existing SDK supervisor, keeps every link under
+runtime ownership and attaches only a port/link observer. Fresh runtime/evidence
+directories are required; the selected fixture has 256 retained frames, 512 total
+exchanges and 100 Hz wall pacing. It checks held discovery, native stop/reset,
+two completed runs, midrun pause/resume and optional WirePlumber SIGKILL.
+
+```sh
+taskset -c 2-15 env JULIA_PKG_OFFLINE=true OPENBLAS_NUM_THREADS=1 \
+  JULIA_NUM_THREADS=1,0 julia --startup-file=no --compiled-modules=existing \
+  --project=/path/to/installed-package/julia \
+  deployment/qualify_wireplumber_hil.jl \
+  /path/to/installed-package /tmp/fresh-hil-runtime /tmp/fresh-hil-evidence \
+  /path/to/wireplumber /tmp/wp-ao-pilot/build
+```
+
+This fixture uses `/opt/pipewireao`, CPU6 for its coordinator/observer, and the
+package's admitted placement for scientific owners. Select a host whose allowed
+CPUs include that envelope. No systemd ownership or production policy transfer
+is performed. `hil-observer.lua` checks negotiated Formats through existing
+native SPA filtering, including deliberate incompatible contracts. The runtime
+remains the scientific admission authority.
+
+See the [coexistence evidence](../../docs/validation/wireplumber-hil-coexistence-20261006/README.md)
+for exact allocation, numerical and ownership limits. Focused cold manifest checks
+are in `deployment/test_qualify_wireplumber_hil.jl`.

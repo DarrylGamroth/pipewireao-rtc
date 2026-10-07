@@ -290,6 +290,15 @@ explicit linking work for that complete-frame FITS/discard path. This requires
 no native WirePlumber patch; a maintained build/release selection and additional
 AO contracts still need qualification.
 
+The [Copper HIL coexistence pilot](validation/wireplumber-hil-coexistence-20261006/README.md)
+also passes with CUDA AOS and each CPU executor using existing artifacts. A
+port/link-only WirePlumber profile observes the exact admitted cohort while the
+runtime retains scientific admission and every link. Native stop/reset/resume,
+exact retained baseline prefixes and continued operation after WirePlumber
+SIGKILL pass. No native WirePlumber or scientific source changes were needed.
+This is observation/coexistence evidence, not connection-policy or ownership
+transfer qualification. Required-owner loss and replacement remain open here.
+
 The broader compatibility questions retain these scopes:
 
 1. WirePlumber currently requests `libpipewire-0.3` and `libspa-0.2` through
@@ -336,6 +345,9 @@ the duplication.
    small existing NDArray source-to-sink graph. Check discovery, negotiated
    formats, explicit links and teardown. Leave the desktop session untouched.
 2. Pilot explicit connection realization for one existing Copper RTC session.
+   The runtime-owned-link coexistence stage passes for CUDA AOS with each CPU
+   executor; see the evidence above. Explicit WirePlumber realization and its
+   ownership-transfer gates below are not implemented.
    Preserve exact owner identities, negotiation order/passive links, native
    controls and held-source admission. Check pending withdrawal, owner replacement
    and runtime/WirePlumber loss before transferring link lifetime. Reuse existing

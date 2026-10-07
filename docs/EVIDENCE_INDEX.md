@@ -21,6 +21,13 @@ not new runtime, timing or hardware qualification.
 records the isolated complete-frame NDArray fixture, exact delivery and basic
 link cleanup. It does not qualify RTC/AOS admission or transfer ownership.
 
+[Copper WirePlumber/HIL coexistence, 2026-10-06](validation/wireplumber-hil-coexistence-20261006/README.md)
+records CPU FGN/JFG with CUDA AOS, held discovery, native stop/reset/resume,
+two 512-command runs per executor, exact 256-frame baseline/reset prefixes and
+preserved runtime-owned links after optional WirePlumber loss. Simulator tails
+report zero Julia heap allocation/GC. Required-owner failure, process/link
+ownership transfer and rate/latency qualification remain separate.
+
 [Installed Copper qualification, 2026-10-06](validation/copper-main-20261006/README.md)
 records refreshed main-runtime/SDK detector and DM trajectories, observer
 death/replacement and stall, simulator Julia heap counters and independent

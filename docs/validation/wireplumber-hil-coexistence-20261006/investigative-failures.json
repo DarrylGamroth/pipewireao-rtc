@@ -1,0 +1,62 @@
+[
+  {
+    "attempt": 1,
+    "failure": "failed process: Process(`/opt/pipewireao/bin/pwao-dump -r /tmp/rtc-wp-hil-fgn-runtime-v1-20261006/run-UGskqM/rtc-861764fea8c5`, ProcessExited(127)) [127]\n",
+    "shutdown_confirmed": true,
+    "cleanup": "complete",
+    "coordinator_sha256": "1e153a91e847a1f44ed6deb749e9184a6b72f52dbb276c524ceb2bc797c3e64e",
+    "policy_sha256": "03511c9b2f72dac8185c3ffcf00aa4c148ed5774a8cbb1572484b0267eb520d3",
+    "original_receipt_sha256": "9a0e502783810bf59a6848c0eb4fed0605c1a1567877d94402329c067ea8d126",
+    "original_receipt": "/tmp/rtc-wp-hil-fgn-evidence-v1-20261006/receipt.json"
+  },
+  {
+    "attempt": 2,
+    "failure": "WirePlumber discovery timed out",
+    "shutdown_confirmed": true,
+    "cleanup": "complete",
+    "coordinator_sha256": "8f5736aecea1a4ea79a0d6384b5a9337e80d2b34c183ab4871e56b5eb9881d5b",
+    "policy_sha256": "bfae80501e9aa6a08e1676ff5af94b4723c377b8ed529095aea7eaf61a653a48",
+    "original_receipt_sha256": "83099c3c606bce770bb34b4eee14be7922b9420f564d70fcf2d189970cb5c2ff",
+    "original_receipt": "/tmp/rtc-wp-hil-fgn-evidence-v2-20261006/receipt.json"
+  },
+  {
+    "attempt": 3,
+    "failure": "WirePlumber discovery timed out",
+    "shutdown_confirmed": true,
+    "cleanup": "complete",
+    "coordinator_sha256": "c3a2b6cdd7dbd6ae9ebd2c8f837174048a7d85f1b019faa28f1163538303b425",
+    "policy_sha256": "7281b580f2bd652784427e98ff296676e1c71cff8e4ad69fc03a13f6b7b3b2df",
+    "original_receipt_sha256": "1f2ae87024dc8de32678a6174b295ee859acdcc283cd370b59ba0a9b1795ac9e",
+    "original_receipt": "/tmp/rtc-wp-hil-fgn-evidence-v3-20261006/receipt.json"
+  },
+  {
+    "attempt": 4,
+    "failure": "WirePlumber Lua probe rejected discovery; see its retained log",
+    "shutdown_confirmed": true,
+    "cleanup": "complete",
+    "coordinator_sha256": "9230deb5d07b2ad83f93b8df23ec6169b0ea303384e8f13cfc77d063b3a78d3a",
+    "policy_sha256": "97a328bf13452aa135a4df4a19149be7ca53ab5d5c7da85ad6574fc17b018d08",
+    "original_receipt_sha256": "cf9f8c8e7eb279eb87e87e6389f53b096b07a634296e35687aa05f50ff8c8ec6",
+    "original_receipt": "/tmp/rtc-wp-hil-fgn-evidence-v4-20261006/receipt.json"
+  },
+  {
+    "attempt": 5,
+    "failure": "WirePlumber Lua probe rejected discovery; see its retained log",
+    "shutdown_confirmed": true,
+    "cleanup": "complete",
+    "coordinator_sha256": "9230deb5d07b2ad83f93b8df23ec6169b0ea303384e8f13cfc77d063b3a78d3a",
+    "policy_sha256": "c461d8776a87c2bf38731e565356f71e7837b1f04e868db60dd1e44b63d8ddaa",
+    "original_receipt_sha256": "c022d282883a5b515244de8b7d01a487d129eb1262214b33be11b6fe4f030a11",
+    "original_receipt": "/tmp/rtc-wp-hil-fgn-evidence-v5-20261006/receipt.json"
+  },
+  {
+    "attempt": 6,
+    "failure": "WirePlumber Lua probe rejected discovery; see its retained log",
+    "shutdown_confirmed": true,
+    "cleanup": "complete",
+    "coordinator_sha256": "9230deb5d07b2ad83f93b8df23ec6169b0ea303384e8f13cfc77d063b3a78d3a",
+    "policy_sha256": "6eaac67954dbd1c8cbf5bcc7d3c61c60b2d77d890e3a2a0ea98306d122225ee1",
+    "original_receipt_sha256": "cfdb13420815a0edd6ae88578bc4c79b31bc0251e7de995949506c8f2207de92",
+    "original_receipt": "/tmp/rtc-wp-hil-fgn-evidence-v6-20261006/receipt.json"
+  }
+]
