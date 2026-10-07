@@ -43,10 +43,14 @@ corrects periodic required-link/removal monitoring and checks configured Formats
 passive policy and exact owner clients through optional WirePlumber observation.
 Both Copper CPU executors with CUDA AOS pass required-link and simulator loss,
 bounded owned cleanup and fresh admission with two 512-command runs and exact
-baseline prefixes. Fault teardown diagnostics remain preserved; graceful fault
-shutdown and revocation latency are not qualified. Step 4 (link transfer) remains
-unproved, so existing link-management code stays in place and broad cleanup is
-deferred.
+baseline prefixes. The subsequent [source fault teardown correction](validation/fault-teardown-20261007/README.md)
+passes living-source failure report completion and owned cleanup for both
+executors, followed by fresh admission and two 512-command runs each. Retained
+prefixes remain exact and simulator tails remain at zero Julia heap/GC.
+Expected native/transport fault diagnostics are preserved; fresh fault-time pause
+acknowledgements and source-revocation latency remain unqualified. Step 4 (link
+transfer) remains unproved, so existing link-management code stays in place and
+broad cleanup is deferred.
 RTC/AOS session ownership transfer remains unimplemented and unqualified;
 current deployment and controls remain in use.
 
@@ -69,8 +73,10 @@ multiple-endpoint adapter or mixed-rate plant synchronization.
 Use each component for its intended purpose as selected in the
 [architecture boundary](architecture.md#accepted-workstation-integration-boundary).
 
-1. Fix graceful fault teardown against the preserved required-link/owner-loss
-   cases; bounded process cleanup has passed, graceful shutdown has not.
+1. Source fault disposal/report completion now passes the preserved Copper
+   required-link/owner-loss cases for both CPU executors with CUDA AOS. Reuse
+   [that scoped evidence](validation/fault-teardown-20261007/README.md); it does
+   not establish fault-time pause acknowledgements or revocation latency.
 2. Qualify pre-admission WirePlumber realization and realization-scoped withdrawal
    for the existing Copper CPU FGN/JFG sessions with CUDA AOS. Preserve held
    sources, exact identities, negotiation/passive semantics, native controls and
@@ -89,7 +95,8 @@ and execute only checks affected by each responsibility transfer.
 | Area | Current disposition | Evidence to read if affected |
 | --- | --- | --- |
 | WirePlumber compatibility | Unmodified 0.5.18 built against AO passes the isolated FITS/discard test. Copper CUDA AOS with each CPU executor passes two 512-command runs, held discovery, native stop/reset/resume, unchanged runtime-owned links after WirePlumber SIGKILL, and exact 256-frame baseline/reset prefixes. Simulator measured tails report zero Julia heap allocation/GC. Link/process ownership transfer and general multiple-endpoint qualification remain open. | [Compatibility test](validation/wireplumber-compatibility-20261006/README.md), [Copper coexistence](validation/wireplumber-hil-coexistence-20261006/README.md) |
-| Declared connection policy / required loss | Configured Formats, passive links and exact role-owner clients are checked continuously by the optional observer. Corrected RTC monitoring latches required-link and external endpoint loss. Both Copper CPU executors with CUDA AOS pass link/simulator loss, complete owned cleanup and fresh admission with exact baseline prefixes and zero simulator heap/GC tails. General multi-output AOS and graceful fault teardown remain unqualified; step 4 has not transferred link ownership. | [Policy design](WIREPLUMBER_CONNECTION_POLICY.md), [qualification and independent review](validation/wireplumber-connection-policy-20261007/README.md) |
+| Declared connection policy / required loss | Configured Formats, passive links and exact role-owner clients are checked continuously by the optional observer. Corrected RTC monitoring latches required-link and external endpoint loss. Both Copper CPU executors with CUDA AOS pass link/simulator loss, complete owned cleanup and fresh admission with exact baseline prefixes and zero simulator heap/GC tails. General multi-output AOS remains unqualified; step 4 has not transferred link ownership. | [Policy design](WIREPLUMBER_CONNECTION_POLICY.md), [qualification and independent review](validation/wireplumber-connection-policy-20261007/README.md) |
+| Source fault disposal/report completion | Exited source groups are revoked/reaped before native cleanup; unknown live outcomes revoke the core before source report grace. Both CPU executors with CUDA AOS pass link/simulator loss, final living-source report publication, complete owned cleanup and fresh two-run admission. Baseline prefixes and zero simulator heap/GC tails are preserved. Expected fault diagnostics remain; no fault-time pause acknowledgement or revocation-latency claim follows. | [Qualification and independent review](validation/fault-teardown-20261007/README.md) |
 | Optional WirePlumber user service | Installed companion uses the existing RTC unit's exact native incarnation. Both Copper CPU executors with CUDA AOS pass two 512-exchange incarnations, automatic observer restart after an actual RTC restart, observer stop/death independence, exact retained baseline prefixes, zero simulator heap/GC tails and cleanup after whole-cohort exit. Focused cold checks pass 33 service and 9 topology assertions. No independent-owner unit or release qualification follows. | [User-service evidence](validation/wireplumber-user-service-20261007/README.md), [service design](../deployment/wireplumber/SERVICE_DESIGN.md) |
 | Native control implementation | Reviewed changes merged to RTC main; live controls use typed native requests. Saved JSON is artifact/configuration only. | [Inventory](LIVE_CONTROL_INVENTORY.md), [integration snapshot](MAIN_INTEGRATION_20261006.md) |
 | Julia SDK/bootstrap | SDK 0.6.17 source is pushed; deployment pins that exact own revision. Paired cold runtime checks pass 232 assertions. Refreshed installed Copper CUDA simulator / CPU JFG passes lifecycle and simulator heap gates; other selected profiles and SDK registration remain open. | [Bootstrap validation](BOOTSTRAP_CONTROLLER_SEAL_VALIDATION.md), [installed Copper evidence](validation/copper-main-20261006/README.md) |

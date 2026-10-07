@@ -1,0 +1,305 @@
+{
+  "baseline_revision": "5282c93d33415df999d51125140f077ea0cf26ed",
+  "cold_log_hashes": {
+    "final-teardown-tests.log": "f29b645a1dda08303613f3b102140275ca4baef03f6b31588abbf16f1461e0a7",
+    "native-peer-health-before.log": "f0455de93cf2f0ad4adbc95883068700f34efcc3b78769fdcecc1faa52c3a9dd",
+    "report-warmup-after.log": "82ce06dce839a0cf08b4a78abefc4d94a2f064bde8ff44298650c1bad168f058",
+    "report-warmup-before.log": "aea7e794ba2f9fb6e76d3fc624de8361d99824cfd3f6c1edb815a87fa887877d",
+    "sdk-tests.log": "2eaf257a4e8cb5ce149e5498b81fc6250e1be9cf5ec7764baaf4c8aa4d47f740",
+    "source-exit-before.log": "9c6a0fd6ae029e264111f163cc539333ea5076fa0d52c12ddf20724317be9516",
+    "source-grace-after.log": "fc2fb28e73f503a63ab21116597f124140c1a7125175da807a7d3aa70fba89ba",
+    "source-grace-before.log": "e21c53165e762bda09660cf5a5e64ebc0c14dd6f8f23a6fe0456cd402a3bcbb2"
+  },
+  "engines": {
+    "fgn": {
+      "all_sealed_hashes_match": true,
+      "artifact_count": 719,
+      "base_descriptor_sha256": "9ea2bfd7464e0fc28755753219c52fed0358e137b472f6a2eb9f075dbcd2612c",
+      "cases": {
+        "linkloss": {
+          "deployment_log_sha256": "455be6b6f3e7cc0b8e588ce000aa07f7e713f63c637baa9504449f67e18a4512",
+          "fault_teardown": {
+            "finalizer_failure": false,
+            "julia_shutdown_interrupted": false,
+            "scope": "fault exit and report completion; no pause ACK or revocation-latency claim",
+            "source_report_written": true
+          },
+          "owned_cleanup": "complete",
+          "receipt_sha256": "099838eda05c3dddbf5f9c8bc8924124ded7096201477f7bc9ab24cf200bcedf",
+          "retained_cleanup_errors": [],
+          "success": true,
+          "wireplumber_log_sha256": "66cc600a37cc6c2e0e5159a020a67cb1aa145f6c83f91309c7a00609e5faea52"
+        },
+        "ownerloss": {
+          "deployment_log_sha256": "456803b39df178042b66412c2338b4e25c9dd585d111c91b8f6aa8a4f0898889",
+          "fault_teardown": {
+            "finalizer_failure": false,
+            "julia_shutdown_interrupted": false,
+            "scope": "fault exit and report completion; no pause ACK or revocation-latency claim",
+            "source_report_written": false
+          },
+          "owned_cleanup": "complete",
+          "receipt_sha256": "9c6a963681b0b64c2648ee332fbe97290b7c08b4c9a047f38e27f2255204d1b4",
+          "retained_cleanup_errors": [
+            "source outcome unknown: source proxy was removed",
+            "deployment cleanup failed: source coordination failed: source outcome unknown: source proxy was removed"
+          ],
+          "success": true,
+          "wireplumber_log_sha256": "bf4a6fd357cc375fd535d7f781051ff382c1be112530470fb3eb0264d3970bb9"
+        },
+        "readmission": {
+          "deployment_log_sha256": "fa8cfff252f0cd49a3aaf7663c823869a0e0135353907aeff942db1c35d6040e",
+          "fresh_native_identities": true,
+          "owned_cleanup": "complete",
+          "receipt_sha256": "bbeda9ff354fdcb9d018bfa429c08f81e36a5ff345767972625adee3871a2b93",
+          "runs": {
+            "1": {
+              "completed_exchanges": 512,
+              "prefixes": {
+                "simulator-result.commands.f32le": {
+                  "baseline": "/tmp/rtc-wp-policy-fgn-readmission-20261007/run-1/simulator-result.commands.f32le",
+                  "baseline_sha256": "946e1cb5dc5be9f3ee9059db5597fef1fa02020c2d81ba2aa51c208aacc8554a",
+                  "byte_equal": true,
+                  "retained_frames": 256,
+                  "sha256": "946e1cb5dc5be9f3ee9059db5597fef1fa02020c2d81ba2aa51c208aacc8554a"
+                },
+                "simulator-result.frames.u16le": {
+                  "baseline": "/tmp/rtc-wp-policy-fgn-readmission-20261007/run-1/simulator-result.frames.u16le",
+                  "baseline_sha256": "e206f4cd44096b6d020090e5bb44ee2dd1b62226e0ebe14fcdd6e6cb33075f59",
+                  "byte_equal": true,
+                  "retained_frames": 256,
+                  "sha256": "e206f4cd44096b6d020090e5bb44ee2dd1b62226e0ebe14fcdd6e6cb33075f59"
+                }
+              },
+              "reports": {
+                "simulator-result.json": "1c48ece1d0bce5a6bd095852864159490682fa0bef781eece44e9e77ded19d16",
+                "sustained-result.json": "a5cdabad91486cbf7d8660807cb6d9fe8cd70fce382642719bc7917c288dc963"
+              },
+              "simulator_tail_allocation": {
+                "allocated_bytes": 0,
+                "allocations": {
+                  "big": 0,
+                  "malloc": 0,
+                  "pool": 0,
+                  "realloc": 0
+                },
+                "completed_exchanges": 256,
+                "full_sweeps": 0,
+                "gc_pauses": 0,
+                "gc_time_ns": 0,
+                "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included"
+              }
+            },
+            "2": {
+              "completed_exchanges": 512,
+              "prefixes": {
+                "simulator-result.commands.f32le": {
+                  "baseline": "/tmp/rtc-wp-policy-fgn-readmission-20261007/run-1/simulator-result.commands.f32le",
+                  "baseline_sha256": "946e1cb5dc5be9f3ee9059db5597fef1fa02020c2d81ba2aa51c208aacc8554a",
+                  "byte_equal": true,
+                  "retained_frames": 256,
+                  "sha256": "946e1cb5dc5be9f3ee9059db5597fef1fa02020c2d81ba2aa51c208aacc8554a"
+                },
+                "simulator-result.frames.u16le": {
+                  "baseline": "/tmp/rtc-wp-policy-fgn-readmission-20261007/run-1/simulator-result.frames.u16le",
+                  "baseline_sha256": "e206f4cd44096b6d020090e5bb44ee2dd1b62226e0ebe14fcdd6e6cb33075f59",
+                  "byte_equal": true,
+                  "retained_frames": 256,
+                  "sha256": "e206f4cd44096b6d020090e5bb44ee2dd1b62226e0ebe14fcdd6e6cb33075f59"
+                }
+              },
+              "reports": {
+                "simulator-result.json": "72fb06b8c377845416eedf05fa7ea6f82617267db98dcd389d3743229253dca8",
+                "sustained-result.json": "b477b1ab03c0877ab8b20ae0cc44761de25f554b19968ceb578737c3c9e87aa0"
+              },
+              "simulator_tail_allocation": {
+                "allocated_bytes": 0,
+                "allocations": {
+                  "big": 0,
+                  "malloc": 0,
+                  "pool": 0,
+                  "realloc": 0
+                },
+                "completed_exchanges": 256,
+                "full_sweeps": 0,
+                "gc_pauses": 0,
+                "gc_time_ns": 0,
+                "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included"
+              }
+            }
+          },
+          "success": true,
+          "wireplumber_log_sha256": "7e32bea34be3a988477cdec905cafd126abe2f45b86fde53100fe9712ffedd27"
+        }
+      },
+      "changed_artifacts": [
+        "hil/simulator_owner.jl",
+        "julia/assets/deployment/hil/simulator_owner.jl",
+        "julia/src/deploy.jl",
+        "provenance.json"
+      ],
+      "descriptor_sha256": "a96a699992f478fc2501260daef4bc3954b205c481d637dc75f21437e827fe3e",
+      "package": "/tmp/rtc-fault-teardown-fgn-20261007"
+    },
+    "jfg": {
+      "all_sealed_hashes_match": true,
+      "artifact_count": 718,
+      "base_descriptor_sha256": "81c2184127dfc1890574dead34a8d88fd49cfdc6880bea3c03137d7570addfe6",
+      "cases": {
+        "linkloss": {
+          "deployment_log_sha256": "4468ebf873445be9b19ca08d02ff626e8617aa4e2c4a86dc872eae9ebd8c8a85",
+          "fault_teardown": {
+            "finalizer_failure": false,
+            "julia_shutdown_interrupted": false,
+            "scope": "fault exit and report completion; no pause ACK or revocation-latency claim",
+            "source_report_written": true
+          },
+          "owned_cleanup": "complete",
+          "receipt_sha256": "b1ab2736a83d920db74f2f12b516140d15d0a2f4e8a6bc0fd45e886c68ee7f59",
+          "retained_cleanup_errors": [],
+          "success": true,
+          "wireplumber_log_sha256": "7e846102de68cd121b7d004a41ef264388054fca49a8b48e2ca7081796e20087"
+        },
+        "ownerloss": {
+          "deployment_log_sha256": "0c26cda221864827e2246f390b072b76065807d145f2f39f690fd8f5cf54c389",
+          "fault_teardown": {
+            "finalizer_failure": false,
+            "julia_shutdown_interrupted": false,
+            "scope": "fault exit and report completion; no pause ACK or revocation-latency claim",
+            "source_report_written": false
+          },
+          "owned_cleanup": "complete",
+          "receipt_sha256": "28b1fc7088c2725daf918fe8b2c7dc84a954316b68ed36f25d91722c6ee8a55c",
+          "retained_cleanup_errors": [],
+          "success": true,
+          "wireplumber_log_sha256": "108d065d0b98f485325fce622b40677b6e621f846b7414c4fdbe2e8e6f3c5611"
+        },
+        "readmission": {
+          "deployment_log_sha256": "59128681521e14cd05589aea986b332c62fb93947594f0d1aefb60e4a02bf731",
+          "fresh_native_identities": true,
+          "owned_cleanup": "complete",
+          "receipt_sha256": "fc7b71be6955022d26f961e7d1c18143cecbd41d7011f9eb25a2bb2621998908",
+          "runs": {
+            "1": {
+              "completed_exchanges": 512,
+              "prefixes": {
+                "simulator-result.commands.f32le": {
+                  "baseline": "/tmp/rtc-wp-policy-jfg-readmission-20261007/run-1/simulator-result.commands.f32le",
+                  "baseline_sha256": "349c6f6105a780236cd6bc402c8fc849293fdd300838e3f1d74706ed4f12e27f",
+                  "byte_equal": true,
+                  "retained_frames": 256,
+                  "sha256": "349c6f6105a780236cd6bc402c8fc849293fdd300838e3f1d74706ed4f12e27f"
+                },
+                "simulator-result.frames.u16le": {
+                  "baseline": "/tmp/rtc-wp-policy-jfg-readmission-20261007/run-1/simulator-result.frames.u16le",
+                  "baseline_sha256": "b47321140763e9ba4c0eb6a7d56102aff54835a6ce2ba83418511b70270e71c0",
+                  "byte_equal": true,
+                  "retained_frames": 256,
+                  "sha256": "b47321140763e9ba4c0eb6a7d56102aff54835a6ce2ba83418511b70270e71c0"
+                }
+              },
+              "reports": {
+                "simulator-result.json": "cac28ef575279019716b16d8f6213e9f708f307d68ed25825074e66d2d241c5f",
+                "sustained-result.json": "b92684797b36e2c18987556b7d2d48f06e0e0c8f81910ab56d31e440245759d7"
+              },
+              "simulator_tail_allocation": {
+                "allocated_bytes": 0,
+                "allocations": {
+                  "big": 0,
+                  "malloc": 0,
+                  "pool": 0,
+                  "realloc": 0
+                },
+                "completed_exchanges": 256,
+                "full_sweeps": 0,
+                "gc_pauses": 0,
+                "gc_time_ns": 0,
+                "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included"
+              }
+            },
+            "2": {
+              "completed_exchanges": 512,
+              "prefixes": {
+                "simulator-result.commands.f32le": {
+                  "baseline": "/tmp/rtc-wp-policy-jfg-readmission-20261007/run-1/simulator-result.commands.f32le",
+                  "baseline_sha256": "349c6f6105a780236cd6bc402c8fc849293fdd300838e3f1d74706ed4f12e27f",
+                  "byte_equal": true,
+                  "retained_frames": 256,
+                  "sha256": "349c6f6105a780236cd6bc402c8fc849293fdd300838e3f1d74706ed4f12e27f"
+                },
+                "simulator-result.frames.u16le": {
+                  "baseline": "/tmp/rtc-wp-policy-jfg-readmission-20261007/run-1/simulator-result.frames.u16le",
+                  "baseline_sha256": "b47321140763e9ba4c0eb6a7d56102aff54835a6ce2ba83418511b70270e71c0",
+                  "byte_equal": true,
+                  "retained_frames": 256,
+                  "sha256": "b47321140763e9ba4c0eb6a7d56102aff54835a6ce2ba83418511b70270e71c0"
+                }
+              },
+              "reports": {
+                "simulator-result.json": "9e4501d4cc88f4e5b26e1436a56ff9d75093c6dbbf91beb1d82c3ac846487115",
+                "sustained-result.json": "e3cb2dcb04bdb8fa391ee16889a85c9994564e149efb47878bbd5ce1d7aadc2e"
+              },
+              "simulator_tail_allocation": {
+                "allocated_bytes": 0,
+                "allocations": {
+                  "big": 0,
+                  "malloc": 0,
+                  "pool": 0,
+                  "realloc": 0
+                },
+                "completed_exchanges": 256,
+                "full_sweeps": 0,
+                "gc_pauses": 0,
+                "gc_time_ns": 0,
+                "scope": "entire simulator process after retained prefix; includes optics, transport, recording, diagnostics and controls; excludes final report serialization; interim controls and pause reports remain included"
+              }
+            }
+          },
+          "success": true,
+          "wireplumber_log_sha256": "cb777982d032e57b9b41644b5160ec5b459112c4a1ae1fe57890e7a230378585"
+        }
+      },
+      "changed_artifacts": [
+        "hil/simulator_owner.jl",
+        "julia/assets/deployment/hil/simulator_owner.jl",
+        "julia/src/deploy.jl",
+        "provenance.json"
+      ],
+      "descriptor_sha256": "078097d0d7536e6525183e5710c660f64c25f3b1002967ba19da2a20ed6b4938",
+      "package": "/tmp/rtc-fault-teardown-jfg-20261007"
+    }
+  },
+  "production_revision": "781daf3",
+  "scope": "source fault disposal/report completion; no native pause acknowledgement, rate or revocation-latency qualification",
+  "software_checks": {
+    "baseline_delayed_report": {
+      "fail": 1,
+      "pass": 12
+    },
+    "baseline_report_types": {
+      "fail": 2,
+      "pass": 10
+    },
+    "baseline_source_exit": {
+      "fail": 5,
+      "pass": 7
+    },
+    "corrected_delayed_report": {
+      "fail": 0,
+      "pass": 13
+    },
+    "corrected_report_type_pass": 24,
+    "corrected_simulator_pass": 199,
+    "latest_teardown_pass": 45,
+    "sdk_pass": 3441
+  },
+  "source_hashes": {
+    "deployment/hil/simulator_owner.jl": "d13428f8dad419a9152e3e3086a4a66a4ecf944f1901d56403e54c5a292618bf",
+    "deployment/hil/test_simulator.jl": "d44d7d644fc56b1313af057352dfae511a650b4864cadd6820c3093b86e98919",
+    "deployment/julia/src/deploy.jl": "1bef38ab85befd994e33571b0df911d60a56892943a9b35f4cc73ab52cbc8770",
+    "deployment/julia/test/test_fault_teardown.jl": "a057b0d491060c8c34430b877dc723ca09c1b7dfa758154b0e76cf307bed5990",
+    "deployment/qualify_wireplumber_hil.jl": "89c2631b02ccd24c5102e8858c52dce52d39fd4e288cf0391ad3aea1e24ed8f4",
+    "deployment/qualify_wireplumber_loss.jl": "c0460a7246b9988679352ae07766c441be8fde767e3444aa9c55b816daf081da",
+    "scripts/prepare_fault_teardown_test.jl": "c62ea4ea25cf69b87e40523e3bfca54ecfae04ac2523e54897107558622c4fd3"
+  }
+}

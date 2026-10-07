@@ -382,8 +382,11 @@ coexistence steps pass within their recorded scopes. Explicit WirePlumber link
 realization and separate owner service supervision are still pending. The
 [current roadmap](roadmap.md#current-work) owns delivery order:
 
-1. Correct graceful fault teardown using the preserved link/owner-loss cases.
-   Existing bounded cleanup is not a claim of graceful owner shutdown.
+1. Source fault disposal/report completion now passes the preserved Copper
+   link/owner-loss cases for both CPU executors with CUDA AOS. Reuse
+   [the scoped correction and evidence](validation/fault-teardown-20261007/README.md).
+   Expected native/transport fault diagnostics remain; fault-time pause
+   acknowledgements and source-revocation latency remain unqualified.
 2. Qualify WirePlumber connection realization before RTC admission for one
    existing Copper session. Use existing WirePlumber/PipeWire facilities and
    native control contracts. Preserve exact owner identities, negotiation order,

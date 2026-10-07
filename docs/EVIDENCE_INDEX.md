@@ -45,6 +45,17 @@ simulator heap/GC tails. Preserved fault diagnostics limit the claim to bounded
 cleanup. Link ownership transfer, graceful fault shutdown and general multi-output
 AOS execution remain unqualified. Independent review and exact hashes are included.
 
+[Source fault teardown, 2026-10-07](validation/fault-teardown-20261007/README.md)
+records source-group revocation, core-first fallback and private report warmup
+corrections with fail-before/pass-after software evidence. Copper CPU FGN/JFG
+with CUDA AOS pass required-link/simulator loss, surviving-owner exit,
+final living-source report publication and owned cleanup. Fresh admission passes
+two 512-command runs per executor, exact retained baseline prefixes and zero
+simulator Julia heap/GC tails. Expected native/transport errors remain visible;
+no fault-time pause acknowledgement, revocation-latency, link/process ownership
+transfer, general multi-output or physical-actuation claim follows. Checked hashes
+and independent review are retained.
+
 [Installed Copper qualification, 2026-10-06](validation/copper-main-20261006/README.md)
 records refreshed main-runtime/SDK detector and DM trajectories, observer
 death/replacement and stall, simulator Julia heap counters and independent

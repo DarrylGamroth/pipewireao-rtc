@@ -1,0 +1,27 @@
+ERROR: LoadError: Some tests did not pass: 12 passed, 1 failed, 0 errored, 0 broken.
+in expression starting at /tmp/rtc-fault-grace-only-20261007.jl:36
+Unknown live source gets report grace after core revocation: Test Failed at /tmp/rtc-fault-grace-only-20261007.jl:74
+  Expression: isfile(source_exit_path)
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] (::var"#21#22")(directory::String)
+   @ Main /tmp/rtc-fault-grace-only-20261007.jl:74
+ [3] mktempdir(fn::var"#21#22", parent::String; prefix::String)
+   @ Base.Filesystem ./file.jl:941
+ [4] mktempdir (repeats 2 times)
+   @ ./file.jl:937 [inlined]
+ [5] #19
+   @ /tmp/rtc-fault-grace-only-20261007.jl:39 [inlined]
+ [6] withenv(f::var"#19#20", keyvals::Pair{String, Nothing})
+   @ Base ./env.jl:283
+ [7] top-level scope
+   @ /tmp/rtc-fault-grace-only-20261007.jl:37
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [9] macro expansion
+   @ /tmp/rtc-fault-grace-only-20261007.jl:38 [inlined]
+Test Summary:                                               | Pass  Fail  Total  Time
+Unknown live source gets report grace after core revocation |   12     1     13  6.4s
+RNG of the outermost testset: Random.Xoshiro(0x9836148abdc2731b, 0x46c60d2da1c139f7, 0xe69bd37c1cc3a2a2, 0x09a0e8c35ca70e3f, 0x30f9bad7bb69b1e3)

@@ -1,0 +1,6 @@
+Test Summary:                                    | Pass  Total  Time
+Exited source is revoked without a pause request |   20     20  5.6s
+Test Summary:                                       | Pass  Total  Time
+Exited source revokes its adopted owned descendants |   12     12  0.5s
+Test Summary:                                               | Pass  Total  Time
+Unknown live source gets report grace after core revocation |   13     13  0.8s

@@ -109,6 +109,17 @@ function main(args)
                 end
                 record["observer_loss_reported"]=occursin("HIL_COHORT_LOST",post_log)
                 require(record["observer_loss_reported"],"Policy did not report required cohort loss")
+                # These are cold teardown diagnostics, outside frame processing.
+                # The intentionally killed simulator cannot write a final report.
+                log_text=read(joinpath(evidence,"deployment.log"),String)
+                report_written=occursin(r"(?m)^SIMULATOR_REPORT_WRITTEN sequence=\d+ recorded_frames=\d+ failed=true$",log_text)
+                interrupted=occursin(r"\[\d+\] signal (?:9|15):",log_text)
+                finalizer_failure=occursin("error in running finalizer",lowercase(log_text))
+                record["fault_teardown"]=Dict("source_report_written"=>report_written,
+                    "julia_shutdown_interrupted"=>interrupted,"finalizer_failure"=>finalizer_failure,
+                    "scope"=>"fault exit and report completion; no pause ACK or revocation-latency claim")
+                require(kind!="required-link" || report_written,"Living simulator did not finish its fault report")
+                require(!interrupted && !finalizer_failure,"Surviving Julia owner teardown was interrupted")
                 record["success"]=true
             end
         catch exception

@@ -151,7 +151,7 @@ end
                     push!(children, ("core", core)); pids[core] = getpid(core)
 
                     source_exit_path = joinpath(directory, "source-exited-after-core-revocation")
-                    source_script = "while test -e /proc/\$1; do sleep 0.01; done; " *
+                    source_script = "while test -e /proc/\$1; do sleep 0.01; done; sleep 0.25; " *
                         "echo source-exited > \$2"
                     source = run(Cmd(Cmd(["sh", "-c", source_script, "source",
                         string(pids[core]), source_exit_path]); detach=true); wait=false)

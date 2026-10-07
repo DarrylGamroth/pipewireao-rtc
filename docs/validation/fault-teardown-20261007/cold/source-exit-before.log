@@ -1,0 +1,120 @@
+ERROR: LoadError: Some tests did not pass: 7 passed, 5 failed, 0 errored, 0 broken.
+in expression starting at /tmp/rtc-report-warmup-before-20261007/deployment/julia/test/test_fault_teardown.jl:36
+Exited source is revoked without a pause request: Test Failed at /tmp/rtc-report-warmup-before-20261007/deployment/julia/test/test_fault_teardown.jl:65
+  Expression: isempty(errors)
+   Evaluated: isempty(Any[PipeWireAODeployment.Deployment.DeploymentError("source coordination failed: shutdown attempted pause on an exited source")])
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] (::var"#20#21"{Bool})(directory::String)
+   @ Main /tmp/rtc-report-warmup-before-20261007/deployment/julia/test/test_fault_teardown.jl:65
+ [3] mktempdir(fn::var"#20#21"{Bool}, parent::String; prefix::String)
+   @ Base.Filesystem ./file.jl:941
+ [4] mktempdir (repeats 2 times)
+   @ ./file.jl:937 [inlined]
+ [5] #18
+   @ /tmp/rtc-report-warmup-before-20261007/deployment/julia/test/test_fault_teardown.jl:39 [inlined]
+ [6] withenv(f::var"#18#19", keyvals::Pair{String, Nothing})
+   @ Base ./env.jl:283
+ [7] top-level scope
+   @ /tmp/rtc-report-warmup-before-20261007/deployment/julia/test/test_fault_teardown.jl:37
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [9] macro expansion
+   @ /tmp/rtc-report-warmup-before-20261007/deployment/julia/test/test_fault_teardown.jl:37 [inlined]
+Exited source is revoked without a pause request: Test Failed at /tmp/rtc-report-warmup-before-20261007/deployment/julia/test/test_fault_teardown.jl:66
+  Expression: requests == UInt32[3, 1]
+   Evaluated: UInt32[] == UInt32[0x00000003, 0x00000001]
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] (::var"#20#21"{Bool})(directory::String)
+   @ Main /tmp/rtc-report-warmup-before-20261007/deployment/julia/test/test_fault_teardown.jl:66
+ [3] mktempdir(fn::var"#20#21"{Bool}, parent::String; prefix::String)
+   @ Base.Filesystem ./file.jl:941
+ [4] mktempdir (repeats 2 times)
+   @ ./file.jl:937 [inlined]
+ [5] #18
+   @ /tmp/rtc-report-warmup-before-20261007/deployment/julia/test/test_fault_teardown.jl:39 [inlined]
+ [6] withenv(f::var"#18#19", keyvals::Pair{String, Nothing})
+   @ Base ./env.jl:283
+ [7] top-level scope
+   @ /tmp/rtc-report-warmup-before-20261007/deployment/julia/test/test_fault_teardown.jl:37
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [9] macro expansion
+   @ /tmp/rtc-report-warmup-before-20261007/deployment/julia/test/test_fault_teardown.jl:37 [inlined]
+Exited source is revoked without a pause request: Test Failed at /tmp/rtc-report-warmup-before-20261007/deployment/julia/test/test_fault_teardown.jl:67
+  Expression: deployment.source_id == 0
+   Evaluated: 1 == 0
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] (::var"#20#21"{Bool})(directory::String)
+   @ Main /tmp/rtc-report-warmup-before-20261007/deployment/julia/test/test_fault_teardown.jl:67
+ [3] mktempdir(fn::var"#20#21"{Bool}, parent::String; prefix::String)
+   @ Base.Filesystem ./file.jl:941
+ [4] mktempdir (repeats 2 times)
+   @ ./file.jl:937 [inlined]
+ [5] #18
+   @ /tmp/rtc-report-warmup-before-20261007/deployment/julia/test/test_fault_teardown.jl:39 [inlined]
+ [6] withenv(f::var"#18#19", keyvals::Pair{String, Nothing})
+   @ Base ./env.jl:283
+ [7] top-level scope
+   @ /tmp/rtc-report-warmup-before-20261007/deployment/julia/test/test_fault_teardown.jl:37
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [9] macro expansion
+   @ /tmp/rtc-report-warmup-before-20261007/deployment/julia/test/test_fault_teardown.jl:37 [inlined]
+Exited source is revoked without a pause request: Test Failed at /tmp/rtc-report-warmup-before-20261007/deployment/julia/test/test_fault_teardown.jl:68
+  Expression: deployment.source_failed == source_failed
+   Evaluated: true == false
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] (::var"#20#21"{Bool})(directory::String)
+   @ Main /tmp/rtc-report-warmup-before-20261007/deployment/julia/test/test_fault_teardown.jl:68
+ [3] mktempdir(fn::var"#20#21"{Bool}, parent::String; prefix::String)
+   @ Base.Filesystem ./file.jl:941
+ [4] mktempdir (repeats 2 times)
+   @ ./file.jl:937 [inlined]
+ [5] #18
+   @ /tmp/rtc-report-warmup-before-20261007/deployment/julia/test/test_fault_teardown.jl:39 [inlined]
+ [6] withenv(f::var"#18#19", keyvals::Pair{String, Nothing})
+   @ Base ./env.jl:283
+ [7] top-level scope
+   @ /tmp/rtc-report-warmup-before-20261007/deployment/julia/test/test_fault_teardown.jl:37
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [9] macro expansion
+   @ /tmp/rtc-report-warmup-before-20261007/deployment/julia/test/test_fault_teardown.jl:37 [inlined]
+Exited source is revoked without a pause request: Test Failed at /tmp/rtc-report-warmup-before-20261007/deployment/julia/test/test_fault_teardown.jl:66
+  Expression: requests == UInt32[3, 1]
+   Evaluated: UInt32[] == UInt32[0x00000003, 0x00000001]
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] (::var"#20#21"{Bool})(directory::String)
+   @ Main /tmp/rtc-report-warmup-before-20261007/deployment/julia/test/test_fault_teardown.jl:66
+ [3] mktempdir(fn::var"#20#21"{Bool}, parent::String; prefix::String)
+   @ Base.Filesystem ./file.jl:941
+ [4] mktempdir (repeats 2 times)
+   @ ./file.jl:937 [inlined]
+ [5] #18
+   @ /tmp/rtc-report-warmup-before-20261007/deployment/julia/test/test_fault_teardown.jl:39 [inlined]
+ [6] withenv(f::var"#18#19", keyvals::Pair{String, Nothing})
+   @ Base ./env.jl:283
+ [7] top-level scope
+   @ /tmp/rtc-report-warmup-before-20261007/deployment/julia/test/test_fault_teardown.jl:37
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [9] macro expansion
+   @ /tmp/rtc-report-warmup-before-20261007/deployment/julia/test/test_fault_teardown.jl:37 [inlined]
+Test Summary:                                    | Pass  Fail  Total  Time
+Exited source is revoked without a pause request |    7     5     12  5.5s
+RNG of the outermost testset: Random.Xoshiro(0x46dcff2ffd2f8cbb, 0xd95ee0eb61a9d32e, 0xc1abac0f2e8acf5c, 0x313276d57df33cb4, 0xf3b53e147c89bbfd)

@@ -1,0 +1,201 @@
+W 08:32:37.540550         pw.context ../src/pipewire/context.c:548:pw_context_new: 0x55f0900e1250: can't load dbus library: support/libspa-dbus
+HIL_OBSERVER_STARTED 9
+HIL_OWNER client-24 335189
+HIL_OWNER client-30 335859
+HIL_OWNER client-33 335859
+HIL_OBJECT link-49 49 49
+HIL_OBJECT link-50 50 50
+HIL_OBJECT link-52 52 52
+HIL_FORMAT port-26
+	elementType:
+		1: U16_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-26 schema
+HIL_REJECTED port-26 shape
+HIL_REJECTED port-26 elementType
+HIL_REJECTED port-26 layout
+HIL_REJECTED port-26 rate
+HIL_OBJECT port-26 26 26
+HIL_FORMAT port-28
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-28 schema
+HIL_REJECTED port-28 shape
+HIL_REJECTED port-28 elementType
+HIL_REJECTED port-28 layout
+HIL_REJECTED port-28 rate
+HIL_OBJECT port-28 28 28
+HIL_FORMAT port-32
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		denom: 1
+		num: 500
+		pod_type: Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-32 schema
+HIL_REJECTED port-32 shape
+HIL_REJECTED port-32 elementType
+HIL_REJECTED port-32 layout
+HIL_OBJECT port-32 32 32
+HIL_FORMAT port-35
+	elementType:
+		1: U16_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-35 schema
+HIL_REJECTED port-35 shape
+HIL_REJECTED port-35 elementType
+HIL_REJECTED port-35 layout
+HIL_REJECTED port-35 rate
+HIL_OBJECT port-35 35 35
+HIL_FORMAT port-40
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		denom: 1
+		num: 500
+		pod_type: Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-40 schema
+HIL_REJECTED port-40 shape
+HIL_REJECTED port-40 elementType
+HIL_REJECTED port-40 layout
+HIL_OBJECT port-40 40 40
+HIL_FORMAT port-48
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-48 schema
+HIL_REJECTED port-48 shape
+HIL_REJECTED port-48 elementType
+HIL_REJECTED port-48 layout
+HIL_REJECTED port-48 rate
+HIL_OBJECT port-48 48 48
+HIL_COHORT_READY

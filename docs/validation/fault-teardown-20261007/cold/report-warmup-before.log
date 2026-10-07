@@ -1,0 +1,53 @@
+ERROR: LoadError: Some tests did not pass: 10 passed, 2 failed, 0 errored, 0 broken.
+in expression starting at /tmp/rtc-report-warmup-before-20261007/deployment/hil/test_simulator.jl:304
+Test Summary:                                       | Pass  Total  Time
+plant model period uses nanosecond driver precision |    4      4  2.4s
+Test Summary:                                           | Pass  Total     Time
+observer sees fresh prefix before companion publication |  127    127  1m26.6s
+Test Summary:                 | Pass  Total  Time
+private failure report warmup |   18     18  5.0s
+Test Summary:                          | Pass  Total  Time
+HEART units and native reset authority |   12     12  0.3s
+Test Summary:                             | Pass  Total  Time
+sustained report retains an honest prefix |   14     14  1.1s
+report warmup covers populated timing without changing plant records: Test Failed at /tmp/rtc-report-warmup-before-20261007/deployment/hil/test_simulator.jl:334
+  Expression: field_types == Set([(Nothing, Nothing), (Nothing, Float64), (String, Nothing), (String, Float64)])
+   Evaluated: Set(Tuple{DataType, DataType}[(String, Nothing)]) == Set(Tuple{DataType, DataType}[(Nothing, Float64), (String, Nothing), (String, Float64), (Nothing, Nothing)])
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] (::var"#54#55"{Module})(root::String)
+   @ Main /tmp/rtc-report-warmup-before-20261007/deployment/hil/test_simulator.jl:334
+ [3] mktempdir(fn::var"#54#55"{Module}, parent::String; prefix::String)
+   @ Base.Filesystem ./file.jl:941
+ [4] mktempdir(fn::Function, parent::String)
+   @ Base.Filesystem ./file.jl:937
+ [5] top-level scope
+   @ /tmp/rtc-report-warmup-before-20261007/deployment/hil/test_simulator.jl:305
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [7] macro expansion
+   @ /tmp/rtc-report-warmup-before-20261007/deployment/hil/test_simulator.jl:306 [inlined]
+report warmup covers populated timing without changing plant records: Test Failed at /tmp/rtc-report-warmup-before-20261007/deployment/hil/test_simulator.jl:336
+  Expression: summary_types == Set([Nothing, String])
+   Evaluated: Set(DataType[String]) == Set(DataType[Nothing, String])
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] (::var"#54#55"{Module})(root::String)
+   @ Main /tmp/rtc-report-warmup-before-20261007/deployment/hil/test_simulator.jl:336
+ [3] mktempdir(fn::var"#54#55"{Module}, parent::String; prefix::String)
+   @ Base.Filesystem ./file.jl:941
+ [4] mktempdir(fn::Function, parent::String)
+   @ Base.Filesystem ./file.jl:937
+ [5] top-level scope
+   @ /tmp/rtc-report-warmup-before-20261007/deployment/hil/test_simulator.jl:305
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [7] macro expansion
+   @ /tmp/rtc-report-warmup-before-20261007/deployment/hil/test_simulator.jl:306 [inlined]
+Test Summary:                                                        | Pass  Fail  Total  Time
+report warmup covers populated timing without changing plant records |   10     2     12  2.4s
+RNG of the outermost testset: Random.Xoshiro(0x283fd5813dd6ce5b, 0x2e167a038df90c53, 0x3b34ec23487c50c2, 0x08324589cd3c02f8, 0x13ebc700eed39be6)

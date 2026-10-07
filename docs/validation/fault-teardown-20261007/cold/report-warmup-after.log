@@ -1,0 +1,12 @@
+Test Summary:                                       | Pass  Total  Time
+plant model period uses nanosecond driver precision |    4      4  1.2s
+Test Summary:                                           | Pass  Total     Time
+observer sees fresh prefix before companion publication |  127    127  1m02.5s
+Test Summary:                 | Pass  Total  Time
+private failure report warmup |   18     18  6.6s
+Test Summary:                          | Pass  Total  Time
+HEART units and native reset authority |   12     12  0.2s
+Test Summary:                             | Pass  Total  Time
+sustained report retains an honest prefix |   14     14  1.0s
+Test Summary:                                                        | Pass  Total  Time
+report warmup covers populated timing without changing plant records |   24     24  0.9s
