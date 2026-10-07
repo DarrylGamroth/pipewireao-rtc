@@ -192,13 +192,13 @@ independent optical stepping or a mandatory one-source/one-sink pairing.
 | Control | GUI and CLI request coordinated start/pause/reset/stop through the headless runtime and existing native owner controls |
 | Loss/restart | Simulator or required endpoint loss revokes admission; restart prepares a fresh instance and requires readmission |
 
-The currently implemented complete-frame fixture has one WFS source and one
+The currently implemented complete-frame simulation has one WFS source and one
 command sink. Its source is the lockstep graph driver. This is a supported
-fixture, not an architectural limit on the number of endpoints an AOS instance
-can provide. A general multiple-endpoint adapter and its timing/coherence
-contracts are not claimed implemented by this fixture.
+simulation run, not an architectural limit on the number of endpoints an AOS
+instance can provide. A general multiple-endpoint adapter and its
+timing/coherence contracts are not claimed implemented by this simulation.
 
-For that fixture, command/frame feedback stays inside the simulator owner. The
+For that simulation, command/frame feedback stays inside the simulator owner. The
 external PipeWire plant exchange path remains acyclic: source → processor → sink.
 A transport feedback link is not needed to advance the plant; declared scientific
 feedback and observation paths retain their existing contracts. For this exchange,
@@ -332,6 +332,16 @@ to the active RTC MainPID, exact native incarnation and admitted topology.
 control. Both CPU executors with CUDA AOS pass the scoped lifecycle, prefix and
 cleanup gates. The runtime still supervises its scientific owners and owns all
 links; separate owner units and connection policy transfer remain unimplemented.
+
+The [declared-connection checks](validation/wireplumber-connection-policy-20261007/README.md)
+now compare negotiated contracts with session declarations and watch exact
+owner-client incarnations. Periodic RTC monitoring also detects required link
+removal/failure and latches external endpoint removal. Both selected Copper
+paths pass link/simulator loss, bounded cleanup and fresh admission with matching
+baseline prefixes. This observer remains optional and has no repair or source
+authority. Its current startup cannot replace initial RTC link realization;
+the pre-admission realization/withdrawal interface is still missing. Retaining
+RTC-owned links follows the architecture review's conditional transfer decision.
 
 ## Current implementation and proposed transfer
 

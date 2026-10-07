@@ -1,0 +1,42 @@
+[W][195170][02:39:00.171327] pw.context   | [       context.c:  548 pw_context_new()] 0x55a99acb8a90: can't load dbus library: support/libspa-dbus
+SIMULATOR_PREPARING profile=copper backend=cuda
+SIMULATOR_CONNECTING remote=/tmp/rtc-wp-policy-jfg-ownerloss-runtime-20261007/run-WmhfTr/rtc-aa8718eb3776
+SIMULATOR_CONNECTED sequence=0 held=true
+DEPLOYMENT_READY name=rtc-graph-updates-jfg-baseline-20261006 control_locator=/tmp/rtc-wp-policy-jfg-ownerloss-runtime-20261007/control.json
+[E][195170][02:41:28.113721] pw.core      | [     impl-core.c:  259 core_error()] 0x55a99acb8a90: error -32 for resource 2: retained ndarray buffer removed before processing completed: Broken pipe
+[E][195170][02:41:28.113733] mod.client-node | [   client-node.c: 1304 client_node_resource_error()] 0x55a99ad63f30: error seq:125 -32 (retained ndarray buffer removed before processing completed: Broken pipe)
+[E][195170][02:41:28.113737] pw.core      | [     impl-core.c:  259 core_error()] 0x55a99acb8a90: error -32 for resource 2: port_set_param(Spa:Enum:ParamId:Format) failed: Broken pipe
+[E][195170][02:41:28.113739] mod.client-node | [   client-node.c: 1304 client_node_resource_error()] 0x55a99ad63f30: error seq:127 -32 (port_set_param(Spa:Enum:ParamId:Format) failed: Broken pipe)
+Precompiling packages...
+   6873.0 ms  ✓ PipeWireAO
+  1 dependency successfully precompiled in 7 seconds. 8 already precompiled.
+Precompiling packages...
+   9483.8 ms  ✓ FilterGraphAlgorithms
+  1 dependency successfully precompiled in 10 seconds. 44 already precompiled.
+  6 dependencies precompiled but different versions are currently loaded (Dates, JLLWrappers, Preferences, Printf, TOML and Zlib_jll). Restart julia to access the new versions. Otherwise, 16 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+Precompiling packages...
+   1369.1 ms  ✓ JuliaFilterGraph
+   1839.7 ms  ✓ FilterGraphPipeWire
+  2 dependencies successfully precompiled in 3 seconds. 62 already precompiled.
+  37 dependencies precompiled but different versions are currently loaded (AbstractFFTs, AdaptiveOpticsCalibration, CEnum, CompilerSupportLibraries_jll, Dates, DelimitedFiles, DocStringExtensions, FFTW, FFTW_jll, FilterGraphAlgorithms, GenericLinearAlgebra, Hwloc, Hwloc_jll, IrrationalConstants, JLLWrappers, Libiconv_jll, LogExpFunctions, Mmap, OpenLibm_jll, OpenSpecFun_jll, PipeWireAO, PipeWireAO_jll, PrecompileTools, Preferences, Printf, Reexport, Serialization, SpecialFunctions, StableTasks, SysInfo, TOML, ThreadPinning, ThreadPinningCore, UnsafeArrays, XML2_jll, Xorg_libpciaccess_jll and Zlib_jll). Restart julia to access the new versions. Otherwise, 12 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+ERROR: LoadError: pw_ndarray_filter_run failed: Broken pipe (-32)
+Stacktrace:
+ [1] with_owner(f::var"#9#10"{String, Vector{String}}, options::@NamedTuple{remote::String, bootstrap_node::String, bootstrap_instance::Int64})
+   @ Main.HILNativeOwnerBootstrap /tmp/rtc-wp-policy-jfg-20261007/hil/native_owner_bootstrap.jl:29
+ [2] main(arguments::Vector{String}; owner_script::String)
+   @ Main /tmp/rtc-wp-policy-jfg-20261007/hil/jfg_owner.jl:75
+ [3] main
+   @ /tmp/rtc-wp-policy-jfg-20261007/hil/jfg_owner.jl:73 [inlined]
+ [4] main()
+   @ Main /tmp/rtc-wp-policy-jfg-20261007/hil/jfg_owner.jl:73
+ [5] top-level scope
+   @ /tmp/rtc-wp-policy-jfg-20261007/hil/jfg_owner.jl:83
+ [6] include(mod::Module, _path::String)
+   @ Base ./Base.jl:306
+ [7] exec_options(opts::Base.JLOptions)
+   @ Base ./client.jl:317
+ [8] _start()
+   @ Base ./client.jl:550
+in expression starting at /tmp/rtc-wp-policy-jfg-20261007/hil/jfg_owner.jl:83
+pipewireao-rtc: stop processing graphs before cleanup: PipeWire operation failed: object 0, sequence 2736, status -32: connection error
+pipewireao-rtc-deploy: source coordination failed: source outcome unknown: source proxy was removed

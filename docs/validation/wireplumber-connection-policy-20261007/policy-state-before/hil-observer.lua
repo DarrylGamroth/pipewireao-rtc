@@ -8,11 +8,6 @@ local ready = false
 local withdrawn = false
 local current = {}
 
--- WpLua exposes GEnum values as their nick strings.
-local function failed_link(state)
-  return state == "error" or state == "unlinked"
-end
-
 local function withdraw(role, reason)
   if withdrawn then return end
   withdrawn = true
@@ -120,7 +115,7 @@ hil_observer_om:connect("object-added", function(_, object)
       current[expected.role] = object
       if expected.kind == "link" then
         object:connect("state-changed", function(_, _, state)
-          if failed_link(state) then withdraw(expected.role, "link-failed") end
+          if state < 0 then withdraw(expected.role, "link-failed") end
         end)
       end
       print("HIL_OBJECT " .. expected.role .. " " .. tostring(expected.id)
@@ -186,7 +181,7 @@ Core.timeout_add(100, function()
         return false
       end
     else
-      if failed_link(object["state"]) then
+      if object["state"] < 0 then
         withdraw(expected.role, "link-failed")
         return false
       end

@@ -24,7 +24,7 @@ direct reference. Raw CSV retains warmup records; the report excludes them.
 ## Run
 
 First prepare the same private-core prerequisites as the [maintained live
-fixture](../README.md#run-the-development-fixture). Create an output directory
+profile](../README.md#run-the-development-profile). Create an output directory
 outside the repository so generated evidence is not accidentally committed.
 
 ```sh

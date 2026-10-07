@@ -1,0 +1,7 @@
+[W][191080][02:30:47.988732] pw.context   | [       context.c:  548 pw_context_new()] 0x559a7c592a90: can't load dbus library: support/libspa-dbus
+SIMULATOR_PREPARING profile=copper backend=cuda
+SIMULATOR_CONNECTING remote=/tmp/rtc-wp-policy-fgn-ownerloss-runtime-20261007/run-r8BOmX/rtc-3d5e51d70fbe
+SIMULATOR_CONNECTED sequence=0 held=true
+DEPLOYMENT_READY name=rtc-graph-updates-fgn-baseline-20261006 control_locator=/tmp/rtc-wp-policy-fgn-ownerloss-runtime-20261007/control.json
+pipewireao-rtc: source simulator-wfs.node.name: required external node 25 disappeared or was replaced
+pipewireao-rtc-deploy: required rtc exited with status 1

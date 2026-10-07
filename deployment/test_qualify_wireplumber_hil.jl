@@ -4,11 +4,17 @@ const W = WirePlumberHILQualification
 
 @testset "coexistence pins declared topology and role owners" begin
     mktempdir() do package
-        session = Dict("sources"=>[Dict("node.name"=>"pixels","ownership"=>"external")],
-            "graphs"=>[Dict("node.name"=>"graph")],
-            "sinks"=>[Dict("node.name"=>"commands","ownership"=>"external")],
+        session = Dict{String,Any}("sources"=>[Dict{String,Any}("node.name"=>"pixels","ownership"=>"external")],
+            "graphs"=>[Dict{String,Any}("node.name"=>"graph")],
+            "sinks"=>[Dict{String,Any}("node.name"=>"commands","ownership"=>"external")],
             "links"=>[Dict("output"=>"pixels:out","input"=>"graph:in","passive"=>true),
                 Dict("output"=>"graph:out","input"=>"commands:in","passive"=>false)])
+        session["rate"]="500/1"
+        for (group, names) in (("sources", [("out","output")]),
+                ("graphs", [("in","input"),("out","output")]), ("sinks", [("in","input")]))
+            session[group][1]["ports"]=[Dict("name"=>name,"direction"=>direction,
+                "element-type"=>"F32_LE","shape"=>[2],"schema"=>"test/1") for (name,direction) in names]
+        end
         W.C.write_json(joinpath(package,"session.conf.in"),session)
         ready=Dict("processes"=>Dict("rtc"=>Dict("pid"=>100),"simulator"=>Dict("pid"=>200)))
         object(id,type,props;extra=Dict())=Dict("id"=>id,"type"=>"PipeWire:Interface:"*type,
@@ -22,7 +28,7 @@ const W = WirePlumberHILQualification
             push!(objects,object(id,"Port",Dict("node.id"=>node,"port.name"=>name,"port.direction"=>direction)))
         end
         format=Dict("mediaType"=>"application","mediaSubtype"=>"ndarray","elementType"=>"F32_LE",
-            "shape"=>[2],"layout"=>"COLUMN_MAJOR","schema"=>"test/1")
+            "shape"=>[2],"layout"=>"ROW_MAJOR","schema"=>"test/1", "rate"=>Dict("num"=>500,"denom"=>1))
         for (id,onode,oport,inode,iport,passive) in ((10,3,6,4,7,true),(11,4,8,5,9,false))
             push!(objects,object(id,"Link",Dict("client.id"=>1,"link.output.node"=>onode,
                 "link.output.port"=>oport,"link.input.node"=>inode,"link.input.port"=>iport,"link.passive"=>passive);

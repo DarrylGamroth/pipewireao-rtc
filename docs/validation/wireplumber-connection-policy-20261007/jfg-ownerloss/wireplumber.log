@@ -1,0 +1,194 @@
+W 02:41:27.350757         pw.context ../src/pipewire/context.c:548:pw_context_new: 0x562f08cdc250: can't load dbus library: support/libspa-dbus
+HIL_OBSERVER_STARTED 9
+HIL_OWNER client-24 195189
+HIL_OWNER client-43 195569
+HIL_OWNER client-49 196251
+HIL_OBJECT link-52 52 52
+HIL_OBJECT link-53 53 53
+HIL_OBJECT link-54 54 54
+HIL_FORMAT port-26
+	elementType:
+		1: U16_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-26 schema
+HIL_REJECTED port-26 shape
+HIL_REJECTED port-26 elementType
+HIL_REJECTED port-26 layout
+HIL_REJECTED port-26 rate
+HIL_OBJECT port-26 26 26
+HIL_FORMAT port-28
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-28 schema
+HIL_REJECTED port-28 shape
+HIL_REJECTED port-28 elementType
+HIL_REJECTED port-28 layout
+HIL_OBJECT port-28 28 28
+HIL_FORMAT port-38
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-38 schema
+HIL_REJECTED port-38 shape
+HIL_REJECTED port-38 elementType
+HIL_REJECTED port-38 layout
+HIL_REJECTED port-38 rate
+HIL_OBJECT port-38 38 38
+HIL_FORMAT port-45
+	elementType:
+		1: U16_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-45 schema
+HIL_REJECTED port-45 shape
+HIL_REJECTED port-45 elementType
+HIL_REJECTED port-45 layout
+HIL_REJECTED port-45 rate
+HIL_OBJECT port-45 45 45
+HIL_FORMAT port-47
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	rate:
+		pod_type: Choice.None
+		value_type: Spa:Fraction
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-47 schema
+HIL_REJECTED port-47 shape
+HIL_REJECTED port-47 elementType
+HIL_REJECTED port-47 layout
+HIL_REJECTED port-47 rate
+HIL_OBJECT port-47 47 47
+HIL_FORMAT port-51
+	elementType:
+		1: F32_LE
+		pod_type: Choice.None
+		value_type: Spa:Id
+	layout:
+		1: ROW_MAJOR
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaSubtype:
+		1: ndarray
+		pod_type: Choice.None
+		value_type: Spa:Id
+	mediaType:
+		1: application
+		pod_type: Choice.None
+		value_type: Spa:Id
+	schema:
+		pod_type: Choice.None
+		value_type: Spa:String
+	shape:
+		pod_type: Choice.None
+		value_type: Spa:Array
+HIL_REJECTED port-51 schema
+HIL_REJECTED port-51 shape
+HIL_REJECTED port-51 elementType
+HIL_REJECTED port-51 layout
+HIL_OBJECT port-51 51 51
+HIL_COHORT_READY
+HIL_COHORT_LOST link-53 object-removed

@@ -36,6 +36,15 @@ baseline prefixes, zero simulator heap/GC tails and cleanup after whole-cohort
 exit. It does not transfer link/scientific ownership or newly qualify isolated
 required-owner loss, multiple endpoints, release packaging or rate/latency.
 
+[Declared connection policy and required loss, 2026-10-07](validation/wireplumber-connection-policy-20261007/README.md)
+records the required-link monitor's fail-before/pass-after tests, removal-latched
+external incarnations, configured native Format/passive/owner checks and both
+Copper CPU executor paths with CUDA AOS. Required-link/simulator loss, owned
+cleanup and fresh admission pass with exact retained baseline prefixes and zero
+simulator heap/GC tails. Preserved fault diagnostics limit the claim to bounded
+cleanup. Link ownership transfer, graceful fault shutdown and general multi-output
+AOS execution remain unqualified. Independent review and exact hashes are included.
+
 [Installed Copper qualification, 2026-10-06](validation/copper-main-20261006/README.md)
 records refreshed main-runtime/SDK detector and DM trajectories, observer
 death/replacement and stall, simulator Julia heap counters and independent

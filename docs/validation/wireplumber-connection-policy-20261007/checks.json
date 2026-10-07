@@ -1,0 +1,96 @@
+{
+  "base_revision": "e605831d21e7ba362b600801d9e39a0d2d50ea03",
+  "cases": {
+    "fgn": {
+      "changed_package_artifacts": [
+        "bin/pipewireao-rtc",
+        "provenance.json"
+      ],
+      "linkloss": {
+        "cleanup": "complete",
+        "deployment_uuid": "4325f464-1a29-436b-a37a-6d56572920e5",
+        "endpoint_instance": 2133185257220713,
+        "receipt_sha256": "a9680fa6e95626168275db31d186f68dc819708e27ee02eedbdae8e1a25ea29d",
+        "runner_instance": 2133274264398128
+      },
+      "ownerloss": {
+        "cleanup": "complete",
+        "deployment_uuid": "78e60b9d-03db-40de-8d9e-7ed92f159c23",
+        "endpoint_instance": 2133357870289787,
+        "receipt_sha256": "3194e1a76a554f984d74a7fd07c2dd069763159fa758d4252470e155f5f5414c",
+        "runner_instance": 2133447303447225
+      },
+      "readmission": {
+        "cleanup": "complete",
+        "deployment_uuid": "a043ee05-5cab-4f34-906c-18716eae423c",
+        "endpoint_instance": 2133512898495204,
+        "receipt_sha256": "f086c5d57590e0013deb81dccd7afc6cfefeda612962745f001182b5804454ea",
+        "run-1": {
+          "command_sha256": "946e1cb5dc5be9f3ee9059db5597fef1fa02020c2d81ba2aa51c208aacc8554a",
+          "frame_sha256": "e206f4cd44096b6d020090e5bb44ee2dd1b62226e0ebe14fcdd6e6cb33075f59"
+        },
+        "run-2": {
+          "command_sha256": "946e1cb5dc5be9f3ee9059db5597fef1fa02020c2d81ba2aa51c208aacc8554a",
+          "frame_sha256": "e206f4cd44096b6d020090e5bb44ee2dd1b62226e0ebe14fcdd6e6cb33075f59"
+        },
+        "runner_instance": 2133601667299151
+      }
+    },
+    "jfg": {
+      "changed_package_artifacts": [
+        "bin/pipewireao-rtc",
+        "provenance.json"
+      ],
+      "linkloss": {
+        "cleanup": "complete",
+        "deployment_uuid": "9945f88f-693a-4674-ba60-ea44f00c445d",
+        "endpoint_instance": 2133659349099574,
+        "receipt_sha256": "a99b9a949bbe34e4649e2d72c3dc7dc4a3fe543605be05d74608093c0da09b0e",
+        "runner_instance": 2133799702467579
+      },
+      "ownerloss": {
+        "cleanup": "complete",
+        "deployment_uuid": "30992d72-04d4-4695-9a3d-cbb0652de03f",
+        "endpoint_instance": 2133850052969036,
+        "receipt_sha256": "a0af33c8d3ab241cf104ef954b69021232f58b569da05c8deae15a29a544aa2b",
+        "runner_instance": 2133990155986548
+      },
+      "readmission": {
+        "cleanup": "complete",
+        "deployment_uuid": "fe29f94d-05f2-494c-83a6-2c86e38902a0",
+        "endpoint_instance": 2134036525288158,
+        "receipt_sha256": "bb2512bedc05f0cbfc7fe677aff0b577bd89481290044165d3de416eed2a867d",
+        "run-1": {
+          "command_sha256": "349c6f6105a780236cd6bc402c8fc849293fdd300838e3f1d74706ed4f12e27f",
+          "frame_sha256": "b47321140763e9ba4c0eb6a7d56102aff54835a6ce2ba83418511b70270e71c0"
+        },
+        "run-2": {
+          "command_sha256": "349c6f6105a780236cd6bc402c8fc849293fdd300838e3f1d74706ed4f12e27f",
+          "frame_sha256": "b47321140763e9ba4c0eb6a7d56102aff54835a6ce2ba83418511b70270e71c0"
+        },
+        "runner_instance": 2134176246978544
+      }
+    }
+  },
+  "cold_checks": {
+    "declared_session_assertions": 26,
+    "existing_topology_assertions": 9,
+    "lua_callbacks": "passed; retained enum script fails same test",
+    "pidfd_identity_test": "passed",
+    "service_assertions": 33
+  },
+  "runner_revision": "0bcdf2410fe00ef1b1f247d985822a292ab77521",
+  "scope": "Copper complete-frame CPU FGN/JFG + CUDA AOS; RTC retains links; functional, no transfer/timing/general multiple-endpoint claim",
+  "sources": {
+    "deployment/qualify_wireplumber_hil.jl": "89c2631b02ccd24c5102e8858c52dce52d39fd4e288cf0391ad3aea1e24ed8f4",
+    "deployment/qualify_wireplumber_loss.jl": "5abe0e4a571e33b49573ea677162ac7cbb24d18791edb0b20ce4e6e25a2b8347",
+    "deployment/wireplumber/hil-observer.lua": "cf4d673a14e2c7a958adaff16fbd93043163948de1e62db39ff7712fae720d9d",
+    "deployment/wireplumber/session.jl": "2e1a9b5dccfc57af19239f1055b35979885cc55118a4b8b2779f27d2e662940d",
+    "deployment/wireplumber/test_observer.lua": "74283c1dee4406957f80d1ba9cc444832db5152ebd4fa688372e45b7f38cbc29",
+    "deployment/wireplumber/test_service.jl": "5eac3e3859c83a185d0cf74545770dbcbf5953c6f7042124b7def59c23db1dd7",
+    "deployment/wireplumber/test_session.jl": "57511fc0d3d58cc4c4818a428b88cd3667c76185e4f9ca75845e92f5522b7b27",
+    "scripts/signal_test_owner.py": "416218fecb92ebd6cbe35bc3c4bdc36e32aff64c1d5090593d0a86fb146f6fe0",
+    "scripts/test_signal_test_owner.py": "31006134f21b0d3d91d876ab840f2350297f73af53bff314af14cb8c41a75ec5",
+    "src/live.rs": "f956a0e0c976409c45340a1bd5aa56755c0af6c89cbec299c44546aabba7caa3"
+  }
+}

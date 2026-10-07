@@ -11,17 +11,17 @@ and restart a whole chain or one independent branch while the session remains
 loaded.
 
 The repository contains the non-actuating development runner and its active
-architecture and delivery contract. The maintained live fixture
+architecture and delivery contract. The maintained live development profile
 runs recorded FITS vectors through minimal, serial, forked, and independent
 `fgn-native` graph sessions into generic discard sinks. It also discovers an
 externally launched AdaptiveOpticsSim HIL source and sink and closes a
 deterministic Shack–Hartmann SCAO loop through an RTC-owned FGN graph. The
 runner can also admit an externally owned processing node by its PipeWire
-contracts and an explicit run-control grant. The maintained fixture substitutes
+contracts and an explicit run-control grant. The maintained profile substitutes
 an externally owned Julia Filter Graph for the native graph and exercises the
-same durable start, stop, restart, and unload sequence. A REVOLT Classic fixture
-uses the same external plant nodes with either an RTC-owned native FGN
-controller or an externally owned Julia Filter Graph controller and compares
+same durable start, stop, restart, and unload sequence. A REVOLT Classic
+development profile uses the same external plant nodes with either an RTC-owned
+native FGN controller or an externally owned Julia Filter Graph controller and compares
 both with direct references. The runner does not load or execute Julia itself.
 Physical devices, correction authority,
 recording, in-process Julia graph execution, remote operation, progressive
@@ -50,7 +50,7 @@ HEART/FGN/JFG endpoint integration, interaction-matrix estimation and operationa
 qualification remain pending. See the [review and limits](docs/CALIBRATION_COORDINATOR_REVIEW.md)
 and [delivery gates](docs/roadmap.md#completion-driven-coordinator-delivery).
 
-## Run the development fixture
+## Run the development profile
 
 Build-tree paths are explicit; the runner does not install into or admit system
 plugin directories. Against an already running private PipeWireAO core, invoke
@@ -123,18 +123,18 @@ cargo test --features live --test live_private_core -- --ignored --nocapture
 ```
 
 Set `PIPEWIREAO_RTC_LIVE_SCOPE=revolt` on that command to run only the REVOLT
-Classic native/Julia equivalence fixture on the isolated core.
+Classic native/Julia equivalence simulation run on the isolated core.
 Set `PIPEWIREAO_RTC_LIVE_SCOPE=revolt-lockstep` to run the common-input
-fixture. Its one WFS source fans each 352 × 352 F32 frame out to distinct
+simulation. Its one WFS source fans each 352 × 352 F32 frame out to distinct
 native FGN and JuliaFilterGraph nodes. Separate 277-element F32 metre command
 sinks receive matching Header sequences. The provider checks both commands
 against the direct Classic oracle and each other before advancing the plant.
-This ten-frame fixture uses the initial calibrated reconstructor, gain, and
-pole. The separate `revolt` fixture covers controller updates and finite
-source completion; simultaneous parity during the parameter-adoption window
+This ten-frame simulation run uses the initial calibrated reconstructor, gain,
+and pole. The separate `revolt` simulation run covers controller updates and
+finite source completion; simultaneous parity during the parameter-adoption window
 remains unverified.
 
-The common-input fixture passed on the development host with this command
+The common-input simulation run passed on the development host with this command
 on 2026-09-29:
 
 ```sh
@@ -150,12 +150,13 @@ cargo test --features live --test live_private_core -- --ignored --nocapture
 | System | RTC configuration | Input → command | Maintained replay |
 | --- | --- | --- | --- |
 | Classic, native FGN | [`revolt-classic-native-development.conf`](fixtures/revolt-classic-native-development.conf) | Simulated 352 × 352 F32 SHWFS frame → 277 actuator-surface OPD values in metres | The private-core command above with `PIPEWIREAO_RTC_LIVE_SCOPE=revolt` |
-| Classic, JuliaFilterGraph | [`revolt-classic-julia-development.conf`](fixtures/revolt-classic-julia-development.conf) | The same simulated plant and scientific boundary | The same private-core command; it runs after the native fixture |
+| Classic, JuliaFilterGraph | [`revolt-classic-julia-development.conf`](fixtures/revolt-classic-julia-development.conf) | The same simulated plant and scientific boundary | The same private-core command; it runs after the native simulation run |
 | Classic, common input | [`revolt-classic-lockstep-development.conf`](fixtures/revolt-classic-lockstep-development.conf) | One simulated WFS frame → native and Julia controllers → separate HSDM277 command sinks | The private-core command above with `PIPEWIREAO_RTC_LIVE_SCOPE=revolt-lockstep` |
 | Copper, native FGN | [`revolt-copper-native-development.conf`](fixtures/revolt-copper-native-development.conf) | HEART WFS 64 × 64 U16 detector frame → 277 demanded commands in micrometres | [`run_copper_rtc.py`](benchmark/run_copper_rtc.py), documented in [COPPER.md](benchmark/COPPER.md) |
 | Copper, JuliaFilterGraph | [`revolt-copper-julia-development.conf`](fixtures/revolt-copper-julia-development.conf) | The same HEART WFS and non-actuating observer through an external graph | [`run_copper_rtc.py --controller julia`](benchmark/run_copper_rtc.py), documented in [COPPER.md](benchmark/COPPER.md) |
 
-The Classic fixtures use the external `REVOLTClassicSimPipeWireHIL.jl` plant,
+The Classic development profiles use the external
+`REVOLTClassicSimPipeWireHIL.jl` plant,
 the generated controller graph, and a published 277 × 376 reconstructor
 parameter. The Copper replay prepares its calibration in the generated graph
 arguments and uses the shared FITS cube through HEART's WFS source. These are
@@ -170,9 +171,10 @@ the selected PipeWireAO installation for Julia's JLL and one OpenBLAS thread
 by default; [COPPER.md](benchmark/COPPER.md) records the thread-count comparison.
 The companion runner can also attach a measurement-only Standard-DM path with
 `--wire-capture` and qualify software WFS-packet to DM-packet latency without
-adding those links to the RTC-owned fixture.
+adding those links to the RTC-owned graph configuration.
 
-For the latest/hold fixture, set `PIPEWIREAO_RTC_LIVE_SCOPE=latest-hold`. The
+For the latest/hold development profile, set
+`PIPEWIREAO_RTC_LIVE_SCOPE=latest-hold`. The
 Julia environment selected by `PIPEWIREAO_RTC_PIPEWIREAO_JULIA` must resolve
 `PipeWireAO_jll` 1.7.0+17 or newer; the JFG `deployment` environment is a
 working choice when the local `PipeWireAO.jl` manifest is older.

@@ -50,3 +50,7 @@ Existing dependency future-compatibility warning: proc-macro-error2 v2.0.1.
 No commits created; parent owns final integration and documentation.
 
 Final src/live.rs SHA-256: f956a0e0c976409c45340a1bd5aa56755c0af6c89cbec299c44546aabba7caa3
+
+Parent integration: the monitor correction was subsequently committed as 0bcdf24.
+Retained log copies remove trailing whitespace/final blank lines; originals
+remain in /tmp/rtc-wp-required-monitor-20261007.

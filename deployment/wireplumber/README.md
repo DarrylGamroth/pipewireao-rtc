@@ -56,7 +56,7 @@ and the remaining ownership-transfer gates.
 The Julia development qualifier reuses an installed Copper CUDA AOS / CPU FGN
 or CPU JFG package. It runs the existing SDK supervisor, keeps every link under
 runtime ownership and attaches only a port/link observer. Fresh runtime/evidence
-directories are required; the selected fixture has 256 retained frames, 512 total
+directories are required; the selected simulation has 256 retained frames, 512 total
 exchanges and 100 Hz wall pacing. It checks held discovery, native stop/reset,
 two completed runs, midrun pause/resume and optional WirePlumber SIGKILL.
 
@@ -69,7 +69,7 @@ taskset -c 2-15 env JULIA_PKG_OFFLINE=true OPENBLAS_NUM_THREADS=1 \
   /path/to/wireplumber /tmp/wp-ao-pilot/build
 ```
 
-This fixture uses `/opt/pipewireao`, CPU6 for its coordinator/observer, and the
+This simulation uses `/opt/pipewireao`, CPU6 for its coordinator/observer, and the
 package's admitted placement for scientific owners. Select a host whose allowed
 CPUs include that envelope. No systemd ownership or production policy transfer
 is performed. `hil-observer.lua` checks negotiated Formats through existing
@@ -134,3 +134,40 @@ Cold service checks are in
 user units and requires an independently qualified baseline receipt. It verifies
 observer lifecycle, native reset, an actual RTC restart transaction and unexpected
 RTC cohort exit. It does not stop unrelated services or promote timing claims.
+
+## Required connection loss
+
+The policy now compares negotiated Formats with the configured schema, shape,
+element type, layout and data rate, rather than treating the observed Format as
+its declaration. It watches exact port/link and owner-client IDs/serials,
+passive policy and owner PIDs. Loss is latched without name-based repair.
+The RTC independently monitors required links and external endpoint removal;
+its existing failure handling retains admission and cleanup authority.
+
+The development loss qualifier selects installed Copper CPU FGN/JFG packages
+with CUDA AOS. It checks healthy observation and acquisition before removing a
+required input link or terminating its owned simulator. Use fresh output paths
+for each case, then a separate coexistence run to establish fresh readmission:
+
+```sh
+taskset -c 2-15 env JULIA_PKG_OFFLINE=true OPENBLAS_NUM_THREADS=1 \
+  JULIA_NUM_THREADS=1,0 julia --startup-file=no --compiled-modules=existing \
+  --project=/path/to/installed-package/julia \
+  deployment/qualify_wireplumber_loss.jl \
+  /path/to/installed-package /tmp/fresh-loss-runtime /tmp/fresh-loss-evidence \
+  /path/to/wireplumber /tmp/wp-ao-pilot/build required-link
+```
+
+Select `simulator-owner` as the last argument for owned simulator termination.
+That development test uses Python's Linux pidfd interface to bind the signal
+to the independently checked process; production launch/control remains Julia
+and Rust. Required-link injection uses the public native CLI after checking
+the exact link snapshot; that numeric destroy call is not an atomic serial-aware
+operation. The isolated topology and retained receipt define its scope.
+
+Success requires a new policy loss marker, failed deployment with revoked
+postmortem admission, and observed absence of every owned process group and
+private runtime. This proves eventual ingress revocation and bounded cleanup,
+not graceful shutdown or a measured revocation latency. Actual faults may
+terminate an in-flight exchange. See [the policy design](../../docs/WIREPLUMBER_CONNECTION_POLICY.md)
+and [review/evidence](../../docs/validation/wireplumber-connection-policy-20261007/README.md).

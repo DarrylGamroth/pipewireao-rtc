@@ -66,7 +66,7 @@ test native_runner_codec::tests::nonfinite_and_duplicate_properties_are_rejected
 test native_runner_codec::tests::exact_operation_arity_types_and_names_are_required ... ok
 test native_control_codec::tests::serial_bit_patterns_and_required_positive_identity ... ok
 test native_control_codec::tests::bounds_include_the_entire_pod_and_require_explicit_calibration ... ok
-test native_runner_codec::tests::every_command_round_trips_exactly_without_artifact_io ... 
+test native_runner_codec::tests::every_command_round_trips_exactly_without_artifact_io ...
 running 1 test
 ok
 test native_runner_result::tests::active_property_reply_requires_the_existing_producer_conditions ... ok
@@ -302,4 +302,3 @@ test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-
