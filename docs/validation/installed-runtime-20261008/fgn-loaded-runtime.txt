@@ -1,0 +1,205 @@
+55da6f0ea000-55da6f0ec000 r--p 00000000 00:24 2606513                    /tmp/rtc-installed-fgn-20261008-session-dffd067b/installed/wireplumber/bin/wireplumber
+55da6f0ec000-55da6f0ed000 r-xp 00002000 00:24 2606513                    /tmp/rtc-installed-fgn-20261008-session-dffd067b/installed/wireplumber/bin/wireplumber
+55da6f0ed000-55da6f0ee000 r--p 00003000 00:24 2606513                    /tmp/rtc-installed-fgn-20261008-session-dffd067b/installed/wireplumber/bin/wireplumber
+55da6f0ee000-55da6f0ef000 r--p 00003000 00:24 2606513                    /tmp/rtc-installed-fgn-20261008-session-dffd067b/installed/wireplumber/bin/wireplumber
+55da6f0ef000-55da6f0f0000 rw-p 00004000 00:24 2606513                    /tmp/rtc-installed-fgn-20261008-session-dffd067b/installed/wireplumber/bin/wireplumber
+7f5fab8b9000-7f5fab8cd000 r--p 00000000 00:24 2606519                    /tmp/rtc-installed-fgn-20261008-session-dffd067b/installed/wireplumber/modules/libwireplumber-module-lua-scripting.so
+7f5fab8cd000-7f5fab91c000 r-xp 00014000 00:24 2606519                    /tmp/rtc-installed-fgn-20261008-session-dffd067b/installed/wireplumber/modules/libwireplumber-module-lua-scripting.so
+7f5fab91c000-7f5fab933000 r--p 00063000 00:24 2606519                    /tmp/rtc-installed-fgn-20261008-session-dffd067b/installed/wireplumber/modules/libwireplumber-module-lua-scripting.so
+7f5fab933000-7f5fab936000 r--p 0007a000 00:24 2606519                    /tmp/rtc-installed-fgn-20261008-session-dffd067b/installed/wireplumber/modules/libwireplumber-module-lua-scripting.so
+7f5fab936000-7f5fab938000 rw-p 0007d000 00:24 2606519                    /tmp/rtc-installed-fgn-20261008-session-dffd067b/installed/wireplumber/modules/libwireplumber-module-lua-scripting.so
+7f5fac93a000-7f5fac93e000 r--p 00000000 103:03 13430479                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-node.so
+7f5fac93e000-7f5fac966000 r-xp 00004000 103:03 13430479                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-node.so
+7f5fac966000-7f5fac96c000 r--p 0002c000 103:03 13430479                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-node.so
+7f5fac96c000-7f5fac96e000 r--p 00031000 103:03 13430479                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-node.so
+7f5fac96e000-7f5fac96f000 rw-p 00033000 103:03 13430479                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-node.so
+7f5fac96f000-7f5fac97d000 r--p 00000000 103:03 13430493                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-native.so
+7f5fac97d000-7f5fac9a4000 r-xp 0000e000 103:03 13430493                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-native.so
+7f5fac9a4000-7f5fac9b2000 r--p 00035000 103:03 13430493                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-native.so
+7f5fac9b2000-7f5fac9be000 r--p 00042000 103:03 13430493                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-native.so
+7f5fac9be000-7f5fac9bf000 rw-p 0004e000 103:03 13430493                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-native.so
+7f5fac9bf000-7f5fac9c4000 r--p 00000000 103:03 13430529                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so
+7f5fac9c4000-7f5fac9f0000 r-xp 00005000 103:03 13430529                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so
+7f5fac9f0000-7f5fac9f7000 r--p 00031000 103:03 13430529                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so
+7f5fac9f7000-7f5fac9ff000 r--p 00038000 103:03 13430529                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so
+7f5fac9ff000-7f5faca00000 rw-p 00040000 103:03 13430529                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so
+7f5fad3f5000-7f5fad41a000 r--p 00000000 103:03 13293006                  /opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0
+7f5fad41a000-7f5fad4e7000 r-xp 00025000 103:03 13293006                  /opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0
+7f5fad4e7000-7f5fad512000 r--p 000f2000 103:03 13293006                  /opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0
+7f5fad512000-7f5fad52a000 r--p 0011d000 103:03 13293006                  /opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0
+7f5fad52a000-7f5fad52c000 rw-p 00135000 103:03 13293006                  /opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0
+7f5fad6f3000-7f5fad6f5000 r--p 00000000 00:24 2606518                    /tmp/rtc-installed-fgn-20261008-session-dffd067b/installed/wireplumber/modules/libwireplumber-module-ao-control-endpoint.so
+7f5fad6f5000-7f5fad6f8000 r-xp 00002000 00:24 2606518                    /tmp/rtc-installed-fgn-20261008-session-dffd067b/installed/wireplumber/modules/libwireplumber-module-ao-control-endpoint.so
+7f5fad6f8000-7f5fad6f9000 r--p 00005000 00:24 2606518                    /tmp/rtc-installed-fgn-20261008-session-dffd067b/installed/wireplumber/modules/libwireplumber-module-ao-control-endpoint.so
+7f5fad6f9000-7f5fad6fa000 r--p 00006000 00:24 2606518                    /tmp/rtc-installed-fgn-20261008-session-dffd067b/installed/wireplumber/modules/libwireplumber-module-ao-control-endpoint.so
+7f5fad6fa000-7f5fad6fb000 rw-p 00007000 00:24 2606518                    /tmp/rtc-installed-fgn-20261008-session-dffd067b/installed/wireplumber/modules/libwireplumber-module-ao-control-endpoint.so
+7f5fad706000-7f5fad728000 r--p 00000000 00:24 2606516                    /tmp/rtc-installed-fgn-20261008-session-dffd067b/installed/wireplumber/lib/wp/libwireplumber-0.5.so.0
+7f5fad728000-7f5fad77e000 r-xp 00022000 00:24 2606516                    /tmp/rtc-installed-fgn-20261008-session-dffd067b/installed/wireplumber/lib/wp/libwireplumber-0.5.so.0
+7f5fad77e000-7f5fad7a5000 r--p 00078000 00:24 2606516                    /tmp/rtc-installed-fgn-20261008-session-dffd067b/installed/wireplumber/lib/wp/libwireplumber-0.5.so.0
+7f5fad7a5000-7f5fad7b1000 r--p 0009f000 00:24 2606516                    /tmp/rtc-installed-fgn-20261008-session-dffd067b/installed/wireplumber/lib/wp/libwireplumber-0.5.so.0
+7f5fad7b1000-7f5fad7b4000 rw-p 000ab000 00:24 2606516                    /tmp/rtc-installed-fgn-20261008-session-dffd067b/installed/wireplumber/lib/wp/libwireplumber-0.5.so.0
+fgn: 7f329288a000-7f329288c000 r--p 00000000 103:03 13430523                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-ndarray-filter-chain.so
+fgn: 7f329288c000-7f32928af000 r-xp 00002000 103:03 13430523                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-ndarray-filter-chain.so
+fgn: 7f32928af000-7f32928b3000 r--p 00025000 103:03 13430523                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-ndarray-filter-chain.so
+fgn: 7f32928b3000-7f32928b4000 r--p 00028000 103:03 13430523                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-ndarray-filter-chain.so
+fgn: 7f32928b4000-7f32928b5000 rw-p 00029000 103:03 13430523                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-ndarray-filter-chain.so
+fgn: 7f32928b5000-7f32928b9000 r--p 00000000 103:03 13430479                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-node.so
+fgn: 7f32928b9000-7f32928e1000 r-xp 00004000 103:03 13430479                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-node.so
+fgn: 7f32928e1000-7f32928e7000 r--p 0002c000 103:03 13430479                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-node.so
+fgn: 7f32928e7000-7f32928e9000 r--p 00031000 103:03 13430479                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-node.so
+fgn: 7f32928e9000-7f32928ea000 rw-p 00033000 103:03 13430479                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-node.so
+fgn: 7f3292cfd000-7f3292d0b000 r--p 00000000 103:03 13430493                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-native.so
+fgn: 7f3292d0b000-7f3292d32000 r-xp 0000e000 103:03 13430493                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-native.so
+fgn: 7f3292d32000-7f3292d40000 r--p 00035000 103:03 13430493                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-native.so
+fgn: 7f3292d40000-7f3292d4c000 r--p 00042000 103:03 13430493                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-native.so
+fgn: 7f3292d4c000-7f3292d4d000 rw-p 0004e000 103:03 13430493                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-native.so
+fgn: 7f3292e4d000-7f3292e4f000 r--p 00000000 103:03 13430505                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-spa-node-factory.so
+fgn: 7f3292e4f000-7f3292e51000 r-xp 00002000 103:03 13430505                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-spa-node-factory.so
+fgn: 7f3292e51000-7f3292e52000 r--p 00004000 103:03 13430505                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-spa-node-factory.so
+fgn: 7f3292e52000-7f3292e53000 r--p 00004000 103:03 13430505                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-spa-node-factory.so
+fgn: 7f3292e53000-7f3292e54000 rw-p 00005000 103:03 13430505                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-spa-node-factory.so
+fgn: 7f3292e54000-7f3292e55000 r--p 00000000 103:03 13430495                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-rt.so
+fgn: 7f3292e55000-7f3292e57000 r-xp 00001000 103:03 13430495                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-rt.so
+fgn: 7f3292e57000-7f3292e58000 r--p 00003000 103:03 13430495                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-rt.so
+fgn: 7f3292e58000-7f3292e59000 r--p 00003000 103:03 13430495                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-rt.so
+fgn: 7f3292e59000-7f3292e5a000 rw-p 00004000 103:03 13430495                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-rt.so
+fgn: 7f3292e5a000-7f3292e5f000 r--p 00000000 103:03 13430529                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so
+fgn: 7f3292e5f000-7f3292e8b000 r-xp 00005000 103:03 13430529                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so
+fgn: 7f3292e8b000-7f3292e92000 r--p 00031000 103:03 13430529                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so
+fgn: 7f3292e92000-7f3292e9a000 r--p 00038000 103:03 13430529                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so
+fgn: 7f3292e9a000-7f3292e9b000 rw-p 00040000 103:03 13430529                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so
+fgn: 7f32930a8000-7f32930a9000 r--p 00000000 103:03 13430515                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-journal.so
+fgn: 7f32930a9000-7f32930aa000 r-xp 00001000 103:03 13430515                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-journal.so
+fgn: 7f32930aa000-7f32930ab000 r--p 00002000 103:03 13430515                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-journal.so
+fgn: 7f32930ab000-7f32930ac000 r--p 00002000 103:03 13430515                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-journal.so
+fgn: 7f32930ac000-7f32930ad000 rw-p 00003000 103:03 13430515                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-journal.so
+fgn: 7f32930af000-7f32930d4000 r--p 00000000 103:03 13293006                  /opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0
+fgn: 7f32930d4000-7f32931a1000 r-xp 00025000 103:03 13293006                  /opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0
+fgn: 7f32931a1000-7f32931cc000 r--p 000f2000 103:03 13293006                  /opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0
+fgn: 7f32931cc000-7f32931e4000 r--p 0011d000 103:03 13293006                  /opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0
+fgn: 7f32931e4000-7f32931e6000 rw-p 00135000 103:03 13293006                  /opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0
+parameters: 7f70094cb000-7f70094cf000 r--p 00000000 103:03 13430479                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-node.so
+parameters: 7f70094cf000-7f70094f7000 r-xp 00004000 103:03 13430479                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-node.so
+parameters: 7f70094f7000-7f70094fd000 r--p 0002c000 103:03 13430479                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-node.so
+parameters: 7f70094fd000-7f70094ff000 r--p 00031000 103:03 13430479                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-node.so
+parameters: 7f70094ff000-7f7009500000 rw-p 00033000 103:03 13430479                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-node.so
+parameters: 7f70098b0000-7f70098be000 r--p 00000000 103:03 13430493                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-native.so
+parameters: 7f70098be000-7f70098e5000 r-xp 0000e000 103:03 13430493                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-native.so
+parameters: 7f70098e5000-7f70098f3000 r--p 00035000 103:03 13430493                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-native.so
+parameters: 7f70098f3000-7f70098ff000 r--p 00042000 103:03 13430493                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-native.so
+parameters: 7f70098ff000-7f7009900000 rw-p 0004e000 103:03 13430493                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-native.so
+parameters: 7f7009cc8000-7f7009ced000 r--p 00000000 103:03 13293006                  /opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0
+parameters: 7f7009ced000-7f7009dba000 r-xp 00025000 103:03 13293006                  /opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0
+parameters: 7f7009dba000-7f7009de5000 r--p 000f2000 103:03 13293006                  /opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0
+parameters: 7f7009de5000-7f7009dfd000 r--p 0011d000 103:03 13293006                  /opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0
+parameters: 7f7009dfd000-7f7009dff000 rw-p 00135000 103:03 13293006                  /opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0
+parameters: 7f700ae1e000-7f700ae23000 r--p 00000000 103:03 13430529                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so
+parameters: 7f700ae23000-7f700ae4f000 r-xp 00005000 103:03 13430529                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so
+parameters: 7f700ae4f000-7f700ae56000 r--p 00031000 103:03 13430529                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so
+parameters: 7f700ae56000-7f700ae5e000 r--p 00038000 103:03 13430529                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so
+parameters: 7f700ae5e000-7f700ae5f000 rw-p 00040000 103:03 13430529                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so
+parameters: 7f70132b7000-7f70132c9000 r--p 00000000 103:03 13293011                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/libspa-ao.so
+parameters: 7f70132c9000-7f70132e2000 r-xp 00012000 103:03 13293011                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/libspa-ao.so
+parameters: 7f70132e2000-7f70132f2000 r--p 0002b000 103:03 13293011                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/libspa-ao.so
+parameters: 7f70132f2000-7f70132fb000 r--p 0003b000 103:03 13293011                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/libspa-ao.so
+parameters: 7f70132fb000-7f70132fc000 rw-p 00044000 103:03 13293011                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/libspa-ao.so
+parameters: 7f702bcf8000-7f702bcfa000 r--p 00000000 103:03 13430505                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-spa-node-factory.so
+parameters: 7f702bcfa000-7f702bcfc000 r-xp 00002000 103:03 13430505                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-spa-node-factory.so
+parameters: 7f702bcfc000-7f702bcfd000 r--p 00004000 103:03 13430505                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-spa-node-factory.so
+parameters: 7f702bcfd000-7f702bcfe000 r--p 00004000 103:03 13430505                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-spa-node-factory.so
+parameters: 7f702bcfe000-7f702bcff000 rw-p 00005000 103:03 13430505                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-spa-node-factory.so
+parameters: 7f702c01b000-7f702c01c000 r--p 00000000 103:03 13430495                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-rt.so
+parameters: 7f702c01c000-7f702c01e000 r-xp 00001000 103:03 13430495                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-rt.so
+parameters: 7f702c01e000-7f702c01f000 r--p 00003000 103:03 13430495                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-rt.so
+parameters: 7f702c01f000-7f702c020000 r--p 00003000 103:03 13430495                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-rt.so
+parameters: 7f702c020000-7f702c021000 rw-p 00004000 103:03 13430495                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-rt.so
+parameters: 7f702c444000-7f702c445000 r--p 00000000 103:03 13430515                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-journal.so
+parameters: 7f702c445000-7f702c446000 r-xp 00001000 103:03 13430515                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-journal.so
+parameters: 7f702c446000-7f702c447000 r--p 00002000 103:03 13430515                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-journal.so
+parameters: 7f702c447000-7f702c448000 r--p 00002000 103:03 13430515                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-journal.so
+parameters: 7f702c448000-7f702c449000 rw-p 00003000 103:03 13430515                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-journal.so
+core: 7f3245a4c000-7f3245a4e000 r--p 00000000 103:03 13430475                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-access.so
+core: 7f3245a4e000-7f3245a51000 r-xp 00002000 103:03 13430475                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-access.so
+core: 7f3245a51000-7f3245a52000 r--p 00005000 103:03 13430475                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-access.so
+core: 7f3245a52000-7f3245a53000 r--p 00005000 103:03 13430475                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-access.so
+core: 7f3245a53000-7f3245a54000 rw-p 00006000 103:03 13430475                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-access.so
+core: 7f3245a54000-7f3245a56000 r--p 00000000 103:03 13430486                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-metadata.so
+core: 7f3245a56000-7f3245a61000 r-xp 00002000 103:03 13430486                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-metadata.so
+core: 7f3245a61000-7f3245a63000 r--p 0000d000 103:03 13430486                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-metadata.so
+core: 7f3245a63000-7f3245a64000 r--p 0000e000 103:03 13430486                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-metadata.so
+core: 7f3245a64000-7f3245a65000 rw-p 0000f000 103:03 13430486                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-metadata.so
+core: 7f3245a65000-7f3245a69000 r--p 00000000 103:03 13430479                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-node.so
+core: 7f3245a69000-7f3245a91000 r-xp 00004000 103:03 13430479                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-node.so
+core: 7f3245a91000-7f3245a97000 r--p 0002c000 103:03 13430479                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-node.so
+core: 7f3245a97000-7f3245a99000 r--p 00031000 103:03 13430479                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-node.so
+core: 7f3245a99000-7f3245a9a000 rw-p 00033000 103:03 13430479                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-node.so
+core: 7f3245a9a000-7f3245aa8000 r--p 00000000 103:03 13430493                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-native.so
+core: 7f3245aa8000-7f3245acf000 r-xp 0000e000 103:03 13430493                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-native.so
+core: 7f3245acf000-7f3245add000 r--p 00035000 103:03 13430493                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-native.so
+core: 7f3245add000-7f3245ae9000 r--p 00042000 103:03 13430493                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-native.so
+core: 7f3245ae9000-7f3245aea000 rw-p 0004e000 103:03 13430493                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-native.so
+core: 7f3245fe2000-7f3245fe4000 r--p 00000000 103:03 13430484                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-link-factory.so
+core: 7f3245fe4000-7f3245fe6000 r-xp 00002000 103:03 13430484                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-link-factory.so
+core: 7f3245fe6000-7f3245fe7000 r--p 00004000 103:03 13430484                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-link-factory.so
+core: 7f3245fe7000-7f3245fe8000 r--p 00004000 103:03 13430484                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-link-factory.so
+core: 7f3245fe8000-7f3245fe9000 rw-p 00005000 103:03 13430484                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-link-factory.so
+core: 7f3245fe9000-7f3245feb000 r--p 00000000 103:03 13430505                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-spa-node-factory.so
+core: 7f3245feb000-7f3245fed000 r-xp 00002000 103:03 13430505                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-spa-node-factory.so
+core: 7f3245fed000-7f3245fee000 r--p 00004000 103:03 13430505                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-spa-node-factory.so
+core: 7f3245fee000-7f3245fef000 r--p 00004000 103:03 13430505                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-spa-node-factory.so
+core: 7f3245fef000-7f3245ff0000 rw-p 00005000 103:03 13430505                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-spa-node-factory.so
+core: 7f3245ff0000-7f3245ff1000 r--p 00000000 103:03 13430499                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-scheduler-v1.so
+core: 7f3245ff1000-7f3245ff6000 r-xp 00001000 103:03 13430499                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-scheduler-v1.so
+core: 7f3245ff6000-7f3245ff7000 r--p 00006000 103:03 13430499                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-scheduler-v1.so
+core: 7f3245ff7000-7f3245ff8000 r--p 00006000 103:03 13430499                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-scheduler-v1.so
+core: 7f3245ff8000-7f3245ff9000 rw-p 00007000 103:03 13430499                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-scheduler-v1.so
+core: 7f3245ff9000-7f3245ffa000 r--p 00000000 103:03 13430495                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-rt.so
+core: 7f3245ffa000-7f3245ffc000 r-xp 00001000 103:03 13430495                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-rt.so
+core: 7f3245ffc000-7f3245ffd000 r--p 00003000 103:03 13430495                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-rt.so
+core: 7f3245ffd000-7f3245ffe000 r--p 00003000 103:03 13430495                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-rt.so
+core: 7f3245ffe000-7f3245fff000 rw-p 00004000 103:03 13430495                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-rt.so
+core: 7f3245fff000-7f3246004000 r--p 00000000 103:03 13430529                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so
+core: 7f3246004000-7f3246030000 r-xp 00005000 103:03 13430529                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so
+core: 7f3246030000-7f3246037000 r--p 00031000 103:03 13430529                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so
+core: 7f3246037000-7f324603f000 r--p 00038000 103:03 13430529                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so
+core: 7f324603f000-7f3246040000 rw-p 00040000 103:03 13430529                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so
+core: 7f324624d000-7f324624e000 r--p 00000000 103:03 13430515                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-journal.so
+core: 7f324624e000-7f324624f000 r-xp 00001000 103:03 13430515                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-journal.so
+core: 7f324624f000-7f3246250000 r--p 00002000 103:03 13430515                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-journal.so
+core: 7f3246250000-7f3246251000 r--p 00002000 103:03 13430515                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-journal.so
+core: 7f3246251000-7f3246252000 rw-p 00003000 103:03 13430515                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-journal.so
+core: 7f3246254000-7f3246279000 r--p 00000000 103:03 13293006                  /opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0
+core: 7f3246279000-7f3246346000 r-xp 00025000 103:03 13293006                  /opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0
+core: 7f3246346000-7f3246371000 r--p 000f2000 103:03 13293006                  /opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0
+core: 7f3246371000-7f3246389000 r--p 0011d000 103:03 13293006                  /opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0
+core: 7f3246389000-7f324638b000 rw-p 00135000 103:03 13293006                  /opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0
+simulator: 7fc63c8c8000-7fc63c8ed000 r--p 00000000 103:03 13293006                  /opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0
+simulator: 7fc63c8ed000-7fc63c9ba000 r-xp 00025000 103:03 13293006                  /opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0
+simulator: 7fc63c9ba000-7fc63c9e5000 r--p 000f2000 103:03 13293006                  /opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0
+simulator: 7fc63c9e5000-7fc63c9fd000 r--p 0011d000 103:03 13293006                  /opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0
+simulator: 7fc63c9fd000-7fc63c9ff000 rw-p 00135000 103:03 13293006                  /opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0
+simulator: 7fc63ccb0000-7fc63ccbe000 r--p 00000000 103:03 13430493                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-native.so
+simulator: 7fc63ccbe000-7fc63cce5000 r-xp 0000e000 103:03 13430493                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-native.so
+simulator: 7fc63cce5000-7fc63ccf3000 r--p 00035000 103:03 13430493                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-native.so
+simulator: 7fc63ccf3000-7fc63ccff000 r--p 00042000 103:03 13430493                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-native.so
+simulator: 7fc63ccff000-7fc63cd00000 rw-p 0004e000 103:03 13430493                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-native.so
+simulator: 7fc63d0bf000-7fc63d0c4000 r--p 00000000 103:03 13430529                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so
+simulator: 7fc63d0c4000-7fc63d0f0000 r-xp 00005000 103:03 13430529                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so
+simulator: 7fc63d0f0000-7fc63d0f7000 r--p 00031000 103:03 13430529                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so
+simulator: 7fc63d0f7000-7fc63d0ff000 r--p 00038000 103:03 13430529                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so
+simulator: 7fc63d0ff000-7fc63d100000 rw-p 00040000 103:03 13430529                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so
+simulator: 7fc63e201000-7fc63e205000 r--p 00000000 103:03 13430479                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-node.so
+simulator: 7fc63e205000-7fc63e22d000 r-xp 00004000 103:03 13430479                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-node.so
+simulator: 7fc63e22d000-7fc63e233000 r--p 0002c000 103:03 13430479                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-node.so
+simulator: 7fc63e233000-7fc63e235000 r--p 00031000 103:03 13430479                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-node.so
+simulator: 7fc63e235000-7fc63e236000 rw-p 00033000 103:03 13430479                  /opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-node.so
+simulator: 7fc642437000-7fc642449000 r--p 00000000 103:03 13293011                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/libspa-ao.so
+simulator: 7fc642449000-7fc642462000 r-xp 00012000 103:03 13293011                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/libspa-ao.so
+simulator: 7fc642462000-7fc642472000 r--p 0002b000 103:03 13293011                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/libspa-ao.so
+simulator: 7fc642472000-7fc64247b000 r--p 0003b000 103:03 13293011                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/libspa-ao.so
+simulator: 7fc64247b000-7fc64247c000 rw-p 00044000 103:03 13293011                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/libspa-ao.so
+simulator: 7fc65c2c5000-7fc65c2c6000 r--p 00000000 103:03 13430515                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-journal.so
+simulator: 7fc65c2c6000-7fc65c2c7000 r-xp 00001000 103:03 13430515                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-journal.so
+simulator: 7fc65c2c7000-7fc65c2c8000 r--p 00002000 103:03 13430515                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-journal.so
+simulator: 7fc65c2c8000-7fc65c2c9000 r--p 00002000 103:03 13430515                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-journal.so
+simulator: 7fc65c2c9000-7fc65c2ca000 rw-p 00003000 103:03 13430515                  /opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-journal.so

@@ -91,7 +91,11 @@ to a fresh destination to select another runtime.
 
 All campaigns require a sealed scientist-authored complete-frame base package.
 The selected WirePlumber binary, modules and Lua scripts must be sealed with the
-scientific assets. Calibration exports copy and validate those assets before
+scientific assets. HIL and HEART exports select these assets from the installed
+`--pipewire-prefix` by default (`/opt/pipewireao` on this host). Development builds
+can supply both `--wireplumber-build` and `--wireplumber-source`. See the
+[installed runtime](INSTALLED_RUNTIME.md) for build and validation details.
+Calibration exports copy and validate the base package's sealed assets before
 hashing. Existing Python generators/audits remain development tools and are not
 invoked by operational Julia campaigns. Historical Python producer records retain
 their original scope.

@@ -1,0 +1,66 @@
+ 1/57 test-component-loader                                               OK              0.01s
+ 2/57 test-core                                                           OK              0.01s
+ 3/57 test-events                                                         OK              0.02s
+ 4/57 test-client-context                                                 OK              0.16s
+ 5/57 test-metadata                                                       OK              0.01s
+ 6/57 test-object-interest                                                OK              0.01s
+ 7/57 test-object-manager                                                 OK              0.02s
+ 8/57 test-properties                                                     OK              0.01s
+ 9/57 test-proxy                                                          OK              0.02s
+10/57 test-session-item                                                   OK              0.02s
+11/57 test-spa-json                                                       OK              0.01s
+12/57 test-spa-pod                                                        OK              0.01s
+13/57 test-spa-type                                                       OK              0.00s
+14/57 test-state                                                          OK              0.01s
+15/57 test-settings                                                       OK              0.02s
+16/57 test-transition                                                     OK              0.01s
+17/57 test-factory                                                        OK              0.01s
+18/57 test-conf                                                           OK              0.01s
+19/57 test-json-utils                                                     OK              0.01s
+20/57 test-dynamic-rules                                                  OK              0.02s
+21/57 test-wplua                                                          OK              0.01s
+22/57 test-lua-pod                                                        OK              0.01s
+23/57 test-lua-json                                                       OK              0.02s
+24/57 test-lua-json-utils                                                 OK              0.01s
+25/57 test-lua-monitor-rules                                              OK              0.01s
+26/57 test-lua-require                                                    OK              0.01s
+27/57 test-lua-async-activation                                           OK              0.31s
+28/57 test-lua-settings                                                   OK              0.01s
+29/57 test-lua-event-hooks                                                OK              0.01s
+30/57 test-lua-properties                                                 OK              0.01s
+31/57 test-lua-node-utils                                                 OK              0.01s
+32/57 test-lua-profile-utils                                              OK              0.01s
+33/57 test-linking-non-default-device-node                                OK              0.04s
+34/57 test-linking-non-default-device-node-capture                        OK              0.03s
+35/57 test-linking-default-device-node                                    OK              0.04s
+36/57 test-linking-default-device-node-capture                            OK              0.04s
+37/57 test-linking-defined-device-node-target-object-string               OK              0.04s
+38/57 test-linking-defined-device-node-target-object-int                  OK              0.04s
+39/57 test-linking-defined-device-node-target-object-name                 OK              0.04s
+40/57 test-linking-defined-device-node-target-object-string-capture       OK              0.04s
+41/57 test-linking-defined-device-node-target-object-int-capture          OK              0.05s
+42/57 test-linking-defined-device-node-target-object-name-capture         OK              0.04s
+43/57 test-linking-defined-device-node-node-target                        OK              0.04s
+44/57 test-linking-defined-device-node-node-target-capture                OK              0.04s
+45/57 test-linking-defined-device-node-target-node-metadata               OK              0.05s
+46/57 test-linking-defined-device-node-target-node-metadata-capture       OK              0.05s
+47/57 test-linking-defined-device-node-target-object-metadata             OK              0.05s
+48/57 test-linking-defined-device-node-target-object-metadata-capture     OK              0.05s
+49/57 test-linking-defined-device-node-target-object-int-metadata         OK              0.05s
+50/57 test-linking-defined-device-node-target-object-int-metadata-capture OK              0.05s
+51/57 00-test-default-nodes-initial-metadata-update                       OK              0.05s
+52/57 test-dbus-connection                                                OK              0.02s
+53/57 test-reserve-device                                                 OK              0.04s
+54/57 test-file-monitor                                                   OK              0.01s
+55/57 test-si-node                                                        OK              0.02s
+56/57 test-si-audio-adapter                                               OK              0.01s
+57/57 test-si-standard-link                                               OK              0.02s
+
+Ok:                 57  
+Expected Fail:      0   
+Fail:               0   
+Unexpected Pass:    0   
+Skipped:            0   
+Timeout:            0   
+
+Full log written to /tmp/wp-installed-runtime-20261008/build/meson-logs/testlog.txt

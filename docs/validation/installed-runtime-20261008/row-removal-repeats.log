@@ -1,0 +1,29 @@
+ 1/20 pw-test-row-return-mix-removal OK              1.01s
+ 2/20 pw-test-row-return-mix-removal OK              1.01s
+ 3/20 pw-test-row-return-mix-removal OK              1.01s
+ 4/20 pw-test-row-return-mix-removal OK              1.01s
+ 5/20 pw-test-row-return-mix-removal OK              1.01s
+ 6/20 pw-test-row-return-mix-removal OK              1.01s
+ 7/20 pw-test-row-return-mix-removal OK              1.01s
+ 8/20 pw-test-row-return-mix-removal OK              1.01s
+ 9/20 pw-test-row-return-mix-removal OK              1.01s
+10/20 pw-test-row-return-mix-removal OK              1.01s
+11/20 pw-test-row-return-mix-removal OK              1.01s
+12/20 pw-test-row-return-mix-removal OK              1.01s
+13/20 pw-test-row-return-mix-removal OK              1.01s
+14/20 pw-test-row-return-mix-removal OK              1.01s
+15/20 pw-test-row-return-mix-removal OK              1.01s
+16/20 pw-test-row-return-mix-removal OK              1.01s
+17/20 pw-test-row-return-mix-removal OK              1.01s
+18/20 pw-test-row-return-mix-removal OK              1.01s
+19/20 pw-test-row-return-mix-removal OK              1.01s
+20/20 pw-test-row-return-mix-removal OK              1.01s
+
+Ok:                 20  
+Expected Fail:      0   
+Fail:               0   
+Unexpected Pass:    0   
+Skipped:            0   
+Timeout:            0   
+
+Full log written to /tmp/rtc-installed-runtime-20261008/builddir/pipewire/meson-logs/testlog.txt

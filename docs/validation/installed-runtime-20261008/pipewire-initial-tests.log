@@ -1,0 +1,210 @@
+ 1/76 test-peaks                                                       OK              0.16s
+ 2/76 spa-filter-graph-ndarray-retained-c                              OK              0.14s
+ 3/76 spa-test-ump-utils                                               OK              0.11s
+ 4/76 validate-json-pipewire.conf                                      OK              0.09s
+ 5/76 validate-json-client.conf                                        OK              0.08s
+ 6/76 validate-json-filter-chain.conf                                  OK              0.06s
+ 7/76 validate-json-jack.conf                                          OK              0.05s
+ 8/76 test-audioadapter                                                OK              0.27s
+ 9/76 validate-json-minimal.conf                                       OK              0.14s
+10/76 test-channelmix                                                  OK              0.30s
+11/76 validate-json-pipewire-avb.conf                                  OK              0.20s
+12/76 validate-json-pipewire-aes67.conf                                OK              0.19s
+13/76 validate-json-pipewire-uninstalled.conf                          OK              0.19s
+14/76 validate-json-pipewire-10-rates.conf                             OK              0.16s
+15/76 validate-json-pipewire-20-upmix.conf                             OK              0.15s
+16/76 validate-json-pipewire-50-raop.conf                              OK              0.14s
+17/76 validate-json-client-20-upmix.conf                               OK              0.14s
+18/76 validate-json-filter-chain-demonic.conf                          OK              0.24s
+19/76 validate-json-filter-chain-source-duplicate-FL.conf              OK              0.24s
+20/76 validate-json-filter-chain-sink-mix-FL-FR.conf                   OK              0.23s
+21/76 test-audioconvert                                                OK              0.61s
+22/76 validate-json-filter-chain-sink-make-LFE.conf                    OK              0.34s
+23/76 validate-json-filter-chain-sink-virtual-surround-5.1-kemar.conf  OK              0.32s
+24/76 validate-json-filter-chain-sink-virtual-surround-7.1-hesuvi.conf OK              0.30s
+25/76 validate-json-filter-chain-sink-dolby-surround.conf              OK              0.29s
+26/76 validate-json-filter-chain-sink-dolby-pro-logic-ii.conf          OK              0.28s
+27/76 validate-json-filter-chain-sink-eq6.conf                         OK              0.26s
+28/76 validate-json-filter-chain-sink-matrix-spatialiser.conf          OK              0.24s
+29/76 validate-json-filter-chain-source-rnnoise.conf                   OK              0.37s
+30/76 test-resample                                                    OK              0.89s
+31/76 validate-json-filter-chain-sink-upmix-5.1-filter.conf            OK              0.43s
+32/76 pw-test-protocol-native                                          OK              0.41s
+33/76 pw-test-endpoint                                                 OK              0.26s
+34/76 pw-test-interfaces                                               OK              0.24s
+35/76 pw-test-stream                                                   OK              0.22s
+36/76 pw-test-filter                                                   OK              0.21s
+37/76 pw-test-ndarray-filter                                           OK              0.20s
+38/76 pw-test-ndarray-filter-admission                                 OK              0.18s
+39/76 pw-test-ndarray-filter-publication                               OK              0.17s
+40/76 pw-test-run-control                                              OK              0.20s
+41/76 pw-test-stream-buffer-return                                     OK              0.46s
+42/76 pw-test-security-context                                         OK              1.20s
+43/76 test-resample-delay                                              OK              2.20s
+44/76 pw-test-row-transport-mix                                        OK              5.21s
+45/76 pw-test-filter-output-return                                     OK              5.19s
+46/76 pw-test-buffers-negotiate                                        OK              5.17s
+47/76 pw-test-row-transport-order                                      OK              5.16s
+48/76 pw-test-row-return-io-replacement                                OK              5.13s
+49/76 pw-test-row-return-driver-lifetime                               OK              5.12s
+50/76 pw-test-row-return-mix-removal                                   OK              6.33s
+51/76 pw-test-ndarray-filter-fifo                                      OK              5.28s
+52/76 pw-test-polling-data-loop                                        FAIL            6.54s   killed by signal 6 SIGABRT
+>>> LD_LIBRARY_PATH=/tmp/rtc-installed-runtime-20261008/builddir/pipewire/src/pipewire:/tmp/rtc-installed-runtime-20261008/builddir/pipewire/spa/plugins/support MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 PIPEWIREAO_SPA_PLUGIN_DIR=/tmp/rtc-installed-runtime-20261008/builddir/pipewire/spa/plugins PIPEWIREAO_CONFIG_DIR=/tmp/rtc-installed-runtime-20261008/builddir/pipewire/src/pipewire/../daemon MALLOC_PERTURB_=124 MESON_TEST_ITERATION=1 PIPEWIREAO_MODULE_DIR=/tmp/rtc-installed-runtime-20261008/builddir/pipewire/src/pipewire/../modules /tmp/rtc-installed-runtime-20261008/builddir/pipewire/src/tests/pw-test-polling-data-loop
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stderr:
+[E][1069983][01:00:44.759400] pw.data-loop | [     data-loop.c:  206 loop_new()] invalid loop.idle value 'invalid'
+'!impl->yielding' failed at ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/spa/plugins/support/loop.c:768 loop_yield()
+'elapsed < 2 * SPA_NSEC_PER_SEC' failed at ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/tests/test-polling-data-loop.c:300 wait_for_node_state()
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+53/76 pw-test-ndarray-filter-remote                                    OK              6.39s
+54/76 pw-test-ndarray-filter-chain-feedback                            OK              0.32s
+55/76 pw-test-cpp                                                      OK              0.19s
+56/76 test-pwtest                                                      OK              0.17s
+57/76 pw-test-ndarray-filter-buffers32                                 OK              0.60s
+58/76 pw-test-ndarray-filter-parameter                                 OK              0.57s
+59/76 test-lib                                                         OK              0.26s
+60/76 test-client                                                      OK              0.24s
+61/76 pw-test-ndarray-filter-props                                     OK              0.76s
+62/76 pw-test-ndarray-filter-chain-teardown                            OK              0.56s
+63/76 pw-test-ndarray-filter-fifo-queued                               OK              1.83s
+64/76 pw-test-ndarray-filter-chain-props                               OK              0.70s
+65/76 pw-test-ndarray-filter-chain-buffer-removal                      OK              0.74s
+66/76 test-loop                                                        OK              0.39s
+67/76 test-context                                                     OK              0.55s
+68/76 test-support                                                     OK              0.55s
+69/76 test-pw-utils                                                    OK              1.29s
+70/76 pw-test-ndarray-filter-fifo-no-backlog                           OK              2.88s
+71/76 test-spa                                                         FAIL            2.79s   exit status 1
+>>> MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 LD_LIBRARY_PATH=/tmp/rtc-installed-runtime-20261008/builddir/pipewire/src/pipewire MALLOC_PERTURB_=34 ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 MESON_TEST_ITERATION=1 /tmp/rtc-installed-runtime-20261008/builddir/pipewire/test/test-spa
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+Listing only the last 100 lines from a long log.
+  - name: "json_data"
+    status: PASS
+  - name: "json_object_find"
+    status: PASS
+- suite: "spa_utils"
+  tests:
+  - name: "utils_abi_sizes"
+    status: PASS
+  - name: "utils_abi"
+    status: PASS
+  - name: "utils_macros"
+    status: PASS
+  - name: "utils_result"
+    status: PASS
+  - name: "utils_dict"
+    status: PASS
+  - name: "utils_list"
+    status: PASS
+  - name: "utils_hook"
+    status: PASS
+  - name: "utils_ringbuffer"
+    status: PASS
+  - name: "utils_strtol"
+    status: PASS
+  - name: "utils_strtoul"
+    status: PASS
+  - name: "utils_strtoll"
+    status: PASS
+  - name: "utils_strtof"
+    status: PASS
+  - name: "utils_strtod"
+    status: PASS
+  - name: "utils_streq"
+    status: PASS
+  - name: "utils_strendswith"
+    status: PASS
+  - name: "utils_strendswith_null_suffix"
+    status: PASS
+  - name: "utils_snprintf"
+    status: PASS
+  - name: "utils_snprintf_abort_neg_size"
+    iteration: -2  # -2 - 0
+    status: PASS
+  - name: "utils_snprintf_abort_neg_size"
+    iteration: -1  # -2 - 0
+    status: PASS
+  - name: "utils_atob"
+    status: PASS
+  - name: "utils_ansi"
+    status: PASS
+  - name: "utils_callback"
+    status: PASS
+  - name: "utils_callback_func_is_null"
+    status: PASS
+  - name: "utils_callback_version"
+    status: PASS
+- suite: "spa_log"
+  tests:
+  - name: "utils_log_logt"
+    status: PASS
+  - name: "utils_log_logt_levels"
+    status: PASS
+- suite: "spa_node"
+  tests:
+  - name: "node_io_abi_sizes"
+    status: PASS
+  - name: "node_io_abi"
+    status: PASS
+  - name: "node_command_abi"
+    status: PASS
+  - name: "node_event_abi"
+    status: PASS
+  - name: "node_node_abi"
+    status: PASS
+- suite: "spa_pod"
+  tests:
+  - name: "pod_abi_sizes"
+    status: PASS
+  - name: "pod_abi"
+    status: PASS
+  - name: "pod_init"
+    status: PASS
+  - name: "pod_empty"
+    status: PASS
+  - name: "pod_build"
+    status: PASS
+  - name: "pod_varargs"
+    status: PASS
+  - name: "pod_varargs2"
+    status: PASS
+  - name: "pod_parser"
+    status: PASS
+  - name: "pod_parser2"
+    status: PASS
+  - name: "pod_static"
+    status: PASS
+  - name: "pod_overflow"
+    status: PASS
+  - name: "pod_overflow2"
+    status: PASS
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+72/76 test-fmt-ops                                                     OK             11.06s
+73/76 spa-filter-graph-ndarray-rust                                    FAIL           13.69s   killed by signal 6 SIGABRT
+>>> MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 LD_LIBRARY_PATH=/tmp/rtc-installed-runtime-20261008/builddir/pipewire/spa/plugins/filter-graph MESON_TEST_ITERATION=1 MALLOC_PERTURB_=232 /tmp/rtc-installed-runtime-20261008/builddir/pipewire/spa/plugins/filter-graph/test-filter-graph-ndarray /tmp/rtc-installed-runtime-20261008/builddir/pipewire/spa/plugins/filter-graph/libspa-filter-graph-ndarray-example-rust.so /tmp/rtc-installed-runtime-20261008/builddir/pipewire/spa/plugins/filter-graph/libspa-filter-graph-ndarray-test-unstable.so
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stderr:
+test-filter-graph-ndarray: ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/spa/plugins/filter-graph/test-filter-graph-ndarray.c:139: test_graph_inspection: Assertion `spa_fgn_graph_new(config, &graph) == 0' failed.
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+74/76 pw-test-polling-remote                                           OK             13.90s
+75/76 spa-filter-graph-ndarray-c                                       OK             18.62s
+76/76 pw-test-ndarray-filter-chain-parameter                           OK             17.82s
+
+Summary of Failures:
+
+52/76 pw-test-polling-data-loop                                        FAIL            6.54s   killed by signal 6 SIGABRT
+71/76 test-spa                                                         FAIL            2.79s   exit status 1
+73/76 spa-filter-graph-ndarray-rust                                    FAIL           13.69s   killed by signal 6 SIGABRT
+
+Ok:                 73  
+Expected Fail:      0   
+Fail:               3   
+Unexpected Pass:    0   
+Skipped:            0   
+Timeout:            0   
+
+Full log written to /tmp/rtc-installed-runtime-20261008/builddir/pipewire/meson-logs/testlog.txt

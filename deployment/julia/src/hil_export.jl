@@ -964,7 +964,8 @@ function export_package(args)
         specification["node-owners"] = hil_node_owners(session, specification)
         ScienceExport.wireplumber_session_defaults!(specification)
         ScienceExport.stage_wireplumber!(package;
-            build=option(args, :wireplumber_build), source=option(args, :wireplumber_source))
+            build=option(args, :wireplumber_build), source=option(args, :wireplumber_source),
+            prefix=args.pipewire_prefix)
         detector_observation && (specification["detector-observation"] = true)
         specification["name"] = "revolt-$instrument-$(provenance["engine"])-hil-$(args.backend)"
         specification["placement"]["simulator"] = bootstrap_placement!(Dict("cpus"=>[6,14],"leader-cpu"=>6,"rt-priority"=>0,"threads"=>Any[],"locked-bytes"=>0))

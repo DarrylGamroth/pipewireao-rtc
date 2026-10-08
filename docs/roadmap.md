@@ -6,7 +6,7 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-10-07. This section is the current delivery summary. Later sections
+Updated 2026-10-08. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
@@ -39,6 +39,15 @@ Copper startup, native controls and ordered unit cleanup pass for both CPU
 engines with CUDA AOS; [checks and independent review](validation/systemd-session-startup-20261007/README.md)
 retain the scope and recovery defect disposition. This change adds no timing or
 broader profile qualification.
+
+PipeWireAO and WirePlumberAO are installed under `/opt/pipewireao`. HIL/HEART
+exports now seal the installed manager assets by default, and the manager loads
+its packaged libwp before the installed AO libraries. Selected Copper CPU
+FGN/JFG with CUDA AOS pass admission, native controls, installed-library loading
+and cleanup. [Installation and test evidence](validation/installed-runtime-20261008/README.md)
+records unchanged scientific artifact hashes, the preserved GUI/HIL service,
+dependency selection and corrected test handshakes. This adds no timing,
+numerical, allocation or broader profile qualification.
 
 Completed Copper link and process-supervision transfers remain valid only for
 their dated scopes. The selected Copper composition has passed link realization

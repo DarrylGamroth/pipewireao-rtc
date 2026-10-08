@@ -1,0 +1,25 @@
+{
+  "prefix": "/opt/pipewireao",
+  "host": "rtc-devel",
+  "pipewire_source": "9cf2006459f6329a2bb42bd2f65266cfed4ba706",
+  "wireplumber_source": "6557dcea789dc3a6fba4f098a40fd648148a08e5",
+  "rtc_baseline": "b24c52df3a4647ab9404fedc98fc5ae2c2ab4258",
+  "installed_sha256": {
+    "/opt/pipewireao/bin/pipewire-ao": "7448313884221f743d88bb1a0b34a5ef191c6d237514ff2dab9d5f402e2ba192",
+    "/opt/pipewireao/bin/wireplumber": "699e6472085dd28c9532e91c05e1004f733566f0f49a39714cf19bd01c612f79",
+    "/opt/pipewireao/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0": "ffcd183b0451f6a76eeb2c90ac677b3970541607c0da6896a0ec14c39a306644",
+    "/opt/pipewireao/lib/x86_64-linux-gnu/libwireplumber-0.5.so.0": "ea501083a3de22c3c499cba90835c95509e42f5cf935fa52965fae698b27821f",
+    "/opt/pipewireao/lib/x86_64-linux-gnu/wireplumber-0.5/libwireplumber-module-lua-scripting.so": "43546082dc3fa07eb65c1bbed7d9f93ed384e139e141530a878979ead90956b2",
+    "/opt/pipewireao/lib/x86_64-linux-gnu/wireplumber-0.5/libwireplumber-module-ao-control-endpoint.so": "0a81c3d2e7da091986a680ac77b6e69cd1a9e243e5721064271768ee1169f036",
+    "/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2/audiotestsrc/libspa-audiotestsrc.so": "3cf747802ff95e0b41ec88a12234eccc317645c2be24b8f09c071961ad2b0924"
+  },
+  "preserved_service": "pipewireao-gui-hil-demo-hIo0tX.service",
+  "preserved_main_pid": 1632744,
+  "scope": "Copper CPU FGN/JFG, CUDA AOS; model period2ms, wall10Hz; lifecycle/control/loading, no new timing/numerical qualification",
+  "rtc_source_sha256": {
+    "deployment/julia/src/science_export.jl": "b393b7434c0af3cd683df9ee93b9a349f8a5696df10dc2b3744e5593f545ed9f",
+    "deployment/julia/src/hil_export.jl": "0ad503bb26413647b8b97b439faf9df5951ac47018876f56765408f45eaaeb82",
+    "deployment/julia/src/heart_export.jl": "b058d465cf9ce730033b82f5425d408decbf8ade196cb6238740e2f3eef18a8d",
+    "deployment/julia/wireplumber_launch.jl": "0e844768d9b1953af56c765b80242f6837e4c96723eea9674743248c65f1506c"
+  }
+}

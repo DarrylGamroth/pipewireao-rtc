@@ -24,7 +24,7 @@ module HeartConfiguration end
 include(joinpath(package_root(), "src", "science_export.jl"))
 # This fixture verifies exporter math and provenance; packaged WirePlumber
 # assets are checked by the installed session path.
-ScienceExport.stage_wireplumber!(::String; build=nothing, source=nothing) = nothing
+ScienceExport.stage_wireplumber!(::String; build=nothing, source=nothing, prefix=nothing) = nothing
 include(joinpath(package_root(), "src", "hil_export.jl"))
 include(joinpath(package_root(), "src", "calibration_export.jl"))
 include(joinpath(package_root(), "src", "calibration_campaign.jl"))

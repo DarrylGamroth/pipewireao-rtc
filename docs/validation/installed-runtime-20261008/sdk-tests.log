@@ -1,0 +1,274 @@
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+┌ Error: Duplicate key detected in mapping
+│   node = YAML.MappingNode("tag:yaml.org,2002:map", Any[(YAML.ScalarNode("tag:yaml.org,2002:str", "x", line 1, column 7, line 1, column 8, nothing), YAML.ScalarNode("tag:yaml.org,2002:int", "1", line 1, column 10, line 1, column 11, nothing)), (YAML.ScalarNode("tag:yaml.org,2002:str", "x", line 1, column 13, line 1, column 14, nothing), YAML.ScalarNode("tag:yaml.org,2002:int", "2", line 1, column 16, line 1, column 17, nothing))], line 1, column 5, line 1, column 19, true)
+│   key = "x"
+└ @ YAML ~/.julia/packages/YAML/M5j6t/src/constructor.jl:206
+Test Summary:                           | Pass  Total  Time
+native local session discovery contract |   62     62  2.2s
+Test Summary:                  | Pass  Total  Time
+fresh direct session lifecycle |    7      7  0.0s
+Test Summary:                                    | Pass  Total  Time
+invalid listings never initiate native selection |    4      4  1.6s
+Test Summary:                                 | Pass  Total  Time
+operator discovery never creates its registry |    7      7  0.1s
+Test Summary:                           | Pass  Total  Time
+Julia operational preparation utilities |   32     32  3.4s
+Test Summary:                                      | Pass  Total  Time
+systemd owner names and exact invocation discovery |    8      8  0.2s
+Test Summary:                                                                | Pass  Total  Time
+owner service rendering quotes arguments and applies isolated service policy |   20     20  0.5s
+Test Summary:                                        | Pass  Total  Time
+cohort service dependencies and target job filtering |    6      6  0.0s
+Test Summary:                                         | Pass  Total  Time
+retained owner identity and recursive cgroup evidence |   12     12  0.2s
+Test Summary:              | Pass  Total  Time
+native control envelope v1 |   66     66  0.9s
+Test Summary:         | Pass  Total  Time
+native runner profile |  146    146  1.5s
+Test Summary:                 | Pass  Total  Time
+native owner profile dispatch |   14     14  0.7s
+Test Summary:                                     | Pass  Total  Time
+native reply envelope limits follow owner profile |    9      9  0.1s
+Test Summary:                   | Pass  Total  Time
+ordinary native bootstrap codec |   67     67  0.6s
+Test Summary:              | Pass  Total  Time
+native HEART typed profile |   54     54  0.5s
+Test Summary:                         | Pass  Total  Time
+native acquisition lifecycle profiles |  174    174  0.9s
+Test Summary:                                     | Pass  Total  Time
+acquisition Connect retains typed failure details |   52     52  0.1s
+Test Summary:                                                                 | Pass  Total  Time
+fresh acquisition readiness preserves Status requirements and failure details |   37     37  0.1s
+Test Summary:                                  | Pass  Total  Time
+native calibration vectors use iteration order |   32     32  1.6s
+Test Summary:                   | Pass  Total  Time
+native calibration action codec |  163    163  1.1s
+Test Summary:                                                             | Pass  Total  Time
+native calibration action client preserves correlation and known outcomes |   20     20  1.1s
+Test Summary:                                    | Pass  Total  Time
+unknown native outcomes retire the action client |   14     14  0.2s
+Test Summary:                                               | Pass  Total  Time
+local validation does not consume or submit native requests |   13     13  0.5s
+Test Summary:                                      | Pass  Total  Time
+legacy command parser maps to typed codec commands |   58     58  0.5s
+Test Summary:                                             | Pass  Total  Time
+typed completion rendering preserves legacy result fields |   86     86  1.5s
+Test Summary:                                                     | Pass  Total  Time
+exported bootstrap descriptors pass the strict deployment profile |   12     12  2.7s
+Test Summary:                                          | Pass  Total  Time
+public optional-loop selection and native thread names |  117    117  0.9s
+Test Summary:                                  | Pass  Total  Time
+HEART configuration preparation without Python |   29     29  5.0s
+Test Summary:                                                     | Pass  Total  Time
+Explicit operational Classic native offsets and fixed eligibility |   47     47  6.7s
+Test Summary:                                          | Pass  Total  Time
+HEART owner portable validation and generation reports |   31     31  3.1s
+Test Summary:                                            | Pass  Total  Time
+optional detector core placement and queue configuration |   16     16  0.2s
+Test Summary:                                                       | Pass  Total  Time
+native SPA config writer preserves data and separates object arrays |    5      5  0.9s
+Test Summary:                                         | Pass  Total  Time
+staged HIL package replaces embedded local dependency |    6      6  0.2s
+Test Summary:                     | Pass  Total  Time
+export payload and path contracts |   15     15  0.4s
+Test Summary:              | Pass  Total  Time
+calibration package export |   34     34  6.1s
+Test Summary:                                             | Pass  Total  Time
+acquisition export selects only the matching native owner |   23     23  0.1s
+Test Summary:           | Pass  Total  Time
+calibration graph split |   14     14  0.5s
+Test Summary:         | Pass  Total  Time
+owner argument safety |    3      3  0.1s
+Test Summary:          | Pass  Total  Time
+HEART bridge contracts |   13     13  0.2s
+Test Summary:                                                | Pass  Total  Time
+sustained HIL exporter preserves effective pacing provenance |  104    104  5.3s
+Test Summary:                              | Pass  Total  Time
+ordinary export native bootstrap contracts |   30     30  0.5s
+Test Summary:                                                 | Pass  Total  Time
+JFG owner compatibility follows only the validated staged SDK |   41     41  0.5s
+Test Summary:                                         | Pass  Total  Time
+split JFG deployment owners select the native wrapper |   18     18  0.8s
+Test Summary:                                                 | Pass  Total  Time
+installed WirePlumber prefix stages the sealed manager layout |   16     16  0.2s
+Test Summary:                                                       | Pass  Total  Time
+invalid installed WirePlumber prefix preserves prior staged manager |    9      9  0.1s
+Test Summary:                                                       | Pass  Total  Time
+installed WirePlumber library layout and source selection are exact |    5      5  0.1s
+Test Summary:                                          | Pass  Total  Time
+installed WirePlumber staging rejects a symlink target |    4      4  0.1s
+Test Summary:                                     | Pass  Total  Time
+calibration labels preserve a bounded base prefix |   28     28  0.0s
+Test Summary:                                              | Pass  Total  Time
+native HEART calibration exports the action server adapter |    3      3  0.0s
+Test Summary:                                   | Pass  Total  Time
+HEART calibration session has exact relay links |   16     16  0.2s
+Test Summary:                                            | Pass  Total  Time
+full rate native telemetry and immutable owner arguments |   11     11  0.2s
+Test Summary:                                                | Pass  Total  Time
+pilot keeps normal detector algorithms and freezes only seed |    4      4  1.4s
+Test Summary:                                                   | Pass  Total  Time
+finite pilot retains final report and telemetry before shutdown |    6      6  1.8s
+Test Summary:                                                 | Pass  Total  Time
+native processing diagnostics are explicit and off by default |    5      5  0.1s
+Test Summary:                                                    | Pass  Total  Time
+frozen native full plans derive exact physical counts and bounds |   16     16  0.6s
+Test Summary:                                                           | Pass  Total  Time
+native export verifies selected backend provenance, owner and CUDA UUID |    4      4  0.2s
+Test Summary:                                            | Pass  Total  Time
+native calibration export keeps its Copper profile guard |    2      2  0.1s
+Test Summary:                                                        | Pass  Total  Time
+frozen native method binds seed, recipe and prepared source identity |    9      9  2.3s
+Test Summary:                                                        | Pass  Total  Time
+native reduction binds the actual stopped runtime and owned instance |   16     16  0.5s
+Test Summary:                                                    | Pass  Total  Time
+completion native ingress has bounded explicit fixture selection |   24     24  0.4s
+Test Summary:                                             | Pass  Total  Time
+explicit Classic profile retains Copper default rejection |   17     17  0.1s
+Test Summary:                                                       | Pass  Total  Time
+Classic ordinary ingress does not admit the Copper deferred fixture |    4      4  0.4s
+Test Summary:                                            | Pass  Total  Time
+Classic lamp changes exactly magnitude and detector seed |    7      7  0.5s
+Test Summary:                                                                   | Pass  Total  Time
+Classic corpus requires externally bound policy and literal original chronology |    9      9  1.4s
+Test Summary:                                                 | Pass  Total  Time
+Classic generated name preserves the public40-character bound |    6      6  0.2s
+Test Summary:                                                             | Pass  Total  Time
+Classic admission requires retained helpers and its actual decode closure |   10     10  0.1s
+Test Summary:                                        | Pass  Total  Time
+Classic transfer admission precedes helper execution |   10     10  0.7s
+Test Summary:                                            | Pass  Total  Time
+maintained Classic cold worker is contained and recorded |    4      4  0.0s
+Test Summary:                                                  | Pass  Total  Time
+native correction name respects the unchanged deployment bound |    7      7  0.2s
+Test Summary:                                                | Pass  Total  Time
+native correction preserves actual recurrence and zero terms |   12     12  0.7s
+Test Summary:                                | Pass  Total  Time
+normal owner and immutable clipping contract |    6      6  0.2s
+Test Summary:                                     | Pass  Total  Time
+metadata alone cannot prepare a native correction |    4      4  1.1s
+Test Summary:                                                     | Pass  Total  Time
+active phase and receipt source contracts are packaged explicitly |    5      5  0.0s
+Test Summary:                                                                   | Pass  Total  Time
+Classic active export requires retained native transfer and original recurrence |    9      9  0.1s
+Test Summary:                                                           | Pass  Total  Time
+exact native profile flags are included in both runtime resource copies |    5      5  0.1s
+Test Summary:                                             | Pass  Total  Time
+correction freezes the moved scientific body and cold SDK |    4      4  0.7s
+Test Summary:                               | Pass  Total  Time
+Native Quit attempt and completion ordering |    8      8  0.2s
+Test Summary:                       | Pass  Total  Time
+Classic recipe and method admission |   22     22  0.9s
+Test Summary:                         | Pass  Total  Time
+Batch admission precedes stage output |   10     10  1.6s
+Test Summary:                             | Pass  Total  Time
+Capture association and payload integrity |   22     22  1.5s
+Test Summary:                                       | Pass  Total  Time
+Campaign requires an explicit native action binding |    6      6  0.3s
+Test Summary:                                           | Pass  Total  Time
+Interaction result output bound follows the sealed plan |    8      8  1.8s
+Test Summary:           | Pass  Total  Time
+Copper reference policy |    7      7  0.2s
+Test Summary:                                | Pass  Total  Time
+Copper quality represented balanced schedule |   17     17  0.9s
+Test Summary:                        | Pass  Total  Time
+Copper quality typed producer report |    7      7  1.4s
+Test Summary:                           | Pass  Total  Time
+completed owner and Copper ADC evidence |   44     44  0.5s
+Test Summary:                                        | Pass  Total  Time
+Copper method recipe requires only Copper conditions |   16     16  0.5s
+Test Summary:                                          | Pass  Total  Time
+Copper retained background and interaction preparation |   32     32  4.4s
+Test Summary:                               | Pass  Total  Time
+explicit simulator backend method admission |   37     37  0.5s
+Test Summary:                                                        | Pass  Total  Time
+backend identity rejects missing, ambiguous and mismatched selection |   18     18  0.3s
+Test Summary:                                                     | Pass  Total  Time
+Classic method retains science across explicit simulator backends |  136    136  3.6s
+Test Summary:                                           | Pass  Total   Time
+named deployment package and operational source closure |  251    251  13.9s
+Test Summary:                                      | Pass  Total  Time
+unsupported SDK rejection preserves sealed sources |    4      4  0.1s

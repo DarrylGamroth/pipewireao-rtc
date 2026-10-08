@@ -1,0 +1,4720 @@
+{
+  "files": [
+    {
+      "path": "bin/pipewire-ao",
+      "before": {
+        "sha256": "69873d8cdfc54d49a7ad16ee7c243cdf4f77eef895094eb445e4cb0d2b601783",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "7448313884221f743d88bb1a0b34a5ef191c6d237514ff2dab9d5f402e2ba192",
+        "mode": 493
+      }
+    },
+    {
+      "path": "bin/pwao-cli",
+      "before": {
+        "sha256": "226d70e343e7212e9d52de92c9018076c1d4dcda7d2a8931a00d01b440dcd706",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "7f3abc9a1f817cfbb20023b467d42637e0ee62a1f61ae03e57e5ce1a8ffe76d3",
+        "mode": 493
+      }
+    },
+    {
+      "path": "bin/pwao-config",
+      "before": {
+        "sha256": "3bc0f4e9ee899b83ad505f5452657765681c60e7da7573a934a48b43320e16a2",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "5664aec741ad29eee25255cc7937720f02cd06b103886ea55c87c550b79d37dd",
+        "mode": 493
+      }
+    },
+    {
+      "path": "bin/pwao-container",
+      "before": {
+        "sha256": "00d3115e5a83f0d94f8100327a66981ac3118039185f5f7fc01ef3649d8ebd8d",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "380952100529c223fde74dc649e4cbf45e05a7c8b535da86d8bcef45a16d5295",
+        "mode": 493
+      }
+    },
+    {
+      "path": "bin/pwao-dot",
+      "before": {
+        "sha256": "d0199c0c5ad9a4db4f192566c12bcbfac9e3037dd30471f6a613b87abed09b53",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "00849280f71d960d9a6ae90024b5778bd7d9d5ca5c61557076ea0b5040de9034",
+        "mode": 493
+      }
+    },
+    {
+      "path": "bin/pwao-dump",
+      "before": {
+        "sha256": "59c1e0d7b95a79b3feee9d690a809dca92164eea1d188948168dc73b48ba3ef6",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "9e8295ea6183ed1a3b4cd0041919adaeab97b80421b280224c2dae4d62fae1ee",
+        "mode": 493
+      }
+    },
+    {
+      "path": "bin/pwao-link",
+      "before": {
+        "sha256": "ccc4782821e1a3c388c4553fe48288218e9818402dbee9f4fc81476d89a151e4",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "2e1631627b91ec2f015cfb7c99b1730a93c70fe4fda1292e30bd8c36cebeaf80",
+        "mode": 493
+      }
+    },
+    {
+      "path": "bin/pwao-loopback",
+      "before": {
+        "sha256": "40bb5b1e015d1efa2750bbb96a2cd5f8607fc2be1be5aa235658f692bcb042c5",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "109fb006cabe2f37b282d61759f6d753c7b52fb803c2e722845303559a382907",
+        "mode": 493
+      }
+    },
+    {
+      "path": "bin/pwao-metadata",
+      "before": {
+        "sha256": "7f242f3111b9ab0d2e4619794a1b293159dcc12eae7064d82947f58df3bc7735",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "7c8fcc7efb619f66b98a275acfb4afe88418c42d992302dfba9e2614e0e21e22",
+        "mode": 493
+      }
+    },
+    {
+      "path": "bin/pwao-mididump",
+      "before": {
+        "sha256": "61bd4b2e9d6520b70d25a88a8c79042d27c01518564941c3e99c9650416da935",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "26f539902f9f081c1c26748c62016958e6bfe59af4d1d7853721501a50823c22",
+        "mode": 493
+      }
+    },
+    {
+      "path": "bin/pwao-mon",
+      "before": {
+        "sha256": "c9fcee288779f1b3031cf3dbf2d693e8212a9b2c8058c10d699a9f38968305bd",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "6f36afa4c29f2197cbf3e2282f386c4f4ad50df27fdc1a3de075f2edcb850452",
+        "mode": 493
+      }
+    },
+    {
+      "path": "bin/pwao-profiler",
+      "before": {
+        "sha256": "e1c42976b94b14cbf88043bbd08d8977a1e20a9e8c42f36690b614d2480c8a76",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "3a70ef443d3d9fdbe1f6d56c1800db7dad790d28dda07df60287305ad059a7fd",
+        "mode": 493
+      }
+    },
+    {
+      "path": "bin/pwao-spa-inspect",
+      "before": {
+        "sha256": "d75d2a16fc239206fa8eb21642dbf4cb6e308037fbd33a592848fd9355295ec2",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "0d39b22437e4e6f29750e1a5c78b2b3b9ed9897e78ec278c938b7de5c519c9c3",
+        "mode": 493
+      }
+    },
+    {
+      "path": "bin/pwao-spa-json-dump",
+      "before": {
+        "sha256": "ccba78d4428ccc1ea9ca60f186d36a1077a6b224d2b84aeb7ef6c6aece3e7803",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "b10e352e1925f5aa29930070b3df41cd7aed597032ac5a05ba5a663ba5cfcb0e",
+        "mode": 493
+      }
+    },
+    {
+      "path": "bin/pwao-spa-monitor",
+      "before": {
+        "sha256": "e36fa84c7dbbcf43dd122505bbe2ac7fc3c1c74338f4abb5a8e128f4f15501ca",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "709564bd750a9eab3eba2b9cb98bc14f13c49346c81607364bf92a0bf04f602f",
+        "mode": 493
+      }
+    },
+    {
+      "path": "bin/pwao-top",
+      "before": {
+        "sha256": "1b92f372f9671a22c695c5c0adf5a04f9638a28d1bf10ab32f57a09a41823761",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "05c1ab8b5dc905e3da39b650cb55dff8a104d9e9d83c679249ab74bf3f7d02f5",
+        "mode": 493
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/array.h",
+      "before": {
+        "sha256": "7a7c366addeba7498a6f0a64493b86ee5fb27d3cc0cf76897c76f9b25cbfb57a",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "7a7c366addeba7498a6f0a64493b86ee5fb27d3cc0cf76897c76f9b25cbfb57a",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/buffers.h",
+      "before": {
+        "sha256": "5fcc5d4081dbbb708df8fa7862afed9596e8ada78e98b4d4a688e7a2afd52cf6",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "5fcc5d4081dbbb708df8fa7862afed9596e8ada78e98b4d4a688e7a2afd52cf6",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/capabilities.h",
+      "before": {
+        "sha256": "56812439d35b95f90b883609536e8bf981c73d4d063837e7f665d943ed6a0d7d",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "56812439d35b95f90b883609536e8bf981c73d4d063837e7f665d943ed6a0d7d",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/client.h",
+      "before": {
+        "sha256": "bdb89c06d4719d77fe4900f6bac6df7a677bcc19de2cbd91b6bb70c96d14666b",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "bdb89c06d4719d77fe4900f6bac6df7a677bcc19de2cbd91b6bb70c96d14666b",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/conf.h",
+      "before": {
+        "sha256": "b199571ecbb53a9f0cc06e55723d35873386b7e4509265c7ff5eff588ba24d83",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "b199571ecbb53a9f0cc06e55723d35873386b7e4509265c7ff5eff588ba24d83",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/context.h",
+      "before": {
+        "sha256": "6c3c295de66602c9f70c13291d17b406bc36cf95233f6a7399eb5de56114c7f8",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "6c3c295de66602c9f70c13291d17b406bc36cf95233f6a7399eb5de56114c7f8",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/control.h",
+      "before": {
+        "sha256": "63660741b369e014067f2d72e6e55bdeca4e67ebeb6e8e556ddf22a3a2de090f",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "63660741b369e014067f2d72e6e55bdeca4e67ebeb6e8e556ddf22a3a2de090f",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/core.h",
+      "before": {
+        "sha256": "a7775297e8f7d77e49bb573673e0ae88b09f54468c315741a6c592ad25b4cb29",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "a7775297e8f7d77e49bb573673e0ae88b09f54468c315741a6c592ad25b4cb29",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/data-loop.h",
+      "before": {
+        "sha256": "6865547edcbe53f90c4e3d82fff057165fe8bd0ea8c8497189edd8cc0c8e1373",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "6865547edcbe53f90c4e3d82fff057165fe8bd0ea8c8497189edd8cc0c8e1373",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/device.h",
+      "before": {
+        "sha256": "d726118ecaedf196b7fbebbff367b3ac328a9653874047fc4edcd517d566b026",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "d726118ecaedf196b7fbebbff367b3ac328a9653874047fc4edcd517d566b026",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/extensions/client-node.h",
+      "before": {
+        "sha256": "bebdd7a6d8667539ef2241e3e1803f5163e5ee01037fef7824a8330267102076",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "bebdd7a6d8667539ef2241e3e1803f5163e5ee01037fef7824a8330267102076",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/extensions/metadata.h",
+      "before": {
+        "sha256": "29c3ef06cb75aa00418cef06000b1852020ff18fe0e8ef27e0cc6b5b67c24ba1",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "29c3ef06cb75aa00418cef06000b1852020ff18fe0e8ef27e0cc6b5b67c24ba1",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/extensions/profiler.h",
+      "before": {
+        "sha256": "ab9f3dcd7816c0bbdb09af2a45d6f2c503bf82aa71f4f7c8339fe311981ccf98",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "ab9f3dcd7816c0bbdb09af2a45d6f2c503bf82aa71f4f7c8339fe311981ccf98",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/extensions/protocol-native.h",
+      "before": {
+        "sha256": "76df16179938069aa26531b46af893877ecd3f8f7dda496840731b7445d7560b",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "76df16179938069aa26531b46af893877ecd3f8f7dda496840731b7445d7560b",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/extensions/security-context.h",
+      "before": {
+        "sha256": "d55fe25fca8d1c4e7a73364b00d05d086c34fd826bb1872714f14680775332a0",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "d55fe25fca8d1c4e7a73364b00d05d086c34fd826bb1872714f14680775332a0",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/extensions/session-manager/impl-interfaces.h",
+      "before": {
+        "sha256": "056903ed62dce94d46bfae0fedf8ce5b89d474c76f20cb3003fbe21f3334422b",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "056903ed62dce94d46bfae0fedf8ce5b89d474c76f20cb3003fbe21f3334422b",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/extensions/session-manager/interfaces.h",
+      "before": {
+        "sha256": "af67fca93c7d3c5a0a5b048ca5af5cf95f061ca7c8e033fee8dba98b5b78c7a4",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "af67fca93c7d3c5a0a5b048ca5af5cf95f061ca7c8e033fee8dba98b5b78c7a4",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/extensions/session-manager/introspect-funcs.h",
+      "before": {
+        "sha256": "6474a28a63dcdf6bea43a064b4092ce4578e5f2fa427df7fbccccdd95f2be8d0",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "6474a28a63dcdf6bea43a064b4092ce4578e5f2fa427df7fbccccdd95f2be8d0",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/extensions/session-manager/introspect.h",
+      "before": {
+        "sha256": "694e6d09a6034f0a2469cb6d4c832960c94ddc46d962e72c0f0926890d11660f",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "694e6d09a6034f0a2469cb6d4c832960c94ddc46d962e72c0f0926890d11660f",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/extensions/session-manager/keys.h",
+      "before": {
+        "sha256": "b352c6181675f15ef8056f5cdda0732967f6915a91079e8ecac5e2d02123f146",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "b352c6181675f15ef8056f5cdda0732967f6915a91079e8ecac5e2d02123f146",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/extensions/session-manager.h",
+      "before": {
+        "sha256": "7fbc5213249c7b38a9bdc6ff7e6155bc8c220c3bbeb93f586654386016f26499",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "7fbc5213249c7b38a9bdc6ff7e6155bc8c220c3bbeb93f586654386016f26499",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/factory.h",
+      "before": {
+        "sha256": "7b4a302c6dce7ff0b217ee0a2462bb99298148620228d624ed93b7552d5a5aab",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "7b4a302c6dce7ff0b217ee0a2462bb99298148620228d624ed93b7552d5a5aab",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/filter.h",
+      "before": {
+        "sha256": "6de8d47e60ac4120c0b5c04e971d7337d066b2d635ae8829b80e1ff0e8680544",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "6de8d47e60ac4120c0b5c04e971d7337d066b2d635ae8829b80e1ff0e8680544",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/global.h",
+      "before": {
+        "sha256": "674a331427eebbc95842b24fe38b96fd26c288e20321579dcceb4445b3ff16cb",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "674a331427eebbc95842b24fe38b96fd26c288e20321579dcceb4445b3ff16cb",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/i18n.h",
+      "before": {
+        "sha256": "87649030587fab02ea9584891277e781c37478e2e96155e39b5876250b20e810",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "87649030587fab02ea9584891277e781c37478e2e96155e39b5876250b20e810",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/impl-client.h",
+      "before": {
+        "sha256": "624371a2a2a051fe9621d35d2d7cddb3c3655051dcff134e5c8068720f3d3b62",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "624371a2a2a051fe9621d35d2d7cddb3c3655051dcff134e5c8068720f3d3b62",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/impl-core.h",
+      "before": {
+        "sha256": "26023eb1325ae308e31d6cf46a543bfda2fba77f3592aa0ca9e0702784e66748",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "26023eb1325ae308e31d6cf46a543bfda2fba77f3592aa0ca9e0702784e66748",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/impl-device.h",
+      "before": {
+        "sha256": "9caad51e7052509db7352595cfb89a3c4bb28bc400f1322959f51b6e0cc08915",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "9caad51e7052509db7352595cfb89a3c4bb28bc400f1322959f51b6e0cc08915",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/impl-factory.h",
+      "before": {
+        "sha256": "9be31d0d07d07b7b0e1fb9f82f26dd7bdd12487987db506cd3f3e6804434e7ca",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "9be31d0d07d07b7b0e1fb9f82f26dd7bdd12487987db506cd3f3e6804434e7ca",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/impl-link.h",
+      "before": {
+        "sha256": "d8d34ec7eb5823ceee1beef52d1b584a69866c484b6de23003ddc140962a3c7d",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "d8d34ec7eb5823ceee1beef52d1b584a69866c484b6de23003ddc140962a3c7d",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/impl-metadata.h",
+      "before": {
+        "sha256": "ecfeb5772d88a1bce1ce07ec6496154de80357717ebcd1470ff5799cf4b5b93a",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "ecfeb5772d88a1bce1ce07ec6496154de80357717ebcd1470ff5799cf4b5b93a",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/impl-module.h",
+      "before": {
+        "sha256": "2112fc7c572299cbfedeb7fa37d6b86a5fac362c052e40af92db2983d5f66143",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "2112fc7c572299cbfedeb7fa37d6b86a5fac362c052e40af92db2983d5f66143",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/impl-node.h",
+      "before": {
+        "sha256": "c106b7b6f37d6ada681bf732831b82bc858eea8053d0b44b2415fb79a10e5616",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "c106b7b6f37d6ada681bf732831b82bc858eea8053d0b44b2415fb79a10e5616",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/impl-port.h",
+      "before": {
+        "sha256": "8bca5d711c399a0741396950ecb75d3120eb3ae0d542335a6e2b0a8a8ca7f518",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "8bca5d711c399a0741396950ecb75d3120eb3ae0d542335a6e2b0a8a8ca7f518",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/impl.h",
+      "before": {
+        "sha256": "c4333e4fee840379f449f285eb95ce79f0a70ba8f05f6f01279de15856aa3ae4",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "c4333e4fee840379f449f285eb95ce79f0a70ba8f05f6f01279de15856aa3ae4",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/keys.h",
+      "before": {
+        "sha256": "2a7c7fa65dad00d6a867fd29f551a2fb625f19605789dfe467224dec621417b8",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "2a7c7fa65dad00d6a867fd29f551a2fb625f19605789dfe467224dec621417b8",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/link.h",
+      "before": {
+        "sha256": "046ba5419b1b6fb276e5e8400e44d1a9b3bf87ba960742fb02e7c011986a58ce",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "046ba5419b1b6fb276e5e8400e44d1a9b3bf87ba960742fb02e7c011986a58ce",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/log.h",
+      "before": {
+        "sha256": "b9281f0f7d671c8c74ce4501fd0f5d76a29a069bfc3558a8764a107dc7a57a13",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "b9281f0f7d671c8c74ce4501fd0f5d76a29a069bfc3558a8764a107dc7a57a13",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/loop.h",
+      "before": {
+        "sha256": "e9658173e447a99e822f0b7a8e46832a0aec9acb9d2be2ba800d11d1cbb1dd3f",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "e9658173e447a99e822f0b7a8e46832a0aec9acb9d2be2ba800d11d1cbb1dd3f",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/main-loop.h",
+      "before": {
+        "sha256": "d25142d1b9d9fc8e7451b4033abeb0b9039e3a53deb8144e103499cf048a22ab",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "d25142d1b9d9fc8e7451b4033abeb0b9039e3a53deb8144e103499cf048a22ab",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/map.h",
+      "before": {
+        "sha256": "2b0b18d23672cf2cd31024edefc307be2cc6b476adf87b80ee7a91ed2d5819e2",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "2b0b18d23672cf2cd31024edefc307be2cc6b476adf87b80ee7a91ed2d5819e2",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/mem.h",
+      "before": {
+        "sha256": "1cdafe0a71ca746e8775d98a974e61030030acb5aa4141783bf366e3d8ce5e05",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "1cdafe0a71ca746e8775d98a974e61030030acb5aa4141783bf366e3d8ce5e05",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/module.h",
+      "before": {
+        "sha256": "b4f2238aaaf5eb9824c1c93678fd3aebe4f124290c0147750198681c49ef5de0",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "b4f2238aaaf5eb9824c1c93678fd3aebe4f124290c0147750198681c49ef5de0",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/ndarray-filter.h",
+      "before": {
+        "sha256": "9654751efdb4a6b3f25db71236f624f9aee83a90165f7707c94bbc8e00513aec",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "9654751efdb4a6b3f25db71236f624f9aee83a90165f7707c94bbc8e00513aec",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/node.h",
+      "before": {
+        "sha256": "3d24c47b69589d5b665d839c3ca121a3d5c0f71f64a4a6f142a73b9761ada401",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "3d24c47b69589d5b665d839c3ca121a3d5c0f71f64a4a6f142a73b9761ada401",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/permission.h",
+      "before": {
+        "sha256": "246b544933a68119ce06d438950620b1869ee6c014d1a26cd4c12213015af3a2",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "246b544933a68119ce06d438950620b1869ee6c014d1a26cd4c12213015af3a2",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/pipewire.h",
+      "before": {
+        "sha256": "f5d035b8e89c2cc7c1b886f0ec6c90bf625c50915a5d12614ab7f3700e016f96",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "f5d035b8e89c2cc7c1b886f0ec6c90bf625c50915a5d12614ab7f3700e016f96",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/port.h",
+      "before": {
+        "sha256": "d8af653d29bf0d0ff52186e4d39a4a1ff53d99599d8edb86f4c946bee70fea12",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "d8af653d29bf0d0ff52186e4d39a4a1ff53d99599d8edb86f4c946bee70fea12",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/properties.h",
+      "before": {
+        "sha256": "80fd4f54f89a94993cc1b3ff5c96de727208bb80a5609fc3321cc512e8f127da",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "80fd4f54f89a94993cc1b3ff5c96de727208bb80a5609fc3321cc512e8f127da",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/protocol.h",
+      "before": {
+        "sha256": "c2e3d2d437f64ffe5f4d7e97e5b604779e986c50ed0765a58aa9db7debb4a49b",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "c2e3d2d437f64ffe5f4d7e97e5b604779e986c50ed0765a58aa9db7debb4a49b",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/proxy.h",
+      "before": {
+        "sha256": "e163588ba6df9f287ab162976429102f557166c8559f43164ae85bc32b794494",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "e163588ba6df9f287ab162976429102f557166c8559f43164ae85bc32b794494",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/resource.h",
+      "before": {
+        "sha256": "56bdd1f6c1a78286a3b3a90859fae6854c49f030d0ac5efb7670265f5d5999e5",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "56bdd1f6c1a78286a3b3a90859fae6854c49f030d0ac5efb7670265f5d5999e5",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/run-control.h",
+      "before": {
+        "sha256": "ad69f1d9b04a915887998d52212ddfda2ccc05f28093e6971bfff32da23e2461",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "ad69f1d9b04a915887998d52212ddfda2ccc05f28093e6971bfff32da23e2461",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/stream.h",
+      "before": {
+        "sha256": "6176f67566827c3d17857dc18b57f265f82c60f7ee8aeb55cef52de2958e0a8c",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "6176f67566827c3d17857dc18b57f265f82c60f7ee8aeb55cef52de2958e0a8c",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/thread-loop.h",
+      "before": {
+        "sha256": "843a7e4d22adc943a6615aa524f1d0ca5c3c5bcf67cce1f4fca63aa4335c6718",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "843a7e4d22adc943a6615aa524f1d0ca5c3c5bcf67cce1f4fca63aa4335c6718",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/thread.h",
+      "before": {
+        "sha256": "79291853a969b590992ec13c7e9d7fe3e7a1a7ffd0dc8992d4e5131c72c3fb8a",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "79291853a969b590992ec13c7e9d7fe3e7a1a7ffd0dc8992d4e5131c72c3fb8a",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/timer-queue.h",
+      "before": {
+        "sha256": "7f327d49ec91f294822f0d8ece38bd8b9590ea590cd373aefd4053ea26e8b406",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "7f327d49ec91f294822f0d8ece38bd8b9590ea590cd373aefd4053ea26e8b406",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/type.h",
+      "before": {
+        "sha256": "b86c6a582a34e2e91d3c401bf98e65dc615550202c994ff864e3dad42df69b81",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "b86c6a582a34e2e91d3c401bf98e65dc615550202c994ff864e3dad42df69b81",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/utils.h",
+      "before": {
+        "sha256": "76cf497a5afe5d3c0dc9f2351248165b389d0d17d6be9474559f1d7247e4a2f1",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "76cf497a5afe5d3c0dc9f2351248165b389d0d17d6be9474559f1d7247e4a2f1",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/version.h",
+      "before": {
+        "sha256": "681c2e0e1a0f451e304e167408bd34657b6e54e7ba5ff85501822ab017592f5f",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "681c2e0e1a0f451e304e167408bd34657b6e54e7ba5ff85501822ab017592f5f",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/pipewire-ao-0.3/pipewire/work-queue.h",
+      "before": {
+        "sha256": "4290b08d77fd060b9c454d2f0c356362db44d3347d13212c8d52812cf2c59acc",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "4290b08d77fd060b9c454d2f0c356362db44d3347d13212c8d52812cf2c59acc",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/buffer/alloc.h",
+      "before": {
+        "sha256": "29f73cd95ed27db4b6fc7b71fbba2398723d3a583bf92cc4df990af49be777a5",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "29f73cd95ed27db4b6fc7b71fbba2398723d3a583bf92cc4df990af49be777a5",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/buffer/buffer.h",
+      "before": {
+        "sha256": "14a18a1bd0f499b78cc54217161867da06ffab33f488af5a5d0acb35daafe0da",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "14a18a1bd0f499b78cc54217161867da06ffab33f488af5a5d0acb35daafe0da",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/buffer/meta.h",
+      "before": {
+        "sha256": "b2d8c50170378aaea9af85e45122f80bfbf6fd0380941060d114eb3ab316da74",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "b2d8c50170378aaea9af85e45122f80bfbf6fd0380941060d114eb3ab316da74",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/buffer/type-info.h",
+      "before": {
+        "sha256": "49ae0508315bc4957dc9de74358d79ea834ff0ae4a5deb6289932acf71f86362",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "49ae0508315bc4957dc9de74358d79ea834ff0ae4a5deb6289932acf71f86362",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/control/control.h",
+      "before": {
+        "sha256": "cee0ebc665e2a998bd34d326cbd104526f604b68e81b4d5048a47fe48baccf77",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "cee0ebc665e2a998bd34d326cbd104526f604b68e81b4d5048a47fe48baccf77",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/control/type-info.h",
+      "before": {
+        "sha256": "1aa3b04ad2eb00905a2faba9a1225e036e33185aa8887518455fc3801a856858",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "1aa3b04ad2eb00905a2faba9a1225e036e33185aa8887518455fc3801a856858",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/control/ump-utils.h",
+      "before": {
+        "sha256": "b337abe769cab9ed71a6716c21903680c71ca004f9a90dc0d4ef6b3a102e9bb9",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "b337abe769cab9ed71a6716c21903680c71ca004f9a90dc0d4ef6b3a102e9bb9",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/debug/buffer.h",
+      "before": {
+        "sha256": "71d922dda23551c0fee7b998969ac96eacf3e7fb0a64893d5eb1a75afba8d32a",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "71d922dda23551c0fee7b998969ac96eacf3e7fb0a64893d5eb1a75afba8d32a",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/debug/context.h",
+      "before": {
+        "sha256": "2592383f34aaaa0722b7fab90ef747afddb6777bb8a371f0a2dea242fb7c8295",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "2592383f34aaaa0722b7fab90ef747afddb6777bb8a371f0a2dea242fb7c8295",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/debug/dict.h",
+      "before": {
+        "sha256": "19df7e42062add6a856e946c58c6917d8663fef6b932c23183240773644aff15",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "19df7e42062add6a856e946c58c6917d8663fef6b932c23183240773644aff15",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/debug/file.h",
+      "before": {
+        "sha256": "fe31219fa88e423a695255fec4f598c9a196aa3cff6e8cd356ea2d9eed526505",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "fe31219fa88e423a695255fec4f598c9a196aa3cff6e8cd356ea2d9eed526505",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/debug/filter-graph-ndarray.h",
+      "before": {
+        "sha256": "66869059df7fbe68e3d727c18d071f4beff0f621a2f3ff219e44e15a681d8e20",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "66869059df7fbe68e3d727c18d071f4beff0f621a2f3ff219e44e15a681d8e20",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/debug/format.h",
+      "before": {
+        "sha256": "32938a28282a73b68f4c0e47408ee3e9813b868dc3ddf745786d57f7b8f67fe1",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "32938a28282a73b68f4c0e47408ee3e9813b868dc3ddf745786d57f7b8f67fe1",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/debug/log.h",
+      "before": {
+        "sha256": "8aafd760c721b049891a7e9a709d04dd5e57f02100849164b2f77a4ce45fab16",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "8aafd760c721b049891a7e9a709d04dd5e57f02100849164b2f77a4ce45fab16",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/debug/mem.h",
+      "before": {
+        "sha256": "e1a142f45054cb85574c2a4b4e86c2bc6739058135172a91f4ff9c171d6e40aa",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "e1a142f45054cb85574c2a4b4e86c2bc6739058135172a91f4ff9c171d6e40aa",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/debug/node.h",
+      "before": {
+        "sha256": "076c7386581f50957ac25b717553b676df544a797535b0beb546045658dbdb66",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "076c7386581f50957ac25b717553b676df544a797535b0beb546045658dbdb66",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/debug/pod.h",
+      "before": {
+        "sha256": "d49d8316bf2dd7d6507bb30db932db4418cf27663ebf4a30ab77416e2bc3a37b",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "d49d8316bf2dd7d6507bb30db932db4418cf27663ebf4a30ab77416e2bc3a37b",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/debug/types.h",
+      "before": {
+        "sha256": "c352554d42d2dbe6cce41d45b6153e9a119f4eb73c791c662ac343957d0cfa4e",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "c352554d42d2dbe6cce41d45b6153e9a119f4eb73c791c662ac343957d0cfa4e",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/filter-graph/filter-graph-ndarray.h",
+      "before": {
+        "sha256": "4d18593593e4829ad205acb5eb640accd54573d363d92374386fbca92dcd4252",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "4d18593593e4829ad205acb5eb640accd54573d363d92374386fbca92dcd4252",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/filter-graph/filter-graph.h",
+      "before": {
+        "sha256": "137aded710e9658f4ff09d67621257fb6a98df441a4ff8ca75e12d8044737164",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "137aded710e9658f4ff09d67621257fb6a98df441a4ff8ca75e12d8044737164",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/filter-graph/ndarray-executor.h",
+      "before": {
+        "sha256": "ec68938b89b3c2270b6af5f422a6e4754693edad407b324c26a86d4c70980e2f",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "ec68938b89b3c2270b6af5f422a6e4754693edad407b324c26a86d4c70980e2f",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/filter-graph/ndarray-plugin.h",
+      "before": {
+        "sha256": "900a3c1c6897b8fb96bbd04644b759276d33afb7a5b897007371eb7b4dd86794",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "900a3c1c6897b8fb96bbd04644b759276d33afb7a5b897007371eb7b4dd86794",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/graph/graph.h",
+      "before": {
+        "sha256": "c1a4741387fa1e35ba177d04b6113f64b5dd10e7cc162b06ddd9621539d21957",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "c1a4741387fa1e35ba177d04b6113f64b5dd10e7cc162b06ddd9621539d21957",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/interfaces/audio/aec.h",
+      "before": {
+        "sha256": "4e1acd4aaf96f4be7a22e7a931455e06686f4102dc5746132653b42bf9ec69ec",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "4e1acd4aaf96f4be7a22e7a931455e06686f4102dc5746132653b42bf9ec69ec",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/monitor/device.h",
+      "before": {
+        "sha256": "fd25f90ff95ded0d0eb398680c3551d43e0a79624ecdc58c1f077a1f6f09fb77",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "fd25f90ff95ded0d0eb398680c3551d43e0a79624ecdc58c1f077a1f6f09fb77",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/monitor/event.h",
+      "before": {
+        "sha256": "775cc7142c8823b55f26f67fd8a36593c1d10b804bde3a484db3cf5041991abe",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "775cc7142c8823b55f26f67fd8a36593c1d10b804bde3a484db3cf5041991abe",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/monitor/type-info.h",
+      "before": {
+        "sha256": "a354a397053bd5dd452433b65bd35052dafaf96575fcd087348a9488e5342bc3",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "a354a397053bd5dd452433b65bd35052dafaf96575fcd087348a9488e5342bc3",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/monitor/utils.h",
+      "before": {
+        "sha256": "9ec47e2f4bc4c2f20e24f4aee29a776a41290dfc788427d67e9eb3e299002565",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "9ec47e2f4bc4c2f20e24f4aee29a776a41290dfc788427d67e9eb3e299002565",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/node/command.h",
+      "before": {
+        "sha256": "6f85bdd798425e780be666b621c33f15aa0c0e568d646de1749786d9dd5f51a4",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "6f85bdd798425e780be666b621c33f15aa0c0e568d646de1749786d9dd5f51a4",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/node/event.h",
+      "before": {
+        "sha256": "572e47d09d9418df364c55ea220371a8488c7d0c4f57ccae59e6d41d7fcc7017",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "572e47d09d9418df364c55ea220371a8488c7d0c4f57ccae59e6d41d7fcc7017",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/node/io.h",
+      "before": {
+        "sha256": "3b93148d386d077b6b76593455df202d342dcb50e4c0184ec3510bfd2722cdd0",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "3b93148d386d077b6b76593455df202d342dcb50e4c0184ec3510bfd2722cdd0",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/node/keys.h",
+      "before": {
+        "sha256": "f4ece0e39d5ab56e58b75724108b39d10aa6ac7eb03bd21f3bec9f3778d02178",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "f4ece0e39d5ab56e58b75724108b39d10aa6ac7eb03bd21f3bec9f3778d02178",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/node/node.h",
+      "before": {
+        "sha256": "f440b78521f63eb61652906471e2c2a47d567064a3e290d41c73cfc64abfd5fd",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "f440b78521f63eb61652906471e2c2a47d567064a3e290d41c73cfc64abfd5fd",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/node/type-info.h",
+      "before": {
+        "sha256": "97fcb384386cafbeb4166a98c9aac25d0f01d16f626642eea3d3cc8c62c01206",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "97fcb384386cafbeb4166a98c9aac25d0f01d16f626642eea3d3cc8c62c01206",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/node/utils.h",
+      "before": {
+        "sha256": "c21aa7af115aea0ccfd99c6a566a5f528fc797e5ea258f36a0cd842ec3f9bce0",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "c21aa7af115aea0ccfd99c6a566a5f528fc797e5ea258f36a0cd842ec3f9bce0",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/aac-types.h",
+      "before": {
+        "sha256": "0739d630e48deabf2a94232f4544a8bd146274ad1ef770a56e6e7a7110e1fc19",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "0739d630e48deabf2a94232f4544a8bd146274ad1ef770a56e6e7a7110e1fc19",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/aac-utils.h",
+      "before": {
+        "sha256": "272a3365304d6e1c4d5ba7abfbd7e6947395e5eceb1a2777c8e7806a97bc5388",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "272a3365304d6e1c4d5ba7abfbd7e6947395e5eceb1a2777c8e7806a97bc5388",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/aac.h",
+      "before": {
+        "sha256": "65789792ac4239f4f1fc9ea306fa07457cf099d6b2c7a4f0372619b867760784",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "65789792ac4239f4f1fc9ea306fa07457cf099d6b2c7a4f0372619b867760784",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/ac3-utils.h",
+      "before": {
+        "sha256": "ee9831a8865f5b9d7f9528f0ba9eb7406d7a7aa55854fda6c33a4b74deeb2755",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "ee9831a8865f5b9d7f9528f0ba9eb7406d7a7aa55854fda6c33a4b74deeb2755",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/ac3.h",
+      "before": {
+        "sha256": "63e72093a02bdde23b00fbabcae959d6b812c1a9b58d0df7a22808246755aaf8",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "63e72093a02bdde23b00fbabcae959d6b812c1a9b58d0df7a22808246755aaf8",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/alac-utils.h",
+      "before": {
+        "sha256": "eb37e1d7c83c71252be92310b3729c7a489291521ef7b23dd32a604369feed21",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "eb37e1d7c83c71252be92310b3729c7a489291521ef7b23dd32a604369feed21",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/alac.h",
+      "before": {
+        "sha256": "06c41ffb0db6544f406e3deadfeee62190f5461769e1d9a7094a66b25c73aa3a",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "06c41ffb0db6544f406e3deadfeee62190f5461769e1d9a7094a66b25c73aa3a",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/amr-types.h",
+      "before": {
+        "sha256": "5a318104866b19c1a1460074378f19c764e8ef2f08dcfc933267d34967eaec4d",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "5a318104866b19c1a1460074378f19c764e8ef2f08dcfc933267d34967eaec4d",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/amr-utils.h",
+      "before": {
+        "sha256": "2f55a3d335207392b27113bdb6682f7db095747109051e175ea702c4ea7638a2",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "2f55a3d335207392b27113bdb6682f7db095747109051e175ea702c4ea7638a2",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/amr.h",
+      "before": {
+        "sha256": "2401ca5fad4af7b5ea3a07d6335e79985718c99c693206705a73c45386933c66",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "2401ca5fad4af7b5ea3a07d6335e79985718c99c693206705a73c45386933c66",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/ape-utils.h",
+      "before": {
+        "sha256": "5ed3060e8293ef051d6546f7c57f578b36f9d4aab2d0a69c7cc569050d6a7c47",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "5ed3060e8293ef051d6546f7c57f578b36f9d4aab2d0a69c7cc569050d6a7c47",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/ape.h",
+      "before": {
+        "sha256": "145dafe819658fba862c8be46738e1149bd2783402bac57099541fe6eaefabdb",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "145dafe819658fba862c8be46738e1149bd2783402bac57099541fe6eaefabdb",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/compressed.h",
+      "before": {
+        "sha256": "9b555e08a54e43f9db148c081ba9ab19311de649c5b2af5630a75a45e452894c",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "9b555e08a54e43f9db148c081ba9ab19311de649c5b2af5630a75a45e452894c",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/dsd-utils.h",
+      "before": {
+        "sha256": "85445dc975e67316d8a72de414faabcd2204ae03e11eb1a2bf827bad2fb3dd20",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "85445dc975e67316d8a72de414faabcd2204ae03e11eb1a2bf827bad2fb3dd20",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/dsd.h",
+      "before": {
+        "sha256": "ca2ab88333b57ed780b6acfda19ac5459e2d8170ef95cf2b6a19537dcb39b46d",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "ca2ab88333b57ed780b6acfda19ac5459e2d8170ef95cf2b6a19537dcb39b46d",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/dsp-utils.h",
+      "before": {
+        "sha256": "a8707bed32539c55b3194c6da8d5a07b21879d30fd827aa6abe0afaecbd41f7c",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "a8707bed32539c55b3194c6da8d5a07b21879d30fd827aa6abe0afaecbd41f7c",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/dsp.h",
+      "before": {
+        "sha256": "71f937393bcbc907edc366fd2987a49058e71267054d0d43c2e4ae7e261bee0f",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "71f937393bcbc907edc366fd2987a49058e71267054d0d43c2e4ae7e261bee0f",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/dts-types.h",
+      "before": {
+        "sha256": "500ff373404085678296d888d9c97bac9589691419802f8fd69adc69eb7dc633",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "500ff373404085678296d888d9c97bac9589691419802f8fd69adc69eb7dc633",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/dts-utils.h",
+      "before": {
+        "sha256": "1d8dc4cbcaebf21555101121d25b51e286cf0c7f214cf31523e91ceb30f6321a",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "1d8dc4cbcaebf21555101121d25b51e286cf0c7f214cf31523e91ceb30f6321a",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/dts.h",
+      "before": {
+        "sha256": "260e26acd17ec38fc119af00eb0cb418ccdfba2bb447e21233716d5ef82a97ba",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "260e26acd17ec38fc119af00eb0cb418ccdfba2bb447e21233716d5ef82a97ba",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/eac3-utils.h",
+      "before": {
+        "sha256": "c45158f759e853733fe0b5cb8d73aa86308aab740f677aa4baa46a06be6d93c1",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "c45158f759e853733fe0b5cb8d73aa86308aab740f677aa4baa46a06be6d93c1",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/eac3.h",
+      "before": {
+        "sha256": "cd41f5c961275c2e06c8a28b2281242e61c5ac4a38c8450df2334bb4a1907db3",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "cd41f5c961275c2e06c8a28b2281242e61c5ac4a38c8450df2334bb4a1907db3",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/flac-utils.h",
+      "before": {
+        "sha256": "a318d151b61d4bb4f26584d5e04e31a32299990c0ea40148a31e634c701238cf",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "a318d151b61d4bb4f26584d5e04e31a32299990c0ea40148a31e634c701238cf",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/flac.h",
+      "before": {
+        "sha256": "e0181e5580c51d8ee800ef3ddb14e6e795bee7e44889a98670d2d6faa784c2c6",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "e0181e5580c51d8ee800ef3ddb14e6e795bee7e44889a98670d2d6faa784c2c6",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/format-utils.h",
+      "before": {
+        "sha256": "3b4079b7219ab0df05374bc3b60d18877d567a578d297a513e7cacedacb11bab",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "3b4079b7219ab0df05374bc3b60d18877d567a578d297a513e7cacedacb11bab",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/format.h",
+      "before": {
+        "sha256": "4759e7abfc560fafc93150f9e3a8b8ec20280b3ccbdcd4967a07bc3dcc1d35bd",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "4759e7abfc560fafc93150f9e3a8b8ec20280b3ccbdcd4967a07bc3dcc1d35bd",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/iec958-types.h",
+      "before": {
+        "sha256": "c62d9071f73b2028865ba6dd0fa2a8e024ce197b6ad1723f7e3c4ac235620a11",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "c62d9071f73b2028865ba6dd0fa2a8e024ce197b6ad1723f7e3c4ac235620a11",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/iec958-utils.h",
+      "before": {
+        "sha256": "ad28ae63753d5d0d9f51219eb434ddc0d3515085af2876c1c4906cf3f334d361",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "ad28ae63753d5d0d9f51219eb434ddc0d3515085af2876c1c4906cf3f334d361",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/iec958.h",
+      "before": {
+        "sha256": "eb65886c785dcbdf9e5d05cbcb52cf8b46f64aa4f392bba26080e89e05024e61",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "eb65886c785dcbdf9e5d05cbcb52cf8b46f64aa4f392bba26080e89e05024e61",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/layout-types.h",
+      "before": {
+        "sha256": "d21dc5c415cdf15ee6bc60cc9574e06a4b8ff1493f1f1f165c226121a63fd68f",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "d21dc5c415cdf15ee6bc60cc9574e06a4b8ff1493f1f1f165c226121a63fd68f",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/layout.h",
+      "before": {
+        "sha256": "f23c925d3586946d00e7c513678d9e5e62bb3b30331d2dba1f764a1a9e58c30c",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "f23c925d3586946d00e7c513678d9e5e62bb3b30331d2dba1f764a1a9e58c30c",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/mp3-types.h",
+      "before": {
+        "sha256": "22c7aa5bd8bae3ecec52c82cb2f1c9b92920f5e072acced5e417c9fabf718a5f",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "22c7aa5bd8bae3ecec52c82cb2f1c9b92920f5e072acced5e417c9fabf718a5f",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/mp3-utils.h",
+      "before": {
+        "sha256": "90c27b446535218ddb3fb89a15de408e3958aa63b3ec877564e378f64dddb523",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "90c27b446535218ddb3fb89a15de408e3958aa63b3ec877564e378f64dddb523",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/mp3.h",
+      "before": {
+        "sha256": "be028499f4a4788b0cda226f821750a1b4767ead95959d29019743ad4b3655bc",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "be028499f4a4788b0cda226f821750a1b4767ead95959d29019743ad4b3655bc",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/mpegh-utils.h",
+      "before": {
+        "sha256": "4593342fdaafd92303841dcba6b3014beb4ec1202c1d5e03ecdfd95ffcc324af",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "4593342fdaafd92303841dcba6b3014beb4ec1202c1d5e03ecdfd95ffcc324af",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/mpegh.h",
+      "before": {
+        "sha256": "70bff65641dedc74f2df874150a5e76700cc8e6d3fd71c5c8a2d94dc32907876",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "70bff65641dedc74f2df874150a5e76700cc8e6d3fd71c5c8a2d94dc32907876",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/opus.h",
+      "before": {
+        "sha256": "d2d72b815ee0fecb36944a5dd7f146bc37f1910b845324daf983b6a8cc92c6c3",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "d2d72b815ee0fecb36944a5dd7f146bc37f1910b845324daf983b6a8cc92c6c3",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/ra-utils.h",
+      "before": {
+        "sha256": "e6a8bb11fb9fa0f0786d6c4e3457f7246bcaac7ee7e5d75da3020f8bc3b2705b",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "e6a8bb11fb9fa0f0786d6c4e3457f7246bcaac7ee7e5d75da3020f8bc3b2705b",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/ra.h",
+      "before": {
+        "sha256": "01ce231665b54d1d21f99b2834e5f3d13d4486df816cd1ecf6d49fcc0f0aea59",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "01ce231665b54d1d21f99b2834e5f3d13d4486df816cd1ecf6d49fcc0f0aea59",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/raw-json.h",
+      "before": {
+        "sha256": "4dd126c0a58a3bb118a69614fea9d336e1a354909b5d2a1e282a75b22bea35a9",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "4dd126c0a58a3bb118a69614fea9d336e1a354909b5d2a1e282a75b22bea35a9",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/raw-types.h",
+      "before": {
+        "sha256": "ea0bc207497583d25067878c23ff454fc3aeba83f00f153ca4c9f42e7f608c26",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "ea0bc207497583d25067878c23ff454fc3aeba83f00f153ca4c9f42e7f608c26",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/raw-utils.h",
+      "before": {
+        "sha256": "44b276153f7a7689c02c1aaa82aa63d98299359704ca9e6d441e50cec0b7e839",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "44b276153f7a7689c02c1aaa82aa63d98299359704ca9e6d441e50cec0b7e839",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/raw.h",
+      "before": {
+        "sha256": "e6973905e13df878567683ddaf37acc8bbef06355d6e9bde3eeb7abb5be8147e",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "e6973905e13df878567683ddaf37acc8bbef06355d6e9bde3eeb7abb5be8147e",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/truehd-utils.h",
+      "before": {
+        "sha256": "428c2118e6f845e1b7847b5b4623e4810fc03f34e7a28cb222164f173e34fbd6",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "428c2118e6f845e1b7847b5b4623e4810fc03f34e7a28cb222164f173e34fbd6",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/truehd.h",
+      "before": {
+        "sha256": "614014f5ab870cfb672c7bc4562152cb1df48cf3cc89a8acb4e227db515afa63",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "614014f5ab870cfb672c7bc4562152cb1df48cf3cc89a8acb4e227db515afa63",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/type-info.h",
+      "before": {
+        "sha256": "e9882b19bfe81b9380d72096e2d797b0b280755746cf804c4d0d4af0cdb45674",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "e9882b19bfe81b9380d72096e2d797b0b280755746cf804c4d0d4af0cdb45674",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/vorbis-utils.h",
+      "before": {
+        "sha256": "96fe29101a708bc20c65cabb591d087b8df086ea2ed322ba26a9a6f8b622bf91",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "96fe29101a708bc20c65cabb591d087b8df086ea2ed322ba26a9a6f8b622bf91",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/vorbis.h",
+      "before": {
+        "sha256": "d7ec98b9f79c844ac6b20912f340d501d6b7ea6513a5a600005900b3f3bc725b",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "d7ec98b9f79c844ac6b20912f340d501d6b7ea6513a5a600005900b3f3bc725b",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/wma-types.h",
+      "before": {
+        "sha256": "48da9fe4f6a0b3be18f9b6dd73d740e6638b6368eb10da0dd556487bc52594d7",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "48da9fe4f6a0b3be18f9b6dd73d740e6638b6368eb10da0dd556487bc52594d7",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/wma-utils.h",
+      "before": {
+        "sha256": "b49e7b2549a1a9568ba135dc7311f3faedfc51bb27bc1d3ba2be0b6b4b9a3393",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "b49e7b2549a1a9568ba135dc7311f3faedfc51bb27bc1d3ba2be0b6b4b9a3393",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/audio/wma.h",
+      "before": {
+        "sha256": "d55e4c28fa8b1ed65db82be674caab3d20de7d7dcef5b5bacb7ed986676cbc09",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "d55e4c28fa8b1ed65db82be674caab3d20de7d7dcef5b5bacb7ed986676cbc09",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/bluetooth/audio.h",
+      "before": {
+        "sha256": "7fb71a1af1b6f4f2f4d8bece0d66085ba49fa9cd3310d2d6e341c70f9376d799",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "7fb71a1af1b6f4f2f4d8bece0d66085ba49fa9cd3310d2d6e341c70f9376d799",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/bluetooth/type-info.h",
+      "before": {
+        "sha256": "47dfdad9d6c401b0385a5c20a3fa43ba7539c37e9114b1d296fbe6a1dc85e3be",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "47dfdad9d6c401b0385a5c20a3fa43ba7539c37e9114b1d296fbe6a1dc85e3be",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/buffers-types.h",
+      "before": {
+        "sha256": "0bdcdc69866a68d4bdd1f3d4c32453a57e1c4f11a796f2b186efb040a61b709e",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "0bdcdc69866a68d4bdd1f3d4c32453a57e1c4f11a796f2b186efb040a61b709e",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/buffers.h",
+      "before": {
+        "sha256": "294ab47475f5161ed7391db639acd4642e5b85315487c86cc166c81f5071074c",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "294ab47475f5161ed7391db639acd4642e5b85315487c86cc166c81f5071074c",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/dict-types.h",
+      "before": {
+        "sha256": "1526343a7778e182c066b870b27ec0c321be44e491fe7bd971d9f33f81c9934d",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "1526343a7778e182c066b870b27ec0c321be44e491fe7bd971d9f33f81c9934d",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/dict-utils.h",
+      "before": {
+        "sha256": "4244ef2527b18b307d99d78e8f0831b574899de9322b12deeb873708d8ac1d74",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "4244ef2527b18b307d99d78e8f0831b574899de9322b12deeb873708d8ac1d74",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/dict.h",
+      "before": {
+        "sha256": "399489691558597756e01999ed63533028c979f912427d93683330de6a080002",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "399489691558597756e01999ed63533028c979f912427d93683330de6a080002",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/format-types.h",
+      "before": {
+        "sha256": "68795d63c3dea4be03040785374d139699045220e1decb9c50e604f8eaba420e",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "68795d63c3dea4be03040785374d139699045220e1decb9c50e604f8eaba420e",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/format-utils.h",
+      "before": {
+        "sha256": "2b9e6bef23b8232ebebf4b560374abc5a48f9dc2fad1089848a6321007366315",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "2b9e6bef23b8232ebebf4b560374abc5a48f9dc2fad1089848a6321007366315",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/format.h",
+      "before": {
+        "sha256": "9f72233983e5b1c0b4477ff8d80857b9c29100328531622d30b9d744a988a7e3",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "9f72233983e5b1c0b4477ff8d80857b9c29100328531622d30b9d744a988a7e3",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/latency-types.h",
+      "before": {
+        "sha256": "e10c9b9bcd195566a47ed8e3f5eef9cbc27b4464cc4bba333727368ea358a876",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "e10c9b9bcd195566a47ed8e3f5eef9cbc27b4464cc4bba333727368ea358a876",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/latency-utils.h",
+      "before": {
+        "sha256": "6ba829f4cfc6379df6fcd1e483f68fd364973ba7131415d0742c968b7726c788",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "6ba829f4cfc6379df6fcd1e483f68fd364973ba7131415d0742c968b7726c788",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/latency.h",
+      "before": {
+        "sha256": "0369eba26a15068ceea0c13eb028c22e99377e3e8dce3fe9aab45c8ccbe2d0ed",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "0369eba26a15068ceea0c13eb028c22e99377e3e8dce3fe9aab45c8ccbe2d0ed",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/ndarray-utils.h",
+      "before": {
+        "sha256": "c50c604802da85ce0867afd4b0fbe49d1a02fbd6c18e69f06b9fdca0a0fc8659",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "c50c604802da85ce0867afd4b0fbe49d1a02fbd6c18e69f06b9fdca0a0fc8659",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/ndarray.h",
+      "before": {
+        "sha256": "7fba1bc3ed53646ac3ddde07f7409e2589046d89e32ed83a4f480bca8b663c12",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "7fba1bc3ed53646ac3ddde07f7409e2589046d89e32ed83a4f480bca8b663c12",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/param-types.h",
+      "before": {
+        "sha256": "95de0c0918864e6d9028c9d4655e15969a574ddd7fc1494a23f77f77b1440cfc",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "95de0c0918864e6d9028c9d4655e15969a574ddd7fc1494a23f77f77b1440cfc",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/param.h",
+      "before": {
+        "sha256": "760fbfe692ce17cf41061bb02205fdd6ffe35dcd87e0ce88a71d390e65eb603d",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "760fbfe692ce17cf41061bb02205fdd6ffe35dcd87e0ce88a71d390e65eb603d",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/peer-types.h",
+      "before": {
+        "sha256": "3f421e8370ced892cf7956396225445a98020df9f50b6b68c5ca0c4f87eb9137",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "3f421e8370ced892cf7956396225445a98020df9f50b6b68c5ca0c4f87eb9137",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/peer-utils.h",
+      "before": {
+        "sha256": "b8ae28cd7cffbddf4a94c81a9703fdec7b7fcbd3b35bf1efed00abbdbc91b511",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "b8ae28cd7cffbddf4a94c81a9703fdec7b7fcbd3b35bf1efed00abbdbc91b511",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/peer.h",
+      "before": {
+        "sha256": "7fac38bd10913da1691e16b1edf001c500c53db150a1b32e46f925f50643581d",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "7fac38bd10913da1691e16b1edf001c500c53db150a1b32e46f925f50643581d",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/port-config-types.h",
+      "before": {
+        "sha256": "6f1862f0f12953d30a2878581b60258c89708da9f7959766064b74d6701f0391",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "6f1862f0f12953d30a2878581b60258c89708da9f7959766064b74d6701f0391",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/port-config.h",
+      "before": {
+        "sha256": "d2d92a7f6258653500324427fec50a71b79b2bb5f890d80f55e2f63a57ca6206",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "d2d92a7f6258653500324427fec50a71b79b2bb5f890d80f55e2f63a57ca6206",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/profile-types.h",
+      "before": {
+        "sha256": "323869ce007969bcabfaef43e914f7478c0aa4a5a1bf6cd8547d765b7dfc5c60",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "323869ce007969bcabfaef43e914f7478c0aa4a5a1bf6cd8547d765b7dfc5c60",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/profile.h",
+      "before": {
+        "sha256": "695de275bd9b6b21741fe5488b80ffc2c665d169638179d69584f6f7d998ee9f",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "695de275bd9b6b21741fe5488b80ffc2c665d169638179d69584f6f7d998ee9f",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/profiler-types.h",
+      "before": {
+        "sha256": "b1c1a2461b5440b2705a3d234d09009423e388a1071d8e8f40af73bca8f44e8e",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "b1c1a2461b5440b2705a3d234d09009423e388a1071d8e8f40af73bca8f44e8e",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/profiler.h",
+      "before": {
+        "sha256": "32aa93a0995efc7d5781abba0213c2c966d54568e2e8382b4028a1648584192c",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "32aa93a0995efc7d5781abba0213c2c966d54568e2e8382b4028a1648584192c",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/props-types.h",
+      "before": {
+        "sha256": "3985e6cf388e3d2e68891e9def7b6f02e70cc3df84752ad41faf17d1b55bd9ae",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "3985e6cf388e3d2e68891e9def7b6f02e70cc3df84752ad41faf17d1b55bd9ae",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/props.h",
+      "before": {
+        "sha256": "35f8af4e5f26bc89367ed506332842891b8a822ae9747e2878439d2891152e80",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "35f8af4e5f26bc89367ed506332842891b8a822ae9747e2878439d2891152e80",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/route-types.h",
+      "before": {
+        "sha256": "5f412889f3a393701fb549fac9456367a858c5989a31494ee9235584a8499535",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "5f412889f3a393701fb549fac9456367a858c5989a31494ee9235584a8499535",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/route.h",
+      "before": {
+        "sha256": "8a5dc942459140a0b1631fb593a264f5c9f6b91b9e38fc9a6ae5df86e55006b6",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "8a5dc942459140a0b1631fb593a264f5c9f6b91b9e38fc9a6ae5df86e55006b6",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/tag-types.h",
+      "before": {
+        "sha256": "379c331f62ae50681cb58e30295a45519b3d7f8ece34e0740663ab1952acf167",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "379c331f62ae50681cb58e30295a45519b3d7f8ece34e0740663ab1952acf167",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/tag-utils.h",
+      "before": {
+        "sha256": "161f1d5c3b33a647844bcca5c996e00d22e0bf865348209fe5104849374c022c",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "161f1d5c3b33a647844bcca5c996e00d22e0bf865348209fe5104849374c022c",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/tag.h",
+      "before": {
+        "sha256": "30fc2fef0263b36edbcfc5e25d95ee59f5688975a95599c15cc22a21e51ecec5",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "30fc2fef0263b36edbcfc5e25d95ee59f5688975a95599c15cc22a21e51ecec5",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/type-info.h",
+      "before": {
+        "sha256": "3eb44d04c9d6bda8c62ee1db224879d6e40170e65c3a1b2f391278bb27621bcb",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "3eb44d04c9d6bda8c62ee1db224879d6e40170e65c3a1b2f391278bb27621bcb",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/video/chroma.h",
+      "before": {
+        "sha256": "4b2d95090bf674d30413e67a1870666eed2f802dbb19ba4057fd16f0877edcc1",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "4b2d95090bf674d30413e67a1870666eed2f802dbb19ba4057fd16f0877edcc1",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/video/color-types.h",
+      "before": {
+        "sha256": "e40ec955e5e15dd9c453c18e9891661b23f21044b796ca39d6c53d5478561c8a",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "e40ec955e5e15dd9c453c18e9891661b23f21044b796ca39d6c53d5478561c8a",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/video/color.h",
+      "before": {
+        "sha256": "54dd01c462cb9c8f26b9bc5ddb8f3c6464bde6fc41350a9e608b99699c4ce976",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "54dd01c462cb9c8f26b9bc5ddb8f3c6464bde6fc41350a9e608b99699c4ce976",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/video/dsp-utils.h",
+      "before": {
+        "sha256": "ecea93eafd842c6422c6728983153e682459c2354ab5b26e5dd7525e4065a8ba",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "ecea93eafd842c6422c6728983153e682459c2354ab5b26e5dd7525e4065a8ba",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/video/dsp.h",
+      "before": {
+        "sha256": "bde64c1df6f462ac93f546a12cd8ac54e3098611a97f710d90f693fc42d5fc2d",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "bde64c1df6f462ac93f546a12cd8ac54e3098611a97f710d90f693fc42d5fc2d",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/video/encoded.h",
+      "before": {
+        "sha256": "fb79e7f960781aadf136bd801c002bc96fe1d542a0dd501ed2cea3cfab0690ac",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "fb79e7f960781aadf136bd801c002bc96fe1d542a0dd501ed2cea3cfab0690ac",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/video/format-utils.h",
+      "before": {
+        "sha256": "6e720f308fba623779a2337ad5539a649eb18ca0879e6fb28aee3920b6d39c18",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "6e720f308fba623779a2337ad5539a649eb18ca0879e6fb28aee3920b6d39c18",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/video/format.h",
+      "before": {
+        "sha256": "f4714f2b53444a768eea527c890e2954fda1cc64b367bd71234546cc5b235cc7",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "f4714f2b53444a768eea527c890e2954fda1cc64b367bd71234546cc5b235cc7",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/video/h264-utils.h",
+      "before": {
+        "sha256": "d56bae3ebe0d0285d91fe65ffdd3ba33ebcb1cba46d42358b9cebe001930f6bc",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "d56bae3ebe0d0285d91fe65ffdd3ba33ebcb1cba46d42358b9cebe001930f6bc",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/video/h264.h",
+      "before": {
+        "sha256": "420338fa3601c0a5026c6fd7f8aa5fc81e51b7fabfafe7999e38f7d4cbc837df",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "420338fa3601c0a5026c6fd7f8aa5fc81e51b7fabfafe7999e38f7d4cbc837df",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/video/h265-utils.h",
+      "before": {
+        "sha256": "ff88d05fb924c6cecb8810cf3c9e4a66e7cc160f7b3ee9488e5672753fc5a62a",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "ff88d05fb924c6cecb8810cf3c9e4a66e7cc160f7b3ee9488e5672753fc5a62a",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/video/h265.h",
+      "before": {
+        "sha256": "212f87316577795b6464a994873777e316c7cfb2d96f43a2beb4e1842ceb536d",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "212f87316577795b6464a994873777e316c7cfb2d96f43a2beb4e1842ceb536d",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/video/mjpg-utils.h",
+      "before": {
+        "sha256": "b962cbb27f1d924b4baef3928b4e6f14f963593cf51bb258a7a12f6e04f6ef2a",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "b962cbb27f1d924b4baef3928b4e6f14f963593cf51bb258a7a12f6e04f6ef2a",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/video/mjpg.h",
+      "before": {
+        "sha256": "d29628dc0dcc3e9aca1566e68ac1c0a91830744877ab7a3d6895a41a809ec463",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "d29628dc0dcc3e9aca1566e68ac1c0a91830744877ab7a3d6895a41a809ec463",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/video/multiview.h",
+      "before": {
+        "sha256": "cd49f21bcd208aeab45bf6b219982109097c2fb3844e10a1a1a392a8bda5ac85",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "cd49f21bcd208aeab45bf6b219982109097c2fb3844e10a1a1a392a8bda5ac85",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/video/raw-types.h",
+      "before": {
+        "sha256": "7c98d73c8fd027af2e39e1e35fd5b70593079e3055e706fb45e9c708a951b1cc",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "7c98d73c8fd027af2e39e1e35fd5b70593079e3055e706fb45e9c708a951b1cc",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/video/raw-utils.h",
+      "before": {
+        "sha256": "11f5594b20ce8efd5bf88cac3938f14b6a245c08b88b8182ce920ae17ff33f8c",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "11f5594b20ce8efd5bf88cac3938f14b6a245c08b88b8182ce920ae17ff33f8c",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/video/raw.h",
+      "before": {
+        "sha256": "44a87441079010a18a9fed63d4235aa2b2040270d5282adf0309bcc6ba6b48e8",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "44a87441079010a18a9fed63d4235aa2b2040270d5282adf0309bcc6ba6b48e8",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/param/video/type-info.h",
+      "before": {
+        "sha256": "1f04a7b168cf7fe7c4f9bce825ec3ad1be3bc324a80172ccd0d6d8ede1bbce43",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "1f04a7b168cf7fe7c4f9bce825ec3ad1be3bc324a80172ccd0d6d8ede1bbce43",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/pod/body.h",
+      "before": {
+        "sha256": "52cf6317a22f28840164ae9de167b35e7321d025b42c8aeaadfd68955d6d623d",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "52cf6317a22f28840164ae9de167b35e7321d025b42c8aeaadfd68955d6d623d",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/pod/builder.h",
+      "before": {
+        "sha256": "f6b6ac1581f70e448d6bdb26c9fe623e0630ded45423f4fce896c77e92fad7aa",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "f6b6ac1581f70e448d6bdb26c9fe623e0630ded45423f4fce896c77e92fad7aa",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/pod/command.h",
+      "before": {
+        "sha256": "0fb87c225417a34b41c29140996c45d3d61fc923263e31794ba8a51b0dbfa7f4",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "0fb87c225417a34b41c29140996c45d3d61fc923263e31794ba8a51b0dbfa7f4",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/pod/compare.h",
+      "before": {
+        "sha256": "947295cd7dd4625ec90a84f4b64f7ed387456adf300a233396dfcb7207651a88",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "947295cd7dd4625ec90a84f4b64f7ed387456adf300a233396dfcb7207651a88",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/pod/dynamic.h",
+      "before": {
+        "sha256": "db228419eb2f53034214e0b01cc017678c9c402f1d777d2821dd9b1ff08c3f13",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "db228419eb2f53034214e0b01cc017678c9c402f1d777d2821dd9b1ff08c3f13",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/pod/event.h",
+      "before": {
+        "sha256": "f2cd930119aaaffdd5777bb633ab64ed3bdbceb22e936f451a4443c9f2b5061b",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "f2cd930119aaaffdd5777bb633ab64ed3bdbceb22e936f451a4443c9f2b5061b",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/pod/filter.h",
+      "before": {
+        "sha256": "38afe9dd082643a9a8d1dd344ca32efa2cb7d34714e613d829940ac5edb75ce9",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "38afe9dd082643a9a8d1dd344ca32efa2cb7d34714e613d829940ac5edb75ce9",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/pod/iter.h",
+      "before": {
+        "sha256": "73af7a94af921f4aed1e46fa423ce8e7e64807083277f7a730fd6a06c32f83be",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "73af7a94af921f4aed1e46fa423ce8e7e64807083277f7a730fd6a06c32f83be",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/pod/parser.h",
+      "before": {
+        "sha256": "237c99ba5ab641dbf5d897fc1715a00f016f3954d0c356d880aa021d992afad5",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "237c99ba5ab641dbf5d897fc1715a00f016f3954d0c356d880aa021d992afad5",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/pod/pod.h",
+      "before": {
+        "sha256": "c7849f6bbcb343e52f0105a18d3db82248b17d9660f6215a422386b6ac9dadb3",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "c7849f6bbcb343e52f0105a18d3db82248b17d9660f6215a422386b6ac9dadb3",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/pod/simplify.h",
+      "before": {
+        "sha256": "ce1d7d9c7cf956dbf60afc1d77e1af40381a7d0071298227723cba2ca4477e6a",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "ce1d7d9c7cf956dbf60afc1d77e1af40381a7d0071298227723cba2ca4477e6a",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/pod/vararg.h",
+      "before": {
+        "sha256": "1f3d1b396f61272ebbacbdb3b897b134407529c0586e08ca34be3f35699b05b8",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "1f3d1b396f61272ebbacbdb3b897b134407529c0586e08ca34be3f35699b05b8",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/support/cpu.h",
+      "before": {
+        "sha256": "17b311f4f55ae559f6400be846f3fdac432677a685c0367668d78d9496e11c09",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "17b311f4f55ae559f6400be846f3fdac432677a685c0367668d78d9496e11c09",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/support/dbus.h",
+      "before": {
+        "sha256": "dc3934d5be3ccad32ac628501ad85d1ddd363c48e43a0fa8866c1ee8b0ceb0de",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "dc3934d5be3ccad32ac628501ad85d1ddd363c48e43a0fa8866c1ee8b0ceb0de",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/support/i18n.h",
+      "before": {
+        "sha256": "cac28b13a99148187c8b620e9ec57c4839a8a0b7f528c2c4235730010d9f8d36",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "cac28b13a99148187c8b620e9ec57c4839a8a0b7f528c2c4235730010d9f8d36",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/support/log-impl.h",
+      "before": {
+        "sha256": "2115fcb1cc0dbf7b8fb80b55d10bae899a0332d5d649c040ac5e62e8547232e2",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "2115fcb1cc0dbf7b8fb80b55d10bae899a0332d5d649c040ac5e62e8547232e2",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/support/log.h",
+      "before": {
+        "sha256": "7a13eafcbe6018f2b6cd471e8c088c1b4c14ea0635018ab729c9fba5874dfde0",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "7a13eafcbe6018f2b6cd471e8c088c1b4c14ea0635018ab729c9fba5874dfde0",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/support/loop.h",
+      "before": {
+        "sha256": "88bc3b3a6fbec373e15cf863c5997897ea3e077b0b19d9b71cba0e0fb6b812b0",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "88bc3b3a6fbec373e15cf863c5997897ea3e077b0b19d9b71cba0e0fb6b812b0",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/support/plugin-loader.h",
+      "before": {
+        "sha256": "41acd05b275dd594253d8ff9106b44f4da825938463ba73105dfffbbc422c1e5",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "41acd05b275dd594253d8ff9106b44f4da825938463ba73105dfffbbc422c1e5",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/support/plugin.h",
+      "before": {
+        "sha256": "96ce7797e67d0a6d7f8a771bc9a2a33ad1cc48158974d58e3b7d485c518d140b",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "96ce7797e67d0a6d7f8a771bc9a2a33ad1cc48158974d58e3b7d485c518d140b",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/support/system.h",
+      "before": {
+        "sha256": "82e173185ad2ef2e7dc6e9e549a1c449fcb2eaa189efcef2cbc4c883a0e4b850",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "82e173185ad2ef2e7dc6e9e549a1c449fcb2eaa189efcef2cbc4c883a0e4b850",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/support/thread.h",
+      "before": {
+        "sha256": "7e42d5d6b0d976aac599e6efc43fc3421387fcc3127d139e450dc893984d2cd9",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "7e42d5d6b0d976aac599e6efc43fc3421387fcc3127d139e450dc893984d2cd9",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/utils/ansi.h",
+      "before": {
+        "sha256": "ed39b431c9b27b5be6af8116b89507e57762d774ee1d965b02a3d86eea23225f",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "ed39b431c9b27b5be6af8116b89507e57762d774ee1d965b02a3d86eea23225f",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/utils/atomic.h",
+      "before": {
+        "sha256": "e91b6303b2a7f8a689ef088a12ebdbd10ed378aa911f017994721b27de989773",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "e91b6303b2a7f8a689ef088a12ebdbd10ed378aa911f017994721b27de989773",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/utils/burg-pred.h",
+      "before": {
+        "sha256": "861f12ef92c45f7b9cbdab3c3c7ce75cdc26c0b2925d51395c0e35d51de77278",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "861f12ef92c45f7b9cbdab3c3c7ce75cdc26c0b2925d51395c0e35d51de77278",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/utils/cleanup.h",
+      "before": {
+        "sha256": "e377bc00f3a0f211f97f12b4d9dbdde9be42e7f2392fd5a461bf53c93b69f4d8",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "e377bc00f3a0f211f97f12b4d9dbdde9be42e7f2392fd5a461bf53c93b69f4d8",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/utils/defs.h",
+      "before": {
+        "sha256": "ffc7e8a49105d31b62681dc0a0cffaff72c072cafee14bece607bc861a1b9ece",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "ffc7e8a49105d31b62681dc0a0cffaff72c072cafee14bece607bc861a1b9ece",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/utils/dict.h",
+      "before": {
+        "sha256": "a36b37d65ea1c6b364e05ecf9dfa7b180b8666406b44591a664adf113bf73f5e",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "a36b37d65ea1c6b364e05ecf9dfa7b180b8666406b44591a664adf113bf73f5e",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/utils/dll.h",
+      "before": {
+        "sha256": "5f1fb1747376d7084d034ab3569d39cebaecd149ae37cc63e1435b9c4160a7c3",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "5f1fb1747376d7084d034ab3569d39cebaecd149ae37cc63e1435b9c4160a7c3",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/utils/endian.h",
+      "before": {
+        "sha256": "ba1ae51edeebe7786dc650c2cf4a114333e573170966f6349a499d65cf8769e3",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "ba1ae51edeebe7786dc650c2cf4a114333e573170966f6349a499d65cf8769e3",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/utils/enum-types.h",
+      "before": {
+        "sha256": "73e587d710c0ad2019108af83f1e28db01326ccd44b32acbf31ff52b19e43c75",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "73e587d710c0ad2019108af83f1e28db01326ccd44b32acbf31ff52b19e43c75",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/utils/hook.h",
+      "before": {
+        "sha256": "e91f89790372319933a4ca5cc852ba9612bf0d08751cd1ebda1c895db2b1eb2a",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "e91f89790372319933a4ca5cc852ba9612bf0d08751cd1ebda1c895db2b1eb2a",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/utils/json-builder.h",
+      "before": {
+        "sha256": "5305a9b4a9c1acb6f4b2487256ab0a49cd09bb84a83aabe752cf892ba634e7bb",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "5305a9b4a9c1acb6f4b2487256ab0a49cd09bb84a83aabe752cf892ba634e7bb",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/utils/json-core.h",
+      "before": {
+        "sha256": "35fd6b275dd773db5b69bd7f320d7e230d2573234559aba396c6c0d7eaa330ec",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "35fd6b275dd773db5b69bd7f320d7e230d2573234559aba396c6c0d7eaa330ec",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/utils/json-pod.h",
+      "before": {
+        "sha256": "9aff7a47bdd3f9acb4131bf2094956bdf4bdbbef9c28aaa9c5fa1fa1a6b02a72",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "9aff7a47bdd3f9acb4131bf2094956bdf4bdbbef9c28aaa9c5fa1fa1a6b02a72",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/utils/json.h",
+      "before": {
+        "sha256": "d9322624fee30f345a02040ad70279be56e9839db2a74ae9e7bf6489303ba122",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "d9322624fee30f345a02040ad70279be56e9839db2a74ae9e7bf6489303ba122",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/utils/keys.h",
+      "before": {
+        "sha256": "62ca666248eb33e5da803fb6a5855e21178707bb24657af1debaf17bd34e0419",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "62ca666248eb33e5da803fb6a5855e21178707bb24657af1debaf17bd34e0419",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/utils/list.h",
+      "before": {
+        "sha256": "72ef0f15716952de2e3533f8751e7a18eb6d6f56d21595c71bc98b6200aaddfc",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "72ef0f15716952de2e3533f8751e7a18eb6d6f56d21595c71bc98b6200aaddfc",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/utils/names.h",
+      "before": {
+        "sha256": "2bd1969406873b1cec1c0091a9e701f5ef7fdf08f9dae1fe0fa31cf40c8b68ea",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "2bd1969406873b1cec1c0091a9e701f5ef7fdf08f9dae1fe0fa31cf40c8b68ea",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/utils/overflow.h",
+      "before": {
+        "sha256": "a4edbf7ffad773ce21978ef24c65627ec931bd98c18f667b99949fb9fa58ab1d",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "a4edbf7ffad773ce21978ef24c65627ec931bd98c18f667b99949fb9fa58ab1d",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/utils/ratelimit.h",
+      "before": {
+        "sha256": "6d61e2e59a257b5163f7b0026feedeb79f1585b9d4ccaf50981fc6350209b327",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "6d61e2e59a257b5163f7b0026feedeb79f1585b9d4ccaf50981fc6350209b327",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/utils/result.h",
+      "before": {
+        "sha256": "023dd471a92b64a8d22b8e41cf90706365a5b4da837467038bd390870677de49",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "023dd471a92b64a8d22b8e41cf90706365a5b4da837467038bd390870677de49",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/utils/ringbuffer.h",
+      "before": {
+        "sha256": "18a0aa3a24ed259bbd6cf7e6477dfe8a3ae5851299e6fffb1b6d644785b907a3",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "18a0aa3a24ed259bbd6cf7e6477dfe8a3ae5851299e6fffb1b6d644785b907a3",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/utils/string.h",
+      "before": {
+        "sha256": "40684af8cb2ac77903e0a26c775afe78397bd82e314e4199f2b3cfdd002c04f7",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "40684af8cb2ac77903e0a26c775afe78397bd82e314e4199f2b3cfdd002c04f7",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/utils/type-info.h",
+      "before": {
+        "sha256": "2e638f4044debee89405d5674e739d90ed2cc80ca4bd231e7bcd4cc26b9179d7",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "2e638f4044debee89405d5674e739d90ed2cc80ca4bd231e7bcd4cc26b9179d7",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/spa-ao-0.2/spa/utils/type.h",
+      "before": {
+        "sha256": "1de788d694a42c672fb08785c354b909558aa2d25186253de57cc9fc9d477475",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "1de788d694a42c672fb08785c354b909558aa2d25186253de57cc9fc9d477475",
+        "mode": 420
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/libpipewire-ao-0.3.so",
+      "before": {
+        "symlink": "libpipewire-ao-0.3.so.0"
+      },
+      "after": {
+        "symlink": "libpipewire-ao-0.3.so.0"
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0",
+      "before": {
+        "symlink": "libpipewire-ao-0.3.so.0.1700.0"
+      },
+      "after": {
+        "symlink": "libpipewire-ao-0.3.so.0.1700.0"
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0",
+      "before": {
+        "sha256": "083da9b7c347a40e8ce03cc1332c06774cbf766fdd71fe36010233e6d9096387",
+        "mode": 509
+      },
+      "after": {
+        "sha256": "ffcd183b0451f6a76eeb2c90ac677b3970541607c0da6896a0ec14c39a306644",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-access.so",
+      "before": {
+        "sha256": "02996d09eb277e61d2f65c3ad0534044c55cbd81ca497f69f5548aa05f2a837b",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "6cb3464d63b50c25b3018ece3d76337238a6d96a6f6d7c9c36d1b0f1b26b02b7",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-adapter.so",
+      "before": {
+        "sha256": "5218cf605fdde1a008436de0fda22bfd9007fd93bb7819d14436c5885206ca35",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "b6c748f5102e36a68d1f966ac08f8ab41fe3d7a09ed3f39dfdc6c33bf08f78b8",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-device.so",
+      "before": {
+        "sha256": "c8a8f2e9f805f4e568d0730fa1c13981ba666399454abe83a4d64623cf105fca",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "b88fe2b60ac2afd6d3f67b12b19505c55d7c61485db3cdf408d503145cc7d93a",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-node.so",
+      "before": {
+        "sha256": "40b224884b3c50e669f41ef1e733b153c0857a4fa5e334cabb88f847a0918f84",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "1a757a0cd84ff77a2874a433f400cbb7ba658fbb7ea5ac38193c5c0fb17dd3da",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-combine-stream.so",
+      "before": {
+        "sha256": "06e7179945612f2c386fdd76de6767e73a387d133c1d643ebe5462a4249f733d",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "14b22e0328d1bb798692076ae30e261424ec09e28bb0447a4cda9dc3755b2df1",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-echo-cancel.so",
+      "before": {
+        "sha256": "7035010b32c4e98a83cac5b65da9a2e2b61690b2f3e6cc5d53cdd13b0b26ab44",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "1bc81f85e8a878ee2ae971a2c104f1bdfa3546294951b96b39b7d176098a09d1",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-fallback-sink.so",
+      "before": {
+        "sha256": "c17b8631f858df488a0f852e94f8ef33fedec670d995a84c0e20444e1f6ab061",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "362a5806b25c41949568470e322c9b0d63475edf3e435615c1c8cc644a4cd115",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-filter-chain.so",
+      "before": {
+        "sha256": "fcefb76778bb0f6f4d0b186547a0987b1388ffc66beb186f69ab0fd63f6459e6",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "9a3a6c9c7a6d8e9b71afe7130b52e48beccb35dfc418578d2e4020bbfc28c9ce",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-link-factory.so",
+      "before": {
+        "sha256": "77988107c07931c0be49a4cc030992b4ee1101182b27f4a3bf9cdafa266a68ab",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "f784a143ce314cf41374939851cc5c7750221e6f3964a8a1548b2ed8f31e16ee",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-loopback.so",
+      "before": {
+        "sha256": "1d43d5bfb8bb00f3e0a68ebafe2394722a9ef1859c33011e981a05b79ad903e3",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "3373a54de6a45e335bf01e8891c51b2a397e76d350b8448ad3a521af911933d5",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-metadata.so",
+      "before": {
+        "sha256": "3739c041038cdde112c48c07a20641a433c164de275596274b9b4fd5f478d033",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "d29f1a8807e117facd5e0a393a25f2cd798068303e26db9ddff2a77f281765fd",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-ndarray-filter-chain.so",
+      "before": {
+        "sha256": "ebcc06b2537c97d1d0199f0cf64b4dae3c9d5126247b428d31eb776bd279f76e",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "5ddb483116127f7b63ae84f3502876b836ec77531495152501a40e34ff7836c8",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-netjack2-driver.so",
+      "before": {
+        "sha256": "138d14dca1f20012fea87941e9e2eb426405d342c66759cb5569381a8102f140",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "ebd6e2fe4b81143e2538ead709a53a67f7a1ceae68bc7ce53657a2471ad7b175",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-netjack2-manager.so",
+      "before": {
+        "sha256": "89f2b0b898da88612960a70bb6876c3ff3519ad2ed4e4a33b1e13f192cc57762",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "e9be1db77f34dc8de1220d97224a1066c1b2847f7015108a60aeb06b5fde5495",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-parametric-equalizer.so",
+      "before": {
+        "sha256": "532d6c07eccd8487146025e2467a97c526398a3661698b3acd2cc7dcad1afa27",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "cdafa3e6b8d902347d9ea8d2f89baa22b8173390244d682aba4f57f1de6b12ba",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-pipe-tunnel.so",
+      "before": {
+        "sha256": "f7f2db770b9e6383148794afa5f9d159a8cd746ac48aacee244836630caaf5a2",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "405194d515b4770b63e3680dcf01925c4367c51d8ad34b37125cf17ddef7309a",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-profiler.so",
+      "before": {
+        "sha256": "bd0b5b6a196807eb434efe3dd812a0a5d9cd5d13470e0856006422f9f653d9e6",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "a4b1a7464aaac7a8bf5759af43203d3d4af5cd924dff01e022e88079b7688615",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-native.so",
+      "before": {
+        "sha256": "2c5e52372373e9294491fb39ed44369fbd84aac2b54840cdce8d32b17b1d6385",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "f9659a3020a592faff7bd04d375a84de7ef4015779f382269fb8e32f2e80a2f8",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-simple.so",
+      "before": {
+        "sha256": "c5a604eb82cb2558936fde05ccbf35aca21cd7fbe0ffd4513f39014d78d54848",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "3ad707e5659a7f57927b84e7fbd5f5bded85c3ebde6e36e9594952deb370836f",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-rt.so",
+      "before": {
+        "sha256": "b1725ebea52acf11e0ecaf48ac66916195707b0bae7002e96779500e47a6b475",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "ef22e7692cc6935bdf4ef4db2cc2da40dc2433641aa5c6dcb8165daadd15b4a8",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-rtp-sap.so",
+      "before": {
+        "sha256": "72c0e3a0da4bd8771c467b942c52b793b69013028d2582985bc4a7d30ea920ec",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "ee81c7e04a5710e4ffeaf68385f7b264c133870c18e6ec9e4291e354b3533c17",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-rtp-sink.so",
+      "before": {
+        "sha256": "42f861701204218561ca359d780706619805163b6090e436ee58263d8c57d718",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "699762beed0a66674727118e162e811ff3e68cf40e3698b22592e0397ef79208",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-rtp-source.so",
+      "before": {
+        "sha256": "c747fd13ad4a02545c859b2ed978896f5cd98880033c88aa20b1de76c7fadb72",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "da246698d2695ab3534b8468cd795b00a0c2c07ba923bde91676db7fc4de0f87",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-scheduler-v1.so",
+      "before": {
+        "sha256": "ee62d9b1b2a0a69e6446dea191ee7e510088dae770e2121b186e2b6143da6048",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "8392e5025f8bbf2e8970e18c9f8149fc70ca388f27ca9cd744e985c40a7271de",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-sendspin-recv.so",
+      "before": {
+        "sha256": "a20e4d484b1dc3c40626b10c244314c8e871bbb7a20a1ebbfbdd48c637872910",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "075cbf84145510735c053bc064ff20ecb30ef05baeed103b00fbe854109c6428",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-sendspin-send.so",
+      "before": {
+        "sha256": "e5d8da46a377b3219554411112e052f712ebb0c4532a23d4519bded6fe403290",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "cb40573e9862ee492d85765ddb21eab6f9c00b25e6107909738c41a6cc9b29ab",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-session-manager.so",
+      "before": {
+        "sha256": "744cd5688340fe75d6361d45072661982ad51d9bbc5c8835b47fc1061675cbf3",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "5fb83962bbd09036448e18b2d8d629eec328e789626d968fc423572984bfd576",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-spa-device-factory.so",
+      "before": {
+        "sha256": "7512e5cc33d137abdda59bdf6f17d649fdc1fd6404bf98ea0c403c79c0706c15",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "2b664534da20986707047884e4e369834dd39c2c19e6c117cbedd6d227de0b85",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-spa-device.so",
+      "before": {
+        "sha256": "d71807561f10161700f8da5971d949c2add382d8132fc56e02a194f59cce9c1c",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "47b1d7ef048cde99e45c590ad7449d823477f07267c7434f040bed10b565e4ab",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-spa-node-factory.so",
+      "before": {
+        "sha256": "a81c27ecf0a8688c7c87caf759c14c0140b5a93ae41ce81ca3a1fea599fb0b34",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "39b5a12f412b1683da1bce165206fc7dff7a4031986bc400e02877066fb65a67",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-spa-node.so",
+      "before": {
+        "sha256": "17b29318681a18ef9900b843e8bc3b8c2d4072903c34d6a1e4f5ead5ec1ea173",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "88b0c12e807724761cc0232e325af9f4116921a07eba5f8040b6da5c823059b3",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-vban-recv.so",
+      "before": {
+        "sha256": "826b33c5ea410db579eaf475b94475c79a05b5b2f86b957643caec23975e05a9",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "909e2450af24d649141503a57f827ffc3fa81ad87602add051c3fe7d14148bf4",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-vban-send.so",
+      "before": {
+        "sha256": "135e7c40146d963c004104058fde2232d6c55bb722491fb0a2b56373b9da0e5c",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "527a2c20b4bd8134a0ec787d84c5532ccffee9f3f2d69ff41347e243b47d7f8a",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pkgconfig/libpipewire-ao-0.3.pc",
+      "before": {
+        "sha256": "8ce1d07173471cf6dbb1122d5dc8d3b7cccdcddd3e63d6feb95fba9bfff2125d",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "8ce1d07173471cf6dbb1122d5dc8d3b7cccdcddd3e63d6feb95fba9bfff2125d",
+        "mode": 420
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pkgconfig/libspa-ao-0.2.pc",
+      "before": {
+        "sha256": "24882ae98930a233ee722e9e61af8d4092935601a6647f510afbf6bd131c4ca2",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "24882ae98930a233ee722e9e61af8d4092935601a6647f510afbf6bd131c4ca2",
+        "mode": 420
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/spa-ao-0.2/aec/libspa-aec-null.so",
+      "before": {
+        "sha256": "84bc813ef12aac8f09d3d0b45e67f32cacbc1e046b130f87a91ba9ca66897b61",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "103bb1066d5254f0acc41adfe1ab788df5405c1b0aaa906a3f955ee342665541",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/spa-ao-0.2/audioconvert/libspa-audioconvert.so",
+      "before": {
+        "sha256": "4495f876be578c3c04f7f42cd200ce41463eb7b0c7d46b7b6203a0d6e082206c",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "81c7bfbd48cc7dec3b4d6f0fceb1bdcb085255039b03231344171b938643b544",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/spa-ao-0.2/filter-graph/libspa-filter-graph-plugin-builtin.so",
+      "before": {
+        "sha256": "f983378a7415a2b02eea7769e09499f82993b1b5c0db58e6179dce5d0873a58c",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "5385b51e1e726d46f59ca6b5dbd6fb4aa09aa2f9fe6da01516536dc8833f17c1",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/spa-ao-0.2/filter-graph/libspa-filter-graph-plugin-ladspa.so",
+      "before": {
+        "sha256": "2035d20269c93e5cdb38ef6be0d8308d7d7db45cee2838778d92bf815303ee12",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "6fe782077f8a34dbe83aa76b553374ebf2e75fb5adf397b52d343dd485ee7427",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/spa-ao-0.2/filter-graph/libspa-filter-graph.so",
+      "before": {
+        "sha256": "6306b4f84423816503127242082b10f87e7e0ea9213e00d6ad9161c3ed1c7072",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "7fcfbd460d5f74d88597f10a8a98e924a7e4f84f7984499711c41173e3838eec",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/spa-ao-0.2/libspa-ao.so",
+      "before": {
+        "sha256": "f6d81317c5aa231391c67e372fc972731fcf750046c5b2e661691cbad22f79a9",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "ca1eefce801511fc94e47ac658ad923cf69d23eb50029bcef3d5a568a93ba475",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-journal.so",
+      "before": null,
+      "after": {
+        "sha256": "e8b0455fc46b0815a3b9bb5801f5f0812ad5b7e58b05c130e685963079df70c8",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so",
+      "before": {
+        "sha256": "49d108c51cd2fe0c6dad91fc507a7147d761a7ce2c77d2db3f5197e82aea902a",
+        "mode": 493
+      },
+      "after": {
+        "sha256": "281447538a3ac29cf09877490e958b6e349f5a92147e23ff0afe328a29a13bff",
+        "mode": 493
+      }
+    },
+    {
+      "path": "share/locale/af/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "34b3f8dbaaa6982dc18de4c323cd8da7e1eebe7424f6a3175e97fe74e85135ba",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "34b3f8dbaaa6982dc18de4c323cd8da7e1eebe7424f6a3175e97fe74e85135ba",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/ar/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "4ebc86b42522f998457df37555cc8aaf9a8c2dd272134623a033597d2d95665d",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "4ebc86b42522f998457df37555cc8aaf9a8c2dd272134623a033597d2d95665d",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/as/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "1c81e2ed7d9207c8baf3261b4065529942cfb048c43f2df07d1ab932279c0d48",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "1c81e2ed7d9207c8baf3261b4065529942cfb048c43f2df07d1ab932279c0d48",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/be/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "28a6fc362130d7d9a3b16d574fbf2746a8533d0daec6d4fa7ebe3cc5b65f837f",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "28a6fc362130d7d9a3b16d574fbf2746a8533d0daec6d4fa7ebe3cc5b65f837f",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/bg/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "0857550c37b04bdd36a7955665287aaa88dc3f418cca65b241183dc060b3c162",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "0857550c37b04bdd36a7955665287aaa88dc3f418cca65b241183dc060b3c162",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/bn_IN/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "50137963b9dc8e9f4f9e6e50622fbebec3e3df6c0bc0c6c1d20ffadfcdf38fae",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "50137963b9dc8e9f4f9e6e50622fbebec3e3df6c0bc0c6c1d20ffadfcdf38fae",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/ca/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "c7c41a1a9620a55b69a16c8357c1492d9a49c30b52577a1ee14775bf712494c7",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "c7c41a1a9620a55b69a16c8357c1492d9a49c30b52577a1ee14775bf712494c7",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/cs/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "859d61f92d04cd206ddd1118bb2c2110328c576d9c93f5af13dc4b9dfb2ae68b",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "859d61f92d04cd206ddd1118bb2c2110328c576d9c93f5af13dc4b9dfb2ae68b",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/da/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "4b75ebc0db4e16a0c0eef64cce7ac4e97b202cf96c423ae72bcdd3a75e1ea194",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "4b75ebc0db4e16a0c0eef64cce7ac4e97b202cf96c423ae72bcdd3a75e1ea194",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/de/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "e9234a0a59a081026889bcca5ab9f8b80ed42214077dbd0e9e43de155093af7d",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "e9234a0a59a081026889bcca5ab9f8b80ed42214077dbd0e9e43de155093af7d",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/de_CH/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "54738ab987de437dbf52b4bdad0c1d5e6f7fb6a61d7aa63a677e03f6c9e09d2f",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "54738ab987de437dbf52b4bdad0c1d5e6f7fb6a61d7aa63a677e03f6c9e09d2f",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/el/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "7f87581c8944501e0c3eedb3a99eabe285852b8958be1a66b92c4843be1281c8",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "7f87581c8944501e0c3eedb3a99eabe285852b8958be1a66b92c4843be1281c8",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/eo/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "b5a9257438d00dfaab54af1893965a5c4f5d5e029b89eba82772085470d63310",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "b5a9257438d00dfaab54af1893965a5c4f5d5e029b89eba82772085470d63310",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/es/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "16d79985ffb6b6c44162d6e70e171992062e1a7497dac8b8591480921fcd140f",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "16d79985ffb6b6c44162d6e70e171992062e1a7497dac8b8591480921fcd140f",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/fi/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "f54cfe7cc6e92beb8c7268d3cfddbad89b4cbed2af4d51806789877deec83e26",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "f54cfe7cc6e92beb8c7268d3cfddbad89b4cbed2af4d51806789877deec83e26",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/fr/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "20f36a44e6f899891d2bfdc85ada9ac6a047cde3ba53539af651fc36650d7c99",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "20f36a44e6f899891d2bfdc85ada9ac6a047cde3ba53539af651fc36650d7c99",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/gl/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "45c2127f115255b799614e9e5218c811f93e13f91b60c86f2eed4aa9bff0e14e",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "45c2127f115255b799614e9e5218c811f93e13f91b60c86f2eed4aa9bff0e14e",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/gu/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "0ecf1f3ebe126e550ebfa07ac4942d6c08d6a7b7165fef323861ccc4318ead38",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "0ecf1f3ebe126e550ebfa07ac4942d6c08d6a7b7165fef323861ccc4318ead38",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/he/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "9ebe11eed8c3a44f925298f206af7ef5a956a9550e785e193ed48fb3f29a42de",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "9ebe11eed8c3a44f925298f206af7ef5a956a9550e785e193ed48fb3f29a42de",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/hi/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "08b4a2b991cb36e14dee0ae647e5e36fa3d319ddf177b36303d9b4452e8b366c",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "08b4a2b991cb36e14dee0ae647e5e36fa3d319ddf177b36303d9b4452e8b366c",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/hr/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "84eb5860514c7e53489eaa0692d04360524b90347c9b27562ae2a684182bcd9e",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "84eb5860514c7e53489eaa0692d04360524b90347c9b27562ae2a684182bcd9e",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/hu/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "bb4eccb77f3ee4da25b126cb43c882d9b2190d0644ef4c550dbb07f84cc5328e",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "bb4eccb77f3ee4da25b126cb43c882d9b2190d0644ef4c550dbb07f84cc5328e",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/id/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "139df84e4ef92219f8cf4179e0753b328180fee0e350e37098820b70a84537a3",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "139df84e4ef92219f8cf4179e0753b328180fee0e350e37098820b70a84537a3",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/it/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "7290ee1a43fbb17ea30085c33eeee45496bf18ece455217660df49070e925915",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "7290ee1a43fbb17ea30085c33eeee45496bf18ece455217660df49070e925915",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/ja/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "f7b265b20f91ff2c4abf92e8a2371b7881240aec1ec632c518800604641069e6",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "f7b265b20f91ff2c4abf92e8a2371b7881240aec1ec632c518800604641069e6",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/ka/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "4af67b7de2c8f99fef451cfd82960fe751a6a3b3516fe8f32aaa598a8f3988ac",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "4af67b7de2c8f99fef451cfd82960fe751a6a3b3516fe8f32aaa598a8f3988ac",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/kk/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "03e997499c98cc326d6364e93018df67d04f5f79772af226feef37767f178b58",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "03e997499c98cc326d6364e93018df67d04f5f79772af226feef37767f178b58",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/kn/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "5d998a1cedc1be863537ab7aea38afea33ca937e1afd773afa535feeb8b95564",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "5d998a1cedc1be863537ab7aea38afea33ca937e1afd773afa535feeb8b95564",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/ko/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "ab81b98ac46d66bcb2c918a625bc95b9dc7504cf176f8014ad97275f8f125f98",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "ab81b98ac46d66bcb2c918a625bc95b9dc7504cf176f8014ad97275f8f125f98",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/lt/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "3888f265e0ee1d05db4569cd58439da6ff14e3413ae544c0854ff9e2cacc97d7",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "3888f265e0ee1d05db4569cd58439da6ff14e3413ae544c0854ff9e2cacc97d7",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/ml/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "07a85c027c88c8089cf88d0513360b13c1c2f0de0361a8a0e06f39718cfa4b16",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "07a85c027c88c8089cf88d0513360b13c1c2f0de0361a8a0e06f39718cfa4b16",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/mr/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "87eba26daa844a4f9c9b200e8f36fa6c2812a05cfbb6bee564b1be9311c22a7d",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "87eba26daa844a4f9c9b200e8f36fa6c2812a05cfbb6bee564b1be9311c22a7d",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/my/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "578848e58b61d2edba9544ea6f8ec9abf9e04fb9390c789010b4a0ddc5153fe1",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "578848e58b61d2edba9544ea6f8ec9abf9e04fb9390c789010b4a0ddc5153fe1",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/nb/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "361838b185cbd1a463778cd30b25adaf2035b5518c8ca0ebe4f917c6a041d9c0",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "361838b185cbd1a463778cd30b25adaf2035b5518c8ca0ebe4f917c6a041d9c0",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/nl/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "07d75b6334a43d829f1dd74f7ddcfa1d8463b1062e8d33a61326323204024e3a",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "07d75b6334a43d829f1dd74f7ddcfa1d8463b1062e8d33a61326323204024e3a",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/nn/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "65435e5d28a10e57d661d1cfa079e211bd1258f0eb84361ac51d6f69af36c47d",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "65435e5d28a10e57d661d1cfa079e211bd1258f0eb84361ac51d6f69af36c47d",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/oc/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "cc61920c47f2078301e005fda22e4889564cc1d1f8e5b13b53970530de59af20",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "cc61920c47f2078301e005fda22e4889564cc1d1f8e5b13b53970530de59af20",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/or/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "11d314c711942961352514087905ff6932ff77d8b4cfd55da81ecd0cb7136735",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "11d314c711942961352514087905ff6932ff77d8b4cfd55da81ecd0cb7136735",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/pa/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "98e114f6004ffc6e5c6cad0731418b9463e18d34e6fe16cfb54075e18f6aea2f",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "98e114f6004ffc6e5c6cad0731418b9463e18d34e6fe16cfb54075e18f6aea2f",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/pl/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "1bbd460ba342b451eb8357e867218c2cae6823816120832658e9c7fd14e13762",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "1bbd460ba342b451eb8357e867218c2cae6823816120832658e9c7fd14e13762",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/pt/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "40160d05df66f14aafca54ca2d7428e55a7bccaf58c308f7bf6ff0849ffc7ea0",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "40160d05df66f14aafca54ca2d7428e55a7bccaf58c308f7bf6ff0849ffc7ea0",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/pt_BR/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "36d652f220efb4d4d0f36e1f124f972af86cc9d9ac2a3a6639f17c2e5b37d4b5",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "36d652f220efb4d4d0f36e1f124f972af86cc9d9ac2a3a6639f17c2e5b37d4b5",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/ro/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "1a11e972e276cf0b77d9d264e04da110896c60b9f7fc602ffc076dcd6732fa99",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "1a11e972e276cf0b77d9d264e04da110896c60b9f7fc602ffc076dcd6732fa99",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/ru/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "b1c53f30cf5aaae7493251aa7092298fd0b289d0aa64084dbd233edd00905cc7",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "b1c53f30cf5aaae7493251aa7092298fd0b289d0aa64084dbd233edd00905cc7",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/si/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "fc908eb5f7ece13e93c49b1faacab825f54d555dc97df81c892d6636ee7d7eff",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "fc908eb5f7ece13e93c49b1faacab825f54d555dc97df81c892d6636ee7d7eff",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/sk/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "f93a9ba95c9012fbe2fff3bfeb55001e522ef13574bacc6dfb16bff9f6f8e412",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "f93a9ba95c9012fbe2fff3bfeb55001e522ef13574bacc6dfb16bff9f6f8e412",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/sl/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "a8eaa4466bfb4132bd552f8037e7cca05ae8b09f421449a6f7e07ec087065506",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "a8eaa4466bfb4132bd552f8037e7cca05ae8b09f421449a6f7e07ec087065506",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/sr/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "bfe51c9eba6203a6878af9b3e7c95bf8113a2a970f0e9e64b1c7576bf6d34cba",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "bfe51c9eba6203a6878af9b3e7c95bf8113a2a970f0e9e64b1c7576bf6d34cba",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/sr@latin/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "edb4a6859365d4044b56c786459d84bf648ffa51a81c45e6f1bb81578fba97fe",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "edb4a6859365d4044b56c786459d84bf648ffa51a81c45e6f1bb81578fba97fe",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/sv/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "1cbf22272f3c02bb69a629ab1d8f56aefc628de3a11ae2b875dad0eba796dde1",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "1cbf22272f3c02bb69a629ab1d8f56aefc628de3a11ae2b875dad0eba796dde1",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/ta/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "692c3f494c2f8d6c05fee07f6789d3ce040a3e83f2661de005777c2d1a754203",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "692c3f494c2f8d6c05fee07f6789d3ce040a3e83f2661de005777c2d1a754203",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/te/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "994900240bee7bf8dcabddf8a606c4171bcc8426052d0de15084bb33b2c22277",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "994900240bee7bf8dcabddf8a606c4171bcc8426052d0de15084bb33b2c22277",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/tr/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "4c3e4f741e2c586997a7aebe40b9425a71f8b0faced21b22ab423d1d82ae5ad0",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "4c3e4f741e2c586997a7aebe40b9425a71f8b0faced21b22ab423d1d82ae5ad0",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/uk/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "a61899e34b863fdbf47b94eb9403be80165d57b263e0bb2112e5317b9cf84c3d",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "a61899e34b863fdbf47b94eb9403be80165d57b263e0bb2112e5317b9cf84c3d",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/zh_CN/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "d9b0b5529136293ab70adac443928595adb2307f78fc93863f0dc77d1b3dc61b",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "d9b0b5529136293ab70adac443928595adb2307f78fc93863f0dc77d1b3dc61b",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/zh_TW/LC_MESSAGES/pipewire-ao.mo",
+      "before": {
+        "sha256": "5bf4874ae70111d2b2c1e41293a6e715d8e67f126cd3d5637f26c092ad0ae6ee",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "5bf4874ae70111d2b2c1e41293a6e715d8e67f126cd3d5637f26c092ad0ae6ee",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/pipewire-ao/client.conf",
+      "before": {
+        "sha256": "18916f98550aaba8b4cb141e4d6f782ffd63fb780537099a3ae79d51caa1e24b",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "18916f98550aaba8b4cb141e4d6f782ffd63fb780537099a3ae79d51caa1e24b",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/pipewire-ao/client.conf.avail/20-upmix.conf",
+      "before": {
+        "sha256": "ed2c84455d7829e1ff644ff3e2d8066ec047fdac7f7cba106c33b5403f0a3ee6",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "ed2c84455d7829e1ff644ff3e2d8066ec047fdac7f7cba106c33b5403f0a3ee6",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/pipewire-ao/filter-chain/demonic.conf",
+      "before": {
+        "sha256": "c1c2acf06d4bee3e5aa9a8f704b087d4bce5c98fa6cdca27e1626b3bfb8d78a5",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "c1c2acf06d4bee3e5aa9a8f704b087d4bce5c98fa6cdca27e1626b3bfb8d78a5",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/pipewire-ao/filter-chain/sink-dolby-pro-logic-ii.conf",
+      "before": {
+        "sha256": "537c3e88de311d7cf57787b56404cb79a2d55cded717b98dbad5bbe12c7b99be",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "537c3e88de311d7cf57787b56404cb79a2d55cded717b98dbad5bbe12c7b99be",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/pipewire-ao/filter-chain/sink-dolby-surround.conf",
+      "before": {
+        "sha256": "a73483f8ec0f96e4cb011ed62c35a336c2f99e77c9a6800fea72b4a860639021",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "a73483f8ec0f96e4cb011ed62c35a336c2f99e77c9a6800fea72b4a860639021",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/pipewire-ao/filter-chain/sink-eq6.conf",
+      "before": {
+        "sha256": "cbd53e38884060bbdaebacce43c05ccd14b4dbd716ec431347ce776682a2b8f3",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "cbd53e38884060bbdaebacce43c05ccd14b4dbd716ec431347ce776682a2b8f3",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/pipewire-ao/filter-chain/sink-make-LFE.conf",
+      "before": {
+        "sha256": "bcb75ad6d4d92c317eddb0730dc045c8922505ba3ab7e0448e036f729fb25edc",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "bcb75ad6d4d92c317eddb0730dc045c8922505ba3ab7e0448e036f729fb25edc",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/pipewire-ao/filter-chain/sink-matrix-spatialiser.conf",
+      "before": {
+        "sha256": "b8177da230184c91d5ce4d6b30fa330801686cd026d85e2fa5367e68d9ae64af",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "b8177da230184c91d5ce4d6b30fa330801686cd026d85e2fa5367e68d9ae64af",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/pipewire-ao/filter-chain/sink-mix-FL-FR.conf",
+      "before": {
+        "sha256": "acadaed47497dfdc8ae940c20a9d2dbf7b011def4a76b3a181320bbe95b7be3a",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "acadaed47497dfdc8ae940c20a9d2dbf7b011def4a76b3a181320bbe95b7be3a",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/pipewire-ao/filter-chain/sink-upmix-5.1-filter.conf",
+      "before": {
+        "sha256": "ecb91e666bbe996eb9e8a32dee9a89eec5ef1a40939a04410cf59c6978e41fbf",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "ecb91e666bbe996eb9e8a32dee9a89eec5ef1a40939a04410cf59c6978e41fbf",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/pipewire-ao/filter-chain/sink-virtual-surround-5.1-kemar.conf",
+      "before": {
+        "sha256": "c934c99dfb6c0eea4ddcffcb4e49d7be9f72281556385c6544caeec20e38dbe3",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "c934c99dfb6c0eea4ddcffcb4e49d7be9f72281556385c6544caeec20e38dbe3",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/pipewire-ao/filter-chain/sink-virtual-surround-7.1-hesuvi.conf",
+      "before": {
+        "sha256": "13d9e0fff406723dc879f0101602f00929f81aa0a9de60fce99861a1c8b7c4ea",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "13d9e0fff406723dc879f0101602f00929f81aa0a9de60fce99861a1c8b7c4ea",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/pipewire-ao/filter-chain/source-duplicate-FL.conf",
+      "before": {
+        "sha256": "8093bbb857c984e70cf6e6505b9654983d58a556c8116172d9c15ff276dc3095",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "8093bbb857c984e70cf6e6505b9654983d58a556c8116172d9c15ff276dc3095",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/pipewire-ao/filter-chain/source-rnnoise.conf",
+      "before": {
+        "sha256": "d9964799c77d77c6a64321c87fb7f2b66b3f14500d56a11f2bd35f542e50c01b",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "d9964799c77d77c6a64321c87fb7f2b66b3f14500d56a11f2bd35f542e50c01b",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/pipewire-ao/filter-chain.conf",
+      "before": {
+        "sha256": "57a9cd3f2039ef5e50e3049a40be0b5b6e06de3bbd2d35d9e141631f0c1c307f",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "57a9cd3f2039ef5e50e3049a40be0b5b6e06de3bbd2d35d9e141631f0c1c307f",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/pipewire-ao/jack.conf",
+      "before": {
+        "sha256": "8ade883013f8da0c7aac8bb9c99c64ac94738f9eeb8126d1efc32384c89a3644",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "8ade883013f8da0c7aac8bb9c99c64ac94738f9eeb8126d1efc32384c89a3644",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/pipewire-ao/minimal.conf",
+      "before": {
+        "sha256": "b29397daf0bc918fc599d233f57109d7e9f05b01944a71c5b8f31736443e2f6a",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "b29397daf0bc918fc599d233f57109d7e9f05b01944a71c5b8f31736443e2f6a",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/pipewire-ao/pipewire-aes67.conf",
+      "before": {
+        "sha256": "4046a58cb523b67924c29f8ce5f2ef1aa9eccf067857c5de49e816a1d6d730d7",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "4046a58cb523b67924c29f8ce5f2ef1aa9eccf067857c5de49e816a1d6d730d7",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/pipewire-ao/pipewire-avb.conf",
+      "before": {
+        "sha256": "676824a00ac5de6558513a3ebf2c6bd1a20a2d78481068359a204a74f5fe9d8a",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "676824a00ac5de6558513a3ebf2c6bd1a20a2d78481068359a204a74f5fe9d8a",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/pipewire-ao/pipewire.conf",
+      "before": {
+        "sha256": "89a0a0cc235aff15f55083c53c0a31c790f40ca7a4efe8d4afaf9335fdea531b",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "89a0a0cc235aff15f55083c53c0a31c790f40ca7a4efe8d4afaf9335fdea531b",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/pipewire-ao/pipewire.conf.avail/10-rates.conf",
+      "before": {
+        "sha256": "1a3454b56962fb55e8a5dc399743c7e79d96b0d78f41c9b2143fdd68c0a59d53",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "1a3454b56962fb55e8a5dc399743c7e79d96b0d78f41c9b2143fdd68c0a59d53",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/pipewire-ao/pipewire.conf.avail/20-upmix.conf",
+      "before": {
+        "sha256": "ed2c84455d7829e1ff644ff3e2d8066ec047fdac7f7cba106c33b5403f0a3ee6",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "ed2c84455d7829e1ff644ff3e2d8066ec047fdac7f7cba106c33b5403f0a3ee6",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/pipewire-ao/pipewire.conf.avail/50-raop.conf",
+      "before": {
+        "sha256": "0601ca5da77e64b61a58f491fe6e741a568fcd75587b6cd528764640d45b7dd7",
+        "mode": 420
+      },
+      "after": {
+        "sha256": "0601ca5da77e64b61a58f491fe6e741a568fcd75587b6cd528764640d45b7dd7",
+        "mode": 420
+      }
+    }
+  ],
+  "external_preserved": {
+    "bin/pwao-spa-acp-tool": {
+      "sha256": "82b92ead105a7804788e6858c5ce9896fd1af18c0d694786f93c2187fd3a46e5",
+      "mode": 493
+    },
+    "etc/security/limits.d/25-pwao-rlimits.conf": {
+      "sha256": "a01440aa759f387a82821ea077f11757f2e8cf0c1165caf652ff4773979f573f",
+      "mode": 420
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-queue.so": {
+      "sha256": "8f953946733fafa3aaa766518ba3c2128fd2e6977babe3b8d478050f20664835",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/alsa-lib/libasound_module_pcm_pipewire.so": {
+      "sha256": "b911d9f326878a41f3817ad82fc25019af66749bb803921c80d4d42798fbb883",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/alsa-lib/libasound_module_ctl_pipewire.so": {
+      "sha256": "08f19057fdf4dcffc95ca5ffd243b2a89e144ff7312bdf095ab688dd89c1df30",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/hermes/libspa-hermes-decoder.so": {
+      "sha256": "3151a939a586ef7ba087096342e038ac9a501aa3c70eeec71750ed6659c33c5e",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/imagestreamio/libspa-imagestreamio.so": {
+      "sha256": "7dc5a71ee9fac9cff37ded94f13e8198261fec0e2f0b6dc2abaaac6be86af6c6",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/alsa/libspa-alsa.so": {
+      "sha256": "cf718f8f86cf3da1965540a3c2385fc5f70274b7b2ef21c9ec24698274907ed5",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/fits/libspa-fits.so": {
+      "sha256": "3f3fb042201afb2cf646fd76a468103d8f57609e0630eef065b332fe03e14e2a",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/bgapi2/libspa-bgapi2.so": {
+      "sha256": "40f83d8baa3ce46af9798d9cd66eba2d4ed60780757295352cb6d8283b69dc38",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/egrabber/libspa-egrabber.so": {
+      "sha256": "4c3d09331de05dc7b8084becf7adb3c3343e7e22db6546bcad4263620013a96e",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/aravis/libspa-aravis.so": {
+      "sha256": "b21b48f5e69161061b986791fe112a5e006af41e1cda406d9bed11561fd133b5",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/discard/libspa-pipewireao-discard.so": {
+      "sha256": "5ffcb1339e65e3eee48597b62bb42843b22ab8b293f65736aaa57074d50338b0",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/test/libspa-test.so": {
+      "sha256": "d18e69a4756c3f9354aeae84ddad98e4310da82c3bbe45b2ba972c8ab1d8de77",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/nuvu/libspa-nuvu.so": {
+      "sha256": "a4e9fbe7929de2500f528c41de99469e5901973d2c7d80afdb14ecd18e459cf7",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/ndarray/libspa-ndarray.so": {
+      "sha256": "153839f352590a992655f327ef892c1dff3595ab9fbe80f183ed2aeb7ec6458c",
+      "mode": 509
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so": {
+      "sha256": "7fd6888486910f7b6a4c3d5cd2d4f36f5b332bffbc1b6d0d8345517039555193",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/pyrtc/libspa-pyrtc.so": {
+      "sha256": "fffc869e3e533567e85291a7cbba14d891493d41f0953181a6479a13f1a3d6bc",
+      "mode": 493
+    },
+    "include/pipewireao-plugins-0.1/pipewireao-plugins/imagestreamio.h": {
+      "sha256": "a2c650cdc9de73d826bd542291f407a1428c81d396165630c310feb65a6da7d0",
+      "mode": 420
+    },
+    "include/pipewireao-plugins-0.1/pipewireao-plugins/discard.h": {
+      "sha256": "1d36255d238f3f8ab13baea695e752833802a4859317bdb24f175fadf58c55a6",
+      "mode": 420
+    },
+    "include/pipewireao-plugins-0.1/pipewireao-plugins/pod.h": {
+      "sha256": "c65fe4cc44fe60a18a61d5a460c083fc6cb28bdf3cd4879421cf116cfc537205",
+      "mode": 420
+    },
+    "include/pipewireao-plugins-0.1/pipewireao-plugins/nuvu.h": {
+      "sha256": "d9a45cdb03eb4a0f728af71972de8f97657e702d3766bad7e5ce794163e7b625",
+      "mode": 420
+    },
+    "include/pipewireao-plugins-0.1/pipewireao-plugins/fits.h": {
+      "sha256": "18d0637851315dcad8ba2cf6b20d7c9e59ca727664ce4a54c209125d68308c8a",
+      "mode": 420
+    },
+    "include/pipewireao-plugins-0.1/pipewireao-plugins/heart.h": {
+      "sha256": "0349297651179ca7f76b9e2aeeb85b6b9ac707037d34c7b8d149cb6b7740d7b5",
+      "mode": 420
+    },
+    "include/pipewireao-plugins-0.1/pipewireao-plugins/pyrtc.h": {
+      "sha256": "0ae554cae987bbecd92ecd8b6ff8036253b9be4b490624d801922f305fba5be0",
+      "mode": 420
+    },
+    "include/pipewireao-plugins-0.1/pipewireao-plugins/ndarray.h": {
+      "sha256": "43af5a1230605680e329b08712b2a0c70a4514292476e7d67ea4b43e0e63d9d6",
+      "mode": 436
+    },
+    "include/pipewireao-plugins-0.1/pipewireao-plugins/alpao.h": {
+      "sha256": "b0fd4715782015b1dd7e9ea969c743a228c3f8cead2f98d72b21e56547768274",
+      "mode": 420
+    },
+    "share/pkgconfig/pipewireao-spa-plugins-0.1.pc": {
+      "sha256": "004c7a8fa8c20266e6b7ea05da6bbbb57f9a64ca9a10cba6b3a6c594408a5836",
+      "mode": 420
+    },
+    "share/pkgconfig/pipewireao-spa-plugin-heart-0.1.pc": {
+      "sha256": "c49b2484dbdd970747f27f4898a9f0df0cac701b13889d03e13252bd37683c08",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-output-headphones-2.conf": {
+      "sha256": "2c2f0d38f9f375b5ff4f049afdd8709e16c608d2a3e5406683ad04c5dc389fe6",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/steelseries-gamedac-output-game.conf": {
+      "sha256": "0b1ae2992223ac06e313d1f7385c5e17fc9d45882502ba232c5bf043a087ff92",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/hdmi-output-3.conf": {
+      "sha256": "8bead4246c5a5e0a7188929b5c25d75d859e653e6af69188b2bcda9f219b9051",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/hdmi-output-7.conf": {
+      "sha256": "8a79b3e8ae48796bc9391dbecf8e6e57d265ae8a8c90d18842ec588dfa0dadbe",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/audigy-analog-output-mirror.conf": {
+      "sha256": "56e5448f319303c5f88af79b5ac2d2e1f3ec157dc4ec222d33520aaa1b36e603",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/audeze-maxwell-output-game.conf": {
+      "sha256": "d45d55f70346f5080073b140304e105125fd5e55e1d825c3197f8c23cb3a3c56",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/audigy-analog-output.conf": {
+      "sha256": "65e2c229454d4d153b5a2d86467ec99e6274f29bb11a9f51d01e91c8bb24c4bf",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-mic.conf": {
+      "sha256": "231741eb25593485000500ad5ae5e473f4e5c86341f7143b97075e90f0cad63f",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-front-mic.conf": {
+      "sha256": "56dbf67cd1f831f04ade1b2f0bfa5896aeb37abe99c801638866a59f841e4c1e",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/steelseries-gamedac-output-chat.conf": {
+      "sha256": "fcbf15aae22fb564f5e717151a59431968533d991392b2b8db424a952fe19f6a",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-headset-mic.conf": {
+      "sha256": "9a6a6a3c6d42753743dd5a523bc30e5e83b424a31d665894af021bfdc5546747",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-fm.conf": {
+      "sha256": "bd302e95e63f4a23b90383c1a7019da20d352359c89cecfd2effa6ff17d816a5",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-output.conf": {
+      "sha256": "1ae2721891fdc47f2518a4182823d94cd12a730a42c0b494119e81b6e980abd7",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/hdmi-output-5.conf": {
+      "sha256": "8457124ffc4bec3e53bad511e2a95a0002fe2107b53234cd59b75fa7594d8074",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-dock-mic.conf": {
+      "sha256": "f384e6158eeb2a844bda761e41137199fcb284841bbc6e6bf963ec1c091dbc93",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/hdmi-output-2.conf": {
+      "sha256": "7ba7347a3e7b4dde22601a92f5e1acaf343c95bc8e118e1a90f532a1fc0711ac",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-linein.conf": {
+      "sha256": "180136bc6f7e2f91fe1abe9de57faddad1ed80a705c9691e545010c703bad7b2",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/usb-gaming-headset-output-mono.conf": {
+      "sha256": "fc35e19d053530149fc415beff8e63c4337c08ab333f9be1f192f68882d9e4d2",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-mic.conf.common": {
+      "sha256": "927ddc7376500fc7cc396833c06c7847f0d3e172c4dd524129253b8ccd7e8581",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/usb-gaming-headset-input.conf": {
+      "sha256": "86a0b0a037f039cc4fcdadc16f7911447bb41662f31db4204e5f020b836e88bc",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/steelseries-arctis-output-chat-common.conf": {
+      "sha256": "c7c275e83b1ccdd29d07846c0389eb499dab2759c199428d023e202a08bb8337",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/iec958-stereo-input.conf": {
+      "sha256": "6f639917b373bd60120864dd6b76f163439b88fa1e88ce6b2a6e078f4fdd476a",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-mic-line.conf": {
+      "sha256": "6a33421919c6c8dabc301bd1da5a1ad332bbea5cc69d2ea16676dbd735972125",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-output-mono.conf": {
+      "sha256": "e7dae5dad2b509017ba64ceedf82e3997f75ee5aa7a91ac2014f16f8cfeb939a",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/virtual-surround-7.1.conf": {
+      "sha256": "47cf9ceed1d0a41ee83bf96dd15fec06950002e1dc2172b1bb356352ab402dca",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-internal-mic.conf": {
+      "sha256": "aed33a4ba81e4dc4a580a3a0b8f2668f49b03644291320a5a5705a4e521312bf",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-tvtuner.conf": {
+      "sha256": "69152fb03997a9fe5e09039671a6897735b954e31cc878d690e4d570eff046d6",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-video.conf": {
+      "sha256": "8d3fe46fadd652cd26f72732c15352b9b23e291b08b932ed74a9e8bb094803af",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/hdmi-output-6.conf": {
+      "sha256": "9e1ed6431144d0a2f4b08816b751fd08a8c25689391c7dc49776a79dc500e004",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/iec958-stereo-output.conf": {
+      "sha256": "dc8f258cc786471d8e3edb1631593c544c5c468f196fb67aff358157c259c451",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-headphone-mic.conf": {
+      "sha256": "5b3cc458304477bfac8dd6fdd383dc8a1c94b80987dd36d3ff9cf6b86c3d72e0",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-output.conf.common": {
+      "sha256": "a8b58bdb919f2657ffda89e3bfa3406c915ef3bb22912f4926b1fc0b15d90c00",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/hdmi-output-1.conf": {
+      "sha256": "6776e159df5e9cf3f90028190eed740331dcc6a73230e3efdb516cd15fedfd34",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input.conf": {
+      "sha256": "a66ddfa7d3723d099ab874b55c6faf6d31727056d9b90ae3c983778887f48ef6",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/audeze-maxwell-input.conf": {
+      "sha256": "41f615fcfcc881ed239712decabc079691f3bb2d3fb51d9f6782b421ec368e5d",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-output-chat.conf": {
+      "sha256": "28dd252e42faa82c8a37fe2e0807f992d73caa9ab1d5b00a80de33ecbb75c54e",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-output-speaker.conf": {
+      "sha256": "be156d5186887f28dcd2f129d1d9efd91643f74c6859f3c305d773aadd04be7e",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/usb-gaming-headset-output-stereo.conf": {
+      "sha256": "8ae2fe977983b1d6775a4092735d3fbce85465088ff46fdc1d63a04638c06b6b",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/hdmi-output-4.conf": {
+      "sha256": "6287f4c69927165f21da386d969c892e5b470ddc772e81e8026fc642963cff0c",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-output-headphones.conf": {
+      "sha256": "f81ec1b07dedefdf9bbca5d6d47d401f10a6b6b9820475666e67dd57e376ac37",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/hdmi-output-9.conf": {
+      "sha256": "c2ebdd590a5593352f0010c4fff730028985d8dc061368b9bfed32e67fc3d60b",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-internal-mic-always.conf": {
+      "sha256": "cb797c78e09c02e782faa6d5005922f498941fa3709916b0c311aa029ddc2662",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-aux.conf": {
+      "sha256": "8cfdf1190de489037b38627d59976db2f97968f91df1080c029e49cbc5805668",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-output-speaker-always.conf": {
+      "sha256": "35183952c2783747b7ce93dd5854d945298421031a4f73961df497b00a470a69",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/steelseries-arctis-output-game-common.conf": {
+      "sha256": "c97f4b0e1de860b86d3ba078440f433087798dce1446123faba1c7b873059abb",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-output-lineout.conf": {
+      "sha256": "cc09e74ad122727ce51cdb38c0948afdfd5a10e9b9aa5ec69f3b1246367332f8",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/audeze-maxwell-output-chat.conf": {
+      "sha256": "8f4e976f0fab4c8b7ac6149ec28008f440dc987964ba0d1db97f8ad889c36b66",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/hdmi-output-10.conf": {
+      "sha256": "cbf4c064d7260dd23b75d6fce28d1b44d7bdfdc41785017daf6b2397974e0e8e",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-rear-mic.conf": {
+      "sha256": "8c9df52461e4ef12b08381fd6cff4a4c932b7b2c6b648924a936020f688045e6",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/hdmi-output-0.conf": {
+      "sha256": "8e5e8426d4634cee5083781c68f63157f9ee86913e1cf14994c84fecf935978e",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/hdmi-output-8.conf": {
+      "sha256": "52e97701101e07717091f61884895dfb0814ba3987a11301809cb0bb830fef71",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input.conf.common": {
+      "sha256": "cdecb2934db2db7269f72e3ede55a61748d16c06a0126c2c4ed1ee6ae8d1d8a5",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/logi407-iec958-stereo-output.conf": {
+      "sha256": "5025485aea3cf16cb5d8e4a0e3ad843f1f7ac609825da6cd22cafa29ec43c622",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/simple-headphones-mic.conf": {
+      "sha256": "36762047410fa606435d55e9226554544e54f50c4dbb13c4e9e4be7bfd943bad",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/steelseries-gamedac-usb-audio.conf": {
+      "sha256": "e383447b4b764d62f535769404be605a4d8218310ca7548a0722c8cf8b8e3114",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/default.conf": {
+      "sha256": "92c977e8926fd40ee169885eb1b1b2e3082a0ea52643f65cafab8b5a1e27b5bc",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/9999-custom.conf": {
+      "sha256": "3b02e9ae36f70917abb18191931af8e77acf62531e2345733af50dd7befb722c",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/sb-omni-surround-5.1.conf": {
+      "sha256": "12e381917650f22dde4b0f08b51c483922739eb6ee02a16042f53ec7fd78abfe",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/native-instruments-korecontroller.conf": {
+      "sha256": "35dc1c073ac952ba3112b20b2f6c60d280e261bd2a68fbc4447d2f3fdf7099e6",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/sennheiser-gsx.conf": {
+      "sha256": "9e90352f61a0298cef4eeef6e808b77c775561a3298390bc0ea8177a54412f0d",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/steelseries-arctis-common-usb-audio.conf": {
+      "sha256": "47b4b9420979eb349f62307a0b26355f72a4e8f8f9630565bcf1ff4f76a68dbe",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/force-speaker.conf": {
+      "sha256": "9de0208e53d9ec28d5350b2a0c7c660af17692f807c35c76795c1f4522d92062",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/native-instruments-audio4dj.conf": {
+      "sha256": "4c5c1e1652e1192c4a301a10250257f6fdd5340393d3d39f84a1f95e2916f76b",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/kinect-audio.conf": {
+      "sha256": "361670fb6183c840f2dfef947fb48b2653003d50cb8459fcd27e5791508fe61c",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/native-instruments-traktorkontrol-s4.conf": {
+      "sha256": "ea146097e661fcc1b3e2ac24684318d7c5f3f2bdf89ef7f2bdc61b1517bdd18c",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/hdmi-ac3.conf": {
+      "sha256": "4fe0f5d854fbb3d1a8499e40eb45d942d42b87dba9825199bad4f4c29709318c",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/native-instruments-traktor-audio6.conf": {
+      "sha256": "cad8b0fed1c14916273236a03a57ecc8c571a03fd503d80ad17cab4bc5f84809",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/cmedia-high-speed-true-hdaudio.conf": {
+      "sha256": "da84270b29927d8d37a5e29ba6435acdf3232e3711d08f3fd803b668fa38364f",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/force-speaker-and-int-mic.conf": {
+      "sha256": "33fc9461af9765cc0446875dea83544dfa443439bd5a9063211b1317dc13a140",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/native-instruments-traktor-audio10.conf": {
+      "sha256": "ccfeb983437d6e2ed46993402362c173b31b9e47ada0134c77b1f43c893ae40a",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/maudio-fasttrack-pro.conf": {
+      "sha256": "407cd96445ee262b40ecde7793d3423f6247f52b19ee7d6e1f4624ff62eee07b",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/logi407.conf": {
+      "sha256": "6badd25458044c746bf5ce135e484f67413b8f2f8ed6369ed3f632e4b2288282",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/asus-xonar-se.conf": {
+      "sha256": "39e8f2b4649f78145ace11ad2931baae86512a5f22c8c001b37c3ee77276dc30",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/analog-only.conf": {
+      "sha256": "e0ee6c41e5b0e656cd9491140559529621c14a4b8ac4433ae6c8c47b1118a5e3",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/usb-gaming-headset.conf": {
+      "sha256": "9482f4a0bf3895d3a389f02c37a507d7eec618a5d2a9d0e15d6e6f02837ab96c",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/texas-instruments-pcm2902.conf": {
+      "sha256": "c78988cf40462330178e74a8c7df880af9269530a6af2304c5babdae24b4bf80",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/native-instruments-komplete-audio6.conf": {
+      "sha256": "842fd21bea1726323bfadcca200960b7d100b580ce1acbf4424c0f2f79442d4f",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/hp-tbt-dock-120w-g2.conf": {
+      "sha256": "849694d785e9c9a70ec71d693753b3e1869df104753835ca8f4434d91c251106",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/native-instruments-traktor-audio2.conf": {
+      "sha256": "093d9e7dce9bfbfcd3533e13f57432f3cdfed8c9a7ab5a261d1893ef05c8dec4",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/audeze-maxwell.conf": {
+      "sha256": "3552b707bcf78eb992b733100ecfb5bb4176ddfa467e5941abb60cd638b596aa",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/native-instruments-audio8dj.conf": {
+      "sha256": "dfa4376acd59927b4e6189659bbc8e380bf466ff4bb9491271a23b4f66b39a01",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/usb-gaming-headset-gamefirst.conf": {
+      "sha256": "f880c7cc04bb5336605748f75ebb92becb595465d36b5f0560fca641f06d04e2",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/dell-dock-tb16-usb-audio.conf": {
+      "sha256": "9b990784481ebc94a70121f2a6ddc1c0e780d7b7ebd20476b050397c09417c2f",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/audigy.conf": {
+      "sha256": "219658b54032a5932d038b5cda5592142361d134db95ed0054ffba8262d820d2",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/hp-tbt-dock-audio-module.conf": {
+      "sha256": "2fd2b46ad2bc94546687ba4175786277ea4958c313ab0e45180d34164a7bbcc4",
+      "mode": 420
+    },
+    "share/alsa/alsa.conf.d/99-pipewire-default.conf": {
+      "sha256": "f52f257069a93f698a496fc433c2d946a4dc0ed81e1f9c634a2e41da01636bca",
+      "mode": 420
+    },
+    "share/alsa/alsa.conf.d/50-pipewire.conf": {
+      "sha256": "101d1b134d1a0ce4c5a0e5a4264f63aa263c05073712c458cb433caeb25bea0b",
+      "mode": 420
+    }
+  }
+}

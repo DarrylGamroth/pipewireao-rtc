@@ -505,7 +505,7 @@ function prepare!(request::Request; render!::Function)
             "PIPEWIRE_RUNTIME_DIR" => runtime,
             "PIPEWIRE_REMOTE" => remote,
             "PIPEWIREAO_REMOTE" => remote,
-            "LD_LIBRARY_PATH" => paths["library"],
+            "LD_LIBRARY_PATH" => joinpath(package, "wireplumber/lib/wp") * ":" * paths["library"],
             "PIPEWIREAO_MODULE_DIR" => paths["modules"],
             "PIPEWIREAO_SPA_PLUGIN_DIR" => paths["spa"])
         if haskey(spec, "session-manager")

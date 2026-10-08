@@ -1,0 +1,944 @@
+ 1/57 test-component-loader                                               FAIL            0.01s   killed by signal 11 SIGSEGV
+>>> G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/wp MALLOC_PERTURB_=74 LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/wp XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/../src HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 /tmp/wp-installed-runtime-20261008/build/tests/wp/test-component-loader
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02Sce4f41c6038a4d00a2d7137d286fa2d9
+1..3
+# Start of wp tests
+# Start of comploader tests
+stderr:
+I 01:08:41.096012                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.096159         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.096445            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x55f6312fd0c0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.096505            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.096510         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x55f6312f9f90: parsed 1 context.properties items
+I 01:08:41.096667             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.096801 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x55f6313057e0: unable to open lockfile '/invalid/wp-test-server-1078057-65112772.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+ 2/57 test-core                                                           FAIL            0.01s   killed by signal 11 SIGSEGV
+>>> G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/wp LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' MALLOC_PERTURB_=156 UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/wp XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/../src HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 /tmp/wp-installed-runtime-20261008/build/tests/wp/test-core
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02S9de76c73adfe105a838fcfc9a03d52bb
+1..3
+# Start of wp tests
+# Start of core tests
+stderr:
+I 01:08:41.102142                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.102267         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.102484            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x55f39a1900b0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.102549            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.102554         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x55f39a18cf80: parsed 1 context.properties items
+I 01:08:41.102715             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.102854 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x55f39a1987d0: unable to open lockfile '/invalid/wp-test-server-1078058-1852974544.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+ 3/57 test-events                                                         FAIL            0.01s   killed by signal 11 SIGSEGV
+>>> G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/wp LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/wp XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/../src HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 MALLOC_PERTURB_=213 /tmp/wp-installed-runtime-20261008/build/tests/wp/test-events
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02S72e4c84bf8d822266aeb1fec5ce94827
+1..4
+# Start of wp tests
+# Start of events tests
+stderr:
+I 01:08:41.108314                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.108442         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.108663            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x5627b999f190: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.108729            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.108736         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x5627b999c060: parsed 1 context.properties items
+I 01:08:41.108897             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.109028 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x5627b99a79d0: unable to open lockfile '/invalid/wp-test-server-1078059--464471037.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+ 4/57 test-client-context                                                 FAIL            0.00s   killed by signal 11 SIGSEGV
+>>> G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/wp LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/wp XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/../src HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 MALLOC_PERTURB_=164 /tmp/wp-installed-runtime-20261008/build/tests/wp/test-client-context
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02S7c0cccfb1b0ea2bb391e7eb3b217fe19
+1..4
+# Start of wp tests
+# Start of client-context tests
+stderr:
+I 01:08:41.113542                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.113687         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.113918            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x55ae48395150: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.113981            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.113986         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x55ae48392020: parsed 1 context.properties items
+I 01:08:41.114152             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.114308 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x55ae4839d9d0: unable to open lockfile '/invalid/wp-test-server-1078060-954023666.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+ 5/57 test-metadata                                                       FAIL            0.01s   killed by signal 11 SIGSEGV
+>>> G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/wp LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config MESON_TEST_ITERATION=1 MALLOC_PERTURB_=183 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/wp XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/../src HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 /tmp/wp-installed-runtime-20261008/build/tests/wp/test-metadata
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02S5a9006549b553d4e5a6229c78faa0dd7
+1..1
+# Start of wp tests
+# Start of metadata tests
+stderr:
+I 01:08:41.119602                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.119724         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.119943            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x5647e964efd0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.120006            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.120011         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x5647e964bd80: parsed 1 context.properties items
+I 01:08:41.120166             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.120296 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x5647e96576d0: unable to open lockfile '/invalid/wp-test-server-1078061-449857746.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+ 6/57 test-object-interest                                                OK              0.00s
+ 7/57 test-object-manager                                                 FAIL            0.01s   killed by signal 11 SIGSEGV
+>>> G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/wp LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp MALLOC_PERTURB_=129 WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/wp XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/../src HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 /tmp/wp-installed-runtime-20261008/build/tests/wp/test-object-manager
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02Sa91760d1032f881adc5a9b2d35dfac1e
+1..2
+# Start of wp tests
+# Start of om tests
+stderr:
+I 01:08:41.130565                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.130692         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.130908            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x55ea34e55040: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.130974            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.130980         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x55ea34e51ec0: parsed 1 context.properties items
+I 01:08:41.131136             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.131266 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x55ea34e5d8b0: unable to open lockfile '/invalid/wp-test-server-1078063--1441547559.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+ 8/57 test-properties                                                     OK              0.00s
+ 9/57 test-proxy                                                          FAIL            0.01s   killed by signal 11 SIGSEGV
+>>> G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/wp LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/wp XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 MALLOC_PERTURB_=234 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/../src HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 /tmp/wp-installed-runtime-20261008/build/tests/wp/test-proxy
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02Sca40471ca74002ce20e76c6ea1913af9
+1..4
+# Start of wp tests
+# Start of proxy tests
+stderr:
+I 01:08:41.141209                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.141340         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.141602            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x564ba3d22180: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.141670            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.141676         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x564ba3d1f050: parsed 1 context.properties items
+I 01:08:41.141842             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.141973 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x564ba3d2a9a0: unable to open lockfile '/invalid/wp-test-server-1078065-1777045229.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+10/57 test-session-item                                                   FAIL            0.01s   killed by signal 11 SIGSEGV
+>>> G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/wp LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' MALLOC_PERTURB_=195 UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/wp XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/../src HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 /tmp/wp-installed-runtime-20261008/build/tests/wp/test-session-item
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02S49d5a2eb2685ec7c6b89b6afec6a2e92
+1..6
+# Start of wp tests
+# Start of session-item tests
+stderr:
+I 01:08:41.147369                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.147490         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.147701            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x563c2954c320: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.147762            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.147767         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x563c295491f0: parsed 1 context.properties items
+I 01:08:41.147908             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.148032 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x563c29554da0: unable to open lockfile '/invalid/wp-test-server-1078066-1152848186.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+11/57 test-spa-json                                                       OK              0.00s
+12/57 test-spa-pod                                                        OK              0.00s
+13/57 test-spa-type                                                       OK              0.00s
+14/57 test-state                                                          OK              0.00s
+15/57 test-settings                                                       FAIL            0.00s   killed by signal 11 SIGSEGV
+>>> G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/wp LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/wp XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/../src HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 MALLOC_PERTURB_=112 /tmp/wp-installed-runtime-20261008/build/tests/wp/test-settings
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02S40dc3dd04d59479548ccd92c15ef6804
+1..4
+# Start of wp tests
+# Start of settings tests
+stderr:
+I 01:08:41.169830                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.169962         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.170200            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x557c537c51d0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.170275            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.170283         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x557c537c20a0: parsed 1 context.properties items
+I 01:08:41.170446             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.170589 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x557c537cdba0: unable to open lockfile '/invalid/wp-test-server-1078071-246458421.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+16/57 test-transition                                                     OK              0.00s
+17/57 test-factory                                                        FAIL            0.01s   killed by signal 11 SIGSEGV
+>>> G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/wp LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp MALLOC_PERTURB_=129 WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/wp XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/../src HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 /tmp/wp-installed-runtime-20261008/build/tests/wp/test-factory
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02S4fe74e36d8cdfd54fdab347ad4434026
+1..1
+# Start of wp tests
+# Start of factory tests
+stderr:
+I 01:08:41.180006                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.180129         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.180369            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x55b3466ddfb0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.180442            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.180447         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x55b3466dade0: parsed 1 context.properties items
+I 01:08:41.180631             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.180781 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x55b3466e66b0: unable to open lockfile '/invalid/wp-test-server-1078073-1591602634.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+18/57 test-conf                                                           OK              0.00s
+19/57 test-json-utils                                                     OK              0.00s
+20/57 test-dynamic-rules                                                  FAIL            0.01s   killed by signal 11 SIGSEGV
+>>> G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/wp LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config MALLOC_PERTURB_=125 MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/wp XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/../src HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 /tmp/wp-installed-runtime-20261008/build/tests/wp/test-dynamic-rules
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02Sfc9c9b64587527ee693ab6fa9fe134a2
+1..2
+# Start of wp tests
+# Start of dynamic-rules tests
+stderr:
+I 01:08:41.195710                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.195831         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.196051            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x56185f51f050: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.196114            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.196120         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x56185f51bed0: parsed 1 context.properties items
+I 01:08:41.196286             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.196421 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x56185f5278e0: unable to open lockfile '/invalid/wp-test-server-1078076-1193495375.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+21/57 test-wplua                                                          OK              0.01s
+22/57 test-lua-pod                                                        FAIL            0.00s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp MALLOC_PERTURB_=52 WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/wplua:/tmp/wp-installed-runtime-20261008/tests/../src MESON_TEST_ITERATION=1 G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/wplua SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/wplua /tmp/wp-installed-runtime-20261008/build/tests/wplua/script-tester lua-api-tests pod.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02S6150027a7b40029268fe425b583ae107
+1..1
+# Start of lua tests
+# Start of wprun tests
+stderr:
+I 01:08:41.207753                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.207870         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.208084            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x560d41395010: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.208145            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.208151         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x560d41391e40: parsed 1 context.properties items
+I 01:08:41.208303             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.208440 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x560d4139d880: unable to open lockfile '/invalid/wp-test-server-1078078--1205967642.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+23/57 test-lua-json                                                       FAIL            0.01s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp MALLOC_PERTURB_=152 XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/wplua:/tmp/wp-installed-runtime-20261008/tests/../src MESON_TEST_ITERATION=1 G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/wplua SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/wplua /tmp/wp-installed-runtime-20261008/build/tests/wplua/script-tester lua-api-tests json.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02Sb21ec4dd9ea27f088352fa0d560a010b
+1..1
+# Start of lua tests
+# Start of wprun tests
+stderr:
+I 01:08:41.213494                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.213625         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.213860            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x55c8ddcca010: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.213925            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.213931         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x55c8ddcc6e40: parsed 1 context.properties items
+I 01:08:41.214084             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.214224 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x55c8ddcd2880: unable to open lockfile '/invalid/wp-test-server-1078079-1989123878.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+24/57 test-lua-json-utils                                                 FAIL            0.01s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp MALLOC_PERTURB_=40 XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/wplua:/tmp/wp-installed-runtime-20261008/tests/../src MESON_TEST_ITERATION=1 G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/wplua SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/wplua /tmp/wp-installed-runtime-20261008/build/tests/wplua/script-tester lua-api-tests json-utils.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02Sfcff2f5dcfcdadb298d024714f34f4fb
+1..1
+# Start of lua tests
+# Start of wprun tests
+stderr:
+I 01:08:41.219829                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.219945         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.220157            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x560a04ea6010: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.220218            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.220224         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x560a04ea2e40: parsed 1 context.properties items
+I 01:08:41.220373             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.220506 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x560a04eae880: unable to open lockfile '/invalid/wp-test-server-1078080--979153866.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+25/57 test-lua-monitor-rules                                              FAIL            0.00s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/wplua:/tmp/wp-installed-runtime-20261008/tests/../src MESON_TEST_ITERATION=1 G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/wplua SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/wplua MALLOC_PERTURB_=31 /tmp/wp-installed-runtime-20261008/build/tests/wplua/script-tester lua-api-tests monitor-rules.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02S6a058c37a520b5d14e207393d1336511
+1..1
+# Start of lua tests
+# Start of wprun tests
+stderr:
+I 01:08:41.224800                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.224919         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.225126            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x557ed7c3f010: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.225187            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.225193         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x557ed7c3be40: parsed 1 context.properties items
+I 01:08:41.225335             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.225477 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x557ed7c47880: unable to open lockfile '/invalid/wp-test-server-1078081--378963174.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+26/57 test-lua-require                                                    FAIL            0.00s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/wplua:/tmp/wp-installed-runtime-20261008/tests/../src MESON_TEST_ITERATION=1 G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/wplua SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MALLOC_PERTURB_=4 MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/wplua /tmp/wp-installed-runtime-20261008/build/tests/wplua/script-tester lua-api-tests require.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02S41fc51ebb87c93afa87290a2527c561e
+1..1
+# Start of lua tests
+# Start of wprun tests
+stderr:
+I 01:08:41.229671                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.229788         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.229992            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x55898eb48010: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.230054            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.230061         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x55898eb44e40: parsed 1 context.properties items
+I 01:08:41.230206             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.230424 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x55898eb50880: unable to open lockfile '/invalid/wp-test-server-1078082--1848681752.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+27/57 test-lua-async-activation                                           FAIL            0.00s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' MALLOC_PERTURB_=156 UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/wplua:/tmp/wp-installed-runtime-20261008/tests/../src MESON_TEST_ITERATION=1 G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/wplua SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/wplua /tmp/wp-installed-runtime-20261008/build/tests/wplua/script-tester lua-api-tests async-activation.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02S01a81884cc0566f8b5d176d29e785529
+1..1
+# Start of lua tests
+# Start of wprun tests
+stderr:
+I 01:08:41.234740                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.234856         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.235065            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x56503d7bb010: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.235125            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.235131         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x56503d7b7e40: parsed 1 context.properties items
+I 01:08:41.235282             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.235422 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x56503d7c3880: unable to open lockfile '/invalid/wp-test-server-1078083-1555905251.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+28/57 test-lua-settings                                                   FAIL            0.01s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' MALLOC_PERTURB_=66 UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/wplua:/tmp/wp-installed-runtime-20261008/tests/../src MESON_TEST_ITERATION=1 G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/wplua SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/wplua /tmp/wp-installed-runtime-20261008/build/tests/wplua/script-tester lua-api-tests settings.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02S136c72c45ed9dc607b59f21e09e76bd8
+1..1
+# Start of lua tests
+# Start of wprun tests
+stderr:
+I 01:08:41.240691                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.240804         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.241010            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x559b80258010: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.241068            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.241074         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x559b80254e40: parsed 1 context.properties items
+I 01:08:41.241219             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.241359 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x559b80260880: unable to open lockfile '/invalid/wp-test-server-1078084--961881710.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+29/57 test-lua-event-hooks                                                FAIL            0.01s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp MALLOC_PERTURB_=155 WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/wplua:/tmp/wp-installed-runtime-20261008/tests/../src MESON_TEST_ITERATION=1 G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/wplua SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/wplua /tmp/wp-installed-runtime-20261008/build/tests/wplua/script-tester lua-api-tests event-hooks.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02Sf592638cc0f3b23215e78dcd031d758b
+1..1
+# Start of lua tests
+# Start of wprun tests
+stderr:
+I 01:08:41.246894                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.247015         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.247232            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x563db9e3d010: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.247292            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.247298         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x563db9e39e40: parsed 1 context.properties items
+I 01:08:41.247448             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.247591 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x563db9e45880: unable to open lockfile '/invalid/wp-test-server-1078085-2111514699.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+30/57 test-lua-properties                                                 FAIL            0.00s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp MALLOC_PERTURB_=232 WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/wplua:/tmp/wp-installed-runtime-20261008/tests/../src MESON_TEST_ITERATION=1 G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/wplua SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/wplua /tmp/wp-installed-runtime-20261008/build/tests/wplua/script-tester lua-api-tests properties.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02Scbdcc95d9462495f036b232bf176e8c1
+1..1
+# Start of lua tests
+# Start of wprun tests
+stderr:
+I 01:08:41.252545                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.252669         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.252918            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x56302767e010: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.252972            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.252978         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x56302767ae40: parsed 1 context.properties items
+I 01:08:41.253150             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.253288 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x563027686880: unable to open lockfile '/invalid/wp-test-server-1078086--423142435.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+31/57 test-lua-node-utils                                                 FAIL            0.00s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/wplua:/tmp/wp-installed-runtime-20261008/tests/../src MESON_TEST_ITERATION=1 G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/wplua SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid MALLOC_PERTURB_=233 PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/wplua /tmp/wp-installed-runtime-20261008/build/tests/wplua/script-tester lua-api-tests node-utils.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02Se75f88b1242708df5871aae2fc5820c4
+1..1
+# Start of lua tests
+# Start of wprun tests
+stderr:
+I 01:08:41.257433                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.257550         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.257794            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x55f75b527010: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.257891            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.257897         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x55f75b523e40: parsed 1 context.properties items
+I 01:08:41.258058             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.258189 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x55f75b52f880: unable to open lockfile '/invalid/wp-test-server-1078087-503029527.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+32/57 test-lua-profile-utils                                              FAIL            0.00s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp MALLOC_PERTURB_=130 WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/wplua:/tmp/wp-installed-runtime-20261008/tests/../src MESON_TEST_ITERATION=1 G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/wplua SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/wplua /tmp/wp-installed-runtime-20261008/build/tests/wplua/script-tester lua-api-tests profile-utils.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02Sd631531cdd04cd2259dcfc35a68a1630
+1..1
+# Start of lua tests
+# Start of wprun tests
+stderr:
+I 01:08:41.262418                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.262537         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.262743            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x563cf612a010: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.262812            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.262817         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x563cf6126e40: parsed 1 context.properties items
+I 01:08:41.262967             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.263098 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x563cf6132880: unable to open lockfile '/invalid/wp-test-server-1078088-1234887010.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+33/57 test-linking-non-default-device-node                                FAIL            0.00s   killed by signal 11 SIGSEGV
+>>> MALLOC_PERTURB_=138 LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/scripts:/tmp/wp-installed-runtime-20261008/tests/../src G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/scripts G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/scripts MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 /tmp/wp-installed-runtime-20261008/build/tests/scripts/script-tester script-tests 00-test-linking-non-default-device-node.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02Sfa4ce746aecec5467269ed8cf0c3277c
+1..1
+# Start of lua tests
+stderr:
+I 01:08:41.268015                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.268134         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.268358            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x5598324caea0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.268418            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.268423         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x5598324c7c80: parsed 1 context.properties items
+I 01:08:41.268587             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.268719 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x5598324d36e0: unable to open lockfile '/invalid/wp-test-server-1078089-1375432794.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+34/57 test-linking-non-default-device-node-capture                        FAIL            0.00s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/scripts:/tmp/wp-installed-runtime-20261008/tests/../src G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/scripts G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/scripts MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 MALLOC_PERTURB_=230 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 /tmp/wp-installed-runtime-20261008/build/tests/scripts/script-tester script-tests 01-test-linking-non-default-device-node-capture.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02S8055a9123707f20488630b106f5e2641
+1..1
+# Start of lua tests
+stderr:
+I 01:08:41.272850                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.272972         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.273188            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x5562d8dbeea0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.273248            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.273253         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x5562d8dbbc80: parsed 1 context.properties items
+I 01:08:41.273414             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.273541 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x5562d8dc76e0: unable to open lockfile '/invalid/wp-test-server-1078090--705870213.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+35/57 test-linking-default-device-node                                    FAIL            0.00s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/scripts:/tmp/wp-installed-runtime-20261008/tests/../src G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/scripts G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/scripts MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 MALLOC_PERTURB_=120 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 /tmp/wp-installed-runtime-20261008/build/tests/scripts/script-tester script-tests 02-test-linking-default-device-node.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02Sac0f9b8dd4fb09a08db7446f3cdfe806
+1..1
+# Start of lua tests
+stderr:
+I 01:08:41.277853                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.277987         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.278309            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x5609f7364ea0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.278372            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.278378         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x5609f7361c80: parsed 1 context.properties items
+I 01:08:41.278534             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.278761 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x5609f736d6e0: unable to open lockfile '/invalid/wp-test-server-1078091-790124654.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+36/57 test-linking-default-device-node-capture                            FAIL            0.01s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/scripts:/tmp/wp-installed-runtime-20261008/tests/../src G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/scripts G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/scripts MESON_TEST_ITERATION=1 MALLOC_PERTURB_=174 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 /tmp/wp-installed-runtime-20261008/build/tests/scripts/script-tester script-tests 03-test-linking-default-device-node-capture.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02Se107fbc2b00b852c612bf5ef78d8f6ec
+1..1
+# Start of lua tests
+stderr:
+I 01:08:41.283862                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.283979         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.284185            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x55f4e39afea0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.284251            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.284257         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x55f4e39acc80: parsed 1 context.properties items
+I 01:08:41.284402             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.284543 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x55f4e39b86e0: unable to open lockfile '/invalid/wp-test-server-1078092--1827272838.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+37/57 test-linking-defined-device-node-target-object-string               FAIL            0.00s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/scripts:/tmp/wp-installed-runtime-20261008/tests/../src G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/scripts G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/scripts MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 MALLOC_PERTURB_=140 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 /tmp/wp-installed-runtime-20261008/build/tests/scripts/script-tester script-tests 04-test-linking-defined-device-node-target-object-string.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02Sb42975b651d4d552f86ff65c1a064e45
+1..1
+# Start of lua tests
+stderr:
+I 01:08:41.289080                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.289199         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.289419            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x563560dbeea0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.289483            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.289488         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x563560dbbc80: parsed 1 context.properties items
+I 01:08:41.289682             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.289824 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x563560dc76e0: unable to open lockfile '/invalid/wp-test-server-1078093-1470331255.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+38/57 test-linking-defined-device-node-target-object-int                  FAIL            0.00s   killed by signal 11 SIGSEGV
+>>> MALLOC_PERTURB_=53 LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/scripts:/tmp/wp-installed-runtime-20261008/tests/../src G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/scripts G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/scripts MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 /tmp/wp-installed-runtime-20261008/build/tests/scripts/script-tester script-tests 05-test-linking-defined-device-node-target-object-int.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02Sc36bc6658ec9fb12b5df18e9e2f1af32
+1..1
+# Start of lua tests
+stderr:
+I 01:08:41.294440                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.294558         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.294824            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x56413c0c7ea0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.294886            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.294895         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x56413c0c4c80: parsed 1 context.properties items
+I 01:08:41.295048             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.295181 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x56413c0d06e0: unable to open lockfile '/invalid/wp-test-server-1078094--1559380400.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+39/57 test-linking-defined-device-node-target-object-name                 FAIL            0.00s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp MALLOC_PERTURB_=40 XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/scripts:/tmp/wp-installed-runtime-20261008/tests/../src G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/scripts G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/scripts MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 /tmp/wp-installed-runtime-20261008/build/tests/scripts/script-tester script-tests 06-test-linking-defined-device-node-target-object-name.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02S6bed6c4a5578a6e3c0f147bd427740b8
+1..1
+# Start of lua tests
+stderr:
+I 01:08:41.299291                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.299407         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.299610            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x55bbe4277ea0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.299674            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.299680         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x55bbe4274c80: parsed 1 context.properties items
+I 01:08:41.299827             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.299961 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x55bbe42806e0: unable to open lockfile '/invalid/wp-test-server-1078095-251191134.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+40/57 test-linking-defined-device-node-target-object-string-capture       FAIL            0.01s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/scripts:/tmp/wp-installed-runtime-20261008/tests/../src G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/scripts G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/scripts MESON_TEST_ITERATION=1 MALLOC_PERTURB_=12 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 /tmp/wp-installed-runtime-20261008/build/tests/scripts/script-tester script-tests 07-test-linking-defined-device-node-target-object-string-capture.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02S881842f12d0b65ab7ab1280bff595704
+1..1
+# Start of lua tests
+stderr:
+I 01:08:41.304756                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.304876         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.305107            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x55ece92b3ea0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.305169            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.305175         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x55ece92b0c80: parsed 1 context.properties items
+I 01:08:41.305421             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.305679 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x55ece92bc6e0: unable to open lockfile '/invalid/wp-test-server-1078096--1761635647.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+41/57 test-linking-defined-device-node-target-object-int-capture          FAIL            0.00s   killed by signal 11 SIGSEGV
+>>> MALLOC_PERTURB_=74 LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/scripts:/tmp/wp-installed-runtime-20261008/tests/../src G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/scripts G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/scripts MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 /tmp/wp-installed-runtime-20261008/build/tests/scripts/script-tester script-tests 08-test-linking-defined-device-node-target-object-int-capture.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02Sf5303e91ae132173382b3f148c9c4437
+1..1
+# Start of lua tests
+stderr:
+I 01:08:41.310337                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.310455         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.310651            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x55f9b8ff0ea0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.310709            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.310721         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x55f9b8fedc80: parsed 1 context.properties items
+I 01:08:41.310871             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.311000 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x55f9b8ff96e0: unable to open lockfile '/invalid/wp-test-server-1078097-831691902.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+42/57 test-linking-defined-device-node-target-object-name-capture         FAIL            0.01s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/scripts:/tmp/wp-installed-runtime-20261008/tests/../src G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/scripts G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/scripts MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 MALLOC_PERTURB_=108 /tmp/wp-installed-runtime-20261008/build/tests/scripts/script-tester script-tests 09-test-linking-defined-device-node-target-object-name-capture.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02Sbc9a07adb99a477f0affcf8e29a94f63
+1..1
+# Start of lua tests
+stderr:
+I 01:08:41.316576                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.316695         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.316912            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x55e868bfcea0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.316985            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.316990         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x55e868bf9c80: parsed 1 context.properties items
+I 01:08:41.317153             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.317287 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x55e868c056e0: unable to open lockfile '/invalid/wp-test-server-1078098--1346066864.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+43/57 test-linking-defined-device-node-node-target                        FAIL            0.01s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp MALLOC_PERTURB_=50 WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/scripts:/tmp/wp-installed-runtime-20261008/tests/../src G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/scripts G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/scripts MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 /tmp/wp-installed-runtime-20261008/build/tests/scripts/script-tester script-tests 10-test-linking-defined-device-node-node-target.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02Sa1fd230c576bba846b000bb7c00c0f68
+1..1
+# Start of lua tests
+stderr:
+I 01:08:41.322978                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.323093         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.323299            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x558349734ea0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.323364            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.323370         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x558349731c80: parsed 1 context.properties items
+I 01:08:41.323519             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.323658 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x55834973d6e0: unable to open lockfile '/invalid/wp-test-server-1078099-1158099941.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+44/57 test-linking-defined-device-node-node-target-capture                FAIL            0.01s   killed by signal 11 SIGSEGV
+>>> MALLOC_PERTURB_=53 LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/scripts:/tmp/wp-installed-runtime-20261008/tests/../src G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/scripts G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/scripts MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 /tmp/wp-installed-runtime-20261008/build/tests/scripts/script-tester script-tests 11-test-linking-defined-device-node-node-target-capture.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02S34f33eeaa39d06f83f5a267c1501f087
+1..1
+# Start of lua tests
+stderr:
+I 01:08:41.328381                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.328498         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.328700            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x55a4586ddea0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.328767            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.328772         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x55a4586dac80: parsed 1 context.properties items
+I 01:08:41.328931             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.329059 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x55a4586e66e0: unable to open lockfile '/invalid/wp-test-server-1078100-901792747.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+45/57 test-linking-defined-device-node-target-node-metadata               FAIL            0.01s   killed by signal 11 SIGSEGV
+>>> MALLOC_PERTURB_=171 LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/scripts:/tmp/wp-installed-runtime-20261008/tests/../src G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/scripts G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/scripts MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 /tmp/wp-installed-runtime-20261008/build/tests/scripts/script-tester script-tests 12-test-linking-defined-device-node-target-node-metadata.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02S9ba9a5dfb43cf978e1e1249a4aca9914
+1..1
+# Start of lua tests
+stderr:
+I 01:08:41.335625                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.335742         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.335947            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x55c4f7731ea0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.336007            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.336012         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x55c4f772ec80: parsed 1 context.properties items
+I 01:08:41.336160             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.336294 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x55c4f773a6e0: unable to open lockfile '/invalid/wp-test-server-1078101--680433694.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+46/57 test-linking-defined-device-node-target-node-metadata-capture       FAIL            0.00s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/scripts:/tmp/wp-installed-runtime-20261008/tests/../src G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/scripts G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/scripts MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 MALLOC_PERTURB_=131 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 /tmp/wp-installed-runtime-20261008/build/tests/scripts/script-tester script-tests 13-test-linking-defined-device-node-target-node-metadata-capture.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02Sb644d9d8c4ee1ba3dd7f67b3a576eaf3
+1..1
+# Start of lua tests
+stderr:
+I 01:08:41.340499                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.340620         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.340818            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x56050c668ea0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.340878            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.340883         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x56050c665c80: parsed 1 context.properties items
+I 01:08:41.341021             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.341164 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x56050c6716e0: unable to open lockfile '/invalid/wp-test-server-1078102--202886608.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+47/57 test-linking-defined-device-node-target-object-metadata             FAIL            0.01s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/scripts:/tmp/wp-installed-runtime-20261008/tests/../src G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/scripts G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/scripts MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 MALLOC_PERTURB_=246 /tmp/wp-installed-runtime-20261008/build/tests/scripts/script-tester script-tests 14-test-linking-defined-device-node-target-object-metadata.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02Se3768bbf5321483e3412b4d147399af2
+1..1
+# Start of lua tests
+stderr:
+I 01:08:41.346404                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.346522         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.346745            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x55cda3b26ea0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.346798            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.346810         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x55cda3b23c80: parsed 1 context.properties items
+I 01:08:41.346963             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.347097 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x55cda3b2f6e0: unable to open lockfile '/invalid/wp-test-server-1078103-845489932.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+48/57 test-linking-defined-device-node-target-object-metadata-capture     FAIL            0.01s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/scripts:/tmp/wp-installed-runtime-20261008/tests/../src G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/scripts G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/scripts MESON_TEST_ITERATION=1 MALLOC_PERTURB_=63 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 /tmp/wp-installed-runtime-20261008/build/tests/scripts/script-tester script-tests 15-test-linking-defined-device-node-target-object-metadata-capture.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02Sa2d463f1d73bedcd41ace5e85d6f5a2d
+1..1
+# Start of lua tests
+stderr:
+I 01:08:41.352527                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.352644         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.352848            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x55dba59a8ea0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.352911            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.352920         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x55dba59a5c80: parsed 1 context.properties items
+I 01:08:41.353080             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.353210 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x55dba59b16e0: unable to open lockfile '/invalid/wp-test-server-1078104--564959725.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+49/57 test-linking-defined-device-node-target-object-int-metadata         FAIL            0.01s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/scripts:/tmp/wp-installed-runtime-20261008/tests/../src G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/scripts MALLOC_PERTURB_=59 G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/scripts MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 /tmp/wp-installed-runtime-20261008/build/tests/scripts/script-tester script-tests 16-test-linking-defined-device-node-target-object-int-metadata.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02Sf9f5c93d0243a7e661d688cd4f9fec96
+1..1
+# Start of lua tests
+stderr:
+I 01:08:41.358451                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.358571         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.358770            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x55aeaa14dea0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.358834            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.358843         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x55aeaa14ac80: parsed 1 context.properties items
+I 01:08:41.358991             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.359124 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x55aeaa1566e0: unable to open lockfile '/invalid/wp-test-server-1078105--69515026.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+50/57 test-linking-defined-device-node-target-object-int-metadata-capture FAIL            0.00s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp MALLOC_PERTURB_=104 XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/scripts:/tmp/wp-installed-runtime-20261008/tests/../src G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/scripts G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/scripts MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 /tmp/wp-installed-runtime-20261008/build/tests/scripts/script-tester script-tests 17-test-linking-defined-device-node-target-object-int-metadata-capture.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02Sa98e5278faffa41dba86094d5fbd74ac
+1..1
+# Start of lua tests
+stderr:
+I 01:08:41.364288                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.364410         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.364627            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x55cd32e1dea0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.364704            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.364715         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x55cd32e1ac80: parsed 1 context.properties items
+I 01:08:41.364891             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.365020 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x55cd32e266e0: unable to open lockfile '/invalid/wp-test-server-1078106--933827826.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+51/57 00-test-default-nodes-initial-metadata-update                       FAIL            0.00s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp MALLOC_PERTURB_=223 XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/scripts:/tmp/wp-installed-runtime-20261008/tests/../src G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/scripts G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/scripts MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 /tmp/wp-installed-runtime-20261008/build/tests/scripts/script-tester script-tests 00-test-default-nodes-initial-metadata-update.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02S9b1826de01e2343ce40376449dca4910
+1..1
+# Start of lua tests
+stderr:
+I 01:08:41.369144                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.369262         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.369497            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x55e4055adea0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.369546            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.369551         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x55e4055aac80: parsed 1 context.properties items
+I 01:08:41.369737             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.369870 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x55e4055b66e0: unable to open lockfile '/invalid/wp-test-server-1078107--1264068180.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+52/57 test-dbus-connection                                                FAIL            0.01s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/modules WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp MALLOC_PERTURB_=152 XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/../src HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/modules /tmp/wp-installed-runtime-20261008/build/tests/modules/test-dbus-connection
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02Sef36c08b592317ee88b91e2129d1e9c2
+1..1
+# Start of wp tests
+# Start of dbus tests
+stderr:
+I 01:08:41.375378                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.375498         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.375754            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x556be2e7efc0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.375813            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.375818         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x556be2e7bdf0: parsed 1 context.properties items
+I 01:08:41.375958             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.376120 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x556be2e876c0: unable to open lockfile '/invalid/wp-test-server-1078108-1567387648.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+53/57 test-reserve-device                                                 FAIL            0.01s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/modules MALLOC_PERTURB_=62 WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/../src HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/modules /tmp/wp-installed-runtime-20261008/build/tests/modules/test-reserve-device
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02Sfcd4f6ee8cb98838f62bcb26508f24d3
+1..3
+# Start of modules tests
+# Start of rd tests
+stderr:
+I 01:08:41.381352                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.381474         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.381714            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x55b5fe7930e0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.381763            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.381771         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x55b5fe78ff30: parsed 1 context.properties items
+I 01:08:41.381930             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.382064 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x55b5fe79b800: unable to open lockfile '/invalid/wp-test-server-1078109--1391249886.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+54/57 test-file-monitor                                                   FAIL            0.01s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/modules WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' MALLOC_PERTURB_=121 UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/../src HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/modules /tmp/wp-installed-runtime-20261008/build/tests/modules/test-file-monitor
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02S792840c6bebed544f5d91ce13b0d6a36
+1..1
+# Start of modules tests
+# Start of file-monitor tests
+stderr:
+I 01:08:41.387866                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.387983         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.388190            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x5649d4611fd0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.388254            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.388260         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x5649d460ee00: parsed 1 context.properties items
+I 01:08:41.388400             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.388544 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x5649d461aab0: unable to open lockfile '/invalid/wp-test-server-1078110-745884045.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+55/57 test-si-node                                                        FAIL            0.00s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/modules WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config MESON_TEST_ITERATION=1 MALLOC_PERTURB_=99 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/../src HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/modules /tmp/wp-installed-runtime-20261008/build/tests/modules/test-si-node
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02See6d2c37a3500b3a7736661f7c71c8e8
+1..2
+# Start of modules tests
+# Start of si-node tests
+# Start of configure-activate tests
+stderr:
+I 01:08:41.392800                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.392924         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.393150            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x558bcc6921a0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.393215            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.393220         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x558bcc68efd0: parsed 1 context.properties items
+I 01:08:41.393397             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.393532 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x558bcc69aa20: unable to open lockfile '/invalid/wp-test-server-1078111--473908614.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+56/57 test-si-audio-adapter                                               FAIL            0.00s   killed by signal 11 SIGSEGV
+>>> MALLOC_PERTURB_=159 LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/modules WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/../src HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/modules /tmp/wp-installed-runtime-20261008/build/tests/modules/test-si-audio-adapter
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02Sc95466021859cd7837e2c0fca30ec87f
+1..1
+# Start of modules tests
+# Start of si-audio-adapter tests
+stderr:
+I 01:08:41.397821                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.397938         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.398144            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x55a913c28fb0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.398209            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.398215         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x55a913c25d90: parsed 1 context.properties items
+I 01:08:41.398367             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.398496 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x55a913c316c0: unable to open lockfile '/invalid/wp-test-server-1078112--960296292.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+57/57 test-si-standard-link                                               FAIL            0.00s   killed by signal 11 SIGSEGV
+>>> LD_LIBRARY_PATH=/tmp/wp-installed-runtime-20261008/build/lib/wp G_TEST_BUILDDIR=/tmp/wp-installed-runtime-20261008/build/tests/modules WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIRE_RUNTIME_DIR=/tmp XDG_CONFIG_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.config MESON_TEST_ITERATION=1 SPA_PLUGIN_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/spa-ao-0.2 XDG_RUNTIME_DIR=/invalid MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 FILE_MONITOR_DIR=/tmp/wp-installed-runtime-20261008/build/tests/.local/file_monitor ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 XDG_STATE_HOME=/tmp/wp-installed-runtime-20261008/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/tmp/wp-installed-runtime-20261008/build/tests/../modules WIREPLUMBER_DATA_DIR=/tmp/wp-installed-runtime-20261008/tests/../src HOME=/invalid PIPEWIRE_MODULE_DIR=/opt/pipewireao/lib/x86_64-linux-gnu/pipewire-ao-0.3 MALLOC_PERTURB_=44 G_TEST_SRCDIR=/tmp/wp-installed-runtime-20261008/tests/modules /tmp/wp-installed-runtime-20261008/build/tests/modules/test-si-standard-link
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02S65302779ead8bb9933fa5f479721bada
+1..1
+# Start of modules tests
+# Start of si-standard-link tests
+stderr:
+I 01:08:41.402636                 wp ../lib/wp/wp.c:35:wp_init: WirePlumber 0.5.18 initializing
+I 01:08:41.402753         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/pipewire.c:606:pw_init: version 1.7.0
+I 01:08:41.402959            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:424:conf_load: 0x559325a41fc0: loaded config '/opt/pipewireao/share/pipewire-ao/client.conf' with 8 items
+I 01:08:41.403016            pw.conf ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/conf.c:1138:pw_conf_section_for_each: handle config '/opt/pipewireao/share/pipewire-ao/client.conf' section 'context.properties'
+I 01:08:41.403029         pw.context ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/pipewire/context.c:476:pw_context_new: 0x559325a3edf0: parsed 1 context.properties items
+I 01:08:41.403171             mod.rt ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-rt.c:1152:pipewire__module_init: invalid nice level 20 (not between -20 and 19). nice level will not be adjusted
+E 01:08:41.403312 mod.protocol-nativ ../../../../home/dgamroth/workspaces/codex/pipewire/pipewire/src/modules/module-protocol-native.c:825:lock_socket: server 0x559325a4a6c0: unable to open lockfile '/invalid/wp-test-server-1078113-545608856.lock': No such file or directory
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+
+Summary of Failures:
+
+ 1/57 test-component-loader                                               FAIL            0.01s   killed by signal 11 SIGSEGV
+ 2/57 test-core                                                           FAIL            0.01s   killed by signal 11 SIGSEGV
+ 3/57 test-events                                                         FAIL            0.01s   killed by signal 11 SIGSEGV
+ 4/57 test-client-context                                                 FAIL            0.00s   killed by signal 11 SIGSEGV
+ 5/57 test-metadata                                                       FAIL            0.01s   killed by signal 11 SIGSEGV
+ 7/57 test-object-manager                                                 FAIL            0.01s   killed by signal 11 SIGSEGV
+ 9/57 test-proxy                                                          FAIL            0.01s   killed by signal 11 SIGSEGV
+10/57 test-session-item                                                   FAIL            0.01s   killed by signal 11 SIGSEGV
+15/57 test-settings                                                       FAIL            0.00s   killed by signal 11 SIGSEGV
+17/57 test-factory                                                        FAIL            0.01s   killed by signal 11 SIGSEGV
+20/57 test-dynamic-rules                                                  FAIL            0.01s   killed by signal 11 SIGSEGV
+22/57 test-lua-pod                                                        FAIL            0.00s   killed by signal 11 SIGSEGV
+23/57 test-lua-json                                                       FAIL            0.01s   killed by signal 11 SIGSEGV
+24/57 test-lua-json-utils                                                 FAIL            0.01s   killed by signal 11 SIGSEGV
+25/57 test-lua-monitor-rules                                              FAIL            0.00s   killed by signal 11 SIGSEGV
+26/57 test-lua-require                                                    FAIL            0.00s   killed by signal 11 SIGSEGV
+27/57 test-lua-async-activation                                           FAIL            0.00s   killed by signal 11 SIGSEGV
+28/57 test-lua-settings                                                   FAIL            0.01s   killed by signal 11 SIGSEGV
+29/57 test-lua-event-hooks                                                FAIL            0.01s   killed by signal 11 SIGSEGV
+30/57 test-lua-properties                                                 FAIL            0.00s   killed by signal 11 SIGSEGV
+31/57 test-lua-node-utils                                                 FAIL            0.00s   killed by signal 11 SIGSEGV
+32/57 test-lua-profile-utils                                              FAIL            0.00s   killed by signal 11 SIGSEGV
+33/57 test-linking-non-default-device-node                                FAIL            0.00s   killed by signal 11 SIGSEGV
+34/57 test-linking-non-default-device-node-capture                        FAIL            0.00s   killed by signal 11 SIGSEGV
+35/57 test-linking-default-device-node                                    FAIL            0.00s   killed by signal 11 SIGSEGV
+36/57 test-linking-default-device-node-capture                            FAIL            0.01s   killed by signal 11 SIGSEGV
+37/57 test-linking-defined-device-node-target-object-string               FAIL            0.00s   killed by signal 11 SIGSEGV
+38/57 test-linking-defined-device-node-target-object-int                  FAIL            0.00s   killed by signal 11 SIGSEGV
+39/57 test-linking-defined-device-node-target-object-name                 FAIL            0.00s   killed by signal 11 SIGSEGV
+40/57 test-linking-defined-device-node-target-object-string-capture       FAIL            0.01s   killed by signal 11 SIGSEGV
+41/57 test-linking-defined-device-node-target-object-int-capture          FAIL            0.00s   killed by signal 11 SIGSEGV
+42/57 test-linking-defined-device-node-target-object-name-capture         FAIL            0.01s   killed by signal 11 SIGSEGV
+43/57 test-linking-defined-device-node-node-target                        FAIL            0.01s   killed by signal 11 SIGSEGV
+44/57 test-linking-defined-device-node-node-target-capture                FAIL            0.01s   killed by signal 11 SIGSEGV
+45/57 test-linking-defined-device-node-target-node-metadata               FAIL            0.01s   killed by signal 11 SIGSEGV
+46/57 test-linking-defined-device-node-target-node-metadata-capture       FAIL            0.00s   killed by signal 11 SIGSEGV
+47/57 test-linking-defined-device-node-target-object-metadata             FAIL            0.01s   killed by signal 11 SIGSEGV
+48/57 test-linking-defined-device-node-target-object-metadata-capture     FAIL            0.01s   killed by signal 11 SIGSEGV
+49/57 test-linking-defined-device-node-target-object-int-metadata         FAIL            0.01s   killed by signal 11 SIGSEGV
+50/57 test-linking-defined-device-node-target-object-int-metadata-capture FAIL            0.00s   killed by signal 11 SIGSEGV
+51/57 00-test-default-nodes-initial-metadata-update                       FAIL            0.00s   killed by signal 11 SIGSEGV
+52/57 test-dbus-connection                                                FAIL            0.01s   killed by signal 11 SIGSEGV
+53/57 test-reserve-device                                                 FAIL            0.01s   killed by signal 11 SIGSEGV
+54/57 test-file-monitor                                                   FAIL            0.01s   killed by signal 11 SIGSEGV
+55/57 test-si-node                                                        FAIL            0.00s   killed by signal 11 SIGSEGV
+56/57 test-si-audio-adapter                                               FAIL            0.00s   killed by signal 11 SIGSEGV
+57/57 test-si-standard-link                                               FAIL            0.00s   killed by signal 11 SIGSEGV
+
+Ok:                 10  
+Expected Fail:      0   
+Fail:               47  
+Unexpected Pass:    0   
+Skipped:            0   
+Timeout:            0   
+
+Full log written to /tmp/wp-installed-runtime-20261008/build/meson-logs/testlog.txt

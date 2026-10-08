@@ -1,0 +1,35 @@
+[New LWP 1101037]
+[New LWP 1101036]
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+0x00007f8c7e78572e in ?? () from /lib/x86_64-linux-gnu/libc.so.6
+
+Thread 3 (Thread 0x7f8c7e4846c0 (LWP 1101036) "data-loop"):
+#0  0x00007f8c7e78572e in ?? () from /lib/x86_64-linux-gnu/libc.so.6
+#1  0x00007f8c7e77a388 in ?? () from /lib/x86_64-linux-gnu/libc.so.6
+#2  0x00007f8c7e77a3cd in ?? () from /lib/x86_64-linux-gnu/libc.so.6
+#3  0x00007f8c7e7fb7ed in epoll_wait () from /lib/x86_64-linux-gnu/libc.so.6
+#4  0x00007f8c7e6d8423 in impl_pollfd_wait () from /tmp/rtc-installed-runtime-20261008/builddir/pipewire/spa/plugins/support/libspa-support.so
+#5  0x00007f8c7e6b06c7 in loop_iterate () from /tmp/rtc-installed-runtime-20261008/builddir/pipewire/spa/plugins/support/libspa-support.so
+#6  0x00007f8c7e944991 in do_loop () from /tmp/rtc-installed-runtime-20261008/builddir/pipewire/src/pipewire/libpipewire-ao-0.3.so.0
+#7  0x00007f8c7e77d8bb in ?? () from /lib/x86_64-linux-gnu/libc.so.6
+#8  0x00007f8c7e7fb538 in ?? () from /lib/x86_64-linux-gnu/libc.so.6
+
+Thread 2 (Thread 0x7f8c7dc836c0 (LWP 1101037) "data-loop"):
+#0  0x00007f8c7e77abbb in ?? () from /lib/x86_64-linux-gnu/libc.so.6
+#1  0x00007f8c7e780d19 in pthread_mutex_lock () from /lib/x86_64-linux-gnu/libc.so.6
+#2  0x00007f8c7e6b0c0e in loop_enter () from /tmp/rtc-installed-runtime-20261008/builddir/pipewire/spa/plugins/support/libspa-support.so
+#3  0x00007f8c7e944943 in do_loop () from /tmp/rtc-installed-runtime-20261008/builddir/pipewire/src/pipewire/libpipewire-ao-0.3.so.0
+#4  0x00007f8c7e77d8bb in ?? () from /lib/x86_64-linux-gnu/libc.so.6
+#5  0x00007f8c7e7fb538 in ?? () from /lib/x86_64-linux-gnu/libc.so.6
+
+Thread 1 (Thread 0x7f8c7e6e9b80 (LWP 1101035) "pw-test-row-ret"):
+#0  0x00007f8c7e78572e in ?? () from /lib/x86_64-linux-gnu/libc.so.6
+#1  0x00007f8c7e77a388 in ?? () from /lib/x86_64-linux-gnu/libc.so.6
+#2  0x00007f8c7e77a9ac in ?? () from /lib/x86_64-linux-gnu/libc.so.6
+#3  0x00007f8c7e77ce98 in pthread_cond_wait () from /lib/x86_64-linux-gnu/libc.so.6
+#4  0x000055a460038f8b in publish_on_loop ()
+#5  0x00007f8c7e6b1eab in flush_queues.constprop () from /tmp/rtc-installed-runtime-20261008/builddir/pipewire/spa/plugins/support/libspa-support.so
+#6  0x00007f8c7e6b496e in loop_invoke () from /tmp/rtc-installed-runtime-20261008/builddir/pipewire/spa/plugins/support/libspa-support.so
+#7  0x000055a4600337fd in main ()
+[Inferior 1 (process 1101035) detached]

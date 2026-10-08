@@ -188,7 +188,8 @@ function export_package(args; simulator_backend::String="cpu")
             "heart-dm-source" => "core", "heart-wfs-sink" => "core")
         ScienceExport.wireplumber_session_defaults!(specification)
         ScienceExport.stage_wireplumber!(package;
-            build=option(args, :wireplumber_build), source=option(args, :wireplumber_source))
+            build=option(args, :wireplumber_build), source=option(args, :wireplumber_source),
+            prefix=args.pipewire_prefix)
         provenance["engine"] = "heart"
         merge!(provenance["hil"],Dict("command_unit"=>"metre OPD","plant_command_scale"=>1.0,"transport"=>"heart"))
         provenance["heart"] = merge(config,Dict("revision"=>ScienceExport.revision(args.heart_root),

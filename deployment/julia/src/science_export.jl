@@ -189,29 +189,57 @@ function wireplumber_session_defaults!(specification)
     return specification
 end
 
-"Stage a bounded WirePlumber build and its Lua scripts before sealing artifacts."
-function stage_wireplumber!(package; build=nothing, source=nothing)
+"Copy WirePlumber assets from an installed prefix or an explicit development build."
+function stage_wireplumber!(package; build=nothing, source=nothing, prefix=nothing)
     (build === nothing) == (source === nothing) ||
         throw(ArgumentError("WirePlumber build and source must be supplied together"))
     target = joinpath(package, "wireplumber")
-    if build !== nothing
-        build = realpath(build)
-        source = realpath(source)
-        (ispath(target) || islink(target)) && rm(target; force=true, recursive=true)
-        binary = joinpath(build, "src/wireplumber")
-        library = realpath(joinpath(build, "lib/wp/libwireplumber-0.5.so.0"))
+    if build !== nothing || prefix !== nothing
+        if build !== nothing
+            build, source = realpath(build), realpath(source)
+            binary = joinpath(build, "src/wireplumber")
+            library = realpath(joinpath(build, "lib/wp/libwireplumber-0.5.so.0"))
+            modules = joinpath(build, "modules")
+            scripts = joinpath(source, "src/scripts")
+        else
+            prefix = realpath(prefix)
+            candidates = [joinpath(prefix, "lib"), joinpath(prefix, "lib64")]
+            isdir(joinpath(prefix, "lib")) && append!(candidates,
+                readdir(joinpath(prefix, "lib"); join=true))
+            libraries = filter(path -> isfile(joinpath(path, "libwireplumber-0.5.so.0")), candidates)
+            length(libraries) == 1 ||
+                throw(ArgumentError("expected one installed WirePlumber library directory in $prefix"))
+            directory = only(libraries)
+            binary = joinpath(prefix, "bin/wireplumber")
+            library = realpath(joinpath(directory, "libwireplumber-0.5.so.0"))
+            modules = joinpath(directory, "wireplumber-0.5")
+            scripts = joinpath(prefix, "share/wireplumber/scripts")
+        end
         isfile(binary) && (stat(binary).mode & 0o111) != 0 ||
-            throw(ArgumentError("selected WirePlumber build has no executable"))
-        copy_tree(joinpath(source, "src/scripts"), joinpath(target, "scripts");
-            ignored=Set(["tests", "test"]))
-        copy_file(binary, joinpath(target, "bin/wireplumber"))
-        chmod(joinpath(target, "bin/wireplumber"), stat(binary).mode & 0o777)
-        copy_file(library, joinpath(target, "lib/wp/libwireplumber-0.5.so.0"))
-        for name in ("libwireplumber-module-lua-scripting.so",
-                     "libwireplumber-module-ao-control-endpoint.so")
-            copy_file(joinpath(build, "modules", name), joinpath(target, "modules", name))
+            throw(ArgumentError("selected WirePlumber runtime has no executable"))
+        islink(target) && throw(ArgumentError("staged WirePlumber directory must not be a symlink"))
+        temporary = mktempdir(package; prefix="wireplumber-stage-")
+        try
+            copy_tree(scripts, joinpath(temporary, "scripts"); ignored=Set(["tests", "test"]))
+            copy_file(binary, joinpath(temporary, "bin/wireplumber"))
+            chmod(joinpath(temporary, "bin/wireplumber"), stat(binary).mode & 0o777)
+            copy_file(library, joinpath(temporary, "lib/wp/libwireplumber-0.5.so.0"))
+            for name in ("libwireplumber-module-lua-scripting.so",
+                         "libwireplumber-module-ao-control-endpoint.so")
+                copy_file(joinpath(modules, name), joinpath(temporary, "modules", name))
+            end
+            validate_wireplumber(temporary)
+            ispath(target) && rm(target; recursive=true)
+            mv(temporary, target)
+        finally
+            ispath(temporary) && rm(temporary; recursive=true)
         end
     end
+    validate_wireplumber(target)
+    return target
+end
+
+function validate_wireplumber(target)
     for file in ("bin/wireplumber", "lib/wp/libwireplumber-0.5.so.0",
                  "modules/libwireplumber-module-lua-scripting.so",
                  "modules/libwireplumber-module-ao-control-endpoint.so",
@@ -224,7 +252,7 @@ function stage_wireplumber!(package; build=nothing, source=nothing)
     end
     (stat(joinpath(target, "bin/wireplumber")).mode & 0o111) != 0 ||
         throw(ArgumentError("sealed WirePlumber executable is not executable"))
-    return target
+    return nothing
 end
 
 function revision(root::AbstractString)

@@ -1,0 +1,3834 @@
+{
+  "files": [
+    {
+      "path": "bin/wireplumber",
+      "before": null,
+      "after": {
+        "sha256": "699e6472085dd28c9532e91c05e1004f733566f0f49a39714cf19bd01c612f79",
+        "mode": 493
+      }
+    },
+    {
+      "path": "bin/wpctl",
+      "before": null,
+      "after": {
+        "sha256": "f9f2b3987dee06ba5723e6c677dba8f2e482e7a0ee204b140f73a99fff3d01d8",
+        "mode": 493
+      }
+    },
+    {
+      "path": "bin/wpexec",
+      "before": null,
+      "after": {
+        "sha256": "36a90eb4424e6622ac45c5ce9ae57d9ff03d40efc547e1b426c9a59f8b2b2862",
+        "mode": 493
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/base-dirs.h",
+      "before": null,
+      "after": {
+        "sha256": "7e664d45b143a97b627f90cf5c01f57b43d226aff950d8c42470e58b90c97459",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/client.h",
+      "before": null,
+      "after": {
+        "sha256": "276d464a9f2aaa8d636b5585fb49f98d775af849f5f9e9ae66f567044abb4e5a",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/component-loader.h",
+      "before": null,
+      "after": {
+        "sha256": "ccbb8a12daccf7d891e5b592fe28362971022094b3ca8ccf7960b635733940ea",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/conf.h",
+      "before": null,
+      "after": {
+        "sha256": "cf60b954ee90098a6a5931f8eb474bce7a83ea7c0066f20284595336ba48a7ac",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/core.h",
+      "before": null,
+      "after": {
+        "sha256": "935f6a6a6e1d50d855119a00ae5b4aa8218c250a49bb2ebae4fc0093ff2b1fce",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/defs.h",
+      "before": null,
+      "after": {
+        "sha256": "8d2f040c33d66a2a22ecbf9656f3c7d50c12d48b08b49818ed2a472c8d1fabe1",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/device.h",
+      "before": null,
+      "after": {
+        "sha256": "4fe3bbb2a57c75a3c9da2b742d5fd378dd0e88c98e299c7c6a2d5a3a4224a923",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/dynamic-rules.h",
+      "before": null,
+      "after": {
+        "sha256": "273008b647a97e2e8246341c0f811c5a7455a695fba0affd6d466db07e997bda",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/error.h",
+      "before": null,
+      "after": {
+        "sha256": "c46683e337b19474342b1be68f86d36946d5427122b6ce9da3c5a0547bb9a40d",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/event-dispatcher.h",
+      "before": null,
+      "after": {
+        "sha256": "2e12210839fe712f7be964f0d0c9a26f31fa61e482a4fbcd2b103e3b2ce7f49a",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/event-hook.h",
+      "before": null,
+      "after": {
+        "sha256": "8590944eba35bd61c62d2e24eccd6fa2cd96b1779c6614d516eb1cca30658eee",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/event.h",
+      "before": null,
+      "after": {
+        "sha256": "0b1bc0552f47e7ec3e6ba6ae73b81f2f1b5cd4c795104ca73c90900c65003c2b",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/factory.h",
+      "before": null,
+      "after": {
+        "sha256": "f1fdf13332d5983c0ce77f2a98d76ddfcd3458f041886e0a619edee79f002632",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/global-proxy.h",
+      "before": null,
+      "after": {
+        "sha256": "f0bef693ae75ebd3ce29a721fd660434a0b86d81cb81725518cb582b20e9e867",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/iterator.h",
+      "before": null,
+      "after": {
+        "sha256": "92e6238457393bbb66efc09559c50b158f03fa36259f6072e661ab33d3b68cd7",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/json-utils.h",
+      "before": null,
+      "after": {
+        "sha256": "928d1d99ffface984ea059d7ca60ddfa2f2040509f7a2ad42ac70fae7ad6481d",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/link.h",
+      "before": null,
+      "after": {
+        "sha256": "1a003258bcd1d29e1464315605ffc1f7edde62f812246c1613542650d8450eb9",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/log.h",
+      "before": null,
+      "after": {
+        "sha256": "fad429cb196e1b53b85f5020ecb91e3efafe14736386c7173bffea6739a82adf",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/metadata.h",
+      "before": null,
+      "after": {
+        "sha256": "0be4452981a816519e1963666ad1c8353138e821d8e15e408c0dea2d428f6fde",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/module.h",
+      "before": null,
+      "after": {
+        "sha256": "ce5ddd006238aaea85b56cff4e583c34ffef849677aae5f05f71fa55b8dad967",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/node.h",
+      "before": null,
+      "after": {
+        "sha256": "8e94af3b91e71090ea5ce9933cb2b373f1fbe05f89ad88b22b3fec03003bcedb",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/object-interest.h",
+      "before": null,
+      "after": {
+        "sha256": "a177cf6de700a44b5813a421655aadcea909bcb3119ff63c69c21fb2cadd6006",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/object-manager.h",
+      "before": null,
+      "after": {
+        "sha256": "1b9a5fd63e09a27ea5bfa1d43edafc6b166cc10b5f1fcaa4a8274e5ebfdae266",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/object.h",
+      "before": null,
+      "after": {
+        "sha256": "9fdfd5cfe99ccb01cab36475642432a8bb1f1b5c81acbe91ba6f6bfbedd4f400",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/permission-manager.h",
+      "before": null,
+      "after": {
+        "sha256": "2d2028436401413dba3df60849e820fbd92de80165b87243b83394d91c5f3dcf",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/plugin.h",
+      "before": null,
+      "after": {
+        "sha256": "314741bec57feb1d8a14f6c0dc95f22952e95e01b7c6ffcefe543604e309910a",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/port.h",
+      "before": null,
+      "after": {
+        "sha256": "eeee9266838c69f94f7242484c9f6987fbb0aa39b2d30548141e96486a98645f",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/proc-utils.h",
+      "before": null,
+      "after": {
+        "sha256": "3818c96aa6bc93ece72a91a32ad5b1c2e1ad1fdc65873c2211c343e337210605",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/properties.h",
+      "before": null,
+      "after": {
+        "sha256": "55f7364af6e9efad19a86a80b82210294cd926603363655b4c3aa5650e11f86d",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/proxy-interfaces.h",
+      "before": null,
+      "after": {
+        "sha256": "02b51e21296926edcdbbc1df808ad3a8a28cf6206570b466e86e2cb8cc7b968d",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/proxy.h",
+      "before": null,
+      "after": {
+        "sha256": "4af31baa976046920eee3c4e85bd67d12dfd4f02503b611b8e262ba2d52b5ba5",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/session-item.h",
+      "before": null,
+      "after": {
+        "sha256": "5c788d6fd75dac3a3fc94fa160c15e98b81c0f9584beca03efa7ecd5bc74e853",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/settings.h",
+      "before": null,
+      "after": {
+        "sha256": "a06a8f25698940686165921eddaf778a5e8e78ef26b81334c9cd9bf3f214182e",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/si-factory.h",
+      "before": null,
+      "after": {
+        "sha256": "51cd500e0196cf47fe204702298b9582cdba1a930e98ea8d74326f19d7d4e954",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/si-interfaces.h",
+      "before": null,
+      "after": {
+        "sha256": "04bb713c227fc48bb58ead37d6140af0f226c46f6a55f450dceb922f6a4bcd09",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/spa-json.h",
+      "before": null,
+      "after": {
+        "sha256": "9a736ad7c115b6a1a74a068ab15c99b1ad06aed09c91725775240d67c497cc47",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/spa-pod.h",
+      "before": null,
+      "after": {
+        "sha256": "04ed5718adedb210b9dec5ceaedf472768f4bc34bfb9651d6d9e8b81f37a47c6",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/spa-type.h",
+      "before": null,
+      "after": {
+        "sha256": "3de56a719218520f8128b330a5d7ef293b6ca9f4c8a86a7b9251850b90493232",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/state.h",
+      "before": null,
+      "after": {
+        "sha256": "e235cbfb26affa56f1146a462e968b7a3c471f7ae1ec426a309dc5420e44f4b2",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/transition.h",
+      "before": null,
+      "after": {
+        "sha256": "8d22015865bb45a4f917b25477e612c300963025c0648664f246936a682a9f0d",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/wp.h",
+      "before": null,
+      "after": {
+        "sha256": "83da5c2a7d474a562c398fc8c96b31ef89af7d328214a2fc5464c0bca12a3849",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/wpenums.h",
+      "before": null,
+      "after": {
+        "sha256": "50eca42a7e0328fe7a883358fe53a8882d5569f302a12a713d46d70ff94252f4",
+        "mode": 420
+      }
+    },
+    {
+      "path": "include/wireplumber-0.5/wp/wpversion.h",
+      "before": null,
+      "after": {
+        "sha256": "f310bbd8088ae136e783c1dd83b474a54a75b875d79db44fce5e7d313cd4a9fc",
+        "mode": 420
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/liblua.a",
+      "before": null,
+      "after": {
+        "sha256": "2928abcf76b582bf16cbfde11f0a3ad06346f422e5f8d798bec64599f4ee0f74",
+        "mode": 420
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/libwireplumber-0.5.so",
+      "before": null,
+      "after": {
+        "symlink": "libwireplumber-0.5.so.0"
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/libwireplumber-0.5.so.0",
+      "before": null,
+      "after": {
+        "symlink": "libwireplumber-0.5.so.0.518.0"
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/libwireplumber-0.5.so.0.518.0",
+      "before": null,
+      "after": {
+        "sha256": "ea501083a3de22c3c499cba90835c95509e42f5cf935fa52965fae698b27821f",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/pkgconfig/wireplumber-0.5.pc",
+      "before": null,
+      "after": {
+        "sha256": "966ac999b2c22977163dca167f2f92dbd737a4a7cb9470756dcb77436e01071e",
+        "mode": 420
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/wireplumber-0.5/libwireplumber-module-ao-control-endpoint.so",
+      "before": null,
+      "after": {
+        "sha256": "0a81c3d2e7da091986a680ac77b6e69cd1a9e243e5721064271768ee1169f036",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/wireplumber-0.5/libwireplumber-module-dbus-connection.so",
+      "before": null,
+      "after": {
+        "sha256": "64866fcc4740269cde99643c5526f12e0c1adc7860b339eb4f4ffe4e6012f339",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/wireplumber-0.5/libwireplumber-module-default-nodes-api.so",
+      "before": null,
+      "after": {
+        "sha256": "ab1016d4fa153f06bcce0166d54322ce61c4b18f7baf40c9412e2572bacc3762",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/wireplumber-0.5/libwireplumber-module-file-monitor-api.so",
+      "before": null,
+      "after": {
+        "sha256": "693a882f96374b674c0cafa181af834c45b8a3b13b88f0474a2f5bd5aaa84013",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/wireplumber-0.5/libwireplumber-module-log-settings.so",
+      "before": null,
+      "after": {
+        "sha256": "cb76bcf2fba8ca2f2614166e0c0eb3ac5c04a4eabf939515aa496dfe9b743bfa",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/wireplumber-0.5/libwireplumber-module-lua-scripting.so",
+      "before": null,
+      "after": {
+        "sha256": "43546082dc3fa07eb65c1bbed7d9f93ed384e139e141530a878979ead90956b2",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/wireplumber-0.5/libwireplumber-module-mixer-api.so",
+      "before": null,
+      "after": {
+        "sha256": "8346aa57e6cd1b5a25c24bec251ae8649d875bd858b9a3b5833d5707f7b3de6e",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/wireplumber-0.5/libwireplumber-module-modem-manager.so",
+      "before": null,
+      "after": {
+        "sha256": "c65450f327f80829ae46dd8e50fe5127639e7aa35e94f06b1032054a282f42f2",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/wireplumber-0.5/libwireplumber-module-mpris.so",
+      "before": null,
+      "after": {
+        "sha256": "593fe7130369556fb12fe24d8c1d139e651bb0b58b950f6c59a9ac9780995ab3",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/wireplumber-0.5/libwireplumber-module-notifications-api.so",
+      "before": null,
+      "after": {
+        "sha256": "8b87419be9c904d47c86d737bc65f109df1e3e21126910bb7543acbeb7d33f12",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/wireplumber-0.5/libwireplumber-module-portal-permissionstore.so",
+      "before": null,
+      "after": {
+        "sha256": "8cb2be29cfe770f6861afc840e3fb853ada49b6fff68f885433fc8a77678091a",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/wireplumber-0.5/libwireplumber-module-reserve-device.so",
+      "before": null,
+      "after": {
+        "sha256": "22fb868547a695b7589e4e63a5d10e7418a0009dc984105dffe4b98d5494aacb",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/wireplumber-0.5/libwireplumber-module-settings.so",
+      "before": null,
+      "after": {
+        "sha256": "96148a8315f7164a0e2b9ce1b3de48576ff9a32bc6e905b069cdf17cd8e3a6e5",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/wireplumber-0.5/libwireplumber-module-si-audio-adapter.so",
+      "before": null,
+      "after": {
+        "sha256": "b5dac1ebd39ad218617c3f086e56e6e91292d63070ad66f5f29631f0d4600162",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/wireplumber-0.5/libwireplumber-module-si-node.so",
+      "before": null,
+      "after": {
+        "sha256": "f126356d427549ac6d0e32304c77f214256fe954aff4cc0000ec5c00b71f9591",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/wireplumber-0.5/libwireplumber-module-si-standard-link.so",
+      "before": null,
+      "after": {
+        "sha256": "a4a3f13d3825f4f2474bd6cbe1799474adf14392b68372907c92b3569bcf2895",
+        "mode": 493
+      }
+    },
+    {
+      "path": "lib/x86_64-linux-gnu/wireplumber-0.5/libwireplumber-module-standard-event-source.so",
+      "before": null,
+      "after": {
+        "sha256": "d0bf04a5545cf1636c45909cd0604dc27f62c97292da172571aba71481155056",
+        "mode": 493
+      }
+    },
+    {
+      "path": "share/bash-completion/completions/wpctl",
+      "before": null,
+      "after": {
+        "sha256": "d86d2fa34144d88cedfca2c0a3d528c32f2a4252eb0d2cdd0e9f3a322c637d5b",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/doc/wireplumber/examples/wireplumber.conf.d/access.conf",
+      "before": null,
+      "after": {
+        "sha256": "577083fba596b19cf28f6574fdd101343ce43e16ba3b5ad8b041b90293ce09f6",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/doc/wireplumber/examples/wireplumber.conf.d/alsa.conf",
+      "before": null,
+      "after": {
+        "sha256": "823b54bf35beb56010a314bcfe10b3a73d4dc6a3fb5db697ff7f82e0fa9043e0",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/doc/wireplumber/examples/wireplumber.conf.d/bluetooth.conf",
+      "before": null,
+      "after": {
+        "sha256": "50d84f88f22d048257b2d143d23db4a963943a66e0e01b617f320fdfbca71a64",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/doc/wireplumber/examples/wireplumber.conf.d/device.conf",
+      "before": null,
+      "after": {
+        "sha256": "32e2966ec0cadd1b1842be82075f32de5c6c2be142cd805195812f624fc2f75d",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/doc/wireplumber/examples/wireplumber.conf.d/filter-graph.conf",
+      "before": null,
+      "after": {
+        "sha256": "04e10e01ad1b83fb14f1bc21607d8453df4acb6169ceba4c34298a5730119a72",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/doc/wireplumber/examples/wireplumber.conf.d/libcamera.conf",
+      "before": null,
+      "after": {
+        "sha256": "d6798d3e67bd91af5964c0d80f77452a4014d0120545fb10533cde1e59d94d43",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/doc/wireplumber/examples/wireplumber.conf.d/linking.conf",
+      "before": null,
+      "after": {
+        "sha256": "f969d2105f4e10191cfb86d031dd58fa5c41b7c747adfd42f9c937197a15b9c0",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/doc/wireplumber/examples/wireplumber.conf.d/log.conf",
+      "before": null,
+      "after": {
+        "sha256": "f8b08b37bb27c438e468d64530f943c7c3c5f477b8b8412d33270fbdd5608a2c",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/doc/wireplumber/examples/wireplumber.conf.d/media-role-nodes.conf",
+      "before": null,
+      "after": {
+        "sha256": "413b7495a04b4e30148a08296f91b6c7a6e5a718241b97f8d7c98331dd183082",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/doc/wireplumber/examples/wireplumber.conf.d/profile.conf",
+      "before": null,
+      "after": {
+        "sha256": "64c517f47b1a0ea8245292364244530872ad493a0e616ed2203aea2efa34add6",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/doc/wireplumber/examples/wireplumber.conf.d/smart-equalizer.conf",
+      "before": null,
+      "after": {
+        "sha256": "068fb0a7c9966e330c17bb7352a61d518c08710240a6caceec9b5af6c2314db3",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/doc/wireplumber/examples/wireplumber.conf.d/stream.conf",
+      "before": null,
+      "after": {
+        "sha256": "bca57c5b197bdfc6895daf021c9b6018d3b7b52eaa50f207bdfb2cd524c34563",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/doc/wireplumber/examples/wireplumber.conf.d/v4l2.conf",
+      "before": null,
+      "after": {
+        "sha256": "1b6bbe8b8876eb8674e4c7d752ae200566c80a4fbb6f229d579d0504f999d3c2",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/af/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "0fbaa3aa70375e2b515d77efeb525b5abf0d36e1fc4b662997287f244a067365",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/as/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "a2332790567f0de284a7206eff35fdc287980e1bb1c5a127033110e2867b659f",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/be/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "b1f1cd09cf8c37a13260c408943c144a49bc95e5e78ed73a62f47b95a8227826",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/bg/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "628114d8ae6cc5f9d1b3b975220fa40b5b1d7d51b7576077f164dc2820fcdde3",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/bn_IN/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "106cb74ec9ed4ad32f589fb8e67bbbdbebe176d76e08964165d36a18dce07d41",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/ca/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "35e856f878c7755283e0444631b5557f17befd30ebfbc69ee3cc6e68a2fa2966",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/cs/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "f8e8677a4b33499af8fd499f24073ac2b5f9e1a323ef19f745a85d050c0da2d1",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/da/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "5fc9ca31ed448610cad664ff70d2ca91738b60e18f19ac4e357f9644ba70e945",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/de/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "a67d9b0b6311372e8d016e8baf6bd655cf090f22c988511300320a416736cd15",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/de_CH/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "5674a3f425f962d472475f2f626f7b939ff4c2f80475896e99a0ff1a2e65a44e",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/el/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "777181e807d698c8e9a6ba99678d93b8f9c44a565330f5d7ed0649e694525932",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/eo/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "a82b39a5d00d57f6256e9c8be9c4fcf7b8b624b2f07d1897fe2e858ee3ed1cb2",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/es/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "5f91a45a4e81145e6979c5a267ebf55da372e60cc8f3f1202cc044a229215043",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/fa/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "92cb94412115019f94f7888a7698d8fe6d40400dec453e52cc8cf1037ba632ba",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/fi/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "904f497f6f071fabec14ace59199ec4db5197a24d0833c2403a26ddc053c6e73",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/fr/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "98d2c43682048edcee4ba4e6b168a0755c9652ae42f27c77eaed58ae6b9cbd69",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/gl/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "0f99dd4953e8272f43b175df2022aa242e932d0c04a2fcc5be3cfa735defd465",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/gu/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "48cafe77b5acea319a4d8d0477ec777a67f613a2906211730e732994bf7a4a5a",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/he/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "defba0c40aa58785f649c2734447b1d7a626f1044cdce5212273637e3cefa693",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/hi/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "a7b9971fca33ea01cf5baa222dc7791e661c136ba3bcc9c8998e0506c8bec8b5",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/hr/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "92a7e0e14018a01e09d60eaff1a3e78df74a126cf223e4f988ec36177138cf74",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/hu/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "a72417aece98e3552a55089f1956555c43f5e7439d5b64e5106f9002d0d163e5",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/id/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "53cdcbb579df2123475967ac5abe20135d3f5222aa4d46f52ee495ec1aa0c9b0",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/it/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "dba7599ac370f930532a037c6670f9cf90c438c5e71341c5560a771dda07f615",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/ja/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "44d74ec825d6c6e3c0735646a70ff077631e6e80e8dfc9ac55a3263790227978",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/ka/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "9077a7a8bfc5d9c3de01285625a39cbdef034efe3b1d5d6bc89e08ab612388f9",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/kk/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "3a53dacb14658bc0a1b688c7f788f8a58d4643fcdf9c91edcee1442adb479aff",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/kn/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "39b4c07a63831e2b220abc69fa6d64a3bc6807058a302924b170d0b6042caf86",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/ko/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "0d5dea85e80a9a98cd66e1958b66c0e24e4b12a487f886691853db4219222ebe",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/lt/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "c6198dc4a90bebe6cd58b4dc8995e2b3897fe5bb10e1f17f84abe46a12d88315",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/ml/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "80d2d8123eeaca52e07d1b818b70952786cd85a3e57662ea49126f7b9120002d",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/mr/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "75f79899129e27178e4b7aa22757dc5d03d0b6241f47a23611731b9a72015a63",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/my/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "bdbcc7ff1d0fdcf87d735f2b5ccc53c1a7bbdf9b90a7f95fd32766d1d9796058",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/nb/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "9e2568db5eb958f1952a135726272aab440d4a1f192d0ee67a17595342c6446d",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/nl/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "4f4cf9c812e4d22fd88cb797bd915adcea64e26bcb91e5dfd0535316079fd128",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/nn/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "3615cc7e4425d8462e1d66a1514bb640ed186c7d1d05617a47a9619273b18975",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/oc/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "978d522f1f3d63a6577d7e49c1288eb7f623fc2ae4c9c1f881283bac4ce61168",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/or/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "4fad62030bd2ffe8655f57395390e75be5dbc14b8646135ba6a4e86fb71b9ea5",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/pa/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "7175198b6affa252c8207111a2c986813c7aaf72cb7048fc65ef74513d13a8c3",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/pl/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "7882f2cf306d4a9a31317766da53a28e54ffa307cace03ec0ac9c165bde8da30",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/pt/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "39b2e5122ebd9efab86cd30873c5e1620ba7beb42feb919af695b3d8b3a8ab6e",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/pt_BR/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "7196ce41a90dcb579a2d6eee5fd9149e98ec2ad6c872fd1468bb8de5ddb0fd99",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/ro/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "c50d188b48b29c56f1dc86fad4876e8b0dac539b5b5873b30aaaafa063dfc904",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/ru/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "89b8c66e2aba71e53181c0c9669c13b4fe24209e9d9b72ef9b9dffb5b9868f14",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/si/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "afed19c3569c37f4b87e3a7cee4d3746f23afeed1d0be4e7f3d2d473f71d3db8",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/sk/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "791fba0f76b64391a850b888a5ec11a1fad7869470d093fc635feced5f25dfd5",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/sl/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "51f737ea431ae01affb8d30312feaa80b513bcd1ab18965859a94cdc3e9e54ff",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/sr/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "d910c10a710be0c802a2180f1dc5308becad85b1ea4e96a60ad608ed7bd88e87",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/sr@latin/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "8ece0af8397d71274690b5e23f6942e7d856f303ef2740b8aab35439a27ae20c",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/sv/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "86b652839761035150319843d328d8f445e084308f0dcb536b0676f741e459cd",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/ta/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "fa83fd6ef9c502c6f71601f790ca35b52b6e56fd88c76c1baa797d470528e2b2",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/te/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "73aa8e81465c77e813bd9d7b267c7a2fbcdf2acf496d2665453b919862889276",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/tr/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "60c8e65d038bd432d1a13f7ccc14d3053381b722c270fd75e0196ec1c9b52da5",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/uk/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "91cce643f2a1f8083d4242d7d91ee1c69c80872d93590220acc6d34a3e46462a",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/zh_CN/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "d767a659e522a6898fedb383bc4b7c7691a075f142098996dfcb8aba4df7d799",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/locale/zh_TW/LC_MESSAGES/wireplumber.mo",
+      "before": null,
+      "after": {
+        "sha256": "7c1c4e57e8fa1c287bbce775e5afc9b502c185942fbc42d7fd31468e20d93cf4",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/ao/session.lua",
+      "before": null,
+      "after": {
+        "sha256": "2bb4b2d83455bc1d364fbfeee773e0f1143d9d21951f855ae88c267034070fcd",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/client/apply-access.lua",
+      "before": null,
+      "after": {
+        "sha256": "febc2d6aa4c2c327b78fcc6de7442992f3278f4886592f9649ee9478f393614a",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/client/find-config-access.lua",
+      "before": null,
+      "after": {
+        "sha256": "5f0c417a7ffbee59300077ade1cd914052440a09785ecb45247664bd1b07a247",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/client/find-default-access.lua",
+      "before": null,
+      "after": {
+        "sha256": "7e5d859d4d4821d45d5ac72301f3d9dc464f26b4a78facf1b2d4ae772dfd28e0",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/client/find-flatpak-access.lua",
+      "before": null,
+      "after": {
+        "sha256": "137ab5fb790f38c47736338d0b3d06de0df6d1b4e681bc9c411b1996dea09645",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/client/find-portal-access.lua",
+      "before": null,
+      "after": {
+        "sha256": "536f7552468881e459f67206ad8153dd3385cbc4dc27a1138a084a1449241f25",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/client/find-snap-access.lua",
+      "before": null,
+      "after": {
+        "sha256": "2d556cc3191cca8941ab914704a8495818b7bff5cbb6a47f70bffb8fb1718cdf",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/client/select-access.lua",
+      "before": null,
+      "after": {
+        "sha256": "3718d3987a46f502271a522bd7ccfb6a9d1c746fc2a5be10ac5ee43b21bc7f50",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/default-nodes/apply-default-node.lua",
+      "before": null,
+      "after": {
+        "sha256": "21746be3955485f44e197624fe98eaa94342538eb3895c865e850015c0b554b6",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/default-nodes/find-best-default-node.lua",
+      "before": null,
+      "after": {
+        "sha256": "5ef24a6239a460fb90ba4d810b5c381756a0004a75a4c70f268a41f1cd4aedba",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/default-nodes/find-selected-default-node.lua",
+      "before": null,
+      "after": {
+        "sha256": "37f256c714bae4217ad10ff0fba1d2bfb819d66a5e122fd910dbf58ce05aec27",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/default-nodes/rescan.lua",
+      "before": null,
+      "after": {
+        "sha256": "49060517629cfbe8e45a2551606ed6efaf91e8443f2c0132d63ae1e6fb806373",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/default-nodes/state-default-nodes.lua",
+      "before": null,
+      "after": {
+        "sha256": "fc968c6bef1fcefe0ccb75264388971533e3ad79df5cb78c599e98742d35a338",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/device/apply-profile.lua",
+      "before": null,
+      "after": {
+        "sha256": "f9c98a3ad33ea3c27d9b5f38e4b567a64b4acdd6efeb4dfa570aa55ee9291d72",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/device/apply-routes.lua",
+      "before": null,
+      "after": {
+        "sha256": "98690d647cebc78e6a6e401814e9086bf13a9c0362496a9d752c7b5bb14d90e5",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/device/automute-alsa-routes.lua",
+      "before": null,
+      "after": {
+        "sha256": "726f30174e45885d95431bb80ca7bb1c92fd9a7c0c81a28d955dc6c17a656ce4",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/device/autoswitch-bluetooth-profile.lua",
+      "before": null,
+      "after": {
+        "sha256": "aa8edce20e0de41fadd10d417ac4f43b900920318af4debd3e4c255c34d9062f",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/device/find-best-profile.lua",
+      "before": null,
+      "after": {
+        "sha256": "9eabbe2fe2038950cdb62482d08824f058e1c73a9690e7d447bf2a9f56412334",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/device/find-best-routes.lua",
+      "before": null,
+      "after": {
+        "sha256": "5f113802e9499d6666fe9f9eb80ed17d3f04729e558e9d5c25964068c179b5f3",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/device/find-preferred-profile.lua",
+      "before": null,
+      "after": {
+        "sha256": "543d212b8ad6870dacc74fb2042dea3c6ee9309cacc2c2fcb79ce9f3199631ab",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/device/find-voice-call-profile.lua",
+      "before": null,
+      "after": {
+        "sha256": "28a5d39db66735e62ca0f7804a100cc4b254a41a85293a54c3751a18e4a9e3c4",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/device/select-profile.lua",
+      "before": null,
+      "after": {
+        "sha256": "6be92c22ebfb412be3cc1ab9953d63e3d335b0656fc35f02e72650406e51f8ae",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/device/select-routes.lua",
+      "before": null,
+      "after": {
+        "sha256": "f6864d5717a1420d2f2b43ffe2d7530a98810e9b5fcba9a462a5a344f65300de",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/device/state-profile.lua",
+      "before": null,
+      "after": {
+        "sha256": "8866fd7a5910fd7ff158ecdccfc3a6929d800bfe69d7b581c5d318fbbc7930fc",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/device/state-routes.lua",
+      "before": null,
+      "after": {
+        "sha256": "9cc3723f33d9830731d65fdd0a774206f32fa5fe90f915a9971301e3d1426c8e",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/fallback-sink.lua",
+      "before": null,
+      "after": {
+        "sha256": "6921dcb6dc4cf1db162080d89a728cf9e85d8e75e91d4ba93bdc23eb5eb127be",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/lib/ao-acquisition.lua",
+      "before": null,
+      "after": {
+        "sha256": "313210f7702a5797cd85f02ae66c1119f01bda9586abfc794b486e82190bb2aa",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/lib/ao-connections.lua",
+      "before": null,
+      "after": {
+        "sha256": "26d54682cc9e5543b83b23046562647a52cbcba8271203cf607dcd706e08d5da",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/lib/ao-control.lua",
+      "before": null,
+      "after": {
+        "sha256": "cfd8cf439dce33a1d33addd5a0298ea35273585854a7a80eb10d96a3f426c777",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/lib/ao-owner.lua",
+      "before": null,
+      "after": {
+        "sha256": "9b6f86ee89639d3ee7335f202a123c0f0a4d0c29190714edd74c86d9babd0aa5",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/lib/ao-session-control.lua",
+      "before": null,
+      "after": {
+        "sha256": "db7fd2fcb2f84f1f255d2686fac74ce7ebf8bbbb70c926a449cc7f67c1bff76c",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/lib/audio-group-utils.lua",
+      "before": null,
+      "after": {
+        "sha256": "dc66a5609fa3b6f21440982c6bc8e28d2798652702284ac9766bf7641e8fe72f",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/lib/common-utils.lua",
+      "before": null,
+      "after": {
+        "sha256": "09a9b5c6875039ab93a27f9ce254a4ea767797822323d75c9930fb79a2dffb3b",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/lib/device-info-cache.lua",
+      "before": null,
+      "after": {
+        "sha256": "83859077720c0f04e4e6cc21497877e23cd94c799c568a091546273be5c9e831",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/lib/filter-utils.lua",
+      "before": null,
+      "after": {
+        "sha256": "6d9720056ef7ea7d96ed2ceda612d0efe1874d0233684dd1ecd3ec5fadf0b988",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/lib/linking-utils.lua",
+      "before": null,
+      "after": {
+        "sha256": "c1d4267b33d943e327caa5a05187578008bf04f7d44dacce01169e0689dfbb4e",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/lib/monitor-utils.lua",
+      "before": null,
+      "after": {
+        "sha256": "facd0a9e1799f6824598b8299c30a43ba402e98f2e74d90ba8a4584ee35f2e57",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/lib/node-utils.lua",
+      "before": null,
+      "after": {
+        "sha256": "290e7c1c05de70bf27e2808fbfa7f8d1ee9e0f33f9299da8cb3e99748b7e09c9",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/lib/profile-utils.lua",
+      "before": null,
+      "after": {
+        "sha256": "669c8796ec32aa9f148a53778ab77928a7a8979f19d4db28446ceb7c0f57d5bd",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/linking/find-audio-group-target.lua",
+      "before": null,
+      "after": {
+        "sha256": "d777febf1e97e555c4d0980973e3bcd3340e146e4354c411ca38abd9e9a07e92",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/linking/find-best-target.lua",
+      "before": null,
+      "after": {
+        "sha256": "91757804fc1ebdfb62760f7705afe12f279916f46aa331a2e1813095095b3d80",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/linking/find-default-target.lua",
+      "before": null,
+      "after": {
+        "sha256": "4c333ce1c0e510ebe1865805da5321c0155a7f90682d4404a8fed7322a137d1d",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/linking/find-defined-target.lua",
+      "before": null,
+      "after": {
+        "sha256": "758a3d25ec9a8064a080c5caaf895624ff217942b913c5ed1839bb318a398c3f",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/linking/find-filter-target.lua",
+      "before": null,
+      "after": {
+        "sha256": "d80a728d23672d6e9781009896a70172f031610a029b1c3b9ec3a60f6fb6abf1",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/linking/find-media-role-sink-target.lua",
+      "before": null,
+      "after": {
+        "sha256": "4fab5313af766110308fb6490ce31b3105ab7669f0a6d0614cb0f2b147d64e0c",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/linking/find-media-role-target.lua",
+      "before": null,
+      "after": {
+        "sha256": "8ba852b3b148398436987ea1c10c4857783c95eb9ab82656ed0043ce6c3610b2",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/linking/get-filter-from-target.lua",
+      "before": null,
+      "after": {
+        "sha256": "70fb40a96b4638015ec0ad817f3d2b7764d9ee5bef890c0c51e5868433732b9a",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/linking/link-target.lua",
+      "before": null,
+      "after": {
+        "sha256": "9e8a24f2ec0fdb52b7db307bfc35d02c03133b4a6f6c98e23fcf27a1779ebf05",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/linking/mpris-pause.lua",
+      "before": null,
+      "after": {
+        "sha256": "5736b1fafe65d4a16d519147307c1c5bbc363cbbaf33b34cf000d92f87934b0e",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/linking/prepare-link.lua",
+      "before": null,
+      "after": {
+        "sha256": "c2dec8776fd7089663cce46db39367049f1e7d7d87119b9d030530df385f7615",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/linking/rescan-media-role-links.lua",
+      "before": null,
+      "after": {
+        "sha256": "a5507be87263319531ab4dca1d4ce1a57ed310eae85d05aa8df09e09d4020696",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/linking/rescan-on-linkable.lua",
+      "before": null,
+      "after": {
+        "sha256": "538ebaa392d2e8a78b828f4295eb600823b254f3b6111331100d611007d7668f",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/linking/rescan.lua",
+      "before": null,
+      "after": {
+        "sha256": "b8b422c7e168fb466169f3c693eb2a6d82e92ac53c340764d3f760e267e834e1",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/metadata.lua",
+      "before": null,
+      "after": {
+        "sha256": "7394102cc24ee32f68d687fce26033c770e38f5f130a5dd495f6c42506342996",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/monitors/alsa-midi.lua",
+      "before": null,
+      "after": {
+        "sha256": "9977bd49f1d7aab636c7ad3255a0bbf4e78eebf44632a1d30cedc730faeb7abd",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/monitors/alsa.lua",
+      "before": null,
+      "after": {
+        "sha256": "b34959d3daaafb7fc82078cb6aa18a435a9ab28d4a6622f158ce89e10d2d8c67",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/monitors/bluez/create-device.lua",
+      "before": null,
+      "after": {
+        "sha256": "a9c4ee2c7d3e673d50013a9b981bc05b35a245b66a9d7ecba6cc7e26e2521ae1",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/monitors/bluez/create-loopback-node.lua",
+      "before": null,
+      "after": {
+        "sha256": "15771df4fa20ae01cfb29c32955fa6ed35762eb6d11374f872df487c66ac78f2",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/monitors/bluez/create-node.lua",
+      "before": null,
+      "after": {
+        "sha256": "fe72b3d4cc01837008cae590de1aba5ebe21f1224bd59d8fe130071c3e682c4d",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/monitors/bluez/create-offload-node.lua",
+      "before": null,
+      "after": {
+        "sha256": "f0c9397caacce651dd8354b50423b5b97cd71c3710e19ed08d4b959c6852172f",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/monitors/bluez/create-set-node.lua",
+      "before": null,
+      "after": {
+        "sha256": "8b30f18e8ac12c03b01455fc0a3f74e50357a13c94f12238cb81b242b175d7a3",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/monitors/bluez/enumerate-device.lua",
+      "before": null,
+      "after": {
+        "sha256": "1f982d9e46fb919caf6feb707bd7cdd1451982cfb14385da0592679a9b841148",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/monitors/bluez/name-device.lua",
+      "before": null,
+      "after": {
+        "sha256": "84f7ab05ef1e2e1840f88d84e118892ef91a4916a190bf19d55cb774c7217f54",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/monitors/bluez/name-node.lua",
+      "before": null,
+      "after": {
+        "sha256": "3f227bcfd31f2bdc2899fa226f5a6a5f50f1d24cbe3e64df0699f597d364fb3a",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/monitors/bluez/remove-device.lua",
+      "before": null,
+      "after": {
+        "sha256": "0dda705b16ca651fddc84bcde704b43b5fe5987963077cae01bf06a77e6072ac",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/monitors/bluez/remove-node.lua",
+      "before": null,
+      "after": {
+        "sha256": "b71ca675b3e0bdeab9e84100e010a90676c4516f44f5caaeca113357b44378c2",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/monitors/bluez-midi.lua",
+      "before": null,
+      "after": {
+        "sha256": "7589b26fe416ba6ec2609747cfd0b5fef01d238183775b3c7166b1b41dc73def",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/monitors/libcamera/create-device.lua",
+      "before": null,
+      "after": {
+        "sha256": "42f948f45890f8d9ad58b2ea80380ac7269a8523481050ed949a8a5823e810f5",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/monitors/libcamera/create-node.lua",
+      "before": null,
+      "after": {
+        "sha256": "53b111b46fcf2782a8322c12912ba30801b5b9d0979e143af12bf88a409dc21d",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/monitors/libcamera/enumerate-device.lua",
+      "before": null,
+      "after": {
+        "sha256": "ca852d1cdd8764194b48836717b0da0560540142e195a4f305f25a94819c0f2c",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/monitors/libcamera/name-device.lua",
+      "before": null,
+      "after": {
+        "sha256": "421256d8a7e6025eeea8aa85ea8d076371b3d9e0033d7efa264454dbb998767e",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/monitors/libcamera/name-node.lua",
+      "before": null,
+      "after": {
+        "sha256": "2e5f2bfb1cb59a2e7a41bb849f5543f2ecf42a8e43e4ea77669982648ceac083",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/monitors/v4l2/create-device.lua",
+      "before": null,
+      "after": {
+        "sha256": "1694a42c3659c8c2d2fd7c8c6e4204f907bf5ddd76ef640d1bcb844eaa050eeb",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/monitors/v4l2/create-node.lua",
+      "before": null,
+      "after": {
+        "sha256": "8b9c4f6eb99d9ebd401f797d294fc288dd0a3991a4879a7e26b14274b31d89e3",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/monitors/v4l2/enumerate-device.lua",
+      "before": null,
+      "after": {
+        "sha256": "1605ad73ae6cdc0769fb46f9ab4839e5d57629aadf5e19d5c5fcf131ea1a2ffb",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/monitors/v4l2/name-device.lua",
+      "before": null,
+      "after": {
+        "sha256": "bdf099d60dfe2c4691004b30af124af65ccf488f724763d3d2da2d5529e4f7a6",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/monitors/v4l2/name-node.lua",
+      "before": null,
+      "after": {
+        "sha256": "eb06960f5f13ed8d1d1045ffe9e82d3c7a10e03c01d69eb3b0405f3f4ba607ca",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/node/audio-group.lua",
+      "before": null,
+      "after": {
+        "sha256": "937a24d2b4d1039b956b3964c4259e995bc67166dc0edf159dcbc17afce6070e",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/node/create-item.lua",
+      "before": null,
+      "after": {
+        "sha256": "563ed1e22f01e6886ee39daf97ee1a8be15d2692482fe770ef926f93fb2e61e8",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/node/filter-graph.lua",
+      "before": null,
+      "after": {
+        "sha256": "f9c949aabedb02ddab16596b8a52bbeb315043fddfa60983a662b0d27840534b",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/node/find-media-role-default-volume.lua",
+      "before": null,
+      "after": {
+        "sha256": "b0a2a6d1bfb1aa8a21a8559e28375ccd03cea89175a9e8f9105582cfbc27946b",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/node/software-dsp.lua",
+      "before": null,
+      "after": {
+        "sha256": "58ffc0354baa503e43c621012aa1d16340f469a7c32b8bac0da31ec201e81f2d",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/node/state-stream.lua",
+      "before": null,
+      "after": {
+        "sha256": "dd746b0aab8a166ac79481396789bd24ad21afbb20d8e4cb00c06a904577dd00",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/node/suspend-node.lua",
+      "before": null,
+      "after": {
+        "sha256": "6ac2f7f2cfe739db462b1a9f10b580fd08339d6d15025dbab9060ce290bd09e6",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/session-services.lua",
+      "before": null,
+      "after": {
+        "sha256": "b9d47116f63af2eb3fa4e701d13c2a5911a1d83d148c5d3b7f0ed88c3bbd0376",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/scripts/sm-objects.lua",
+      "before": null,
+      "after": {
+        "sha256": "21ebc1dd7ce5593aa77b8ba5666303ba4634e11738bdc427019c89774dd7d39e",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/wireplumber.conf",
+      "before": null,
+      "after": {
+        "sha256": "704605702bb4cee39d99bf0da838ebe6a4f0510d861e1e244ce7bd2c8d7d8d34",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/wireplumber/wireplumber.conf.d/alsa-vm.conf",
+      "before": null,
+      "after": {
+        "sha256": "915d7cca4b8a3e55a64139607f0f7e9e1171466870bfe289d43d1ebb5d9c5ce5",
+        "mode": 420
+      }
+    },
+    {
+      "path": "share/zsh/site-functions/_wpctl",
+      "before": null,
+      "after": {
+        "sha256": "69c18b251ad3eea9871bd17cabb85b848d882cdfd88a1c7972277dd9c70fdfa0",
+        "mode": 420
+      }
+    }
+  ],
+  "external_preserved": {
+    "bin/pwao-mon": {
+      "sha256": "6f36afa4c29f2197cbf3e2282f386c4f4ad50df27fdc1a3de075f2edcb850452",
+      "mode": 493
+    },
+    "bin/pwao-top": {
+      "sha256": "05c1ab8b5dc905e3da39b650cb55dff8a104d9e9d83c679249ab74bf3f7d02f5",
+      "mode": 493
+    },
+    "bin/pwao-mididump": {
+      "sha256": "26f539902f9f081c1c26748c62016958e6bfe59af4d1d7853721501a50823c22",
+      "mode": 493
+    },
+    "bin/pwao-spa-monitor": {
+      "sha256": "709564bd750a9eab3eba2b9cb98bc14f13c49346c81607364bf92a0bf04f602f",
+      "mode": 493
+    },
+    "bin/pwao-spa-json-dump": {
+      "sha256": "b10e352e1925f5aa29930070b3df41cd7aed597032ac5a05ba5a663ba5cfcb0e",
+      "mode": 493
+    },
+    "bin/pwao-dump": {
+      "sha256": "9e8295ea6183ed1a3b4cd0041919adaeab97b80421b280224c2dae4d62fae1ee",
+      "mode": 493
+    },
+    "bin/pwao-spa-inspect": {
+      "sha256": "0d39b22437e4e6f29750e1a5c78b2b3b9ed9897e78ec278c938b7de5c519c9c3",
+      "mode": 493
+    },
+    "bin/pwao-loopback": {
+      "sha256": "109fb006cabe2f37b282d61759f6d753c7b52fb803c2e722845303559a382907",
+      "mode": 493
+    },
+    "bin/pwao-container": {
+      "sha256": "380952100529c223fde74dc649e4cbf45e05a7c8b535da86d8bcef45a16d5295",
+      "mode": 493
+    },
+    "bin/pwao-spa-acp-tool": {
+      "sha256": "82b92ead105a7804788e6858c5ce9896fd1af18c0d694786f93c2187fd3a46e5",
+      "mode": 493
+    },
+    "bin/pipewire-ao": {
+      "sha256": "7448313884221f743d88bb1a0b34a5ef191c6d237514ff2dab9d5f402e2ba192",
+      "mode": 493
+    },
+    "bin/pwao-dot": {
+      "sha256": "00849280f71d960d9a6ae90024b5778bd7d9d5ca5c61557076ea0b5040de9034",
+      "mode": 493
+    },
+    "bin/pwao-profiler": {
+      "sha256": "3a70ef443d3d9fdbe1f6d56c1800db7dad790d28dda07df60287305ad059a7fd",
+      "mode": 493
+    },
+    "bin/pwao-link": {
+      "sha256": "2e1631627b91ec2f015cfb7c99b1730a93c70fe4fda1292e30bd8c36cebeaf80",
+      "mode": 493
+    },
+    "bin/pwao-cli": {
+      "sha256": "7f3abc9a1f817cfbb20023b467d42637e0ee62a1f61ae03e57e5ce1a8ffe76d3",
+      "mode": 493
+    },
+    "bin/pwao-config": {
+      "sha256": "5664aec741ad29eee25255cc7937720f02cd06b103886ea55c87c550b79d37dd",
+      "mode": 493
+    },
+    "bin/pwao-metadata": {
+      "sha256": "7c8fcc7efb619f66b98a275acfb4afe88418c42d992302dfba9e2614e0e21e22",
+      "mode": 493
+    },
+    "etc/security/limits.d/25-pwao-rlimits.conf": {
+      "sha256": "a01440aa759f387a82821ea077f11757f2e8cf0c1165caf652ff4773979f573f",
+      "mode": 420
+    },
+    "lib/x86_64-linux-gnu/libpipewire-ao-0.3.so": {
+      "symlink": "libpipewire-ao-0.3.so.0"
+    },
+    "lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0": {
+      "symlink": "libpipewire-ao-0.3.so.0.1700.0"
+    },
+    "lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0": {
+      "sha256": "ffcd183b0451f6a76eeb2c90ac677b3970541607c0da6896a0ec14c39a306644",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pkgconfig/libpipewire-ao-0.3.pc": {
+      "sha256": "8ce1d07173471cf6dbb1122d5dc8d3b7cccdcddd3e63d6feb95fba9bfff2125d",
+      "mode": 420
+    },
+    "lib/x86_64-linux-gnu/pkgconfig/libspa-ao-0.2.pc": {
+      "sha256": "24882ae98930a233ee722e9e61af8d4092935601a6647f510afbf6bd131c4ca2",
+      "mode": 420
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-combine-stream.so": {
+      "sha256": "14b22e0328d1bb798692076ae30e261424ec09e28bb0447a4cda9dc3755b2df1",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-access.so": {
+      "sha256": "6cb3464d63b50c25b3018ece3d76337238a6d96a6f6d7c9c36d1b0f1b26b02b7",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-parametric-equalizer.so": {
+      "sha256": "cdafa3e6b8d902347d9ea8d2f89baa22b8173390244d682aba4f57f1de6b12ba",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-vban-recv.so": {
+      "sha256": "909e2450af24d649141503a57f827ffc3fa81ad87602add051c3fe7d14148bf4",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-rt.so": {
+      "sha256": "ef22e7692cc6935bdf4ef4db2cc2da40dc2433641aa5c6dcb8165daadd15b4a8",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-node.so": {
+      "sha256": "1a757a0cd84ff77a2874a433f400cbb7ba658fbb7ea5ac38193c5c0fb17dd3da",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-rtp-sink.so": {
+      "sha256": "699762beed0a66674727118e162e811ff3e68cf40e3698b22592e0397ef79208",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-netjack2-driver.so": {
+      "sha256": "ebd6e2fe4b81143e2538ead709a53a67f7a1ceae68bc7ce53657a2471ad7b175",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-sendspin-send.so": {
+      "sha256": "cb40573e9862ee492d85765ddb21eab6f9c00b25e6107909738c41a6cc9b29ab",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-ndarray-filter-chain.so": {
+      "sha256": "5ddb483116127f7b63ae84f3502876b836ec77531495152501a40e34ff7836c8",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-vban-send.so": {
+      "sha256": "527a2c20b4bd8134a0ec787d84c5532ccffee9f3f2d69ff41347e243b47d7f8a",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-pipe-tunnel.so": {
+      "sha256": "405194d515b4770b63e3680dcf01925c4367c51d8ad34b37125cf17ddef7309a",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-native.so": {
+      "sha256": "f9659a3020a592faff7bd04d375a84de7ef4015779f382269fb8e32f2e80a2f8",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-loopback.so": {
+      "sha256": "3373a54de6a45e335bf01e8891c51b2a397e76d350b8448ad3a521af911933d5",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-link-factory.so": {
+      "sha256": "f784a143ce314cf41374939851cc5c7750221e6f3964a8a1548b2ed8f31e16ee",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-device.so": {
+      "sha256": "b88fe2b60ac2afd6d3f67b12b19505c55d7c61485db3cdf408d503145cc7d93a",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-spa-node-factory.so": {
+      "sha256": "39b5a12f412b1683da1bce165206fc7dff7a4031986bc400e02877066fb65a67",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-fallback-sink.so": {
+      "sha256": "362a5806b25c41949568470e322c9b0d63475edf3e435615c1c8cc644a4cd115",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-metadata.so": {
+      "sha256": "d29f1a8807e117facd5e0a393a25f2cd798068303e26db9ddff2a77f281765fd",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-session-manager.so": {
+      "sha256": "5fb83962bbd09036448e18b2d8d629eec328e789626d968fc423572984bfd576",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-netjack2-manager.so": {
+      "sha256": "e9be1db77f34dc8de1220d97224a1066c1b2847f7015108a60aeb06b5fde5495",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-sendspin-recv.so": {
+      "sha256": "075cbf84145510735c053bc064ff20ecb30ef05baeed103b00fbe854109c6428",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-rtp-source.so": {
+      "sha256": "da246698d2695ab3534b8468cd795b00a0c2c07ba923bde91676db7fc4de0f87",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-rtp-sap.so": {
+      "sha256": "ee81c7e04a5710e4ffeaf68385f7b264c133870c18e6ec9e4291e354b3533c17",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-scheduler-v1.so": {
+      "sha256": "8392e5025f8bbf2e8970e18c9f8149fc70ca388f27ca9cd744e985c40a7271de",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-adapter.so": {
+      "sha256": "b6c748f5102e36a68d1f966ac08f8ab41fe3d7a09ed3f39dfdc6c33bf08f78b8",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-spa-node.so": {
+      "sha256": "88b0c12e807724761cc0232e325af9f4116921a07eba5f8040b6da5c823059b3",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-profiler.so": {
+      "sha256": "a4b1a7464aaac7a8bf5759af43203d3d4af5cd924dff01e022e88079b7688615",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-simple.so": {
+      "sha256": "3ad707e5659a7f57927b84e7fbd5f5bded85c3ebde6e36e9594952deb370836f",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-spa-device-factory.so": {
+      "sha256": "2b664534da20986707047884e4e369834dd39c2c19e6c117cbedd6d227de0b85",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-spa-device.so": {
+      "sha256": "47b1d7ef048cde99e45c590ad7449d823477f07267c7434f040bed10b565e4ab",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-queue.so": {
+      "sha256": "8f953946733fafa3aaa766518ba3c2128fd2e6977babe3b8d478050f20664835",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-filter-chain.so": {
+      "sha256": "9a3a6c9c7a6d8e9b71afe7130b52e48beccb35dfc418578d2e4020bbfc28c9ce",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-echo-cancel.so": {
+      "sha256": "1bc81f85e8a878ee2ae971a2c104f1bdfa3546294951b96b39b7d176098a09d1",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/libspa-ao.so": {
+      "sha256": "ca1eefce801511fc94e47ac658ad923cf69d23eb50029bcef3d5a568a93ba475",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/alsa-lib/libasound_module_pcm_pipewire.so": {
+      "sha256": "b911d9f326878a41f3817ad82fc25019af66749bb803921c80d4d42798fbb883",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/alsa-lib/libasound_module_ctl_pipewire.so": {
+      "sha256": "08f19057fdf4dcffc95ca5ffd243b2a89e144ff7312bdf095ab688dd89c1df30",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/hermes/libspa-hermes-decoder.so": {
+      "sha256": "3151a939a586ef7ba087096342e038ac9a501aa3c70eeec71750ed6659c33c5e",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/imagestreamio/libspa-imagestreamio.so": {
+      "sha256": "7dc5a71ee9fac9cff37ded94f13e8198261fec0e2f0b6dc2abaaac6be86af6c6",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/audioconvert/libspa-audioconvert.so": {
+      "sha256": "81c7bfbd48cc7dec3b4d6f0fceb1bdcb085255039b03231344171b938643b544",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/alsa/libspa-alsa.so": {
+      "sha256": "cf718f8f86cf3da1965540a3c2385fc5f70274b7b2ef21c9ec24698274907ed5",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/fits/libspa-fits.so": {
+      "sha256": "3f3fb042201afb2cf646fd76a468103d8f57609e0630eef065b332fe03e14e2a",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-journal.so": {
+      "sha256": "e8b0455fc46b0815a3b9bb5801f5f0812ad5b7e58b05c130e685963079df70c8",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/support/libspa-support.so": {
+      "sha256": "281447538a3ac29cf09877490e958b6e349f5a92147e23ff0afe328a29a13bff",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/bgapi2/libspa-bgapi2.so": {
+      "sha256": "40f83d8baa3ce46af9798d9cd66eba2d4ed60780757295352cb6d8283b69dc38",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/egrabber/libspa-egrabber.so": {
+      "sha256": "4c3d09331de05dc7b8084becf7adb3c3343e7e22db6546bcad4263620013a96e",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/aravis/libspa-aravis.so": {
+      "sha256": "b21b48f5e69161061b986791fe112a5e006af41e1cda406d9bed11561fd133b5",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/discard/libspa-pipewireao-discard.so": {
+      "sha256": "5ffcb1339e65e3eee48597b62bb42843b22ab8b293f65736aaa57074d50338b0",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/test/libspa-test.so": {
+      "sha256": "d18e69a4756c3f9354aeae84ddad98e4310da82c3bbe45b2ba972c8ab1d8de77",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/filter-graph/libspa-filter-graph.so": {
+      "sha256": "7fcfbd460d5f74d88597f10a8a98e924a7e4f84f7984499711c41173e3838eec",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/filter-graph/libspa-filter-graph-plugin-builtin.so": {
+      "sha256": "5385b51e1e726d46f59ca6b5dbd6fb4aa09aa2f9fe6da01516536dc8833f17c1",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/filter-graph/libspa-filter-graph-plugin-ladspa.so": {
+      "sha256": "6fe782077f8a34dbe83aa76b553374ebf2e75fb5adf397b52d343dd485ee7427",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/audiotestsrc/libspa-audiotestsrc.so": {
+      "sha256": "3cf747802ff95e0b41ec88a12234eccc317645c2be24b8f09c071961ad2b0924",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/aec/libspa-aec-null.so": {
+      "sha256": "103bb1066d5254f0acc41adfe1ab788df5405c1b0aaa906a3f955ee342665541",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/nuvu/libspa-nuvu.so": {
+      "sha256": "a4e9fbe7929de2500f528c41de99469e5901973d2c7d80afdb14ecd18e459cf7",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/ndarray/libspa-ndarray.so": {
+      "sha256": "153839f352590a992655f327ef892c1dff3595ab9fbe80f183ed2aeb7ec6458c",
+      "mode": 509
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/heart/libspa-heart.so": {
+      "sha256": "7fd6888486910f7b6a4c3d5cd2d4f36f5b332bffbc1b6d0d8345517039555193",
+      "mode": 493
+    },
+    "lib/x86_64-linux-gnu/spa-ao-0.2/pyrtc/libspa-pyrtc.so": {
+      "sha256": "fffc869e3e533567e85291a7cbba14d891493d41f0953181a6479a13f1a3d6bc",
+      "mode": 493
+    },
+    "include/spa-ao-0.2/spa/debug/types.h": {
+      "sha256": "c352554d42d2dbe6cce41d45b6153e9a119f4eb73c791c662ac343957d0cfa4e",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/debug/pod.h": {
+      "sha256": "d49d8316bf2dd7d6507bb30db932db4418cf27663ebf4a30ab77416e2bc3a37b",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/debug/dict.h": {
+      "sha256": "19df7e42062add6a856e946c58c6917d8663fef6b932c23183240773644aff15",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/debug/format.h": {
+      "sha256": "32938a28282a73b68f4c0e47408ee3e9813b868dc3ddf745786d57f7b8f67fe1",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/debug/node.h": {
+      "sha256": "076c7386581f50957ac25b717553b676df544a797535b0beb546045658dbdb66",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/debug/mem.h": {
+      "sha256": "e1a142f45054cb85574c2a4b4e86c2bc6739058135172a91f4ff9c171d6e40aa",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/debug/file.h": {
+      "sha256": "fe31219fa88e423a695255fec4f598c9a196aa3cff6e8cd356ea2d9eed526505",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/debug/context.h": {
+      "sha256": "2592383f34aaaa0722b7fab90ef747afddb6777bb8a371f0a2dea242fb7c8295",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/debug/log.h": {
+      "sha256": "8aafd760c721b049891a7e9a709d04dd5e57f02100849164b2f77a4ce45fab16",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/debug/buffer.h": {
+      "sha256": "71d922dda23551c0fee7b998969ac96eacf3e7fb0a64893d5eb1a75afba8d32a",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/debug/filter-graph-ndarray.h": {
+      "sha256": "66869059df7fbe68e3d727c18d071f4beff0f621a2f3ff219e44e15a681d8e20",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/support/plugin.h": {
+      "sha256": "96ce7797e67d0a6d7f8a771bc9a2a33ad1cc48158974d58e3b7d485c518d140b",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/support/i18n.h": {
+      "sha256": "cac28b13a99148187c8b620e9ec57c4839a8a0b7f528c2c4235730010d9f8d36",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/support/system.h": {
+      "sha256": "82e173185ad2ef2e7dc6e9e549a1c449fcb2eaa189efcef2cbc4c883a0e4b850",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/support/loop.h": {
+      "sha256": "88bc3b3a6fbec373e15cf863c5997897ea3e077b0b19d9b71cba0e0fb6b812b0",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/support/dbus.h": {
+      "sha256": "dc3934d5be3ccad32ac628501ad85d1ddd363c48e43a0fa8866c1ee8b0ceb0de",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/support/thread.h": {
+      "sha256": "7e42d5d6b0d976aac599e6efc43fc3421387fcc3127d139e450dc893984d2cd9",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/support/plugin-loader.h": {
+      "sha256": "41acd05b275dd594253d8ff9106b44f4da825938463ba73105dfffbbc422c1e5",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/support/cpu.h": {
+      "sha256": "17b311f4f55ae559f6400be846f3fdac432677a685c0367668d78d9496e11c09",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/support/log-impl.h": {
+      "sha256": "2115fcb1cc0dbf7b8fb80b55d10bae899a0332d5d649c040ac5e62e8547232e2",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/support/log.h": {
+      "sha256": "7a13eafcbe6018f2b6cd471e8c088c1b4c14ea0635018ab729c9fba5874dfde0",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/pod/compare.h": {
+      "sha256": "947295cd7dd4625ec90a84f4b64f7ed387456adf300a233396dfcb7207651a88",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/pod/event.h": {
+      "sha256": "f2cd930119aaaffdd5777bb633ab64ed3bdbceb22e936f451a4443c9f2b5061b",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/pod/pod.h": {
+      "sha256": "c7849f6bbcb343e52f0105a18d3db82248b17d9660f6215a422386b6ac9dadb3",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/pod/filter.h": {
+      "sha256": "38afe9dd082643a9a8d1dd344ca32efa2cb7d34714e613d829940ac5edb75ce9",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/pod/command.h": {
+      "sha256": "0fb87c225417a34b41c29140996c45d3d61fc923263e31794ba8a51b0dbfa7f4",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/pod/body.h": {
+      "sha256": "52cf6317a22f28840164ae9de167b35e7321d025b42c8aeaadfd68955d6d623d",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/pod/dynamic.h": {
+      "sha256": "db228419eb2f53034214e0b01cc017678c9c402f1d777d2821dd9b1ff08c3f13",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/pod/builder.h": {
+      "sha256": "f6b6ac1581f70e448d6bdb26c9fe623e0630ded45423f4fce896c77e92fad7aa",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/pod/iter.h": {
+      "sha256": "73af7a94af921f4aed1e46fa423ce8e7e64807083277f7a730fd6a06c32f83be",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/pod/parser.h": {
+      "sha256": "237c99ba5ab641dbf5d897fc1715a00f016f3954d0c356d880aa021d992afad5",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/pod/vararg.h": {
+      "sha256": "1f3d1b396f61272ebbacbdb3b897b134407529c0586e08ca34be3f35699b05b8",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/pod/simplify.h": {
+      "sha256": "ce1d7d9c7cf956dbf60afc1d77e1af40381a7d0071298227723cba2ca4477e6a",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/control/type-info.h": {
+      "sha256": "1aa3b04ad2eb00905a2faba9a1225e036e33185aa8887518455fc3801a856858",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/control/ump-utils.h": {
+      "sha256": "b337abe769cab9ed71a6716c21903680c71ca004f9a90dc0d4ef6b3a102e9bb9",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/control/control.h": {
+      "sha256": "cee0ebc665e2a998bd34d326cbd104526f604b68e81b4d5048a47fe48baccf77",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/node/event.h": {
+      "sha256": "572e47d09d9418df364c55ea220371a8488c7d0c4f57ccae59e6d41d7fcc7017",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/node/io.h": {
+      "sha256": "3b93148d386d077b6b76593455df202d342dcb50e4c0184ec3510bfd2722cdd0",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/node/utils.h": {
+      "sha256": "c21aa7af115aea0ccfd99c6a566a5f528fc797e5ea258f36a0cd842ec3f9bce0",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/node/command.h": {
+      "sha256": "6f85bdd798425e780be666b621c33f15aa0c0e568d646de1749786d9dd5f51a4",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/node/node.h": {
+      "sha256": "f440b78521f63eb61652906471e2c2a47d567064a3e290d41c73cfc64abfd5fd",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/node/type-info.h": {
+      "sha256": "97fcb384386cafbeb4166a98c9aac25d0f01d16f626642eea3d3cc8c62c01206",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/node/keys.h": {
+      "sha256": "f4ece0e39d5ab56e58b75724108b39d10aa6ac7eb03bd21f3bec9f3778d02178",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/monitor/event.h": {
+      "sha256": "775cc7142c8823b55f26f67fd8a36593c1d10b804bde3a484db3cf5041991abe",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/monitor/utils.h": {
+      "sha256": "9ec47e2f4bc4c2f20e24f4aee29a776a41290dfc788427d67e9eb3e299002565",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/monitor/device.h": {
+      "sha256": "fd25f90ff95ded0d0eb398680c3551d43e0a79624ecdc58c1f077a1f6f09fb77",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/monitor/type-info.h": {
+      "sha256": "a354a397053bd5dd452433b65bd35052dafaf96575fcd087348a9488e5342bc3",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/buffers.h": {
+      "sha256": "294ab47475f5161ed7391db639acd4642e5b85315487c86cc166c81f5071074c",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/peer.h": {
+      "sha256": "7fac38bd10913da1691e16b1edf001c500c53db150a1b32e46f925f50643581d",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/props-types.h": {
+      "sha256": "3985e6cf388e3d2e68891e9def7b6f02e70cc3df84752ad41faf17d1b55bd9ae",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/dict-types.h": {
+      "sha256": "1526343a7778e182c066b870b27ec0c321be44e491fe7bd971d9f33f81c9934d",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/peer-utils.h": {
+      "sha256": "b8ae28cd7cffbddf4a94c81a9703fdec7b7fcbd3b35bf1efed00abbdbc91b511",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/latency-utils.h": {
+      "sha256": "6ba829f4cfc6379df6fcd1e483f68fd364973ba7131415d0742c968b7726c788",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/buffers-types.h": {
+      "sha256": "0bdcdc69866a68d4bdd1f3d4c32453a57e1c4f11a796f2b186efb040a61b709e",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/param-types.h": {
+      "sha256": "95de0c0918864e6d9028c9d4655e15969a574ddd7fc1494a23f77f77b1440cfc",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/dict.h": {
+      "sha256": "399489691558597756e01999ed63533028c979f912427d93683330de6a080002",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/format-types.h": {
+      "sha256": "68795d63c3dea4be03040785374d139699045220e1decb9c50e604f8eaba420e",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/profile-types.h": {
+      "sha256": "323869ce007969bcabfaef43e914f7478c0aa4a5a1bf6cd8547d765b7dfc5c60",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/format.h": {
+      "sha256": "9f72233983e5b1c0b4477ff8d80857b9c29100328531622d30b9d744a988a7e3",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/param.h": {
+      "sha256": "760fbfe692ce17cf41061bb02205fdd6ffe35dcd87e0ce88a71d390e65eb603d",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/port-config-types.h": {
+      "sha256": "6f1862f0f12953d30a2878581b60258c89708da9f7959766064b74d6701f0391",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/route-types.h": {
+      "sha256": "5f412889f3a393701fb549fac9456367a858c5989a31494ee9235584a8499535",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/tag-utils.h": {
+      "sha256": "161f1d5c3b33a647844bcca5c996e00d22e0bf865348209fe5104849374c022c",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/tag-types.h": {
+      "sha256": "379c331f62ae50681cb58e30295a45519b3d7f8ece34e0740663ab1952acf167",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/latency.h": {
+      "sha256": "0369eba26a15068ceea0c13eb028c22e99377e3e8dce3fe9aab45c8ccbe2d0ed",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/tag.h": {
+      "sha256": "30fc2fef0263b36edbcfc5e25d95ee59f5688975a95599c15cc22a21e51ecec5",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/profiler-types.h": {
+      "sha256": "b1c1a2461b5440b2705a3d234d09009423e388a1071d8e8f40af73bca8f44e8e",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/props.h": {
+      "sha256": "35f8af4e5f26bc89367ed506332842891b8a822ae9747e2878439d2891152e80",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/port-config.h": {
+      "sha256": "d2d92a7f6258653500324427fec50a71b79b2bb5f890d80f55e2f63a57ca6206",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/route.h": {
+      "sha256": "8a5dc942459140a0b1631fb593a264f5c9f6b91b9e38fc9a6ae5df86e55006b6",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/latency-types.h": {
+      "sha256": "e10c9b9bcd195566a47ed8e3f5eef9cbc27b4464cc4bba333727368ea358a876",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/type-info.h": {
+      "sha256": "3eb44d04c9d6bda8c62ee1db224879d6e40170e65c3a1b2f391278bb27621bcb",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/format-utils.h": {
+      "sha256": "2b9e6bef23b8232ebebf4b560374abc5a48f9dc2fad1089848a6321007366315",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/peer-types.h": {
+      "sha256": "3f421e8370ced892cf7956396225445a98020df9f50b6b68c5ca0c4f87eb9137",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/ndarray-utils.h": {
+      "sha256": "c50c604802da85ce0867afd4b0fbe49d1a02fbd6c18e69f06b9fdca0a0fc8659",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/profiler.h": {
+      "sha256": "32aa93a0995efc7d5781abba0213c2c966d54568e2e8382b4028a1648584192c",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/ndarray.h": {
+      "sha256": "7fba1bc3ed53646ac3ddde07f7409e2589046d89e32ed83a4f480bca8b663c12",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/profile.h": {
+      "sha256": "695de275bd9b6b21741fe5488b80ffc2c665d169638179d69584f6f7d998ee9f",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/dict-utils.h": {
+      "sha256": "4244ef2527b18b307d99d78e8f0831b574899de9322b12deeb873708d8ac1d74",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/filter-graph/ndarray-plugin.h": {
+      "sha256": "900a3c1c6897b8fb96bbd04644b759276d33afb7a5b897007371eb7b4dd86794",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/filter-graph/filter-graph.h": {
+      "sha256": "137aded710e9658f4ff09d67621257fb6a98df441a4ff8ca75e12d8044737164",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/filter-graph/ndarray-executor.h": {
+      "sha256": "ec68938b89b3c2270b6af5f422a6e4754693edad407b324c26a86d4c70980e2f",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/filter-graph/filter-graph-ndarray.h": {
+      "sha256": "4d18593593e4829ad205acb5eb640accd54573d363d92374386fbca92dcd4252",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/buffer/alloc.h": {
+      "sha256": "29f73cd95ed27db4b6fc7b71fbba2398723d3a583bf92cc4df990af49be777a5",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/buffer/meta.h": {
+      "sha256": "b2d8c50170378aaea9af85e45122f80bfbf6fd0380941060d114eb3ab316da74",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/buffer/type-info.h": {
+      "sha256": "49ae0508315bc4957dc9de74358d79ea834ff0ae4a5deb6289932acf71f86362",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/buffer/buffer.h": {
+      "sha256": "14a18a1bd0f499b78cc54217161867da06ffab33f488af5a5d0acb35daafe0da",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/utils/burg-pred.h": {
+      "sha256": "861f12ef92c45f7b9cbdab3c3c7ce75cdc26c0b2925d51395c0e35d51de77278",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/utils/ratelimit.h": {
+      "sha256": "6d61e2e59a257b5163f7b0026feedeb79f1585b9d4ccaf50981fc6350209b327",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/utils/enum-types.h": {
+      "sha256": "73e587d710c0ad2019108af83f1e28db01326ccd44b32acbf31ff52b19e43c75",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/utils/dll.h": {
+      "sha256": "5f1fb1747376d7084d034ab3569d39cebaecd149ae37cc63e1435b9c4160a7c3",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/utils/cleanup.h": {
+      "sha256": "e377bc00f3a0f211f97f12b4d9dbdde9be42e7f2392fd5a461bf53c93b69f4d8",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/utils/atomic.h": {
+      "sha256": "e91b6303b2a7f8a689ef088a12ebdbd10ed378aa911f017994721b27de989773",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/utils/dict.h": {
+      "sha256": "a36b37d65ea1c6b364e05ecf9dfa7b180b8666406b44591a664adf113bf73f5e",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/utils/ringbuffer.h": {
+      "sha256": "18a0aa3a24ed259bbd6cf7e6477dfe8a3ae5851299e6fffb1b6d644785b907a3",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/utils/names.h": {
+      "sha256": "2bd1969406873b1cec1c0091a9e701f5ef7fdf08f9dae1fe0fa31cf40c8b68ea",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/utils/string.h": {
+      "sha256": "40684af8cb2ac77903e0a26c775afe78397bd82e314e4199f2b3cfdd002c04f7",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/utils/result.h": {
+      "sha256": "023dd471a92b64a8d22b8e41cf90706365a5b4da837467038bd390870677de49",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/utils/type.h": {
+      "sha256": "1de788d694a42c672fb08785c354b909558aa2d25186253de57cc9fc9d477475",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/utils/ansi.h": {
+      "sha256": "ed39b431c9b27b5be6af8116b89507e57762d774ee1d965b02a3d86eea23225f",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/utils/json-core.h": {
+      "sha256": "35fd6b275dd773db5b69bd7f320d7e230d2573234559aba396c6c0d7eaa330ec",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/utils/defs.h": {
+      "sha256": "ffc7e8a49105d31b62681dc0a0cffaff72c072cafee14bece607bc861a1b9ece",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/utils/json-builder.h": {
+      "sha256": "5305a9b4a9c1acb6f4b2487256ab0a49cd09bb84a83aabe752cf892ba634e7bb",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/utils/type-info.h": {
+      "sha256": "2e638f4044debee89405d5674e739d90ed2cc80ca4bd231e7bcd4cc26b9179d7",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/utils/endian.h": {
+      "sha256": "ba1ae51edeebe7786dc650c2cf4a114333e573170966f6349a499d65cf8769e3",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/utils/list.h": {
+      "sha256": "72ef0f15716952de2e3533f8751e7a18eb6d6f56d21595c71bc98b6200aaddfc",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/utils/overflow.h": {
+      "sha256": "a4edbf7ffad773ce21978ef24c65627ec931bd98c18f667b99949fb9fa58ab1d",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/utils/json-pod.h": {
+      "sha256": "9aff7a47bdd3f9acb4131bf2094956bdf4bdbbef9c28aaa9c5fa1fa1a6b02a72",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/utils/hook.h": {
+      "sha256": "e91f89790372319933a4ca5cc852ba9612bf0d08751cd1ebda1c895db2b1eb2a",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/utils/json.h": {
+      "sha256": "d9322624fee30f345a02040ad70279be56e9839db2a74ae9e7bf6489303ba122",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/utils/keys.h": {
+      "sha256": "62ca666248eb33e5da803fb6a5855e21178707bb24657af1debaf17bd34e0419",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/graph/graph.h": {
+      "sha256": "c1a4741387fa1e35ba177d04b6113f64b5dd10e7cc162b06ddd9621539d21957",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/interfaces/audio/aec.h": {
+      "sha256": "4e1acd4aaf96f4be7a22e7a931455e06686f4102dc5746132653b42bf9ec69ec",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/bluetooth/audio.h": {
+      "sha256": "7fb71a1af1b6f4f2f4d8bece0d66085ba49fa9cd3310d2d6e341c70f9376d799",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/bluetooth/type-info.h": {
+      "sha256": "47dfdad9d6c401b0385a5c20a3fa43ba7539c37e9114b1d296fbe6a1dc85e3be",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/video/mjpg.h": {
+      "sha256": "d29628dc0dcc3e9aca1566e68ac1c0a91830744877ab7a3d6895a41a809ec463",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/video/h265.h": {
+      "sha256": "212f87316577795b6464a994873777e316c7cfb2d96f43a2beb4e1842ceb536d",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/video/color.h": {
+      "sha256": "54dd01c462cb9c8f26b9bc5ddb8f3c6464bde6fc41350a9e608b99699c4ce976",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/video/raw-utils.h": {
+      "sha256": "11f5594b20ce8efd5bf88cac3938f14b6a245c08b88b8182ce920ae17ff33f8c",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/video/dsp.h": {
+      "sha256": "bde64c1df6f462ac93f546a12cd8ac54e3098611a97f710d90f693fc42d5fc2d",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/video/raw-types.h": {
+      "sha256": "7c98d73c8fd027af2e39e1e35fd5b70593079e3055e706fb45e9c708a951b1cc",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/video/format.h": {
+      "sha256": "f4714f2b53444a768eea527c890e2954fda1cc64b367bd71234546cc5b235cc7",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/video/h264-utils.h": {
+      "sha256": "d56bae3ebe0d0285d91fe65ffdd3ba33ebcb1cba46d42358b9cebe001930f6bc",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/video/dsp-utils.h": {
+      "sha256": "ecea93eafd842c6422c6728983153e682459c2354ab5b26e5dd7525e4065a8ba",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/video/multiview.h": {
+      "sha256": "cd49f21bcd208aeab45bf6b219982109097c2fb3844e10a1a1a392a8bda5ac85",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/video/encoded.h": {
+      "sha256": "fb79e7f960781aadf136bd801c002bc96fe1d542a0dd501ed2cea3cfab0690ac",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/video/mjpg-utils.h": {
+      "sha256": "b962cbb27f1d924b4baef3928b4e6f14f963593cf51bb258a7a12f6e04f6ef2a",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/video/raw.h": {
+      "sha256": "44a87441079010a18a9fed63d4235aa2b2040270d5282adf0309bcc6ba6b48e8",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/video/color-types.h": {
+      "sha256": "e40ec955e5e15dd9c453c18e9891661b23f21044b796ca39d6c53d5478561c8a",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/video/h265-utils.h": {
+      "sha256": "ff88d05fb924c6cecb8810cf3c9e4a66e7cc160f7b3ee9488e5672753fc5a62a",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/video/type-info.h": {
+      "sha256": "1f04a7b168cf7fe7c4f9bce825ec3ad1be3bc324a80172ccd0d6d8ede1bbce43",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/video/format-utils.h": {
+      "sha256": "6e720f308fba623779a2337ad5539a649eb18ca0879e6fb28aee3920b6d39c18",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/video/h264.h": {
+      "sha256": "420338fa3601c0a5026c6fd7f8aa5fc81e51b7fabfafe7999e38f7d4cbc837df",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/video/chroma.h": {
+      "sha256": "4b2d95090bf674d30413e67a1870666eed2f802dbb19ba4057fd16f0877edcc1",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/eac3.h": {
+      "sha256": "cd41f5c961275c2e06c8a28b2281242e61c5ac4a38c8450df2334bb4a1907db3",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/ra-utils.h": {
+      "sha256": "e6a8bb11fb9fa0f0786d6c4e3457f7246bcaac7ee7e5d75da3020f8bc3b2705b",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/dsd.h": {
+      "sha256": "ca2ab88333b57ed780b6acfda19ac5459e2d8170ef95cf2b6a19537dcb39b46d",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/layout.h": {
+      "sha256": "f23c925d3586946d00e7c513678d9e5e62bb3b30331d2dba1f764a1a9e58c30c",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/ra.h": {
+      "sha256": "01ce231665b54d1d21f99b2834e5f3d13d4486df816cd1ecf6d49fcc0f0aea59",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/dts-utils.h": {
+      "sha256": "1d8dc4cbcaebf21555101121d25b51e286cf0c7f214cf31523e91ceb30f6321a",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/opus.h": {
+      "sha256": "d2d72b815ee0fecb36944a5dd7f146bc37f1910b845324daf983b6a8cc92c6c3",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/wma.h": {
+      "sha256": "d55e4c28fa8b1ed65db82be674caab3d20de7d7dcef5b5bacb7ed986676cbc09",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/eac3-utils.h": {
+      "sha256": "c45158f759e853733fe0b5cb8d73aa86308aab740f677aa4baa46a06be6d93c1",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/raw-utils.h": {
+      "sha256": "44b276153f7a7689c02c1aaa82aa63d98299359704ca9e6d441e50cec0b7e839",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/dts.h": {
+      "sha256": "260e26acd17ec38fc119af00eb0cb418ccdfba2bb447e21233716d5ef82a97ba",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/mp3-utils.h": {
+      "sha256": "90c27b446535218ddb3fb89a15de408e3958aa63b3ec877564e378f64dddb523",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/ac3-utils.h": {
+      "sha256": "ee9831a8865f5b9d7f9528f0ba9eb7406d7a7aa55854fda6c33a4b74deeb2755",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/vorbis.h": {
+      "sha256": "d7ec98b9f79c844ac6b20912f340d501d6b7ea6513a5a600005900b3f3bc725b",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/dsp.h": {
+      "sha256": "71f937393bcbc907edc366fd2987a49058e71267054d0d43c2e4ae7e261bee0f",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/amr.h": {
+      "sha256": "2401ca5fad4af7b5ea3a07d6335e79985718c99c693206705a73c45386933c66",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/truehd-utils.h": {
+      "sha256": "428c2118e6f845e1b7847b5b4623e4810fc03f34e7a28cb222164f173e34fbd6",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/raw-types.h": {
+      "sha256": "ea0bc207497583d25067878c23ff454fc3aeba83f00f153ca4c9f42e7f608c26",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/dsd-utils.h": {
+      "sha256": "85445dc975e67316d8a72de414faabcd2204ae03e11eb1a2bf827bad2fb3dd20",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/ac3.h": {
+      "sha256": "63e72093a02bdde23b00fbabcae959d6b812c1a9b58d0df7a22808246755aaf8",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/format.h": {
+      "sha256": "4759e7abfc560fafc93150f9e3a8b8ec20280b3ccbdcd4967a07bc3dcc1d35bd",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/amr-utils.h": {
+      "sha256": "2f55a3d335207392b27113bdb6682f7db095747109051e175ea702c4ea7638a2",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/dsp-utils.h": {
+      "sha256": "a8707bed32539c55b3194c6da8d5a07b21879d30fd827aa6abe0afaecbd41f7c",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/wma-types.h": {
+      "sha256": "48da9fe4f6a0b3be18f9b6dd73d740e6638b6368eb10da0dd556487bc52594d7",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/alac.h": {
+      "sha256": "06c41ffb0db6544f406e3deadfeee62190f5461769e1d9a7094a66b25c73aa3a",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/mpegh-utils.h": {
+      "sha256": "4593342fdaafd92303841dcba6b3014beb4ec1202c1d5e03ecdfd95ffcc324af",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/alac-utils.h": {
+      "sha256": "eb37e1d7c83c71252be92310b3729c7a489291521ef7b23dd32a604369feed21",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/wma-utils.h": {
+      "sha256": "b49e7b2549a1a9568ba135dc7311f3faedfc51bb27bc1d3ba2be0b6b4b9a3393",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/vorbis-utils.h": {
+      "sha256": "96fe29101a708bc20c65cabb591d087b8df086ea2ed322ba26a9a6f8b622bf91",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/raw.h": {
+      "sha256": "e6973905e13df878567683ddaf37acc8bbef06355d6e9bde3eeb7abb5be8147e",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/aac.h": {
+      "sha256": "65789792ac4239f4f1fc9ea306fa07457cf099d6b2c7a4f0372619b867760784",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/amr-types.h": {
+      "sha256": "5a318104866b19c1a1460074378f19c764e8ef2f08dcfc933267d34967eaec4d",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/iec958-types.h": {
+      "sha256": "c62d9071f73b2028865ba6dd0fa2a8e024ce197b6ad1723f7e3c4ac235620a11",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/flac-utils.h": {
+      "sha256": "a318d151b61d4bb4f26584d5e04e31a32299990c0ea40148a31e634c701238cf",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/truehd.h": {
+      "sha256": "614014f5ab870cfb672c7bc4562152cb1df48cf3cc89a8acb4e227db515afa63",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/raw-json.h": {
+      "sha256": "4dd126c0a58a3bb118a69614fea9d336e1a354909b5d2a1e282a75b22bea35a9",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/type-info.h": {
+      "sha256": "e9882b19bfe81b9380d72096e2d797b0b280755746cf804c4d0d4af0cdb45674",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/format-utils.h": {
+      "sha256": "3b4079b7219ab0df05374bc3b60d18877d567a578d297a513e7cacedacb11bab",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/mpegh.h": {
+      "sha256": "70bff65641dedc74f2df874150a5e76700cc8e6d3fd71c5c8a2d94dc32907876",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/mp3.h": {
+      "sha256": "be028499f4a4788b0cda226f821750a1b4767ead95959d29019743ad4b3655bc",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/mp3-types.h": {
+      "sha256": "22c7aa5bd8bae3ecec52c82cb2f1c9b92920f5e072acced5e417c9fabf718a5f",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/iec958.h": {
+      "sha256": "eb65886c785dcbdf9e5d05cbcb52cf8b46f64aa4f392bba26080e89e05024e61",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/aac-types.h": {
+      "sha256": "0739d630e48deabf2a94232f4544a8bd146274ad1ef770a56e6e7a7110e1fc19",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/dts-types.h": {
+      "sha256": "500ff373404085678296d888d9c97bac9589691419802f8fd69adc69eb7dc633",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/iec958-utils.h": {
+      "sha256": "ad28ae63753d5d0d9f51219eb434ddc0d3515085af2876c1c4906cf3f334d361",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/flac.h": {
+      "sha256": "e0181e5580c51d8ee800ef3ddb14e6e795bee7e44889a98670d2d6faa784c2c6",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/compressed.h": {
+      "sha256": "9b555e08a54e43f9db148c081ba9ab19311de649c5b2af5630a75a45e452894c",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/ape.h": {
+      "sha256": "145dafe819658fba862c8be46738e1149bd2783402bac57099541fe6eaefabdb",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/layout-types.h": {
+      "sha256": "d21dc5c415cdf15ee6bc60cc9574e06a4b8ff1493f1f1f165c226121a63fd68f",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/ape-utils.h": {
+      "sha256": "5ed3060e8293ef051d6546f7c57f578b36f9d4aab2d0a69c7cc569050d6a7c47",
+      "mode": 420
+    },
+    "include/spa-ao-0.2/spa/param/audio/aac-utils.h": {
+      "sha256": "272a3365304d6e1c4d5ba7abfbd7e6947395e5eceb1a2777c8e7806a97bc5388",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/buffers.h": {
+      "sha256": "5fcc5d4081dbbb708df8fa7862afed9596e8ada78e98b4d4a688e7a2afd52cf6",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/timer-queue.h": {
+      "sha256": "7f327d49ec91f294822f0d8ece38bd8b9590ea590cd373aefd4053ea26e8b406",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/client.h": {
+      "sha256": "bdb89c06d4719d77fe4900f6bac6df7a677bcc19de2cbd91b6bb70c96d14666b",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/impl-port.h": {
+      "sha256": "8bca5d711c399a0741396950ecb75d3120eb3ae0d542335a6e2b0a8a8ca7f518",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/impl-node.h": {
+      "sha256": "c106b7b6f37d6ada681bf732831b82bc858eea8053d0b44b2415fb79a10e5616",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/permission.h": {
+      "sha256": "246b544933a68119ce06d438950620b1869ee6c014d1a26cd4c12213015af3a2",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/proxy.h": {
+      "sha256": "e163588ba6df9f287ab162976429102f557166c8559f43164ae85bc32b794494",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/map.h": {
+      "sha256": "2b0b18d23672cf2cd31024edefc307be2cc6b476adf87b80ee7a91ed2d5819e2",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/i18n.h": {
+      "sha256": "87649030587fab02ea9584891277e781c37478e2e96155e39b5876250b20e810",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/impl-core.h": {
+      "sha256": "26023eb1325ae308e31d6cf46a543bfda2fba77f3592aa0ca9e0702784e66748",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/port.h": {
+      "sha256": "d8af653d29bf0d0ff52186e4d39a4a1ff53d99599d8edb86f4c946bee70fea12",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/thread-loop.h": {
+      "sha256": "843a7e4d22adc943a6615aa524f1d0ca5c3c5bcf67cce1f4fca63aa4335c6718",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/pipewire.h": {
+      "sha256": "f5d035b8e89c2cc7c1b886f0ec6c90bf625c50915a5d12614ab7f3700e016f96",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/utils.h": {
+      "sha256": "76cf497a5afe5d3c0dc9f2351248165b389d0d17d6be9474559f1d7247e4a2f1",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/impl-metadata.h": {
+      "sha256": "ecfeb5772d88a1bce1ce07ec6496154de80357717ebcd1470ff5799cf4b5b93a",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/array.h": {
+      "sha256": "7a7c366addeba7498a6f0a64493b86ee5fb27d3cc0cf76897c76f9b25cbfb57a",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/loop.h": {
+      "sha256": "e9658173e447a99e822f0b7a8e46832a0aec9acb9d2be2ba800d11d1cbb1dd3f",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/impl-client.h": {
+      "sha256": "624371a2a2a051fe9621d35d2d7cddb3c3655051dcff134e5c8068720f3d3b62",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/filter.h": {
+      "sha256": "6de8d47e60ac4120c0b5c04e971d7337d066b2d635ae8829b80e1ff0e8680544",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/work-queue.h": {
+      "sha256": "4290b08d77fd060b9c454d2f0c356362db44d3347d13212c8d52812cf2c59acc",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/factory.h": {
+      "sha256": "7b4a302c6dce7ff0b217ee0a2462bb99298148620228d624ed93b7552d5a5aab",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/properties.h": {
+      "sha256": "80fd4f54f89a94993cc1b3ff5c96de727208bb80a5609fc3321cc512e8f127da",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/type.h": {
+      "sha256": "b86c6a582a34e2e91d3c401bf98e65dc615550202c994ff864e3dad42df69b81",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/stream.h": {
+      "sha256": "6176f67566827c3d17857dc18b57f265f82c60f7ee8aeb55cef52de2958e0a8c",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/thread.h": {
+      "sha256": "79291853a969b590992ec13c7e9d7fe3e7a1a7ffd0dc8992d4e5131c72c3fb8a",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/node.h": {
+      "sha256": "3d24c47b69589d5b665d839c3ca121a3d5c0f71f64a4a6f142a73b9761ada401",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/global.h": {
+      "sha256": "674a331427eebbc95842b24fe38b96fd26c288e20321579dcceb4445b3ff16cb",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/link.h": {
+      "sha256": "046ba5419b1b6fb276e5e8400e44d1a9b3bf87ba960742fb02e7c011986a58ce",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/version.h": {
+      "sha256": "681c2e0e1a0f451e304e167408bd34657b6e54e7ba5ff85501822ab017592f5f",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/device.h": {
+      "sha256": "d726118ecaedf196b7fbebbff367b3ac328a9653874047fc4edcd517d566b026",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/impl.h": {
+      "sha256": "c4333e4fee840379f449f285eb95ce79f0a70ba8f05f6f01279de15856aa3ae4",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/main-loop.h": {
+      "sha256": "d25142d1b9d9fc8e7451b4033abeb0b9039e3a53deb8144e103499cf048a22ab",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/mem.h": {
+      "sha256": "1cdafe0a71ca746e8775d98a974e61030030acb5aa4141783bf366e3d8ce5e05",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/impl-module.h": {
+      "sha256": "2112fc7c572299cbfedeb7fa37d6b86a5fac362c052e40af92db2983d5f66143",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/protocol.h": {
+      "sha256": "c2e3d2d437f64ffe5f4d7e97e5b604779e986c50ed0765a58aa9db7debb4a49b",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/impl-link.h": {
+      "sha256": "d8d34ec7eb5823ceee1beef52d1b584a69866c484b6de23003ddc140962a3c7d",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/ndarray-filter.h": {
+      "sha256": "9654751efdb4a6b3f25db71236f624f9aee83a90165f7707c94bbc8e00513aec",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/conf.h": {
+      "sha256": "b199571ecbb53a9f0cc06e55723d35873386b7e4509265c7ff5eff588ba24d83",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/data-loop.h": {
+      "sha256": "6865547edcbe53f90c4e3d82fff057165fe8bd0ea8c8497189edd8cc0c8e1373",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/impl-device.h": {
+      "sha256": "9caad51e7052509db7352595cfb89a3c4bb28bc400f1322959f51b6e0cc08915",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/core.h": {
+      "sha256": "a7775297e8f7d77e49bb573673e0ae88b09f54468c315741a6c592ad25b4cb29",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/run-control.h": {
+      "sha256": "ad69f1d9b04a915887998d52212ddfda2ccc05f28093e6971bfff32da23e2461",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/capabilities.h": {
+      "sha256": "56812439d35b95f90b883609536e8bf981c73d4d063837e7f665d943ed6a0d7d",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/module.h": {
+      "sha256": "b4f2238aaaf5eb9824c1c93678fd3aebe4f124290c0147750198681c49ef5de0",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/impl-factory.h": {
+      "sha256": "9be31d0d07d07b7b0e1fb9f82f26dd7bdd12487987db506cd3f3e6804434e7ca",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/context.h": {
+      "sha256": "6c3c295de66602c9f70c13291d17b406bc36cf95233f6a7399eb5de56114c7f8",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/control.h": {
+      "sha256": "63660741b369e014067f2d72e6e55bdeca4e67ebeb6e8e556ddf22a3a2de090f",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/resource.h": {
+      "sha256": "56bdd1f6c1a78286a3b3a90859fae6854c49f030d0ac5efb7670265f5d5999e5",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/log.h": {
+      "sha256": "b9281f0f7d671c8c74ce4501fd0f5d76a29a069bfc3558a8764a107dc7a57a13",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/keys.h": {
+      "sha256": "2a7c7fa65dad00d6a867fd29f551a2fb625f19605789dfe467224dec621417b8",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/extensions/protocol-native.h": {
+      "sha256": "76df16179938069aa26531b46af893877ecd3f8f7dda496840731b7445d7560b",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/extensions/client-node.h": {
+      "sha256": "bebdd7a6d8667539ef2241e3e1803f5163e5ee01037fef7824a8330267102076",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/extensions/security-context.h": {
+      "sha256": "d55fe25fca8d1c4e7a73364b00d05d086c34fd826bb1872714f14680775332a0",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/extensions/metadata.h": {
+      "sha256": "29c3ef06cb75aa00418cef06000b1852020ff18fe0e8ef27e0cc6b5b67c24ba1",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/extensions/session-manager.h": {
+      "sha256": "7fbc5213249c7b38a9bdc6ff7e6155bc8c220c3bbeb93f586654386016f26499",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/extensions/profiler.h": {
+      "sha256": "ab9f3dcd7816c0bbdb09af2a45d6f2c503bf82aa71f4f7c8339fe311981ccf98",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/extensions/session-manager/interfaces.h": {
+      "sha256": "af67fca93c7d3c5a0a5b048ca5af5cf95f061ca7c8e033fee8dba98b5b78c7a4",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/extensions/session-manager/introspect-funcs.h": {
+      "sha256": "6474a28a63dcdf6bea43a064b4092ce4578e5f2fa427df7fbccccdd95f2be8d0",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/extensions/session-manager/impl-interfaces.h": {
+      "sha256": "056903ed62dce94d46bfae0fedf8ce5b89d474c76f20cb3003fbe21f3334422b",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/extensions/session-manager/introspect.h": {
+      "sha256": "694e6d09a6034f0a2469cb6d4c832960c94ddc46d962e72c0f0926890d11660f",
+      "mode": 420
+    },
+    "include/pipewire-ao-0.3/pipewire/extensions/session-manager/keys.h": {
+      "sha256": "b352c6181675f15ef8056f5cdda0732967f6915a91079e8ecac5e2d02123f146",
+      "mode": 420
+    },
+    "include/pipewireao-plugins-0.1/pipewireao-plugins/imagestreamio.h": {
+      "sha256": "a2c650cdc9de73d826bd542291f407a1428c81d396165630c310feb65a6da7d0",
+      "mode": 420
+    },
+    "include/pipewireao-plugins-0.1/pipewireao-plugins/discard.h": {
+      "sha256": "1d36255d238f3f8ab13baea695e752833802a4859317bdb24f175fadf58c55a6",
+      "mode": 420
+    },
+    "include/pipewireao-plugins-0.1/pipewireao-plugins/pod.h": {
+      "sha256": "c65fe4cc44fe60a18a61d5a460c083fc6cb28bdf3cd4879421cf116cfc537205",
+      "mode": 420
+    },
+    "include/pipewireao-plugins-0.1/pipewireao-plugins/nuvu.h": {
+      "sha256": "d9a45cdb03eb4a0f728af71972de8f97657e702d3766bad7e5ce794163e7b625",
+      "mode": 420
+    },
+    "include/pipewireao-plugins-0.1/pipewireao-plugins/fits.h": {
+      "sha256": "18d0637851315dcad8ba2cf6b20d7c9e59ca727664ce4a54c209125d68308c8a",
+      "mode": 420
+    },
+    "include/pipewireao-plugins-0.1/pipewireao-plugins/heart.h": {
+      "sha256": "0349297651179ca7f76b9e2aeeb85b6b9ac707037d34c7b8d149cb6b7740d7b5",
+      "mode": 420
+    },
+    "include/pipewireao-plugins-0.1/pipewireao-plugins/pyrtc.h": {
+      "sha256": "0ae554cae987bbecd92ecd8b6ff8036253b9be4b490624d801922f305fba5be0",
+      "mode": 420
+    },
+    "include/pipewireao-plugins-0.1/pipewireao-plugins/ndarray.h": {
+      "sha256": "43af5a1230605680e329b08712b2a0c70a4514292476e7d67ea4b43e0e63d9d6",
+      "mode": 436
+    },
+    "include/pipewireao-plugins-0.1/pipewireao-plugins/alpao.h": {
+      "sha256": "b0fd4715782015b1dd7e9ea969c743a228c3f8cead2f98d72b21e56547768274",
+      "mode": 420
+    },
+    "share/pkgconfig/pipewireao-spa-plugins-0.1.pc": {
+      "sha256": "004c7a8fa8c20266e6b7ea05da6bbbb57f9a64ca9a10cba6b3a6c594408a5836",
+      "mode": 420
+    },
+    "share/pkgconfig/pipewireao-spa-plugin-heart-0.1.pc": {
+      "sha256": "c49b2484dbdd970747f27f4898a9f0df0cac701b13889d03e13252bd37683c08",
+      "mode": 420
+    },
+    "share/pipewire-ao/pipewire-aes67.conf": {
+      "sha256": "4046a58cb523b67924c29f8ce5f2ef1aa9eccf067857c5de49e816a1d6d730d7",
+      "mode": 420
+    },
+    "share/pipewire-ao/filter-chain.conf": {
+      "sha256": "57a9cd3f2039ef5e50e3049a40be0b5b6e06de3bbd2d35d9e141631f0c1c307f",
+      "mode": 420
+    },
+    "share/pipewire-ao/pipewire-avb.conf": {
+      "sha256": "676824a00ac5de6558513a3ebf2c6bd1a20a2d78481068359a204a74f5fe9d8a",
+      "mode": 420
+    },
+    "share/pipewire-ao/minimal.conf": {
+      "sha256": "b29397daf0bc918fc599d233f57109d7e9f05b01944a71c5b8f31736443e2f6a",
+      "mode": 420
+    },
+    "share/pipewire-ao/jack.conf": {
+      "sha256": "8ade883013f8da0c7aac8bb9c99c64ac94738f9eeb8126d1efc32384c89a3644",
+      "mode": 420
+    },
+    "share/pipewire-ao/client.conf": {
+      "sha256": "18916f98550aaba8b4cb141e4d6f782ffd63fb780537099a3ae79d51caa1e24b",
+      "mode": 420
+    },
+    "share/pipewire-ao/pipewire.conf": {
+      "sha256": "89a0a0cc235aff15f55083c53c0a31c790f40ca7a4efe8d4afaf9335fdea531b",
+      "mode": 420
+    },
+    "share/pipewire-ao/pipewire.conf.avail/20-upmix.conf": {
+      "sha256": "ed2c84455d7829e1ff644ff3e2d8066ec047fdac7f7cba106c33b5403f0a3ee6",
+      "mode": 420
+    },
+    "share/pipewire-ao/pipewire.conf.avail/50-raop.conf": {
+      "sha256": "0601ca5da77e64b61a58f491fe6e741a568fcd75587b6cd528764640d45b7dd7",
+      "mode": 420
+    },
+    "share/pipewire-ao/pipewire.conf.avail/10-rates.conf": {
+      "sha256": "1a3454b56962fb55e8a5dc399743c7e79d96b0d78f41c9b2143fdd68c0a59d53",
+      "mode": 420
+    },
+    "share/pipewire-ao/filter-chain/sink-dolby-pro-logic-ii.conf": {
+      "sha256": "537c3e88de311d7cf57787b56404cb79a2d55cded717b98dbad5bbe12c7b99be",
+      "mode": 420
+    },
+    "share/pipewire-ao/filter-chain/sink-make-LFE.conf": {
+      "sha256": "bcb75ad6d4d92c317eddb0730dc045c8922505ba3ab7e0448e036f729fb25edc",
+      "mode": 420
+    },
+    "share/pipewire-ao/filter-chain/source-duplicate-FL.conf": {
+      "sha256": "8093bbb857c984e70cf6e6505b9654983d58a556c8116172d9c15ff276dc3095",
+      "mode": 420
+    },
+    "share/pipewire-ao/filter-chain/source-rnnoise.conf": {
+      "sha256": "d9964799c77d77c6a64321c87fb7f2b66b3f14500d56a11f2bd35f542e50c01b",
+      "mode": 420
+    },
+    "share/pipewire-ao/filter-chain/sink-dolby-surround.conf": {
+      "sha256": "a73483f8ec0f96e4cb011ed62c35a336c2f99e77c9a6800fea72b4a860639021",
+      "mode": 420
+    },
+    "share/pipewire-ao/filter-chain/sink-mix-FL-FR.conf": {
+      "sha256": "acadaed47497dfdc8ae940c20a9d2dbf7b011def4a76b3a181320bbe95b7be3a",
+      "mode": 420
+    },
+    "share/pipewire-ao/filter-chain/demonic.conf": {
+      "sha256": "c1c2acf06d4bee3e5aa9a8f704b087d4bce5c98fa6cdca27e1626b3bfb8d78a5",
+      "mode": 420
+    },
+    "share/pipewire-ao/filter-chain/sink-matrix-spatialiser.conf": {
+      "sha256": "b8177da230184c91d5ce4d6b30fa330801686cd026d85e2fa5367e68d9ae64af",
+      "mode": 420
+    },
+    "share/pipewire-ao/filter-chain/sink-virtual-surround-5.1-kemar.conf": {
+      "sha256": "c934c99dfb6c0eea4ddcffcb4e49d7be9f72281556385c6544caeec20e38dbe3",
+      "mode": 420
+    },
+    "share/pipewire-ao/filter-chain/sink-eq6.conf": {
+      "sha256": "cbd53e38884060bbdaebacce43c05ccd14b4dbd716ec431347ce776682a2b8f3",
+      "mode": 420
+    },
+    "share/pipewire-ao/filter-chain/sink-virtual-surround-7.1-hesuvi.conf": {
+      "sha256": "13d9e0fff406723dc879f0101602f00929f81aa0a9de60fce99861a1c8b7c4ea",
+      "mode": 420
+    },
+    "share/pipewire-ao/filter-chain/sink-upmix-5.1-filter.conf": {
+      "sha256": "ecb91e666bbe996eb9e8a32dee9a89eec5ef1a40939a04410cf59c6978e41fbf",
+      "mode": 420
+    },
+    "share/pipewire-ao/client.conf.avail/20-upmix.conf": {
+      "sha256": "ed2c84455d7829e1ff644ff3e2d8066ec047fdac7f7cba106c33b5403f0a3ee6",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-output-headphones-2.conf": {
+      "sha256": "2c2f0d38f9f375b5ff4f049afdd8709e16c608d2a3e5406683ad04c5dc389fe6",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/steelseries-gamedac-output-game.conf": {
+      "sha256": "0b1ae2992223ac06e313d1f7385c5e17fc9d45882502ba232c5bf043a087ff92",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/hdmi-output-3.conf": {
+      "sha256": "8bead4246c5a5e0a7188929b5c25d75d859e653e6af69188b2bcda9f219b9051",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/hdmi-output-7.conf": {
+      "sha256": "8a79b3e8ae48796bc9391dbecf8e6e57d265ae8a8c90d18842ec588dfa0dadbe",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/audigy-analog-output-mirror.conf": {
+      "sha256": "56e5448f319303c5f88af79b5ac2d2e1f3ec157dc4ec222d33520aaa1b36e603",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/audeze-maxwell-output-game.conf": {
+      "sha256": "d45d55f70346f5080073b140304e105125fd5e55e1d825c3197f8c23cb3a3c56",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/audigy-analog-output.conf": {
+      "sha256": "65e2c229454d4d153b5a2d86467ec99e6274f29bb11a9f51d01e91c8bb24c4bf",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-mic.conf": {
+      "sha256": "231741eb25593485000500ad5ae5e473f4e5c86341f7143b97075e90f0cad63f",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-front-mic.conf": {
+      "sha256": "56dbf67cd1f831f04ade1b2f0bfa5896aeb37abe99c801638866a59f841e4c1e",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/steelseries-gamedac-output-chat.conf": {
+      "sha256": "fcbf15aae22fb564f5e717151a59431968533d991392b2b8db424a952fe19f6a",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-headset-mic.conf": {
+      "sha256": "9a6a6a3c6d42753743dd5a523bc30e5e83b424a31d665894af021bfdc5546747",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-fm.conf": {
+      "sha256": "bd302e95e63f4a23b90383c1a7019da20d352359c89cecfd2effa6ff17d816a5",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-output.conf": {
+      "sha256": "1ae2721891fdc47f2518a4182823d94cd12a730a42c0b494119e81b6e980abd7",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/hdmi-output-5.conf": {
+      "sha256": "8457124ffc4bec3e53bad511e2a95a0002fe2107b53234cd59b75fa7594d8074",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-dock-mic.conf": {
+      "sha256": "f384e6158eeb2a844bda761e41137199fcb284841bbc6e6bf963ec1c091dbc93",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/hdmi-output-2.conf": {
+      "sha256": "7ba7347a3e7b4dde22601a92f5e1acaf343c95bc8e118e1a90f532a1fc0711ac",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-linein.conf": {
+      "sha256": "180136bc6f7e2f91fe1abe9de57faddad1ed80a705c9691e545010c703bad7b2",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/usb-gaming-headset-output-mono.conf": {
+      "sha256": "fc35e19d053530149fc415beff8e63c4337c08ab333f9be1f192f68882d9e4d2",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-mic.conf.common": {
+      "sha256": "927ddc7376500fc7cc396833c06c7847f0d3e172c4dd524129253b8ccd7e8581",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/usb-gaming-headset-input.conf": {
+      "sha256": "86a0b0a037f039cc4fcdadc16f7911447bb41662f31db4204e5f020b836e88bc",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/steelseries-arctis-output-chat-common.conf": {
+      "sha256": "c7c275e83b1ccdd29d07846c0389eb499dab2759c199428d023e202a08bb8337",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/iec958-stereo-input.conf": {
+      "sha256": "6f639917b373bd60120864dd6b76f163439b88fa1e88ce6b2a6e078f4fdd476a",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-mic-line.conf": {
+      "sha256": "6a33421919c6c8dabc301bd1da5a1ad332bbea5cc69d2ea16676dbd735972125",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-output-mono.conf": {
+      "sha256": "e7dae5dad2b509017ba64ceedf82e3997f75ee5aa7a91ac2014f16f8cfeb939a",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/virtual-surround-7.1.conf": {
+      "sha256": "47cf9ceed1d0a41ee83bf96dd15fec06950002e1dc2172b1bb356352ab402dca",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-internal-mic.conf": {
+      "sha256": "aed33a4ba81e4dc4a580a3a0b8f2668f49b03644291320a5a5705a4e521312bf",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-tvtuner.conf": {
+      "sha256": "69152fb03997a9fe5e09039671a6897735b954e31cc878d690e4d570eff046d6",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-video.conf": {
+      "sha256": "8d3fe46fadd652cd26f72732c15352b9b23e291b08b932ed74a9e8bb094803af",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/hdmi-output-6.conf": {
+      "sha256": "9e1ed6431144d0a2f4b08816b751fd08a8c25689391c7dc49776a79dc500e004",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/iec958-stereo-output.conf": {
+      "sha256": "dc8f258cc786471d8e3edb1631593c544c5c468f196fb67aff358157c259c451",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-headphone-mic.conf": {
+      "sha256": "5b3cc458304477bfac8dd6fdd383dc8a1c94b80987dd36d3ff9cf6b86c3d72e0",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-output.conf.common": {
+      "sha256": "a8b58bdb919f2657ffda89e3bfa3406c915ef3bb22912f4926b1fc0b15d90c00",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/hdmi-output-1.conf": {
+      "sha256": "6776e159df5e9cf3f90028190eed740331dcc6a73230e3efdb516cd15fedfd34",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input.conf": {
+      "sha256": "a66ddfa7d3723d099ab874b55c6faf6d31727056d9b90ae3c983778887f48ef6",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/audeze-maxwell-input.conf": {
+      "sha256": "41f615fcfcc881ed239712decabc079691f3bb2d3fb51d9f6782b421ec368e5d",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-output-chat.conf": {
+      "sha256": "28dd252e42faa82c8a37fe2e0807f992d73caa9ab1d5b00a80de33ecbb75c54e",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-output-speaker.conf": {
+      "sha256": "be156d5186887f28dcd2f129d1d9efd91643f74c6859f3c305d773aadd04be7e",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/usb-gaming-headset-output-stereo.conf": {
+      "sha256": "8ae2fe977983b1d6775a4092735d3fbce85465088ff46fdc1d63a04638c06b6b",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/hdmi-output-4.conf": {
+      "sha256": "6287f4c69927165f21da386d969c892e5b470ddc772e81e8026fc642963cff0c",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-output-headphones.conf": {
+      "sha256": "f81ec1b07dedefdf9bbca5d6d47d401f10a6b6b9820475666e67dd57e376ac37",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/hdmi-output-9.conf": {
+      "sha256": "c2ebdd590a5593352f0010c4fff730028985d8dc061368b9bfed32e67fc3d60b",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-internal-mic-always.conf": {
+      "sha256": "cb797c78e09c02e782faa6d5005922f498941fa3709916b0c311aa029ddc2662",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-aux.conf": {
+      "sha256": "8cfdf1190de489037b38627d59976db2f97968f91df1080c029e49cbc5805668",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-output-speaker-always.conf": {
+      "sha256": "35183952c2783747b7ce93dd5854d945298421031a4f73961df497b00a470a69",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/steelseries-arctis-output-game-common.conf": {
+      "sha256": "c97f4b0e1de860b86d3ba078440f433087798dce1446123faba1c7b873059abb",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-output-lineout.conf": {
+      "sha256": "cc09e74ad122727ce51cdb38c0948afdfd5a10e9b9aa5ec69f3b1246367332f8",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/audeze-maxwell-output-chat.conf": {
+      "sha256": "8f4e976f0fab4c8b7ac6149ec28008f440dc987964ba0d1db97f8ad889c36b66",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/hdmi-output-10.conf": {
+      "sha256": "cbf4c064d7260dd23b75d6fce28d1b44d7bdfdc41785017daf6b2397974e0e8e",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input-rear-mic.conf": {
+      "sha256": "8c9df52461e4ef12b08381fd6cff4a4c932b7b2c6b648924a936020f688045e6",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/hdmi-output-0.conf": {
+      "sha256": "8e5e8426d4634cee5083781c68f63157f9ee86913e1cf14994c84fecf935978e",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/hdmi-output-8.conf": {
+      "sha256": "52e97701101e07717091f61884895dfb0814ba3987a11301809cb0bb830fef71",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/analog-input.conf.common": {
+      "sha256": "cdecb2934db2db7269f72e3ede55a61748d16c06a0126c2c4ed1ee6ae8d1d8a5",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/paths/logi407-iec958-stereo-output.conf": {
+      "sha256": "5025485aea3cf16cb5d8e4a0e3ad843f1f7ac609825da6cd22cafa29ec43c622",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/simple-headphones-mic.conf": {
+      "sha256": "36762047410fa606435d55e9226554544e54f50c4dbb13c4e9e4be7bfd943bad",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/steelseries-gamedac-usb-audio.conf": {
+      "sha256": "e383447b4b764d62f535769404be605a4d8218310ca7548a0722c8cf8b8e3114",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/default.conf": {
+      "sha256": "92c977e8926fd40ee169885eb1b1b2e3082a0ea52643f65cafab8b5a1e27b5bc",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/9999-custom.conf": {
+      "sha256": "3b02e9ae36f70917abb18191931af8e77acf62531e2345733af50dd7befb722c",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/sb-omni-surround-5.1.conf": {
+      "sha256": "12e381917650f22dde4b0f08b51c483922739eb6ee02a16042f53ec7fd78abfe",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/native-instruments-korecontroller.conf": {
+      "sha256": "35dc1c073ac952ba3112b20b2f6c60d280e261bd2a68fbc4447d2f3fdf7099e6",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/sennheiser-gsx.conf": {
+      "sha256": "9e90352f61a0298cef4eeef6e808b77c775561a3298390bc0ea8177a54412f0d",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/steelseries-arctis-common-usb-audio.conf": {
+      "sha256": "47b4b9420979eb349f62307a0b26355f72a4e8f8f9630565bcf1ff4f76a68dbe",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/force-speaker.conf": {
+      "sha256": "9de0208e53d9ec28d5350b2a0c7c660af17692f807c35c76795c1f4522d92062",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/native-instruments-audio4dj.conf": {
+      "sha256": "4c5c1e1652e1192c4a301a10250257f6fdd5340393d3d39f84a1f95e2916f76b",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/kinect-audio.conf": {
+      "sha256": "361670fb6183c840f2dfef947fb48b2653003d50cb8459fcd27e5791508fe61c",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/native-instruments-traktorkontrol-s4.conf": {
+      "sha256": "ea146097e661fcc1b3e2ac24684318d7c5f3f2bdf89ef7f2bdc61b1517bdd18c",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/hdmi-ac3.conf": {
+      "sha256": "4fe0f5d854fbb3d1a8499e40eb45d942d42b87dba9825199bad4f4c29709318c",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/native-instruments-traktor-audio6.conf": {
+      "sha256": "cad8b0fed1c14916273236a03a57ecc8c571a03fd503d80ad17cab4bc5f84809",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/cmedia-high-speed-true-hdaudio.conf": {
+      "sha256": "da84270b29927d8d37a5e29ba6435acdf3232e3711d08f3fd803b668fa38364f",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/force-speaker-and-int-mic.conf": {
+      "sha256": "33fc9461af9765cc0446875dea83544dfa443439bd5a9063211b1317dc13a140",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/native-instruments-traktor-audio10.conf": {
+      "sha256": "ccfeb983437d6e2ed46993402362c173b31b9e47ada0134c77b1f43c893ae40a",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/maudio-fasttrack-pro.conf": {
+      "sha256": "407cd96445ee262b40ecde7793d3423f6247f52b19ee7d6e1f4624ff62eee07b",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/logi407.conf": {
+      "sha256": "6badd25458044c746bf5ce135e484f67413b8f2f8ed6369ed3f632e4b2288282",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/asus-xonar-se.conf": {
+      "sha256": "39e8f2b4649f78145ace11ad2931baae86512a5f22c8c001b37c3ee77276dc30",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/analog-only.conf": {
+      "sha256": "e0ee6c41e5b0e656cd9491140559529621c14a4b8ac4433ae6c8c47b1118a5e3",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/usb-gaming-headset.conf": {
+      "sha256": "9482f4a0bf3895d3a389f02c37a507d7eec618a5d2a9d0e15d6e6f02837ab96c",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/texas-instruments-pcm2902.conf": {
+      "sha256": "c78988cf40462330178e74a8c7df880af9269530a6af2304c5babdae24b4bf80",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/native-instruments-komplete-audio6.conf": {
+      "sha256": "842fd21bea1726323bfadcca200960b7d100b580ce1acbf4424c0f2f79442d4f",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/hp-tbt-dock-120w-g2.conf": {
+      "sha256": "849694d785e9c9a70ec71d693753b3e1869df104753835ca8f4434d91c251106",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/native-instruments-traktor-audio2.conf": {
+      "sha256": "093d9e7dce9bfbfcd3533e13f57432f3cdfed8c9a7ab5a261d1893ef05c8dec4",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/audeze-maxwell.conf": {
+      "sha256": "3552b707bcf78eb992b733100ecfb5bb4176ddfa467e5941abb60cd638b596aa",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/native-instruments-audio8dj.conf": {
+      "sha256": "dfa4376acd59927b4e6189659bbc8e380bf466ff4bb9491271a23b4f66b39a01",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/usb-gaming-headset-gamefirst.conf": {
+      "sha256": "f880c7cc04bb5336605748f75ebb92becb595465d36b5f0560fca641f06d04e2",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/dell-dock-tb16-usb-audio.conf": {
+      "sha256": "9b990784481ebc94a70121f2a6ddc1c0e780d7b7ebd20476b050397c09417c2f",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/audigy.conf": {
+      "sha256": "219658b54032a5932d038b5cda5592142361d134db95ed0054ffba8262d820d2",
+      "mode": 420
+    },
+    "share/pipewire-ao/alsa-card-profile/mixer/profile-sets/hp-tbt-dock-audio-module.conf": {
+      "sha256": "2fd2b46ad2bc94546687ba4175786277ea4958c313ab0e45180d34164a7bbcc4",
+      "mode": 420
+    },
+    "share/alsa/alsa.conf.d/99-pipewire-default.conf": {
+      "sha256": "f52f257069a93f698a496fc433c2d946a4dc0ed81e1f9c634a2e41da01636bca",
+      "mode": 420
+    },
+    "share/alsa/alsa.conf.d/50-pipewire.conf": {
+      "sha256": "101d1b134d1a0ce4c5a0e5a4264f63aa263c05073712c458cb433caeb25bea0b",
+      "mode": 420
+    },
+    "share/locale/ta/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "692c3f494c2f8d6c05fee07f6789d3ce040a3e83f2661de005777c2d1a754203",
+      "mode": 420
+    },
+    "share/locale/sv/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "1cbf22272f3c02bb69a629ab1d8f56aefc628de3a11ae2b875dad0eba796dde1",
+      "mode": 420
+    },
+    "share/locale/fi/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "f54cfe7cc6e92beb8c7268d3cfddbad89b4cbed2af4d51806789877deec83e26",
+      "mode": 420
+    },
+    "share/locale/eo/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "b5a9257438d00dfaab54af1893965a5c4f5d5e029b89eba82772085470d63310",
+      "mode": 420
+    },
+    "share/locale/hi/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "08b4a2b991cb36e14dee0ae647e5e36fa3d319ddf177b36303d9b4452e8b366c",
+      "mode": 420
+    },
+    "share/locale/de/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "e9234a0a59a081026889bcca5ab9f8b80ed42214077dbd0e9e43de155093af7d",
+      "mode": 420
+    },
+    "share/locale/ml/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "07a85c027c88c8089cf88d0513360b13c1c2f0de0361a8a0e06f39718cfa4b16",
+      "mode": 420
+    },
+    "share/locale/ka/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "4af67b7de2c8f99fef451cfd82960fe751a6a3b3516fe8f32aaa598a8f3988ac",
+      "mode": 420
+    },
+    "share/locale/as/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "1c81e2ed7d9207c8baf3261b4065529942cfb048c43f2df07d1ab932279c0d48",
+      "mode": 420
+    },
+    "share/locale/mr/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "87eba26daa844a4f9c9b200e8f36fa6c2812a05cfbb6bee564b1be9311c22a7d",
+      "mode": 420
+    },
+    "share/locale/ko/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "ab81b98ac46d66bcb2c918a625bc95b9dc7504cf176f8014ad97275f8f125f98",
+      "mode": 420
+    },
+    "share/locale/tr/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "4c3e4f741e2c586997a7aebe40b9425a71f8b0faced21b22ab423d1d82ae5ad0",
+      "mode": 420
+    },
+    "share/locale/sk/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "f93a9ba95c9012fbe2fff3bfeb55001e522ef13574bacc6dfb16bff9f6f8e412",
+      "mode": 420
+    },
+    "share/locale/te/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "994900240bee7bf8dcabddf8a606c4171bcc8426052d0de15084bb33b2c22277",
+      "mode": 420
+    },
+    "share/locale/be/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "28a6fc362130d7d9a3b16d574fbf2746a8533d0daec6d4fa7ebe3cc5b65f837f",
+      "mode": 420
+    },
+    "share/locale/si/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "fc908eb5f7ece13e93c49b1faacab825f54d555dc97df81c892d6636ee7d7eff",
+      "mode": 420
+    },
+    "share/locale/de_CH/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "54738ab987de437dbf52b4bdad0c1d5e6f7fb6a61d7aa63a677e03f6c9e09d2f",
+      "mode": 420
+    },
+    "share/locale/gu/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "0ecf1f3ebe126e550ebfa07ac4942d6c08d6a7b7165fef323861ccc4318ead38",
+      "mode": 420
+    },
+    "share/locale/kn/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "5d998a1cedc1be863537ab7aea38afea33ca937e1afd773afa535feeb8b95564",
+      "mode": 420
+    },
+    "share/locale/or/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "11d314c711942961352514087905ff6932ff77d8b4cfd55da81ecd0cb7136735",
+      "mode": 420
+    },
+    "share/locale/ar/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "4ebc86b42522f998457df37555cc8aaf9a8c2dd272134623a033597d2d95665d",
+      "mode": 420
+    },
+    "share/locale/pa/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "98e114f6004ffc6e5c6cad0731418b9463e18d34e6fe16cfb54075e18f6aea2f",
+      "mode": 420
+    },
+    "share/locale/it/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "7290ee1a43fbb17ea30085c33eeee45496bf18ece455217660df49070e925915",
+      "mode": 420
+    },
+    "share/locale/ca/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "c7c41a1a9620a55b69a16c8357c1492d9a49c30b52577a1ee14775bf712494c7",
+      "mode": 420
+    },
+    "share/locale/uk/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "a61899e34b863fdbf47b94eb9403be80165d57b263e0bb2112e5317b9cf84c3d",
+      "mode": 420
+    },
+    "share/locale/zh_TW/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "5bf4874ae70111d2b2c1e41293a6e715d8e67f126cd3d5637f26c092ad0ae6ee",
+      "mode": 420
+    },
+    "share/locale/af/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "34b3f8dbaaa6982dc18de4c323cd8da7e1eebe7424f6a3175e97fe74e85135ba",
+      "mode": 420
+    },
+    "share/locale/gl/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "45c2127f115255b799614e9e5218c811f93e13f91b60c86f2eed4aa9bff0e14e",
+      "mode": 420
+    },
+    "share/locale/ja/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "f7b265b20f91ff2c4abf92e8a2371b7881240aec1ec632c518800604641069e6",
+      "mode": 420
+    },
+    "share/locale/nn/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "65435e5d28a10e57d661d1cfa079e211bd1258f0eb84361ac51d6f69af36c47d",
+      "mode": 420
+    },
+    "share/locale/id/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "139df84e4ef92219f8cf4179e0753b328180fee0e350e37098820b70a84537a3",
+      "mode": 420
+    },
+    "share/locale/hr/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "84eb5860514c7e53489eaa0692d04360524b90347c9b27562ae2a684182bcd9e",
+      "mode": 420
+    },
+    "share/locale/kk/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "03e997499c98cc326d6364e93018df67d04f5f79772af226feef37767f178b58",
+      "mode": 420
+    },
+    "share/locale/sr@latin/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "edb4a6859365d4044b56c786459d84bf648ffa51a81c45e6f1bb81578fba97fe",
+      "mode": 420
+    },
+    "share/locale/da/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "4b75ebc0db4e16a0c0eef64cce7ac4e97b202cf96c423ae72bcdd3a75e1ea194",
+      "mode": 420
+    },
+    "share/locale/cs/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "859d61f92d04cd206ddd1118bb2c2110328c576d9c93f5af13dc4b9dfb2ae68b",
+      "mode": 420
+    },
+    "share/locale/ro/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "1a11e972e276cf0b77d9d264e04da110896c60b9f7fc602ffc076dcd6732fa99",
+      "mode": 420
+    },
+    "share/locale/sl/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "a8eaa4466bfb4132bd552f8037e7cca05ae8b09f421449a6f7e07ec087065506",
+      "mode": 420
+    },
+    "share/locale/he/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "9ebe11eed8c3a44f925298f206af7ef5a956a9550e785e193ed48fb3f29a42de",
+      "mode": 420
+    },
+    "share/locale/hu/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "bb4eccb77f3ee4da25b126cb43c882d9b2190d0644ef4c550dbb07f84cc5328e",
+      "mode": 420
+    },
+    "share/locale/pt_BR/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "36d652f220efb4d4d0f36e1f124f972af86cc9d9ac2a3a6639f17c2e5b37d4b5",
+      "mode": 420
+    },
+    "share/locale/nl/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "07d75b6334a43d829f1dd74f7ddcfa1d8463b1062e8d33a61326323204024e3a",
+      "mode": 420
+    },
+    "share/locale/pt/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "40160d05df66f14aafca54ca2d7428e55a7bccaf58c308f7bf6ff0849ffc7ea0",
+      "mode": 420
+    },
+    "share/locale/nb/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "361838b185cbd1a463778cd30b25adaf2035b5518c8ca0ebe4f917c6a041d9c0",
+      "mode": 420
+    },
+    "share/locale/my/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "578848e58b61d2edba9544ea6f8ec9abf9e04fb9390c789010b4a0ddc5153fe1",
+      "mode": 420
+    },
+    "share/locale/lt/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "3888f265e0ee1d05db4569cd58439da6ff14e3413ae544c0854ff9e2cacc97d7",
+      "mode": 420
+    },
+    "share/locale/bn_IN/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "50137963b9dc8e9f4f9e6e50622fbebec3e3df6c0bc0c6c1d20ffadfcdf38fae",
+      "mode": 420
+    },
+    "share/locale/pl/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "1bbd460ba342b451eb8357e867218c2cae6823816120832658e9c7fd14e13762",
+      "mode": 420
+    },
+    "share/locale/sr/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "bfe51c9eba6203a6878af9b3e7c95bf8113a2a970f0e9e64b1c7576bf6d34cba",
+      "mode": 420
+    },
+    "share/locale/es/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "16d79985ffb6b6c44162d6e70e171992062e1a7497dac8b8591480921fcd140f",
+      "mode": 420
+    },
+    "share/locale/el/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "7f87581c8944501e0c3eedb3a99eabe285852b8958be1a66b92c4843be1281c8",
+      "mode": 420
+    },
+    "share/locale/oc/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "cc61920c47f2078301e005fda22e4889564cc1d1f8e5b13b53970530de59af20",
+      "mode": 420
+    },
+    "share/locale/bg/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "0857550c37b04bdd36a7955665287aaa88dc3f418cca65b241183dc060b3c162",
+      "mode": 420
+    },
+    "share/locale/fr/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "20f36a44e6f899891d2bfdc85ada9ac6a047cde3ba53539af651fc36650d7c99",
+      "mode": 420
+    },
+    "share/locale/ru/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "b1c53f30cf5aaae7493251aa7092298fd0b289d0aa64084dbd233edd00905cc7",
+      "mode": 420
+    },
+    "share/locale/zh_CN/LC_MESSAGES/pipewire-ao.mo": {
+      "sha256": "d9b0b5529136293ab70adac443928595adb2307f78fc93863f0dc77d1b3dc61b",
+      "mode": 420
+    }
+  }
+}

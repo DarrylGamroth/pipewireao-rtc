@@ -1,0 +1,29 @@
+ 1/20 pw-test-ndarray-filter-fifo-queued     OK              0.34s
+ 2/20 pw-test-ndarray-filter-fifo-no-backlog OK              1.44s
+ 3/20 pw-test-ndarray-filter-fifo-queued     OK              0.33s
+ 4/20 pw-test-ndarray-filter-fifo-no-backlog OK              1.44s
+ 5/20 pw-test-ndarray-filter-fifo-queued     OK              0.34s
+ 6/20 pw-test-ndarray-filter-fifo-no-backlog OK              1.44s
+ 7/20 pw-test-ndarray-filter-fifo-queued     OK              0.33s
+ 8/20 pw-test-ndarray-filter-fifo-no-backlog OK              1.45s
+ 9/20 pw-test-ndarray-filter-fifo-queued     OK              0.33s
+10/20 pw-test-ndarray-filter-fifo-no-backlog OK              1.44s
+11/20 pw-test-ndarray-filter-fifo-queued     OK              0.34s
+12/20 pw-test-ndarray-filter-fifo-no-backlog OK              1.44s
+13/20 pw-test-ndarray-filter-fifo-queued     OK              0.32s
+14/20 pw-test-ndarray-filter-fifo-no-backlog OK              1.44s
+15/20 pw-test-ndarray-filter-fifo-queued     OK              0.34s
+16/20 pw-test-ndarray-filter-fifo-no-backlog OK              1.44s
+17/20 pw-test-ndarray-filter-fifo-queued     OK              0.32s
+18/20 pw-test-ndarray-filter-fifo-no-backlog OK              1.43s
+19/20 pw-test-ndarray-filter-fifo-queued     OK              0.33s
+20/20 pw-test-ndarray-filter-fifo-no-backlog OK              1.43s
+
+Ok:                 20  
+Expected Fail:      0   
+Fail:               0   
+Unexpected Pass:    0   
+Skipped:            0   
+Timeout:            0   
+
+Full log written to /tmp/rtc-installed-runtime-20261008/builddir/pipewire/meson-logs/testlog.txt
