@@ -60,10 +60,12 @@ GUI/client imports remain aliases. [Source layout and software checks](../README
 record preserved configuration/data bytes and passing Rust/Julia tests. No
 language migration or session-policy change is included.
 
-The [structure proposal](JULIA_RTC_STRUCTURE_PLAN.md) recommends completing Julia
-operational tools, moving the GUI-used Rust client code into its native adapter,
-then adopting a root Julia package with an explicit export closure. It preserves
-WirePlumber/systemd ownership and v1 controls. This is reviewed proposed work,
+The revised [structure proposal](JULIA_RTC_STRUCTURE_PLAN.md) separates reusable
+Julia calibration and systemd tools from independent instrument RTC projects.
+Each instrument owns its graphs, recipes, artifacts and optional GUI TOML profile.
+It also proposes moving GUI-used Rust clients into the GUI's native adapter and
+adopting a shared root Julia package with a selected export closure. It preserves
+WirePlumber/systemd ownership and v1 controls. This is proposed work,
 not an implemented language migration or a change to existing qualification.
 
 Completed Copper link and process-supervision transfers remain valid only for
