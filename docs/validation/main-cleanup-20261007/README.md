@@ -56,3 +56,25 @@ suite or performance experiment was run for this cleanup. Earlier
 [session qualification](../wireplumber-session-20261007/SESSION_CHECKS.md)
 retains its recorded scope and remaining gates. [Receipt](receipt.json) records
 exact source heads, removed paths, retained paths and preservation evidence.
+
+## Follow-up: remaining reference deployments removed
+
+The user subsequently requested removal of the remaining legacy deployments.
+All 17 named `revolt-*` packages and the now-empty
+`~/.config/pipewireao-rtc` directory were removed. Their calibration payloads,
+graph configuration and provenance were copied and SHA-256 verified under
+`~/.local/share/pipewireao-rtc/retired-calibration/20261007/profiles`. Identical
+content shares storage using hard links. The complete reference archive now
+occupies 15 MiB; its local manifest records all 328 preserved files. Legacy
+executables, copied SDKs, service templates and reproducible replay inputs
+were removed. Current process/file and active-unit checks found no users of
+the deleted deployment paths.
+
+The unused global `pipewireao-session@.service` symlink into the temporary
+FGN installation was also removed, after confirming its instances had no
+MainPID or pending jobs. This removes a temporary launch dependency; fresh
+installed sessions continue to use their generated exact-instance units.
+The active GUI/HIL service remains running on PID 1632744 from its separate
+cache-owned legacy package. It has not yet been transitioned to WirePlumber.
+See [the follow-up receipt](final-config-cleanup.json). `/opt/pipewireao`
+remains unchanged and does not yet contain WirePlumberAO.

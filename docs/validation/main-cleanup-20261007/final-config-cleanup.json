@@ -1,0 +1,97 @@
+{
+  "removed_profiles": [
+    {
+      "name": "revolt-classic-fgn-frame",
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/profiles/revolt-classic-fgn-frame",
+      "file_count": 18
+    },
+    {
+      "name": "revolt-classic-fgn-hil-cpu",
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/profiles/revolt-classic-fgn-hil-cpu",
+      "file_count": 22
+    },
+    {
+      "name": "revolt-classic-fgn-row",
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/profiles/revolt-classic-fgn-row",
+      "file_count": 18
+    },
+    {
+      "name": "revolt-classic-heart-hil-cpu",
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/profiles/revolt-classic-heart-hil-cpu",
+      "file_count": 23
+    },
+    {
+      "name": "revolt-classic-jfg-frame",
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/profiles/revolt-classic-jfg-frame",
+      "file_count": 23
+    },
+    {
+      "name": "revolt-classic-jfg-hil-cpu",
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/profiles/revolt-classic-jfg-hil-cpu",
+      "file_count": 27
+    },
+    {
+      "name": "revolt-classic-jfg-row",
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/profiles/revolt-classic-jfg-row",
+      "file_count": 23
+    },
+    {
+      "name": "revolt-copper-fgn-frame",
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/profiles/revolt-copper-fgn-frame",
+      "file_count": 14
+    },
+    {
+      "name": "revolt-copper-fgn-hil-amdgpu",
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/profiles/revolt-copper-fgn-hil-amdgpu",
+      "file_count": 18
+    },
+    {
+      "name": "revolt-copper-fgn-hil-cpu",
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/profiles/revolt-copper-fgn-hil-cpu",
+      "file_count": 18
+    },
+    {
+      "name": "revolt-copper-fgn-hil-cuda",
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/profiles/revolt-copper-fgn-hil-cuda",
+      "file_count": 18
+    },
+    {
+      "name": "revolt-copper-fgn-hil-cuda100",
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/profiles/revolt-copper-fgn-hil-cuda100",
+      "file_count": 18
+    },
+    {
+      "name": "revolt-copper-fgn-row",
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/profiles/revolt-copper-fgn-row",
+      "file_count": 14
+    },
+    {
+      "name": "revolt-copper-heart-hil-cpu",
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/profiles/revolt-copper-heart-hil-cpu",
+      "file_count": 19
+    },
+    {
+      "name": "revolt-copper-jfg-frame",
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/profiles/revolt-copper-jfg-frame",
+      "file_count": 17
+    },
+    {
+      "name": "revolt-copper-jfg-hil-cpu",
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/profiles/revolt-copper-jfg-hil-cpu",
+      "file_count": 21
+    },
+    {
+      "name": "revolt-copper-jfg-row",
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/profiles/revolt-copper-jfg-row",
+      "file_count": 17
+    }
+  ],
+  "archive_manifest": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/profiles/manifest.json",
+  "template_cleanup": {
+    "removed_link": "/home/dgamroth/.config/systemd/user/pipewireao-session@.service",
+    "target": "/tmp/rtc-wireplumber-fgn-20261007-installed/systemd/pipewireao-session@.service",
+    "sha256": "ce3fe924b385715c871daeb40294be1340ef12d25a858c834f99a55ccc92149c",
+    "checked_instances": []
+  },
+  "scope": "Legacy executables, SDK copies and replay test inputs removed; calibration, graph configuration and provenance hashes preserved."
+}
