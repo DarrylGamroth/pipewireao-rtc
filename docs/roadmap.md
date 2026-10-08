@@ -60,6 +60,12 @@ GUI/client imports remain aliases. [Source layout and software checks](../README
 record preserved configuration/data bytes and passing Rust/Julia tests. No
 language migration or session-policy change is included.
 
+The [structure proposal](JULIA_RTC_STRUCTURE_PLAN.md) recommends completing Julia
+operational tools, moving the GUI-used Rust client code into its native adapter,
+then adopting a root Julia package with an explicit export closure. It preserves
+WirePlumber/systemd ownership and v1 controls. This is reviewed proposed work,
+not an implemented language migration or a change to existing qualification.
+
 Completed Copper link and process-supervision transfers remain valid only for
 their dated scopes. The selected Copper composition has passed link realization
 and systemd owner-service checks while the old runtime retains science readiness

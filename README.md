@@ -16,6 +16,7 @@ and command-line tools act as clients of the same WirePlumber session authority.
 - [Current work and qualification](docs/roadmap.md#current-work)
 - [Ownership and migration design](docs/WIREPLUMBER_SESSION_DESIGN.md)
 - [Julia deployment and calibration tools](docs/JULIA_DEPLOYMENT_USAGE.md)
+- [Proposed Julia RTC structure and migration](docs/JULIA_RTC_STRUCTURE_PLAN.md)
 - [Installed replacement checks](docs/validation/wireplumber-session-20261007/SESSION_CHECKS.md)
 
 ## Launch a sealed session package
