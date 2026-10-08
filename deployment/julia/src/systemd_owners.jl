@@ -2,10 +2,11 @@ module SystemdOwners
 
 using ..Common
 
-export Coordinator, Service, coordinator, launch!, pid, alive, failure, record, verify!, stop!, cleanup_invocation
+export Coordinator, Service, pid, alive, failure, record, verify!, stop!
 
 const PREFIX = "pipewireao-owner-"
 const NONCE = r"^[0-9a-f]{32}$"
+cohort_name(invocation) = PREFIX * valid_invocation(invocation) * "-cohort.target"
 const ROLE = r"^[a-z][a-z0-9-]{0,31}$"
 const SHOW_FIELDS = "Id,LoadState,ActiveState,MainPID,InvocationID,ControlGroup"
 monotonic() = time_ns() / 1.0e9
@@ -58,12 +59,17 @@ function checked(argv; timeout=5, deadline=nothing)
 end
 
 function properties(unit::AbstractString; extra="", deadline=nothing)
-    fields = isempty(extra) ? SHOW_FIELDS : SHOW_FIELDS * "," * extra
+    base = endswith(unit, ".target") ? "Id,LoadState,ActiveState,InvocationID" : SHOW_FIELDS
+    fields = isempty(extra) ? base : base * "," * extra
     result = checked(["systemctl", "--user", "show", "--no-pager", "--property=" * fields, String(unit)]; deadline)
     result.returncode == 0 || fail("cannot query systemd unit $unit: $(strip(result.stderr))")
     values = parse_properties(result.stdout)
     for field in split(fields, ',')
         haskey(values, field) || fail("missing systemd property $field for $unit")
+    end
+    if endswith(unit, ".target") # Targets own jobs, not processes or cgroups.
+        values["MainPID"] = "0"
+        values["ControlGroup"] = ""
     end
     get(values, "Id", "") == unit || fail("systemd returned a different unit identity for $unit")
     return values
@@ -129,43 +135,6 @@ function maybe_start_ticks(pid::Integer)
     end
 end
 
-function coordinator(unit::AbstractString; launcher::AbstractString)
-    occursin(r"^[a-zA-Z0-9_.@-]+\.service$", unit) || fail("invalid coordinator unit name")
-    isabspath(launcher) && !occursin(r"[\n\r\0;]", launcher) ||
-        fail("coordinator launcher must be an absolute executable path")
-    values = properties(unit; extra="ExecStopPost,KillMode,Restart")
-    values["LoadState"] == "loaded" && values["ActiveState"] in ("active", "activating") ||
-        fail("coordinator user service is not running")
-    parsed = tryparse(Int, values["MainPID"])
-    parsed == getpid() || fail("coordinator is not the user service MainPID")
-    invocation = valid_invocation(values["InvocationID"])
-    env_invocation = get(ENV, "INVOCATION_ID", "")
-    valid_invocation(env_invocation) == invocation || fail("coordinator invocation environment differs from systemd")
-    group = values["ControlGroup"]
-    startswith(group, "/") && group != "/" || fail("coordinator has no private cgroup")
-    observed = proc_cgroup(getpid())
-    (observed == group || startswith(observed, group * "/")) ||
-        fail("coordinator process is outside its systemd cgroup")
-    values["KillMode"] == "mixed" || fail("coordinator KillMode must be mixed")
-    values["Restart"] == "no" || fail("coordinator Restart must be no")
-    cleanup_hook_valid(values["ExecStopPost"], launcher) ||
-        fail("coordinator lacks cleanup-systemd-owners ExecStopPost")
-    return Coordinator(String(unit), invocation, group, String(launcher))
-end
-
-"""Match one serialized ExecStopPost command from the generated coordinator unit.
-This intentionally accepts only the unit format we install, not arbitrary shell
-commands that happen to contain the cleanup subcommand.
-"""
-function cleanup_hook_valid(value::AbstractString, launcher::AbstractString)
-    isabspath(launcher) && !occursin(r"[\n\r\0;]", launcher) || return false
-    prefix = "{ path=" * launcher * " ; argv[]=" * launcher *
-        " cleanup-systemd-owners --invocation \${INVOCATION_ID} ; ignore_errors=no ; "
-    startswith(value, prefix) || return false
-    suffix = value[ncodeunits(prefix)+1:end]
-    return occursin(r"^start_time=[^;{}]* ; stop_time=[^;{}]* ; pid=[0-9]+ ; code=[^;{}]* ; status=[^;{}]* \}$", suffix)
-end
-
 function parsed_pid(values)
     value = tryparse(Int, values["MainPID"])
     value !== nothing && value > 0 || fail("owner systemd MainPID is unavailable")
@@ -197,78 +166,6 @@ function validate_placement(placement)
         length(unique(cpus)) == length(cpus) && typeof(cpu) === Int && cpu in cpus ||
         fail("invalid owner CPU envelope or leader")
     return cpu, sort(cpus)
-end
-
-function launch_command(service::Service, argv, env, cwd, placement)
-    service.state == :pending || fail("owner launch requires a pending handle")
-    argv isa AbstractVector && !isempty(argv) &&
-        all(x -> x isa AbstractString && !occursin('\0', x), argv) &&
-        !isempty(argv[1]) || fail("owner command has an invalid executable or argument")
-    isabspath(String(argv[1])) || fail("owner executable must be absolute")
-    isabspath(String(cwd)) && isdir(cwd) || fail("owner working directory must exist and be absolute")
-    cpu, _ = validate_placement(placement)
-    environment = Dict{String,String}()
-    for (key, value) in pairs(env)
-        key isa AbstractString && occursin(r"^[A-Za-z_][A-Za-z0-9_]*$", key) &&
-            value isa AbstractString && !occursin('\0', value) || fail("invalid owner environment")
-        environment[String(key)] = String(value)
-    end
-    for key in ("NOTIFY_SOCKET", "INVOCATION_ID", "JOURNAL_STREAM", "SYSTEMD_EXEC_PID")
-        delete!(environment, key)
-    end
-    cmd = String["systemd-run", "--user", "--service-type=exec", "--expand-environment=no",
-        "--unit=" * service.unit, "--working-directory=" * String(cwd),
-        "--property=CPUAffinity=" * string(cpu),
-        "--property=LimitRTPRIO=95", "--property=LimitMEMLOCK=4294967296",
-        "--property=KillMode=control-group", "--property=Restart=no",
-        "--property=UMask=0077",
-        "--property=TimeoutStopSec=15", "--property=StandardOutput=journal",
-        "--property=StandardError=journal"]
-    for key in sort!(collect(keys(environment)))
-        push!(cmd, "--setenv=" * key * "=" * environment[key])
-    end
-    append!(cmd, ["--"; String.(argv)])
-    return cmd
-end
-
-function launch!(service::Service, argv, env, cwd, placement)
-    command = launch_command(service, argv, env, cwd, placement)
-    observed = coordinator(service.coordinator.unit; launcher=service.coordinator.launcher)
-    observed.invocation == service.coordinator.invocation && observed.cgroup == service.coordinator.cgroup ||
-        fail("coordinator incarnation changed before owner launch")
-    before = properties(service.unit)
-    before["LoadState"] == "not-found" || fail("owner unit name is already reserved: $(service.unit)")
-    any(pair -> pair.second == service.unit, listed_jobs(service.coordinator.invocation)) &&
-        fail("owner unit has a pending start job: $(service.unit)")
-    service.state = :launching
-    error_text = ""
-    try
-        result = checked(command; timeout=20)
-        result.returncode == 0 || (error_text = "systemd-run failed with status $(result.returncode)")
-    catch error
-        error_text = "systemd-run did not confirm launch: " * sprint(showerror, error)
-    end
-    # A timeout or nonzero result can still leave a live service. Never release
-    # the handle without reconciling the actual unit identity.
-    try
-        values = properties(service.unit)
-        if values["LoadState"] == "not-found"
-            # A queued start job may not have made the unit visible yet.
-            service.state = :uncertain
-            service.error = isempty(error_text) ? "owner unit disappeared during launch" : error_text
-            fail(service.error)
-        end
-        retain!(service, values)
-        if !isempty(error_text)
-            service.error = error_text
-            fail(error_text)
-        end
-        return service
-    catch error
-        service.state == :launching && (service.state = :uncertain)
-        isempty(service.error) && (service.error = sprint(showerror, error))
-        rethrow()
-    end
 end
 
 pid(service::Service) = service.main_pid
@@ -427,9 +324,13 @@ function parse_jobs(output, invocation)
         length(fields) >= 3 || continue
         job, name, operation = fields[1:3]
         occursin(r"^[0-9]+$", job) && startswith(name, prefix) &&
-            endswith(name, ".service") || continue
-        role = name[length(prefix)+1:end-length(".service")]
-        occursin(ROLE, role) && operation == "start" && push!(jobs, job => name)
+            (endswith(name, ".service") || name == cohort_name(invocation)) || continue
+        if name == cohort_name(invocation)
+            operation == "start" && push!(jobs, job => name)
+        else
+            role = name[length(prefix)+1:end-length(".service")]
+            occursin(ROLE, role) && operation == "start" && push!(jobs, job => name)
+        end
     end
     return jobs
 end
@@ -479,55 +380,7 @@ function quiescent_unit(unit; deadline=nothing)
     isempty(group) || cgroup_empty(group)
 end
 
-"""Stop this exact invocation's core first. Unit names are exclusive in the
-supported workflow; hostile/manual same-name replacement is outside it. A live
-query followed by stop is not atomic, so any observed mismatch fences cleanup.
-"""
-function cleanup_invocation(id)
-    invocation = valid_invocation(id)
-    core = PREFIX * invocation * "-core.service"
-    core_cleared = false
-    quiet_rounds = 0
-    deadline = monotonic() + 45
-    while monotonic() < deadline
-        units = listed_units(invocation; deadline)
-        jobs = listed_jobs(invocation; deadline)
-        if isempty(jobs) && all(unit -> quiescent_unit(unit; deadline), units)
-            quiet_rounds += 1
-            quiet_rounds >= 3 && return nothing
-            sleep(0.05)
-            continue
-        end
-        quiet_rounds = 0
-        core_jobs = filter(pair -> pair.second == core, jobs)
-        for job in core_jobs
-            cancel_job(job.first; deadline)
-        end
-        if core in units
-            cleanup_unit(core; deadline)
-            core_cleared = true
-        elseif !isempty(core_jobs)
-            core_cleared = true
-        elseif properties(core; deadline)["LoadState"] == "not-found"
-            core_cleared = true
-        elseif !core_cleared
-            fail("core owner identity is unknown; refusing consumer cleanup")
-        end
-        # Re-query after stopping core: a start job may have materialized while
-        # the first list was collected. Never tear down consumers first.
-        core in listed_units(invocation; deadline) && !quiescent_unit(core; deadline) && continue
-        any(pair -> pair.second == core, listed_jobs(invocation; deadline)) && continue
-        for job in jobs
-            job.second == core && continue
-            cancel_job(job.first; deadline)
-        end
-        for unit in units
-            unit == core && continue
-            cleanup_unit(unit; deadline)
-        end
-        sleep(0.05)
-    end
-    fail("invocation owner cleanup exceeded its deadline")
-end
+include("systemd_units.jl")
+include("systemd_unit_files.jl")
 
 end

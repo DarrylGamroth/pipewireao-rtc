@@ -241,42 +241,12 @@ function parameter_owner!(request, spec, session, bindings, runtime)
             "--control-node", control, "--control-instance", bindings["PARAMETER_OWNER_INSTANCE"]])
 end
 
-function launch_owner!(coordinator, role, argv, env, cwd, placement, runtime, record)
+function reserve_owner!(coordinator, role, placement, record)
     service = S.Service(coordinator, role)
-    saved() = merge(S.record(service), Dict{String,Any}(
+    haskey(record["owners"], role) && fail("duplicate owner role $role")
+    record["owners"][role] = merge(S.record(service), Dict{String,Any}(
         "role" => role, "placement" => deepcopy(placement)))
-    record["owners"][role] = saved()
-    launch_record!(runtime, record) # Retain the name before systemd-run is submitted.
-    command = S.launch_command(service, argv, env, cwd, placement)
-    before = S.properties(service.unit)
-    before["LoadState"] == "not-found" || fail("owner unit name is already reserved: $(service.unit)")
-    any(pair -> pair.second == service.unit, S.listed_jobs(coordinator.invocation)) &&
-        fail("owner unit has a pending start job")
-    service.state = :launching
-    record["owners"][role] = saved()
-    launch_record!(runtime, record)
-    result_error = nothing
-    try
-        result = S.checked(command; timeout=20)
-        result.returncode == 0 || (result_error = "systemd-run failed with status $(result.returncode)")
-    catch error
-        result_error = "systemd-run outcome uncertain: " * sprint(showerror, error)
-    end
-    try
-        values = S.properties(service.unit)
-        values["LoadState"] == "not-found" && fail("owner unit is not visible after launch")
-        S.retain!(service, values)
-        record["owners"][role] = saved()
-        launch_record!(runtime, record)
-        result_error === nothing || fail(result_error)
-        return service
-    catch error
-        service.state = :uncertain
-        service.error = sprint(showerror, error)
-        record["owners"][role] = saved()
-        launch_record!(runtime, record)
-        rethrow()
-    end
+    return service
 end
 
 function wait_core!(service, socket; seconds=15)
@@ -434,12 +404,40 @@ function prepare!(request::Request; render!::Function)
         locked = maximum(contract["locked-bytes"] for contract in contracts)
         record["credentials"] = P.credentials(priority, locked, spec["cpu-latency-us"])
         launch_record!(runtime, record)
-        core_env = owner_environment(paths, spec, bindings, runtime, "core")
-        core = launch_owner!(coordinator, "core", [paths["daemon"], "-c", "daemon.conf"],
-            core_env, joinpath(runtime, "core"), spec["placement"]["core"], runtime, record)
-        wait_core!(core, remote)
+        services = Dict{String,S.Service}()
+        services["core"] = reserve_owner!(coordinator, "core", spec["placement"]["core"], record)
         owner_records = record["owners"]
         for owner in spec["owners"]
+            role = owner["role"]
+            services[role] = reserve_owner!(coordinator, role, spec["placement"][role], record)
+            control_instance = D.native_heart(owner) ? bindings["HEART_OWNER_INSTANCE"] :
+                D.native_acquisition(owner) ? bindings["SOURCE_OWNER_INSTANCE"] :
+                get(owner, "control-instance", nothing)
+            merge!(owner_records[role], Dict{String,Any}(
+                "bootstrap-node" => get(owner, "bootstrap-node", nothing),
+                "bootstrap-instance" => get(bindings, D.bootstrap_instance_key(role), nothing),
+                "control-node" => get(owner, "control-node", nothing),
+                "control-protocol" => get(owner, "control-protocol", nothing),
+                "control-instance" => control_instance))
+        end
+        host_env = owner_environment(paths, spec, bindings, runtime, "fgn")
+        fgn_nodes = render_fgn_host!(request, spec, session, host_env, runtime)
+        if !isempty(fgn_nodes)
+            services["fgn"] = reserve_owner!(coordinator, "fgn", spec["placement"]["rtc"], record)
+            owner_records["fgn"]["graph-nodes"] = fgn_nodes
+        end
+        record["cohort_unit"] = S.cohort_name(invocation)
+        record["unit_files"] = Dict{String,Any}()
+        launch_record!(runtime, record) # Complete role/name intent before any process starts.
+        core_env = owner_environment(paths, spec, bindings, runtime, "core")
+        core = services["core"]
+        S.install_fragment!(core.unit, S.service_unit(core, [paths["daemon"], "-c", "daemon.conf"],
+            core_env, joinpath(runtime, "core"), spec["placement"]["core"]), runtime, record)
+        S.reload_fragments!(record)
+        S.start_services!([core], core.unit, runtime, record)
+        wait_core!(core, remote)
+
+        function install_owner!(owner)
             role = owner["role"]
             env = owner_environment(paths, spec, bindings, runtime, role)
             for (key, value) in owner["environment"]
@@ -447,29 +445,34 @@ function prepare!(request::Request; render!::Function)
             end
             private_remote_environment(env, runtime, bindings)
             argv = [D.substitute(arg, bindings) for arg in owner["argv"]]
-            service = launch_owner!(coordinator, role, argv, env,
-                joinpath(runtime, role), spec["placement"][role], runtime, record)
-            D.native_heart(owner) && (bindings["HEART_OWNER_PID"] = string(S.pid(service)))
-            control_instance = D.native_heart(owner) ? bindings["HEART_OWNER_INSTANCE"] :
-                D.native_acquisition(owner) ? bindings["SOURCE_OWNER_INSTANCE"] :
-                get(owner, "control-instance", nothing)
-            owner_records[role] = merge(owner_records[role], Dict{String,Any}(
-                "bootstrap-node" => get(owner, "bootstrap-node", nothing),
-                "bootstrap-instance" => get(bindings, D.bootstrap_instance_key(role), nothing),
-                "control-node" => get(owner, "control-node", nothing),
-                "control-protocol" => get(owner, "control-protocol", nothing),
-                "control-instance" => control_instance))
-            launch_record!(runtime, record)
+            S.install_fragment!(services[role].unit, S.service_unit(services[role], argv, env,
+                joinpath(runtime, role), spec["placement"][role]; after=[core.unit]), runtime, record)
         end
-        host_env = owner_environment(paths, spec, bindings, runtime, "fgn")
-        fgn_nodes = render_fgn_host!(request, spec, session, host_env, runtime)
+        # HEART's source command needs the real controller PID. Keep this
+        # necessary stage; ordinary FGN/JFG owners start together below.
+        staged_roles = Set(["core"])
+        for owner in filter(D.native_heart, spec["owners"])
+            install_owner!(owner)
+            service = services[owner["role"]]
+            S.reload_fragments!(record)
+            S.start_services!([service], service.unit, runtime, record)
+            bindings["HEART_OWNER_PID"] = string(S.pid(service))
+            push!(staged_roles, owner["role"])
+        end
+        for owner in spec["owners"]
+            owner["role"] in staged_roles || install_owner!(owner)
+        end
         if !isempty(fgn_nodes)
-            host = launch_owner!(coordinator, "fgn", [paths["daemon"], "-c", "client-host.conf"],
-                host_env, joinpath(runtime, "fgn"), spec["placement"]["rtc"], runtime, record)
-            owner_records["fgn"]["graph-nodes"] = fgn_nodes
-            launch_record!(runtime, record)
-            S.alive(host) || fail("FGN client host exited during preparation")
+            host = services["fgn"]
+            S.install_fragment!(host.unit, S.service_unit(host, [paths["daemon"], "-c", "client-host.conf"],
+                host_env, joinpath(runtime, "fgn"), spec["placement"]["rtc"]; after=[core.unit]), runtime, record)
         end
+        cohort = [services[role] for role in sort!(collect(keys(services))) if !(role in staged_roles)]
+        S.install_fragment!(record["cohort_unit"], S.cohort_unit(invocation, [service.unit for service in cohort]),
+            runtime, record)
+        S.reload_fragments!(record)
+        S.verify!(core)
+        S.start_services!(cohort, record["cohort_unit"], runtime, record)
         config = render!(spec, session, bindings, deepcopy(owner_records), runtime)
         config isa AbstractString && isabspath(config) && isfile(config) &&
             startswith(realpath(config), realpath(runtime) * "/") ||
@@ -594,6 +597,7 @@ function cleanup_invocation!(runtime_root::AbstractString, id::AbstractString;
         # If the ledger is unreadable, only ingress can be safely revoked by
         # the exact invocation names. Consumer cleanup remains fenced.
         deadline = monotonic() + 45
+        S.cancel_start_jobs!(invocation, deadline)
         for role in ("core", String(source_role))
             unit = S.PREFIX * invocation * "-" * role * ".service"
             for job in S.listed_jobs(invocation; deadline)
@@ -617,6 +621,7 @@ end
 
 function cleanup_record!(runtime, record, invocation, source_role)
     deadline = monotonic() + 240
+    S.cancel_start_jobs!(invocation, deadline)
     units = S.listed_units(invocation; deadline)
     jobs = S.listed_jobs(invocation; deadline)
     names = Set(vcat(units, last.(jobs)))
@@ -648,6 +653,7 @@ function cleanup_record!(runtime, record, invocation, source_role)
             continue
         end
         quiet = 0
+        S.cancel_start_jobs!(invocation, deadline)
         for role in ("core", String(source_role))
             cleanup_role!(record, role, deadline)
         end
@@ -659,6 +665,13 @@ function cleanup_record!(runtime, record, invocation, source_role)
         end
     end
     quiet >= 3 || fail("WirePlumber invocation cleanup exceeded its deadline")
+    # The target has no stop propagation. Stop it only after core/source and
+    # every consumer are proven empty, then remove owned runtime definitions.
+    if haskey(record, "cohort_unit")
+        record["cohort_unit"] == S.cohort_name(invocation) || fail("cleanup cohort identity differs")
+        S.cleanup_unit(record["cohort_unit"]; deadline)
+    end
+    get(record, "unit_files_removed", false) || S.remove_fragments!(runtime, record, deadline)
     result = get(ENV, "SERVICE_RESULT", "")
     record["service_result"] = result
     record["cleanup_complete"] = true

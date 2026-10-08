@@ -1,0 +1,4 @@
+{"cleanup_complete":true,"runtime":"/tmp/rtc-systemd-unit-probe %n é 9f3Bec","failed_member":false,"invocation":"533ddb5e31ac4469a3df7d0b29fc713f"}
+{"cleanup_complete":true,"runtime":"/tmp/rtc-systemd-unit-probe %n é Dxs1cH","failed_member":true,"invocation":"520075e088f24fa99d1cc1c8d76d309d"}
+Test Summary:                                                    | Pass  Total  Time
+actual user manager literal round trip and failed member cleanup |   16     16  9.8s

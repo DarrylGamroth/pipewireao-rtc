@@ -32,6 +32,14 @@ artifacts while migrating. The selected FGN host is a separate ordinary
 PipeWire client service. FGN LocalModule in the WirePlumber process is a different
 placement/failure option and is not selected or qualified by these checks.
 
+The one-shot launcher now renders ordinary owner services and starts the held
+FGN/JFG cohort through one systemd target transaction after private-core startup.
+Unused transient coordinator launch/cleanup routines are removed. Selected
+Copper startup, native controls and ordered unit cleanup pass for both CPU
+engines with CUDA AOS; [checks and independent review](validation/systemd-session-startup-20261007/README.md)
+retain the scope and recovery defect disposition. This change adds no timing or
+broader profile qualification.
+
 Completed Copper link and process-supervision transfers remain valid only for
 their dated scopes. The selected Copper composition has passed link realization
 and systemd owner-service checks while the old runtime retains science readiness

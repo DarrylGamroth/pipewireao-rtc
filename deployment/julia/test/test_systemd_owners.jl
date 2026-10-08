@@ -26,32 +26,65 @@ const INVOCATION = "0123456789abcdef0123456789abcdef"
     @test SO.parse_jobs(jobs, INVOCATION) == ["82" => "pipewireao-owner-$(INVOCATION)-core.service"]
 end
 
-@testset "owner command preserves arguments and strips coordinator notification state" begin
+@testset "owner service rendering quotes arguments and applies isolated service policy" begin
     owner = SO.Coordinator("pipewireao-rtc@test.service", INVOCATION, "/user.slice/core.service")
     service = SO.Service(owner, "core")
-    secret = "secret '\$() \" value"
-    command = SO.launch_command(service, ["/bin/echo", "literal \$HOME", "a'b", "a\"b"],
-        Dict("SECRET" => secret, "NOTIFY_SOCKET" => "/tmp/notify", "INVOCATION_ID" => INVOCATION,
-            "JOURNAL_STREAM" => "1:2", "SYSTEMD_EXEC_PID" => "123"),
+    argv = ["/bin/echo", "", "two words", "\$HOME", "%n", "line\nbreak", "slash\\path", "a\"b"]
+    environment = Dict("SECRET" => "secret '\$() \" value", "NOTIFY_SOCKET" => "/tmp/notify",
+        "INVOCATION_ID" => INVOCATION, "JOURNAL_STREAM" => "1:2", "SYSTEMD_EXEC_PID" => "123",
+        "PIPEWIREAO_LITERAL" => "\$HOME %n line\nbreak slash\\path a\"b")
+    unit = SO.service_unit(service, argv, environment,
         "/tmp", Dict("cpus" => [2, 3], "leader-cpu" => 2))
-    @test command[1:4] == ["systemd-run", "--user", "--service-type=exec", "--expand-environment=no"]
-    @test command[end-4:end] == ["--", "/bin/echo", "literal \$HOME", "a'b", "a\"b"]
-    @test "--setenv=SECRET=" * secret in command
-    @test !any(x -> startswith(x, "--setenv=NOTIFY_SOCKET=") ||
-        startswith(x, "--setenv=INVOCATION_ID=") ||
-        startswith(x, "--setenv=JOURNAL_STREAM=") ||
-        startswith(x, "--setenv=SYSTEMD_EXEC_PID="), command)
-    @test "--property=CPUAffinity=2" in command
-    @test !any(x -> startswith(x, "--property=AllowedCPUs="), command)
-    @test "--property=KillMode=control-group" in command
-    @test "--property=Restart=no" in command
-    @test "--property=UMask=0077" in command
-    @test SO.launch_command(service, ["/bin/echo", ""], Dict(), "/tmp",
-        Dict("cpus" => [2], "leader-cpu" => 2))[end] == ""
-    @test_throws SO.OwnerError SO.launch_command(service, ["/bin/echo"], Dict(), "/tmp",
-        Dict("cpus" => [0, 2], "leader-cpu" => 2))
-    @test_throws SO.OwnerError SO.launch_command(service, ["echo"], Dict(), "/tmp",
+    @test "ExecStart=:\"/bin/echo\" \"\" \"two words\" \"\$HOME\" \"%%n\" \"line\\nbreak\" \"slash\\\\path\" \"a\\\"b\"" in split(unit, '\n')
+    @test "Environment=\"PIPEWIREAO_LITERAL=\$HOME %%n line\\nbreak slash\\\\path a\\\"b\"" in split(unit, '\n')
+    @test "Environment=\"SECRET=secret '\$() \\\" value\"" in split(unit, '\n')
+    @test !any(line -> startswith(line, "Environment=\"NOTIFY_SOCKET=") ||
+        startswith(line, "Environment=\"INVOCATION_ID=") ||
+        startswith(line, "Environment=\"JOURNAL_STREAM=") ||
+        startswith(line, "Environment=\"SYSTEMD_EXEC_PID="), split(unit, '\n'))
+    @test "Type=exec" in split(unit, '\n')
+    @test "CPUAffinity=2" in split(unit, '\n')
+    @test "LimitRTPRIO=95" in split(unit, '\n')
+    @test "LimitMEMLOCK=4294967296" in split(unit, '\n')
+    @test "KillMode=control-group" in split(unit, '\n')
+    @test "Restart=no" in split(unit, '\n')
+    @test !any(line -> startswith(line, "PartOf=") || startswith(line, "Requires=") ||
+        startswith(line, "BindsTo="), split(unit, '\n'))
+    @test SO.unit_argument("a\tb\n\\\"%n") == "\"a\\tb\\n\\\\\\\"%%n\""
+    @test_throws SO.OwnerError SO.unit_argument("bad\0value")
+    @test_throws SO.OwnerError SO.service_unit(service, ["/bin/echo", "bad\0arg"], Dict(),
+        "/tmp", Dict("cpus" => [2], "leader-cpu" => 2))
+    @test_throws SO.OwnerError SO.service_unit(service, ["/bin/echo"], Dict("bad-key" => "x"),
+        "/tmp", Dict("cpus" => [2], "leader-cpu" => 2))
+    @test_throws SO.OwnerError SO.service_unit(service, ["/bin/echo"], Dict("KEY" => "bad\0value"),
+        "/tmp", Dict("cpus" => [2], "leader-cpu" => 2))
+    @test_throws SO.OwnerError SO.service_unit(service, ["/bin/echo"], Dict(), "relative",
         Dict("cpus" => [2], "leader-cpu" => 2))
+    @test_throws SO.OwnerError SO.service_unit(service, ["/bin/echo"], Dict(), "/missing-owner-cwd",
+        Dict("cpus" => [2], "leader-cpu" => 2))
+    @test_throws SO.OwnerError SO.service_unit(service, ["/bin/echo"], Dict(), "/tmp",
+        Dict("cpus" => [0, 2], "leader-cpu" => 2))
+    @test_throws SO.OwnerError SO.service_unit(service, ["echo"], Dict(), "/tmp",
+        Dict("cpus" => [2], "leader-cpu" => 2))
+end
+
+@testset "cohort service dependencies and target job filtering" begin
+    core = "pipewireao-owner-$(INVOCATION)-core.service"
+    source = "pipewireao-owner-$(INVOCATION)-source-owner.service"
+    target = SO.cohort_name(INVOCATION)
+    unit = SO.cohort_unit(INVOCATION, [core, source])
+    @test "Wants=$core $source" in split(unit, '\n')
+    @test "After=$core $source" in split(unit, '\n')
+    @test_throws SO.OwnerError SO.cohort_unit(INVOCATION, [core, core])
+    @test_throws SO.OwnerError SO.cohort_unit(INVOCATION,
+        ["pipewireao-owner-ffffffffffffffffffffffffffffffff-core.service"])
+    @test_throws SO.OwnerError SO.cohort_unit(INVOCATION, ["pipewireao-owner-$(INVOCATION)-bad.role.service"])
+    jobs = "82 $core start running\n" *
+        "83 $target start waiting\n" *
+        "84 $target stop waiting\n" *
+        "85 pipewireao-owner-ffffffffffffffffffffffffffffffff-core.service start waiting\n" *
+        "86 pipewireao-owner-$(INVOCATION)f-cohort.target start waiting\n"
+    @test SO.parse_jobs(jobs, INVOCATION) == ["82" => core, "83" => target]
 end
 
 @testset "retained owner identity and recursive cgroup evidence" begin
@@ -79,18 +112,4 @@ end
     @test_throws SO.OwnerError SO.parse_populated("populated 2\n")
     @test SO.parse_properties("Id=unit.service\nExecStopPost=argv[]=x=y\n")["ExecStopPost"] == "argv[]=x=y"
     @test_throws SO.OwnerError SO.parse_properties("Id=a\nId=b\n")
-    launcher = "/tmp/package/bin/pipewireao-rtc-session"
-    hook = "{ path=" * launcher * " ; argv[]=" * launcher *
-        " cleanup-systemd-owners --invocation \${INVOCATION_ID} ; ignore_errors=no ; " *
-        "start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 }"
-    @test SO.cleanup_hook_valid(hook, launcher)
-    spaced = "/tmp/package with spaces/bin/pipewireao-rtc-session"
-    @test SO.cleanup_hook_valid(replace(hook, launcher => spaced), spaced)
-    @test !SO.cleanup_hook_valid("/bin/echo cleanup-systemd-owners --invocation \${INVOCATION_ID}", launcher)
-    @test !SO.cleanup_hook_valid(replace(hook, "path=" * launcher => "path=/bin/echo"), launcher)
-    @test !SO.cleanup_hook_valid(replace(hook, "argv[]=" * launcher => "argv[]=/bin/echo"), launcher)
-    @test !SO.cleanup_hook_valid(replace(hook, "--invocation \${INVOCATION_ID}" => "--invocation wrong"), launcher)
-    @test !SO.cleanup_hook_valid(replace(hook, " cleanup-systemd-owners --invocation \${INVOCATION_ID}" => ""), launcher)
-    @test !SO.cleanup_hook_valid(replace(hook, "ignore_errors=no" => "ignore_errors=yes"), launcher)
-    @test !SO.cleanup_hook_valid(hook * " { path=" * launcher * " ; argv[]=another ; }", launcher)
 end

@@ -104,6 +104,13 @@ returns only after the admission hook completes. `ActiveState=active` alone
 never proves scientific readiness. The manager verifies native owners and held
 acquisition; the one-shot admission hook checks their actual placement.
 
+The preparation helper renders ordinary user service files and an owner target.
+It starts the private core, verifies its socket, then starts the FGN/JFG cohort
+through one target transaction. It performs no frame processing and exits before
+WirePlumber runs. HEART retains its necessary controller-PID launch stage.
+See [startup and cleanup](SYSTEMD_SESSION_STARTUP.md) for identity checks and
+ingress-first removal of the generated runtime units.
+
 Clients send native session controls. Normal `shutdown!` requires a correlated
 Quit→Offline acknowledgement and then observes exact systemd/owner cleanup.
 Emergency `stop!` is a distinct process-cleanup operation; it cannot establish

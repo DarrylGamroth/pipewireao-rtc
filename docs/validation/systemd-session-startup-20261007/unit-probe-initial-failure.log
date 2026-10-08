@@ -1,0 +1,29 @@
+ERROR: LoadError: Some tests did not pass: 0 passed, 0 failed, 1 errored, 0 broken.
+in expression starting at /tmp/rtc-systemd-unit-probe-20261007.jl:52
+actual user manager literal round trip and failed member cleanup: Error During Test at /tmp/rtc-systemd-unit-probe-20261007.jl:52
+  Got exception outside of a @test
+  loaded unit definition differs: pipewireao-owner-1df8857e9dfa4e5399b378fb288fc37a-source.service
+  Stacktrace:
+    [1] fail(message::String)
+      @ Main.WirePlumberLaunch /tmp/rtc-systemd-session-launch-20261007/deployment/julia/wireplumber_launch.jl:31
+    [2] verify_fragment!(unit::String, record::Dict{String, Any})
+      @ Main.WirePlumberLaunch /tmp/rtc-systemd-session-launch-20261007/deployment/julia/wireplumber_launch.jl:295
+    [3] reload_fragments!(record::Dict{String, Any})
+      @ Main.WirePlumberLaunch /tmp/rtc-systemd-session-launch-20261007/deployment/julia/wireplumber_launch.jl:314
+    [4] probe(failed_member::Bool)
+      @ Main /tmp/rtc-systemd-unit-probe-20261007.jl:30
+    [5] top-level scope
+      @ /tmp/rtc-systemd-unit-probe-20261007.jl:53
+    [6] macro expansion
+      @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+    [7] macro expansion
+      @ /tmp/rtc-systemd-unit-probe-20261007.jl:53 [inlined]
+    [8] include(mod::Module, _path::String)
+      @ Base ./Base.jl:306
+    [9] exec_options(opts::Base.JLOptions)
+      @ Base ./client.jl:317
+   [10] _start()
+      @ Base ./client.jl:550
+Test Summary:                                                    | Error  Total  Time
+actual user manager literal round trip and failed member cleanup |     1      1  5.6s
+RNG of the outermost testset: Random.Xoshiro(0x7f280f63600f6a6f, 0xb8764d9a4c1e06d4, 0xb4d0ed51424cd829, 0x3abec47c7443c74c, 0xcbd6fa2fbdc42acc)

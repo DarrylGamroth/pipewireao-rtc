@@ -1,0 +1,7 @@
+Precompiling packages...
+   4501.2 ms  ✓ PipeWireAODeployment
+  1 dependency successfully precompiled in 5 seconds. 32 already precompiled.
+{"cleanup_complete":true,"runtime":"/tmp/rtc-systemd-unit-probe-0hVHTo","failed_member":false,"invocation":"e54ace43dd534f5cb954636baee9ed45"}
+{"cleanup_complete":true,"runtime":"/tmp/rtc-systemd-unit-probe-onfjr0","failed_member":true,"invocation":"d7ce14edbb9d4b9096f8a0aaaacc1954"}
+Test Summary:                                                    | Pass  Total  Time
+actual user manager literal round trip and failed member cleanup |   16     16  7.1s

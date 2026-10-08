@@ -1,5 +1,7 @@
 # Delivery evidence catalog
 
+- [Ordinary systemd session startup, 2026-10-07–08](validation/systemd-session-startup-20261007/README.md): generated owner services/target, literal arguments, cleanup recovery, selected Copper FGN/JFG native lifecycle/control checks and independent review.
+
 - [Main integration and cleanup, 2026-10-07](validation/main-cleanup-20261007/README.md): fork main/master merges, private GUI repository, obsolete worktree and installed-snapshot cleanup.
 
 Catalog preserved from the documentation index on 2026-10-06.
