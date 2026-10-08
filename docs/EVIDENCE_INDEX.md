@@ -1,5 +1,7 @@
 # Delivery evidence catalog
 
+- [Python tooling removal, 2026-10-08](PYTHON_REMOVAL.md): removed obsolete scripts, preserved historical source/results and checked the existing Julia SDK. No new live or timing qualification.
+
 - [Installed AO runtime, 2026-10-08](validation/installed-runtime-20261008/README.md): `/opt/pipewireao` builds, installed-default manager export, Copper CPU FGN/JFG with CUDA AOS loading/controls/cleanup, independent review and test synchronization corrections.
 
 - [Ordinary systemd session startup, 2026-10-07–08](validation/systemd-session-startup-20261007/README.md): generated owner services/target, literal arguments, cleanup recovery, selected Copper FGN/JFG native lifecycle/control checks and independent review.

@@ -1,5 +1,11 @@
 # Installed AOS/HIL deployment
 
+Historical tool provenance: Python commands below describe the
+[recorded checkout](https://github.com/DarrylGamroth/pipewireao-rtc/blob/6b893b7e98e474580f53ff913751963b62f8db2a/docs/HIL_DEPLOYMENT_VALIDATION.md).
+Those scripts were removed on 2026-10-08 and are not runnable in this checkout.
+Use the [current Julia guide](JULIA_DEPLOYMENT_USAGE.md) for maintained tools;
+the original qualification scope and results remain unchanged.
+
 This document records implementation and qualification evidence for
 RTC-DEV-024 through RTC-DEV-027. The operating requirements remain in
 [operations.md](operations.md). The independent findings and their dispositions

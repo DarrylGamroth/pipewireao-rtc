@@ -7,9 +7,10 @@ same deployed, completion-driven Classic CPU DM/WFS path as the zonal campaign.
 It publishes an **unaccepted response candidate**. It does not select a
 reconstructor, update the controller or establish scientific equivalence.
 AdaptiveOpticsCalibration owns probe construction and numerical estimation;
-Julia owns export, lifecycle supervision and evidence collection. The former
-Python entrypoint remains a development reference; historical evidence below
-retains its original producer.
+Julia owns export, session launch and evidence collection; WirePlumber owns
+session lifecycle and systemd supervises processes. The former Python
+entrypoint is retained only in [Git history](https://github.com/DarrylGamroth/pipewireao-rtc/blob/6b893b7e98e474580f53ff913751963b62f8db2a/deployment/calibration_method.py);
+historical evidence below retains its original producer.
 
 The existing campaign recipe supplies reference, physical amplitudes, exposure
 count, settling, detector seed/settings and timeouts. The input must be a

@@ -1,5 +1,11 @@
 # Merged Classic live methodology review
 
+Tool provenance: the Python scripts and retired Julia launcher referenced here
+were removed from the current checkout on 2026-10-08. Commands describe the
+[recorded source revision](https://github.com/DarrylGamroth/pipewireao-rtc/blob/6b893b7e98e474580f53ff913751963b62f8db2a/benchmark/CLASSIC_MERGED_LIVE_REVIEW.md);
+these commands are not runnable in this checkout. Results and design claims
+retain their original scope. See the [current benchmark index](README.md) for retained tooling.
+
 ## Scope and disposition
 
 Independent review, 2026-10-01, in `pipewireao-rtc-classic-merged-live`, based on

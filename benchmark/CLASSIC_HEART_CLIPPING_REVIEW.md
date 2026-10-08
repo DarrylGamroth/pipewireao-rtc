@@ -1,5 +1,11 @@
 # Classic HEART clipping precision review
 
+Tool provenance: the Python scripts and retired Julia launcher referenced here
+were removed from the current checkout on 2026-10-08. Commands describe the
+[recorded source revision](https://github.com/DarrylGamroth/pipewireao-rtc/blob/6b893b7e98e474580f53ff913751963b62f8db2a/benchmark/CLASSIC_HEART_CLIPPING_REVIEW.md);
+these commands are not runnable in this checkout. Results and design claims
+retain their original scope. See the [current benchmark index](README.md) for retained tooling.
+
 Date: 2026-09-30. Independent source inspection and offline captured-array
 analysis. This review continues [the matched-chain review](CLASSIC_MATCHED_REVIEW.md)
 and [the Float32 precision review](CLASSIC_PRECISION_REVIEW.md) under
@@ -38,8 +44,8 @@ The review document was created in
 and tests, and untracked corpus, profile, and capacity-analysis files were
 present. The initial review changed only this document. The subsequent
 intermediate analysis adds
-[`analyze_classic_heart_boundaries.py`](analyze_classic_heart_boundaries.py) and
-[`test_analyze_classic_heart_boundaries.py`](test_analyze_classic_heart_boundaries.py);
+[`analyze_classic_heart_boundaries.py`](https://github.com/DarrylGamroth/pipewireao-rtc/blob/6b893b7e98e474580f53ff913751963b62f8db2a/benchmark/analyze_classic_heart_boundaries.py) and
+[`test_analyze_classic_heart_boundaries.py`](https://github.com/DarrylGamroth/pipewireao-rtc/blob/6b893b7e98e474580f53ff913751963b62f8db2a/benchmark/test_analyze_classic_heart_boundaries.py);
 it does not modify the runners or scientific implementations.
 
 HEART source root is

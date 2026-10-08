@@ -1,16 +1,23 @@
 # Python live-control CLI retirement
 
-Status: scoped CLI retirement at RTC commit `eca7b0cff1edf3db6a39fb84714615bfa39d51e3`
+Historical status: scoped CLI retirement at RTC commit `eca7b0cff1edf3db6a39fb84714615bfa39d51e3`
+
+This record describes the earlier CLI retirement, not the current checkout.
+All Python files were removed on 2026-10-08; the old coordinator is also retired.
+The [source before removal](https://github.com/DarrylGamroth/pipewireao-rtc/tree/6b893b7e98e474580f53ff913751963b62f8db2a/deployment)
+preserves those implementations. Use the [current Julia guide](JULIA_DEPLOYMENT_USAGE.md)
+for maintained tools. Statements and verification below refer to the recorded
+revision.
 
 The operational deployment and calibration CLI entrypoints use Julia. Direct
-Python commands that start or control a live RTC now stop with a diagnostic
+Python commands that started or controlled a live RTC stopped with a diagnostic
 before creating runtime/output paths, opening sockets, or reading deployment
-state. The Julia entrypoints named by each diagnostic are present in this
-checkout.
+state. The Julia entrypoints named by each diagnostic were present at that
+revision.
 
 ## Retired direct entrypoints
 
-| Python entrypoint | Rejected direct command | Julia entrypoint in this checkout |
+| Python entrypoint | Rejected direct command | Julia entrypoint at that revision |
 | --- | --- | --- |
 | `deployment/deploy.py` | `run`, `control` | `deployment/julia/deploy_cli.jl` |
 | `deployment/check_profile.py` | live profile qualification | `deployment/julia/deploy_cli.jl` for deployment control; no Julia counterpart for this focused check |

@@ -250,7 +250,7 @@ were reviewed; raw perf binary decoding was not independently rerun.
 
 ### Handoff boundary verification
 
-The new [handoff analyzer](../benchmark/analyze_classic_handoff.py) was reviewed
+The new [handoff analyzer](https://github.com/DarrylGamroth/pipewireao-rtc/blob/6b893b7e98e474580f53ff913751963b62f8db2a/benchmark/analyze_classic_handoff.py) was reviewed
 against the instrumented source, not only its labels:
 
 - Source `R` records a monotonic timestamp after `recv` returns. Its stored

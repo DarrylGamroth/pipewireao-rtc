@@ -43,8 +43,9 @@
   restore a parallel session authority or supervisor fallback. One-shot clients
   and scientific owners remain; qualify each selected profile separately.
 - Production calibration orchestration uses Julia and the existing acquisition,
-  protocol, analysis and AdaptiveOpticsCalibration APIs. Python remains allowed
-  for development/validation tooling, not new operational dependencies.
+  protocol, analysis and AdaptiveOpticsCalibration APIs. Maintained repository
+  scripts and scripting tests use Julia; do not add Python implementations.
+  Historical Python tools remain in Git history with their recorded evidence.
 - Live controls use native PipeWire serialization (`RTC-ARCH-024`/`RTC-DEV-030`).
   Saved reports/configuration may use JSON. Saved files never prove live readiness.
 - Use maintained standard PipeWire relaxed SPA-JSON configuration/generators.

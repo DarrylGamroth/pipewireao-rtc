@@ -933,7 +933,7 @@ advances to SUBMITTED after one queued buffer (`:241–257`); the correction add
 no periodic publication or frame control. No allocation/performance guarantee
 was measured in this review.
 
-The reviewer read the [isolated probe](parameter-format-probe.py),
+The reviewer read the [isolated probe](https://github.com/DarrylGamroth/pipewireao-rtc/blob/6b893b7e98e474580f53ff913751963b62f8db2a/docs/validation/wireplumber-session-20261007/parameter-format-probe.py),
 [retained bootstrap client](parameter-format-connect.jl),
 [pass-after owner log](parameter-format-pass-after-parameters.log),
 [pass-after client log](parameter-format-pass-after-connect.log), and

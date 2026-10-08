@@ -1,5 +1,11 @@
 # Classic live transport review
 
+Tool provenance: the Python scripts and retired Julia launcher referenced here
+were removed from the current checkout on 2026-10-08. Commands describe the
+[recorded source revision](https://github.com/DarrylGamroth/pipewireao-rtc/blob/6b893b7e98e474580f53ff913751963b62f8db2a/benchmark/CLASSIC_TRANSPORT_REVIEW.md);
+these commands are not runnable in this checkout. Results and design claims
+retain their original scope. See the [current benchmark index](README.md) for retained tooling.
+
 Date: 2026-09-30. Independent bounded review of the Classic complete-frame
 FGN/JFG harness and ordinary progressive HEART harness. This is characterization
 under [the active authority map](../docs/README.md) and

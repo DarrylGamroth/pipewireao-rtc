@@ -227,7 +227,7 @@ The independent probe used systemd user manager `257.13-1~deb13u1`, CPU 2,
 unique private UUID namespaces and the cached installed Julia project. It did
 not build dependencies or start scientific owners. Unrelated units were untouched.
 
-Reproduction script: [investigate.jl](investigate.jl).
+Reproduction script: [investigate.jl](https://github.com/DarrylGamroth/pipewireao-rtc/blob/6b893b7e98e474580f53ff913751963b62f8db2a/docs/validation/systemd-owners-20261007/investigate.jl).
 Evidence: [receipt](investigation-results/receipt.json),
 [unknown-launch receipt](investigation-results/unknown-reply.json),
 [probe output](investigation.log) and

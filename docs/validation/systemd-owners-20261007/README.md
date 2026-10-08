@@ -87,7 +87,7 @@ retention correction; both final core-loss checks exercise that correction.
 [Focused tests](focused-tests-final.log) pass **215/215** assertions, including
 CLI/template/SDK copy, exact identity, unknown revocation, terminal report and
 actual subprocess-exit retention. [Private unit probes](unit-probe.md) and
-[adversarial probes](investigate.jl) exercise descendant closure, abrupt
+[adversarial probes](https://github.com/DarrylGamroth/pipewireao-rtc/blob/6b893b7e98e474580f53ff913751963b62f8db2a/docs/validation/systemd-owners-20261007/investigate.jl) exercise descendant closure, abrupt
 coordinator death, queued-start cancellation, an accepted launch with an unknown
 client result, and rejection of observed replacement incarnations. The review
 retains SOR-06–09 fail-before/pass-after evidence and unsupported authority

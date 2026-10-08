@@ -34,7 +34,7 @@ thread placement, requested flags, available readback, and first-frame state.
 The current HEART runner records flag acknowledgements separately from effective
 flag and zero-state evidence. A wire capture alone does not establish either.
 See [the matched review](CLASSIC_MATCHED_REVIEW.md) and
-[the HEART runner](run_classic_heart_live.py).
+[the HEART runner](https://github.com/DarrylGamroth/pipewireao-rtc/blob/6b893b7e98e474580f53ff913751963b62f8db2a/benchmark/run_classic_heart_live.py).
 
 First establish functional row delivery using serial execution. Then compare
 helper counts and matrix layouts with a declared, equal compute-core budget and

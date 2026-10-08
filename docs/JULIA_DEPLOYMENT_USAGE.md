@@ -57,8 +57,8 @@ Source wrappers keep their existing command lines. The source checkout uses
 Every exported SDK embeds these resources under `julia/assets/deployment`, along
 with its package project, lock, source, CLI and test workspace closure. Resource
 paths are resolved from the loaded package at runtime, including after SDK
-relocation and precompilation. Operational provenance inventories exclude test
-and Python development files.
+relocation and precompilation. Operational provenance inventories exclude tests.
+The repository's maintained scripts use Julia.
 
 Installation verifies the sealed incoming artifacts, package identity/version
 and resource completeness before copying an SDK. Generated service units use
@@ -96,9 +96,8 @@ scientific assets. HIL and HEART exports select these assets from the installed
 can supply both `--wireplumber-build` and `--wireplumber-source`. See the
 [installed runtime](INSTALLED_RUNTIME.md) for build and validation details.
 Calibration exports copy and validate the base package's sealed assets before
-hashing. Existing Python generators/audits remain development tools and are not
-invoked by operational Julia campaigns. Historical Python producer records retain
-their original scope.
+hashing. Python tools have been removed from this repository. Historical producer
+records retain their original scope and Git source provenance.
 
 ## systemd session and owner services
 

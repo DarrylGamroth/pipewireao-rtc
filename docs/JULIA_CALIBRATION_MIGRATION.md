@@ -10,6 +10,11 @@ entry points and their installed export/supervision dependencies. The
 and limits. Scientific calibration remains partial under RTC-DEV-029. The
 starting-state and implementation plan below preserve the original decision.
 
+Python development tools were removed on 2026-10-08. The original plan below
+retains its starting architecture and tool inventory; RTC-ARCH-025 subsequently
+retired the Rust/Julia coordinators in favor of WirePlumber session ownership.
+Use the [current Julia guide](JULIA_DEPLOYMENT_USAGE.md) for retained entrypoints.
+
 ## Decision and starting state
 
 User direction on 2026-10-03: scripts promoted to production must use Julia.
@@ -25,11 +30,11 @@ deployments, validates receipts and payloads, sequences stages and invokes
 Julia analysis. Porting just a campaign entry point would leave transitive
 Python dependencies in export and deployment helpers.
 
-## Current allocation and selected scope
+## Starting allocation and selected scope
 
 All paths below are relative to `deployment/`.
 
-| Current files | Responsibility | Migration |
+| Starting files | Responsibility | Migration |
 | --- | --- | --- |
 | `hil/calibration_acquisition.jl`, `hil/calibration_server.jl`, `hil/calibration_owner.jl` | Endpoints, adopted probes, settling and exposure association | Reuse existing Julia modules |
 | `hil/calibration_client.jl`, `hil/calibration_*_analysis.jl` | AOC probe bases and measured-response estimation | Reuse existing Julia modules; avoid a second estimator |

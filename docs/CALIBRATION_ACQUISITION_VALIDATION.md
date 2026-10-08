@@ -1,5 +1,11 @@
 # Operational calibration acquisition
 
+Historical tool provenance: Python commands below describe the
+[recorded checkout](https://github.com/DarrylGamroth/pipewireao-rtc/blob/6b893b7e98e474580f53ff913751963b62f8db2a/docs/CALIBRATION_ACQUISITION_VALIDATION.md).
+Those scripts were removed on 2026-10-08 and are not runnable in this checkout.
+Use the [current Julia guide](JULIA_DEPLOYMENT_USAGE.md) for maintained tools;
+the original qualification scope and results remain unchanged.
+
 ## Scope
 
 This records the Classic CPU increment of RTC-DEV-029 on 2026-10-02.

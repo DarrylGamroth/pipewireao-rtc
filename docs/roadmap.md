@@ -49,6 +49,12 @@ records unchanged scientific artifact hashes, the preserved GUI/HIL service,
 dependency selection and corrected test handshakes. This adds no timing,
 numerical, allocation or broader profile qualification.
 
+Repository cleanup removed all Python files and obsolete development
+entrypoints. Maintained scripting uses Julia; recorded results are preserved
+and historical source links bind the pre-removal revision. The retired Python
+benchmark tools have no replacement live runner in this increment.
+[Cleanup checks](PYTHON_REMOVAL.md) establish source/package integrity only.
+
 Completed Copper link and process-supervision transfers remain valid only for
 their dated scopes. The selected Copper composition has passed link realization
 and systemd owner-service checks while the old runtime retains science readiness
@@ -1250,7 +1256,7 @@ change is needed; preservation of a running integrator remains a later gate.
 
 | Component | Observed evidence | Remaining gate |
 | --- | --- | --- |
-| Graph asset export | [Exporter](../deployment/export_calibration.py) preserves selected full-frame Classic/Copper FGN/JFG WFS and command node declarations, startup arrays and source provenance; all four exports checked. Four native graphs prepared against a private installed core with exact ports, including Classic validity; no frames or run requests | Assets have no runnable deployment descriptor; native live processing and actual WFS acquisition remain unqualified |
+| Graph asset export | [Exporter](https://github.com/DarrylGamroth/pipewireao-rtc/blob/6b893b7e98e474580f53ff913751963b62f8db2a/deployment/export_calibration.py) preserves selected full-frame Classic/Copper FGN/JFG WFS and command node declarations, startup arrays and source provenance; all four exports checked. Four native graphs prepared against a private installed core with exact ports, including Classic validity; no frames or run requests | Assets have no runnable deployment descriptor; native live processing and actual WFS acquisition remain unqualified |
 | Julia graph preparation | Both WFS and command graphs prepared with the real owner for Classic and Copper; no connection was made | Live response acquisition and numerical agreement |
 | Validity transport | RTC configuration and live format validation admit `BOOL8` alongside F32/U16 data; mismatched links and non-F32 runtime parameters still reject | Actual linked Classic validity delivery |
 | Completion IPC | Historical Unix stream endpoint (now retired) queued bounded requests without I/O in submit; eight focused socket tests included kernel queue saturation and late adoption during restoration | Serialized operational server, restoration fences and deployment fault integration |

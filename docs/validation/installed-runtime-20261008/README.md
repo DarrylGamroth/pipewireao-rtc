@@ -78,7 +78,7 @@ camera, FITS, HEART, ndarray, discard and scientific plugins were retained.
 Files were replaced through temporary siblings and rename, preserving mapped
 inodes; no existing service was restarted or desktop service enabled.
 
-The [ad hoc atomic install script](atomic-install.py) is validation evidence,
+The [ad hoc atomic install script](https://github.com/DarrylGamroth/pipewireao-rtc/blob/6b893b7e98e474580f53ff913751963b62f8db2a/docs/validation/installed-runtime-20261008/atomic-install.py) is validation evidence,
 not an operational dependency. The install is additive; it is not a transaction
 across the whole prefix. Small rollback copies were retained during validation.
 The [smoke driver](installed-smoke.jl) refreshes the SDK and seals installed
