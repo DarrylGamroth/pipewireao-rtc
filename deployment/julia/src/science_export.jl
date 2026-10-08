@@ -3,6 +3,7 @@ module ScienceExport
 using JSON3
 using SHA
 using ..Common
+import ..RuntimeExport: copy_file, copy_tree, copy_entries
 
 import ..package_root, ..resource_root, ..source_relative_path
 const RAW_SCHEMA = "org.calculon.ao.raw-detector-pixels/1"
@@ -27,12 +28,6 @@ Parameter(item::AbstractDict) = Parameter(item["name"], item["endpoint"], item["
 parameter_dict(p::Parameter) = Dict{String,Any}("name" => p.name, "endpoint" => p.endpoint, "element_type" => p.element_type, "shape" => p.shape, "file" => p.file, "schema" => p.schema)
 
 sha256(path::AbstractString) = Common.sha256_file(path)
-function copy_file(source::AbstractString, destination::AbstractString)
-    isfile(source) && !islink(source) || throw(ArgumentError("missing or symlinked export prerequisite: $source"))
-    mkpath(dirname(destination))
-    cp(source, destination; force=true, follow_symlinks=true)
-    return destination
-end
 write_json(path::AbstractString, value) = Common.write_json(path, value)
 
 """Write native PipeWire SPA configuration with object-array delimiters on separate lines."""
@@ -48,22 +43,19 @@ function write_spa_config(path::AbstractString, value)
     return path
 end
 
-function copy_tree(source::AbstractString, destination::AbstractString; ignored=Set{String}())
-    isdir(source) && !islink(source) || throw(ArgumentError("missing or symlinked export directory: $source"))
-    !ispath(destination) || throw(ArgumentError("export destination exists: $destination"))
-    mkpath(destination)
-    for name in readdir(source)
-        name in ignored && continue
-        from, to = joinpath(source, name), joinpath(destination, name)
-        islink(from) && throw(ArgumentError("symlink in export source: $from"))
-        if isdir(from)
-            copy_tree(from, to; ignored)
-        elseif isfile(from)
-            copy_file(from, to)
-        end
-    end
-    return destination
-end
+# Transitional closure of the existing SDK. Instrument resources move to their
+# projects in the package migration; unrelated repository content is never input.
+const RUNTIME_ENTRIES = (
+    "Project.toml", "Manifest.toml", "src", "test",
+    "wireplumber_cli.jl", "wireplumber_launch.jl",
+    "wireplumber_configuration.jl", "wireplumber_install.jl",
+    "export_heart_calibration.jl", "export_heart_correction.jl",
+    "assets/ryzen-6800h-classic.cpu", "assets/ryzen-6800h-classic.threads",
+)
+const RESOURCE_ENTRYPOINTS = (
+    "calibration_campaign.jl", "calibration_method.jl", "copper_quality.jl",
+    "copper_reference.jl", "export_calibration.jl", "export_heart_hil.jl", "export_hil.jl",
+)
 
 function copy_deployment_runtime(package::AbstractString)
     # Export a new package without carrying a previous coordinator launcher
@@ -91,7 +83,7 @@ function copy_deployment_runtime(package::AbstractString)
     end
     ispath(target) && rm(target; recursive=true, force=true)
     ignored = Set(["__pycache__", ".git"])
-    copy_tree(package_root(), target; ignored)
+    copy_entries(package_root(), target, RUNTIME_ENTRIES; ignored)
     union!(ignored, Set(name for name in readdir(joinpath(resource_root(), "hil"))
         if startswith(name, "test_") || endswith(name, ".py")))
     for directory in ("templates", "hil")
@@ -99,8 +91,7 @@ function copy_deployment_runtime(package::AbstractString)
         ispath(destination) && rm(destination; recursive=true, force=true)
         copy_tree(joinpath(resource_root(), directory), destination; ignored)
     end
-    for name in readdir(resource_root())
-        endswith(name, ".jl") && !startswith(name, "test_") || continue
+    for name in RESOURCE_ENTRYPOINTS
         copy_file(joinpath(resource_root(), name), joinpath(target, "assets", "deployment", name))
     end
     session_service = joinpath(resource_root(), "pipewireao-session@.service.in")

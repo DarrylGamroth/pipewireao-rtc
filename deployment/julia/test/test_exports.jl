@@ -5,6 +5,7 @@ module ExportFixture
 using PipeWireAODeployment: package_root, resource_root, source_relative_path
 using PipeWireAODeployment
 const Common = PipeWireAODeployment.Common
+const RuntimeExport = PipeWireAODeployment.RuntimeExport
 const NativeOwnerBootstrapCodec = PipeWireAODeployment.NativeOwnerBootstrapCodec
 const NativeControlClient = PipeWireAODeployment.NativeControlClient
 const NativeAcquisitionLifecycleCodec = PipeWireAODeployment.NativeAcquisitionLifecycleCodec

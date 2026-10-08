@@ -83,9 +83,12 @@ several declared sources/sinks; the diagram omits optional observation endpoints
 - WirePlumber's `modules/module-ao-control-endpoint.c` provides the bounded
   native endpoint; `src/scripts/ao/session.lua` owns policy. Neither belongs
   in a Julia launcher or GUI adapter.
-- The [exporter](../deployment/julia/src/science_export.jl) recursively copies
-  `package_root()`. Moving the Julia package to the repository root first would
-  copy Rust source, documentation and experiment data into installed packages.
+- The starting exporter recursively copied `package_root()`. The first
+  implementation increment extracts Base-only file-copy helpers and replaces
+  root copying with explicit source/resource entries. Current source/test and
+  scientific-resource directory closures remain until separation. See
+  [the boundary inventory](RTC_PACKAGE_BOUNDARIES.md); this does not complete the
+  root move or instrument-project migration.
 
 ## Independent instrument projects
 

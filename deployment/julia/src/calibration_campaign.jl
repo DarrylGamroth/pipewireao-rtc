@@ -205,15 +205,13 @@ function orchestration_sources()
     package = HILExport.ScienceExport.package_root()
     collect_sources(joinpath(package, "src"))
     append!(files, [joinpath(package, name) for name in
-        ("Project.toml", "Manifest.toml", "wireplumber_cli.jl",
-         "wireplumber_launch.jl", "wireplumber_configuration.jl", "wireplumber_install.jl")])
-    collect_sources(joinpath(package, "assets"); excluded=Set(["__pycache__", ".git"]))
+        HILExport.ScienceExport.RUNTIME_ENTRIES if isfile(joinpath(package, name))])
     resources = HILExport.ScienceExport.resource_root()
     for name in ("hil", "templates")
         collect_sources(joinpath(resources, name); excluded=Set(["__pycache__", ".git"]))
     end
-    append!(files, [joinpath(resources, name) for name in readdir(resources)
-        if endswith(name, ".jl") && !startswith(name, "test_")])
+    append!(files, [joinpath(resources, name) for name in
+        HILExport.ScienceExport.RESOURCE_ENTRYPOINTS])
     push!(files, joinpath(resources, "pipewireao-session@.service.in"))
     return Dict(abspath(path) => sha256_file(regular(path)) for path in unique(files))
 end

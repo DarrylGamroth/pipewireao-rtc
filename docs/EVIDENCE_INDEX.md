@@ -1,5 +1,7 @@
 # Delivery evidence catalog
 
+- [Explicit runtime export, 2026-10-08](validation/runtime-export-20261008/README.md): unrelated-root-file fail-before/pass-after, declared source closure, relocated SDK/re-export and Julia software checks. No new live or timing qualification.
+
 - [Source organization, 2026-10-08](../README.md#source-layout): domain modules, configs/test-data names, public-import compatibility and Rust/Julia software checks.
 
 - [Python tooling removal, 2026-10-08](PYTHON_REMOVAL.md): removed obsolete scripts, preserved historical source/results and checked the existing Julia SDK. No new live or timing qualification.

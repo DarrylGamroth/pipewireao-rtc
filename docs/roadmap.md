@@ -67,6 +67,13 @@ It also proposes moving GUI-used Rust clients into the GUI's native adapter and
 adopting a shared root Julia package with a selected export closure. It preserves
 WirePlumber/systemd ownership and v1 controls. This is proposed work,
 not an implemented language migration or a change to existing qualification.
+The first package-boundary increment extracts instrument-independent file-copy
+helpers and selects runtime source/entrypoints explicitly, preventing whole-root
+copying during the future package move. Installation validation and campaign
+provenance share those entry declarations. [The inventory](RTC_PACKAGE_BOUNDARIES.md)
+assigns shared versus instrument responsibilities and records remaining mixed
+modules. Calibration acquisition still uses Rust for interaction runs, and the
+instrument projects/root-package move remain unfinished.
 
 Completed Copper link and process-supervision transfers remain valid only for
 their dated scopes. The selected Copper composition has passed link realization

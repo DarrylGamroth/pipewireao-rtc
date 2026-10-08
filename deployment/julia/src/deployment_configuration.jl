@@ -372,10 +372,16 @@ end
 function validate_runtime(root::AbstractString)
     isfile(joinpath(root, "src", "PipeWireAODeployment.jl")) ||
         fail("unsupported legacy include-loaded deployment runtime; preserve this sealed SDK and use its original launcher, or export a new SDK with the named package")
-    for name in ("Project.toml", "Manifest.toml", "wireplumber_cli.jl",
-                 "wireplumber_launch.jl", "wireplumber_configuration.jl",
-                 "wireplumber_install.jl", "test/Project.toml", "test/runtests.jl")
-        isfile(joinpath(root, name)) || fail("installed Julia deployment runtime is incomplete: $name")
+    for name in ScienceExport.RUNTIME_ENTRIES
+        expected = joinpath(ScienceExport.package_root(), name)
+        installed = joinpath(root, name)
+        complete = isdir(expected) ? isdir(installed) : isfile(installed)
+        complete && !islink(installed) ||
+            fail("installed Julia deployment runtime is incomplete: $name")
+    end
+    for name in ("test/Project.toml", "test/runtests.jl")
+        isfile(joinpath(root, name)) && !islink(joinpath(root, name)) ||
+            fail("installed Julia deployment runtime is incomplete: $name")
     end
     metadata = TOML.parsefile(joinpath(root, "Project.toml"))
     owner = parentmodule(@__MODULE__)
@@ -402,9 +408,7 @@ function validate_runtime(root::AbstractString)
             end
         end
     end
-    for name in readdir(ScienceExport.resource_root())
-        (endswith(name, ".jl") && !startswith(name, "test_")) ||
-            name == "pipewireao-session@.service.in" || continue
+    for name in (ScienceExport.RESOURCE_ENTRYPOINTS..., "pipewireao-session@.service.in")
         isfile(joinpath(resources, name)) && !islink(joinpath(resources, name)) ||
             fail("installed Julia deployment resources are incomplete: $name")
     end

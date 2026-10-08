@@ -36,6 +36,7 @@ end
 include("common.jl")
 include("placement.jl")
 include("systemd_owners.jl")
+include("runtime_export.jl")
 include("science_export.jl")
 include("native_control_codec.jl")
 include("native_runner_codec.jl")
