@@ -8,7 +8,7 @@ separate worktree. HEART and ordinary closed-loop deployment were unchanged.
 
 ## Scope and ownership
 
-[src/calibration.rs](../src/calibration.rs) owns one serialized coordinator,
+[src/calibration.rs](https://github.com/DarrylGamroth/pipewireao-rtc/blob/0fadb2a116f360df7f7d601b8e7f2bea02d809f9/src/calibration.rs) owns one serialized coordinator,
 with one pending request. Prepared absolute Float32 probe figures and reference
 figures use the scientific client's declared command units/order. The client
 constructs the basis with AdaptiveOpticsCalibration and retains the complete

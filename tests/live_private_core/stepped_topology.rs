@@ -53,7 +53,7 @@ fn sources(case: &SessionCase<'_>) -> &'static [SourceSpec] {
 }
 
 fn stepped_fixture(repository: &Path, temporary: &Path, case: &SessionCase<'_>) -> PathBuf {
-    let template = std::fs::read_to_string(repository.join("fixtures").join(case.fixture))
+    let template = std::fs::read_to_string(repository.join("configs").join(case.fixture))
         .expect("read topology fixture");
     let source_start = template.find("    sources = [").expect("source section");
     let graph_start = template.find("    graphs = [").expect("graph section");

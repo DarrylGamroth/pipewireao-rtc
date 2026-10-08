@@ -1,4 +1,4 @@
-# Native session discovery fixture
+# Native session discovery record
 
 `record.pod` is the 192-byte seven-field SPA Struct emitted by Julia
 `NativeSessionDiscovery.encode_record` on 2026-10-06. It carries label

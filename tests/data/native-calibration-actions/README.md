@@ -1,9 +1,9 @@
-# Calibration action SPA fixtures
+# Calibration action SPA test data
 
 These 43 binary SPA Props PODs were produced by
 `deployment/julia/test/test_native_calibration_action_codec.jl` on Linux x86_64
 (little endian). The Julia test compares its encoder output byte for byte with
-each fixture. The Rust test decodes and re-encodes the same fixtures.
+each sample. The Rust test decodes and re-encodes the same samples.
 
 There are 22 valid records: nine requests (including all three settling rules),
 seven success results, four typed failure reasons, one negative transport
@@ -22,4 +22,4 @@ mutate common-envelope metadata and exercise request/reply byte limits.
 
 The wire contract and validation limits are recorded in
 [`NATIVE_CALIBRATION_ACTION_CONTROL.md`](../../../docs/NATIVE_CALIBRATION_ACTION_CONTROL.md).
-These fixtures prove serialization behavior only.
+These samples verify serialization behavior only.

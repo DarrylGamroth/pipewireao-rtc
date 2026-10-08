@@ -9,10 +9,10 @@ retain their original scope. See the [current benchmark index](README.md) for re
 ## RTC development configuration
 
 The RTC has maintained complete-frame fixtures for
-[`REVOLT Classic (native FGN)`](../fixtures/revolt-classic-native-development.conf),
-[`REVOLT Classic (Julia)`](../fixtures/revolt-classic-julia-development.conf),
-[`REVOLT Copper (native FGN)`](../fixtures/revolt-copper-native-development.conf),
-and [`REVOLT Copper (JuliaFilterGraph)`](../fixtures/revolt-copper-julia-development.conf).
+[`REVOLT Classic (native FGN)`](../configs/revolt-classic-native-development.conf),
+[`REVOLT Classic (Julia)`](../configs/revolt-classic-julia-development.conf),
+[`REVOLT Copper (native FGN)`](../configs/revolt-copper-native-development.conf),
+and [`REVOLT Copper (JuliaFilterGraph)`](../configs/revolt-copper-julia-development.conf).
 The Copper fixtures use the existing HEART WFS source and demanded-command
 observer from the matched comparison at 474 Hz. The graph input is a 64 × 64
 U16 detector image; the observed 277-element Float32 command is in

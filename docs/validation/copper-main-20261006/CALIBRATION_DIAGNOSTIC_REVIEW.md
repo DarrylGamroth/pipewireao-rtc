@@ -121,7 +121,7 @@ qualification claim; actual acquisition receipts and status are separate.
 
 Reviewed source `/tmp/classic-fgn-main-nativecal-v4-installed`, fresh fixture
 `/tmp/classic-fgn-cal-lamp-v3-installed`,
-[`prepare_calibration_lamp_fixture.jl`](../../../scripts/prepare_calibration_lamp_fixture.jl),
+[`prepare_calibration_lamp.jl`](../../../scripts/prepare_calibration_lamp.jl),
 and `/tmp/classic-fgn-cal-lamp-v3-coldproof.json`.
 
 | Reviewed input | SHA-256 |

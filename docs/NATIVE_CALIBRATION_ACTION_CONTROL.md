@@ -136,7 +136,7 @@ Encoders independently recheck the exact final extent before copying vectors.
 ## Validation scope
 
 The shared binary fixtures in
-[`tests/fixtures/native-calibration-actions`](../tests/fixtures/native-calibration-actions)
+[`tests/data/native-calibration-actions`](../tests/data/native-calibration-actions)
 were emitted by Julia. Both codecs compare re-encoded bytes against them.
 They cover every action, all settling rules, every result and failure reason,
 negative transport completion, rejection, full UInt64 identity boundaries,

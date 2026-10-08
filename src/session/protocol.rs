@@ -1,19 +1,19 @@
 //! Direct `WirePlumber` session profile using the established typed command grammar.
 //!
-//! The profile name is distinct from the internal runner. The v1 operation IDs,
+//! The session profile retains the established v1 operation IDs,
 //! request payloads, lifecycle IDs, outcomes, completion and rejection grammar
 //! are reused without a supervisor snapshot wrapper.
 
 pub const PROFILE: &str = "pipewireao.rtc.session/1";
 pub const SESSION_UUID_PROPERTY: &str = "pipewireao.rtc.session.session-uuid";
 
-pub use crate::control_dto::LifecycleState as Lifecycle;
-pub use crate::control_dto::Operation;
-pub use crate::native_runner_codec::{decode_request, encode_request};
-pub use crate::native_runner_result::{decode_completion, decode_rejection, Completion, Rejection};
+pub use crate::control::types::LifecycleState as Lifecycle;
+pub use crate::control::types::Operation;
+pub use crate::session::replies::{decode_completion, decode_rejection, Completion, Rejection};
+pub use crate::session::requests::{decode_request, encode_request};
 
+use crate::control::envelope::{self as envelope, ReplyBound, ReplyHeader, ReplyKind};
 use crate::control::ControlError;
-use crate::native_control_codec::{self as envelope, ReplyBound, ReplyHeader, ReplyKind};
 use pipewire::spa::pod::Value;
 use pipewire::spa::utils::Id;
 
@@ -37,7 +37,7 @@ fn administrative_lifecycle(id: u32) -> Result<Lifecycle, String> {
     }
 }
 
-/// Decode exact retained operation 15/16 responses without extending runner IDs.
+/// Decode retained operation 15/16 responses without changing public operation IDs.
 ///
 /// # Errors
 /// Rejects malformed envelopes, correlation fields, lifecycle values, and operation payloads.

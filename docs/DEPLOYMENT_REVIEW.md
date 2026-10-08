@@ -183,7 +183,7 @@ it rather than calling it free because it is outside callbacks.
 ### DEP-006 — Packaged profiles must name the actual maintained scientific graph
 
 - **Severity:** medium. **Confidence:** high. **Status:** profile acceptance requirement.
-- **Evidence:** `fixtures/revolt-classic-native-development.conf` declares the
+- **Evidence:** `configs/revolt-classic-native-development.conf` declares the
   maintained HIL 277 × 376 reconstructor and integrate interface. The matched
   Classic benchmark uses a different 221-coordinate completion/clipping graph.
   Existing benchmark launchers separately compose row/full-frame schemas and

@@ -73,6 +73,29 @@ WirePlumber withdrawal; systemd cleanup reconciles the exact owned cohort.
 Emergency `systemctl --user stop UNIT` is process cleanup, not proof of a
 successful public shutdown.
 
+## Source layout
+
+| Path | Responsibility |
+| --- | --- |
+| `src/control/` | Operator commands, domain types and native control envelopes |
+| `src/session/` | Session discovery, protocol, connection clients and CLI |
+| `src/calibration/` | Completion-driven acquisition and native calibration clients |
+| `src/connection.rs` | Private socket connection support |
+| `configs/` | Retained development graph/session configurations |
+| `tests/data/` | Serialized protocol records and test input data |
+| `deployment/julia/` | Julia export, installation, session and calibration clients |
+
+Unit tests live beside each Rust domain under its `tests/` directory. Existing
+flat Rust module imports remain aliases for GUI/client compatibility; new code
+uses the domain paths. Session lifecycle policy lives in WirePlumberAO Lua,
+not this crate.
+
+The 2026-10-08 organization change passed 99 live-feature Rust tests,
+19 default-feature Rust tests, Clippy with warnings denied, and 2,663 Julia SDK
+assertions. Existing default/live public imports compile; all 19 development
+configs and 94 non-Markdown test-data files remain byte-identical. These are
+source/API checks, not new live-loop or timing qualification.
+
 ## Qualification scope
 
 Copper complete-frame CPU FGN/JFG with CUDA AOS passes the recorded 512-exchange

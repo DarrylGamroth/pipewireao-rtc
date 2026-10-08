@@ -2,7 +2,7 @@ fn main() {
     let mut arguments = std::env::args().skip(1);
     match arguments.next().as_deref() {
         Some("session") => {
-            if let Err(error) = pipewireao_rtc::session_cli::run(&arguments.collect::<Vec<_>>()) {
+            if let Err(error) = pipewireao_rtc::session::cli::run(&arguments.collect::<Vec<_>>()) {
                 eprintln!("pipewireao-rtc: {error}");
                 std::process::exit(1);
             }

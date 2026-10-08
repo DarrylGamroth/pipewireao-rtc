@@ -15,19 +15,19 @@ const exposure = Codec.Exposure(typemax(UInt64), UInt64(1)<<63, typemax(UInt64),
 ps(fields...) = SPA.Struct(Pod[fields...])
 id(value) = Pod(SPA.Id(UInt32(value)))
 long(value) = Pod(reinterpret(Int64, UInt64(value)))
-const fixture_dir = normpath(joinpath(@__DIR__, "../../../tests/fixtures/native-calibration-actions"))
-function fixture(name, pod)
+const data_dir = normpath(joinpath(@__DIR__, "../../../tests/data/native-calibration-actions"))
+function check_record(name, pod)
     bytes = pod.data
-    @test bytes == read(joinpath(fixture_dir, name * ".pod"))
+    @test bytes == read(joinpath(data_dir, name * ".pod"))
 end
 function bad_request(name, op, args; run=typemax(UInt64), serial=UInt64(1)<<63)
     pod = Envelope.encode_request(request(op), ps(long(run), long(serial), Pod(args)))
-    fixture("bad-request-" * name, pod)
+    check_record("bad-request-" * name, pod)
     @test_throws ArgumentError Client.decode_request(profile, pod)
 end
 function bad_reply(name, op, result; lifecycle=UInt32(3))
     pod = Envelope.encode_completion(reply(op), ps(id(lifecycle), long(typemax(UInt64)), long(UInt64(1)<<63), Pod(result), Pod("")); endpoint=:calibration)
-    fixture("bad-reply-" * name, pod)
+    check_record("bad-reply-" * name, pod)
     @test_throws ArgumentError Client.decode_completion(profile, pod)
 end
 
@@ -103,7 +103,7 @@ end
         command = Codec.Command(typemax(UInt64), UInt64(1)<<63, action)
         op = Client.operation_id(profile, command)
         pod = Client.encode_request(profile, request(op), command)
-        fixture("request-" * name, pod)
+        check_record("request-" * name, pod)
         header, decoded = Client.decode_request(profile, pod)
         @test header.operation == op
         @test decoded.run == command.run && decoded.serial == command.serial
@@ -116,7 +116,7 @@ end
         "restored"=>Codec.Restored(Float32[1.0,-1.0], true), "released"=>Codec.Released())
     for (op, (name, result)) in enumerate(results)
         pod = Client.encode_completion(profile, reply(op), Lifecycle.Connected, typemax(UInt64), UInt64(1)<<63, result, "ok")
-        fixture("reply-" * name, pod)
+        check_record("reply-" * name, pod)
         decoded = Client.decode_completion(profile, pod)
         @test decoded.run == typemax(UInt64) && decoded.serial == UInt64(1)<<63
         @test Client.encode_completion(profile, decoded.header, decoded.lifecycle, decoded.run, decoded.serial, decoded.result, decoded.message).data == pod.data
@@ -124,14 +124,14 @@ end
     end
     for reason in (Codec.Cancelled, Codec.Endpoint, Codec.InvalidEvidence, Codec.ProbeClipped)
         pod = Client.encode_completion(profile, reply(4), Lifecycle.Fault, typemax(UInt64), UInt64(1)<<63, Codec.Failed(reason), "")
-        fixture("reply-failed-" * string(UInt32(reason)), pod)
+        check_record("reply-failed-" * string(UInt32(reason)), pod)
         @test Client.decode_completion(profile, pod).result.reason === reason
     end
     negative = Client.encode_completion(profile, reply(4; result=Int32(-22)), Lifecycle.Fault, typemax(UInt64), UInt64(1)<<63, nothing, "expired")
-    fixture("reply-negative", negative)
+    check_record("reply-negative", negative)
     @test Client.decode_completion(profile, negative).result === nothing
     rejection = Client.encode_rejection(profile, reply(4; result=Int32(-22)), Lifecycle.Prepared, "rejected")
-    fixture("rejection", rejection)
+    check_record("rejection", rejection)
     @test Client.decode_rejection(profile, rejection).message == "rejected"
 
     bad_request("hold-arity", 1, ps(id(1)))

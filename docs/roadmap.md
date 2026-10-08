@@ -54,6 +54,11 @@ entrypoints. Maintained scripting uses Julia; recorded results are preserved
 and historical source links bind the pre-removal revision. The retired Python
 benchmark tools have no replacement live runner in this increment.
 [Cleanup checks](PYTHON_REMOVAL.md) establish source/package integrity only.
+Rust sources are now grouped by control, session and calibration; development
+configurations live in `configs/` and test records in `tests/data/`. Existing
+GUI/client imports remain aliases. [Source layout and software checks](../README.md#source-layout)
+record preserved configuration/data bytes and passing Rust/Julia tests. No
+language migration or session-policy change is included.
 
 Completed Copper link and process-supervision transfers remain valid only for
 their dated scopes. The selected Copper composition has passed link realization
@@ -1225,7 +1230,7 @@ AdaptiveOpticsCalibration. Existing closed-loop deployment remains unchanged.
 | Background/reference acquisition, AOC matrices and exports | Operational detector/WFS adapters and calibration client | Missing; no operational matrix claim |
 | Classic/Copper, HEART/FGN/JFG, CPU/CUDA/AMDGPU | Live endpoint qualification and numerical/correction checks | Missing; coordinator tests do not qualify endpoints |
 
-Implemented acquisition core: [calibration module](../src/calibration.rs),
+Implemented acquisition core: [calibration module](https://github.com/DarrylGamroth/pipewireao-rtc/blob/0fadb2a116f360df7f7d601b8e7f2bea02d809f9/src/calibration.rs),
 [focused tests](../tests/calibration.rs) and
 [independent review](CALIBRATION_COORDINATOR_REVIEW.md). The core has no installed
 calibration command or operational endpoint adapters. Thus RTC-DEV-029 remains

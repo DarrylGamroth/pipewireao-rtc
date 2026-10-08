@@ -2,9 +2,9 @@
 //!
 //! This module is a client only. `WirePlumber` owns lifecycle and admission.
 use crate::control::{self, Command};
-use crate::native_session_client::{self, Connection, InitialStatus};
-use crate::native_session_discovery::{self, SessionRecord};
-use crate::native_session_transport::{ClientError, Reply};
+use crate::session::client::{self, Connection, InitialStatus};
+use crate::session::discovery::{self, SessionRecord};
+use crate::session::transport::{ClientError, Reply};
 use serde_json::{json, Value};
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
@@ -92,13 +92,13 @@ fn record_json(record: &SessionRecord) -> Value {
 }
 
 fn select(runtime: &std::path::Path, uuid: &str, deadline: Instant) -> Result<Connection, String> {
-    let entries = native_session_discovery::list_sessions(runtime)?;
+    let entries = discovery::list_sessions(runtime)?;
     let record = entries
         .into_iter()
         .filter_map(|entry| entry.record)
         .find(|record| record.session_id == uuid)
         .ok_or_else(|| format!("no session locator found for UUID {uuid}"))?;
-    native_session_client::select_direct_session(&record, deadline).map_err(|entry| {
+    client::select_direct_session(&record, deadline).map_err(|entry| {
         format!(
             "session selection {:?}: {}",
             entry.verification, entry.detail
@@ -117,10 +117,9 @@ fn run_control(
     let label = connection.selected.record.label.clone();
     let owner_pid = connection.selected.status.owner_pid;
     let initial_state = match &connection.initial_status {
-        InitialStatus::Session(status) => format!(
-            "{:?}",
-            crate::native_session_client::session_lifecycle(status)
-        ),
+        InitialStatus::Session(status) => {
+            format!("{:?}", crate::session::client::session_lifecycle(status))
+        }
     };
     let reply = connection
         .request(command, deadline)
@@ -151,7 +150,7 @@ pub fn run(arguments: &[String]) -> Result<(), String> {
     let options = parse_options(arguments)?;
     let runtime = runtime_dir()?;
     if options.list {
-        let entries = native_session_discovery::list_sessions(&runtime)?;
+        let entries = discovery::list_sessions(&runtime)?;
         let result = entries
             .into_iter()
             .map(|entry| match entry.record {
@@ -188,25 +187,5 @@ pub fn run(arguments: &[String]) -> Result<(), String> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn direct_session_cli_requires_explicit_selection_and_command() {
-        assert!(parse_options(&[]).is_err());
-        assert!(parse_options(&["--session".into(), "uuid".into()]).is_err());
-        assert!(parse_options(&["--list".into(), "--".into(), "status".into()]).is_err());
-        let parsed = parse_options(&[
-            "--timeout".into(),
-            "2.5".into(),
-            "--session".into(),
-            "uuid".into(),
-            "--".into(),
-            "status".into(),
-        ])
-        .unwrap();
-        assert_eq!(parsed.command, vec!["status"]);
-        assert_eq!(parsed.session.as_deref(), Some("uuid"));
-        assert_eq!(parsed.timeout, Duration::from_millis(2500));
-    }
-}
+#[path = "tests/cli.rs"]
+mod tests;

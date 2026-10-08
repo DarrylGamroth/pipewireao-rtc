@@ -57,6 +57,11 @@
   declared full-frame/row-block owners without adding an RTC data scheduler.
 - Follow the relevant roadmap dependencies unless the user changes their order.
 
+- Organize Rust client code by `control`, `session` and `calibration`. Development
+  configurations belong in `configs/`; test input records belong in `tests/data/`.
+  Use those domain names in new code instead of “fixture”. Preserve externally
+  defined protocol names and historical report fields.
+
 ## Validation and documentation
 
 - Keep commits focused; never rewrite published history without authorization.

@@ -15,7 +15,7 @@ pub(super) fn external_replacement(
         wait_for_dump(pipewire_build, environment, core_name, NAME);
         let mut runner = load_observation_session(
             core_name,
-            &repository.join("fixtures/external-graph-development.conf"),
+            &repository.join("configs/external-graph-development.conf"),
         );
         if running {
             assert_eq!(
@@ -95,7 +95,7 @@ pub(super) fn run(
     for running in [false, true] {
         let mut runner = load_observation_session(
             core_name,
-            &repository.join("fixtures/minimal-development.conf"),
+            &repository.join("configs/minimal-development.conf"),
         );
         assert_eq!(
             runner.poll_required_objects().unwrap(),

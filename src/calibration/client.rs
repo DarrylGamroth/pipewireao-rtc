@@ -1,11 +1,15 @@
-//! Bounded native public RTC client for one selected endpoint profile.
-//! One exact binding, one shared transport, no reconnect or unknown-outcome retry.
-use crate::control::Command;
-use crate::native_control_codec::{
+//! Native cold transport for the existing calibration coordinator.
+//! Connection hints require fresh `NodeInfo`, capability and controller proof.
+use crate::calibration::protocol::{
+    self as codec, Action, ColdLifecycle, Command, FailureReason, ResultValue, Rule,
+};
+use crate::calibration::{
+    CalibrationAction, CalibrationCompletion, CalibrationEffect, CalibrationEndpoint,
+    CalibrationEvidence, CalibrationFailure, CalibrationRequest, ResponseBatch, SettlingRule,
+};
+use crate::control::envelope::{
     self as envelope, ControllerIdentity, ReplyBound, ReplyHeader, ReplyKind, RequestHeader,
 };
-use crate::native_runner_codec::Operation;
-use crate::native_session_codec as session;
 use pipewire as pw;
 use pw::properties::properties;
 use pw::proxy::ProxyT;
@@ -19,37 +23,14 @@ use std::sync::atomic::{AtomicI64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
+#[cfg(test)]
+#[path = "tests/client.rs"]
+mod tests;
+
 const PROTOCOL: &str = "pipewireao.rtc-control/1";
 const CONTROLLER_PROFILE: &str = "pipewireao.rtc.controller/1";
+const CAP_PREFIX: &str = "pipewireao.rtc.calibration-actions.";
 static NEXT_INSTANCE: AtomicI64 = AtomicI64::new(1);
-
-/// Sole public session grammar. Scientific owners retain their local profiles.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum Profile {
-    WirePlumberSession,
-}
-impl Profile {
-    fn capability_prefix() -> &'static str {
-        "pipewireao.rtc.session."
-    }
-    fn uuid_property() -> &'static str {
-        session::SESSION_UUID_PROPERTY
-    }
-    fn name() -> &'static str {
-        session::PROFILE
-    }
-}
-
-/// Live registry identity of the selected endpoint.
-#[derive(Clone, Debug)]
-pub struct OwnerBinding {
-    pub name: String,
-    pub profile: String,
-    pub pid: u32,
-    pub global_id: u32,
-    pub serial: u64,
-    pub instance: i64,
-}
 
 /// Exact intended owner; names or saved reports alone are not authority.
 #[derive(Clone, Debug)]
@@ -58,7 +39,6 @@ pub struct Binding {
     pub node: String,
     pub owner_pid: u32,
     pub instance: i64,
-    pub expected_uuid: Option<String>,
 }
 impl Binding {
     /// # Errors
@@ -76,70 +56,28 @@ impl Binding {
             || owner_pid == 0
             || instance <= 0
         {
-            return Err("invalid native session binding".into());
+            return Err("invalid native calibration binding".into());
         }
         Ok(Self {
             remote,
             node,
             owner_pid,
             instance,
-            expected_uuid: None,
         })
     }
-
-    /// Require this immutable deployment identity from the live bound `NodeInfo`.
-    /// # Errors
-    /// Rejects noncanonical, zero or unbounded UUID hints.
-    pub fn with_expected_uuid(mut self, uuid: String) -> Result<Self, String> {
-        validate_uuid(&uuid)?;
-        self.expected_uuid = Some(uuid);
-        Ok(self)
-    }
-
-    /// Select the direct `WirePlumber` session grammar and require its UUID.
-    /// # Errors
-    /// Rejects a malformed or zero session UUID.
-    pub fn for_session(mut self, expected_uuid: String) -> Result<Self, String> {
-        validate_uuid(&expected_uuid)?;
-        self.expected_uuid = Some(expected_uuid);
-        Ok(self)
-    }
-
-    #[must_use]
-    pub fn profile(&self) -> Profile {
-        Profile::WirePlumberSession
-    }
-}
-fn validate_uuid(value: &str) -> Result<(), String> {
-    if value.len() != 36
-        || value == "00000000-0000-0000-0000-000000000000"
-        || !value.bytes().enumerate().all(|(i, c)| {
-            if matches!(i, 8 | 13 | 18 | 23) {
-                c == b'-'
-            } else {
-                c.is_ascii_digit() || (b'a'..=b'f').contains(&c)
-            }
-        })
-    {
-        return Err("public endpoint UUID must be nonzero canonical bounded text".into());
-    }
-    Ok(())
-}
-fn effective_uid() -> Result<u32, String> {
-    fs::read_to_string("/proc/self/status")
-        .map_err(|e| e.to_string())?
-        .lines()
-        .find_map(|line| line.strip_prefix("Uid:"))
-        .and_then(|values| values.split_whitespace().nth(1))
-        .and_then(|value| value.parse::<u32>().ok())
-        .ok_or_else(|| "effective UID unavailable".into())
 }
 fn private_remote(remote: &str) -> Result<String, String> {
     let path = Path::new(remote);
     let name = path.file_name().ok_or("remote must name a socket")?;
     let parent = fs::canonicalize(path.parent().ok_or("remote parent missing")?)
         .map_err(|e| e.to_string())?;
-    let uid = effective_uid()?;
+    let uid = fs::read_to_string("/proc/self/status")
+        .map_err(|e| e.to_string())?
+        .lines()
+        .find_map(|line| line.strip_prefix("Uid:"))
+        .and_then(|values| values.split_whitespace().nth(1))
+        .and_then(|value| value.parse::<u32>().ok())
+        .ok_or("effective UID unavailable")?;
     let directory = fs::symlink_metadata(&parent).map_err(|e| e.to_string())?;
     let remote = parent.join(name);
     let socket = fs::symlink_metadata(&remote).map_err(|e| e.to_string())?;
@@ -243,7 +181,7 @@ fn id(bytes: &[u8], value: Span) -> Result<u32, String> {
     ))
 }
 fn props(bytes: &[u8]) -> Result<Vec<Span>, String> {
-    if bytes.len() > envelope::LIFECYCLE_REPLY_BOUND {
+    if bytes.len() > envelope::CALIBRATION_REPLY_BOUND {
         return Err("oversized owner Props".into());
     }
     let root = span(bytes, 0, bytes.len())?;
@@ -265,8 +203,7 @@ fn props(bytes: &[u8]) -> Result<Vec<Span>, String> {
 }
 #[derive(Clone, Debug)]
 struct Capability {
-    // The wire IDs overlap but mean different states in each profile.
-    _lifecycle_id: u32,
+    lifecycle: ColdLifecycle,
     last_token: i64,
     controllers: Vec<ControllerIdentity>,
 }
@@ -285,7 +222,7 @@ fn capability(bytes: &[u8], values: &[Span], binding: &Binding) -> Result<Capabi
     let mut ordered = [None; 6];
     for pair in values.chunks_exact(2) {
         let name = text(bytes, pair[0])?
-            .strip_prefix(Profile::capability_prefix())
+            .strip_prefix(CAP_PREFIX)
             .ok_or("capability namespace")?;
         let index = names
             .iter()
@@ -302,10 +239,14 @@ fn capability(bytes: &[u8], values: &[Span], binding: &Binding) -> Result<Capabi
     {
         return Err("capability owner identity changed".into());
     }
-    let lifecycle_id = id(bytes, values[3])?;
-    if !(1..=5).contains(&lifecycle_id) {
-        return Err("unknown lifecycle".into());
-    }
+    let lifecycle = match id(bytes, values[3])? {
+        1 => ColdLifecycle::Preparing,
+        2 => ColdLifecycle::Prepared,
+        3 => ColdLifecycle::Connected,
+        4 => ColdLifecycle::Fault,
+        5 => ColdLifecycle::Stopped,
+        _ => return Err("unknown lifecycle".into()),
+    };
     let last_token = long(bytes, values[4])?;
     if last_token < 0 {
         return Err("negative accepted token".into());
@@ -334,7 +275,7 @@ fn capability(bytes: &[u8], values: &[Span], binding: &Binding) -> Result<Capabi
         controllers.push(controller);
     }
     Ok(Capability {
-        _lifecycle_id: lifecycle_id,
+        lifecycle,
         last_token,
         controllers,
     })
@@ -348,71 +289,20 @@ struct Candidate {
     permissions: pw::permissions::PermissionFlags,
 }
 #[derive(Clone)]
-#[allow(clippy::large_enum_variant)] // The cold owned snapshot is bounded and avoids extra indirection.
-pub enum Reply {
-    SessionCompletion(session::Completion),
-    SessionRejection(session::Rejection),
-    SessionAdministrativeCompletion(session::AdministrativeCompletion),
+enum Terminal {
+    Completion(codec::Completion),
+    Rejection(codec::Rejection),
 }
-impl Reply {
-    #[must_use]
-    pub fn header(&self) -> ReplyHeader {
+impl Terminal {
+    fn header(&self) -> ReplyHeader {
         match self {
-            Self::SessionCompletion(value) => value.header,
-            Self::SessionRejection(value) => value.header,
-            Self::SessionAdministrativeCompletion(value) => value.header,
+            Self::Completion(value) => value.header,
+            Self::Rejection(value) => value.header,
         }
-    }
-
-    /// Render the verified typed reply for operator display or saved reports.
-    /// JSON is created locally and never forms the control request/reply wire.
-    #[must_use]
-    pub fn render(&self, request_id: Option<&str>) -> serde_json::Value {
-        use serde_json::json;
-        let header = self.header();
-        if let Self::SessionAdministrativeCompletion(c) = self {
-            return json!({
-                "version":1, "id":request_id.map_or_else(|| header.token.to_string(), str::to_owned),
-                "session_id":null, "state":crate::control::state_name(c.lifecycle),
-                "result":c.warmed.map(|warmed| json!({"warmed":warmed})),
-                "ok":header.result==0 && c.error.is_none(),
-                "error":c.error.as_ref().map(|e| json!({"field":e.field,"message":e.message})),
-                "native_token":header.token, "endpoint_instance":header.endpoint_instance,
-                "profile":session::PROFILE,
-            });
-        }
-        if let Self::SessionCompletion(c) = self {
-            let (result, error) = match &c.result {
-                Ok(result) => (Some(result.legacy_json()), None),
-                Err(error) => (
-                    None,
-                    Some(json!({"field":error.field,"message":error.message})),
-                ),
-            };
-            return json!({
-                "version":1, "id":request_id.map_or_else(|| header.token.to_string(), str::to_owned),
-                "session_id":null, "state":crate::control::state_name(c.lifecycle),
-                "result":result, "ok":header.result==0 && c.result.is_ok(), "error":error,
-                "native_token":header.token, "endpoint_instance":header.endpoint_instance,
-                "profile":session::PROFILE,
-            });
-        }
-        if let Self::SessionRejection(r) = self {
-            return json!({
-                "version":1, "id":request_id.map_or_else(|| header.token.to_string(), str::to_owned),
-                "session_id":null, "state":crate::control::state_name(r.lifecycle),
-                "result":null, "ok":false,
-                "error":{"field":r.error.field,"message":r.error.message},
-                "native_token":header.token, "endpoint_instance":header.endpoint_instance,
-                "profile":session::PROFILE,
-            });
-        }
-        unreachable!("all session reply variants rendered above")
     }
 }
-
 struct Observed {
-    value: Reply,
+    value: Terminal,
     at: Instant,
     bytes: Vec<u8>,
 }
@@ -426,7 +316,6 @@ struct Observation {
     owner: Option<Candidate>,
     identity: Option<ControllerIdentity>,
     owner_ready: bool,
-    uuid: Option<String>,
     marker_ready: bool,
     capability: Option<Capability>,
     completion_seen: bool,
@@ -453,24 +342,6 @@ impl Observation {
             .as_ref()
             .map_or(Ok(()), |(message, _)| Err(message.clone()))
     }
-    fn terminal(&mut self, deadline: Instant) -> Option<Result<Reply, String>> {
-        if !self.fatal
-            && self.matched.as_ref().is_some_and(|m| {
-                m.at <= deadline && self.failure.as_ref().map_or(true, |(_, at)| m.at <= *at)
-            })
-        {
-            self.pending = None;
-            Some(Ok(self.matched.take().expect("matching terminal").value))
-        } else if self.failure.is_some() || self.fatal {
-            Some(Err(self
-                .failure
-                .as_ref()
-                .map_or("invalid native evidence", |(m, _)| m.as_str())
-                .to_owned()))
-        } else {
-            None
-        }
-    }
     fn observe(&mut self, bytes: &[u8]) -> Result<(), String> {
         if self.fatal {
             return Ok(());
@@ -478,7 +349,7 @@ impl Observation {
         let values = props(bytes)?;
         let first = *values.first().ok_or("empty owner Props")?;
         let name = text(bytes, first)?;
-        if name.starts_with(Profile::capability_prefix()) {
+        if name.starts_with(CAP_PREFIX) {
             let cap = capability(bytes, &values, &self.binding)?;
             if cap.last_token >= self.max_token {
                 self.max_token = cap.last_token;
@@ -487,8 +358,9 @@ impl Observation {
             return Ok(());
         }
         let value = if name == "pipewireao.rtc.control.completion.header" {
-            let outer = envelope::decode_reply(bytes, ReplyKind::Completion, ReplyBound::Lifecycle)
-                .map_err(|e| e.to_string())?;
+            let outer =
+                envelope::decode_reply(bytes, ReplyKind::Completion, ReplyBound::Calibration)
+                    .map_err(|e| e.to_string())?;
             if outer.header.endpoint_instance != self.binding.instance {
                 return Err("completion instance changed".into());
             }
@@ -512,21 +384,14 @@ impl Observation {
                 self.last_completion = Some((outer.header.token, bytes.to_vec()));
             }
             self.max_token = self.max_token.max(outer.header.token);
-            if matches!(outer.header.operation, 15 | 16) {
-                Reply::SessionAdministrativeCompletion(session::decode_administrative_completion(
-                    bytes,
-                )?)
-            } else {
-                Reply::SessionCompletion(session::decode_completion(bytes).map_err(|e| e.message)?)
-            }
+            Terminal::Completion(codec::decode_completion(bytes).map_err(|e| e.to_string())?)
         } else if name == "pipewireao.rtc.control.rejection.header" {
-            let value =
-                Reply::SessionRejection(session::decode_rejection(bytes).map_err(|e| e.message)?);
-            if value.header().endpoint_instance != self.binding.instance {
+            let value = codec::decode_rejection(bytes).map_err(|e| e.to_string())?;
+            if value.header.endpoint_instance != self.binding.instance {
                 return Err("rejection instance changed".into());
             }
             self.rejection_seen = true;
-            value
+            Terminal::Rejection(value)
         } else {
             return Err("unrecognized owner Props".into());
         };
@@ -573,11 +438,12 @@ struct Resources {
     loop_: pw::main_loop::MainLoopRc,
 }
 /// One actual controller, one pending request, no reconnect or unknown-outcome retry.
-pub struct Client {
+pub struct NativeCalibrationEndpoint {
     resources: Option<Resources>,
     observation: Rc<RefCell<Observation>>,
+    pending: Option<CalibrationRequest>,
     last_token: i64,
-    retired: bool,
+    fault: Option<CalibrationFailure>,
 }
 fn node_info(
     observation: &mut Observation,
@@ -608,7 +474,7 @@ fn node_info(
             observation.binding.node.as_str(),
             observation.binding.owner_pid,
             observation.binding.instance,
-            Profile::name(),
+            codec::PROFILE,
         )
     };
     if props.get("node.name") != Some(name)
@@ -626,20 +492,6 @@ fn node_info(
     if marker {
         observation.marker_ready = true;
     } else {
-        let uuid = props
-            .get(Profile::uuid_property())
-            .ok_or("public endpoint UUID absent")?;
-        validate_uuid(uuid)?;
-        if observation.uuid.as_ref().is_some_and(|prior| prior != uuid)
-            || observation
-                .binding
-                .expected_uuid
-                .as_ref()
-                .is_some_and(|expected| expected != uuid)
-        {
-            return Err("bound endpoint UUID changed or differs from intended identity".into());
-        }
-        observation.uuid = Some(uuid.into());
         observation.owner_ready = true;
     }
     Ok(())
@@ -767,10 +619,7 @@ impl Resources {
         let loop_ = pw::main_loop::MainLoopRc::new(None).map_err(|e| e.to_string())?;
         let context = pw::context::ContextRc::new(&loop_, None).map_err(|e| e.to_string())?;
         let core = context
-            .connect_fd_rc(
-                crate::native_connection::connect_socket(remote, deadline)?,
-                None,
-            )
+            .connect_fd_rc(crate::connection::connect_socket(remote, deadline)?, None)
             .map_err(|e| e.to_string())?;
         let errors = Rc::clone(observation);
         let core_listener = core
@@ -816,8 +665,8 @@ impl Resources {
     }
 }
 
-impl Client {
-    /// Prove one live public owner and actual controller, including preadmission.
+impl NativeCalibrationEndpoint {
+    /// Prove one live owner and actual controller before submitting Hold.
     /// # Errors
     /// Returns setup/proof failure or expiration of the single absolute deadline.
     pub fn connect(binding: Binding, deadline: Instant) -> Result<Self, String> {
@@ -827,12 +676,6 @@ impl Client {
             binding.owner_pid,
             binding.instance,
         )?;
-        if let Some(uuid) = &binding.expected_uuid {
-            validate_uuid(uuid)?;
-        }
-        if binding.expected_uuid.is_none() {
-            return Err("direct session binding requires an exact expected UUID".into());
-        }
         let remote = private_remote(&binding.remote)?;
         if Instant::now() >= deadline {
             return Err("connection deadline expired".into());
@@ -853,7 +696,6 @@ impl Client {
             owner: None,
             identity: None,
             owner_ready: false,
-            uuid: None,
             marker_ready: false,
             capability: None,
             completion_seen: false,
@@ -874,8 +716,9 @@ impl Client {
                 deadline,
             )?),
             observation,
+            pending: None,
             last_token: 0,
-            retired: false,
+            fault: None,
         };
         client.prove(deadline)?;
         Ok(client)
@@ -933,6 +776,23 @@ impl Client {
                         .contains(&s.identity.expect("proven controller"))
                 })
         })?;
+        self.poll_until(deadline, |s| {
+            s.capability.as_ref().is_some_and(|cap| {
+                cap.lifecycle != ColdLifecycle::Preparing
+                    && cap.lifecycle != ColdLifecycle::Prepared
+            })
+        })?;
+        if self
+            .observation
+            .borrow()
+            .capability
+            .as_ref()
+            .expect("proven capability")
+            .lifecycle
+            != ColdLifecycle::Connected
+        {
+            return Err("native calibration owner is unavailable".into());
+        }
         Ok(())
     }
     fn iterate(&self, deadline: Instant) -> Result<(), String> {
@@ -975,407 +835,235 @@ impl Client {
             self.iterate(deadline)?;
         }
     }
-    fn retire(&mut self) {
-        self.retired = true;
-        self.observation.borrow_mut().pending = None;
+    fn retire(&mut self, failure: CalibrationFailure) {
+        self.fault = Some(failure);
+        self.pending = None;
         self.resources = None;
     }
-
-    /// Current exact owner identity, obtained from bound `NodeInfo`.
+    /// Last transport retirement reason, when one occurred.
     #[must_use]
-    pub fn owner_binding(&self) -> Option<OwnerBinding> {
-        if self.retired || self.resources.is_none() {
-            return None;
-        }
-        let state = self.observation.borrow();
-        let owner = state.owner?;
-        state.healthy().ok()?;
-        state.owner_ready.then(|| OwnerBinding {
-            name: state.binding.node.clone(),
-            profile: Profile::name().into(),
-            pid: state.binding.owner_pid,
-            global_id: owner.id,
-            serial: owner.serial,
-            instance: state.binding.instance,
-        })
-    }
-
-    /// Immutable live identity from this exact owner binding.
-    #[must_use]
-    pub fn live_uuid(&self) -> Option<String> {
-        if self.retired || self.resources.is_none() {
-            return None;
-        }
-        let state = self.observation.borrow();
-        state.healthy().ok()?;
-        state.uuid.clone()
-    }
-
-    /// Submit once and await the exact matching native terminal within one deadline.
-    /// # Errors
-    /// `BeforeSend` means no request was submitted. `UnknownOutcome` retires this
-    /// client permanently; callers must not reconnect or retry that operation.
-    /// # Panics
-    /// Panics only if private connected-resource or matching-terminal invariants are violated.
-    pub fn request(&mut self, command: &Command, deadline: Instant) -> Result<Reply, ClientError> {
-        if self.retired || self.resources.is_none() {
-            return Err(ClientError::UnknownOutcome("native client retired".into()));
-        }
-        // Drain already available events with the same finite deadline before
-        // choosing the next token. A concurrent caller can still win admission;
-        // a native rejection is returned without replaying this command.
-        if let Err(message) = self.iterate(deadline) {
-            self.retire();
-            return Err(ClientError::BeforeSend(message));
-        }
-        let failure = self.observation.borrow().healthy().err();
-        if let Some(message) = failure {
-            self.retire();
-            return Err(ClientError::BeforeSend(message));
-        }
-        let submitted = (|| {
-            let mut state = self.observation.borrow_mut();
-            state.healthy().map_err(ClientError::BeforeSend)?;
-            if state.pending.is_some() {
-                return Err(ClientError::BeforeSend("request already pending".into()));
-            }
-            let token = self
-                .last_token
-                .max(state.max_token)
-                .checked_add(1)
-                .ok_or_else(|| ClientError::BeforeSend("native token exhausted".into()))?;
-            let budget = deadline
-                .checked_duration_since(Instant::now())
-                .ok_or_else(|| ClientError::BeforeSend("absolute deadline expired".into()))?;
-            let header = RequestHeader {
-                version: envelope::VERSION,
-                endpoint_instance: state.binding.instance,
-                controller: state
-                    .identity
-                    .ok_or_else(|| ClientError::BeforeSend("controller absent".into()))?,
-                token,
-                operation: operation(command)? as u32,
-                budget_ns: i64::try_from(budget.as_nanos())
-                    .map_err(|_| ClientError::BeforeSend("deadline exceeds wire budget".into()))?,
-            };
-            let bytes = session::encode_request(&header, command)
-                .map_err(|e| ClientError::BeforeSend(e.message))?;
-            if Instant::now() >= deadline {
-                return Err(ClientError::BeforeSend("absolute deadline expired".into()));
-            }
-            let pod = pw::spa::pod::Pod::from_bytes(&bytes)
-                .ok_or_else(|| ClientError::BeforeSend("invalid encoded request".into()))?;
-            state.pending = Some(header);
-            state.matched = None;
-            self.last_token = token;
-            self.resources
-                .as_ref()
-                .expect("connected resources")
-                .owner
-                .as_ref()
-                .expect("bound owner")
-                .node
-                .set_param(pw::spa::param::ParamType::Props, 0, pod);
-            Ok(())
-        })();
-        submitted?;
-        loop {
-            let outcome = self.observation.borrow_mut().terminal(deadline);
-            if let Some(outcome) = outcome {
-                return outcome.map_err(|message| {
-                    self.retire();
-                    ClientError::UnknownOutcome(message)
-                });
-            }
-            if Instant::now() >= deadline {
-                self.retire();
-                return Err(ClientError::UnknownOutcome(
-                    "absolute deadline expired after submission".into(),
-                ));
-            }
-            if let Err(message) = self.iterate(deadline) {
-                self.retire();
-                return Err(ClientError::UnknownOutcome(message));
-            }
-        }
+    pub const fn fault_reason(&self) -> Option<CalibrationFailure> {
+        self.fault
     }
 }
-
-/// A transport error explicitly distinguishes failure before submission.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ClientError {
-    BeforeSend(String),
-    UnknownOutcome(String),
-}
-impl std::fmt::Display for ClientError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::BeforeSend(message) => write!(f, "native request not submitted: {message}"),
-            Self::UnknownOutcome(message) => {
-                write!(f, "native outcome unknown; client retired: {message}")
-            }
-        }
-    }
-}
-impl std::error::Error for ClientError {}
-
-fn operation(command: &Command) -> Result<Operation, ClientError> {
-    Ok(match command {
-        Command::Quit => Operation::Quit,
-        Command::Groups => Operation::Groups,
-        Command::Status => Operation::Status,
-        Command::Properties(_) => Operation::Properties,
-        Command::PropertyGeneration(..) => Operation::PropertyGeneration,
-        Command::ParameterGeneration(..) => Operation::ParameterGeneration,
-        Command::StopGroup(_) => Operation::StopGroup,
-        Command::StartGroup(_) => Operation::StartGroup,
-        Command::SessionStop => Operation::SessionStop,
-        Command::SessionStart => Operation::SessionStart,
-        Command::SourceEnded => Operation::SourceEnded,
-        Command::Reset => Operation::Reset,
-        Command::PropertiesSet(..) => Operation::PropertiesSet,
-        Command::Parameter { .. } => Operation::Parameter,
-        Command::PreparedParameter { .. } => {
-            return Err(ClientError::BeforeSend(
-                "prepared parameter has no public wire command".into(),
-            ))
-        }
+fn wire_rule(rule: SettlingRule) -> Result<Rule, CalibrationFailure> {
+    Ok(match rule {
+        SettlingRule::Immediate => Rule::Immediate,
+        SettlingRule::DiscardExposures(frames) => Rule::DiscardExposures(frames),
+        SettlingRule::ModelTime(duration) => Rule::ModelTime(
+            u64::try_from(duration.as_nanos()).map_err(|_| CalibrationFailure::InvalidEvidence)?,
+        ),
     })
 }
-
-#[derive(serde::Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Locator {
-    version: u8,
-    profile: String,
-    remote: String,
-    node: String,
-    owner_pid: u32,
-    instance: i64,
-    #[serde(default)]
-    session_uuid: Option<String>,
+fn wire_action(action: &CalibrationAction) -> Result<Action, CalibrationFailure> {
+    let invalid = |_| CalibrationFailure::InvalidEvidence;
+    let probe = |value: usize| {
+        if value > 16383 {
+            return Err(CalibrationFailure::InvalidEvidence);
+        }
+        u32::try_from(value).map_err(invalid)
+    };
+    Ok(match action {
+        CalibrationAction::Hold => Action::Hold,
+        CalibrationAction::Release => Action::Release,
+        CalibrationAction::Adopt { probe: p, figure } => {
+            let probe = probe(*p)?;
+            codec::preflight_figure_request(figure, None)
+                .map_err(|_| CalibrationFailure::InvalidEvidence)?;
+            Action::Adopt {
+                probe,
+                figure: figure.to_vec(),
+            }
+        }
+        CalibrationAction::Restore { figure, rule } => {
+            let rule = wire_rule(*rule)?;
+            codec::preflight_figure_request(figure, Some(rule))
+                .map_err(|_| CalibrationFailure::InvalidEvidence)?;
+            Action::Restore {
+                figure: figure.to_vec(),
+                rule,
+            }
+        }
+        CalibrationAction::Settle {
+            probe: p,
+            after,
+            rule,
+        } => Action::Settle {
+            probe: probe(*p)?,
+            after: *after,
+            rule: wire_rule(*rule)?,
+        },
+        CalibrationAction::Collect {
+            probe: p,
+            after,
+            measurements,
+            frames,
+        } => Action::Collect {
+            probe: probe(*p)?,
+            after: *after,
+            measurements: u32::try_from(*measurements).map_err(invalid)?,
+            frames: u32::try_from(*frames).map_err(invalid)?,
+        },
+    })
 }
-impl Binding {
-    /// Read bounded saved hints; the subsequent live bind supplies authority.
-    /// # Errors
-    /// Rejects symlinks, nonregular/unowned files, malformed or excessive hints.
-    pub fn from_locator(path: &Path) -> Result<Self, String> {
-        use std::io::Read;
-        use std::os::unix::fs::OpenOptionsExt;
-        let file = fs::OpenOptions::new()
-            .read(true)
-            .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
-            .open(path)
-            .map_err(|e| e.to_string())?;
-        let metadata = file.metadata().map_err(|e| e.to_string())?;
-        let uid = effective_uid()?;
-        if !metadata.is_file() || metadata.uid() != uid || metadata.len() > 4096 {
-            return Err("session locator must be a bounded owned regular file".into());
+fn evidence(result: ResultValue) -> Result<CalibrationEvidence, CalibrationFailure> {
+    Ok(match result {
+        ResultValue::Held(cursor) => CalibrationEvidence::Held(cursor),
+        ResultValue::Adopted {
+            cursor,
+            figure,
+            clipped,
+        } => CalibrationEvidence::Adopted {
+            cursor,
+            figure: figure.into(),
+            clipped,
+        },
+        ResultValue::Settled(cursor) => CalibrationEvidence::Settled(cursor),
+        ResultValue::Responses {
+            values,
+            exposures,
+            valid,
+        } => CalibrationEvidence::Responses(ResponseBatch {
+            values,
+            exposures,
+            valid,
+        }),
+        ResultValue::Restored { figure, clipped } => CalibrationEvidence::Restored {
+            figure: figure.into(),
+            clipped,
+        },
+        ResultValue::Released => CalibrationEvidence::Released,
+        ResultValue::Failed(reason) => {
+            return Err(match reason {
+                FailureReason::Cancelled => CalibrationFailure::Cancelled,
+                FailureReason::Endpoint => CalibrationFailure::Endpoint,
+                FailureReason::InvalidEvidence => CalibrationFailure::InvalidEvidence,
+                FailureReason::ProbeClipped => CalibrationFailure::ProbeClipped,
+            })
         }
-        let mut bytes = Vec::new();
-        file.take(4097)
-            .read_to_end(&mut bytes)
-            .map_err(|e| e.to_string())?;
-        if bytes.len() > 4096 {
-            return Err("session locator exceeds 4096 bytes".into());
-        }
-        let locator: Locator = serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
-        if locator.version != 1 {
-            return Err("unsupported native locator version".into());
-        }
-        let binding = Self::new(
-            locator.remote,
-            locator.node,
-            locator.owner_pid,
-            locator.instance,
-        )?;
-        match locator.profile.as_str() {
-            session::PROFILE => binding.for_session(
-                locator
-                    .session_uuid
-                    .ok_or("direct session locator lacks session_uuid")?,
-            ),
-            _ => Err("unsupported native locator profile or UUID field".into()),
-        }
-    }
+        ResultValue::Captured { .. } => return Err(CalibrationFailure::InvalidEvidence),
+    })
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    fn fixture(_name: &str) -> Vec<u8> {
-        use crate::control::ExecutionResult;
-        use crate::LifecycleState;
-        crate::native_runner_result::encode_completion(
-            &ReplyHeader {
-                version: 1,
-                endpoint_instance: 7,
-                controller: ControllerIdentity {
-                    global_id: 11,
-                    serial: 13,
-                    instance: 17,
-                },
-                token: 19,
-                operation: 3,
-                result: 0,
-            },
-            LifecycleState::Ready,
-            &ExecutionResult::Status {
-                lifecycle_state: LifecycleState::Ready,
-                status: crate::LiveGraphStatus {
-                    owned_links: 3,
-                    ..Default::default()
-                },
-            },
-        )
-        .unwrap()
+impl CalibrationEndpoint for NativeCalibrationEndpoint {
+    fn submit(&mut self, effect: &CalibrationEffect) -> Result<(), CalibrationFailure> {
+        if self.pending.is_some() || self.resources.is_none() {
+            return Err(CalibrationFailure::Endpoint);
+        }
+        if Instant::now() >= effect.deadline {
+            return Err(CalibrationFailure::Endpoint);
+        }
+        let action = wire_action(&effect.action)?;
+        let mut state = self.observation.borrow_mut();
+        if state.healthy().is_err() {
+            drop(state);
+            self.retire(CalibrationFailure::Endpoint);
+            return Err(CalibrationFailure::Endpoint);
+        }
+        let token = self
+            .last_token
+            .max(state.max_token)
+            .checked_add(1)
+            .ok_or(CalibrationFailure::InvalidEvidence)?;
+        let budget = effect
+            .deadline
+            .checked_duration_since(Instant::now())
+            .ok_or(CalibrationFailure::Endpoint)?;
+        let header = RequestHeader {
+            version: envelope::VERSION,
+            endpoint_instance: state.binding.instance,
+            controller: state.identity.ok_or(CalibrationFailure::Endpoint)?,
+            token,
+            operation: action.operation(),
+            budget_ns: i64::try_from(budget.as_nanos())
+                .map_err(|_| CalibrationFailure::InvalidEvidence)?,
+        };
+        let command = Command {
+            run: effect.request.run,
+            serial: effect.request.serial,
+            action,
+        };
+        let bytes = codec::encode_request(&header, &command)
+            .map_err(|_| CalibrationFailure::InvalidEvidence)?;
+        if Instant::now() >= effect.deadline {
+            return Err(CalibrationFailure::Endpoint);
+        }
+        let pod =
+            pw::spa::pod::Pod::from_bytes(&bytes).ok_or(CalibrationFailure::InvalidEvidence)?;
+        state.pending = Some(header);
+        state.matched = None;
+        self.pending = Some(effect.request);
+        self.last_token = token;
+        self.resources
+            .as_ref()
+            .expect("connected resources")
+            .owner
+            .as_ref()
+            .expect("bound owner")
+            .node
+            .set_param(pw::spa::param::ParamType::Props, 0, pod);
+        Ok(())
     }
-    fn observation(bytes: &[u8]) -> Observation {
-        let header = session::decode_completion(bytes).unwrap().header;
-        Observation {
-            binding: Binding::new(
-                "/tmp/private/core".into(),
-                "owner".into(),
-                1,
-                header.endpoint_instance,
-            )
-            .unwrap(),
-            marker_name: "marker".into(),
-            marker_instance: 1,
-            candidates: BTreeMap::new(),
-            owner: None,
-            identity: Some(header.controller),
-            owner_ready: true,
-            uuid: Some("11111111-1111-1111-1111-111111111111".into()),
-            marker_ready: true,
-            capability: None,
-            completion_seen: false,
-            rejection_seen: false,
-            max_token: 0,
-            pending: Some(RequestHeader {
-                version: envelope::VERSION,
-                endpoint_instance: header.endpoint_instance,
-                controller: header.controller,
-                token: header.token,
-                operation: header.operation,
-                budget_ns: 1_000_000_000,
-            }),
-            matched: None,
-            last_completion: None,
-            failure: None,
-            fatal: false,
+    fn receive(
+        &mut self,
+        deadline: Instant,
+    ) -> Result<Option<CalibrationCompletion>, CalibrationFailure> {
+        loop {
+            let outcome = {
+                let mut state = self.observation.borrow_mut();
+                if !state.fatal
+                    && state.matched.as_ref().is_some_and(|m| {
+                        m.at <= deadline
+                            && state.failure.as_ref().map_or(true, |(_, at)| m.at <= *at)
+                    })
+                {
+                    Some(Ok(state.matched.take().expect("matching terminal").value))
+                } else if state.failure.is_some() || state.fatal {
+                    Some(Err(CalibrationFailure::Endpoint))
+                } else {
+                    None
+                }
+            };
+            if let Some(outcome) = outcome {
+                let terminal = match outcome {
+                    Ok(value) => value,
+                    Err(error) => {
+                        self.retire(error);
+                        return Err(error);
+                    }
+                };
+                let request = self
+                    .pending
+                    .take()
+                    .ok_or(CalibrationFailure::InvalidEvidence)?;
+                self.observation.borrow_mut().pending = None;
+                let Terminal::Completion(completion) = terminal else {
+                    self.retire(CalibrationFailure::Endpoint);
+                    return Err(CalibrationFailure::Endpoint);
+                };
+                if completion.run != request.run || completion.serial != request.serial {
+                    self.retire(CalibrationFailure::InvalidEvidence);
+                    return Err(CalibrationFailure::InvalidEvidence);
+                }
+                if completion.header.result != 0 || completion.result.is_none() {
+                    self.retire(CalibrationFailure::Endpoint);
+                    return Err(CalibrationFailure::Endpoint);
+                }
+                return Ok(Some(CalibrationCompletion {
+                    request,
+                    result: evidence(completion.result.expect("validated result")),
+                }));
+            }
+            if Instant::now() >= deadline {
+                self.retire(CalibrationFailure::Endpoint);
+                return Ok(None);
+            }
+            if self.iterate(deadline).is_err() {
+                self.retire(CalibrationFailure::Endpoint);
+                return Err(CalibrationFailure::Endpoint);
+            }
         }
     }
-    #[test]
-    fn uuid_is_bounded_canonical_and_nonzero() {
-        assert!(validate_uuid("12345678-1234-1234-1234-123456789abc").is_ok());
-        for uuid in [
-            "00000000-0000-0000-0000-000000000000",
-            "12345678-1234-1234-1234-123456789ABC",
-            "1234567811234-1234-1234-123456789abc",
-            "short",
-        ] {
-            assert!(validate_uuid(uuid).is_err());
-        }
-    }
-    #[test]
-    fn saved_locator_is_bounded_hints_only() {
-        let directory = tempfile::tempdir().unwrap();
-        let path = directory.path().join("control.json");
-        let hints = serde_json::json!({"version":1,"profile":session::PROFILE,"session_uuid":"11111111-1111-1111-1111-111111111111","remote":"/tmp/private/core","node":"owner","owner_pid":42,"instance":5});
-        fs::write(&path, hints.to_string()).unwrap();
-        let binding = Binding::from_locator(&path).unwrap();
-        assert_eq!(binding.owner_pid, 42);
-        assert!(binding.expected_uuid.is_some());
-        let symlink = directory.path().join("link");
-        std::os::unix::fs::symlink(&path, &symlink).unwrap();
-        assert!(Binding::from_locator(&symlink).is_err());
-        fs::write(&path, vec![b' '; 4097]).unwrap();
-        assert!(Binding::from_locator(&path).is_err());
-        let mut extra = hints.clone();
-        extra["admitted"] = serde_json::json!(true);
-        fs::write(&path, extra.to_string()).unwrap();
-        assert!(Binding::from_locator(&path).is_err());
-        let mut wrong = hints;
-        wrong["profile"] = serde_json::json!(crate::native_runner_codec::PROFILE);
-        fs::write(&path, wrong.to_string()).unwrap();
-        assert!(Binding::from_locator(&path).is_err());
-    }
-    #[test]
-    fn matching_terminal_precedes_later_retirement() {
-        let bytes = fixture("reply-status-simulator.pod");
-        let mut state = observation(&bytes);
-        state.observe(&bytes).unwrap();
-        let at = state.matched.as_ref().unwrap().at;
-        state.fail_at("removed", true, at + Duration::from_millis(1));
-        assert!(matches!(
-            state.terminal(at + Duration::from_secs(1)),
-            Some(Ok(Reply::SessionCompletion(_)))
-        ));
-        assert!(state.healthy().is_err());
-    }
-    #[test]
-    fn earlier_retirement_fatal_evidence_and_late_terminal_do_not_complete() {
-        let bytes = fixture("reply-status-simulator.pod");
-        let mut state = observation(&bytes);
-        state.fail("removed", true);
-        state.observe(&bytes).unwrap();
-        assert!(state.matched.is_none());
-        assert!(matches!(
-            state.terminal(Instant::now() + Duration::from_secs(1)),
-            Some(Err(_))
-        ));
-        let mut state = observation(&bytes);
-        state.observe(&bytes).unwrap();
-        state.fail("malformed", false);
-        assert!(matches!(
-            state.terminal(Instant::now() + Duration::from_secs(1)),
-            Some(Err(_))
-        ));
-        let mut state = observation(&bytes);
-        let deadline = Instant::now()
-            .checked_sub(Duration::from_millis(1))
-            .unwrap();
-        state.observe(&bytes).unwrap();
-        assert!(state.terminal(deadline).is_none());
-    }
-    #[test]
-    fn malformed_and_conflicting_native_evidence_is_rejected() {
-        let bytes = fixture("reply-status-simulator.pod");
-        let mut state = observation(&bytes);
-        assert!(state
-            .observe(&vec![0; envelope::LIFECYCLE_REPLY_BOUND + 1])
-            .is_err());
-        let mut malformed = bytes.clone();
-        malformed[0] = 0;
-        assert!(state.observe(&malformed).is_err());
-        let mut state = observation(&bytes);
-        state.observe(&bytes).unwrap();
-        let mut c = session::decode_completion(&bytes).unwrap();
-        // Changing a valid bounded result while retaining its token is fatal.
-        if let Ok(crate::control::ExecutionResult::Status { status, .. }) = &mut c.result {
-            status.owned_links += 1;
-        }
-        assert!(state
-            .observe(
-                &crate::native_runner_result::encode_completion(
-                    &c.header,
-                    c.lifecycle,
-                    c.result.as_ref().unwrap()
-                )
-                .unwrap()
-            )
-            .is_err());
-    }
-    #[test]
-    fn rendering_reports_the_direct_session_only() {
-        let reply =
-            Reply::SessionCompletion(session::decode_completion(&fixture("status")).unwrap());
-        let value = reply.render(Some("operator"));
-        assert_eq!(value["id"], "operator");
-        assert_eq!(value["state"], "Ready");
-        assert_eq!(value["profile"], session::PROFILE);
-        assert_eq!(value["result"]["owned_links"], 3);
-        assert!(value.get("supervisor_phase").is_none());
+    fn fault(&mut self, failure: CalibrationFailure) {
+        self.retire(failure);
     }
 }

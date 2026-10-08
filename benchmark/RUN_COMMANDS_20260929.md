@@ -9,7 +9,7 @@ retain their original scope. See the [current benchmark index](README.md) for re
 Run from the `pipewireao-rtc-latest-hold-characterization` worktree. These
 commands describe the three baseline runs summarized in
 [`LATEST_HOLD_RESULTS_20260929.md`](LATEST_HOLD_RESULTS_20260929.md). Each
-fixture compiles `tests/fixtures/latest_hold_slow_source.c` with
+fixture compiles `tests/data/latest_hold_slow_source.c` with
 `LATEST_HOLD_BENCH_SAMPLES=2500` before starting its private core. The output
 directory must not exist before each invocation.
 

@@ -28,7 +28,7 @@ An exposure is `{domain,generation,sequence,start_model_ns,duration_ns}` with
 unsigned integer fields. Exposure `duration_ns` must be positive; its end is
 checked against the acquisition cursor. This is enforced in
 [`exposure!`](../deployment/hil/calibration_server.jl#L292-L341); public Rust
-types are in [`calibration.rs`](../src/calibration.rs#L152-L179).
+types are in [`calibration.rs`](https://github.com/DarrylGamroth/pipewireao-rtc/blob/0fadb2a116f360df7f7d601b8e7f2bea02d809f9/src/calibration.rs#L152-L179).
 
 ## Current results and effect behavior
 
@@ -58,7 +58,7 @@ through the socket. References: [`collect!`/`capture!`](../deployment/hil/calibr
 
 ### Rust compatibility surface
 
-[`CalibrationEndpoint`](../src/calibration.rs#L687-L713) is currently:
+[`CalibrationEndpoint`](https://github.com/DarrylGamroth/pipewireao-rtc/blob/0fadb2a116f360df7f7d601b8e7f2bea02d809f9/src/calibration.rs#L687-L713) is currently:
 
 ```rust
 fn submit(&mut self, effect: &CalibrationEffect) -> Result<(), CalibrationFailure>;
@@ -72,7 +72,7 @@ fn fault(&mut self, failure: CalibrationFailure);
 plan: CalibrationPlan) -> Result<CalibrationCoordinator, CalibrationError>`
 drives the existing completion semantics. Rust request/effect types are
 [`CalibrationRequest` (`run`, `serial` as u64), cursor/exposure/batch, actions,
-evidence and completion](../src/calibration.rs#L145-L248).
+evidence and completion](https://github.com/DarrylGamroth/pipewireao-rtc/blob/0fadb2a116f360df7f7d601b8e7f2bea02d809f9/src/calibration.rs#L145-L248).
 
 Rust currently serializes `hold`, `adopt`, `settle`, `collect`, `restore`,
 `release`; it deserializes `held`, `adopted`, `settled`, `responses`,

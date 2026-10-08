@@ -1,35 +1,39 @@
-//! Direct clients for the `PipeWireAO` `WirePlumber` session and calibration APIs.
+//! Clients and calibration acquisition for `WirePlumber`-owned `PipeWireAO` sessions.
 
 pub mod calibration;
 #[cfg(feature = "live")]
+mod connection;
 pub mod control;
-pub mod control_dto;
 #[cfg(feature = "live")]
-pub mod native_calibration_action_codec;
-#[cfg(feature = "live")]
-pub mod native_calibration_endpoint;
-#[cfg(feature = "live")]
-mod native_connection;
-#[cfg(feature = "live")]
-pub mod native_control_codec;
-#[cfg(feature = "live")]
-pub mod native_runner_codec;
-#[cfg(feature = "live")]
-pub mod native_runner_result;
-#[cfg(all(feature = "live", not(target_arch = "wasm32")))]
-pub mod native_session_client;
-#[cfg(feature = "live")]
-pub mod native_session_codec;
-#[cfg(all(feature = "live", not(target_arch = "wasm32")))]
-pub mod native_session_discovery;
-#[cfg(feature = "live")]
-pub mod native_session_transport;
-#[cfg(all(feature = "live", not(target_arch = "wasm32")))]
-pub mod session_cli;
+pub mod session;
 
 #[cfg(feature = "live")]
-pub use control_dto::LiveGraphStatus;
-pub use control_dto::{
+pub use control::types::LiveGraphStatus;
+pub use control::types::{
     ExecutionGroupState, LifecycleState, NdArrayParameterValue, ParameterGeneration,
     PropertyGeneration, ScalarValue,
+};
+
+// Existing GUI and external clients use these module paths. Keep import aliases
+// while source organization and new callers use the domain modules above.
+#[cfg(feature = "live")]
+#[doc(hidden)]
+pub use calibration::{
+    client as native_calibration_endpoint, protocol as native_calibration_action_codec,
+};
+#[cfg(feature = "live")]
+#[doc(hidden)]
+pub use control::envelope as native_control_codec;
+#[doc(hidden)]
+pub use control::types as control_dto;
+#[cfg(all(feature = "live", not(target_arch = "wasm32")))]
+#[doc(hidden)]
+pub use session::{
+    cli as session_cli, client as native_session_client, discovery as native_session_discovery,
+};
+#[cfg(feature = "live")]
+#[doc(hidden)]
+pub use session::{
+    protocol as native_session_codec, replies as native_runner_result,
+    requests as native_runner_codec, transport as native_session_transport,
 };
