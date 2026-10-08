@@ -6,7 +6,7 @@ import ..CalibrationCampaign as Acquisition
 import ..CopperReference as Reference
 import ..CalibrationExport
 import ..HILExport
-import ..Deployment
+import ..DeploymentConfiguration
 
 export validate_recipe, schedule, validate_candidate, analysis_products, campaign, main
 
@@ -149,7 +149,7 @@ function source_snapshot(base,aoc,candidate,arguments)
         "aoc"=>Acquisition.file_identity(aoc),"training_base"=>Acquisition.file_identity(joinpath(candidate,"training-base")),
         "helpers"=>Reference.input_snapshot(base,aoc)["helpers"],
         "orchestration"=>Acquisition.orchestration_sources())
-    paths=vcat(candidate_paths(candidate),[arguments.recipe,arguments.rtc_binary,arguments.calibration_binary,
+    paths=vcat(candidate_paths(candidate),[arguments.recipe,arguments.calibration_binary,
         joinpath(HILExport.ScienceExport.package_root(),"src","copper_quality.jl"),joinpath(HILExport.ScienceExport.package_root(),"src","calibration_campaign.jl"),joinpath(HILExport.ScienceExport.package_root(),"src","copper_reference.jl")])
     source["files"]=Dict(abspath(path)=>sha256_file(Acquisition.regular(path)) for path in paths)
     return source
@@ -297,7 +297,7 @@ function campaign(arguments)
         total_bytes=sum(item["frames"]*22596 for item in plan)
         CalibrationExport.export_package((;base_package=prepared,output=package,
             pipewire_prefix=arguments.pipewire_prefix,deployment=true,
-            rtc_binary=arguments.rtc_binary,calibration_binary=arguments.calibration_binary,
+            calibration_binary=arguments.calibration_binary,
             illumination="lamp",calibration_stage="training",capture_max_bytes=total_bytes))
         seal=Dict("version"=>1,"files"=>seal_files(output,package))
         write_json(joinpath(output,"quality-inputs.json"),seal)
@@ -338,13 +338,13 @@ function campaign(arguments)
         rethrow()
     finally
         record["timing_ns"]=Dict("total_campaign"=>time_ns()-started)
-        Deployment.atomic_record(joinpath(output,"quality-result.json"),record)
+        DeploymentConfiguration.atomic_record(joinpath(output,"quality-result.json"),record)
     end
     return joinpath(output,"quality-result.json")
 end
 
 function main(argv=ARGS)
-    arguments=cli_arguments(argv;required=["base-package","output","recipe","aoc-source","rtc-binary",
+    arguments=cli_arguments(argv;required=["base-package","output","recipe","aoc-source",
         "calibration-binary","runtime","reference-candidate"],
         defaults=(pipewire_prefix="/opt/pipewireao",julia="julia"))
     arguments.pipewire_prefix=="/opt/pipewireao" || throw(ArgumentError("only /opt/pipewireao supported"))

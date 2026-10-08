@@ -1,7 +1,7 @@
 module HeartExport
 
 using ..Common
-using ..Deployment
+using ..DeploymentConfiguration
 using ..ScienceExport
 using ..HILExport
 using ..HeartConfiguration
@@ -69,9 +69,9 @@ function export_package(args; simulator_backend::String="cpu")
     base = realpath(args.base_package)
     output = abspath(args.output)
     !ispath(output) && !islink(output) || throw(ArgumentError("export output must be new"))
-    specification = Deployment.profile(joinpath(base,"deployment.conf"),args.pipewire_prefix)
+    specification = DeploymentConfiguration.profile(joinpath(base,"deployment.conf"),args.pipewire_prefix)
     source = only(filter(owner -> owner["role"] == get(specification,"source-owner",nothing), specification["owners"]))
-    Deployment.native_source(source) ||
+    DeploymentConfiguration.native_source(source) ||
         throw(ArgumentError("HEART HIL export requires a native-source HIL base; export a fresh base first"))
     provenance = Common.read_json(joinpath(base,"provenance.json"))
     get(provenance,"engine",nothing) == "fgn" ||
@@ -84,7 +84,7 @@ function export_package(args; simulator_backend::String="cpu")
     HeartConfiguration.calibration_inputs(base,provenance;pipewire_prefix=args.pipewire_prefix)
     rate = provenance["hil"]["wall_rate_hz"]
     readout_us = readout_interval(instrument,option(args,:readout_us),rate)
-    paths = Deployment.installed_paths(args.pipewire_prefix)
+    paths = DeploymentConfiguration.installed_paths(args.pipewire_prefix)
     plugin = joinpath(paths["spa"],"heart/libspa-heart.so")
     isfile(plugin) || throw(ArgumentError("installed HEART SPA plugin is missing"))
     mkpath(dirname(output))
@@ -93,10 +93,6 @@ function export_package(args; simulator_backend::String="cpu")
         ScienceExport.copy_tree(base,package;ignored=Set(["__pycache__","systemd"]))
         ScienceExport.sha256(joinpath(package,"hil/plant.toml")) == plant_sha256 ||
             throw(ArgumentError("HEART export changed the selected simulator plant"))
-        for name in ("pipewireao-rtc-deploy","placement.py","pipewireao-rtc@.service.in")
-            path = joinpath(package,"bin",name)
-            isfile(path) && rm(path)
-        end
         rm(joinpath(package,"graphs");force=true,recursive=true)
         mkpath(joinpath(package,"heart/bin"))
         for name in ("scaoTemplate","scaoTemplateCmdClient")
@@ -104,7 +100,6 @@ function export_package(args; simulator_backend::String="cpu")
             isfile(source) && (stat(source).mode & 0o111) != 0 || throw(ArgumentError("missing native HEART executable: $source"))
             ScienceExport.copy_file(source,joinpath(package,"heart/bin",name))
         end
-        ScienceExport.copy_file(args.rtc_binary,joinpath(package,"bin/pipewireao-rtc"))
         for name in ("simulator.jl","simulator_owner.jl","native_owner_bootstrap.jl","jfg_owner.jl",
                 "owner_protocol.jl","heart_owner.jl","native_heart_control.jl")
             source = joinpath(ScienceExport.resource_root(),"hil",name)
@@ -128,7 +123,7 @@ function export_package(args; simulator_backend::String="cpu")
         config = HeartConfiguration.prepare_heart_configuration(package,base,realpath(args.heart_source_config),
                                                                  realpath(args.calibration_root),rate;pipewire_prefix=args.pipewire_prefix)
         Common.write_json(joinpath(package,"session.conf.in"),bridge_session(instrument,rate))
-        core = Deployment.decode(joinpath(package,specification["core"]),args.pipewire_prefix)
+        core = DeploymentConfiguration.decode(joinpath(package,specification["core"]),args.pipewire_prefix)
         core["context.spa-libs"]["api.heart.*"] = "heart/libspa-heart"
         shape = instrument == "classic" ? 352 : 64
         rows = instrument == "classic" ? 11 : 32
@@ -148,7 +143,7 @@ function export_package(args; simulator_backend::String="cpu")
             "api.heart.std-dm.port"=>6100,"api.heart.std-dm.target-id"=>0,"api.heart.std-dm.actuator-count"=>277,
             "api.heart.std-dm.frame-rate"=>"$rate/1")))
         ScienceExport.write_spa_config(joinpath(package,specification["core"]),core)
-        rtc_client = Deployment.decode(joinpath(package,specification["client"]["rtc"]),args.pipewire_prefix)
+        rtc_client = DeploymentConfiguration.decode(joinpath(package,specification["client"]["rtc"]),args.pipewire_prefix)
         pop!(rtc_client["context.properties"],"context.data-loops",nothing)
         filter!(item -> item["name"] != "libpipewire-module-rt",rtc_client["context.modules"])
         ScienceExport.write_spa_config(joinpath(package,"client-heart-rtc.conf.in"),rtc_client)
@@ -183,6 +178,17 @@ function export_package(args; simulator_backend::String="cpu")
         specification["client"]["heart"] = "client-simulator.conf.in"
         specification["environment"] = Dict{String,Any}()
         specification["name"] = "revolt-$instrument-heart-hil-$simulator_backend"
+        bridge = bridge_session(instrument, rate)
+        Set(entry["node.name"] for section in ("sources", "graphs", "sinks")
+            for entry in bridge[section]) ==
+            Set(("simulator-wfs", "heart-dm-source", "heart-wfs-sink", "simulator-command")) ||
+            throw(ArgumentError("HEART bridge node declarations changed"))
+        specification["node-owners"] = Dict(
+            "simulator-wfs" => "simulator", "simulator-command" => "simulator",
+            "heart-dm-source" => "core", "heart-wfs-sink" => "core")
+        ScienceExport.wireplumber_session_defaults!(specification)
+        ScienceExport.stage_wireplumber!(package;
+            build=option(args, :wireplumber_build), source=option(args, :wireplumber_source))
         provenance["engine"] = "heart"
         merge!(provenance["hil"],Dict("command_unit"=>"metre OPD","plant_command_scale"=>1.0,"transport"=>"heart"))
         provenance["heart"] = merge(config,Dict("revision"=>ScienceExport.revision(args.heart_root),
@@ -191,19 +197,16 @@ function export_package(args; simulator_backend::String="cpu")
         Common.write_json(joinpath(package,"provenance.json"),provenance)
         specification["artifacts"] = _artifacts(package)
         Common.write_json(joinpath(package,"deployment.conf"),specification)
-        Deployment.profile(joinpath(package,"deployment.conf"),args.pipewire_prefix)
+        DeploymentConfiguration.profile(joinpath(package,"deployment.conf"),args.pipewire_prefix)
         mv(package,output)
         return joinpath(output,"deployment.conf")
     end
 end
 
 function main(argv=ARGS)
-    installed_binary = joinpath(dirname(ScienceExport.package_root()), "bin", "pipewireao-rtc")
-    default_binary = isfile(installed_binary) ? installed_binary :
-        normpath(joinpath(ScienceExport.resource_root(), "..", "target", "release", "pipewireao-rtc"))
     options = Common.cli_arguments(argv;required=["base-package","output","heart-root","heart-source-config","calibration-root"],
-        allowed=["adapter-root","readout-us"],defaults=(rtc_binary=default_binary,
-                                                         pipewire_prefix="/opt/pipewireao"))
+        allowed=["adapter-root","readout-us","wireplumber-build","wireplumber-source"],
+        defaults=(pipewire_prefix="/opt/pipewireao",))
     args = merge(options,(readout_us=hasproperty(options,:readout_us) ? parse(Int,options.readout_us) : nothing,))
     println(export_package(args))
     return 0

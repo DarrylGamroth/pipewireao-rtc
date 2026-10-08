@@ -1,0 +1,22 @@
+Oct 07 19:58:30.321454 rtc-devel pipewireao-rtc-session[775061]: Precompiling packages...
+Oct 07 19:58:35.462076 rtc-devel pipewireao-rtc-session[775061]:    5136.1 ms  ✓ PipeWireAODeployment
+Oct 07 19:58:35.462838 rtc-devel pipewireao-rtc-session[775061]:   1 dependency successfully precompiled in 5 seconds. 32 already precompiled.
+Oct 07 20:03:16.614758 rtc-devel pipewireao-rtc-session[775338]: ERROR: LoadError: ArgumentError: direct session did not warm before publication deadline
+Oct 07 20:03:16.614758 rtc-devel pipewireao-rtc-session[775338]: Stacktrace:
+Oct 07 20:03:16.639603 rtc-devel pipewireao-rtc-session[775338]:  [1] publish!(args::@NamedTuple{prefix::String, unit::String, package::String, runtime_root::String})
+Oct 07 20:03:16.639774 rtc-devel pipewireao-rtc-session[775338]:    @ Main.WirePlumberCLI /tmp/rtc-wireplumber-fgn-20261007-installed/julia/wireplumber_cli.jl:147
+Oct 07 20:03:16.640634 rtc-devel pipewireao-rtc-session[775338]:  [2] main(argv::Vector{String})
+Oct 07 20:03:16.640634 rtc-devel pipewireao-rtc-session[775338]:    @ Main.WirePlumberCLI /tmp/rtc-wireplumber-fgn-20261007-installed/julia/wireplumber_cli.jl:313
+Oct 07 20:03:16.640760 rtc-devel pipewireao-rtc-session[775338]:  [3] top-level scope
+Oct 07 20:03:16.640760 rtc-devel pipewireao-rtc-session[775338]:    @ /tmp/rtc-wireplumber-fgn-20261007-installed/julia/wireplumber_cli.jl:351
+Oct 07 20:03:16.640760 rtc-devel pipewireao-rtc-session[775338]:  [4] include(mod::Module, _path::String)
+Oct 07 20:03:16.640760 rtc-devel pipewireao-rtc-session[775338]:    @ Base ./Base.jl:306
+Oct 07 20:03:16.640760 rtc-devel pipewireao-rtc-session[775338]:  [5] exec_options(opts::Base.JLOptions)
+Oct 07 20:03:16.640974 rtc-devel pipewireao-rtc-session[775338]:    @ Base ./client.jl:317
+Oct 07 20:03:16.640974 rtc-devel pipewireao-rtc-session[775338]:  [6] _start()
+Oct 07 20:03:16.658888 rtc-devel pipewireao-rtc-session[775338]:    @ Base ./client.jl:550
+Oct 07 20:03:16.658888 rtc-devel pipewireao-rtc-session[775338]: in expression starting at /tmp/rtc-wireplumber-fgn-20261007-installed/julia/wireplumber_cli.jl:351
+Oct 07 20:03:16.721207 rtc-devel wireplumber[775337]: m-lua-scripting: AO session fault: Session control publication failed
+Oct 07 20:03:16.721224 rtc-devel wireplumber[775337]: wp-properties: wp_properties_get: assertion 'self != NULL' failed
+Oct 07 20:03:16.721230 rtc-devel wireplumber[775337]: wp-properties: wp_properties_get: assertion 'self != NULL' failed
+Oct 07 20:03:16.721239 rtc-devel wireplumber[775337]: m-lua-scripting: AO source hold uncertain; systemd emergency cleanup required: [string "ao-control.lua"]:150: Missing object serial

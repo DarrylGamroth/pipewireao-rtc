@@ -21,6 +21,7 @@ claim; do not infer completion from prose.
 
 | Task | Relevant contract/design | Working guide or evidence |
 | --- | --- | --- |
+| WirePlumber-owned session lifecycle | [RTC-ARCH-025](WIREPLUMBER_SESSION_DESIGN.md), [system boundary](architecture.md#accepted-workstation-integration-boundary); RTC-DEV-003/004/009/012/013/021/022/025/030 | [Migration design and removal gates](WIREPLUMBER_SESSION_DESIGN.md); completed link/systemd receipts remain scoped evidence |
 | Ecosystem integration/session-manager reuse | [System boundary](architecture.md#system-boundary), [configuration](architecture.md#configuration-boundary) | [PipeWireAO, FGN/JFG, AOS/AOC and proposed WirePlumber integration](ECOSYSTEM_INTEGRATION.md), [declared connection policy](WIREPLUMBER_CONNECTION_POLICY.md), [realization/withdrawal design](WIREPLUMBER_REALIZATION_DESIGN.md) |
 | Runner/configuration/ownership | [System boundary](architecture.md#system-boundary), [configuration](architecture.md#configuration-boundary); RTC-DEV-001–004, 009–013 | [Operations](operations.md#requirements) and the matching source/tests |
 | Graph properties/parameters | RTC-DEV-005, 010–012; [update classes](operations.md#update-classes) | [Native controls](NATIVE_CONTROL_MIGRATION_DESIGN.md), [public supervisor](NATIVE_SUPERVISOR_CONTROL.md) |
@@ -44,6 +45,9 @@ finding or result rather than loading the entire delivery catalog.
   ownership-transfer findings and qualification boundaries for WirePlumber reuse.
 - [Main integration snapshot](MAIN_INTEGRATION_20261006.md): exact source/dependency
   merge and its qualification limits on 2026-10-06.
+- [WirePlumber session documentation review](validation/wireplumber-session-20261007/REVIEW.md):
+  WPS01–08/WPI source dispositions and final calibration corrections; runtime
+  evidence remains separately scoped.
 - [Inactive full-RTC archive](archive/full-rtc/README.md): non-normative deferred
   design; read only for an explicitly selected scope change.
 - [PipeWireAO contracts](https://github.com/DarrylGamroth/PipeWireAO/tree/master/doc/dox/internals):

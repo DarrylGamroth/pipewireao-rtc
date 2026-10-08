@@ -2,12 +2,15 @@ module CalibrationCampaign
 
 using JSON3, TOML
 import ..Common: read_json, write_json, sha256_file, run_checked, cli_arguments
-import ..Deployment
+import ..DeploymentConfiguration
 import ..CalibrationExport
 import ..HILExport
 import ..Common
 import ..NativeCalibrationActionClient
 import ..NativeAcquisitionLifecycleCodec
+import ..WirePlumberSessionRuntime
+import ..SystemdOwners
+import ..RunnerCommands
 
 export validate_recipe, positive_integer, wire_float32, same_figure, validate_batches,
        verify_capture, run_stage, stage_base, campaign, main, copy_tree, file_identity,
@@ -201,7 +204,9 @@ function orchestration_sources()
     end
     package = HILExport.ScienceExport.package_root()
     collect_sources(joinpath(package, "src"))
-    append!(files, [joinpath(package, name) for name in ("Project.toml", "Manifest.toml", "deploy_cli.jl")])
+    append!(files, [joinpath(package, name) for name in
+        ("Project.toml", "Manifest.toml", "wireplumber_cli.jl",
+         "wireplumber_launch.jl", "wireplumber_configuration.jl", "wireplumber_install.jl")])
     collect_sources(joinpath(package, "assets"); excluded=Set(["__pycache__", ".git"]))
     resources = HILExport.ScienceExport.resource_root()
     for name in ("hil", "templates")
@@ -209,7 +214,7 @@ function orchestration_sources()
     end
     append!(files, [joinpath(resources, name) for name in readdir(resources)
         if endswith(name, ".jl") && !startswith(name, "test_")])
-    push!(files, joinpath(resources, "pipewireao-rtc@.service.in"))
+    push!(files, joinpath(resources, "pipewireao-session@.service.in"))
     return Dict(abspath(path) => sha256_file(regular(path)) for path in unique(files))
 end
 
@@ -386,17 +391,15 @@ function completed_report_cursor(source)
 end
 
 "Wait only on fresh native status, keeping the stage's absolute deadline."
-function wait_completed_source(locator;deadline::Float64,
-        query=(path,limit)->Deployment.control(path,["status"];deadline=limit))
+function wait_completed_source(ready, instrument;deadline::Float64,
+        query=(record,kind,limit)->WirePlumberSessionRuntime.source_status(record,kind;deadline=limit))
     isfinite(deadline) || throw(ArgumentError("report deadline must be finite"))
+    get(ready["source_endpoint"],"profile",nothing)=="pipewireao.rtc.calibration-lifecycle/1" ||
+        throw(ArgumentError("report query selected another owner authority"))
     while time_ns()/1e9<deadline
-        reply=query(locator,deadline)
+        source=query(ready,instrument,deadline)
         time_ns()/1e9<deadline || throw(ArgumentError("completed owner report deadline expired"))
-        get(reply,"ok",nothing)===true || throw(ArgumentError("owner status query failed"))
-        endpoint=get(reply,"source_endpoint",Dict())
-        get(endpoint,"profile",nothing)=="pipewireao.rtc.calibration-lifecycle/1" ||
-            throw(ArgumentError("report query selected another owner authority"))
-        source=get(reply,"source",Dict())
+        get(source,"ok",nothing)===true || throw(ArgumentError("owner status query failed"))
         completed_report_cursor(source)===nothing || return source
         sleep(min(0.01,max(0.0,deadline-time_ns()/1e9)))
     end
@@ -429,11 +432,10 @@ end
 
 function stage_command(package,runtime;owner_preparation_timeout_seconds=90)
     positive_integer(owner_preparation_timeout_seconds,"owner preparation timeout seconds",3600)
-    return [Base.julia_cmd().exec[1],"--startup-file=no","--project="*HILExport.ScienceExport.package_root(),
-            joinpath(HILExport.ScienceExport.package_root(),"deploy_cli.jl"),"run",
-            "--deployment",joinpath(package,"deployment.conf"),"--runtime",runtime,
-            "--pipewire-prefix","/opt/pipewireao",
-            "--owner-preparation-timeout-seconds",string(owner_preparation_timeout_seconds)]
+    return [Base.julia_cmd().exec[1],"--startup-file=no",
+        "--project=" * joinpath(package,"julia"),joinpath(package,"julia","wireplumber_cli.jl"),
+        "install","--package",String(package),"--destination",joinpath(runtime,"installed"),
+        "--pipewire-prefix","/opt/pipewireao"]
 end
 
 function run_stage(package,output,runtime,recipe,stage;frames=nothing,batches=nothing,
@@ -441,9 +443,8 @@ function run_stage(package,output,runtime,recipe,stage;frames=nothing,batches=no
     command=stage_command(package,runtime;owner_preparation_timeout_seconds)
     batches===nothing || frames===nothing || throw(ArgumentError("frames and batches are mutually exclusive"))
     normalized=batches===nothing ? nothing : validate_batches(batches)
-    profile=nothing
+    profile=read_json(joinpath(package,"provenance.json"))["profile"]
     if frames!==nothing || normalized!==nothing
-        profile=read_json(joinpath(package,"provenance.json"))["profile"]
         _,payload_bytes=capture_contract(profile)
         if normalized!==nothing
             profile=="copper" || throw(ArgumentError("batches require Copper profile"))
@@ -457,122 +458,127 @@ function run_stage(package,output,runtime,recipe,stage;frames=nothing,batches=no
     stage_started=time_ns()
     deadline=Int128(stage_started)+Int128(recipe["stage_timeout_seconds"])*1_000_000_000
     mkpath(output)
-    result=Dict{String,Any}("stage"=>stage,"run_argv"=>command,
+    result=Dict{String,Any}("stage"=>stage,"install_argv"=>command,
         "owner_preparation_timeout_seconds"=>owner_preparation_timeout_seconds,
-        "restoration_confirmed"=>false,"release_confirmed"=>false,"shutdown_confirmed"=>false,
+        "restoration_confirmed"=>false,"release_confirmed"=>false,
+        "shutdown_confirmed"=>false,"cleanup_confirmed"=>false,
         "timing_ns"=>Dict{String,Any}(name=>nothing for name in
             ("startup_readiness","acquisition","public_shutdown","total_stage")),
         "timing_confirmed"=>Dict{String,Any}(name=>false for name in
             ("startup_readiness","acquisition","public_shutdown")))
     normalized===nothing || (result["captures"]=Any[])
     endpoint=nothing
-    process=nothing
+    handle=nothing
     acquisition_started=nothing
     shutdown_started=nothing
     startup_started=time_ns()
     try
-        open(joinpath(output,"deployment.log"),"w") do log
-            process=run(pipeline(Cmd(command),stdout=log,stderr=log);wait=false)
-            ready=Deployment.wait_state(runtime,s->get(s,"phase",nothing)=="running";
-                timeout=stage_remaining(deadline,recipe["stage_timeout_seconds"]),process=process)
-            isint(ready["pid"]) && ready["pid"]==getpid(process) ||
-                throw(ArgumentError("runtime state belongs to another launcher"))
-            ready_ns=time_ns()
-            result["timing_ns"]["startup_readiness"]=ready_ns-startup_started
-            result["timing_confirmed"]["startup_readiness"]=true
-            acquisition_started=ready_ns
-            instance=ready["private_runtime"]
-            result["ready"]=ready
-            result["startup_report"]=read_json(joinpath(instance,"simulator-result.json"))
-            if frames!==nothing || normalized!==nothing
-                limit=Int(recipe["request_timeout_ns"])
-                endpoint=endpoint_connect(endpoint_binding(ready),1,
-                    Int(floor(stage_remaining(deadline,limit/1e9)*1e9)))
-                request=(action,expected)->begin
-                    endpoint.timeout_ns=max(1,Int(floor(stage_remaining(deadline,limit/1e9)*1e9)))
-                    request!(endpoint,action,expected)
-                end
-                held=request(Dict("kind"=>"hold"),"held")
-                commands=normalized===nothing ? [Dict("figure"=>recipe["reference"],"frames"=>frames)] : normalized
-                previous=held["cursor"]
-                captures=normalized===nothing ? Any[] : result["captures"]
-                normalized===nothing || mkdir(joinpath(output,"captured"))
-                for (index,batch) in enumerate(commands)
-                    probe=index-1
-                    adopted=request(Dict("kind"=>"adopt","probe"=>probe,"figure"=>batch["figure"]),"adopted")
-                    !adopted["clipped"] && same_figure(adopted["figure"],batch["figure"]) &&
-                        adopted["cursor"]==previous || throw(ArgumentError("figure adoption clipped or moved cursor"))
-                    settled=request(Dict("kind"=>"settle","probe"=>probe,"after"=>adopted["cursor"],
-                                         "rule"=>recipe["settling"]),"settled")
-                    capture=request(Dict("kind"=>"capture","probe"=>probe,"after"=>settled["cursor"],
-                                         "frames"=>batch["frames"]),"captured")
-                    serial=endpoint.serial
-                    push!(captures,Dict("probe"=>probe,"serial"=>serial,"figure"=>batch["figure"],
-                        "settled_cursor"=>settled["cursor"],"completion"=>capture))
-                    if normalized!==nothing
-                        copy_tree(joinpath(instance,"captured",string(serial)),joinpath(output,"captured",string(serial)))
-                        verify_capture(joinpath(output,"captured"),capture;run=1,serial,stage,
-                            frames=batch["frames"],after=settled["cursor"],startup=result["startup_report"],profile,probe)
-                        stage_remaining(deadline,recipe["stage_timeout_seconds"])
-                        previous=capture["cursor"]
-                    end
-                end
-                restored=request(Dict("kind"=>"restore","figure"=>recipe["reference"],
-                                      "rule"=>recipe["settling"]),"restored")
-                !restored["clipped"] && same_figure(restored["figure"],recipe["reference"]) ||
-                    throw(ArgumentError("reference restoration clipped or changed"))
-                result["restoration_confirmed"]=true
-                request(Dict("kind"=>"release"),"released")
-                result["release_confirmed"]=true
-                result["timing_ns"]["acquisition"]=time_ns()-acquisition_started
-                result["timing_confirmed"]["acquisition"]=true
-                result["requests"]=endpoint.records
-                close(endpoint)
-                endpoint=nothing
-                if normalized===nothing
-                    copy_tree(joinpath(instance,"captured"),joinpath(output,"captured"))
-                    item=only(captures)
-                    verify_capture(joinpath(output,"captured"),item["completion"];run=1,serial=4,stage,
-                        frames,after=item["settled_cursor"],startup=result["startup_report"],profile,probe=0)
-                    result["capture"]=item["completion"]
-                end
-            else
-                binding=endpoint_binding(ready)
-                argv=[joinpath(package,"bin","rtc-calibrate"),"--remote",binding.remote,
-                      "--node",binding.node,"--owner-pid",string(binding.owner_pid),
-                      "--owner-instance",string(binding.instance),
-                      "--plan",joinpath(dirname(output),"interaction-plan.json")]
-                response=run_checked(argv;timeout=stage_remaining(deadline,recipe["stage_timeout_seconds"]),
-                    maximum_output_bytes=interaction_result_output_limit_bytes(joinpath(dirname(output),"interaction-plan.json")))
-                write(joinpath(output,"rtc-calibrate.json"),response.stdout)
-                write(joinpath(output,"rtc-calibrate.stderr"),response.stderr)
-                response.returncode==0 || throw(ErrorException("rtc-calibrate exited $(response.returncode)"))
-                matrix=Common.parse_json(response.stdout)
-                matrix["phase"]=="complete" && matrix["failure"]===nothing &&
-                    matrix["recovery_failure"]===nothing && matrix["restoration_confirmed"]===true &&
-                    matrix["resume_permitted"]===true || throw(ArgumentError("interaction stage incomplete"))
-                result["restoration_confirmed"]=result["release_confirmed"]=true
-                result["timing_ns"]["acquisition"]=time_ns()-acquisition_started
-                result["timing_confirmed"]["acquisition"]=true
+        startup_deadline=min(Float64(deadline)/1e9,
+            time_ns()/1e9+owner_preparation_timeout_seconds+300)
+        handle=WirePlumberSessionRuntime.start!(package,runtime;
+            deadline=startup_deadline)
+        result["unit_start_argv"]=["systemctl","--user","start",handle.unit]
+        ready=WirePlumberSessionRuntime.running!(handle;
+            deadline=min(Float64(deadline)/1e9,time_ns()/1e9+45))
+        ready_ns=time_ns()
+        result["timing_ns"]["startup_readiness"]=ready_ns-startup_started
+        result["timing_confirmed"]["startup_readiness"]=true
+        acquisition_started=ready_ns
+        instance=ready["private_runtime"]
+        result["ready"]=ready
+        result["startup_report"]=read_json(joinpath(instance,"simulator-result.json"))
+        if frames!==nothing || normalized!==nothing
+            limit=Int(recipe["request_timeout_ns"])
+            endpoint=endpoint_connect(endpoint_binding(ready),1,
+                Int(floor(stage_remaining(deadline,limit/1e9)*1e9)))
+            request=(action,expected)->begin
+                endpoint.timeout_ns=max(1,Int(floor(stage_remaining(deadline,limit/1e9)*1e9)))
+                request!(endpoint,action,expected)
             end
-            # The instance is removed by public shutdown. Pause admission and
-            # retain the completed owner's report while it is still available.
-            stopped=Deployment.control(ready["control_locator"],["session-stop"];
-                timeout=stage_remaining(deadline,8.0))
-            stopped["ok"]===true || throw(ArgumentError("stage admission pause failed"))
-            source=wait_completed_source(ready["control_locator"];deadline=Float64(deadline)/1e9)
-            report_path=joinpath(instance,"simulator-result.json")
-            completed_report=completed_owner_report(report_path,source,result["startup_report"])
-            result["completed_report"]=completed_report
-            write_json(joinpath(output,"completed-owner-report.json"),completed_report)
-            shutdown_started=time_ns()
-            final=Deployment.shutdown(runtime,process;timeout=stage_remaining(deadline,55.0))
-            result["shutdown_confirmed"]=true
-            result["final"]=final
-            result["timing_ns"]["public_shutdown"]=time_ns()-shutdown_started
-            result["timing_confirmed"]["public_shutdown"]=true
-            stage_remaining(deadline,recipe["stage_timeout_seconds"])
+            held=request(Dict("kind"=>"hold"),"held")
+            commands=normalized===nothing ? [Dict("figure"=>recipe["reference"],"frames"=>frames)] : normalized
+            previous=held["cursor"]
+            captures=normalized===nothing ? Any[] : result["captures"]
+            normalized===nothing || mkdir(joinpath(output,"captured"))
+            for (index,batch) in enumerate(commands)
+                probe=index-1
+                adopted=request(Dict("kind"=>"adopt","probe"=>probe,"figure"=>batch["figure"]),"adopted")
+                !adopted["clipped"] && same_figure(adopted["figure"],batch["figure"]) &&
+                    adopted["cursor"]==previous || throw(ArgumentError("figure adoption clipped or moved cursor"))
+                settled=request(Dict("kind"=>"settle","probe"=>probe,"after"=>adopted["cursor"],
+                                     "rule"=>recipe["settling"]),"settled")
+                capture=request(Dict("kind"=>"capture","probe"=>probe,"after"=>settled["cursor"],
+                                     "frames"=>batch["frames"]),"captured")
+                serial=endpoint.serial
+                push!(captures,Dict("probe"=>probe,"serial"=>serial,"figure"=>batch["figure"],
+                    "settled_cursor"=>settled["cursor"],"completion"=>capture))
+                if normalized!==nothing
+                    copy_tree(joinpath(instance,"captured",string(serial)),joinpath(output,"captured",string(serial)))
+                    verify_capture(joinpath(output,"captured"),capture;run=1,serial,stage,
+                        frames=batch["frames"],after=settled["cursor"],startup=result["startup_report"],profile,probe)
+                    stage_remaining(deadline,recipe["stage_timeout_seconds"])
+                    previous=capture["cursor"]
+                end
+            end
+            restored=request(Dict("kind"=>"restore","figure"=>recipe["reference"],
+                                  "rule"=>recipe["settling"]),"restored")
+            !restored["clipped"] && same_figure(restored["figure"],recipe["reference"]) ||
+                throw(ArgumentError("reference restoration clipped or changed"))
+            result["restoration_confirmed"]=true
+            request(Dict("kind"=>"release"),"released")
+            result["release_confirmed"]=true
+            result["timing_ns"]["acquisition"]=time_ns()-acquisition_started
+            result["timing_confirmed"]["acquisition"]=true
+            result["requests"]=endpoint.records
+            close(endpoint)
+            endpoint=nothing
+            if normalized===nothing
+                copy_tree(joinpath(instance,"captured"),joinpath(output,"captured"))
+                item=only(captures)
+                verify_capture(joinpath(output,"captured"),item["completion"];run=1,serial=4,stage,
+                    frames,after=item["settled_cursor"],startup=result["startup_report"],profile,probe=0)
+                result["capture"]=item["completion"]
+            end
+        else
+            binding=endpoint_binding(ready)
+            argv=[joinpath(package,"bin","rtc-calibrate"),"--remote",binding.remote,
+                  "--node",binding.node,"--owner-pid",string(binding.owner_pid),
+                  "--owner-instance",string(binding.instance),
+                  "--plan",joinpath(dirname(output),"interaction-plan.json")]
+            response=run_checked(argv;timeout=stage_remaining(deadline,recipe["stage_timeout_seconds"]),
+                maximum_output_bytes=interaction_result_output_limit_bytes(joinpath(dirname(output),"interaction-plan.json")))
+            write(joinpath(output,"rtc-calibrate.json"),response.stdout)
+            write(joinpath(output,"rtc-calibrate.stderr"),response.stderr)
+            response.returncode==0 || throw(ErrorException("rtc-calibrate exited $(response.returncode)"))
+            matrix=Common.parse_json(response.stdout)
+            matrix["phase"]=="complete" && matrix["failure"]===nothing &&
+                matrix["recovery_failure"]===nothing && matrix["restoration_confirmed"]===true &&
+                matrix["resume_permitted"]===true || throw(ArgumentError("interaction stage incomplete"))
+            result["restoration_confirmed"]=result["release_confirmed"]=true
+            result["timing_ns"]["acquisition"]=time_ns()-acquisition_started
+            result["timing_confirmed"]["acquisition"]=true
         end
+        # Pause through WirePlumber and retain the owner's completed report
+        # before systemd revokes the private core and external owners.
+        stopped=WirePlumberSessionRuntime.control!(handle,
+            RunnerCommands.parse(["session-stop"]);
+            deadline=time_ns()/1e9+stage_remaining(deadline,8.0))
+        stopped["ok"]===true && stopped["state"]=="Ready" ||
+            throw(ArgumentError("stage admission pause failed"))
+        source=wait_completed_source(ready,profile;deadline=Float64(deadline)/1e9)
+        report_path=joinpath(instance,"simulator-result.json")
+        completed_report=completed_owner_report(report_path,source,result["startup_report"])
+        result["completed_report"]=completed_report
+        write_json(joinpath(output,"completed-owner-report.json"),completed_report)
+        shutdown_started=time_ns()
+        final=WirePlumberSessionRuntime.shutdown!(handle;
+            deadline=time_ns()/1e9+stage_remaining(deadline,320.0))
+        result["shutdown_confirmed"]=true
+        result["cleanup_confirmed"]=true
+        result["final"]=final
+        result["timing_ns"]["public_shutdown"]=time_ns()-shutdown_started
+        result["timing_confirmed"]["public_shutdown"]=true
+        stage_remaining(deadline,recipe["stage_timeout_seconds"])
     catch error
         failed=time_ns()
         result["timing_ns"]["startup_readiness"]===nothing && (result["timing_ns"]["startup_readiness"]=failed-startup_started)
@@ -596,15 +602,44 @@ function run_stage(package,output,runtime,recipe,stage;frames=nothing,batches=no
             end
         end
         endpoint===nothing || (result["requests"]=endpoint.records)
-        if process!==nothing && result["release_confirmed"] && !result["shutdown_confirmed"] &&
-                !process_exited(process)
+        if handle!==nothing && handle.shutdown_accepted
             try
-                shutdown_started=time_ns()
-                grace=min(55.0,max(5.0,(deadline-Int128(time_ns()))/1e9))
-                result["final"]=Deployment.shutdown(runtime,process;timeout=grace)
+                result["final"]=WirePlumberSessionRuntime.reconcile_shutdown!(handle;
+                    deadline=time_ns()/1e9+320.0)
                 result["shutdown_confirmed"]=true
-                result["timing_ns"]["public_shutdown"]=time_ns()-shutdown_started
+                result["cleanup_confirmed"]=true
                 result["timing_confirmed"]["public_shutdown"]=true
+            catch cleanup
+                result["cleanup_failure"]=sprint(showerror,cleanup)
+            end
+        elseif handle!==nothing && !handle.stop_attempted
+            try
+                cleanup_deadline=time_ns()/1e9+320.0
+                if handle.shutdown_attempted &&
+                        !SystemdOwners.old_process_exists(handle.main_pid,handle.start_ticks)
+                    result["final"]=WirePlumberSessionRuntime.reconcile_cleanup!(handle;
+                        deadline=cleanup_deadline)
+                else
+                    try
+                        result["final"]=WirePlumberSessionRuntime.stop!(handle;
+                            deadline=cleanup_deadline)
+                    catch stop_error
+                        handle.shutdown_attempted || rethrow()
+                        result["final"]=WirePlumberSessionRuntime.reconcile_cleanup!(handle;
+                            deadline=cleanup_deadline)
+                    end
+                end
+                result["cleanup_confirmed"]=true
+            catch cleanup
+                result["cleanup_failure"]=sprint(showerror,cleanup)
+            end
+        elseif handle!==nothing
+            # A submitted stop may time out after taking effect. Observe its
+            # exact unit and retained cleanup without issuing another stop.
+            try
+                result["final"]=WirePlumberSessionRuntime.reconcile_stop!(handle;
+                    deadline=time_ns()/1e9+320.0)
+                result["cleanup_confirmed"]=true
             catch cleanup
                 result["cleanup_failure"]=sprint(showerror,cleanup)
             end
@@ -614,17 +649,7 @@ function run_stage(package,output,runtime,recipe,stage;frames=nothing,batches=no
         if endpoint!==nothing
             try close(endpoint) catch end
         end
-        if process!==nothing
-            if !process_exited(process)
-                try kill(process,Base.SIGINT) catch end
-                timedwait(() -> process_exited(process),Deployment.CLEANUP_TIMEOUT_SECONDS;pollint=0.01)==:ok ||
-                    (try kill(process,Base.SIGKILL) catch end)
-                timedwait(() -> process_exited(process),5.0;pollint=0.01)
-            end
-            result["launcher_exit"]=process_exited(process) ? process.exitcode : nothing
-        else
-            result["launcher_exit"]=nothing
-        end
+        result["unit"]=handle===nothing ? nothing : handle.unit
         finished=time_ns()
         acquisition_started!==nothing && result["timing_ns"]["acquisition"]===nothing &&
             (result["timing_ns"]["acquisition"]=finished-acquisition_started)
@@ -649,7 +674,7 @@ end
 
 function stage_base(base,output,recipe,stage,background,references,active,aoc_source,prefix;allowed_backends=("cpu",))
     original=read_json(joinpath(base,"provenance.json"))
-    specification=Deployment.profile(joinpath(base,"deployment.conf"),prefix)
+    specification=DeploymentConfiguration.profile(joinpath(base,"deployment.conf"),prefix)
     original["profile"]=="classic" && original["mode"]=="frame" ||
         throw(ArgumentError("Classic campaign requires complete-frame science"))
     backend=validate_simulator_backend(base,specification,original;allowed_backends)
@@ -659,7 +684,7 @@ function stage_base(base,output,recipe,stage,background,references,active,aoc_so
     end
     copy_tree(base,output)
     provenance=deepcopy(original)
-    graph=Deployment.decode(joinpath(output,"graphs","graph.conf.in"),prefix)
+    graph=DeploymentConfiguration.decode(joinpath(output,"graphs","graph.conf.in"),prefix)
     wfs=only(filter(node->node["label"]=="shack-hartmann-image-f32",graph["filter.graph"]["nodes"]))
     bindings=Dict(item["name"]=>item for item in vcat(provenance["parameters"],get(provenance,"construction_parameters",Any[])))
     for (name,payload) in (("background",background),("reference-slopes",references),("active",active))
@@ -688,7 +713,7 @@ function stage_base(base,output,recipe,stage,background,references,active,aoc_so
     descriptor["artifacts"]=Dict(relative=>sha for (relative,sha) in file_identity(output)
         if relative!="deployment.conf")
     write_json(joinpath(output,"deployment.conf"),descriptor)
-    Deployment.profile(joinpath(output,"deployment.conf"),prefix)
+    DeploymentConfiguration.profile(joinpath(output,"deployment.conf"),prefix)
     return output
 end
 
@@ -714,7 +739,7 @@ function campaign(arguments)
     aoc_identity=file_identity(aoc)
     recipe_sha=sha256_file(arguments.recipe)
     binary_identity=Dict(abspath(path)=>sha256_file(regular(path)) for path in
-        (arguments.rtc_binary,arguments.calibration_binary))
+        (arguments.calibration_binary,))
     mkpath(output)
     write_json(joinpath(output,"recipe.json"),recipe)
     background=zeros(UInt8,495616)
@@ -740,7 +765,7 @@ function campaign(arguments)
             frames=frame_key===nothing ? nothing : recipe[frame_key]
             CalibrationExport.export_package((;base_package=base,output=package,
                 pipewire_prefix=arguments.pipewire_prefix,deployment=true,
-                rtc_binary=arguments.rtc_binary,calibration_binary=arguments.calibration_binary,
+                calibration_binary=arguments.calibration_binary,
                 illumination=stage=="dark" ? "dark" : "lamp",calibration_stage=stage,
                 capture_max_bytes=frames===nothing ? nothing : frames*250252))
             package_identity=file_identity(package)
@@ -774,13 +799,13 @@ function campaign(arguments)
         record["artifacts"]=Dict(basename(path)=>sha256_file(path) for path in
             readdir(output;join=true) if startswith(basename(path),"measured-") && isfile(path))
         record["timing_ns"]=Dict("total_campaign"=>time_ns()-started)
-        Deployment.atomic_record(joinpath(output,"campaign-result.json"),record)
+        DeploymentConfiguration.atomic_record(joinpath(output,"campaign-result.json"),record)
     end
     return joinpath(output,"campaign-result.json")
 end
 
 function main(argv=ARGS)
-    arguments=cli_arguments(argv;required=["base-package","output","recipe","aoc-source","rtc-binary",
+    arguments=cli_arguments(argv;required=["base-package","output","recipe","aoc-source",
         "calibration-binary","runtime"],defaults=(pipewire_prefix="/opt/pipewireao",julia="julia"))
     arguments.pipewire_prefix=="/opt/pipewireao" || throw(ArgumentError("only /opt/pipewireao is supported"))
     println(campaign(arguments))

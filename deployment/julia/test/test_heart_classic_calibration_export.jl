@@ -117,7 +117,7 @@ end
 end
 
 @testset "Classic generated name preserves the public40-character bound" begin
-    D=PipeWireAODeployment.Deployment
+    D=PipeWireAODeployment.DeploymentConfiguration
     mktempdir() do directory
         for name in ("session.conf.in","core.conf.in","client.conf.in")
             write(joinpath(directory,name),"{}\n")

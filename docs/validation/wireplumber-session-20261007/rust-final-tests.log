@@ -1,0 +1,156 @@
+   Compiling pipewireao-rtc v0.1.0 (/tmp/rtc-wireplumber-session-20261007)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.22s
+     Running unittests src/lib.rs (/tmp/rtc-maintenance-target-20261006/debug/deps/pipewireao_rtc-12d3c724da721564)
+
+running 70 tests
+test control::tests::legacy_group_requests_preserve_requested_and_optional_observed_state ... ok
+test control::tests::legacy_generation_queries_preserve_optional_active_and_signed_values ... ok
+test control::tests::legacy_parameter_submission_is_submitted_with_or_without_observation ... ok
+test control::tests::legacy_property_updates_retain_null_observations_and_adoption_outcomes ... ok
+test control::tests::legacy_session_completions_retain_command_specific_capitalization ... ok
+test control::tests::legacy_properties_preserve_all_seven_scalar_variants_and_bits ... ok
+test control::tests::legacy_shutdown_and_group_snapshots_match_golden_json ... ok
+test control::tests::legacy_status_preserves_lifecycle_names_and_unsigned_counters ... ok
+test control::tests::parser_accepts_existing_commands_and_property_transactions ... ok
+test control::tests::parser_bounds_argument_count_and_checked_parameter_shapes ... ok
+test control::tests::parameter_preparation_requires_regular_exact_sized_payload ... ok
+test native_calibration_action_codec::tests::capture_paths_hashes_counts_and_strings_are_bounded ... ok
+test native_calibration_action_codec::tests::cursor_and_exposure_domains_and_times_are_distinct ... ok
+test control::tests::payload_replacement_between_inspection_and_open_is_rejected ... ok
+test native_calibration_action_codec::tests::request_validates_before_encoding_and_preserves_unsigned_bits ... ok
+test native_calibration_action_codec::tests::shared_julia_fixtures_roundtrip_and_reject ... ok
+test native_calibration_action_codec::tests::typed_failure_negative_transport_and_rejection_stay_distinct ... ok
+test native_calibration_endpoint::tests::borrowed_figure_capacity_and_rule_conversion_precede_copy ... ok
+test native_calibration_endpoint::tests::capability_is_bounded_typed_and_preserves_full_serial ... ok
+test native_calibration_endpoint::tests::malformed_capability_containers_reject_before_value_decoding ... ok
+test native_calibration_endpoint::tests::matching_terminal_before_retirement_preserves_release_style_outcome ... ok
+test native_calibration_endpoint::tests::prior_loss_late_reply_conflict_or_science_identity_mismatch_retires ... ok
+test native_calibration_endpoint::tests::typed_failed_action_keeps_correlation_and_known_recovery ... ok
+
+running 1 test
+EXPLICIT_SOCKET requested_accepted=true environment_accepted=false
+test native_connection::tests::explicit_socket_ignores_environment_in_owned_child ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 69 filtered out; finished in 0.00s
+
+test native_connection::tests::explicit_socket_ignores_environment_in_owned_child ... ok
+test native_connection::tests::full_unix_backlog_is_failure_without_wait_or_retry ... ok
+test native_connection::tests::socket_is_nonblocking_and_failure_does_not_fall_back ... ok
+test native_control_codec::tests::all_six_scalar_array_kinds_roundtrip_with_empty_arrays ... ok
+test native_calibration_action_codec::tests::exact_collect_capacity_matches_serialization_at_boundary ... ok
+test native_control_codec::tests::bounds_include_the_entire_pod_and_require_explicit_calibration ... ok
+test native_control_codec::tests::exact_header_arity_order_and_payload_container ... ok
+test native_control_codec::tests::malformed_lengths_truncation_flags_names_and_scalar_widths ... ok
+test native_control_codec::tests::completion_and_rejection_sentinels_are_exact ... ok
+test native_control_codec::tests::outer_children_and_reply_result_types_are_exact ... ok
+test native_control_codec::tests::payload_array_and_string_preflight_prevents_decoder_panics ... ok
+test native_control_codec::tests::payload_depth_is_checked_before_recursive_decode_or_encode ... ok
+test native_control_codec::tests::request_and_reply_owned_roundtrip ... ok
+test native_control_codec::tests::serial_bit_patterns_and_required_positive_identity ... ok
+test native_runner_codec::tests::every_command_round_trips_exactly_without_artifact_io ... ok
+test native_runner_codec::tests::exact_operation_arity_types_and_names_are_required ... ok
+test native_runner_codec::tests::nonfinite_and_duplicate_properties_are_rejected ... ok
+test native_runner_codec::tests::oversized_parameter_descriptors_fail_before_variable_input_diagnostics ... ok
+test native_runner_codec::tests::parameter_extent_and_native_envelope_bounds_are_enforced ... ok
+test native_runner_codec::tests::property_transactions_are_canonical_and_bounded ... ok
+test native_runner_codec::tests::scalar_pods_preserve_all_seven_types_and_numeric_bits ... ok
+test native_runner_result::tests::active_property_reply_requires_the_existing_producer_conditions ... ok
+test native_runner_result::tests::duplicate_catalogs_and_invalid_scalar_rows_are_rejected ... ok
+test native_runner_result::tests::empty_catalog_shapes_round_trip ... ok
+test native_runner_result::tests::every_lifecycle_and_unsigned_counter_boundary_round_trips ... ok
+test native_runner_result::tests::every_successful_operation_round_trips_exact_typed_results ... ok
+test native_runner_result::tests::exact_borrowed_capacity_matches_common_encoder_at_padding_boundary ... ok
+test native_runner_codec::tests::borrowed_preflight_matches_native_padding_at_the_byte_limit ... ok
+test native_runner_result::tests::failed_terminal_completion_and_admission_rejection_remain_distinct ... ok
+test native_runner_result::tests::header_sentinel_truncation_trailing_bytes_and_wrong_error_shapes_reject ... ok
+test native_runner_result::tests::optional_generation_shapes_round_trip ... ok
+test native_runner_result::tests::oversized_borrowed_data_is_rejected_before_payload_construction ... ok
+test native_runner_result::tests::partial_generations_and_duplicate_observations_are_rejected ... ok
+test native_runner_result::tests::exact_operation_outcome_lifecycle_and_arity_are_required ... ok
+test native_session_client::tests::exact_identity_including_full_unsigned_serial_and_query_token ... ok
+test native_session_client::tests::session_lifecycle_uses_direct_authority_states ... ok
+test native_session_discovery::tests::absent_registry_is_not_created_and_diagnostics_are_utf8_bounded ... ok
+test native_runner_result::tests::snapshots_preserve_all_float_and_double_bits_including_nan ... ok
+test native_session_discovery::tests::record_extent_and_closed_fields ... ok
+test native_session_transport::tests::earlier_retirement_fatal_evidence_and_late_terminal_do_not_complete ... ok
+test native_session_transport::tests::malformed_and_conflicting_native_evidence_is_rejected ... ok
+test native_session_transport::tests::matching_terminal_precedes_later_retirement ... ok
+test native_session_transport::tests::rendering_reports_the_direct_session_only ... ok
+test native_session_discovery::tests::listing_is_read_only_and_rejects_special_modes_links_and_capacity ... ok
+test native_session_transport::tests::uuid_is_bounded_canonical_and_nonzero ... ok
+test session_cli::tests::direct_session_cli_requires_explicit_selection_and_command ... ok
+test native_session_transport::tests::saved_locator_is_bounded_hints_only ... ok
+
+test result: ok. 70 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running unittests src/main.rs (/tmp/rtc-maintenance-target-20261006/debug/deps/pipewireao_rtc-fab82f79c53e2024)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/rtc-calibrate.rs (/tmp/rtc-maintenance-target-20261006/debug/deps/rtc_calibrate-19eee3c61615e88d)
+
+running 5 tests
+test tests::aborted_journal_identifies_first_collect_or_second_adopt ... ok
+test tests::evidence_charges_nested_objects_and_exposure_temporaries ... ok
+test tests::evidence_preflight_preserves_existing_file_and_overflow_is_reported ... ok
+test tests::explicit_binding_is_required_and_legacy_endpoint_has_no_fallback ... ok
+test tests::complete_native_wire_plan_preflight_precedes_connection_and_hold ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/calibration.rs (/tmp/rtc-maintenance-target-20261006/debug/deps/calibration-95c17bea3e3f3a6a)
+
+running 19 tests
+test acquisition_deadlines_restore_and_recovery_deadlines_fault ... ok
+test cancellation_before_settling_preserves_the_declared_restoration_rule ... ok
+test cancellation_is_idempotent_and_preserves_recovery_barriers ... ok
+test clipped_wrong_or_unrelated_adoption_requires_reference_restoration ... ok
+test current_completion_at_deadline_cannot_complete_acquisition ... ok
+test held_sequence_zero_is_valid_but_unadvanceable_or_overflowing_cursors_restore ... ok
+test incorrect_or_clipped_reference_restoration_faults_without_release ... ok
+test invalid_timeouts_settling_ranges_and_run_identity_reject_before_submission ... ok
+test overlapping_overflowing_and_oversized_capacity_batches_are_rejected ... ok
+test oversized_plan_probe_spare_capacity_is_rejected_without_touching_spare_storage ... ok
+test invalid_figures_dimensions_cardinalities_and_retained_sizes_reject_plans ... ok
+test response_batches_require_exact_finite_post_settling_exposures ... ok
+test settling_uses_declared_model_time_or_exact_discard_count ... ok
+test synchronous_driver_uses_typed_completions_without_sleep_or_poll_success ... ok
+test synchronous_early_expiration_or_bounded_unrelated_events_require_recovery ... ok
+test synchronous_recovery_errors_fault_before_returning_and_keep_hold ... ok
+test synchronous_submit_and_receive_errors_restore_without_retrying_work ... ok
+test two_probes_publish_responses_only_after_restoration_and_release ... ok
+test unrelated_duplicate_and_wrong_kind_events_preserve_pending_deadline ... ok
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/calibration_cli.rs (/tmp/rtc-maintenance-target-20261006/debug/deps/calibration_cli-a781f2f91ade32fd)
+
+running 3 tests
+test invalid_saved_plan_is_rejected_before_native_connect ... ok
+test retired_endpoint_argument_is_rejected_before_plan_read_or_connection ... ok
+test oversized_saved_plan_is_rejected_before_native_connect ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/retired_ingress.rs (/tmp/rtc-maintenance-target-20261006/debug/deps/retired_ingress-772021961929bee6)
+
+running 2 tests
+test help_documents_only_direct_session_commands ... ok
+test direct_session_cli_rejects_missing_uuid_before_accessing_runtime_directory ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests examples/native_control_envelope_proof.rs (/tmp/rtc-maintenance-target-20261006/debug/examples/native_control_envelope_proof-ceb640544e090d6b)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests examples/native_filter_proof.rs (/tmp/rtc-maintenance-target-20261006/debug/examples/native_filter_proof-ba68f82e18b92b14)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

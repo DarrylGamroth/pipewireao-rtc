@@ -1,0 +1,30 @@
+{
+  "unit": "pipewireao-session@wf-0710.service",
+  "invocation": "ec6dc3f832c24f6fb79507ffb1f2ec31",
+  "session": "16eac4ad-947f-4ca1-aef9-5a4d440cbf66",
+  "fault_injection": "SIGKILL exact recorded parameter owner MainPID",
+  "phase_before": "Ready after512complete",
+  "status": {
+    "endpoint_instance": 2198432405374112,
+    "error": null,
+    "id": "535",
+    "initial_state": "Fault",
+    "label": "rtc-wp-session-fgn-20261007",
+    "native_token": 535,
+    "ok": true,
+    "owner_pid": 792520,
+    "profile": "pipewireao.rtc.session/1",
+    "result": {
+      "discarded_buffers": 0,
+      "discarded_by_sink": {},
+      "lifecycle_state": "Fault",
+      "outcome": "observed",
+      "owned_links": 0,
+      "owned_nodes": 0,
+      "running": false
+    },
+    "session_id": "16eac4ad-947f-4ca1-aef9-5a4d440cbf66",
+    "state": "Fault",
+    "version": 1
+  }
+}

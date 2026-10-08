@@ -12,10 +12,10 @@ const C=PipeWireAODeployment.Common
             "placement"=>Dict("core"=>placement,"rtc"=>placement),"owners"=>[],"environment"=>Dict(),
             "artifacts"=>Dict("fixture.conf"=>C.sha256_file(asset)),"cpu-latency-us"=>nothing)
         path=joinpath(root,"deployment.conf");C.write_json(path,specification)
-        @test_throws PipeWireAODeployment.Deployment.DeploymentError PipeWireAODeployment.Deployment.profile(path,"/opt/pipewireao")
+        @test_throws PipeWireAODeployment.DeploymentConfiguration.DeploymentError PipeWireAODeployment.DeploymentConfiguration.profile(path,"/opt/pipewireao")
         for backend in ("cpu","cuda")
             specification["name"]=X.deployment_name("copper",backend);C.write_json(path,specification)
-            actual=PipeWireAODeployment.Deployment.profile(path,"/opt/pipewireao")
+            actual=PipeWireAODeployment.DeploymentConfiguration.profile(path,"/opt/pipewireao")
             @test actual["name"]=="copper-heart-$backend-correction"
             @test ncodeunits(actual["name"])<=40
         end

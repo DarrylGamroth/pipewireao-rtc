@@ -1,0 +1,24 @@
+[Unit]
+Description=WirePlumber-owned PipeWireAO RTC session %i
+
+[Service]
+Type=exec
+ExecStartPre=@LAUNCHER@ prepare --package @PACKAGE@ --prefix @PIPEWIRE_PREFIX@ --unit %n --launcher @LAUNCHER@ --runtime-root %t/pipewireao-session-%i
+EnvironmentFile=-%t/pipewireao-session-%i/current.env
+ExecStart=@WIREPLUMBER@ -c ${WIREPLUMBER_CONFIG} -p ao-rtc
+ExecStartPost=@LAUNCHER@ publish --package @PACKAGE@ --prefix @PIPEWIRE_PREFIX@ --unit %n --runtime-root %t/pipewireao-session-%i
+ExecStopPost=@LAUNCHER@ cleanup --invocation ${INVOCATION_ID} --runtime-root %t/pipewireao-session-%i --source-role @SOURCE_ROLE@
+RuntimeDirectory=pipewireao-session-%i
+RuntimeDirectoryMode=0700
+RuntimeDirectoryPreserve=yes
+UMask=0077
+LimitRTPRIO=95
+LimitMEMLOCK=4294967296
+CPUAffinity=@CPUS@
+KillMode=control-group
+TimeoutStartSec=300
+TimeoutStopSec=300
+Restart=no
+
+[Install]
+WantedBy=default.target

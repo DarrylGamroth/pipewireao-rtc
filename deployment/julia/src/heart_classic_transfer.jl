@@ -1,6 +1,6 @@
 """Trusted admission and cold replay of the reviewed finite Classic native transfer."""
 module HeartClassicTransfer
-using ..Common, ..CalibrationCampaign, ..Deployment, ..HeartCalibrationExport, ..ScienceExport
+using ..Common, ..CalibrationCampaign, ..DeploymentConfiguration, ..HeartCalibrationExport, ..ScienceExport
 const D=parentmodule(@__MODULE__)
 const C=Common
 const RUNNER_SHA="417395f9685f0ea025e0dc80f226edad63ee1f3932f83e699a08af5a4bfbe9c0"
@@ -41,7 +41,7 @@ function admit(package,evidence,lifecycle)
     # This immutable historical package is replay input, already bound to its
     # actual launch/preparation hashes above. Validate its original export seal
     # before loading a helper; fresh exports and runtime admission stay strict.
-    specification=D.Deployment.profile(joinpath(package,"deployment.conf"),"/opt/pipewireao";
+    specification=D.DeploymentConfiguration.profile(joinpath(package,"deployment.conf"),"/opt/pipewireao";
         legacy_export_input=true)
     check(specification["artifacts"]==Dict(name=>hash for (name,hash) in files if name!="deployment.conf"),
         "descriptor does not seal every actual package file")

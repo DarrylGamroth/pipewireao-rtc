@@ -1,0 +1,15 @@
+Precompiling packages...
+   3687.7 ms  ✓ PipeWireAODeployment
+  1 dependency successfully precompiled in 4 seconds. 32 already precompiled.
+Test Summary:                               | Pass  Total  Time
+Native Quit attempt and completion ordering |    8      8  0.6s
+Test Summary:                       | Pass  Total  Time
+Classic recipe and method admission |   22     22  1.7s
+Test Summary:                         | Pass  Total  Time
+Batch admission precedes stage output |   10     10  8.8s
+Test Summary:                             | Pass  Total  Time
+Capture association and payload integrity |   22     22  2.1s
+Test Summary:                                       | Pass  Total  Time
+Campaign requires an explicit native action binding |    6      6  0.4s
+Test Summary:                                           | Pass  Total  Time
+Interaction result output bound follows the sealed plan |    8      8  1.9s

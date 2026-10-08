@@ -10,7 +10,7 @@ const Pod = PipeWireAO.Pod
 const SESSION_A = "01234567-89ab-cdef-0123-456789abcdef"
 const SESSION_B = "11234567-89ab-cdef-0123-456789abcdef"
 struct StatusVerifier
-    status::Discovery.FreshSupervisorStatus
+    status::Discovery.FreshSessionStatus
 end
 (verifier::StatusVerifier)(record::Discovery.SessionRecord) = verifier.status
 current_pid() = UInt32(getpid())
@@ -90,9 +90,9 @@ directory(root) = Discovery.registry_directory(root)
             @test all(item -> item.record.label == "Copper", listed)
             @test all(item -> occursin("has not been queried", item.detail), listed)
 
-            fresh = Discovery.FreshSupervisorStatus(SESSION_A, current_pid(), Int64(100),
+            fresh = Discovery.FreshSessionStatus(SESSION_A, current_pid(), Int64(100),
                 record(SESSION_A).remote, "rtc.supervisor.copper", UInt32(9), UInt64(200), Int64(1), :stopped,
-                :deployment_supervisor)
+                :wireplumber_session)
             selected = Discovery.select_session(only(filter(
                 item -> item.record.session_id == SESSION_A, listed)), StatusVerifier(fresh))
             @test selected isa Discovery.SelectedSession
@@ -105,25 +105,25 @@ directory(root) = Discovery.registry_directory(root)
                 item -> item.record.session_id == SESSION_B, listed)), _ -> error("endpoint inaccessible"))
             @test inaccessible.verification === Discovery.Inaccessible
             @test inaccessible.record.session_id == SESSION_B
-            replaced_status = Discovery.FreshSupervisorStatus(SESSION_B, current_pid(), Int64(101),
+            replaced_status = Discovery.FreshSessionStatus(SESSION_B, current_pid(), Int64(101),
                 record(SESSION_B).remote, "rtc.supervisor.copper", UInt32(10), UInt64(201), Int64(2), :ready,
-                :deployment_supervisor)
+                :wireplumber_session)
             replaced = Discovery.select_session(only(filter(
                 item -> item.record.session_id == SESSION_B, listed)), _ -> replaced_status)
             @test replaced.verification === Discovery.Replaced
-            wrong_remote = Discovery.FreshSupervisorStatus(SESSION_B, current_pid(), Int64(100),
+            wrong_remote = Discovery.FreshSessionStatus(SESSION_B, current_pid(), Int64(100),
                 "/run/user/$(Discovery._uid())/other-remote", "rtc.supervisor.copper",
-                UInt32(11), UInt64(202), Int64(3), :ready, :deployment_supervisor)
+                UInt32(11), UInt64(202), Int64(3), :ready, :wireplumber_session)
             remote_mismatch = Discovery.select_session(only(filter(
                 item -> item.record.session_id == SESSION_B, listed)), _ -> wrong_remote)
             @test remote_mismatch.verification === Discovery.Replaced
-            runner_status = Discovery.FreshSupervisorStatus(SESSION_B, current_pid(), Int64(100),
+            runner_status = Discovery.FreshSessionStatus(SESSION_B, current_pid(), Int64(100),
                 record(SESSION_B).remote, "rtc.supervisor.copper", UInt32(12), UInt64(203),
                 Int64(4), :ready, :standalone_runner)
             wrong_authority = Discovery.select_session(only(filter(
                 item -> item.record.session_id == SESSION_B, listed)), _ -> runner_status)
             @test wrong_authority.verification === Discovery.Replaced
-            @test occursin("standalone runner", wrong_authority.detail)
+            @test occursin("not a session authority", wrong_authority.detail)
 
             new_incarnation = Discovery.SessionRecord("Copper", SESSION_A,
                 current_pid(), Int64(101), first.remote, first.node_name)
@@ -159,12 +159,12 @@ directory(root) = Discovery.registry_directory(root)
             linked = joinpath(root, "runtime-link")
             symlink(root, linked)
             @test_throws ArgumentError directory(linked)
-            @test_throws ArgumentError Discovery.FreshSupervisorStatus(SESSION_A,
+            @test_throws ArgumentError Discovery.FreshSessionStatus(SESSION_A,
                 current_pid(), Int64(1), "/run/user/$(Discovery._uid())/pw", "rtc.supervisor", UInt32(2), UInt64(1), Int64(1),
-                :running, :deployment_supervisor)
-            @test_throws ArgumentError Discovery.FreshSupervisorStatus(SESSION_A,
+                :unknown, :wireplumber_session)
+            @test_throws ArgumentError Discovery.FreshSessionStatus(SESSION_A,
                 current_pid(), Int64(1), "/run/user/$(Discovery._uid())/pw", "rtc.supervisor", UInt32(2), UInt64(1), Int64(0),
-                :ready, :deployment_supervisor)
+                :ready, :wireplumber_session)
         end
 
         mktempdir() do root

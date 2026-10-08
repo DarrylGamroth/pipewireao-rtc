@@ -1,0 +1,3020 @@
+[
+  {
+    "id": 0,
+    "type": "PipeWire:Interface:Core",
+    "version": 4,
+    "permissions": [ "r", "x", "m" ],
+    "info": {
+      "cookie": 3267816488,
+      "user-name": "dgamroth",
+      "host-name": "rtc-devel",
+      "version": "1.7.0",
+      "name": "rtc-1c10460020d2",
+      "change-mask": [ "props" ],
+      "props": {
+        "application.language": "en_US.UTF-8",
+        "application.name": "pipewire-ao",
+        "application.process.binary": "pipewire-ao",
+        "application.process.host": "rtc-devel",
+        "application.process.id": 775241,
+        "application.process.user": "dgamroth",
+        "clock.power-of-two-quantum": true,
+        "config.name": "daemon.conf",
+        "context.data-loops": "[\n      {\n        \"loop.name\": \"rtc-data-loop\",\n        \"thread.name\": \"rtc-data-loop\",\n        \"loop.class\": [\n          \"data.rt\"\n        ],\n        \"loop.idle\": \"eventfd\",\n        \"loop.rt-prio\": 83,\n        \"thread.affinity\": [\n          2\n        ]\n      }\n    ]",
+        "core.daemon": true,
+        "core.name": "rtc-1c10460020d2",
+        "cpu.max-align": 32,
+        "default.clock.max-quantum": 2048,
+        "default.clock.min-quantum": 1,
+        "default.clock.quantum": 1024,
+        "default.clock.quantum-floor": 1,
+        "default.clock.quantum-limit": 8192,
+        "default.clock.rate": 48000,
+        "default.video.height": 480,
+        "default.video.rate.denom": 1,
+        "default.video.rate.num": 25,
+        "default.video.width": 640,
+        "library.use-fallback": false,
+        "link.max-buffers": 64,
+        "log.level": 2,
+        "mem.allow-mlock": true,
+        "mem.mlock-all": false,
+        "mem.warn-mlock": false,
+        "object.id": 0,
+        "object.serial": 0,
+        "settings.check-quantum": false,
+        "settings.check-rate": false
+      }
+    }
+  },
+  {
+    "id": 1,
+    "type": "PipeWire:Interface:Module",
+    "version": 3,
+    "permissions": [ "r", "m" ],
+    "info": {
+      "name": "libpipewire-module-rt",
+      "filename": "/tmp/pwao-linktrace/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-rt.so",
+      "args": "{\n        \"rt.prio\": 83,\n        \"rtportal.enabled\": false,\n        \"rtkit.enabled\": false\n      }",
+      "change-mask": [ "props" ],
+      "props": {
+        "module.author": "Wim Taymans <wim.taymans@gmail.com>",
+        "module.description": "Use realtime thread scheduling, falling back to RTKit",
+        "module.name": "libpipewire-module-rt",
+        "module.usage": "( nice.level=<priority: default 20(don't change)> ) ( rt.prio=<priority: default 83> ) ( rt.time.soft=<in usec: default -1> ) ( rt.time.hard=<in usec: default -1> ) ( rlimits.enabled=<default true> ) ( rtportal.enabled=<default true> ) ( rtkit.enabled=<default true> ) ( uclamp.min=<default 0> ) ( uclamp.max=<default 1024> )",
+        "module.version": "1.7.0",
+        "object.id": 1,
+        "object.serial": 1,
+        "rt.prio": 83,
+        "rtkit.enabled": false,
+        "rtportal.enabled": false
+      }
+    }
+  },
+  {
+    "id": 2,
+    "type": "PipeWire:Interface:Module",
+    "version": 3,
+    "permissions": [ "r", "m" ],
+    "info": {
+      "name": "libpipewire-module-scheduler-v1",
+      "filename": "/tmp/pwao-linktrace/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-scheduler-v1.so",
+      "args": null,
+      "change-mask": [ "props" ],
+      "props": {
+        "module.author": "Wim Taymans <wim.taymans@proton.me>",
+        "module.description": "Implement the Scheduler V1",
+        "module.name": "libpipewire-module-scheduler-v1",
+        "module.usage": null,
+        "module.version": "1.7.0",
+        "object.id": 2,
+        "object.serial": 2
+      }
+    }
+  },
+  {
+    "id": 4,
+    "type": "PipeWire:Interface:SecurityContext",
+    "version": 3,
+    "permissions": [ "r", "w", "x" ],
+    "props": {
+      "object.serial": 4
+    }
+  },
+  {
+    "id": 3,
+    "type": "PipeWire:Interface:Module",
+    "version": 3,
+    "permissions": [ "r", "m" ],
+    "info": {
+      "name": "libpipewire-module-protocol-native",
+      "filename": "/tmp/pwao-linktrace/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-protocol-native.so",
+      "args": null,
+      "change-mask": [ "props" ],
+      "props": {
+        "module.author": "Wim Taymans <wim.taymans@gmail.com>",
+        "module.description": "Native protocol using unix sockets",
+        "module.name": "libpipewire-module-protocol-native",
+        "module.version": "1.7.0",
+        "object.id": 3,
+        "object.serial": 3
+      }
+    }
+  },
+  {
+    "id": 5,
+    "type": "PipeWire:Interface:Module",
+    "version": 3,
+    "permissions": [ "r", "m" ],
+    "info": {
+      "name": "libpipewire-module-spa-node-factory",
+      "filename": "/tmp/pwao-linktrace/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-spa-node-factory.so",
+      "args": null,
+      "change-mask": [ "props" ],
+      "props": {
+        "module.author": "Wim Taymans <wim.taymans@gmail.com>",
+        "module.description": "Provide a factory to make SPA nodes",
+        "module.name": "libpipewire-module-spa-node-factory",
+        "module.version": "1.7.0",
+        "object.id": 5,
+        "object.serial": 5
+      }
+    }
+  },
+  {
+    "id": 6,
+    "type": "PipeWire:Interface:Factory",
+    "version": 3,
+    "permissions": [ "r", "m" ],
+    "info": {
+      "name": "spa-node-factory",
+      "type": "PipeWire:Interface:Node",
+      "version": 3,
+      "change-mask": [ "props" ],
+      "props": {
+        "factory.name": "spa-node-factory",
+        "factory.type.name": "PipeWire:Interface:Node",
+        "factory.type.version": 3,
+        "module.id": 5,
+        "object.id": 6,
+        "object.serial": 6
+      }
+    }
+  },
+  {
+    "id": 7,
+    "type": "PipeWire:Interface:Module",
+    "version": 3,
+    "permissions": [ "r", "m" ],
+    "info": {
+      "name": "libpipewire-module-client-node",
+      "filename": "/tmp/pwao-linktrace/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-client-node.so",
+      "args": null,
+      "change-mask": [ "props" ],
+      "props": {
+        "module.author": "Wim Taymans <wim.taymans@gmail.com>",
+        "module.description": "Allow clients to create and control remote nodes",
+        "module.name": "libpipewire-module-client-node",
+        "module.version": "1.7.0",
+        "object.id": 7,
+        "object.serial": 7
+      }
+    }
+  },
+  {
+    "id": 8,
+    "type": "PipeWire:Interface:Factory",
+    "version": 3,
+    "permissions": [ "r", "m" ],
+    "info": {
+      "name": "client-node",
+      "type": "PipeWire:Interface:ClientNode",
+      "version": 6,
+      "change-mask": [ "props" ],
+      "props": {
+        "factory.name": "client-node",
+        "factory.type.name": "PipeWire:Interface:ClientNode",
+        "factory.type.version": 6,
+        "module.id": 7,
+        "object.id": 8,
+        "object.serial": 8
+      }
+    }
+  },
+  {
+    "id": 9,
+    "type": "PipeWire:Interface:Module",
+    "version": 3,
+    "permissions": [ "r", "m" ],
+    "info": {
+      "name": "libpipewire-module-metadata",
+      "filename": "/tmp/pwao-linktrace/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-metadata.so",
+      "args": null,
+      "change-mask": [ "props" ],
+      "props": {
+        "module.author": "Wim Taymans <wim.taymans@gmail.com>",
+        "module.description": "Allow clients to create metadata store",
+        "module.name": "libpipewire-module-metadata",
+        "module.version": "1.7.0",
+        "object.id": 9,
+        "object.serial": 9
+      }
+    }
+  },
+  {
+    "id": 10,
+    "type": "PipeWire:Interface:Factory",
+    "version": 3,
+    "permissions": [ "r", "m" ],
+    "info": {
+      "name": "metadata",
+      "type": "PipeWire:Interface:Metadata",
+      "version": 3,
+      "change-mask": [ "props" ],
+      "props": {
+        "factory.name": "metadata",
+        "factory.type.name": "PipeWire:Interface:Metadata",
+        "factory.type.version": 3,
+        "factory.usage": "(metadata.name = <name> ) (metadata.values = [    { ( id = <int> ) key = <string> ( type = <string> ) value = <json> }    ...  ] )",
+        "module.id": 9,
+        "object.id": 10,
+        "object.serial": 10
+      }
+    }
+  },
+  {
+    "id": 11,
+    "type": "PipeWire:Interface:Module",
+    "version": 3,
+    "permissions": [ "r", "m" ],
+    "info": {
+      "name": "libpipewire-module-access",
+      "filename": "/tmp/pwao-linktrace/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-access.so",
+      "args": null,
+      "change-mask": [ "props" ],
+      "props": {
+        "module.author": "Wim Taymans <wim.taymans@gmail.com>",
+        "module.description": "Perform access check",
+        "module.name": "libpipewire-module-access",
+        "module.usage": "( access.socket={ <socket>=<access>, ... } ) ( access.legacy=true ) ",
+        "module.version": "1.7.0",
+        "object.id": 11,
+        "object.serial": 11
+      }
+    }
+  },
+  {
+    "id": 12,
+    "type": "PipeWire:Interface:Module",
+    "version": 3,
+    "permissions": [ "r", "m" ],
+    "info": {
+      "name": "libpipewire-module-link-factory",
+      "filename": "/tmp/pwao-linktrace/lib/x86_64-linux-gnu/pipewire-ao-0.3/libpipewire-module-link-factory.so",
+      "args": "{\n        \"allow.link.passive\": true\n      }",
+      "change-mask": [ "props" ],
+      "props": {
+        "module.author": "Wim Taymans <wim.taymans@gmail.com>",
+        "module.description": "Allow clients to create links",
+        "module.name": "libpipewire-module-link-factory",
+        "module.usage": "( allow.link.passive=<bool, default false> ) ",
+        "module.version": "1.7.0",
+        "object.id": 12,
+        "object.serial": 12
+      }
+    }
+  },
+  {
+    "id": 13,
+    "type": "PipeWire:Interface:Factory",
+    "version": 3,
+    "permissions": [ "r", "m" ],
+    "info": {
+      "name": "link-factory",
+      "type": "PipeWire:Interface:Link",
+      "version": 3,
+      "change-mask": [ "props" ],
+      "props": {
+        "factory.name": "link-factory",
+        "factory.type.name": "PipeWire:Interface:Link",
+        "factory.type.version": 3,
+        "factory.usage": "(link.output.node=<output-node>) (link.output.port=<output-port>) (link.input.node=<input-node>) (link.input.port=<input-port>) (object.linger=<bool>) (link.passive=<bool>)",
+        "module.id": 12,
+        "object.id": 13,
+        "object.serial": 13
+      }
+    }
+  },
+  {
+    "id": 14,
+    "type": "PipeWire:Interface:Node",
+    "version": 3,
+    "permissions": [ "r", "w", "x", "m" ],
+    "info": {
+      "max-input-ports": 0,
+      "max-output-ports": 0,
+      "change-mask": [ "input-ports", "output-ports", "state", "props", "params" ],
+      "n-input-ports": 0,
+      "n-output-ports": 0,
+      "state": "suspended",
+      "error": null,
+      "props": {
+        "clock.id": "monotonic",
+        "clock.name": "clock.system.monotonic",
+        "clock.quantum-limit": 8192,
+        "factory.id": 6,
+        "factory.name": "support.node.driver",
+        "node.driver": true,
+        "node.group": "pipewireao-rtc-dummy",
+        "node.loop.name": "rtc-data-loop",
+        "node.name": "PipeWireAO-RTC-Dummy-Driver",
+        "node.sync-group": "sync.pipewireao-rtc-dummy",
+        "object.id": 14,
+        "object.serial": 14,
+        "priority.driver": 200000
+      },
+      "params": {
+        "PropInfo": [
+          {
+            "id": "clockId",
+            "description": "The clock id (monotonic, realtime, etc.)",
+            "type": "monotonic"
+          },
+          {
+            "id": "clockDevice",
+            "description": "The clock device (eg. /dev/ptp0)",
+            "type": ""
+          },
+          {
+            "id": "clockInterface",
+            "description": "The clock network interface (eg. eth0)",
+            "type": ""
+          }
+        ],
+        "Props": [
+          {
+            "clockId": "monotonic"
+          },
+          {
+            "clockDevice": ""
+          },
+          {
+            "clockInterface": ""
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": 15,
+    "type": "PipeWire:Interface:Metadata",
+    "version": 3,
+    "permissions": [ "r", "w", "x" ],
+    "props": {
+      "metadata.name": "settings",
+      "object.serial": 15
+    },
+    "metadata": [
+      { "subject": 0, "key": "log.level", "type": "", "value": 2 },
+      { "subject": 0, "key": "clock.rate", "type": "", "value": 48000 },
+      { "subject": 0, "key": "clock.allowed-rates", "type": "", "value": "[ 48000 ]" },
+      { "subject": 0, "key": "clock.quantum", "type": "", "value": 1024 },
+      { "subject": 0, "key": "clock.min-quantum", "type": "", "value": 1 },
+      { "subject": 0, "key": "clock.max-quantum", "type": "", "value": 2048 },
+      { "subject": 0, "key": "clock.force-quantum", "type": "", "value": 0 },
+      { "subject": 0, "key": "clock.force-rate", "type": "", "value": 0 }
+    ]
+  },
+  {
+    "id": 16,
+    "type": "PipeWire:Interface:Client",
+    "version": 3,
+    "permissions": [ "r", "w", "x", "m" ],
+    "info": {
+      "change-mask": [ "props" ],
+      "props": {
+        "application.language": "en_US.UTF-8",
+        "application.name": "pipewire-ao",
+        "application.process.binary": "pipewire-ao",
+        "application.process.host": "rtc-devel",
+        "application.process.id": 775307,
+        "application.process.user": "dgamroth",
+        "clock.power-of-two-quantum": true,
+        "config.name": "client-host.conf",
+        "context.data-loops": "[\n      {\n        \"loop.idle\": \"eventfd\",\n        \"thread.name\": \"rtc-data-loop\",\n        \"loop.name\": \"rtc-data-loop\",\n        \"loop.rt-prio\": 83,\n        \"loop.class\": [\n          \"data.rt\"\n        ],\n        \"thread.affinity\": [\n          2\n        ]\n      }\n    ]",
+        "core.daemon": false,
+        "core.name": "pipewire-dgamroth-775307",
+        "core.version": "1.7.0",
+        "cpu.max-align": 32,
+        "default.clock.max-quantum": 2048,
+        "default.clock.min-quantum": 32,
+        "default.clock.quantum": 1024,
+        "default.clock.quantum-floor": 4,
+        "default.clock.quantum-limit": 8192,
+        "default.clock.rate": 48000,
+        "default.video.height": 480,
+        "default.video.rate.denom": 1,
+        "default.video.rate.num": 25,
+        "default.video.width": 640,
+        "library.use-fallback": false,
+        "link.max-buffers": 64,
+        "log.level": 0,
+        "mem.allow-mlock": true,
+        "mem.mlock-all": false,
+        "mem.warn-mlock": false,
+        "module.id": 3,
+        "object.id": 16,
+        "object.serial": 17,
+        "pipewire.access": "unrestricted",
+        "pipewire.protocol": "protocol-native",
+        "pipewire.sec.gid": 1000,
+        "pipewire.sec.gids": "[20,24,25,27,29,30,44,46,100,101,106,107,109,992,1000]",
+        "pipewire.sec.pid": 775307,
+        "pipewire.sec.socket": "rtc-1c10460020d2",
+        "pipewire.sec.uid": 1000,
+        "settings.check-quantum": false,
+        "settings.check-rate": false
+      },
+      "object-permissions": {
+        "-1": [ "r", "w", "x", "m" ]
+      }
+    }
+  },
+  {
+    "id": 17,
+    "type": "PipeWire:Interface:Node",
+    "version": 3,
+    "permissions": [ "r", "w", "x", "m" ],
+    "info": {
+      "max-input-ports": 4294967295,
+      "max-output-ports": 4294967295,
+      "change-mask": [ "input-ports", "output-ports", "state", "props", "params" ],
+      "n-input-ports": 13,
+      "n-output-ports": 1,
+      "state": "idle",
+      "error": null,
+      "props": {
+        "client.id": 16,
+        "media.category": "Filter",
+        "media.name": "revolt-copper-fgn-frame-graph",
+        "media.type": "Application",
+        "node.description": "revolt-copper-fgn-frame-graph",
+        "node.driver-id": 45,
+        "node.loop.name": "rtc-data-loop",
+        "node.name": "revolt-copper-fgn-frame-graph",
+        "node.reliable": true,
+        "node.virtual": true,
+        "node.want-driver": true,
+        "object.id": 17,
+        "object.serial": 18,
+        "pipewireao.feedback.control:constraint-feedback": "feedback-to-controller:controller-constraint-feedback",
+        "pipewireao.fifo-inputs": true,
+        "pipewireao.reset-control": true,
+        "pipewireao.row-transport-return": true,
+        "pipewireao.run-control": true,
+        "pipewireao.startup-parameter.calibrate:background": "/tmp/rtc-wireplumber-fgn-20261007-installed/calibration/parameter-background.f32",
+        "pipewireao.startup-parameter.controller-to-vdm:controller-to-vdm": "/tmp/rtc-wireplumber-fgn-20261007-installed/calibration/parameter-controller-to-vdm.f32",
+        "pipewireao.startup-parameter.feedback-to-controller:vdm-to-controller": "/tmp/rtc-wireplumber-fgn-20261007-installed/calibration/parameter-vdm-to-controller.f32",
+        "pipewireao.startup-parameter.feedback-to-vdm:full-to-active": "/tmp/rtc-wireplumber-fgn-20261007-installed/calibration/parameter-full-to-active.f32",
+        "pipewireao.startup-parameter.feedback-to-vdm:pdm-to-vdm": "/tmp/rtc-wireplumber-fgn-20261007-installed/calibration/parameter-pdm-to-vdm.f32",
+        "pipewireao.startup-parameter.reconstruct:reconstructor": "/tmp/rtc-wireplumber-fgn-20261007-installed/calibration/parameter-reconstructor.f32",
+        "pipewireao.startup-parameter.system-flat:system-flat": "/tmp/rtc-wireplumber-fgn-20261007-installed/calibration/parameter-system-flat.f32",
+        "pipewireao.startup-parameter.vdm-to-pdm:active-to-full": "/tmp/rtc-wireplumber-fgn-20261007-installed/calibration/parameter-active-to-full.f32",
+        "pipewireao.startup-parameter.vdm-to-pdm:vdm-to-pdm": "/tmp/rtc-wireplumber-fgn-20261007-installed/calibration/parameter-vdm-to-pdm.f32"
+      },
+      "params": {
+        "PropInfo": [
+          {
+            "name": "calibrate:requested-parameter-sequence",
+            "description": "Sequence of the latest accepted ndarray parameter",
+            "type": 0,
+            "params": true
+          },
+          {
+            "name": "calibrate:active-parameter-sequence",
+            "description": "Parameter sequence used by numerical processing",
+            "type": 0,
+            "params": true
+          },
+          {
+            "name": "pyramid:requested-parameter-sequence",
+            "description": "Sequence of the latest accepted ndarray parameter",
+            "type": 0,
+            "params": true
+          },
+          {
+            "name": "pyramid:active-parameter-sequence",
+            "description": "Parameter sequence used by numerical processing",
+            "type": 0,
+            "params": true
+          },
+          {
+            "name": "reconstruct:requested-parameter-sequence",
+            "description": "Sequence of the latest accepted ndarray parameter",
+            "type": 0,
+            "params": true
+          },
+          {
+            "name": "reconstruct:active-parameter-sequence",
+            "description": "Parameter sequence used by numerical processing",
+            "type": 0,
+            "params": true
+          },
+          {
+            "name": "control:gain",
+            "description": "Leaky-integrator input gain g",
+            "type": { "default": 1.000000, "min": -340282346638528859811704183484516925440.000000, "max": 340282346638528859811704183484516925440.000000 },
+            "params": true
+          },
+          {
+            "name": "control:pole",
+            "description": "Discrete-time integrator pole p",
+            "type": { "default": 0.000000, "min": 0.000000, "max": 1.000000 },
+            "params": true
+          },
+          {
+            "name": "control:anti-windup-gain",
+            "description": "Constraint-feedback anti-windup gain k_aw",
+            "type": { "default": 0.000000, "min": -340282346638528859811704183484516925440.000000, "max": 340282346638528859811704183484516925440.000000 },
+            "params": true
+          },
+          {
+            "name": "control:hidden-mode-gain",
+            "description": "Hidden-mode removal gain k_h",
+            "type": { "default": 0.000000, "min": -340282346638528859811704183484516925440.000000, "max": 340282346638528859811704183484516925440.000000 },
+            "params": true
+          },
+          {
+            "name": "control:requested-generation",
+            "description": "Latest property generation published for processing",
+            "type": 0,
+            "params": true
+          },
+          {
+            "name": "control:active-generation",
+            "description": "Property generation used by processing",
+            "type": 0,
+            "params": true
+          },
+          {
+            "name": "control:requested-parameter-sequence",
+            "description": "Sequence of the latest accepted ndarray parameter",
+            "type": 0,
+            "params": true
+          },
+          {
+            "name": "control:active-parameter-sequence",
+            "description": "Parameter sequence used by numerical processing",
+            "type": 0,
+            "params": true
+          },
+          {
+            "name": "controller-to-vdm:requested-parameter-sequence",
+            "description": "Sequence of the latest accepted ndarray parameter",
+            "type": 0,
+            "params": true
+          },
+          {
+            "name": "controller-to-vdm:active-parameter-sequence",
+            "description": "Parameter sequence used by numerical processing",
+            "type": 0,
+            "params": true
+          },
+          {
+            "name": "vdm-to-pdm:requested-parameter-sequence",
+            "description": "Sequence of the latest accepted ndarray parameter",
+            "type": 0,
+            "params": true
+          },
+          {
+            "name": "vdm-to-pdm:active-parameter-sequence",
+            "description": "Parameter sequence used by numerical processing",
+            "type": 0,
+            "params": true
+          },
+          {
+            "name": "system-flat:requested-parameter-sequence",
+            "description": "Sequence of the latest accepted ndarray parameter",
+            "type": 0,
+            "params": true
+          },
+          {
+            "name": "system-flat:active-parameter-sequence",
+            "description": "Parameter sequence used by numerical processing",
+            "type": 0,
+            "params": true
+          },
+          {
+            "name": "feedback-to-vdm:requested-parameter-sequence",
+            "description": "Sequence of the latest accepted ndarray parameter",
+            "type": 0,
+            "params": true
+          },
+          {
+            "name": "feedback-to-vdm:active-parameter-sequence",
+            "description": "Parameter sequence used by numerical processing",
+            "type": 0,
+            "params": true
+          },
+          {
+            "name": "feedback-to-controller:requested-parameter-sequence",
+            "description": "Sequence of the latest accepted ndarray parameter",
+            "type": 0,
+            "params": true
+          },
+          {
+            "name": "feedback-to-controller:active-parameter-sequence",
+            "description": "Parameter sequence used by numerical processing",
+            "type": 0,
+            "params": true
+          }
+        ],
+        "Props": [
+          {
+            "params": [
+              "calibrate:requested-parameter-sequence",
+              0,
+              "calibrate:active-parameter-sequence",
+              0,
+              "pyramid:requested-parameter-sequence",
+              0,
+              "pyramid:active-parameter-sequence",
+              0,
+              "reconstruct:requested-parameter-sequence",
+              0,
+              "reconstruct:active-parameter-sequence",
+              0,
+              "control:gain",
+              1.000000,
+              "control:pole",
+              0.000000,
+              "control:anti-windup-gain",
+              0.000000,
+              "control:hidden-mode-gain",
+              0.000000,
+              "control:requested-generation",
+              0,
+              "control:active-generation",
+              0,
+              "control:requested-parameter-sequence",
+              0,
+              "control:active-parameter-sequence",
+              0,
+              "controller-to-vdm:requested-parameter-sequence",
+              0,
+              "controller-to-vdm:active-parameter-sequence",
+              0,
+              "vdm-to-pdm:requested-parameter-sequence",
+              0,
+              "vdm-to-pdm:active-parameter-sequence",
+              0,
+              "system-flat:requested-parameter-sequence",
+              0,
+              "system-flat:active-parameter-sequence",
+              0,
+              "feedback-to-vdm:requested-parameter-sequence",
+              0,
+              "feedback-to-vdm:active-parameter-sequence",
+              0,
+              "feedback-to-controller:requested-parameter-sequence",
+              0,
+              "feedback-to-controller:active-parameter-sequence",
+              0
+            ]
+          },
+          {
+            "params": [
+              "pipewireao.run-control.version",
+              1,
+              "pipewireao.run-control.completed-token",
+              0,
+              "pipewireao.run-control.result",
+              0,
+              "pipewireao.run-control.actual-state",
+              "stopped"
+            ]
+          },
+          {
+            "params": [
+              "pipewireao.reset-control.version",
+              1,
+              "pipewireao.reset-control.completed-token",
+              0,
+              "pipewireao.reset-control.result",
+              0
+            ]
+          }
+        ],
+        "ProcessLatency": [ ],
+        "EnumFormat": [ ],
+        "Format": [ ]
+      }
+    }
+  },
+  {
+    "id": 18,
+    "type": "PipeWire:Interface:Port",
+    "version": 3,
+    "permissions": [ "r", "x", "m" ],
+    "info": {
+      "direction": "input",
+      "change-mask": [ "props", "params" ],
+      "props": {
+        "media.type": "Application",
+        "node.id": 17,
+        "object.id": 18,
+        "object.path": "revolt-copper-fgn-frame-graph:input_0",
+        "object.serial": 19,
+        "port.alias": "revolt-copper-fgn-frame-graph:calibrate:raw",
+        "port.direction": "in",
+        "port.group": "stream.0",
+        "port.id": 0,
+        "port.name": "calibrate:raw"
+      },
+      "params": {
+        "EnumFormat": [
+          {
+            "mediaType": "application",
+            "mediaSubtype": "ndarray",
+            "elementType": "U16_LE",
+            "shape": [ 64, 64 ],
+            "layout": "ROW_MAJOR",
+            "rate": { "num": 500, "denom": 1 },
+            "schema": "org.calculon.ao.raw-detector-pixels/1"
+          }
+        ],
+        "Meta": [
+          {
+            "type": "Header",
+            "size": 32
+          },
+          {
+            "type": "Acquisition",
+            "size": 96,
+            "id-00000003": 2
+          }
+        ],
+        "IO": [
+          {
+            "id": "Buffers",
+            "size": 8
+          },
+          {
+            "id": "AsyncBuffers",
+            "size": 8
+          }
+        ],
+        "Format": [
+          {
+            "mediaType": "application",
+            "mediaSubtype": "ndarray",
+            "elementType": "U16_LE",
+            "shape": [ 64, 64 ],
+            "layout": "ROW_MAJOR",
+            "rate": { "num": 500, "denom": 1 },
+            "schema": "org.calculon.ao.raw-detector-pixels/1"
+          }
+        ],
+        "Buffers": [
+          {
+            "buffers": { "default": 4, "min": 2, "max": 64 },
+            "blocks": 1,
+            "size": 8192,
+            "stride": 128,
+            "dataType": {
+              "default": 6
+            }
+          }
+        ],
+        "Latency": [
+          {
+            "direction": "Input",
+            "minQuantum": 1.000000,
+            "maxQuantum": 1.000000,
+            "minRate": 0,
+            "maxRate": 0,
+            "minNs": 0,
+            "maxNs": 0
+          },
+          {
+            "direction": "Output",
+            "minQuantum": 0.000000,
+            "maxQuantum": 0.000000,
+            "minRate": 0,
+            "maxRate": 0,
+            "minNs": 0,
+            "maxNs": 0
+          }
+        ],
+        "Tag": [
+          {
+            "direction": "Output"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": 19,
+    "type": "PipeWire:Interface:Port",
+    "version": 3,
+    "permissions": [ "r", "x", "m" ],
+    "info": {
+      "direction": "input",
+      "change-mask": [ "props", "params" ],
+      "props": {
+        "media.type": "Application",
+        "node.id": 17,
+        "object.id": 19,
+        "object.path": "revolt-copper-fgn-frame-graph:input_1",
+        "object.serial": 20,
+        "port.alias": "revolt-copper-fgn-frame-graph:calibrate:flat",
+        "port.control": true,
+        "port.direction": "in",
+        "port.group": "stream.1",
+        "port.id": 1,
+        "port.name": "calibrate:flat"
+      },
+      "params": {
+        "EnumFormat": [
+          {
+            "mediaType": "application",
+            "mediaSubtype": "ndarray",
+            "elementType": "F32_LE",
+            "shape": [ 64, 64 ],
+            "layout": "ROW_MAJOR",
+            "rate": { "num": 500, "denom": 1 },
+            "schema": "org.calculon.ao.flat-calibration/1"
+          }
+        ],
+        "Meta": [
+          {
+            "type": "Header",
+            "size": 32
+          },
+          {
+            "type": "Acquisition",
+            "size": 96,
+            "id-00000003": 2
+          }
+        ],
+        "IO": [
+          {
+            "id": "Buffers",
+            "size": 8
+          },
+          {
+            "id": "AsyncBuffers",
+            "size": 8
+          }
+        ],
+        "Format": [ ],
+        "Buffers": [
+          {
+            "buffers": { "default": 4, "min": 2, "max": 64 },
+            "blocks": 1,
+            "size": 16384,
+            "stride": 256,
+            "dataType": {
+              "default": 6
+            }
+          }
+        ],
+        "Latency": [
+          {
+            "direction": "Input",
+            "minQuantum": 1.000000,
+            "maxQuantum": 1.000000,
+            "minRate": 0,
+            "maxRate": 0,
+            "minNs": 0,
+            "maxNs": 0
+          },
+          {
+            "direction": "Output",
+            "minQuantum": 0.000000,
+            "maxQuantum": 0.000000,
+            "minRate": 0,
+            "maxRate": 0,
+            "minNs": 0,
+            "maxNs": 0
+          }
+        ],
+        "Tag": [ ]
+      }
+    }
+  },
+  {
+    "id": 20,
+    "type": "PipeWire:Interface:Port",
+    "version": 3,
+    "permissions": [ "r", "x", "m" ],
+    "info": {
+      "direction": "input",
+      "change-mask": [ "props", "params" ],
+      "props": {
+        "media.type": "Application",
+        "node.id": 17,
+        "object.id": 20,
+        "object.path": "revolt-copper-fgn-frame-graph:input_2",
+        "object.serial": 21,
+        "port.alias": "revolt-copper-fgn-frame-graph:calibrate:background",
+        "port.control": true,
+        "port.direction": "in",
+        "port.group": "stream.2",
+        "port.id": 2,
+        "port.name": "calibrate:background"
+      },
+      "params": {
+        "EnumFormat": [
+          {
+            "mediaType": "application",
+            "mediaSubtype": "ndarray",
+            "elementType": "F32_LE",
+            "shape": [ 64, 64 ],
+            "layout": "ROW_MAJOR",
+            "rate": { "num": 500, "denom": 1 },
+            "schema": "org.calculon.ao.background-calibration/1"
+          }
+        ],
+        "Meta": [
+          {
+            "type": "Header",
+            "size": 32
+          },
+          {
+            "type": "Acquisition",
+            "size": 96,
+            "id-00000003": 2
+          }
+        ],
+        "IO": [
+          {
+            "id": "Buffers",
+            "size": 8
+          },
+          {
+            "id": "AsyncBuffers",
+            "size": 8
+          }
+        ],
+        "Format": [ ],
+        "Buffers": [
+          {
+            "buffers": { "default": 4, "min": 2, "max": 64 },
+            "blocks": 1,
+            "size": 16384,
+            "stride": 256,
+            "dataType": {
+              "default": 6
+            }
+          }
+        ],
+        "Latency": [
+          {
+            "direction": "Input",
+            "minQuantum": 1.000000,
+            "maxQuantum": 1.000000,
+            "minRate": 0,
+            "maxRate": 0,
+            "minNs": 0,
+            "maxNs": 0
+          },
+          {
+            "direction": "Output",
+            "minQuantum": 0.000000,
+            "maxQuantum": 0.000000,
+            "minRate": 0,
+            "maxRate": 0,
+            "minNs": 0,
+            "maxNs": 0
+          }
+        ],
+        "Tag": [ ]
+      }
+    }
+  },
+  {
+    "id": 21,
+    "type": "PipeWire:Interface:Port",
+    "version": 3,
+    "permissions": [ "r", "x", "m" ],
+    "info": {
+      "direction": "input",
+      "change-mask": [ "props", "params" ],
+      "props": {
+        "media.type": "Application",
+        "node.id": 17,
+        "object.id": 21,
+        "object.path": "revolt-copper-fgn-frame-graph:input_3",
+        "object.serial": 22,
+        "port.alias": "revolt-copper-fgn-frame-graph:pyramid:pupil-origins",
+        "port.control": true,
+        "port.direction": "in",
+        "port.group": "stream.3",
+        "port.id": 3,
+        "port.name": "pyramid:pupil-origins"
+      },
+      "params": {
+        "EnumFormat": [
+          {
+            "mediaType": "application",
+            "mediaSubtype": "ndarray",
+            "elementType": "U32_LE",
+            "shape": [ 4, 2 ],
+            "layout": "ROW_MAJOR",
+            "rate": { "num": 500, "denom": 1 },
+            "schema": "org.calculon.ao.region-origins/1"
+          }
+        ],
+        "Meta": [
+          {
+            "type": "Header",
+            "size": 32
+          },
+          {
+            "type": "Acquisition",
+            "size": 96,
+            "id-00000003": 2
+          }
+        ],
+        "IO": [
+          {
+            "id": "Buffers",
+            "size": 8
+          },
+          {
+            "id": "AsyncBuffers",
+            "size": 8
+          }
+        ],
+        "Format": [ ],
+        "Buffers": [
+          {
+            "buffers": { "default": 4, "min": 2, "max": 64 },
+            "blocks": 1,
+            "size": 32,
+            "stride": 8,
+            "dataType": {
+              "default": 6
+            }
+          }
+        ],
+        "Latency": [
+          {
+            "direction": "Input",
+            "minQuantum": 1.000000,
+            "maxQuantum": 1.000000,
+            "minRate": 0,
+            "maxRate": 0,
+            "minNs": 0,
+            "maxNs": 0
+          },
+          {
+            "direction": "Output",
+            "minQuantum": 0.000000,
+            "maxQuantum": 0.000000,
+            "minRate": 0,
+            "maxRate": 0,
+            "minNs": 0,
+            "maxNs": 0
+          }
+        ],
+        "Tag": [ ]
+      }
+    }
+  },
+  {
+    "id": 22,
+    "type": "PipeWire:Interface:Port",
+    "version": 3,
+    "permissions": [ "r", "x", "m" ],
+    "info": {
+      "direction": "input",
+      "change-mask": [ "props", "params" ],
+      "props": {
+        "media.type": "Application",
+        "node.id": 17,
+        "object.id": 22,
+        "object.path": "revolt-copper-fgn-frame-graph:input_4",
+        "object.serial": 23,
+        "port.alias": "revolt-copper-fgn-frame-graph:pyramid:pupil-mask",
+        "port.control": true,
+        "port.direction": "in",
+        "port.group": "stream.4",
+        "port.id": 4,
+        "port.name": "pyramid:pupil-mask"
+      },
+      "params": {
+        "EnumFormat": [
+          {
+            "mediaType": "application",
+            "mediaSubtype": "ndarray",
+            "elementType": "BOOL8",
+            "shape": [ 30, 30 ],
+            "layout": "ROW_MAJOR",
+            "rate": { "num": 500, "denom": 1 },
+            "schema": "org.calculon.ao.pyramid-pupil-mask/1"
+          }
+        ],
+        "Meta": [
+          {
+            "type": "Header",
+            "size": 32
+          },
+          {
+            "type": "Acquisition",
+            "size": 96,
+            "id-00000003": 2
+          }
+        ],
+        "IO": [
+          {
+            "id": "Buffers",
+            "size": 8
+          },
+          {
+            "id": "AsyncBuffers",
+            "size": 8
+          }
+        ],
+        "Format": [ ],
+        "Buffers": [
+          {
+            "buffers": { "default": 4, "min": 2, "max": 64 },
+            "blocks": 1,
+            "size": 900,
+            "stride": 30,
+            "dataType": {
+              "default": 6
+            }
+          }
+        ],
+        "Latency": [
+          {
+            "direction": "Input",
+            "minQuantum": 1.000000,
+            "maxQuantum": 1.000000,
+            "minRate": 0,
+            "maxRate": 0,
+            "minNs": 0,
+            "maxNs": 0
+          },
+          {
+            "direction": "Output",
+            "minQuantum": 0.000000,
+            "maxQuantum": 0.000000,
+            "minRate": 0,
+            "maxRate": 0,
+            "minNs": 0,
+            "maxNs": 0
+          }
+        ],
+        "Tag": [ ]
+      }
+    }
+  },
+  {
+    "id": 23,
+    "type": "PipeWire:Interface:Port",
+    "version": 3,
+    "permissions": [ "r", "x", "m" ],
+    "info": {
+      "direction": "input",
+      "change-mask": [ "props", "params" ],
+      "props": {
+        "media.type": "Application",
+        "node.id": 17,
+        "object.id": 23,
+        "object.path": "revolt-copper-fgn-frame-graph:input_5",
+        "object.serial": 24,
+        "port.alias": "revolt-copper-fgn-frame-graph:reconstruct:reconstructor",
+        "port.control": true,
+        "port.direction": "in",
+        "port.group": "stream.5",
+        "port.id": 5,
+        "port.name": "reconstruct:reconstructor"
+      },
+      "params": {
+        "EnumFormat": [
+          {
+            "mediaType": "application",
+            "mediaSubtype": "ndarray",
+            "elementType": "F32_LE",
+            "shape": [ 253, 3600 ],
+            "layout": "ROW_MAJOR",
+            "rate": { "num": 500, "denom": 1 },
+            "schema": "org.calculon.ao.pwfs-reconstructor/1"
+          }
+        ],
+        "Meta": [
+          {
+            "type": "Header",
+            "size": 32
+          },
+          {
+            "type": "Acquisition",
+            "size": 96,
+            "id-00000003": 2
+          }
+        ],
+        "IO": [
+          {
+            "id": "Buffers",
+            "size": 8
+          },
+          {
+            "id": "AsyncBuffers",
+            "size": 8
+          }
+        ],
+        "Format": [ ],
+        "Buffers": [
+          {
+            "buffers": { "default": 4, "min": 2, "max": 64 },
+            "blocks": 1,
+            "size": 3643200,
+            "stride": 14400,
+            "dataType": {
+              "default": 6
+            }
+          }
+        ],
+        "Latency": [ ],
+        "Tag": [
+          {
+            "direction": "Output"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": 24,
+    "type": "PipeWire:Interface:Port",
+    "version": 3,
+    "permissions": [ "r", "x", "m" ],
+    "info": {
+      "direction": "input",
+      "change-mask": [ "props", "params" ],
+      "props": {
+        "media.type": "Application",
+        "node.id": 17,
+        "object.id": 24,
+        "object.path": "revolt-copper-fgn-frame-graph:input_6",
+        "object.serial": 25,
+        "port.alias": "revolt-copper-fgn-frame-graph:controller-to-vdm:controller-to-vdm",
+        "port.control": true,
+        "port.direction": "in",
+        "port.group": "stream.6",
+        "port.id": 6,
+        "port.name": "controller-to-vdm:controller-to-vdm"
+      },
+      "params": {
+        "EnumFormat": [
+          {
+            "mediaType": "application",
+            "mediaSubtype": "ndarray",
+            "elementType": "F32_LE",
+            "shape": [ 253, 253 ],
+            "layout": "ROW_MAJOR",
+            "rate": { "num": 500, "denom": 1 },
+            "schema": "org.calculon.ao.controller-to-vdm-projection/1"
+          }
+        ],
+        "Meta": [
+          {
+            "type": "Header",
+            "size": 32
+          },
+          {
+            "type": "Acquisition",
+            "size": 96,
+            "id-00000003": 2
+          }
+        ],
+        "IO": [
+          {
+            "id": "Buffers",
+            "size": 8
+          },
+          {
+            "id": "AsyncBuffers",
+            "size": 8
+          }
+        ],
+        "Format": [ ],
+        "Buffers": [
+          {
+            "buffers": { "default": 4, "min": 2, "max": 64 },
+            "blocks": 1,
+            "size": 256036,
+            "stride": 1012,
+            "dataType": {
+              "default": 6
+            }
+          }
+        ],
+        "Latency": [
+          {
+            "direction": "Input",
+            "minQuantum": 1.000000,
+            "maxQuantum": 1.000000,
+            "minRate": 0,
+            "maxRate": 0,
+            "minNs": 0,
+            "maxNs": 0
+          },
+          {
+            "direction": "Output",
+            "minQuantum": 0.000000,
+            "maxQuantum": 0.000000,
+            "minRate": 0,
+            "maxRate": 0,
+            "minNs": 0,
+            "maxNs": 0
+          }
+        ],
+        "Tag": [ ]
+      }
+    }
+  },
+  {
+    "id": 25,
+    "type": "PipeWire:Interface:Port",
+    "version": 3,
+    "permissions": [ "r", "x", "m" ],
+    "info": {
+      "direction": "input",
+      "change-mask": [ "props", "params" ],
+      "props": {
+        "media.type": "Application",
+        "node.id": 17,
+        "object.id": 25,
+        "object.path": "revolt-copper-fgn-frame-graph:input_7",
+        "object.serial": 26,
+        "port.alias": "revolt-copper-fgn-frame-graph:vdm-to-pdm:active-to-full",
+        "port.control": true,
+        "port.direction": "in",
+        "port.group": "stream.7",
+        "port.id": 7,
+        "port.name": "vdm-to-pdm:active-to-full"
+      },
+      "params": {
+        "EnumFormat": [
+          {
+            "mediaType": "application",
+            "mediaSubtype": "ndarray",
+            "elementType": "F32_LE",
+            "shape": [ 253, 253 ],
+            "layout": "ROW_MAJOR",
+            "rate": { "num": 500, "denom": 1 },
+            "schema": "org.calculon.ao.active-to-full-vdm-projection/1"
+          }
+        ],
+        "Meta": [
+          {
+            "type": "Header",
+            "size": 32
+          },
+          {
+            "type": "Acquisition",
+            "size": 96,
+            "id-00000003": 2
+          }
+        ],
+        "IO": [
+          {
+            "id": "Buffers",
+            "size": 8
+          },
+          {
+            "id": "AsyncBuffers",
+            "size": 8
+          }
+        ],
+        "Format": [ ],
+        "Buffers": [
+          {
+            "buffers": { "default": 4, "min": 2, "max": 64 },
+            "blocks": 1,
+            "size": 256036,
+            "stride": 1012,
+            "dataType": {
+              "default": 6
+            }
+          }
+        ],
+        "Latency": [
+          {
+            "direction": "Input",
+            "minQuantum": 1.000000,
+            "maxQuantum": 1.000000,
+            "minRate": 0,
+            "maxRate": 0,
+            "minNs": 0,
+            "maxNs": 0
+          },
+          {
+            "direction": "Output",
+            "minQuantum": 0.000000,
+            "maxQuantum": 0.000000,
+            "minRate": 0,
+            "maxRate": 0,
+            "minNs": 0,
+            "maxNs": 0
+          }
+        ],
+        "Tag": [ ]
+      }
+    }
+  },
+  {
+    "id": 26,
+    "type": "PipeWire:Interface:Port",
+    "version": 3,
+    "permissions": [ "r", "x", "m" ],
+    "info": {
+      "direction": "input",
+      "change-mask": [ "props", "params" ],
+      "props": {
+        "media.type": "Application",
+        "node.id": 17,
+        "object.id": 26,
+        "object.path": "revolt-copper-fgn-frame-graph:input_8",
+        "object.serial": 27,
+        "port.alias": "revolt-copper-fgn-frame-graph:vdm-to-pdm:vdm-to-pdm",
+        "port.control": true,
+        "port.direction": "in",
+        "port.group": "stream.8",
+        "port.id": 8,
+        "port.name": "vdm-to-pdm:vdm-to-pdm"
+      },
+      "params": {
+        "EnumFormat": [
+          {
+            "mediaType": "application",
+            "mediaSubtype": "ndarray",
+            "elementType": "F32_LE",
+            "shape": [ 277, 253 ],
+            "layout": "ROW_MAJOR",
+            "rate": { "num": 500, "denom": 1 },
+            "schema": "org.calculon.ao.vdm-to-pdm-projection/1"
+          }
+        ],
+        "Meta": [
+          {
+            "type": "Header",
+            "size": 32
+          },
+          {
+            "type": "Acquisition",
+            "size": 96,
+            "id-00000003": 2
+          }
+        ],
+        "IO": [
+          {
+            "id": "Buffers",
+            "size": 8
+          },
+          {
+            "id": "AsyncBuffers",
+            "size": 8
+          }
+        ],
+        "Format": [ ],
+        "Buffers": [
+          {
+            "buffers": { "default": 4, "min": 2, "max": 64 },
+            "blocks": 1,
+            "size": 280324,
+            "stride": 1012,
+            "dataType": {
+              "default": 6
+            }
+          }
+        ],
+        "Latency": [
+          {
+            "direction": "Input",
+            "minQuantum": 1.000000,
+            "maxQuantum": 1.000000,
+            "minRate": 0,
+            "maxRate": 0,
+            "minNs": 0,
+            "maxNs": 0
+          },
+          {
+            "direction": "Output",
+            "minQuantum": 0.000000,
+            "maxQuantum": 0.000000,
+            "minRate": 0,
+            "maxRate": 0,
+            "minNs": 0,
+            "maxNs": 0
+          }
+        ],
+        "Tag": [ ]
+      }
+    }
+  },
+  {
+    "id": 27,
+    "type": "PipeWire:Interface:Port",
+    "version": 3,
+    "permissions": [ "r", "x", "m" ],
+    "info": {
+      "direction": "input",
+      "change-mask": [ "props", "params" ],
+      "props": {
+        "media.type": "Application",
+        "node.id": 17,
+        "object.id": 27,
+        "object.path": "revolt-copper-fgn-frame-graph:input_9",
+        "object.serial": 28,
+        "port.alias": "revolt-copper-fgn-frame-graph:system-flat:system-flat",
+        "port.control": true,
+        "port.direction": "in",
+        "port.group": "stream.9",
+        "port.id": 9,
+        "port.name": "system-flat:system-flat"
+      },
+      "params": {
+        "EnumFormat": [
+          {
+            "mediaType": "application",
+            "mediaSubtype": "ndarray",
+            "elementType": "F32_LE",
+            "shape": [ 277 ],
+            "layout": "ROW_MAJOR",
+            "rate": { "num": 500, "denom": 1 },
+            "schema": "org.calculon.ao.pdm-system-flat/1"
+          }
+        ],
+        "Meta": [
+          {
+            "type": "Header",
+            "size": 32
+          },
+          {
+            "type": "Acquisition",
+            "size": 96,
+            "id-00000003": 2
+          }
+        ],
+        "IO": [
+          {
+            "id": "Buffers",
+            "size": 8
+          },
+          {
+            "id": "AsyncBuffers",
+            "size": 8
+          }
+        ],
+        "Format": [ ],
+        "Buffers": [
+          {
+            "buffers": { "default": 4, "min": 2, "max": 64 },
+            "blocks": 1,
+            "size": 1108,
+            "stride": 1108,
+            "dataType": {
+              "default": 6
+            }
+          }
+        ],
+        "Latency": [
+          {
+            "direction": "Input",
+            "minQuantum": 1.000000,
+            "maxQuantum": 1.000000,
+            "minRate": 0,
+            "maxRate": 0,
+            "minNs": 0,
+            "maxNs": 0
+          },
+          {
+            "direction": "Output",
+            "minQuantum": 0.000000,
+            "maxQuantum": 0.000000,
+            "minRate": 0,
+            "maxRate": 0,
+            "minNs": 0,
+            "maxNs": 0
+          }
+        ],
+        "Tag": [ ]
+      }
+    }
+  },
+  {
+    "id": 28,
+    "type": "PipeWire:Interface:Port",
+    "version": 3,
+    "permissions": [ "r", "x", "m" ],
+    "info": {
+      "direction": "input",
+      "change-mask": [ "props", "params" ],
+      "props": {
+        "media.type": "Application",
+        "node.id": 17,
+        "object.id": 28,
+        "object.path": "revolt-copper-fgn-frame-graph:input_10",
+        "object.serial": 29,
+        "port.alias": "revolt-copper-fgn-frame-graph:feedback-to-vdm:full-to-active",
+        "port.control": true,
+        "port.direction": "in",
+        "port.group": "stream.10",
+        "port.id": 10,
+        "port.name": "feedback-to-vdm:full-to-active"
+      },
+      "params": {
+        "EnumFormat": [
+          {
+            "mediaType": "application",
+            "mediaSubtype": "ndarray",
+            "elementType": "F32_LE",
+            "shape": [ 253, 253 ],
+            "layout": "ROW_MAJOR",
+            "rate": { "num": 500, "denom": 1 },
+            "schema": "org.calculon.ao.full-to-active-vdm-projection/1"
+          }
+        ],
+        "Meta": [
+          {
+            "type": "Header",
+            "size": 32
+          },
+          {
+            "type": "Acquisition",
+            "size": 96,
+            "id-00000003": 2
+          }
+        ],
+        "IO": [
+          {
+            "id": "Buffers",
+            "size": 8
+          },
+          {
+            "id": "AsyncBuffers",
+            "size": 8
+          }
+        ],
+        "Format": [ ],
+        "Buffers": [
+          {
+            "buffers": { "default": 4, "min": 2, "max": 64 },
+            "blocks": 1,
+            "size": 256036,
+            "stride": 1012,
+            "dataType": {
+              "default": 6
+            }
+          }
+        ],
+        "Latency": [
+          {
+            "direction": "Input",
+            "minQuantum": 1.000000,
+            "maxQuantum": 1.000000,
+            "minRate": 0,
+            "maxRate": 0,
+            "minNs": 0,
+            "maxNs": 0
+          },
+          {
+            "direction": "Output",
+            "minQuantum": 0.000000,
+            "maxQuantum": 0.000000,
+            "minRate": 0,
+            "maxRate": 0,
+            "minNs": 0,
+            "maxNs": 0
+          }
+        ],
+        "Tag": [ ]
+      }
+    }
+  },
+  {
+    "id": 29,
+    "type": "PipeWire:Interface:Port",
+    "version": 3,
+    "permissions": [ "r", "x", "m" ],
+    "info": {
+      "direction": "input",
+      "change-mask": [ "props", "params" ],
+      "props": {
+        "media.type": "Application",
+        "node.id": 17,
+        "object.id": 29,
+        "object.path": "revolt-copper-fgn-frame-graph:input_11",
+        "object.serial": 30,
+        "port.alias": "revolt-copper-fgn-frame-graph:feedback-to-vdm:pdm-to-vdm",
+        "port.control": true,
+        "port.direction": "in",
+        "port.group": "stream.11",
+        "port.id": 11,
+        "port.name": "feedback-to-vdm:pdm-to-vdm"
+      },
+      "params": {
+        "EnumFormat": [
+          {
+            "mediaType": "application",
+            "mediaSubtype": "ndarray",
+            "elementType": "F32_LE",
+            "shape": [ 253, 277 ],
+            "layout": "ROW_MAJOR",
+            "rate": { "num": 500, "denom": 1 },
+            "schema": "org.calculon.ao.pdm-to-vdm-projection/1"
+          }
+        ],
+        "Meta": [
+          {
+            "type": "Header",
+            "size": 32
+          },
+          {
+            "type": "Acquisition",
+            "size": 96,
+            "id-00000003": 2
+          }
+        ],
+        "IO": [
+          {
+            "id": "Buffers",
+            "size": 8
+          },
+          {
+            "id": "AsyncBuffers",
+            "size": 8
+          }
+        ],
+        "Format": [ ],
+        "Buffers": [
+          {
+            "buffers": { "default": 4, "min": 2, "max": 64 },
+            "blocks": 1,
+            "size": 280324,
+            "stride": 1108,
+            "dataType": {
+              "default": 6
+            }
+          }
+        ],
+        "Latency": [
+          {
+            "direction": "Input",
+            "minQuantum": 1.000000,
+            "maxQuantum": 1.000000,
+            "minRate": 0,
+            "maxRate": 0,
+            "minNs": 0,
+            "maxNs": 0
+          },
+          {
+            "direction": "Output",
+            "minQuantum": 0.000000,
+            "maxQuantum": 0.000000,
+            "minRate": 0,
+            "maxRate": 0,
+            "minNs": 0,
+            "maxNs": 0
+          }
+        ],
+        "Tag": [ ]
+      }
+    }
+  },
+  {
+    "id": 30,
+    "type": "PipeWire:Interface:Port",
+    "version": 3,
+    "permissions": [ "r", "x", "m" ],
+    "info": {
+      "direction": "input",
+      "change-mask": [ "props", "params" ],
+      "props": {
+        "media.type": "Application",
+        "node.id": 17,
+        "object.id": 30,
+        "object.path": "revolt-copper-fgn-frame-graph:input_12",
+        "object.serial": 31,
+        "port.alias": "revolt-copper-fgn-frame-graph:feedback-to-controller:vdm-to-controller",
+        "port.control": true,
+        "port.direction": "in",
+        "port.group": "stream.12",
+        "port.id": 12,
+        "port.name": "feedback-to-controller:vdm-to-controller"
+      },
+      "params": {
+        "EnumFormat": [
+          {
+            "mediaType": "application",
+            "mediaSubtype": "ndarray",
+            "elementType": "F32_LE",
+            "shape": [ 253, 253 ],
+            "layout": "ROW_MAJOR",
+            "rate": { "num": 500, "denom": 1 },
+            "schema": "org.calculon.ao.vdm-to-controller-projection/1"
+          }
+        ],
+        "Meta": [
+          {
+            "type": "Header",
+            "size": 32
+          },
+          {
+            "type": "Acquisition",
+            "size": 96,
+            "id-00000003": 2
+          }
+        ],
+        "IO": [
+          {
+            "id": "Buffers",
+            "size": 8
+          },
+          {
+            "id": "AsyncBuffers",
+            "size": 8
+          }
+        ],
+        "Format": [ ],
+        "Buffers": [
+          {
+            "buffers": { "default": 4, "min": 2, "max": 64 },
+            "blocks": 1,
+            "size": 256036,
+            "stride": 1012,
+            "dataType": {
+              "default": 6
+            }
+          }
+        ],
+        "Latency": [
+          {
+            "direction": "Input",
+            "minQuantum": 1.000000,
+            "maxQuantum": 1.000000,
+            "minRate": 0,
+            "maxRate": 0,
+            "minNs": 0,
+            "maxNs": 0
+          },
+          {
+            "direction": "Output",
+            "minQuantum": 0.000000,
+            "maxQuantum": 0.000000,
+            "minRate": 0,
+            "maxRate": 0,
+            "minNs": 0,
+            "maxNs": 0
+          }
+        ],
+        "Tag": [ ]
+      }
+    }
+  },
+  {
+    "id": 31,
+    "type": "PipeWire:Interface:Port",
+    "version": 3,
+    "permissions": [ "r", "x", "m" ],
+    "info": {
+      "direction": "output",
+      "change-mask": [ "props", "params" ],
+      "props": {
+        "media.type": "Application",
+        "node.id": 17,
+        "object.id": 31,
+        "object.path": "revolt-copper-fgn-frame-graph:output_0",
+        "object.serial": 32,
+        "port.alias": "revolt-copper-fgn-frame-graph:command:demanded",
+        "port.direction": "out",
+        "port.group": "stream.0",
+        "port.id": 0,
+        "port.name": "command:demanded"
+      },
+      "params": {
+        "EnumFormat": [
+          {
+            "mediaType": "application",
+            "mediaSubtype": "ndarray",
+            "elementType": "F32_LE",
+            "shape": [ 277 ],
+            "layout": "ROW_MAJOR",
+            "rate": { "num": 500, "denom": 1 },
+            "schema": "org.calculon.ao.demanded-pdm-command/1"
+          }
+        ],
+        "Meta": [
+          {
+            "type": "Header",
+            "size": 32
+          },
+          {
+            "type": "Acquisition",
+            "size": 96,
+            "id-00000003": 2
+          }
+        ],
+        "IO": [
+          {
+            "id": "Buffers",
+            "size": 8
+          },
+          {
+            "id": "AsyncBuffers",
+            "size": 8
+          }
+        ],
+        "Format": [
+          {
+            "mediaType": "application",
+            "mediaSubtype": "ndarray",
+            "elementType": "F32_LE",
+            "shape": [ 277 ],
+            "layout": "ROW_MAJOR",
+            "rate": { "num": 500, "denom": 1 },
+            "schema": "org.calculon.ao.demanded-pdm-command/1"
+          }
+        ],
+        "Buffers": [
+          {
+            "buffers": { "default": 4, "min": 2, "max": 64 },
+            "blocks": 1,
+            "size": 1108,
+            "stride": 1108,
+            "dataType": {
+              "default": 6
+            }
+          }
+        ],
+        "Latency": [
+          {
+            "direction": "Input",
+            "minQuantum": 1.000000,
+            "maxQuantum": 1.000000,
+            "minRate": 0,
+            "maxRate": 0,
+            "minNs": 0,
+            "maxNs": 0
+          },
+          {
+            "direction": "Output",
+            "minQuantum": 0.000000,
+            "maxQuantum": 1.000000,
+            "minRate": 0,
+            "maxRate": 0,
+            "minNs": 0,
+            "maxNs": 0
+          }
+        ],
+        "Tag": [
+          {
+            "direction": "Input"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": 32,
+    "type": "PipeWire:Interface:Client",
+    "version": 3,
+    "permissions": [ "r", "w", "x", "m" ],
+    "info": {
+      "change-mask": [ "props" ],
+      "props": {
+        "application.language": "en_US.UTF-8",
+        "application.name": "WirePlumber (ao-rtc)",
+        "application.process.binary": "wireplumber",
+        "application.process.host": "rtc-devel",
+        "application.process.id": 775337,
+        "application.process.user": "dgamroth",
+        "application.version": "0.5.18",
+        "clock.power-of-two-quantum": true,
+        "config.name": null,
+        "context.modules.allow-empty": true,
+        "core.name": "pipewire-dgamroth-775337",
+        "core.version": "1.7.0",
+        "cpu.max-align": 32,
+        "default.clock.max-quantum": 2048,
+        "default.clock.min-quantum": 32,
+        "default.clock.quantum": 1024,
+        "default.clock.quantum-floor": 4,
+        "default.clock.quantum-limit": 8192,
+        "default.clock.rate": 48000,
+        "default.video.height": 480,
+        "default.video.rate.denom": 1,
+        "default.video.rate.num": 25,
+        "default.video.width": 640,
+        "library.use-fallback": false,
+        "link.max-buffers": 64,
+        "log.level": 2,
+        "mem.allow-mlock": true,
+        "mem.warn-mlock": false,
+        "module.id": 3,
+        "object.id": 32,
+        "object.serial": 33,
+        "pipewire.access": "unrestricted",
+        "pipewire.protocol": "protocol-native",
+        "pipewire.sec.gid": 1000,
+        "pipewire.sec.gids": "[20,24,25,27,29,30,44,46,100,101,106,107,109,992,1000]",
+        "pipewire.sec.pid": 775337,
+        "pipewire.sec.socket": "rtc-1c10460020d2",
+        "pipewire.sec.uid": 1000,
+        "remote.name": "/run/user/1000/pipewireao-session-wf-0710/1c10460020d247ed831377b1d99fc0ad/rtc-1c10460020d2",
+        "settings.check-quantum": false,
+        "settings.check-rate": false,
+        "support.dbus": false,
+        "wireplumber.daemon": true,
+        "wireplumber.profile": "ao-rtc"
+      },
+      "object-permissions": {
+        "-1": [ "r", "w", "x", "m" ]
+      }
+    }
+  },
+  {
+    "id": 33,
+    "type": "PipeWire:Interface:Node",
+    "version": 3,
+    "permissions": [ "r", "w", "x", "m" ],
+    "info": {
+      "max-input-ports": 4294967295,
+      "max-output-ports": 4294967295,
+      "change-mask": [ "input-ports", "output-ports", "state", "props", "params" ],
+      "n-input-ports": 0,
+      "n-output-ports": 0,
+      "state": "suspended",
+      "error": null,
+      "props": {
+        "client.id": 32,
+        "media.name": "pipewireao.rtc.session.rtc-wp-session-fgn-20261007",
+        "node.async": true,
+        "node.cache-params": false,
+        "node.loop.class": "main",
+        "node.name": "pipewireao.rtc.session.rtc-wp-session-fgn-20261007",
+        "node.want-driver": true,
+        "object.id": 33,
+        "object.serial": 34,
+        "pipewireao.row-transport-return": true,
+        "pipewireao.rtc-control.instance": 2196236658381120,
+        "pipewireao.rtc-control.owner-pid": 775337,
+        "pipewireao.rtc-control.profile": "pipewireao.rtc.session/1",
+        "pipewireao.rtc-control.protocol": "pipewireao.rtc-control/1",
+        "pipewireao.rtc.session.session-uuid": "ad5c71fb-e8d8-4971-9e48-8726a83bc90a"
+      },
+      "params": {
+        "PropInfo": [ ],
+        "Props": [
+          {
+            "params": [
+              "pipewireao.rtc.session.version",
+              1,
+              "pipewireao.rtc.session.instance",
+              2196236658381120,
+              "pipewireao.rtc.session.owner-pid",
+              "id-000bd4a9",
+              "pipewireao.rtc.session.lifecycle",
+              "Bool",
+              "pipewireao.rtc.session.last-token",
+              2058,
+              "pipewireao.rtc.session.controllers",
+              [
+                [
+                  "id-00000022",
+                  35,
+                  2196236658381121
+                ],
+                [
+                  "id-0000002b",
+                  44,
+                  2196236658381119
+                ]
+              ]
+            ]
+          },
+          {
+            "params": [
+              "pipewireao.rtc.control.completion.header",
+              [
+                1,
+                2196236658381120,
+                "id-0000002b",
+                44,
+                2196236658381119,
+                2058,
+                "Object",
+                0
+              ],
+              "pipewireao.rtc.control.completion.payload",
+              [
+                "Bool",
+                false
+              ]
+            ]
+          },
+          {
+            "params": [
+              "pipewireao.rtc.control.rejection.header",
+              [
+                1,
+                2196236658381120,
+                "",
+                0,
+                0,
+                0,
+                "",
+                -11
+              ],
+              "pipewireao.rtc.control.rejection.payload",
+              [
+                "session",
+                "No rejected request",
+                "None"
+              ]
+            ]
+          }
+        ],
+        "ProcessLatency": [ ],
+        "EnumFormat": [ ],
+        "Format": [ ]
+      }
+    }
+  },
+  {
+    "id": 34,
+    "type": "PipeWire:Interface:Node",
+    "version": 3,
+    "permissions": [ "r", "w", "x", "m" ],
+    "info": {
+      "max-input-ports": 4294967295,
+      "max-output-ports": 4294967295,
+      "change-mask": [ "input-ports", "output-ports", "state", "props", "params" ],
+      "n-input-ports": 0,
+      "n-output-ports": 0,
+      "state": "suspended",
+      "error": null,
+      "props": {
+        "client.id": 32,
+        "media.name": "pipewireao.rtc.controller.rtc-wp-session-fgn-20261007",
+        "node.async": true,
+        "node.cache-params": false,
+        "node.loop.class": "main",
+        "node.name": "pipewireao.rtc.controller.rtc-wp-session-fgn-20261007",
+        "node.want-driver": true,
+        "object.id": 34,
+        "object.serial": 35,
+        "pipewireao.row-transport-return": true,
+        "pipewireao.rtc-control.instance": 2196236658381121,
+        "pipewireao.rtc-control.owner-pid": 775337,
+        "pipewireao.rtc-control.profile": "pipewireao.rtc.controller/1",
+        "pipewireao.rtc-control.protocol": "pipewireao.rtc-control/1"
+      },
+      "params": {
+        "PropInfo": [ ],
+        "Props": [ ],
+        "ProcessLatency": [ ],
+        "EnumFormat": [ ],
+        "Format": [ ]
+      }
+    }
+  },
+  {
+    "id": 36,
+    "type": "PipeWire:Interface:Client",
+    "version": 3,
+    "permissions": [ "r", "w", "x", "m" ],
+    "info": {
+      "change-mask": [ "props" ],
+      "props": {
+        "application.language": "en_US.UTF-8",
+        "application.name": "julia",
+        "application.process.binary": "julia",
+        "application.process.host": "rtc-devel",
+        "application.process.id": 775248,
+        "application.process.user": "dgamroth",
+        "clock.power-of-two-quantum": true,
+        "core.name": "pipewire-dgamroth-775248",
+        "core.version": "1.7.0",
+        "cpu.max-align": 32,
+        "default.clock.max-quantum": 2048,
+        "default.clock.min-quantum": 32,
+        "default.clock.quantum": 1024,
+        "default.clock.quantum-floor": 4,
+        "default.clock.quantum-limit": 8192,
+        "default.clock.rate": 48000,
+        "default.video.height": 480,
+        "default.video.rate.denom": 1,
+        "default.video.rate.num": 25,
+        "default.video.width": 640,
+        "library.use-fallback": false,
+        "link.max-buffers": 64,
+        "log.level": 0,
+        "mem.allow-mlock": true,
+        "mem.mlock-all": false,
+        "mem.warn-mlock": false,
+        "module.id": 3,
+        "object.id": 36,
+        "object.serial": 37,
+        "pipewire.access": "unrestricted",
+        "pipewire.protocol": "protocol-native",
+        "pipewire.sec.gid": 1000,
+        "pipewire.sec.gids": "[20,24,25,27,29,30,44,46,100,101,106,107,109,992,1000]",
+        "pipewire.sec.pid": 775248,
+        "pipewire.sec.socket": "rtc-1c10460020d2",
+        "pipewire.sec.uid": 1000,
+        "remote.name": "/run/user/1000/pipewireao-session-wf-0710/1c10460020d247ed831377b1d99fc0ad/rtc-1c10460020d2",
+        "settings.check-quantum": false,
+        "settings.check-rate": false
+      },
+      "object-permissions": {
+        "-1": [ "r", "w", "x", "m" ]
+      }
+    }
+  },
+  {
+    "id": 37,
+    "type": "PipeWire:Interface:Node",
+    "version": 3,
+    "permissions": [ "r", "w", "x", "m" ],
+    "info": {
+      "max-input-ports": 4294967295,
+      "max-output-ports": 4294967295,
+      "change-mask": [ "input-ports", "output-ports", "state", "props", "params" ],
+      "n-input-ports": 0,
+      "n-output-ports": 0,
+      "state": "suspended",
+      "error": null,
+      "props": {
+        "client.id": 36,
+        "media.class": "Control",
+        "media.name": "pipewireao.rtc.bootstrap.simulator",
+        "node.async": true,
+        "node.loop.class": "main",
+        "node.name": "pipewireao.rtc.bootstrap.simulator",
+        "node.want-driver": true,
+        "object.id": 37,
+        "object.serial": 38,
+        "pipewireao.row-transport-return": true,
+        "pipewireao.rtc-control.instance": 2196236658381122,
+        "pipewireao.rtc-control.owner-pid": 775248,
+        "pipewireao.rtc-control.profile": "pipewireao.rtc.owner-bootstrap/1",
+        "pipewireao.rtc-control.protocol": "pipewireao.rtc-control/1"
+      },
+      "params": {
+        "PropInfo": [ ],
+        "Props": [
+          {
+            "params": [
+              "pipewireao.rtc.owner-bootstrap.version",
+              1,
+              "pipewireao.rtc.owner-bootstrap.instance",
+              2196236658381122,
+              "pipewireao.rtc.owner-bootstrap.owner-pid",
+              "id-000bd450",
+              "pipewireao.rtc.owner-bootstrap.lifecycle",
+              "Id",
+              "pipewireao.rtc.owner-bootstrap.last-token",
+              2,
+              "pipewireao.rtc.owner-bootstrap.controllers",
+              [
+                [
+                  "id-00000022",
+                  35,
+                  2196236658381121
+                ]
+              ]
+            ]
+          },
+          {
+            "params": [
+              "pipewireao.rtc.control.completion.header",
+              [
+                1,
+                2196236658381122,
+                "id-00000022",
+                35,
+                2196236658381121,
+                2,
+                "Bool",
+                0
+              ],
+              "pipewireao.rtc.control.completion.payload",
+              [
+                "Id",
+                ""
+              ]
+            ]
+          },
+          {
+            "params": [
+              "pipewireao.rtc.control.rejection.header",
+              [
+                1,
+                2196236658381122,
+                "",
+                0,
+                0,
+                0,
+                "",
+                -22
+              ],
+              "pipewireao.rtc.control.rejection.payload",
+              [
+                "None",
+                "request rejected"
+              ]
+            ]
+          }
+        ],
+        "ProcessLatency": [ ],
+        "EnumFormat": [ ],
+        "Format": [ ]
+      }
+    }
+  },
+  {
+    "id": 42,
+    "type": "PipeWire:Interface:Client",
+    "version": 3,
+    "permissions": [ "r", "w", "x", "m" ],
+    "info": {
+      "change-mask": [ "props" ],
+      "props": {
+        "application.language": "en_US.UTF-8",
+        "application.name": "julia",
+        "application.process.binary": "julia",
+        "application.process.host": "rtc-devel",
+        "application.process.id": 775338,
+        "application.process.user": "dgamroth",
+        "clock.power-of-two-quantum": true,
+        "core.name": "pipewire-dgamroth-775338",
+        "core.version": "1.7.0",
+        "cpu.max-align": 32,
+        "default.clock.max-quantum": 2048,
+        "default.clock.min-quantum": 32,
+        "default.clock.quantum": 1024,
+        "default.clock.quantum-floor": 4,
+        "default.clock.quantum-limit": 8192,
+        "default.clock.rate": 48000,
+        "default.video.height": 480,
+        "default.video.rate.denom": 1,
+        "default.video.rate.num": 25,
+        "default.video.width": 640,
+        "library.use-fallback": true,
+        "link.max-buffers": 64,
+        "log.level": 0,
+        "mem.allow-mlock": true,
+        "mem.warn-mlock": false,
+        "module.id": 3,
+        "object.id": 42,
+        "object.serial": 43,
+        "pipewire.access": "unrestricted",
+        "pipewire.protocol": "protocol-native",
+        "pipewire.sec.gid": 1000,
+        "pipewire.sec.gids": "[20,24,25,27,29,30,44,46,100,101,106,107,109,992,1000]",
+        "pipewire.sec.pid": 775338,
+        "pipewire.sec.socket": "rtc-1c10460020d2",
+        "pipewire.sec.uid": 1000,
+        "remote.name": "/run/user/1000/pipewireao-session-wf-0710/1c10460020d247ed831377b1d99fc0ad/rtc-1c10460020d2",
+        "settings.check-quantum": false,
+        "settings.check-rate": false
+      },
+      "object-permissions": {
+        "-1": [ "r", "w", "x", "m" ]
+      }
+    }
+  },
+  {
+    "id": 43,
+    "type": "PipeWire:Interface:Node",
+    "version": 3,
+    "permissions": [ "r", "w", "x", "m" ],
+    "info": {
+      "max-input-ports": 4294967295,
+      "max-output-ports": 4294967295,
+      "change-mask": [ "input-ports", "output-ports", "state", "props", "params" ],
+      "n-input-ports": 0,
+      "n-output-ports": 0,
+      "state": "suspended",
+      "error": null,
+      "props": {
+        "client.id": 42,
+        "media.class": "Control",
+        "media.name": "pipewireao.rtc.controller.julia.775338.2196236658381119",
+        "node.async": true,
+        "node.loop.class": "main",
+        "node.name": "pipewireao.rtc.controller.julia.775338.2196236658381119",
+        "node.want-driver": true,
+        "object.id": 43,
+        "object.serial": 44,
+        "pipewireao.row-transport-return": true,
+        "pipewireao.rtc-control.instance": 2196236658381119,
+        "pipewireao.rtc-control.owner-pid": 775338,
+        "pipewireao.rtc-control.profile": "pipewireao.rtc.controller/1",
+        "pipewireao.rtc-control.protocol": "pipewireao.rtc-control/1"
+      },
+      "params": {
+        "PropInfo": [ ],
+        "Props": [ ],
+        "ProcessLatency": [ ],
+        "EnumFormat": [ ],
+        "Format": [ ]
+      }
+    }
+  },
+  {
+    "id": 44,
+    "type": "PipeWire:Interface:Client",
+    "version": 3,
+    "permissions": [ "r", "w", "x", "m" ],
+    "info": {
+      "change-mask": [ "props" ],
+      "props": {
+        "application.language": "en_US.UTF-8",
+        "application.name": "julia",
+        "application.process.binary": "julia",
+        "application.process.host": "rtc-devel",
+        "application.process.id": 775248,
+        "application.process.user": "dgamroth",
+        "clock.power-of-two-quantum": true,
+        "core.name": "pipewire-dgamroth-775248",
+        "core.version": "1.7.0",
+        "cpu.max-align": 32,
+        "default.clock.max-quantum": 2048,
+        "default.clock.min-quantum": 32,
+        "default.clock.quantum": 1024,
+        "default.clock.quantum-floor": 4,
+        "default.clock.quantum-limit": 8192,
+        "default.clock.rate": 48000,
+        "default.video.height": 480,
+        "default.video.rate.denom": 1,
+        "default.video.rate.num": 25,
+        "default.video.width": 640,
+        "library.use-fallback": false,
+        "link.max-buffers": 64,
+        "log.level": 0,
+        "mem.allow-mlock": true,
+        "mem.mlock-all": false,
+        "mem.warn-mlock": false,
+        "module.id": 3,
+        "object.id": 44,
+        "object.serial": 45,
+        "pipewire.access": "unrestricted",
+        "pipewire.protocol": "protocol-native",
+        "pipewire.sec.gid": 1000,
+        "pipewire.sec.gids": "[20,24,25,27,29,30,44,46,100,101,106,107,109,992,1000]",
+        "pipewire.sec.pid": 775248,
+        "pipewire.sec.socket": "rtc-1c10460020d2",
+        "pipewire.sec.uid": 1000,
+        "remote.name": "/run/user/1000/pipewireao-session-wf-0710/1c10460020d247ed831377b1d99fc0ad/rtc-1c10460020d2",
+        "settings.check-quantum": false,
+        "settings.check-rate": false
+      },
+      "object-permissions": {
+        "-1": [ "r", "w", "x", "m" ]
+      }
+    }
+  },
+  {
+    "id": 45,
+    "type": "PipeWire:Interface:Node",
+    "version": 3,
+    "permissions": [ "r", "w", "x", "m" ],
+    "info": {
+      "max-input-ports": 0,
+      "max-output-ports": 1,
+      "change-mask": [ "input-ports", "output-ports", "state", "props", "params" ],
+      "n-input-ports": 0,
+      "n-output-ports": 1,
+      "state": "suspended",
+      "error": null,
+      "props": {
+        "client.id": 44,
+        "media.category": "Filter",
+        "media.class": "Stream/Output/Application",
+        "media.name": "simulator-wfs",
+        "media.role": "DSP",
+        "media.type": "Application",
+        "node.async": true,
+        "node.description": "simulator-wfs",
+        "node.dont-reconnect": true,
+        "node.driver": true,
+        "node.loop.class": "main",
+        "node.name": "simulator-wfs",
+        "node.want-driver": true,
+        "object.id": 45,
+        "object.serial": 46,
+        "pipewireao.reset-control": true,
+        "pipewireao.row-transport-return": true,
+        "pipewireao.run-control": true,
+        "pipewireao.source-control.instance": 5461666308499093172,
+        "pipewireao.source-control.owner-pid": 775248,
+        "pipewireao.source-query.version": 1,
+        "pipewireao.source-rejection.version": 1,
+        "pipewireao.source-snapshot.version": 1,
+        "port.group": "stream.0",
+        "priority.driver": 210000,
+        "stream.is-live": true
+      },
+      "params": {
+        "PropInfo": [ ],
+        "Props": [
+          {
+            "params": [
+              "pipewireao.run-control.version",
+              1,
+              "pipewireao.run-control.completed-token",
+              4,
+              "pipewireao.run-control.result",
+              0,
+              "pipewireao.run-control.actual-state",
+              "stopped"
+            ]
+          },
+          {
+            "params": [
+              "pipewireao.reset-control.version",
+              1,
+              "pipewireao.reset-control.completed-token",
+              0,
+              "pipewireao.reset-control.result",
+              0
+            ]
+          },
+          {
+            "params": [
+              "pipewireao.source-snapshot.version",
+              1,
+              "pipewireao.source-snapshot.instance",
+              5461666308499093172,
+              "pipewireao.source-snapshot.kind",
+              3,
+              "pipewireao.source-snapshot.completed-token",
+              5,
+              "pipewireao.source-snapshot.result",
+              0,
+              "pipewireao.source-snapshot.generation",
+              1,
+              "pipewireao.source-snapshot.sequence",
+              0,
+              "pipewireao.source-snapshot.running",
+              false,
+              "pipewireao.source-snapshot.completed",
+              false,
+              "pipewireao.source-snapshot.report-generation",
+              1,
+              "pipewireao.source-snapshot.report-sequence",
+              0
+            ]
+          },
+          {
+            "params": [
+              "pipewireao.source-rejection.version",
+              1,
+              "pipewireao.source-rejection.instance",
+              5461666308499093172,
+              "pipewireao.source-rejection.kind",
+              0,
+              "pipewireao.source-rejection.completed-token",
+              0,
+              "pipewireao.source-rejection.result",
+              0,
+              "pipewireao.source-rejection.generation",
+              1,
+              "pipewireao.source-rejection.sequence",
+              0,
+              "pipewireao.source-rejection.running",
+              false,
+              "pipewireao.source-rejection.completed",
+              false,
+              "pipewireao.source-rejection.report-generation",
+              1,
+              "pipewireao.source-rejection.report-sequence",
+              0
+            ]
+          }
+        ],
+        "EnumFormat": [
+          {
+            "mediaType": "application",
+            "mediaSubtype": "ndarray",
+            "elementType": "U16_LE",
+            "shape": [ 64, 64 ],
+            "layout": "ROW_MAJOR",
+            "rate": { "num": 500, "denom": 1 },
+            "schema": "org.calculon.ao.raw-detector-pixels/1"
+          }
+        ],
+        "Format": [
+          {
+            "mediaType": "application",
+            "mediaSubtype": "ndarray",
+            "elementType": "U16_LE",
+            "shape": [ 64, 64 ],
+            "layout": "ROW_MAJOR",
+            "rate": { "num": 500, "denom": 1 },
+            "schema": "org.calculon.ao.raw-detector-pixels/1"
+          }
+        ],
+        "ProcessLatency": [
+        ]
+      }
+    }
+  },
+  {
+    "id": 46,
+    "type": "PipeWire:Interface:Port",
+    "version": 3,
+    "permissions": [ "r", "x", "m" ],
+    "info": {
+      "direction": "output",
+      "change-mask": [ "props", "params" ],
+      "props": {
+        "node.id": 45,
+        "object.id": 46,
+        "object.path": "simulator-wfs:output_0",
+        "object.serial": 47,
+        "port.alias": "simulator-wfs:output_1",
+        "port.direction": "out",
+        "port.group": "stream.0",
+        "port.id": 0,
+        "port.name": "output_1"
+      },
+      "params": {
+        "EnumFormat": [
+          {
+            "mediaType": "application",
+            "mediaSubtype": "ndarray",
+            "elementType": "U16_LE",
+            "shape": [ 64, 64 ],
+            "layout": "ROW_MAJOR",
+            "rate": { "num": 500, "denom": 1 },
+            "schema": "org.calculon.ao.raw-detector-pixels/1"
+          }
+        ],
+        "Meta": [
+          {
+            "type": "Header",
+            "size": 32
+          },
+          {
+            "type": "Acquisition",
+            "size": 96,
+            "id-00000003": 2
+          },
+          {
+            "type": "Busy",
+            "size": 8
+          }
+        ],
+        "IO": [
+          {
+            "id": "Buffers",
+            "size": 8
+          },
+          {
+            "id": "AsyncBuffers",
+            "size": 8
+          }
+        ],
+        "Format": [
+          {
+            "mediaType": "application",
+            "mediaSubtype": "ndarray",
+            "elementType": "U16_LE",
+            "shape": [ 64, 64 ],
+            "layout": "ROW_MAJOR",
+            "rate": { "num": 500, "denom": 1 },
+            "schema": "org.calculon.ao.raw-detector-pixels/1"
+          }
+        ],
+        "Buffers": [
+          {
+            "buffers": 2,
+            "size": 8192
+          }
+        ],
+        "Latency": [
+          {
+            "direction": "Input",
+            "minQuantum": 1.000000,
+            "maxQuantum": 1.000000,
+            "minRate": 0,
+            "maxRate": 0,
+            "minNs": 0,
+            "maxNs": 0
+          }
+        ],
+        "Tag": [
+          {
+            "direction": "Input"
+          }
+        ],
+        "Capability": [ ],
+        "PeerCapability": [
+          {
+            "id-00000012": null
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": 47,
+    "type": "PipeWire:Interface:Node",
+    "version": 3,
+    "permissions": [ "r", "w", "x", "m" ],
+    "info": {
+      "max-input-ports": 1,
+      "max-output-ports": 0,
+      "change-mask": [ "input-ports", "output-ports", "state", "props", "params" ],
+      "n-input-ports": 1,
+      "n-output-ports": 0,
+      "state": "idle",
+      "error": null,
+      "props": {
+        "client.id": 44,
+        "media.category": "Filter",
+        "media.class": "Stream/Input/Application",
+        "media.name": "simulator-command",
+        "media.role": "DSP",
+        "media.type": "Application",
+        "node.async": true,
+        "node.description": "simulator-command",
+        "node.dont-reconnect": true,
+        "node.driver-id": 45,
+        "node.loop.class": "main",
+        "node.name": "simulator-command",
+        "node.want-driver": true,
+        "object.id": 47,
+        "object.serial": 48,
+        "pipewireao.row-transport-return": true,
+        "port.group": "stream.0",
+        "stream.is-live": true
+      },
+      "params": {
+        "PropInfo": [ ],
+        "Props": [ ],
+        "EnumFormat": [
+          {
+            "mediaType": "application",
+            "mediaSubtype": "ndarray",
+            "elementType": "F32_LE",
+            "shape": [ 277 ],
+            "layout": "ROW_MAJOR",
+            "rate": { "num": 500, "denom": 1 },
+            "schema": "org.calculon.ao.demanded-pdm-command/1"
+          }
+        ],
+        "Format": [
+          {
+            "mediaType": "application",
+            "mediaSubtype": "ndarray",
+            "elementType": "F32_LE",
+            "shape": [ 277 ],
+            "layout": "ROW_MAJOR",
+            "rate": { "num": 500, "denom": 1 },
+            "schema": "org.calculon.ao.demanded-pdm-command/1"
+          }
+        ],
+        "ProcessLatency": [
+        ]
+      }
+    }
+  },
+  {
+    "id": 48,
+    "type": "PipeWire:Interface:Port",
+    "version": 3,
+    "permissions": [ "r", "x", "m" ],
+    "info": {
+      "direction": "input",
+      "change-mask": [ "props", "params" ],
+      "props": {
+        "node.id": 47,
+        "object.id": 48,
+        "object.path": "simulator-command:input_0",
+        "object.serial": 49,
+        "port.alias": "simulator-command:input_1",
+        "port.direction": "in",
+        "port.group": "stream.0",
+        "port.id": 0,
+        "port.name": "input_1"
+      },
+      "params": {
+        "EnumFormat": [
+          {
+            "mediaType": "application",
+            "mediaSubtype": "ndarray",
+            "elementType": "F32_LE",
+            "shape": [ 277 ],
+            "layout": "ROW_MAJOR",
+            "rate": { "num": 500, "denom": 1 },
+            "schema": "org.calculon.ao.demanded-pdm-command/1"
+          }
+        ],
+        "Meta": [
+          {
+            "type": "Header",
+            "size": 32
+          },
+          {
+            "type": "Acquisition",
+            "size": 96,
+            "id-00000003": 2
+          },
+          {
+            "type": "Busy",
+            "size": 8
+          }
+        ],
+        "IO": [
+          {
+            "id": "Buffers",
+            "size": 8
+          },
+          {
+            "id": "AsyncBuffers",
+            "size": 8
+          }
+        ],
+        "Format": [
+          {
+            "mediaType": "application",
+            "mediaSubtype": "ndarray",
+            "elementType": "F32_LE",
+            "shape": [ 277 ],
+            "layout": "ROW_MAJOR",
+            "rate": { "num": 500, "denom": 1 },
+            "schema": "org.calculon.ao.demanded-pdm-command/1"
+          }
+        ],
+        "Buffers": [
+          {
+            "buffers": 2,
+            "size": 1108
+          }
+        ],
+        "Latency": [
+          {
+            "direction": "Output",
+            "minQuantum": 1.000000,
+            "maxQuantum": 2.000000,
+            "minRate": 0,
+            "maxRate": 0,
+            "minNs": 0,
+            "maxNs": 0
+          }
+        ],
+        "Tag": [
+          {
+            "direction": "Output"
+          }
+        ],
+        "Capability": [ ],
+        "PeerCapability": [
+          {
+            "id-0000001f": null
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": 49,
+    "type": "PipeWire:Interface:Link",
+    "version": 3,
+    "permissions": [ "r", "x" ],
+    "info": {
+      "output-node-id": 17,
+      "output-port-id": 31,
+      "input-node-id": 47,
+      "input-port-id": 48,
+      "change-mask": [ "state", "format", "props" ],
+      "state": "paused",
+      "error": null,
+      "format": {
+        "mediaType": "application",
+        "mediaSubtype": "ndarray",
+        "elementType": "F32_LE",
+        "shape": [ 277 ],
+        "layout": "ROW_MAJOR",
+        "rate": { "num": 500, "denom": 1 },
+        "schema": "org.calculon.ao.demanded-pdm-command/1"
+      },
+      "props": {
+        "client.id": 32,
+        "factory.id": 13,
+        "link.async": true,
+        "link.input.node": 47,
+        "link.input.port": 48,
+        "link.output.node": 17,
+        "link.output.port": 31,
+        "link.passive": false,
+        "object.id": 49,
+        "object.linger": false,
+        "object.path": "pipewireao/session/2196236658381120/1/3",
+        "object.serial": 50
+      }
+    }
+  },
+  {
+    "id": 50,
+    "type": "PipeWire:Interface:Link",
+    "version": 3,
+    "permissions": [ "r", "x" ],
+    "info": {
+      "output-node-id": 45,
+      "output-port-id": 46,
+      "input-node-id": 17,
+      "input-port-id": 18,
+      "change-mask": [ "state", "format", "props" ],
+      "state": "paused",
+      "error": null,
+      "format": {
+        "mediaType": "application",
+        "mediaSubtype": "ndarray",
+        "elementType": "U16_LE",
+        "shape": [ 64, 64 ],
+        "layout": "ROW_MAJOR",
+        "rate": { "num": 500, "denom": 1 },
+        "schema": "org.calculon.ao.raw-detector-pixels/1"
+      },
+      "props": {
+        "client.id": 32,
+        "factory.id": 13,
+        "link.input.node": 17,
+        "link.input.port": 18,
+        "link.output.node": 45,
+        "link.output.port": 46,
+        "link.passive": true,
+        "object.id": 50,
+        "object.linger": false,
+        "object.path": "pipewireao/session/2196236658381120/1/1",
+        "object.serial": 51
+      }
+    }
+  },
+  {
+    "id": 35,
+    "type": "PipeWire:Interface:Client",
+    "version": 3,
+    "permissions": [ "r", "w", "x", "m" ],
+    "info": {
+      "change-mask": [ "props" ],
+      "props": {
+        "application.language": "en_US.UTF-8",
+        "application.name": "pwao-dump",
+        "application.process.binary": "pwao-dump",
+        "application.process.host": "rtc-devel",
+        "application.process.id": 777189,
+        "application.process.session-id": 325,
+        "application.process.user": "dgamroth",
+        "clock.power-of-two-quantum": true,
+        "core.name": "pipewire-dgamroth-777189",
+        "core.version": "1.7.0",
+        "cpu.max-align": 32,
+        "default.clock.max-quantum": 2048,
+        "default.clock.min-quantum": 32,
+        "default.clock.quantum": 1024,
+        "default.clock.quantum-floor": 4,
+        "default.clock.quantum-limit": 8192,
+        "default.clock.rate": 48000,
+        "default.video.height": 480,
+        "default.video.rate.denom": 1,
+        "default.video.rate.num": 25,
+        "default.video.width": 640,
+        "library.use-fallback": true,
+        "link.max-buffers": 64,
+        "log.level": 0,
+        "mem.allow-mlock": true,
+        "mem.warn-mlock": false,
+        "module.id": 3,
+        "object.id": 35,
+        "object.serial": 53,
+        "pipewire.access": "unrestricted",
+        "pipewire.protocol": "protocol-native",
+        "pipewire.sec.gid": 1000,
+        "pipewire.sec.gids": "[20,24,25,27,29,30,44,46,100,101,106,107,109,992,1000,1002]",
+        "pipewire.sec.pid": 777189,
+        "pipewire.sec.socket": "rtc-1c10460020d2-manager",
+        "pipewire.sec.uid": 1000,
+        "remote.intention": "manager",
+        "remote.name": "/run/user/1000/pipewireao-session-wf-0710/1c10460020d247ed831377b1d99fc0ad/rtc-1c10460020d2",
+        "settings.check-quantum": false,
+        "settings.check-rate": false
+      },
+      "object-permissions": {
+        "-1": [ "r", "w", "x", "m" ]
+      }
+    }
+  }
+]

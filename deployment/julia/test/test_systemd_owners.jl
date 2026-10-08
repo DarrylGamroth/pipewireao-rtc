@@ -79,12 +79,12 @@ end
     @test_throws SO.OwnerError SO.parse_populated("populated 2\n")
     @test SO.parse_properties("Id=unit.service\nExecStopPost=argv[]=x=y\n")["ExecStopPost"] == "argv[]=x=y"
     @test_throws SO.OwnerError SO.parse_properties("Id=a\nId=b\n")
-    launcher = "/tmp/package/bin/pipewireao-rtc-deploy"
+    launcher = "/tmp/package/bin/pipewireao-rtc-session"
     hook = "{ path=" * launcher * " ; argv[]=" * launcher *
         " cleanup-systemd-owners --invocation \${INVOCATION_ID} ; ignore_errors=no ; " *
         "start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 }"
     @test SO.cleanup_hook_valid(hook, launcher)
-    spaced = "/tmp/package with spaces/bin/pipewireao-rtc-deploy"
+    spaced = "/tmp/package with spaces/bin/pipewireao-rtc-session"
     @test SO.cleanup_hook_valid(replace(hook, launcher => spaced), spaced)
     @test !SO.cleanup_hook_valid("/bin/echo cleanup-systemd-owners --invocation \${INVOCATION_ID}", launcher)
     @test !SO.cleanup_hook_valid(replace(hook, "path=" * launcher => "path=/bin/echo"), launcher)

@@ -4,7 +4,7 @@ using SHA
 using TOML
 using JSON3
 using ..Common
-using ..Deployment
+using ..DeploymentConfiguration
 using ..ScienceExport
 import ..NativeControlClient, ..NativeOwnerBootstrapCodec
 
@@ -215,7 +215,7 @@ end
 function classic_snapshot(package::AbstractString, provenance::AbstractDict, prefix::AbstractString)
     bindings = classic_bindings(provenance)
     graph_path = campaign_file(package, "graphs/graph.conf.in", 2 * 1024 * 1024)
-    graph = Deployment.decode(graph_path, prefix)
+    graph = DeploymentConfiguration.decode(graph_path, prefix)
     nodes = graph["filter.graph"]["nodes"]
     length(Set(node["name"] for node in nodes)) == length(nodes) || throw(ArgumentError("duplicate Classic graph node names"))
     selected = Dict{String,Any}()
@@ -356,6 +356,42 @@ function hil_session(base::AbstractDict)
     return value
 end
 
+"Assign each declared HIL node to the process that creates it."
+function hil_node_owners(session::AbstractDict, specification::AbstractDict)
+    roles = Set(owner["role"] for owner in specification["owners"])
+    "simulator" in roles || throw(ArgumentError("HIL source owner is missing"))
+    result = Dict{String,String}()
+    for (section, entries) in (("sources", session["sources"]),
+                               ("graphs", session["graphs"]),
+                               ("sinks", session["sinks"]))
+        for entry in entries
+            name = entry["node.name"]
+            role = if section == "sources" && name == "simulator-wfs" &&
+                      get(entry, "ownership", nothing) == "external"
+                "simulator"
+            elseif section == "sources" &&
+                   get(entry, "factory", nothing) == "pipewireao.runtime-parameter"
+                "parameters"
+            elseif section == "graphs" &&
+                   get(entry, "factory", nothing) == "pipewireao.fgn-native"
+                "fgn"
+            elseif section == "graphs" &&
+                   get(entry, "ownership", nothing) == "external" &&
+                   get(entry, "run-control", nothing) == "session" && "julia" in roles
+                "julia"
+            elseif section == "sinks" && name == "simulator-command" &&
+                   get(entry, "ownership", nothing) == "external"
+                "simulator"
+            else
+                throw(ArgumentError("HIL node has no declared process owner: $name"))
+            end
+            haskey(result, name) && throw(ArgumentError("duplicate HIL node: $name"))
+            result[name] = role
+        end
+    end
+    return result
+end
+
 function hil_core(base::AbstractDict; detector_observation::Bool=false)
     value = Dict{String,Any}(deepcopy(base))
     value["context.properties"] = Dict{String,Any}(value["context.properties"])
@@ -459,7 +495,7 @@ function bind_bootstrap_owner!(owner)
     owner["bootstrap-protocol"] = NativeControlClient.profile_name(NativeOwnerBootstrapCodec.PROFILE)
     owner["bootstrap-node"] = node
     append!(owner["argv"], ["--bootstrap-node", node, "--bootstrap-instance",
-        "@" * Deployment.bootstrap_instance_key(role) * "@"])
+        "@" * DeploymentConfiguration.bootstrap_instance_key(role) * "@"])
     return owner
 end
 
@@ -520,7 +556,7 @@ function calibration_inputs(package::AbstractString,provenance::AbstractDict,pre
         result["artifacts"]["system_flat"] = artifact("system-flat","micrometre OPD")
         return result
     end
-    graph = Deployment.decode(joinpath(package,"graphs/graph.conf.in"),prefix)["filter.graph"]
+    graph = DeploymentConfiguration.decode(joinpath(package,"graphs/graph.conf.in"),prefix)["filter.graph"]
     nodes = [node for node in graph["nodes"] if get(node,"label",nothing) == "shack-hartmann-image-f32"]
     length(nodes) == 1 || throw(ArgumentError("Classic calibration requires one complete-image Shack-Hartmann estimator"))
     config = nodes[1]["config"]
@@ -709,7 +745,7 @@ function operational_calibration(package::AbstractString,specification::Abstract
             get(deployed_specification["artifacts"],relative,nothing) == ScienceExport.sha256(path) ||
                 throw(ArgumentError("stale deployed campaign binding: $stage/$relative"))
         end
-        deployed_wfs = Deployment.decode(joinpath(deployed_package,"graphs/wfs.conf.in"),prefix)
+        deployed_wfs = DeploymentConfiguration.decode(joinpath(deployed_package,"graphs/wfs.conf.in"),prefix)
         validate_startup_bindings(deployed_package,deployed_specification,source_provenance,deployed_wfs,source_bindings;
                                   owner_role="julia-wfs",graph_relative="graphs/wfs.conf.in")
         source_wfs_nodes = [node for node in source_graph["filter.graph"]["nodes"] if node["label"] in ("pixel-calibration-u16-f32","shack-hartmann-image-f32")]
@@ -831,7 +867,7 @@ function export_package(args)
     args.dark_frames isa Int && 1 <= args.dark_frames <= 4096 || throw(ArgumentError("dark calibration must use 1..4096 exposures"))
     args.backend in ("cpu","cuda","amdgpu") || throw(ArgumentError("unsupported HIL backend"))
     base = realpath(args.base_package)
-    specification = Deployment.profile(joinpath(base,"deployment.conf"),args.pipewire_prefix;legacy_export_input=true)
+    specification = DeploymentConfiguration.profile(joinpath(base,"deployment.conf"),args.pipewire_prefix;legacy_export_input=true)
     provenance = Common.read_json(joinpath(base,"provenance.json"))
     get(provenance,"mode",nothing) == "frame" && get(provenance,"profile",nothing) in ("classic","copper") ||
         throw(ArgumentError("base must be a maintained Classic/Copper complete-frame package"))
@@ -866,10 +902,6 @@ function export_package(args)
         package = joinpath(temporary,"package")
         ScienceExport.copy_tree(base,package;ignored=Set(["__pycache__","input.fits","systemd"]))
         ScienceExport.copy_deployment_runtime(package)
-        for name in ("pipewireao-rtc-deploy","placement.py","pipewireao-rtc@.service.in")
-            path = joinpath(package,"bin",name)
-            isfile(path) && rm(path)
-        end
         session = hil_session(Common.read_json(joinpath(package,"session.conf.in")))
         session["rate"] = "$(args.rate_hz)/1"
         for item in vcat(session["sources"],session["graphs"],session["sinks"]), port in item["ports"]
@@ -929,6 +961,10 @@ function export_package(args)
             "environment"=>simulator_environment(args.backend),"control-protocol"=>"pipewireao.source-control/1",
             "control-node"=>"simulator-wfs")))
         specification["source-owner"] = "simulator"
+        specification["node-owners"] = hil_node_owners(session, specification)
+        ScienceExport.wireplumber_session_defaults!(specification)
+        ScienceExport.stage_wireplumber!(package;
+            build=option(args, :wireplumber_build), source=option(args, :wireplumber_source))
         detector_observation && (specification["detector-observation"] = true)
         specification["name"] = "revolt-$instrument-$(provenance["engine"])-hil-$(args.backend)"
         specification["placement"]["simulator"] = bootstrap_placement!(Dict("cpus"=>[6,14],"leader-cpu"=>6,"rt-priority"=>0,"threads"=>Any[],"locked-bytes"=>0))
@@ -936,7 +972,7 @@ function export_package(args)
         detector_observation && push!(specification["placement"]["core"]["threads"],
             Dict("cpus"=>[14], "policy"=>"fifo", "priority"=>83, "count"=>1, "name"=>"observer-loop"))
         core_path = joinpath(package,specification["core"])
-        ScienceExport.write_spa_config(core_path,hil_core(Deployment.decode(core_path,args.pipewire_prefix);detector_observation))
+        ScienceExport.write_spa_config(core_path,hil_core(DeploymentConfiguration.decode(core_path,args.pipewire_prefix);detector_observation))
         specification["client"]["simulator"] = "client-simulator.conf.in"
         ScienceExport.copy_file(joinpath(ScienceExport.resource_root(),"templates/client-simulator.conf.in"),joinpath(package,"client-simulator.conf.in"))
         provenance["hil"] = Dict{String,Any}("backend"=>args.backend,"wall_rate_hz"=>(wall_rate == "default" ? args.rate_hz : wall_rate == "unpaced" ? 0 : parse(Int,wall_rate)),"model_rate_hz"=>args.rate_hz,
@@ -964,7 +1000,7 @@ function export_package(args)
         Common.write_json(joinpath(package,"provenance.json"),provenance)
         specification["artifacts"] = _package_artifacts(package)
         Common.write_json(joinpath(package,"deployment.conf"),specification)
-        Deployment.profile(joinpath(package,"deployment.conf"),args.pipewire_prefix)
+        DeploymentConfiguration.profile(joinpath(package,"deployment.conf"),args.pipewire_prefix)
         mv(package,output)
         return joinpath(output,"deployment.conf")
     end
@@ -973,7 +1009,8 @@ end
 function main(argv=ARGS)
     options = Common.cli_arguments(argv;required=["output","base-package","aoc-root","aos-root","plant-root",
         "adapter-root","pipewireao-jl-root","calibration-algorithms-root"],flags=["correction-diagnostics"],
-        allowed=["operational-calibration","pipewire-prefix","total-exchanges","wall-rate","detector-observation"],defaults=(backend="cpu",rate_hz="10",frames="16",dark_frames="256"))
+        allowed=["operational-calibration","pipewire-prefix","total-exchanges","wall-rate","detector-observation",
+                 "wireplumber-build","wireplumber-source"],defaults=(backend="cpu",rate_hz="10",frames="16",dark_frames="256"))
     observation = hasproperty(options,:detector_observation) ? options.detector_observation : "false"
     observation in ("true","false") || throw(ArgumentError("--detector-observation must be true or false"))
     args = merge(options,(rate_hz=parse(Int,options.rate_hz),frames=parse(Int,options.frames),

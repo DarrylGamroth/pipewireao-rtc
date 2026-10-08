@@ -46,7 +46,6 @@ function export_classic_package(args,base,output,backend,specification,provenanc
     read(joinpath(override,"Project.toml"))==read(joinpath(base,"hil/packages/PipeWireAO/Project.toml")) &&
         occursin("allow_zero_sequence::Bool=false",read(joinpath(override,"src/ndarray_exchange.jl"),String)) ||
         throw(ArgumentError("Classic correction requires the exact-zero public receive dependency"))
-    isfile(args.rtc_binary) && !islink(args.rtc_binary) || throw(ArgumentError("missing Classic RTC binary"))
     helper_hashes=Dict(name=>digest(joinpath(base,"hil",name)) for name in FROZEN_HELPERS)
     all(digest(joinpath(ScienceExport.resource_root(),"hil",name))==hash for (name,hash) in helper_hashes) ||
         throw(ArgumentError("Classic correction must preserve all four normal scientific helpers"))
@@ -65,7 +64,7 @@ function export_classic_package(args,base,output,backend,specification,provenanc
     return mktempdir(dirname(output);prefix=".rtc-heart-correct-") do temporary
         package=joinpath(temporary,"package")
         HeartExport.export_package(merge(args,(;output=package,readout_us=0));simulator_backend=backend)
-        staged=Deployment.profile(joinpath(package,"deployment.conf"),args.pipewire_prefix)
+        staged=DeploymentConfiguration.profile(joinpath(package,"deployment.conf"),args.pipewire_prefix)
         staged_provenance=Common.read_json(joinpath(package,"provenance.json"))
         for file in HELPERS
             destination=joinpath(package,"hil",file);ispath(destination) && rm(destination)
@@ -98,7 +97,7 @@ function export_classic_package(args,base,output,backend,specification,provenanc
         CalibrationExport.correction_source_control!(simulator, "classic")
         simulator["argv"]=owner_arguments(simulator["argv"],evidence,128*1024*1024;profile="classic")
         Common.write_json(joinpath(package,"session.conf.in"),HeartCalibrationExport.calibration_session(provenance["hil"]["wall_rate_hz"];profile="classic"))
-        core=Deployment.decode(joinpath(package,staged["core"]),args.pipewire_prefix)
+        core=DeploymentConfiguration.decode(joinpath(package,staged["core"]),args.pipewire_prefix)
         wfs=only(filter(item->get(get(item,"args",Dict()),"factory.name",nothing)=="api.heart.std-wfs.sink",core["context.objects"]))["args"]
         ingress=HeartCalibrationExport.ingress_contract("streaming","classic",wfs,joinpath(package,"heart/bin/scaoTemplate");source_revision=staged_provenance["heart"]["revision"])
         runtime_inputs=Dict(basename(path)=>digest(path) for path in readdir(joinpath(package,"heart/calibration");join=true))
@@ -135,7 +134,7 @@ function export_classic_package(args,base,output,backend,specification,provenanc
         Common.write_json(joinpath(package,"deployment.conf"),staged)
         exact_inputs!(Dict{String,String}(),inputs)
         all(digest(joinpath(args.heart_root,file))==hash for (file,hash) in source_hashes) || throw(ArgumentError("native source changed during Classic preparation"))
-        Deployment.profile(joinpath(package,"deployment.conf"),args.pipewire_prefix)
+        DeploymentConfiguration.profile(joinpath(package,"deployment.conf"),args.pipewire_prefix)
         mv(package,output)
         return joinpath(output,"deployment.conf")
     end

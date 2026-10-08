@@ -63,5 +63,5 @@ def check(args):
 
 if __name__ == "__main__":
     raise SystemExit(
-        "Python live HEART failure qualification is retired; use deployment/julia/deploy_cli.jl "
+        "Python live HEART failure qualification is retired; use deployment/julia/wireplumber_cli.jl "
         "for deployment control (this focused check has no Julia counterpart).")

@@ -934,7 +934,7 @@ def main() -> int:
     try:
         if args.command in ("run", "control"):
             raise DeploymentError(
-                "Python live deployment control is retired; use deployment/julia/deploy_cli.jl")
+                "Python live deployment control is retired; use deployment/julia/wireplumber_cli.jl")
         if args.command == "install":
             install(args)
         else:

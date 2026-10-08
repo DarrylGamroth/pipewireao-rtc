@@ -1,0 +1,4 @@
+Oct 07 20:35:06.302703 rtc-devel pipewireao-rtc-session[792270]: Precompiling packages...
+Oct 07 20:35:11.360927 rtc-devel pipewireao-rtc-session[792270]:    5053.5 ms  ✓ PipeWireAODeployment
+Oct 07 20:35:11.361439 rtc-devel pipewireao-rtc-session[792270]:   1 dependency successfully precompiled in 5 seconds. 32 already precompiled.
+Oct 07 20:41:28.522097 rtc-devel wireplumber[792520]: m-lua-scripting: AO session fault: Required registry incarnation removed

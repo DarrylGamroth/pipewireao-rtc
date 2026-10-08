@@ -4,19 +4,16 @@ version = "0.1.0"
 edition = "2021"
 rust-version = "1.78"
 license = "MIT"
-description = "Headless non-actuating PipeWireAO development runner"
+description = "Native clients and calibration APIs for WirePlumber-owned PipeWireAO sessions"
 
 [dependencies]
-statig = "=0.4.1"
 pipewire = { package = "pipewire-ao", git = "https://github.com/DarrylGamroth/PipeWireAO-rs.git", rev = "f2d8689", features = ["v0_3_34"], optional = true }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-signal-hook = "0.3"
 libc = "0.2"
 rustix = { version = "1.1", features = ["net", "event"] }
 
 [build-dependencies]
-cc = "1.2"
 pkg-config = "0.3"
 
 [dev-dependencies]

@@ -5,6 +5,36 @@ const CampaignTestModules=PipeWireAODeployment
 const A=CampaignTestModules.CalibrationCampaign
 const M=CampaignTestModules.CalibrationMethod
 const C=CampaignTestModules.Common
+const W=CampaignTestModules.WirePlumberSessionRuntime
+
+@testset "Native Quit attempt and completion ordering" begin
+    handle=W.Handle("pipewireao-session@test.service", "/unused", "a"^32,
+        1, UInt64(1), "/unused", false, false, false, nothing)
+    events=Symbol[]
+    W._native_quit!(handle) do mark_attempt!
+        push!(events, :before)
+        @test !handle.shutdown_attempted
+        mark_attempt!()
+        push!(events, :submitted)
+        @test handle.shutdown_attempted && !handle.shutdown_accepted
+        Dict("ok"=>true,"state"=>"Offline","result"=>Dict("shutdown"=>true))
+    end
+    @test events==[:before,:submitted]
+    @test handle.shutdown_accepted
+    @test_throws ArgumentError W._native_quit!(handle) do mark_attempt!
+        error("native Quit must never be sent twice")
+    end
+    uncertain=W.Handle("pipewireao-session@test.service", "/unused", "b"^32,
+        1, UInt64(1), "/unused", false, false, false, nothing)
+    @test_throws ErrorException W._native_quit!(uncertain) do mark_attempt!
+        mark_attempt!()
+        error("reply lost after submission")
+    end
+    @test uncertain.shutdown_attempted && !uncertain.shutdown_accepted
+    @test_throws ArgumentError W._native_quit!(uncertain) do mark_attempt!
+        error("native Quit must never be retried")
+    end
+end
 
 classic_recipe()=Dict{String,Any}(
     "version"=>1,"dark_frames"=>8,"training_frames"=>8,"qualification_frames"=>8,
@@ -60,12 +90,11 @@ end
     @test haskey(source,abspath(joinpath(PipeWireAODeployment.resource_root(),"hil","calibration_campaign_analysis.jl")))
     @test haskey(source,abspath(joinpath(PipeWireAODeployment.resource_root(),"hil","calibration_method_analysis.jl")))
     @test haskey(source,abspath(joinpath(PipeWireAODeployment.resource_root(),"templates","client-simulator.conf.in")))
-    @test haskey(source,abspath(joinpath(PipeWireAODeployment.resource_root(),"pipewireao-rtc@.service.in")))
+    @test haskey(source,abspath(joinpath(PipeWireAODeployment.resource_root(),"pipewireao-session@.service.in")))
     @test haskey(source,abspath(joinpath(PipeWireAODeployment.package_root(),"assets","ryzen-6800h-classic.cpu")))
     @test haskey(source,abspath(joinpath(PipeWireAODeployment.package_root(),"assets","ryzen-6800h-classic.threads")))
-    service=read(joinpath(PipeWireAODeployment.resource_root(),"pipewireao-rtc@.service.in"),String)
-    stop_bound=parse(Float64,only(match(r"(?m)^TimeoutStopSec=(\d+)$",service).captures))
-    @test CampaignTestModules.Deployment.CLEANUP_TIMEOUT_SECONDS==stop_bound
+    service=read(joinpath(PipeWireAODeployment.resource_root(),"pipewireao-session@.service.in"),String)
+    @test occursin(r"(?m)^TimeoutStopSec=300$",service)
     mktempdir() do root
         copied=joinpath(root,"orchestration-sources")
         mkdir(copied)

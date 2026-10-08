@@ -17,6 +17,19 @@ records independent system/real-time reviews, their consolidated dispositions,
 and the resulting ownership and migration recommendations. It is source review,
 not new runtime, timing or hardware qualification.
 
+[WirePlumber session independent review](validation/wireplumber-session-20261007/REVIEW.md)
+records WPS-01–08 documentation dispositions and WPI implementation findings
+for RTC-ARCH-025. Source review does not close runtime gates.
+
+[WirePlumber session checks](validation/wireplumber-session-20261007/SESSION_CHECKS.md)
+records Copper FGN/JFG installed admission, controls, retained scientific
+prefixes, coordinator-free SDK readmission, GUI read-only selection and scoped
+loss/Quit cleanup. It also links preserved original failures and open gates.
+
+[Native WirePlumber module-load check](validation/wireplumber-session-20261007/MODULE_LOAD.md)
+records fail-before/pass-after dependency loading and client-node export, followed
+by a typed Warmup reply. Scientific lifecycle and resource admission are unqualified.
+
 [WirePlumber compatibility, 2026-10-06](validation/wireplumber-compatibility-20261006/README.md)
 records the isolated complete-frame NDArray fixture, exact delivery and basic
 link cleanup. It does not qualify RTC/AOS admission or transfer ownership.
@@ -64,11 +77,13 @@ fixture's preserved Collect failure, and passed Collect/Capture with the
 recorded recipe's illumination. No maximum-rate or optical-truth claim follows
 from these checks.
 
-The maintained baseline starts with one non-actuating, complete-frame
+The pre-RTC-ARCH-025 implementation baseline starts with one non-actuating, complete-frame
 FGN/PipeWireAO development graph, then extends the same runner into a
 small RTC workstation (RTCW) that can compose multiple ordinary PipeWireAO
 filter-graph instances. The runner loads, links, inspects, and tests the
-declared session without introducing another graph-authoring format.
+declared session without introducing another graph-authoring format. See
+[RTC-ARCH-025](WIREPLUMBER_SESSION_DESIGN.md) for current session ownership and
+the migration gates.
 
 ## Active documents
 

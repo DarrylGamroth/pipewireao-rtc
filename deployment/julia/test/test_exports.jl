@@ -9,7 +9,10 @@ const NativeOwnerBootstrapCodec = PipeWireAODeployment.NativeOwnerBootstrapCodec
 const NativeControlClient = PipeWireAODeployment.NativeControlClient
 const NativeAcquisitionLifecycleCodec = PipeWireAODeployment.NativeAcquisitionLifecycleCodec
 const NativeCalibrationActionClient = PipeWireAODeployment.NativeCalibrationActionClient
-module Deployment
+const WirePlumberSessionRuntime = PipeWireAODeployment.WirePlumberSessionRuntime
+const SystemdOwners = PipeWireAODeployment.SystemdOwners
+const RunnerCommands = PipeWireAODeployment.RunnerCommands
+module DeploymentConfiguration
 using ..Common
 native_source(owner) = get(owner, "control-protocol", nothing) == "pipewireao.source-control/1"
 decode(path,prefix) = Common.read_json(path)
@@ -19,6 +22,9 @@ end
 
 module HeartConfiguration end
 include(joinpath(package_root(), "src", "science_export.jl"))
+# This fixture verifies exporter math and provenance; packaged WirePlumber
+# assets are checked by the installed session path.
+ScienceExport.stage_wireplumber!(::String; build=nothing, source=nothing) = nothing
 include(joinpath(package_root(), "src", "hil_export.jl"))
 include(joinpath(package_root(), "src", "calibration_export.jl"))
 include(joinpath(package_root(), "src", "calibration_campaign.jl"))
@@ -159,6 +165,8 @@ end
         base = joinpath(root,"base")
         mkpath(joinpath(base,"lib")); mkpath(joinpath(base,"hil"))
         write(joinpath(base,"lib","graph.so"),"fixture")
+        mkpath(joinpath(base,"wireplumber","scripts","ao"))
+        write(joinpath(base,"wireplumber","scripts","ao","session.lua"),"fixture\n")
         write(joinpath(base,"hil","calibration_acquisition.jl"),"module CalibrationAcquisition end\n")
         mkpath(joinpath(base,"graphs"))
         ExportFixture.Common.write_json(joinpath(base,"graphs/graph.conf.in"),fixture_graph())
@@ -175,6 +183,13 @@ end
             "client"=>Dict("core"=>"client-simulator.conf.in","rtc"=>"client-simulator.conf.in","simulator"=>"client-simulator.conf.in"),
             "placement"=>Dict("core"=>deepcopy(placement),"rtc"=>deepcopy(placement),"simulator"=>deepcopy(placement)),
             "owners"=>[owner],"source-owner"=>"simulator","environment"=>Dict(),"artifacts"=>Dict(),"cpu-latency-us"=>nothing)
+        specification["session-manager"] = Dict("argv"=>[
+            "@PACKAGE@/wireplumber/bin/wireplumber","-c",
+            "@RUNTIME@/wireplumber/wireplumber.conf","-p","ao-rtc"],
+            "environment"=>Dict("WIREPLUMBER_MODULE_DIR"=>"@PACKAGE@/wireplumber/modules",
+                "WIREPLUMBER_DATA_DIR"=>"@PACKAGE@/wireplumber"))
+        specification["artifacts"]["wireplumber/scripts/ao/session.lua"] =
+            ExportFixture.Common.sha256_file(joinpath(base,"wireplumber/scripts/ao/session.lua"))
         ExportFixture.Common.write_json(joinpath(base,"deployment.conf"),specification)
         write(joinpath(base,"client-simulator.conf.in"),"{}\n")
         write(joinpath(base,"core.conf.in"),"{}\n")
@@ -187,12 +202,14 @@ end
         binary = joinpath(root,"runner"); write(binary,"runner")
         deployed = joinpath(root,"deployed")
         result = Calibration.export_package((;base_package=base,output=deployed,pipewire_prefix="/unused",deployment=true,
-            rtc_binary=binary,calibration_binary=binary,illumination="lamp",calibration_stage="interaction"))
+            calibration_binary=binary,illumination="lamp",calibration_stage="interaction"))
         @test result == joinpath(deployed,"provenance.json")
         @test isfile(joinpath(deployed,"deployment.conf"))
         @test isfile(joinpath(deployed,"julia/Manifest.toml"))
         @test isfile(joinpath(deployed,"julia/src/PipeWireAODeployment.jl"))
-        @test isfile(joinpath(deployed,"pipewireao-rtc@.service.in"))
+        @test isfile(joinpath(deployed,"julia/assets/deployment/pipewireao-session@.service.in"))
+        @test !ispath(joinpath(deployed,"bin/pipewireao-rtc"))
+        @test !ispath(joinpath(deployed,"bin/pipewireao-rtc-deploy"))
         @test isfile(joinpath(deployed,"julia/assets/deployment/templates/client-simulator.conf.in"))
         @test isfile(joinpath(deployed,"julia/assets/deployment/hil/calibration_campaign_analysis.jl"))
         @test isfile(joinpath(deployed,"julia/assets/deployment/hil/Project.toml"))
@@ -316,7 +333,8 @@ end
         port(name) = Dict("name"=>name, "rate"=>"500/1")
         session = Dict("execution"=>"complete-frame", "rate"=>"500/1",
             "sources"=>[Dict("node.name"=>"recorded-source", "ports"=>[port("output")])],
-            "graphs"=>[Dict("node.name"=>"science", "ports"=>[port("input"), port("output")])],
+            "graphs"=>[Dict("node.name"=>"science", "factory"=>"pipewireao.fgn-native",
+                "ports"=>[port("input"), port("output")])],
             "sinks"=>[Dict("node.name"=>"recorded-sink", "ports"=>[port("input")])],
             "links"=>[Dict("output"=>"recorded-source:output", "input"=>"science:input"),
                 Dict("output"=>"science:output", "input"=>"recorded-sink:input")],
@@ -328,7 +346,8 @@ end
             Dict("loop.name"=>name) for name in ("rtc-data-loop", "source-loop", "sink-loop")]),"context.modules"=>Any[])
         ExportFixture.Common.write_json(joinpath(base, "core.conf.in"), core)
         specification = Dict("owners"=>Any[], "core"=>"core.conf.in",
-            "placement"=>Dict{String,Any}(), "client"=>Dict{String,Any}())
+            "placement"=>Dict{String,Any}(),
+            "client"=>Dict{String,Any}("rtc"=>"client-simulator.conf.in"))
         ExportFixture.Common.write_json(joinpath(base, "deployment.conf"), specification)
         packages = Dict{String,String}()
         for name in ("AdaptiveOpticsCalibration", "AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL",
@@ -586,10 +605,13 @@ end
             "placement"=>Dict("simulator"=>HIL.bootstrap_placement!(deepcopy(placement)),
                 "julia"=>HIL.bootstrap_placement!(deepcopy(placement))))
         graphs = Calibration.split_graph(fixture_graph(),"classic","jfg","fixture")
-        records = [Dict("role"=>role,"owner_arguments"=>Calibration.julia_arguments(graph,[],role,"10/1","julia"))
+        records = [Dict("role"=>role,"node.name"=>graph["node.name"],
+            "ports"=>Calibration.boundary_contract(graph,"classic",role,"jfg"),
+            "owner_arguments"=>Calibration.julia_arguments(graph,[],role,"10/1","julia"))
             for (role,graph) in sort(collect(graphs);by=first)]
         saved_arguments = deepcopy(records)
-        Calibration.deployment_descriptor(package,root,specification,records,"classic","jfg",Dict("rate"=>"10/1"),"/unused")
+        session = Calibration.calibration_session(records,"classic","jfg","10/1")
+        Calibration.deployment_descriptor(package,root,specification,records,"classic","jfg",session,"/unused")
         @test records == saved_arguments
         @test isempty(specification["placement"]["simulator"]["threads"])
         @test !haskey(source,"bootstrap-protocol")

@@ -114,69 +114,49 @@ implemented.
 
 ## Accepted workstation integration boundary
 
-On 2026-10-06 the user selected a headless runtime as the RTC lifecycle owner,
-with the GUI acting as its editor/controller and command-line tools providing
-the same control access. Clients use the existing native control contracts and
-completion semantics. Scientific readiness, source admission, reset and artifact
-adoption remain runtime/owner responsibilities; client presence does not gate
-processing or own the lifecycle.
-
-On 2026-10-07 the user clarified that each component should serve its intended
-purpose. The selected target assigns declared external session-link realization
-and lifetime to WirePlumberAO, and process supervision to systemd. The RTC's
-current link realization and child supervision are migration responsibilities;
-the optional post-admission WirePlumber observer is an intermediate step.
+On 2026-10-07 the user selected **RTC-ARCH-025**, which supersedes the
+headless-runtime session ownership allocation. WirePlumberAO Lua is the sole
+session lifecycle, admission and connection-policy authority. systemd owns
+process lifetime. Julia deployment tooling is limited to one-shot export,
+installation and preflight. Julia calibration clients and scientific Julia
+owners, including JFG graph processes, remain. This is the target architecture,
+not an implementation or qualification claim; the
+[migration design](WIREPLUMBER_SESSION_DESIGN.md) defines the removal gates.
 
 | Component | Selected target responsibility |
 | --- | --- |
-| systemd | Start, stop, reap and supervise service processes; apply configured cgroup/resource and scheduling policy through user units and administrator-provisioned permissions. |
-| WirePlumberAO profile | Discover instrument/session objects, apply declared connection policy, and create, monitor and withdraw external session links. |
-| Headless RTC runtime | Coordinate scientific preparation, validate actual session readiness, hold/release acquisition, coordinate reset and artifact adoption, and handle required-object failure. |
+| WirePlumberAO Lua profile | Own session lifecycle, exact admission, declared connection policy, source-first stop, reset/update sequencing, deadlines, required-loss handling, cleanup and fresh readmission. |
+| systemd | Start, stop, reap and supervise session processes and apply configured service resource policy. |
 | PipeWireAO | Negotiate and transport NDArray buffers, schedule published nodes, expose native controls and host FGN. |
-| FGN/JFG | Prepare and execute internal scientific graphs, manage workspaces and executor workers, and expose processing ports and controls. |
+| FGN/JFG | Prepare and execute internal scientific graphs, manage workspaces and executor workers, and apply owner-local scientific controls and adoption. |
 | AOS and its HIL adapter | Simulate instrument physics, own model time and frame/command causality, and publish the declared sources and sinks. |
-| AOC and acquisition application | AOC owns calibration algorithms and estimates; the acquisition application coordinates probes and measurements through deployed endpoints and RTC controls. |
-| GUI and CLI | Edit configurations, request operations and observe status as clients of the headless runtime and native owner controls. |
+| AOC and Julia calibration clients | AOC owns calibration algorithms and estimates; clients prepare/export artifacts and coordinate acquisition through deployed endpoints. |
+| Julia deployment tools and GUI/CLI | Export, install, preflight, request operations and observe status as clients; Julia scientific owners remain. Clients do not own runtime lifecycle or process supervision. |
 
-WirePlumber's link policy operates between published nodes. Internal FGN/JFG
-graph connections and worker placement remain executor responsibilities. Systemd
-sets service resource policy; PipeWire and executors configure their participating
-threads within that policy. Service startup and successful link creation alone
-do not authorize acquisition. The RTC consumes actual session state before
-release and on required-object failure. Each link has one designated owner;
-the runtime, GUI and WirePlumber must not independently manage the same link.
-
-The [adversarial architecture review](APPLICATION_ARCHITECTURE_REVIEW.md)
-requires link ownership and process supervision to migrate as separate parity
-steps. Transfer preserves exact owner identities, negotiation/passive semantics,
-runtime-loss withdrawal and held fresh readmission. Current ownership stays in
-place until those gates pass. A transfer that adds coordination without removing
-maintained responsibilities needs explicit architectural reconsideration; the
-current observer's startup order alone does not establish that conclusion.
-The initial pilot retains established FGN hosting and separate JFG processes;
-optional WirePlumber-hosted FGN needs its own resource and failure qualification.
-
-This is the selected target, not a claim that ownership has transferred or that
-all WirePlumber integration is qualified. The current system boundary below
-continues to describe the working runner/supervisor. The current operating
-contract remains in force. Before enabling a replacement, the transfer increment
-must explicitly revise affected ownership allocations, including RTC-DEV-003
-and RTC-DEV-013, while preserving their admission, cleanup and failure obligations.
-See [ecosystem integration](ECOSYSTEM_INTEGRATION.md) for the migration and
-[current work](roadmap.md#current-work) for completed gates.
-
-The opt-in [separate owner service backend](SYSTEMD_OWNER_DESIGN.md) implements
-the systemd process allocation for selected private deployments. Its headless
-coordinator retains native science admission. systemd owns each process cgroup
-and a cold coordinator `ExecStopPost` revokes the private core before disposing
-the remaining cohort after abrupt exit. Source/graph applications continue to
-own their nodes under RTC-DEV-013; the explicit WirePlumber creator continues to
-own session links under RTC-DEV-003. Default direct-mode supervision remains
-necessary for existing foreground and other unqualified profiles.
+WirePlumber Lua owns session policy; a narrow PipeWireAO native typed endpoint
+and C transport shim supply PipeWire operations without adding a second
+authority. Selective `ObjectManager` features must limit observation to the
+declared session surface. PipeWire schedules published nodes; FGN/JFG own
+internal graph connections, workspaces and workers. systemd sets process
+resource policy. Startup alone does not admit acquisition: WirePlumber must
+observe scientific owner readiness and source hold before release. Source-first
+stop, reset, adoption and required-loss handling remain migration gates. The selected FGN host is a separate ordinary PipeWire client service.
+LocalModule hosting inside WirePlumber has a different process/failure boundary
+and remains unqualified by the selected checks. Preserve the FGN/JFG full-frame and row-block data
+paths; those do not represent two hosting alternatives.
+See [RTC-ARCH-025 and its gates](WIREPLUMBER_SESSION_DESIGN.md) and
+[current work](roadmap.md#current-work).
 
 ## Active scope
 
-The active implementation begins with:
+The former implementation began with the Rust Statig runner described below.
+The paragraphs and milestones through this historical scope record the
+original implementation baseline; they are not current provider allocations.
+Current target work is the WirePlumber-owned session lifecycle in
+[RTC-ARCH-025](WIREPLUMBER_SESSION_DESIGN.md); the existing implementation and
+its receipts remain evidence for their recorded scope, not qualification of
+that replacement. The following baseline and increments describe the former
+implementation, not current ownership:
 
 - one simulated or recorded complete-frame source;
 - one `fgn-native` execution composite;

@@ -1,0 +1,8 @@
+Oct 07 19:22:26 rtc-devel systemd[1279]: Starting pipewireao-owner-fd1984d544f4482f870ab2427db24c33-core.service - [systemd-run] /tmp/pwao-linktrace/bin/pipewire-ao -c daemon.conf...
+Oct 07 19:22:26 rtc-devel systemd[1279]: Started pipewireao-owner-fd1984d544f4482f870ab2427db24c33-core.service - [systemd-run] /tmp/pwao-linktrace/bin/pipewire-ao -c daemon.conf.
+Oct 07 19:22:26 rtc-devel pipewire-ao[756393]: [W][756393][19:22:26.624564] pw.context   | [       context.c:  548 pw_context_new()] 0x55bad065b260: can't load dbus library: support/libspa-dbus
+Oct 07 19:23:55 rtc-devel pipewire-ao[756393]: [W][756393][19:23:55.080444] pw.link      | [     impl-link.c: 1037 global_bind()] AO link 49 bind resource=39 state=0 mask=0 format=0
+Oct 07 19:23:55 rtc-devel pipewire-ao[756393]: [W][756393][19:23:55.081278] pw.link      | [     impl-link.c: 1037 global_bind()] AO link 49 bind resource=40 state=1 mask=3 format=1
+Oct 07 19:23:55 rtc-devel pipewire-ao[756393]: [W][756393][19:23:55.100608] pw.link      | [     impl-link.c:   62 info_changed()] AO link 49 broadcast state=3 mask=3 format=1
+Oct 07 19:24:08 rtc-devel systemd[1279]: Stopping pipewireao-owner-fd1984d544f4482f870ab2427db24c33-core.service - [systemd-run] /tmp/pwao-linktrace/bin/pipewire-ao -c daemon.conf...
+Oct 07 19:24:08 rtc-devel systemd[1279]: Stopped pipewireao-owner-fd1984d544f4482f870ab2427db24c33-core.service - [systemd-run] /tmp/pwao-linktrace/bin/pipewire-ao -c daemon.conf.

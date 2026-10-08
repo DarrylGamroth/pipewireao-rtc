@@ -1,0 +1,7 @@
+PipeWireAODeployment.NativeOwnerBootstrapCodec.Completion(PipeWireAODeployment.NativeControlCodec.ReplyHeader(1, 11007, PipeWireAODeployment.NativeControlCodec.ControllerIdentity(0x00000021, 0x0000000000000021, 2197826681773015), 4, 0x00000002, 0), PipeWireAODeployment.NativeOwnerBootstrapCodec.Connected, "")
+PipeWireAODeployment.NativeParameterSource.Completion(PipeWireAODeployment.NativeControlCodec.ReplyHeader(1, 11008, PipeWireAODeployment.NativeControlCodec.ControllerIdentity(0x00000029, 0x000000000000002d, 2197826681773016), 1, 0x0000000e, 0), "revolt-copper-fgn-frame-graph", "reconstruct:reconstructor", 1, true, false, "")
+PipeWireAODeployment.NativeOwnerBootstrapCodec.Completion(PipeWireAODeployment.NativeControlCodec.ReplyHeader(1, 11007, PipeWireAODeployment.NativeControlCodec.ControllerIdentity(0x00000021, 0x0000000000000021, 2197826681773015), 5, 0x00000003, 0), PipeWireAODeployment.NativeOwnerBootstrapCodec.Stopped, "")
+Precompiling packages...
+    PipeWireAODeployment Being precompiled by another process (pid: 788003, pidfile: /run/user/1000/pipewireao-session-wf-0710/1c10460020d247ed831377b1d99fc0ad/julia-depot/compiled/v1.12/PipeWireAODeployment/j1cKT_5tzWc.ji.pidfile)
+   3987.1 ms  ✓ PipeWireAODeployment
+  1 dependency successfully precompiled in 4 seconds. 32 already precompiled.

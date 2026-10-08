@@ -8,7 +8,7 @@ separate runtime gates; preparation cannot qualify them.
 module HeartCorrectionExport
 
 using SHA, TOML
-using ..Common, ..Deployment, ..ScienceExport, ..HILExport, ..HeartConfiguration
+using ..Common, ..DeploymentConfiguration, ..ScienceExport, ..HILExport, ..HeartConfiguration
 using ..HeartExport, ..HeartCalibrationExport, ..HeartOwner, ..CalibrationCampaign, ..HeartClassicTransfer
 import ..CalibrationExport
 
@@ -184,7 +184,7 @@ function export_package(args)
     !ispath(output) && !islink(output) || throw(ArgumentError("native correction output must be fresh"))
     backend=option(args,:simulator_backend,"cuda")
     backend in ("cpu","cuda") || throw(ArgumentError("native correction simulator backend unavailable"))
-    specification=Deployment.profile(joinpath(base,"deployment.conf"),args.pipewire_prefix)
+    specification=DeploymentConfiguration.profile(joinpath(base,"deployment.conf"),args.pipewire_prefix)
     provenance=Common.read_json(joinpath(base,"provenance.json"))
     provenance["profile"]=="classic" && return export_classic_package(args,base,output,backend,specification,provenance)
     all(hasproperty(args,key) for key in (:locked_test,:locked_test_sha256)) || throw(ArgumentError("Copper correction requires sealed locked utility"))
@@ -217,7 +217,7 @@ function export_package(args)
     return mktempdir(dirname(output);prefix=".rtc-heart-correct-") do temporary
         package=joinpath(temporary,"package")
         HeartExport.export_package(merge(args,(;output=package,readout_us=1000));simulator_backend=backend)
-        staged=Deployment.profile(joinpath(package,"deployment.conf"),args.pipewire_prefix)
+        staged=DeploymentConfiguration.profile(joinpath(package,"deployment.conf"),args.pipewire_prefix)
         staged_provenance=Common.read_json(joinpath(package,"provenance.json"))
         for name in HELPERS
             destination=joinpath(package,"hil",name);ispath(destination) && rm(destination)
@@ -238,7 +238,7 @@ function export_package(args)
         pop!(sections["CB"],"TELEMETRY_SOCKET_STREAMS",nothing)
         write(joinpath(package,"heart/config.yaml.in"),HeartConfiguration.serialize_config(document,args.heart_source_config))
         native=only(filter(owner->owner["role"]=="heart",staged["owners"]))
-        core=Deployment.decode(joinpath(package,staged["core"]),args.pipewire_prefix)
+        core=DeploymentConfiguration.decode(joinpath(package,staged["core"]),args.pipewire_prefix)
         wfs=only(filter(item->get(get(item,"args",Dict()),"factory.name",nothing)=="api.heart.std-wfs.sink",core["context.objects"]))["args"]
         ingress=HeartCalibrationExport.ingress_contract("deferred","copper",wfs,joinpath(package,"heart/bin/scaoTemplate");source_revision=staged_provenance["heart"]["revision"])
         native["environment"]["HRT_DEFER_WFS_INGRESS"]="1";append!(native["argv"],["--native-ingress-mode","deferred"])
@@ -277,7 +277,7 @@ function export_package(args)
         Common.write_json(joinpath(package,"deployment.conf"),staged)
         exact_inputs!(Dict(),inputs.inputs)
         all(digest(joinpath(args.heart_root,name))==hash for (name,hash) in source_hashes) || throw(ArgumentError("native source changed during preparation"))
-        Deployment.profile(joinpath(package,"deployment.conf"),args.pipewire_prefix)
+        DeploymentConfiguration.profile(joinpath(package,"deployment.conf"),args.pipewire_prefix)
         mv(package,output)
         return joinpath(output,"deployment.conf")
     end
@@ -288,10 +288,9 @@ include("heart_classic_correction.jl")
 function main(argv=ARGS)
     args=Common.cli_arguments(argv;required=["base-package","output","heart-root","heart-source-config","calibration-root",
         "owner-evidence-directory","pipewireao-jl-root"],
-        defaults=(pipewire_prefix="/opt/pipewireao",simulator_backend="cuda"),allowed=["rtc-binary","adapter-root","locked-test","locked-test-sha256",
+        defaults=(pipewire_prefix="/opt/pipewireao",simulator_backend="cuda"),allowed=["adapter-root","locked-test","locked-test-sha256",
             "transfer-package","transfer-evidence","transfer-lifecycle","transfer-score","transfer-score-sha256",
             "forward-model","accepted-preparation"])
-    hasproperty(args,:rtc_binary) || throw(ArgumentError("native correction requires an explicit RTC binary"))
     println(export_package(args));return 0
 end
 

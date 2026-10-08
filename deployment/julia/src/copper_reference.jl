@@ -3,7 +3,7 @@ module CopperReference
 using TOML
 import ..Common: read_json, write_json, sha256_file, cli_arguments
 import ..CalibrationCampaign as Acquisition
-import ..Deployment
+import ..DeploymentConfiguration
 import ..CalibrationExport
 import ..HILExport
 
@@ -39,13 +39,13 @@ function validate_recipe(value)
 end
 
 function validate_base(base,prefix,recipe;allowed_backends=("cpu",))
-    specification=Deployment.profile(joinpath(base,"deployment.conf"),prefix)
+    specification=DeploymentConfiguration.profile(joinpath(base,"deployment.conf"),prefix)
     provenance=read_json(joinpath(base,"provenance.json"))
     provenance["profile"]=="copper" && provenance["engine"] in ("fgn","jfg") &&
         provenance["mode"]=="frame" ||
         throw(ArgumentError("Copper calibration requires complete-frame science"))
     Acquisition.validate_simulator_backend(base,specification,provenance;allowed_backends)
-    graph=Deployment.decode(joinpath(base,"graphs","graph.conf.in"),prefix)
+    graph=DeploymentConfiguration.decode(joinpath(base,"graphs","graph.conf.in"),prefix)
     CalibrationExport.split_graph(graph,"copper",provenance["engine"],"reference-validation")
     bindings=filter(item->item["name"]=="background",provenance["parameters"])
     length(bindings)==1 || throw(ArgumentError("one Copper background binding required"))
@@ -158,7 +158,7 @@ function stage_base(base,output,recipe,stage,background,aoc_source,prefix;allowe
     descriptor["artifacts"]=Dict(relative=>sha for (relative,sha) in Acquisition.file_identity(output)
         if relative!="deployment.conf")
     write_json(joinpath(output,"deployment.conf"),descriptor)
-    Deployment.profile(joinpath(output,"deployment.conf"),prefix)
+    DeploymentConfiguration.profile(joinpath(output,"deployment.conf"),prefix)
     return output
 end
 
@@ -180,7 +180,7 @@ function campaign(arguments)
     orchestration=Acquisition.orchestration_sources()
     sources=copy(orchestration)
     merge!(sources,Dict(abspath(path)=>sha256_file(path) for path in
-        (helper_path(),abspath(arguments.rtc_binary),abspath(arguments.calibration_binary),
+        (helper_path(),abspath(arguments.calibration_binary),
          abspath(arguments.recipe))))
     mkpath(output)
     write_json(joinpath(output,"recipe.json"),recipe)
@@ -208,7 +208,7 @@ function campaign(arguments)
             package=joinpath(output,stage*"-package")
             CalibrationExport.export_package((;base_package=prepared,output=package,
                 pipewire_prefix=arguments.pipewire_prefix,deployment=true,
-                rtc_binary=arguments.rtc_binary,calibration_binary=arguments.calibration_binary,
+                calibration_binary=arguments.calibration_binary,
                 illumination=stage=="dark" ? "dark" : "lamp",calibration_stage=stage,
                 capture_max_bytes=count*22596))
             evidence=joinpath(output,stage*"-evidence")
@@ -242,13 +242,13 @@ function campaign(arguments)
     finally
         record["artifacts"]=products
         record["timing_ns"]=Dict("total_campaign"=>time_ns()-started)
-        Deployment.atomic_record(joinpath(output,"reference-result.json"),record)
+        DeploymentConfiguration.atomic_record(joinpath(output,"reference-result.json"),record)
     end
     return joinpath(output,"reference-result.json")
 end
 
 function main(argv=ARGS)
-    arguments=cli_arguments(argv;required=["base-package","output","recipe","aoc-source","rtc-binary",
+    arguments=cli_arguments(argv;required=["base-package","output","recipe","aoc-source",
         "calibration-binary","runtime"],defaults=(pipewire_prefix="/opt/pipewireao",julia="julia"))
     arguments.pipewire_prefix=="/opt/pipewireao" || throw(ArgumentError("only /opt/pipewireao supported"))
     println(campaign(arguments))

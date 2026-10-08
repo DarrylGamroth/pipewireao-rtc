@@ -1,5 +1,11 @@
 # Recorded-input RTC deployment
 
+> Historical pre-RTC-ARCH-025 deployment instructions. The coordinator and
+> companion observer launchers described below are retired. Their source and
+> results remain available at baseline `e791361e`. Use the current repository
+> README and `docs/WIREPLUMBER_SESSION_DESIGN.md` for WirePlumber-owned sessions.
+
+
 This package supervises a private PipeWireAO core, the Rust lifecycle owner,
 and optional external scientific owners. It delegates scientific processing,
 row scheduling and buffer ownership to FGN or JuliaFilterGraph. Current REVOLT

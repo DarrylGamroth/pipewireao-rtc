@@ -1,0 +1,15 @@
+Oct 07 20:00:15.986703 rtc-devel julia[775261]: ERROR: LoadError: ArgumentError: negotiated parameter format differs from declaration
+Oct 07 20:00:15.986703 rtc-devel julia[775261]: Stacktrace:
+Oct 07 20:00:16.001486 rtc-devel julia[775261]:  [1] main(arguments::Vector{String})
+Oct 07 20:00:16.001681 rtc-devel julia[775261]:    @ Main /tmp/rtc-wireplumber-fgn-20261007-installed/julia/assets/deployment/hil/parameter_source.jl:37
+Oct 07 20:00:16.001681 rtc-devel julia[775261]:  [2] main()
+Oct 07 20:00:16.001681 rtc-devel julia[775261]:    @ Main /tmp/rtc-wireplumber-fgn-20261007-installed/julia/assets/deployment/hil/parameter_source.jl:9
+Oct 07 20:00:16.001681 rtc-devel julia[775261]:  [3] top-level scope
+Oct 07 20:00:16.001681 rtc-devel julia[775261]:    @ /tmp/rtc-wireplumber-fgn-20261007-installed/julia/assets/deployment/hil/parameter_source.jl:41
+Oct 07 20:00:16.001681 rtc-devel julia[775261]:  [4] include(mod::Module, _path::String)
+Oct 07 20:00:16.001681 rtc-devel julia[775261]:    @ Base ./Base.jl:306
+Oct 07 20:00:16.002016 rtc-devel julia[775261]:  [5] exec_options(opts::Base.JLOptions)
+Oct 07 20:00:16.002016 rtc-devel julia[775261]:    @ Base ./client.jl:317
+Oct 07 20:00:16.002016 rtc-devel julia[775261]:  [6] _start()
+Oct 07 20:00:16.019798 rtc-devel julia[775261]:    @ Base ./client.jl:550
+Oct 07 20:00:16.019798 rtc-devel julia[775261]: in expression starting at /tmp/rtc-wireplumber-fgn-20261007-installed/julia/assets/deployment/hil/parameter_source.jl:41

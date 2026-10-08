@@ -1,10 +1,18 @@
 # Julia deployment and calibration entrypoints
 
-Operational calibration preparation, acquisition orchestration and process
-supervision use Julia ≥ 1.12. The numerical estimators and probe bases remain
+Operational calibration preparation and acquisition clients use Julia ≥ 1.12.
+WirePlumber owns session policy; systemd owns process supervision. The numerical estimators and probe bases remain
 in AdaptiveOpticsCalibration. Detector acquisition and graph algorithms retain
 their existing owners. The migration does not change illumination, noise,
 matrices, gains or scientific acceptance.
+
+The Julia DeploymentRunner and supervisor launchers are retired. Use the
+one-shot WirePlumber session tools described in the [repository quickstart](../README.md#launch-a-sealed-session-package).
+The native session client controls admission and graph operations; local owner
+interfaces retain calibration acquisition actions. The new SDK includes sealed
+WirePlumber assets and rejects a missing session runtime before installation.
+Scientific campaign qualification under this replacement remains separate from
+the recorded Copper complete-frame lifecycle checks.
 
 ## Source entrypoints
 
@@ -22,7 +30,6 @@ julia --startup-file=no --project=deployment/julia deployment/copper_reference.j
   --output /absolute/path/to/fresh-candidate \
   --recipe /absolute/path/to/recipe.json \
   --aoc-source /absolute/path/to/AdaptiveOpticsCalibration.jl \
-  --rtc-binary /absolute/path/to/pipewireao-rtc \
   --calibration-binary /absolute/path/to/rtc-calibrate \
   --runtime /short/absolute/path/to/fresh-runtime
 ```
@@ -62,60 +69,52 @@ format instead of replacing sealed code.
 
 ## Installed entrypoints
 
-Install a sealed exported package with `deployment/deploy.jl install`, supplying
-`--package`, `--destination` and `--pipewire-prefix`. Its `bin` directory contains
-`pipewireao-rtc-deploy`, `calibration_campaign`, `calibration_method`,
-`copper_reference`, `copper_quality`, `export_calibration`, `export_hil` and
-`export_heart_hil`. The wrappers
-select the package's Julia project and load its packaged modules. Packages carry
-their cold export resources separately from the resolved simulator environment;
-preparing another package does not replace its plant or local dependencies.
+Install a sealed exported package using the one-shot CLI:
 
-Use optional `--julia-executable /absolute/path/to/julia` to select the runtime.
-The default is the executable of the Julia process running the installer.
-Installation validates Julia ≥ 1.12 and < 2 before creating the destination and
-resolves juliaup selection to its reported managed runtime. Each generated
-wrapper records the same absolute executable, so foreground and generated user
-units work with a `PATH` that excludes Julia. Retain the selected runtime on the
-host. Reinstall to a fresh destination to choose another runtime. Unsealed
-installed wrappers are regenerated; incompatible sealed wrappers are rejected
-with instructions to export a fresh SDK. The user manager environment requires
-no changes.
+```sh
+julia --startup-file=no --project=deployment/julia deployment/julia/wireplumber_cli.jl install \
+  --package /absolute/sealed-package \
+  --destination /absolute/fresh-installation \
+  --pipewire-prefix /opt/pipewireao
+```
 
-All four campaigns require a sealed scientist-authored complete-frame
-`--base-package`. Existing Python generators and audits remain development
-tools for creating or inspecting those inputs. They are not invoked by the
-operational Julia workflow. Legacy Python command lines in historical evidence
-identify the original producer and must not be relabeled.
+The installed `bin/pipewireao-rtc-session` invokes that package's one-shot tools.
+Calibration/export wrappers retain their own Julia project and packaged modules.
+They do not run a persistent supervisor. The old Rust coordinator binary,
+`pipewireao-rtc-deploy` and coordinator service templates are excluded.
 
-Foreground launch and the generated systemd user service use the same deployment
-owner. The service sends SIGINT for bounded graceful cleanup. Placement admission
-checks the configured CPU envelopes, worker policies and resource limits;
-the supervisor pins every existing Julia native thread before starting children.
-This is functional deployment behavior, not a scheduler-latency qualification.
+Use optional `--julia-executable /absolute/path/to/julia` during installation to
+select the runtime. The default is the executable running the installer.
+Installation validates Julia ≥ 1.12 and < 2 and resolves juliaup selection to its
+managed runtime. Generated wrappers record that absolute executable; reinstall
+to a fresh destination to select another runtime.
 
-## Separate systemd owner services
+All campaigns require a sealed scientist-authored complete-frame base package.
+The selected WirePlumber binary, modules and Lua scripts must be sealed with the
+scientific assets. Calibration exports copy and validate those assets before
+hashing. Existing Python generators/audits remain development tools and are not
+invoked by operational Julia campaigns. Historical Python producer records retain
+their original scope.
 
-New SDK exports also install `systemd/pipewireao-rtc-systemd@.service`. This opt-in
-unit starts a headless coordinator and separate transient user services for the
-private core, source, optional Julia graph, WirePlumber and RTC runner. Native
-GUI/CLI controls and scientific configurations remain the same. Installation
-does not link, enable or start a service. The default `pipewireao-rtc@.service`
-and foreground command retain direct process ownership.
+## systemd session and owner services
 
-Install the package at `~/.config/pipewireao-rtc/<instance>`, link its opt-in
-template with `systemctl --user link`, reload the user manager, then explicitly
-start `pipewireao-rtc-systemd@<instance>.service`. Stop or restart the coordinator
-unit as a whole; independently restarting an owner under the same unit name is
-unsupported. A restart creates and validates a fresh scientific cohort.
-The coordinator verifies its exact cleanup executable and arguments before
-starting any owners. `ActiveState=active` alone does not establish RTC admission.
+`WirePlumberSessionRuntime.start!` installs a fresh exact instance of
+`pipewireao-session@.service`, prepares separate scientific owner services, and
+returns only after the admission hook completes. `ActiveState=active` alone
+never proves scientific readiness. The manager verifies native owners and held
+acquisition; the one-shot admission hook checks their actual placement.
 
-The unit preserves its private runtime directory for final reports and uncertain
-cleanup diagnostics. Remove a stopped instance's retained runtime only after its
-owner cgroups are empty. The initial backend verifies actual per-thread placement;
-this host's accepted `AllowedCPUs` property is insufficient to establish a cgroup
-cpuset restriction. See [design and qualification scope](SYSTEMD_OWNER_DESIGN.md).
+Clients send native session controls. Normal `shutdown!` requires a correlated
+Quit→Offline acknowledgement and then observes exact systemd/owner cleanup.
+Emergency `stop!` is a distinct process-cleanup operation; it cannot establish
+successful public shutdown. Unknown Quit outcomes prohibit another Quit.
+The same retained invocation is used to reconcile cleanup without replay.
+
+Owner services use fresh names and `Restart=no`. Restart the session as a new
+whole cohort; do not restart a required owner in place. Retained runtime files
+are diagnostic receipts and never live readiness authority. Delete them only
+after exact process/cgroup cleanup. Functional placement checks do not qualify
+scheduler latency or a host cpuset restriction.
 
 ## Qualified scientific dependencies
 

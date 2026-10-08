@@ -1,5 +1,11 @@
 # Optional WirePlumber user service
 
+> Historical pre-RTC-ARCH-025 deployment instructions. The coordinator and
+> companion observer launchers described below are retired. Their source and
+> results remain available at baseline `e791361e`. Use the current repository
+> README and `docs/WIREPLUMBER_SESSION_DESIGN.md` for WirePlumber-owned sessions.
+
+
 Baseline: RTC `c49139f`, clean dedicated branch/worktree
 `feat/wireplumber-user-service-20261007` / `/tmp/rtc-wireplumber-service-20261007`.
 The selected slice is a companion observer for existing installed Copper HIL

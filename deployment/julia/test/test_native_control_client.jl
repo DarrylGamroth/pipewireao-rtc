@@ -2,7 +2,7 @@ using Test, PipeWireAO, PipeWireAODeployment
 
 const Client = PipeWireAODeployment.NativeControlClient
 const Envelope = PipeWireAODeployment.NativeControlCodec
-const Runner = PipeWireAODeployment.NativeRunnerClient
+const SessionProfile = PipeWireAODeployment.NativeSessionProfile
 const SPA = PipeWireAO.SPA
 
 @enum TestState::UInt32 Preparing=17 Prepared=18
@@ -54,10 +54,10 @@ end
     @test fieldtype(typeof(observation), :profile) === TestProfile
     @test observation isa Client.Observation{TestProfile,TestState,TestReply,TestReply}
 
-    runner = Runner.Observation(Int64(23), UInt32(getpid()))
-    Client.observe!(runner, test_capability(profile))
-    @test runner.fatal_failure !== nothing
-    @test runner.capability === nothing
+    session = Client.Observation(SessionProfile.Profile(), Int64(23), UInt32(getpid()))
+    Client.observe!(session, test_capability(profile))
+    @test session.fatal_failure !== nothing
+    @test session.capability === nothing
     invalid = Client.Observation(profile, Int64(23), UInt32(getpid()))
     Client.observe!(invalid, test_capability(profile; state=UInt32(3)))
     @test invalid.fatal_failure !== nothing
@@ -73,7 +73,7 @@ end
     @test Client.operation_id(profile, TestCommand()) == 71
     @test_throws MethodError Client.operation_id(profile,
         PipeWireAODeployment.NativeRunnerCodec.RunnerCommand(:status))
-    @test_throws MethodError Client.operation_id(Runner.RunnerProfile(), TestCommand())
+    @test_throws MethodError Client.operation_id(SessionProfile.Profile(), TestCommand())
 end
 
 @testset "native reply envelope limits follow owner profile" begin

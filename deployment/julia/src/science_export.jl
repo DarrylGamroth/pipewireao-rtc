@@ -65,7 +65,18 @@ function copy_tree(source::AbstractString, destination::AbstractString; ignored=
     return destination
 end
 
-function copy_deployment_runtime(package::AbstractString; copy_service=true)
+function copy_deployment_runtime(package::AbstractString)
+    # Export a new package without carrying a previous coordinator launcher
+    # or service template forward from a sealed input package.
+    for relative in ("pipewireao-rtc@.service.in",
+                     "pipewireao-rtc-systemd@.service.in",
+                     "bin/pipewireao-rtc-deploy", "bin/pipewireao-rtc",
+                     "bin/pipewireao-rtc@.service.in",
+                     "bin/pipewireao-rtc-systemd@.service.in",
+                     "bin/placement.py")
+        obsolete = joinpath(package, relative)
+        (ispath(obsolete) || islink(obsolete)) && rm(obsolete; force=true)
+    end
     target = abspath(joinpath(package, "julia"))
     ancestor = target
     while !ispath(ancestor)
@@ -92,12 +103,9 @@ function copy_deployment_runtime(package::AbstractString; copy_service=true)
         endswith(name, ".jl") && !startswith(name, "test_") || continue
         copy_file(joinpath(resource_root(), name), joinpath(target, "assets", "deployment", name))
     end
-    service_source = joinpath(resource_root(), "pipewireao-rtc@.service.in")
-    copy_file(service_source, joinpath(target, "assets/deployment/pipewireao-rtc@.service.in"))
-    copy_service && copy_file(service_source, joinpath(package, "pipewireao-rtc@.service.in"))
-    owner_service = joinpath(resource_root(), "pipewireao-rtc-systemd@.service.in")
-    isfile(owner_service) && copy_file(owner_service,
-        joinpath(target, "assets/deployment/pipewireao-rtc-systemd@.service.in"))
+    session_service = joinpath(resource_root(), "pipewireao-session@.service.in")
+    copy_file(session_service,
+        joinpath(target, "assets/deployment/pipewireao-session@.service.in"))
     return target
 end
 
@@ -164,6 +172,59 @@ function placement(cpus, fifo_cpus; julia=false)
     julia && push!(threads, Dict("cpus" => [10], "policy" => "other", "priority" => 0, "count" => 1))
     return Dict("cpus" => collect(cpus), "leader-cpu" => 14, "rt-priority" => 83,
                 "threads" => threads, "locked-bytes" => 0)
+end
+
+"Declare the opt-in one-shot WirePlumber executable and its packaged assets."
+function wireplumber_session_defaults!(specification)
+    specification["session-manager"] = Dict{String,Any}(
+        "argv" => ["@PACKAGE@/wireplumber/bin/wireplumber", "-c",
+                   "@RUNTIME@/wireplumber/wireplumber.conf", "-p", "ao-rtc"],
+        "environment" => Dict(
+            "WIREPLUMBER_MODULE_DIR" => "@PACKAGE@/wireplumber/modules",
+            "WIREPLUMBER_DATA_DIR" => "@PACKAGE@/wireplumber"))
+    specification["placement"]["wireplumber"] = Dict(
+        "cpus" => [14], "leader-cpu" => 14, "rt-priority" => 0,
+        "threads" => Any[], "locked-bytes" => 0)
+    specification["client"]["wireplumber"] = specification["client"]["rtc"]
+    return specification
+end
+
+"Stage a bounded WirePlumber build and its Lua scripts before sealing artifacts."
+function stage_wireplumber!(package; build=nothing, source=nothing)
+    (build === nothing) == (source === nothing) ||
+        throw(ArgumentError("WirePlumber build and source must be supplied together"))
+    target = joinpath(package, "wireplumber")
+    if build !== nothing
+        build = realpath(build)
+        source = realpath(source)
+        (ispath(target) || islink(target)) && rm(target; force=true, recursive=true)
+        binary = joinpath(build, "src/wireplumber")
+        library = realpath(joinpath(build, "lib/wp/libwireplumber-0.5.so.0"))
+        isfile(binary) && (stat(binary).mode & 0o111) != 0 ||
+            throw(ArgumentError("selected WirePlumber build has no executable"))
+        copy_tree(joinpath(source, "src/scripts"), joinpath(target, "scripts");
+            ignored=Set(["tests", "test"]))
+        copy_file(binary, joinpath(target, "bin/wireplumber"))
+        chmod(joinpath(target, "bin/wireplumber"), stat(binary).mode & 0o777)
+        copy_file(library, joinpath(target, "lib/wp/libwireplumber-0.5.so.0"))
+        for name in ("libwireplumber-module-lua-scripting.so",
+                     "libwireplumber-module-ao-control-endpoint.so")
+            copy_file(joinpath(build, "modules", name), joinpath(target, "modules", name))
+        end
+    end
+    for file in ("bin/wireplumber", "lib/wp/libwireplumber-0.5.so.0",
+                 "modules/libwireplumber-module-lua-scripting.so",
+                 "modules/libwireplumber-module-ao-control-endpoint.so",
+                 "scripts/ao/session.lua", "scripts/lib/ao-control.lua",
+                 "scripts/lib/ao-owner.lua", "scripts/lib/ao-acquisition.lua",
+                 "scripts/lib/ao-session-control.lua", "scripts/lib/ao-connections.lua")
+        path = joinpath(target, file)
+        isfile(path) && !islink(path) ||
+            throw(ArgumentError("sealed WirePlumber asset is missing: $file"))
+    end
+    (stat(joinpath(target, "bin/wireplumber")).mode & 0o111) != 0 ||
+        throw(ArgumentError("sealed WirePlumber executable is not executable"))
+    return target
 end
 
 function revision(root::AbstractString)

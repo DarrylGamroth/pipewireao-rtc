@@ -1,7 +1,7 @@
 using Test, PipeWireAODeployment
 
 @testset "exported bootstrap descriptors pass the strict deployment profile" begin
-    D = PipeWireAODeployment.Deployment
+    D = PipeWireAODeployment.DeploymentConfiguration
     H = PipeWireAODeployment.HILExport
     C = PipeWireAODeployment.Common
     mktempdir() do root

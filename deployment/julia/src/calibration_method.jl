@@ -2,7 +2,7 @@ module CalibrationMethod
 
 import ..Common: read_json, write_json, sha256_file, cli_arguments
 import ..CalibrationCampaign as Campaign
-import ..Deployment
+import ..DeploymentConfiguration
 import ..CalibrationExport
 import ..HILExport
 import ..CopperReference
@@ -91,7 +91,7 @@ function retained_copper_startup(base,prefix,recipe)
         throw(ArgumentError("retained Copper background hash missing or differs"))
     background=HILExport.finite_payload(path,"F32_LE",(64,64))
     graph_path=joinpath(base,"graphs","graph.conf.in")
-    graph=Deployment.decode(graph_path,prefix)
+    graph=DeploymentConfiguration.decode(graph_path,prefix)
     if provenance["engine"]=="fgn"
         key="pipewireao.startup-parameter."*binding["endpoint"]
         count=length(findall(key,read(graph_path,String)))
@@ -124,7 +124,7 @@ function retained_startup(base,prefix;recipe=nothing)
         recipe===nothing && throw(ArgumentError("Copper startup requires its declared recipe"))
         return retained_copper_startup(base,prefix,recipe)
     end
-    specification=Deployment.profile(joinpath(base,"deployment.conf"),prefix)
+    specification=DeploymentConfiguration.profile(joinpath(base,"deployment.conf"),prefix)
     provenance=HILExport.campaign_json(base,"provenance.json")
     Campaign.validate_simulator_backend(base,specification,provenance;allowed_backends=SIMULATOR_BACKENDS)
     snapshot,graph,bindings=HILExport.classic_snapshot(base,provenance,prefix)
@@ -199,7 +199,7 @@ function method(arguments)
     source_identity=Campaign.orchestration_sources()
     aoc_identity=Campaign.file_identity(aoc)
     input_identity=Dict(abspath(path)=>sha256_file(Campaign.regular(path)) for path in
-        (arguments.recipe,arguments.method,arguments.rtc_binary,arguments.calibration_binary))
+        (arguments.recipe,arguments.method,arguments.calibration_binary))
     background,references,active,snapshot=retained_startup(base,prefix;recipe)
     mkpath(output)
     timing=Dict{String,Any}(name=>nothing for name in
@@ -233,7 +233,7 @@ function method(arguments)
         end
         package=joinpath(output,"package")
         CalibrationExport.export_package((;base_package=base_copy,output=package,
-            pipewire_prefix=prefix,deployment=true,rtc_binary=arguments.rtc_binary,
+            pipewire_prefix=prefix,deployment=true,
             calibration_binary=arguments.calibration_binary,illumination="lamp",
             calibration_stage="interaction",capture_max_bytes=nothing))
         scripts=joinpath(output,"analysis")
@@ -302,14 +302,14 @@ function method(arguments)
             end
         end
         timing["total"]=time_ns()-started
-        Deployment.atomic_record(joinpath(output,"method-result.json"),record)
+        DeploymentConfiguration.atomic_record(joinpath(output,"method-result.json"),record)
     end
     return joinpath(output,"method-result.json")
 end
 
 function main(argv=ARGS)
     arguments=cli_arguments(argv;required=["base-package","recipe","method","output","aoc-source",
-        "rtc-binary","calibration-binary","runtime"],defaults=(prefix="/opt/pipewireao",julia="julia",
+        "calibration-binary","runtime"],defaults=(prefix="/opt/pipewireao",julia="julia",
         owner_preparation_timeout_seconds="90"))
     println(method(arguments))
     return 0

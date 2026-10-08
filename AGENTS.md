@@ -36,9 +36,12 @@
 
 ## Implementation
 
-- Rust is the runner language; use Statig's blocking API, private Statig types
-  and one serialized dispatcher. Handlers emit typed effects; blocking work
-  executes outside handlers and returns typed completions.
+- RTC-ARCH-025 selects WirePlumber Lua as the sole session lifecycle and
+  admission authority. systemd owns process lifetime; Julia tools export,
+  install, inspect and send native controls as one-shot clients. Rust Statig
+  and Julia DeploymentRunner coordinators are retired. Do not
+  restore a parallel session authority or supervisor fallback. One-shot clients
+  and scientific owners remain; qualify each selected profile separately.
 - Production calibration orchestration uses Julia and the existing acquisition,
   protocol, analysis and AdaptiveOpticsCalibration APIs. Python remains allowed
   for development/validation tooling, not new operational dependencies.

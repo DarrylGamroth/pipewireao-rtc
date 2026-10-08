@@ -24,15 +24,17 @@ SPA-JSON configuration containing the admitted endpoints, FGN graph instances,
 explicit links, initial values, and declared observation ports needed for one
 session. The minimum increment contains one source, one graph, and one sink.
 
-An **RTC session** is the set of required objects admitted by one runner
-lifecycle. It contains runner-owned objects and MAY contain explicitly declared
-external HIL endpoints. Ownership does not transfer merely because an object is
-required by the session.
+An **RTC session** is the set of required objects admitted by the sole
+WirePlumberAO session lifecycle authority under RTC-ARCH-025. It contains
+WirePlumber-managed session policy and explicitly declared external HIL
+endpoints; graph owners retain their own nodes and internal execution. In
+requirements below, “the runner” denotes this WirePlumber session authority
+unless a passage explicitly describes historical implementation or a client.
 
 An **execution group** is a uniquely named, non-empty set of declared session
 nodes that starts and stops as one processing unit while the session remains
-realized. It does not own configuration, links, cleanup, or a separate Statig
-lifecycle.
+realized. WirePlumber coordinates group lifecycle; FGN/JFG apply owner-local
+execution controls. A group does not own configuration or links.
 
 A **required object** is the configured source, execution composite, sink, or
 link whose availability is necessary for the graph to reach `READY` or remain
@@ -96,24 +98,26 @@ check that validation fails before streaming with an actionable diagnostic.
 
 ### RTC-DEV-003 — Exact topology realization and cleanup
 
-The runner MUST realize the configured source → execution composite → sink
-topology without substituting discovered devices or creating undeclared
-critical links. It MUST expose the resulting objects through standard
-PipeWire introspection. On unload or failed configuration, it MUST remove the
-nodes and links it owns and MUST NOT stop or mutate an unrelated shared
-PipeWire object.
+WirePlumberAO MUST realize only the declared source → execution composite →
+sink topology, without substituting discovered devices or creating undeclared
+critical links. It MUST expose the resulting objects through standard PipeWire
+introspection. On unload or failed admission, it MUST withdraw the exact Links
+and other session resources it owns and MUST NOT stop or mutate an unrelated
+shared PipeWire object.
 
-A deployment MAY explicitly select one exact WirePlumber creator client for
-session links on its isolated private core. In that mode, the runner MUST
-project only the declared topology through the native realization contract,
-validate the actual manager-owned Links before `READY`, and retain scientific
-readiness and acquisition authority. Cleanup MUST observe acknowledged
-withdrawal and absence of every correlated Link before reporting success or
-admitting a new realization. Exact selected-manager client disappearance plus
-absence of every correlated Link MAY serve as the alternate resource-lifetime
-fence; a replacement manager MUST NOT adopt the old generation. Unknown cleanup
-MUST remain a fault. The default
-runner-owned link path MUST retain its existing semantics.
+WirePlumber MUST bind declared endpoints and its own manager incarnation by
+exact identity, validate negotiated formats before admission, and monitor the
+required cohort while admitted. Cleanup MUST have an acknowledged withdrawal
+or an equivalent exact resource-lifetime fence. Withdrawal MUST cancel and
+account for pending Link creation completions, proxy deactivation/destruction
+and the manager's Core sync before confirming absence of every correlated Link.
+Only then may cleanup succeed or a new realization generation begin. A
+zero-links snapshot alone is insufficient while creation or withdrawal may be
+pending. A replacement manager MUST NOT adopt an old generation. Unknown
+cleanup MUST remain a fault.
+This is the target provider allocation under RTC-ARCH-025; the current native
+realization projection and direct runner-owned link path are historical
+implementations and evidence, not replacement qualification.
 
 Verification intent (informative): run beside unrelated nodes, fail creation
 after each owned object, and verify exact topology, visible introspection,
@@ -121,7 +125,9 @@ complete owned-object cleanup, and preservation of unrelated objects.
 
 ### RTC-DEV-004 — Basic lifecycle
 
-The runner MUST serialize the following stable states and transitions:
+The session authority MUST serialize the following stable states and
+transitions. Under RTC-ARCH-025, WirePlumberAO Lua is that authority; Julia and
+Rust runtime coordinators are retired target components.
 
 ```mermaid
 stateDiagram-v2
@@ -145,7 +151,7 @@ stateDiagram-v2
 
 | State | Observable meaning |
 | --- | --- |
-| `OFFLINE` | The runner owns no active development graph. |
+| `OFFLINE` | No authority-owned session resources remain and no realization or cleanup is pending; external owner nodes may remain. |
 | `CONFIGURING` | The configuration is being resolved, objects are being created, and initial values are being applied. |
 | `READY` | The exact required topology exists and can start, but it is not processing frames. |
 | `RUNNING` | Session execution is admitted. All execution groups start in the running condition, after which individual groups may be stopped and restarted under RTC-DEV-011. |
@@ -153,38 +159,39 @@ stateDiagram-v2
 
 Startup and stopping MAY be reported as transition progress but are not
 additional stable states. An unload request MUST be accepted from every
-`MANAGED` leaf; after the applicable cancel, stop, and cleanup effects complete,
-it MUST reach `OFFLINE`, or `FAULT` if cleanup fails. `CORRECTING` MUST NOT
-exist in this profile.
+`MANAGED` leaf; after cancellation, pending-link withdrawal, stop and cleanup
+fences complete, it MUST reach `OFFLINE`, or `FAULT` if cleanup fails. `OFFLINE`
+requires absence of authority-owned session resources and pending realization or
+cleanup; external owner nodes may remain. A zero-links observation alone MUST
+NOT establish cleanup completion or permit a new generation. `CORRECTING` MUST
+NOT exist in this profile.
 
 Verification intent (informative): exercise every transition, retry after
 each injected creation and streaming failure, repeat load/start/stop/unload,
 and verify that invalid commands leave the state and owned objects coherent.
 
-### RTC-DEV-009 — Statig hierarchical lifecycle execution
+### RTC-DEV-009 — Serialized lifecycle execution
 
-The runner MUST implement RTC-DEV-004 with Statig's blocking state-machine API
-and one serialized event dispatcher. `CONFIGURING`, `READY`, `RUNNING`, and
-`FAULT` MUST be descendants of a `MANAGED` superstate. The superstate MUST own
-the common unload behavior required by RTC-DEV-004. The lifecycle interface
-and effect-executor boundary MUST use RTC domain states, events, effects, and
-results; they MUST NOT expose Statig types.
+RTC-ARCH-025 retires the implementation mandate to use Statig and a Rust
+dispatcher. WirePlumberAO MUST be the sole serialized session lifecycle and
+admission authority. Its Lua state transitions MUST preserve RTC-DEV-004
+states, legal transitions, unload behavior, typed operation identity and
+completion fencing. The authority MAY have at most one internal session or
+group effect in flight. Its token MUST be unique within the manager incarnation
+and never reused; completion correlation MUST include token, effect kind,
+originating transition and session incarnation. Stop, unload, reset, required
+loss or superseding operation MUST cancel or fence pending work; late results
+MUST be discarded and MUST NOT mutate a later state. Potentially blocking
+PipeWire work MUST use asynchronous PipeWire operations through the bounded
+native typed endpoint and C transport shim. Lua and native handlers MUST NOT
+perform blocking PipeWire roundtrips, filesystem/configuration work or science
+work. External owner operations MUST have bounded deadlines. The shim and
+clients MUST NOT own lifecycle state. Existing Statig evidence is historical
+and does not qualify WirePlumber replacement behavior.
 
-A state handler MUST NOT perform potentially blocking PipeWire,
-configuration, or filesystem work. It MUST emit a typed effect, and the runner
-MUST return the effect's success or failure to the same serialized dispatcher
-as a typed completion event. Every effect and completion MUST carry a runner-
-allocated token that is not reused during the runner process lifetime. The
-development runner MAY permit only one lifecycle effect in flight, but it MUST
-reject a completion whose token, effect kind, or originating transition does
-not match the current pending effect instead of applying it to a later state.
-
-Verification intent (informative): inspect the Statig hierarchy and lifecycle
-boundary; exercise superstate handling, deterministic event order, one in-
-flight effect, successful and failed completions, and a delayed completion
-delivered after a retry or unload; verify that blocking test effects run
-outside state handlers and that stale completions cannot change the current
-state.
+Verification intent (informative): verify one authoritative Lua state writer,
+serialized order, bounded effects, exact completion correlation, stale
+completion rejection and coherent retry/unload across a fresh incarnation.
 
 ### RTC-DEV-010 — RTCW multi-composite sessions
 
@@ -299,30 +306,27 @@ objects, unchanged links, resumed sink delivery, and session-wide cleanup.
 
 ### RTC-DEV-012 — Serialized execution-group control
 
-Execution-group requests MUST enter the same single serialized dispatcher used
-by RTC-DEV-004 and RTC-DEV-009. A Statig handler MUST only validate the stable
-session state and emit a typed group effect. Potentially blocking PipeWire and
-metric work MUST execute outside the handler and return through the dispatcher
-as a typed completion containing the runner-allocated token, operation kind,
-originating transition, and execution-group identity.
+Execution-group requests MUST enter the sole serialized WirePlumberAO session
+lifecycle. At most one internal session/group effect MAY be in flight. Each
+effect MUST carry a token unique and never reused within the WirePlumber
+incarnation, kind, originating transition, group identity and session
+incarnation. WirePlumber MUST validate stable state and issue bounded typed
+effects to the relevant owner. FGN/JFG MUST apply owner-local execution controls
+and return matching completion identity. The lifecycle MUST reject invalid
+state/group requests without changing state and reject stale, duplicate or
+mismatched completions. Failed group start/stop MUST retain a diagnostic and
+fault the required session. Session stop, unload, reset or required object loss
+MUST cancel/fence pending group operations; late completions MUST be discarded
+and MUST NOT change a later state.
 
-The dispatcher MUST allow at most one session or group effect in flight. It
-MUST reject an invalid state or group request without changing group or
-session state. It MUST reject a stale, duplicate, wrong-kind,
-wrong-transition, or wrong-group completion. A failed group start or stop MUST
-retain a scientific diagnostic and move the required session to `FAULT`.
-Session stop, unload, or required-object failure MUST supersede a pending group
-operation, and its late completion MUST NOT change subsequent state.
-
-Verification intent (informative): inspect that the private Statig machine and
-one dispatcher remain the only control-state writer; exercise group start and
-stop success and failure, duplicate requests, unknown groups, every completion
-mismatch, session stop and unload during a pending group effect, late
-completion rejection, and repeated group and session cycles.
+Verification intent (informative): verify that WirePlumber is the only
+session-state writer; exercise group success/failure, duplicate and unknown
+requests, each token/kind/transition/group mismatch, concurrent stop/unload/
+reset/loss, cancellation, late-completion discard and fresh-incarnation use.
 
 ### RTC-DEV-013 — External PipeWire endpoint composition
 
-The runner MUST admit an already-running external source or sink without
+WirePlumber MUST admit an already-running external source or sink without
 depending on its implementation package, language, process, or private
 properties. It MUST require declared external ownership and validate the exact
 node and port names, direction, `F32_LE` element type, complete shape, and
@@ -330,31 +334,28 @@ scientific schema before creating a link. A node name or descriptive label
 alone MUST NOT establish a compatible port contract.
 
 A deployment MAY start external applications as separate systemd user services.
-Process supervision MUST NOT transfer ownership of their published nodes to the
-runner or change the external endpoint compatibility contract.
+systemd owns process supervision; this MUST NOT transfer ownership of published
+nodes to WirePlumber or change the external endpoint compatibility contract.
 
 The external WFS source and simulated correction-command sink MUST already be
-inspectable on the selected private PipeWire core before the session reaches
-`READY`. The runner MUST NOT create, destroy, or claim ownership of either node.
-It MUST own and remove only its FGN graphs and, in the default link mode,
-its declared links. When RTC-DEV-003 explicitly selects WirePlumber link
-ownership, it MUST retain borrowed Link observations and require the manager
-to withdraw that exact realization before completing cleanup. Unload,
-failed configuration, and retry MUST leave the adapter nodes intact. Loss or
-incompatible mutation of either required endpoint while `READY` or `RUNNING`
-MUST move the session to `FAULT` through the existing serialized dispatcher.
+inspectable on the selected private PipeWire core before admission. WirePlumber
+MUST NOT create, destroy, or claim ownership of either node. It MUST own only
+declared session Links and its own lifecycle marker/resources. Unload, failed
+configuration and retry MUST leave adapter nodes intact. Loss or incompatible
+mutation of a required endpoint while `READY` or `RUNNING` MUST move the session
+to `FAULT` through the WirePlumber lifecycle.
 
 This admission is valid only as part of a maintained development composition
 whose launcher supplies known non-actuating applications on an isolated
 private core. It MUST NOT be presented as generic physical-device admission.
-The runner's factory allowlists continue to apply to every node it creates.
+Owner-local factory allowlists continue to apply to every node an owner creates.
 
-Verification intent (informative): reject invalid ownership, a runner factory
+Verification intent (informative): reject invalid ownership, an owner factory
 on an external declaration, missing or duplicate nodes, and every port-format
 mismatch; then realize and unload a private-core session while both external
-nodes survive and an unrelated object remains untouched. Inspect the runner
-to confirm that no AdaptiveOpticsSim or adapter-specific identifier controls
-admission.
+nodes survive and an unrelated object remains untouched. Inspect WirePlumber's
+profile to confirm that no AdaptiveOpticsSim or adapter-specific identifier
+controls admission.
 
 ### RTC-DEV-014 — Complete-frame simulated closed-loop causality
 
@@ -691,61 +692,73 @@ unit and verify recovery and fresh active generations separately.
 
 ### RTC-DEV-021 — Admission and coherent lifecycle
 
-The launcher MUST prepare the private core, scientific owners and stopped RTC
-session before ingress. It MUST verify exact READY topology and requested
-effective per-thread affinity, scheduler and memory/QoS prerequisites before
-explicit start/source release. Readiness observations MUST identify the current
-native owner incarnation; stale locators, markers and saved status files MUST
-NOT admit ingress. An external source MUST
-remain held until release and MUST stop when admission is revoked. A source
-without a hold contract MUST be rejected for deployment admission.
+WirePlumberAO MUST prepare and admit the exact session before ingress. It MUST
+verify exact topology and owner readiness, and required effective per-thread
+affinity, scheduler and memory/QoS prerequisites, before explicit source
+release. Readiness MUST bind current manager and owner incarnations; stale
+locators, markers and saved status files MUST NOT admit ingress. An external
+source MUST remain held until release and MUST stop when admission is revoked.
+A source without a hold contract MUST be rejected.
 
-Failure or loss of any required owned process MUST revoke admission and stop
-the deployment. Restart MUST recreate and revalidate the dependent set, without
-automatically replaying operator mutations. Shutdown MUST stop ingress before
-unloading consumers and terminate only owned processes with finite deadlines.
-The deployment MUST support both foreground and systemd user-unit operation
-through the same commands/configuration. User units MUST NOT elevate the whole
-control or Julia process to FIFO or assume unavailable inherited rights.
+Failure or loss of any required endpoint, Link, manager or owner MUST revoke
+admission and fault the session. Restart MUST use fresh incarnations, revalidate
+the dependent set and MUST NOT replay operator mutations. Shutdown MUST stop
+ingress before unloading consumers. Every invocation MUST use fresh owner unit
+names with `Restart=no`, bind owners to verified MainPIDs and process
+incarnations, and terminate only its owned processes. Before owner startup, it
+MUST verify the installed emergency cleanup hook. It MUST reconcile uncertain
+launches and pending starts before proceeding. User-manager operations MUST have
+finite bounds; name-based stop MUST NOT be treated as an atomic incarnation
+fence. Operation and cleanup deadlines MUST be finite; unknown revocation or
+cleanup MUST remain a fault.
 
-An explicitly selected systemd owner backend MAY delegate owner creation,
-termination, reaping and cgroup containment to the user manager. The headless
-coordinator MUST retain scientific readiness and acquisition coordination.
-Service activation MUST NOT authorize ingress. A fresh coordinator invocation
-MUST use fresh owner unit names, disable automatic owner restart, and bind native
-owners to verified MainPIDs and process incarnations. Normal and abrupt
-coordinator shutdown MUST confirm ingress revocation before consumer teardown;
-an unknown revocation MUST remain a cleanup fault. User-manager operations MUST
-have finite bounds. The selected backend MUST verify its installed cleanup hook
-before owner creation and MUST reconcile uncertain launches and pending starts.
-Name-based stop requests MUST NOT be described as atomic incarnation fences.
+If the WirePlumber service dies abruptly while Lua is unavailable, its installed
+systemd emergency cleanup hook MUST revoke ingress before tearing down
+consumers. Service activation MUST NOT authorize ingress. Foreground and
+user-service modes MUST use the same session contract. User units MUST NOT
+elevate the whole control or Julia deployment tooling to FIFO or assume
+unavailable rights.
+
+The Julia DeploymentRunner and Rust Statig runner are retired target components
+under RTC-ARCH-025. Their existing foreground and owner-service results remain
+historical evidence and do not qualify the WirePlumber implementation.
 
 Verification intent: delayed owner, wrong contract, bad placement/rights,
-stale marker, partial launch failure, dependency death and repeated restart;
-source silence before admission and clean shutdown in both launch modes.
+stale manager/owner incarnation, partial launch failure, dependency loss and
+repeated fresh admission; source silence before admission and clean shutdown
+with systemd-supervised processes.
 
 ### RTC-DEV-022 — Bounded local control
 
-The console and private native PipeWire endpoint MUST use one typed command
-executor on the sole lifecycle owner. Parameter decoding and parameter-file
-preparation MUST run outside effect handlers. RTC-DEV-030 selects the native
-transport; legacy JSON socket helpers remain fixture support and MUST NOT be
-selectable by installed deployments. The endpoint MUST admit at most one prepared request at a
-time, limit a request to 16 KiB and 128 fields, a parameter payload to 512 MiB,
-and a reply to 64 KiB. Parameter dimensions/type/byte length MUST be checked
-before reading the payload. Client read/write deadlines MUST be finite.
-Malformed commands MUST reject the request without terminating a healthy
-session. The private core MUST restrict control access to the owning user. Remaining
-legacy socket cleanup MUST NOT unlink arbitrary pre-existing path objects.
+The public native PipeWire endpoint MUST dispatch typed requests to the sole
+WirePlumberAO lifecycle owner. A narrow C transport shim MAY expose PipeWire
+operations to Lua but MUST NOT duplicate lifecycle policy or serve as another
+command endpoint. FGN/JFG scientific changes MUST use their owner-local public
+controls. WirePlumber MUST order those updates against reset, stop and reload,
+while the owner applies the scientific value and reports adoption. Parameter
+decoding and file preparation MUST remain outside PipeWire
+callbacks. RTC-ARCH-024 selects native transport; JSON socket helpers remain
+fixture support and MUST NOT be selectable by installed clients. The endpoint
+MUST admit at most one prepared request at a time, limit a request to 16 KiB
+and 128 fields, a parameter payload to 512 MiB, and a reply to 64 KiB.
+Dimensions/type/byte length MUST be checked before reading a payload. Client
+read/write deadlines MUST be finite. Malformed commands MUST reject without
+terminating a healthy session. The private core MUST restrict control access
+to the owning user.
 
-Commands MUST cover session/group start and stop, reset, scalar transactions,
-declared ndarray parameter replacement, property/parameter generation queries,
-status and shutdown. Responses MUST include request identity, lifecycle state
-and success/rejection. Submission MUST NOT be represented as active adoption.
-A client disconnect MUST NOT cause an automatic retry or imply rollback.
-Status freshness and existing effect deadlines MUST be documented; an effect
-may retain the dispatcher for up to five seconds. Unsupported observations
-MUST remain unknown. Hot-path logging MUST NOT be introduced for health.
+Client operations MUST cover session/group start and stop, reset, scalar
+transactions, declared ndarray parameter replacement, property/parameter
+generation queries, status and shutdown. Session operations MUST go to
+WirePlumber; scientific property/parameter changes MUST go to the exact FGN/JFG
+owner endpoint. Responses MUST include request identity, the relevant
+lifecycle/owner state and success/rejection. Submission MUST be distinguished
+from observed active adoption. A client disconnect MUST NOT cause an automatic
+retry or imply rollback.
+Status freshness and effect deadlines MUST be documented and finite. The
+existing session-effect dispatcher bound is five seconds; replacement effects
+MUST preserve that bound unless a separately approved contract changes it.
+Unsupported observations MUST remain unknown. Hot-path logging MUST NOT be
+introduced for health.
 
 Verification intent: oversized input/file, dimension overflow, flood/slow
 client/disconnect, operator rejection, stopped submission, running adoption,
@@ -792,11 +805,13 @@ and validate encoding, order and unit conversion against a direct oracle.
 
 The source owner MUST warm and reset before reporting prepared, connect held,
 and publish no frame before explicit release following effective placement and
-RTC Running acknowledgement. One frame and same-sequence command MAY be in
-flight. Pause MUST acknowledge only after outstanding adoption. The supervisor
-MUST pause before session/group stop and shutdown, start the graph before
-resuming the source, and reset the held model only with the stopped RTC. A
-reset MUST change acquisition generation and clear sequence/timing state.
+WirePlumber admission acknowledgement. One frame and same-sequence command MAY
+be in flight. Pause MUST acknowledge only after outstanding adoption.
+WirePlumber MUST stop ingress before session/group stop and shutdown, start the
+graph before resuming the source, and reset the held model only with the stopped
+session. A reset MUST change acquisition generation and clear sequence/timing
+state. Source-local pause/reset/query remains an owner contract; session
+ordering belongs solely to WirePlumber.
 
 Complete-frame simulator live controls MUST use native SPA `Props` parameters
 on the exact owned source-node incarnation. They MUST retain native Version 1
@@ -809,14 +824,15 @@ phase MUST NOT emit fabricated requests or frames, and MUST NOT be re-entered
 after source failure or during cleanup. Every actual request MUST retain its
 finite dispatch/submission/completion deadline. Cached parameter enumeration
 MUST NOT substitute for a fresh status-query completion.
-Calibration-owner restoration/report controls retain their separate existing
-contract until deliberately migrated; simulator file controls MUST NOT be used
-as a fallback. The coordinating socket and calibration files MUST retain
-current-instance ownership and finite sizes and waits.
+Calibration-owner restoration/report controls retain their separate native
+owner contract; simulator file controls MUST NOT be used as a fallback. Native
+requests and reports MUST retain current-incarnation ownership and finite sizes
+and waits.
 Malformed/stale controls MUST preserve state. Timeout/disconnect outcomes
 MUST remain unknown without automatic retry. Required-owner death or unconfirmed
-source control MUST fail the deployment and revoke ingress before consumer
-cleanup. Both foreground and user-service paths MUST use this same behavior.
+source control MUST fault the session and revoke ingress before consumer
+cleanup. systemd-supervised and development service paths MUST use this same
+behavior.
 
 Native pause MUST return the adopted owner cursor without requiring a saved
 partial checkpoint. Preparation, stopped reset, finite completion and orderly
@@ -1123,37 +1139,35 @@ on public PipeWire owner nodes. JSON embedded in a POD MUST NOT be treated as
 native serialization. Saved configuration and scientific artifacts MAY retain
 JSON; their existence MUST NOT substitute for a fresh live completion.
 
-Each endpoint MUST retain its existing sole lifecycle/acquisition owner.
-Callbacks MUST stage bounded owned values and MUST NOT execute scientific or
-blocking lifecycle effects. Cold no-port inactive Filter endpoints MAY allocate;
-the measured scientific source MUST retain its prepared control storage and
-inclusive allocation boundary. No new scientific scheduler or graph-authoring
-contract is introduced.
+Each live authority MUST have one owner. WirePlumber Lua MUST own session
+lifecycle and admission; FGN/JFG and AOS MUST retain their owner-local scientific
+and source controls. Callbacks MUST stage bounded owned values and MUST NOT
+execute scientific or blocking lifecycle effects. Cold no-port inactive Filter
+endpoints MAY allocate; the measured scientific source MUST retain its prepared
+control storage and inclusive allocation boundary. No new scientific scheduler
+or graph-authoring contract is introduced.
 
-The sole RTC owner MAY export one inactive, no-port realization Filter per
-session-link generation under RTC-DEV-003. This is an intent projection, not a
-caller command endpoint: it MUST accept no caller commands, caller tokens or
-scientific controls. Its bounded typed Props snapshot MUST identify the exact
-runtime and selected manager clients, ordered endpoint identities and passive
-flags. Prepared, Realize and Withdraw phases MUST be monotonic; the immutable
-cohort MUST NOT change. Once Realize publication is attempted, withdrawal MUST
-fence pending link activations before the manager synchronizes its own Core
-and destroys the exact Filter as acknowledgement. RTC MUST observe that
-removal and absence of the correlated Link cohort, or exact selected-manager
-client disappearance with no correlated Links. Marker disappearance already
-observed before Withdraw publication MUST NOT be treated as its acknowledgement
-while the manager remains alive. Its own Core sync alone MUST
-NOT substitute for the manager fence. Manager replacement MUST NOT adopt an
-old projection. RTC MUST validate node incarnations and actual client
-provenance before projection, before admission and while admitted. WirePlumber
-MUST validate exact Port and Client incarnations without subscribing to
-scientific Node Props. This selected trusted private-core projection does not
-establish an untrusted publisher or physical-device admission contract.
+WirePlumber's session endpoint MUST use bounded native typed Props requests and
+completions. A narrow PipeWireAO C transport shim MAY expose the required
+PipeWire operations to Lua, but MUST NOT own session state or implement
+connection/admission policy. The endpoint MUST bind exact manager, runtime,
+endpoint and Link incarnations; stale manager replacement MUST NOT adopt an old
+session. Before success or a new generation, withdrawal MUST cancel/account for
+pending Link-creation completions, deactivate and destroy Link proxies, complete
+the manager Core sync, and confirm absence of every correlated Link. A zero-Links
+snapshot alone MUST NOT establish withdrawal while asynchronous creation or
+cleanup is outstanding. Selective `ObjectManager` features MUST observe required
+identities and Links without subscribing to unrelated scientific Node Props.
+The previous
+RTC-published Prepared/Realize/Withdraw intent Filter is superseded as the
+session-authority design; existing implementation evidence is historical and
+does not qualify the replacement. This private-core contract does not establish
+an untrusted publisher or physical-device admission contract.
 
-The following common-envelope and retained-completion rules apply to the new
-cold owner endpoints. The already completed supervisor-exclusive scientific
-source MUST retain its unchanged native run/reset/source schemas under
-RTC-DEV-025; it does not acquire this new caller envelope.
+The following common-envelope and retained-completion rules apply to native
+cold-owner endpoints. The scientific source MUST retain its native run/reset/
+source schemas under RTC-DEV-025; it does not acquire the session lifecycle
+authority or a new caller envelope.
 
 New cold-owner requests and matching completions MUST identify the exact endpoint incarnation,
 controller registry global ID, object.serial and controller instance, request

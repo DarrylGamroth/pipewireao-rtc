@@ -1,0 +1,4 @@
+Precompiling packages...
+   3809.3 ms  ✓ PipeWireAODeployment
+  1 dependency successfully precompiled in 4 seconds. 32 already precompiled.
+{"shutdown_accepted":true,"cleanup_complete":true,"unit":"pipewireao-session@d19c851c8e53.service","shutdown_attempted":true,"invocation":"74ba3f03245540b1a407e73b643e22f5"}

@@ -45,22 +45,23 @@ using Test, TOML, PipeWireAODeployment
         @test campaign.completed_report_cursor(pending)===nothing
         @test campaign.completed_report_cursor(unpublished)===nothing
         @test campaign.completed_report_cursor(older)===nothing
-        endpoint=Dict("profile"=>"pipewireao.rtc.calibration-lifecycle/1")
+        ready=Dict("source_endpoint"=>Dict("profile"=>"pipewireao.rtc.calibration-lifecycle/1"))
         calls=Float64[];responses=[pending,older,source];limit=time_ns()/1e9+5
-        selected=campaign.wait_completed_source("locator";deadline=limit,query=(path,deadline)->begin
-            @test path=="locator";push!(calls,deadline)
-            Dict("ok"=>true,"source_endpoint"=>endpoint,"source"=>responses[length(calls)])
+        selected=campaign.wait_completed_source(ready,"classic";deadline=limit,query=(record,kind,deadline)->begin
+            @test record===ready && kind=="classic";push!(calls,deadline)
+            responses[length(calls)]
         end)
         @test selected===source && calls==fill(limit,3)
         invoked=Ref(0)
-        @test_throws ArgumentError campaign.wait_completed_source("locator";deadline=time_ns()/1e9-1,
+        @test_throws ArgumentError campaign.wait_completed_source(ready,"classic";deadline=time_ns()/1e9-1,
             query=(args...)->(invoked[]+=1))
         @test invoked[]==0
-        @test_throws ErrorException campaign.wait_completed_source("locator";deadline=time_ns()/1e9+5,
+        @test_throws ErrorException campaign.wait_completed_source(ready,"classic";deadline=time_ns()/1e9+5,
             query=(args...)->begin invoked[]+=1;error("native outcome unknown") end)
         @test invoked[]==1 # no automatic retry or saved-file fallback
-        @test_throws ArgumentError campaign.wait_completed_source("locator";deadline=time_ns()/1e9+5,
-            query=(args...)->Dict("ok"=>true,"source_endpoint"=>Dict("profile"=>"standalone"),"source"=>source))
+        @test_throws ArgumentError campaign.wait_completed_source(
+            Dict("source_endpoint"=>Dict("profile"=>"standalone")),"classic";
+            deadline=time_ns()/1e9+5,query=(args...)->source)
     end
     @test method.validate_detector_completion(Dict("completed_report"=>report))==report["detector_diagnostics"]
     @test_throws ArgumentError method.validate_detector_completion(Dict())
@@ -80,8 +81,13 @@ const Common=PipeWireAODeployment.Common
 const CalibrationExport=PipeWireAODeployment.CalibrationExport
 const NativeCalibrationActionClient=PipeWireAODeployment.NativeCalibrationActionClient
 const NativeAcquisitionLifecycleCodec=PipeWireAODeployment.NativeAcquisitionLifecycleCodec
+const NativeControlClient=PipeWireAODeployment.NativeControlClient
+const NativeOwnerBootstrapCodec=PipeWireAODeployment.NativeOwnerBootstrapCodec
 const ScienceExport=PipeWireAODeployment.ScienceExport
-module Deployment
+const WirePlumberSessionRuntime=PipeWireAODeployment.WirePlumberSessionRuntime
+const SystemdOwners=PipeWireAODeployment.SystemdOwners
+const RunnerCommands=PipeWireAODeployment.RunnerCommands
+module DeploymentConfiguration
 using ..Common
 profile(path,prefix)=Common.read_json(path)
 decode(path,prefix)=Common.read_json(path)

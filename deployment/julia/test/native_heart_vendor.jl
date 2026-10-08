@@ -4,13 +4,75 @@ using Test, JSON3, SHA, PipeWireAO, PipeWireAODeployment
 include("native_control_private_core.jl")
 const HVC = PipeWireAODeployment.NativeHeartClient
 const HCC = PipeWireAODeployment.NativeControlClient
-const D = PipeWireAODeployment.Deployment
 const HCO = PipeWireAODeployment.Common
 const PACKAGE = realpath(ENV["HEART_NATIVE_TEST_PACKAGE"])
 const EVIDENCE = mkpath(ENV["HEART_NATIVE_TEST_EVIDENCE"])
 const SOURCE_ROOT = dirname(@__DIR__)
 include(joinpath(PipeWireAODeployment.resource_root(), "hil", "native_heart_control.jl"))
 const ENTRYPOINT = joinpath(PipeWireAODeployment.resource_root(), "hil", "heart_owner.jl")
+
+# This opt-in vendor test owns a detached process group. Keep its cleanup local
+# to the test so the scientific gate does not depend on the retired coordinator.
+function vendor_subreaper!()
+    ccall(:prctl, Cint, (Cint, Culong, Culong, Culong, Culong), 36, 1, 0, 0, 0) == 0 ||
+        error("cannot enable Linux child subreaper for vendor test")
+end
+
+function vendor_group_members(group_pid::Integer)
+    members = NamedTuple[]
+    for name in readdir("/proc")
+        all(isdigit, name) || continue
+        pid = try parse(Int, name) catch; continue end
+        line = try read("/proc/$pid/stat", String) catch; continue end
+        closing = findlast(==(')'), line)
+        closing === nothing && continue
+        fields = split(strip(line[closing+1:end]))
+        length(fields) >= 4 || continue
+        state = fields[1]
+        ppid = try parse(Int, fields[2]) catch; continue end
+        pgrp = try parse(Int, fields[3]) catch; continue end
+        session = try parse(Int, fields[4]) catch; continue end
+        pgrp == group_pid && session == group_pid &&
+            push!(members, (; pid, ppid, state))
+    end
+    return members
+end
+
+vendor_live_orphans(group_pid) = filter(member -> member.pid != group_pid &&
+    member.ppid == getpid() && !(member.state in ("Z", "X")),
+    vendor_group_members(group_pid))
+
+function vendor_reap_orphans!(group_pid)
+    for member in vendor_group_members(group_pid)
+        if member.pid != group_pid && member.ppid == getpid() && member.state in ("Z", "X")
+            status = Ref{Cint}(0)
+            ccall(:waitpid, Cint, (Cint, Ref{Cint}, Cint), member.pid, status, 1)
+        end
+    end
+end
+
+function vendor_owned_wait!(process::Base.Process, group_pid::Integer, grace::Real)
+    active() = process_running(process) || !isempty(vendor_live_orphans(group_pid))
+    deadline = HCC.monotonic() + grace
+    while active() && HCC.monotonic() < deadline
+        vendor_reap_orphans!(group_pid)
+        sleep(0.02)
+    end
+    for signal in (Base.SIGTERM, Base.SIGKILL)
+        active() || break
+        # The live leader or an adopted child reserves the numeric group ID.
+        ccall(:kill, Cint, (Cint, Cint), -group_pid, signal)
+        deadline = HCC.monotonic() + 5
+        while active() && HCC.monotonic() < deadline
+            vendor_reap_orphans!(group_pid)
+            sleep(0.02)
+        end
+    end
+    active() && error("vendor test process group $group_pid did not exit")
+    wait(process)
+    vendor_reap_orphans!(group_pid)
+    return nothing
+end
 
 function vendor_arguments(native_root, socket, node, instance)
     paths = Dict(name => joinpath(PACKAGE, "heart", relative) for (name, relative) in (
@@ -33,7 +95,7 @@ function qualify_vendor(socket, directory, daemon)
     node = "test.native.vendor.heart"
     instance = Int64(time_ns() % UInt64(typemax(Int64) - 1)) + 1
     argv, paths = vendor_arguments(native_root, socket, node, instance)
-    D._enable_subreaper()
+    vendor_subreaper!()
     child_pids = UInt32[]
     owner = client = owner_pid = nothing
     log = open(joinpath(EVIDENCE, "owner.log"), "w")
@@ -103,7 +165,7 @@ function qualify_vendor(socket, directory, daemon)
         println("NATIVE_HEART_VENDOR_EVIDENCE=$EVIDENCE")
     finally
         client === nothing || try close(client) catch end
-        owner === nothing || D._owned_wait(owner, something(owner_pid), 1)
+        owner === nothing || vendor_owned_wait!(owner, something(owner_pid), 1)
         if isdir(native_root)
             target = joinpath(EVIDENCE, "native")
             ispath(target) || cp(native_root, target; follow_symlinks=false)
@@ -184,7 +246,7 @@ function qualify_vendor_failure(socket, directory, daemon, scenario::Symbol)
             "vendor_source_modified"=>false, "pixel_ingress"=>false)))
     finally
         client === nothing || try close(client) catch end
-        owner === nothing || D._owned_wait(owner, something(owner_pid), 1)
+        owner === nothing || vendor_owned_wait!(owner, something(owner_pid), 1)
         if isdir(native_root)
             cp(native_root,joinpath(destination,"native");follow_symlinks=false)
         end

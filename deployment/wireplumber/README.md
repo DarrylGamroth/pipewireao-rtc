@@ -1,5 +1,11 @@
 # WirePlumber compatibility pilot
 
+> Historical pre-RTC-ARCH-025 deployment instructions. The coordinator and
+> companion observer launchers described below are retired. Their source and
+> results remain available at baseline `e791361e`. Use the current repository
+> README and `docs/WIREPLUMBER_SESSION_DESIGN.md` for WirePlumber-owned sessions.
+
+
 This development fixture proves generic WirePlumber discovery, native SPA
 format/metadata parsing and explicit client-owned links on an isolated AO core.
 It does not launch an RTC, authorize acquisition or replace the headless runtime.

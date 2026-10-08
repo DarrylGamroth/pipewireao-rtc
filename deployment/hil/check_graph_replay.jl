@@ -21,7 +21,7 @@ module GraphReplayCheck
 using PipeWireAODeployment
 using SHA
 const Common = PipeWireAODeployment.Common
-const Deployment = PipeWireAODeployment.Deployment
+const Deployment = PipeWireAODeployment.DeploymentConfiguration
 const SCALE = 1.0f-6
 const FEEDBACK_IN = Symbol("constraint-feedback")
 const FEEDBACK_OUT = Symbol("controller-constraint-feedback")

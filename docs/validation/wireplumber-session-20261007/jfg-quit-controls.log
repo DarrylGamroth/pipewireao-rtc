@@ -1,0 +1,5 @@
+{"reply":{"result":{"running":false,"owned_nodes":0,"outcome":"observed","discarded_buffers":0,"discarded_by_sink":{},"lifecycle_state":"Ready","owned_links":3},"owner_pid":799558,"session_id":"c765660d-78fe-433d-9930-9d56aa238656","error":null,"ok":true,"authority":"wireplumber_session","id":"486","version":1,"state":"Ready"},"monotonic":2.200169744621602e6,"command":["status"]}
+{"reply":{"result":{"message":"shutdown requested","outcome":"accepted","shutdown":true},"owner_pid":799558,"session_id":"c765660d-78fe-433d-9930-9d56aa238656","error":null,"ok":true,"authority":"wireplumber_session","id":"487","version":1,"state":"Offline"},"monotonic":2.200170304799792e6,"command":["quit"]}
+Precompiling packages...
+   4811.2 ms  ✓ PipeWireAODeployment
+  1 dependency successfully precompiled in 5 seconds. 32 already precompiled.

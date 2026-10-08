@@ -194,21 +194,37 @@ end
 
 @testset "native reduction binds the actual stopped runtime and owned instance" begin
     mktempdir() do directory
-        identity = Dict("runtime"=>directory, "deployment_sha256"=>"d"^64, "launcher_pid"=>123,
-            "instance"=>"run-owned", "ready_session_id"=>"session-owned", "processes"=>Dict("simulator"=>Dict("pid"=>124)), "source_owner"=>"simulator")
-        state = Dict("pid"=>123, "instance"=>"run-owned", "ready"=>Dict("session_id"=>"session-owned"),
-            "processes"=>Dict("simulator"=>Dict("pid"=>124)), "source-owner"=>"simulator", "source"=>Dict("sequence"=>7),
-            "phase"=>"stopped", "admitted"=>false, "error"=>nothing)
+        invocation = "a"^32
+        unit = "pipewireao-session@fixture.service"
+        identity = Dict("runtime"=>directory, "deployment_sha256"=>"d"^64,
+            "wireplumber_pid"=>123, "wireplumber_start_ticks"=>UInt64(41),
+            "instance"=>invocation, "unit"=>unit, "ready_session_id"=>"session-owned",
+            "processes"=>Dict("simulator"=>Dict("pid"=>124,
+                "start-ticks"=>UInt64(42), "cgroup"=>"/fixture/simulator")),
+            "source_owner"=>"simulator")
+        state = Dict("unit"=>unit, "invocation"=>invocation,
+            "wireplumber_pid"=>123, "wireplumber_start_ticks"=>UInt64(41),
+            "session_uuid"=>"session-owned", "owners"=>Dict("simulator"=>Dict(
+                "pid"=>124, "start-ticks"=>UInt64(42), "cgroup"=>"/fixture/simulator")),
+            "source_role"=>"simulator", "phase"=>"stopped",
+            "cleanup_complete"=>true, "cleanup_errors"=>String[], "error"=>nothing)
         @test Export.validate_stopped_runtime(state,identity,directory,"d"^64,7) === nothing
         @test_throws ArgumentError Export.validate_stopped_runtime(state,nothing,directory,"d"^64,7)
-        for change in (s->s["pid"]=456, s->s["instance"]="other", s->s["ready"]["session_id"]="other",
-            s->s["processes"]["simulator"]["pid"]=456, s->s["source"]["sequence"]=6,
-            s->s["admitted"]=true, s->s["phase"]="running")
+        for change in (s->s["wireplumber_pid"]=456,
+            s->s["wireplumber_start_ticks"]=UInt64(99),
+            s->s["invocation"]="b"^32, s->s["unit"]="pipewireao-session@other.service",
+            s->s["session_uuid"]="other",
+            s->s["owners"]["simulator"]["pid"]=456,
+            s->s["owners"]["simulator"]["start-ticks"]=UInt64(99),
+            s->s["source_role"]="other", s->s["cleanup_complete"]=false,
+            s->push!(s["cleanup_errors"],"owner cleanup failed"),
+            s->s["error"]="service failed", s->s["phase"]="running")
             bad=deepcopy(state); change(bad)
             @test_throws ArgumentError Export.validate_stopped_runtime(bad,identity,directory,"d"^64,7)
         end
-        mkdir(joinpath(directory,"run-owned"))
-        @test_throws ArgumentError Export.validate_stopped_runtime(state,identity,directory,"d"^64,7)
+        bad_identity=deepcopy(identity); bad_identity["runtime"]=joinpath(directory,"other")
+        @test_throws ArgumentError Export.validate_stopped_runtime(state,bad_identity,directory,"d"^64,7)
+        @test_throws ArgumentError Export.validate_stopped_runtime(state,identity,directory,"d"^64,-1)
     end
 end
 

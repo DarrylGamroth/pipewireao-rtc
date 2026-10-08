@@ -1,0 +1,140 @@
+{
+  "invocation": "c5b1980204b14e5eba6be2e39dd01128",
+  "phase": "failed",
+  "error": "WirePlumber service exited with result exit-code",
+  "cleanup_complete": true,
+  "cleanup_errors": null,
+  "service_result": "exit-code",
+  "owners": {
+    "fgn": {
+      "role": "fgn",
+      "pid": 743529,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/pipewireao-owner-c5b1980204b14e5eba6be2e39dd01128-fgn.service",
+      "error": "",
+      "placement": {
+        "threads": [
+          {
+            "priority": 83,
+            "policy": "fifo",
+            "cpus": [
+              2
+            ],
+            "count": 1
+          }
+        ],
+        "leader-cpu": 14,
+        "rt-priority": 83,
+        "cpus": [
+          2,
+          14
+        ],
+        "locked-bytes": 0
+      },
+      "start-ticks": 219251000,
+      "unit": "pipewireao-owner-c5b1980204b14e5eba6be2e39dd01128-fgn.service",
+      "graph-nodes": [
+        "revolt-copper-fgn-frame-graph"
+      ],
+      "invocation": "bbf0f20d44c7496280c090d479f9efd1",
+      "state": "running"
+    },
+    "parameters": {
+      "control-instance": "2192506543113962",
+      "role": "parameters",
+      "bootstrap-node": "pipewireao.rtc.bootstrap.parameters",
+      "pid": 743496,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/pipewireao-owner-c5b1980204b14e5eba6be2e39dd01128-parameters.service",
+      "error": "",
+      "placement": {
+        "threads": [
+          {
+            "name": "rtc-bootstrap",
+            "priority": 0,
+            "policy": "other",
+            "cpus": [
+              14
+            ],
+            "count": 1
+          }
+        ],
+        "leader-cpu": 14,
+        "rt-priority": 0,
+        "cpus": [
+          14
+        ],
+        "locked-bytes": 0
+      },
+      "bootstrap-instance": "2192506543113961",
+      "state": "running",
+      "start-ticks": 219250802,
+      "unit": "pipewireao-owner-c5b1980204b14e5eba6be2e39dd01128-parameters.service",
+      "control-protocol": "pipewireao.rtc.parameter-source/1",
+      "control-node": "pipewireao.rtc.parameters.rtc-wp-session-fgn-20261007",
+      "invocation": "d76bcf182c33459e99466470d1fc51ba"
+    },
+    "core": {
+      "role": "core",
+      "pid": 743476,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/pipewireao-owner-c5b1980204b14e5eba6be2e39dd01128-core.service",
+      "error": "",
+      "placement": {
+        "threads": [
+          {
+            "priority": 83,
+            "policy": "fifo",
+            "cpus": [
+              2
+            ],
+            "count": 1
+          }
+        ],
+        "leader-cpu": 14,
+        "rt-priority": 83,
+        "cpus": [
+          2,
+          14
+        ],
+        "locked-bytes": 0
+      },
+      "start-ticks": 219250769,
+      "unit": "pipewireao-owner-c5b1980204b14e5eba6be2e39dd01128-core.service",
+      "invocation": "6963c11d773d4a61a9975ab40ce43044",
+      "state": "running"
+    },
+    "simulator": {
+      "control-instance": null,
+      "role": "simulator",
+      "bootstrap-node": "pipewireao.rtc.bootstrap.simulator",
+      "pid": 743482,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/pipewireao-owner-c5b1980204b14e5eba6be2e39dd01128-simulator.service",
+      "error": "",
+      "placement": {
+        "threads": [
+          {
+            "name": "rtc-bootstrap",
+            "priority": 0,
+            "policy": "other",
+            "cpus": [
+              12
+            ],
+            "count": 1
+          }
+        ],
+        "leader-cpu": 12,
+        "rt-priority": 0,
+        "cpus": [
+          12,
+          14
+        ],
+        "locked-bytes": 0
+      },
+      "bootstrap-instance": "2192506543113960",
+      "state": "running",
+      "start-ticks": 219250784,
+      "unit": "pipewireao-owner-c5b1980204b14e5eba6be2e39dd01128-simulator.service",
+      "control-protocol": "pipewireao.source-control/1",
+      "control-node": "simulator-wfs",
+      "invocation": "87f4a533dbd748bea0683a5827e8d6af"
+    }
+  }
+}

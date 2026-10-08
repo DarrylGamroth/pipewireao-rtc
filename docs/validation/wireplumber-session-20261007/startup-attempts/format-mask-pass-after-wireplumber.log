@@ -1,0 +1,29 @@
+Oct 07 19:22:14 rtc-devel systemd[1279]: Starting pipewireao-session@wf-0710.service - WirePlumber-owned PipeWireAO RTC session wf-0710...
+Oct 07 19:23:55 rtc-devel wireplumber[756466]: wp-link: <WpLink:49:0x55f805a3e550> AO link info state=0 mask=7 format=0
+Oct 07 19:23:55 rtc-devel wireplumber[756466]: m-lua-scripting: AO link activation completed error=nil
+Oct 07 19:23:55 rtc-devel wireplumber[756466]: m-lua-scripting: AO link inspect id=49 state=init features=17
+Oct 07 19:23:55 rtc-devel wireplumber[756466]: wp-link: <WpLink:49:0x55f805a5a6f0> AO link info state=1 mask=7 format=1
+Oct 07 19:23:55 rtc-devel wireplumber[756466]: wp-link: <WpLink:49:0x55f805a3e550> AO link info state=3 mask=3 format=1
+Oct 07 19:23:55 rtc-devel wireplumber[756466]: m-lua-scripting: AO link inspect id=49 state=paused features=17
+Oct 07 19:23:55 rtc-devel wireplumber[756466]: m-lua-scripting: AO link format present=true
+Oct 07 19:23:55 rtc-devel wireplumber[756466]: m-lua-scripting: AO session fault: [string "ao-connections.lua"]:189: Expected ndarray Format
+Oct 07 19:23:55 rtc-devel wireplumber[756466]: wp-link: <WpLink:49:0x55f805a5a6f0> AO link info state=3 mask=3 format=1
+Oct 07 19:23:56 rtc-devel pipewireao-rtc-session[756467]: ERROR: LoadError: ArgumentError: direct session warmup query did not retain Configuring
+Oct 07 19:23:56 rtc-devel pipewireao-rtc-session[756467]: Stacktrace:
+Oct 07 19:23:56 rtc-devel pipewireao-rtc-session[756467]:  [1] publish!(args::@NamedTuple{prefix::String, unit::String, package::String, runtime_root::String})
+Oct 07 19:23:56 rtc-devel pipewireao-rtc-session[756467]:    @ Main.WirePlumberCLI /tmp/rtc-wireplumber-fgn-20261007-installed/julia/wireplumber_cli.jl:151
+Oct 07 19:23:56 rtc-devel pipewireao-rtc-session[756467]:  [2] main(argv::Vector{String})
+Oct 07 19:23:56 rtc-devel pipewireao-rtc-session[756467]:    @ Main.WirePlumberCLI /tmp/rtc-wireplumber-fgn-20261007-installed/julia/wireplumber_cli.jl:313
+Oct 07 19:23:56 rtc-devel pipewireao-rtc-session[756467]:  [3] top-level scope
+Oct 07 19:23:56 rtc-devel pipewireao-rtc-session[756467]:    @ /tmp/rtc-wireplumber-fgn-20261007-installed/julia/wireplumber_cli.jl:351
+Oct 07 19:23:56 rtc-devel pipewireao-rtc-session[756467]:  [4] include(mod::Module, _path::String)
+Oct 07 19:23:56 rtc-devel pipewireao-rtc-session[756467]:    @ Base ./Base.jl:306
+Oct 07 19:23:56 rtc-devel pipewireao-rtc-session[756467]:  [5] exec_options(opts::Base.JLOptions)
+Oct 07 19:23:56 rtc-devel pipewireao-rtc-session[756467]:    @ Base ./client.jl:317
+Oct 07 19:23:56 rtc-devel pipewireao-rtc-session[756467]:  [6] _start()
+Oct 07 19:23:56 rtc-devel pipewireao-rtc-session[756467]:    @ Base ./client.jl:550
+Oct 07 19:23:56 rtc-devel pipewireao-rtc-session[756467]: in expression starting at /tmp/rtc-wireplumber-fgn-20261007-installed/julia/wireplumber_cli.jl:351
+Oct 07 19:23:56 rtc-devel systemd[1279]: pipewireao-session@wf-0710.service: Control process exited, code=exited, status=1/FAILURE
+Oct 07 19:24:09 rtc-devel systemd[1279]: pipewireao-session@wf-0710.service: Failed with result 'exit-code'.
+Oct 07 19:24:09 rtc-devel systemd[1279]: Failed to start pipewireao-session@wf-0710.service - WirePlumber-owned PipeWireAO RTC session wf-0710.
+Oct 07 19:24:09 rtc-devel systemd[1279]: pipewireao-session@wf-0710.service: Consumed 50.064s CPU time, 709.6M memory peak.

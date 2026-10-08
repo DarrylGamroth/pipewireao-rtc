@@ -3,7 +3,7 @@ module HeartCalibrationCapture
 using PipeWireAODeployment, SHA, JSON3, LinearAlgebra
 const C=PipeWireAODeployment.Common
 const H=PipeWireAODeployment.HeartCalibrationExport
-const D=PipeWireAODeployment.Deployment
+const D=PipeWireAODeployment.DeploymentConfiguration
 const MethodPath=joinpath(@__DIR__,"heart_calibration_method.jl")
 const CoordinatesPath=joinpath(@__DIR__,"heart_calibration_coordinates.jl")
 const IncludedSources=Dict(path=>bytes2hex(open(sha256,path)) for path in

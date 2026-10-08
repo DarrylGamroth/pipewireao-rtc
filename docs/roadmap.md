@@ -15,22 +15,36 @@ chronology. Architecture/requirement decisions remain authoritative.
 ### Selected scope
 
 Complete the native-control/deployment increment and provide a stable base for
-GUI development. AOS uses CUDA; FGN/JFG RTC execution remains CPU. Classic and
+GUI development. AOS uses CUDA; FGN/JFG execution remains CPU. Classic and
 Copper, full-frame and existing row-block owners remain selected. CPU0/1 are
 excluded. Keep HEART unchanged and all profiles non-actuating. Functional,
 numerical, allocation and rate/latency qualification remain separate.
 
-The user-selected integration direction is to reuse systemd and WirePlumber for
-general process/session infrastructure, with AOS activated as the simulated
-instrument. [Ecosystem integration](ECOSYSTEM_INTEGRATION.md) describes existing
-ownership and the proposed transfer. The accepted application split keeps RTC
-lifecycle logic in a headless runtime, with GUI and CLI clients using the same
-native controls. The selected target assigns external session-link realization
-and lifetime to WirePlumberAO, and service supervision to systemd. The selected
-opt-in Copper composition
-now passes those responsibility transfers. RTC-owned external links and direct
-child supervision remain for foreground operation and unqualified profiles;
-the observer-only pilot is retained evidence rather than the selected target.
+The user selected [RTC-ARCH-025](WIREPLUMBER_SESSION_DESIGN.md): WirePlumberAO
+Lua will own the complete session lifecycle, admission and connection policy;
+systemd will own process lifetime. Julia deployment tooling remains one-shot for
+export, installation and preflight, with Julia calibration clients and
+scientific Julia owners, including JFG graph processes, retained. The Julia
+DeploymentRunner and Rust Statig session runner are removed in the migration
+worktree. The selected Copper replacement checks are recorded below; broader
+profile, fault and timing qualification remain open. Preserve existing data paths and
+artifacts while migrating. The selected FGN host is a separate ordinary
+PipeWire client service. FGN LocalModule in the WirePlumber process is a different
+placement/failure option and is not selected or qualified by these checks.
+
+Completed Copper link and process-supervision transfers remain valid only for
+their dated scopes. The selected Copper composition has passed link realization
+and systemd owner-service checks while the old runtime retains science readiness
+and source authority. Those checks do not qualify WirePlumber-owned lifecycle,
+source release, reset/update coordination, or removal of either coordinator.
+The optional post-admission observer and direct RTC links are retained historical
+paths pending the new migration gates.
+
+The following detailed paragraphs and evidence table record completed behavior
+of the pre-RTC-ARCH-025 runtime architecture. Their cohort-specific results are
+retained; none establishes qualification of the WirePlumber-owned session
+authority or authorizes removing existing paths.
+
 The isolated complete-frame WirePlumber compatibility fixture passes discovery,
 format/metadata parsing, explicit linking, exact delivery and basic teardown.
 The Copper CUDA AOS pilot also passes coexistence with CPU FGN and CPU JFG,
@@ -84,29 +98,34 @@ endpoint set by exact owner and role; optional observation endpoints must not
 gate progress. The existing single-exchange simulation does not qualify a general
 multiple-endpoint adapter or mixed-rate plant synchronization.
 
-### Next integration increment
+### Active work: WirePlumber-owned session lifecycle
 
-Use each component for its intended purpose as selected in the
-[architecture boundary](architecture.md#accepted-workstation-integration-boundary).
+The WirePlumber native endpoint, Lua lifecycle/connection policy and one-shot
+systemd tools now pass the selected Copper CPU FGN/JFG + CUDA AOS checks:
+held admission, native reset/start/stop, stopped and running gain/matrix adoption,
+512 exchanges each, and exact accepted per-engine retained prefixes. FGN actual
+required-parameter-owner loss reaches Fault/zero owned links and exact process
+cleanup. JFG native Quit reaches Offline, then complete systemd cleanup. Both
+simulator measured tails report zero allocations/GC. Runtime coordinators and
+supervisor fallback clients are removed in this worktree; scientific executors,
+local owner controls and one-shot calibration clients remain.
 
-1. Reuse the completed selected Copper ownership-transfer evidence above. Keep
-   science, native GUI/CLI controls and accepted artifacts unchanged.
-2. Extend the opt-in WirePlumber link/systemd service composition to remaining
-   Classic and existing row-block profiles with only the affected short native
-   lifecycle/placement checks. Reuse their existing scientific evidence.
-3. Retire pilot or legacy paths only when they have no supported callers. Keep
-   direct foreground operation and graph-internal link creation where required;
-   do not remove working profiles based on Copper-only evidence.
-4. Reconcile selected installed profiles and release packaging before changing
-   the default backend. General multi-endpoint AOS and target timing remain
-   separate decisions and gates.
+See [current checks and limits](validation/wireplumber-session-20261007/SESSION_CHECKS.md).
+The coordinator-free SDK admits a fresh JFG incarnation and completes another
+512 exact-prefix exchanges. Direct GUI selection/rendering and the corrected
+normal Julia Quit/cleanup path pass. Independent source review found and closed
+two calibration packaging/shutdown defects; production export/install closure
+passes, while full campaign qualification remains open.
+Broader Classic/row-block/calibration profile parity, the complete loss/timeout
+matrix, general multi-endpoint sessions and target timing remain separate gates.
+Historical runner evidence below is preserved with its original scope.
 
 The remaining qualification list below stays applicable; reuse existing evidence
 and execute only checks affected by each responsibility transfer.
 
-### Observed progress
+### Dated evidence from the prior runtime architecture
 
-| Area | Current disposition | Evidence to read if affected |
+| Area | Recorded disposition at the time of the evidence | Evidence to read if affected |
 | --- | --- | --- |
 | WirePlumber compatibility | Unmodified 0.5.18 built against AO passes the isolated FITS/discard test. Copper CUDA AOS with each CPU executor passes two 512-command runs, held discovery, native stop/reset/resume, unchanged runtime-owned links after WirePlumber SIGKILL, and exact 256-frame baseline/reset prefixes. Simulator measured tails report zero Julia heap allocation/GC. The later owner-service row records selected ownership transfer; general multiple-endpoint qualification remains open. | [Compatibility test](validation/wireplumber-compatibility-20261006/README.md), [Copper coexistence](validation/wireplumber-hil-coexistence-20261006/README.md) |
 | Declared connection policy / required loss | Configured Formats, passive links and exact role-owner clients are checked continuously by the optional observer. Corrected RTC monitoring latches required-link and external endpoint loss. Both Copper CPU executors with CUDA AOS pass link/simulator loss, complete owned cleanup and fresh admission with exact baseline prefixes and zero simulator heap/GC tails. General multi-output AOS remains unqualified; later selected ownership-transfer evidence is recorded below. | [Policy design](WIREPLUMBER_CONNECTION_POLICY.md), [qualification and independent review](validation/wireplumber-connection-policy-20261007/README.md) |
@@ -502,6 +521,11 @@ whole-process counters, allocation differential, and profile attribution at
 the narrower synchronous callback boundary.
 
 ## Requirement delivery map
+
+The implementation/evidence labels in this historical map describe the
+pre-RTC-ARCH-025 providers. They preserve the demonstrated behavior of that
+baseline; they do not establish WirePlumber-owned lifecycle implementation or
+qualification. The current migration gates are above.
 
 | Requirement | Primary increment | Implementation | Evidence | Required evidence |
 | --- | --- | --- | --- | --- |

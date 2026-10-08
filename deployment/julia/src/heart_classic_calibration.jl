@@ -12,7 +12,7 @@ const CLASSIC_TRANSFER_MAPS = (
     ("vdm-to-controller",[221,221],"983d34d2a0b061ba1769f01b4b112e00b8a39f74f45bc9e7d7f01d21dc7ac772"))
 
 function classic_selected_resources(base, provenance, specification, prefix)
-    graph = Deployment.decode(joinpath(base,"graphs/graph.conf.in"),prefix)
+    graph = DeploymentConfiguration.decode(joinpath(base,"graphs/graph.conf.in"),prefix)
     controller = only(filter(node->get(node,"label",nothing)=="closed-loop-correction-f32",graph["filter.graph"]["nodes"]))
     controller["props"]["gain"] == -0.3 && controller["props"]["pole"] == 0.99 &&
         controller["props"]["anti-windup-gain"] == 0.99 && controller["config"]["state_length"] == 221 ||
@@ -124,7 +124,7 @@ function classic_transfer_inputs(args, base, provenance, plan_path, seed)
     policy = classic_transfer_policy(args.classic_transfer, option(args, :classic_transfer_sha256), plan_path, seed)
     inputs = HeartConfiguration.calibration_inputs(base, provenance; pipewire_prefix=args.pipewire_prefix)
     inputs.mode == "operational" || throw(ArgumentError("Classic transfer requires accepted operational offsets"))
-    specification = Deployment.profile(joinpath(base, "deployment.conf"), args.pipewire_prefix)
+    specification = DeploymentConfiguration.profile(joinpath(base, "deployment.conf"), args.pipewire_prefix)
     CalibrationCampaign.validate_simulator_backend(base, specification, provenance; allowed_backends=("cpu", "cuda"))
     profile = provenance["prepared_profile"]
     profile["controlled_vdm_size"] == 221 && profile["full_vdm_size"] == 277 && profile["pdm_size"] == 277 ||

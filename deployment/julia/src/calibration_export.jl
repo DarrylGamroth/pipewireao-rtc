@@ -2,7 +2,7 @@ module CalibrationExport
 
 using JSON3
 using ..Common
-using ..Deployment
+using ..DeploymentConfiguration
 using ..ScienceExport
 using ..HILExport
 import ..NativeControlClient
@@ -202,21 +202,32 @@ function selected_calibration_binary(args)
     source isa AbstractString && isfile(source) && !islink(source) || throw(ArgumentError("--deployment requires an existing --calibration-binary"))
     return realpath(source)
 end
-function selected_rtc_binary(args)
-    option(args,:deployment,false) === true || return nothing
-    source = option(args,:rtc_binary)
-    source isa AbstractString && isfile(source) && !islink(source) || throw(ArgumentError("--deployment requires an existing --rtc-binary"))
-    return realpath(source)
-end
 function copy_calibration_binary(package,source)
     path = "bin/rtc-calibrate"
     ScienceExport.copy_file(source,joinpath(package,path))
     return Dict("path"=>path,"sha256"=>ScienceExport.sha256(joinpath(package,path)))
 end
-function copy_rtc_binary(package,source)
-    path = "bin/pipewireao-rtc"
-    ScienceExport.copy_file(source,joinpath(package,path))
-    return Dict("path"=>path,"sha256"=>ScienceExport.sha256(joinpath(package,path)))
+
+function copy_wireplumber_from_base!(package, base, specification)
+    manager = get(specification, "session-manager", nothing)
+    manager isa AbstractDict && manager["argv"] ==
+        ["@PACKAGE@/wireplumber/bin/wireplumber", "-c",
+         "@RUNTIME@/wireplumber/wireplumber.conf", "-p", "ao-rtc"] &&
+        manager["environment"] == Dict(
+            "WIREPLUMBER_MODULE_DIR" => "@PACKAGE@/wireplumber/modules",
+            "WIREPLUMBER_DATA_DIR" => "@PACKAGE@/wireplumber") ||
+        throw(ArgumentError("calibration base has no canonical packaged WirePlumber session contract"))
+    source = joinpath(base, "wireplumber")
+    isdir(source) && !islink(source) ||
+        throw(ArgumentError("calibration base has no sealed WirePlumber assets"))
+    for (directory, _, files) in walkdir(source), name in files
+        relative = relpath(joinpath(directory, name), base)
+        haskey(specification["artifacts"], relative) ||
+            throw(ArgumentError("calibration base has an unsealed WirePlumber asset: $relative"))
+    end
+    ScienceExport.copy_tree(source, joinpath(package, "wireplumber"))
+    ScienceExport.stage_wireplumber!(package)
+    return nothing
 end
 
 function _artifacts(package; include_deployment=false)
@@ -235,7 +246,7 @@ end
 
 "Select the sole acquisition owner's native cold lifecycle, retaining saved reports."
 function acquisition_source_control!(source, profile, instrument::AbstractString)
-    Deployment.native_source(source) || throw(ArgumentError("acquisition export requires a fresh native-source base"))
+    DeploymentConfiguration.native_source(source) || throw(ArgumentError("acquisition export requires a fresh native-source base"))
     instrument in ("classic", "copper") || throw(ArgumentError("unsupported acquisition instrument"))
     argv = source["argv"]
     profiles = findall(==("--profile"), argv)
@@ -324,10 +335,20 @@ function deployment_descriptor(package,base,specification,records,profile,engine
         source = joinpath(base,client)
         isfile(source) && !isfile(joinpath(package,client)) && ScienceExport.copy_file(source,joinpath(package,client))
     end
+    # These endpoints are created by the selected calibration owner. Graph
+    # roles come from the same records that generated their owner argv.
+    node_owners = Dict{String,String}(
+        item["node.name"] => simulator["role"] for section in ("sources", "sinks")
+        for item in session[section])
+    for record in records
+        node_owners[record["node.name"]] = engine == "fgn" ? "fgn" :
+            "julia-" * record["role"]
+    end
+    specification["node-owners"] = node_owners
     Common.write_json(joinpath(package,"session.conf.in"),session)
     specification["artifacts"] = _artifacts(package)
     Common.write_json(joinpath(package,"deployment.conf"),specification)
-    Deployment.profile(joinpath(package,"deployment.conf"),prefix)
+    DeploymentConfiguration.profile(joinpath(package,"deployment.conf"),prefix)
     return specification
 end
 
@@ -335,9 +356,8 @@ function export_package(args)
     output = abspath(args.output)
     !ispath(output) && !islink(output) || throw(ArgumentError("export output must be new: $output"))
     calibration_binary = selected_calibration_binary(args)
-    rtc_binary = selected_rtc_binary(args)
     base = realpath(args.base_package)
-    specification = Deployment.profile(joinpath(base,"deployment.conf"),args.pipewire_prefix;legacy_export_input=true)
+    specification = DeploymentConfiguration.profile(joinpath(base,"deployment.conf"),args.pipewire_prefix;legacy_export_input=true)
     provenance = Common.read_json(joinpath(base,"provenance.json"))
     profile,engine = provenance["profile"],provenance["engine"]
     illumination,stage = option(args,:illumination,"lamp"),option(args,:calibration_stage,"interaction")
@@ -348,20 +368,21 @@ function export_package(args)
     validate_capture_budget(profile,capture,deployment)
     profile in ("classic","copper") && engine in ("fgn","jfg") && provenance["mode"] == "frame" ||
         throw(ArgumentError("initial calibration requires selected full-frame Classic/Copper FGN/JFG science"))
-    session = Deployment.decode(joinpath(base,specification["session"]),args.pipewire_prefix)
+    session = DeploymentConfiguration.decode(joinpath(base,specification["session"]),args.pipewire_prefix)
     session["execution"] == "complete-frame" || throw(ArgumentError("initial calibration requires complete-frame science"))
     source_path = joinpath(base,"graphs/graph.conf.in")
-    source = Deployment.decode(source_path,args.pipewire_prefix)
+    source = DeploymentConfiguration.decode(source_path,args.pipewire_prefix)
     name = "revolt-$profile-$engine-initial-calibration"
     graphs = split_graph(source,profile,engine,name)
     mkpath(dirname(output))
     return mktempdir(dirname(output); prefix=".rtc-calibration-export-") do temporary
         package = joinpath(temporary,"package")
         mkpath(joinpath(package,"graphs")); mkpath(joinpath(package,"calibration"))
-        calibration_command = rtc_runner = nothing
+        calibration_command = nothing
         if deployment
             isfile(joinpath(base,"hil/calibration_acquisition.jl")) || throw(ArgumentError("calibration deployment descriptor requires calibration_acquisition.jl in the HIL package"))
             ScienceExport.copy_deployment_runtime(package)
+            copy_wireplumber_from_base!(package, base, specification)
             ScienceExport.copy_tree(joinpath(base,"hil"),joinpath(package,"hil"))
             for filename in ("simulator.jl","simulator_owner.jl","native_owner_bootstrap.jl","jfg_owner.jl",
                     "calibration_owner.jl","calibration_acquisition.jl","calibration_server.jl",
@@ -373,7 +394,6 @@ function export_package(args)
             isfile(joinpath(package,"hil/Project.toml")) && HILExport.add_bootstrap_dependency!(joinpath(package,"hil/Project.toml"))
             mkpath(joinpath(package,"bin"))
             calibration_command = copy_calibration_binary(package,calibration_binary)
-            rtc_runner = copy_rtc_binary(package,rtc_binary)
         end
         if engine == "fgn"
             ScienceExport.copy_tree(joinpath(base,"lib"),joinpath(package,"lib"))
@@ -431,7 +451,6 @@ function export_package(args)
             metadata["deployment_entrypoint"] = isfile(joinpath(package,"hil/calibration_owner.jl")) ? "hil/calibration_owner.jl" : "missing: hil/calibration_owner.jl"
             metadata["artifact_scope"] = "initial-calibration-graphs-and-deployment-descriptor"
             metadata["calibration_command"] = calibration_command
-            metadata["rtc_runner"] = rtc_runner
             metadata["owner_transport_conversion"] = Dict(
                 "source"=>"pipewireao.rtc.calibration-lifecycle/1",
                 "external_graphs"=>engine == "jfg" ? "pipewireao.rtc.owner-bootstrap/1" : nothing,
@@ -452,7 +471,7 @@ end
 function main(argv=ARGS)
     options = Common.cli_arguments(argv; flags=["deployment"], required=["base-package","output","pipewire-prefix"],
         defaults=(illumination="lamp", calibration_stage="interaction"),
-        allowed=["calibration-binary","rtc-binary","capture-max-bytes"])
+        allowed=["calibration-binary","capture-max-bytes"])
     capture = hasproperty(options,:capture_max_bytes) ? parse(Int,options.capture_max_bytes) : nothing
     args = merge(options,(capture_max_bytes=capture,))
     println(export_package(args))

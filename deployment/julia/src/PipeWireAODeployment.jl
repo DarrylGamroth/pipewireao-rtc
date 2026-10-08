@@ -1,4 +1,4 @@
-"""Configuration export, installed deployment supervision and calibration orchestration.
+"""Configuration export, one-shot session tools and calibration orchestration.
 
 Scientific algorithms and frame execution remain in their owning packages.
 """
@@ -15,7 +15,7 @@ function resource_root()
     source = dirname(package_root())
     root = isdir(installed) ? installed : source
     all(isdir(joinpath(root, name)) for name in ("hil", "templates")) &&
-        isfile(joinpath(root, "pipewireao-rtc@.service.in")) ||
+        isfile(joinpath(root, "pipewireao-session@.service.in")) ||
         throw(ArgumentError("deployment resources are incomplete: $root"))
     return root
 end
@@ -41,8 +41,11 @@ include("native_control_codec.jl")
 include("native_runner_codec.jl")
 include("native_control_client.jl")
 include("native_control_endpoint.jl")
+include("native_session_codec.jl")
+include("native_session_profile.jl")
 include("native_owner_bootstrap_codec.jl")
 include("native_owner_bootstrap_runtime.jl")
+include("native_parameter_source.jl")
 include("native_owner_bootstrap_client.jl")
 include("native_heart_codec.jl")
 include("native_acquisition_lifecycle_codec.jl")
@@ -51,17 +54,11 @@ include("native_acquisition_lifecycle_runtime.jl")
 include("native_acquisition_lifecycle_client.jl")
 include("native_calibration_action_client.jl")
 include("native_heart_client.jl")
-include("native_runner_client.jl")
-include("native_supervisor_codec.jl")
-include("native_supervisor_runtime.jl")
 include("runner_commands.jl")
-include(joinpath(resource_root(), "hil", "source_control.jl"))
-include("source_client.jl")
-include("native_supervisor_client.jl")
 include("native_session_discovery.jl")
 include("native_session_client.jl")
-include("observation_boundary.jl")
-include("deploy.jl")
+include("deployment_configuration.jl")
+include("wireplumber_session_runtime.jl")
 include("hil_export.jl")
 include("calibration_export.jl")
 include("calibration_campaign.jl")

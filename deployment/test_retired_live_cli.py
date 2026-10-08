@@ -60,11 +60,11 @@ class RetiredLiveCliTests(unittest.TestCase):
         deploy = DEPLOYMENT / "deploy.py"
         self.assert_retired_before_effects(
             (deploy, "run", "--deployment", self.root / "missing.conf", "--runtime", self.runtime),
-            "deployment/julia/deploy_cli.jl",
+            "deployment/julia/wireplumber_cli.jl",
         )
         self.assert_retired_before_effects(
             (deploy, "control", "--runtime", self.runtime, "status"),
-            "deployment/julia/deploy_cli.jl",
+            "deployment/julia/wireplumber_cli.jl",
         )
 
     def test_live_qualification_and_campaign_entrypoints_fail_closed(self):
@@ -72,18 +72,18 @@ class RetiredLiveCliTests(unittest.TestCase):
             ("check_profile.py", ("--deployment", self.root / "missing.conf", "--fits",
                                    self.root / "missing.fits", "--frames", "1", "--output",
                                    self.output, "--runtime", self.runtime),
-             "deployment/julia/deploy_cli.jl"),
+             "deployment/julia/wireplumber_cli.jl"),
             ("check_properties.py", ("--deployment", self.root / "missing.conf", "--fits",
                                      self.root / "missing.fits", "--node", "fixture", "--gain",
                                      "0.5", "--pole", "0.9", "--output", self.output,
                                      "--runtime", self.runtime),
-             "deployment/julia/deploy_cli.jl"),
+             "deployment/julia/wireplumber_cli.jl"),
             ("check_hil.py", ("--deployment", self.root / "missing.conf", "--runtime",
                               self.runtime, "--output", self.output),
-             "deployment/julia/deploy_cli.jl"),
+             "deployment/julia/wireplumber_cli.jl"),
             ("check_heart_failure.py", ("--deployment", self.root / "missing.conf", "--runtime",
                                         self.runtime, "--output", self.output),
-             "deployment/julia/deploy_cli.jl"),
+             "deployment/julia/wireplumber_cli.jl"),
             ("calibration_campaign.py", ("--base-package", self.root / "missing-package",
                                          "--output", self.output, "--recipe", self.root / "missing.json",
                                          "--aoc-source", self.root / "missing-aoc", "--rtc-binary",

@@ -1,8 +1,9 @@
 module HeartCalibrationExport
 
 using TOML
-using ..Common, ..Deployment, ..ScienceExport, ..HILExport, ..HeartConfiguration, ..HeartExport
+using ..Common, ..DeploymentConfiguration, ..ScienceExport, ..HILExport, ..HeartConfiguration, ..HeartExport
 using ..CalibrationExport, ..CalibrationCampaign
+using ..WirePlumberSessionRuntime
 
 export export_package, run_pilot, run_plan, reduce_plan, plan_limits, main
 
@@ -259,7 +260,7 @@ function export_package(args)
         package = joinpath(temporary, "package")
         HeartExport.export_package(merge(args, (; output=package, readout_us=option(args, :readout_us, 0)));
             simulator_backend=option(args, :simulator_backend, "cpu"))
-        specification = Deployment.profile(joinpath(package, "deployment.conf"), args.pipewire_prefix)
+        specification = DeploymentConfiguration.profile(joinpath(package, "deployment.conf"), args.pipewire_prefix)
         staged_provenance = Common.read_json(joinpath(package, "provenance.json"))
         selected_helpers = profile == "classic" ? (HELPERS..., "heart_classic_calibration_verify.jl", "heart_classic_calibration_evidence.jl") : HELPERS
         for name in selected_helpers
@@ -301,7 +302,7 @@ function export_package(args)
         source["argv"] = owner_arguments(source["argv"]; stage, illumination,
             capture_max_bytes=capture_budget, telemetry_max_bytes=telemetry_budget, evidence_directory, ingress_mode, profile)
         native_owner = only(filter(owner -> owner["role"] == "heart", specification["owners"]))
-        core = Deployment.decode(joinpath(package, specification["core"]), args.pipewire_prefix)
+        core = DeploymentConfiguration.decode(joinpath(package, specification["core"]), args.pipewire_prefix)
         wfs = only(filter(item -> get(get(item, "args", Dict()), "factory.name", nothing) == "api.heart.std-wfs.sink", core["context.objects"]))["args"]
         ingress = ingress_contract(ingress_mode, staged_provenance["profile"], wfs,
             joinpath(package, "heart/bin/scaoTemplate"); source_revision=staged_provenance["heart"]["revision"])
@@ -310,6 +311,9 @@ function export_package(args)
         native_debug && append!(native_owner["argv"], ["--native-wfs-proc-debug", "true"])
         wrapper === nothing || append!(native_owner["argv"], ["--native-debug-stdio-wrapper", wrapper])
         specification["name"] = calibration_name(specification["name"], profile)
+        node_owners = specification["node-owners"]
+        node_owners["heart-calibration-probe"] = specification["source-owner"]
+        node_owners["heart-calibration-command"] = specification["source-owner"]
         calibration_binary = option(args, :calibration_binary)
         if calibration_binary !== nothing
             CalibrationExport.copy_calibration_binary(package, realpath(calibration_binary))
@@ -341,7 +345,7 @@ function export_package(args)
         Common.write_json(joinpath(package, "provenance.json"), staged_provenance)
         specification["artifacts"] = HeartExport._artifacts(package)
         Common.write_json(joinpath(package, "deployment.conf"), specification)
-        Deployment.profile(joinpath(package, "deployment.conf"), args.pipewire_prefix)
+        DeploymentConfiguration.profile(joinpath(package, "deployment.conf"), args.pipewire_prefix)
         mv(package, output)
         return joinpath(output, "deployment.conf")
     end
@@ -390,7 +394,8 @@ function run_pilot(runtime::AbstractString, output::AbstractString; frames::Int=
     0 < request_timeout_ns <= 30_000_000_000 && 0 < stage_timeout_seconds <= 3600 || throw(ArgumentError("invalid pilot deadline"))
     output = abspath(output)
     !ispath(output) && !islink(output) && isdir(dirname(output)) || throw(ArgumentError("pilot evidence output must be fresh"))
-    ready = Deployment.wait_state(runtime, state -> get(state, "admitted", false); timeout=30)
+    ready = WirePlumberSessionRuntime.running!(WirePlumberSessionRuntime.attach(runtime);
+        deadline=time_ns()/1e9+45)
     instance = ready["private_runtime"]
     mkdir(output; mode=0o700)
     deadline = Base.checked_add(time_ns(), UInt64(stage_timeout_seconds) * UInt64(1_000_000_000))
@@ -432,7 +437,7 @@ function run_pilot(runtime::AbstractString, output::AbstractString; frames::Int=
         # The source reports completion after handling Release; wait for that
         # bounded publication before copying its final diagnostic report.
         report_path = joinpath(instance, "simulator-result.json")
-        source = CalibrationCampaign.wait_completed_source(ready["control_locator"];
+        source = CalibrationCampaign.wait_completed_source(ready,result["profile"];
             deadline=Float64(deadline)/1e9)
         result["final_owner_report"] = CalibrationCampaign.completed_owner_report(
             report_path,source,result["startup_owner_report"])
@@ -466,7 +471,7 @@ function run_plan(package::AbstractString, runtime::AbstractString, output::Abst
     total_start = time_ns()
     0 < stage_timeout_seconds <= 3600 || throw(ArgumentError("invalid native plan deadline"))
     package = realpath(package)
-    specification = Deployment.profile(joinpath(package, "deployment.conf"), "/opt/pipewireao")
+    specification = DeploymentConfiguration.profile(joinpath(package, "deployment.conf"), "/opt/pipewireao")
     descriptor_sha256 = ScienceExport.sha256(joinpath(package, "deployment.conf"))
     provenance = Common.read_json(joinpath(package, "provenance.json"))
     calibration = provenance["heart_calibration"]
@@ -479,7 +484,8 @@ function run_plan(package::AbstractString, runtime::AbstractString, output::Abst
     limits == frozen["limits"] || throw(ArgumentError("native frozen plan limits differ"))
     output = abspath(output)
     !ispath(output) && !islink(output) && isdir(dirname(output)) || throw(ArgumentError("native plan evidence must be fresh"))
-    ready = Deployment.wait_state(runtime, state -> get(state, "admitted", false); timeout=30)
+    ready = WirePlumberSessionRuntime.running!(WirePlumberSessionRuntime.attach(runtime);
+        deadline=time_ns()/1e9+45)
     instance = ready["private_runtime"]
     startup = Common.read_json(joinpath(instance, "simulator-result.json"))
     if provenance["profile"] == "classic"
@@ -492,8 +498,9 @@ function run_plan(package::AbstractString, runtime::AbstractString, output::Abst
     mkdir(output; mode=0o700)
     deadline = Base.checked_add(time_ns(), UInt64(stage_timeout_seconds) * UInt64(1_000_000_000))
     result = Dict{String,Any}("version"=>1, "plan_sha256"=>frozen["sha256"], "limits"=>limits,
-        "runtime_identity"=>Dict("runtime"=>abspath(runtime), "instance"=>ready["instance"], "launcher_pid"=>ready["pid"],
-            "ready_session_id"=>ready["ready"]["session_id"], "processes"=>ready["processes"],
+        "runtime_identity"=>Dict("runtime"=>abspath(runtime), "instance"=>ready["instance"], "wireplumber_pid"=>ready["pid"],
+            "wireplumber_start_ticks"=>ready["wireplumber_start_ticks"],
+            "unit"=>ready["unit"], "ready_session_id"=>ready["ready"]["session_id"], "processes"=>ready["processes"],
             "source_owner"=>specification["source-owner"], "deployment_sha256"=>descriptor_sha256,
             "acquisition_generation"=>startup["acquisition_generation"],
             "acquisition_domain_mapping"=>startup["acquisition_domain_mapping"],
@@ -514,7 +521,7 @@ function run_plan(package::AbstractString, runtime::AbstractString, output::Abst
         response.returncode == 0 || throw(ArgumentError("public native calibration client failed: $(response.returncode)"))
         result["cli_result_sha256"] = ScienceExport.sha256(response_path)
         report_path = joinpath(instance, "simulator-result.json")
-        source = CalibrationCampaign.wait_completed_source(ready["control_locator"];
+        source = CalibrationCampaign.wait_completed_source(ready,provenance["profile"];
             deadline=Float64(deadline)/1e9)
         final = CalibrationCampaign.completed_owner_report(report_path,source,startup)
         final["sequence"] == limits["completed_exposures"] &&
@@ -602,16 +609,21 @@ end
 """Reduce a completed, publicly stopped native plan through its sealed public AOC method."""
 function validate_stopped_runtime(state, identity, runtime, descriptor_sha256, exposures)
     identity isa AbstractDict && all(name -> haskey(identity, name),
-        ("runtime", "deployment_sha256", "launcher_pid", "instance", "ready_session_id", "processes", "source_owner")) ||
+        ("runtime", "deployment_sha256", "wireplumber_pid", "wireplumber_start_ticks", "instance", "unit", "ready_session_id", "processes", "source_owner")) ||
         throw(ArgumentError("missing actual native runtime identity"))
-    all(name -> haskey(state, name), ("pid", "instance", "ready", "processes", "source-owner", "source", "phase", "admitted")) ||
+    all(name -> haskey(state, name), ("unit", "invocation", "session_uuid", "owners", "source_role", "phase", "cleanup_complete")) ||
         throw(ArgumentError("missing completed native runtime state"))
     identity["runtime"] == abspath(runtime) && identity["deployment_sha256"] == descriptor_sha256 &&
-        state["pid"] == identity["launcher_pid"] && state["instance"] == identity["instance"] &&
-        state["ready"]["session_id"] == identity["ready_session_id"] && state["processes"] == identity["processes"] &&
-        state["source-owner"] == identity["source_owner"] && state["source"]["sequence"] == exposures &&
-        state["phase"] == "stopped" && state["admitted"] === false && get(state, "error", nothing) === nothing &&
-        isempty(get(state, "cleanup_errors", [])) && !ispath(joinpath(runtime, identity["instance"])) ||
+        state["wireplumber_pid"] == identity["wireplumber_pid"] &&
+        state["wireplumber_start_ticks"] == identity["wireplumber_start_ticks"] &&
+        state["invocation"] == identity["instance"] &&
+        state["unit"] == identity["unit"] && state["session_uuid"] == identity["ready_session_id"] &&
+        state["source_role"] == identity["source_owner"] &&
+        all(haskey(state["owners"], role) && all(get(state["owners"][role], field, nothing) == value
+            for (field, value) in owner) for (role, owner) in identity["processes"]) &&
+        state["phase"] == "stopped" && state["cleanup_complete"] === true &&
+        get(state, "error", nothing) === nothing && isempty(get(state, "cleanup_errors", [])) &&
+        exposures isa Integer && exposures >= 0 ||
         throw(ArgumentError("native reduction requires the same captured runtime and successful public shutdown"))
     return nothing
 end
@@ -622,16 +634,22 @@ function reduce_plan(package, evidence, runtime, output; expected_deployment_sha
     package = realpath(package)
     ScienceExport.sha256(joinpath(package, "deployment.conf")) == expected_deployment_sha256 ||
         throw(ArgumentError("native deployment differs from the pre-acquisition descriptor"))
-    Deployment.profile(joinpath(package, "deployment.conf"), "/opt/pipewireao")
+    DeploymentConfiguration.profile(joinpath(package, "deployment.conf"), "/opt/pipewireao")
     provenance = Common.read_json(joinpath(package, "provenance.json"))
     method = provenance["heart_calibration"]["frozen_method"]
     method === nothing && throw(ArgumentError("native reduction requires sealed method inputs"))
     completion_path = joinpath(evidence, "native-plan-result.json")
     completion = Common.read_json(completion_path)
     identity = get(completion, "runtime_identity", nothing)
-    state = Common.read_json(joinpath(runtime, "state.json"))
+    identity isa AbstractDict && all(haskey(identity, key) for key in ("instance", "unit")) ||
+        throw(ArgumentError("native plan has no captured systemd session identity"))
+    state = WirePlumberSessionRuntime.final_record(runtime;
+        invocation=identity["instance"], unit=identity["unit"])
     validate_stopped_runtime(state, identity, runtime, expected_deployment_sha256,
         get(get(completion, "limits", Dict()), "completed_exposures", nothing))
+    get(get(completion, "final_owner_report", Dict()), "sequence", nothing) ==
+        completion["limits"]["completed_exposures"] ||
+        throw(ArgumentError("native completed owner count differs from the reduced plan"))
     manifest_path = joinpath(evidence, "native-evidence-manifest.json")
     ScienceExport.sha256(manifest_path) == completion["evidence_manifest_sha256"] ||
         throw(ArgumentError("native evidence manifest changed"))
@@ -662,12 +680,9 @@ function reduce_plan(package, evidence, runtime, output; expected_deployment_sha
 end
 
 function main(argv=ARGS)
-    installed_binary = joinpath(dirname(ScienceExport.package_root()), "bin", "pipewireao-rtc")
-    default_binary = isfile(installed_binary) ? installed_binary :
-        normpath(joinpath(ScienceExport.resource_root(), "..", "target", "release", "pipewireao-rtc"))
     options = Common.cli_arguments(argv; required=["base-package", "output", "heart-root", "heart-source-config", "calibration-root", "pipewireao-jl-root"],
         allowed=["adapter-root", "readout-us", "calibration-stage", "illumination", "capture-max-bytes", "telemetry-max-bytes", "calibration-binary", "owner-evidence-directory", "native-wfs-proc-debug", "native-debug-line-buffering", "plan", "simulator-backend", "detector-seed", "frozen-method", "native-ingress-mode", "classic-transfer", "classic-transfer-sha256"],
-        defaults=(rtc_binary=default_binary, pipewire_prefix="/opt/pipewireao"))
+        defaults=(pipewire_prefix="/opt/pipewireao",))
     debug_option = option(options, :native_wfs_proc_debug, "false")
     debug_option in ("true", "false") || throw(ArgumentError("native WFS processing debug must be true or false"))
     line_option = option(options, :native_debug_line_buffering, "false")

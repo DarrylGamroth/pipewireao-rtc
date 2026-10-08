@@ -179,7 +179,8 @@ function observe!(observation::Observation, pod::Pod; at::Union{Nothing,Float64}
             if previous !== nothing && header.token == previous.value.header.token
                 bytes == previous.bytes || throw(ArgumentError("conflicting terminal completion"))
             end
-            recorded = ObservedReply(value, at === nothing ? monotonic() : at, bytes)
+            recorded = ObservedReply{completion_type(observation.profile)}(
+                value, at === nothing ? monotonic() : at, bytes)
             if previous === nothing || header.token >= previous.value.header.token
                 observation.completion = recorded
             end
@@ -392,7 +393,7 @@ All discovery/subscription/admission steps share one absolute monotonic deadline
 """
 function connect(profile::Profile, remote::AbstractString, node_name::AbstractString,
         expected_pid::Integer, expected_instance::Integer;
-        deadline::Float64, check=()->nothing)
+        deadline::Float64, check=()->nothing, controller_instance::Union{Nothing,Integer}=nothing)
     0 < expected_pid <= typemax(UInt32) || throw(ArgumentError("expected owner PID must fit positive Id"))
     0 < expected_instance <= typemax(Int64) || throw(ArgumentError("expected instance must be positive Int64"))
     0 < ncodeunits(node_name) <= 128 && !occursin('\0', node_name) && isvalid(node_name) ||
@@ -400,7 +401,11 @@ function connect(profile::Profile, remote::AbstractString, node_name::AbstractSt
     deadline_check(deadline, check)
     path = private_remote(remote)
     deadline_check(deadline, check)
-    instance = next_instance()
+    controller_instance === nothing ||
+        (typeof(controller_instance) <: Integer && !(controller_instance isa Bool) &&
+         0 < controller_instance <= typemax(Int64)) ||
+        throw(ArgumentError("controller instance must be positive Int64"))
+    instance = controller_instance === nothing ? next_instance() : Int64(controller_instance)
     marker_name = "pipewireao.rtc.controller.julia.$(getpid()).$instance"
     observation = Observation(profile, Int64(expected_instance), UInt32(expected_pid))
     client = Client(ThreadLoop("deployment.native-control"), nothing, nothing, nothing,

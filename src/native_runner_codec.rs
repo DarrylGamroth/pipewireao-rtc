@@ -4,6 +4,7 @@
 //! The production endpoint must establish those boundaries separately.
 
 use crate::control::{expected_parameter_bytes, Command, ControlError, MAX_PARAMETER_BYTES};
+pub use crate::control_dto::Operation;
 use crate::native_control_codec::{self as envelope, RequestHeader};
 use crate::ScalarValue;
 use pipewire::spa::pod::{Value, ValueArray};
@@ -14,49 +15,6 @@ use std::path::PathBuf;
 pub const PROFILE: &str = "pipewireao.rtc.runner/1";
 // The existing CLI admits 128 fields: command, graph and three per property.
 const MAX_PROPERTIES: usize = (crate::control::MAX_ARGUMENTS - 2) / 3;
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-#[repr(u32)]
-pub enum Operation {
-    Quit = 1,
-    Groups = 2,
-    Status = 3,
-    Properties = 4,
-    PropertyGeneration = 5,
-    ParameterGeneration = 6,
-    StopGroup = 7,
-    StartGroup = 8,
-    SessionStop = 9,
-    SessionStart = 10,
-    SourceEnded = 11,
-    Reset = 12,
-    PropertiesSet = 13,
-    Parameter = 14,
-}
-
-impl TryFrom<u32> for Operation {
-    type Error = ControlError;
-
-    fn try_from(value: u32) -> Result<Self, Self::Error> {
-        Ok(match value {
-            1 => Self::Quit,
-            2 => Self::Groups,
-            3 => Self::Status,
-            4 => Self::Properties,
-            5 => Self::PropertyGeneration,
-            6 => Self::ParameterGeneration,
-            7 => Self::StopGroup,
-            8 => Self::StartGroup,
-            9 => Self::SessionStop,
-            10 => Self::SessionStart,
-            11 => Self::SourceEnded,
-            12 => Self::Reset,
-            13 => Self::PropertiesSet,
-            14 => Self::Parameter,
-            _ => return Err(invalid("unknown runner operation")),
-        })
-    }
-}
 
 fn invalid(message: impl Into<String>) -> ControlError {
     ControlError::new("native.runner.request", message)

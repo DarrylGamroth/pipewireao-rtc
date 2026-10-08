@@ -1,4 +1,4 @@
-"""Owner-published, per-user discovery hints for live RTC supervisors."""
+"""Owner-published, per-user discovery hints for live RTC sessions."""
 module NativeSessionDiscovery
 
 using PipeWireAO
@@ -15,13 +15,13 @@ const MAX_DETAIL_BYTES = 512
 const RECORD_SUFFIX = ".pod"
 const RECORD_PREFIX = "session-"
 
-export SessionRecord, Verification, DiscoveryEntry, FreshSupervisorStatus,
+export SessionRecord, Verification, DiscoveryEntry, FreshSessionStatus,
     SelectedSession, registry_directory, existing_registry_directory, encode_record, decode_record,
     publish!, remove!, list_sessions, select_session
 
 @enum Verification::UInt8 Unverified=1 Verified=2 Inaccessible=3 Replaced=4 Malformed=5
 
-"Identity and locator hints published by one live deployment supervisor."
+"Identity and locator hints published by one live deployment session."
 struct SessionRecord
     label::String
     session_id::String
@@ -35,7 +35,7 @@ struct SessionRecord
         name = _string(label; limit=MAX_LABEL_BYTES)
         id = _session_id(session_id)
         owner_pid > 0 || throw(ArgumentError("session owner PID must be positive"))
-        incarnation > 0 || throw(ArgumentError("supervisor incarnation must be positive"))
+        incarnation > 0 || throw(ArgumentError("session incarnation must be positive"))
         private_remote = _string(remote; limit=MAX_REMOTE_BYTES)
         isabspath(private_remote) || throw(ArgumentError("session remote must be an absolute private socket path"))
         node = _node_name(node_name)
@@ -44,7 +44,7 @@ struct SessionRecord
 end
 
 "A fresh native status result returned by the injected selection verifier."
-struct FreshSupervisorStatus
+struct FreshSessionStatus
     session_id::String
     owner_pid::UInt32
     incarnation::Int64
@@ -55,19 +55,19 @@ struct FreshSupervisorStatus
     query_token::Int64
     lifecycle::Symbol
     authority::Symbol
-    function FreshSupervisorStatus(session_id::AbstractString, owner_pid::UInt32,
+    function FreshSessionStatus(session_id::AbstractString, owner_pid::UInt32,
             incarnation::Int64, remote::AbstractString, node_name::AbstractString, global_id::UInt32,
             object_serial::UInt64, query_token::Int64, lifecycle::Symbol, authority::Symbol)
         id = _session_id(session_id)
         owner_pid > 0 && incarnation > 0 && global_id > 0 && global_id < typemax(UInt32) &&
             object_serial > 0 && query_token > 0 ||
-            throw(ArgumentError("invalid fresh supervisor identity or status token"))
-        lifecycle in (:preparing, :ready, :fault, :stopped) ||
-            throw(ArgumentError("unknown supervisor lifecycle"))
-        authority in (:deployment_supervisor, :standalone_runner) ||
+            throw(ArgumentError("invalid fresh session identity or status token"))
+        lifecycle in (:preparing, :ready, :fault, :stopped, :offline, :configuring, :running) ||
+            throw(ArgumentError("unknown session lifecycle"))
+        authority in (:deployment_session, :standalone_runner, :wireplumber_session) ||
             throw(ArgumentError("unknown native endpoint authority"))
         private_remote = _string(remote; limit=MAX_REMOTE_BYTES)
-        isabspath(private_remote) || throw(ArgumentError("fresh supervisor remote must be absolute"))
+        isabspath(private_remote) || throw(ArgumentError("fresh session remote must be absolute"))
         new(id, owner_pid, incarnation, private_remote,
             _node_name(node_name),
             global_id, object_serial, query_token, lifecycle, authority)
@@ -85,7 +85,7 @@ struct DiscoveryEntry
 end
 struct SelectedSession
     record::SessionRecord
-    status::FreshSupervisorStatus
+    status::FreshSessionStatus
 end
 
 _struct(fields::Pod...) = SPA.Struct(Pod[fields...])
@@ -120,7 +120,7 @@ end
 function _node_name(value::AbstractString)
     name = _string(value; limit=MAX_NODE_NAME_BYTES)
     all(c -> isascii(c) && (isletter(c) || isnumeric(c) || c in ('_', '.', '-')), name) ||
-        throw(ArgumentError("supervisor node name must use ASCII letters, digits, underscore, dot, or hyphen"))
+        throw(ArgumentError("session node name must use ASCII letters, digits, underscore, dot, or hyphen"))
     return name
 end
 _filename(record::SessionRecord) = RECORD_PREFIX * record.session_id * RECORD_SUFFIX
@@ -145,7 +145,7 @@ function _decode_record(pod::Pod)
     return SessionRecord(_pod_string(f[2], "display label"; limit=MAX_LABEL_BYTES),
         _pod_string(f[3], "session ID"; limit=36), _id(f[4]), _long(f[5]),
         _pod_string(f[6], "private remote"; limit=MAX_REMOTE_BYTES),
-        _pod_string(f[7], "supervisor node name"; limit=MAX_NODE_NAME_BYTES))
+        _pod_string(f[7], "session node name"; limit=MAX_NODE_NAME_BYTES))
 end
 
 function decode_record(bytes::AbstractVector{UInt8})
@@ -278,7 +278,7 @@ end
 
 "Atomically publish this process's locator under its stable session UUID."
 function publish!(directory::AbstractString, record::SessionRecord)
-    record.owner_pid == UInt32(getpid()) || throw(ArgumentError("only the owning supervisor may publish its locator"))
+    record.owner_pid == UInt32(getpid()) || throw(ArgumentError("only the owning session may publish its locator"))
     dir = _check_registry(directory)
     pod = encode_record(record)
     path = joinpath(dir, _filename(record))
@@ -290,7 +290,7 @@ end
 
 "Remove only this incarnation's record; a replacement incarnation is retained."
 function remove!(directory::AbstractString, expected::SessionRecord)
-    expected.owner_pid == UInt32(getpid()) || throw(ArgumentError("only the owning supervisor may remove its locator"))
+    expected.owner_pid == UInt32(getpid()) || throw(ArgumentError("only the owning session may remove its locator"))
     dir = _check_registry(directory)
     path = joinpath(dir, _filename(expected))
     return _with_registry_lock(dir) do
@@ -329,14 +329,14 @@ function list_sessions(directory::AbstractString)
     return entries
 end
 
-function _matches(record::SessionRecord, status::FreshSupervisorStatus)
+function _matches(record::SessionRecord, status::FreshSessionStatus)
     return status.session_id == record.session_id && status.owner_pid == record.owner_pid &&
         status.incarnation == record.incarnation && status.remote == record.remote &&
         status.node_name == record.node_name &&
-        status.authority === :deployment_supervisor
+        status.authority === :wireplumber_session
 end
 
-"Verify an explicitly selected listing against a fresh native supervisor status callback."
+"Verify an explicitly selected listing against a fresh native session status callback."
 function select_session(entry::DiscoveryEntry, verifier)
     entry.record === nothing && return DiscoveryEntry(nothing, Malformed, "record cannot be selected")
     entry.verification === Unverified || return DiscoveryEntry(entry.record, entry.verification, entry.detail)
@@ -349,14 +349,14 @@ function select_session(entry::DiscoveryEntry, verifier)
     return _selected_result(record, status)
 end
 
-function _selected_result(record::SessionRecord, status::FreshSupervisorStatus)
-    status.authority === :deployment_supervisor || return DiscoveryEntry(record, Replaced,
-        "verified endpoint is a standalone runner, not the deployment supervisor")
+function _selected_result(record::SessionRecord, status::FreshSessionStatus)
+    status.authority === :wireplumber_session || return DiscoveryEntry(record, Replaced,
+        "verified endpoint is not a session authority")
     _matches(record, status) || return DiscoveryEntry(record, Replaced,
-        "fresh endpoint identity does not match the selected supervisor incarnation")
+        "fresh endpoint identity does not match the selected session incarnation")
     return SelectedSession(record, status)
 end
 _selected_result(record::SessionRecord, status) = DiscoveryEntry(record, Inaccessible,
-    "verifier did not return a fresh supervisor identity and status")
+    "verifier did not return a fresh session identity and status")
 
 end # module NativeSessionDiscovery

@@ -1,36 +1,34 @@
 //! Explicit session selection followed by control on that exact retained client.
 use crate::control::Command;
+use crate::control::ExecutionResult;
+use crate::control_dto::LifecycleState;
+use crate::native_session_codec as direct;
 use crate::native_session_discovery::{DiscoveryEntry, SessionRecord, Verification};
-use crate::native_supervisor_client::{Binding, Client, ClientError, Reply};
-use crate::native_supervisor_codec::{Completion, Phase};
-use crate::LifecycleState;
+use crate::native_session_transport::{Binding, Client, ClientError, Reply};
 use std::time::Instant;
 
-/// Lifecycle from a fresh native supervisor/runner Status, never listing metadata.
+/// Lifecycle reported by the selected `WirePlumber` session authority.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SessionLifecycle {
-    /// Supervisor preparing or runner configuring.
-    Preparing,
-    /// Admitted runner actively running.
-    Ready,
-    /// Live supervisor with stopped/ready/offline runner, or stopping supervisor.
-    Stopped,
-    /// Owner reports a fault.
+    Offline,
+    Configuring,
+    SessionReady,
+    Running,
     Fault,
 }
 
 /// Actual identity and token observed by selection's one fresh Status query.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct FreshSupervisorStatus {
+pub struct FreshSessionStatus {
     /// Immutable native endpoint UUID.
     pub session_id: String,
-    /// Actual bound supervisor PID.
+    /// Actual bound session PID.
     pub owner_pid: u32,
     /// Actual endpoint incarnation.
     pub incarnation: i64,
     /// Exact remote used for this connection.
     pub remote: String,
-    /// Actual bound supervisor node name.
+    /// Actual bound session node name.
     pub node_name: String,
     /// Actual registry global ID.
     pub global_id: u32,
@@ -38,7 +36,7 @@ pub struct FreshSupervisorStatus {
     pub object_serial: u64,
     /// Positive token of the freshly completed Status query.
     pub query_token: i64,
-    /// Native deployment supervisor authority profile.
+    /// Native session authority profile.
     pub profile: String,
     /// Lifecycle independently derived from fresh status.
     pub lifecycle: SessionLifecycle,
@@ -50,7 +48,7 @@ pub struct SelectedSession {
     /// Hint that was explicitly selected.
     pub record: SessionRecord,
     /// Actual freshly verified facts.
-    pub status: FreshSupervisorStatus,
+    pub status: FreshSessionStatus,
 }
 
 /// Retains the exact client that proved selection; there is no reconnect policy.
@@ -58,8 +56,14 @@ pub struct Connection {
     /// Immutable selection identity.
     pub selected: SelectedSession,
     /// Fresh successful Status completion from selection.
-    pub initial_status: Completion,
+    pub initial_status: InitialStatus,
     client: Client,
+}
+
+/// Fresh Status from the selected native public profile.
+#[derive(Clone, Debug)]
+pub enum InitialStatus {
+    Session(direct::Completion),
 }
 
 impl Connection {
@@ -72,43 +76,14 @@ impl Connection {
     }
 }
 
-/// Derive the discovery lifecycle from native status semantics.
+/// Check fresh identity against the direct `WirePlumber` session profile.
 ///
 /// # Errors
-/// Rejects failed/non-Status replies or incoherent admitted runner observations.
-pub fn lifecycle(completion: &Completion) -> Result<SessionLifecycle, String> {
-    if completion.header.result != 0 || completion.header.operation != 3 {
-        return Err("session selection requires successful fresh Status".into());
-    }
-    match completion.lifecycle {
-        Phase::Preparing => Ok(SessionLifecycle::Preparing),
-        Phase::Failed => Ok(SessionLifecycle::Fault),
-        Phase::Stopping | Phase::Stopped => Ok(SessionLifecycle::Stopped),
-        Phase::Admitted => {
-            let runner = completion
-                .snapshot
-                .as_ref()
-                .and_then(|s| s.runner.as_ref())
-                .filter(|_| completion.admitted)
-                .ok_or("admitted Status has no runner")?;
-            Ok(match runner.status.lifecycle {
-                LifecycleState::Fault => SessionLifecycle::Fault,
-                LifecycleState::Ready | LifecycleState::Offline => SessionLifecycle::Stopped,
-                LifecycleState::Running => SessionLifecycle::Ready,
-                LifecycleState::Configuring => SessionLifecycle::Preparing,
-            })
-        }
-    }
-}
-
-/// Check a fresh identity against the exact selected hint without rebinding.
-///
-/// # Errors
-/// A valid but different identity is Replaced; invalid fresh evidence is Inaccessible.
-#[allow(clippy::result_large_err)] // Cold bounded record retained for explicit failed selection.
-pub fn verify_identity(
+/// A valid but different identity is Replaced; invalid evidence is Inaccessible.
+#[allow(clippy::result_large_err)]
+pub fn verify_session_identity(
     record: &SessionRecord,
-    fresh: FreshSupervisorStatus,
+    fresh: FreshSessionStatus,
 ) -> Result<SelectedSession, DiscoveryEntry> {
     record.validate().map_err(|detail| {
         DiscoveryEntry::new(Some(record.clone()), Verification::Malformed, &detail)
@@ -129,12 +104,12 @@ pub fn verify_identity(
         || fresh.incarnation != record.incarnation
         || fresh.remote != record.remote
         || fresh.node_name != record.node_name
-        || fresh.profile != crate::native_supervisor_codec::PROFILE
+        || fresh.profile != crate::native_session_codec::PROFILE
     {
         return Err(DiscoveryEntry::new(
             Some(record.clone()),
             Verification::Replaced,
-            "fresh native identity differs from selected supervisor",
+            "fresh native identity differs from selected session",
         ));
     }
     Ok(SelectedSession {
@@ -143,44 +118,65 @@ pub fn verify_identity(
     })
 }
 
-/// Connect once, query Status once, and retain that same client for later controls.
-///
-/// # Errors
-/// Reports bounded Malformed/Inaccessible/Replaced without removing the hint.
-#[allow(clippy::result_large_err)] // Cold bounded record retained for explicit failed selection.
-pub fn select_session(
+/// Read the direct session lifecycle using its unchanged numeric IDs.
+#[must_use]
+pub fn session_lifecycle(completion: &crate::native_session_codec::Completion) -> SessionLifecycle {
+    match completion.lifecycle {
+        LifecycleState::Offline => SessionLifecycle::Offline,
+        LifecycleState::Configuring => SessionLifecycle::Configuring,
+        LifecycleState::Ready => SessionLifecycle::SessionReady,
+        LifecycleState::Running => SessionLifecycle::Running,
+        LifecycleState::Fault => SessionLifecycle::Fault,
+    }
+}
+
+fn inaccessible(record: &SessionRecord, detail: impl AsRef<str>) -> DiscoveryEntry {
+    DiscoveryEntry::new(
+        Some(record.clone()),
+        Verification::Inaccessible,
+        detail.as_ref(),
+    )
+}
+
+#[allow(clippy::result_large_err)] // Bounded discovery failure retains the selected record for caller reporting.
+fn finish_status(
     record: &SessionRecord,
+    mut client: Client,
     deadline: Instant,
 ) -> Result<Connection, DiscoveryEntry> {
-    record
-        .validate()
-        .map_err(|e| DiscoveryEntry::new(Some(record.clone()), Verification::Malformed, &e))?;
-    let inaccessible = |detail: String| {
-        DiscoveryEntry::new(Some(record.clone()), Verification::Inaccessible, &detail)
-    };
-    let binding = Binding::new(
-        record.remote.clone(),
-        record.node_name.clone(),
-        record.owner_pid,
-        record.incarnation,
-    )
-    .map_err(inaccessible)?;
-    // Observe actual UUID before matching: a replacement must be reported, never adopted.
-    let mut client = Client::connect(binding, deadline).map_err(inaccessible)?;
-    let Reply::Completion(completion) = client
+    // Once Status is submitted, no fallback or replay is safe.
+    let reply = client
         .request(&Command::Status, deadline)
-        .map_err(|e| inaccessible(e.to_string()))?
-    else {
-        return Err(inaccessible("native Status rejected".into()));
+        .map_err(|e| inaccessible(record, e.to_string()))?;
+    let (initial_status, lifecycle, token) = match reply {
+        Reply::SessionCompletion(completion) => {
+            if completion.header.result != 0
+                || completion.header.operation != 3
+                || !matches!(&completion.result, Ok(ExecutionResult::Status { .. }))
+            {
+                return Err(inaccessible(
+                    record,
+                    "direct session Status was not successful",
+                ));
+            }
+            let state = session_lifecycle(&completion);
+            let token = completion.header.token;
+            (InitialStatus::Session(completion), state, token)
+        }
+        _ => {
+            return Err(inaccessible(
+                record,
+                "native Status rejected or changed profile",
+            ))
+        }
     };
-    let lifecycle = lifecycle(&completion).map_err(inaccessible)?;
     let binding = client
         .owner_binding()
-        .ok_or_else(|| inaccessible("native owner disappeared after Status".into()))?;
+        .ok_or_else(|| inaccessible(record, "native owner disappeared after Status"))?;
     let uuid = client
         .live_uuid()
-        .ok_or_else(|| inaccessible("native owner UUID unavailable after Status".into()))?;
-    let fresh = FreshSupervisorStatus {
+        .ok_or_else(|| inaccessible(record, "native owner UUID unavailable after Status"))?;
+    let fresh = FreshSessionStatus {
         session_id: uuid,
         owner_pid: binding.pid,
         incarnation: binding.instance,
@@ -188,16 +184,58 @@ pub fn select_session(
         node_name: binding.name,
         global_id: binding.global_id,
         object_serial: binding.serial,
-        query_token: completion.header.token,
+        query_token: token,
         profile: binding.profile,
         lifecycle,
     };
-    let selected = verify_identity(record, fresh)?;
+    let selected = verify_session_identity(record, fresh)?;
     Ok(Connection {
         selected,
-        initial_status: completion,
+        initial_status,
         client,
     })
+}
+
+#[allow(clippy::result_large_err)] // Retains the bounded locator for explicit failed-selection reporting.
+fn candidate_binding(record: &SessionRecord) -> Result<Binding, DiscoveryEntry> {
+    Binding::new(
+        record.remote.clone(),
+        record.node_name.clone(),
+        record.owner_pid,
+        record.incarnation,
+    )
+    .map_err(|e| inaccessible(record, e))
+}
+
+/// Connect to the direct `WirePlumber` profile and retain its fresh Status client.
+///
+/// # Errors
+/// Reports bounded Malformed/Inaccessible/Replaced without removing the hint.
+#[allow(clippy::result_large_err)]
+pub fn select_direct_session(
+    record: &SessionRecord,
+    deadline: Instant,
+) -> Result<Connection, DiscoveryEntry> {
+    record
+        .validate()
+        .map_err(|e| DiscoveryEntry::new(Some(record.clone()), Verification::Malformed, &e))?;
+    let binding = candidate_binding(record)?
+        .for_session(record.session_id.clone())
+        .map_err(|e| inaccessible(record, e))?;
+    let client = Client::connect(binding, deadline).map_err(|e| inaccessible(record, e))?;
+    finish_status(record, client, deadline)
+}
+
+/// Select only the `WirePlumber` authority; no coordinator fallback or rebinding.
+///
+/// # Errors
+/// Returns a bounded discovery result for malformed, inaccessible, or replaced endpoints.
+#[allow(clippy::result_large_err)]
+pub fn select_session(
+    record: &SessionRecord,
+    deadline: Instant,
+) -> Result<Connection, DiscoveryEntry> {
+    select_direct_session(record, deadline)
 }
 
 #[cfg(test)]
@@ -213,8 +251,8 @@ mod tests {
             node_name: "supervisor".into(),
         }
     }
-    fn fresh(record: &SessionRecord) -> FreshSupervisorStatus {
-        FreshSupervisorStatus {
+    fn fresh(record: &SessionRecord) -> FreshSessionStatus {
+        FreshSessionStatus {
             session_id: record.session_id.clone(),
             owner_pid: record.owner_pid,
             incarnation: record.incarnation,
@@ -223,15 +261,15 @@ mod tests {
             global_id: 11,
             object_serial: u64::MAX,
             query_token: 17,
-            profile: crate::native_supervisor_codec::PROFILE.into(),
-            lifecycle: SessionLifecycle::Stopped,
+            profile: crate::native_session_codec::PROFILE.into(),
+            lifecycle: SessionLifecycle::SessionReady,
         }
     }
     #[test]
     fn exact_identity_including_full_unsigned_serial_and_query_token() {
         let record = record();
         assert_eq!(
-            verify_identity(&record, fresh(&record))
+            verify_session_identity(&record, fresh(&record))
                 .unwrap()
                 .status
                 .object_serial,
@@ -248,7 +286,9 @@ mod tests {
                 _ => observed.profile = "pipewireao.rtc.runner/1".into(),
             }
             assert_eq!(
-                verify_identity(&record, observed).unwrap_err().verification,
+                verify_session_identity(&record, observed)
+                    .unwrap_err()
+                    .verification,
                 Verification::Replaced
             );
         }
@@ -260,36 +300,55 @@ mod tests {
                 _ => observed.query_token = 0,
             }
             assert_eq!(
-                verify_identity(&record, observed).unwrap_err().verification,
+                verify_session_identity(&record, observed)
+                    .unwrap_err()
+                    .verification,
                 Verification::Inaccessible
             );
         }
         let mut invalid = record.clone();
         invalid.owner_pid = 0;
         assert_eq!(
-            verify_identity(&invalid, fresh(&invalid))
+            verify_session_identity(&invalid, fresh(&invalid))
                 .unwrap_err()
                 .verification,
             Verification::Malformed
         );
     }
     #[test]
-    fn preparing_has_no_runner_and_lifecycle_never_comes_from_record() {
-        let bytes = std::fs::read(
-            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-                .join("tests/fixtures/native-supervisor/reply-status-preparing.pod"),
-        )
-        .unwrap();
-        let mut completion = crate::native_supervisor_codec::decode_completion(&bytes).unwrap();
-        assert_eq!(lifecycle(&completion).unwrap(), SessionLifecycle::Preparing);
-        completion.lifecycle = Phase::Failed;
-        assert_eq!(lifecycle(&completion).unwrap(), SessionLifecycle::Fault);
-        completion.lifecycle = Phase::Stopped;
-        assert_eq!(lifecycle(&completion).unwrap(), SessionLifecycle::Stopped);
-        completion.lifecycle = Phase::Admitted;
-        completion.admitted = true;
-        assert!(lifecycle(&completion).is_err());
-        completion.header.result = -1;
-        assert!(lifecycle(&completion).is_err());
+    fn session_lifecycle_uses_direct_authority_states() {
+        use crate::control::ExecutionResult;
+        use crate::native_control_codec::{ControllerIdentity, ReplyHeader};
+        for (state, expected) in [
+            (LifecycleState::Offline, SessionLifecycle::Offline),
+            (LifecycleState::Configuring, SessionLifecycle::Configuring),
+            (LifecycleState::Ready, SessionLifecycle::SessionReady),
+            (LifecycleState::Running, SessionLifecycle::Running),
+            (LifecycleState::Fault, SessionLifecycle::Fault),
+        ] {
+            let completion = direct::Completion {
+                header: ReplyHeader {
+                    version: 1,
+                    endpoint_instance: 1,
+                    controller: ControllerIdentity {
+                        global_id: 1,
+                        serial: 1,
+                        instance: 1,
+                    },
+                    token: 1,
+                    operation: 3,
+                    result: 0,
+                },
+                lifecycle: state,
+                result: Ok(ExecutionResult::Status {
+                    lifecycle_state: state,
+                    status: crate::LiveGraphStatus {
+                        running: state == LifecycleState::Running,
+                        ..Default::default()
+                    },
+                }),
+            };
+            assert_eq!(session_lifecycle(&completion), expected);
+        }
     }
 }

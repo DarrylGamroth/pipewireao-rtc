@@ -1,0 +1,6 @@
+MainPID=0
+ControlGroup=
+LoadState=loaded
+ActiveState=inactive
+FragmentPath=/home/dgamroth/.config/systemd/user/pipewireao-session@.service
+InvocationID=

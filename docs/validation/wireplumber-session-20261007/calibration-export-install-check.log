@@ -1,0 +1,4 @@
+Precompiling packages...
+   3654.9 ms  ✓ PipeWireAODeployment
+  1 dependency successfully precompiled in 4 seconds. 32 already precompiled.
+calibration export to one-shot install passed with sealed inherited WirePlumber assets

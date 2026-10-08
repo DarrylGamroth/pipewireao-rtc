@@ -38,6 +38,12 @@ const P = PipeWireAODeployment
         source = joinpath(directory, "export")
         mkdir(source)
         sdk = P.ScienceExport.copy_deployment_runtime(source)
+        @test isfile(joinpath(sdk, "assets/deployment/pipewireao-session@.service.in"))
+        @test !ispath(joinpath(sdk, "src/deploy.jl"))
+        @test !ispath(joinpath(sdk, "src/native_supervisor_client.jl"))
+        @test !ispath(joinpath(sdk, "deploy_cli.jl"))
+        @test !haskey(P.DeploymentConfiguration.installed_wrappers(Base.julia_cmd().exec[1]),
+            "pipewireao-rtc-deploy")
         @test isfile(joinpath(sdk, "test", "Project.toml"))
         @test isfile(joinpath(sdk, "test", "runtests.jl"))
         @test sort(readdir(joinpath(sdk, "test"))) == sort(readdir(joinpath(P.package_root(), "test")))
@@ -69,14 +75,14 @@ end
         mkpath(joinpath(legacy, "src"))
         write(joinpath(legacy, "PipeWireAODeployment.jl"), "module PipeWireAODeployment; end")
         identity = P.CalibrationCampaign.file_identity(legacy)
-        @test_throws P.Deployment.DeploymentError P.Deployment.validate_runtime(legacy)
+        @test_throws P.DeploymentConfiguration.DeploymentError P.DeploymentConfiguration.validate_runtime(legacy)
         @test P.CalibrationCampaign.file_identity(legacy) == identity
         copied = joinpath(directory, "package")
         mkdir(copied)
         sdk = P.ScienceExport.copy_deployment_runtime(copied)
-        @test P.Deployment.validate_runtime(sdk) == sdk
+        @test P.DeploymentConfiguration.validate_runtime(sdk) == sdk
         project = read(joinpath(sdk, "Project.toml"), String)
         write(joinpath(sdk, "Project.toml"), replace(project, "version = \"0.1.0\"" => "version = \"9.0.0\""))
-        @test_throws P.Deployment.DeploymentError P.Deployment.validate_runtime(sdk)
+        @test_throws P.DeploymentConfiguration.DeploymentError P.DeploymentConfiguration.validate_runtime(sdk)
     end
 end
