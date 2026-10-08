@@ -1,0 +1,772 @@
+{
+  "merge": {
+    "repositories": [
+      {
+        "repository": "pipewire",
+        "branch": "master",
+        "before": "29da2d6699d24fff77a693d3988ad6432594ef81",
+        "after": "691928291e42b26bf4c6b05bc36d25656e4102a0"
+      },
+      {
+        "repository": "wireplumber",
+        "branch": "master",
+        "before": "4c2648faeff714b19e806e747075f6f9f8f4b02c",
+        "after": "9e33913893fac11351570bf4c333d8aeb576ab06"
+      },
+      {
+        "repository": "pipewireao-rtc",
+        "branch": "main",
+        "before": "e791361eaa491dae7e99e1d3df69816de58061a3",
+        "after": "354ae53a1223986015f96477de2399ca5b234090"
+      },
+      {
+        "repository": "pipewireao-gui",
+        "branch": "main",
+        "before": "3cebf28877a47ac6ee8fc543184132a938f57d57",
+        "after": "6e1a77b64b21a3e7788ac9c213712722449ae93f"
+      }
+    ],
+    "gui_review_sha256": "e24f59fbdd778b51b7b341b8109b79b2c493b9a3f91b648ebf35195d275856e5"
+  },
+  "private_gui_repository": "https://github.com/DarrylGamroth/pipewireao-gui",
+  "private_gui_visibility_verified": "PRIVATE",
+  "removed_worktrees": [
+    {
+      "repository": "pipewireao-rtc",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-controls",
+      "branch": "work/native-control-planes-20261005",
+      "head": "d846b572b2d116522871d4d8ee843e3541b5ad99",
+      "estimated_bytes": 22094227
+    },
+    {
+      "repository": "pipewireao-rtc",
+      "path": "/tmp/rtc-wireplumber-session-20261007",
+      "branch": "work/wireplumber-session-20261007",
+      "head": "354ae53a1223986015f96477de2399ca5b234090",
+      "estimated_bytes": 28961388
+    },
+    {
+      "repository": "wireplumber",
+      "path": "/tmp/WirePlumberAO-pod-filter-20261007",
+      "branch": "fix/spa-pod-filter-capacity-20261007",
+      "head": "4c2648faeff714b19e806e747075f6f9f8f4b02c",
+      "estimated_bytes": 92581769
+    },
+    {
+      "repository": "wireplumber",
+      "path": "/tmp/WirePlumberAO-session-20261007",
+      "branch": "work/ao-session-20261007",
+      "head": "9e33913893fac11351570bf4c333d8aeb576ab06",
+      "estimated_bytes": 32810318
+    },
+    {
+      "repository": "pipewire",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewire-hil-async-return",
+      "branch": "fix/ndarray-idle-output-removal-20261002",
+      "head": "7e17c0fa2690b06884e456ef34a221cb813d30e5",
+      "estimated_bytes": 17535783
+    },
+    {
+      "repository": "pipewire",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewire-native-fifo",
+      "branch": "test/native-fifo-qualification-20261006",
+      "head": "29da2d6699d24fff77a693d3988ad6432594ef81",
+      "estimated_bytes": 17612879
+    },
+    {
+      "repository": "pipewire",
+      "path": "/tmp/PipeWireAO-link-info-20261007",
+      "branch": "work/link-info-mask-20261007",
+      "head": "691928291e42b26bf4c6b05bc36d25656e4102a0",
+      "estimated_bytes": 28503863
+    },
+    {
+      "repository": "pipewireao-gui",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-gui-native-hil",
+      "branch": "qualify/native-gui-hil",
+      "head": "b5929cea559df2e951bebb969c0f941a81d6ac48",
+      "estimated_bytes": 2847838
+    },
+    {
+      "repository": "pipewireao-gui",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-gui-native-rtc",
+      "branch": "work/native-rtc-observation-20261006",
+      "head": "eaa659b4b50178f30cc2db10a55a7eb29f791631",
+      "estimated_bytes": 2238299
+    },
+    {
+      "repository": "pipewireao-gui",
+      "path": "/tmp/gui-copper-truth-scope",
+      "branch": "fix/disabled-truth-comparison-20261006",
+      "head": "59cb08782b419b477f284ba00fff17f68e78dc02",
+      "estimated_bytes": 2809498
+    },
+    {
+      "repository": "pipewireao-gui",
+      "path": "/tmp/pipewireao-gui-session-20261007",
+      "branch": "work/wireplumber-session-20261007",
+      "head": "6e1a77b64b21a3e7788ac9c213712722449ae93f",
+      "estimated_bytes": 968552783
+    },
+    {
+      "repository": "JuliaFilterGraph.jl",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph-fifo-qualification",
+      "branch": "work/rtc-fifo-qualification-20261006",
+      "head": "3b824ef5dc6e3a47536f9de13f5ff3627d3142bb",
+      "estimated_bytes": 28930543
+    },
+    {
+      "repository": "JuliaFilterGraph.jl",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph-progressive-gates",
+      "branch": "test/progressive-load-gates-20261006",
+      "head": "b60911697c9439f83897d79492e93a5324edb05a",
+      "estimated_bytes": 28980371
+    },
+    {
+      "repository": "pipewireao-rtc",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-actions",
+      "branch": "work/native-calibration-actions-20261006",
+      "head": "c6e4ea066729375af3ba4466f600003df37258a6",
+      "archive_ref": "refs/archive/worktree-cleanup-20261007/pipewireao-rtc-calibration-actions",
+      "estimated_bytes": 18679341,
+      "basis": "git cherry confirms zero unique patches"
+    },
+    {
+      "repository": "pipewireao-rtc",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-actions-review",
+      "branch": "review/calibration-actions-20261006",
+      "head": "70aa9560a11cbb969fac5d00081c053fa30be27f",
+      "archive_ref": "refs/archive/worktree-cleanup-20261007/pipewireao-rtc-calibration-actions-review",
+      "estimated_bytes": 18628042,
+      "basis": "git cherry confirms zero unique patches"
+    },
+    {
+      "repository": "pipewireao-rtc",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-lifecycle-codec",
+      "branch": "rtc-calibration-lifecycle-codec",
+      "head": "d64879efdfe74d44929e9ae8fe4c3c7e80a48a70",
+      "archive_ref": "refs/archive/worktree-cleanup-20261007/pipewireao-rtc-calibration-lifecycle-codec",
+      "estimated_bytes": 18393086,
+      "basis": "git cherry confirms zero unique patches"
+    },
+    {
+      "repository": "pipewireao-rtc",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-jfg-sdk",
+      "branch": "audit/live-control-retirement-20261006",
+      "head": "a71aacbf29fd607b4faac0f4792b447feb9d5618",
+      "archive_ref": "refs/archive/worktree-cleanup-20261007/pipewireao-rtc-jfg-sdk",
+      "estimated_bytes": 19400895,
+      "basis": "git cherry confirms zero unique patches"
+    },
+    {
+      "repository": "pipewireao-rtc",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-lifecycle-helpers-review",
+      "branch": "review/acquisition-lifecycle-helpers-20261006",
+      "head": "14d30753f62564fecfeaf1555192fd037a20320f",
+      "archive_ref": "refs/archive/worktree-cleanup-20261007/pipewireao-rtc-lifecycle-helpers-review",
+      "estimated_bytes": 18387007,
+      "basis": "git cherry confirms zero unique patches"
+    },
+    {
+      "repository": "pipewireao-rtc",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-lifecycle-owner-review",
+      "branch": "review/acquisition-lifecycle-owners-20261006",
+      "head": "d5d44feb9f1ff087ea2e0926f215b3549692be21",
+      "archive_ref": "refs/archive/worktree-cleanup-20261007/pipewireao-rtc-lifecycle-owner-review",
+      "estimated_bytes": 18401526,
+      "basis": "git cherry confirms zero unique patches"
+    },
+    {
+      "repository": "pipewireao-rtc",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-observation-review",
+      "branch": "review/observation-9055db3",
+      "head": "db6e35612d5450712ce6f91da9987633905a1767",
+      "archive_ref": "refs/archive/worktree-cleanup-20261007/pipewireao-rtc-observation-review",
+      "estimated_bytes": 18884863,
+      "basis": "git cherry confirms zero unique patches"
+    },
+    {
+      "repository": "pipewireao-rtc",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-session-selection-review",
+      "branch": "work/native-session-selection-review-20261006",
+      "head": "46a25908b1ca07ad18ff6a5473cf3a4c840c6e35",
+      "archive_ref": "refs/archive/worktree-cleanup-20261007/pipewireao-rtc-session-selection-review",
+      "estimated_bytes": 19082047,
+      "basis": "git cherry confirms zero unique patches"
+    },
+    {
+      "repository": "pipewireao-rtc",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/rtc-bootstrap-allocation-review",
+      "branch": null,
+      "head": "ace417b5bc6a0000e904be32d0ef6155c9b4852c",
+      "archive_ref": "refs/archive/worktree-cleanup-20261007/rtc-bootstrap-allocation-review",
+      "estimated_bytes": 19650017,
+      "basis": "git cherry confirms zero unique patches"
+    },
+    {
+      "repository": "pipewireao-rtc",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/rtc-bootstrap-review",
+      "branch": null,
+      "head": "87312d003be49c6b0dcf13fb82a90bbc39ebd870",
+      "archive_ref": "refs/archive/worktree-cleanup-20261007/rtc-bootstrap-review",
+      "estimated_bytes": 19396124,
+      "basis": "git cherry confirms zero unique patches"
+    },
+    {
+      "repository": "pipewireao-rtc",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/rtc-native-explicit-socket",
+      "branch": "fix/native-explicit-socket-20261006",
+      "head": "3f85f12752587c48b40f05ba49e4b1109f723ddf",
+      "archive_ref": "refs/archive/worktree-cleanup-20261007/rtc-native-explicit-socket",
+      "estimated_bytes": 21408434,
+      "basis": "git cherry confirms zero unique patches"
+    },
+    {
+      "repository": "pipewireao-rtc",
+      "path": "/tmp/pipewireao-rtc-bootstrap-seal",
+      "branch": "fix/bootstrap-controller-seal-20261006",
+      "head": "7efd4327ea4420e7d1c9103ea877d6fcb787230f",
+      "archive_ref": "refs/archive/worktree-cleanup-20261007/pipewireao-rtc-bootstrap-seal",
+      "estimated_bytes": 21439371,
+      "basis": "git cherry confirms zero unique patches"
+    },
+    {
+      "repository": "pipewireao-rtc",
+      "path": "/tmp/pipewireao-rtc-native-controls-inventory",
+      "branch": "work/calibration-action-inventory-20261006",
+      "head": "37d3353eff23f005b2585978388d424395a4e199",
+      "archive_ref": "refs/archive/worktree-cleanup-20261007/pipewireao-rtc-native-controls-inventory",
+      "estimated_bytes": 18348692,
+      "basis": "git cherry confirms zero unique patches"
+    },
+    {
+      "repository": "pipewireao-rtc",
+      "path": "/tmp/rtc-calibration-keyword-fix",
+      "branch": "fix/calibration-keyword-timeout-20261006",
+      "head": "b023c95109614d82f77cbfc348794fb1d8c8c69c",
+      "archive_ref": "refs/archive/worktree-cleanup-20261007/rtc-calibration-keyword-fix",
+      "estimated_bytes": 21715765,
+      "basis": "git cherry confirms zero unique patches"
+    },
+    {
+      "repository": "pipewireao-rtc",
+      "path": "/tmp/rtc-gui-selection-allocation-review",
+      "branch": "docs/gui-selection-allocation-diagnostic-20261006",
+      "head": "3e270fbd66808e24087713a3e47c09f59d325ddf",
+      "archive_ref": "refs/archive/worktree-cleanup-20261007/rtc-gui-selection-allocation-review",
+      "estimated_bytes": 21352988,
+      "basis": "git cherry confirms zero unique patches"
+    },
+    {
+      "repository": "pipewireao-rtc",
+      "path": "/tmp/rtc-retire-python-live-control",
+      "branch": "codex/retire-python-live-control",
+      "head": "d9f3905ebc63c4a83664423de793f557a346241d",
+      "archive_ref": "refs/archive/worktree-cleanup-20261007/rtc-retire-python-live-control",
+      "estimated_bytes": 19827362,
+      "basis": "git cherry confirms zero unique patches"
+    },
+    {
+      "repository": "pipewireao-gui",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/gui-native-review",
+      "branch": null,
+      "head": "9eaaca7258d6b361263583bd43a6e67069a1cc50",
+      "archive_ref": "refs/archive/worktree-cleanup-20261007/gui-native-review",
+      "estimated_bytes": 2182747,
+      "basis": "git cherry confirms zero unique patches"
+    },
+    {
+      "repository": "pipewireao-gui",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-gui-native-qualification",
+      "branch": "qualify/native-gui-harness",
+      "head": "ca5c1dca45e10610c8334494e41f7d4170df3ea6",
+      "archive_ref": "refs/archive/worktree-cleanup-20261007/pipewireao-gui-native-qualification",
+      "estimated_bytes": 2224543,
+      "basis": "git cherry confirms zero unique patches"
+    },
+    {
+      "repository": "pipewireao-gui",
+      "path": "/tmp/pipewireao-gui-qualification-gates",
+      "branch": "test/native-hil-gui-gates-20261006",
+      "head": "527264e394794a41e3cc30f4bf24f1a736429eb4",
+      "archive_ref": "refs/archive/worktree-cleanup-20261007/pipewireao-gui-qualification-gates",
+      "estimated_bytes": 2301081,
+      "basis": "git cherry confirms zero unique patches"
+    },
+    {
+      "repository": "JuliaFilterGraph.jl",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph-source-retry",
+      "branch": "test/source-arrival-investigation-20261006",
+      "head": "30a5bb40d50e72fbbc82946cd01519199526eec2",
+      "archive_ref": "refs/archive/worktree-cleanup-20261007/JuliaFilterGraph-source-retry",
+      "estimated_bytes": 28892863,
+      "basis": "git cherry confirms zero unique patches"
+    },
+    {
+      "repository": "JuliaFilterGraph.jl",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/jfg-source-review",
+      "branch": null,
+      "head": "387847e9ccf188a48f503f88ab5cfde9bb1d5b14",
+      "archive_ref": "refs/archive/worktree-cleanup-20261007/jfg-source-review",
+      "estimated_bytes": 28922049,
+      "basis": "git cherry confirms zero unique patches"
+    }
+  ],
+  "preserved_worktrees": [
+    {
+      "repository": "pipewireao-rtc",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-codec",
+      "head": "0fb933ca7ca66d88794651a45e2a7465495f4b2f",
+      "reason": "unique commits require adjudication"
+    },
+    {
+      "repository": "pipewireao-rtc",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-calibration-codec-review",
+      "head": "307395edac6378ebc4995650748b16af989cbdc7",
+      "reason": "unique commits require adjudication"
+    },
+    {
+      "repository": "pipewireao-rtc",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-live-observation",
+      "head": "03770074b590a73156c664ea0d4ea816b5853921",
+      "reason": "dirty/untracked changes"
+    },
+    {
+      "repository": "pipewireao-rtc",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-calibration-consumer",
+      "head": "43bc1fd3dded56232af5067b5166e59b5867ad70",
+      "reason": "unique commits require adjudication"
+    },
+    {
+      "repository": "pipewireao-rtc",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-supervisor",
+      "head": "8d2ec943f3ac0ed69eaba76e6e44e0d569af305b",
+      "reason": "unique commits require adjudication"
+    },
+    {
+      "repository": "pipewireao-rtc",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-owner-bootstrap",
+      "head": "93a0661d2234ada8cfb11243a9b96167b73caedb",
+      "reason": "unique commits require adjudication"
+    },
+    {
+      "repository": "pipewireao-rtc",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-progressive-requal",
+      "head": "f8dbb47930f8d24fa7711509bac557fe9d867077",
+      "reason": "dirty/untracked changes"
+    },
+    {
+      "repository": "pipewireao-rtc",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-session-discovery",
+      "head": "f3f0815dc0ffa074e4265aebc51fb07a0d39dac4",
+      "reason": "dirty/untracked changes"
+    },
+    {
+      "repository": "pipewireao-rtc",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-supervisor-codec-review",
+      "head": "320d237db772b76ab9b041898c9e72ae42fa1d7a",
+      "reason": "unique commits require adjudication"
+    },
+    {
+      "repository": "pipewireao-rtc",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-supervisor-public-review",
+      "head": "62c834c742cdd8daa4e90b824dc1a4562c38210e",
+      "reason": "unique commits require adjudication"
+    },
+    {
+      "repository": "pipewireao-rtc",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-systemd-julia",
+      "head": "adcd3f6b9bf3e67d9a1839ef24dac485937bb9e5",
+      "reason": "unique commits require adjudication"
+    },
+    {
+      "repository": "pipewire",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewire-row-ready-retry",
+      "head": "d130d3afac6e81519dad019629c7ba245e6de34c",
+      "reason": "dirty/untracked changes"
+    },
+    {
+      "repository": "pipewire",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-ndarray-ingress-diag",
+      "head": "b46f513a2779c9c33f1eb2ba1f72d938fe894c5b",
+      "reason": "dirty/untracked changes"
+    },
+    {
+      "repository": "pipewireao-gui",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-gui-live-observation",
+      "head": "f6b33b7019f4358646dcdda3797ecfa1e9872a93",
+      "reason": "dirty/untracked changes"
+    },
+    {
+      "repository": "JuliaFilterGraph.jl",
+      "path": "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph-progressive-requal",
+      "head": "6f1da393f9bd7153ed95b8811ccf32ebce6342a6",
+      "reason": "dirty/untracked changes"
+    }
+  ],
+  "removed_config_snapshots": [
+    {
+      "name": "gui-test-classic-fgn-frame-2e0d26d",
+      "source": "/home/dgamroth/.config/pipewireao-rtc/gui-test-classic-fgn-frame-2e0d26d",
+      "retained_unique_calibration": [],
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/gui-test-classic-fgn-frame-2e0d26d",
+      "previous_logical_bytes": 9973649
+    },
+    {
+      "name": "gui-test-classic-fgn-frame-5565d6e",
+      "source": "/home/dgamroth/.config/pipewireao-rtc/gui-test-classic-fgn-frame-5565d6e",
+      "retained_unique_calibration": [],
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/gui-test-classic-fgn-frame-5565d6e",
+      "previous_logical_bytes": 9973673
+    },
+    {
+      "name": "gui-test-copper-fgn-frame-2e0d26d",
+      "source": "/home/dgamroth/.config/pipewireao-rtc/gui-test-copper-fgn-frame-2e0d26d",
+      "retained_unique_calibration": [],
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/gui-test-copper-fgn-frame-2e0d26d",
+      "previous_logical_bytes": 11147795
+    },
+    {
+      "name": "gui-test-copper-fgn-frame-5565d6e",
+      "source": "/home/dgamroth/.config/pipewireao-rtc/gui-test-copper-fgn-frame-5565d6e",
+      "retained_unique_calibration": [],
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/gui-test-copper-fgn-frame-5565d6e",
+      "previous_logical_bytes": 11147819
+    },
+    {
+      "name": "issue2-julia-after",
+      "source": "/home/dgamroth/.config/pipewireao-rtc/issue2-julia-after",
+      "retained_unique_calibration": [],
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/issue2-julia-after",
+      "previous_logical_bytes": 10192773
+    },
+    {
+      "name": "issue2-julia-before",
+      "source": "/home/dgamroth/.config/pipewireao-rtc/issue2-julia-before",
+      "retained_unique_calibration": [],
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/issue2-julia-before",
+      "previous_logical_bytes": 10188137
+    },
+    {
+      "name": "issue2-julia-fixed",
+      "source": "/home/dgamroth/.config/pipewireao-rtc/issue2-julia-fixed",
+      "retained_unique_calibration": [],
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/issue2-julia-fixed",
+      "previous_logical_bytes": 10194891
+    },
+    {
+      "name": "julia-heart-v7-classic",
+      "source": "/home/dgamroth/.config/pipewireao-rtc/julia-heart-v7-classic",
+      "retained_unique_calibration": [
+        {
+          "relative_path": "hil/calibration-input.json",
+          "sha256": "df5616ce662e9c6285e5cf0bedd6f15c1b43c5008c37da7301f6c143df261e90",
+          "bytes": 3642
+        },
+        {
+          "relative_path": "hil/calibration-result.json",
+          "sha256": "55ba3e9db4ea5ace3514c78b341c077f3f3fd50254d0f9c079d6b7b4b59c0905",
+          "bytes": 6605
+        }
+      ],
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/julia-heart-v7-classic",
+      "previous_logical_bytes": 33825147
+    },
+    {
+      "name": "julia-heart-v7-copper",
+      "source": "/home/dgamroth/.config/pipewireao-rtc/julia-heart-v7-copper",
+      "retained_unique_calibration": [
+        {
+          "relative_path": "hil/calibration-input.json",
+          "sha256": "2c46b3c6f2010420dbfd455df8ea1f5a76bb5b174469d3397bc3341f2db593e8",
+          "bytes": 336
+        },
+        {
+          "relative_path": "hil/calibration-result.json",
+          "sha256": "e1117d22f63011024fe791b7fd88c957ad46a975d0d7ed446939afd3e95b122d",
+          "bytes": 2038
+        }
+      ],
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/julia-heart-v7-copper",
+      "previous_logical_bytes": 41607622
+    },
+    {
+      "name": "julia-heart-v8-classic",
+      "source": "/home/dgamroth/.config/pipewireao-rtc/julia-heart-v8-classic",
+      "retained_unique_calibration": [
+        {
+          "relative_path": "hil/calibration-input.json",
+          "sha256": "df5616ce662e9c6285e5cf0bedd6f15c1b43c5008c37da7301f6c143df261e90",
+          "bytes": 3642
+        },
+        {
+          "relative_path": "hil/calibration-result.json",
+          "sha256": "55ba3e9db4ea5ace3514c78b341c077f3f3fd50254d0f9c079d6b7b4b59c0905",
+          "bytes": 6605
+        }
+      ],
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/julia-heart-v8-classic",
+      "previous_logical_bytes": 33826658
+    },
+    {
+      "name": "julia-heart-v8-compatible-classic",
+      "source": "/home/dgamroth/.config/pipewireao-rtc/julia-heart-v8-compatible-classic",
+      "retained_unique_calibration": [
+        {
+          "relative_path": "hil/calibration-input.json",
+          "sha256": "df5616ce662e9c6285e5cf0bedd6f15c1b43c5008c37da7301f6c143df261e90",
+          "bytes": 3642
+        },
+        {
+          "relative_path": "hil/calibration-result.json",
+          "sha256": "55ba3e9db4ea5ace3514c78b341c077f3f3fd50254d0f9c079d6b7b4b59c0905",
+          "bytes": 6605
+        }
+      ],
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/julia-heart-v8-compatible-classic",
+      "previous_logical_bytes": 33792725
+    },
+    {
+      "name": "julia-heart-v8-compatible-copper",
+      "source": "/home/dgamroth/.config/pipewireao-rtc/julia-heart-v8-compatible-copper",
+      "retained_unique_calibration": [
+        {
+          "relative_path": "hil/calibration-input.json",
+          "sha256": "2c46b3c6f2010420dbfd455df8ea1f5a76bb5b174469d3397bc3341f2db593e8",
+          "bytes": 336
+        },
+        {
+          "relative_path": "hil/calibration-result.json",
+          "sha256": "e1117d22f63011024fe791b7fd88c957ad46a975d0d7ed446939afd3e95b122d",
+          "bytes": 2038
+        }
+      ],
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/julia-heart-v8-compatible-copper",
+      "previous_logical_bytes": 41575200
+    },
+    {
+      "name": "julia-heart-v8-copper",
+      "source": "/home/dgamroth/.config/pipewireao-rtc/julia-heart-v8-copper",
+      "retained_unique_calibration": [
+        {
+          "relative_path": "hil/calibration-input.json",
+          "sha256": "2c46b3c6f2010420dbfd455df8ea1f5a76bb5b174469d3397bc3341f2db593e8",
+          "bytes": 336
+        },
+        {
+          "relative_path": "hil/calibration-result.json",
+          "sha256": "e1117d22f63011024fe791b7fd88c957ad46a975d0d7ed446939afd3e95b122d",
+          "bytes": 2038
+        }
+      ],
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/julia-heart-v8-copper",
+      "previous_logical_bytes": 41609133
+    },
+    {
+      "name": "rtc-packagefix-classic",
+      "source": "/home/dgamroth/.config/pipewireao-rtc/rtc-packagefix-classic",
+      "retained_unique_calibration": [
+        {
+          "relative_path": "hil/calibration-input.json",
+          "sha256": "df5616ce662e9c6285e5cf0bedd6f15c1b43c5008c37da7301f6c143df261e90",
+          "bytes": 3642
+        },
+        {
+          "relative_path": "hil/calibration-result.json",
+          "sha256": "55ba3e9db4ea5ace3514c78b341c077f3f3fd50254d0f9c079d6b7b4b59c0905",
+          "bytes": 6605
+        }
+      ],
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/rtc-packagefix-classic",
+      "previous_logical_bytes": 33893289
+    },
+    {
+      "name": "rtc-packagefix-copper",
+      "source": "/home/dgamroth/.config/pipewireao-rtc/rtc-packagefix-copper",
+      "retained_unique_calibration": [
+        {
+          "relative_path": "hil/calibration-input.json",
+          "sha256": "2c46b3c6f2010420dbfd455df8ea1f5a76bb5b174469d3397bc3341f2db593e8",
+          "bytes": 336
+        },
+        {
+          "relative_path": "hil/calibration-result.json",
+          "sha256": "e1117d22f63011024fe791b7fd88c957ad46a975d0d7ed446939afd3e95b122d",
+          "bytes": 2038
+        }
+      ],
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/rtc-packagefix-copper",
+      "previous_logical_bytes": 41675764
+    },
+    {
+      "name": "rtcw-classic-sustained-20261005",
+      "source": "/home/dgamroth/.config/pipewireao-rtc/rtcw-classic-sustained-20261005",
+      "retained_unique_calibration": [
+        {
+          "relative_path": "calibration/reconstructor.f32le",
+          "sha256": "bb9aa68345a3402445b65a350e796b212e048453bf917245cee7f36efa015813",
+          "bytes": 332384
+        },
+        {
+          "relative_path": "calibration/background.f32le",
+          "sha256": "914044dfcf902a3361a8da6921f91e3086f7880cb430293d2bc7743c6df428ad",
+          "bytes": 495616
+        },
+        {
+          "relative_path": "calibration/reference-slopes.f32le",
+          "sha256": "4786782913a4699359fd095dd1952152669b03ff8132ddcd739852c7f17cf4ba",
+          "bytes": 1504
+        },
+        {
+          "relative_path": "calibration/active-subapertures.u8",
+          "sha256": "04090c0ed1a3808cd3b8ad03503008eb4915bab3c5eedbc856b14cc8db543697",
+          "bytes": 188
+        }
+      ],
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/rtcw-classic-sustained-20261005",
+      "previous_logical_bytes": 14200058
+    },
+    {
+      "name": "rtcw-copper-sustained-20261005",
+      "source": "/home/dgamroth/.config/pipewireao-rtc/rtcw-copper-sustained-20261005",
+      "retained_unique_calibration": [
+        {
+          "relative_path": "calibration/parameter-reconstructor.f32",
+          "sha256": "8cfeba562c55ff99de362e77d5046cbb1d4011c21bce334b93ab50912596c043",
+          "bytes": 3643200
+        },
+        {
+          "relative_path": "calibration/parameter-background.f32",
+          "sha256": "5bf46551e6d559bfbafef125ee39e862b83ca69605d08187324edfc94e6e60d1",
+          "bytes": 16384
+        }
+      ],
+      "archive": "/home/dgamroth/.local/share/pipewireao-rtc/retired-calibration/20261007/rtcw-copper-sustained-20261005",
+      "previous_logical_bytes": 17759225
+    }
+  ],
+  "removed_legacy_user_units": [
+    {
+      "name": "pipewireao-rtc@revolt-classic-fgn-frame.service",
+      "sha256": "e1c4b604d166e8143bf3ffdf00cbdc12919a1f2c0b2b0876eb6945da14cdc24f",
+      "observed": {
+        "MainPID": "0",
+        "ActiveState": "inactive",
+        "UnitFileState": "disabled"
+      }
+    },
+    {
+      "name": "pipewireao-rtc@revolt-classic-fgn-row.service",
+      "sha256": "11237ed63f5173622ce68b21f188e76fe8e69b2277d214e97fab48b98eb843d8",
+      "observed": {
+        "MainPID": "0",
+        "ActiveState": "inactive",
+        "UnitFileState": "disabled"
+      }
+    },
+    {
+      "name": "pipewireao-rtc@revolt-classic-heart-hil-cpu.service",
+      "sha256": "410aa0f5146dd9b63fbebc2358037af6d13d2a99675a48da45c4dbaab2d27c70",
+      "observed": {
+        "MainPID": "0",
+        "ActiveState": "inactive",
+        "UnitFileState": "disabled"
+      }
+    },
+    {
+      "name": "pipewireao-rtc@revolt-classic-jfg-frame.service",
+      "sha256": "271bf25f2744cf696535cd7e615f14c1a315a452ef58f767de23d4f88506c23b",
+      "observed": {
+        "MainPID": "0",
+        "ActiveState": "inactive",
+        "UnitFileState": "disabled"
+      }
+    },
+    {
+      "name": "pipewireao-rtc@revolt-classic-jfg-row.service",
+      "sha256": "e2caa95aa3552444b4cac1bda754e188a1bd5715e3ae446dd890b2029a7d61e4",
+      "observed": {
+        "MainPID": "0",
+        "ActiveState": "inactive",
+        "UnitFileState": "disabled"
+      }
+    },
+    {
+      "name": "pipewireao-rtc@revolt-copper-fgn-frame.service",
+      "sha256": "0804910c68b2cfb4c6cc675baa3f613527d69cd1d96135b1f0d782b4bf554ce7",
+      "observed": {
+        "MainPID": "0",
+        "ActiveState": "inactive",
+        "UnitFileState": "disabled"
+      }
+    },
+    {
+      "name": "pipewireao-rtc@revolt-copper-fgn-hil-cpu.service",
+      "sha256": "7c04d1edbf7f19a29f5ac9d8cf694f11ee15899b75f5f3db0b558c1301936f6f",
+      "observed": {
+        "MainPID": "0",
+        "ActiveState": "inactive",
+        "UnitFileState": "disabled"
+      }
+    },
+    {
+      "name": "pipewireao-rtc@revolt-copper-fgn-row.service",
+      "sha256": "c173c40e3b4397eea2ad89c28768ec354cf3669916a379ea25463b9b6a6d03aa",
+      "observed": {
+        "MainPID": "0",
+        "ActiveState": "inactive",
+        "UnitFileState": "disabled"
+      }
+    },
+    {
+      "name": "pipewireao-rtc@revolt-copper-heart-hil-cpu.service",
+      "sha256": "07f03a1f074fcd7aae2d88d5d22b4acb0dd5e7c4f0454c68d2b4e98a5904d752",
+      "observed": {
+        "MainPID": "0",
+        "ActiveState": "inactive",
+        "UnitFileState": "disabled"
+      }
+    },
+    {
+      "name": "pipewireao-rtc@revolt-copper-jfg-frame.service",
+      "sha256": "f561d9b0e29ab3571258cebdb4b2ae0c1f8ba8e5e3f0e3fc50370c00dffa38d7",
+      "observed": {
+        "MainPID": "0",
+        "ActiveState": "inactive",
+        "UnitFileState": "disabled"
+      }
+    },
+    {
+      "name": "pipewireao-rtc@revolt-copper-jfg-hil-cpu.service",
+      "sha256": "26e37a8023c9fa66ac6cc878046f7ae1bf2d3cf07afd709b30445afb2d6f1a73",
+      "observed": {
+        "MainPID": "0",
+        "ActiveState": "inactive",
+        "UnitFileState": "disabled"
+      }
+    },
+    {
+      "name": "pipewireao-rtc@revolt-copper-jfg-row.service",
+      "sha256": "785d0ca23b714db818b554e2e3ce5986fe42e8978e217626c8843ec60e49a993",
+      "observed": {
+        "MainPID": "0",
+        "ActiveState": "inactive",
+        "UnitFileState": "disabled"
+      }
+    }
+  ],
+  "library_relocation": {
+    "source": "/tmp/PipeWireAO-link-info-20261007/build/src/pipewire/libpipewire-ao-0.3.so.0.1700.0",
+    "retained": "/tmp/pwao-linktrace/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0",
+    "sha256": "0ac5e2fd3864fb317e6c40191556b1d1264c71d63e2fa2208e0ff226728ea933",
+    "names": [
+      "/tmp/pwao-linktrace/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0.1700.0",
+      "/tmp/pwao-linktrace/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so.0",
+      "/tmp/pwao-linktrace/lib/x86_64-linux-gnu/libpipewire-ao-0.3.so"
+    ]
+  },
+  "active_service_preserved": {
+    "unit": "pipewireao-gui-hil-demo-hIo0tX.service",
+    "pid": 1632744
+  }
+}

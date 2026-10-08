@@ -1,5 +1,7 @@
 # Delivery evidence catalog
 
+- [Main integration and cleanup, 2026-10-07](validation/main-cleanup-20261007/README.md): fork main/master merges, private GUI repository, obsolete worktree and installed-snapshot cleanup.
+
 Catalog preserved from the documentation index on 2026-10-06.
 Descriptions below refer to their named revisions and cohorts; historical
 “pending” or “complete” statements are not current project status. Start with
