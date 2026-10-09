@@ -28,10 +28,11 @@ identified during design review, not observed breakage.
 | PKG-007 | P1 / confirmed | Capture/replay initially bound only the old combined source root. Capture checks both roots and replay loads both projects. | Closed in final source review. |
 | PKG-008 | P2 / confirmed | Isolated export namespaces cannot identify the installed app. Identity derives from the authoritative package_root function's owning module. | Closed; isolated export and tamper checks pass. |
 | PKG-009 | P2 / confirmed | HEART/JFG integration tests remained in shared code while referencing removed modules/resources; the copied app package test was stale and excluded. Instrument tests now reside with their owner, and a rewritten app package/relocation test is included in its suite. | Closed in source; software checks recorded in receipt. |
-| PKG-010 | P2 / confirmed; high confidence | Shared `ScienceExport.orchestration_sources` silently skipped a missing declared top-level runtime entry. The new `else` throws `ArgumentError`; the package regression test removes `wireplumber_cli.jl` only from a temporary exported SDK and requires rejection. | Source fix independently reviewed. Fail-before recorded: 112 assertions passed, one failed. Pass-after pending primary-agent confirmation. |
+| PKG-010 | P2 / confirmed; high confidence | Shared `ScienceExport.orchestration_sources` silently skipped a missing declared top-level runtime entry. The new `else` throws `ArgumentError`; the package regression test removes `wireplumber_cli.jl` only from a temporary exported SDK and requires rejection. | Closed. Source fix independently reviewed. Fail-before recorded: 112 assertions passed, one failed. Pass-after recorded: strict shared Pkg.test exited 0, with 1557 assertions across 41 testsets, including all 113 package-closure assertions. |
 
 The preceding final seam pass found no remaining confirmed production defect;
-the later PKG-010 source fix still awaits pass-after confirmation. A subsequent
+the later PKG-010 source fix has observed pass-after evidence in
+[shared-pkg-test-complete.log](shared-pkg-test-complete.log). A subsequent
 strict Pkg run demonstrated that the export resolver inherited the test sandbox's
 restricted load path and could not import Pkg. Its child-only environment now
 uses `@:@stdlib`; the independent follow-up found no remaining defect in that fix.
