@@ -54,11 +54,15 @@ entrypoints. Maintained scripting uses Julia; recorded results are preserved
 and historical source links bind the pre-removal revision. The retired Python
 benchmark tools have no replacement live runner in this increment.
 [Cleanup checks](PYTHON_REMOVAL.md) establish source/package integrity only.
-Rust sources are now grouped by control, session and calibration; development
-configurations live in `configs/` and test records in `tests/data/`. Existing
-GUI/client imports remain aliases. [Source layout and software checks](../README.md#source-layout)
-record preserved configuration/data bytes and passing Rust/Julia tests. No
-language migration or session-policy change is included.
+The Julia package now lives at the repository root. The remaining RTC Rust
+crate is retired after checking its callers; the GUI owns its native Rust client
+and calibration driving uses Julia. Test records now live in `test/data/`.
+[Root-layout checks and review](validation/julia-root-layout-20261008/README.md)
+record 2,985 passing assertions in 105 testsets, corrected cold resource paths,
+relocation/re-export checks and byte preservation of protocol records,
+configurations and templates. Existing sealed SDKs and session authority are
+unchanged. Instrument integration still loads in the shared package until the
+separate project extraction is complete.
 
 The revised [structure proposal](JULIA_RTC_STRUCTURE_PLAN.md) separates reusable
 Julia calibration and systemd tools from independent instrument RTC projects.
@@ -82,8 +86,9 @@ unchanged. The GUI now owns its native Rust client closure and has removed the
 headless RTC Cargo dependency. [GUI software checks and independent review](https://github.com/DarrylGamroth/pipewireao-gui/blob/d193254fb5044b84ede83b65a8849da6f115ae7f/docs/validation/native-client-20261008/README.md)
 cover retained protocol tests, fencing, native/WASM separation and the corrected
 socket child-test selector; they add no live-session or timing qualification.
-Instrument projects and the shared root-package move remain unfinished. Retire
-the remaining RTC Rust source during that extraction after checking active callers.
+The root-package move and Rust retirement are complete. The independent
+`REVOLTRTC.jl` project is being prepared; instrument extraction and affected
+installed-profile qualification remain unfinished.
 
 Completed Copper link and process-supervision transfers remain valid only for
 their dated scopes. The selected Copper composition has passed link realization

@@ -77,7 +77,7 @@ function main(args)
 
     # Refresh SDK implementation sources only. The accepted environment and
     # scientific package identity remain byte-for-byte as installed.
-    sdk_source = normpath(joinpath(@__DIR__, "../deployment/julia/src"))
+    sdk_source = normpath(joinpath(@__DIR__, "../src"))
     sdk_destination = joinpath(output, "julia/src")
     require(isdir(sdk_source) && isdir(sdk_destination), "deployment Julia SDK source is missing")
     rm(sdk_destination; recursive=true)

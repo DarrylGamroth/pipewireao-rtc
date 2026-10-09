@@ -1,12 +1,14 @@
 # Delivery evidence catalog
 
+- [Julia root layout, 2026-10-08](validation/julia-root-layout-20261008/README.md): root package, Rust retirement, protocol/configuration byte preservation, resource-path fail-before/pass-after and 2,985 passing software assertions. Instrument extraction and live qualification remain open.
+
 - [GUI client detachment, 2026-10-08](validation/native-client-20261008/README.md): GUI-owned Rust native client, removed RTC Cargo dependency, independent review and native/WASM checks; inherited socket child-test selector corrected in both repositories. No new live-session or timing qualification.
 
 - [Julia interaction acquisition, 2026-10-08](validation/julia-acquisition-20261008/README.md): reusable native driver, Julia export entrypoint, temporary Rust comparison, recovery/plan bounds, relocation/install checks and independent review. No new scientific or timing qualification.
 
 - [Explicit runtime export, 2026-10-08](validation/runtime-export-20261008/README.md): unrelated-root-file fail-before/pass-after, declared source closure, relocated SDK/re-export and Julia software checks. No new live or timing qualification.
 
-- [Source organization, 2026-10-08](../README.md#source-layout): domain modules, configs/test-data names, public-import compatibility and Rust/Julia software checks.
+- [Source organization, 2026-10-08](https://github.com/DarrylGamroth/pipewireao-rtc/blob/4bc5c5d327e7fc1f589b56d7ea80f8396f8b2f1f/README.md#source-layout): domain modules, configs/test-data names, public-import compatibility and Rust/Julia software checks.
 
 - [Python tooling removal, 2026-10-08](PYTHON_REMOVAL.md): removed obsolete scripts, preserved historical source/results and checked the existing Julia SDK. No new live or timing qualification.
 

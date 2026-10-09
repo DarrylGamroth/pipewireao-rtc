@@ -36,7 +36,7 @@ thread and BLAS thread, private `/opt/pipewireao` core. No GPU, normal desktop
 PipeWire core, HEART process or scientific frame workload was used.
 
 The [Rust probe](../examples/native_sync_deadline_proof.rs) and
-[Julia fixture](../deployment/julia/test/native_sync_deadline_proof.jl) pass
+[Julia fixture](../test/native_sync_deadline_proof.jl) pass
 **34/34** checks, including an explicitly invoked **1/1** private Rust test.
 Only fixture-owned daemons receive STOP/CONT/KILL signals.
 

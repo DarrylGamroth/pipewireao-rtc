@@ -9,8 +9,29 @@ current delivery status remains in [the roadmap](roadmap.md#current-work).
 ## Source ownership and destinations
 
 “Shared” means reusable across independently configured instrument projects.
-“REVOLT project” is a migration destination, not an existing new repository.
-Its name/location is pending selection. HEART source remains unchanged.
+The selected independent instrument package is `REVOLTRTC`, in sibling
+`REVOLTRTC.jl`. It owns Classic and Copper integration. HEART source remains
+unchanged. This destination is separate from the shared repository and does not
+require the GUI.
+
+### Extraction contracts
+
+- Keep the shared `PipeWireAODeployment` package name and UUID. Its root
+  `Project.toml`, `src/`, `test/` and package-relative `assets/` replace the
+  nested package. Retain native protocol records under `test/data/`.
+- Keep public native v1 IDs and field types, including existing acquisition
+  instrument IDs. Package separation does not authorize protocol changes.
+- Export shared and instrument Julia projects separately (`julia/` and
+  `revolt/`). Resolve the instrument dependency on the shared project before
+  sealing. Operational wrappers load the shared project; instrument wrappers
+  load `REVOLTRTC`. Each package declares and validates its own closure.
+- Retain the shared parameter type and inert helper bindings. Instrument
+  staging has a local forwarding function so isolated test substitutions cannot
+  modify the shared WirePlumber staging function.
+- Compose source evidence from both packages using distinct `julia/` and
+  `revolt/` prefixes. Preserve containment, file hashes and relocation checks.
+- Old sealed SDKs retain their files and original launchers. Only fresh exports
+  use the new project layout. WirePlumber and systemd ownership is unchanged.
 
 | Current source group | Destination | Work needed |
 | --- | --- | --- |
@@ -31,22 +52,22 @@ Its name/location is pending selection. HEART source remains unchanged.
 
 ## Caller and resource constraints
 
-- [The package includes](../deployment/julia/src/PipeWireAODeployment.jl) currently
+- [The package includes](../src/PipeWireAODeployment.jl) currently
   load generic and instrument modules together. Extraction is incomplete.
-- [HIL](../deployment/julia/src/hil_export.jl),
-  [calibration](../deployment/julia/src/calibration_export.jl) and
-  [HEART](../deployment/julia/src/heart_export.jl) exporters call the same
+- [HIL](../src/hil_export.jl),
+  [calibration](../src/calibration_export.jl) and
+  [HEART](../src/heart_export.jl) exporters call the same
   `ScienceExport.copy_deployment_runtime`. Preserve this entrypoint while
   changing its implementation.
-- [Deployment configuration](../deployment/julia/src/deployment_configuration.jl)
+- [Deployment configuration](../src/deployment_configuration.jl)
   imports ScienceExport. Calling configuration “generic” before removing that
   instrument/resource dependency would leave a misleading boundary.
-- [The campaign](../deployment/julia/src/calibration_campaign.jl) invokes the
+- [The campaign](../src/calibration_campaign.jl) invokes the
   exported `bin/rtc-calibrate` entrypoint for interaction acquisition. Fresh
   exports now use the shared [Julia driver](JULIA_CALIBRATION_ACQUISITION.md);
   old sealed packages retain their Rust executable. Instrument capture and
   scientific analysis remain separate migration work.
-- [Export tests](../deployment/julia/test/test_exports.jl) include modules in an
+- [Export tests](../test/test_exports.jl) include modules in an
   isolated namespace and stub integration services. Preserve those bindings
   while adding shared modules; package imports alone are not the entire closure.
 - Installed resource discovery uses package-relative `assets/deployment` and

@@ -1,6 +1,6 @@
 # Classic CPU calibration campaign usage
 
-`deployment/calibration_campaign.jl` runs a finite, non-actuating Classic
+`assets/deployment/calibration_campaign.jl` runs a finite, non-actuating Classic
 calibration campaign from an installed CPU base package. The base package may
 use the native FGN graph or the external JuliaFilterGraph (JFG) graph. The
 campaign makes four fresh stage packages and runtimes:
@@ -30,7 +30,7 @@ captured evidence. It does not force all positions to remain active. A prior
 campaign happened to select 184 positions, but that count is not prescribed.
 
 Save this as `write-example-recipe.jl` and run it with the
-`deployment/julia` project. It writes a
+root Julia project. It writes a
 JSON recipe with separate detector seeds for all four stages:
 
 ```julia
@@ -67,7 +67,7 @@ must not already exist; use a new short runtime root because the campaign uses
 local AF_UNIX sockets.
 
 ```sh
-julia --startup-file=no --project=deployment/julia deployment/calibration_campaign.jl \
+julia --startup-file=no --project=. assets/deployment/calibration_campaign.jl \
   --base-package /absolute/path/to/classic-cpu-base-package \
   --output /absolute/path/to/new-campaign-output \
   --recipe /absolute/path/to/classic-campaign-recipe.json \

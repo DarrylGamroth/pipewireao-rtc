@@ -88,10 +88,10 @@ Confidence: high for the observed path; byte attribution incomplete. A retained
 sampled stack contains `Dict{String,String}(Dict) → globals → find_globals →`
 the endpoint poll lock. Current source and the staged source are identical:
 
-- [bootstrap runtime](../deployment/julia/src/native_owner_bootstrap_runtime.jl):
+- [bootstrap runtime](../src/native_owner_bootstrap_runtime.jl):
   registry-added/removed callbacks set `wake`; `_poll_ready!` calls the endpoint
   only for wake/pending, and the reserved monitor runs on Julia thread 2.
-- [generic endpoint](../deployment/julia/src/native_control_endpoint.jl): `poll!`
+- [generic endpoint](../src/native_control_endpoint.jl): `poll!`
   unconditionally calls `refresh_controllers!`; this snapshots matching globals,
   updates exact serial/PID/incarnation proofs, binds candidates and retires nodes.
 - Staged public SDK `core.jl:1388` documents that `globals` copies globals and

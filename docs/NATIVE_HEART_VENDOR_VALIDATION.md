@@ -3,7 +3,7 @@
 ## Scope
 
 RTC issue #5, RTC-DEV-028 and RTC-DEV-030. The explicit integration fixture
-[uses the production wrapper](../deployment/julia/test/native_heart_vendor.jl)
+[uses the production wrapper](../test/native_heart_vendor.jl)
 on a private PipeWireAO core with the existing unchanged `scaoTemplate` and
 `scaoTemplateCmdClient` binaries. It does not publish WFS pixels or qualify
 scientific equivalence, simulation cadence, allocations or physical hardware.

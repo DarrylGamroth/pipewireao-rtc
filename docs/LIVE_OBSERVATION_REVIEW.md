@@ -29,8 +29,8 @@ failure containment and separate live/scientific gates.
 Inspected code includes
 [observation_boundary.jl](../deployment/julia/src/observation_boundary.jl),
 [deployment hooks](../deployment/julia/src/deploy.jl),
-[HIL export](../deployment/julia/src/hil_export.jl),
-[placement validation](../deployment/julia/src/placement.jl), and the HIL
+[HIL export](../src/hil_export.jl),
+[placement validation](../src/placement.jl), and the HIL
 observation/source-buffer and finite-pacing options. The review checked
 relevant tests, the retained evidence recorder, native reader and FFTW
 qualification instrumentation. It did not review or select the separate GUI

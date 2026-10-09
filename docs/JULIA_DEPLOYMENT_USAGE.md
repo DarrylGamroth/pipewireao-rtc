@@ -19,13 +19,13 @@ the recorded Copper complete-frame lifecycle checks.
 Instantiate the cold orchestration environment once:
 
 ```sh
-julia --startup-file=no --project=deployment/julia -e 'using Pkg; Pkg.instantiate()'
+julia --startup-file=no --project=. -e 'using Pkg; Pkg.instantiate()'
 ```
 
 Run a wrapper with the same project, for example:
 
 ```sh
-julia --startup-file=no --project=deployment/julia deployment/copper_reference.jl \
+julia --startup-file=no --project=. assets/deployment/copper_reference.jl \
   --base-package /absolute/path/to/sealed-copper-base \
   --output /absolute/path/to/fresh-candidate \
   --recipe /absolute/path/to/recipe.json \
@@ -44,15 +44,15 @@ and product contracts. Output and runtime directories must be new.
 
 The cold orchestration project is the named package `PipeWireAODeployment`
 (v0.1.0, Julia ≥ 1.12), loaded with `using PipeWireAODeployment`. Modules live in
-`deployment/julia/src`; the test workspace lives in `deployment/julia/test`.
+`src`; the test workspace lives in `test`.
 Run portable verification with:
 
 ```sh
-julia --startup-file=no --project=deployment/julia -e 'using Pkg; Pkg.precompile(); Pkg.test()'
+julia --startup-file=no --project=. -e 'using Pkg; Pkg.precompile(); Pkg.test()'
 ```
 
 Source wrappers keep their existing command lines. The source checkout uses
-`deployment/hil`, `deployment/templates` and the service template as resources.
+`assets/deployment/hil`, `assets/deployment/templates` and the service template as resources.
 Every exported SDK embeds these resources under `julia/assets/deployment`, along
 with its package project, lock, source, CLI and test workspace closure. Resource
 paths are resolved from the loaded package at runtime, including after SDK
@@ -71,7 +71,7 @@ format instead of replacing sealed code.
 Install a sealed exported package using the one-shot CLI:
 
 ```sh
-julia --startup-file=no --project=deployment/julia deployment/julia/wireplumber_cli.jl install \
+julia --startup-file=no --project=. wireplumber_cli.jl install \
   --package /absolute/sealed-package \
   --destination /absolute/fresh-installation \
   --pipewire-prefix /opt/pipewireao

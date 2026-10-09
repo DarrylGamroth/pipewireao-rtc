@@ -27,11 +27,11 @@ Reviewed files:
 
 - [Envelope contract](NATIVE_CONTROL_ENVELOPE.md).
 - [Rust codec](https://github.com/DarrylGamroth/pipewireao-rtc/blob/0fadb2a116f360df7f7d601b8e7f2bea02d809f9/src/native_control_codec.rs) and its embedded unit tests.
-- [Julia codec](../deployment/julia/src/native_control_codec.jl) and
-  [unit tests](../deployment/julia/test/test_native_control_codec.jl).
+- [Julia codec](../src/native_control_codec.jl) and
+  [unit tests](../test/test_native_control_codec.jl).
 - Rust `src/lib.rs` feature-gated exposure and Julia package/test-suite inclusion.
 - [Common-envelope diagnostic owner](../examples/native_control_envelope_proof.rs)
-  and [Julia fixture](../deployment/julia/test/native_control_envelope_proof.jl).
+  and [Julia fixture](../test/native_control_envelope_proof.jl).
 - Relevant public POD ownership/parsing implementations in canonical PipeWireAO
   0.6.16 and the pinned Rust SDK revision
   `f2d86899328465e9b97ccbfb4b10d0b243749171`.

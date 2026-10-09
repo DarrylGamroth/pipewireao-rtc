@@ -127,7 +127,7 @@ Source evidence: `source/template/src/hrtTemplate.c::setTelemetryForFile`,
 `source/python/heart/util/{circbuf,telemetry}.py` representation declarations.
 The Julia decoder does not invoke Python or load shared memory.
 
-[heart_calibration_telemetry.jl](../deployment/hil/heart_calibration_telemetry.jl)
+[heart_calibration_telemetry.jl](../assets/deployment/hil/heart_calibration_telemetry.jl)
 supports the selected little-endian CPU file representation: 1024-byte file
 header, 128-byte CB specification, 64-byte revision-2 bucket header, and payload
 padding to multiples of 64 bytes. The reader checks the requested tag, datatype,
@@ -197,7 +197,7 @@ per-frame association under RTC-DEV-029.
 
 ## Association and owner integration sequence
 
-[`heart_calibration_owner.jl`](../deployment/hil/heart_calibration_owner.jl)
+[`heart_calibration_owner.jl`](../assets/deployment/hil/heart_calibration_owner.jl)
 implements the existing `CalibrationServer` session dispatches. Its specialized
 constructor requires an established `NativeHold` containing the fresh native
 child PID/generation, the fresh startup CORRECT SUCCESS acknowledgement and

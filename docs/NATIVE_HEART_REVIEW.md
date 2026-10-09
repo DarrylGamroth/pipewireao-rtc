@@ -37,10 +37,10 @@ an actual private core. Disposition: primary accepted the minimal fail-closed
 fix; independent source and fail-before/pass-after evidence verification passed.
 
 Affected code:
-[NativeHeartClient.require_ready](../deployment/julia/src/native_heart_client.jl),
-[NativeControlClient.observe!](../deployment/julia/src/native_control_client.jl),
+[NativeHeartClient.require_ready](../src/native_heart_client.jl),
+[NativeControlClient.observe!](../src/native_control_client.jl),
 and the missing-snapshot case in
-[the connected HEART fixture](../deployment/julia/test/native_heart_client.jl).
+[the connected HEART fixture](../test/native_heart_client.jl).
 At the reviewed revision, `require_ready` lines 54–60 check the expected
 generation/child/ingress only when the newest completion has a snapshot.
 `observe!` replaces its retained completion with every newer valid completion.
@@ -97,7 +97,7 @@ independent followup review compared them with the parser and exported argv.
 [HEART_CALIBRATION_ADAPTER.md](HEART_CALIBRATION_ADAPTER.md), in “Association
 and owner integration sequence,” directs the operator to supply
 `--controller-request` and `--controller-reply`. The migrated
-[option parser](../deployment/hil/owner_protocol.jl) rejects those names and
+[option parser](../assets/deployment/hil/owner_protocol.jl) rejects those names and
 requires `--controller-node`, `--controller-pid`, `--controller-instance` and an
 absolute private remote for HEART transport.
 
@@ -124,7 +124,7 @@ Shutdown path. Disposition: primary accepted retention of the spawned PID;
 remediation independently verified against source and portable process evidence.
 
 Affected code: `HeartOwner.apply!(::HeartCommand{:shutdown})`, `report` and
-`snapshot` in [heart_owner.jl](../deployment/julia/src/heart_owner.jl).
+`snapshot` in [heart_owner.jl](../src/heart_owner.jl).
 The followup implementation calls `stop`, which waits for the child to exit,
 then `report`, which obtains the child PID using `getpid(owner.child)`.
 `snapshot` uses the same operation. In Julia 1.12.7, `uv_return_spawn` clears the

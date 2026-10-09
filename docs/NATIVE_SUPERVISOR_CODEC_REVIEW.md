@@ -49,7 +49,7 @@ Source evidence:
 [supervisor traits](../deployment/julia/src/native_supervisor_codec.jl),
 lines 27–37;
 [supervisor wrapper](../deployment/julia/src/native_supervisor_client.jl);
-[generic client](../deployment/julia/src/native_control_client.jl),
+[generic client](../src/native_control_client.jl),
 `same_request`, `observe!`, `matching_reply`, `healthy`, `node_info!` and
 `request!`.
 
@@ -84,7 +84,7 @@ keeps operation-specific Requested, Completed, Active and Submitted outcomes;
 parameter submission remains Submitted with an observed generation pair.
 
 Source evidence:
-[Julia request decoder](../deployment/julia/src/native_runner_codec.jl),
+[Julia request decoder](../src/native_runner_codec.jl),
 lines 312–350;
 [Julia supervisor](../deployment/julia/src/native_supervisor_codec.jl),
 `_decode_record`, `_validate_runner`, `_simulator`, `_source_pod`, `_heart_pod`,

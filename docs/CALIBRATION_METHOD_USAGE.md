@@ -2,7 +2,7 @@
 
 ## Scope
 
-`deployment/calibration_method.jl` acquires one declared probe basis through the
+`assets/deployment/calibration_method.jl` acquires one declared probe basis through the
 same deployed, completion-driven Classic CPU DM/WFS path as the zonal campaign.
 It publishes an **unaccepted response candidate**. It does not select a
 reconstructor, update the controller or establish scientific equivalence.
@@ -56,7 +56,7 @@ checks remain separate scientific gates.
 Use new output and runtime paths outside the source package and AOC checkout:
 
 ```sh
-julia --startup-file=no --project=deployment/julia deployment/calibration_method.jl \
+julia --startup-file=no --project=. assets/deployment/calibration_method.jl \
   --base-package /path/to/qualified-classic-recorded-package \
   --recipe /path/to/shared-recipe.json \
   --method /path/to/method.json \

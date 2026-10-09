@@ -58,7 +58,7 @@ assertions passed.
 
 ## Private native-core exchange
 
-The [Julia fixture](../deployment/julia/test/native_control_envelope_proof.jl)
+The [Julia fixture](../test/native_control_envelope_proof.jl)
 and [Rust owner](../examples/native_control_envelope_proof.rs) pass **42/42**
 checks using registered PipeWireAO 0.6.16 and the pinned Rust SDK `f2d8689`.
 They run as separate processes on an isolated private core, with an inactive

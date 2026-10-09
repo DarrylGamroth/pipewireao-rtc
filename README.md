@@ -24,7 +24,7 @@ and command-line tools act as clients of the same WirePlumber session authority.
 Instantiate the one-shot tooling environment:
 
 ```sh
-julia --startup-file=no --project=deployment/julia -e 'using Pkg; Pkg.instantiate()'
+julia --startup-file=no --project=. -e 'using Pkg; Pkg.instantiate()'
 ```
 
 A sealed package includes its scientific configurations, calibration artifacts,
@@ -34,7 +34,7 @@ and returns after held admission. The helper exits; WirePlumber remains the
 session authority.
 
 ```sh
-julia --startup-file=no --project=deployment/julia -e '
+julia --startup-file=no --project=. -e '
     using PipeWireAODeployment
     W = PipeWireAODeployment.WirePlumberSessionRuntime
     println(W.start!(ARGS[1], ARGS[2]))
@@ -48,23 +48,22 @@ released. Packages with missing WirePlumber assets are rejected.
 
 ## Native session control
 
-Build the Rust client and list candidate sessions:
+List candidate sessions with the Julia client:
 
 ```sh
-cargo build --features live
-cargo run --features live -- session --list
+julia --startup-file=no --project=. wireplumber_cli.jl sessions
 ```
 
 Explicit selection proves the exact live endpoint and fresh Status. Commands
 use native PipeWire serialization; JSON on stdout is only a local report.
 
 ```sh
-cargo run --features live -- session --session UUID -- status
-cargo run --features live -- session --session UUID -- session-start
-cargo run --features live -- session --session UUID -- session-stop
-cargo run --features live -- session --session UUID -- reset
-cargo run --features live -- session --session UUID -- properties GRAPH
-cargo run --features live -- session --session UUID -- quit
+julia --startup-file=no --project=. wireplumber_cli.jl control --session UUID -- status
+julia --startup-file=no --project=. wireplumber_cli.jl control --session UUID -- session-start
+julia --startup-file=no --project=. wireplumber_cli.jl control --session UUID -- session-stop
+julia --startup-file=no --project=. wireplumber_cli.jl control --session UUID -- reset
+julia --startup-file=no --project=. wireplumber_cli.jl control --session UUID -- properties GRAPH
+julia --startup-file=no --project=. wireplumber_cli.jl control --session UUID -- quit
 ```
 
 Gain updates and sparse ndarray parameter publication use the same endpoint.
@@ -78,24 +77,18 @@ successful public shutdown.
 
 | Path | Responsibility |
 | --- | --- |
-| `src/control/` | Operator commands, domain types and native control envelopes |
-| `src/session/` | Session discovery, protocol, connection clients and CLI |
-| `src/calibration/` | Completion-driven acquisition and native calibration clients |
-| `src/connection.rs` | Private socket connection support |
+| `Project.toml`, `Manifest.toml` | Julia package identity and pinned operational environment |
+| `src/` | Native clients, shared operational tools and integration modules undergoing extraction |
+| `test/` | Package tests and native protocol records under `test/data/` |
+| `assets/deployment/` | Explicitly exported runtime resources; instrument resources undergoing extraction |
 | `configs/` | Retained development graph/session configurations |
-| `tests/data/` | Serialized protocol records and test input data |
-| `deployment/julia/` | Julia export, installation, session and calibration clients |
+| `wireplumber_*.jl` | One-shot native session and systemd installation commands |
 
-Unit tests live beside each Rust domain under its `tests/` directory. Existing
-flat Rust module imports remain aliases for GUI/client compatibility; new code
-uses the domain paths. Session lifecycle policy lives in WirePlumberAO Lua,
-not this crate.
-
-The 2026-10-08 organization change passed 99 live-feature Rust tests,
-19 default-feature Rust tests, Clippy with warnings denied, and 2,663 Julia SDK
-assertions. Existing default/live public imports compile; all 19 development
-configs and 94 non-Markdown test-data files remain byte-identical. These are
-source/API checks, not new live-loop or timing qualification.
+Session lifecycle policy lives in WirePlumberAO Lua. The RTC Rust crate is
+retired: the GUI owns its native Rust client, and calibration driving uses the
+shared Julia implementation. Existing sealed SDKs retain their original files
+and launchers. The root-layout change does not complete the separation of
+instrument integration modules.
 
 ## Qualification scope
 
