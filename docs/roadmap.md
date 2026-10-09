@@ -94,8 +94,17 @@ instrument preflight and composed provenance cover both. [Split checks and
 review](validation/julia-instrument-split-20261008/README.md) record strict Pkg
 success (1,557 shared and 1,362 instrument assertions), export/relocation/re-export,
 tamper rejection and byte preservation. Phases 1–4 of the structure migration
-pass their software gates. Phase 5 affected installed session/calibration checks
-remain open; this split adds no live, scientific, allocation or timing claim.
+pass their software gates. Selected phase 5 installed Copper complete-frame CPU
+FGN/JFG checks now pass admission, native running-gain adoption, reconstructor
+submission, reset/resume and bounded cleanup with CUDA AOS. Fresh calibration
+exports also pass the installed Julia acquisition pilot: two probes, native
+completion/exposure correlation, restoration to the declared zero reference,
+release and a fresh completed-source query. Bootstrap owners report identity-loss
+faults during public Quit; successful process cleanup does not prove graceful
+owner completion. [Installed split checks](validation/installed-instrument-split-20261008/README.md)
+record exact invocations and scope. Phase 5 remains open for affected Classic,
+unchanged HEART and broader profile paths; scientific, allocation, matrix-adoption
+and timing acceptance are not inferred from these selected functional pilots.
 
 Completed Copper link and process-supervision transfers remain valid only for
 their dated scopes. The selected Copper composition has passed link realization

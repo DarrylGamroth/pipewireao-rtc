@@ -1,6 +1,7 @@
 # Delivery evidence catalog
 
-- [Independent REVOLT Julia package, 2026-10-08](validation/julia-instrument-split-20261008/README.md): separate shared/instrument projects, composed source evidence, instrument preflight, strict Pkg checks, relocation/re-export/tamper checks and independent review. Live installed qualification remains separate.
+- [Independent REVOLT Julia package, 2026-10-08](validation/julia-instrument-split-20261008/README.md): separate shared/instrument projects, composed source evidence, instrument preflight, strict Pkg checks, relocation/re-export/tamper checks and independent review.
+- [Installed instrument-package split, 2026-10-08](validation/installed-instrument-split-20261008/README.md): selected Copper CPU FGN/JFG with CUDA AOS, native controls and installed calibration completion/restoration/release. Bounded process cleanup passes; bootstrap-owner revocation faults and remaining profile/resource/scientific gates are explicit.
 
 - [Julia root layout, 2026-10-08](validation/julia-root-layout-20261008/README.md): root package, Rust retirement, protocol/configuration byte preservation, resource-path fail-before/pass-after and 2,985 passing software assertions. Instrument extraction and live qualification remain open.
 
