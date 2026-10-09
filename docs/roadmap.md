@@ -148,11 +148,23 @@ and waits for clean native controller removal before closing action ingress on
 the still-live lifecycle Core. Forced ordering establishes fail-before/pass-after
 evidence. The historic first removed object and core error callback timestamp
 remain unmapped; the repair does not establish the sole cause of that incident.
-Evidence and independent review are in
-`REVOLTRTC.jl/docs/validation/registry-shutdown-20261009/`. Public session
-Quit/systemd cleanup is distinct from graceful simulator resource cleanup after
-SIGTERM, which remains unqualified. These selected Classic results do not qualify
-Copper, row-block mode, hardware or timing under the migrated session authority.
+
+Cold acquisition Shutdown now supports retained terminal completion. WirePlumber
+requests source cleanup, releases the dedicated controller marker and observes
+the exact owner control Clients disappear before public Quit and core shutdown.
+The shared package passes 1,562 assertions; the native instrument lifecycle
+checks pass 28 and WirePlumber passes 60 tests. Both selected Classic CPU FGN/JFG
+calibration runs with CUDA AOS complete restoration, Release and Quit with zero
+native cleanup warnings. Both engines pass two 256-frame correction/reset
+batches, exact reset reproduction and direct OPD/zero-command replay, also with
+zero native cleanup warnings. This establishes the selected Classic simulator
+baseline for GUI testing; GUI attachment remains untested. Instrument evidence is maintained in
+`REVOLTRTC.jl/docs/validation/graceful-shutdown-20261009/README.md`.
+The earlier Release review is preserved in
+`REVOLTRTC.jl/docs/validation/registry-shutdown-20261009/`. Selected normal Quit
+now completes source cleanup before core shutdown. This does not qualify forced
+SIGTERM recovery, Copper, row-block mode, hardware or timing under the migrated
+session authority.
 
 Completed Copper link and process-supervision transfers remain valid only for
 their dated scopes. The selected Copper composition has passed link realization

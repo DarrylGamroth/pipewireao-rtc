@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+- Instrument-owned graceful acquisition shutdown, 2026-10-09:
+  `REVOLTRTC.jl/docs/validation/graceful-shutdown-20261009/README.md` records
+  retained terminal completion and exact control-Client closure before core
+  shutdown, updated sealed session policy and selected Classic CPU FGN/JFG with
+  CUDA AOS checks. GUI attachment and hardware/rate qualification are separate.
 - Independent REVOLT calibration controller teardown, 2026-10-09:
   `REVOLTRTC.jl/docs/validation/registry-shutdown-20261009/README.md` records
   forced-order native fail-before/pass-after, 766 action assertions, 1,413 package
