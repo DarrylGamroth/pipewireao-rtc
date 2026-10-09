@@ -86,7 +86,11 @@ function bootstrap_proof(remote, directory, daemon)
         duplicate = B.request!(a,:connect;deadline=remaining())
         @test duplicate.header.result == -22 && duplicate.lifecycle === C.Connected
         @test B.status(a;deadline=remaining()).lifecycle === C.Connected
-        quitting = ThreadPinning.@spawnat 2 B.quit!(a;deadline=remaining())
+        quitting = ThreadPinning.@spawnat 2 begin
+            reply = B.quit!(a;deadline=remaining())
+            close(a)
+            reply
+        end
         wait_proof(() -> R.cancelled(runtime),5,"accepted Quit")
         @test !istaskdone(quitting)
         R.finishing!(runtime)

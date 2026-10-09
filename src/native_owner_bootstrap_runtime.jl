@@ -119,11 +119,12 @@ end
 
 """Publish the result of an accepted ticket after the sole owner has applied it."""
 function complete!(runtime::Transport, ticket::Endpoint.Ticket,
-        lifecycle::Codec.Lifecycle; result::Int32=Int32(0), message::AbstractString="")
+        lifecycle::Codec.Lifecycle; result::Int32=Int32(0), message::AbstractString="",
+        terminal::Bool=false)
     header = Envelope.ReplyHeader(ticket.header.controller, runtime.endpoint.instance,
         ticket.header.token, ticket.header.operation, result)
     completion = Client.encode_completion(runtime.profile, header, lifecycle, message)
-    Endpoint.complete!(runtime.endpoint, ticket, completion)
+    Endpoint.complete!(runtime.endpoint, ticket, completion; terminal)
     return nothing
 end
 
@@ -407,9 +408,15 @@ function _advance!(runtime, ticket, ::Codec.Command{:quit}, facts, lifecycle)
         result = facts.error === nothing ? Int32(0) : Int32(-5)
         lifecycle = result == 0 ? Codec.Stopped : Codec.Fault
         lifecycle!(runtime.transport, lifecycle)
+        result == 0 && Endpoint.retain_controller!(runtime.transport.endpoint, ticket)
         complete!(runtime.transport, ticket, lifecycle; result,
-            message=facts.error === nothing ? "" : _message(facts.error))
+            message=facts.error === nothing ? "" : _message(facts.error), terminal=result == 0)
         flush_terminal!(runtime.transport, ticket.deadline)
+        if result == 0
+            # main_finished proves scientific cleanup; retain only the cold
+            # control transport until the reader releases this exact controller.
+            Endpoint.wait_terminal_release!(runtime.transport.endpoint, ticket)
+        end
         return nothing, lifecycle, true
     end
     # Repeat public quit until main excludes hooks before close: quit may

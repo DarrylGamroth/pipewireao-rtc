@@ -44,7 +44,11 @@ function retained_authority(remote, directory, daemon)
                 @test (@allocated E.poll!(runtime.transport.endpoint)) == 0
             end
         end
-        quitting = ThreadPinning.@spawnat 2 B.quit!(client; deadline=remaining())
+        quitting = ThreadPinning.@spawnat 2 begin
+            reply = B.quit!(client; deadline=remaining())
+            close(client)
+            reply
+        end
         wait_proof(() -> R.cancelled(runtime), 5, "retained Quit")
         R.finish!(runtime)
         @test fetch(quitting).lifecycle === P.Stopped

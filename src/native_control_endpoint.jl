@@ -21,6 +21,7 @@ mutable struct Controller
     node::Union{Nothing,Node}
     verified::Bool
     retired::Bool
+    removed::Bool
 end
 
 struct Ticket{C}
@@ -47,6 +48,7 @@ mutable struct Endpoint{P<:Client.Profile,C,L,F}
     rejection::Pod
     failure::Union{Nothing,String}
     closed::Bool
+    terminal::Bool
     retained_controller::Union{Nothing,Envelope.ControllerIdentity}
 end
 
@@ -140,6 +142,7 @@ function refresh_controllers!(endpoint::Endpoint)
         matches = filter(global_object -> global_object.id == controller.global_id &&
             get(global_object.properties, "object.serial", nothing) == string(controller.serial), globals)
         if isempty(matches) && !controller.retired
+            controller.removed = true
             controller.retired = true
             controller.verified = false
             changed = true
@@ -170,7 +173,7 @@ function refresh_controllers!(endpoint::Endpoint)
         # Registry announcements are sparse. Bind a bounded set of candidate
         # names, then admit only the exact full NodeInfo proof, never the name.
         controller = Controller(global_object.id, serial, nothing, name, UInt32(0),
-            nothing, false, false)
+            nothing, false, false, false)
         controller.node = bind(registry, global_object, Node;
             on_info=(node, info) -> begin
                 controller_info!(controller, info)
@@ -178,6 +181,9 @@ function refresh_controllers!(endpoint::Endpoint)
                 nothing
             end,
             on_removed=node -> begin
+                # Preserve an earlier proof/error revocation; its later removal
+                # must never reclassify that incarnation as a clean release.
+                controller.removed |= !controller.retired
                 controller.retired = true
                 controller.verified = false
                 publish!(endpoint)
@@ -222,6 +228,38 @@ controller_present(endpoint::Endpoint, identity::Envelope.ControllerIdentity) =
     any(controller -> controller.identity == identity && controller.verified && !controller.retired,
         endpoint.controllers)
 
+"Read terminal delivery state without treating pre-terminal revocation as release."
+function terminal_release(endpoint::Endpoint, ticket::Ticket)
+    with_thread_loop_lock(endpoint.loop) do _
+        operational(endpoint)
+        endpoint.terminal_request === ticket && endpoint.pending === nothing ||
+            error("native terminal request has not completed")
+        endpoint.terminal || error("native terminal admission remains open")
+        header, _ = Envelope.decode_completion(endpoint.completion;
+            endpoint=Client.reply_endpoint(endpoint.profile))
+        Client.same_request(header, ticket.header) && header.result == 0 ||
+            error("native terminal request has no successful completion")
+        endpoint.retained_controller == ticket.header.controller ||
+            error("native terminal controller was not retained")
+        controller = only(endpoint.controllers)
+        controller.identity == ticket.header.controller ||
+            error("native terminal controller incarnation changed")
+        controller.removed && return :removed
+        controller.verified && !controller.retired ||
+            error("native terminal controller proof was revoked")
+        return monotonic() < ticket.deadline ? :waiting : :expired
+    end
+end
+
+"Keep the cold endpoint available for a reader until exact release or its budget."
+function wait_terminal_release!(endpoint::Endpoint, ticket::Ticket)
+    while true
+        release = terminal_release(endpoint, ticket)
+        release === :waiting || return release
+        sleep(min(0.005, max(0.0, ticket.deadline - monotonic())))
+    end
+end
+
 function rejection!(endpoint::Endpoint, header::Union{Nothing,Envelope.RequestHeader}, result::Int32)
     reply = header === nothing ? Envelope.ReplyHeader(endpoint.instance, result) :
         Envelope.ReplyHeader(header.controller, endpoint.instance, header.token, header.operation, result)
@@ -243,6 +281,7 @@ function admission(endpoint::Endpoint, header::Envelope.RequestHeader, bytes)
         end
     end
     header.token > endpoint.last_token || return Int32(-116)
+    endpoint.terminal && return Int32(-108)
     endpoint.pending === nothing || return Int32(-16)
     return Int32(0)
 end
@@ -287,7 +326,7 @@ function Endpoint(profile::P, ::Type{C}, loop::ThreadLoop, core::CoreConnection,
         endpoint=Client.reply_endpoint(profile))
     rejected = Client.encode_rejection(profile, Envelope.ReplyHeader(instance, Int32(-22)), lifecycle)
     endpoint = Endpoint{P,C,L,typeof(publisher)}(profile, loop, nothing, nothing, instance, lifecycle, publisher, Controller[],
-        nothing, false, 0, nothing, initial, rejected, nothing, false, nothing)
+        nothing, false, 0, nothing, initial, rejected, nothing, false, false, nothing)
     try
         with_thread_loop_lock(loop) do _
             endpoint.registry = Registry(core)
@@ -363,7 +402,7 @@ function check_ticket(endpoint::Endpoint, ticket::Ticket)
     return nothing
 end
 
-function complete!(endpoint::Endpoint, ticket::Ticket, completion::Pod)
+function complete!(endpoint::Endpoint, ticket::Ticket, completion::Pod; terminal::Bool=false)
     with_thread_loop_lock(endpoint.loop) do _
         operational(endpoint)
         endpoint.pending === ticket && endpoint.applying || error("native owner ticket is not applying")
@@ -372,6 +411,11 @@ function complete!(endpoint::Endpoint, ticket::Ticket, completion::Pod)
         if header.result == 0
             check_ticket(endpoint, ticket)
         end
+        terminal && header.result != 0 &&
+            throw(ArgumentError("terminal admission requires a successful completion"))
+        # Commit the terminal gate in the same native-lock transaction as its
+        # publication. Exact replay remains available; fresh work is rejected.
+        endpoint.terminal |= terminal
         endpoint.completion = completion
         publish!(endpoint)
         endpoint.terminal_request = ticket

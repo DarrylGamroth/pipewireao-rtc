@@ -23,7 +23,7 @@ const CONTROLLER_PROPERTIES = Dict("node.name" => "pipewireao.rtc.controller.tes
 
 @testset "controller property-change mask fences identity" begin
     controller = Endpoint.Controller(UInt32(42), typemax(UInt64), nothing,
-        CONTROLLER_PROPERTIES["node.name"], UInt32(0), nothing, false, false)
+        CONTROLLER_PROPERTIES["node.name"], UInt32(0), nothing, false, false, false)
     Endpoint.controller_info!(controller, node_info(NODE_CHANGE_STATE, Dict()))
     @test !controller.verified && !controller.retired
     Endpoint.controller_info!(controller, node_info(NODE_CHANGE_PROPERTIES, CONTROLLER_PROPERTIES))
@@ -79,7 +79,7 @@ function publication_fault(socket, directory, daemon, phase)
         # Fault injection tests publication and slot transitions in isolation.
         # Registry lifetime itself is qualified by the separate actual-client fixture.
         push!(endpoint.controllers, Endpoint.Controller(IDENTITY.global_id, IDENTITY.serial,
-            IDENTITY, "test.controller", UInt32(getpid()), nothing, true, false))
+            IDENTITY, "test.controller", UInt32(getpid()), nothing, true, false, false))
         header = Envelope.RequestHeader(IDENTITY, Int64(23), Int64(1), UInt32(71), Int64(1_000_000_000))
         request = Envelope.encode_request(header, SPA.Struct())
         with_thread_loop_lock(loop) do _
