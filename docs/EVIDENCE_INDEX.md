@@ -1,5 +1,7 @@
 # Delivery evidence catalog
 
+- [Installed owner shutdown and cleanup, 2026-10-09](validation/terminal-shutdown-20261009/README.md): installed core-hosting discovery, native owner termination before controller removal, atomic terminal retention, independent review and delayed-reader fail-before/pass-after. Selected Classic/Copper CPU FGN/JFG controls and unchanged Classic HEART lifecycle pass; Classic acquisition recovers with a declared brighter lamp. Worktree removals preserve branch history and dirty local files. Scientific, emergency-failure, allocation and timing limits are explicit.
+
 - [Independent REVOLT Julia package, 2026-10-08](validation/julia-instrument-split-20261008/README.md): separate shared/instrument projects, composed source evidence, instrument preflight, strict Pkg checks, relocation/re-export/tamper checks and independent review.
 - [Installed instrument-package split, 2026-10-08](validation/installed-instrument-split-20261008/README.md): selected Copper and Classic CPU FGN/JFG with CUDA AOS native controls; Copper acquisition passes, Classic quality-invalid acquisition restores/releases. A core-hosting resolver fix advances unchanged Classic HEART through staged lifecycle/reset/cleanup. Installed-prefix promotion, owner shutdown faults and remaining profile/resource/scientific gates are explicit.
 

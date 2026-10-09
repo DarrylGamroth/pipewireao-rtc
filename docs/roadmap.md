@@ -6,7 +6,7 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-10-08. This section is the current delivery summary. Later sections
+Updated 2026-10-09. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
@@ -99,23 +99,36 @@ FGN/JFG checks now pass admission, native running-gain adoption, reconstructor
 submission, reset/resume and bounded cleanup with CUDA AOS. Fresh calibration
 exports also pass the installed Julia acquisition pilot: two probes, native
 completion/exposure correlation, restoration to the declared zero reference,
-release and a fresh completed-source query. Bootstrap owners report identity-loss
-faults during public Quit; successful process cleanup does not prove graceful
-owner completion. [Installed split checks](validation/installed-instrument-split-20261008/README.md)
-record exact invocations and scope. Classic CPU FGN/JFG complete-frame controls
-with CUDA AOS also pass. Their calibration pilots reject quality-invalid
-responses, restore and release correctly; successful acquisition remains open.
-The unchanged Classic HEART bridge initially timed out before admission with
-zero frames/commands after a scratch sustained-mode request was corrected.
-Bounded cleanup passed. A cold diagnostic replay identified discovery's
-Client-only resolver excluding core-hosted HEART
-SPA nodes despite all declared ports being present. An explicit core-hosting
-identity path now passes a fresh staged HEART admission/start/stop/reset/restart
-and cleanup run. Its source patches and cold diagnostics were staged separately;
-installed-prefix promotion and wider profile checks remain open. Phase 5 remains
-open for successful Classic acquisition,
-unchanged HEART and broader profile paths; scientific, allocation, matrix-adoption
-and timing acceptance are not inferred from these selected functional pilots.
+release and a fresh completed-source query. The earlier
+[installed split checks](validation/installed-instrument-split-20261008/README.md)
+preserve Classic quality-invalid acquisition and ordinary Quit owner faults.
+Bounded native Capture now identifies insufficient active-region flux in the
+original Classic lamp input. A separately declared brighter lamp uses the
+existing recipe setting without changing thresholds, masks or seed; all 184
+active regions are valid and neither captured exposure saturates. Fresh Classic
+FGN/JFG two-probe pilots pass valid native acquisition, restoration, release and
+a completed-source query. This is functional acquisition, not a validated matrix.
+
+The explicit core-hosting discovery fix is now installed under `/opt/pipewireao`
+without diagnostic patches. Fresh unchanged Classic HEART passes admission,
+start/stop/reset/restart with a new child PID/generation, native shutdown and
+owned cleanup. Ordinary Quit now validates native owner termination before
+disconnecting; paired owners retain terminal results for the issuing controller
+under the original deadline and reject fresh requests atomically. The
+[shutdown qualification and independent review](validation/terminal-shutdown-20261009/README.md)
+record strict shared tests (1,562 assertions), REVOLT tests (1,362), all 57
+WirePlumber tests and delayed-reader fail-before/pass-after evidence. Fresh
+Classic/Copper CPU FGN/JFG with CUDA AOS pass installed controls, reset/resume,
+native Quit and cleanup without the previous owner faults. HEART's existing
+mixer-negotiation warning remains recorded. Eight obsolete clean RTC worktrees
+and the completed WirePlumber worktree are removed; branch refs and three dirty
+RTC trees are preserved.
+
+Selected phase 5 functional checks now pass. Broader profile/row-block parity,
+scientific precision/correction, full allocation boundaries, live matrix adoption
+and timing acceptance retain their separate gates. The earlier emergency JFG
+buffer-removal failure remains unadjudicated; normal Quit success is not its
+root-cause or repair evidence.
 
 Completed Copper link and process-supervision transfers remain valid only for
 their dated scopes. The selected Copper composition has passed link realization
