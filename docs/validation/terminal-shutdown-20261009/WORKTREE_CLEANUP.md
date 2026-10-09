@@ -29,6 +29,29 @@ The pre-removal `du -sh` measurements total approximately **164M** (rounded per 
 
 The post-cleanup worktree list contained these five paths only. The active package branch has since advanced; its cleanup-time SHA above is retained for an accurate before/after record.
 
+## Qualified main integration and final cleanup
+
+After seven selected installed checks passed, canonical RTC `main` fast-forwarded
+from `4bc5c5d327e7fc1f589b56d7ea80f8396f8b2f1f` to
+`c8d2102a2a448dbd6b8de2626115c007e59367c0` and was pushed to
+`DarrylGamroth/pipewireao-rtc`. The clean `pipewireao-rtc-julia-package` worktree
+was removed with ordinary `git worktree remove`. Its branch remains at that
+exact commit; its pre-removal size was approximately 29 MiB.
+
+WirePlumber's canonical `master` fast-forwarded from `6557dcea` to
+`f248ff5770c42d6d04c4745952cb4ce980072f5d` and was pushed to
+`DarrylGamroth/WirePlumberAO`. Its clean `wireplumber-core-endpoints` worktree was
+removed normally; its branch remains at that exact commit. The removed worktree
+and build directory occupied approximately 130 MiB. The installed runtime remains
+under `/opt/pipewireao`.
+
+Total: **nine RTC worktrees and one WirePlumber worktree removed**, approximately
+**323 MiB** from rounded `du -sh` measurements. RTC now has canonical `main` plus
+the three unchanged dirty worktrees listed below. WirePlumber has only canonical
+`master`. No force, reset, stash, branch deletion or unrelated file removal was
+used. The independent REVOLT project is committed on local `main` at `3bde91c`;
+it has no configured remote and was not published.
+
 The three dirty worktrees were left untouched. At inventory time their visible local changes were:
 
 - **Live observation:** 12 modified tracked files: `deployment/hil/Project.toml`, `deployment/hil/owner_protocol.jl`, `deployment/hil/simulator.jl`, `deployment/hil/test_owner_protocol.jl`, `deployment/julia/src/PipeWireAODeployment.jl`, `deployment/julia/src/deploy.jl`, `deployment/julia/src/hil_export.jl`, `deployment/julia/test/runtests.jl`, `deployment/julia/test/test_deploy.jl`, `deployment/julia/test/test_exports.jl`, `docs/operations.md`, `docs/roadmap.md`; 4 untracked files: `deployment/julia/src/observation_boundary.jl`, `deployment/julia/test/test_observation_boundary.jl`, `deployment/julia/test/test_observation_loop.jl`, `docs/LIVE_OBSERVATION_VALIDATION.md`.

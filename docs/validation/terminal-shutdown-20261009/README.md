@@ -134,3 +134,10 @@ WirePlumber's qualified branch was fast-forwarded and pushed to its own fork's
 was then removed normally, reclaiming approximately another 130 MiB including
 the build directory. Its branch ref and installed `/opt/pipewireao` runtime
 remain intact.
+The shared package then fast-forwarded and pushed to canonical `main` at
+`c8d2102a2a448dbd6b8de2626115c007e59367c0`; its clean migration worktree was removed
+normally, reclaiming approximately another 29 MiB. Final totals are nine RTC
+and one WirePlumber worktrees removed, approximately 323 MiB, with three dirty
+RTC trees preserved. The [cleanup record](WORKTREE_CLEANUP.md) records the exact
+branch refs and outcomes. REVOLT is committed on local `main` at `3bde91c`; it
+has no configured remote and was not published.

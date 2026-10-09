@@ -120,9 +120,11 @@ record strict shared tests (1,562 assertions), REVOLT tests (1,362), all 57
 WirePlumber tests and delayed-reader fail-before/pass-after evidence. Fresh
 Classic/Copper CPU FGN/JFG with CUDA AOS pass installed controls, reset/resume,
 native Quit and cleanup without the previous owner faults. HEART's existing
-mixer-negotiation warning remains recorded. Eight obsolete clean RTC worktrees
-and the completed WirePlumber worktree are removed; branch refs and three dirty
-RTC trees are preserved.
+mixer-negotiation warning remains recorded. The shared package and WirePlumber
+are merged and pushed to their own fork's canonical main/master. The REVOLT
+project is committed on local main without a configured remote. Nine clean RTC
+worktrees and the completed WirePlumber worktree are removed; branch refs and
+three dirty RTC trees are preserved.
 
 Selected phase 5 functional checks now pass. Broader profile/row-block parity,
 scientific precision/correction, full allocation boundaries, live matrix adoption
