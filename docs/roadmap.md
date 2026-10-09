@@ -132,6 +132,21 @@ and timing acceptance retain their separate gates. The earlier emergency JFG
 buffer-removal failure remains unadjudicated; normal Quit success is not its
 root-cause or repair evidence.
 
+The independent REVOLT package now maintains a finite Classic correction
+entrypoint using native session controls. CPU FGN and JFG with CUDA AOS each
+pass two 256-frame correction/reset batches using the retained selected inverse,
+direct OPD truth and zero-command replay. Both pass running gain/matrix adoption
+and exact finite delivery under the reviewed desired-value policy. The bounded
+two-direction native calibration matrices match byte for byte. Ordinary JFG
+public processing, including calls following prepared gain/matrix changes,
+allocates zero bytes; native control staging and foreign callbacks are outside
+that measurement. Instrument evidence and the active plan live in
+`REVOLTRTC.jl/docs/validation/classic-calibration-adoption-20261009/` and
+`REVOLTRTC.jl/ANALYSIS_PLAN.md`. The intermittent split-acquisition registry loss
+remains open; saved-identity diagnostics improve the next incident record rather
+than establish a repair. These selected Classic results do not qualify Copper,
+row-block mode, hardware or timing under the migrated session authority.
+
 Completed Copper link and process-supervision transfers remain valid only for
 their dated scopes. The selected Copper composition has passed link realization
 and systemd owner-service checks while the old runtime retains science readiness
