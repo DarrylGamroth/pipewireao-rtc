@@ -102,7 +102,18 @@ completion/exposure correlation, restoration to the declared zero reference,
 release and a fresh completed-source query. Bootstrap owners report identity-loss
 faults during public Quit; successful process cleanup does not prove graceful
 owner completion. [Installed split checks](validation/installed-instrument-split-20261008/README.md)
-record exact invocations and scope. Phase 5 remains open for affected Classic,
+record exact invocations and scope. Classic CPU FGN/JFG complete-frame controls
+with CUDA AOS also pass. Their calibration pilots reject quality-invalid
+responses, restore and release correctly; successful acquisition remains open.
+The unchanged Classic HEART bridge initially timed out before admission with
+zero frames/commands after a scratch sustained-mode request was corrected.
+Bounded cleanup passed. A cold diagnostic replay identified discovery's
+Client-only resolver excluding core-hosted HEART
+SPA nodes despite all declared ports being present. An explicit core-hosting
+identity path now passes a fresh staged HEART admission/start/stop/reset/restart
+and cleanup run. Its source patches and cold diagnostics were staged separately;
+installed-prefix promotion and wider profile checks remain open. Phase 5 remains
+open for successful Classic acquisition,
 unchanged HEART and broader profile paths; scientific, allocation, matrix-adoption
 and timing acceptance are not inferred from these selected functional pilots.
 

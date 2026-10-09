@@ -34,8 +34,39 @@ repository remains local pending the user's publication choice. The raw
 experiment cache is
 `~/.cache/rtc-julia-package-20261008/installed-checks/evidence`.
 
-Phase 5 remains open for affected Classic/unchanged-HEART paths and broader profile
-qualification. Matrix adoption without interruption, scientific precision,
+## Classic follow-up
+
+Both Classic complete-frame CPU graph engines with CUDA AOS pass admission,
+running-gain adoption, reconstructor submission and reset/resume, preserving
+their 1.896 ms exposure and scientific files. Successful invocations are FGN
+`dca146fb2287465294b0630ada5f194f` and JFG
+`847577df2a9c4e5993e108ec1037f22c`.
+
+Their installed calibration pilots rejected `valid=false` response evidence and
+returned no batches. Both restored the explicit reference, released ownership
+and completed cleanup. No ADC saturation was observed; the specific active-ROI
+failure remains unidentified. This is failure-recovery evidence, not successful
+acquisition or matrix acceptance. JFG calibration owners exited on broken pipe
+during shutdown; process cleanup does not prove graceful graph completion.
+
+The unchanged Classic HEART bridge's installed-prefix qualification remains open.
+A scratch sustained-mode
+request was rejected before bootstrap publication; correcting that preparation
+allowed the source to prepare/connect held, but the new invocation
+`f90176da82c64aa8a5c98707c8cc21f1` still timed out before admission. No frames or
+commands completed. Exact-owned cleanup and unit-file removal passed. The
+diagnostic replay identifies discovery's Client-only resolver excluding the
+core-hosted HEART SPA nodes, despite all four ports being present. An explicit
+core-hosting identity patch passes fresh staged replay
+`393fa0b0b1bc49d6b305deea0dc67391`: admission, start/stop, reset with native child
+generation 1→2 and a new PID, restart and bounded cleanup. This prototype staged
+three source changes and cold diagnostics; installed-prefix promotion remains
+open. All failures and the successful replay are preserved with the
+instrument in `docs/validation/installed-classic-split-20261008/README.md` and its
+independent startup review.
+
+Phase 5 remains open for successful Classic acquisition, unchanged-HEART paths
+and broader profile qualification. Matrix adoption without interruption, scientific precision,
 allocation/GC, exact-delivery throughput, latency, physical actuation and graceful
 ordinary-owner completion are separate unqualified gates. Current status belongs
 to [the roadmap](../../roadmap.md#current-work).
