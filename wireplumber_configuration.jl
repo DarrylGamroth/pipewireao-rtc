@@ -146,6 +146,8 @@ function session_configuration(spec, session, bindings, records;
     admission_instance != public_instance && admission_instance != controller_instance ||
         fail("admission controller instance must be distinct from session endpoints")
     pids = node_pids(session, records, node_owners)
+    core_nodes = sort!([name for (name, role) in node_owners if role == "core"])
+    core_owner = Dict("pid" => verified_pid(records, "core"), "nodes" => core_nodes)
     declarations = owner_specs(spec)
     all(role -> haskey(declarations, role) || role in ("core", "fgn"), keys(records)) ||
         fail("an owner process record has no matching owner declaration")
@@ -180,7 +182,8 @@ function session_configuration(spec, session, bindings, records;
         "requires" => ["support.lua-scripting", "ao.session-control", "ao.session-controller"],
             "arguments" => Dict{String,Any}(
             "session" => deepcopy(session), "owners" => owners, "source" => source,
-            "node.pids" => pids, "instance" => string(public_instance),
+            "node.pids" => pids, "core.owner" => core_owner,
+            "instance" => string(public_instance),
             "controller.instance" => string(controller_instance), "session.uuid" => uuid,
             "admission.controller-instance" => string(admission_instance),
             "startup.timeout-ms" => 300000))
