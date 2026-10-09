@@ -142,10 +142,17 @@ public processing, including calls following prepared gain/matrix changes,
 allocates zero bytes; native control staging and foreign callbacks are outside
 that measurement. Instrument evidence and the active plan live in
 `REVOLTRTC.jl/docs/validation/classic-calibration-adoption-20261009/` and
-`REVOLTRTC.jl/ANALYSIS_PLAN.md`. The intermittent split-acquisition registry loss
-remains open; saved-identity diagnostics improve the next incident record rather
-than establish a repair. These selected Classic results do not qualify Copper,
-row-block mode, hardware or timing under the migrated session authority.
+`REVOLTRTC.jl/ANALYSIS_PLAN.md`. The selected-controller calibration teardown race
+is now reproduced and repaired: successful Release retains terminal completion
+and waits for clean native controller removal before closing action ingress on
+the still-live lifecycle Core. Forced ordering establishes fail-before/pass-after
+evidence. The historic first removed object and core error callback timestamp
+remain unmapped; the repair does not establish the sole cause of that incident.
+Evidence and independent review are in
+`REVOLTRTC.jl/docs/validation/registry-shutdown-20261009/`. Public session
+Quit/systemd cleanup is distinct from graceful simulator resource cleanup after
+SIGTERM, which remains unqualified. These selected Classic results do not qualify
+Copper, row-block mode, hardware or timing under the migrated session authority.
 
 Completed Copper link and process-supervision transfers remain valid only for
 their dated scopes. The selected Copper composition has passed link realization

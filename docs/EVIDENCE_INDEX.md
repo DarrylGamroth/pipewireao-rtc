@@ -1,5 +1,12 @@
 # Delivery evidence catalog
 
+- Independent REVOLT calibration controller teardown, 2026-10-09:
+  `REVOLTRTC.jl/docs/validation/registry-shutdown-20261009/README.md` records
+  forced-order native fail-before/pass-after, 766 action assertions, 1,413 package
+  assertions, plain installed Classic CPU FGN/JFG with CUDA AOS, unchanged
+  response vectors and independent review. Historical first removal identity
+  and graceful simulator cleanup after SIGTERM remain unresolved.
+
 - [Installed owner shutdown and cleanup, 2026-10-09](validation/terminal-shutdown-20261009/README.md): installed core-hosting discovery, native owner termination before controller removal, atomic terminal retention, independent review and delayed-reader fail-before/pass-after. Selected Classic/Copper CPU FGN/JFG controls and unchanged Classic HEART lifecycle pass; Classic acquisition recovers with a declared brighter lamp. Worktree removals preserve branch history and dirty local files. Scientific, emergency-failure, allocation and timing limits are explicit.
 
 - [Independent REVOLT Julia package, 2026-10-08](validation/julia-instrument-split-20261008/README.md): separate shared/instrument projects, composed source evidence, instrument preflight, strict Pkg checks, relocation/re-export/tamper checks and independent review.

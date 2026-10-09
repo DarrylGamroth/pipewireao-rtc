@@ -239,11 +239,16 @@ Successful replies carry an empty message, so native Collect preflight uses
 copying dictionary figures. The encoder checks the final reply again. No new
 SCI state machine, acquisition math or timing coefficients are introduced.
 
-Release flushes its terminal reply through the existing Bridge Core sync before
-closing only action ingress. The lifecycle endpoint remains alive for final
-Shutdown and stopped publication. If transport aborts after the actual Release
-effect, cleanup retains the released, restored, unheld SCI facts even when the
-client cannot establish the outcome.
+Successful Release retains its exact controller and commits terminal admission:
+exact replay remains available, while fresh actions are rejected. The adapter
+flushes the reply through the existing Bridge Core sync, then waits within the
+same ticket budget for the retained controller's clean native removal before
+closing only action ingress. The client closes its controller after validating
+Released; Core sync alone does not prove peer receipt or removal. Expiry is a
+transport failure, not proof of clean release. The lifecycle endpoint remains
+alive for final Shutdown and stopped publication. If transport aborts after the
+actual Release effect, cleanup retains the released, restored, unheld SCI facts
+even when the client cannot establish the outcome.
 When the existing SCI effect or accepted-action failure has actually faulted the
 owner, the adapter publishes lifecycle Fault before action ingress closes while
 the Core remains usable. Publication failure is retained with the primary
