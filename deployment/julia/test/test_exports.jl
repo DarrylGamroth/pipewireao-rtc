@@ -15,10 +15,12 @@ const SystemdOwners = PipeWireAODeployment.SystemdOwners
 const RunnerCommands = PipeWireAODeployment.RunnerCommands
 module DeploymentConfiguration
 using ..Common
+using ..PipeWireAODeployment
 native_source(owner) = get(owner, "control-protocol", nothing) == "pipewireao.source-control/1"
 decode(path,prefix) = Common.read_json(path)
 profile(path,prefix;legacy_export_input=false) = Common.read_json(path)
 bootstrap_instance_key(role) = "BOOTSTRAP_INSTANCE_" * replace(uppercase(role), "-"=>"_")
+installed_wrappers(julia) = PipeWireAODeployment.DeploymentConfiguration.installed_wrappers(julia)
 end
 
 module HeartConfiguration end
@@ -200,14 +202,15 @@ end
         @test isfile(joinpath(graph_only,"graphs/wfs.conf.in"))
         @test !isfile(joinpath(graph_only,"deployment.conf"))
         @test_throws ArgumentError Calibration.export_package((;base_package=base,output=graph_only,pipewire_prefix="/unused",deployment=false))
-        binary = joinpath(root,"runner"); write(binary,"runner")
         deployed = joinpath(root,"deployed")
         result = Calibration.export_package((;base_package=base,output=deployed,pipewire_prefix="/unused",deployment=true,
-            calibration_binary=binary,illumination="lamp",calibration_stage="interaction"))
+            illumination="lamp",calibration_stage="interaction"))
         @test result == joinpath(deployed,"provenance.json")
         @test isfile(joinpath(deployed,"deployment.conf"))
         @test isfile(joinpath(deployed,"julia/Manifest.toml"))
         @test isfile(joinpath(deployed,"julia/src/PipeWireAODeployment.jl"))
+        @test isexecutable(joinpath(deployed,"bin/rtc-calibrate"))
+        @test occursin("CalibrationCLI.main",read(joinpath(deployed,"bin/rtc-calibrate"),String))
         @test isfile(joinpath(deployed,"julia/assets/deployment/pipewireao-session@.service.in"))
         @test !ispath(joinpath(deployed,"bin/pipewireao-rtc"))
         @test !ispath(joinpath(deployed,"bin/pipewireao-rtc-deploy"))
@@ -227,6 +230,9 @@ end
         @test selected["control-protocol"] == "pipewireao.rtc.calibration-lifecycle/1"
         @test selected["instrument"] == "classic"
         provenance = ExportFixture.Common.read_json(joinpath(deployed,"provenance.json"))
+        @test provenance["calibration_command"]["implementation"] == "julia"
+        @test provenance["calibration_command"]["sha256"] ==
+            ExportFixture.Common.sha256_file(joinpath(deployed,"bin/rtc-calibrate"))
         @test provenance["source_deployment_sha256"] == ExportFixture.Common.sha256_file(joinpath(base,"deployment.conf"))
         @test provenance["owner_transport_conversion"]["helpers_sha256"]["simulator_owner.jl"] ==
             ExportFixture.Common.sha256_file(joinpath(deployed,"hil/simulator_owner.jl"))
@@ -234,6 +240,13 @@ end
         @test !("--calibration-socket" in selected["argv"])
         @test selected["argv"][findfirst(==("--remote"), selected["argv"]) + 1] == "@RUNTIME@/@REMOTE@"
         @test isempty(intersect(Set(keys(selected)), Set(("prepared", "connect", "connected", "quit", "control-request", "control-reply"))))
+        relocated = joinpath(root,"relocated calibration package")
+        mv(deployed,relocated)
+        rejected = ExportFixture.Common.run_checked(
+            [joinpath(relocated,"bin/rtc-calibrate"),"--endpoint","retired"];
+            timeout=45,maximum_output_bytes=4096)
+        @test rejected.returncode == 2
+        @test occursin("unknown option --endpoint",rejected.stderr)
     end
 end
 

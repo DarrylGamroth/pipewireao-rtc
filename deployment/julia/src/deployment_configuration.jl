@@ -440,6 +440,7 @@ end
 shell_quote(value::AbstractString) = "'" * replace(value, "'" => "'\"'\"'") * "'"
 
 const INSTALLED_ENTRYPOINTS = Dict(
+    "rtc-calibrate" => "CalibrationCLI",
     "calibration_campaign" => "CalibrationCampaign",
     "calibration_method" => "CalibrationMethod",
     "copper_reference" => "CopperReference",

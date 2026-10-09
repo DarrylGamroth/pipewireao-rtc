@@ -1,5 +1,7 @@
 # Delivery evidence catalog
 
+- [Julia interaction acquisition, 2026-10-08](validation/julia-acquisition-20261008/README.md): reusable native driver, Julia export entrypoint, temporary Rust comparison, recovery/plan bounds, relocation/install checks and independent review. No new scientific or timing qualification.
+
 - [Explicit runtime export, 2026-10-08](validation/runtime-export-20261008/README.md): unrelated-root-file fail-before/pass-after, declared source closure, relocated SDK/re-export and Julia software checks. No new live or timing qualification.
 
 - [Source organization, 2026-10-08](../README.md#source-layout): domain modules, configs/test-data names, public-import compatibility and Rust/Julia software checks.

@@ -40,10 +40,11 @@ Its name/location is pending selection. HEART source remains unchanged.
 - [Deployment configuration](../deployment/julia/src/deployment_configuration.jl)
   imports ScienceExport. Calling configuration “generic” before removing that
   instrument/resource dependency would leave a misleading boundary.
-- [The campaign](../deployment/julia/src/calibration_campaign.jl) still invokes
-  Rust `bin/rtc-calibrate` for interaction acquisition. Direct Julia capture
-  actions already exist. The next acquisition migration uses those native
-  clients with AOC-produced plans and tests completion/recovery parity.
+- [The campaign](../deployment/julia/src/calibration_campaign.jl) invokes the
+  exported `bin/rtc-calibrate` entrypoint for interaction acquisition. Fresh
+  exports now use the shared [Julia driver](JULIA_CALIBRATION_ACQUISITION.md);
+  old sealed packages retain their Rust executable. Instrument capture and
+  scientific analysis remain separate migration work.
 - [Export tests](../deployment/julia/test/test_exports.jl) include modules in an
   isolated namespace and stub integration services. Preserve those bindings
   while adding shared modules; package imports alone are not the entire closure.

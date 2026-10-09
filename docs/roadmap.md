@@ -72,8 +72,15 @@ helpers and selects runtime source/entrypoints explicitly, preventing whole-root
 copying during the future package move. Installation validation and campaign
 provenance share those entry declarations. [The inventory](RTC_PACKAGE_BOUNDARIES.md)
 assigns shared versus instrument responsibilities and records remaining mixed
-modules. Calibration acquisition still uses Rust for interaction runs, and the
-instrument projects/root-package move remain unfinished.
+modules. Fresh calibration exports now use the reusable Julia interaction
+acquisition driver and no longer require a Rust calibrator input. The native v1
+plan/result and completion contracts are retained. [Software checks and independent
+review](validation/julia-acquisition-20261008/README.md) cover causal evidence,
+clipping/recovery, cancellation, timeout bounds, relocated exports and synthetic
+Classic/Copper-sized owners, including comparison with the temporary Rust oracle.
+This adds no scientific or real-time qualification. Older sealed packages remain
+unchanged. GUI client detachment, instrument projects and the shared root-package
+move remain unfinished.
 
 Completed Copper link and process-supervision transfers remain valid only for
 their dated scopes. The selected Copper composition has passed link realization

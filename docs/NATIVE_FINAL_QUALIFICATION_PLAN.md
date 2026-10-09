@@ -209,8 +209,8 @@ not replace the six HIL service profiles or prove scientific equivalence.
 ### 3. Qualify real calibration/restoration consumers, not another codec sweep
 
 Use current Julia `deployment/export_calibration.jl --deployment` with
-`--base-package`, `--output`, `--pipewire-prefix`, explicit final
-`--rtc-binary` and `--calibration-binary`. HEART variants use
+`--base-package`, `--output` and `--pipewire-prefix`. Fresh exports include
+the Julia acquisition entrypoint. HEART variants use
 `deployment/julia/export_heart_calibration.jl` and
 `export_heart_correction.jl`; both need the frozen vendor/config/calibration
 roots and source SDK. Specify `--simulator-backend cuda` explicitly, following

@@ -9,6 +9,12 @@ it records no new execution or scientific acceptance. Runner maintenance and
 an explicit CPU reservation precede every SCI command below. Existing caches
 were inspected without copying packages or running Julia/builds.
 
+The coordinator/qualifier procedures below describe that historical checkpoint;
+those programs were subsequently retired. Fresh exports use the Julia acquisition
+entrypoint and [WirePlumber installation tools](JULIA_DEPLOYMENT_USAGE.md), with
+[current acquisition usage](JULIA_CALIBRATION_ACQUISITION.md). Historical command
+sequences are not current runnable instructions.
+
 All paths below use these existing roots:
 
 ```sh
@@ -20,11 +26,11 @@ RTC=/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-native-controls
 JULIA=/home/dgamroth/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/bin/julia
 ```
 
-`RUNNER` and `CALIBRATOR` must name the qualified binaries after maintenance;
-the earlier preparation receipt recorded runner `7968051f...23f9a341` and
-calibrator `ce0ba26c...9b1cb`. Do not silently reuse an earlier installed
-binary when the selected final binary changes. Package seals, runtime source
-checkpoint, exact executable hashes and native `--help` must be recorded anew.
+The binary hashes in the original preparation receipt belong to its historical
+coordinator/calibrator. Fresh exports now include the Julia acquisition
+entrypoint; do not copy those binaries into a new package. Record the fresh
+package seals, runtime sources and selected Julia executable again. Use the
+[one-shot WirePlumber installation path](JULIA_DEPLOYMENT_USAGE.md).
 
 ## Frozen plans and capacities
 
@@ -76,14 +82,13 @@ For the four ordinary owners, use the public exporter, explicitly binding the
 taskset -c "$COLD_CPU" "$JULIA" --startup-file=no --project="$RTC/deployment/julia" \
   "$RTC/deployment/export_calibration.jl" --deployment \
   --base-package "$BASE" --output "$FRESH_STAGE" --pipewire-prefix /opt/pipewireao \
-  --rtc-binary "$RUNNER" --calibration-binary "$CALIBRATOR" \
   --calibration-stage native-functional --illumination lamp \
   --capture-max-bytes "$CAPTURE_BUDGET"
 ```
 
 The common CLI accepts stage/illumination through its named defaults; the Julia
 API also supports typed arguments. Install each validated stage to a fresh path using public
-`deployment/deploy.jl install` and the selected Julia executable. Then run two
+`deployment/julia/wireplumber_cli.jl install` and the selected Julia executable. Then run two
 separate admitted runs with fresh runtime/evidence directories:
 
 ```sh
@@ -274,7 +279,7 @@ startup flags. SDK/control refreshes must be explicit sealed provenance; do not
 regenerate darks, references, inverse matrices or vendor algorithms.
 
 The two HEART full256 correction consumers use
-[`deployment/qualify_correction_native.jl`](../deployment/qualify_correction_native.jl).
+[`deployment/qualify_correction_native.jl` at its historical revision](https://github.com/DarrylGamroth/pipewireao-rtc/blob/92444413e4930e1191821b8a402301307fbaca2a/deployment/qualify_correction_native.jl).
 Their source lifecycle, phases, window reports and supported stopped Reset
 already exist. Old marker-based launch scripts remain historical
 algorithm/evidence inputs. The coordinator's

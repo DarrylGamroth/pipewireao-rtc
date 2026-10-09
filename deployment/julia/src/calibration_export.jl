@@ -196,16 +196,14 @@ function classic_active(graph, parameters, package)
     return values
 end
 
-function selected_calibration_binary(args)
-    option(args,:deployment,false) === true || return nothing
-    source = option(args,:calibration_binary)
-    source isa AbstractString && isfile(source) && !islink(source) || throw(ArgumentError("--deployment requires an existing --calibration-binary"))
-    return realpath(source)
-end
-function copy_calibration_binary(package,source)
+function install_calibration_command(package)
     path = "bin/rtc-calibrate"
-    ScienceExport.copy_file(source,joinpath(package,path))
-    return Dict("path"=>path,"sha256"=>ScienceExport.sha256(joinpath(package,path)))
+    mkpath(joinpath(package, "bin"))
+    write(joinpath(package,path),
+        DeploymentConfiguration.installed_wrappers(Base.julia_cmd().exec[1])["rtc-calibrate"])
+    chmod(joinpath(package,path), 0o755)
+    return Dict("path"=>path,"sha256"=>ScienceExport.sha256(joinpath(package,path)),
+        "implementation"=>"julia")
 end
 
 function copy_wireplumber_from_base!(package, base, specification)
@@ -355,7 +353,6 @@ end
 function export_package(args)
     output = abspath(args.output)
     !ispath(output) && !islink(output) || throw(ArgumentError("export output must be new: $output"))
-    calibration_binary = selected_calibration_binary(args)
     base = realpath(args.base_package)
     specification = DeploymentConfiguration.profile(joinpath(base,"deployment.conf"),args.pipewire_prefix;legacy_export_input=true)
     provenance = Common.read_json(joinpath(base,"provenance.json"))
@@ -393,7 +390,7 @@ function export_package(args)
             end
             isfile(joinpath(package,"hil/Project.toml")) && HILExport.add_bootstrap_dependency!(joinpath(package,"hil/Project.toml"))
             mkpath(joinpath(package,"bin"))
-            calibration_command = copy_calibration_binary(package,calibration_binary)
+            calibration_command = install_calibration_command(package)
         end
         if engine == "fgn"
             ScienceExport.copy_tree(joinpath(base,"lib"),joinpath(package,"lib"))
@@ -471,7 +468,7 @@ end
 function main(argv=ARGS)
     options = Common.cli_arguments(argv; flags=["deployment"], required=["base-package","output","pipewire-prefix"],
         defaults=(illumination="lamp", calibration_stage="interaction"),
-        allowed=["calibration-binary","capture-max-bytes"])
+        allowed=["capture-max-bytes"])
     capture = hasproperty(options,:capture_max_bytes) ? parse(Int,options.capture_max_bytes) : nothing
     args = merge(options,(capture_max_bytes=capture,))
     println(export_package(args))

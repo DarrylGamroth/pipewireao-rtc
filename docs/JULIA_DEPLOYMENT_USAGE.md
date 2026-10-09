@@ -30,7 +30,6 @@ julia --startup-file=no --project=deployment/julia deployment/copper_reference.j
   --output /absolute/path/to/fresh-candidate \
   --recipe /absolute/path/to/recipe.json \
   --aoc-source /absolute/path/to/AdaptiveOpticsCalibration.jl \
-  --calibration-binary /absolute/path/to/rtc-calibrate \
   --runtime /short/absolute/path/to/fresh-runtime
 ```
 

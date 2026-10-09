@@ -60,6 +60,24 @@ function session_assets(spec, package, prefix)
     return nothing
 end
 
+function validate_sealed_wrappers(source, source_spec, wrappers)
+    for (name, script) in wrappers
+        relative = "bin/$name"
+        haskey(source_spec["artifacts"], relative) || continue
+        # Old sealed calibrations retain their Rust executable. Never rewrite
+        # that artifact or treat it as a newly generated Julia entrypoint.
+        if name == "rtc-calibrate"
+            provenance = C.read_json(joinpath(source, "provenance.json"))
+            command = get(provenance, "calibration_command", nothing)
+            command === nothing && continue
+            get(command, "implementation", nothing) == "julia" || continue
+        end
+        read(joinpath(source, relative), String) == script ||
+            throw(ArgumentError("sealed $relative differs from the selected Julia executable"))
+    end
+    return nothing
+end
+
 function install(options)
     source = realpath(options.package)
     prefix = realpath(options.pipewire_prefix)
@@ -77,12 +95,7 @@ function install(options)
     julia = D.selected_julia_executable(get(options, :julia_executable,
                                             Base.julia_cmd().exec[1]))
     wrappers = D.installed_wrappers(julia)
-    for (name, script) in wrappers
-        relative = "bin/$name"
-        haskey(source_spec["artifacts"], relative) || continue
-        read(joinpath(source, relative), String) == script ||
-            throw(ArgumentError("sealed $relative differs from the selected Julia executable"))
-    end
+    validate_sealed_wrappers(source, source_spec, wrappers)
     destination = abspath(options.destination)
     !(ispath(destination) || islink(destination)) ||
         throw(ArgumentError("install destination must be new"))

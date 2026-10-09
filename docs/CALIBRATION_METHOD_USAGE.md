@@ -62,9 +62,7 @@ julia --startup-file=no --project=deployment/julia deployment/calibration_method
   --method /path/to/method.json \
   --output /path/to/new-method-evidence \
   --runtime /path/to/new-runtime \
-  --aoc-source /path/to/AdaptiveOpticsCalibration.jl \
-  --rtc-binary /path/to/pipewireao-rtc \
-  --calibration-binary /path/to/rtc-calibrate
+  --aoc-source /path/to/AdaptiveOpticsCalibration.jl
 ```
 
 The maintained launcher currently uses `/opt/pipewireao`. Parent CPU affinity

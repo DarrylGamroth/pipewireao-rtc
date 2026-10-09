@@ -16,14 +16,14 @@ const Native = PipeWireAODeployment.NativeCalibrationActionClient
 const Generic = PipeWireAODeployment.NativeControlClient
 const Codec = PipeWireAODeployment.NativeCalibrationActionCodec
 
-function native_fixture(f,socket,daemon;samples=[Float32[3,4]],accept_ns=UInt64(20_000_000_000),io_ns=UInt64(5_000_000_000),build_fixture=nothing,service_control=owner->nothing)
+function native_fixture(f,socket,daemon;samples=[Float32[3,4]],accept_ns=UInt64(20_000_000_000),io_ns=UInt64(5_000_000_000),maximum_ns=UInt64(10_000_000_000),build_fixture=nothing,service_control=owner->nothing)
     chmod(dirname(socket),0o700)
     instance=Int64(time_ns()%UInt64(typemax(Int64)-1))+1
     node="test.native.calibration.$instance"
     bridge=Lifecycle.Bridge((;profile=:classic,remote=socket,control_node=node,control_instance=instance),Lifecycle.Codec.CALIBRATION_PROFILE)
     actions=Actions.ActionServer(bridge,node)
     fixture=build_fixture===nothing ? server_fixture(;samples) : build_fixture()
-    fixture.owner.maximum_timeout_ns=UInt64(10_000_000_000)
+    fixture.owner.maximum_timeout_ns=maximum_ns
     enabled=Ref(true)
     failure=Ref{Any}(nothing)
     task=nothing
@@ -425,27 +425,72 @@ end
     end
 end
 
+@testset "Julia interaction acquisition uses unchanged native owner actions" begin
+    acquisition = PipeWireAODeployment.CalibrationAcquisition
+    for (profile,measurements) in ((:classic,376),(:copper,3600)),
+            rule in (Codec.Immediate(),Codec.DiscardExposures(UInt32(1)),Codec.ModelTime(UInt64(50)))
+        with_control_private_core() do socket,directory,daemon
+            build = ()->begin
+                fixture = server_fixture(;samples=[fill(3.0f0,measurements)])
+                resize!(fixture.session.figure,277); fill!(fixture.session.figure,0)
+                owner = Server.Owner(fixture.session;normal_controller_absent=true,
+                    command_count=277,measurement_count=measurements,
+                    maximum_timeout_ns=UInt64(10_000_000_000))
+                (;session=fixture.session,owner)
+            end
+            native_fixture(socket,daemon;build_fixture=build) do test
+                timeouts = acquisition.Timeouts(ntuple(_->5_000_000_000,5)...)
+                plan = acquisition.Plan(typemax(UInt64),zeros(Float32,277),
+                    [fill(0.1f0,277)],measurements,3,rule,timeouts)
+                client = native_connect(test;command_count=277)
+                try
+                    result = acquisition.acquire!(client,plan;check=test.check)
+                    @test result.phase=="complete" && result.failure===nothing
+                    @test result.restoration_confirmed && result.resume_permitted
+                    @test only(result.responses).values==fill(3.0f0,measurements)
+                    @test length(only(result.responses).exposures)==3
+                    @test test.fixture.owner.serial==6 && test.fixture.owner.phase===:released
+                    wait_proof(()->istaskdone(test.task),5,"Julia driver owner terminal flush")
+                    @test test.failure[]===nothing && !test.fixture.owner.held
+                finally
+                    close(client)
+                end
+            end
+        end
+    end
+end
+
 if haskey(ENV,"PIPEWIREAO_RTC_CALIBRATE_TEST_BINARY")
-    @testset "Rust coordinator uses the exact native Julia action owner" begin
+    @testset "Julia and temporary Rust acquisition reports agree on the native owner" begin
         binary=ENV["PIPEWIREAO_RTC_CALIBRATE_TEST_BINARY"]
         @test isfile(binary)
+        reports=Dict{String,Any}()
+        for implementation in ("rust","julia")
         with_control_private_core() do socket,directory,daemon
-            native_fixture(socket,daemon;io_ns=UInt64(20_000_000_000)) do test
+            # This is cold executable qualification, not a latency test. Reserve
+            # time for Julia package load/JIT before the first owned action.
+            native_fixture(socket,daemon;accept_ns=UInt64(60_000_000_000),
+                    maximum_ns=UInt64(20_000_000_000),io_ns=UInt64(20_000_000_000)) do test
                 plan=Dict("version"=>1,"run"=>typemax(UInt64),"reference"=>Float32[0,0],
                     "probes"=>[Float32[1,2]],"measurements"=>2,"frames_per_probe"=>3,
                     "settling"=>Dict("kind"=>"immediate"),
                     "timeouts_ns"=>Dict(name=>UInt64(5_000_000_000) for name in
                         ("ownership","adoption","settling","collection","restoration")))
+                plan["timeouts_ns"]["ownership"]=UInt64(15_000_000_000)
+                executable = implementation=="rust" ? `$binary` :
+                    `$(Base.julia_cmd().exec[1]) --startup-file=no --project=$(PipeWireAODeployment.package_root()) -e 'using PipeWireAODeployment; exit(PipeWireAODeployment.CalibrationCLI.main(ARGS))' --`
                 path=joinpath(directory,"plan.json")
                 PipeWireAODeployment.Common.write_json(path,plan)
                 output=joinpath(directory,"result.json");errors=joinpath(directory,"rust.stderr")
                 binding=test.binding
-                for (pid,instance) in ((binding.owner_pid+UInt32(1),binding.instance),
-                                       (binding.owner_pid,binding.instance+1))
-                    rejected=`$binary --remote $(binding.remote) --node $(binding.node) --owner-pid $pid --owner-instance $instance --plan $path`
+                mismatches = implementation=="rust" ?
+                    ((binding.owner_pid+UInt32(1),binding.instance),
+                     (binding.owner_pid,binding.instance+1)) : ()
+                for (pid,instance) in mismatches
+                    rejected=`$executable --remote $(binding.remote) --node $(binding.node) --owner-pid $pid --owner-instance $instance --plan $path`
                     child=run(pipeline(ignorestatus(rejected);stdout=output,stderr=errors);wait=false)
                     try
-                        wait_proof(()->process_exited(child),10,"Rust exact owner binding rejection")
+                        wait_proof(()->process_exited(child),30,"$implementation exact owner binding rejection")
                         @test !success(child)
                         @test test.fixture.owner.run==0 && test.fixture.owner.serial==0
                         @test !test.fixture.owner.held && !test.fixture.owner.faulted
@@ -453,13 +498,14 @@ if haskey(ENV,"PIPEWIREAO_RTC_CALIBRATE_TEST_BINARY")
                         stop_proof_child!(child,"Rust rejected calibration client")
                     end
                 end
-                command=`$binary --remote $(binding.remote) --node $(binding.node) --owner-pid $(binding.owner_pid) --owner-instance $(binding.instance) --plan $path`
+                command=`$executable --remote $(binding.remote) --node $(binding.node) --owner-pid $(binding.owner_pid) --owner-instance $(binding.instance) --plan $path`
                 child=run(pipeline(command;stdout=output,stderr=errors);wait=false)
                 try
-                    wait_proof(()->process_exited(child),20,"Rust native calibration completion")
+                    wait_proof(()->process_exited(child),30,"$implementation native calibration completion")
                     @test success(child)
                     success(child) || error(read(errors,String))
                     result=PipeWireAODeployment.Common.read_json(output)
+                    reports[implementation]=result
                     @test result["run"]==typemax(UInt64) && result["phase"]=="complete"
                     @test result["restoration_confirmed"] && result["resume_permitted"]
                     @test only(result["responses"])["values"]==Float32[3,4]
@@ -475,5 +521,7 @@ if haskey(ENV,"PIPEWIREAO_RTC_CALIBRATE_TEST_BINARY")
                 end
             end
         end
+        end
+        @test reports["julia"]==reports["rust"]
     end
 end

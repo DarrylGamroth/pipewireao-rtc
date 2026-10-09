@@ -11,7 +11,7 @@ campaign makes four fresh stage packages and runtimes:
    reference centroids and eligibility.
 3. **Qualification:** capture a separate lamp set and check the frozen
    reference and selected positions.
-4. **Interaction:** run the packaged `rtc-calibrate` client to collect zonal
+4. **Interaction:** use the Julia completion-driven client to collect zonal
    push-pull responses and estimate an interaction matrix.
 
 Each stage uses the deployed graph and its normal noisy ADC acquisition. The
@@ -61,8 +61,8 @@ write("classic-campaign-recipe.json", JSON3.write(recipe) * "\n")
 ## Run
 
 Use absolute paths. The base package must be an installed Classic CPU
-deployment. Supply the current RTC runner binary and the `rtc-calibrate`
-binary that will be copied into each generated package. The output directory
+deployment. The Julia package supplies
+its completion-driven acquisition client. The output directory
 must not already exist; use a new short runtime root because the campaign uses
 local AF_UNIX sockets.
 
@@ -72,8 +72,6 @@ julia --startup-file=no --project=deployment/julia deployment/calibration_campai
   --output /absolute/path/to/new-campaign-output \
   --recipe /absolute/path/to/classic-campaign-recipe.json \
   --aoc-source /absolute/path/to/AdaptiveOpticsCalibration \
-  --rtc-binary /absolute/path/to/pipewireao-rtc \
-  --calibration-binary /absolute/path/to/rtc-calibrate \
   --runtime /tmp/rtc-campaign-unique \
   --pipewire-prefix /opt/pipewireao \
   --julia /absolute/path/to/julia

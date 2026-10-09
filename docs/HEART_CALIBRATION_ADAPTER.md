@@ -316,7 +316,6 @@ julia --startup-file=no --project=deployment/julia deployment/julia/export_heart
   --base-package <copper-fgn-cpu-base> --output <fresh-package> \
   --heart-root <unchanged-heart-checkout> --heart-source-config <matched-copper-yaml> \
   --calibration-root <native-calibration-root> --pipewireao-jl-root <exact-zero-package> \
-  --rtc-binary <pipewireao-rtc> --calibration-binary <rtc-calibrate> \
   --pipewire-prefix <installed-prefix> --readout-us 0
 ```
 
@@ -880,7 +879,6 @@ julia --startup-file=no --project=deployment/julia \
   --heart-root NATIVE_HEART_ROOT --heart-source-config MATCHED_COPPER_CONFIG \
   --calibration-root NATIVE_CALIBRATION_ROOT \
   --pipewireao-jl-root EXACT_ZERO_PIPEWIREAO_ROOT \
-  --rtc-binary PUBLIC_RTC_BINARY --calibration-binary PUBLIC_CALIBRATE_BINARY \
   --pipewire-prefix /opt/pipewireao --readout-us 1000
 ```
 
@@ -892,7 +890,7 @@ using PipeWireAODeployment
 PipeWireAODeployment.HeartCalibrationExport.run_plan(package, runtime, fresh_evidence)
 ```
 
-The call uses the sealed plan through the ordinary `rtc-calibrate` endpoint.
+The call uses the sealed plan through the Julia completion-driven acquisition client.
 It invokes existing public `CalibrationClient.validate_result` on the actual
 response means and positive exposure identities, waits for the final owner
 report with the expected completed/ADC count, and verifies every native CB

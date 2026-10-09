@@ -28,6 +28,14 @@ encode_failure(profile::Profile, header, lifecycle, command) =
 reply_endpoint(::Profile) = :lifecycle
 reply_bound(profile::Profile) = Envelope._limit(Val(:reply), reply_endpoint(profile))
 maximum_budget(::Profile) = 30.0
+function budget_ns(profile::Profile, remaining::Float64)
+    isfinite(remaining) && remaining > 0 || throw(ArgumentError("invalid native request budget"))
+    nanoseconds = min(remaining, maximum_budget(profile)) * 1.0e9
+    # Float64(typemax(Int64)) rounds upward to 2^63. Saturate before integer
+    # conversion so a valid maximum calibration budget cannot overflow.
+    return nanoseconds >= Float64(typemax(Int64)) ? typemax(Int64) :
+        max(Int64(1), floor(Int64, nanoseconds))
+end
 "Profile-specific immutable bound NodeInfo identity; common profiles have none."
 node_identity(::Profile, properties, previous) = nothing
 
@@ -523,7 +531,7 @@ function request!(client::Client, command;
         # Cold validation/compilation must not inflate the transmitted budget.
         deadline_check(deadline, check)
         remaining = deadline - monotonic()
-        budget = max(Int64(1), floor(Int64, min(remaining, maximum_budget(client.observation.profile)) * 1.0e9))
+        budget = budget_ns(client.observation.profile, remaining)
         header = Envelope.RequestHeader(something(client.identity), client.observation.instance,
             token, operation, budget)
         pod = encode_request(client.observation.profile, header, command)

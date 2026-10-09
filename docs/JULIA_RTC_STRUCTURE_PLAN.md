@@ -71,7 +71,7 @@ several declared sources/sinks; the diagram omits optional observation endpoints
   native clients, export/install tools, session CLI and calibration campaigns.
   It also contains instrument-specific Classic/Copper/HEART export and analysis
   modules that need separation from generic tooling.
-- Interaction-matrix acquisition still executes the sealed Rust
+- At the proposal baseline, interaction-matrix acquisition executed the sealed Rust
   `bin/rtc-calibrate`; direct Julia capture stages already use native actions.
   See [the campaign](../deployment/julia/src/calibration_campaign.jl).
 - The GUI imports this repository's Rust session client. Its generic PipeWire

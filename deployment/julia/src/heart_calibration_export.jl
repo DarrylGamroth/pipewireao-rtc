@@ -314,10 +314,7 @@ function export_package(args)
         node_owners = specification["node-owners"]
         node_owners["heart-calibration-probe"] = specification["source-owner"]
         node_owners["heart-calibration-command"] = specification["source-owner"]
-        calibration_binary = option(args, :calibration_binary)
-        if calibration_binary !== nothing
-            CalibrationExport.copy_calibration_binary(package, realpath(calibration_binary))
-        end
+        staged_provenance["calibration_command"] = CalibrationExport.install_calibration_command(package)
         staged_provenance["heart_calibration"] = Dict(
             "version"=>1, "stage"=>stage, "illumination"=>illumination, "plant"=>plant,
             "frozen_method"=>method_inputs === nothing ? nothing : Dict("path"=>"heart-method",
@@ -681,7 +678,7 @@ end
 
 function main(argv=ARGS)
     options = Common.cli_arguments(argv; required=["base-package", "output", "heart-root", "heart-source-config", "calibration-root", "pipewireao-jl-root"],
-        allowed=["adapter-root", "readout-us", "calibration-stage", "illumination", "capture-max-bytes", "telemetry-max-bytes", "calibration-binary", "owner-evidence-directory", "native-wfs-proc-debug", "native-debug-line-buffering", "plan", "simulator-backend", "detector-seed", "frozen-method", "native-ingress-mode", "classic-transfer", "classic-transfer-sha256"],
+        allowed=["adapter-root", "readout-us", "calibration-stage", "illumination", "capture-max-bytes", "telemetry-max-bytes", "owner-evidence-directory", "native-wfs-proc-debug", "native-debug-line-buffering", "plan", "simulator-backend", "detector-seed", "frozen-method", "native-ingress-mode", "classic-transfer", "classic-transfer-sha256"],
         defaults=(pipewire_prefix="/opt/pipewireao",))
     debug_option = option(options, :native_wfs_proc_debug, "false")
     debug_option in ("true", "false") || throw(ArgumentError("native WFS processing debug must be true or false"))

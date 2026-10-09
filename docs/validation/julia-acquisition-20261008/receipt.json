@@ -1,0 +1,189 @@
+{
+  "version": 1,
+  "date": "2026-10-08",
+  "scope": "Julia cold calibration acquisition migration; software/native interoperability only",
+  "baseline": "6a040187bcc5b19697329241d6e8fe5135ddafc1",
+  "branch": "codex/julia-acquisition-20261008",
+  "worktree": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-julia-acquisition",
+  "starting_changes": [],
+  "environment": {
+    "julia": "1.12.7",
+    "suite_cpu": 14,
+    "native_cpu": 15,
+    "independent_review_cpu": 13,
+    "cpu_0_1_excluded": true,
+    "source_sdk": {
+      "path": "/home/dgamroth/workspaces/codex/pipewire/PipeWireAO.jl",
+      "revision": "1417b69656b94e146e600c7201bc4d3b34d2cea4",
+      "working_changes": []
+    },
+    "native_test_environment": "/home/dgamroth/.cache/rtc-heart-native-20261006/classic-fgn-cpu-base/hil",
+    "native_test_manifest_sha256": "019491033f77fff9d011a3647bbd06095e57bd82d0ec29e81db586580f34b9ca",
+    "native_artifact": {
+      "path": "/home/dgamroth/.julia/artifacts/cee1f96f590a4ee6f4c25f6860648cda5d5ca225",
+      "daemon_sha256": "7417e9744cc19e4787499a0a4eefb5ccb109d4901121f897e79cd882ac26898e",
+      "library_sha256": "7a6c98cd96593894ca9bc907471f367979d274eb477c7ec263c2800bc45f96b9"
+    },
+    "tooling_manifest_sha256": "f2d647745dbb84fcb669f53d79a518f6f9f3ea61a5074135cfec605a914dfe21"
+  },
+  "checks": {
+    "julia_suite": {
+      "assertions": 2980,
+      "testsets": 104,
+      "exit_code": 0,
+      "log": "rtc-julia-acquisition-suite-v3.log"
+    },
+    "native_owner_suite": {
+      "assertions": 775,
+      "testsets": 41,
+      "exit_code": 0,
+      "log": "rtc-julia-acquisition-native-final.log"
+    },
+    "retained_rust_acquisition": {
+      "tests": 19,
+      "exit_code": 0,
+      "log": "rtc-julia-acquisition-rust.log"
+    },
+    "native_classic_copper_dimensions": {
+      "assertions": 60,
+      "commands": 277,
+      "measurements": [
+        376,
+        3600
+      ],
+      "settling_rules": [
+        "immediate",
+        "discard_exposures",
+        "model_time"
+      ],
+      "synthetic_owners": true
+    },
+    "native_rust_julia_success_report_comparison": {
+      "assertions": 36,
+      "reports_exactly_equal": true
+    },
+    "installer_unit_checks": {
+      "assertions": 11,
+      "included_in_full_suite": true,
+      "full_systemd_install_performed": false
+    },
+    "relocated_export_wrapper": {
+      "path_contains_spaces": true,
+      "invalid_flag_exit": 2,
+      "native_effects": false,
+      "included_in_full_suite": true
+    }
+  },
+  "commands": [
+    "taskset -c 14 julia --startup-file=no --project=deployment/julia deployment/julia/test/runtests.jl",
+    "env PIPEWIREAO_TEST_SDK=/home/dgamroth/workspaces/codex/pipewire/PipeWireAO.jl PIPEWIREAO_RTC_CALIBRATE_TEST_BINARY=/tmp/rtc-julia-acquisition-target/debug/rtc-calibrate taskset -c 15 julia --startup-file=no --project=/home/dgamroth/.cache/rtc-heart-native-20261006/classic-fgn-cpu-base/hil deployment/hil/test_native_calibration_actions.jl",
+    "env PKG_CONFIG_PATH=/opt/pipewireao/lib/x86_64-linux-gnu/pkgconfig LD_LIBRARY_PATH=/opt/pipewireao/lib/x86_64-linux-gnu taskset -c 15 cargo build --offline --features live --bin rtc-calibrate --target-dir /tmp/rtc-julia-acquisition-target",
+    "taskset -c 15 cargo test --offline --test calibration --target-dir /tmp/rtc-julia-acquisition-target"
+  ],
+  "rust_oracle": {
+    "source_revision": "6a040187bcc5b19697329241d6e8fe5135ddafc1",
+    "production_source_unchanged": true,
+    "binary_sha256": "c413e9ada344e14d8777cc5232896e33c95ad35fac44903673e462d6c5fe5ade",
+    "temporary_build_removed_after_delivery": true
+  },
+  "qualified_input_sha256": {
+    "deployment/hil/test_native_calibration_actions.jl": "1899c29321eb4b2a51ff5b27944b600591d4fc42ca372bdea0539d5d8b741d62",
+    "deployment/julia/src/PipeWireAODeployment.jl": "87532423d8de97e46c82b68857f8365f59508ac5405d21ba0822aa0e61410276",
+    "deployment/julia/src/calibration_acquisition.jl": "dcfb2dde2436d48dff505549ef27ad75325fd4dea34d4c2c6882bdd8604891e6",
+    "deployment/julia/src/calibration_campaign.jl": "cd0860b9984dc058f5beb1cc8fe276c41a7a10bc48c33ffe00fc8493e894772d",
+    "deployment/julia/src/calibration_cli.jl": "30d07106272438952722e56ae2d7173c93456b8702307608f7d132af3f334152",
+    "deployment/julia/src/calibration_export.jl": "ca182af818719ebcca3594653693083ddd245029bec0662ee017408b64792566",
+    "deployment/julia/src/calibration_method.jl": "ea14dbc5b8498f6118f4ecbd7dce336038a48a4473c15b62adc114946dd3a76e",
+    "deployment/julia/src/copper_quality.jl": "64e56581dc152478cfae6848d9ddad3b53e419ab34b6506956ee1939ffe439d9",
+    "deployment/julia/src/copper_reference.jl": "5c11d1ea8eb7e4dd8e8b1da5656d8dc17f6cb96db9f101760e9d3a8679ee9a4e",
+    "deployment/julia/src/deployment_configuration.jl": "149c023f6814daf6e7f40f4afc080f0e7cb6c96ff17746b82f32bff80530cfc7",
+    "deployment/julia/src/heart_calibration_export.jl": "7d3a0390d7da0c4b4d41a6c6f10ea4e7dc82ee5416787d50d64c300be854200f",
+    "deployment/julia/src/native_calibration_action_client.jl": "cb9ac1a39bce6207d1ecc02d3d5c4430f776364a43e9c4a446400221df81e6fd",
+    "deployment/julia/src/native_calibration_action_codec.jl": "f71e398cb3d2d6314684e7fe396cfaa2b9e4ae422fb79a40fd911d170530d7f6",
+    "deployment/julia/src/native_control_client.jl": "7ce77d3a59f60bf4e841160f18afb59cd7c7c4de2d66a39b6ea578cdabd4777d",
+    "deployment/julia/test/runtests.jl": "8595f03087e88445f70a495776f21ef9b058de5e8771b3c659ce6f15f173407d",
+    "deployment/julia/test/test_calibration_acquisition.jl": "7674f4bf08f4514b0ae6ae971ad4ae7bf110ef662f693a4fcb48e1249836f804",
+    "deployment/julia/test/test_calibration_install.jl": "f081e2c5384d81db4726bf3711da65583d333fee0e06f9559c05938cb8d86a3c",
+    "deployment/julia/test/test_exports.jl": "b9df6acc5f92d0758d8a605ee9bb35e81a7c7e2bdfc7273230041e5597d09c71",
+    "deployment/julia/wireplumber_install.jl": "ac480aa169b571b428db649bb777f28559a2a4fd3ebe87cb68a222fa9d60f0f9"
+  },
+  "logs": {
+    "rtc-julia-acquisition-exports-v2.log": {
+      "path": "/home/dgamroth/.cache/rtc-julia-acquisition-20261008/rtc-julia-acquisition-exports-v2.log",
+      "sha256": "77ade7dcdab4e1261f7b6da531a1194d7e71a143fa56ff3bd5116d3334af6b13",
+      "bytes": 7534
+    },
+    "rtc-julia-acquisition-exports.log": {
+      "path": "/home/dgamroth/.cache/rtc-julia-acquisition-20261008/rtc-julia-acquisition-exports.log",
+      "sha256": "e8ca4c46bc0485893eb1cc837fa2f7c7c63c38b1c5f45cca71109ba0b336a193",
+      "bytes": 7939
+    },
+    "rtc-julia-acquisition-native-final.log": {
+      "path": "/home/dgamroth/.cache/rtc-julia-acquisition-20261008/rtc-julia-acquisition-native-final.log",
+      "sha256": "db15466617979ee3092b7ef643ece08d215839f76ad44ecf1cc5dca00e0388e7",
+      "bytes": 9424
+    },
+    "rtc-julia-acquisition-native-v2.log": {
+      "path": "/home/dgamroth/.cache/rtc-julia-acquisition-20261008/rtc-julia-acquisition-native-v2.log",
+      "sha256": "d97fd8a610724fc301ea1839c6a12b1ba7f627138f0ab4af191044f1c4188af6",
+      "bytes": 9424
+    },
+    "rtc-julia-acquisition-native.log": {
+      "path": "/home/dgamroth/.cache/rtc-julia-acquisition-20261008/rtc-julia-acquisition-native.log",
+      "sha256": "96b2805bf7f426d173b971b1513c4b187917b6b561af492a2209819280a93739",
+      "bytes": 48220
+    },
+    "rtc-julia-acquisition-rust.log": {
+      "path": "/home/dgamroth/.cache/rtc-julia-acquisition-20261008/rtc-julia-acquisition-rust.log",
+      "sha256": "13330e81564d540f46ebe9a8440e22fea084ce39fa4fdd65739a5b3c9cc9a380",
+      "bytes": 2276
+    },
+    "rtc-julia-acquisition-suite-final.log": {
+      "path": "/home/dgamroth/.cache/rtc-julia-acquisition-20261008/rtc-julia-acquisition-suite-final.log",
+      "sha256": "b1c5f149a9020cddffe26d9f022b9cbc85eb8a5829f72b1082f1eca12fa706fa",
+      "bytes": 5675
+    },
+    "rtc-julia-acquisition-suite-v3.log": {
+      "path": "/home/dgamroth/.cache/rtc-julia-acquisition-20261008/rtc-julia-acquisition-suite-v3.log",
+      "sha256": "a8540e810f3bc3e39d466c4b3450f64492efebdc90a915cea0409951209af1c7",
+      "bytes": 21931
+    },
+    "rtc-julia-acquisition-suite.log": {
+      "path": "/home/dgamroth/.cache/rtc-julia-acquisition-20261008/rtc-julia-acquisition-suite.log",
+      "sha256": "6b9dee5304ec73cdbe9bbdf3c4870a19933da0ac7faabaf3dd42e4088c9b1ad4",
+      "bytes": 21339
+    }
+  },
+  "failed_attempts": [
+    {
+      "log": "rtc-julia-acquisition-native.log",
+      "disposition": "Cold CLI startup exhausted initial test-owner admission/binding deadlines. Test-only cold-start budgets increased; final native suite passes. This does not measure real-time latency."
+    },
+    {
+      "log": "rtc-julia-acquisition-suite-final.log",
+      "disposition": "Confirmed JAC-004: String(bytes) consumed the input before duplicate validation. Retain one String for both parsers and add valid-plan regression; final suite passes."
+    }
+  ],
+  "warnings": [
+    "Synthetic copied export roots emit caught non-Git provenance diagnostics.",
+    "YAML duplicate-key rejection test emits its expected error diagnostic.",
+    "Alternate SDK LOAD_PATH produces precompile build-ID/version warnings, including one HIL dependency precompile failure; final runtime assertions pass. This does not qualify a clean installed package precompile closure."
+  ],
+  "review": "REVIEW.md",
+  "unchanged_owners": [
+    "HEART source",
+    "JFG source",
+    "FGN source",
+    "PipeWire source",
+    "WirePlumber session policy",
+    "systemd process ownership"
+  ],
+  "not_qualified": [
+    "Instrument numerical acceptance",
+    "Actual Classic/Copper scientific graph calibration",
+    "Unchanged HEART live calibration",
+    "Fresh full systemd package admission",
+    "Steady-state frame allocations",
+    "Cadence, tail latency or hardware loop"
+  ]
+}

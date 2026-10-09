@@ -22,6 +22,7 @@ export PROFILE, CalibrationActionProfile, Command, Hold, Adopt, Settle, Collect,
 struct CalibrationActionProfile <: Client.Profile end
 const PROFILE = CalibrationActionProfile()
 Client.profile_name(::CalibrationActionProfile) = "pipewireao.rtc.calibration-actions/1"
+Client.maximum_budget(::CalibrationActionProfile) = Float64(typemax(Int64)) / 1e9
 Client.reply_endpoint(::CalibrationActionProfile) = :calibration
 Client.capability_names(::CalibrationActionProfile) = Tuple(
     "pipewireao.rtc.calibration-actions." * suffix for suffix in

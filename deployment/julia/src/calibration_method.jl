@@ -199,7 +199,7 @@ function method(arguments)
     source_identity=Campaign.orchestration_sources()
     aoc_identity=Campaign.file_identity(aoc)
     input_identity=Dict(abspath(path)=>sha256_file(Campaign.regular(path)) for path in
-        (arguments.recipe,arguments.method,arguments.calibration_binary))
+        (arguments.recipe,arguments.method))
     background,references,active,snapshot=retained_startup(base,prefix;recipe)
     mkpath(output)
     timing=Dict{String,Any}(name=>nothing for name in
@@ -234,7 +234,7 @@ function method(arguments)
         package=joinpath(output,"package")
         CalibrationExport.export_package((;base_package=base_copy,output=package,
             pipewire_prefix=prefix,deployment=true,
-            calibration_binary=arguments.calibration_binary,illumination="lamp",
+            illumination="lamp",
             calibration_stage="interaction",capture_max_bytes=nothing))
         scripts=joinpath(output,"analysis")
         mkdir(scripts)
@@ -309,7 +309,7 @@ end
 
 function main(argv=ARGS)
     arguments=cli_arguments(argv;required=["base-package","recipe","method","output","aoc-source",
-        "calibration-binary","runtime"],defaults=(prefix="/opt/pipewireao",julia="julia",
+        "runtime"],defaults=(prefix="/opt/pipewireao",julia="julia",
         owner_preparation_timeout_seconds="90"))
     println(method(arguments))
     return 0

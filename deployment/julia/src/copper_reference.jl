@@ -180,7 +180,7 @@ function campaign(arguments)
     orchestration=Acquisition.orchestration_sources()
     sources=copy(orchestration)
     merge!(sources,Dict(abspath(path)=>sha256_file(path) for path in
-        (helper_path(),abspath(arguments.calibration_binary),
+        (helper_path(),
          abspath(arguments.recipe))))
     mkpath(output)
     write_json(joinpath(output,"recipe.json"),recipe)
@@ -208,7 +208,6 @@ function campaign(arguments)
             package=joinpath(output,stage*"-package")
             CalibrationExport.export_package((;base_package=prepared,output=package,
                 pipewire_prefix=arguments.pipewire_prefix,deployment=true,
-                calibration_binary=arguments.calibration_binary,
                 illumination=stage=="dark" ? "dark" : "lamp",calibration_stage=stage,
                 capture_max_bytes=count*22596))
             evidence=joinpath(output,stage*"-evidence")
@@ -249,7 +248,7 @@ end
 
 function main(argv=ARGS)
     arguments=cli_arguments(argv;required=["base-package","output","recipe","aoc-source",
-        "calibration-binary","runtime"],defaults=(pipewire_prefix="/opt/pipewireao",julia="julia"))
+        "runtime"],defaults=(pipewire_prefix="/opt/pipewireao",julia="julia"))
     arguments.pipewire_prefix=="/opt/pipewireao" || throw(ArgumentError("only /opt/pipewireao supported"))
     println(campaign(arguments))
     return 0

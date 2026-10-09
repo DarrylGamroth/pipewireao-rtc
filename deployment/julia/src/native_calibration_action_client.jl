@@ -8,7 +8,7 @@ const Client = NativeControlClient
 const Codec = NativeCalibrationActionCodec
 const Lifecycle = NativeAcquisitionLifecycleCodec
 
-export Binding, Connection, connect, request!, action, document
+export Binding, Connection, connect, request!, complete!, action, document
 
 struct Binding
     remote::String
@@ -146,8 +146,9 @@ _validate_figure(::Codec.Result, count) = nothing
 _validate_figure(r::Union{Codec.Adopted,Codec.Restored}, count) =
     length(r.figure) == count || throw(Client.UnknownOutcome("calibration command contract changed"))
 
-function _request!(connection::Connection, value, expected::AbstractString;
-        deadline::Float64=Client.monotonic()+connection.timeout_ns/1e9, check=()->nothing)
+function _complete!(connection::Connection, value;
+        deadline::Float64=Client.monotonic()+connection.timeout_ns/1e9,
+        check=()->nothing, record::Bool=true)
     connection.can_restore = false
     command_action = action(value)
     serial = Base.Checked.checked_add(connection.serial, UInt64(1))
@@ -163,22 +164,27 @@ function _request!(connection::Connection, value, expected::AbstractString;
         throw(Client.UnknownOutcome("calibration transport completion failed: $(reply.message)"))
     result = reply.result
     _validate_figure(result, connection.command_count)
+    _valid_result(command_action, result) ||
+        throw(Client.UnknownOutcome("unexpected calibration completion result"))
+    record && _record!(connection, value, command_action, reply)
+    connection.can_restore = _restore_allowed(result)
+    return result
+end
+_valid_result(a::Codec.Action, r::Codec.Result) = Codec._operation(a) == Codec._tag(r)
+_valid_result(::Codec.Action, ::Codec.Failed) = true
+function _record!(connection, value, command_action, reply)
+    result = reply.result
     result_document = document(result)
     sent_action = value isa AbstractDict ? value : _action_document(command_action)
-    sent = Dict("version"=>1,"run"=>connection.run,"serial"=>serial,
+    sent = Dict("version"=>1,"run"=>connection.run,"serial"=>reply.serial,
         "timeout_ns"=>connection.timeout_ns,"action"=>sent_action)
     push!(connection.records, Dict("request"=>sent,"reply"=>Dict("version"=>1,
         "run"=>reply.run,"serial"=>reply.serial,"result"=>result_document)))
-    if result isa Codec.Failed
-        connection.can_restore = result.reason === Codec.InvalidEvidence
-        throw(ArgumentError("calibration action failed: $(result_document)"))
-    end
-    _kind(result) == expected || throw(Client.UnknownOutcome("unexpected calibration completion result"))
-    connection.can_restore = _restore_allowed(result)
-    return result_document
+    return nothing
 end
 _restore_allowed(::Codec.Result) = true
 _restore_allowed(r::Codec.Restored) = !r.clipped
+_restore_allowed(r::Codec.Failed) = r.reason === Codec.InvalidEvidence
 # Typed callers retain ordinary structured evidence without serializing it live.
 _action_document(::Codec.Hold) = Dict("kind"=>"hold")
 _action_document(::Codec.Release) = Dict("kind"=>"release")
@@ -190,15 +196,27 @@ _rule_document(r::Codec.DiscardExposures) = Dict("kind"=>"discard_exposures","fr
 _rule_document(r::Codec.ModelTime) = Dict("kind"=>"model_time","duration_ns"=>r.duration_ns)
 _action_document(a::Codec.Settle) = Dict("kind"=>"settle","probe"=>a.probe,"after"=>_cursor_document(a.after),"rule"=>_rule_document(a.rule))
 _action_document(a::Codec.Restore) = Dict("kind"=>"restore","figure"=>a.figure,"rule"=>_rule_document(a.rule))
-function request!(connection::Connection, value, expected::AbstractString; kwargs...)
+"Return the correlated typed terminal result, including an action-level Failed."
+function complete!(connection::Connection, value; kwargs...)
     try
-        return _request!(connection,value,expected; kwargs...)
+        return _complete!(connection,value; kwargs...)
     catch primary
         if primary isa Client.UnknownOutcome
             try close(connection) catch cleanup; throw(CompositeException([primary,cleanup])) end
         end
         rethrow()
     end
+end
+_successful(result::Codec.Result) = result
+_successful(result::Codec.Failed) = throw(ArgumentError("calibration action failed: $(document(result))"))
+function request!(connection::Connection, value, expected::AbstractString; kwargs...)
+    result = _successful(complete!(connection, value; kwargs...))
+    if _kind(result) != expected
+        connection.can_restore = false
+        close(connection)
+        throw(Client.UnknownOutcome("unexpected calibration completion result"))
+    end
+    return document(result)
 end
 Base.close(connection::Connection) = close(connection.client)
 

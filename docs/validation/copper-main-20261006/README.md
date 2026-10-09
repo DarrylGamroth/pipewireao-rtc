@@ -32,9 +32,10 @@ only the bounds above. Original detailed reports remain at the receipt paths.
 
 ## Reproduction boundary
 
-The RTC development helper is
-`scripts/refresh_qualification_runtime.jl`; its accepted Copper invocation is
-preserved at commit `5bcbdd0`. The GUI's existing
+The historical [RTC development helper](https://github.com/DarrylGamroth/pipewireao-rtc/blob/6a040187bcc5b19697329241d6e8fe5135ddafc1/scripts/refresh_qualification_runtime.jl)
+and its accepted Copper invocation are preserved in Git history (invocation
+commit `5bcbdd0`). The helper was retired during the Julia acquisition migration;
+fresh packages use the one-shot WirePlumber installer. The GUI's existing
 `scripts/check_native_hil_gui.jl` runs the installed `trajectory-baseline`,
 `trajectory-unattended`, `render-death`, `render` and `baseline` scenarios in
 systemd mode. Each run uses fresh runtime/evidence directories; the receipt

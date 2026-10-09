@@ -736,8 +736,6 @@ function campaign(arguments)
     base_identity=file_identity(abspath(arguments.base_package))
     aoc_identity=file_identity(aoc)
     recipe_sha=sha256_file(arguments.recipe)
-    binary_identity=Dict(abspath(path)=>sha256_file(regular(path)) for path in
-        (arguments.calibration_binary,))
     mkpath(output)
     write_json(joinpath(output,"recipe.json"),recipe)
     background=zeros(UInt8,495616)
@@ -746,11 +744,10 @@ function campaign(arguments)
     record=Dict{String,Any}("version"=>1,"phase"=>"candidate","stages"=>Dict{String,Any}(),
         "scope"=>"Classic CPU simulated calibration; no precision, correction or cadence acceptance",
         "source_files"=>source_identity,"base_files"=>base_identity,"aoc_files"=>aoc_identity,
-        "recipe_input_sha256"=>recipe_sha,"binary_files"=>binary_identity)
+        "recipe_input_sha256"=>recipe_sha)
     check_inputs=()->begin
         orchestration_sources()==source_identity && file_identity(abspath(arguments.base_package))==base_identity &&
-            file_identity(aoc)==aoc_identity && sha256_file(arguments.recipe)==recipe_sha &&
-            all(sha256_file(path)==hash for (path,hash) in binary_identity) ||
+            file_identity(aoc)==aoc_identity && sha256_file(arguments.recipe)==recipe_sha ||
             throw(ArgumentError("Classic campaign source input changed"))
     end
     try
@@ -763,7 +760,6 @@ function campaign(arguments)
             frames=frame_key===nothing ? nothing : recipe[frame_key]
             CalibrationExport.export_package((;base_package=base,output=package,
                 pipewire_prefix=arguments.pipewire_prefix,deployment=true,
-                calibration_binary=arguments.calibration_binary,
                 illumination=stage=="dark" ? "dark" : "lamp",calibration_stage=stage,
                 capture_max_bytes=frames===nothing ? nothing : frames*250252))
             package_identity=file_identity(package)
@@ -804,7 +800,7 @@ end
 
 function main(argv=ARGS)
     arguments=cli_arguments(argv;required=["base-package","output","recipe","aoc-source",
-        "calibration-binary","runtime"],defaults=(pipewire_prefix="/opt/pipewireao",julia="julia"))
+        "runtime"],defaults=(pipewire_prefix="/opt/pipewireao",julia="julia"))
     arguments.pipewire_prefix=="/opt/pipewireao" || throw(ArgumentError("only /opt/pipewireao is supported"))
     println(campaign(arguments))
     return 0
