@@ -61,15 +61,15 @@ and calibration driving uses Julia. Test records now live in `test/data/`.
 record 2,985 passing assertions in 105 testsets, corrected cold resource paths,
 relocation/re-export checks and byte preservation of protocol records,
 configurations and templates. Existing sealed SDKs and session authority are
-unchanged. Instrument integration still loads in the shared package until the
-separate project extraction is complete.
+unchanged. The next increment separates instrument integration into the
+independent `REVOLTRTC.jl` project.
 
 The revised [structure proposal](JULIA_RTC_STRUCTURE_PLAN.md) separates reusable
 Julia calibration and systemd tools from independent instrument RTC projects.
 Each instrument owns its graphs, recipes, artifacts and optional GUI TOML profile.
 It selects GUI-owned Rust clients and a shared root Julia package with a selected
 export closure. Delivery preserves WirePlumber/systemd ownership and v1 controls;
-the package/instrument extraction is still incomplete.
+the shared/instrument extraction now passes software package checks.
 The first package-boundary increment extracts instrument-independent file-copy
 helpers and selects runtime source/entrypoints explicitly, preventing whole-root
 copying during the future package move. Installation validation and campaign
@@ -87,8 +87,15 @@ headless RTC Cargo dependency. [GUI software checks and independent review](http
 cover retained protocol tests, fencing, native/WASM separation and the corrected
 socket child-test selector; they add no live-session or timing qualification.
 The root-package move and Rust retirement are complete. The independent
-`REVOLTRTC.jl` project is being prepared; instrument extraction and affected
-installed-profile qualification remain unfinished.
+`REVOLTRTC.jl` project now owns the Classic/Copper/HEART modules, resources,
+recipes and scientific environments. Shared clients and acquisition driving stay
+in `PipeWireAODeployment`. Fresh SDKs contain separate resolved projects;
+instrument preflight and composed provenance cover both. [Split checks and
+review](validation/julia-instrument-split-20261008/README.md) record strict Pkg
+success (1,557 shared and 1,362 instrument assertions), export/relocation/re-export,
+tamper rejection and byte preservation. Phases 1–4 of the structure migration
+pass their software gates. Phase 5 affected installed session/calibration checks
+remain open; this split adds no live, scientific, allocation or timing claim.
 
 Completed Copper link and process-supervision transfers remain valid only for
 their dated scopes. The selected Copper composition has passed link realization

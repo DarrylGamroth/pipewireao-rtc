@@ -1,6 +1,6 @@
 # Copper precision and amplitude characterization
 
-The maintained `assets/deployment/copper_quality.jl` collects a bounded one-direction
+The maintained `REVOLTRTC.jl/bin/copper_quality.jl` collects a bounded one-direction
 pilot through the ordinary deployed Copper CPU calibration endpoint. It requires
 a complete-frame FGN/JFG science base and its completed measured-reference
 candidate from `copper_reference.jl`. It does not adopt a reference or reconstructor.
@@ -49,7 +49,7 @@ qualified fixture is 64×64 and 14 bit; it is not a qualified DU860 gain/noise m
 ## Invocation
 
 ```sh
-julia --startup-file=no --project=. assets/deployment/copper_quality.jl \
+julia --startup-file=no --project=../REVOLTRTC.jl ../REVOLTRTC.jl/bin/copper_quality.jl \
   --base-package /absolute/path/to/copper-cpu-science-base \
   --reference-candidate /absolute/path/to/completed-reference-candidate \
   --recipe /absolute/path/to/recipe.json \

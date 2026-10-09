@@ -43,19 +43,13 @@ function write_spa_config(path::AbstractString, value)
     return path
 end
 
-# Transitional closure of the existing SDK. Instrument resources move to their
-# projects in the package migration; unrelated repository content is never input.
+# Shared operational closure; instrument projects export their own sources.
 const RUNTIME_ENTRIES = (
     "Project.toml", "Manifest.toml", "src", "test",
     "wireplumber_cli.jl", "wireplumber_launch.jl",
     "wireplumber_configuration.jl", "wireplumber_install.jl",
-    "export_heart_calibration.jl", "export_heart_correction.jl",
-    "assets/ryzen-6800h-classic.cpu", "assets/ryzen-6800h-classic.threads",
 )
-const RESOURCE_ENTRYPOINTS = (
-    "calibration_campaign.jl", "calibration_method.jl", "copper_quality.jl",
-    "copper_reference.jl", "export_calibration.jl", "export_heart_hil.jl", "export_hil.jl",
-)
+const RESOURCE_ENTRYPOINTS = ()
 
 function copy_deployment_runtime(package::AbstractString)
     # Export a new package without carrying a previous coordinator launcher
@@ -132,52 +126,12 @@ function validate_parameter(directory::AbstractString, p::Parameter)
     return path
 end
 
-function classic_parameters()
-    return Parameter[
-        Parameter("background", "pixel-calibration:background", "F32_LE", [352,352], "background.f32le"),
-        Parameter("subaperture-origins", "shack-hartmann:subaperture-origins", "U32_LE", [188,2], "subaperture-origins.u32le"),
-        Parameter("coordinates", "shack-hartmann:coordinates", "F32_LE", [484,2], "shack-hartmann-coordinates.f32le"),
-        Parameter("reference-slopes", "shack-hartmann:reference-slopes", "F32_LE", [188,2], "reference-slopes.f32le"),
-        Parameter("thresholds", "shack-hartmann:thresholds", "F32_LE", [188,2], "thresholds.f32le"),
-        Parameter("active", "shack-hartmann:active", "Bool", [188], "active-subapertures.u8"),
-        Parameter("reconstructor", "reconstruction:reconstructor", "F32_LE", [221,376], "reconstructor.f32le", "org.calculon.ao.shwfs-reconstructor/1"),
-        Parameter("controller-to-vdm", "controller-to-vdm:controller-to-vdm", "F32_LE", [221,221], "controller-to-vdm.f32le"),
-        Parameter("active-to-full", "vdm-to-pdm:active-to-full", "F32_LE", [277,221], "active-to-full-vdm.f32le"),
-        Parameter("vdm-to-pdm", "vdm-to-pdm:vdm-to-pdm", "F32_LE", [277,277], "vdm-to-pdm.f32le"),
-        Parameter("full-to-active", "pdm-feedback-to-vdm:full-to-active", "F32_LE", [221,277], "full-to-active-vdm.f32le"),
-        Parameter("pdm-to-vdm", "pdm-feedback-to-vdm:pdm-to-vdm", "F32_LE", [277,277], "pdm-to-vdm.f32le"),
-        Parameter("vdm-to-controller", "vdm-feedback-to-controller:vdm-to-controller", "F32_LE", [221,221], "vdm-to-controller.f32le")
-    ]
-end
-
 function port(name, direction, shape, schema, element_type="F32_LE"; parameter=false, rate=nothing)
     value = Dict{String,Any}("name" => name, "direction" => direction, "element-type" => element_type,
                              "shape" => collect(shape), "schema" => schema)
     parameter && (value["parameter"] = true)
     rate === nothing || (value["rate"] = rate isa Integer ? "$rate/1" : rate)
     return value
-end
-
-function placement(cpus, fifo_cpus; julia=false)
-    threads = [Dict("cpus" => [cpu], "policy" => "fifo", "priority" => 83, "count" => 1) for cpu in fifo_cpus]
-    julia && push!(threads, Dict("cpus" => [10], "policy" => "other", "priority" => 0, "count" => 1))
-    return Dict("cpus" => collect(cpus), "leader-cpu" => 14, "rt-priority" => 83,
-                "threads" => threads, "locked-bytes" => 0)
-end
-
-"Declare the opt-in one-shot WirePlumber executable and its packaged assets."
-function wireplumber_session_defaults!(specification)
-    specification["session-manager"] = Dict{String,Any}(
-        "argv" => ["@PACKAGE@/wireplumber/bin/wireplumber", "-c",
-                   "@RUNTIME@/wireplumber/wireplumber.conf", "-p", "ao-rtc"],
-        "environment" => Dict(
-            "WIREPLUMBER_MODULE_DIR" => "@PACKAGE@/wireplumber/modules",
-            "WIREPLUMBER_DATA_DIR" => "@PACKAGE@/wireplumber"))
-    specification["placement"]["wireplumber"] = Dict(
-        "cpus" => [14], "leader-cpu" => 14, "rt-priority" => 0,
-        "threads" => Any[], "locked-bytes" => 0)
-    specification["client"]["wireplumber"] = specification["client"]["rtc"]
-    return specification
 end
 
 "Copy WirePlumber assets from an installed prefix or an explicit development build."
@@ -257,5 +211,33 @@ end
 # Initial scientist-authored recorded-input assets are accepted as sealed base
 # packages by HILExport. Their development-only generator is outside this
 # operational calibration migration; no generator process is launched here.
+
+"""Hash this package's declared operational sources and resources."""
+function orchestration_sources()
+    files = String[]
+    for relative in RUNTIME_ENTRIES
+        relative == "test" && continue
+        path = joinpath(package_root(), relative)
+        if isfile(path)
+            push!(files, path)
+        elseif isdir(path)
+            for (parent, dirs, names) in walkdir(path)
+                any(name -> islink(joinpath(parent, name)), dirs) &&
+                    throw(ArgumentError("linked operational source directory"))
+                append!(files, joinpath.(Ref(parent), names))
+            end
+        else
+            throw(ArgumentError("missing operational source: $relative"))
+        end
+    end
+    for (parent, dirs, names) in walkdir(resource_root())
+        any(name -> islink(joinpath(parent, name)), dirs) &&
+            throw(ArgumentError("linked operational resource directory"))
+        append!(files, joinpath.(Ref(parent), names))
+    end
+    all(path -> isfile(path) && !islink(path), files) ||
+        throw(ArgumentError("missing or linked operational source"))
+    return Dict(abspath(path) => sha256(path) for path in unique(files))
+end
 
 end # module

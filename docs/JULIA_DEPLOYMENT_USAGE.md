@@ -14,18 +14,20 @@ WirePlumber assets and rejects a missing session runtime before installation.
 Scientific campaign qualification under this replacement remains separate from
 the recorded Copper complete-frame lifecycle checks.
 
-## Source entrypoints
+## REVOLT instrument entrypoints
 
-Instantiate the cold orchestration environment once:
+The Classic and Copper exporters and acquisition commands belong to the
+independent [REVOLT Julia project](../../REVOLTRTC.jl/README.md). From this
+repository root, instantiate that app environment once:
 
 ```sh
-julia --startup-file=no --project=. -e 'using Pkg; Pkg.instantiate()'
+julia --startup-file=no --project=../REVOLTRTC.jl -e 'using Pkg; Pkg.instantiate()'
 ```
 
-Run a wrapper with the same project, for example:
+Run its wrapper with the same project, for example:
 
 ```sh
-julia --startup-file=no --project=. assets/deployment/copper_reference.jl \
+julia --startup-file=no --project=../REVOLTRTC.jl ../REVOLTRTC.jl/bin/copper_reference.jl \
   --base-package /absolute/path/to/sealed-copper-base \
   --output /absolute/path/to/fresh-candidate \
   --recipe /absolute/path/to/recipe.json \
@@ -33,8 +35,9 @@ julia --startup-file=no --project=. assets/deployment/copper_reference.jl \
   --runtime /short/absolute/path/to/fresh-runtime
 ```
 
-`calibration_campaign.jl` uses these options for Classic. `copper_quality.jl`
-also requires `--reference-candidate`. `calibration_method.jl` also requires
+`../REVOLTRTC.jl/bin/calibration_campaign.jl` uses these options for Classic.
+`copper_quality.jl` also requires `--reference-candidate`.
+`calibration_method.jl` also requires
 `--method` and uses `--prefix` for the PipeWire prefix. The other campaign
 wrappers use `--pipewire-prefix`; the supported prefix is `/opt/pipewireao`.
 See the maintained Copper reference and quality usage documents for recipes
@@ -51,8 +54,10 @@ Run portable verification with:
 julia --startup-file=no --project=. -e 'using Pkg; Pkg.precompile(); Pkg.test()'
 ```
 
-Source wrappers keep their existing command lines. The source checkout uses
-`assets/deployment/hil`, `assets/deployment/templates` and the service template as resources.
+Shared operational scripts remain in this repository root. REVOLT entrypoints
+are under `../REVOLTRTC.jl/bin` and use that app's project. The shared package
+source checkout uses `assets/deployment/hil`, `assets/deployment/templates` and
+the service template as resources.
 Every exported SDK embeds these resources under `julia/assets/deployment`, along
 with its package project, lock, source, CLI and test workspace closure. Resource
 paths are resolved from the loaded package at runtime, including after SDK
@@ -82,6 +87,17 @@ Calibration/export wrappers retain their own Julia project and packaged modules.
 They do not run a persistent supervisor. The old Rust coordinator binary,
 `pipewireao-rtc-deploy` and coordinator service templates are excluded.
 
+Start an exported REVOLT instrument package through the instrument preflight,
+which verifies both the shared and instrument package closures and the sealed
+instrument wrappers before delegating to the shared one-shot session runtime:
+
+```sh
+julia --startup-file=no --project=../REVOLTRTC.jl -e '
+    using REVOLTRTC
+    println(REVOLTRTC.Installation.start!(ARGS[1], ARGS[2]))
+' /absolute/sealed-package /absolute/fresh-stage
+```
+
 Use optional `--julia-executable /absolute/path/to/julia` during installation to
 select the runtime. The default is the executable running the installer.
 Installation validates Julia ≥ 1.12 and < 2 and resolves juliaup selection to its
@@ -100,8 +116,8 @@ records retain their original scope and Git source provenance.
 
 ## systemd session and owner services
 
-`WirePlumberSessionRuntime.start!` installs a fresh exact instance of
-`pipewireao-session@.service`, prepares separate scientific owner services, and
+For generic shared packages, `WirePlumberSessionRuntime.start!` installs a
+fresh exact instance of `pipewireao-session@.service`, prepares separate scientific owner services, and
 returns only after the admission hook completes. `ActiveState=active` alone
 never proves scientific readiness. The manager verifies native owners and held
 acquisition; the one-shot admission hook checks their actual placement.

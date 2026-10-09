@@ -2,7 +2,7 @@
 
 julia_version = "1.12.7"
 manifest_format = "2.0"
-project_hash = "8c54929c7480bc458fd4997a16fd2c1b644b3826"
+project_hash = "61209e734db06f6c9572c4a3ed0053deaf205574"
 
 [[deps.Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
@@ -112,11 +112,6 @@ deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
 uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
 version = "0.3.29+0"
 
-[[deps.OrderedCollections]]
-git-tree-sha1 = "f9b03759e9ef463718934fbed30820b39997511e"
-uuid = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
-version = "2.0.2"
-
 [[deps.Parsers]]
 deps = ["Dates", "PrecompileTools", "UUIDs"]
 git-tree-sha1 = "ba0dc8a8a67cacac4842631f960c046e4e563675"
@@ -132,7 +127,7 @@ uuid = "5d815c25-fdf3-4508-8205-db8be38ea5d0"
 version = "0.6.17"
 
 [[deps.PipeWireAODeployment]]
-deps = ["JSON3", "OrderedCollections", "PipeWireAO", "SHA", "Sockets", "StructTypes", "TOML", "ThreadPinning", "UUIDs", "YAML"]
+deps = ["JSON3", "PipeWireAO", "SHA", "Sockets", "StructTypes", "TOML", "ThreadPinning", "UUIDs"]
 path = "."
 uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
 version = "0.1.0"
@@ -181,12 +176,6 @@ version = "1.11.0"
 git-tree-sha1 = "c4f6610f85cb965bee5bfafa64cbeeda55a4e0b2"
 uuid = "91464d47-22a1-43fe-8b7f-2d57ee82463f"
 version = "0.1.7"
-
-[[deps.StringEncodings]]
-deps = ["Libiconv_jll"]
-git-tree-sha1 = "b765e46ba27ecf6b44faf70df40c57aa3a547dcb"
-uuid = "69024149-9ee7-55f6-a4c4-859efe599b68"
-version = "0.3.7"
 
 [[deps.StructTypes]]
 deps = ["Dates", "UUIDs"]
@@ -259,12 +248,6 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Zlib_jll"]
 git-tree-sha1 = "58972370b81423fc546c56a60ed1a009450177c3"
 uuid = "a65dc6b1-eb27-53a1-bb3e-dea574b5389e"
 version = "0.19.0+0"
-
-[[deps.YAML]]
-deps = ["Base64", "Dates", "Printf", "StringEncodings"]
-git-tree-sha1 = "9c685a6e94e255019e2bf9486318147cd42fe34a"
-uuid = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
-version = "0.4.17"
 
 [[deps.Zlib_jll]]
 deps = ["Libdl"]

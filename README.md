@@ -46,6 +46,16 @@ prefix with the helper's `prefix` keyword. Startup verifies actual process
 incarnations, native readiness and declared placement before acquisition is
 released. Packages with missing WirePlumber assets are rejected.
 
+For an exported REVOLT instrument package, use its preflight before session
+startup. From this shared repository root:
+
+```sh
+julia --startup-file=no --project=../REVOLTRTC.jl -e '
+    using REVOLTRTC
+    println(REVOLTRTC.Installation.start!(ARGS[1], ARGS[2]))
+' /absolute/sealed-package /absolute/fresh-stage
+```
+
 ## Native session control
 
 List candidate sessions with the Julia client:
@@ -78,17 +88,19 @@ successful public shutdown.
 | Path | Responsibility |
 | --- | --- |
 | `Project.toml`, `Manifest.toml` | Julia package identity and pinned operational environment |
-| `src/` | Native clients, shared operational tools and integration modules undergoing extraction |
+| `src/` | Native clients, shared operational tools |
 | `test/` | Package tests and native protocol records under `test/data/` |
-| `assets/deployment/` | Explicitly exported runtime resources; instrument resources undergoing extraction |
+| `assets/deployment/` | Generic systemd, PipeWire and parameter-source resources |
 | `configs/` | Retained development graph/session configurations |
 | `wireplumber_*.jl` | One-shot native session and systemd installation commands |
 
 Session lifecycle policy lives in WirePlumberAO Lua. The RTC Rust crate is
 retired: the GUI owns its native Rust client, and calibration driving uses the
 shared Julia implementation. Existing sealed SDKs retain their original files
-and launchers. The root-layout change does not complete the separation of
-instrument integration modules.
+and launchers. REVOLT Classic/Copper/HEART integration is in the independent
+[REVOLTRTC.jl project](../REVOLTRTC.jl/README.md). Use its export/calibration
+commands and `REVOLTRTC.Installation.start!` for instrument preflight; shared
+session clients remain instrument-independent.
 
 ## Qualification scope
 

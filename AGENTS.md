@@ -57,10 +57,11 @@
   declared full-frame/row-block owners without adding an RTC data scheduler.
 - Follow the relevant roadmap dependencies unless the user changes their order.
 
-- Organize Rust client code by `control`, `session` and `calibration`. Development
-  configurations belong in `configs/`; test input records belong in `tests/data/`.
-  Use those domain names in new code instead of “fixture”. Preserve externally
-  defined protocol names and historical report fields.
+- Keep shared Julia code in `src/`, package tests in `test/` and native protocol
+  records in `test/data/`. Independent instrument projects own their named graphs,
+  resources and calibration integration. The RTC Rust crate is retired; the GUI
+  owns its native Rust client. Preserve protocol names and historical report fields.
+  Use domain names for test inputs instead of “fixture”.
 
 ## Validation and documentation
 

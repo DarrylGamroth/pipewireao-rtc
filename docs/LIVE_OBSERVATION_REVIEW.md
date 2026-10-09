@@ -29,7 +29,7 @@ failure containment and separate live/scientific gates.
 Inspected code includes
 [observation_boundary.jl](../deployment/julia/src/observation_boundary.jl),
 [deployment hooks](../deployment/julia/src/deploy.jl),
-[HIL export](../src/hil_export.jl),
+[HIL export](https://github.com/DarrylGamroth/pipewireao-rtc/blob/3101c5a/src/hil_export.jl),
 [placement validation](../src/placement.jl), and the HIL
 observation/source-buffer and finite-pacing options. The review checked
 relevant tests, the retained evidence recorder, native reader and FFTW

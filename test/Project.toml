@@ -1,4 +1,5 @@
 [deps]
+PipeWireAO = "5d815c25-fdf3-4508-8205-db8be38ea5d0"
 PipeWireAODeployment = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
@@ -10,6 +11,7 @@ TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 PipeWireAODeployment = {path = ".."}
 
 [compat]
+PipeWireAO = "0.6.17"
 SHA = "0.7, 1"
 Sockets = "1"
 TOML = "1"

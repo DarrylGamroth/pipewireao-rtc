@@ -1,5 +1,7 @@
 # Delivery evidence catalog
 
+- [Independent REVOLT Julia package, 2026-10-08](validation/julia-instrument-split-20261008/README.md): separate shared/instrument projects, composed source evidence, instrument preflight, strict Pkg checks, relocation/re-export/tamper checks and independent review. Live installed qualification remains separate.
+
 - [Julia root layout, 2026-10-08](validation/julia-root-layout-20261008/README.md): root package, Rust retirement, protocol/configuration byte preservation, resource-path fail-before/pass-after and 2,985 passing software assertions. Instrument extraction and live qualification remain open.
 
 - [GUI client detachment, 2026-10-08](validation/native-client-20261008/README.md): GUI-owned Rust native client, removed RTC Cargo dependency, independent review and native/WASM checks; inherited socket child-test selector corrected in both repositories. No new live-session or timing qualification.

@@ -1,5 +1,6 @@
 using Test, PipeWireAODeployment
 const R = PipeWireAODeployment.RuntimeExport
+tree_identity(root) = Dict(relpath(joinpath(parent, file), root) => PipeWireAODeployment.Common.sha256_file(joinpath(parent, file)) for (parent, _, files) in walkdir(root) for file in files)
 
 @testset "explicit runtime entries" begin
     mktempdir() do root
@@ -67,8 +68,8 @@ end
         for entry in PipeWireAODeployment.ScienceExport.RUNTIME_ENTRIES
             original, copied = joinpath(source, entry), joinpath(exported, entry)
             @test isfile(original) ? read(original) == read(copied) :
-                PipeWireAODeployment.CalibrationCampaign.file_identity(original) ==
-                PipeWireAODeployment.CalibrationCampaign.file_identity(copied)
+                tree_identity(original) ==
+                tree_identity(copied)
         end
     end
 end
@@ -77,7 +78,7 @@ end
     mktempdir() do root
         sdk = PipeWireAODeployment.ScienceExport.copy_deployment_runtime(root)
         @test PipeWireAODeployment.DeploymentConfiguration.validate_runtime(sdk) == sdk
-        for name in ("export_heart_calibration.jl", "assets/ryzen-6800h-classic.threads")
+        for name in ("wireplumber_install.jl", "assets/deployment/hil/parameter_source.jl")
             path = joinpath(sdk, name)
             bytes = read(path)
             rm(path)

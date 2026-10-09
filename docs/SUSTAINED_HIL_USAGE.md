@@ -1,12 +1,19 @@
 # Bounded sustained HIL qualification
 
-This extends the installed complete-frame scientific HIL owner under
+This records the earlier installed complete-frame scientific HIL owner under
 RTC-DEV-025/026. The finite default is unchanged. HEART transport is excluded
 from this extension; HEART remains unchanged.
 
+The qualification coordinator below was retired with the earlier session
+coordinator. Its command is historical and is not runnable from a fresh package.
+The new session authority is WirePlumber. Current export/start/control commands
+are in [the Julia guide](JULIA_DEPLOYMENT_USAGE.md). Requalification of sustained
+measurement through that authority remains a separate gate; these recorded
+results do not establish it.
+
 ## Export options
 
-The maintained `export_hil_science.jl` accepts:
+The current `REVOLTRTC.jl/bin/export_hil.jl` exporter retains these options:
 
 | Option | Meaning |
 | --- | --- |
@@ -30,9 +37,9 @@ own dependencies before admission. Preparation and reset happen while held;
 release follows inspected thread placement and RTC Running acknowledgement.
 The normal foreground and systemd user-service paths use the same source owner.
 
-## Run through the installed deployment
+## Historical run through the retired deployment coordinator
 
-A newly exported package contains the development qualification coordinator:
+The earlier package contained the development qualification coordinator:
 
 ```bash
 OPENBLAS_NUM_THREADS=1 JULIA_NUM_THREADS=1,0 taskset -c 2-15 \

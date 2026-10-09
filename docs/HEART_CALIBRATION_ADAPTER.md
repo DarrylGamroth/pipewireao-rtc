@@ -127,7 +127,7 @@ Source evidence: `source/template/src/hrtTemplate.c::setTelemetryForFile`,
 `source/python/heart/util/{circbuf,telemetry}.py` representation declarations.
 The Julia decoder does not invoke Python or load shared memory.
 
-[heart_calibration_telemetry.jl](../assets/deployment/hil/heart_calibration_telemetry.jl)
+[heart_calibration_telemetry.jl](https://github.com/DarrylGamroth/pipewireao-rtc/blob/3101c5a/assets/deployment/hil/heart_calibration_telemetry.jl)
 supports the selected little-endian CPU file representation: 1024-byte file
 header, 128-byte CB specification, 64-byte revision-2 bucket header, and payload
 padding to multiples of 64 bytes. The reader checks the requested tag, datatype,
@@ -197,7 +197,7 @@ per-frame association under RTC-DEV-029.
 
 ## Association and owner integration sequence
 
-[`heart_calibration_owner.jl`](../assets/deployment/hil/heart_calibration_owner.jl)
+[`heart_calibration_owner.jl`](https://github.com/DarrylGamroth/pipewireao-rtc/blob/3101c5a/assets/deployment/hil/heart_calibration_owner.jl)
 implements the existing `CalibrationServer` session dispatches. Its specialized
 constructor requires an established `NativeHold` containing the fresh native
 child PID/generation, the fresh startup CORRECT SUCCESS acknowledgement and
@@ -304,7 +304,7 @@ cross-process acquisition domain.
 ## Verification
 
 The public Julia package exposes
-`PipeWireAODeployment.HeartCalibrationExport.export_package` and the
+`REVOLTRTC.HeartCalibrationExport.export_package` and the
 `export_heart_calibration.jl` CLI. This preparation path calls the normal
 `HeartExport`, adds the four full-rate telemetry streams and exact relay
 links, copies the selected exact-zero-capable PipeWireAO package, and seals
@@ -312,14 +312,18 @@ every resulting artifact hash. It selects the supplied Copper CPU 100× lamp
 base, retains normal photon/readout noise, and freezes detector seed 700.
 
 ```sh
-julia --startup-file=no --project=deployment/julia deployment/julia/export_heart_calibration.jl \
+julia --startup-file=no --project=../REVOLTRTC.jl ../REVOLTRTC.jl/bin/export_heart_calibration.jl \
   --base-package <copper-fgn-cpu-base> --output <fresh-package> \
   --heart-root <unchanged-heart-checkout> --heart-source-config <matched-copper-yaml> \
   --calibration-root <native-calibration-root> --pipewireao-jl-root <exact-zero-package> \
   --pipewire-prefix <installed-prefix> --readout-us 0
 ```
 
-After the normal public `Deployment.main(["run", ...])` admits the prepared
+Instrument startup now uses `REVOLTRTC.Installation.start!`; the old
+`Deployment.main(["run", ...])` coordinator is retired. The following pilot
+description records the earlier admitted runtime; its affected installed
+calibration path still needs qualification under WirePlumber admission.
+After admission of the prepared
 package, `HeartCalibrationExport.run_pilot(runtime, fresh_evidence_directory)`
 performs a finite native protocol check. It adopts zero and physical actuator
 139 at ±0.04 µm, discards one normal exposure after each adoption,
@@ -334,9 +338,9 @@ qualify an interaction matrix, inverse or correction result.
 Run the focused software tests with:
 
 ```sh
-julia --startup-file=no deployment/hil/test_heart_calibration_telemetry.jl
-julia --startup-file=no --project=<prepared-hil-environment> deployment/hil/test_heart_calibration_owner.jl
-julia --startup-file=no --project=deployment/julia/test deployment/julia/test/test_heart_calibration_export.jl
+julia --startup-file=no --project=<prepared-hil-environment> ../REVOLTRTC.jl/assets/deployment/hil/test_heart_calibration_telemetry.jl
+julia --startup-file=no --project=<prepared-hil-environment> ../REVOLTRTC.jl/assets/deployment/hil/test_heart_calibration_owner.jl
+julia --startup-file=no --project=../REVOLTRTC.jl/test ../REVOLTRTC.jl/test/test_heart_calibration_export.jl
 ```
 
 The tests use independently constructed public-format fixtures. They exercise
@@ -871,8 +875,8 @@ After the functional pilot has passed, prepare a fresh package and fresh short
 owner evidence root using the public CLI:
 
 ```sh
-julia --startup-file=no --project=deployment/julia \
-  deployment/julia/export_heart_calibration.jl \
+julia --startup-file=no --project=../REVOLTRTC.jl \
+  ../REVOLTRTC.jl/bin/export_heart_calibration.jl \
   --base-package BASE_COPPER_FGN_CUDA --simulator-backend cuda \
   --plan FROZEN_INTERACTION_PLAN --calibration-stage interaction \
   --output NEW_PACKAGE --owner-evidence-directory NEW_SHORT_EVIDENCE_ROOT \
@@ -882,12 +886,14 @@ julia --startup-file=no --project=deployment/julia \
   --pipewire-prefix /opt/pipewireao --readout-us 1000
 ```
 
-Preload the public SDK, supervise launch through normal `Deployment` lifecycle,
+The following records the former `Deployment` lifecycle. Its replacement
+uses the instrument preflight and WirePlumber admission; that affected live
+calibration gate remains open. Preload the public SDK,
 wait for admission, and immediately invoke:
 
 ```julia
-using PipeWireAODeployment
-PipeWireAODeployment.HeartCalibrationExport.run_plan(package, runtime, fresh_evidence)
+using REVOLTRTC
+REVOLTRTC.HeartCalibrationExport.run_plan(package, runtime, fresh_evidence)
 ```
 
 The call uses the sealed plan through the Julia completion-driven acquisition client.
@@ -964,7 +970,7 @@ training method:
 After `run_plan` and successful public shutdown, reduce through the public SDK:
 
 ```julia
-PipeWireAODeployment.HeartCalibrationExport.reduce_plan(
+REVOLTRTC.HeartCalibrationExport.reduce_plan(
     package, evidence, runtime, fresh_candidate;
     expected_deployment_sha256="93be47c8c7d2199ad6a59cae4cecce778c012cfe185097de67e9c3a277a1e4ed")
 ```

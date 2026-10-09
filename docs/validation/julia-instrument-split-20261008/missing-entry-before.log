@@ -1,0 +1,28 @@
+Precompiling packages...
+   2090.1 ms  ✓ PipeWireAODeployment
+  1 dependency successfully precompiled in 2 seconds. 28 already precompiled.
+  1 dependency precompiled but a different version is currently loaded (Serialization). Restart julia to access the new version. Otherwise, 3 dependents of this package may trigger further precompilation to work with the unexpected version.
+ERROR: LoadError: Some tests did not pass: 112 passed, 1 failed, 0 errored, 0 broken.
+in expression starting at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-julia-package/test/test_package.jl:5
+named deployment package and operational source closure: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-julia-package/test/test_package.jl:75
+  Expression: (P.Common.run_checked([(Base.julia_cmd()).exec[1], "--startup-file=no", "--project=" * sdk, "-e", missing]; timeout = 60)).returncode == 0
+   Evaluated: 1 == 0
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] (::var"#10#11")(directory::String)
+   @ Main ~/workspaces/codex/pipewire/pipewireao-rtc-julia-package/test/test_package.jl:75
+ [3] mktempdir(fn::var"#10#11", parent::String; prefix::String)
+   @ Base.Filesystem ./file.jl:941
+ [4] mktempdir(fn::Function, parent::String)
+   @ Base.Filesystem ./file.jl:937
+ [5] top-level scope
+   @ ~/workspaces/codex/pipewire/pipewireao-rtc-julia-package/test/test_package.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [7] macro expansion
+   @ ~/workspaces/codex/pipewire/pipewireao-rtc-julia-package/test/test_package.jl:38 [inlined]
+Test Summary:                                           | Pass  Fail  Total  Time
+named deployment package and operational source closure |  112     1    113  9.4s
+RNG of the outermost testset: Random.Xoshiro(0x905e6d63b27593f4, 0xef6d1222bb96c294, 0x7124e7c4f04a0e14, 0xb57baa3eb0291c60, 0x8abfd25b67cbe8b4)

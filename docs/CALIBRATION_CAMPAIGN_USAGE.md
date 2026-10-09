@@ -1,6 +1,6 @@
 # Classic CPU calibration campaign usage
 
-`assets/deployment/calibration_campaign.jl` runs a finite, non-actuating Classic
+`REVOLTRTC.jl/bin/calibration_campaign.jl` runs a finite, non-actuating Classic
 calibration campaign from an installed CPU base package. The base package may
 use the native FGN graph or the external JuliaFilterGraph (JFG) graph. The
 campaign makes four fresh stage packages and runtimes:
@@ -29,8 +29,8 @@ mask declares the candidate universe; training derives eligibility from the
 captured evidence. It does not force all positions to remain active. A prior
 campaign happened to select 184 positions, but that count is not prescribed.
 
-Save this as `write-example-recipe.jl` and run it with the
-root Julia project. It writes a
+Save this as `write-example-recipe.jl` and run it from the shared repository
+root with the REVOLT app project. It writes a
 JSON recipe with separate detector seeds for all four stages:
 
 ```julia
@@ -67,7 +67,7 @@ must not already exist; use a new short runtime root because the campaign uses
 local AF_UNIX sockets.
 
 ```sh
-julia --startup-file=no --project=. assets/deployment/calibration_campaign.jl \
+julia --startup-file=no --project=../REVOLTRTC.jl ../REVOLTRTC.jl/bin/calibration_campaign.jl \
   --base-package /absolute/path/to/classic-cpu-base-package \
   --output /absolute/path/to/new-campaign-output \
   --recipe /absolute/path/to/classic-campaign-recipe.json \

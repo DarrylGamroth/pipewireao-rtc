@@ -439,17 +439,7 @@ end
 
 shell_quote(value::AbstractString) = "'" * replace(value, "'" => "'\"'\"'") * "'"
 
-const INSTALLED_ENTRYPOINTS = Dict(
-    "rtc-calibrate" => "CalibrationCLI",
-    "calibration_campaign" => "CalibrationCampaign",
-    "calibration_method" => "CalibrationMethod",
-    "copper_reference" => "CopperReference",
-    "copper_quality" => "CopperQuality",
-    "export_calibration" => "CalibrationExport",
-    "export_hil" => "HILExport",
-    "export_heart_hil" => "HeartExport",
-    "export_heart_calibration" => "HeartCalibrationExport",
-    "export_heart_correction" => "HeartCorrectionExport")
+const INSTALLED_ENTRYPOINTS = Dict("rtc-calibrate" => "CalibrationCLI")
 
 function installed_wrappers(julia::AbstractString)
     executable = shell_quote(julia)

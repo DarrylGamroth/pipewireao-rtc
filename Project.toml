@@ -1,11 +1,13 @@
 name = "PipeWireAODeployment"
 uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
-authors = ["Darryl Gamroth <dgamroth@rubus.ca>"]
 version = "0.1.0"
+authors = ["Darryl Gamroth <dgamroth@rubus.ca>"]
+
+[workspace]
+projects = ["test"]
 
 [deps]
 JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
-OrderedCollections = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
 PipeWireAO = "5d815c25-fdf3-4508-8205-db8be38ea5d0"
 SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 Sockets = "6462fe0b-24de-5631-8697-dd941f90decc"
@@ -13,23 +15,17 @@ StructTypes = "856f2bd8-1eba-4b0a-8007-ebc267875bd4"
 TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 ThreadPinning = "811555cd-349b-4f26-b7bc-1f208b848042"
 UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
-YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
 
 [sources]
-PipeWireAO = {url = "https://github.com/DarrylGamroth/PipeWireAO.jl.git", rev = "1417b69"}
+PipeWireAO = {rev = "1417b69", url = "https://github.com/DarrylGamroth/PipeWireAO.jl.git"}
 
 [compat]
+JSON3 = "1"
+PipeWireAO = "0.6.17"
 SHA = "0.7, 1"
 Sockets = "1"
+StructTypes = "1"
 TOML = "1"
 ThreadPinning = "1"
 UUIDs = "1"
-JSON3 = "1"
-OrderedCollections = "2"
-PipeWireAO = "0.6.17"
-StructTypes = "1"
-YAML = "0.4"
 julia = "1.12"
-
-[workspace]
-projects = ["test"]

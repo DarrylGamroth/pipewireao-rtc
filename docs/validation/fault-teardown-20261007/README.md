@@ -58,7 +58,7 @@ The installed copies `/tmp/rtc-fault-teardown-{fgn,jfg}-20261007` change only
 `provenance.json`. All 719 FGN / 718 JFG sealed artifact hashes were checked.
 Algorithms, calibration matrices/maps, scientific dependencies, graph
 configurations and Rust runner bytes are unchanged. Preparation is reproducible
-with `scripts/prepare_fault_teardown_test.jl`.
+with [the then-current preparation script](https://github.com/DarrylGamroth/pipewireao-rtc/blob/3101c5a/scripts/prepare_fault_teardown_test.jl).
 
 | Check | CPU FGN | CPU JFG | Scope |
 | --- | --- | --- | --- |

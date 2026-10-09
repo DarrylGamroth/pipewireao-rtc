@@ -9,7 +9,7 @@ property or operation identifiers.
 ## Current request contract
 
 The Julia server is authoritative for the current accepted JSON requests:
-[`parse_request` and validators](../assets/deployment/hil/calibration_server.jl#L192-L290).
+[`parse_request` and validators](https://github.com/DarrylGamroth/pipewireao-rtc/blob/3101c5a/assets/deployment/hil/calibration_server.jl#L192-L290).
 Every object rejects unknown/missing fields. Requests are newline-delimited
 JSON, with newline included in the request byte limit.
 
@@ -27,14 +27,14 @@ Cursor/exposure time fields are model-clock nanoseconds, not host arrival time.
 An exposure is `{domain,generation,sequence,start_model_ns,duration_ns}` with
 unsigned integer fields. Exposure `duration_ns` must be positive; its end is
 checked against the acquisition cursor. This is enforced in
-[`exposure!`](../assets/deployment/hil/calibration_server.jl#L292-L341); public Rust
+[`exposure!`](https://github.com/DarrylGamroth/pipewireao-rtc/blob/3101c5a/assets/deployment/hil/calibration_server.jl#L292-L341); public Rust
 types are in [`calibration.rs`](https://github.com/DarrylGamroth/pipewireao-rtc/blob/0fadb2a116f360df7f7d601b8e7f2bea02d809f9/src/calibration.rs#L152-L179).
 
 ## Current results and effect behavior
 
 The outer reply is exactly `{version,run,serial,result}`. Julia encodes it as
 JSON plus newline; maximum reply including newline is 128 KiB. Success result
-shapes from [`effect!`](../assets/deployment/hil/calibration_server.jl#L472-L598):
+shapes from [`effect!`](https://github.com/DarrylGamroth/pipewireao-rtc/blob/3101c5a/assets/deployment/hil/calibration_server.jl#L472-L598):
 
 | `result.kind` | Fields (besides `kind`) | Semantics |
 | --- | --- | --- |
@@ -53,8 +53,8 @@ check. These constants are a bound for finite Float32 tokens and UInt64
 identities, not a count of every actual field byte. Capture has a separate
 payload reservation (`frame_bytes * frames <= maximum_bytes - reserved_bytes`)
 and metadata bound `16 KiB + 4096 * frames`; capture does not return the payload
-through the socket. References: [`collect!`/`capture!`](../assets/deployment/hil/calibration_server.jl#L350-L518),
-[`encode_reply`](../assets/deployment/hil/calibration_server.jl#L628-L633).
+through the socket. References: [`collect!`/`capture!`](https://github.com/DarrylGamroth/pipewireao-rtc/blob/3101c5a/assets/deployment/hil/calibration_server.jl#L350-L518),
+[`encode_reply`](https://github.com/DarrylGamroth/pipewireao-rtc/blob/3101c5a/assets/deployment/hil/calibration_server.jl#L628-L633).
 
 ### Rust compatibility surface
 
@@ -82,7 +82,7 @@ unknown top-level reply fields. **Observed contract difference:** no Rust
 `Capture` action/evidence exists, while Julia campaign uses `capture` for the
 interaction/HIL artifact path. The campaign client also has its own endpoint
 record schema that accepts `captured` and does not implement `collect`
-([`Endpoint`/`request!`](../src/calibration_campaign.jl#L299-L367)).
+([`Endpoint`/`request!`](https://github.com/DarrylGamroth/pipewireao-rtc/blob/3101c5a/src/calibration_campaign.jl#L299-L367)).
 This must be resolved as a phase-E interface mapping; this inventory does not
 select its native representation.
 
@@ -90,11 +90,11 @@ select its native representation.
 
 | Current caller / seam | Exact source interface and scope |
 | --- | --- |
-| Julia server framing | `parse_request(payload::AbstractString)` → typed request; `execute!(owner::Owner, request; started::UInt64=time_ns(), check_connection=()->nothing)` → reply NamedTuple. `effect!` and acquisition helpers implement the operational behavior. Keep effect/session implementation semantics at these seams while replacing parse/encode/dispatch framing. See [`calibration_server.jl`](../assets/deployment/hil/calibration_server.jl#L274-L290), [effect and execute](../assets/deployment/hil/calibration_server.jl#L520-L633). |
-| Julia transport lifecycle | `serve_connection!(owner, socket; io_timeout_ns, should_stop, service_control, admission_enabled)` accepts one client/run; `serve!(owner, listener; accept_timeout_ns, ...)` admits one client; path overload publishes/removes socket. See [connection/accept](../assets/deployment/hil/calibration_server.jl#L695-L793). |
+| Julia server framing | `parse_request(payload::AbstractString)` → typed request; `execute!(owner::Owner, request; started::UInt64=time_ns(), check_connection=()->nothing)` → reply NamedTuple. `effect!` and acquisition helpers implement the operational behavior. Keep effect/session implementation semantics at these seams while replacing parse/encode/dispatch framing. See [`calibration_server.jl`](https://github.com/DarrylGamroth/pipewireao-rtc/blob/3101c5a/assets/deployment/hil/calibration_server.jl#L274-L290), [effect and execute](https://github.com/DarrylGamroth/pipewireao-rtc/blob/3101c5a/assets/deployment/hil/calibration_server.jl#L520-L633). |
+| Julia transport lifecycle | `serve_connection!(owner, socket; io_timeout_ns, should_stop, service_control, admission_enabled)` accepts one client/run; `serve!(owner, listener; accept_timeout_ns, ...)` admits one client; path overload publishes/removes socket. See [connection/accept](https://github.com/DarrylGamroth/pipewireao-rtc/blob/3101c5a/assets/deployment/hil/calibration_server.jl#L695-L793). |
 | Rust runtime | `rtc-calibrate` connects `UnixStream::connect(endpoint_path)`, wraps `CalibrationSocketEndpoint::new`, then calls `acquire_calibration`; replace construction/endpoint adapter in [`rtc-calibrate.rs`](../src/bin/rtc-calibrate.rs#L173-L185), preserving plan parse/output and coordinator call. |
-| Campaign client | `CalibrationCampaign.endpoint_connect(path,run,timeout_ns)` → `Endpoint`; `request!(endpoint::Endpoint, action, expected)` sends and validates one request/result. Caller in `run_interaction` issues hold/adopt/settle/capture/restore/release; see [endpoint and request](../src/calibration_campaign.jl#L299-L367), [campaign actions](../src/calibration_campaign.jl#L495-L555). |
-| HEART pilot client | `HeartCalibrationExport.run_pilot` directly uses `endpoint_connect` and closure calling `request!`; hold/adopt/settle/capture/restore/release; see [`heart_calibration_export.jl`](../src/heart_calibration_export.jl#L384-L428). Search indicates HEART full-plan path also connects with `CalibrationCampaign.endpoint_connect` and consumes capture manifests in `heart_calibration_export.jl` around lines 467–554. |
+| Campaign client | `CalibrationCampaign.endpoint_connect(path,run,timeout_ns)` → `Endpoint`; `request!(endpoint::Endpoint, action, expected)` sends and validates one request/result. Caller in `run_interaction` issues hold/adopt/settle/capture/restore/release; see [endpoint and request](https://github.com/DarrylGamroth/pipewireao-rtc/blob/3101c5a/src/calibration_campaign.jl#L299-L367), [campaign actions](https://github.com/DarrylGamroth/pipewireao-rtc/blob/3101c5a/src/calibration_campaign.jl#L495-L555). |
+| HEART pilot client | `HeartCalibrationExport.run_pilot` directly uses `endpoint_connect` and closure calling `request!`; hold/adopt/settle/capture/restore/release; see [`heart_calibration_export.jl`](https://github.com/DarrylGamroth/pipewireao-rtc/blob/3101c5a/src/heart_calibration_export.jl#L384-L428). Search indicates HEART full-plan path also connects with `CalibrationCampaign.endpoint_connect` and consumes capture manifests in `heart_calibration_export.jl` around lines 467–554. |
 
 ## Identity, deadlines, and inactivity boundaries
 
@@ -117,9 +117,9 @@ ack; release requires confirmed restore. Once an effect has begun, errors
 fault the owner and preserve hold. `execute!` rejects wrong run, non-increasing
 serial, over-limit timeout, or unsupported initial action before running it;
 the deadline is based on server `started=time_ns()` and checked around effects.
-References: [`Owner`/fault](../assets/deployment/hil/calibration_server.jl#L101-L188),
-[`execute!`](../assets/deployment/hil/calibration_server.jl#L600-L633),
-[`effect!`](../assets/deployment/hil/calibration_server.jl#L520-L598).
+References: [`Owner`/fault](https://github.com/DarrylGamroth/pipewireao-rtc/blob/3101c5a/assets/deployment/hil/calibration_server.jl#L101-L188),
+[`execute!`](https://github.com/DarrylGamroth/pipewireao-rtc/blob/3101c5a/assets/deployment/hil/calibration_server.jl#L600-L633),
+[`effect!`](https://github.com/DarrylGamroth/pipewireao-rtc/blob/3101c5a/assets/deployment/hil/calibration_server.jl#L520-L598).
 
 **Accept and inactivity:** after listener readiness the owner waits for
 `admission_enabled()` before starting the finite accept timer; accept timeout
@@ -130,8 +130,8 @@ EOF, pipelined arrival before prior reply, stop request, or broken connection
 causes endpoint failure/fault and therefore retained hold. Per-request timeout
 starts at record completion (server `started`) and bounds effect and reply.
 While admission is disabled, ordinary actions return `cancelled`, but restore
-and release remain admitted. References: [`serve_connection!`](../assets/deployment/hil/calibration_server.jl#L695-L741),
-[`serve!`](../assets/deployment/hil/calibration_server.jl#L743-L793).
+and release remain admitted. References: [`serve_connection!`](https://github.com/DarrylGamroth/pipewireao-rtc/blob/3101c5a/assets/deployment/hil/calibration_server.jl#L695-L741),
+[`serve!`](https://github.com/DarrylGamroth/pipewireao-rtc/blob/3101c5a/assets/deployment/hil/calibration_server.jl#L743-L793).
 
 ## Phase-E replacement inventory (recommendations)
 

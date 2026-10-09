@@ -1,14 +1,15 @@
 using Test, PipeWireAODeployment, JSON3
 const P = PipeWireAODeployment
+tree_identity(root) = Dict(relpath(joinpath(parent, file), root) => P.Common.sha256_file(joinpath(parent, file)) for (parent, _, files) in walkdir(root) for file in files)
 
 @testset "named deployment package and operational source closure" begin
     @test P.ScienceExport.Parameter("name", "endpoint", "F32_LE", (2, 3), "value", "schema").shape == [2, 3]
     @test nameof(P) == :PipeWireAODeployment
     @test Base.PkgId(P).uuid !== nothing
     @test isfile(joinpath(P.package_root(), "src", "PipeWireAODeployment.jl"))
-    inventory = P.CalibrationCampaign.orchestration_sources()
+    inventory = P.ScienceExport.orchestration_sources()
     @test haskey(inventory, joinpath(P.package_root(), "src", "common.jl"))
-    @test haskey(inventory, joinpath(P.resource_root(), "calibration_campaign.jl"))
+    @test haskey(inventory, joinpath(P.resource_root(), "hil", "parameter_source.jl"))
     @test_throws ArgumentError P.source_relative_path(dirname(P.package_root()))
     @test_throws ArgumentError P.ScienceExport.copy_deployment_runtime(P.package_root())
     @test_throws ArgumentError P.ScienceExport.copy_deployment_runtime(joinpath(P.package_root(), "nested-output"))
@@ -17,7 +18,7 @@ const P = PipeWireAODeployment
         @test_throws ArgumentError P.ScienceExport.copy_deployment_runtime(rejected)
         @test !ispath(rejected)
     end
-    @test P.CalibrationCampaign.orchestration_sources() == inventory
+    @test P.ScienceExport.orchestration_sources() == inventory
     # The checkout's deployment directory is not itself copied recursively.
     # An unrelated child is safe; an installed package contains its resources
     # in the copied package tree, so every child there overlaps by definition.
@@ -47,7 +48,7 @@ const P = PipeWireAODeployment
         @test isfile(joinpath(sdk, "test", "Project.toml"))
         @test isfile(joinpath(sdk, "test", "runtests.jl"))
         @test sort(readdir(joinpath(sdk, "test"))) == sort(readdir(joinpath(P.package_root(), "test")))
-        before = P.CalibrationCampaign.file_identity(sdk)
+        before = tree_identity(sdk)
         # Compile at the original location, then load from a renamed SDK.
         command = [Base.julia_cmd().exec[1], "--startup-file=no", "--project=" * sdk,
             "-e", "using PipeWireAODeployment; @assert startswith(PipeWireAODeployment.package_root(), ARGS[1])", sdk]
@@ -58,14 +59,21 @@ const P = PipeWireAODeployment
         code = "using PipeWireAODeployment; P=PipeWireAODeployment; " *
             "@assert P.package_root()==ARGS[1]; " *
             "@assert P.resource_root()==joinpath(ARGS[1],\"assets/deployment\"); " *
-            "@assert all(isfile, keys(P.CalibrationCampaign.orchestration_sources())); " *
+            "@assert all(isfile, keys(P.ScienceExport.orchestration_sources())); " *
             "P.ScienceExport.copy_deployment_runtime(ARGS[2])"
         copied = joinpath(directory, "second export")
         mkdir(copied)
         @test P.Common.run_checked([Base.julia_cmd().exec[1], "--startup-file=no", "--project=" * sdk,
             "-e", code, sdk, copied]; timeout=60).returncode == 0
-        @test P.CalibrationCampaign.file_identity(sdk) == before
+        @test tree_identity(sdk) == before
         @test isfile(joinpath(copied, "julia", "src", "common.jl"))
+        # Missing declared entrypoints must not silently disappear from provenance.
+        missing = "using PipeWireAODeployment; P=PipeWireAODeployment; " *
+            "rm(joinpath(P.package_root(), \"wireplumber_cli.jl\")); " *
+            "try P.ScienceExport.orchestration_sources(); error(\"missing entry accepted\") " *
+            "catch e; @assert e isa ArgumentError end"
+        @test P.Common.run_checked([Base.julia_cmd().exec[1], "--startup-file=no",
+            "--project=" * sdk, "-e", missing]; timeout=60).returncode == 0
     end
 end
 
@@ -74,9 +82,9 @@ end
         legacy = joinpath(directory, "legacy")
         mkpath(joinpath(legacy, "src"))
         write(joinpath(legacy, "PipeWireAODeployment.jl"), "module PipeWireAODeployment; end")
-        identity = P.CalibrationCampaign.file_identity(legacy)
+        identity = tree_identity(legacy)
         @test_throws P.DeploymentConfiguration.DeploymentError P.DeploymentConfiguration.validate_runtime(legacy)
-        @test P.CalibrationCampaign.file_identity(legacy) == identity
+        @test tree_identity(legacy) == identity
         copied = joinpath(directory, "package")
         mkdir(copied)
         sdk = P.ScienceExport.copy_deployment_runtime(copied)
@@ -84,17 +92,5 @@ end
         project = read(joinpath(sdk, "Project.toml"), String)
         write(joinpath(sdk, "Project.toml"), replace(project, "version = \"0.1.0\"" => "version = \"9.0.0\""))
         @test_throws P.DeploymentConfiguration.DeploymentError P.DeploymentConfiguration.validate_runtime(sdk)
-    end
-end
-
-@testset "cold HIL bridges load from package resources" begin
-    for (file, name) in (("native_owner_bootstrap.jl", :HILNativeOwnerBootstrap),
-                         ("native_acquisition_lifecycle.jl", :HILNativeAcquisitionLifecycle),
-                         ("native_heart_control.jl", :HILHeartControl))
-        suite = Module(gensym(:ResourceBridge))
-        Base.include(suite, joinpath(P.resource_root(), "hil", file))
-        bridge = getfield(suite, name)
-        @test bridge.SOURCE == joinpath(P.package_root(), "src")
-        @test isfile(joinpath(bridge.SOURCE, "native_control_codec.jl"))
     end
 end
