@@ -74,7 +74,7 @@ several declared sources/sinks; the diagram omits optional observation endpoints
 - At the proposal baseline, interaction-matrix acquisition executed the sealed Rust
   `bin/rtc-calibrate`; direct Julia capture stages already use native actions.
   See [the campaign](../deployment/julia/src/calibration_campaign.jl).
-- The GUI imports this repository's Rust session client. Its generic PipeWire
+- At the proposal baseline, the GUI imported this repository's Rust session client. Its generic PipeWire
   registry and PropInfo/Props access are independent of that dependency. It is
   the only active external Rust consumer found.
 - The GUI already accepts `--view-config PATH` for typed operator-view TOML.

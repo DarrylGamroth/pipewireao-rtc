@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "date": "2026-10-08",
+  "baseline": "2e49b6e4deb621051f6ac27f1d98e59f0e11f314",
+  "branch": "codex/native-client-split-20261008",
+  "starting_changes": [],
+  "gui_revision": "d193254fb5044b84ede83b65a8849da6f115ae7f",
+  "corrected_source_sha256": "7bd373c23ed9d7beca59e1f064aed716751fd385bf059d22af9e73d4eaec606a",
+  "log": {
+    "path": "/home/dgamroth/.cache/gui-native-client-20261008/native-client-rtc-socket.log",
+    "sha256": "5bed2f39e2ffc376d62288fcdd2af8d36cdddcf25917f680b22925b0440e24c7"
+  },
+  "checks": {
+    "focused_test_exit_code": 0,
+    "parent_tests_passed": 1,
+    "actual_child_tests_passed": 1,
+    "format_exit_code": 0,
+    "whitespace_exit_code": 0
+  },
+  "environment": {
+    "rustc": "1.97.1",
+    "cpu": 14,
+    "native_prefix": "/opt/pipewireao",
+    "owned_temporary_target": "/tmp/native-client-rtc-target"
+  },
+  "scope": "Test selector and source ownership documentation only; no production runtime change"
+}

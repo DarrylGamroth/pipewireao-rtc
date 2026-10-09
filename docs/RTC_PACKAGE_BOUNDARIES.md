@@ -27,6 +27,7 @@ Its name/location is pending selection. HEART source remains unchanged.
 | CopperReference, CalibrationMethod, CopperQuality | REVOLT recipes/analysis | Use AOC methods; preserve existing scientific acceptance failures and measured-unit conventions. |
 | deployment/hil models, instrument entrypoints and exported scientific environments | Instrument project, or existing owning science package where already generic | Avoid mandatory CUDA/AOS/JFG/AOC dependencies in operational tools. Inventory entrypoints before transfer. |
 | GUI view TOML | Instrument project | Optional input to the independent GUI; not a graph definition or headless dependency. |
+| GUI-used native Rust client closure | GUI native adapter | Relocated and independently reviewed in GUI `d193254`; headless RTC Cargo dependency removed. Remaining RTC Rust retirement belongs to the extraction phase. |
 
 ## Caller and resource constraints
 

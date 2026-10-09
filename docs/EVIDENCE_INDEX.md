@@ -1,5 +1,7 @@
 # Delivery evidence catalog
 
+- [GUI client detachment, 2026-10-08](validation/native-client-20261008/README.md): GUI-owned Rust native client, removed RTC Cargo dependency, independent review and native/WASM checks; inherited socket child-test selector corrected in both repositories. No new live-session or timing qualification.
+
 - [Julia interaction acquisition, 2026-10-08](validation/julia-acquisition-20261008/README.md): reusable native driver, Julia export entrypoint, temporary Rust comparison, recovery/plan bounds, relocation/install checks and independent review. No new scientific or timing qualification.
 
 - [Explicit runtime export, 2026-10-08](validation/runtime-export-20261008/README.md): unrelated-root-file fail-before/pass-after, declared source closure, relocated SDK/re-export and Julia software checks. No new live or timing qualification.

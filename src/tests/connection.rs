@@ -41,12 +41,10 @@ fn explicit_socket_ignores_environment_in_owned_child() {
         return;
     }
     let directory = tempfile::tempdir().unwrap();
+    let (_, module) = module_path!().split_once("::").unwrap();
+    let child_test = format!("{module}::explicit_socket_ignores_environment_in_owned_child");
     let mut child = Command::new(std::env::current_exe().unwrap())
-        .args([
-            "--exact",
-            "native_connection::tests::explicit_socket_ignores_environment_in_owned_child",
-            "--nocapture",
-        ])
+        .args(["--exact", &child_test, "--nocapture"])
         .env(CHILD, "1")
         .env("PIPEWIREAO_REMOTE", directory.path().join("other"))
         .env("PIPEWIRE_REMOTE", "another-unselected-socket")

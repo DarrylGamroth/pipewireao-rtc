@@ -63,10 +63,9 @@ language migration or session-policy change is included.
 The revised [structure proposal](JULIA_RTC_STRUCTURE_PLAN.md) separates reusable
 Julia calibration and systemd tools from independent instrument RTC projects.
 Each instrument owns its graphs, recipes, artifacts and optional GUI TOML profile.
-It also proposes moving GUI-used Rust clients into the GUI's native adapter and
-adopting a shared root Julia package with a selected export closure. It preserves
-WirePlumber/systemd ownership and v1 controls. This is proposed work,
-not an implemented language migration or a change to existing qualification.
+It selects GUI-owned Rust clients and a shared root Julia package with a selected
+export closure. Delivery preserves WirePlumber/systemd ownership and v1 controls;
+the package/instrument extraction is still incomplete.
 The first package-boundary increment extracts instrument-independent file-copy
 helpers and selects runtime source/entrypoints explicitly, preventing whole-root
 copying during the future package move. Installation validation and campaign
@@ -79,8 +78,12 @@ review](validation/julia-acquisition-20261008/README.md) cover causal evidence,
 clipping/recovery, cancellation, timeout bounds, relocated exports and synthetic
 Classic/Copper-sized owners, including comparison with the temporary Rust oracle.
 This adds no scientific or real-time qualification. Older sealed packages remain
-unchanged. GUI client detachment, instrument projects and the shared root-package
-move remain unfinished.
+unchanged. The GUI now owns its native Rust client closure and has removed the
+headless RTC Cargo dependency. [GUI software checks and independent review](https://github.com/DarrylGamroth/pipewireao-gui/blob/d193254fb5044b84ede83b65a8849da6f115ae7f/docs/validation/native-client-20261008/README.md)
+cover retained protocol tests, fencing, native/WASM separation and the corrected
+socket child-test selector; they add no live-session or timing qualification.
+Instrument projects and the shared root-package move remain unfinished. Retire
+the remaining RTC Rust source during that extraction after checking active callers.
 
 Completed Copper link and process-supervision transfers remain valid only for
 their dated scopes. The selected Copper composition has passed link realization
