@@ -109,11 +109,11 @@ end
 """Publish the result of an accepted ticket after the sole owner has applied it."""
 function complete!(runtime::Runtime, ticket::Endpoint.Ticket,
         lifecycle::Codec.ColdLifecycle, snapshot::Union{Nothing,Codec.Snapshot};
-        result::Int32=Int32(0), message::AbstractString="")
+        result::Int32=Int32(0), message::AbstractString="", terminal::Bool=false)
     header = Envelope.ReplyHeader(ticket.header.controller, runtime.endpoint.instance,
         ticket.header.token, ticket.header.operation, result)
     completion = Client.encode_completion(runtime.profile, header, lifecycle, snapshot, message)
-    Endpoint.complete!(runtime.endpoint, ticket, completion)
+    Endpoint.complete!(runtime.endpoint, ticket, completion; terminal)
     return nothing
 end
 

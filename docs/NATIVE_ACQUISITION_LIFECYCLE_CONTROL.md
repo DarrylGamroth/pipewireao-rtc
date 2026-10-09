@@ -26,6 +26,16 @@ Cold lifecycle Ids are `Preparing=1`, `Prepared=2`, `Connected=3`, `Fault=4`,
 `Stopped=5`. Scientific `running` and `completed` are snapshot flags. The
 owner's existing serialized dispatcher remains their authority.
 
+`NativeAcquisitionLifecycleRuntime.complete!` accepts `terminal=true` for a
+successful Shutdown after scientific cleanup. The adapter retains the issuing
+controller, publishes Stopped, flushes publication and requires clean controller
+removal before closing its transport, within the original ticket deadline.
+WirePlumber invokes native source Shutdown before graph-owner Shutdown, releases
+its dedicated controller marker after all Stopped replies, and observes the exact
+owner control clients disappear while the private core remains alive. Only then
+does it complete public Quit. Legacy acquisition mailboxes keep their existing
+bootstrap cleanup path. These operations do not change the wire representation.
+
 The completion payload Struct has exactly three fields: lifecycle Id, Snapshot
 Struct or None, and bounded message String (at most 8192 UTF-8 bytes). A
 successful correlated completion requires a Snapshot, including Preparing and
