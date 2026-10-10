@@ -156,11 +156,20 @@ function validate_session_manager(value; legacy_export_input::Bool=false)
     return nothing
 end
 
+"Explicit cold startup budget; acquisition and live-control deadlines are separate."
+function startup_timeout_ms(spec::AbstractDict)
+    value = get(spec, "startup-timeout-ms", 300000)
+    require(value isa Integer && !(value isa Bool) && 1000 <= value <= 3600000,
+        "startup-timeout-ms must be an integer in 1000:3600000")
+    return Int(value)
+end
+
 function profile(path::AbstractString, prefix::AbstractString; legacy_export_input::Bool=false)
     value = decode(path, prefix)
     require(value isa AbstractDict && REQUIRED_KEYS ⊆ Set(keys(value)) ⊆
-        union(REQUIRED_KEYS, Set(["source-owner","detector-observation","session-manager","node-owners"])) && get(value, "version", nothing) === 1,
+        union(REQUIRED_KEYS, Set(["source-owner","detector-observation","session-manager","node-owners","startup-timeout-ms"])) && get(value, "version", nothing) === 1,
         "expected version 1 deployment with the documented fields")
+    startup_timeout_ms(value)
     require(value["name"] isa String && occursin(r"^[a-z0-9][a-z0-9-]{0,39}$", value["name"]),
         "deployment name must use 1..40 lowercase letters, digits or hyphens")
     owners = value["owners"]

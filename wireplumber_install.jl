@@ -133,7 +133,8 @@ function install(options)
         "@PIPEWIRE_PREFIX@" => quote_unit(prefix),
         "@WIREPLUMBER@" => quote_unit(wireplumber),
         "@SOURCE_ROLE@" => installed_spec["source-owner"],
-        "@CPUS@" => join(cpus, " "))
+        "@CPUS@" => join(cpus, " "),
+        "TimeoutStartSec=300" => "TimeoutStartSec=" * string(D.startup_timeout_ms(installed_spec) / 1000))
     occursin(r"@[A-Z_]+@", unit) &&
         throw(ArgumentError("unresolved WirePlumber unit template binding"))
     systemd = joinpath(destination, "systemd")

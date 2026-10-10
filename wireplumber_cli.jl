@@ -137,7 +137,8 @@ function publish!(args)
     uuid = String(record["session_uuid"])
     remote = String(record["remote"])
     node = "pipewireao.rtc.session." * name
-    deadline = Client.monotonic() + 240
+    deadline = Client.monotonic() + (haskey(package, "startup-timeout-ms") ?
+        D.startup_timeout_ms(package) / 1000 : 240)
     client = Client.connect(Profile.Profile(), remote, node, UInt32(pid), expected;
         deadline=min(deadline, Client.monotonic() + 30),
         controller_instance=Int64(record["admission_controller_instance"]))

@@ -348,7 +348,8 @@ function start!(package::AbstractString, base::AbstractString;
         checked(["systemctl", "--user", "daemon-reload"], deadline)
         _assert_installed_instance!(unit, root, unit_file, deadline)
         start_attempted = true
-        checked(["systemctl", "--user", "start", unit], deadline; limit=300)
+        checked(["systemctl", "--user", "start", unit], deadline;
+            limit=DeploymentConfiguration.startup_timeout_ms(spec) / 1000)
         handle = _identity(unit, root; deadline)
         _ledger(handle)["phase"] == "prepared" ||
             throw(ArgumentError("WirePlumber session did not retain prepared launch evidence"))

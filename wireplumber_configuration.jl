@@ -9,6 +9,7 @@ module WirePlumberConfiguration
 using PipeWireAODeployment
 
 const Export = PipeWireAODeployment.ScienceExport
+const D = PipeWireAODeployment.DeploymentConfiguration
 
 export session_configuration, write_session_config
 
@@ -186,7 +187,7 @@ function session_configuration(spec, session, bindings, records;
             "instance" => string(public_instance),
             "controller.instance" => string(controller_instance), "session.uuid" => uuid,
             "admission.controller-instance" => string(admission_instance),
-            "startup.timeout-ms" => 300000))
+            "startup.timeout-ms" => D.startup_timeout_ms(spec)))
     return Dict{String,Any}(
         "context.properties" => Dict{String,Any}(
             "library.use-fallback" => false, "support.dbus" => false,

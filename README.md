@@ -46,6 +46,13 @@ prefix with the helper's `prefix` keyword. Startup verifies actual process
 incarnations, native readiness and declared placement before acquisition is
 released. Packages with missing WirePlumber assets are rejected.
 
+Cold Julia/CUDA compilation can need a longer preparation budget. A sealed
+profile may explicitly set `startup-timeout-ms` (1000–3600000); the default is
+300000. This setting applies to systemd startup, owner admission and initial
+session publication. The caller's absolute deadline must also cover installation
+and startup. Live controls and acquisition retain their existing deadlines.
+Budgets above five minutes require the matching WirePlumberAO owner policy.
+
 For an exported REVOLT instrument package, use its preflight before session
 startup. From this shared repository root:
 
