@@ -347,6 +347,21 @@ function profile(path::AbstractString, prefix::AbstractString; legacy_export_inp
             node = get(args, "node.name", nothing)
             node isa String && push!(core_nodes, node)
         end
+        # A queue module creates its capture/playback streams through the
+        # private core's own native client, rather than a context SPA object.
+        # Exact names must still originate in the sealed core configuration;
+        # native admission verifies the bound client's process identity.
+        for item in get(core, "context.modules", Any[])
+            item isa AbstractDict && get(item,"name",nothing) == "libpipewire-module-queue" || continue
+            args = get(item,"args",nothing)
+            args isa AbstractDict || continue
+            for key in ("capture.props","playback.props")
+                properties = get(args,key,nothing)
+                properties isa AbstractDict || continue
+                node = get(properties,"node.name",nothing)
+                node isa String && push!(core_nodes,node)
+            end
+        end
         !isempty(core_nodes) && push!(roles, "core")
         require(length(unique(nodes)) == length(nodes) && Set(keys(mapping)) == Set(nodes) &&
             all(role in roles for role in values(mapping)),
@@ -354,7 +369,7 @@ function profile(path::AbstractString, prefix::AbstractString; legacy_export_inp
         for section in ("sources", "graphs", "sinks"), item in session[section]
             if mapping[item["node.name"]] == "core"
                 require(item["node.name"] in core_nodes,
-                    "core-mapped node must have an exact private core context object")
+                    "core-mapped node must have an exact private core context object or queue stream")
             end
             if section == "graphs" && get(item, "factory", nothing) == "pipewireao.fgn-native"
                 require(mapping[item["node.name"]] == "fgn", "FGN graph must map to its own host")
