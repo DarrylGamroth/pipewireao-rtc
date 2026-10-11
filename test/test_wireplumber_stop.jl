@@ -1,5 +1,5 @@
 using Test, PipeWireAODeployment
-include(joinpath(dirname(@__DIR__), "wireplumber_launch.jl"))
+Base.include(@__MODULE__, joinpath(dirname(@__DIR__), "wireplumber_launch.jl"))
 
 @testset "exact installed graceful stop hook" begin
     request = WirePlumberLaunch.Request("/sdk", "/prefix", "pipewireao-session@test.service",

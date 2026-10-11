@@ -95,6 +95,22 @@ The harness separates cold Julia preparation from the actual eight-second
 native request and uses the production 300-second service stop bound. The
 standalone exact-hook tests passed 12 assertions.
 
+The final package-suite attempt exposed two test integration errors before the
+new stop assertions: an unqualified `include` in the isolated suite module and
+the direct launcher's undeclared `UUIDs` test dependency. `Base.include` and the
+existing standard-library test dependency correct those failures without a
+production change. The exact suite then passed 12/12 in the isolated test
+environment. Retained logs are `rtc-full-suite-final.log`,
+`rtc-full-suite-after-include.log` and `rtc-stop-suite-test-environment.log`.
+The corrected full package suite passed 1587/1587 assertions across 44 testsets,
+exit 0, with Julia 1.12.7, CPU15, one thread and
+`Pkg.test(; allow_reresolve=false)`; log `rtc-full-suite-qualified.log`.
+An intervening run was deliberately interrupted to release CPU15 before an
+owned diagnostic's Ready gate expired; `rtc-full-suite-after-test-environment.log`
+does not constitute a pass. The final production driver syntax check and
+`git diff --check` passed. Opt-in live qualification is separate from the package
+suite and is not automatically executed by it.
+
 The corrected normal case's source-copy checkpoints (monotonic nanoseconds) are:
 
 | Stage | Monotonic ns | Seconds after helper launch |
@@ -114,7 +130,7 @@ MainPID exit proof followed close by 0.316 seconds. These measurements include
 test timing writes and cold Julia compilation; they are functional cold-path
 evidence, not a real-time latency distribution or production Lua timing bound.
 
-All tests are pinned to CPUs 12/13. Temporary files use
+The stand-in tests are pinned to CPUs 12/13. Temporary files use
 `/home/dgamroth/.cache/rtc-steady-state-20261010/tmp`; the shortened test socket
 name preserves Unix socket path limits. Existing live sessions are not touched.
 
@@ -123,18 +139,163 @@ name preserves Unix socket path limits. Existing live sessions are not touched.
 Astra accepted production commit `3ca7b5f` with no confirmed source defect.
 `GS-REV-001` (P2) records the qualification gap: baseline ordering failure and
 corrected normal/fault/unknown cases now pass their respective intended gates;
-production matching command/frame counts remain required. `GS-REV-002` (P3)
+the four production balanced-drain gates below now close that gap. `GS-REV-002` (P3)
 is addressed by the deadline wording and measured helper launch, request,
 client close and MainPID exit times above.
 The isolated test instruments a source copy with exact insertion checks;
 production has no timing hooks. Its retained journals, ledgers and monotonic
 checkpoints distinguish package preparation from the native request and cleanup.
 
-## Remaining evidence boundary
+## Production application qualification
 
-Native Copper JFG Quit's reported five-second overrun remains a separate
-investigation until close/report/main-finish timestamps distinguish the slow
-stage. This change does not increase its deadline or claim that symptom is
-repaired. The production FGN/JFG test must additionally verify equal final
-frame/command counts and no terminal scientific fault on the selected staged
-profile. The root task coordinates that CUDA test with the allocation worker.
+The opt-in `test/native_production_shutdown.jl` ran four selected sealed,
+non-actuating simulated profiles with ordinary SIGTERM, exported placements,
+8192 finite exchanges and a 256-exchange prefix. Every incarnation passed a
+fresh verifier using the scientific owner's exact Julia binary, project,
+load path/depot and thread settings: CUDA/CUDACore 6.4.2 and
+`use_nonblocking_synchronization === false`. No scientific source, calibration,
+algorithm, graph, placement, production instrumentation or deadline was changed
+by the driver. FGN inputs declare DM-only observation; JFG inputs declare the
+selected detector/WFS feeds. This is software/application validation, not
+physical hardware, capacity or uncontended real-time qualification.
+
+The driver accepts `SEALED_PACKAGE FRESH_STAGE FRESH_EVIDENCE finite|systemd`
+under the package's `revolt` Julia project. `RTC_OPERATOR_VIEW_WRITER` selects
+the maintained REVOLT `scripts/deploy_classic.jl`;
+`RTC_SOURCE_QUERY_CLIENT` selects the recorded existing typed query client.
+`RTC_HOLD_READY`, `RTC_FINITE_CONTROLS`, `RTC_HOLD_FINISH` and
+`RTC_HOLD_SYSTEMD_STOP` are opt-in test coordination gates. Their saved files
+coordinate external observers; native Status remains the session authority.
+The normal driver rejects SDK owner environments declaring profiling or
+callback-metrics instrumentation.
+
+All four completed finite runs had 8192 frames and matching commands. All
+7936 measured exchanges had zero **simulator-process** allocation bytes,
+pool/big/malloc/realloc counters, GC time, pauses and full sweeps. Fresh systemd
+stop invocations separately interrupted genuine Running acquisition, completed
+all matching commands, retained no scientific fault, submitted one accepted
+ExecStop Quit, and ended inactive/successful with MainPID/ControlPID 0,
+quiescent cgroups and complete error-free cleanup. No Unknown mutation was
+retried.
+
+| Profile | Finite measured / bytes / GC | Running sequence before systemd stop | Final matched frames/commands | Systemd stop through cleanup, s |
+| --- | --- | ---: | ---: | ---: |
+| Classic JFG | 7936 / 0 / 0 | 3045 | 6196 | 27.974 |
+| Classic FGN | 7936 / 0 / 0 | 514 | 3650 | 27.071 |
+| Copper JFG | 7936 / 0 / 0 | 512 | 3681 | 26.963 |
+| Copper FGN | 7936 / 0 / 0 | 513 | 3576 | 25.425 |
+
+The final finite runs included native gain perturbation/exact Float32
+restoration, +0.81 µm OPD clipping against ±0.8 bounds, Zernike index 12 and
+Fourier index 0 adoption, and active zero restoration. Classic JFG additionally
+attempted a scaled 221×376 reconstructor FITS array and original restoration.
+The helper's optimistic FITS flag was superseded by parent inspection:
+`AcceptedSubmitted` with requested/active generation still zero does not prove
+adoption. Those FITS attempts do not qualify adoption/restoration; the finite simulator
+and lifecycle gates and separately verified scalar/shape controls still pass.
+The original optimistic receipt is preserved beside
+`live-controls/fits-adoption-adjudication.json` and
+`release-finish-adjudicated.json`. The driver captures the adjudicated companion
+preferentially with its filename and SHA-256, separately from finite completion;
+it never treats an unchanged generation or the original helper flag as a FITS
+adoption gate. Future positive FITS evidence must show each requested/active
+generation advancing beyond the previous stage and active original restoration.
+A read-only Ready declaration/binding preflight armed the sole external native
+watcher before Start; an atomic native Running/sequence-at-least-512 receipt
+triggered controls without message latency. Four held 64-sample observers per
+run verified literal 277-element Float32 offset bytes and copied Headers, then
+detached. All controls/restorations finished before finite exhaustion.
+
+| Controlled finite profile | Control duration, s | Last held-zero sequence | Roles [none,direct,extrapolated,unknown/mixed] | Stop acknowledgement, s | Quit Offline acknowledgement, s |
+| --- | ---: | ---: | --- | ---: | ---: |
+| Classic JFG, FITS attempted | 11.430 | 3355 | [0,221,56,0] | 0.178 | 2.542 |
+| Classic FGN | 10.708 | 3187 | [0,221,56,0] | 0.180 | 2.162 |
+| Copper JFG | 10.743 | 2920 | [0,0,0,277] | 0.178 | 1.591 |
+| Copper FGN | 10.709 | 3160 | [0,0,0,277] | 0.179 | 1.476 |
+
+These are native acknowledgement intervals, separate from cold final service
+cleanup. All remaining final latest Demand/Offset/role/constraint Headers
+aligned. Copper JFG clip's detached endpoint instead had latest Demand 1297
+while Offset/role/constraint shared 1296 / PTS 187097549938450; they are
+explicitly not one latest tuple. Its window retained 348 valid production
+associated feedback/role render frames, Demand +0.800000011921 and strictly
+positive residual +0.002388358..+0.019619882. Its later Zernike/Fourier/zero
+endpoints aligned at 1815/2341/2920. Applied remains an independent feed and is
+not required to share Demand's latest Header.
+
+### Retained evidence and preparation failures
+
+All raw receipts are under `~/.cache/rtc-steady-state-20261010/`:
+
+- Final controlled runs: `{classic,copper}-{jfg,fgn}-final-controlled-evidence/`,
+  except Copper FGN, whose first `copper-fgn-final-finite-evidence/` completed
+  controls. Each contains `qualification.json`, exact-owner CUDA proof,
+  finite reports, native journals and the truthful `release-finish` companion.
+- In-flight stops: `{classic,copper}-{jfg,fgn}-final-systemd-evidence/`, except
+  Classic JFG's successful resumed `classic-jfg-final-systemd-evidence-2/`.
+- First Classic JFG baseline: `classic-jfg-final-finite-evidence-2/` (startup
+  and CUDA proof) and `...-evidence-3/` (finite result and 256-sample observer).
+  It recorded 245 coherent SHWFS sequences, Header 2082 / PTS 183348173666712,
+  roles [0,221,56,0] and zero constraint residual; that receipt proves the
+  zero-residual case, not clipping.
+- Earlier Classic FGN finite evidence preserved a 205–206/256-sample observer
+  timeout after gain/clip adoption, with modes not attempted and zero submitted
+  only after exhaustion. Copper JFG's first finite watcher rejected a
+  Classic-specific gain target before sending any mutation. Both finite
+  allocation/lifecycle gates passed; their companions record controls incomplete.
+  Fresh controlled runs above close those control gaps without relabelling the
+  earlier attempts.
+
+The first Classic JFG startup failed before admission because the parent-owned
+graph generator emitted colon separators instead of SPA `=`; the repaired SDKs
+failed-before/passed-after the actual JFG parser with unchanged decoded graph
+semantics/scientific inputs. An initial driver used a calibration-only Ready
+view; direct native Status corrected the client API mismatch before first
+Start. The legacy typed V1 source client also required untouched token-zero
+Props, but bootstrap had already committed warm run/pause/reset/query requests.
+The test-only connection validator accepts a valid committed snapshot while
+preserving PID/instance/protocol checks. Authoritative native Ready plus a
+read-only source query proves sequence zero before admission. Its source path
+and SHA are recorded; no production source client was changed.
+
+Ready gain readback showed an active default (Classic 1.0) before the first
+graph process adopted pending configured initial properties (Running −0.3).
+The helper therefore rereads and exactly restores the actual Running value.
+Parent inspection confirmed the initial pending stage rejects competing writes
+with EBUSY; no scientific gain/configuration change was warranted.
+
+### Allocation and timing boundaries
+
+Simulator counters exclude the separate JFG, parameter and FGN owner processes.
+The unprofiled final SDKs omit JFG callback allocation instrumentation, so these
+zero counters cannot prove zero JFG allocations or graph-thread GC pauses.
+The parent separately owns explicitly sealed callback diagnostic SDKs.
+Existing sustained reports retain aggregate source-to-command histograms over
+7936 exchanges; raw retained-prefix observations precede controls. They do not
+separate individual control phases or establish absent control-related tails.
+Recorded unrelated CPU2/3/4 simulation/synthesis processes were left untouched.
+Production uses exported profile placements; CPU15 observer/build work can
+overlap cold preparation but all owned builds were quiet before measured Start.
+Ordinary exact-project shared-depot CUDA import warming (191 s Classic, 133 s
+Copper precompilation) made no GPU science call or source/cache-policy change.
+
+Early-stop coarse markers span controls and finalization and cannot attribute
+allocations to an individual phase:
+
+| Partial run | Measured exchanges | Bytes / pool / malloc | GC pauses / time |
+| --- | ---: | --- | --- |
+| Classic JFG, controls | 5940 | 7,895,936 / 152876 / 50 | 0 / 0 |
+| Classic FGN, no helper controls | 3394 | 7,896,528 / 152884 / 50 | 0 / 0 |
+| Copper JFG, no helper controls | 3425 | 7,896,560 / 152885 / 50 | 1 / 53.189 ms |
+| Copper FGN, no helper controls | 3320 | 7,893,344 / 152837 / 50 | 0 / 0 |
+
+The similar aggregates without mutation helpers show live controls are not
+required for these allocations. Copper JFG's 3425-sample source-to-command
+histogram had maximum 3.070 ms and zero samples above its 4 ms wall period,
+but no phase timestamp attributes its GC pause. Strict finite acceptance and
+balanced partial-stop acceptance remain separate.
+
+The original Copper JFG five-second Unknown Quit root cause remains unproven.
+The selected current profile now acknowledges normal Quit within the unchanged
+request/effect bounds; that pass does not retroactively identify the old slow
+phase or justify a timeout increase.

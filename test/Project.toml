@@ -6,6 +6,7 @@ JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
 Sockets = "6462fe0b-24de-5631-8697-dd941f90decc"
 SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
+UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
 [sources]
 PipeWireAODeployment = {path = ".."}
@@ -15,6 +16,7 @@ PipeWireAO = "0.6.17"
 SHA = "0.7, 1"
 Sockets = "1"
 TOML = "1"
+UUIDs = "1"
 Test = "1"
 PipeWireAODeployment = "0.1"
 JSON3 = "1"

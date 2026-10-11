@@ -1,6 +1,6 @@
 # Delivery evidence catalog
 
-- [Graceful systemd stop, 2026-10-10](validation/systemd-graceful-stop-20261010/README.md): exact-incarnation one-shot ExecStop delegates orderly stop to native WirePlumber Quit before process revocation. Cold systemd/native control regressions and the remaining selected-profile deadline boundary are recorded separately.
+- [Graceful systemd stop, 2026-10-10](validation/systemd-graceful-stop-20261010/README.md): exact-incarnation one-shot ExecStop delegates orderly stop to native WirePlumber Quit before process revocation. Cold ownership regressions and all four selected-profile finite allocation, live scalar/shape controls and in-flight balanced-drain gates pass; the original FITS attempt and separate graph-process GC evidence retain explicit scope limits.
 
 - Instrument-owned graceful acquisition shutdown, 2026-10-09:
   `REVOLTRTC.jl/docs/validation/graceful-shutdown-20261009/README.md` records
