@@ -15,9 +15,6 @@ Client.encode_failure(::Profile.Profile, header, lifecycle) =
     Envelope.encode_completion(header, SPA.Struct(Pod(""), Pod("request expired"), Pod(SPA.Id(UInt32(lifecycle)))))
 
 function main(root, remote, unit, mode)
-# Forced-stop cases measure systemd's native ordering; avoid Julia's diagnostic
-# shutdown/finalizers introducing a second independent wait in this stand-in.
-ccall(:signal, Ptr{Cvoid}, (Cint, Ptr{Cvoid}), Base.SIGTERM, C_NULL)
 invocation = ENV["INVOCATION_ID"]
 runtime = joinpath(root, invocation)
 mkpath(runtime)
@@ -41,6 +38,7 @@ try
         "name"=>"stop-test"); atomic=true)
     event("ready")
     while true
+        mode == "exited" && isfile(joinpath(root, "exit-owner")) && break
         Endpoint.poll!(endpoint)
         ticket = Endpoint.take!(endpoint)
         if ticket !== nothing
@@ -52,6 +50,9 @@ try
                 Endpoint.complete!(endpoint, ticket, Envelope.encode_completion(header,
                     SPA.Struct(Pod(SPA.Id(UInt32(state))), Pod(SPA.Id(UInt32(2))), Pod(details))))
             elseif ticket.header.operation == 1
+                open(joinpath(root, "quit-submissions"), "a") do io
+                    println(io, ticket.header.token)
+                end
                 event("quit-entry")
                 if mode == "unknown"
                     close(endpoint)

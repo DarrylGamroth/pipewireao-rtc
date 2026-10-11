@@ -33,8 +33,10 @@ session. WirePlumber retains authority for source hold and outstanding command
 adoption, graph stop, link withdrawal and terminal owner acknowledgements. The
 client uses the existing eight-second request bound; Lua retains its five-second
 effect deadline. It records the attempt before submission and waits for the
-same WirePlumber process to exit within its finite helper budget. A failed,
-missing or unknown acknowledgement is not retried.
+same WirePlumber process to exit within its cooperative 30-second helper budget.
+That budget begins after package load and does not interrupt compilation, I/O
+or client close; systemd's unchanged 300-second watchdog bounds the process.
+A failed, missing or unknown acknowledgement is not retried.
 
 Fresh invocation names are exclusive and services use `Restart=no`. On failure
 or exit, cancel all cohort/member start jobs, revoke and prove the private core
