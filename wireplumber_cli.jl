@@ -44,7 +44,7 @@ function _preflight(argv)
 end
 
 function _unit_identity(unit, invocation, runtime_root, launcher, source_role)
-    values = S.properties(unit; extra="ControlPID,ExecStopPost,Restart,KillMode,Type")
+    values = S.properties(unit; extra="ControlPID,ExecStop,ExecStopPost,Restart,KillMode,Type")
     values["LoadState"] == "loaded" &&
         values["ActiveState"] in ("activating", "active") &&
         values["Type"] == "exec" && values["Restart"] == "no" &&
@@ -62,6 +62,8 @@ function _unit_identity(unit, invocation, runtime_root, launcher, source_role)
         unit, launcher, runtime_root)
     WirePlumberLaunch.cleanup_hook_valid(values["ExecStopPost"], request, source_role) ||
         throw(ArgumentError("WirePlumber emergency cleanup hook changed"))
+    WirePlumberLaunch.stop_hook_valid(values["ExecStop"], request) ||
+        throw(ArgumentError("WirePlumber native stop hook changed"))
     pid = tryparse(Int, values["MainPID"])
     pid !== nothing && 0 < pid <= typemax(UInt32) ||
         throw(ArgumentError("WirePlumber MainPID is unavailable"))
@@ -233,6 +235,88 @@ function retire!(runtime_root)
     return nothing
 end
 
+"Run only as this invocation's ExecStop, before systemd revokes WirePlumber."
+function stop!(args)
+    invocation = S.valid_invocation(get(ENV, "INVOCATION_ID", ""))
+    deadline = Client.monotonic() + 30
+    values = S.properties(args.unit;
+        extra="ControlPID,Type,Restart,KillMode", deadline)
+    values["LoadState"] == "loaded" && values["ActiveState"] == "deactivating" &&
+        values["Type"] == "exec" && values["Restart"] == "no" &&
+        values["KillMode"] == "control-group" &&
+        S.valid_invocation(values["InvocationID"]) == invocation &&
+        tryparse(Int, values["ControlPID"]) == getpid() ||
+        throw(ArgumentError("native stop is not this session's ExecStop"))
+    group = values["ControlGroup"]
+    observed = S.proc_cgroup(getpid())
+    startswith(group, "/") && group != "/" &&
+        (observed == group || startswith(observed, group * "/")) ||
+        throw(ArgumentError("native stop is outside this session's cgroup"))
+    # A successful public Quit or unexpected process exit can invoke ExecStop
+    # after MainPID has already disappeared. Cleanup remains ExecStopPost's job.
+    values["MainPID"] == "0" && return nothing
+    runtime = joinpath(args.runtime_root, invocation)
+    ledger = joinpath(runtime, "launch.json")
+    record = C.read_json(ledger; maximum=1024 * 1024)
+    pid = tryparse(Int, values["MainPID"])
+    record["unit"] == args.unit && record["invocation"] == invocation &&
+        record["runtime"] == runtime && pid == record["wireplumber_pid"] &&
+        S.start_ticks(pid) == UInt64(record["wireplumber_start_ticks"]) ||
+        throw(ArgumentError("native stop ledger differs from the live session"))
+    main_group = S.proc_cgroup(pid)
+    (main_group == group || startswith(main_group, group * "/")) ||
+        throw(ArgumentError("WirePlumber MainPID left its session cgroup before stop"))
+    haskey(record, "systemd_quit") &&
+        throw(ArgumentError("native systemd Quit was already attempted; refusing to retry"))
+    client = Client.connect(Profile.Profile(), record["remote"],
+        "pipewireao.rtc.session." * record["name"], UInt32(pid),
+        Int64(record["session_control_instance"]); deadline)
+    try
+        status = Client.request!(client, Session.RunnerCommand(:status); deadline)
+        status isa Session.Completion && status.header.result == 0 &&
+            status.error === nothing && status.lifecycle in
+                (Session.Runner.Ready, Session.Runner.Running) ||
+            throw(ArgumentError("native stop requires an admitted healthy session"))
+        with_thread_loop_lock(client.loop) do _
+            Client.healthy(client)
+            client.observation.node_identity == record["session_uuid"] ||
+                throw(ArgumentError("native stop selected a different session UUID"))
+        end
+        # Fence submission durably. Unknown outcomes proceed only to emergency
+        # process cleanup, never to another native mutation.
+        record["systemd_quit"] = Dict("attempted" => true, "accepted" => false)
+        C.write_json(ledger, record; atomic=true)
+        completion = Client.request!(client, Session.RunnerCommand(:quit);
+            deadline=min(deadline, Client.monotonic() + 8))
+        completion isa Session.Completion && completion.header.result == 0 &&
+            completion.error === nothing && completion.lifecycle == Session.Runner.Offline &&
+            completion.result !== nothing && completion.result.details.shutdown === true ||
+            throw(ArgumentError("native systemd Quit did not complete Offline"))
+        record["systemd_quit"]["accepted"] = true
+        C.write_json(ledger, record; atomic=true)
+    finally
+        close(client)
+    end
+    # A terminal native reply proves session cleanup. Give the same exact
+    # WirePlumber process time to finish its publication fence and exit before
+    # returning to systemd's signal phase, within this helper's original budget.
+    while Client.monotonic() < deadline
+        current = S.properties(args.unit; deadline)
+        S.valid_invocation(current["InvocationID"]) == invocation ||
+            throw(ArgumentError("session incarnation changed after native Quit"))
+        current["MainPID"] == "0" && return nothing
+        tryparse(Int, current["MainPID"]) == pid ||
+            throw(ArgumentError("WirePlumber process changed after native Quit"))
+        # /proc may disappear after systemd's query and before this read.
+        # Require a fresh MainPID=0 proof on the next pass; PID reuse still faults.
+        current_ticks = S.maybe_start_ticks(pid)
+        current_ticks === nothing || current_ticks == UInt64(record["wireplumber_start_ticks"]) ||
+            throw(ArgumentError("WirePlumber PID was reused after native Quit"))
+        sleep(min(0.005, max(0.0, deadline - Client.monotonic())))
+    end
+    throw(ArgumentError("WirePlumber did not exit after native Quit before the stop deadline"))
+end
+
 "List local POD hints without treating their presence as live-session proof."
 function sessions()
     directory = Discovery.existing_registry_directory()
@@ -301,7 +385,7 @@ end
 
 function main(argv=ARGS)
     isempty(argv) && throw(ArgumentError(
-        "expected install, prepare, publish, cleanup, sessions, select-session or control"))
+        "expected install, prepare, publish, stop, cleanup, sessions, select-session or control"))
     command = first(argv)
     rest = argv[2:end]
     if command == "install"
@@ -312,6 +396,9 @@ function main(argv=ARGS)
     elseif command == "publish"
         args = C.cli_arguments(rest; required=["package", "prefix", "unit", "runtime-root"])
         publish!(args)
+    elseif command == "stop"
+        args = C.cli_arguments(rest; required=["unit", "runtime-root"])
+        stop!(args)
     elseif command == "cleanup"
         runtime_root = C.cli_arguments(rest;
             required=["invocation", "runtime-root", "source-role"]).runtime_root

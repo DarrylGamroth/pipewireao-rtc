@@ -64,8 +64,17 @@ function cleanup_hook_valid(value::AbstractString, request::Request, source_role
     occursin(r"^start_time=[^;{}]* ; stop_time=[^;{}]* ; pid=[0-9]+ ; code=[^;{}]* ; status=[^;{}]* \}$", suffix)
 end
 
+function stop_hook_valid(value::AbstractString, request::Request)
+    prefix = "{ path=" * request.launcher * " ; argv[]=" * request.launcher *
+        " stop --unit " * request.unit * " --runtime-root " * request.runtime_root *
+        " ; ignore_errors=no ; "
+    startswith(value, prefix) || return false
+    suffix = chopprefix(value, prefix)
+    occursin(r"^start_time=[^;{}]* ; stop_time=[^;{}]* ; pid=[0-9]+ ; code=[^;{}]* ; status=[^;{}]* \}$", suffix)
+end
+
 function preparation_identity(request::Request, source_role::AbstractString)
-    values = S.properties(request.unit; extra="ControlPID,ExecStopPost,Restart,KillMode,Type")
+    values = S.properties(request.unit; extra="ControlPID,ExecStop,ExecStopPost,Restart,KillMode,Type")
     values["LoadState"] == "loaded" && values["ActiveState"] == "activating" ||
         fail("WirePlumber unit is not in start preparation")
     tryparse(Int, values["ControlPID"]) == getpid() ||
@@ -82,6 +91,8 @@ function preparation_identity(request::Request, source_role::AbstractString)
         values["Type"] == "exec" || fail("WirePlumber unit has unexpected lifetime policy")
     cleanup_hook_valid(values["ExecStopPost"], request, source_role) ||
         fail("WirePlumber unit lacks its exact emergency cleanup hook")
+    stop_hook_valid(values["ExecStop"], request) ||
+        fail("WirePlumber unit lacks its exact native stop hook")
     return S.Coordinator(request.unit, invocation, group, request.launcher)
 end
 

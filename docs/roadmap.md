@@ -166,6 +166,14 @@ now completes source cleanup before core shutdown. This does not qualify forced
 SIGTERM recovery, Copper, row-block mode, hardware or timing under the migrated
 session authority.
 
+The session unit template now supplies a one-shot `ExecStop` native Quit path
+before process revocation, with exact invocation/session identity and a
+durable no-retry submission fence. The existing native deadlines and emergency
+cleanup order are preserved. [Source ordering and cold validation](validation/systemd-graceful-stop-20261010/README.md)
+record the 12 exact-hook assertions and pending uncontended systemd/native
+reruns. Selected FGN/JFG command-count and Copper Quit deadline checks remain
+required; this source change does not qualify them.
+
 Completed Copper link and process-supervision transfers remain valid only for
 their dated scopes. The selected Copper composition has passed link realization
 and systemd owner-service checks while the old runtime retains science readiness

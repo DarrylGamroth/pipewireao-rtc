@@ -25,17 +25,19 @@ function stop_proof_child!(process::Base.Process, label::AbstractString)
     return nothing
 end
 
-function with_control_private_core(f; check_running=true, allow_passive=false)
+function with_control_private_core(f; check_running=true, allow_passive=false,
+                                   temporary_prefix="pipewireao-native-envelope-",
+                                   remote_name=nothing)
     prefix = String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir)
     libdir = isdir(joinpath(prefix, "lib", "x86_64-linux-gnu")) ?
         joinpath(prefix, "lib", "x86_64-linux-gnu") : joinpath(prefix, "lib")
     daemon_path = joinpath(prefix, "bin", "pipewire-ao")
-    mktempdir(prefix="pipewireao-native-envelope-") do directory
+    mktempdir(prefix=temporary_prefix) do directory
         runtime = joinpath(directory, "runtime")
         config = joinpath(directory, "configuration")
         mkpath(runtime)
         mkpath(config)
-        remote = "native-envelope-$(getpid())-$(time_ns())"
+        remote = remote_name === nothing ? "native-envelope-$(getpid())-$(time_ns())" : String(remote_name)
         socket = joinpath(runtime, remote)
         write(joinpath(config, "private-core.conf"), """
         context.properties = { core.daemon = true core.name = $remote support.dbus = false library.use-fallback = false }

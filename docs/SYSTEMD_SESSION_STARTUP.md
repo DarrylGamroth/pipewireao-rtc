@@ -26,6 +26,16 @@ warmup, placement inspection and Lua admission remain mandatory before release.
 
 ## Cleanup
 
+An explicit service stop first runs the installed `ExecStop` one-shot client.
+It verifies the exact service invocation, main PID/start time, caller cgroup,
+and native session UUID, then requests native Quit once from an admitted healthy
+session. WirePlumber retains authority for source hold and outstanding command
+adoption, graph stop, link withdrawal and terminal owner acknowledgements. The
+client uses the existing eight-second request bound; Lua retains its five-second
+effect deadline. It records the attempt before submission and waits for the
+same WirePlumber process to exit within its finite helper budget. A failed,
+missing or unknown acknowledgement is not retried.
+
 Fresh invocation names are exclusive and services use `Restart=no`. On failure
 or exit, cancel all cohort/member start jobs, revoke and prove the private core
 and source empty, then stop consumers. Stop the target only after owner
