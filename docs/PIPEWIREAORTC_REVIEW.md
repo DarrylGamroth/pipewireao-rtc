@@ -1,8 +1,8 @@
 # PipeWireAORTC application review and disposition
 
 Date: 2026-10-14 (America/Vancouver). Source review completed; implementation
-and independent software verification have started. Registration and the small
-application remain open. See the roadmap for current delivery status.
+and independent software verification have started. Core registration is complete;
+scientific dependency releases and the small application remain open. See the roadmap for current delivery status.
 
 Two independent Astra passes reviewed application architecture/organization and
 runtime correctness/library reuse. The primary agent checked significant findings

@@ -66,8 +66,8 @@ defect: the intentional metadata-tamper test tried to overwrite a copied
 The checkout run had writable source files. See [the failed registered run](registered-0.1.0-Pkg.test.log).
 Production export intentionally retains source permission bits; validation only
 reads the sealed files. The repair belongs in the temporary test copy, followed
-by a new immutable patch release and a registered-copy rerun. Version 0.1.0's
-registered tree must not be replaced.
+by the immutable 0.1.1 patch release and registered-copy rerun recorded in
+[registration](REGISTRATION.md). Version 0.1.0's registered tree was not replaced.
 
 The test now forces the temporary Project read-only, then explicitly grants
 owner-write only before its intentional corruption. It also derives the original
@@ -86,7 +86,8 @@ message is not presented as a successful registry fetch or a scientific result.
 
 ## Open application gates
 
-Core registration, scientific owner migration and the small Classic application
-have distinct gates in [the migration contract](../../REGISTERED_RTC_MIGRATION.md).
+Core registration and the registered 0.1.1 suite are complete at the scope in
+[the receipt](REGISTRATION.md). Scientific owner migration and the small Classic
+application have distinct gates in [the migration contract](../../REGISTERED_RTC_MIGRATION.md).
 These checks do not qualify scientific numerics, resource timing, FGN parity,
 Copper/SPIDERS acquisition, warmup/Quit reliability or physical operation.

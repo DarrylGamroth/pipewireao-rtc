@@ -36,3 +36,7 @@ registered Classic science/application gate. LocalRegistry's installed version
 does not recognize a registry with a Git-worktree `.git` file; registration is
 prepared in an ordinary isolated registry clone, preserving the user's registry
 until the resulting entries and resolution are checked.
+
+Subsequent core registration completed at `PipeWireAORTC 0.1.1` and
+`PipeWireAO 0.6.17`; [the receipt and registered-copy checks](../../validation/registered-core-20261014/REGISTRATION.md)
+record exact immutable trees and the remaining scientific/application boundary.

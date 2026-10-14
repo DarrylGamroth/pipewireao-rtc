@@ -45,8 +45,11 @@ gates: public scientific introspection, package-owned scientific entrypoints,
 configuration-driven simulation, immutable registered scientific dependencies,
 small relocated Classic application and isolated lifecycle/science checks.
 [Registration readiness](reviews/20261014/REGISTRATION_READINESS.md) records why
-dirty scientific snapshots cannot simply be registered. Core registration is being
-prepared independently. Adapter consolidation is conditional. Hsm and Agent are
+dirty scientific snapshots cannot simply be registered. Core `PipeWireAORTC 0.1.1` and `PipeWireAO 0.6.17` are registered in the
+installed Local Registry; [registration and isolated-depot evidence](validation/registered-core-20261014/REGISTRATION.md)
+include a path-free resolved environment and **1,850 passing assertions** from
+the registered package. The implementation/registry review branches are published;
+remote default branches are unchanged. Scientific/application gates remain open. Adapter consolidation is conditional. Hsm and Agent are
 explicitly deferred; HdrHistogram remains a separate measured change.
 WirePlumber/systemd authority and existing live services are preserved.
 CTW-01/02 warmup/Quit causes remain unresolved. Historical qualification records
