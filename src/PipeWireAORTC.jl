@@ -32,6 +32,7 @@ end
 
 
 include("common.jl")
+include("artifacts.jl")
 include("deployment/placement.jl")
 include("deployment/systemd_owners.jl")
 include("deployment/runtime_export.jl")
@@ -65,7 +66,7 @@ include("deployment/wireplumber_launch.jl")
 include("deployment/wireplumber_install.jl")
 include("cli.jl")
 
-public WirePlumberConfiguration, WirePlumberInstall, WirePlumberSessionRuntime,
+public Artifacts, WirePlumberConfiguration, WirePlumberInstall, WirePlumberSessionRuntime,
     NativeSessionClient, CalibrationAcquisition, CalibrationCLI, WirePlumberCLI,
     NativeOwnerBootstrapRuntime, NativeParameterSource, NativeSourceControl
 

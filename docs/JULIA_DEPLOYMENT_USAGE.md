@@ -45,8 +45,8 @@ and product contracts. Output and runtime directories must be new.
 
 ## Package and resources
 
-The cold orchestration project is the named package `PipeWireAODeployment`
-(v0.1.0, Julia ≥ 1.12), loaded with `using PipeWireAODeployment`. Modules live in
+The cold orchestration project is the named package `PipeWireAORTC`
+(v0.1.0, Julia ≥ 1.12), loaded with `using PipeWireAORTC`. Modules live in
 `src`; the test workspace lives in `test`.
 Run portable verification with:
 
@@ -54,7 +54,8 @@ Run portable verification with:
 julia --startup-file=no --project=. -e 'using Pkg; Pkg.precompile(); Pkg.test()'
 ```
 
-Shared operational scripts remain in this repository root. REVOLT entrypoints
+Reusable operational implementations live in package modules under `src`; root
+`wireplumber_*.jl` scripts are thin package entrypoints. REVOLT entrypoints
 are under `../REVOLTRTC.jl/bin` and use that app's project. The shared package
 source checkout uses `assets/deployment/hil`, `assets/deployment/templates` and
 the service template as resources.

@@ -1,7 +1,8 @@
 # PipeWireAORTC application review and disposition
 
-Date: 2026-10-14 (America/Vancouver). Status: source review complete; production
-remediation, package renaming and registration have not started.
+Date: 2026-10-14 (America/Vancouver). Source review completed; implementation
+and independent software verification have started. Registration and the small
+application remain open. See the roadmap for current delivery status.
 
 Two independent Astra passes reviewed application architecture/organization and
 runtime correctness/library reuse. The primary agent checked significant findings
@@ -58,7 +59,7 @@ correctness behavior is distinguished from executed reproductions.
 
 | Finding | Primary disposition | Action and evidence boundary |
 |---|---|---|
-| **RAR-01: pre-effect request validation faults a healthy session** | **Confirmed source defect; fix first** | Wrong command arity asserts in WirePlumber session dispatch; the ingress catch calls fault, which holds the source and withdraws links. This contradicts RTC-DEV-030's malformed-command rejection rule. Source and selected installed policy match. No new runtime reproduction was performed. |
+| **RAR-01: parameter payload validation before effects** | **Original wrong-arity claim withdrawn; narrower defect reproduced and fixed on an isolated branch** | The existing dispatch wrapper already rejects wrong arity without fault. It was omitted from the review trace. Malformed operation-14 type/shape fields instead reached the parameter owner after effects were marked issued; an owner error then faulted the session. The same malformed-type payload fails before and preserves health after validation. WirePlumber commit `63f2df2` retains consumed-ticket completions and post-effect fault handling; it is not installed in the live service. |
 | **AAR-01: deployment/installer requires copied SDK source and path dependencies** | **Accepted required redesign** | Both shared and instrument exporters copy code; runtime validators require that copied layout. Replace the export/install contract together with registered dependency resolution. This reflects the changed user target; the former source-copy design was deliberate. |
 | **AAR-02 / RAR-04: FITS authoring still produces mandatory raw runtime files** | **Accepted required redesign; one work item** | Existing FITS preparation writes packed files, and startup/live parameter readers expect them. Introduce cold validated memory preparation and explicit live-update compatibility. Preserve typed wire encoding; do not silently reinterpret a raw-file v1 request as FITS. |
 | **AAR-03: simulator requires instrument code and fixed extents** | **Accepted required redesign** | Classic/Copper imports, detector dimensions, boundary names and 277-command assumptions remain in owner code. Move presets/exact geometry/order/masks to configuration/FITS; generalize reusable preparation against scientific declarations. Do not register REVOLTClassicSim or move its entire implementation into AOS. |
@@ -157,7 +158,8 @@ the runtime report.
 
 ## Ordered implementation and evidence gates
 
-1. **Fix the confirmed command-validation defect.** Establish the same malformed
+1. **Fix the reproduced parameter-validation defect.** Correct the withdrawn
+   wrong-arity claim and establish the same malformed
    request failing before and rejecting safely after, while preserving post-effect
    fault/Unknown handling. This is a distinct WirePlumber change.
 2. **Define the registered package API and owner/artifact contracts.** Specify
@@ -187,7 +189,8 @@ the runtime report.
 
 Future validation includes pure software, native process integration, deterministic
 simulation, allocation/load/latency measurements and physical hardware checks at
-their respective scopes. None was performed by this review. Existing services,
+their respective scopes. The original source review performed none of these gates; subsequent focused
+software results are in [implementation verification](reviews/20261014/IMPLEMENTATION_VERIFICATION.md). Existing services,
 user changes, sealed packages and registry entries were preserved.
 
 ## Coverage and limits
@@ -197,7 +200,10 @@ client boundaries. The review is comprehensive at the application architecture
 and source-contract level; it is not exhaustive verification of every scientific
 kernel, GUI visual interaction, callback interleaving or hardware behavior.
 No test suite, runtime reproduction, benchmark, registration or deployment action
-was run. The static hotspot scan supplied navigation signals only. A container
+was run during the original review. Later implementation reproduced and corrected
+the narrower RAR-01 defect; the original wrong-arity claim is withdrawn. The static hotspot scan supplied navigation signals only. A container
 renderer pull was attempted for documentation and rejected by its registry with
 HTTP 403; this report uses plain text ownership/layout diagrams and introduces
 no unrendered Mermaid diagrams.
+
+Implementation contracts and open gates are in [the registered-package migration](REGISTERED_RTC_MIGRATION.md).

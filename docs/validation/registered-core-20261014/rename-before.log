@@ -1,0 +1,22 @@
+ERROR: ArgumentError: Package PipeWireAORTC [a3e2c7da-f73f-4284-8482-36ac422b34e6] is required but does not seem to be installed:
+ - Run `Pkg.instantiate()` to install all recorded dependencies.
+
+Stacktrace:
+ [1] __require_prelocked(pkg::Base.PkgId, env::String)
+   @ Base ./loading.jl:2682
+ [2] _require_prelocked(uuidkey::Base.PkgId, env::String)
+   @ Base ./loading.jl:2560
+ [3] macro expansion
+   @ ./loading.jl:2488 [inlined]
+ [4] macro expansion
+   @ ./lock.jl:376 [inlined]
+ [5] __require(into::Module, mod::Symbol)
+   @ Base ./loading.jl:2453
+ [6] require(into::Module, mod::Symbol)
+   @ Base ./loading.jl:2429
+ [7] eval(m::Module, e::Any)
+   @ Core ./boot.jl:489
+ [8] exec_options(opts::Base.JLOptions)
+   @ Base ./client.jl:283
+ [9] _start()
+   @ Base ./client.jl:550

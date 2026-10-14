@@ -1,5 +1,8 @@
 using Test, PipeWireAORTC
 
+for name in ("artifacts", "parameter_fits", "owner_entrypoints")
+    Base.include(Module(gensym(:ArtifactSuite)), joinpath(@__DIR__, "test_" * name * ".jl"))
+end
 include("test_native_session_discovery.jl")
 include("test_native_session_client.jl")
 include("test_calibration_acquisition.jl")

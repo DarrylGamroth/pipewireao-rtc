@@ -12,7 +12,7 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
-### Package and application review — 2026-10-14
+### Registered package migration — 2026-10-14
 
 The user approved the direction of renaming the shared Julia package
 `PipeWireAODeployment` to `PipeWireAORTC` and requested an Astra application review
@@ -25,16 +25,32 @@ configuration/artifacts must be separated. AOC is already registered.
 
 [The adjudicated review](PIPEWIREAORTC_REVIEW.md) records two independent Astra
 passes, filename/module organization, confirmed and proposed findings, and library
-reuse decisions. Fix pre-effect malformed-command rejection first; then define
-package-owned owner/FITS APIs and migrate registered dependencies and small
-applications. Adapter package consolidation is conditional and not a prerequisite.
-HdrHistogram has a concrete scoped metrics use; Hsm/Agent changes are deferred
-pending a justified owner-local contract. WirePlumber/systemd authority is retained.
+reuse decisions. The original wrong-arity fault trigger is withdrawn: existing
+dispatch protection was omitted from the review. A narrower operation-14
+malformed-field defect was reproduced and fixed at WirePlumber commit `63f2df2`,
+with unchanged consumed-ticket and post-effect semantics. The fix has not been
+installed into the live service.
 
-Review completed without production changes, tests or live actions. Package rename,
-registration, direct FITS owner loading and new application qualification remain
-pending. CTW-01/02 warmup/Quit causes remain unresolved. Historical qualification
-records below retain their original version/profile scope.
+The shared package is now named `PipeWireAORTC`, retaining its UUID. Configuration,
+launch/install/CLI implementations load through the package; root commands are
+thin wrappers. Native modules/records retain identity. `Artifacts` prepares owned
+logical arrays from bounded FITS snapshots without raw files. Sparse parameter
+configuration version 2 supports FITS preloads; version 1 and native live raw-file
+semantics remain unchanged. Owner construction/cleanup shares the package bootstrap
+helper. [Independent software verification](reviews/20261014/IMPLEMENTATION_VERIFICATION.md)
+covers the implementation increment and its precise limits.
+
+[Migration contracts and coverage](REGISTERED_RTC_MIGRATION.md) retain the remaining
+gates: public scientific introspection, package-owned scientific entrypoints,
+configuration-driven simulation, immutable registered scientific dependencies,
+small relocated Classic application and isolated lifecycle/science checks.
+[Registration readiness](reviews/20261014/REGISTRATION_READINESS.md) records why
+dirty scientific snapshots cannot simply be registered. Core registration is being
+prepared independently. Adapter consolidation is conditional. Hsm and Agent are
+explicitly deferred; HdrHistogram remains a separate measured change.
+WirePlumber/systemd authority and existing live services are preserved.
+CTW-01/02 warmup/Quit causes remain unresolved. Historical qualification records
+below retain their original version/profile scope.
 
 ### Selected scope
 

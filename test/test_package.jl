@@ -1,9 +1,13 @@
-using Test, PipeWireAORTC, JSON3
+using Test, PipeWireAORTC, JSON3, TOML
 const P = PipeWireAORTC
 tree_identity(root) = Dict(relpath(joinpath(parent, file), root) => P.Common.sha256_file(joinpath(parent, file)) for (parent, _, files) in walkdir(root) for file in files)
 
 @testset "callable package modules and compatibility scripts" begin
     @test Base.PkgId(P).uuid == Base.UUID("a3e2c7da-f73f-4284-8482-36ac422b34e6")
+    manifest = TOML.parsefile(joinpath(P.package_root(), "Manifest.toml"))
+    self = filter(row -> row["uuid"] == string(Base.PkgId(P).uuid),
+        [merge(item, Dict("name" => name)) for (name, rows) in manifest["deps"] for item in rows])
+    @test only(self)["name"] == "PipeWireAORTC"
     @test P.WirePlumberCLI.WirePlumberConfiguration === P.WirePlumberConfiguration
     @test P.WirePlumberCLI.WirePlumberLaunch === P.WirePlumberLaunch
     @test P.WirePlumberCLI.WirePlumberInstall === P.WirePlumberInstall

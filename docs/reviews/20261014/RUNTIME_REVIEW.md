@@ -56,41 +56,37 @@ the newly proposed invalid-session-command behavior gate.
 
 ## Findings
 
-### RAR-01 — Pre-effect session validation can fault a healthy session
+### RAR-01 — Parameter fields must be validated before owner handoff
 
-- **Severity:** High (P1), correctness and availability.
-- **Confidence:** High in source behavior; no execution reproduction in this review.
-- **Classification:** Observed control flow; derived effect on a healthy session.
-- **Disposition:** Proposed confirmed defect, independently adjudicate and fix before broad command/API refactoring.
-- **Evidence:** WP `src/scripts/ao/session.lua:450–466` validates operation arity,
-  admission state and Reset state with assertions. The ticket has already been
-  installed by `lib/ao-session-control.lua:166–177`. Its handler exception path
-  unconditionally calls `self.fault` at lines 177–180. `session.lua:180–219`
-  marks Fault, invalidates the current epoch, attempts source hold, stops
-  consumers after the hold acknowledgement and withdraws links. RTC
-  `docs/operations.md:745–746` requires malformed commands to reject without
-  terminating a healthy session. Source/installed policy hashes match above.
-- **Trigger:** An authenticated native request with a valid envelope but wrong
-  command field arity reaches the assertion at `session.lua:460`. No scientific
-  effect has been requested yet. Nevertheless the general handler catch faults
-  the session. A Reset request while Running also takes this pre-effect failure
-  path; its admissibility handling needs an explicit policy alongside the
-  unambiguous malformed-command case.
-- **Impact:** A client input mistake can cause acquisition hold and link
-  withdrawal. Local Julia command encoding catches some malformed inputs but is
-  not the server's validation boundary; other native clients can submit valid
-  envelopes with invalid operation payloads.
-- **Remediation:** Separate pure command validation/admission from accepted
-  effects. Return the protocol's negative rejection/completion for invalid
-  pre-effect requests while preserving the current admitted state. Keep fault
-  escalation for required identity/transport loss and uncertain effects. Do not
-  globally turn all caught exceptions into harmless rejection.
-- **Required validation:** In an isolated policy harness, submit wrong arity,
-  wrong scalar type, unknown operation and invalid state commands while Ready
-  and Running. Verify no hold, graph stop, link withdrawal or epoch replacement;
-  verify subsequent valid commands still work. Inject a failure after an effect
-  was issued and prove the existing fault/Unknown behavior remains. The same
-  malformed request should demonstrate fail-before/pass-after behavior.
+**Correction, 2026-10-14:** The original wrong-arity fault trigger in this review
+was incorrect at the audited `d20cd203` baseline. The `pcall(dispatch, ticket)`
+wrapper already turns pre-operation assertions into negative correlated
+completions without faulting. The original trace omitted that wrapper. Isolated
+reproduction confirms wrong-arity requests preserve Ready and Running, epoch and
+links. The original causal claim is withdrawn, rather than attributed to a
+subsequent source change.
+
+A narrower defect was then demonstrated: operation 14 accepted six fields but
+forwarded malformed element-type/shape fields after marking `effects_issued`.
+An owner fixture rejected an Int in place of the type String; the actual policy
+faulted, held the source, stopped the graph and withdrew links. Pure field and
+extent validation before `begin` fixes this case while retaining the existing
+consumed-token negative completion and post-effect fault behavior.
+
+- **Severity:** P1 for the reproduced malformed-parameter path.
+- **Confidence/classification:** Observed isolated software behavior; owner and
+  POD fixtures, not native transport or live scientific-owner qualification.
+- **Disposition:** Fixed on WirePlumber branch `codex/session-rejection-20261014`,
+  commit `63f2df2ff88c07add386e28912e54bdeb345661b`; not deployed to the live service.
+- **Requirements:** RTC-DEV-022 malformed-command rule and RTC-DEV-030 native
+  correlation/uncertain-outcome invariants.
+- **Verification:** Same malformed-type case fails before (`Fault`, hold/stop/
+  withdrawal/publisher each 1) and passes after in Ready and Running. Forty-four
+  malformed/state cases, valid/duplicate requests, post-handoff errors,
+  required-core/identity loss and expiry pass. Original wrong-arity controls pass
+  against the baseline. See [independent implementation verification](IMPLEMENTATION_VERIFICATION.md)
+  and the WirePlumber worktree's `docs/reviews/20261014/SESSION_REJECTION.md` for
+  exact harness scope and commands.
 
 ### RAR-02 — Quit has a shared five-second internal budget without phase attribution
 

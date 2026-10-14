@@ -37,6 +37,7 @@ The supported callable interfaces retain their existing module bindings:
 | `CalibrationAcquisition` | Sequence calibration acquisition actions |
 | `CalibrationCLI`, `WirePlumberCLI` | Translate command arguments and reports |
 | `NativeOwnerBootstrapRuntime`, `NativeParameterSource`, `NativeSourceControl` | Reusable cold owner entry points and native source controls |
+| `Artifacts` | Select FITS images and prepare owned arrays and transient wire bytes |
 
 For example, `PipeWireAORTC.WirePlumberCLI.main(["sessions"])` is the callable
 counterpart of the root `wireplumber_cli.jl` command. Root `wireplumber_*.jl`
@@ -44,6 +45,27 @@ files are compatibility entry points; their implementation loads with the packag
 from `src/configuration/`, `src/deployment/` and `src/cli.jl`. Native protocols
 live under `src/native/`, and reusable owner runtimes live under `src/owners/`.
 The sealed SDK launch path remains available during application migration.
+
+### FITS calibration inputs
+
+```julia
+using PipeWireAORTC.Artifacts
+reference = FITSArtifact("artifacts/reference-slopes.fits"; hdu=1, axes=(2, 1))
+prepared = prepare(reference, Float32, (188, 2))
+slopes = prepared.data  # owned logical subaperture × axis array
+```
+
+Multidimensional FITS inputs require explicit axis order, including square
+matrices. Preparation validates bounds, finite values and exact integer/Boolean
+conversion, retaining hashes and FITS units in `prepared.provenance`. It performs
+no calibration or unit conversion and creates no packed artifact files.
+
+Sparse parameter-source configuration version 2 accepts `initial_artifact`
+instead of version 1's `initial_payload_path`. A selection has `path`, optional
+one-based `hdu`, and explicit multidimensional `axes`; relative paths resolve
+against the configuration file. This is cold FITS preload support. Native v1 live
+requests retain their raw-file contract; FITS live replacement remains a separate
+owner/adoption interface. See [migration contracts and evidence gates](docs/REGISTERED_RTC_MIGRATION.md).
 
 ## Launch a sealed session package
 

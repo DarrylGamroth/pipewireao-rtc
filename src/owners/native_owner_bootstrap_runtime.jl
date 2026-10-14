@@ -18,7 +18,7 @@ const POLL_SECONDS = 0.005
 
 export Runtime, validate_threads, preparation_check!, prepared!, take_connect!,
     check_connect!, connecting!, connected!, await_connected!, cancelled,
-    finishing!, fault!, finish!, clean_cancel, flush_terminal!
+    finishing!, fault!, finish!, clean_cancel, flush_terminal!, with_owner
 
 mutable struct Transport{P<:Profile,C,E,L}
     profile::P
@@ -524,4 +524,38 @@ function Base.close(runtime::Runtime)
     close(runtime.transport)
     return nothing
 end
+
+"""
+    with_owner(f, options)
+
+Publish the native bootstrap `Preparing` endpoint before running cold owner
+construction on the caller thread. Call `f` with `options` extended by
+`bootstrap_runtime` and `owner_check`; the latter checks preparation failure and
+cooperative cancellation. Retain primary and cleanup failures in order, and
+treat an interrupt after accepted cancellation as clean owner shutdown.
+"""
+function with_owner(f, options)
+    runtime = Runtime(options.remote, options.bootstrap_node, options.bootstrap_instance)
+    return _with_owner(f, options, runtime)
+end
+
+function _with_owner(f, options, runtime)
+    failures = Exception[]
+    admitted = merge(options, (; bootstrap_runtime=runtime,
+        owner_check=() -> preparation_check!(runtime)))
+    try
+        f(admitted)
+    catch error
+        if !(error isa InterruptException && cancelled(runtime))
+            push!(failures, error)
+            fault!(runtime, error)
+        end
+    finally
+        try finish!(runtime) catch error; push!(failures, error) end
+        try close(runtime) catch error; push!(failures, error) end
+    end
+    isempty(failures) || throw(length(failures) == 1 ? only(failures) : CompositeException(failures))
+    return nothing
+end
+
 end # module NativeOwnerBootstrapRuntime

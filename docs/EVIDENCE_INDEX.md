@@ -1,6 +1,7 @@
 # Delivery evidence catalog
 
-- [PipeWireAORTC application review, 2026-10-14](PIPEWIREAORTC_REVIEW.md): two independent Astra source reviews, package/API/file organization, registered-dependency and FITS-to-memory migration, a confirmed pre-effect session rejection defect, unresolved warmup/Quit investigations, and evidence-based Hsm/HdrHistogram/other library decisions. Primary dispositions and implementation gates are recorded; no production changes, tests, benchmarks or live qualification were performed.
+- [PipeWireAORTC implementation verification, 2026-10-14](reviews/20261014/IMPLEMENTATION_VERIFICATION.md): independent package/API/relocation and owned-memory FITS checks; corrected policy reproduction. Registration, small-application, live and hardware gates remain separate.
+- [PipeWireAORTC application review, 2026-10-14](PIPEWIREAORTC_REVIEW.md): two independent Astra source reviews, package/API/file organization, registered-dependency and FITS-to-memory migration, the corrected malformed-parameter validation finding, unresolved warmup/Quit investigations, and evidence-based Hsm/HdrHistogram/other library decisions. Primary dispositions and implementation gates are recorded. The original wrong-arity trigger is withdrawn; later focused software verification is linked below.
 
 - [Graceful systemd stop, 2026-10-10](validation/systemd-graceful-stop-20261010/README.md): exact-incarnation one-shot ExecStop delegates orderly stop to native WirePlumber Quit before process revocation. Cold ownership regressions and all four selected-profile finite allocation, live scalar/shape controls and in-flight balanced-drain gates pass; the original FITS attempt and separate graph-process GC evidence retain explicit scope limits.
 

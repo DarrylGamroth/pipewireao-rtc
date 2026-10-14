@@ -2,7 +2,9 @@
 module NativeParameterSource
 
 using PipeWireAO
+using SHA
 import ..Common
+import ..Artifacts
 import ..NativeControlCodec
 import ..NativeControlClient
 import ..NativeControlEndpoint
@@ -22,7 +24,7 @@ const PENDING = UInt8(1)
 const SUBMITTED = UInt8(2)
 
 export Profile, PROFILE, Lifecycle, Preparing, Prepared, Connected, Fault, Stopped,
-    Command, Completion, Rejection, run_owner, read_declarations
+    Command, Completion, Rejection, run_owner, read_declarations, main
 
 struct Profile <: Client.Profile end
 const PROFILE = Profile()
@@ -130,6 +132,7 @@ mutable struct Source
     format::NdArrayFormat
     bytes::Vector{UInt8}
     initial::Bool
+    initial_provenance::Union{Nothing,Dict{String,Any}}
     buffer::StreamBuffer
     stride::Int32
     phase::UInt8                 # ThreadLoop lock, including native callbacks
@@ -144,7 +147,7 @@ mutable struct Source
     wake::Base.Event
 end
 
-"""Read saved JSON declarations, checking all mappings before opening any payload.
+"""Read saved JSON declarations, checking all mappings before opening any artifact.
 
 The root object has exactly `version=1` and `sources`. Each source declares
 `node_name`, `graph`, `inlet`, `element_type="F32_LE"`, positive `shape`,
@@ -152,12 +155,20 @@ The root object has exactly `version=1` and `sources`. Each source declares
 an optional absolute `initial_payload_path` (absent/null means no initial publication).
 There are at most 32 mappings and their
 aggregate packed extent is at most 512 MiB. Files contain raw packed wire bytes.
+
+Version 2 instead accepts optional `initial_artifact` with `path`, `hdu` and
+`axes`. Paths resolve relative to this configuration. Multidimensional images
+require explicit axes. These FITS files are decoded into owned memory before
+publication; no packed files are written. Legacy version 1 and native v1 live
+requests retain their raw-file semantics. A FITS preload is not a live update.
 """
 function read_declarations(path::AbstractString, wake::Base.Event; check=()->nothing)
     Base.ENDIAN_BOM == 0x04030201 || throw(ArgumentError("parameter owner requires a little-endian host"))
     config = Common.read_json(path; maximum=1024 * 1024)
     config isa AbstractDict && Set(keys(config)) == Set(("version", "sources")) &&
-        config["version"] === Int64(1) || throw(ArgumentError("invalid parameter source configuration"))
+        config["version"] isa Int64 && config["version"] in (1, 2) ||
+        throw(ArgumentError("invalid parameter source configuration"))
+    fits_initial = config["version"] == 2
     rows = config["sources"]
     rows isa AbstractVector && 1 <= length(rows) <= MAX_SOURCES ||
         throw(ArgumentError("parameter source count must be between 1 and 32"))
@@ -169,7 +180,7 @@ function read_declarations(path::AbstractString, wake::Base.Event; check=()->not
     for row in rows
         check()
         row isa AbstractDict && fields ⊆ Set(keys(row)) &&
-            Set(keys(row)) ⊆ union(fields, Set(("initial_payload_path",))) ||
+            Set(keys(row)) ⊆ union(fields, Set((fits_initial ? "initial_artifact" : "initial_payload_path",))) ||
             throw(ArgumentError("invalid parameter declaration fields"))
         name = _string(row["node_name"]; maximum=128)
         occursin(r"^[a-zA-Z0-9_.-]+$", name) || throw(ArgumentError("invalid parameter node name"))
@@ -190,10 +201,25 @@ function read_declarations(path::AbstractString, wake::Base.Event; check=()->not
         layout = row["layout"] == "row-major" ? NdArray.ROW_MAJOR :
             row["layout"] == "column-major" ? NdArray.COLUMN_MAJOR : throw(ArgumentError("invalid parameter layout"))
         schema = _string(row["schema"]; empty=true, maximum=16 * 1024)
-        initial = get(row, "initial_payload_path", nothing)
+        initial = get(row, fits_initial ? "initial_artifact" : "initial_payload_path", nothing)
         if initial !== nothing
-            initial = _string(initial; maximum=16 * 1024)
-            isabspath(initial) || throw(ArgumentError("initial parameter path must be absolute"))
+            if fits_initial
+                initial isa AbstractDict && haskey(initial, "path") &&
+                    Set(keys(initial)) ⊆ Set(("path", "hdu", "axes")) ||
+                    throw(ArgumentError("invalid initial FITS artifact selection"))
+                artifact_path = _string(initial["path"]; maximum=16 * 1024)
+                initial = Artifacts.FITSArtifact(joinpath(dirname(abspath(path)), artifact_path);
+                    hdu=get(initial, "hdu", 1), axes=get(initial, "axes", nothing))
+                length(shape) == 1 || initial.axes !== nothing ||
+                    throw(ArgumentError("multidimensional FITS artifacts require explicit axes"))
+                initial.axes === nothing || length(initial.axes) == length(shape) ||
+                    throw(ArgumentError("FITS axes rank differs from parameter shape"))
+                extent <= Artifacts.MAX_IMAGE_BYTES ||
+                    throw(ArgumentError("initial FITS parameter exceeds 256 MiB"))
+            else
+                initial = _string(initial; maximum=16 * 1024)
+                isabspath(initial) || throw(ArgumentError("initial parameter path must be absolute"))
+            end
         end
         name in names && throw(ArgumentError("duplicate parameter node name"))
         (graph, inlet) in mappings && throw(ArgumentError("duplicate parameter mapping"))
@@ -204,13 +230,30 @@ function read_declarations(path::AbstractString, wake::Base.Event; check=()->not
     sources = Source[]
     for declaration in declarations
         check()
-        bytes = Vector{UInt8}(undef, declaration.extent)
-        declaration.initial === nothing || _read_payload!(bytes, declaration.initial; check)
+        provenance = nothing
+        bytes = if declaration.initial isa Artifacts.FITSArtifact
+            prepared = Artifacts.prepare(declaration.initial, Float32, declaration.shape; check)
+            provenance = prepared.provenance
+            # Sparse publication copies these privately owned bytes. FITS decoding
+            # and layout conversion remain outside the PipeWire lock/callback.
+            declaration.format.layout == NdArray.ROW_MAJOR ? Artifacts.pack(prepared; check) :
+                copy(reinterpret(UInt8, vec(prepared.data)))
+        else
+            buffer = Vector{UInt8}(undef, declaration.extent)
+            declaration.initial === nothing || _read_payload!(buffer, declaration.initial; check)
+            buffer
+        end
+        if provenance !== nothing
+            provenance["publication_storage_order"] = declaration.format.layout == NdArray.ROW_MAJOR ?
+                "row-major" : "column-major"
+            provenance["publication_sha256"] = bytes2hex(SHA.sha256(bytes))
+        end
+        check()
         axis = declaration.format.layout == NdArray.ROW_MAJOR ? length(declaration.shape) : 1
         stride = Int32(4 * Int(declaration.shape[axis]))
         parameters = (Pod(buffers_param(buffers=2, blocks=1, size=length(bytes))), Pod(header_metadata_param()))
         push!(sources, Source(declaration.name, declaration.graph, declaration.inlet,
-            declaration.shape, declaration.schema, declaration.format, bytes, declaration.initial !== nothing, StreamBuffer(),
+            declaration.shape, declaration.schema, declaration.format, bytes, declaration.initial !== nothing, provenance, StreamBuffer(),
             stride, IDLE, false, nothing, nothing, nothing, 0, nothing, nothing, parameters, wake))
     end
     return sources
@@ -572,6 +615,40 @@ function run_owner(options, runtime)
     end
     isempty(failures) || throw(length(failures) == 1 ? only(failures) : CompositeException(failures))
     return nothing
+end
+
+function _owner_options(arguments)
+    required = ["config", "remote", "bootstrap-node", "bootstrap-instance", "control-node", "control-instance"]
+    options = Common.cli_arguments(arguments; required)
+    isabspath(options.config) && isabspath(options.remote) ||
+        throw(ArgumentError("parameter owner requires absolute --config and --remote paths"))
+    for name in (:bootstrap_node, :control_node)
+        occursin(r"^[a-zA-Z0-9_.-]{1,128}$", getproperty(options, name)) ||
+            throw(ArgumentError("invalid parameter owner node name"))
+    end
+    bootstrap_instance = tryparse(Int64, options.bootstrap_instance)
+    control_instance = tryparse(Int64, options.control_instance)
+    bootstrap_instance !== nothing && bootstrap_instance > 0 &&
+        control_instance !== nothing && control_instance > 0 ||
+        throw(ArgumentError("parameter owner instances must be positive Int64"))
+    options.bootstrap_node != options.control_node ||
+        throw(ArgumentError("bootstrap and parameter endpoints must have distinct names"))
+    return merge(options, (; bootstrap_instance, control_instance))
+end
+
+"""
+    main(arguments=ARGS)
+
+Run the sparse parameter owner using explicit config, remote, bootstrap endpoint
+and control endpoint arguments. Publish bootstrap `Preparing` before reading the
+parameter declarations; WirePlumber controls admission and links. Return
+`nothing` after cleanup, or throw the retained owner and cleanup failures.
+"""
+function main(arguments=ARGS)
+    options = _owner_options(arguments)
+    return Bootstrap.with_owner(options) do admitted
+        run_owner(admitted, admitted.bootstrap_runtime)
+    end
 end
 
 end # module NativeParameterSource

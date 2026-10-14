@@ -7,6 +7,7 @@ authors = ["Darryl Gamroth <dgamroth@rubus.ca>"]
 projects = ["test"]
 
 [deps]
+FITSIO = "525bcba6-941b-5504-bd06-fd0dc1a4d2eb"
 JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
 PipeWireAO = "5d815c25-fdf3-4508-8205-db8be38ea5d0"
 SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
@@ -20,6 +21,7 @@ UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 PipeWireAO = {rev = "1417b69", url = "https://github.com/DarrylGamroth/PipeWireAO.jl.git"}
 
 [compat]
+FITSIO = "0.17"
 JSON3 = "1"
 PipeWireAO = "0.6.17"
 SHA = "0.7, 1"
