@@ -46,7 +46,7 @@ and product contracts. Output and runtime directories must be new.
 ## Package and resources
 
 The cold orchestration project is the named package `PipeWireAORTC`
-(v0.1.0, Julia ≥ 1.12), loaded with `using PipeWireAORTC`. Modules live in
+(v0.1.1, Julia ≥ 1.12), loaded with `using PipeWireAORTC`. Modules live in
 `src`; the test workspace lives in `test`.
 Run portable verification with:
 

@@ -1,7 +1,7 @@
 # Independent implementation verification
 
 Date: 2026-10-14. Reviewer: independent Astra architecture reviewer.
-Status: focused implementation checks pass; the primary agent's completed isolated Pkg.test log also passes. The subsequently discovered stale manifest self-name and its verified repair are recorded in IV-08. This verifies a bounded increment, not completion of the registered small-application migration.
+Status: focused implementation checks pass; the primary agent's completed checkout Pkg.test log also passes. IV-08 records the stale manifest self-name repair. IV-09 records a subsequent registered-source test-permission failure and its test-only 0.1.1 correction; that release still requires its own registered-source full-suite result. This verifies bounded increments, not completion of the registered small-application migration.
 
 ## Source and scope
 
@@ -124,6 +124,18 @@ The repair used Pkg in an anonymous temporary project to remove the stale self e
 Final `Manifest.toml:188–192` has the canonical self name, unchanged UUID/version and path `.`. `test/Project.toml:2–5,12–19` declares FITSIO and PipeWireAORTC directly, points the latter to `..` and retains matching compatibility bounds. `test/test_package.jl:8–11` now asserts that exactly one manifest record has this UUID and that its name is PipeWireAORTC. Independent execution of the updated package test passed **158 assertions** (29 identity/metadata, 125 export/relocation, 4 legacy rejection).
 
 The primary agent's completed `/tmp/pipewireaortc-pkg-test-20261014.log` was independently inspected: isolated environment setup names PipeWireAORTC correctly, all **53 testsets / 1,848 assertions** pass, and Pkg reports `PipeWireAORTC tests passed`. This includes the updated initial-provenance field and all three new test files. This reviewer did not duplicate the full Pkg.test process. The fail-before evidence and pass-after full test execution close this package-isolation gate; they do not establish a fresh-depot registered installation, native live session behavior or scientific owner parity.
+
+### IV-09 — Registered-source tamper fixture assumed writable copies; test-only repair verified
+
+**Severity P2 test-portability defect; confidence high; classification observed/source-derived; disposition focused regression gate closed, registered 0.1.1 full-suite gate pending.**
+
+After core commit `385cb64`, the primary agent installed immutable registered 0.1.0 in a fresh depot and ran its package tests. The archived `docs/validation/registered-core-20261014/registered-0.1.0-Pkg.test.log:236–238` identifies the failure: the existing deliberate-tamper fixture attempted to write the temporary copied `Project.toml` and received Permission denied. The test had assumed copied package sources were writable; Pkg-installed source files are read-only and the existing export preserves their permissions. The registered suite reached and passed module identity and export/relocation checks before this test error. A successful checkout suite in IV-08 therefore did not establish registered-source test portability.
+
+The reviewed patch changes `test/test_package.jl:117–127` only: it first sets the temporary copied Project file to mode 0444 and checks that no write bit remains, derives the version substitution from `Base.pkgversion(P)`, asserts that bytes actually change, then grants owner-write on that temporary file before intentionally corrupting it. The unchanged rejection assertion still requires the SDK validator to reject the altered package. Production export/permission behavior, the installed source tree and native/scientific code are unchanged. Forcing read-only mode makes the same condition occur in ordinary checkout tests as well as registered installations; using the actual package version preserves the tamper operation after a version bump.
+
+The worker's `/tmp/pipewireaortc-readonly-fail-before-20261014.log` demonstrates the same Permission denied with the read-only fixture and without its permission repair. `/tmp/pipewireaortc-readonly-pass-after-20261014.log` passes after the repair. This reviewer inspected both logs and independently reran the final package test: **160 assertions pass** (29 module/metadata, 125 export/relocation, 6 legacy rejection/read-only tamper checks).
+
+Root `Project.toml:3` and the manifest self record at `Manifest.toml:192` advance from 0.1.0 to 0.1.1. An independent parsed comparison against `385cb64` confirms the **entire Manifest differs only in that self version**; all 59 nonself dependency records and all other metadata remain identical. Publishing 0.1.1 as a new immutable tree is the appropriate remaining release action; the already registered 0.1.0 tree must not be replaced. This record does not claim that 0.1.1 has been registered or that its fresh-depot full Pkg.test has passed. Registration receipts and the final full-suite evidence remain the primary agent's delivery gate. Other migration obligations in IV-05, including the small scientific application and Hsm/Agent deferral, are unchanged.
 
 ## Reproduction and limits
 

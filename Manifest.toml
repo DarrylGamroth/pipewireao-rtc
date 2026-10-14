@@ -189,7 +189,7 @@ version = "0.6.17"
 deps = ["FITSIO", "JSON3", "PipeWireAO", "SHA", "Sockets", "StructTypes", "TOML", "ThreadPinning", "UUIDs"]
 path = "."
 uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
-version = "0.1.0"
+version = "0.1.1"
 
 [[deps.PipeWireAO_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "TOML"]

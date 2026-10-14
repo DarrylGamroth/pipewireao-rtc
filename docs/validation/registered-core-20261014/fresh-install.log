@@ -1,0 +1,152 @@
+fatal: couldn't find remote ref refs/heads/codex/pipewireaortc-registration-20261014
+Precompiling packages...
+  84715.7 ms  ✓ Pkg (serial)
+  1 dependency successfully precompiled in 85 seconds
+     Copying registry from `~/.cache/pipewireaortc-registration-20261014/registry`
+      Copied registry `DarrylGamrothRegistry` to `~/.cache/pipewireaortc-registration-20261014/fresh-depot/registries/DarrylGamrothRegistry`
+       Added `General` registry to ~/.cache/pipewireaortc-registration-20261014/fresh-depot/registries
+    Updating registry at `~/.cache/pipewireaortc-registration-20261014/fresh-depot/registries/DarrylGamrothRegistry`
+    Updating git-repo `ssh://git@github.com/DarrylGamroth/PackageRegistry`
+    Updating registry at `~/.cache/pipewireaortc-registration-20261014/fresh-depot/registries/General.toml`
+┌ Error: Some registries failed to update:
+│     — /home/dgamroth/.cache/pipewireaortc-registration-20261014/fresh-depot/registries/DarrylGamrothRegistry — failed to fetch from repo: The command `git fetch -q ssh://git@github.com/DarrylGamroth/PackageRegistry +refs/heads/codex/pipewireaortc-registration-20261014:refs/remotes/origin/codex/pipewireaortc-registration-20261014` failed, error: ProcessFailedException(Base.Process[Process(`git fetch -q ssh://git@github.com/DarrylGamroth/PackageRegistry +refs/heads/codex/pipewireaortc-registration-20261014:refs/remotes/origin/codex/pipewireaortc-registration-20261014`, ProcessExited(128))])
+└ @ Pkg.Registry ~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/share/julia/stdlib/v1.12/Pkg/src/Registry/Registry.jl:574
+   Resolving package versions...
+   Installed XML2_jll ──────────────────── v2.15.4+0
+   Installed Hwloc_jll ─────────────────── v2.15.0+0
+   Installed TableTraits ───────────────── v1.0.1
+   Installed CFITSIO ───────────────────── v1.7.2
+   Installed JSON3 ─────────────────────── v1.14.3
+   Installed Preferences ───────────────── v1.6.0
+   Installed Xorg_libpciaccess_jll ─────── v0.19.0+0
+   Installed Bzip2_jll ─────────────────── v1.0.9+0
+   Installed Parsers ───────────────────── v2.8.8
+   Installed DataAPI ───────────────────── v1.16.0
+   Installed Tables ────────────────────── v1.14.0
+   Installed SysInfo ───────────────────── v0.3.1
+   Installed JLLWrappers ───────────────── v1.8.0
+   Installed PipeWireAO_jll ────────────── v1.7.0+19
+   Installed IteratorInterfaceExtensions ─ v1.0.0
+   Installed Hwloc ─────────────────────── v3.3.0
+   Installed Libiconv_jll ──────────────── v1.18.0+0
+   Installed DataValueInterfaces ───────── v1.0.0
+   Installed OrderedCollections ────────── v2.0.3
+   Installed PrecompileTools ───────────── v1.3.4
+   Installed PipeWireAO ────────────────── v0.6.17
+   Installed StableTasks ───────────────── v0.1.7
+   Installed CEnum ─────────────────────── v0.5.0
+   Installed DelimitedFiles ────────────── v1.9.1
+   Installed Reexport ──────────────────── v1.2.2
+   Installed CFITSIO_jll ───────────────── v4.7.0+0
+   Installed FITSIO ────────────────────── v0.17.5
+   Installed UnsafeArrays ──────────────── v1.0.9
+   Installed ThreadPinning ─────────────── v1.1.1
+   Installed ThreadPinningCore ─────────── v0.4.5
+   Installed StructTypes ───────────────── v1.11.0
+     Cloning [a3e2c7da-f73f-4284-8482-36ac422b34e6] PipeWireAORTC from git@github.com:DarrylGamroth/pipewireao-rtc.git
+   Installed PipeWireAORTC ─────────────── v0.1.0
+  Installing 7 artifacts
+   Installed artifact Bzip2             503.5 KiB
+   Installed artifact Xorg_libpciaccess 26.2 KiB
+   Installed artifact XML2              2.2 MiB
+   Installed artifact CFITSIO           896.4 KiB
+   Installed artifact Hwloc             3.6 MiB
+   Installed artifact Libiconv          1.9 MiB
+   Installed artifact PipeWireAO        3.4 MiB
+    Updating `~/.cache/pipewireaortc-registration-20261014/environment/Project.toml`
+  [525bcba6] + FITSIO v0.17.5
+  [a3e2c7da] + PipeWireAORTC v0.1.0
+    Updating `~/.cache/pipewireaortc-registration-20261014/environment/Manifest.toml`
+⌅ [fa961155] + CEnum v0.5.0
+  [3b1b4be9] + CFITSIO v1.7.2
+  [9a962f9c] + DataAPI v1.16.0
+  [e2d170a0] + DataValueInterfaces v1.0.0
+  [8bb1440f] + DelimitedFiles v1.9.1
+  [525bcba6] + FITSIO v0.17.5
+  [0e44f5e4] + Hwloc v3.3.0
+  [82899510] + IteratorInterfaceExtensions v1.0.0
+  [692b3bcd] + JLLWrappers v1.8.0
+  [0f8b85d8] + JSON3 v1.14.3
+  [bac558e1] + OrderedCollections v2.0.3
+⌅ [69de0a69] + Parsers v2.8.8
+  [5d815c25] + PipeWireAO v0.6.17
+  [a3e2c7da] + PipeWireAORTC v0.1.0
+  [aea7be01] + PrecompileTools v1.3.4
+  [21216c6a] + Preferences v1.6.0
+  [189a3867] + Reexport v1.2.2
+  [91464d47] + StableTasks v0.1.7
+  [856f2bd8] + StructTypes v1.11.0
+  [90a7ee08] + SysInfo v0.3.1
+  [3783bdb8] + TableTraits v1.0.1
+  [bd369af6] + Tables v1.14.0
+  [811555cd] + ThreadPinning v1.1.1
+  [6f48bc29] + ThreadPinningCore v0.4.5
+  [c4a57d5a] + UnsafeArrays v1.0.9
+  [6e34b625] + Bzip2_jll v1.0.9+0
+  [b3e40c51] + CFITSIO_jll v4.7.0+0
+  [e33a78d0] + Hwloc_jll v2.15.0+0
+  [94ce4f54] + Libiconv_jll v1.18.0+0
+  [cde84cf6] + PipeWireAO_jll v1.7.0+19
+  [02c8fc9c] + XML2_jll v2.15.4+0
+  [a65dc6b1] + Xorg_libpciaccess_jll v0.19.0+0
+  [56f22d72] + Artifacts v1.11.0
+  [ade2ca70] + Dates v1.11.0
+  [8f399da3] + Libdl v1.11.0
+  [37e2e46d] + LinearAlgebra v1.12.0
+  [a63ad114] + Mmap v1.11.0
+  [de0858da] + Printf v1.11.0
+  [9a3f8284] + Random v1.11.0
+  [ea8e919c] + SHA v0.7.0
+  [9e88b42a] + Serialization v1.11.0
+  [6462fe0b] + Sockets v1.11.0
+  [fa267f1f] + TOML v1.0.3
+  [cf7118a7] + UUIDs v1.11.0
+  [4ec0a83e] + Unicode v1.11.0
+  [e66e0078] + CompilerSupportLibraries_jll v1.3.1+2
+  [deac9b47] + LibCURL_jll v8.15.0+0
+  [29816b5a] + LibSSH2_jll v1.11.3+1
+  [4536629a] + OpenBLAS_jll v0.3.29+0
+  [458c3c95] + OpenSSL_jll v3.5.6+0
+  [83775a58] + Zlib_jll v1.3.1+2
+  [8e850b90] + libblastrampoline_jll v5.15.0+0
+  [8e850ede] + nghttp2_jll v1.64.0+1
+        Info Packages marked with ⌅ have new versions available but compatibility constraints restrict them from upgrading. To see why use `status --outdated -m`
+Precompiling packages...
+    567.0 ms  ✓ DataAPI
+    624.1 ms  ✓ DataValueInterfaces
+    621.6 ms  ✓ IteratorInterfaceExtensions
+    638.1 ms  ✓ Reexport
+    718.5 ms  ✓ Unicode
+    723.7 ms  ✓ StableTasks
+    720.2 ms  ✓ UnsafeArrays
+    787.0 ms  ✓ Mmap
+    939.1 ms  ✓ Serialization
+    496.0 ms  ✓ TableTraits
+    519.6 ms  ✓ DelimitedFiles
+    741.0 ms  ✓ Preferences
+    484.6 ms  ✓ PrecompileTools
+   1960.3 ms  ✓ CEnum
+    592.1 ms  ✓ JLLWrappers
+   2093.3 ms  ✓ OrderedCollections
+    789.3 ms  ✓ Libiconv_jll
+    995.8 ms  ✓ Bzip2_jll
+   1042.2 ms  ✓ Xorg_libpciaccess_jll
+   2517.3 ms  ✓ StructTypes
+   1185.9 ms  ✓ PipeWireAO_jll
+    830.8 ms  ✓ XML2_jll
+   1899.9 ms  ✓ ThreadPinningCore
+    861.5 ms  ✓ CFITSIO_jll
+    702.4 ms  ✓ Hwloc_jll
+   2636.4 ms  ✓ Tables
+   2116.8 ms  ✓ CFITSIO
+   1950.7 ms  ✓ Hwloc
+    870.3 ms  ✓ FITSIO
+   4772.9 ms  ✓ PipeWireAO
+   7374.6 ms  ✓ Parsers
+   5069.1 ms  ✓ SysInfo
+   7101.0 ms  ✓ JSON3
+   5771.8 ms  ✓ ThreadPinning
+   3942.9 ms  ✓ PipeWireAORTC
+  35 dependencies successfully precompiled in 21 seconds. 9 already precompiled.
+  9 dependencies precompiled but different versions are currently loaded (Dates, LibCURL_jll, LibSSH2_jll, OpenSSL_jll, Printf, TOML, UUIDs, Zlib_jll and nghttp2_jll). Restart julia to access the new versions. Otherwise, 21 dependents of these packages may trigger further precompilation to work with the unexpected versions.
+FRESH_REGISTERED_CORE_PASS /home/dgamroth/.cache/pipewireaortc-registration-20261014/fresh-depot/packages/PipeWireAORTC/i87vL

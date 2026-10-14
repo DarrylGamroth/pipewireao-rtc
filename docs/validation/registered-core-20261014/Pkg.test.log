@@ -180,4 +180,4 @@ Test Summary:                                           | Pass  Total   Time
 named deployment package and operational source closure |  125    125  11.4s
 Test Summary:                                      | Pass  Total  Time
 unsupported SDK rejection preserves sealed sources |    4      4  0.1s
-     Testing PipeWireAORTC tests passed 
+     Testing PipeWireAORTC tests passed

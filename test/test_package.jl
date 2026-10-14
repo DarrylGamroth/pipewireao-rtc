@@ -114,8 +114,16 @@ end
         mkdir(copied)
         sdk = P.ScienceExport.copy_deployment_runtime(copied)
         @test P.DeploymentConfiguration.validate_runtime(sdk) == sdk
-        project = read(joinpath(sdk, "Project.toml"), String)
-        write(joinpath(sdk, "Project.toml"), replace(project, "version = \"0.1.0\"" => "version = \"9.0.0\""))
+        project_path = joinpath(sdk, "Project.toml")
+        # Pkg-installed source files retain their read-only mode when copied.
+        chmod(project_path, 0o444)
+        @test stat(project_path).mode & 0o222 == 0
+        project = read(project_path, String)
+        corrupted = replace(project, "version = \"$(Base.pkgversion(P))\"" => "version = \"9.0.0\"")
+        @test corrupted != project
+        # Grant write access only to this temporary copy for deliberate tampering.
+        chmod(project_path, stat(project_path).mode | 0o200)
+        write(project_path, corrupted)
         @test_throws P.DeploymentConfiguration.DeploymentError P.DeploymentConfiguration.validate_runtime(sdk)
     end
 end

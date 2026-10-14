@@ -8,6 +8,7 @@ This is software verification. No live RTC, GUI, GPU or hardware was changed.
 
 `julia --startup-file=no --project=. -e 'using Pkg; Pkg.test()'` passes:
 **53 testsets, 1,848 assertions**, exit 0. [Full output](Pkg.test.log).
+Recorded logs have trailing whitespace removed; their content/order is retained.
 The normal Pkg test environment, native codec records, configuration, calibration
 client fixtures, export/relocation and new artifact/owner checks are included.
 Native process integration is a separate opt-in suite and was not run.
@@ -35,7 +36,8 @@ was moved back to the package, test self-dependency/source declarations were
 restored, and a fresh Pkg.resolve added the canonical self record. All **59 full
 non-self records are exactly unchanged**, including versions, tree hashes, source
 pins and dependency edges. The self record changes only its table name. The
-project hash changes as expected. No Manifest was edited by hand.
+project hash changes as expected. This comparison describes the rename repair
+before the subsequent 0.1.1 patch-version increment. No Manifest was edited by hand.
 
 A permanent package test now checks the canonical Manifest self name. Astra
 independently verified the loader failure/success and exact record preservation;
@@ -50,6 +52,37 @@ core/identity loss and expiry. Root and Astra replayed this result. The original
 wrong-arity causal claim is withdrawn; the same malformed operation-14 type
 field faults before and preserves health after the fix. This policy is not
 installed in the existing live service.
+
+## Registered-copy test boundary
+
+A separate fresh-depot install resolved the registered 0.1.0 tree, loaded it
+normally, verified a nonsquare FITS selection and found no `path` dependencies
+or application `[sources]` overrides. The restarted environment verified tree
+`e9536bf25171839eb6eb759d306c2efe456c75e6`.
+
+Running the registered copy's complete test suite then exposed a test portability
+defect: the intentional metadata-tamper test tried to overwrite a copied
+`Project.toml` whose read-only permissions came from Julia's installed package.
+The checkout run had writable source files. See [the failed registered run](registered-0.1.0-Pkg.test.log).
+Production export intentionally retains source permission bits; validation only
+reads the sealed files. The repair belongs in the temporary test copy, followed
+by a new immutable patch release and a registered-copy rerun. Version 0.1.0's
+registered tree must not be replaced.
+
+The test now forces the temporary Project read-only, then explicitly grants
+owner-write only before its intentional corruption. It also derives the original
+version from `Base.pkgversion` and asserts the corrupted bytes differ. The same
+test [fails before](readonly-fail-before.log) and [passes after](readonly-pass-after.log)
+on a checkout. Focused package checks pass **160 assertions**. Version 0.1.1
+increments only the canonical Manifest self-version; all 59 non-self records
+remain unchanged. Production copying and validation code are unchanged.
+
+The first fresh installation also logged an unavailable registry review-branch
+ref while that branch was being published. Installation completed after the ref
+was available; [the installation log](fresh-install.log) ends with the explicit
+fresh registered-core pass marker. The subsequent restarted test verifies the
+resolved immutable tree independently of checkout paths. This transient fetch
+message is not presented as a successful registry fetch or a scientific result.
 
 ## Open application gates
 
