@@ -1,8 +1,8 @@
-using Test, PipeWireAO, PipeWireAODeployment
+using Test, PipeWireAO, PipeWireAORTC
 
 include("test_native_control_client.jl")
 include("native_control_private_core.jl")
-const OwnerEndpoint = PipeWireAODeployment.NativeControlEndpoint
+const OwnerEndpoint = PipeWireAORTC.NativeControlEndpoint
 const DECODE_DELAY = Ref(0.0)
 
 function Client.decode_request(::TestProfile, header, payload::SPA.Struct)

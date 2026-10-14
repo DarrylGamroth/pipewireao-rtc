@@ -2,16 +2,12 @@ module NativeRunnerCodecTests
 
 using Test
 using PipeWireAO
-using PipeWireAODeployment
+using PipeWireAORTC
 
-# The package include is owned by integration; this standalone test can run now.
-if !isdefined(PipeWireAODeployment, :NativeRunnerCodec)
-    Base.include(PipeWireAODeployment,
-        joinpath(dirname(@__DIR__), "src", "native_runner_codec.jl"))
-end
 
-const Runner = PipeWireAODeployment.NativeRunnerCodec
-const Envelope = PipeWireAODeployment.NativeControlCodec
+
+const Runner = PipeWireAORTC.NativeRunnerCodec
+const Envelope = PipeWireAORTC.NativeControlCodec
 const SPA = PipeWireAO.SPA
 const Pod = PipeWireAO.Pod
 

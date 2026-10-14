@@ -1,7 +1,7 @@
-using Test, PipeWireAODeployment
+using Test, PipeWireAORTC
 
-const InstalledWirePlumber = PipeWireAODeployment.ScienceExport
-const InstalledWirePlumberCommon = PipeWireAODeployment.Common
+const InstalledWirePlumber = PipeWireAORTC.ScienceExport
+const InstalledWirePlumberCommon = PipeWireAORTC.Common
 
 function wireplumber_prefix(root; library_dir="lib/x86_64-linux-gnu")
     prefix = joinpath(root, "prefix")

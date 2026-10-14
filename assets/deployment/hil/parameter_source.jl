@@ -1,9 +1,9 @@
 #!/usr/bin/env julia
 # Ordinary sparse parameter owner; the installed WirePlumber session owns links and policy.
-using PipeWireAODeployment
-const Parameters = PipeWireAODeployment.NativeParameterSource
-const Common = PipeWireAODeployment.Common
-const Bootstrap = PipeWireAODeployment.NativeOwnerBootstrapRuntime
+using PipeWireAORTC
+const Parameters = PipeWireAORTC.NativeParameterSource
+const Common = PipeWireAORTC.Common
+const Bootstrap = PipeWireAORTC.NativeOwnerBootstrapRuntime
 
 function main(arguments=ARGS)
     required = ["config", "remote", "bootstrap-node", "bootstrap-instance", "control-node", "control-instance"]

@@ -1,11 +1,11 @@
 # Cold private-core authority tests; no scientific application or frames.
-using Test, PipeWireAO, PipeWireAODeployment, ThreadPinning
+using Test, PipeWireAO, PipeWireAORTC, ThreadPinning
 include("native_control_private_core.jl")
-const R = PipeWireAODeployment.NativeOwnerBootstrapRuntime
-const B = PipeWireAODeployment.NativeOwnerBootstrapClient
-const C = PipeWireAODeployment.NativeControlClient
-const P = PipeWireAODeployment.NativeOwnerBootstrapCodec
-const E = PipeWireAODeployment.NativeControlEndpoint
+const R = PipeWireAORTC.NativeOwnerBootstrapRuntime
+const B = PipeWireAORTC.NativeOwnerBootstrapClient
+const C = PipeWireAORTC.NativeControlClient
+const P = PipeWireAORTC.NativeOwnerBootstrapCodec
+const E = PipeWireAORTC.NativeControlEndpoint
 remaining() = C.monotonic() + 10.0
 function connected_owner(remote, name, instance)
     runtime = R.Runtime(remote, name, instance)

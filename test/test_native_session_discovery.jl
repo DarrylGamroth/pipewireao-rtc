@@ -2,9 +2,9 @@ module NativeSessionDiscoveryTests
 
 using Test
 using PipeWireAO
-using PipeWireAODeployment
+using PipeWireAORTC
 
-const Discovery = PipeWireAODeployment.NativeSessionDiscovery
+const Discovery = PipeWireAORTC.NativeSessionDiscovery
 const SPA = PipeWireAO.SPA
 const Pod = PipeWireAO.Pod
 const SESSION_A = "01234567-89ab-cdef-0123-456789abcdef"

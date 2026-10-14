@@ -2,9 +2,9 @@
 pushfirst!(LOAD_PATH, ARGS[1])
 using PipeWireAO
 pushfirst!(LOAD_PATH, ARGS[2])
-using PipeWireAODeployment
-const B = PipeWireAODeployment.NativeOwnerBootstrapClient
-const C = PipeWireAODeployment.NativeControlClient
+using PipeWireAORTC
+const B = PipeWireAORTC.NativeOwnerBootstrapClient
+const C = PipeWireAORTC.NativeControlClient
 
 function primary(remote, name, pid, instance)
     client = B.connect(remote, name, pid, instance; deadline=C.monotonic() + 20)

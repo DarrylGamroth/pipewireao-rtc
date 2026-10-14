@@ -1,13 +1,13 @@
 # Cold native session stand-in for the ExecStop integration test. No science,
 # hardware, links, or CUDA are loaded; production ordering is owned by Lua.
-using PipeWireAO, PipeWireAODeployment
-const Client = PipeWireAODeployment.NativeControlClient
-const Endpoint = PipeWireAODeployment.NativeControlEndpoint
-const Profile = PipeWireAODeployment.NativeSessionProfile
-const Codec = PipeWireAODeployment.NativeSessionCodec
-const Envelope = PipeWireAODeployment.NativeControlCodec
-const S = PipeWireAODeployment.SystemdOwners
-const C = PipeWireAODeployment.Common
+using PipeWireAO, PipeWireAORTC
+const Client = PipeWireAORTC.NativeControlClient
+const Endpoint = PipeWireAORTC.NativeControlEndpoint
+const Profile = PipeWireAORTC.NativeSessionProfile
+const Codec = PipeWireAORTC.NativeSessionCodec
+const Envelope = PipeWireAORTC.NativeControlCodec
+const S = PipeWireAORTC.SystemdOwners
+const C = PipeWireAORTC.Common
 Client.decode_request(::Profile.Profile, header, payload::SPA.Struct) = Codec.Runner.decode_request(header, payload)
 Client.encode_rejection(::Profile.Profile, header, lifecycle) =
     Envelope.encode_rejection(header, SPA.Struct(Pod(""), Pod("request rejected"), Pod(SPA.Id(UInt32(lifecycle)))))

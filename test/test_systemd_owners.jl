@@ -1,6 +1,6 @@
-using Test, PipeWireAODeployment
+using Test, PipeWireAORTC
 
-const SO = PipeWireAODeployment.SystemdOwners
+const SO = PipeWireAORTC.SystemdOwners
 const INVOCATION = "0123456789abcdef0123456789abcdef"
 
 @testset "systemd owner names and exact invocation discovery" begin

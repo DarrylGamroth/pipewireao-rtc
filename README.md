@@ -1,4 +1,4 @@
-# PipeWireAO RTC
+# PipeWireAORTC
 
 `pipewireao-rtc` provides configuration, installation and native control clients
 for a headless, non-actuating adaptive-optics workstation. WirePlumberAO Lua
@@ -19,6 +19,32 @@ and command-line tools act as clients of the same WirePlumber session authority.
 - [Proposed Julia RTC structure and migration](docs/JULIA_RTC_STRUCTURE_PLAN.md)
 - [Installed replacement checks](docs/validation/wireplumber-session-20261007/SESSION_CHECKS.md)
 
+## Julia package API
+
+The shared Julia package is `PipeWireAORTC` (UUID
+`a3e2c7da-f73f-4284-8482-36ac422b34e6`). Update `using PipeWireAODeployment`
+to `using PipeWireAORTC` and resolve the environment after upgrading. Existing
+native protocol names and v1 records retain their identities.
+
+The supported callable interfaces retain their existing module bindings:
+
+| Module | Purpose |
+| --- | --- |
+| `WirePlumberConfiguration` | Generate and write native session configuration |
+| `WirePlumberInstall` | Install a sealed session package |
+| `WirePlumberSessionRuntime` | Start, attach, inspect and stop an installed session |
+| `NativeSessionClient` | Send controls to a selected native session |
+| `CalibrationAcquisition` | Sequence calibration acquisition actions |
+| `CalibrationCLI`, `WirePlumberCLI` | Translate command arguments and reports |
+| `NativeOwnerBootstrapRuntime`, `NativeParameterSource`, `NativeSourceControl` | Reusable cold owner entry points and native source controls |
+
+For example, `PipeWireAORTC.WirePlumberCLI.main(["sessions"])` is the callable
+counterpart of the root `wireplumber_cli.jl` command. Root `wireplumber_*.jl`
+files are compatibility entry points; their implementation loads with the package
+from `src/configuration/`, `src/deployment/` and `src/cli.jl`. Native protocols
+live under `src/native/`, and reusable owner runtimes live under `src/owners/`.
+The sealed SDK launch path remains available during application migration.
+
 ## Launch a sealed session package
 
 Instantiate the one-shot tooling environment:
@@ -35,8 +61,8 @@ session authority.
 
 ```sh
 julia --startup-file=no --project=. -e '
-    using PipeWireAODeployment
-    W = PipeWireAODeployment.WirePlumberSessionRuntime
+    using PipeWireAORTC
+    W = PipeWireAORTC.WirePlumberSessionRuntime
     println(W.start!(ARGS[1], ARGS[2]))
 ' /absolute/sealed-package /absolute/fresh-stage
 ```
@@ -118,3 +144,12 @@ establish target timing, physical authority, every failure case, Classic or
 row-block parity under the new session owner, or the full calibration campaign.
 The algorithms and accepted artifacts remain with their scientific owners.
 Historical runner reports retain their original revision and scope.
+
+## Finite source control
+
+`NativeSourceControl` owns the existing native v1 source run/reset/query mailbox
+and retained snapshots. The implementation was moved from the REVOLT HIL
+resources without changing wire keys, IDs or request/response semantics.
+Instrument owners apply accepted requests between completed exchanges and
+publish under their source loop lock. Scientific stepping and reporting remain
+with each instrument; callbacks stage only bounded scalar requests.

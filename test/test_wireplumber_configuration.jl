@@ -1,5 +1,5 @@
-using Test, PipeWireAODeployment
-include(joinpath(dirname(@__DIR__), "wireplumber_configuration.jl"))
+using Test, PipeWireAORTC
+using PipeWireAORTC: WirePlumberConfiguration
 
 @testset "declared core-hosted session nodes" begin
     spec = Dict("name" => "core-session", "source-owner" => "simulator",
@@ -44,7 +44,7 @@ include(joinpath(dirname(@__DIR__), "wireplumber_configuration.jl"))
 end
 
 @testset "bounded cold startup budget" begin
-    D = PipeWireAODeployment.DeploymentConfiguration
+    D = PipeWireAORTC.DeploymentConfiguration
     @test D.startup_timeout_ms(Dict()) == 300000
     for timeout in (1000, 300000, 900000, 3600000)
         @test D.startup_timeout_ms(Dict("startup-timeout-ms"=>timeout)) == timeout

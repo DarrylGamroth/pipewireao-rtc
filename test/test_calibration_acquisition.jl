@@ -1,13 +1,13 @@
 module CalibrationAcquisitionTests
-using Test, PipeWireAODeployment
-const A = PipeWireAODeployment.CalibrationAcquisition
-const N = PipeWireAODeployment.NativeCalibrationActionClient
-const C = PipeWireAODeployment.NativeCalibrationActionCodec
-const G = PipeWireAODeployment.NativeControlClient
-const E = PipeWireAODeployment.NativeControlCodec
-const L = PipeWireAODeployment.NativeAcquisitionLifecycleCodec
-const CLI = PipeWireAODeployment.CalibrationCLI
-const Common = PipeWireAODeployment.Common
+using Test, PipeWireAORTC
+const A = PipeWireAORTC.CalibrationAcquisition
+const N = PipeWireAORTC.NativeCalibrationActionClient
+const C = PipeWireAORTC.NativeCalibrationActionCodec
+const G = PipeWireAORTC.NativeControlClient
+const E = PipeWireAORTC.NativeControlCodec
+const L = PipeWireAORTC.NativeAcquisitionLifecycleCodec
+const CLI = PipeWireAORTC.CalibrationCLI
+const Common = PipeWireAORTC.Common
 const ID = E.ControllerIdentity(UInt32(8), typemax(UInt64), Int64(11))
 const BINDING = N.Binding("/tmp/test-core", "test.actions", 7, 42)
 const TIMEOUTS = A.Timeouts(1_000_000_000, 1_000_000_000, 1_000_000_000, 1_000_000_000, 1_000_000_000)
@@ -68,7 +68,7 @@ ops(client) = C._operation.([c.action for c in client.client.commands])
         @test all(b->b.values==Float32[3,4] && b.valid,result.responses)
         document = A.document(result)
         @test document["run"] == typemax(UInt64)
-        @test Common.parse_json(PipeWireAODeployment.CalibrationCLI.JSON3.write(document)) == document
+        @test Common.parse_json(PipeWireAORTC.CalibrationCLI.JSON3.write(document)) == document
         @test all(b->length(b["exposures"])==2,document["responses"])
         @test_throws ArgumentError A.acquire!(client,plan(rule))
     end

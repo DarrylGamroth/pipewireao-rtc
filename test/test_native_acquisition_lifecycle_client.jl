@@ -1,7 +1,7 @@
-using Test, PipeWireAODeployment
-const Native = PipeWireAODeployment.NativeAcquisitionLifecycleClient
-const Codec = PipeWireAODeployment.NativeAcquisitionLifecycleCodec
-const Envelope = PipeWireAODeployment.NativeControlCodec
+using Test, PipeWireAORTC
+const Native = PipeWireAORTC.NativeAcquisitionLifecycleClient
+const Codec = PipeWireAORTC.NativeAcquisitionLifecycleCodec
+const Envelope = PipeWireAORTC.NativeControlCodec
 const Identity = Envelope.ControllerIdentity(UInt32(7), typemax(UInt64), Int64(11))
 header(result=Int32(0); operation=UInt32(5)) =
     Envelope.ReplyHeader(Identity, Int64(42), Int64(19), operation, result)

@@ -1,10 +1,10 @@
 module NativeSessionClientTests
-using Test, PipeWireAODeployment
-const S = PipeWireAODeployment.NativeSessionClient
-const D = PipeWireAODeployment.NativeSessionDiscovery
-const E = PipeWireAODeployment.NativeControlCodec
-const R = PipeWireAODeployment.NativeRunnerCodec
-const C = PipeWireAODeployment.NativeSessionCodec
+using Test, PipeWireAORTC
+const S = PipeWireAORTC.NativeSessionClient
+const D = PipeWireAORTC.NativeSessionDiscovery
+const E = PipeWireAORTC.NativeControlCodec
+const R = PipeWireAORTC.NativeRunnerCodec
+const C = PipeWireAORTC.NativeSessionCodec
 const identity = E.ControllerIdentity(UInt32(7), UInt64(8), Int64(9))
 
 function completion(state; result=Int32(0), operation=UInt32(3))

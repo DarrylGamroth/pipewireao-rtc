@@ -1,4 +1,4 @@
-using Test, PipeWireAODeployment
+using Test, PipeWireAORTC
 
 include("test_native_session_discovery.jl")
 include("test_native_session_client.jl")

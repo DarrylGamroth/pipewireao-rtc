@@ -1,9 +1,9 @@
 module NativeOwnerBootstrapCodecTests
-using Test, PipeWireAO, PipeWireAODeployment
-const C = PipeWireAODeployment.NativeOwnerBootstrapCodec
-const Client = PipeWireAODeployment.NativeControlClient
-const E = PipeWireAODeployment.NativeControlCodec
-const B = PipeWireAODeployment.NativeOwnerBootstrapClient
+using Test, PipeWireAO, PipeWireAORTC
+const C = PipeWireAORTC.NativeOwnerBootstrapCodec
+const Client = PipeWireAORTC.NativeControlClient
+const E = PipeWireAORTC.NativeControlCodec
+const B = PipeWireAORTC.NativeOwnerBootstrapClient
 const SPA = PipeWireAO.SPA
 identity = E.ControllerIdentity(UInt32(7), typemax(UInt64), Int64(9))
 request(op) = E.RequestHeader(identity, typemax(Int64), Int64(op), UInt32(op), Int64(1_000_000))

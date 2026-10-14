@@ -1,9 +1,11 @@
 # Instrument only the cold integration helper, without production timing hooks.
-# Root includes are made absolute because include_string inherits its caller's
-# include directory. Exact replacements fail if the measured code drifts.
+# Evaluate the instrumented CLI in an isolated parent module so the package
+# methods remain unchanged. Exact replacements fail if the measured code drifts.
 source_path, evidence_root = ARGS[1:2]
 stop_test_event(name) = write(joinpath(evidence_root, name), string(time_ns()))
 stop_test_event("helper-launch")
+using PipeWireAORTC
+source_path = joinpath(PipeWireAORTC.package_root(), "src", "cli.jl")
 source = read(source_path, String)
 first_byte = findfirst("function stop!(args)", source)
 last_byte = findnext("\n\"List local POD hints", source, last(first_byte))
@@ -25,11 +27,13 @@ for (before, after) in [
     global body = insert_once(body, before, after)
 end
 source = source[1:first(first_byte)-1] * body * source[first(last_byte):end]
-for name in ("wireplumber_configuration.jl", "wireplumber_launch.jl", "wireplumber_install.jl")
-    global source = insert_once(source, "include(" * repr(name) * ")",
-        "include(" * repr(joinpath(dirname(source_path), name)) * ")")
+sandbox = Module(:InstrumentedStopCLI)
+for name in (:PipeWireAORTC, :WirePlumberConfiguration, :WirePlumberLaunch, :WirePlumberInstall)
+    value = name === :PipeWireAORTC ? PipeWireAORTC : getproperty(PipeWireAORTC, name)
+    Core.eval(sandbox, Expr(:const, Expr(:(=), name, value)))
 end
-include_string(Main, source, source_path)
+include_string(sandbox, source, source_path)
+const WirePlumberCLI = sandbox.WirePlumberCLI
 stop_test_event("helper-loaded")
 try
     WirePlumberCLI.main(ARGS[3:end])

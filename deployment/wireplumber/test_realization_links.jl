@@ -2,8 +2,8 @@
 # Opt-in public-interface experiment; never connects to an existing core.
 using Test, PipeWireAO
 using SHA
-using PipeWireAODeployment
-const C = PipeWireAODeployment.Common
+using PipeWireAORTC
+const C = PipeWireAORTC.Common
 include(joinpath(@__DIR__, "../julia/test/native_control_private_core.jl"))
 
 length(ARGS) in (3,4) || error("expected WIREPLUMBER_SOURCE BUILD EVIDENCE_OUTPUT [probe mode]")

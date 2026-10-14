@@ -3,9 +3,9 @@
 pushfirst!(LOAD_PATH, ARGS[1])
 using PipeWireAO, Test
 pushfirst!(LOAD_PATH, ARGS[2])
-using PipeWireAODeployment
+using PipeWireAORTC
 include(joinpath(ARGS[2], "test", "native_control_private_core.jl"))
-const R = PipeWireAODeployment.NativeOwnerBootstrapRuntime
+const R = PipeWireAORTC.NativeOwnerBootstrapRuntime
 const OUTPUT = ARGS[3]
 mkpath(OUTPUT)
 

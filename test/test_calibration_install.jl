@@ -1,9 +1,9 @@
 module CalibrationInstallTests
-using Test, PipeWireAODeployment
-include(joinpath(PipeWireAODeployment.package_root(),"wireplumber_install.jl"))
+using Test, PipeWireAORTC
+using PipeWireAORTC: WirePlumberInstall
 const Installer = WirePlumberInstall
-const Common = PipeWireAODeployment.Common
-const Configuration = PipeWireAODeployment.DeploymentConfiguration
+const Common = PipeWireAORTC.Common
+const Configuration = PipeWireAORTC.DeploymentConfiguration
 @testset "calibration installer validates Julia entrypoint and preserves sealed Rust" begin
     mktempdir() do root
         path=joinpath(root,"bin/rtc-calibrate")

@@ -1,9 +1,9 @@
 module NativeCalibrationActionCodecTests
-using Test, PipeWireAO, PipeWireAODeployment
-const Codec = PipeWireAODeployment.NativeCalibrationActionCodec
-const Client = PipeWireAODeployment.NativeControlClient
-const Envelope = PipeWireAODeployment.NativeControlCodec
-const Lifecycle = PipeWireAODeployment.NativeAcquisitionLifecycleCodec
+using Test, PipeWireAO, PipeWireAORTC
+const Codec = PipeWireAORTC.NativeCalibrationActionCodec
+const Client = PipeWireAORTC.NativeControlClient
+const Envelope = PipeWireAORTC.NativeControlCodec
+const Lifecycle = PipeWireAORTC.NativeAcquisitionLifecycleCodec
 const SPA = PipeWireAO.SPA
 const Pod = PipeWireAO.Pod
 const profile = Codec.PROFILE

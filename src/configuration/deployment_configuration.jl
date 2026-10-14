@@ -394,7 +394,7 @@ function substitute(value::AbstractString, bindings::AbstractDict; quoted=false)
 end
 
 function validate_runtime(root::AbstractString)
-    isfile(joinpath(root, "src", "PipeWireAODeployment.jl")) ||
+    isfile(joinpath(root, "src", "PipeWireAORTC.jl")) ||
         fail("unsupported legacy include-loaded deployment runtime; preserve this sealed SDK and use its original launcher, or export a new SDK with the named package")
     for name in ScienceExport.RUNTIME_ENTRIES
         expected = joinpath(ScienceExport.package_root(), name)
@@ -409,16 +409,22 @@ function validate_runtime(root::AbstractString)
     end
     metadata = TOML.parsefile(joinpath(root, "Project.toml"))
     owner = parentmodule(@__MODULE__)
-    get(metadata, "name", nothing) == "PipeWireAODeployment" &&
+    get(metadata, "name", nothing) == "PipeWireAORTC" &&
         get(metadata, "uuid", nothing) == string(Base.PkgId(owner).uuid) ||
         fail("installed Julia deployment runtime has an unsupported package identity")
     version = tryparse(VersionNumber, get(metadata, "version", ""))
     version !== nothing && version.major == Base.pkgversion(owner).major &&
         version.minor == Base.pkgversion(owner).minor ||
         fail("installed Julia deployment runtime version is unsupported by this installer")
-    for name in readdir(joinpath(ScienceExport.package_root(), "src"))
-        endswith(name, ".jl") || continue
-        isfile(joinpath(root, "src", name)) || fail("installed Julia deployment runtime is incomplete: src/$name")
+    source = joinpath(ScienceExport.package_root(), "src")
+    for (parent, _, files) in walkdir(source)
+        for name in files
+            endswith(name, ".jl") || continue
+            relative = relpath(joinpath(parent, name), source)
+            installed = joinpath(root, "src", relative)
+            isfile(installed) && !islink(installed) ||
+                fail("installed Julia deployment runtime is incomplete: src/$relative")
+        end
     end
     resources = joinpath(root, "assets", "deployment")
     for directory in ("hil", "templates")
@@ -471,8 +477,8 @@ function installed_wrappers(julia::AbstractString)
     for (name, owner) in INSTALLED_ENTRYPOINTS
         scripts[name] = "#!/bin/sh\njulia_dir=\"\$(dirname \"\$0\")/../julia\"\n" *
             "exec $executable --startup-file=no --project=\"\$julia_dir\" -e " *
-            "'using PipeWireAODeployment; " *
-            "exit(PipeWireAODeployment.$owner.main(ARGS))' -- \"\$@\"\n"
+            "'using PipeWireAORTC; " *
+            "exit(PipeWireAORTC.$owner.main(ARGS))' -- \"\$@\"\n"
     end
     return scripts
 end

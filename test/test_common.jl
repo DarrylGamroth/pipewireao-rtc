@@ -1,5 +1,5 @@
 using Test
-using PipeWireAODeployment.Common
+using PipeWireAORTC.Common
 
 @testset "Julia operational preparation utilities" begin
     @test parse_json("{\"x\":4611686018427387903}")["x"] === 4611686018427387903

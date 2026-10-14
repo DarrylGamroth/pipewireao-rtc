@@ -2,11 +2,11 @@ module NativeAcquisitionLifecycleCodecTests
 
 using Test
 using PipeWireAO
-using PipeWireAODeployment
+using PipeWireAORTC
 
-const Codec = PipeWireAODeployment.NativeAcquisitionLifecycleCodec
-const Client = PipeWireAODeployment.NativeControlClient
-const Envelope = PipeWireAODeployment.NativeControlCodec
+const Codec = PipeWireAORTC.NativeAcquisitionLifecycleCodec
+const Client = PipeWireAORTC.NativeControlClient
+const Envelope = PipeWireAORTC.NativeControlCodec
 const SPA = PipeWireAO.SPA
 const Pod = PipeWireAO.Pod
 const identity = Envelope.ControllerIdentity(UInt32(7), typemax(UInt64), Int64(11))

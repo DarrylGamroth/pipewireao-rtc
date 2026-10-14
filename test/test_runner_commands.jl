@@ -1,18 +1,15 @@
 module RunnerCommandsTests
 
 using Test
-using PipeWireAODeployment
+using PipeWireAORTC
 
-if !isdefined(PipeWireAODeployment, :RunnerCommands)
-    Base.include(PipeWireAODeployment,
-        joinpath(dirname(@__DIR__), "src", "runner_commands.jl"))
-end
 
-const RC = PipeWireAODeployment.RunnerCommands
-const Codec = PipeWireAODeployment.NativeRunnerCodec
-const Envelope = PipeWireAODeployment.NativeControlCodec
-const SPA = PipeWireAODeployment.NativeRunnerCodec.PipeWireAO.SPA
-const Pod = PipeWireAODeployment.NativeRunnerCodec.PipeWireAO.Pod
+
+const RC = PipeWireAORTC.RunnerCommands
+const Codec = PipeWireAORTC.NativeRunnerCodec
+const Envelope = PipeWireAORTC.NativeControlCodec
+const SPA = PipeWireAORTC.NativeRunnerCodec.PipeWireAO.SPA
+const Pod = PipeWireAORTC.NativeRunnerCodec.PipeWireAO.Pod
 p(x) = Pod(x)
 ps(x...) = SPA.Struct(Pod[x...])
 id(x) = p(SPA.Id(UInt32(x)))

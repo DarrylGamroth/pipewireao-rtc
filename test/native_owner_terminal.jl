@@ -1,12 +1,12 @@
 # Cold private-core terminal lifetime tests; run with --threads=2,0.
-using Test, PipeWireAO, PipeWireAODeployment, ThreadPinning
+using Test, PipeWireAO, PipeWireAORTC, ThreadPinning
 include("native_control_private_core.jl")
-const R = PipeWireAODeployment.NativeOwnerBootstrapRuntime
-const B = PipeWireAODeployment.NativeOwnerBootstrapClient
-const C = PipeWireAODeployment.NativeOwnerBootstrapCodec
-const Client = PipeWireAODeployment.NativeControlClient
-const Envelope = PipeWireAODeployment.NativeControlCodec
-const Endpoint = PipeWireAODeployment.NativeControlEndpoint
+const R = PipeWireAORTC.NativeOwnerBootstrapRuntime
+const B = PipeWireAORTC.NativeOwnerBootstrapClient
+const C = PipeWireAORTC.NativeOwnerBootstrapCodec
+const Client = PipeWireAORTC.NativeControlClient
+const Envelope = PipeWireAORTC.NativeControlCodec
+const Endpoint = PipeWireAORTC.NativeControlEndpoint
 deadline() = Client.monotonic() + 10.0
 
 function client_fence(client)

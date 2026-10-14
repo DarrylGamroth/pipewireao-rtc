@@ -1,10 +1,10 @@
 #!/usr/bin/env julia
 # Development-only package refresh for the WirePlumber realization test.
-using PipeWireAODeployment
+using PipeWireAORTC
 
-const D = PipeWireAODeployment.Deployment
-const C = PipeWireAODeployment.Common
-const H = PipeWireAODeployment.HILExport
+const D = PipeWireAORTC.Deployment
+const C = PipeWireAORTC.Common
+const H = PipeWireAORTC.HILExport
 
 require(condition, message) = condition || error(message)
 

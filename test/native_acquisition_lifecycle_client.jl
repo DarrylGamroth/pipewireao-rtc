@@ -1,12 +1,12 @@
-using Test, PipeWireAO, PipeWireAODeployment
+using Test, PipeWireAO, PipeWireAORTC
 
 include("native_control_private_core.jl")
 
-const Codec = PipeWireAODeployment.NativeAcquisitionLifecycleCodec
-const Runtime = PipeWireAODeployment.NativeAcquisitionLifecycleRuntime
-const Caller = PipeWireAODeployment.NativeAcquisitionLifecycleClient
-const Generic = PipeWireAODeployment.NativeControlClient
-const Endpoint = PipeWireAODeployment.NativeControlEndpoint
+const Codec = PipeWireAORTC.NativeAcquisitionLifecycleCodec
+const Runtime = PipeWireAORTC.NativeAcquisitionLifecycleRuntime
+const Caller = PipeWireAORTC.NativeAcquisitionLifecycleClient
+const Generic = PipeWireAORTC.NativeControlClient
+const Endpoint = PipeWireAORTC.NativeControlEndpoint
 
 function stub_service_once!(runtime)
     Runtime.has_pending(runtime) || return nothing

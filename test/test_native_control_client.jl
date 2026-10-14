@@ -1,8 +1,8 @@
-using Test, PipeWireAO, PipeWireAODeployment
+using Test, PipeWireAO, PipeWireAORTC
 
-const Client = PipeWireAODeployment.NativeControlClient
-const Envelope = PipeWireAODeployment.NativeControlCodec
-const SessionProfile = PipeWireAODeployment.NativeSessionProfile
+const Client = PipeWireAORTC.NativeControlClient
+const Envelope = PipeWireAORTC.NativeControlCodec
+const SessionProfile = PipeWireAORTC.NativeSessionProfile
 const SPA = PipeWireAO.SPA
 
 @enum TestState::UInt32 Preparing=17 Prepared=18
@@ -72,7 +72,7 @@ end
     @test pod_value(Int32, observation.matched_completion.value.payload.values[1]) == 7
     @test Client.operation_id(profile, TestCommand()) == 71
     @test_throws MethodError Client.operation_id(profile,
-        PipeWireAODeployment.NativeRunnerCodec.RunnerCommand(:status))
+        PipeWireAORTC.NativeRunnerCodec.RunnerCommand(:status))
     @test_throws MethodError Client.operation_id(SessionProfile.Profile(), TestCommand())
 end
 

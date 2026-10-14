@@ -1,7 +1,7 @@
-using Test, PipeWireAO, PipeWireAODeployment
+using Test, PipeWireAO, PipeWireAORTC
 include("test_native_control_client.jl")
 include("native_control_private_core.jl")
-const Endpoint = PipeWireAODeployment.NativeControlEndpoint
+const Endpoint = PipeWireAORTC.NativeControlEndpoint
 
 Client.decode_request(::TestProfile, header, payload::SPA.Struct) =
     header.operation == 71 && isempty(payload.values) ? TestCommand() : throw(ArgumentError("invalid action"))

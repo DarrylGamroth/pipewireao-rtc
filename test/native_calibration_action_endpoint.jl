@@ -1,10 +1,10 @@
-using Test, PipeWireAO, PipeWireAODeployment
+using Test, PipeWireAO, PipeWireAORTC
 
 include("native_control_private_core.jl")
-const Actions = PipeWireAODeployment.NativeCalibrationActionCodec
-const Client = PipeWireAODeployment.NativeControlClient
-const Endpoint = PipeWireAODeployment.NativeControlEndpoint
-const Lifecycle = PipeWireAODeployment.NativeAcquisitionLifecycleCodec
+const Actions = PipeWireAORTC.NativeCalibrationActionCodec
+const Client = PipeWireAORTC.NativeControlClient
+const Endpoint = PipeWireAORTC.NativeControlEndpoint
+const Lifecycle = PipeWireAORTC.NativeAcquisitionLifecycleCodec
 
 function action_retirement_proof(socket, directory, daemon)
     chmod(dirname(socket), 0o700)

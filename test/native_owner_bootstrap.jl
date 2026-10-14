@@ -1,11 +1,11 @@
 # Run with --threads=2,0. These are cold transport/threading tests, no SCI frames.
-using Test, PipeWireAO, PipeWireAODeployment, ThreadPinning
+using Test, PipeWireAO, PipeWireAORTC, ThreadPinning
 include("native_control_private_core.jl")
-const B = PipeWireAODeployment.NativeOwnerBootstrapClient
-const R = PipeWireAODeployment.NativeOwnerBootstrapRuntime
-const C = PipeWireAODeployment.NativeOwnerBootstrapCodec
-const Client = PipeWireAODeployment.NativeControlClient
-const Endpoint = PipeWireAODeployment.NativeControlEndpoint
+const B = PipeWireAORTC.NativeOwnerBootstrapClient
+const R = PipeWireAORTC.NativeOwnerBootstrapRuntime
+const C = PipeWireAORTC.NativeOwnerBootstrapCodec
+const Client = PipeWireAORTC.NativeControlClient
+const Endpoint = PipeWireAORTC.NativeControlEndpoint
 function main_gate(microseconds::Cuint)
     @ccall gc_safe=true usleep(microseconds::Cuint)::Cint
 end

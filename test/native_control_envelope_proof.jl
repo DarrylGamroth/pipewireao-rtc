@@ -1,6 +1,6 @@
 using Test
 using PipeWireAO
-using PipeWireAODeployment.NativeControlCodec
+using PipeWireAORTC.NativeControlCodec
 
 const ProofSPA = PipeWireAO.SPA
 const PROOF_INSTANCE = Int64(23)

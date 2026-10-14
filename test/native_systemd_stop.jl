@@ -1,9 +1,9 @@
 # Opt-in integration: owns only its uniquely named user units/private core.
 # CPU 12/13, no CUDA, no science/hardware or installed live sessions.
-using Test, PipeWireAODeployment, JSON3
+using Test, PipeWireAORTC, JSON3
 include("native_control_private_core.jl")
-const C = PipeWireAODeployment.Common
-const S = PipeWireAODeployment.SystemdOwners
+const C = PipeWireAORTC.Common
+const S = PipeWireAORTC.SystemdOwners
 const repo = dirname(@__DIR__)
 const julia = Base.julia_cmd().exec[1]
 const baseline = "--baseline" in ARGS

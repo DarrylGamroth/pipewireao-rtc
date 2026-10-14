@@ -1,11 +1,11 @@
 #!/usr/bin/env julia
 # Development-only Classic lamp fixture preparation; this is not a qualification.
-using PipeWireAODeployment, TOML
+using PipeWireAORTC, TOML
 
-const C = PipeWireAODeployment.Common
-const D = PipeWireAODeployment.Deployment
-const H = PipeWireAODeployment.HILExport
-const Campaign = PipeWireAODeployment.CalibrationCampaign
+const C = PipeWireAORTC.Common
+const D = PipeWireAORTC.Deployment
+const H = PipeWireAORTC.HILExport
+const Campaign = PipeWireAORTC.CalibrationCampaign
 const GENERATED_UNIT = "systemd/pipewireao-rtc@.service"
 
 function verify_seals(package, specification)

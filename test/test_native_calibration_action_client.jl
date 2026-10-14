@@ -1,10 +1,10 @@
 module NativeCalibrationActionClientTests
-using Test, PipeWireAODeployment
-const Native = PipeWireAODeployment.NativeCalibrationActionClient
-const Generic = PipeWireAODeployment.NativeControlClient
-const Codec = PipeWireAODeployment.NativeCalibrationActionCodec
-const Lifecycle = PipeWireAODeployment.NativeAcquisitionLifecycleCodec
-const Envelope = PipeWireAODeployment.NativeControlCodec
+using Test, PipeWireAORTC
+const Native = PipeWireAORTC.NativeCalibrationActionClient
+const Generic = PipeWireAORTC.NativeControlClient
+const Codec = PipeWireAORTC.NativeCalibrationActionCodec
+const Lifecycle = PipeWireAORTC.NativeAcquisitionLifecycleCodec
+const Envelope = PipeWireAORTC.NativeControlCodec
 mutable struct FakeNative
     answer::Any
     failure::Any

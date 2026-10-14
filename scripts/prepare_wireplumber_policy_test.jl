@@ -1,9 +1,9 @@
 #!/usr/bin/env julia
 # Development-only refresh of the runner; keep the accepted science bytes.
-using PipeWireAODeployment
-const D=PipeWireAODeployment.Deployment
-const C=PipeWireAODeployment.Common
-const E=PipeWireAODeployment.HILExport
+using PipeWireAORTC
+const D=PipeWireAORTC.Deployment
+const C=PipeWireAORTC.Common
+const E=PipeWireAORTC.HILExport
 length(ARGS)==3 || error("expected INSTALLED_BASE RUNNER_BINARY FRESH_OUTPUT")
 base,binary,output=abspath.(ARGS)
 !ispath(output) && !islink(output) || error("Fresh output required")

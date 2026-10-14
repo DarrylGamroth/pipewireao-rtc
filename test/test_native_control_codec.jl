@@ -1,7 +1,7 @@
 using Test
 using PipeWireAO
 
-using PipeWireAODeployment.NativeControlCodec
+using PipeWireAORTC.NativeControlCodec
 
 const SPA = PipeWireAO.SPA
 

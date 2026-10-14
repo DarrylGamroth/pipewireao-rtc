@@ -1,7 +1,7 @@
 using Test
 using SHA
 using PipeWireAO
-using PipeWireAODeployment.NativeControlCodec
+using PipeWireAORTC.NativeControlCodec
 
 include(joinpath(@__DIR__, "native_control_private_core.jl"))
 

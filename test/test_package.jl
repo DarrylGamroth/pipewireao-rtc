@@ -1,12 +1,33 @@
-using Test, PipeWireAODeployment, JSON3
-const P = PipeWireAODeployment
+using Test, PipeWireAORTC, JSON3
+const P = PipeWireAORTC
 tree_identity(root) = Dict(relpath(joinpath(parent, file), root) => P.Common.sha256_file(joinpath(parent, file)) for (parent, _, files) in walkdir(root) for file in files)
+
+@testset "callable package modules and compatibility scripts" begin
+    @test Base.PkgId(P).uuid == Base.UUID("a3e2c7da-f73f-4284-8482-36ac422b34e6")
+    @test P.WirePlumberCLI.WirePlumberConfiguration === P.WirePlumberConfiguration
+    @test P.WirePlumberCLI.WirePlumberLaunch === P.WirePlumberLaunch
+    @test P.WirePlumberCLI.WirePlumberInstall === P.WirePlumberInstall
+    for name in (:WirePlumberConfiguration, :WirePlumberInstall, :WirePlumberSessionRuntime,
+                 :NativeSessionClient, :CalibrationAcquisition, :CalibrationCLI,
+                 :WirePlumberCLI, :NativeOwnerBootstrapRuntime, :NativeParameterSource,
+                 :NativeSourceControl)
+        @test Base.ispublic(P, name)
+        @test parentmodule(getproperty(P, name)) === P
+    end
+    for (script, name) in (("configuration", :WirePlumberConfiguration),
+                           ("launch", :WirePlumberLaunch),
+                           ("install", :WirePlumberInstall), ("cli", :WirePlumberCLI))
+        sandbox = Module(gensym(:CompatibilityScript))
+        Base.include(sandbox, joinpath(P.package_root(), "wireplumber_" * script * ".jl"))
+        @test Base.invokelatest(getproperty, sandbox, name) === getproperty(P, name)
+    end
+end
 
 @testset "named deployment package and operational source closure" begin
     @test P.ScienceExport.Parameter("name", "endpoint", "F32_LE", (2, 3), "value", "schema").shape == [2, 3]
-    @test nameof(P) == :PipeWireAODeployment
+    @test nameof(P) == :PipeWireAORTC
     @test Base.PkgId(P).uuid !== nothing
-    @test isfile(joinpath(P.package_root(), "src", "PipeWireAODeployment.jl"))
+    @test isfile(joinpath(P.package_root(), "src", "PipeWireAORTC.jl"))
     inventory = P.ScienceExport.orchestration_sources()
     @test haskey(inventory, joinpath(P.package_root(), "src", "common.jl"))
     @test haskey(inventory, joinpath(P.resource_root(), "hil", "parameter_source.jl"))
@@ -25,10 +46,10 @@ tree_identity(root) = Dict(relpath(joinpath(parent, file), root) => P.Common.sha
     if P.resource_root() == dirname(P.package_root())
         mktempdir(P.resource_root()) do unrelated
             exported = P.ScienceExport.copy_deployment_runtime(unrelated)
-            @test isfile(joinpath(exported, "src", "PipeWireAODeployment.jl"))
+            @test isfile(joinpath(exported, "src", "PipeWireAORTC.jl"))
         end
     end
-    @test isfile(joinpath(P.package_root(), "src", "PipeWireAODeployment.jl"))
+    @test isfile(joinpath(P.package_root(), "src", "PipeWireAORTC.jl"))
     @test all(!occursin("/test/", path) && !endswith(path, ".py") for path in keys(inventory))
     for path in keys(inventory)
         relative = P.source_relative_path(path)
@@ -51,12 +72,12 @@ tree_identity(root) = Dict(relpath(joinpath(parent, file), root) => P.Common.sha
         before = tree_identity(sdk)
         # Compile at the original location, then load from a renamed SDK.
         command = [Base.julia_cmd().exec[1], "--startup-file=no", "--project=" * sdk,
-            "-e", "using PipeWireAODeployment; @assert startswith(PipeWireAODeployment.package_root(), ARGS[1])", sdk]
+            "-e", "using PipeWireAORTC; @assert startswith(PipeWireAORTC.package_root(), ARGS[1])", sdk]
         @test P.Common.run_checked(command; timeout=60).returncode == 0
         relocated = joinpath(directory, "relocated SDK")
         mv(source, relocated)
         sdk = joinpath(relocated, "julia")
-        code = "using PipeWireAODeployment; P=PipeWireAODeployment; " *
+        code = "using PipeWireAORTC; P=PipeWireAORTC; " *
             "@assert P.package_root()==ARGS[1]; " *
             "@assert P.resource_root()==joinpath(ARGS[1],\"assets/deployment\"); " *
             "@assert all(isfile, keys(P.ScienceExport.orchestration_sources())); " *
@@ -68,7 +89,7 @@ tree_identity(root) = Dict(relpath(joinpath(parent, file), root) => P.Common.sha
         @test tree_identity(sdk) == before
         @test isfile(joinpath(copied, "julia", "src", "common.jl"))
         # Missing declared entrypoints must not silently disappear from provenance.
-        missing = "using PipeWireAODeployment; P=PipeWireAODeployment; " *
+        missing = "using PipeWireAORTC; P=PipeWireAORTC; " *
             "rm(joinpath(P.package_root(), \"wireplumber_cli.jl\")); " *
             "try P.ScienceExport.orchestration_sources(); error(\"missing entry accepted\") " *
             "catch e; @assert e isa ArgumentError end"

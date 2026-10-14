@@ -1,9 +1,9 @@
-using Test, PipeWireAO, PipeWireAODeployment
+using Test, PipeWireAO, PipeWireAORTC
 include("native_control_private_core.jl")
-const R = PipeWireAODeployment.NativeOwnerBootstrapRuntime
-const B = PipeWireAODeployment.NativeOwnerBootstrapClient
-const C = PipeWireAODeployment.NativeControlClient
-const P = PipeWireAODeployment.NativeOwnerBootstrapCodec
+const R = PipeWireAORTC.NativeOwnerBootstrapRuntime
+const B = PipeWireAORTC.NativeOwnerBootstrapClient
+const C = PipeWireAORTC.NativeControlClient
+const P = PipeWireAORTC.NativeOwnerBootstrapCodec
 import ThreadPinning
 function idle_window()
     before = Base.gc_num()
@@ -35,9 +35,9 @@ function measured(remote, directory, daemon)
         # Exclude monitor duty cycles to attribute the registry work directly.
         lock(runtime.lock) do
             for _ in 1:5
-                PipeWireAODeployment.NativeControlEndpoint.poll!(runtime.transport.endpoint)
+                PipeWireAORTC.NativeControlEndpoint.poll!(runtime.transport.endpoint)
             end
-            poll_bytes = @allocated PipeWireAODeployment.NativeControlEndpoint.poll!(runtime.transport.endpoint)
+            poll_bytes = @allocated PipeWireAORTC.NativeControlEndpoint.poll!(runtime.transport.endpoint)
             # Poll/take cannot erase a wake produced after the consumed hint.
             runtime.transport.wake[] = true
             R.poll!(runtime.transport)
