@@ -6,11 +6,35 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-10-09. This section is the current delivery summary. Later sections
+Updated 2026-10-14. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
+
+### Package and application review — 2026-10-14
+
+The user approved the direction of renaming the shared Julia package
+`PipeWireAODeployment` to `PipeWireAORTC` and requested an Astra application review
+before refactoring. The selected application target is registered Julia framework/
+science dependencies, native RTC and simulation graph configuration, and FITS-only
+persistent artifacts. Generic owners decode validated arrays into memory;
+instrument applications do not carry copied SDK source or raw artifact files.
+`REVOLTClassicSim` is not to be registered; reusable science and instrument
+configuration/artifacts must be separated. AOC is already registered.
+
+[The adjudicated review](PIPEWIREAORTC_REVIEW.md) records two independent Astra
+passes, filename/module organization, confirmed and proposed findings, and library
+reuse decisions. Fix pre-effect malformed-command rejection first; then define
+package-owned owner/FITS APIs and migrate registered dependencies and small
+applications. Adapter package consolidation is conditional and not a prerequisite.
+HdrHistogram has a concrete scoped metrics use; Hsm/Agent changes are deferred
+pending a justified owner-local contract. WirePlumber/systemd authority is retained.
+
+Review completed without production changes, tests or live actions. Package rename,
+registration, direct FITS owner loading and new application qualification remain
+pending. CTW-01/02 warmup/Quit causes remain unresolved. Historical qualification
+records below retain their original version/profile scope.
 
 ### Selected scope
 
