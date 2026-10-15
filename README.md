@@ -175,3 +175,11 @@ resources without changing wire keys, IDs or request/response semantics.
 Instrument owners apply accepted requests between completed exchanges and
 publish under their source loop lock. Scientific stepping and reporting remain
 with each instrument; callbacks stage only bounded scalar requests.
+
+## Fault qualification tests
+
+[RTC fault tests](test/integration/README.md) cover the production Lua fault path
+and opt-in installed-session sink/link loss and graph-owner exit. They run in
+isolated sessions and preserve the WirePlumber/systemd authority boundary.
+Physical-device safe-state and recovery qualification remain outside the current
+non-actuating profile.

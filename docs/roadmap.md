@@ -6,11 +6,26 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-10-14. This section is the current delivery summary. Later sections
+Updated 2026-10-15. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
+
+### RTC fault-test ownership — 2026-10-15
+
+The standalone JFG graph supervisor and its ALPAO recovery harness are retired.
+They were not part of the selected RTC path. Fault tests now target the actual
+WirePlumber session authority and exact systemd owner cohort; the
+[test procedures and coverage limits](../test/integration/README.md) distinguish
+production-policy ordering checks from opt-in installed-session loss cases.
+The latter use fresh private sessions and explicitly requested fresh admission.
+Neither suite introduces a lifecycle coordinator or physical-device authority.
+[Validation and independent review](validation/session-faults-20261015/README.md)
+record software passes and two pre-admission startup timeouts separately. Live
+loss/readmission remains unqualified; neither attempt reached fault injection.
+Physical DM safe-state actions, approval and native sink/proxy fault injection
+remain explicit gaps, not claims inherited from the retired harness.
 
 ### Registered package migration — 2026-10-14
 

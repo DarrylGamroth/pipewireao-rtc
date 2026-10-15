@@ -128,6 +128,10 @@ the migration gates.
 
 ## Active documents
 
+[RTC fault-test ownership, 2026-10-15](validation/session-faults-20261015/README.md)
+records production-policy ordering, independent test review, and installed-session
+attempts; its scope does not include physical DM recovery.
+
 | Document | Authority |
 | --- | --- |
 | [Development architecture](architecture.md) | RTCW composition, scientist boundary, external-node substitution, laboratory placement, and the selected deployment package |
