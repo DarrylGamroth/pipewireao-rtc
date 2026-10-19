@@ -75,3 +75,14 @@ combines the registered PipeWireAO_jll 1.7.1+0 artifact
 `3c63168ffd94740be1e2ea34c1eaf12a9468622a` with installed WirePlumber 0.5.18;
 `/opt` is preserved. Final immutable registry-only application, relocation,
 live session controls/cleanup and GUI attachment remain pending.
+
+The first actual registered session exposed two distinct prerequisites. The
+JLL runtime does not include the separately installed queue/SPA plugins, so
+the external native prefix must compose them as well. That failed startup's
+exact cleanup was confirmed. The next attempt exposed CL-R02: RTC 0.1.2's
+AOS default loader resolved weak dependencies in the package rather than the
+application. The three default loaders now resolve in Main, retaining early
+Preparing and cancellation order. Actual-default-loader regressions fail on
+immutable 0.1.2 and pass in the corrected source (CPU 22, CUDA 21 assertions),
+independently verified by Astra. RTC 0.1.3 supersedes 0.1.2 for this application;
+the earlier immutable release is preserved. No failed attempt admitted ingress.

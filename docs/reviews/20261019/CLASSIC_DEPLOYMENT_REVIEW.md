@@ -64,6 +64,54 @@ the observed remediation separately from the initial finding.
   No executable pre-change reproduction was retained; the pre-change evidence
   is source analysis, not a claimed fail-before test run.
 
+### CL-R02 — AOS default loaders resolve optional packages from the wrong module
+
+- **Severity:** P1, blocks the selected registered Classic deployment.
+- **Confidence:** high; observed in the live startup journal and reproduced in
+  a fresh process without services, with the identical invocation passing
+  after the change.
+- **Authority:** AAR-03/04 require a package-owned configuration/FITS AOS owner;
+  optional integrations must preserve cold clients and load through the
+  instrument's registered environment. AAR-01 requires an actually runnable
+  registered application.
+- **Affected code:** `src/owners/aos_owner.jl:157`, the three default
+  `Base.require` calls for AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL and
+  CUDA. The defect is present in committed `8ed4358`, published as RTC 0.1.2.
+- **Observed evidence:**
+  `/home/dgamroth/.local/state/classic-registered-20261019/session-integration-002-simulator.log`
+  records the simulator exiting with status 1 at 13:58:14 after
+  `Cannot load ... AdaptiveOpticsSim into module PipeWireAORTC.AOSOwner ...
+  because package PipeWireAORTC does not have AdaptiveOpticsSim in its dependencies`.
+  The owner resolved each optional package relative to its own package module,
+  where these packages are weak dependencies. Declaring them directly in the
+  application environment did not authorize that package-relative load.
+- **Derived consequence:** startup cannot complete the selected AOS owner or
+  reach session admission. CPU loading fails at the same first import; the CUDA
+  default also used the same incorrect resolution context.
+- **Coverage gap:** the initial declaration/load-order test injected fake
+  `load_science` and `load_cuda` callbacks. The scientific preparation tests
+  imported AOS/HIL before calling preparation. Neither exercised the actual
+  `_main` default loaders. The first independent review missed this path;
+  its earlier source-only conclusion did not establish entrypoint execution.
+- **Remediation:** resolve the three optional imports through `Main`, using the
+  application's direct dependencies, matching the existing GraphOwner loader.
+  Keep the bootstrap call before imports and keep optional packages as weak
+  dependencies of PipeWireAORTC. Publish a new immutable RTC version; do not
+  rewrite the already published 0.1.2 tree.
+- **Required validation:** a fresh process that imports only PipeWireAORTC,
+  calls `_main` with its real default loaders, checks the AOS extension becomes
+  available, verifies CPU does not load CUDA, and verifies the CUDA selection
+  loads CUDA after bootstrap. Repeat actual isolated registered startup with
+  the new release before claiming deployment readiness.
+- **Disposition:** source fix independently verified. A fresh-process invocation
+  with the actual application `simulation.conf` and only bootstrap transport
+  and the final scientific loop substituted exited 1 before the patch and
+  exited 0 after it, printing `DEFAULT_LOADER_REACHED_RUN`. The same command,
+  environment and configuration were used for both runs. The new maintained
+  regression passed independently in fresh CPU and CUDA processes (22 and 21
+  assertions). These runs do not start a service or compute on the GPU. Final
+  immutable release and live admission remain open deployment gates.
+
 ## Reviewed obligations and evidence limits
 
 | Obligation | Source analysis | Remaining deployment evidence |
@@ -79,10 +127,11 @@ the observed remediation separately from the initial finding.
 | HIL acquisition preservation | Diff against `3c3de5b` adds optional image ownership; acquisition-source file is unchanged, and mandatory command-adoption body is unchanged | Existing HIL evidence is reusable only with its documented native SDK and package closure |
 | Registered installation | Installer selects the application's project and package-owned CLI/template implementation; parameter owner uses the registered entrypoint; config paths resolve relative to the copied application | Final registry-only manifest, clean-depot instantiate, relocate, install, launch and GUI attach |
 
-The source review found no additional confirmed defect in the examined owner,
-initial-parameter, or HIL merge paths. This is not an assertion that pending
-live-service gates passed. GPU preparation and the final application were still
-being completed by other agents during this pass.
+The initial source review found no additional confirmed defect in the examined
+owner, initial-parameter, or HIL merge paths. Subsequent real startup exposed
+CL-R02 above; the default-loader regression now covers that missed path. No
+claim is made that pending live-service gates passed. GPU preparation and the
+final application were being completed by other agents during the first pass.
 
 ## Focused independent software checks
 
@@ -100,6 +149,8 @@ evidence.
 | `include("test/test_graph_owner_integration.jl")` | Passed: 15 testset assertions plus top-level cold-loading/extension checks | Complete-frame and row-block JFG preparation, square FITS axis order, copied ownership, resulting row outputs |
 | `include("test/aos_preparation.jl")` | Passed: 14 assertions | CPU AOS FITS preparation, exact command-induced output, deterministic reset, declaration rejection and cancellation; no service or GPU |
 | `include("test/test_registered_application.jl")` | Passed: 19 assertions | CL-R01 empty-closure/missing-seal rejection, direct identity/tree/source checks, containment and generated launcher selection |
+| `test/test_aos_owner_loading.jl cpu` in a fresh process | Passed: 22 assertions | CL-R02 actual default imports, bootstrap-before-import order, AOS extension activation and CUDA remaining unloaded |
+| `test/test_aos_owner_loading.jl cuda` in a fresh process | Passed: 21 assertions | CL-R02 actual default AOS/HIL/CUDA imports and AOS extension activation; no GPU computation |
 | RTC and HIL `git diff --check` | Passed at the review snapshot | Whitespace only |
 | HIL `git diff --quiet 3c3de5b -- src/acquisition_source.jl` | Passed | Acquisition source identical to main |
 
@@ -122,6 +173,9 @@ required for its v3 acquisition tests.
    is retained from the accepted baseline.
 4. Repeat this review's affected portions after final source changes. Keep
    physical and real-time qualification explicitly outside this increment.
+5. For CL-R02, publish the corrected source as a new immutable version, update
+   the registered application and repeat isolated startup through live
+   admission. The loader checks alone do not close this deployment gate.
 
 ## Reviewed source fingerprints
 
@@ -138,3 +192,10 @@ later updates require an explicit affected-file check.
 | `src/configuration/deployment_configuration.jl` | `a22d437c0d70873218d6aecf8dcb8c57096b6b71a2ad702717894631976eefee` |
 | `src/deployment/wireplumber_install.jl` | `2b07e5330eeaae3e6038a88115cefb50fa29a260b95d26fc86683eb05382205b` |
 | `src/artifacts.jl` | `7777012fb9410d5e0664d8ce11f22e561922010eb8bb40169fe53e57c248b0b6` |
+
+CL-R02 follow-up fingerprints, after the three-call loader remediation:
+
+| RTC file | SHA-256 |
+| --- | --- |
+| `src/owners/aos_owner.jl` | `46b03815133cc1413a2fc8cb767fa2f7907c2710ebda33fd8b8f1984e9707a74` |
+| `test/test_aos_owner_loading.jl` | `94980f15b4bfb0cd1fae2c9ec5ed611bd7216bfa4a98533406bb59024b0e2454` |

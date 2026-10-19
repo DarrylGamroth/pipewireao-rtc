@@ -40,3 +40,20 @@ CUDA_VISIBLE_DEVICES=GPU-ace438b4-a57b-9194-d519-bdcbe42cb770 julia --project=DE
 Select the explicit Julia 1.13.2 executable above. `REFERENCE_PACKAGE_DIRECTORY` contains the historical `REVOLTClassicSim.jl` package directory. The diagnostic's reference package is not a runtime dependency of the owner or application.
 
 Live Preparing/Prepared/Connect, held run/reset/query, cancellation, exact cleanup, and optional image publication remain separate application gates. No services were started or stopped by these preparation tests.
+
+## Default optional-package loading regression
+
+The isolated application run subsequently found a real startup defect in registered RTC 0.1.2: the default AOS owner loader called `Base.require` in the `AOSOwner` module's dependency context. Its optional packages are weak dependencies of RTC and direct dependencies of the application. Julia rejected the first actual AOS import. The earlier preparation and injected-loader checks above did not exercise this default loader.
+
+`test/test_aos_owner_loading.jl` now runs in a fresh process with only RTC and the test library loaded. It injects the bootstrap transport callback and final science loop, retaining both actual default package loaders. It checks that Preparing precedes imports, the AOS extension is available before the loop, and CPU selection never loads CUDA. Each backend runs in its own process.
+
+Fail-before evidence uses the application's registered immutable RTC 0.1.2 at `/home/dgamroth/.julia/packages/PipeWireAORTC/w7kWE`, Julia 1.13.2 and `--project=/home/dgamroth/workspaces/revolt-classic-rtc`. The CPU check exits 1 with 9 passing checks, one failure and one error at the first `Base.require`; observed events are Preparing, cancellation check, cleanup. Log: `/home/dgamroth/aos-owner-loading-fail-before-20261019.log`.
+
+The correction changes all three default imports to `Base.require(Main, ...)`, resolving packages from the application's selected dependency environment. Their position after the bootstrap callback and cancellation checks is unchanged. Pass-after evidence uses the same test and Julia executable with `--project=/home/dgamroth/.local/state/classic-registered-20261019/development`, resolving the corrected RTC checkout based on `8ed4358539c2fb55573b53383b76af8f606db3c7`:
+
+| Backend | Observed result | Log |
+| --- | --- | --- |
+| CPU | 22/22, exit 0; AOS/HIL extension loaded after Preparing; CUDA absent | `/home/dgamroth/aos-owner-loading-cpu-pass-after-20261019.log` |
+| CUDA | 21/21, exit 0; actual AOS/HIL/CUDA loaders complete after Preparing | `/home/dgamroth/aos-owner-loading-cuda-pass-after-20261019.log` |
+
+Reproduce with the explicit Julia executable above, selecting the desired project, followed by `--startup-file=no test/test_aos_owner_loading.jl cpu` or `cuda`. CUDA used the same UUID selection listed above. These checks establish package resolution and import order without creating scientific streams or starting services; live application startup remains a separate gate.

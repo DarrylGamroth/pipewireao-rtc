@@ -154,12 +154,13 @@ end
 function prepare_science end
 function run_owner end
 
+# The application declares optional science packages as its direct dependencies.
 function _main(args; with_owner=Bootstrap.with_owner,
         load_science=() -> begin
-            Base.require(@__MODULE__, :AdaptiveOpticsSim)
-            Base.require(@__MODULE__, :AdaptiveOpticsSimPipeWireHIL)
+            Base.require(Main, :AdaptiveOpticsSim)
+            Base.require(Main, :AdaptiveOpticsSimPipeWireHIL)
         end,
-        load_cuda=() -> Base.require(@__MODULE__, :CUDA), run=run_owner)
+        load_cuda=() -> Base.require(Main, :CUDA), run=run_owner)
     invocation = arguments(args)
     options = configuration(invocation.config)
     invocation.control_node != options.command_node && invocation.bootstrap_node != options.command_node ||
