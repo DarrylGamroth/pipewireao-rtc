@@ -9,8 +9,13 @@ const C = PipeWireAORTC.Common
 
 export install, main
 
-function installed_launcher(julia::AbstractString)
+function installed_launcher(julia::AbstractString; environment=nothing)
     quoted = D.shell_quote(julia)
+    if environment !== nothing
+        return "#!/bin/sh\n" *
+            "exec $quoted --startup-file=no --project=" * D.shell_quote(environment) *
+            " -e 'using PipeWireAORTC; exit(PipeWireAORTC.WirePlumberCLI.main(ARGS))' -- \"\$@\"\n"
+    end
     return "#!/bin/sh\n" *
         "julia_dir=\"\$(dirname \"\$0\")/../julia\"\n" *
         "exec $quoted --startup-file=no --project=\"\$julia_dir\" " *
@@ -49,8 +54,12 @@ function session_assets(spec, package, prefix)
     environment = spec["session-manager"]["environment"]
     module_dir = D.substitute(environment["WIREPLUMBER_MODULE_DIR"], bindings)
     data_dir = D.substitute(environment["WIREPLUMBER_DATA_DIR"], bindings)
-    for file in (joinpath(package, "wireplumber/bin/wireplumber"),
-                 joinpath(package, "wireplumber/lib/wp/libwireplumber-0.5.so.0"),
+    registered = D.registered_application(spec)
+    binary = registered ? joinpath(prefix, "bin/wireplumber") :
+        joinpath(package, "wireplumber/bin/wireplumber")
+    library = registered ? joinpath(D.installed_paths(prefix)["library"], "libwireplumber-0.5.so.0") :
+        joinpath(package, "wireplumber/lib/wp/libwireplumber-0.5.so.0")
+    for file in (binary, library,
                  joinpath(module_dir, "libwireplumber-module-ao-control-endpoint.so"),
                  joinpath(module_dir, "libwireplumber-module-lua-scripting.so"),
                  joinpath(data_dir, "scripts/ao/session.lua"))
@@ -92,12 +101,14 @@ function install(options)
     source_spec = session_spec(source, prefix)
     haskey(source_spec["artifacts"], "systemd/pipewireao-session@.service") &&
         throw(ArgumentError("export must not seal an installation-specific session unit"))
-    required_assets(source)
+    registered = D.registered_application(source_spec)
+    registered || required_assets(source)
     session_assets(source_spec, source, prefix)
     external = hasproperty(options, :wireplumber)
-    wireplumber = external ? realpath(options.wireplumber) :
+    wireplumber = external ? realpath(options.wireplumber) : registered ?
+        joinpath(prefix, "bin/wireplumber") :
         joinpath(abspath(options.destination), "wireplumber/bin/wireplumber")
-    preflight_binary = external ? wireplumber : joinpath(source, "wireplumber/bin/wireplumber")
+    preflight_binary = external || registered ? wireplumber : joinpath(source, "wireplumber/bin/wireplumber")
     isfile(preflight_binary) && (stat(preflight_binary).mode & 0o111) != 0 ||
         throw(ArgumentError("selected WirePlumber executable is unavailable"))
     julia = D.selected_julia_executable(get(options, :julia_executable,
@@ -109,22 +120,23 @@ function install(options)
         throw(ArgumentError("install destination must be new"))
     # Copy the sealed package without regenerating legacy coordinator units.
     # Rewriting an artifact here would invalidate its retained package hash.
-    D.validate_runtime(required_assets(source))
+    registered || D.validate_runtime(required_assets(source))
     cp(source, destination; force=false, follow_symlinks=true)
-    runtime = required_assets(destination)
+    runtime = registered ? PipeWireAORTC.package_root() : required_assets(destination)
     installed_spec = session_spec(destination, prefix)
     session_assets(installed_spec, destination, prefix)
     isfile(wireplumber) && (stat(wireplumber).mode & 0o111) != 0 ||
         throw(ArgumentError("installed WirePlumber executable is unavailable"))
     bin = joinpath(destination, "bin")
     mkpath(bin)
-    for (name, script) in wrappers
+    for (name, script) in (registered ? Dict{String,String}() : wrappers)
         entrypoint = joinpath(bin, name)
         haskey(source_spec["artifacts"], "bin/$name") || write(entrypoint, script)
         chmod(entrypoint, 0o755)
     end
     launcher = joinpath(bin, "pipewireao-rtc-session")
-    script = installed_launcher(julia)
+    environment = registered ? D.application_environment(installed_spec, destination) : nothing
+    script = installed_launcher(julia; environment)
     if haskey(source_spec["artifacts"], "bin/pipewireao-rtc-session")
         read(launcher, String) == script ||
             throw(ArgumentError("sealed session launcher differs from the selected Julia executable"))

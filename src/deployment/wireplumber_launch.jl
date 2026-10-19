@@ -235,7 +235,14 @@ function parameter_owner!(request, spec, session, bindings, runtime)
     executable = realpath(Base.julia_cmd().exec[1])
     isfile(executable) && Sys.isexecutable(executable) ||
         fail("Current Julia runtime is unavailable for parameter transport")
-    script = D.relative_asset(request.package, "julia/assets/deployment/hil/parameter_source.jl")
+    entry = if D.registered_application(spec)
+        environment = D.application_environment(spec, request.package)
+        ["--project=" * environment, "-e",
+            "using PipeWireAORTC; PipeWireAORTC.NativeParameterSource.main(ARGS)", "--"]
+    else
+        script = D.relative_asset(request.package, "julia/assets/deployment/hil/parameter_source.jl")
+        ["--project=" * joinpath(request.package, "julia"), script]
+    end
     bootstrap = "pipewireao.rtc.bootstrap.parameters"
     control = "pipewireao.rtc.parameters." * spec["name"]
     bindings["BOOTSTRAP_INSTANCE_PARAMETERS"] = string(N.next_instance())
@@ -246,7 +253,7 @@ function parameter_owner!(request, spec, session, bindings, runtime)
         "control-instance" => bindings["PARAMETER_OWNER_INSTANCE"],
         "environment" => Dict("OPENBLAS_NUM_THREADS" => "1"),
         "argv" => [executable, "--startup-file=no", "--threads=2,0",
-            "--project=" * joinpath(request.package, "julia"), script,
+            entry...,
             "--config", config, "--remote", joinpath(runtime, bindings["REMOTE"]),
             "--bootstrap-node", bootstrap, "--bootstrap-instance", bindings["BOOTSTRAP_INSTANCE_PARAMETERS"],
             "--control-node", control, "--control-instance", bindings["PARAMETER_OWNER_INSTANCE"]])

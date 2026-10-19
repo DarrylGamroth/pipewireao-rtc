@@ -6,11 +6,22 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-10-15. This section is the current delivery summary. Later sections
+Updated 2026-10-19. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
+
+### Classic registered application — 2026-10-19
+
+The selected increment completes Classic CPU JFG with CUDA AOS using packages,
+configuration and FITS artifacts. Package-owned graph/simulator entrypoints and
+optional extensions preserve native bootstrap and serialized controls. Registered
+application installation obtains code from its sealed Julia environment instead
+of copying an SDK. Software checks and exact selected-backend AOS migration
+parity pass; immutable release, live session and GUI gates are in progress.
+The [delivery record](CLASSIC_REGISTERED_DEPLOYMENT.md) links evidence and the
+independent review. Historical fault/recovery qualifications retain their scope.
 
 ### RTC fault-test ownership — 2026-10-15
 

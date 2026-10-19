@@ -328,10 +328,16 @@ function start!(package::AbstractString, base::AbstractString;
     mkdir(target; mode=0o700)
     installed = joinpath(target, "installed")
     julia = Base.julia_cmd().exec[1]
-    launcher = joinpath(source, "julia", "wireplumber_cli.jl")
-    isfile(launcher) || throw(ArgumentError("sealed session installer is unavailable"))
-    checked([julia, "--startup-file=no", "--project=" * joinpath(source, "julia"),
-        launcher, "install", "--package", source, "--destination", installed,
+    installer = if DeploymentConfiguration.registered_application(spec)
+        ["--project=" * DeploymentConfiguration.application_environment(spec, source),
+            "-e", "using PipeWireAORTC; exit(PipeWireAORTC.WirePlumberCLI.main(ARGS))", "--"]
+    else
+        launcher = joinpath(source, "julia", "wireplumber_cli.jl")
+        isfile(launcher) || throw(ArgumentError("sealed session installer is unavailable"))
+        ["--project=" * joinpath(source, "julia"), launcher]
+    end
+    checked([julia, "--startup-file=no", installer...,
+        "install", "--package", source, "--destination", installed,
         "--pipewire-prefix", String(prefix)], deadline; limit=120)
     suffix = first(replace(string(uuid4()), "-" => ""), 12)
     unit = "pipewireao-session@" * suffix * ".service"

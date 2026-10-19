@@ -7,7 +7,7 @@ export FITSArtifact, PreparedArtifact, prepare, pack
 
 const MAX_FITS_BYTES = 512 * 1024 * 1024
 const MAX_IMAGE_BYTES = 256 * 1024 * 1024
-const TARGET_TYPES = (Float32, Float64, UInt8, UInt16, UInt32, Bool)
+const TARGET_TYPES = (Float32, Float64, UInt8, UInt16, UInt32, Int32, Bool)
 
 """
     FITSArtifact(path; hdu=1, axes=nothing)
@@ -119,7 +119,7 @@ function convert_value(::Type{Bool}, value)
     return value == 1
 end
 
-function convert_value(::Type{T}, value) where {T<:Unsigned}
+function convert_value(::Type{T}, value) where {T<:Union{Unsigned,Int32}}
     isfinite(value) || throw(ArgumentError("artifact contains a nonfinite value"))
     converted = try
         T(value)
@@ -140,6 +140,7 @@ end
 
 unsigned_word(value::Bool) = UInt8(value)
 unsigned_word(value::Unsigned) = value
+unsigned_word(value::Int32) = reinterpret(UInt32, value)
 unsigned_word(value::Float32) = reinterpret(UInt32, value)
 unsigned_word(value::Float64) = reinterpret(UInt64, value)
 
@@ -175,7 +176,7 @@ pack(artifact::PreparedArtifact; check=()->nothing) = packed_bytes(artifact.data
 
 Capture the original FITS in memory, validate its selected image and explicit axis
 mapping, and return an owned `Array{T}` with logical `shape` plus provenance.
-Supported targets are Float32, Float64, UInt8, UInt16, UInt32 and Bool. Integer
+Supported targets are Float32, Float64, UInt8, UInt16, UInt32, Int32 and Bool. Integer
 conversion is exact; Bool requires zero/one. Float rounding follows the target
 type, with nonfinite values and overflow rejected. No calibration or unit
 conversion is performed. Both the source image and target are limited to 256 MiB.

@@ -12,7 +12,8 @@ export DeploymentError, fail, require, digest, atomic_record, installed_paths, d
     bootstrap_instance_key, native_heart, native_source, native_acquisition,
     validate_acquisition_arguments, validate_bootstrap_arguments,
     validate_session_manager, profile, substitute, validate_runtime,
-    selected_julia_executable, shell_quote, installed_wrappers
+    selected_julia_executable, shell_quote, installed_wrappers, registered_application,
+    application_environment
 
 const MAX_CONFIG_BYTES = 16 * 1024 * 1024
 const REQUIRED_KEYS = Set(["version", "name", "session", "core", "client", "placement",
@@ -164,11 +165,84 @@ function startup_timeout_ms(spec::AbstractDict)
     return Int(value)
 end
 
+"""Whether this deployment obtains its executable implementation from Julia packages."""
+registered_application(spec::AbstractDict) = haskey(spec, "runtime")
+
+"""Validate a contained, immutable application environment without resolving packages."""
+function application_environment(spec::AbstractDict, package::AbstractString)
+    runtime = spec["runtime"]
+    require(runtime isa AbstractDict && Set(keys(runtime)) == Set(["kind", "project"]) &&
+        runtime["kind"] == "registered", "runtime requires kind=registered and project")
+    project = runtime["project"]
+    require(project isa String && !isempty(project) && !isabspath(project) &&
+        !occursin('\0', project), "runtime project must be a relative directory")
+    root = realpath(package)
+    environment = realpath(joinpath(root, project))
+    require(environment == root || startswith(environment, root * "/"),
+        "runtime project escapes the application")
+    sealed = get(spec, "artifacts", Dict())
+    for filename in ("Project.toml", "Manifest.toml")
+        relative = normpath(joinpath(project, filename))
+        file = relative_asset(root, relative)
+        require(get(sealed, relative, nothing) == digest(file),
+            "application environment must be sealed: $relative")
+    end
+    metadata = TOML.parsefile(joinpath(environment, "Project.toml"))
+    direct = get(metadata, "deps", Dict())
+    require(get(direct, "PipeWireAORTC", nothing) ==
+        "a3e2c7da-f73f-4284-8482-36ac422b34e6", "application must depend on PipeWireAORTC")
+    require(!haskey(metadata, "sources"), "registered application must not override package sources")
+    manifest = TOML.parsefile(joinpath(environment, "Manifest.toml"))
+    dependencies = get(manifest, "deps", nothing)
+    require(dependencies isa AbstractDict && !isempty(dependencies),
+        "application manifest must contain its dependency closure")
+    for (name, uuid) in direct
+        entries = get(dependencies, name, Any[])
+        require(entries isa AbstractVector && count(entry -> entry isa AbstractDict &&
+            get(entry, "uuid", nothing) == uuid, entries) == 1,
+            "application manifest must resolve direct dependency $name exactly once")
+    end
+    for (name, entries) in dependencies
+        require(entries isa AbstractVector && !isempty(entries), "invalid manifest dependency $name")
+        for entry in entries
+            require(entry isa AbstractDict, "invalid manifest dependency record $name")
+            require(!haskey(entry, "path") && !haskey(entry, "repo-url") &&
+                !haskey(entry, "repo-rev"), "application dependencies must resolve through registries")
+            uuid = get(entry, "uuid", nothing)
+            require(uuid isa String && occursin(r"^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$", uuid),
+                "invalid manifest UUID for $name")
+            stdlib = joinpath(Sys.STDLIB, name, "Project.toml")
+            bundled = isfile(stdlib) && get(TOML.parsefile(stdlib), "uuid", nothing) == uuid
+            tree = get(entry, "git-tree-sha1", nothing)
+            require(bundled || tree isa String && occursin(r"^[0-9a-f]{40}$", tree),
+                "registered dependency $name requires an immutable tree hash")
+            version = get(entry, "version", nothing)
+            require(bundled || version isa String && tryparse(VersionNumber, version) !== nothing,
+                "registered dependency $name requires a package version")
+            required = get(entry, "deps", String[])
+            require(required isa AbstractVector || required isa AbstractDict,
+                "invalid dependency list for $name")
+            names = required isa AbstractDict ? keys(required) : required
+            require(all(dependency -> haskey(dependencies, dependency), names),
+                "application manifest is missing a dependency of $name")
+            for dependency in names
+                candidates = dependencies[dependency]
+                require(candidates isa AbstractVector &&
+                    (required isa AbstractDict ? count(candidate -> candidate isa AbstractDict &&
+                        get(candidate, "uuid", nothing) == required[dependency], candidates) == 1 :
+                        length(candidates) == 1), "application manifest has an ambiguous dependency of $name")
+            end
+        end
+    end
+    return environment
+end
+
 function profile(path::AbstractString, prefix::AbstractString; legacy_export_input::Bool=false)
     value = decode(path, prefix)
     require(value isa AbstractDict && REQUIRED_KEYS ⊆ Set(keys(value)) ⊆
-        union(REQUIRED_KEYS, Set(["source-owner","detector-observation","session-manager","node-owners","startup-timeout-ms"])) && get(value, "version", nothing) === 1,
+        union(REQUIRED_KEYS, Set(["source-owner","detector-observation","session-manager","node-owners","startup-timeout-ms","runtime"])) && get(value, "version", nothing) === 1,
         "expected version 1 deployment with the documented fields")
+    registered_application(value) && application_environment(value, dirname(path))
     startup_timeout_ms(value)
     require(value["name"] isa String && occursin(r"^[a-z0-9][a-z0-9-]{0,39}$", value["name"]),
         "deployment name must use 1..40 lowercase letters, digits or hyphens")

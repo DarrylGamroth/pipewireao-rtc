@@ -45,7 +45,7 @@ end
 
 # Shared operational closure; instrument projects export their own sources.
 const RUNTIME_ENTRIES = (
-    "Project.toml", "Manifest.toml", "src", "test",
+    "Project.toml", "Manifest.toml", "src", "ext", "test",
     "wireplumber_cli.jl", "wireplumber_launch.jl",
     "wireplumber_configuration.jl", "wireplumber_install.jl",
 )

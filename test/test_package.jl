@@ -72,6 +72,8 @@ end
             "pipewireao-rtc-deploy")
         @test isfile(joinpath(sdk, "test", "Project.toml"))
         @test isfile(joinpath(sdk, "test", "runtests.jl"))
+        @test isfile(joinpath(sdk, "ext", "PipeWireAORTCGraphExt.jl"))
+        @test isfile(joinpath(sdk, "ext", "PipeWireAORTCAOSExt.jl"))
         @test sort(readdir(joinpath(sdk, "test"))) == sort(readdir(joinpath(P.package_root(), "test")))
         before = tree_identity(sdk)
         # Compile at the original location, then load from a renamed SDK.

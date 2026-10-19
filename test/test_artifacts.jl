@@ -138,6 +138,16 @@ end
         @test_throws ArgumentError prepare(image(Float64[0.0, 0.5]), Bool, (2,))
         @test_throws ArgumentError prepare(image(Float64[1, 1.5]), UInt32, (2,))
         @test_throws ArgumentError prepare(image(Int16[-1, 1]), UInt16, (2,))
+        signed = prepare(image(Int64[typemin(Int32), -1, 0, 1, typemax(Int32)]), Int32, (5,))
+        @test signed.data == Int32[typemin(Int32), -1, 0, 1, typemax(Int32)]
+        @test pack(signed) == UInt8[
+            0x00, 0x00, 0x00, 0x80, 0xff, 0xff, 0xff, 0xff,
+            0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+            0xff, 0xff, 0xff, 0x7f]
+        @test_throws ArgumentError prepare(image(Int64[typemin(Int32) - Int64(1)]), Int32, (1,))
+        @test_throws ArgumentError prepare(image(Int64[typemax(Int32) + Int64(1)]), Int32, (1,))
+        @test_throws ArgumentError prepare(image(Float64[-1.5]), Int32, (1,))
+        @test_throws ArgumentError prepare(image(Float64[Inf]), Int32, (1,))
         @test_throws ArgumentError prepare(image(Int16[255, 256]), UInt8, (2,))
         integer = prepare(image(Float64[0, 65535]), UInt16, (2,))
         @test integer.data == UInt16[0, 65535]

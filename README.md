@@ -38,6 +38,22 @@ The supported callable interfaces retain their existing module bindings:
 | `CalibrationCLI`, `WirePlumberCLI` | Translate command arguments and reports |
 | `NativeOwnerBootstrapRuntime`, `NativeParameterSource`, `NativeSourceControl` | Reusable cold owner entry points and native source controls |
 | `Artifacts` | Select FITS images and prepare owned arrays and transient wire bytes |
+| `GraphOwner`, `AOSOwner` | Package-owned optional scientific owners, configured with graphs and FITS bindings |
+
+## Registered applications
+
+A deployment may select `runtime = { kind = registered project = "." }` in
+`deployment.conf`. Its sealed Project/Manifest resolve registered packages;
+no framework source or raw calibration files belong in the application.
+The native PipeWireAO/WirePlumber prefix is supplied explicitly at installation.
+The installer generates its launcher and exact systemd unit, while the Julia
+package supplies the implementation. Existing sealed SDKs retain their path.
+
+`GraphOwner.main` accepts existing graph options plus `--fits-bindings PATH`.
+`AOSOwner.main` accepts a simulation configuration through `--config PATH`.
+Both publish native Preparing before optional scientific packages load. These
+modules load no science during an ordinary operational client import. See the
+[Classic delivery and validation record](docs/CLASSIC_REGISTERED_DEPLOYMENT.md).
 
 For example, `PipeWireAORTC.WirePlumberCLI.main(["sessions"])` is the callable
 counterpart of the root `wireplumber_cli.jl` command. Root `wireplumber_*.jl`
