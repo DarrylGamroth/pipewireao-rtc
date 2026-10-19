@@ -1,6 +1,6 @@
 name = "PipeWireAORTC"
 uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
-version = "0.1.6"
+version = "0.1.7"
 authors = ["Darryl Gamroth <dgamroth@rubus.ca>"]
 
 [workspace]
@@ -31,7 +31,7 @@ PipeWireAORTCGraphExt = ["FilterGraphIsland", "FilterGraphPipeWire", "JuliaFilte
 
 [compat]
 AdaptiveOpticsSim = "0.1"
-AdaptiveOpticsSimPipeWireHIL = "0.1.4"
+AdaptiveOpticsSimPipeWireHIL = "0.1.5"
 CUDA = "6.4.2"
 FilterGraphIsland = "0.1.2"
 FilterGraphPipeWire = "0.1.3"

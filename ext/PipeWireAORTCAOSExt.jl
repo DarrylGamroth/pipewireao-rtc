@@ -131,7 +131,10 @@ function prepare_source_control(options, state, source_instance)
     return mailbox
 end
 
-function consume_control!(options, mailbox, pipewire, state, wall_period, reset_owner!, phase=nothing)
+# The idle poll forwards this callable; explicit specialization keeps its
+# prepared science captures from being boxed again on every poll.
+function consume_control!(options, mailbox, pipewire, state, wall_period,
+        reset_owner!::F, phase=nothing) where {F}
     mailbox.ready[] || return nothing
     kind, token, requested_running = with_frame_stream(pipewire) do _
         SourceControl.pending(mailbox)
@@ -139,15 +142,15 @@ function consume_control!(options, mailbox, pipewire, state, wall_period, reset_
     if kind != SourceControl.INITIAL
         result = SourceControl.apply!(state, kind, token, requested_running,
             time_ns(), max(wall_period, UInt64(1)), reset_owner!)
-        generation = Int64(frame_acquisition_generation(pipewire))
+        request_generation = Int64(frame_acquisition_generation(pipewire))
         if result == 0 && !state.running
             save_phase_timing!(phase)
         end
         if kind == SourceControl.RESET && result == 0
-            save_report!(options, mailbox, state, generation)
+            save_report!(options, mailbox, state, request_generation)
         end
         with_frame_stream(pipewire) do stream
-            SourceControl.publish!(mailbox, stream, kind, token, result, state, generation)
+            SourceControl.publish!(mailbox, stream, kind, token, result, state, request_generation)
         end
     end
     generation = Int64(frame_acquisition_generation(pipewire))
