@@ -110,7 +110,8 @@ the observed remediation separately from the initial finding.
   environment and configuration were used for both runs. The new maintained
   regression passed independently in fresh CPU and CUDA processes (22 and 21
   assertions). These runs do not start a service or compute on the GPU. Final
-  immutable release and live admission remain open deployment gates.
+  immutable release and live admission were still open deployment gates at that
+  loader-only snapshot; final deployment evidence below closes the selected path.
 
 ## Reviewed obligations and evidence limits
 
@@ -333,11 +334,37 @@ inspected ledger.
 
 At final review, `git diff 572c553 -- src ext` is empty: production runtime is
 identical to registered RTC 0.1.4 tree
-`d17681c169bc8c7a05027e598af1eb79f9029e98`. Pending 0.1.5 carries corrected tests
-and documentation. The review is frozen at this source/evidence snapshot.
+`d17681c169bc8c7a05027e598af1eb79f9029e98`. At this snapshot, pending 0.1.5 carried
+corrected tests and documentation. The subsequent release check is recorded below.
 Broader startup-cancellation, calibration-restoration, abnormal core-loss,
 scientific-parity and timing/physical qualification obligations are not promoted
 by this bounded acceptance.
+
+### Final immutable release and retained GUI verification
+
+The reviewer independently checked source commit
+`d06010c8a5a3f223a62278714b2cfa647533b558`, registered 0.1.5 tree
+`e63114f59bbb20bf1ad0bfa7aad404f883a2de2e`, all 30 sealed application hashes,
+absence of path/repository overrides and 31 identical relocated regular files.
+All 41 runtime `src/` and `ext/` files match immutable `XnB8N`; the runtime diff
+against 0.1.4 remains empty. Actual final logs independently total 1,993/1,993
+assertions across 60 testsets, CPU 22/22 and CUDA 21/21. The isolated installation
+and sealed relocated validation pass.
+
+Final retained receipts under `gui-session-002` identify session
+`fcbaf60c-eb5e-4bfa-a815-3ad623ac0b49`, native unit
+`pipewireao-session@78b9be40f481.service` and invocation
+`c515aae008e147f2977d0d4acf76f3f8`. The reset report is held at generation 2,
+sequence 0, source instance `3871343422673226003`, simulator PID `3993476`.
+All eight retained products advance 70→71 with finite/canonical payloads; the
+SHWFS group has a common generation 2 identity. GUI graph inspection shows seven
+Running ndarray streams; native status is Running/ok and GUI PID `4015903` is
+active. The GPU process receipt maps simulator PID `3993476` to the selected
+RTX 3080 UUID. Smoke and GUI verification logs both record success.
+
+No operational blocker was found for the selected registered Classic deployment.
+This is functional software integration and retained application evidence;
+timing, physical qualification and the broader deferred matrices remain excluded.
 
 ### Native deadline compatibility check
 
@@ -364,6 +391,10 @@ and `deadline-check.log`. The selected overlay and maintained source SHA-256 bot
 equal `5fbedea5a2b6aa44bb911e864e8f66871bdcfe96303c29391d1ba404300333ec`.
 
 ## Obligation coverage
+
+The following table preserves allocation at the initial source-review snapshot.
+Final release and selected live dispositions are recorded above; unexercised
+broader obligations remain separate.
 
 | Obligation | Source analysis | Remaining deployment evidence |
 | --- | --- | --- |
@@ -413,22 +444,26 @@ description but did not independently rerun that full suite. The record also
 retains the native 1.7.0 incompatibility; the selected native 1.7.1 artifact is
 required for its v3 acquisition tests.
 
-## Follow-up before final acceptance
+## Initial follow-ups and final disposition
 
-1. Attach final immutable registered package trees, environment files, FITS
-   hashes, native prefix identity, and relocation/instantiate result.
-2. Complete isolated held startup, source release, property and parameter
-   adoption, stop/reset, cancellation, calibration restoration and exact
-   shutdown evidence. Preserve any failed gate and its actual cause.
-3. Record the basis for the application's current 900000 ms startup timeout.
-   The governing deployment document disallows silently increasing the startup
-   budget to mask failures; this review has not established whether that value
-   is retained from the accepted baseline.
-4. Repeat this review's affected portions after final source changes. Keep
-   physical and real-time qualification explicitly outside this increment.
-5. For CL-R02, publish the corrected source as a new immutable version, update
-   the registered application and repeat isolated startup through live
-   admission. The loader checks alone do not close this deployment gate.
+1. Immutable package trees, environment/FITS hashes, native prefix identity and
+   relocation/instantiate evidence are attached in the delivery record. Final
+   0.1.5 closure and sealed copies were independently checked.
+2. Selected held startup, release, property/parameter adoption and restoration,
+   Stop/Reset, eight-stream delivery and exact shutdown pass integration008.
+   Final 0.1.5 retained reset/data/GUI checks also pass. Cold cancellation checks
+   retain their software scope; broader live cancellation, calibration
+   restoration and loss/readmission matrices remain deferred. Failed attempts
+   are preserved and are not promoted to passes.
+3. The 900000 ms startup allowance is inherited unchanged. Native deadline
+   compatibility and bounded-policy rejection checks are recorded above; no
+   startup budget was increased to mask failures.
+4. Affected source and actual release/retained receipts were independently
+   reviewed after remediation. Physical and real-time qualification remain
+   outside this increment.
+5. CL-R02 shipped in immutable 0.1.3 and is retained in 0.1.5. Actual registered
+   admission and final Running evidence close the selected deployment gate;
+   loader-only checks are not used as a substitute for that evidence.
 
 ## Reviewed source fingerprints
 
@@ -454,7 +489,7 @@ CL-R02 follow-up fingerprints, after the three-call loader remediation:
 | `test/test_aos_owner_loading.jl` | `94980f15b4bfb0cd1fae2c9ec5ed611bd7216bfa4a98533406bb59024b0e2454` |
 
 CL-R04 follow-up fingerprints, after the report remediation and independent
-focused tests (registered live pass-after still pending):
+focused tests (the later registered live pass-after is recorded above):
 
 | RTC file | SHA-256 |
 | --- | --- |

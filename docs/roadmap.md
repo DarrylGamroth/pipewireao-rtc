@@ -19,11 +19,13 @@ configuration and FITS artifacts. Package-owned graph/simulator entrypoints and
 optional extensions preserve native bootstrap and serialized controls. Registered
 application installation obtains code from its sealed Julia environment instead
 of copying an SDK. Software checks and exact selected-backend AOS migration
-parity pass. Registered 0.1.4 passes 1,993 package assertions and the fresh
+parity pass. Registered 0.1.5 passes 1,993 package assertions; unchanged runtime
+from 0.1.4 passes the fresh
 42-check native lifecycle, reset, parameter restoration, eight-stream delivery
-and exact cleanup run. GUI attachment and independent closure pass. The final
-test-only 0.1.5 release and retained launch are in progress; broader fault,
-calibration, scientific and timing qualification remain separate.
+and exact cleanup run. GUI attachment and independent closure pass. Final 0.1.5
+also passes sealed relocation/isolated instantiation and retained reset/data
+checks. Its RTC and attached GUI are left Running with AOS on the RTX 3080.
+Broader fault, calibration, scientific and timing qualification remain separate.
 The [delivery record](CLASSIC_REGISTERED_DEPLOYMENT.md) links evidence and the
 independent review. Historical fault/recovery qualifications retain their scope.
 

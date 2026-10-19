@@ -35,11 +35,11 @@ is introduced. Native live parameter encoding remains unchanged.
 
 | Allocation | Work | Acceptance | State |
 |---|---|---|---|
-| AAR-01 | Immutable registered dependency closure and small application | Fresh resolve/instantiate, relocate, no copied source/path dependencies/raw artifacts | Passed through 0.1.4; repeat final test-only patch release |
+| AAR-01 | Immutable registered dependency closure and small application | Fresh resolve/instantiate, relocate, no copied source/path dependencies/raw artifacts | Final registered 0.1.5 passes sealed relocation and isolated instantiation |
 | AAR-02/04 | Package JFG owner and FITS startup | Type/axis/shape/duplicate rejection, cancellation, parameters before capture/publication | Cold checks, all 16 startup bindings and live parameter adoption pass |
 | AAR-03/04 | Package AOS owner and explicit geometry | Exact Classic grid/order comparison, GPU preparation, held startup and frame/command association | Selected CPU/CUDA science comparisons and actual CUDA lifecycle pass |
 | RTC-DEV-003/004/009/013/021/022/030 | Registered application installer, native controls | Ready/start/stop/reset, parameter submission and exact cleanup on owned sessions; cold cancellation checks | Selected normal lifecycle passes; broader loss/readmission and calibration campaign remain separate |
-| RTC-DEV-006 | Shared GUI profile and optional observation | SHWFS, DM and focal image available; GUI closure does not stop RTC | Eight queue streams and GUI attachment/closure pass; final retained launch pending |
+| RTC-DEV-006 | Shared GUI profile and optional observation | SHWFS, DM and focal image available; GUI closure does not stop RTC | Eight queue streams and GUI attachment/closure pass; final 0.1.5 RTC and GUI retained Running |
 
 Implementation proceeds through package APIs, application construction, software
 checks, isolated session integration, independent review, immutable registration,
@@ -75,7 +75,7 @@ combines the registered PipeWireAO_jll 1.7.1+0 artifact
 `3c63168ffd94740be1e2ea34c1eaf12a9468622a` with installed WirePlumber 0.5.18;
 `/opt` is preserved. The sealed registry-only 0.1.4 application passes isolated
 instantiation and exact relocation. Live session controls, cleanup and GUI
-attachment pass below; the final test-only release and retained launch are pending.
+attachment pass below; final 0.1.5 release evidence is recorded separately.
 
 The first actual registered session exposed two distinct prerequisites. The
 JLL runtime does not include the separately installed queue/SPA plugins, so
@@ -163,3 +163,92 @@ RTC 0.1.5 packages the corrected integration client and evidence. Its runtime
 `572c55311077971e05349bde1149976409da3678`; the full 008 lifecycle evidence is
 reused on that explicit basis. The final registered package suite, sealed
 relocation and retained-session smoke are recorded after release below.
+
+## Final release identity
+
+| Package | Version | Registered Git tree |
+|---|---|---|
+| PipeWireAORTC | 0.1.5 | `e63114f59bbb20bf1ad0bfa7aad404f883a2de2e` |
+| JuliaFilterGraph | 0.4.0 | `a6c81ed737e4dbf828cdc45ffc21b2f9c9c2c9f3` |
+| FilterGraphAlgorithms | 0.7.0 | `2fcfb7675152673c076d9a29adef34ab1be8fff9` |
+| FilterGraphPipeWire | 0.1.3 | `683c2e32d16d6889a00c3f985c25f8e72a0af991` |
+| FilterGraphIsland | 0.1.2 | `15c9c5ef8dd4222e36f90e5434e3bcabc3b7e182` |
+| AdaptiveOpticsSim | 0.1.0 | `ee0a2a24f600954045d08d48971f1ce0d0d61b4b` |
+| AdaptiveOpticsSimPipeWireHIL | 0.1.3 | `abe043eab6cd3bb240e83c16792d1bd3466a5320` |
+| PipeWireAO | 0.6.18 | `14dcef6fff816e5fc89459aca21cd1742b497be3` |
+
+RTC source commit is `d06010c8a5a3f223a62278714b2cfa647533b558`.
+The HIL release is stored in the user-authorized private repository
+`DarrylGamroth/AdaptiveOpticsSimPipeWireHIL.jl` at commit
+`48407618405ce8e906f245b59fd49d5a9ba5c00e`.
+The registry review branch `codex/classic-registration-20261019` is pushed at
+`3b7bd02aecb7e4df036ed1bfa6d29d05b93a5c12`. Installed registry local commit
+`07641c0f7ec926487e54828a23bc127674e29d18` has identical complete tree
+`41bf712fca70f8eaecd010755cf3734ffac4631c`; existing local history is preserved.
+Remote default branches have not been promoted or rewritten.
+
+The final scientist application is `/home/dgamroth/workspaces/revolt-classic-rtc`.
+Its 30 sealed inputs comprise Project/Manifest, configuration, README and 17 FITS
+files; it contains no executable Julia source or path dependencies.
+
+| Application file | SHA-256 |
+|---|---|
+| Project.toml | `de22a5955984ff131d4cf73bb295747a8727b6c9bb812c13633c561ee5cacbfe` |
+| Manifest.toml | `e38333ecf57674956db16e027ce852a6fe61ded3e3190ed3bfb6b67dbe1a1315` |
+| deployment.conf | `c62b3790892eaf680d1887ceb11b06d781433e7bd63727a05fef67f550c01ac4` |
+
+Final registered 0.1.5 verification passes **1,993/1,993** assertions in 60
+testsets and fresh default-loader checks (CPU 22/22, CUDA 21/21), with
+`Pkg.test(...; allow_reresolve=false)` and unchanged Project/Manifest hashes.
+See `rtc-0.1.5-verification.txt` and the corresponding three logs in the evidence
+root. The actual loaded package is the immutable registered `XnB8N` source.
+
+An exact regular-file copy at `relocated-application` validates in an isolated
+depot containing its own packages, registry and compiled cache; only binary
+artifacts share the host cache. `isolated-instantiate-0.1.5.log` records successful
+installation and sealed profile validation. A prior invocation omitted
+`--project` and tested the wrong default environment; its failure is preserved
+as `isolated-instantiate-0.1.5-no-project.log`. The corrected invocation passes
+without changing the application or its dependency versions.
+
+The first final-launch trial, `gui-session-001`, reached Running. An auxiliary
+smoke script then used nonexistent `session-reset` instead of the maintained
+`reset` command. Parsing rejected it before a reset request, and the script's
+cleanup established native Stopped and exact cleanup with no error. Its log
+and terminal receipt are preserved. The script was corrected and all four
+command spellings checked before launching a fresh session; no RTC package or
+scientific input changed.
+
+## Retained session for GUI review
+
+The final registered 0.1.5 session is left **Running**, with the GUI attached.
+Its final smoke check passes Stop, Reset to generation 2/sequence 0, Start,
+all eight advancing observation streams and matching SHWFS acquisition identity.
+The operational reset report identifies the actual simulator PID and source
+instance, with no failures. Seven GUI ndarray nodes are independently observed
+Running; the native session still reports Running after attachment.
+
+| Identity | Value |
+|---|---|
+| Evidence stage | `/home/dgamroth/.local/state/classic-registered-20261019/gui-session-002` |
+| Session UUID | `fcbaf60c-eb5e-4bfa-a815-3ad623ac0b49` |
+| Native systemd unit | `pipewireao-session@78b9be40f481.service` |
+| Native invocation | `c515aae008e147f2977d0d4acf76f3f8` |
+| Simulator PID | `3993476` |
+| GPU | RTX 3080, `GPU-ace438b4-a57b-9194-d519-bdcbe42cb770` |
+| GUI unit | `pipewireao-gui-classic-20261019.service` |
+| GUI PID | `4015903` |
+
+`retained-verification.json` binds those identities to registered 0.1.5, the
+unchanged application hashes, GPU process query and active GUI unit.
+`retained-observation.json`, `smoke-reset-report.json`,
+`retained-final-status.json`, `gui-attached-status.json` and
+`gui-attached-graph.json` retain the data/control evidence. Parent logs are
+`retained-launch-0.1.5-002.log`, `retained-smoke-0.1.5-002.log`,
+`gui-retained-launch-0.1.5.log` and `gui-retained-verification-0.1.5.log`.
+Closing the GUI is optional observation only; native Quit owns RTC shutdown.
+
+This completes the requested selected Classic deployment and GUI attachment.
+It remains a non-actuating simulation at 10 Hz wall pacing and 500 Hz model
+time, using software GUI rendering. No physical-DM, real-time, broader
+fault/readmission or calibration-campaign qualification is claimed.
