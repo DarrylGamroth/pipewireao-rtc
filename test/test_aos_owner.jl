@@ -16,6 +16,58 @@ function owner_configuration(directory; backend="cpu")
             "hdu" => 1, "axes" => [2, 1], "type" => "UInt32", "shape" => [3, 2])])
 end
 
+@testset "AOS operational report records a saved cursor atomically" begin
+    mktempdir() do directory
+        graph = joinpath(directory, "simulation.toml")
+        write(graph, "schema_version = 1\nname = \"report_test\"\n")
+        options = (; remote=joinpath(directory, "native"), control_node="simulator-wfs",
+            bootstrap_instance=Int64(7), backend=:cpu, graph,
+            graph_sha256=PipeWireAORTC.Common.sha256_file(graph))
+        state = (; sequence=UInt64(0), running=false, completed=false)
+        path = Owner.report_path(options)
+        @test path == joinpath(directory, "simulator-wfs-report.json")
+        @test Owner.write_report(options, state, Int64(1), Int64(9)) === nothing
+        initial = PipeWireAORTC.Common.read_json(path)
+        @test initial["generation"] == 1
+        @test initial["sequence"] == 0
+        @test initial["source_instance"] == 9
+        @test initial["bootstrap_instance"] == 7
+        @test initial["owner_pid"] == getpid()
+        @test initial["graph"] == graph
+        @test initial["graph_sha256"] == options.graph_sha256
+        @test initial["backend"] == "cpu"
+        @test !initial["running"] && !initial["completed"]
+        @test isempty(initial["failures"])
+        original = read(path, String)
+        open(path, "r") do prior
+            advanced = (; sequence=UInt64(12), running=false, completed=true)
+            Owner.write_report(options, advanced, Int64(2), Int64(9);
+                failures=[ErrorException("exchange failed after the last adoption")])
+            @test read(prior, String) == original
+        end
+        final = PipeWireAORTC.Common.read_json(path)
+        @test final["generation"] == 2 && final["sequence"] == 12
+        @test final["completed"] && !final["running"]
+        @test final["failures"] == ["exchange failed after the last adoption"]
+        @test_throws ArgumentError Owner.write_report(options, state, nothing, Int64(9))
+        Owner.write_report(options, state, nothing, Int64(9);
+            failures=[ErrorException("cannot query the final generation")])
+        unknown = PipeWireAORTC.Common.read_json(path)
+        @test unknown["generation"] === nothing
+        @test unknown["failures"] == ["cannot query the final generation"]
+        @test sort(readdir(directory)) == ["simulation.toml", "simulator-wfs-report.json"]
+        rm(path)
+        mkdir(path)
+        write(joinpath(path, "retained"), "preserve the conflicting directory")
+        @test_throws Base.IOError Owner.write_report(options, state, Int64(3), Int64(9))
+        @test isdir(path)
+        @test read(joinpath(path, "retained"), String) == "preserve the conflicting directory"
+        @test sort(readdir(directory)) == ["simulation.toml", "simulator-wfs-report.json"]
+        @test_throws ArgumentError Owner.write_report(options,
+            (; sequence=typemax(UInt64), running=false, completed=false), Int64(3), Int64(9))
+    end
+end
+
 @testset "AOS cold declarations and bootstrap load order" begin
     mktempdir() do directory
         path = joinpath(directory, "owner.conf")

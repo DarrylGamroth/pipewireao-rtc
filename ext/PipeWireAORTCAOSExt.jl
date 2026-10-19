@@ -20,8 +20,9 @@ mutable struct OwnerState
     sequence::UInt64
     last_request_id::Int64
     deadline_ns::UInt64
+    generation::Int64
 end
-OwnerState() = OwnerState(false, false, 0, 0, 0)
+OwnerState() = OwnerState(false, false, 0, 0, 0, 1)
 
 function target(options)
     device = options.backend === :cpu ? Backends.HostComputeDevice() :
@@ -115,7 +116,21 @@ function Owner.prepare_science(options; check=()->nothing)
     return (; definition, graph, boundary, driver, target=device, artifacts)
 end
 
-function consume_control!(mailbox, pipewire, state, wall_period, reset_owner!)
+"Record readiness only after its actual operational report has been saved."
+function save_report!(options, mailbox, state, generation; failures=())
+    Owner.write_report(options, state, generation, mailbox.instance; failures)
+    SourceControl.report_ready!(mailbox, generation, state.sequence)
+    return nothing
+end
+
+"Prepare the saved initial cursor before any native source Props can be visible."
+function prepare_source_control(options, state, source_instance)
+    mailbox = SourceControl.Mailbox(source_instance)
+    save_report!(options, mailbox, state, Int64(1))
+    return mailbox
+end
+
+function consume_control!(options, mailbox, pipewire, state, wall_period, reset_owner!)
     mailbox.ready[] || return nothing
     kind, token, requested_running = with_frame_stream(pipewire) do _
         SourceControl.pending(mailbox)
@@ -124,6 +139,9 @@ function consume_control!(mailbox, pipewire, state, wall_period, reset_owner!)
         result = SourceControl.apply!(state, kind, token, requested_running,
             time_ns(), max(wall_period, UInt64(1)), reset_owner!)
         generation = Int64(frame_acquisition_generation(pipewire))
+        if kind == SourceControl.RESET && result == 0
+            save_report!(options, mailbox, state, generation)
+        end
         with_frame_stream(pipewire) do stream
             SourceControl.publish!(mailbox, stream, kind, token, result, state, generation)
         end
@@ -157,14 +175,19 @@ function next_deadline(deadline::UInt64, period::UInt64, now::UInt64)
     return Base.checked_add(candidate, Base.checked_mul(missed, period))
 end
 
-function run_prepared!(options, science, pipewire, observation, mailbox)
+function run_prepared!(options, science, pipewire, observation, mailbox, state)
     runtime = options.bootstrap_runtime
-    state = OwnerState()
     reset_owner! = () -> begin
         # Drain optional asynchronous snapshots before graph reset. Native
         # source controls are applied only here, after the preceding exchange.
         OpticalObservation.drain!(observation)
         reset_pipewire_hil!(pipewire, science.driver)
+        # The plant reset has committed this empty cursor even if optional
+        # observation rewarming subsequently fails before the control ACK.
+        state.generation = Int64(frame_acquisition_generation(pipewire))
+        state.sequence = 0
+        state.completed = false
+        state.deadline_ns = 0
         OpticalObservation.reset!(observation, pipewire; check=options.owner_check)
     end
     ticket = Bootstrap.take_connect!(runtime)
@@ -176,7 +199,7 @@ function run_prepared!(options, science, pipewire, observation, mailbox)
     println("SIMULATOR_CONNECTED sequence=0 held=true")
     flush(stdout)
     while !Bootstrap.cancelled(runtime)
-        consume_control!(mailbox, pipewire, state, options.wall_period_ns, reset_owner!)
+        consume_control!(options, mailbox, pipewire, state, options.wall_period_ns, reset_owner!)
         Bootstrap.cancelled(runtime) && break
         if !state.running || time_ns() < state.deadline_ns
             yield()
@@ -195,6 +218,7 @@ function run_prepared!(options, science, pipewire, observation, mailbox)
             state.running = false
             state.completed = true
             state.deadline_ns = 0
+            save_report!(options, mailbox, state, Int64(frame_acquisition_generation(pipewire)))
         end
     end
     return nothing
@@ -205,14 +229,17 @@ function Owner.run_owner(options)
     options.owner_check()
     println("SIMULATOR_PREPARING backend=$(options.backend) graph=$(options.graph)")
     flush(stdout)
-    science = Owner.prepare_science(options; check=options.owner_check)
+    state = OwnerState()
+    source_instance = Int64(rand(UInt64) % UInt64(typemax(Int64))) + Int64(1)
     observation = nothing
     pipewire = nothing
     failures = Exception[]
     try
+        options = merge(options, (; graph_sha256=PipeWireAORTC.Common.sha256_file(options.graph)))
+        science = Owner.prepare_science(options; check=options.owner_check)
         observation = OpticalObservation.prepare(options.optical_observation ? science.definition : nothing, science.graph)
         options.owner_check()
-        mailbox = SourceControl.Mailbox(Int64(rand(UInt64) % UInt64(typemax(Int64))) + Int64(1))
+        mailbox = prepare_source_control(options, state, source_instance)
         configuration = PipeWireHILConfiguration(remote=options.remote,
             frame_node_name=options.control_node, command_node_name=options.command_node,
             frame_schema=options.frame_schema, command_schema=options.command_schema,
@@ -239,7 +266,7 @@ function Owner.run_owner(options)
         Bootstrap.prepared!(runtime)
         println("SIMULATOR_PREPARED command_count=$(options.command_count) frame_shape=$(options.frame_shape)")
         flush(stdout)
-        run_prepared!(options, science, pipewire, observation, mailbox)
+        run_prepared!(options, science, pipewire, observation, mailbox, state)
     catch error
         if !(error isa InterruptException && Bootstrap.clean_cancel(runtime))
             push!(failures, error)
@@ -247,7 +274,23 @@ function Owner.run_owner(options)
         end
     finally
         Bootstrap.finishing!(runtime)
+        generation = state.generation
+        if pipewire !== nothing
+            try
+                observed = Int64(frame_acquisition_generation(pipewire))
+                if observed != state.generation
+                    generation = nothing
+                    push!(failures, ErrorException("source generation changed from $(state.generation) to $observed before its owner cursor committed"))
+                end
+            catch error
+                generation = nothing
+                push!(failures, error)
+            end
+        end
         try OpticalObservation.close!(observation, pipewire) catch error; push!(failures, error) end
+        state.running = false
+        state.deadline_ns = 0
+        try Owner.write_report(options, state, generation, source_instance; failures) catch error; push!(failures, error) end
     end
     isempty(failures) || throw(length(failures) == 1 ? only(failures) : CompositeException(failures))
     return nothing

@@ -114,6 +114,127 @@ the observed remediation separately from the initial finding.
 
 ## Reviewed obligations and evidence limits
 
+### CL-R03 — Integration adoption oracle can accept the previous parameter generation
+
+- **Severity/confidence:** P2, high; confirmed test-oracle defect.
+- **Evidence:** the initial `adopted` helper in
+  `test/integration/registered_classic.jl` accepted any positive requested
+  generation equal to active generation. Installed native `session.lua`
+  `parameter_update` deliberately acknowledges transport submission with absent
+  generation and `active_adoption_observed=false`. The previous already adopted
+  generation therefore satisfies the helper before the new payload is applied.
+  This affects both the engineering-offset probe and restoration claims.
+- **Remediation/disposition:** the primary agent now queries and saves the
+  requested generation immediately before each parameter submission and requires
+  the later requested generation to exceed that baseline, with active equal to
+  requested. The reviewer inspected this change and the retained integration005
+  receipts: probe baseline requested/active 0/0 advanced to 1/1; restoration
+  baseline 1/1 advanced to 2/2. CL-R03 is closed for the stale-generation oracle.
+  These receipts prove native active adoption; no independent numerical output
+  comparison is implied.
+- **Required validation:** save both baseline and new active-generation receipts
+  separately for probe and restoration. Keep the same-gain property check;
+  native property mutation already uses its stronger value/adoption predicate.
+
+### CL-R04 — AOS omits the saved-report cursor required by native reset
+
+- **Severity/confidence:** P1, high; confirmed source/policy incompatibility.
+- **Authority:** [LIVE_CONTROL_NATIVE.md](../../LIVE_CONTROL_NATIVE.md) defines
+  report-generation/report-sequence as the last successfully saved report,
+  including a saved empty report after reset. The native bootstrap design also
+  fences successful ordinary-source Quit behind cleanup and report publication.
+- **Affected source:** `ext/PipeWireAORTCAOSExt.jl:118` (`consume_control!`),
+  reset and finite-completion branches, and owner finalization. RTC 0.1.3 has no
+  report publication or `SourceControl.report_ready!` call in this extension.
+- **Observed source evidence:** `NativeSourceControl.Mailbox` initializes its
+  report cursor to generation 1/sequence 0. Successful stopped reset increments
+  the HIL generation, but AOS publishes the new live cursor with the unchanged
+  mailbox report cursor. Native `ao-owner.lua:500` requires live/report cursor
+  equality for reset or completed snapshots and otherwise rejects with
+  `Source completed before report publication`. A first successful scientific
+  reset therefore produces live generation 2/report generation 1. Finite
+  completion has the analogous sequence mismatch.
+- **Live fail-before evidence:** integration005 with immutable RTC 0.1.3 reached
+  Ready, Running, scalar and parameter adoption, and Stop. Its retained
+  `session-integration-005/reset.json` records native `ok=false`, state `Fault`,
+  and `ao-owner.lua:501: Source completed before report publication`. The
+  reviewer read this receipt and the driver log independently. Session UUID:
+  `d13e068e-d2c5-4f55-865f-9812bd318a02`; unit:
+  `pipewireao-session@b30117deade5.service`; invocation:
+  `82ce6f2a27e445189f21413612f2684b`. The retained stage is under
+  `/home/dgamroth/.local/state/classic-registered-20261019/`.
+  This confirms the earlier source-derived finding; integration003 had failed
+  before reaching this operation.
+- **Remediation:** preserve the existing report contract: save an appropriate
+  report before advancing the advertised report cursor on preparation/reset,
+  finite completion and finalization. Merely advancing the cursor would falsely
+  advertise a saved report. Any intentionally different source contract needs
+  explicit versioned agreement with its native consumer.
+- **Required validation:** successful reset has a saved report matching its new
+  generation/sequence zero; finite completion has a report at the final adopted
+  cursor; write failure must not acknowledge report readiness or successful
+  terminal cleanup. Exercise the actual native reset after the source fix.
+- **Disposition:** source remediation independently reviewed and its focused
+  checks rerun successfully: 72 cold-owner assertions and 34 optional-extension
+  assertions. The new operational report is written by same-directory temporary
+  file plus `Base.rename` before advancing report readiness or acknowledging
+  reset. Its initial cursor is saved before the source Props are exposed;
+  finite completion saves the final adopted cursor. Finalization closes optical
+  and HIL resources before writing the final paused record, and retains cleanup
+  or write errors so bootstrap cannot claim successful Stopped. The retained
+  owner cursor is updated immediately after plant reset, before optional optical
+  rewarming; an unresolvable generation is recorded as unknown with an error.
+  Failed-save tests preserve the previous report cursor and pending Reset,
+  produce no acknowledgement, and preserve a conflicting destination directory.
+  An actual `run_owner` preparation failure is checked before Prepared, with
+  primary and final-write errors retained. The source defect is remediated;
+  release publication and actual native reset pass-after remain pending.
+
+### Integration driver follow-up
+
+The maintained `test/integration/registered_classic.jl` now reads native source
+snapshots and separately checks the saved report's generation, sequence, and
+source instance at held preparation and successful reset. Its snapshot decoding
+matches the retained integration005 Props representation. Native receipts and
+snapshots remain the authority for lifecycle success; the saved file is checked
+as supporting evidence. Restart and final Stop additionally require progress in
+the new acquisition generation.
+
+Integration005 also demonstrated that native Quit can reject an already Fault
+session. The primary agent's exact-session emergency cleanup is retained in
+`session-integration-005/emergency-cleanup.json`; it reports cleanup complete
+while retaining the original failed phase and service exit condition. The
+driver now makes one native shutdown attempt and, on failure, performs bounded
+`W.stop!` on its exact attached handle. A failure to write diagnostic evidence
+cannot skip that cleanup attempt; shutdown, diagnostic and cleanup errors are
+retained. This is fault cleanup, not automatic readmission or a native retry.
+
+### Native deadline compatibility check
+
+Live integration attempt 003, unit
+`pipewireao-session@a781426e04a7.service`, invocation
+`d0b853b330ac4cbf87cc357b0986f321`, faulted before admission at 14:06:36 with
+`ao-owner.lua:359: Invalid preparation deadline`. The installed old policy
+accepted at most 300 s; the application selected 900 s. Maintained clean
+WirePlumber `d20cd2037fda7b5932b0feb58b0af5aef5226a48` already accepts a bounded
+3600 s and has a deadline-boundary regression. The primary agent selected that
+maintained file in the separate native prefix; `/opt` was preserved.
+
+The reviewer independently executed the exact first block of
+`tests/wplua/scripts/ao-owner.lua` with Lua 5.4 through its shared library.
+The stubbed identity check always returns false and no timer/native request can
+be issued. The old installed file fails the maintained test at 900 s; the clean
+file passes. Additional 1 ms/300 s/900 s/3600 s cases reach identity validation;
+3601 s, float and string deadlines reject, with pending work cleared. This is a
+focused Lua policy check, not a full native WirePlumber test suite.
+
+Reproduction and results are retained in
+`/home/dgamroth/.local/state/classic-registered-20261019/review/deadline_check.jl`
+and `deadline-check.log`. The selected overlay and maintained source SHA-256 both
+equal `5fbedea5a2b6aa44bb911e864e8f66871bdcfe96303c29391d1ba404300333ec`.
+
+## Obligation coverage
+
 | Obligation | Source analysis | Remaining deployment evidence |
 | --- | --- | --- |
 | Optional science and early Preparing | GraphOwner and AOSOwner publish bootstrap Preparing before loading optional science; imports use package entrypoints/extensions | Exercise cold startup and cancellation with exact registered releases |
@@ -148,6 +269,8 @@ evidence.
 | --- | --- | --- |
 | `include("test/test_graph_owner_integration.jl")` | Passed: 15 testset assertions plus top-level cold-loading/extension checks | Complete-frame and row-block JFG preparation, square FITS axis order, copied ownership, resulting row outputs |
 | `include("test/aos_preparation.jl")` | Passed: 14 assertions | CPU AOS FITS preparation, exact command-induced output, deterministic reset, declaration rejection and cancellation; no service or GPU |
+| `include("test/test_aos_owner.jl")`, after CL-R04 | Passed: 72 assertions | Atomic operational report, cursor/identity fields, conflict preservation, cold declarations, FITS ownership and cancellation |
+| `include("test/aos_preparation.jl")`, after CL-R04 | Passed: 34 assertions | Saved report precedes report readiness/reset ACK; actual owner rejects initial report failure before Prepared; CPU preparation and deterministic reset |
 | `include("test/test_registered_application.jl")` | Passed: 19 assertions | CL-R01 empty-closure/missing-seal rejection, direct identity/tree/source checks, containment and generated launcher selection |
 | `test/test_aos_owner_loading.jl cpu` in a fresh process | Passed: 22 assertions | CL-R02 actual default imports, bootstrap-before-import order, AOS extension activation and CUDA remaining unloaded |
 | `test/test_aos_owner_loading.jl cuda` in a fresh process | Passed: 21 assertions | CL-R02 actual default AOS/HIL/CUDA imports and AOS extension activation; no GPU computation |
@@ -199,3 +322,14 @@ CL-R02 follow-up fingerprints, after the three-call loader remediation:
 | --- | --- |
 | `src/owners/aos_owner.jl` | `46b03815133cc1413a2fc8cb767fa2f7907c2710ebda33fd8b8f1984e9707a74` |
 | `test/test_aos_owner_loading.jl` | `94980f15b4bfb0cd1fae2c9ec5ed611bd7216bfa4a98533406bb59024b0e2454` |
+
+CL-R04 follow-up fingerprints, after the report remediation and independent
+focused tests (registered live pass-after still pending):
+
+| RTC file | SHA-256 |
+| --- | --- |
+| `src/owners/aos_owner.jl` | `8c8e013022f44980d6aa5581e18a311febc328f14e0e0de7082d20dcc09f86c3` |
+| `ext/PipeWireAORTCAOSExt.jl` | `94d1a811870aecc4624f4d57531cf8abb46d72544095a35cdc81858d7d056706` |
+| `test/test_aos_owner.jl` | `38224f7ff0a6c1029a82d9ed95f55fae59b698529dc2e98cd706ded81fa8e609` |
+| `test/aos_preparation.jl` | `5375482f09a660f187866f232adf098e21cd4ea2ce16819be9c4f21dff97b2bd` |
+| `test/integration/registered_classic.jl` | `c15512ae6f1b5caccaf6c485c9e8b7f8d4f3ce2f1ba9c5724245ecd55868645b` |

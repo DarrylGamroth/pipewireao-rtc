@@ -9,6 +9,60 @@ using AdaptiveOpticsSim.AlgorithmGraphs
 using AdaptiveOpticsSimPipeWireHIL
 
 const AOSPreparationOwner = PipeWireAORTC.AOSOwner
+const AOSReportExtension = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt)
+const AOSReportControl = PipeWireAORTC.NativeSourceControl
+const AOSReportBootstrap = PipeWireAORTC.NativeOwnerBootstrapRuntime
+
+mutable struct ReportPreparationRuntime
+    failure::Union{Nothing,Exception}
+    prepared::Bool
+    finishing::Bool
+end
+AOSReportBootstrap.fault!(runtime::ReportPreparationRuntime, error::Exception) = (runtime.failure = error; nothing)
+AOSReportBootstrap.prepared!(runtime::ReportPreparationRuntime) = (runtime.prepared = true; nothing)
+AOSReportBootstrap.finishing!(runtime::ReportPreparationRuntime) = (runtime.finishing = true; nothing)
+
+mutable struct ReportControlTransport
+    generation::Int64
+end
+AdaptiveOpticsSimPipeWireHIL.with_frame_stream(f, ::ReportControlTransport) = f(nothing)
+AdaptiveOpticsSimPipeWireHIL.frame_acquisition_generation(transport::ReportControlTransport) = transport.generation
+
+@testset "AOS report save precedes native report readiness and reset ACK" begin
+    mktempdir() do directory
+        graph = joinpath(directory, "simulation.toml")
+        write(graph, "schema_version = 1\nname = \"report_order\"\n")
+        options = (; remote=joinpath(directory, "native"), control_node="simulator-wfs",
+            bootstrap_instance=Int64(7), backend=:cpu, graph)
+        state = AOSReportExtension.OwnerState()
+        mailbox = AOSReportExtension.prepare_source_control(options, state, Int64(9))
+        initial = PipeWireAORTC.Common.read_json(AOSPreparationOwner.report_path(options))
+        @test initial["generation"] == mailbox.report_generation == 1
+        @test initial["sequence"] == mailbox.report_sequence == 0
+        @test initial["source_instance"] == mailbox.instance == 9
+        state.sequence = 4
+        AOSReportExtension.save_report!(options, mailbox, state, Int64(1))
+        @test mailbox.report_generation == 1 && mailbox.report_sequence == 4
+        blocked = merge(options, (; remote=joinpath(directory, "blocked", "native")))
+        path = AOSPreparationOwner.report_path(blocked)
+        mkpath(path)
+        write(joinpath(path, "retained"), "do not replace this directory")
+        @test_throws Base.IOError AOSReportExtension.save_report!(blocked, mailbox, state, Int64(2))
+        @test mailbox.report_generation == 1 && mailbox.report_sequence == 4
+        @test_throws Base.IOError AOSReportExtension.prepare_source_control(blocked, state, Int64(10))
+        # The actual control consumer reaches a real failed filesystem save
+        # after applying reset, before any Stream publication can occur.
+        AOSReportControl.stage!(mailbox, AOSReportControl.RESET, Int64(1))
+        transport = ReportControlTransport(1)
+        @test_throws Base.IOError AOSReportExtension.consume_control!(blocked, mailbox, transport,
+            state, UInt64(0), () -> (transport.generation = 2))
+        @test state.sequence == 0
+        @test mailbox.kind == AOSReportControl.RESET && mailbox.token == 1
+        @test mailbox.last_token == 0
+        @test mailbox.report_generation == 1 && mailbox.report_sequence == 4
+        @test read(joinpath(path, "retained"), String) == "do not replace this directory"
+    end
+end
 
 @testset "FITS-driven AOS graph preparation and deterministic reset" begin
     mktempdir() do directory
@@ -83,6 +137,28 @@ const AOSPreparationOwner = PipeWireAORTC.AOSOwner
         adopt_hil_command!(science.boundary, replay.sequence)
         @test_throws InterruptException AOSPreparationOwner.prepare_science(options;
             check=() -> throw(InterruptException()))
+        @testset "initial report failure prevents native preparation" begin
+            runtime = ReportPreparationRuntime(nothing, false, false)
+            invocation = merge(options, (; remote=joinpath(directory, "private", "native"),
+                control_node="simulator-wfs", bootstrap_instance=Int64(7),
+                bootstrap_runtime=runtime, owner_check=() -> nothing))
+            blocked = AOSPreparationOwner.report_path(invocation)
+            mkpath(blocked)
+            write(joinpath(blocked, "retained"), "preserve")
+            failure = try
+                AOSPreparationOwner.run_owner(invocation)
+                nothing
+            catch error
+                error
+            end
+            @test failure isa CompositeException
+            @test runtime.failure isa Base.IOError
+            @test failure.exceptions[1] === runtime.failure
+            @test length(failure.exceptions) == 2
+            @test failure.exceptions[2] isa Base.IOError
+            @test !runtime.prepared && runtime.finishing
+            @test read(joinpath(blocked, "retained"), String) == "preserve"
+        end
         # Binding declaration validation precedes opening artifacts.
         rm(joinpath(directory, "basis.fits"))
         mismatched = merge(options, (; command_input=:unknown_command))

@@ -35,9 +35,9 @@ is introduced. Native live parameter encoding remains unchanged.
 
 | Allocation | Work | Acceptance | State |
 |---|---|---|---|
-| AAR-01 | Immutable registered dependency closure and small application | Fresh resolve/instantiate, relocate, no copied source/path dependencies/raw artifacts | Planned |
-| AAR-02/04 | Package JFG owner and FITS startup | Type/axis/shape/duplicate rejection, cancellation, parameters before capture/publication | Planned |
-| AAR-03/04 | Package AOS owner and explicit geometry | Exact Classic grid/order comparison, GPU preparation, held startup and frame/command association | Planned |
+| AAR-01 | Immutable registered dependency closure and small application | Fresh resolve/instantiate, relocate, no copied source/path dependencies/raw artifacts | Passed for 0.1.3; repeat after report fix |
+| AAR-02/04 | Package JFG owner and FITS startup | Type/axis/shape/duplicate rejection, cancellation, parameters before capture/publication | Software checks pass; live checks in progress |
+| AAR-03/04 | Package AOS owner and explicit geometry | Exact Classic grid/order comparison, GPU preparation, held startup and frame/command association | Geometry/backend checks pass; reset report fix in progress |
 | RTC-DEV-003/004/009/013/021/022/030 | Registered application installer, native controls | Ready/start/stop/reset, parameter submission, cancellation and exact cleanup on owned sessions | Planned |
 | RTC-DEV-006 | Shared GUI profile and optional observation | SHWFS, DM and focal image available; GUI closure does not stop RTC | Planned |
 
@@ -86,3 +86,39 @@ Preparing and cancellation order. Actual-default-loader regressions fail on
 immutable 0.1.2 and pass in the corrected source (CPU 22, CUDA 21 assertions),
 independently verified by Astra. RTC 0.1.3 supersedes 0.1.2 for this application;
 the earlier immutable release is preserved. No failed attempt admitted ingress.
+
+The third attempt exposed a separate installed-policy mismatch: `/opt` retained
+the five-minute preparation cap although the migration baseline already selects
+WirePlumber `d20cd203` with an explicit maximum of one hour. The separate prefix
+now copies the installed policy assets and replaces only `lib/ao-owner.lua` with
+that clean baseline. Its SHA-256 is
+`5fbedea5a2b6aa44bb911e864e8f66871bdcfe96303c29391d1ba404300333ec`.
+The deployment's 900-second allowance is unchanged. Independent Lua checks
+reproduce rejection by the old policy and acceptance by the selected baseline;
+invalid and excessive budgets still reject. `/opt` and the immutable JLL artifact
+are unchanged.
+
+Registered 0.1.3 then reached native Ready and Running on the RTX 3080 and passed
+the same-value scalar transaction. Attempt 004 exposed an incorrect argument
+order in the integration driver before any parameter mutation; its exact Quit
+and cleanup succeeded. The driver now uses the existing F32_LE command surface
+and requires each parameter's requested generation to advance beyond its own
+pre-submission baseline. An old active generation cannot satisfy the check.
+
+## Ordinary-source report compatibility
+
+The generic AOS owner must preserve the existing source-control-v1 saved-report
+contract, including the empty prepared/reset report and final cleanup report.
+This is an operational cursor receipt, not scientific recording or an archiver.
+Its location is derived from the private invocation remote:
+`dirname(remote)/simulator-wfs-report.json` for the selected Classic source.
+No executable or generated raw artifact is added to the application.
+
+The initial report must exist before source snapshot Props become visible.
+Successful stopped reset and finite completion must save the new generation and
+last adopted sequence before advancing the mailbox's report cursor or issuing a
+successful acknowledgement. Final reporting follows transport/optical cleanup;
+report failures prevent successful bootstrap termination. The source instance,
+bootstrap instance and PID bind the record to the actual owner. The report has
+runtime-limited retention; tests copy selected receipts into their evidence
+stage. There is no durable instrument-state or science-recording claim.
