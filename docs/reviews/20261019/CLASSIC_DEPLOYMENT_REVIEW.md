@@ -188,7 +188,18 @@ the observed remediation separately from the initial finding.
   produce no acknowledgement, and preserve a conflicting destination directory.
   An actual `run_owner` preparation failure is checked before Prepared, with
   primary and final-write errors retained. The source defect is remediated;
-  release publication and actual native reset pass-after remain pending.
+  RTC 0.1.4 is registered with tree
+  `d17681c169bc8c7a05027e598af1eb79f9029e98`. Integration007 supplies the
+  independently inspected native reset pass-after: `reset.json` has `ok=true`,
+  completed outcome and state Ready; `graph-reset.json` has source/report cursor
+  2/0, held and not completed, and `reset-report.json` has the same cursor and
+  source instance `7962115913828068274`. `running-after-reset.json` confirms
+  subsequent Running. CL-R04 is closed for the demonstrated native reset defect.
+  This does not claim live finite-completion or the later observer/shutdown gate.
+  Session UUID `b153dc95-3e52-4b80-812b-f24b28812594`, unit
+  `pipewireao-session@235b1fdb2a91.service`, invocation
+  `7c4fd6df2b5249b0a485a1c25f5353cf`; receipts are in the retained
+  `session-integration-007` stage.
 
 ### Integration driver follow-up
 
@@ -208,6 +219,125 @@ driver now makes one native shutdown attempt and, on failure, performs bounded
 `W.stop!` on its exact attached handle. A failure to write diagnostic evidence
 cannot skip that cleanup attempt; shutdown, diagnostic and cleanup errors are
 retained. This is fault cleanup, not automatic readmission or a native retry.
+
+### CL-R05 — Test observer requests an incompatible fixed buffer count
+
+- **Severity/confidence:** P2 test-harness defect, high confidence. This is not
+  a defect in the registered RTC 0.1.4 production owner.
+- **Affected code:** `_classic_buffer_parameters` in
+  `test/integration/classic_observation.jl`, as published at `572c553`.
+- **Observed evidence:** integration006 failed in observer attachment before
+  reaching Reset. The helper requested exactly two buffers. The capacity-one
+  native queue requires its retained capacity plus two buffers, hence three;
+  the source is `module-queue.c`'s `max_buffers + 2u` parameter. The reviewer
+  inspected the retained C regression and independently reran it against all
+  eight serialized helper buffer parameters. Intersection with the modeled
+  queue parameter fails with `-EINVAL` (-22) for the old fixed request and
+  succeeds with result 0 and negotiated count 3 for the corrected request.
+  Reproduction source and output are retained at
+  `/home/dgamroth/.local/state/classic-registered-20261019/classic-observer-buffer-negotiation.c`
+  and `classic-observer-buffer-negotiation.log`. This is a focused SDK POD
+  intersection check; sample delivery still requires the live application.
+- **Remediation/disposition:** the helper now uses range default 3/minimum
+  2/maximum 64, declared stride and memory types, matching the canonical GUI
+  `sample_observation/parameters.rs`. Explicit Acquisition metadata version 2
+  matches the SDK's prior default. Source review found no weakened default
+  oracle: the driver still selects all eight streams, requires at least two
+  advancing sequences each and a shared detector/slopes/flux/validity acquisition
+  identity, and retains format/schema/rate/payload/finite/Boolean checks. The
+  optional stream subset is used only for diagnostics. Moving observation after
+  Reset/resume preserves reset and final Stop requirements. Integration006's
+  final ledger records phase `stopped`, service success and cleanup complete;
+  integration008 subsequently passed all eight sample-delivery checks and clean
+  retirement, as recorded below. CL-R05 is closed for this bounded helper defect.
+- **Reviewed helper fingerprints:** `classic_observation.jl` SHA-256
+  `e08b5583752d1d18f059857936b826f9014a98581ddc12599064decfef85e9b1`;
+  `registered_classic.jl` SHA-256
+  `e786e976980c09158bd3c40d3bac67a12aca7d853977af0e0d2a40f46effe649`.
+
+### CL-R06 — Observer helper lifecycle crash, bounded remediation verified
+
+- **Severity:** P1 integration-harness failure, not an established production
+  owner defect.
+- **Confidence:** high for the observed client crash and bounded pass-after;
+  native root cause remains unproven.
+- **Affected code:** `test/integration/classic_observation.jl`, trigger ordering
+  and resource retirement before the correction described below.
+
+After the successful native Reset/resume recorded above, Julia observer client
+PID 3788205 received SIGSEGV in native `do_trigger_driver`, dispatched through
+`flush_queues` on a native loop. The retained log is
+`/home/dgamroth/.local/state/classic-registered-20261019/session-integration-007.log`;
+the library belongs to artifact `3c63168ffd94740be1e2ea34c1eaf12a9468622a`.
+This is an observed client crash, not evidence that the scientific owner or
+private core crashed. The overall integration driver did not reach its final
+Stop/Quit checks.
+
+A possible final-trigger lifetime race remains a hypothesis: the helper submits
+new triggers before testing sample completion, so a successful iteration can
+immediately enter teardown with new asynchronous native work outstanding.
+`pw_stream_trigger_process` queues `do_trigger_driver` on its data loop;
+`pw_stream_destroy` explicitly removes invokes from its main loop. The reviewed
+node teardown uses `pw_loop_locked`, whose implementation takes a mutex and
+calls its function directly, without draining queued invokes. These source
+observations identify a discriminating investigation; they do not establish
+that this mechanism caused the retained crash. Detector-only and three full
+eight-stream debugger probes initially exited normally, but those results were
+confounded by an attached GUI. An unchanged helper with the GUI absent then
+reproduced the original `do_trigger_driver` SIGSEGV (PID 3862232), retained in
+`classic-observer-nogui-before-1.log`; its next two probes passed. A separate GUI
+difference is that its tick requires both Streaming and an active link before
+triggering; the Julia helper originally checked only `is_driving`.
+
+The corrected helper checks completion before further triggers and requires both
+Streaming and an active link. It implements the canonical GUI retirement
+protocol: remove its links, await Core Done, disconnect its streams, await Core
+Done again, stop/join its owned callback loop, then release rooted streams,
+callbacks and remaining resources. Failed retirement fences remain errors after
+cleanup is attempted. Independent source review accepts this normal retirement
+sequence; abnormal core-loss cleanup is not qualified by the present tests.
+
+**Disposition:** bounded observer qualification is closed. Three GUI-absent
+plain-process probes and three GUI-absent GDB repetitions with
+`MALLOC_PERTURB_=165` passed for all eight streams and exited normally; the
+reviewer inspected the retained `classic-observer-nogui-after-{1,2,3}.log` and
+`classic-observer-gdb-perturb-after.log`. Full integration008 then passed 42/42
+assertions with the corrected helper. These are observed pass-after results for
+the combined harness correction. They do not isolate which change prevented
+the crash, prove the native lifetime mechanism, or establish blanket SDK safety.
+No production SDK or RTC runtime change was made for CL-R05/06. Final helper
+SHA-256: `5f5aab34333b08988789b49119a22996dbdc5259cb1c02795f5aad15ac045932`.
+
+### Final bounded live acceptance — integration008
+
+The reviewer independently inspected `session-integration-008.log`,
+`qualification.json`, `observation.json` and `final-launch.json` under
+`/home/dgamroth/.local/state/classic-registered-20261019/`.
+All 42 lifecycle assertions pass: held Ready, source release, scalar submission,
+new parameter generation adoption and restoration, Stop, Reset, resumed Running,
+all-eight observation delivery, final Stop and shutdown. Each observation product
+has at least two advancing samples; the SHWFS group shares acquisition generation
+2/sequence 71. Payloads are finite and validity is canonical Boolean. This proves
+sample delivery and identity consistency, not scientific accuracy or timing.
+The final ledger records phase `stopped`, service result `success`, no error and
+cleanup complete. Session UUID `05e97733-4ee1-452a-b02c-c3b64997f37e`, unit
+`pipewireao-session@03fff0b17275.service`, invocation
+`4548ebf30beb40a4900807740b69a97a`.
+
+The separate `gui-check2-graph.json` shows seven running GUI ndarray streams;
+`gui-close-check.log` records that the RTC remains Running after GUI closure.
+These receipts support GUI observation without GUI lifecycle ownership. The
+primary agent separately reports clean shutdown of the retained integration007
+session; this review's complete shutdown acceptance relies on integration008's
+inspected ledger.
+
+At final review, `git diff 572c553 -- src ext` is empty: production runtime is
+identical to registered RTC 0.1.4 tree
+`d17681c169bc8c7a05027e598af1eb79f9029e98`. Pending 0.1.5 carries corrected tests
+and documentation. The review is frozen at this source/evidence snapshot.
+Broader startup-cancellation, calibration-restoration, abnormal core-loss,
+scientific-parity and timing/physical qualification obligations are not promoted
+by this bounded acceptance.
 
 ### Native deadline compatibility check
 

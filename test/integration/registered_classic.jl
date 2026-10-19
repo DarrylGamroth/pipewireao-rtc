@@ -124,13 +124,6 @@ function main(application, stage, prefix)
         checked(running["state"] == "Running","session faulted during exchanges")
         check_updates(handle,application,stage,graph,properties)
         dump_graph(handle,stage,prefix,"graph-running")
-        ledger = C.read_json(joinpath(handle.runtime_root, handle.invocation, "launch.json"))
-        observation = observe_classic(ledger["remote"]; timeout=30)
-        C.write_json(joinpath(stage, "observation.json"), observation)
-        checked(all(stream["distinct_sequences"] >= 2 for stream in values(observation["streams"])),
-            "an observation queue did not deliver advancing samples")
-        checked(observation["matching_wfs_identity"] !== nothing,
-            "SHWFS observation group has no common acquisition identity")
         stopped = request(handle,stage,"stop",["session-stop"])
         checked(stopped["state"] == "Ready","source did not stop")
         before_reset = source_snapshot(dump_graph(handle,stage,prefix,"graph-stopped"))
@@ -148,6 +141,13 @@ function main(application, stage, prefix)
         sleep(1)
         checked(request(handle,stage,"running-after-reset",["status"])["state"] == "Running",
             "session did not resume after reset")
+        ledger = C.read_json(joinpath(handle.runtime_root, handle.invocation, "launch.json"))
+        observation = observe_classic(ledger["remote"]; timeout=45)
+        C.write_json(joinpath(stage, "observation.json"), observation)
+        checked(all(stream["distinct_sequences"] >= 2 for stream in values(observation["streams"])),
+            "an observation queue did not deliver advancing samples")
+        checked(observation["matching_wfs_identity"] !== nothing,
+            "SHWFS observation group has no common acquisition identity")
         request(handle,stage,"final-stop",["session-stop"])
         resumed = source_snapshot(dump_graph(handle,stage,prefix,"graph-resumed"))
         checked(resumed["generation"] == reset["generation"] && resumed["sequence"] > 0 &&

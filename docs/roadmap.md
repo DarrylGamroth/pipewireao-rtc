@@ -19,7 +19,11 @@ configuration and FITS artifacts. Package-owned graph/simulator entrypoints and
 optional extensions preserve native bootstrap and serialized controls. Registered
 application installation obtains code from its sealed Julia environment instead
 of copying an SDK. Software checks and exact selected-backend AOS migration
-parity pass; immutable release, live session and GUI gates are in progress.
+parity pass. Registered 0.1.4 passes 1,993 package assertions and the fresh
+42-check native lifecycle, reset, parameter restoration, eight-stream delivery
+and exact cleanup run. GUI attachment and independent closure pass. The final
+test-only 0.1.5 release and retained launch are in progress; broader fault,
+calibration, scientific and timing qualification remain separate.
 The [delivery record](CLASSIC_REGISTERED_DEPLOYMENT.md) links evidence and the
 independent review. Historical fault/recovery qualifications retain their scope.
 

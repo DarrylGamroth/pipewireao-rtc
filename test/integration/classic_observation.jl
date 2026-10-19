@@ -99,9 +99,17 @@ function (callback::ClassicObservationFormat)(stream, id, parameter)
     return nothing
 end
 
-function _classic_buffer_parameters(capture)
-    return (Pod(buffers_param(buffers=2, blocks=1, size=payload_size(capture.format))),
-        Pod(header_metadata_param()), Pod(acquisition_metadata_param()))
+function _classic_buffer_parameters(capture::ClassicObservationCapture{T}) where {T}
+    # The queue's playback pool has the capture pool's exact buffer count:
+    # capacity one requires three pool buffers (retained capacity plus two).
+    # Match the GUI observer's bounded range rather than requiring two buffers.
+    count=SPA.Choice(SPA.CHOICE_RANGE, Int32[3,2,64])
+    memory_types=Int32((1<<Int(SPA.DATA_MEM_PTR)) | (1<<Int(SPA.DATA_MEM_FD)) |
+        (1<<Int(SPA.DATA_DMA_BUF)))
+    return (Pod(buffers_param(buffers=count, blocks=1, size=payload_size(capture.format),
+            stride=Int(last(capture.format.shape))*sizeof(T),
+            data_types=SPA.Choice(SPA.CHOICE_FLAGS, Int32[memory_types]))),
+        Pod(header_metadata_param()), Pod(acquisition_metadata_param(;version=2)))
 end
 
 function (capture::ClassicObservationCapture{T})(stream) where {T}
@@ -165,8 +173,11 @@ function _classic_wait(predicate, loop, deadline, description, core_error)
     end
 end
 
-function _classic_common_wfs_identity(captures)
-    groups=map(captures[1:4]) do capture
+function _classic_common_wfs_identity(captures, specs=CLASSIC_OBSERVATION_STREAMS)
+    wfs=findall(spec -> spec.name in ("detector","slopes","flux","validity"), specs)
+    length(wfs)==4 || return nothing
+    groups=map(wfs) do index
+        capture=captures[index]
         Set(identity for identity in capture.identities if identity!==nothing)
     end
     common=reduce(intersect, groups)
@@ -199,7 +210,7 @@ function _classic_capture_record(spec, capture, endpoint)
 end
 
 """
-    observe_classic(remote; timeout=30.0)
+    observe_classic(remote; timeout=30.0, selected_streams=nothing)
 
 Observe a Running Classic application through its eight existing capacity-one
 copy/drop-oldest queue outputs. Return a plain record after every stream has
@@ -211,26 +222,44 @@ This opt-in check proves sample delivery and sequence/identity consistency. It
 does not establish scientific accuracy, cadence, latency, or hardware behavior.
 The caller starts/stops the application and saves the returned record, e.g.
 `record = observe_classic(remote; timeout=45)`.
+For a narrow diagnostic, select queue products by name with
+`selected_streams=("detector",)`. The common WFS identity check applies when
+all four WFS products are selected. The default observes and checks all eight.
 """
-function observe_classic(remote::AbstractString; timeout::Real=30.0)
+function observe_classic(remote::AbstractString; timeout::Real=30.0, selected_streams=nothing)
     isfinite(timeout) && timeout>0 || throw(ArgumentError("timeout must be positive and finite"))
     Base.ENDIAN_BOM==0x04030201 || error("Classic observation requires a little-endian host")
+    names=selected_streams===nothing ? map(s -> s.name,CLASSIC_OBSERVATION_STREAMS) :
+        Tuple(String.(selected_streams))
+    isempty(names) && throw(ArgumentError("select at least one Classic stream"))
+    length(unique(names))==length(names) || throw(ArgumentError("duplicate Classic stream selection"))
+    all(name -> any(s -> s.name==name,CLASSIC_OBSERVATION_STREAMS),names) ||
+        throw(ArgumentError("unknown Classic stream selection"))
+    specs=filter(spec -> spec.name in names,CLASSIC_OBSERVATION_STREAMS)
+    require_wfs_identity=all(name -> name in names,("detector","slopes","flux","validity"))
     deadline=_classic_now()+timeout
     loop=ThreadLoop("classic-integration-observer")
     context=core=registry=nothing
     streams=Any[]
     links=Any[]
+    link_trackers=Any[]
     probes=Any[]
-    trackers=Any[nothing for _ in CLASSIC_OBSERVATION_STREAMS]
-    captures=map(ClassicObservationCapture, CLASSIC_OBSERVATION_STREAMS)
+    trackers=Any[nothing for _ in specs]
+    captures=map(ClassicObservationCapture, specs)
     core_error=Ref{Any}(nothing)
     sync_done=Ref{Cint}(-1)
     endpoints=Any[]
+    core_objects=Dict{UInt32,String}()
     try
         with_thread_loop_lock(loop) do _
             context=Context(loop)
             core=CoreConnection(context; properties=Dict("remote.name"=>String(remote)),
-                on_error=(_, id, sequence, err) -> (core_error[]=err; nothing),
+                on_error=(_, id, sequence, err) -> begin
+                    endpoint=get(core_objects,id,join(values(core_objects), "; "))
+                    core_error[]=ErrorException("Classic observer core object=$id sequence=$sequence " *
+                        "endpoint=[$endpoint]: " * sprint(showerror,err))
+                    nothing
+                end,
                 on_done=(_, id, sequence) -> (sync_done[]=sequence; nothing))
             registry=Registry(core)
             for (index, capture) in enumerate(captures)
@@ -257,7 +286,7 @@ function observe_classic(remote::AbstractString; timeout::Real=30.0)
         end
         _classic_wait(loop, deadline, "exact Classic observation endpoints", core_error) do
             empty!(endpoints)
-            for (index, (spec, stream)) in enumerate(zip(CLASSIC_OBSERVATION_STREAMS, streams))
+            for (index, (spec, stream)) in enumerate(zip(specs, streams))
                 stream_state(stream)
                 nodes=find_globals(registry; interface="PipeWire:Interface:Node",
                     properties=("node.name"=>spec.node,))
@@ -289,18 +318,22 @@ function observe_classic(remote::AbstractString; timeout::Real=30.0)
             return true
         end
         with_thread_loop_lock(loop) do _
-            for (stream, endpoint) in zip(streams, endpoints)
-                push!(links, create_object(core, "link-factory", Link; properties=Dict(
+            for (spec, stream, endpoint) in zip(specs, streams, endpoints)
+                link=create_object(core, "link-factory", Link; properties=Dict(
                     "link.output.node"=>string(endpoint.node),
                     "link.output.port"=>string(endpoint.output),
                     "link.input.node"=>string(node_id(stream)),
-                    "link.input.port"=>string(endpoint.input), "object.linger"=>"false")))
+                    "link.input.port"=>string(endpoint.input), "object.linger"=>"false"))
+                push!(links,link)
+                push!(link_trackers,track_info!(link))
+                core_objects[proxy_id(link)]="$(spec.node) global=$(endpoint.node):$(endpoint.output) " *
+                    "-> observer global=$(endpoint.sink):$(endpoint.input)"
                 set_active!(stream, true)
             end
         end
         progress=() -> with_thread_loop_lock(loop) do _
             counts=join(("$(spec.name)=$(capture.distinct_sequences) sequences" for
-                (spec,capture) in zip(CLASSIC_OBSERVATION_STREAMS,captures)), ", ")
+                (spec,capture) in zip(specs,captures)), ", ")
             "Classic samples and matching WFS acquisition identity ($counts)"
         end
         _classic_wait(loop, deadline, progress, core_error) do
@@ -309,10 +342,23 @@ function observe_classic(remote::AbstractString; timeout::Real=30.0)
                 capture.error===nothing || throw(capture.error)
                 capture.finite || error("Classic observation received a nonfinite payload")
                 capture.canonical_boolean || error("Classic validity payload contains a value above one")
-                is_driving(stream) && trigger_process!(stream)
             end
-            all(c -> c.distinct_sequences>=2, captures) &&
-                _classic_common_wfs_identity(captures)!==nothing
+            # Completion must be checked before submitting another asynchronous
+            # driver request. A successful observation needs no extra cycle.
+            if all(c -> c.distinct_sequences>=2, captures) &&
+                (!require_wfs_identity || _classic_common_wfs_identity(captures,specs)!==nothing)
+                return true
+            end
+            for (stream,tracker) in zip(streams,link_trackers)
+                has_current_info(tracker) || continue
+                link=current_info(tracker)
+                link.state==PipeWireAO.LINK_STATE_ERROR && error("Classic observation link failed: $(link.error)")
+                if link.state==PipeWireAO.LINK_STATE_ACTIVE &&
+                    stream_state(stream)==PipeWireAO.LibPipeWire.PW_STREAM_STATE_STREAMING && is_driving(stream)
+                    trigger_process!(stream)
+                end
+            end
+            return false
         end
         return with_thread_loop_lock(loop) do _
             for capture in captures
@@ -321,14 +367,61 @@ function observe_classic(remote::AbstractString; timeout::Real=30.0)
             end
             Dict("remote"=>String(remote), "boundary"=>"capacity-one copy/drop-oldest queues",
                 "streams"=>Dict(spec.name=>_classic_capture_record(spec,capture,endpoint)
-                    for (spec,capture,endpoint) in zip(CLASSIC_OBSERVATION_STREAMS,captures,endpoints)),
-                "matching_wfs_identity"=>_classic_identity_record(_classic_common_wfs_identity(captures)))
+                    for (spec,capture,endpoint) in zip(specs,captures,endpoints)),
+                "matching_wfs_identity"=>_classic_identity_record(_classic_common_wfs_identity(captures,specs)))
         end
     finally
-        # Attempt every close even when another resource reports a cleanup error.
         cleanup_errors=Any[]
+        # Match the GUI's public retirement protocol: remove owned links and
+        # await Done, disconnect streams and await Done, then release callbacks.
+        # Keep streams and capture storage rooted through both acknowledgements.
+        retirement_deadline=_classic_now()+5.0
+        if core!==nothing && isrunning(loop)
+            with_thread_loop_lock(loop) do _
+                for resource in (reverse(link_trackers)..., reverse(links)...)
+                    try
+                        close(resource)
+                    catch err
+                        push!(cleanup_errors,err)
+                    end
+                end
+            end
+            try
+                sequence=with_thread_loop_lock(_ -> sync!(core),loop)
+                _classic_wait(loop,retirement_deadline,"Classic observer link removal",core_error) do
+                    sync_done[]==sequence
+                end
+            catch err
+                push!(cleanup_errors,err)
+            end
+            with_thread_loop_lock(loop) do _
+                for stream in streams
+                    try
+                        disconnect!(stream)
+                    catch err
+                        push!(cleanup_errors,err)
+                    end
+                end
+            end
+            try
+                sequence=with_thread_loop_lock(_ -> sync!(core),loop)
+                _classic_wait(loop,retirement_deadline,"Classic observer stream disconnection",core_error) do
+                    sync_done[]==sequence
+                end
+            catch err
+                push!(cleanup_errors,err)
+            end
+        end
+        # Join the owned callback thread before freeing its remaining objects.
+        # Failed retirement fences remain errors after cleanup is attempted.
+        try
+            stop!(loop)
+        catch err
+            push!(cleanup_errors,err)
+        end
+        # Attempt every close even when another resource reports a cleanup error.
         with_thread_loop_lock(loop) do _
-            for resource in (reverse(links)..., reverse(streams)...,
+            for resource in (reverse(link_trackers)..., reverse(links)..., reverse(streams)...,
                 reverse(trackers)..., reverse(probes)..., registry, core, context)
                 resource===nothing && continue
                 try
@@ -339,7 +432,6 @@ function observe_classic(remote::AbstractString; timeout::Real=30.0)
             end
         end
         try
-            stop!(loop)
             close(loop)
         catch err
             push!(cleanup_errors,err)

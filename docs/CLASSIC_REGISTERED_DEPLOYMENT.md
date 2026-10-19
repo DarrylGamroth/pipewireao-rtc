@@ -35,11 +35,11 @@ is introduced. Native live parameter encoding remains unchanged.
 
 | Allocation | Work | Acceptance | State |
 |---|---|---|---|
-| AAR-01 | Immutable registered dependency closure and small application | Fresh resolve/instantiate, relocate, no copied source/path dependencies/raw artifacts | Passed for 0.1.3; repeat after report fix |
-| AAR-02/04 | Package JFG owner and FITS startup | Type/axis/shape/duplicate rejection, cancellation, parameters before capture/publication | Software checks pass; live checks in progress |
-| AAR-03/04 | Package AOS owner and explicit geometry | Exact Classic grid/order comparison, GPU preparation, held startup and frame/command association | Geometry/backend checks pass; reset report fix in progress |
-| RTC-DEV-003/004/009/013/021/022/030 | Registered application installer, native controls | Ready/start/stop/reset, parameter submission, cancellation and exact cleanup on owned sessions | Planned |
-| RTC-DEV-006 | Shared GUI profile and optional observation | SHWFS, DM and focal image available; GUI closure does not stop RTC | Planned |
+| AAR-01 | Immutable registered dependency closure and small application | Fresh resolve/instantiate, relocate, no copied source/path dependencies/raw artifacts | Passed through 0.1.4; repeat final test-only patch release |
+| AAR-02/04 | Package JFG owner and FITS startup | Type/axis/shape/duplicate rejection, cancellation, parameters before capture/publication | Cold checks, all 16 startup bindings and live parameter adoption pass |
+| AAR-03/04 | Package AOS owner and explicit geometry | Exact Classic grid/order comparison, GPU preparation, held startup and frame/command association | Selected CPU/CUDA science comparisons and actual CUDA lifecycle pass |
+| RTC-DEV-003/004/009/013/021/022/030 | Registered application installer, native controls | Ready/start/stop/reset, parameter submission and exact cleanup on owned sessions; cold cancellation checks | Selected normal lifecycle passes; broader loss/readmission and calibration campaign remain separate |
+| RTC-DEV-006 | Shared GUI profile and optional observation | SHWFS, DM and focal image available; GUI closure does not stop RTC | Eight queue streams and GUI attachment/closure pass; final retained launch pending |
 
 Implementation proceeds through package APIs, application construction, software
 checks, isolated session integration, independent review, immutable registration,
@@ -49,8 +49,8 @@ records failures and limitations separately from successful checks.
 
 ## Validation record
 
-Software preparation gates pass on Julia 1.13.2: the RTC suite reports 1,968
-assertions in 59 testsets; FilterGraphIsland reports 99; the optional JFG owner
+Software preparation gates pass on Julia 1.13.2: registered RTC 0.1.4 reports
+1,993 assertions in 60 testsets; FilterGraphIsland reports 99; the optional JFG owner
 integration reports 18. HIL 0.1.3 reports 1,678 including private-core transport.
 [AOS preparation](validation/classic-registered-20261019/AOS_PREPARATION.md)
 records exact Classic geometry and same-backend frame/OPD parity on CPU and
@@ -73,8 +73,9 @@ Native `/opt/pipewireao` is 1.7.0 and lacks the acquisition-v3 trigger symbol
 required by registered PipeWireAO 0.6.18. The selected external native prefix
 combines the registered PipeWireAO_jll 1.7.1+0 artifact
 `3c63168ffd94740be1e2ea34c1eaf12a9468622a` with installed WirePlumber 0.5.18;
-`/opt` is preserved. Final immutable registry-only application, relocation,
-live session controls/cleanup and GUI attachment remain pending.
+`/opt` is preserved. The sealed registry-only 0.1.4 application passes isolated
+instantiation and exact relocation. Live session controls, cleanup and GUI
+attachment pass below; the final test-only release and retained launch are pending.
 
 The first actual registered session exposed two distinct prerequisites. The
 JLL runtime does not include the separately installed queue/SPA plugins, so
@@ -122,3 +123,43 @@ report failures prevent successful bootstrap termination. The source instance,
 bootstrap instance and PID bind the record to the actual owner. The report has
 runtime-limited retention; tests copy selected receipts into their evidence
 stage. There is no durable instrument-state or science-recording claim.
+
+## Selected live integration and observation
+
+Evidence is retained under
+`/home/dgamroth/.local/state/classic-registered-20261019`. The complete fresh
+`session-integration-008` run passes **42/42** assertions in 3m25.7s with
+registered RTC 0.1.4. Its exact unit is
+`pipewireao-session@03fff0b17275.service`, invocation
+`4548ebf30beb40a4900807740b69a97a`; qualification and final launch receipts
+both confirm cleanup. It exercises held Ready, native Start/Stop/Reset,
+same-value scalar transaction, offset replacement and restoration with distinct
+active generations, resumed samples, native Quit and exact owned cleanup.
+
+All eight observation queues deliver at least two distinct sequences with
+validated finite payloads: detector, slopes, flux, validity, demanded, offset,
+applied and focal image. The four SHWFS products share acquisition generation 2,
+sequence 71. Applied samples have no acquisition identity; focal snapshots can
+lag the WFS. Neither is claimed to match the complete WFS tuple.
+
+The integration observer initially required two pool buffers, while capacity-one
+queues require three. Its negotiation now matches the GUI's bounded range.
+An additional observer SIGSEGV reproduced without the GUI. The test client now
+checks completion before triggering, requires Streaming and active links, and
+uses the GUI's two acknowledged retirement stages before releasing callback
+resources. It passes six eight-stream probes (three plain and three debugger
+runs with allocator poisoning), followed by the complete 008 lifecycle run.
+No native SDK production patch was made. These results qualify this observer;
+they do not establish the precise native crash mechanism or general SDK safety.
+Earlier failed attempts 001–007 and their cleanup evidence remain preserved.
+
+A separate GUI trial attaches seven running ndarray streams. Closing that GUI
+leaves the native session Running; that session subsequently passes normal
+Stop, Quit and cleanup. This proves optional attachment/closure for the selected
+profile, not the broader stalled-observer/trajectory or fault/readmission matrix.
+
+RTC 0.1.5 packages the corrected integration client and evidence. Its runtime
+`src/` and `ext/` are byte-identical to registered 0.1.4 commit
+`572c55311077971e05349bde1149976409da3678`; the full 008 lifecycle evidence is
+reused on that explicit basis. The final registered package suite, sealed
+relocation and retained-session smoke are recorded after release below.
