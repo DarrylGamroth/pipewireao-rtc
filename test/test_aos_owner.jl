@@ -75,6 +75,34 @@ end
         write(path, JSON3.write(document))
         argv = ["--config", path, "--remote", "/tmp/aos-private", "--control-node", "simulator-wfs",
             "--bootstrap-node", "rtc.bootstrap.aos", "--bootstrap-instance", "7"]
+        default_timing = Owner.arguments(argv)
+        @test default_timing.phase_timing_directory === nothing
+        @test default_timing.phase_timing_frames == 0
+        @test default_timing.phase_timing_warmup == 0
+        timing_directory = joinpath(directory, "phase-timing")
+        timing_argv = [argv; ["--phase-timing-directory", timing_directory,
+            "--phase-timing-frames", "64"]]
+        timing_options = Owner.arguments(timing_argv)
+        @test timing_options.phase_timing_directory == timing_directory
+        @test timing_options.phase_timing_frames == 64
+        @test timing_options.phase_timing_warmup == 512
+        explicit_warmup = Owner.arguments([timing_argv; ["--phase-timing-warmup", "0"]])
+        @test explicit_warmup.phase_timing_warmup == 0
+        for invalid_timing in (
+            [argv; ["--phase-timing-directory", timing_directory]],
+            [argv; ["--phase-timing-frames", "64"]],
+            [argv; ["--phase-timing-warmup", "5"]],
+            [argv; ["--phase-timing-directory", "relative", "--phase-timing-frames", "64"]],
+            [argv; ["--phase-timing-directory", timing_directory, "--phase-timing-frames", "0"]],
+            [argv; ["--phase-timing-directory", timing_directory, "--phase-timing-frames", "65537"]],
+            [argv; ["--phase-timing-directory", timing_directory, "--phase-timing-frames", "many"]],
+            [timing_argv; ["--phase-timing-warmup", "-1"]],
+            [timing_argv; ["--phase-timing-warmup", "65537"]],
+            [timing_argv; ["--phase-timing-warmup", "many"]],
+            [timing_argv; ["--phase-timing-frames", "64"]],
+        )
+            @test_throws ArgumentError Owner.arguments(invalid_timing)
+        end
         options = Owner.configuration(path)
         @test options.graph == joinpath(directory, "simulation.toml")
         @test options.frame_shape == (2, 3)

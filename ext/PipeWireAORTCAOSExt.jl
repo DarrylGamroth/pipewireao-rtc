@@ -13,6 +13,7 @@ const SourceControl = PipeWireAORTC.NativeSourceControl
 const Backends = AdaptiveOpticsSim.Backends
 
 include("aos/optical_observation.jl")
+include("aos/phase_timing.jl")
 
 mutable struct OwnerState
     running::Bool
@@ -130,7 +131,7 @@ function prepare_source_control(options, state, source_instance)
     return mailbox
 end
 
-function consume_control!(options, mailbox, pipewire, state, wall_period, reset_owner!)
+function consume_control!(options, mailbox, pipewire, state, wall_period, reset_owner!, phase=nothing)
     mailbox.ready[] || return nothing
     kind, token, requested_running = with_frame_stream(pipewire) do _
         SourceControl.pending(mailbox)
@@ -139,6 +140,9 @@ function consume_control!(options, mailbox, pipewire, state, wall_period, reset_
         result = SourceControl.apply!(state, kind, token, requested_running,
             time_ns(), max(wall_period, UInt64(1)), reset_owner!)
         generation = Int64(frame_acquisition_generation(pipewire))
+        if result == 0 && !state.running
+            save_phase_timing!(phase)
+        end
         if kind == SourceControl.RESET && result == 0
             save_report!(options, mailbox, state, generation)
         end
@@ -175,12 +179,13 @@ function next_deadline(deadline::UInt64, period::UInt64, now::UInt64)
     return Base.checked_add(candidate, Base.checked_mul(missed, period))
 end
 
-function run_prepared!(options, science, pipewire, observation, mailbox, state)
+function run_prepared!(options, science, pipewire, observation, mailbox, state, phase=nothing)
     runtime = options.bootstrap_runtime
     reset_owner! = () -> begin
         # Drain optional asynchronous snapshots before graph reset. Native
         # source controls are applied only here, after the preceding exchange.
         OpticalObservation.drain!(observation)
+        save_phase_timing!(phase)
         reset_pipewire_hil!(pipewire, science.driver)
         # The plant reset has committed this empty cursor even if optional
         # observation rewarming subsequently fails before the control ACK.
@@ -188,6 +193,7 @@ function run_prepared!(options, science, pipewire, observation, mailbox, state)
         state.sequence = 0
         state.completed = false
         state.deadline_ns = 0
+        reset_phase_timing!(phase, state.generation)
         OpticalObservation.reset!(observation, pipewire; check=options.owner_check)
     end
     ticket = Bootstrap.take_connect!(runtime)
@@ -199,7 +205,7 @@ function run_prepared!(options, science, pipewire, observation, mailbox, state)
     println("SIMULATOR_CONNECTED sequence=0 held=true")
     flush(stdout)
     while !Bootstrap.cancelled(runtime)
-        consume_control!(options, mailbox, pipewire, state, options.wall_period_ns, reset_owner!)
+        consume_control!(options, mailbox, pipewire, state, options.wall_period_ns, reset_owner!, phase)
         Bootstrap.cancelled(runtime) && break
         if !state.running || time_ns() < state.deadline_ns
             yield()
@@ -207,17 +213,25 @@ function run_prepared!(options, science, pipewire, observation, mailbox, state)
             continue
         end
         model_ns = model_nanoseconds(next_model_timestamp(science.driver))
-        sequence = exchange_frame!(pipewire, science.driver)
+        deadline = state.deadline_ns
+        timing = exchange_timing(phase)
+        sequence = timing === nothing ? exchange_frame!(pipewire, science.driver) :
+            exchange_frame!(pipewire, science.driver; timing)
         # Public exchange returns only after the matching command is adopted.
         state.sequence = sequence
         model_time_sequence(science.driver) == sequence || error("model-time sequence differs from source")
-        OpticalObservation.sample!(observation, frame_command_timing(pipewire), model_ns, time_ns())
+        frame_timing = frame_command_timing(pipewire)
+        OpticalObservation.sample!(observation, frame_timing, model_ns, time_ns())
+        optical_finished = timing === nothing ? UInt64(0) : time_ns()
         state.deadline_ns = options.wall_period_ns == 0 ? UInt64(0) :
             next_deadline(state.deadline_ns, options.wall_period_ns, time_ns())
+        timing === nothing || record_phase_timing!(phase, timing, frame_timing, deadline,
+            optical_finished, state.deadline_ns)
         if options.total_exchanges !== nothing && sequence == options.total_exchanges
             state.running = false
             state.completed = true
             state.deadline_ns = 0
+            save_phase_timing!(phase)
             save_report!(options, mailbox, state, Int64(frame_acquisition_generation(pipewire)))
         end
     end
@@ -232,10 +246,12 @@ function Owner.run_owner(options)
     state = OwnerState()
     source_instance = Int64(rand(UInt64) % UInt64(typemax(Int64))) + Int64(1)
     observation = nothing
+    phase = nothing
     pipewire = nothing
     failures = Exception[]
     try
         options = merge(options, (; graph_sha256=PipeWireAORTC.Common.sha256_file(options.graph)))
+        phase = prepare_phase_timing(options)
         science = Owner.prepare_science(options; check=options.owner_check)
         observation = OpticalObservation.prepare(options.optical_observation ? science.definition : nothing, science.graph)
         options.owner_check()
@@ -262,11 +278,16 @@ function Owner.run_owner(options)
         OpticalObservation.warm!(observation, pipewire; check=options.owner_check)
         precompile(exchange_frame!, (typeof(pipewire), typeof(science.driver))) ||
             error("cannot compile prepared frame exchange before admission")
+        if phase !== nothing
+            precompile(Core.kwcall, (NamedTuple{(:timing,),Tuple{PipeWireExchangeTiming}},
+                typeof(exchange_frame!), typeof(pipewire), typeof(science.driver))) ||
+                error("cannot compile timed frame exchange before admission")
+        end
         options.owner_check()
         Bootstrap.prepared!(runtime)
         println("SIMULATOR_PREPARED command_count=$(options.command_count) frame_shape=$(options.frame_shape)")
         flush(stdout)
-        run_prepared!(options, science, pipewire, observation, mailbox, state)
+        run_prepared!(options, science, pipewire, observation, mailbox, state, phase)
     catch error
         if !(error isa InterruptException && Bootstrap.clean_cancel(runtime))
             push!(failures, error)
@@ -288,6 +309,7 @@ function Owner.run_owner(options)
             end
         end
         try OpticalObservation.close!(observation, pipewire) catch error; push!(failures, error) end
+        try save_phase_timing!(phase) catch error; push!(failures, error) end
         state.running = false
         state.deadline_ns = 0
         try Owner.write_report(options, state, generation, source_instance; failures) catch error; push!(failures, error) end

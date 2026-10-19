@@ -59,6 +59,7 @@ include("runner_commands.jl")
 include("native/native_session_discovery.jl")
 include("native/native_session_client.jl")
 include("configuration/deployment_configuration.jl")
+include("owners/phase_timing.jl")
 include("owners/aos_owner.jl")
 include("deployment/wireplumber_session_runtime.jl")
 

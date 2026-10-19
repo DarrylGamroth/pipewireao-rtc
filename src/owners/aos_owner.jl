@@ -48,7 +48,9 @@ end
 "Parse the complete native bootstrap invocation without loading science."
 function arguments(args)
     values = Dict{String,String}()
-    allowed = ("--config", "--remote", "--control-node", "--bootstrap-node", "--bootstrap-instance")
+    required = ("--config", "--remote", "--control-node", "--bootstrap-node", "--bootstrap-instance")
+    optional = ("--phase-timing-directory", "--phase-timing-frames", "--phase-timing-warmup")
+    allowed = (required..., optional...)
     iseven(length(args)) || throw(ArgumentError("each AOS owner option requires a value"))
     for index in 1:2:length(args)
         key, value = args[index], args[index + 1]
@@ -56,7 +58,7 @@ function arguments(args)
         haskey(values, key) && throw(ArgumentError("duplicate $key"))
         values[key] = text(value, key)
     end
-    all(key -> haskey(values, key), allowed) || throw(ArgumentError(
+    all(key -> haskey(values, key), required) || throw(ArgumentError(
         "AOS owner requires --config, --remote, --control-node, --bootstrap-node and --bootstrap-instance"))
     remote = values["--remote"]
     isabspath(remote) || throw(ArgumentError("AOS owner requires an absolute private remote"))
@@ -65,8 +67,25 @@ function arguments(args)
     control_node != bootstrap_node || throw(ArgumentError("source and bootstrap nodes must differ"))
     instance = tryparse(Int64, values["--bootstrap-instance"])
     instance !== nothing && instance > 0 || throw(ArgumentError("bootstrap instance must be positive"))
+    requested_timing = any(key -> haskey(values, key), optional)
+    timing_directory = nothing
+    timing_frames = timing_warmup = 0
+    if requested_timing
+        all(key -> haskey(values, key), optional[1:2]) || throw(ArgumentError(
+            "phase timing requires --phase-timing-directory and --phase-timing-frames"))
+        timing_directory = values["--phase-timing-directory"]
+        isabspath(timing_directory) || throw(ArgumentError("phase timing directory must be absolute"))
+        timing_directory = abspath(timing_directory)
+        timing_frames = tryparse(Int, values["--phase-timing-frames"])
+        timing_warmup = tryparse(Int, get(values, "--phase-timing-warmup", "512"))
+        timing_frames !== nothing && 1 <= timing_frames <= 65_536 ||
+            throw(ArgumentError("phase timing frames must be in 1:65536"))
+        timing_warmup !== nothing && 0 <= timing_warmup <= 65_536 ||
+            throw(ArgumentError("phase timing warmup must be in 0:65536"))
+    end
     return (; remote, control_node, bootstrap_node, bootstrap_instance=instance,
-        config=abspath(values["--config"]))
+        config=abspath(values["--config"]), phase_timing_directory=timing_directory,
+        phase_timing_frames=timing_frames, phase_timing_warmup=timing_warmup)
 end
 
 "Validate every configuration declaration before preparing any FITS artifact."
