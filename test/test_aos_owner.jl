@@ -76,6 +76,11 @@ end
         argv = ["--config", path, "--remote", "/tmp/aos-private", "--control-node", "simulator-wfs",
             "--bootstrap-node", "rtc.bootstrap.aos", "--bootstrap-instance", "7"]
         default_timing = Owner.arguments(argv)
+        @test default_timing.transport_cpu === nothing
+        @test Owner.arguments([argv; ["--transport-cpu", "7"]]).transport_cpu == 7
+        for cpu in ("-1", "0", "1", "many", "1.5")
+            @test_throws ArgumentError Owner.arguments([argv; ["--transport-cpu", cpu]])
+        end
         @test default_timing.phase_timing_directory === nothing
         @test default_timing.phase_timing_frames == 0
         @test default_timing.phase_timing_warmup == 0

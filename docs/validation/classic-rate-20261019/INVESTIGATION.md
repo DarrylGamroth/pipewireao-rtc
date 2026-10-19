@@ -137,3 +137,72 @@ The one-off profile driver initially encountered a Julia soft-scope error in
 its post-capture file-stability check. Source Hold and profile serialization
 had already completed. The final file was copied separately and successfully
 deserialized/analyzed; the driver was corrected for future use.
+
+## Corrected-run protocol (declared before measurement)
+
+Use registered RTC 0.1.7 and HIL 0.1.5, with all scientific settings and input
+FITS hashes unchanged. Capture 32,768 consecutive exchanges after 512 warmup
+frames in each of four alternating GUI conditions: closed, open, open, closed.
+The source is held/reset between trials. No profiler or benchmark workers run
+during these windows. The software GUI, viewport, CPU placement and 20 Hz focal
+observer stay unchanged between compared runs. Reopen the GUI after the last
+closed run for the retained operator session.
+
+For this workstation development run, the sustained-cadence acceptance band
+is 500 Hz ±0.1% in every complete window, with no sequence or generation gaps.
+Report actual rates, skipped release slots, phase tails and process GC rather
+than rounding an out-of-band result to 500. This band is a throughput criterion;
+it does not assert that every frame meets a 2 ms hard deadline. The maximum
+GUI-open/closed difference is reported against the same 0.5 Hz tolerance.
+Native sample/identity/reset checks are separate functional gates.
+
+## Remaining transport scheduling delay
+
+The first corrected 32,768-frame closed run with RTC 0.1.7/HIL 0.1.5 failed the
+predeclared rate gate: **491.156 Hz**, 590 skipped slots over 66.714 s. Process
+GC is zero and allocation falls to 160 bytes/frame. Median whole-exchange time
+falls from 1,708 µs to 900 µs; median round trip falls from 1,064 µs to 267 µs.
+AOS step/readback remains bounded below 449 µs in this window. The remaining
+transport tails reach about 6.3 ms, independently of GC.
+
+Observed Linux scheduling: source owner PID 129455 and native HIL ThreadLoop
+TID 130035 (`AdaptiveOpticsS`) are both SCHED_OTHER on logical CPU 6. The owner
+performs yielding Julia polling while native callbacks run on a separate OS
+thread. Julia task yielding does not itself schedule that native OS thread.
+CPU 7 is CPU 6's SMT sibling. The following reversible experiment changes only
+the exact owned native TID's affinity, while keeping the GUI closed and holding/
+resetting the source between short windows:
+
+| Native loop CPU | Frames | Rate (Hz) | Skipped slots | Maximum publication wait (µs) |
+|---|---:|---:|---:|---:|
+| 7 | 5,538 | 499.998586 | 0 | 164.167 |
+| 6 (restore) | 5,410 | 489.944915 | 111 | 5,444.953 |
+| 7 (repeat) | 5,536 | 499.818226 | 2 | 1,939.955 |
+
+These partial diagnostic windows are not the final sustained qualification.
+The exact TID, initial process/thread identity and `/proc/.../schedstat` snapshots
+are retained. The latter include held intervals as well as frame execution and
+must not be interpreted as equal-duration active-only profiles. The native
+thread's cumulative runqueue-wait delta is 214.7 ms across the restored-6
+interval and 7.0 ms across the repeated-7 interval. CPU 6 affinity is restored
+before normal session shutdown. The experiment strongly supports logical-CPU
+scheduling competition as the remaining source of the millisecond transport
+stalls; it does not establish the precise kernel scheduler policy mechanism.
+Shared physical-core resources remain shared between SMT siblings.
+
+A fresh deployment applies the optional `--transport-cpu 7` owner argument
+before Prepared. The generic cold `Placement.pin_loop!` helper dispatches an
+event on the exact retained native loop to identify its Linux TID, applies
+ordinary CPU affinity and verifies it. It holds no loop lock while waiting or
+running the bounded affinity utility, checks cancellation, verifies process
+membership, and always closes the event source while retaining failures.
+No real-time promotion or scientific update is introduced.
+
+`placement.threads` is an independent verification contract, not an affinity
+setter. The deployment therefore widens the simulator CPU envelope to include
+7 and requires exactly one `AdaptiveOpticsS` SCHED_OTHER thread on CPU 7.
+The native readiness inspection must verify this in the fresh invocation.
+The optional default leaves existing applications unchanged. Independent review
+accepts the lifetime/cancellation design; 20 standalone tests exercise exact
+TID, unchanged caller, self-callback rejection, cancellation, failures and cleanup.
+Final sustained trials will use registered RTC 0.1.8/HIL 0.1.5.

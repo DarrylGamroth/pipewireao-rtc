@@ -30,12 +30,17 @@ The [delivery record](CLASSIC_REGISTERED_DEPLOYMENT.md) links evidence and the
 independent review. Historical fault/recovery qualifications retain their scope.
 
 The user subsequently required actual 500 Hz exercise rather than the initial
-10 Hz bring-up pacing. The resealed application now targets 500 Hz and enables
-the existing native profiler. Reset/data checks pass and the replacement RTC/
-GUI remain Running, but short windows achieve only 280–300 frames/s. The
-throughput limitation is unresolved; 500 Hz is not qualified. The
-[rate investigation](validation/classic-rate-20261019/README.md) records native
-profiler capabilities, clock limitations and the next phase measurement.
+10 Hz bring-up pacing. The application targets 500 Hz and enables the existing
+native profiler. Short windows originally achieved only 280–300 frames/s;
+complete baseline phase captures later measured 446–457 Hz. A headless bounded
+capture and sampled allocation profile identified repeated reset-callback boxing
+in the owner poll and a cooldown consumed by ignored native trigger attempts.
+RTC 0.1.7 and HIL 0.1.5 correct these mechanisms without changing scientific
+inputs or control sequencing. Software regressions and corrected native reset/
+eight-stream checks pass. Repeated sustained closed/open GUI trials are underway;
+500 Hz qualification remains pending their measured results. The
+[rate investigation](validation/classic-rate-20261019/INVESTIGATION.md) records
+phase boundaries, fail-before evidence, independent reviews and trial criteria.
 
 ### RTC fault-test ownership — 2026-10-15
 

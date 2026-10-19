@@ -278,6 +278,10 @@ function Owner.run_owner(options)
             on_frame_param_changed=SourceControl.ParameterChanged(mailbox),
             frame_param_buffer=PodBuffer(4096),
             on_frame_param_overflow=SourceControl.ParameterOverflow(mailbox))
+        transport_cpu = get(options, :transport_cpu, nothing)
+        if transport_cpu !== nothing
+            PipeWireAORTC.Placement.pin_loop!(pipewire.loop, transport_cpu; check=options.owner_check)
+        end
         OpticalObservation.warm!(observation, pipewire; check=options.owner_check)
         precompile(exchange_frame!, (typeof(pipewire), typeof(science.driver))) ||
             error("cannot compile prepared frame exchange before admission")

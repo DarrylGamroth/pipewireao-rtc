@@ -50,7 +50,7 @@ function arguments(args)
     values = Dict{String,String}()
     required = ("--config", "--remote", "--control-node", "--bootstrap-node", "--bootstrap-instance")
     optional = ("--phase-timing-directory", "--phase-timing-frames", "--phase-timing-warmup")
-    allowed = (required..., optional...)
+    allowed = (required..., optional..., "--transport-cpu")
     iseven(length(args)) || throw(ArgumentError("each AOS owner option requires a value"))
     for index in 1:2:length(args)
         key, value = args[index], args[index + 1]
@@ -67,6 +67,12 @@ function arguments(args)
     control_node != bootstrap_node || throw(ArgumentError("source and bootstrap nodes must differ"))
     instance = tryparse(Int64, values["--bootstrap-instance"])
     instance !== nothing && instance > 0 || throw(ArgumentError("bootstrap instance must be positive"))
+    transport_cpu = nothing
+    if haskey(values, "--transport-cpu")
+        transport_cpu = tryparse(Int, values["--transport-cpu"])
+        transport_cpu !== nothing && transport_cpu >= 2 ||
+            throw(ArgumentError("transport CPU must be an integer excluding CPUs 0 and 1"))
+    end
     requested_timing = any(key -> haskey(values, key), optional)
     timing_directory = nothing
     timing_frames = timing_warmup = 0
@@ -85,7 +91,7 @@ function arguments(args)
     end
     return (; remote, control_node, bootstrap_node, bootstrap_instance=instance,
         config=abspath(values["--config"]), phase_timing_directory=timing_directory,
-        phase_timing_frames=timing_frames, phase_timing_warmup=timing_warmup)
+        phase_timing_frames=timing_frames, phase_timing_warmup=timing_warmup, transport_cpu)
 end
 
 "Validate every configuration declaration before preparing any FITS artifact."
