@@ -24,10 +24,18 @@ from 0.1.4 passes the fresh
 42-check native lifecycle, reset, parameter restoration, eight-stream delivery
 and exact cleanup run. GUI attachment and independent closure pass. Final 0.1.5
 also passes sealed relocation/isolated instantiation and retained reset/data
-checks. Its RTC and attached GUI are left Running with AOS on the RTX 3080.
+checks. Its RTC and attached GUI were left Running with AOS on the RTX 3080.
 Broader fault, calibration, scientific and timing qualification remain separate.
 The [delivery record](CLASSIC_REGISTERED_DEPLOYMENT.md) links evidence and the
 independent review. Historical fault/recovery qualifications retain their scope.
+
+The user subsequently required actual 500 Hz exercise rather than the initial
+10 Hz bring-up pacing. The resealed application now targets 500 Hz and enables
+the existing native profiler. Reset/data checks pass and the replacement RTC/
+GUI remain Running, but short windows achieve only 280–300 frames/s. The
+throughput limitation is unresolved; 500 Hz is not qualified. The
+[rate investigation](validation/classic-rate-20261019/README.md) records native
+profiler capabilities, clock limitations and the next phase measurement.
 
 ### RTC fault-test ownership — 2026-10-15
 

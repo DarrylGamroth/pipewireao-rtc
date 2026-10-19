@@ -221,6 +221,12 @@ scientific input changed.
 
 ## Retained session for GUI review
 
+This section records the initial 10 Hz session. It was subsequently shut down
+with exact cleanup and replaced by the
+[500 Hz target session](validation/classic-rate-20261019/README.md), which
+currently achieves only 280–300 frames/s. The receipts below retain their
+original scope and identify the earlier invocation.
+
 The final registered 0.1.5 session is left **Running**, with the GUI attached.
 Its final smoke check passes Stop, Reset to generation 2/sequence 0, Start,
 all eight advancing observation streams and matching SHWFS acquisition identity.
