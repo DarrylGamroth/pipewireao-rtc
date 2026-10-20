@@ -9,6 +9,7 @@ using AdaptiveOpticsSimPipeWireHIL
 using REVOLTClassicSim
 
 const InstrumentOwner = PipeWireAORTC.AOSOwner
+const InstrumentExtension = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt)
 const InstrumentBackend = isempty(ARGS) ? :cpu : Symbol(only(ARGS))
 InstrumentBackend in (:cpu, :cuda) || error("expected cpu or cuda")
 InstrumentBackend === :cuda && Base.require(Main, :CUDA)
@@ -132,6 +133,17 @@ end
         @test science.configuration.command_scale == 1f-6
         @test isconcretetype(typeof(science))
         @test all(iszero, hil_command_buffer(science.boundary))
+        properties = InstrumentExtension.simulation_properties(options, science)
+        @test properties isa Dict{String,String}
+        @test !haskey(properties, "aos.simulation.atmosphere-rng-seed")
+        @test !haskey(properties, "aos.simulation.detector-rng-seed")
+        @test !haskey(properties, "aos.simulation.configuration-sha256")
+        @test !haskey(properties, "aos.simulation.calibration-identity")
+        @test !haskey(properties, "aos.simulation.profile")
+        @test !haskey(properties, "aos.simulation.package-version")
+        @test InstrumentExtension.atmosphere_seed((; rng_seed=5)) === nothing
+        @test InstrumentExtension.detector_seed((; rng_seed=5)) === nothing
+        @test (counts.steps, counts.adoptions, counts.resets) == (1, 1, 1)
         frame = step_hil_frame_at!(science.boundary, science.driver)
         @test frame.sequence == 1
         @test (counts.steps, counts.adoptions, counts.resets) == (2, 1, 1)
@@ -164,7 +176,9 @@ end
         document["frame_output"] = "shwfs_frame"
         document["command_count"] = 277
         document["frame_shape"] = [352, 352]
+        document["calibration_identity"] = "declared-classic-startup-calibration"
         options = instrument_options(document, joinpath(directory, "owner.conf"), REVOLTClassicSim)
+        options = merge(options, (; configuration_sha256=PipeWireAORTC.Common.sha256_file(options.config_path)))
         science = InstrumentOwner.prepare_science(options)
         @test options.graph === nothing
         @test science.definition !== nothing
@@ -179,6 +193,37 @@ end
         @test science.configuration.frame_encoding === :uint16
         @test science.configuration.command_scale == 1f-6
         @test isconcretetype(typeof(science))
+        properties = InstrumentExtension.simulation_properties(options, science)
+        @test properties isa Dict{String,String}
+        @test properties["aos.simulation.package"] == "REVOLTClassicSim"
+        @test properties["aos.simulation.package-version"] == string(pkgversion(REVOLTClassicSim))
+        @test properties["aos.simulation.profile"] == "grid_gaussian"
+        @test properties["aos.simulation.backend"] == string(InstrumentBackend)
+        @test properties["aos.simulation.device"] == "0"
+        @test properties["aos.simulation.model-period-ns"] == "2000000"
+        @test properties["aos.simulation.exposure-ns"] == "1896000"
+        @test properties["aos.simulation.configuration-sha256"] == options.configuration_sha256
+        @test properties["aos.simulation.calibration-identity"] == "declared-classic-startup-calibration"
+        @test properties["aos.simulation.atmosphere-rng-seed"] == "1"
+        @test properties["aos.simulation.detector-rng-seed"] == "0"
+        no_profile = merge(options, (; plant=merge(options.plant, (; settings=NamedTuple()))))
+        @test !haskey(InstrumentExtension.simulation_properties(no_profile, science), "aos.simulation.profile")
+        legacy = merge(options, (; plant=nothing))
+        @test !haskey(InstrumentExtension.simulation_properties(legacy, science), "aos.simulation.package")
+        atmosphere = only(filter(node -> InstrumentExtension.atmosphere_seed(node.config) !== nothing,
+            science.definition.nodes))
+        second_atmosphere = algorithm_node(:second_atmosphere,
+            AdaptiveOpticsSim.AlgorithmGraphs.MultiLayerAtmosphereOPDNode{Float32}, atmosphere.config)
+        ambiguous = algorithm_graph((atmosphere, second_atmosphere); name=:multiple_atmospheres)
+        @test InstrumentExtension.single_seed(ambiguous, InstrumentExtension.atmosphere_seed) === nothing
+        detector = only(filter(node -> InstrumentExtension.detector_seed(node.config) !== nothing,
+            science.definition.nodes))
+        second_detector = algorithm_node(:second_detector,
+            AdaptiveOpticsSim.AlgorithmGraphs.CMOSDetectorAcquisitionNode{Float32}, detector.config)
+        ambiguous = algorithm_graph((detector, second_detector); name=:multiple_detectors)
+        @test InstrumentExtension.single_seed(ambiguous, InstrumentExtension.detector_seed) === nothing
+        @test model_time_sequence(science.driver) == 0
+        @test graph_step_sequence(science.graph) == 0
         frame = step_hil_frame_at!(science.boundary, science.driver)
         @test frame.sequence == 1
         @test all(value -> isfinite(value) && 0 <= value <= 65535, hil_frame_buffer(science.boundary))

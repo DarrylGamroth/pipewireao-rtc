@@ -14,6 +14,7 @@ const Backends = AdaptiveOpticsSim.Backends
 
 include("aos/optical_observation.jl")
 include("aos/phase_timing.jl")
+include("aos/metadata.jl")
 
 mutable struct OwnerState
     running::Bool
@@ -328,7 +329,7 @@ function Owner.run_owner(options)
             applied_command_properties=Dict("node.group" => "pipewireao-applied-observation",
                 "node.sync-group" => "sync.pipewireao-applied-observation", "node.loop.name" => "observer-loop"),
             image_sources=OpticalObservation.source_options(observation),
-            frame_properties=SourceControl.source_properties(mailbox),
+            frame_properties=merge(SourceControl.source_properties(mailbox), simulation_properties(options, science)),
             frame_params=mailbox.parameters.params,
             on_frame_param_changed=SourceControl.ParameterChanged(mailbox),
             frame_param_buffer=PodBuffer(4096),

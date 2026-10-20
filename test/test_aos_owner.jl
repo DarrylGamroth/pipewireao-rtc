@@ -36,6 +36,7 @@ end
         @test initial["graph"] == graph
         @test initial["graph_sha256"] == options.graph_sha256
         @test initial["backend"] == "cpu"
+        @test !haskey(initial, "startup_calibration_identity")
         @test !initial["running"] && !initial["completed"]
         @test isempty(initial["failures"])
         original = read(path, String)
@@ -115,6 +116,7 @@ end
         @test options.exposure_ns == 1_896_000
         @test options.wall_period_ns == 100_000_000
         @test options.total_exchanges === nothing
+        @test options.calibration_identity === nothing
         @test only(options.artifacts).source.path == joinpath(directory, "grid.fits")
         for invalid in ([argv; ["--config", path]], [argv; ["--profile", "classic"]], argv[1:end-1],
             replace(argv, "/tmp/aos-private" => "relative"),
@@ -220,6 +222,7 @@ end
         document["frame_schema"] = "org.calculon.ao.raw-detector-pixels/1"
         document["command_schema"] = "org.calculon.ao.demanded-pdm-command/1"
         document["command_scale"] = 1e-6
+        document["calibration_identity"] = "classic-test-startup-calibration"
         delete!(document, "graph")
         delete!(document, "artifacts")
         document["plant"] = Dict("package" => "REVOLTClassicSim",
@@ -233,6 +236,7 @@ end
         @test options.plant == (; package=:REVOLTClassicSim, settings=(; profile="grid_gaussian"))
         @test isconcretetype(typeof(options.plant))
         @test options.frame_encoding === :uint16
+        @test options.calibration_identity == "classic-test-startup-calibration"
         @test Owner.plant_settings(Dict("value" => "")) == (; value="")
         @test_throws ArgumentError Owner.plant_settings(Dict("value" => "\0"))
         @test_throws ArgumentError Owner.plant_settings(Dict("value" => repeat("a", 16 * 1024 + 1)))
@@ -272,6 +276,12 @@ end
             write(path, JSON3.write(invalid))
             @test_throws ArgumentError Owner.configuration(path)
         end
+        for identity in (nothing, true, 42, "", "invalid\0identity", repeat("a", 16 * 1024 + 1))
+            invalid = deepcopy(document)
+            invalid["calibration_identity"] = identity
+            write(path, JSON3.write(invalid))
+            @test_throws ArgumentError Owner.configuration(path)
+        end
         write(path, JSON3.write(document))
         args = ["--config", path, "--remote", "/tmp/aos-private", "--control-node", "simulator-wfs",
             "--bootstrap-node", "rtc.bootstrap.aos", "--bootstrap-instance", "7"]
@@ -308,6 +318,7 @@ end
         @test report["configuration_sha256"] == report_options.configuration_sha256
         @test report["plant"]["package"] == "REVOLTClassicSim"
         @test report["plant"]["settings"]["profile"] == "grid_gaussian"
+        @test report["startup_calibration_identity"] == "classic-test-startup-calibration"
         @test !any(id -> id.name in ("AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL", "CUDA", "REVOLTClassicSim"), keys(Base.loaded_modules))
     end
 end

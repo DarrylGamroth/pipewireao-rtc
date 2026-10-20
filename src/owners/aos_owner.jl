@@ -135,7 +135,7 @@ function configuration(path::AbstractString)
     shared_fields = ("version", "command_input", "frame_output", "command_count", "frame_shape",
         "rate", "exposure_ns", "wall_rate", "backend", "device", "command_node",
         "frame_schema", "command_schema", "command_scale", "total_exchanges", "optical_observation",
-        "detector_observation", "command_observation", "applied_command_observation")
+        "detector_observation", "command_observation", "applied_command_observation", "calibration_identity")
     shared_required = ("version", "command_input", "frame_output", "command_count", "frame_shape",
         "rate", "exposure_ns", "wall_rate", "backend", "device")
     route_fields = version == 1 ? ("graph", "artifacts") : ("plant", "frame_encoding")
@@ -178,6 +178,8 @@ function configuration(path::AbstractString)
     detector_observation = boolean(get(document, "detector_observation", false), "detector_observation")
     command_observation = boolean(get(document, "command_observation", false), "command_observation")
     applied_command_observation = boolean(get(document, "applied_command_observation", false), "applied_command_observation")
+    calibration_identity = haskey(document, "calibration_identity") ?
+        text(document["calibration_identity"], "calibration_identity") : nothing
     entries = version == 1 ? document["artifacts"] : ()
     (entries isa AbstractVector || entries === ()) && length(entries) <= 64 || throw(ArgumentError("artifacts must be an array of at most 64 entries"))
     artifacts = FITSBinding[]
@@ -205,7 +207,7 @@ function configuration(path::AbstractString)
     return (; version, config_path, plant, graph, command_input, frame_output, command_count, frame_shape, rate, period_ns,
         exposure_ns, wall_rate, wall_period_ns, backend, device, artifacts, command_node,
         frame_encoding, frame_schema, command_schema, command_scale, total_exchanges, optical_observation,
-        detector_observation, command_observation, applied_command_observation)
+        detector_observation, command_observation, applied_command_observation, calibration_identity)
 end
 
 "Prepare owned logical FITS arrays; preserve their provenance for the science owner."
@@ -244,6 +246,9 @@ function write_report(options, state, generation, source_instance; failures=())
         plant=get(options, :plant, nothing),
         failures=[first(replace(sprint(showerror, error), '\0' => '?'), 1024) for error in failures],
     )
+    calibration_identity = get(options, :calibration_identity, nothing)
+    calibration_identity === nothing ||
+        (record = merge(record, (; startup_calibration_identity=calibration_identity)))
     path = report_path(options)
     mkpath(dirname(path))
     temporary, io = mktemp(dirname(path))
