@@ -38,6 +38,7 @@ mutable struct ClassicObservationCapture{T,N}
     negotiated::Union{Nothing,NdArrayFormat{N}}
     header::Union{Nothing,BufferHeader}
     identity::Union{Nothing,AcquisitionIdentity}
+    first_identity::Union{Nothing,AcquisitionIdentity}
     first_sequence::Union{Nothing,UInt64}
     count::Int
     distinct_sequences::Int
@@ -50,7 +51,7 @@ end
 function ClassicObservationCapture(spec)
     format=NdArrayFormat(spec.wire, spec.shape; layout=NdArray.ROW_MAJOR, rate=spec.rate)
     return ClassicObservationCapture(StreamBuffer(), zeros(spec.type, prod(spec.shape)),
-        format, spec.schema, nothing, nothing, nothing, nothing, 0, 0, true, true,
+        format, spec.schema, nothing, nothing, nothing, nothing, nothing, 0, 0, true, true,
         Union{Nothing,AcquisitionIdentity}[nothing for _ in 1:256], nothing)
 end
 
@@ -138,13 +139,19 @@ function (capture::ClassicObservationCapture{T})(stream) where {T}
             capture.canonical_boolean &= all(value -> value<=1, capture.values)
         end
         previous=capture.header
+        if previous!==nothing
+            _classic_same_acquisition(capture.identity, identity)
+        end
         if previous===nothing || previous.sequence!=header.sequence
             previous===nothing || header.sequence>previous.sequence ||
                 error("Classic observation sequence regressed")
             capture.distinct_sequences+=1
             capture.identities[mod1(capture.distinct_sequences, length(capture.identities))]=identity
         end
-        capture.first_sequence===nothing && (capture.first_sequence=header.sequence)
+        if capture.first_sequence===nothing
+            capture.first_sequence=header.sequence
+            capture.first_identity=identity
+        end
         capture.header=header
         capture.identity=identity
         capture.count+=1
@@ -158,7 +165,7 @@ end
 
 _classic_now()=Float64(time_ns())/1e9
 
-function _classic_wait(predicate, loop, deadline, description, core_error)
+function _classic_wait(predicate, loop, deadline, description, core_error; interval=0.02)
     while true
         done=with_thread_loop_lock(loop) do _
             core_error[]===nothing || throw(core_error[])
@@ -169,7 +176,7 @@ function _classic_wait(predicate, loop, deadline, description, core_error)
             detail=description isa Function ? description() : description
             error("timed out waiting for $detail")
         end
-        sleep(0.02)
+        sleep(interval) # Outside the native loop lock; the producer remains independent.
     end
 end
 
@@ -185,6 +192,25 @@ function _classic_common_wfs_identity(captures, specs=CLASSIC_OBSERVATION_STREAM
     return last(sort!(collect(common); by=identity -> identity.sequence))
 end
 
+function _classic_same_acquisition(previous, current)
+    if previous===nothing || current===nothing
+        previous===current || error("Classic observation acquisition metadata presence changed")
+    else
+        previous.domain==current.domain && previous.generation==current.generation ||
+            error("Classic observation acquisition domain or generation changed")
+    end
+    return nothing
+end
+
+function _classic_observation_timing(timeout, drive_interval, minimum_duration)
+    all(value -> isfinite(value) && value>0, (timeout, drive_interval)) ||
+        throw(ArgumentError("timeout and drive_interval must be positive and finite"))
+    isfinite(minimum_duration) && 0<=minimum_duration<timeout ||
+        throw(ArgumentError("minimum_duration must be finite, nonnegative and shorter than timeout"))
+    drive_interval<timeout || throw(ArgumentError("drive_interval must be shorter than timeout"))
+    return nothing
+end
+
 function _classic_identity_record(identity)
     identity===nothing && return nothing
     return Dict("domain"=>bytes2hex(collect(identity.domain.bytes)),
@@ -195,8 +221,10 @@ function _classic_capture_record(spec, capture, endpoint)
     actual=something(capture.negotiated)
     header=something(capture.header)
     return Dict("node"=>spec.node, "media"=>spec.media,
-        "output_node_id"=>endpoint.node, "output_port_id"=>endpoint.output,
-        "observer_node_id"=>endpoint.sink, "observer_port_id"=>endpoint.input,
+        "output_node_id"=>endpoint.node, "output_node_serial"=>endpoint.node_serial,
+        "output_port_id"=>endpoint.output, "output_port_serial"=>endpoint.output_serial,
+        "observer_node_id"=>endpoint.sink, "observer_node_serial"=>endpoint.sink_serial,
+        "observer_port_id"=>endpoint.input, "observer_port_serial"=>endpoint.input_serial,
         "shape"=>collect(actual.shape), "element_type"=>string(actual.element_type),
         "storage_type"=>string(eltype(capture.values)), "layout"=>string(actual.layout),
         "schema"=>capture.schema,
@@ -206,11 +234,13 @@ function _classic_capture_record(spec, capture, endpoint)
         "finite"=>capture.finite, "canonical_boolean"=>capture.canonical_boolean,
         "last_header"=>Dict("sequence"=>header.sequence, "pts"=>header.pts,
             "flags"=>header.flags, "offset"=>header.offset, "dts_offset"=>header.dts_offset),
+        "first_identity"=>_classic_identity_record(capture.first_identity),
         "last_identity"=>_classic_identity_record(capture.identity))
 end
 
 """
-    observe_classic(remote; timeout=30.0, selected_streams=nothing)
+    observe_classic(remote; timeout=30.0, selected_streams=nothing,
+        drive_interval=0.02, minimum_duration=0.0)
 
 Observe a Running Classic application through its eight existing capacity-one
 copy/drop-oldest queue outputs. Return a plain record after every stream has
@@ -225,9 +255,14 @@ The caller starts/stops the application and saves the returned record, e.g.
 For a narrow diagnostic, select queue products by name with
 `selected_streams=("detector",)`. The common WFS identity check applies when
 all four WFS products are selected. The default observes and checks all eight.
+`drive_interval` spaces observer driver requests; its sleep is outside the native
+loop lock. `minimum_duration` keeps this attachment observing for at least that
+many seconds after all streams first deliver samples. These are client settings,
+not source controls.
 """
-function observe_classic(remote::AbstractString; timeout::Real=30.0, selected_streams=nothing)
-    isfinite(timeout) && timeout>0 || throw(ArgumentError("timeout must be positive and finite"))
+function observe_classic(remote::AbstractString; timeout::Real=30.0, selected_streams=nothing,
+        drive_interval::Real=0.02, minimum_duration::Real=0.0)
+    _classic_observation_timing(timeout, drive_interval, minimum_duration)
     Base.ENDIAN_BOM==0x04030201 || error("Classic observation requires a little-endian host")
     names=selected_streams===nothing ? map(s -> s.name,CLASSIC_OBSERVATION_STREAMS) :
         Tuple(String.(selected_streams))
@@ -311,9 +346,14 @@ function observe_classic(remote::AbstractString; timeout::Real=30.0, selected_st
                     properties=("node.id"=>string(node.id), "port.direction"=>"out"))
                 inputs=find_globals(registry; interface="PipeWire:Interface:Port",
                     properties=("node.id"=>string(node_id(stream)), "port.direction"=>"in"))
-                (isempty(outputs) || isempty(inputs)) && return false
-                push!(endpoints, (node=node.id, output=only(outputs).id,
-                    sink=node_id(stream), input=only(inputs).id))
+                observer_nodes=filter(object -> object.id==node_id(stream),
+                    find_globals(registry; interface="PipeWire:Interface:Node"))
+                (isempty(outputs) || isempty(inputs) || isempty(observer_nodes)) && return false
+                output, input, sink=only(outputs), only(inputs), only(observer_nodes)
+                serial(object)=parse(UInt64, object.properties["object.serial"])
+                push!(endpoints, (node=node.id, node_serial=serial(node),
+                    output=output.id, output_serial=serial(output),
+                    sink=sink.id, sink_serial=serial(sink), input=input.id, input_serial=serial(input)))
             end
             return true
         end
@@ -336,7 +376,10 @@ function observe_classic(remote::AbstractString; timeout::Real=30.0, selected_st
                 (spec,capture) in zip(specs,captures)), ", ")
             "Classic samples and matching WFS acquisition identity ($counts)"
         end
-        _classic_wait(loop, deadline, progress, core_error) do
+        observation_started=_classic_now()
+        all_streams_sampled=nothing
+        matching_wfs_identity=nothing
+        _classic_wait(loop, deadline, progress, core_error; interval=Float64(drive_interval)) do
             for (stream,capture) in zip(streams,captures)
                 stream_state(stream)
                 capture.error===nothing || throw(capture.error)
@@ -345,8 +388,14 @@ function observe_classic(remote::AbstractString; timeout::Real=30.0, selected_st
             end
             # Completion must be checked before submitting another asynchronous
             # driver request. A successful observation needs no extra cycle.
+            if all_streams_sampled===nothing && all(c -> c.header!==nothing,captures)
+                all_streams_sampled=_classic_now()
+            end
+            current_identity=_classic_common_wfs_identity(captures,specs)
+            current_identity===nothing || (matching_wfs_identity=current_identity)
             if all(c -> c.distinct_sequences>=2, captures) &&
-                (!require_wfs_identity || _classic_common_wfs_identity(captures,specs)!==nothing)
+                (!require_wfs_identity || matching_wfs_identity!==nothing) &&
+                all_streams_sampled!==nothing && _classic_now()-all_streams_sampled>=minimum_duration
                 return true
             end
             for (stream,tracker) in zip(streams,link_trackers)
@@ -366,9 +415,12 @@ function observe_classic(remote::AbstractString; timeout::Real=30.0, selected_st
                 capture.finite && capture.canonical_boolean || error("invalid final Classic payload")
             end
             Dict("remote"=>String(remote), "boundary"=>"capacity-one copy/drop-oldest queues",
+                "drive_interval_s"=>Float64(drive_interval), "minimum_duration_s"=>Float64(minimum_duration),
+                "observation_started_s"=>observation_started, "all_streams_sampled_s"=>all_streams_sampled,
+                "observation_ended_s"=>_classic_now(),
                 "streams"=>Dict(spec.name=>_classic_capture_record(spec,capture,endpoint)
                     for (spec,capture,endpoint) in zip(specs,captures,endpoints)),
-                "matching_wfs_identity"=>_classic_identity_record(_classic_common_wfs_identity(captures,specs)))
+                "matching_wfs_identity"=>_classic_identity_record(matching_wfs_identity))
         end
     finally
         cleanup_errors=Any[]
