@@ -77,11 +77,9 @@ function validate_graph(options)
 end
 
 "Construct a declared AOS graph without an instrument implementation package."
-function Owner.prepare_science(options; check=()->nothing)
+function prepare_declared_science(options, device; check=()->nothing)
     check()
     validate_graph(options)
-    check()
-    device = target(options)
     check()
     artifacts = Owner.prepare_bindings(options.artifacts; check)
     bindings = Pair{Symbol,Any}[]
@@ -99,6 +97,66 @@ function Owner.prepare_science(options; check=()->nothing)
     check()
     boundary = prepare_graph_hil_boundary(graph;
         command_input=options.command_input, frame_output=options.frame_output)
+    return (; definition, graph, boundary, target=device, artifacts)
+end
+
+function wire_configuration(options)
+    return PipeWireHILConfiguration(remote=options.remote,
+        frame_node_name=options.control_node, command_node_name=options.command_node,
+        frame_schema=options.frame_schema, command_schema=options.command_schema,
+        rate=SPA.Fraction(UInt32(options.rate), UInt32(1)),
+        exposure_duration_ns=options.exposure_ns, frame_encoding=options.frame_encoding,
+        command_scale=options.command_scale)
+end
+
+function prepare_instrument_science(options, device; check=()->nothing)
+    plant_module = options.plant_module
+    execution = options.backend === :cpu ? StreamGraphExecution() : CapturedGraphExecution()
+    system = Base.invokelatest(plant_module.prepare_hil_system, options.plant.settings;
+        target=device, execution)
+    check()
+    AdaptiveOpticsSimPipeWireHIL.validate_hil_system(system;
+        command_input=options.command_input, frame_output=options.frame_output,
+        command_shape=(options.command_count,), frame_shape=options.frame_shape)
+    configuration = Base.invokelatest(plant_module.pipewire_configuration, system, options.remote;
+        frame_node_name=options.control_node, command_node_name=options.command_node,
+        frame_encoding=options.frame_encoding, frame_schema=options.frame_schema,
+        command_schema=options.command_schema, command_scale=options.command_scale)
+    validate_configuration(configuration, options)
+    # The builder records the actual model cadence independently of exposure.
+    period_ns = round(Int, Float64(system.frame_period_s) * 1e9)
+    period_ns == options.period_ns || throw(ArgumentError(
+        "prepared model period differs from configured model period"))
+    return (; definition=system.definition, graph=system.graph, boundary=system.boundary,
+        target=device, artifacts=(), configuration)
+end
+
+function validate_configuration(configuration::PipeWireHILConfiguration, options)
+    configuration.remote == options.remote &&
+        configuration.frame_node_name == options.control_node &&
+        configuration.command_node_name == options.command_node ||
+        throw(ArgumentError("prepared wire endpoint names differ from configuration"))
+    configuration.frame_schema == options.frame_schema &&
+        configuration.command_schema == options.command_schema &&
+        configuration.frame_encoding === options.frame_encoding &&
+        configuration.command_scale == options.command_scale ||
+        throw(ArgumentError("prepared wire contract differs from configuration"))
+    UInt64(configuration.rate.num) == UInt64(options.rate) * UInt64(configuration.rate.denom) ||
+        throw(ArgumentError("prepared frame rate differs from configuration"))
+    configuration.exposure_duration_ns == options.exposure_ns ||
+        throw(ArgumentError("prepared detector exposure differs from configuration"))
+    return nothing
+end
+
+"Prepare and warm the exact plant boundary once, then restore its initial cursor."
+function Owner.prepare_science(options; check=()->nothing)
+    check()
+    device = target(options)
+    check()
+    science = options.plant === nothing ? prepare_declared_science(options, device; check) :
+        prepare_instrument_science(options, device; check)
+    check()
+    boundary = science.boundary
     size(hil_frame_buffer(boundary)) == options.frame_shape ||
         throw(DimensionMismatch("AOS detector frame differs from configured $(options.frame_shape)"))
     size(hil_command_buffer(boundary)) == (options.command_count,) ||
@@ -114,7 +172,8 @@ function Owner.prepare_science(options; check=()->nothing)
     adopt_hil_command!(boundary, warm.sequence)
     reset_hil_boundary!(boundary, driver)
     check()
-    return (; definition, graph, boundary, driver, target=device, artifacts)
+    configuration = options.plant === nothing ? wire_configuration(options) : science.configuration
+    return merge(science, (; driver, configuration))
 end
 
 "Record readiness only after its actual operational report has been saved."
@@ -253,19 +312,15 @@ function Owner.run_owner(options)
     pipewire = nothing
     failures = Exception[]
     try
-        options = merge(options, (; graph_sha256=PipeWireAORTC.Common.sha256_file(options.graph)))
+        options = merge(options, (;
+            graph_sha256=options.graph === nothing ? nothing : PipeWireAORTC.Common.sha256_file(options.graph),
+            configuration_sha256=PipeWireAORTC.Common.sha256_file(options.config_path)))
         phase = prepare_phase_timing(options)
         science = Owner.prepare_science(options; check=options.owner_check)
         observation = OpticalObservation.prepare(options.optical_observation ? science.definition : nothing, science.graph)
         options.owner_check()
         mailbox = prepare_source_control(options, state, source_instance)
-        configuration = PipeWireHILConfiguration(remote=options.remote,
-            frame_node_name=options.control_node, command_node_name=options.command_node,
-            frame_schema=options.frame_schema, command_schema=options.command_schema,
-            rate=SPA.Fraction(UInt32(options.rate), UInt32(1)),
-            exposure_duration_ns=options.exposure_ns, frame_encoding=:uint16,
-            command_scale=options.command_scale)
-        pipewire = prepare_pipewire_hil(science.boundary, configuration;
+        pipewire = prepare_pipewire_hil(science.boundary, science.configuration;
             frame_buffers=options.detector_observation ? 3 : 2,
             command_buffers=options.command_observation ? 3 : 2,
             applied_command_node_name=options.applied_command_observation ? "simulator-applied-command" : nothing,

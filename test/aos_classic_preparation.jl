@@ -19,7 +19,7 @@ if ClassicBackend === :cuda
 end
 
 @testset "Classic FITS geometry and selected $ClassicBackend science preparation" begin
-    options = merge(ClassicOwner.configuration(abspath(ARGS[1])), (; backend=ClassicBackend))
+    options = merge(ClassicOwner.configuration(abspath(ARGS[1])), (; backend=ClassicBackend, remote="/tmp/classic-preparation", control_node="simulator-wfs"))
     @test TOML.parsefile(options.graph) == TOML.parsefile(REVOLTClassicSim.graph_path(:grid_gaussian))
     @test options.command_count == REVOLTClassicSim.command_count()
     science = ClassicOwner.prepare_science(options)

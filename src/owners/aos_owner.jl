@@ -1,4 +1,4 @@
-"""Configuration and FITS declarations for an optional native AOS owner."""
+"""Cold declarations for optional graph and instrument AOS owners."""
 module AOSOwner
 
 import ..Artifacts
@@ -43,6 +43,39 @@ end
 function boolean(value, label)
     value isa Bool || throw(ArgumentError("$label must be Boolean"))
     return value
+end
+
+"Seal a bounded JSON value into concrete, immutable cold settings."
+Base.@nospecializeinfer function plant_settings(@nospecialize(value), remaining=Ref(4096), depth=0)
+    depth <= 16 || throw(ArgumentError("plant settings exceed 16 nesting levels"))
+    remaining[] -= 1
+    remaining[] >= 0 || throw(ArgumentError("plant settings exceed 4096 values"))
+    if value isa AbstractDict
+        length(value) <= remaining[] || throw(ArgumentError("plant settings exceed 4096 values"))
+        names = Tuple(identifier(key, "plant setting name") for key in keys(value))
+        items = Tuple(plant_settings(item, remaining, depth + 1) for item in values(value))
+        return NamedTuple{names}(items)
+    elseif value isa AbstractVector
+        length(value) <= remaining[] || throw(ArgumentError("plant settings exceed 4096 values"))
+        return Tuple(plant_settings(item, remaining, depth + 1) for item in value)
+    elseif value isa String
+        ncodeunits(value) <= 16 * 1024 && !occursin('\0', value) ||
+            throw(ArgumentError("plant setting strings must be at most 16 KiB without NUL"))
+        return value
+    elseif value === nothing || value isa Bool || value isa Integer
+        return value
+    elseif value isa AbstractFloat && isfinite(value)
+        return value
+    end
+    throw(ArgumentError("plant settings must contain finite basic JSON values"))
+end
+
+function plant_declaration(value)
+    value isa AbstractDict && Set(keys(value)) == Set(("package", "settings")) ||
+        throw(ArgumentError("plant requires exactly package and settings"))
+    package = identifier(value["package"], "plant package")
+    value["settings"] isa AbstractDict || throw(ArgumentError("plant settings must be an object"))
+    return (; package, settings=plant_settings(value["settings"]))
 end
 
 "Parse the complete native bootstrap invocation without loading science."
@@ -97,17 +130,24 @@ end
 "Validate every configuration declaration before preparing any FITS artifact."
 function configuration(path::AbstractString)
     document = DeploymentConfiguration.decode(path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
-    fields = ("version", "graph", "command_input", "frame_output", "command_count", "frame_shape",
-        "rate", "exposure_ns", "wall_rate", "backend", "device", "artifacts", "command_node",
+    document isa AbstractDict || throw(ArgumentError("AOS configuration must be an object"))
+    version = integer(get(document, "version", nothing), "version", 1, 2)
+    shared_fields = ("version", "command_input", "frame_output", "command_count", "frame_shape",
+        "rate", "exposure_ns", "wall_rate", "backend", "device", "command_node",
         "frame_schema", "command_schema", "command_scale", "total_exchanges", "optical_observation",
         "detector_observation", "command_observation", "applied_command_observation")
-    required = ("version", "graph", "command_input", "frame_output", "command_count", "frame_shape",
-        "rate", "exposure_ns", "wall_rate", "backend", "device", "artifacts")
-    document isa AbstractDict && all(key -> key in fields, keys(document)) &&
+    shared_required = ("version", "command_input", "frame_output", "command_count", "frame_shape",
+        "rate", "exposure_ns", "wall_rate", "backend", "device")
+    route_fields = version == 1 ? ("graph", "artifacts") : ("plant", "frame_encoding")
+    fields = (shared_fields..., route_fields...)
+    required = version == 1 ? (shared_required..., route_fields...) :
+        (shared_required..., route_fields..., "frame_schema", "command_schema", "command_scale")
+    all(key -> key in fields, keys(document)) &&
         all(key -> haskey(document, key), required) || throw(ArgumentError("invalid AOS configuration fields"))
-    integer(document["version"], "version", 1, 1)
-    graph = abspath(joinpath(dirname(abspath(path)), text(document["graph"], "graph")))
-    isfile(graph) || throw(ArgumentError("AOS graph does not exist: $graph"))
+    config_path = abspath(path)
+    graph = version == 1 ? abspath(joinpath(dirname(config_path), text(document["graph"], "graph"))) : nothing
+    graph === nothing || isfile(graph) || throw(ArgumentError("AOS graph does not exist: $graph"))
+    plant = version == 2 ? plant_declaration(document["plant"]) : nothing
     command_input = identifier(document["command_input"], "command_input")
     frame_output = identifier(document["frame_output"], "frame_output")
     command_count = integer(document["command_count"], "command_count", 1, Artifacts.MAX_IMAGE_BYTES ÷ sizeof(Float32))
@@ -123,6 +163,8 @@ function configuration(path::AbstractString)
     device = integer(document["device"], "device", 0, typemax(Int32))
     backend == :cpu && device != 0 && throw(ArgumentError("CPU backend requires device 0"))
     command_node = node_name(get(document, "command_node", "simulator-command"), "command node")
+    frame_encoding = version == 1 ? :uint16 : Symbol(text(document["frame_encoding"], "frame_encoding"))
+    frame_encoding === :uint16 || throw(ArgumentError("AOS frame_encoding must be uint16"))
     frame_schema = text(get(document, "frame_schema", "org.calculon.ao.raw-detector-pixels/1"), "frame_schema")
     command_schema = text(get(document, "command_schema", "org.calculon.ao.demanded-pdm-command/1"), "command_schema")
     scale = get(document, "command_scale", 1.0f-6)
@@ -136,8 +178,8 @@ function configuration(path::AbstractString)
     detector_observation = boolean(get(document, "detector_observation", false), "detector_observation")
     command_observation = boolean(get(document, "command_observation", false), "command_observation")
     applied_command_observation = boolean(get(document, "applied_command_observation", false), "applied_command_observation")
-    entries = document["artifacts"]
-    entries isa AbstractVector && length(entries) <= 64 || throw(ArgumentError("artifacts must be an array of at most 64 entries"))
+    entries = version == 1 ? document["artifacts"] : ()
+    (entries isa AbstractVector || entries === ()) && length(entries) <= 64 || throw(ArgumentError("artifacts must be an array of at most 64 entries"))
     artifacts = FITSBinding[]
     names = Set([command_input])
     total_bytes = command_count * sizeof(Float32)
@@ -160,9 +202,9 @@ function configuration(path::AbstractString)
         total_bytes <= MAX_RETAINED_BYTES || throw(ArgumentError("retained AOS bindings exceed 512 MiB"))
         push!(artifacts, FITSBinding(binding, source, T, shape))
     end
-    return (; graph, command_input, frame_output, command_count, frame_shape, rate, period_ns,
+    return (; version, config_path, plant, graph, command_input, frame_output, command_count, frame_shape, rate, period_ns,
         exposure_ns, wall_rate, wall_period_ns, backend, device, artifacts, command_node,
-        frame_schema, command_schema, command_scale, total_exchanges, optical_observation,
+        frame_encoding, frame_schema, command_schema, command_scale, total_exchanges, optical_observation,
         detector_observation, command_observation, applied_command_observation)
 end
 
@@ -197,6 +239,9 @@ function write_report(options, state, generation, source_instance; failures=())
         running=state.running, completed=state.completed,
         backend=string(options.backend), graph=options.graph,
         graph_sha256=get(options, :graph_sha256, nothing),
+        configuration=get(options, :config_path, nothing),
+        configuration_sha256=get(options, :configuration_sha256, nothing),
+        plant=get(options, :plant, nothing),
         failures=[first(replace(sprint(showerror, error), '\0' => '?'), 1024) for error in failures],
     )
     path = report_path(options)
@@ -225,7 +270,8 @@ function _main(args; with_owner=Bootstrap.with_owner,
             Base.require(Main, :AdaptiveOpticsSim)
             Base.require(Main, :AdaptiveOpticsSimPipeWireHIL)
         end,
-        load_cuda=() -> Base.require(Main, :CUDA), run=run_owner)
+        load_cuda=() -> Base.require(Main, :CUDA),
+        load_plant=package -> Base.require(Main, package), run=run_owner)
     invocation = arguments(args)
     options = configuration(invocation.config)
     invocation.control_node != options.command_node && invocation.bootstrap_node != options.command_node ||
@@ -236,6 +282,11 @@ function _main(args; with_owner=Bootstrap.with_owner,
         admitted.owner_check()
         admitted.backend === :cuda && load_cuda()
         admitted.owner_check()
+        if admitted.plant !== nothing
+            plant_module = load_plant(admitted.plant.package)
+            admitted.owner_check()
+            admitted = merge(admitted, (; plant_module))
+        end
         Base.invokelatest(run, admitted)
     end
     return 0
@@ -246,9 +297,10 @@ end
 
 Run a native AOS scientific owner from `--config PATH`, with explicit `--remote`,
 `--control-node`, `--bootstrap-node` and `--bootstrap-instance`. The version 1
-SPA-JSON configuration declares the simulation TOML graph, command/frame names,
-extents, timing, backend/device and FITS bindings. Paths are relative to the
-configuration. Preparing is published before optional AOS/HIL/CUDA imports.
+SPA-JSON configuration declares the simulation TOML graph and FITS bindings;
+version 2 selects an instrument package and immutable settings. Both declare
+command/frame names, extents, timing and backend/device. Paths are relative to
+the configuration. Preparing is published before optional science imports.
 FITS preparation is cold startup only; WirePlumber retains lifecycle authority.
 """
 main(args) = _main(args)

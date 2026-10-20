@@ -210,3 +210,104 @@ end
         @test_throws DimensionMismatch Owner.prepare_bindings(Owner.configuration(path).artifacts)
     end
 end
+
+@testset "Instrument builders remain cold declarations until Preparing" begin
+    mktempdir() do directory
+        path = joinpath(directory, "owner.conf")
+        document = owner_configuration(directory)
+        document["version"] = 2
+        document["frame_encoding"] = "uint16"
+        document["frame_schema"] = "org.calculon.ao.raw-detector-pixels/1"
+        document["command_schema"] = "org.calculon.ao.demanded-pdm-command/1"
+        document["command_scale"] = 1e-6
+        delete!(document, "graph")
+        delete!(document, "artifacts")
+        document["plant"] = Dict("package" => "REVOLTClassicSim",
+            "settings" => Dict("profile" => "grid_gaussian"))
+        write(path, JSON3.write(document))
+        options = Owner.configuration(path)
+        @test options.version == 2
+        @test options.graph === nothing
+        @test isempty(options.artifacts)
+        @test options.config_path == path
+        @test options.plant == (; package=:REVOLTClassicSim, settings=(; profile="grid_gaussian"))
+        @test isconcretetype(typeof(options.plant))
+        @test options.frame_encoding === :uint16
+        @test Owner.plant_settings(Dict("value" => "")) == (; value="")
+        @test_throws ArgumentError Owner.plant_settings(Dict("value" => "\0"))
+        @test_throws ArgumentError Owner.plant_settings(Dict("value" => repeat("a", 16 * 1024 + 1)))
+        @test Owner.plant_settings(Dict("nested" => [1, true, nothing, Dict("value" => 2.0)])) ==
+            (; nested=(1, true, nothing, (; value=2.0)))
+        @test_throws ArgumentError Owner.plant_settings(Dict("value" => Inf))
+        @test_throws ArgumentError Owner.plant_settings(Dict("value" => :symbol))
+        @test_throws ArgumentError Owner.plant_settings(Dict("value" => zeros(4096)))
+        deep = Dict{String,Any}("value" => 1)
+        for _ in 1:17
+            deep = Dict{String,Any}("nested" => deep)
+        end
+        @test_throws ArgumentError Owner.plant_settings(deep)
+        for mutation in (
+            item -> (item["frame_encoding"] = "float32"),
+            item -> (item["graph"] = "simulation.toml"),
+            item -> (item["artifacts"] = []),
+            item -> (item["plant"]["package"] = "REVOLTClassicSim.path"),
+            item -> (item["plant"]["package"] = "../REVOLTClassicSim"),
+            item -> (item["plant"]["package"] = ""),
+            item -> (item["plant"]["settings"] = []),
+            item -> (item["plant"]["settings"] = Dict("bad-name" => 1)),
+            item -> (item["plant"]["extra"] = 1),
+            item -> delete!(item["plant"], "settings"),
+            item -> delete!(item["plant"], "package"),
+        )
+            invalid = deepcopy(document)
+            mutation(invalid)
+            write(path, JSON3.write(invalid))
+            @test_throws ArgumentError Owner.configuration(path)
+        end
+        for key in ("version", "plant", "command_input", "frame_output", "command_count",
+                "frame_shape", "rate", "exposure_ns", "wall_rate", "backend", "device",
+                "frame_encoding", "frame_schema", "command_schema", "command_scale")
+            invalid = deepcopy(document)
+            delete!(invalid, key)
+            write(path, JSON3.write(invalid))
+            @test_throws ArgumentError Owner.configuration(path)
+        end
+        write(path, JSON3.write(document))
+        args = ["--config", path, "--remote", "/tmp/aos-private", "--control-node", "simulator-wfs",
+            "--bootstrap-node", "rtc.bootstrap.aos", "--bootstrap-instance", "7"]
+        events = Symbol[]
+        with_owner = function (f, admitted)
+            push!(events, :preparing)
+            f(merge(admitted, (; owner_check=() -> push!(events, :check))))
+        end
+        @test Owner._main(args; with_owner,
+            load_science=() -> push!(events, :science),
+            load_plant=package -> begin
+                @test package === :REVOLTClassicSim
+                push!(events, :plant)
+                :instrument_module
+            end,
+            run=admitted -> begin
+                @test admitted.plant_module === :instrument_module
+                push!(events, :run)
+            end) == 0
+        @test events == [:preparing, :check, :science, :check, :check, :plant, :check, :run]
+        empty!(events)
+        @test_throws InterruptException Owner._main(args;
+            with_owner=(f, admitted) -> f(merge(admitted, (; owner_check=() -> throw(InterruptException())))),
+            load_science=() -> push!(events, :science),
+            load_plant=package -> push!(events, :plant))
+        @test isempty(events)
+        report_options = merge(options, (; remote=joinpath(directory, "native"),
+            control_node="simulator-wfs", bootstrap_instance=Int64(7),
+            configuration_sha256=PipeWireAORTC.Common.sha256_file(path)))
+        Owner.write_report(report_options, (; sequence=UInt64(0), running=false, completed=false), 1, 9)
+        report = PipeWireAORTC.Common.read_json(Owner.report_path(report_options))
+        @test report["graph"] === nothing && report["graph_sha256"] === nothing
+        @test report["configuration"] == path
+        @test report["configuration_sha256"] == report_options.configuration_sha256
+        @test report["plant"]["package"] == "REVOLTClassicSim"
+        @test report["plant"]["settings"]["profile"] == "grid_gaussian"
+        @test !any(id -> id.name in ("AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL", "CUDA", "REVOLTClassicSim"), keys(Base.loaded_modules))
+    end
+end

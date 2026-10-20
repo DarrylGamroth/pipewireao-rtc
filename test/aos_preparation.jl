@@ -112,7 +112,8 @@ end
                 Dict("binding" => "pupil", "path" => "pupil.fits", "axes" => [1,2], "type" => "Bool", "shape" => [2,3])])
         config_path = joinpath(directory, "owner.conf")
         write(config_path, JSON3.write(document))
-        options = AOSPreparationOwner.configuration(config_path)
+        options = merge(AOSPreparationOwner.configuration(config_path),
+            (; remote=joinpath(directory, "native"), control_node="simulator-wfs"))
         science = AOSPreparationOwner.prepare_science(options)
         @test length(science.artifacts) == 2
         @test science.artifacts[1].data == basis
