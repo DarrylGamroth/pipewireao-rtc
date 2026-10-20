@@ -322,3 +322,5 @@ end
         @test !any(id -> id.name in ("AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL", "CUDA", "REVOLTClassicSim"), keys(Base.loaded_modules))
     end
 end
+
+include("test_aos_plant_loading.jl")

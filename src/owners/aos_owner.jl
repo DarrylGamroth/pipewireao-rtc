@@ -1,6 +1,9 @@
 """Cold declarations for optional graph and instrument AOS owners."""
 module AOSOwner
 
+import TOML
+import UUIDs
+
 import ..Artifacts
 import ..Common
 import ..DeploymentConfiguration
@@ -269,6 +272,24 @@ function write_report(options, state, generation, source_instance; failures=())
     return nothing
 end
 
+"Load only the exact plant dependency declared by the active application."
+function load_instrument(package::Symbol)
+    project = Base.active_project()
+    project !== nothing && isfile(project) ||
+        throw(ArgumentError("instrument preparation requires an active application Project.toml"))
+    dependencies = get(TOML.parsefile(project), "deps", nothing)
+    name = string(package)
+    dependencies isa AbstractDict && haskey(dependencies, name) ||
+        throw(ArgumentError("plant package $name must be a direct dependency of the active application"))
+    uuid = dependencies[name]
+    uuid isa String || throw(ArgumentError("plant dependency $name must declare a UUID"))
+    identity = Base.PkgId(UUIDs.UUID(uuid), name)
+    instrument = Base.require(identity)
+    Base.PkgId(instrument) == identity ||
+        throw(ArgumentError("loaded plant module differs from the declared dependency identity"))
+    return instrument
+end
+
 # The application declares optional science packages as its direct dependencies.
 function _main(args; with_owner=Bootstrap.with_owner,
         load_science=() -> begin
@@ -276,7 +297,7 @@ function _main(args; with_owner=Bootstrap.with_owner,
             Base.require(Main, :AdaptiveOpticsSimPipeWireHIL)
         end,
         load_cuda=() -> Base.require(Main, :CUDA),
-        load_plant=package -> Base.require(Main, package), run=run_owner)
+        load_plant=load_instrument, run=run_owner)
     invocation = arguments(args)
     options = configuration(invocation.config)
     invocation.control_node != options.command_node && invocation.bootstrap_node != options.command_node ||
