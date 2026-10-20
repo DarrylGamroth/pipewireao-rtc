@@ -120,6 +120,73 @@ panel must not retain required RTC buffers or stop acquisition. Adding metadata
 or a view declaration does not implement native properties, diagnostic sources
 or session admission.
 
+### RTC-owned operator views
+
+Specify the panel profile while defining each RTC application, beginning with
+Classic's managed integration. The instrument package supplies scientific port
+contracts, geometry, units and provenance. The RTC application owns the selected
+operator-view TOML, referencing its actual graph, observation endpoints and
+native controls. The GUI owns rendering, navigation and saved layout. Keep that
+configuration optional so the same RTC runs headless.
+
+Use the GUI's [existing operator-view and component-panel contracts](../../pipewireao-gui/docs/component-panels.md).
+The current accepted operator-view schema is 11; generate it from the selected
+prepared profile instead of copying the older schema-9 Classic example.
+Generation can share the existing REVOLT exporter machinery. It must not require
+loading GUI code into the scientific or session owner.
+
+The following is the requested panel specification, not a claim that every
+listed source or view is implemented:
+
+| RTC profile | WFS panels | Command panels | Additional observations |
+| --- | --- | --- | --- |
+| REVOLT Classic | SHWFS detector image; calibrated pixels when exported; prepared subaperture overlay with frame-associated slopes, flux and validity | HSDM277 Demanded and Applied; Offset and Shape control when explicitly exposed | Controller residuals and constraint feedback when exported; optional focal image |
+| REVOLT Copper | PWFS detector image; calibrated pixels when exported; prepared pyramid-pupil overlay | HSDM277 Demanded and Applied; Offset and Shape control when explicitly exposed | Reconstruction products and constraint feedback when exported; optional focal image |
+| GPI 2.0 | PWFS detector image with declared encoding and pupil geometry; calibrated pixels when exported | Separate 97-channel woofer and 2,304-channel tweeter Demanded/Applied maps; two tip/tilt coefficients in a vector view | Allocation/controller residuals and constraint feedback when exported; optional focal image |
+
+Every profile includes the existing Session, RTC graph Controls and PipeWire
+Graph panels. A simulation session additionally selects simulator settings and
+status: compute device, fidelity, model period/exposure, seeds, preparation and
+calibration identities, and the acquisition generation/sequence that the owner
+actually advertises. This remains planned native property/panel integration.
+Construction-only fields are read-only during execution; live edits require a
+writable advertised capability and adoption readback.
+
+Each panel definition identifies the exact source or control binding, expected
+schema/type/shape, units, geometry/command order and provenance where applicable.
+It also selects presentation group, title and initial visibility using supported
+operator-view fields. Keep scientific facts in the owning instrument/RTC
+metadata and derive view bindings from them. A title, dimensions or static
+actuator map cannot establish a live source, a compatible calibration or write
+authority. A configured missing source shows unavailable; extra diagnostics are
+included only when the selected graph/backend exports them.
+
+Keep Demanded, Applied, Offset and independently measured residuals distinct.
+Applied comes from the simulation owner's adopted-command observation, not from
+assuming the controller demand was applied. Shape control needs the actual
+engineering-offset parameter, supported shapes and bounds. Displaying an actuator
+map does not enable editing. WFS overlays must satisfy their existing acquisition
+association contracts; independently advancing samples cannot substitute for a
+coherent product group.
+
+GPI component maps come from `GPI2Sim.actuator_index_map`; command ranges come
+from `GPI2Sim.command_layout()`. The owner will need bounded component observation
+exports for the woofer, tweeter and tip/tilt products, derived from the declared
+combined vector without changing its control boundary. Do not assume a new GUI
+slice field or component-stream API already exists. Tip/tilt values are OPD-ramp
+coefficients with declared units, not automatically milliarcseconds. The two
+padding rows in the 242 × 240 GPI frame remain explicitly identified; they are
+not qualified camera overscan. A focal image must retain its declared optical
+quantity and acquisition provenance rather than acquire a science-camera label.
+
+For each instrument increment, generate and parse the operator-view configuration
+with the actual GUI schema, verify source/parameter bindings and geometry against
+the prepared profile, and inspect the rendered default layout. Exercise source
+loss/reset, slow observation and panel detach/reattach while checking the RTC
+continues. Headless lifecycle/closed-loop verification remains a separate gate.
+Existing panels can cover the first views; missing simulator controls or GPI
+component exports are implementation work with their own acceptance evidence.
+
 ### Current verification boundary
 
 The shared private-core simulator checks exercise GPU preparation, actual wire

@@ -23,8 +23,12 @@ bounds and removes the obsolete PipeWireAO source pin.
 release and fresh registry checks. Its
 [workspace and simulator boundary](REGISTERED_RTC_MIGRATION.md#independent-simulators-and-rtc-definitions)
 keep plant preparation, RTC control/allocation, managed session authority and
-GUI presentation distinct. Full GPI controller/calibration/allocation and
-managed qualification against the new release closure remain open. The
+GUI presentation distinct. Each RTC application will also own its
+[operator-view panel profile](REGISTERED_RTC_MIGRATION.md#rtc-owned-operator-views),
+starting alongside Classic's managed integration. Shared panels bind explicit
+instrument/RTC products; GPI additionally needs separate component observations.
+Full GPI controller/calibration/allocation and managed qualification against the
+new release closure remain open. The
 existing running Classic application and sealed SDKs are unchanged.
 
 ### Classic registered application — 2026-10-19
