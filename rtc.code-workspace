@@ -38,6 +38,15 @@
     },
     {
       "path": "../../GPI2Sim.jl"
+    },
+    {
+      "path": "../../AdaptiveOpticsSim.jl"
+    },
+    {
+      "path": "../../AdaptiveOpticsSimPipeWireHIL.jl"
+    },
+    {
+      "path": "../../AdaptiveOpticsCalibration.jl"
     }
   ]
 }

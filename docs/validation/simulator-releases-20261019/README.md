@@ -45,7 +45,13 @@ value with counters before and after recording; the warmed zero-allocation
 assertion remains and passes.
 
 The shared simulator checks run with Julia 1.12.7 and default CUDA, disabling
-scalar GPU indexing. Each check owns a temporary private core and command peer:
+scalar GPU indexing. Final registry-backed runs pass 44 assertions each for
+Classic, Copper and GPI 2.0 (132 total), with four exchanges per instrument.
+Separate fresh imports confirm the actual loaded AOS 0.2.1, adapter 0.2.2 and
+PipeWireAO 0.6.18 paths under the Julia package depot. The runs emitted automatic
+precompile cache/version warnings; these are retained in their logs and do not
+replace the explicit loaded-source checks.
+Each check owns a temporary private core and command peer:
 
 ```sh
 julia --startup-file=no --project=environments/classic --threads=3,0 test/private_core.jl classic
