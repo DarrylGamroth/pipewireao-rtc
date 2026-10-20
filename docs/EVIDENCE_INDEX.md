@@ -1,5 +1,7 @@
 # Delivery evidence catalog
 
+- [Released simulator dependencies and RTC boundary](validation/simulator-releases-20261019/README.md): HIL 0.2.2 timing/retry integration, registry dependency correction, fresh RTC loading/configuration/preparation, and private-core simulator checks; managed session, GPI controller and GUI qualification remain open.
+
 - [Classic 500 Hz target and timing investigation, 2026-10-19](validation/classic-rate-20261019/README.md): removes the 10 Hz throttle, enables native profiling, confirms reset/eight-stream delivery and replacement GUI attachment. Short windows achieve 280–300 frames/s; throughput and frame-clock telemetry gaps remain unresolved.
 
 - [Classic registered deployment, 2026-10-19](CLASSIC_REGISTERED_DEPLOYMENT.md): package-owned FITS/JFG/AOS preparation, immutable registered 0.1.5, selected RTX 3080 migration parity, independent review, actual-loader and reset fail-before/pass-after, 42-check native lifecycle/cleanup, isolated relocation and optional GUI attachment. The retained 0.1.5 RTC/GUI identities are recorded separately from broader deferred qualification.

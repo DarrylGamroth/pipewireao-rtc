@@ -12,6 +12,21 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Independent simulator integration
+
+Classic, Copper and GPI 2.0 application environments select released AOS 0.2.1
+and shared PipeWire adapter 0.2.2. Their current CUDA private-core transport checks
+pass 44 assertions each; these use test command peers, not controller graphs.
+The shared RTC integration branch updates the optional science compatibility
+bounds and removes the obsolete PipeWireAO source pin.
+[Software evidence](validation/simulator-releases-20261019/README.md) records the
+release and fresh registry checks. Its
+[workspace and simulator boundary](REGISTERED_RTC_MIGRATION.md#independent-simulators-and-rtc-definitions)
+keep plant preparation, RTC control/allocation, managed session authority and
+GUI presentation distinct. Full GPI controller/calibration/allocation and
+managed qualification against the new release closure remain open. The
+existing running Classic application and sealed SDKs are unchanged.
+
 ### Classic registered application — 2026-10-19
 
 The selected increment completes Classic CPU JFG with CUDA AOS using packages,

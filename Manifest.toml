@@ -1,8 +1,8 @@
 # This file is machine-generated - editing it directly is not advised
 
 julia_version = "1.12.7"
-manifest_format = "2.0"
-project_hash = "2c0003b0371bf20226a1cac41147e35e9da9ffb1"
+manifest_format = "2.1"
+project_hash = "297fc2a9b7e8e8f2c9df47c61f9c375e725b351e"
 
 [[deps.Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
@@ -81,9 +81,9 @@ version = "3.3.0"
 
 [[deps.Hwloc_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "XML2_jll", "Xorg_libpciaccess_jll"]
-git-tree-sha1 = "8015ef94425626913eaa6933eb32e7c9bbe08030"
+git-tree-sha1 = "cbbd99d516990d05c02aa132aa077b2bf50ae323"
 uuid = "e33a78d0-f292-5ffc-b300-72abe9b543c8"
-version = "2.14.1+0"
+version = "2.15.0+0"
 
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]
@@ -179,23 +179,33 @@ version = "2.8.8"
 
 [[deps.PipeWireAO]]
 deps = ["PipeWireAO_jll", "UnsafeArrays"]
-git-tree-sha1 = "4b859fef04b1b77e3a6451d1c22b2a3e0e5bc5ee"
-repo-rev = "1417b69"
-repo-url = "https://github.com/DarrylGamroth/PipeWireAO.jl.git"
+git-tree-sha1 = "14dcef6fff816e5fc89459aca21cd1742b497be3"
 uuid = "5d815c25-fdf3-4508-8205-db8be38ea5d0"
-version = "0.6.17"
+version = "0.6.18"
 
 [[deps.PipeWireAORTC]]
 deps = ["FITSIO", "JSON3", "PipeWireAO", "SHA", "Sockets", "StructTypes", "TOML", "ThreadPinning", "UUIDs"]
 path = "."
 uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
-version = "0.1.1"
+version = "0.1.8"
+
+    [deps.PipeWireAORTC.extensions]
+    PipeWireAORTCAOSExt = ["AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL"]
+    PipeWireAORTCGraphExt = ["FilterGraphIsland", "FilterGraphPipeWire", "JuliaFilterGraph"]
+
+    [deps.PipeWireAORTC.weakdeps]
+    AdaptiveOpticsSim = "002fb5eb-ad68-44a0-adbe-b299bfc2febc"
+    AdaptiveOpticsSimPipeWireHIL = "355e2bce-7765-4934-ac1c-873e1c98ec3d"
+    CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+    FilterGraphIsland = "245ec3f5-bd83-45fe-abab-efac21027a22"
+    FilterGraphPipeWire = "0366a544-13dd-48a3-a3d6-bd2ba4547294"
+    JuliaFilterGraph = "febeb008-6177-4a1b-bafd-f7a6a3435ad8"
 
 [[deps.PipeWireAO_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "TOML"]
-git-tree-sha1 = "6847e65abbe43442d82db075c13433bf63845b4f"
+git-tree-sha1 = "17e508fb0310a12153384dca1fc88c860955d2d2"
 uuid = "cde84cf6-9a21-5ce0-b5e3-1526e778c30b"
-version = "1.7.0+19"
+version = "1.7.1+0"
 
 [[deps.PrecompileTools]]
 deps = ["Preferences"]
@@ -205,9 +215,9 @@ version = "1.3.4"
 
 [[deps.Preferences]]
 deps = ["TOML"]
-git-tree-sha1 = "5005266de4bfe50e53ff44a5cb5c540b6e47a254"
+git-tree-sha1 = "aef1987d90dcc2e2cbd919ad10b2d25bcce4f418"
 uuid = "21216c6a-2e73-6563-6e65-726566657250"
-version = "1.6.0"
+version = "1.6.1"
 
 [[deps.Printf]]
 deps = ["Unicode"]
@@ -339,3 +349,11 @@ version = "5.15.0+0"
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
 version = "1.64.0+1"
+
+[registries.DarrylGamrothRegistry]
+url = "https://github.com/DarrylGamroth/PackageRegistry.git"
+uuid = "f1b7c622-974f-40ab-8efd-04e6e7c951d8"
+
+[registries.General]
+url = "https://github.com/JuliaRegistries/General.git"
+uuid = "23338594-aafe-5451-b93e-139f81909106"

@@ -24,9 +24,11 @@ const TimingRecorder = PipeWireAORTC.PhaseTiming
         timing.adoption_started_ns = 108
         timing.finished_ns = 109
         frame = PipeWireFrameCommandTiming(UInt64(3), Int64(106), Int64(107))
+        gc_before = Base.gc_time_ns()
         TimingExt.record_phase_timing!(owner, timing, frame, UInt64(100), UInt64(110), UInt64(140))
+        gc_after = Base.gc_time_ns()
         @test owner.capture.rows[1][1:15] == (1,3,100,101,102,103,104,105,106,107,108,109,110,140,1)
-        @test owner.capture.rows[1][16] == Base.gc_time_ns()
+        @test gc_before <= owner.capture.rows[1][16] <= gc_after
         @test owner.capture.rows[1][17] > 0
         @test TimingExt.exchange_timing(owner) === timing
         # Compile and warm the exact record call before checking its allocation.

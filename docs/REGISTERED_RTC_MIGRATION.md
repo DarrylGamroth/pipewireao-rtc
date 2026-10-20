@@ -52,3 +52,82 @@ For the final application gate, exercise held startup, property control, paramet
 ## Review correction
 
 The initial RAR-01 wrong-arity trigger was incorrect: the actual `session.lua` dispatch wrapper catches pre-effect assertions and emits a negative correlated completion without faulting. This protection was present at the audited baseline. Isolated reproduction confirmed it; the review omitted this wrapper. The narrower reproduced defect concerns operation 14 forwarding malformed type/shape fields after marking effects issued. Its remediation validates those fields before `begin`, preserving ticket/token and uncertain-effect handling.
+
+## Independent simulators and RTC definitions
+
+Classic, Copper and GPI 2.0 remain independently deployable instrument packages.
+Their Julia builders prepare AOS plants; application TOML selects scientific
+inputs and compute placement. The simulation workspace pins released AOS 0.2.1
+and AdaptiveOpticsSimPipeWireHIL 0.2.2 without common-package path overrides.
+The adapter attaches to the existing prepared HIL boundary. Default development
+propagation is CUDA; CPU reference execution is an explicit selection.
+
+An RTC application supplies the ordinary PipeWire `filter.graph` configuration,
+its FGN or JFG executor, selected calibration artifacts, and a session declaring
+exact endpoint connections, rates and owner/resource policy. Reconstruction,
+control and woofer/tweeter/tip-tilt allocation belong to that RTC graph, not the
+plant or transport adapter. PipeWireAO supplies scheduling and transport;
+WirePlumberAO owns managed admission, links and lifecycle; systemd supervises
+processes. Direct isolated-core graph tests do not require a managed session.
+Neither the GUI nor the VS Code workspace supplies runtime authority.
+
+The integration path is:
+
+```text
+instrument Julia builder -> prepared AOS HIL boundary -> shared PipeWire adapter
+    -> WFS data port -> RTC controller graph -> physical-command port
+    -> shared adapter -> next plant exposure
+```
+
+Matching shapes alone is insufficient. Admit exact schema, element type,
+layout, units, command ordering, rate and acquisition identity. The current
+Classic boundary is 352 × 352 pixels with 277 commands; Copper is 64 × 64 with
+277 commands. GPI 2.0 is 242 × 240 with 2,403 physical-command coefficients:
+97 woofer, 2,304 tweeter, then two tip/tilt OPD-ramp coefficients. GPI's default
+wire pixels are input electrons, not raw ADC codes; U16 requires an explicit
+ADU calibration. Its wire commands are µm OPD and the adapter converts them to
+metre OPD. It must not inherit REVOLT's 277-command graph or HEART's 1,810-mode
+interface. Use each prepared instrument's `pipewire_configuration` to obtain
+its actual wire contract, including the selected detector encoding.
+
+### Ports, properties and simulator panels
+
+Use existing AOS graph port declarations as the scientific authority. Publish
+external WFS/command ports and explicitly selected diagnostic outputs through
+PipeWireAO; do not invent another simulator port system or duplicate dimensions
+and schemas in GUI code. Keep data ports, sparse ndarray parameter ports and
+low-rate scalar properties distinct.
+
+Simulator properties should declare type, units, bounds, defaults and update
+semantics. Construction settings such as grid size, device, detector encoding,
+seed and calibration identity require stopped preparation unless an existing
+owner explicitly supports an atomic live update. No control is advertised as
+writable merely because a configuration field exists. Accepted live changes are
+applied by the simulation owner between completed exchanges, with requested and
+adopted state distinguished. Run, stop and reset use the existing native source
+and session contracts rather than direct GUI calls into Julia.
+
+Reuse the GUI's generic PropInfo/Props controls, graph panel, ndarray viewer,
+WFS overlays and DM views for simulation sessions. A simulator settings/status
+panel can group those advertised controls and show compute/fidelity and model
+provenance. The scientific declaration owns meaning and capabilities; the GUI
+view configuration owns labels, grouping, layout and selected bindings. Rendered
+controls must reflect actual native capabilities and readback.
+
+Observation stays optional and non-gating. Publish diagnostic images through
+bounded copy/drop-oldest observation exports; attaching, slowing or closing a
+panel must not retain required RTC buffers or stop acquisition. Adding metadata
+or a view declaration does not implement native properties, diagnostic sources
+or session admission.
+
+### Current verification boundary
+
+The shared private-core simulator checks exercise GPU preparation, actual wire
+payloads, command scaling/adoption, acquisition identity and deterministic reset.
+Their controller peers are transport tests, not reconstruction/control graphs.
+Existing Classic/Copper session evidence retains its exact historical package
+closure. GPI 2.0 needs its own controller graph, calibration and physical-command
+allocation before full RTC-loop qualification can be claimed. The shared AOS
+owner's retained TOML/FITS application route is separate from the independent
+instrument packages' Julia builders; dependency compatibility does not by itself
+migrate those applications or provide a managed instrument-owner entrypoint.

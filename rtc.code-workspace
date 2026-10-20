@@ -1,0 +1,43 @@
+{
+  "folders": [
+    {
+      "name": "rtc",
+      "path": "."
+    },
+    {
+      "name": "revolt-rtc",
+      "path": "../REVOLTRTC.jl"
+    },
+    {
+      "name": "scientific-graphs",
+      "path": "../JuliaFilterGraph.jl"
+    },
+    {
+      "path": "../calculon-algorithms"
+    },
+    {
+      "path": "../PipeWireAO.jl"
+    },
+    {
+      "path": "../pipewire"
+    },
+    {
+      "path": "../wireplumber"
+    },
+    {
+      "path": "../pipewireao-gui"
+    },
+    {
+      "path": "../../adaptive-optics-simulations"
+    },
+    {
+      "path": "../../REVOLTClassicSim.jl"
+    },
+    {
+      "path": "../../REVOLTCopperSim.jl"
+    },
+    {
+      "path": "../../GPI2Sim.jl"
+    }
+  ]
+}

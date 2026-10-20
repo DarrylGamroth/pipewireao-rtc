@@ -19,6 +19,19 @@ and command-line tools act as clients of the same WirePlumber session authority.
 - [Proposed Julia RTC structure and migration](docs/JULIA_RTC_STRUCTURE_PLAN.md)
 - [Installed replacement checks](docs/validation/wireplumber-session-20261007/SESSION_CHECKS.md)
 
+## Development workspace
+
+Open [rtc.code-workspace](rtc.code-workspace) to edit the shared RTC package,
+REVOLT application, scientific graph packages, PipeWireAO, WirePlumberAO, GUI
+and the Classic, Copper and GPI 2.0 plants together. The `rtc` folder is the
+checkout containing this workspace file; opening it in a worktree selects that
+worktree explicitly. Each repository retains its own history and dependencies.
+The workspace does not start services or select a Julia deployment environment.
+
+The [simulation integration contract](docs/REGISTERED_RTC_MIGRATION.md#independent-simulators-and-rtc-definitions)
+separates instrument definitions, controller graphs, session connections and
+optional GUI views.
+
 ## Julia package API
 
 The shared Julia package is `PipeWireAORTC` (UUID
