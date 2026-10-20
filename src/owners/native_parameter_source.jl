@@ -646,7 +646,7 @@ parameter declarations; WirePlumber controls admission and links. Return
 """
 function main(arguments=ARGS)
     options = _owner_options(arguments)
-    return Bootstrap.with_owner(options) do admitted
+    return Bootstrap.with_owner(options; application_name="RTC parameters") do admitted
         run_owner(admitted, admitted.bootstrap_runtime)
     end
 end

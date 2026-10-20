@@ -34,7 +34,7 @@ end
 
 """Publish Preparing before the existing owner prepares its science or plant."""
 function Transport(profile::P, remote::AbstractString, name::AbstractString,
-        instance::Int64) where {P<:Profile}
+        instance::Int64; application_name::AbstractString=name) where {P<:Profile}
     path = Client.private_remote(remote)
     loop = ThreadLoop("rtc-bootstrap")
     context = core = endpoint = registry_listener = nothing
@@ -44,7 +44,7 @@ function Transport(profile::P, remote::AbstractString, name::AbstractString,
     connection_failure = Ref{Union{Nothing,String}}(nothing)
     try
         with_thread_loop_lock(loop) do _
-            context = Context(loop)
+            context = Context(loop; properties=Dict("application.name" => application_name))
             core = CoreConnection(context; properties=Dict("remote.name" => path),
                 on_done=(core, id, sequence) -> begin
                     id == 0 && (acknowledged_sequence[] = sequence)
@@ -199,9 +199,10 @@ function validate_threads()
         throw(ArgumentError("native owner requires --threads=N,0 with N >= 2; thread 2 is the cold monitor"))
     return nothing
 end
-function Runtime(remote::AbstractString, name::AbstractString, instance::Int64)
+function Runtime(remote::AbstractString, name::AbstractString, instance::Int64;
+        application_name::AbstractString=name)
     validate_threads()
-    transport = Transport(Codec.PROFILE, remote, name, instance)
+    transport = Transport(Codec.PROFILE, remote, name, instance; application_name)
     runtime = Runtime(transport, ReentrantLock(), false, nothing, false, false,
         nothing, false, nothing, nothing, Base.Threads.Atomic{Bool}(false),
         Base.Threads.Atomic{Bool}(false), nothing)
@@ -534,8 +535,9 @@ construction on the caller thread. Call `f` with `options` extended by
 cooperative cancellation. Retain primary and cleanup failures in order, and
 treat an interrupt after accepted cancellation as clean owner shutdown.
 """
-function with_owner(f, options)
-    runtime = Runtime(options.remote, options.bootstrap_node, options.bootstrap_instance)
+function with_owner(f, options; application_name::AbstractString=options.bootstrap_node)
+    runtime = Runtime(options.remote, options.bootstrap_node, options.bootstrap_instance;
+        application_name)
     return _with_owner(f, options, runtime)
 end
 
