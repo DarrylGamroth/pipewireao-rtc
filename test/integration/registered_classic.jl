@@ -1,5 +1,5 @@
 # Opt-in non-actuating application integration. Only fresh owned units are used.
-using Test, PipeWireAORTC, PipeWireAO
+using Test, PipeWireAORTC, PipeWireAO, TOML
 
 include("classic_observation.jl")
 
@@ -33,11 +33,15 @@ function dump_graph(handle, stage, prefix, name)
     return C.read_json(path; maximum=16*1024*1024)
 end
 
-function source_snapshot(graph)
-    source = only(filter(graph) do object
+function simulator_node(graph)
+    return only(filter(graph) do object
         info = get(object, "info", Dict())
         get(get(info, "props", Dict()), "node.name", nothing) == "simulator-wfs"
     end)
+end
+
+function source_snapshot(graph)
+    source = simulator_node(graph)
     records = source["info"]["params"]["Props"]
     fields = only(filter(records) do record
         params = get(record, "params", Any[])
@@ -55,6 +59,92 @@ function saved_report(handle, stage, name, snapshot)
         report["sequence"] == snapshot["sequence"], "saved report cursor differs from native acknowledgement")
     checked(report["source_instance"] == snapshot["instance"], "saved report source incarnation differs")
     C.write_json(joinpath(stage, name*"-report.json"), report)
+end
+
+function check_simulator_metadata(application, stage, graph)
+    config_path = joinpath(stage, "installed", "simulation.conf")
+    checked(C.sha256_file(config_path) == C.sha256_file(joinpath(application, "simulation.conf")),
+        "installed simulator configuration differs from selected application")
+    options = R.AOSOwner.configuration(config_path)
+    checked(options.version == 2 && options.plant.package === :REVOLTClassicSim,
+        "application does not select the managed Classic builder")
+    manifest = TOML.parsefile(joinpath(stage, "installed", "Manifest.toml"))
+    classic = only(manifest["deps"]["REVOLTClassicSim"])
+    checked(classic["version"] == "0.2.1", "application does not select the Classic 0.2.1 candidate")
+    checked(options.calibration_identity !== nothing, "startup calibration identity is missing")
+    expected = Dict(
+        "aos.simulation.package" => string(options.plant.package),
+        "aos.simulation.package-version" => classic["version"],
+        "aos.simulation.profile" => options.plant.settings.profile,
+        "aos.simulation.backend" => string(options.backend),
+        "aos.simulation.device" => string(options.device),
+        "aos.simulation.model-period-ns" => string(options.period_ns),
+        "aos.simulation.exposure-ns" => string(options.exposure_ns),
+        "aos.simulation.configuration-sha256" => C.sha256_file(config_path),
+        "aos.simulation.calibration-identity" => options.calibration_identity,
+        # Classic 0.2.1's prepared atmosphere/CMOS construction seeds.
+        "aos.simulation.atmosphere-rng-seed" => "1",
+        "aos.simulation.detector-rng-seed" => "0")
+    properties = simulator_node(graph)["info"]["props"]
+    observed = Dict(key => get(properties, key, nothing) for key in keys(expected))
+    C.write_json(joinpath(stage, "simulator-metadata.json"), Dict(
+        "configuration" => config_path, "expected" => expected, "observed" => observed,
+        "calibration_identity_scope" => "declared startup identity; not live adoption"))
+    for (key, value) in expected
+        checked(observed[key] == value, "simulator metadata differs for $key")
+    end
+    return nothing
+end
+
+function check_invalid_control(handle, stage, graph, properties)
+    key = "closed-loop-correction:gain"
+    checked(properties["result"]["properties"][key]["type"] == "float", "gain is not Float32")
+    baseline = request(handle, stage, "invalid-control-baseline",
+        ["property-generation", graph, "closed-loop-correction"])
+    # The supported CLI accepts Bool, but PropInfo declares this property Float.
+    # WirePlumber rejects this mismatch before issuing a property transaction.
+    fields = ["property", graph, key, "bool", "true"]
+    reply = W.control!(handle, Commands.parse(fields); deadline=W.monotonic()+15)
+    C.write_json(joinpath(stage, "invalid-control.json"), Dict("argv" => fields, "reply" => reply))
+    checked(reply["ok"] === false && reply["state"] == "Running" && reply["error"] !== nothing,
+        "incompatible scalar control was not rejected while preserving Running")
+    checked(occursin("incompatible property", reply["error"]["message"]),
+        "control rejection did not identify incompatible property declaration")
+    after = request(handle, stage, "invalid-control-generation",
+        ["property-generation", graph, "closed-loop-correction"])
+    checked(after["result"]["requested"] == baseline["result"]["requested"] &&
+        after["result"]["active"] == baseline["result"]["active"],
+        "rejected control changed the property generation")
+    current = request(handle, stage, "properties-after-invalid-control", ["properties", graph])
+    checked(current["result"]["properties"][key] == properties["result"]["properties"][key],
+        "rejected control changed the gain")
+    checked(request(handle, stage, "survived-invalid-control", ["status"])["state"] == "Running",
+        "session did not survive rejected control")
+    return nothing
+end
+
+function save_cadence_window(stage, initial, stopped, start_before, start_after, stop_before, stop_after, options)
+    checked(initial["instance"] == stopped["instance"] && initial["generation"] == stopped["generation"],
+        "cadence cursor identities differ")
+    completed = stopped["sequence"] - initial["sequence"]
+    checked(completed >= 0, "cadence cursor regressed")
+    # The owner starts and holds within the already-required command bounds.
+    # Retained source Props are ACK cursors, not continuous counter telemetry.
+    maximum_elapsed = (stop_after - start_before) / 1e9
+    minimum_elapsed = (stop_before - start_after) / 1e9
+    record = Dict(
+        "method" => "completed owner ACK cursor delta over existing Start/Stop command bounds",
+        "qualification" => false, "initial_cursor" => initial, "stopped_cursor" => stopped,
+        "completed_exchanges" => completed, "declared_model_rate_hz" => options.rate,
+        "configured_wall_rate_hz" => options.wall_rate,
+        "start_command_before_ns" => start_before, "start_command_after_ns" => start_after,
+        "stop_command_before_ns" => stop_before, "stop_command_after_ns" => stop_after,
+        "maximum_elapsed_s" => maximum_elapsed, "minimum_elapsed_s" => minimum_elapsed,
+        "mean_rate_lower_bound_hz" => maximum_elapsed > 0 ? completed / maximum_elapsed : nothing,
+        "mean_rate_upper_bound_hz" => minimum_elapsed > 0 ? completed / minimum_elapsed : nothing,
+        "scope" => "single local functional window; no deadline, tail latency or 500 Hz qualification")
+    C.write_json(joinpath(stage, "cadence-window.json"), record)
+    return record
 end
 
 function adopted(handle, stage, name, kind, graph, node; baseline=0)
@@ -111,24 +201,34 @@ function main(application, stage, prefix)
     try
         ready = request(handle,stage,"ready",["status"])
         checked(ready["state"] == "Ready","source was not held at startup")
-        initial = source_snapshot(dump_graph(handle,stage,prefix,"graph-ready"))
+        ready_graph = dump_graph(handle,stage,prefix,"graph-ready")
+        initial = source_snapshot(ready_graph)
+        check_simulator_metadata(application, stage, ready_graph)
         checked(!initial["running"] && initial["sequence"] == 0,
             "source published frames before explicit release")
         saved_report(handle, stage, "initial", initial)
         graph = "revolt-classic-jfg-frame-graph"
         properties=request(handle,stage,"properties",["properties",graph])
+        start_before = time_ns()
         start = request(handle,stage,"start",["session-start"])
+        start_after = time_ns()
         checked(start["state"] == "Running","source did not start")
         sleep(2)
         running = request(handle,stage,"running",["status"])
         checked(running["state"] == "Running","session faulted during exchanges")
+        check_invalid_control(handle,stage,graph,properties)
         check_updates(handle,application,stage,graph,properties)
         dump_graph(handle,stage,prefix,"graph-running")
+        stop_before = time_ns()
         stopped = request(handle,stage,"stop",["session-stop"])
+        stop_after = time_ns()
         checked(stopped["state"] == "Ready","source did not stop")
         before_reset = source_snapshot(dump_graph(handle,stage,prefix,"graph-stopped"))
         checked(!before_reset["running"] && before_reset["sequence"] > 0,
             "source did not adopt a frame/command exchange")
+        options = R.AOSOwner.configuration(joinpath(stage, "installed", "simulation.conf"))
+        save_cadence_window(stage, initial, before_reset,
+            start_before, start_after, stop_before, stop_after, options)
         request(handle,stage,"reset",["reset"])
         reset = source_snapshot(dump_graph(handle,stage,prefix,"graph-reset"))
         checked(reset["generation"] == before_reset["generation"] + 1 &&
