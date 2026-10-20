@@ -90,3 +90,95 @@ end
         @test_throws ArgumentError validate_source_report(invalid, after)
     end
 end
+
+@testset "Fault harness binds the primary native policy failure" begin
+    entry(message, time) = Dict("MESSAGE" => message, "__MONOTONIC_TIMESTAMP" => string(time),
+        "_BOOT_ID" => "qualification-boot")
+    selected = (; case="link-removal")
+    injection = (; identity=(; id=UInt32(143), serial=UInt64(144)))
+    fault = entry("AO session fault: Required registry incarnation removed kind=\"link\" role=\"link\" id=143 serial=\"144\"", 100)
+    uncertain = entry("AO source hold uncertain; systemd emergency cleanup required: outcome unknown", 110)
+    timeout = entry("correction_command.sequence 1192 timed out", 120)
+    held_policy = policy_fault_evidence([fault], selected, injection)
+    @test require_fault_outcome("held", held_policy) === nothing
+    shutdown_policy = policy_fault_evidence([uncertain, fault], selected, injection; source_records=[timeout])
+    complete = Dict("cleanup_complete" => true, "cleanup_errors" => [])
+    @test require_fault_outcome("policy-shutdown", shutdown_policy, complete) === nothing
+    @test_throws ArgumentError require_fault_outcome("held", shutdown_policy)
+    @test_throws ArgumentError require_fault_outcome("policy-shutdown", held_policy, complete)
+    @test_throws ArgumentError require_fault_outcome("policy-shutdown", shutdown_policy)
+    @test_throws ArgumentError require_fault_outcome("policy-shutdown", shutdown_policy,
+        Dict("cleanup_complete" => false))
+    @test_throws ArgumentError require_fault_outcome("policy-shutdown", shutdown_policy,
+        Dict("cleanup_complete" => true, "cleanup_errors" => ["surviving owner"]))
+    @test_throws ArgumentError require_fault_outcome("unknown", held_policy)
+    for message in (
+        "AO session fault: Required registry incarnation removed kind=\"port\" role=\"endpoint\" id=94 serial=\"95\"",
+        "AO session fault: Required registry incarnation removed kind=\"link\" id=143 serial=\"145\"",
+        "AO session fault: Required registry incarnation removed kind=\"link\" id=142 serial=\"144\"",
+        "AO session fault: Required session link destroyed",
+    )
+        @test_throws ArgumentError policy_fault_evidence([entry(message, 90), fault], selected, injection)
+    end
+    @test_throws ArgumentError policy_fault_evidence([], selected, injection)
+    @test_throws ArgumentError policy_fault_evidence([fault, entry(uncertain["MESSAGE"], 90)], selected, injection)
+    @test_throws ArgumentError policy_fault_evidence([fault], selected, injection;
+        source_records=[entry(timeout["MESSAGE"], 90)])
+    wrong_boot = deepcopy(timeout)
+    wrong_boot["_BOOT_ID"] = "different-boot"
+    @test_throws ArgumentError policy_fault_evidence([fault], selected, injection; source_records=[wrong_boot])
+end
+
+@testset "Fault cleanup waits for receipt, manager and every owner together" begin
+    handle = (; invocation="retained-invocation", cgroup="/retained-manager", main_pid=42)
+    active = Dict("LoadState" => "loaded", "ActiveState" => "active", "InvocationID" => handle.invocation,
+        "ControlGroup" => handle.cgroup, "MainPID" => "42")
+    @test exact_manager(handle, active)
+    deactivating = merge(active, Dict("ActiveState" => "deactivating"))
+    @test !exact_manager(handle, deactivating)
+    stopped = merge(active, Dict("ActiveState" => "inactive", "MainPID" => "0",
+        "ControlGroup" => "", "InvocationID" => ""))
+    @test !exact_manager(handle, stopped)
+    for (key, value) in (("InvocationID", "replacement"), ("ControlGroup", "/replacement"), ("MainPID", "43"))
+        @test_throws ArgumentError exact_manager(handle, merge(active, Dict(key => value)))
+    end
+    checks = Dict("receipt_complete" => true, "no_cleanup_errors" => true, "unit_quiescent" => true,
+        "manager_exited" => true, "manager_cgroup_empty" => true,
+        "source_exited" => true, "source_cgroup_empty" => true)
+    for pending in ("receipt_complete", "unit_quiescent", "manager_exited", "manager_cgroup_empty",
+            "source_exited", "source_cgroup_empty")
+        mktempdir() do destination
+            ticks, reads = Ref(0.0), Ref(0)
+            record = Dict("cleanup_complete" => true, "owners" => Dict(), "phase" => "stopped")
+            observed = observe_cleanup!(handle, destination; failed=true, seconds=1,
+                now=()->ticks[], pause=seconds->(ticks[] += seconds), read_record=()->record,
+                read_checks=_ -> begin
+                    reads[] += 1
+                    merge(checks, Dict(pending => reads[] >= 3))
+                end)
+            @test observed === record
+            @test reads[] == 3
+            evidence = cleanup_evidence(destination)
+            @test length(evidence["settling_observations"]) == 2
+            @test first(evidence["settling_observations"])["checks"][pending] === false
+            @test all(values(evidence["checks"]))
+        end
+    end
+    mktempdir() do destination
+        ticks = Ref(0.0)
+        record = Dict("cleanup_complete" => true, "owners" => Dict(), "phase" => "stopped")
+        @test_throws ErrorException observe_cleanup!(handle, destination; failed=true, seconds=0.2,
+            now=()->ticks[], pause=seconds->(ticks[] += seconds), read_record=()->record,
+            read_checks=_ -> merge(checks, Dict("manager_cgroup_empty" => false)))
+        before = cleanup_evidence(destination)
+        @test length(before["observation_errors"]) == 1
+        # Later observation may settle, but the first failed observation remains evidence.
+        observe_cleanup!(handle, destination; failed=true, seconds=1,
+            now=()->ticks[], pause=seconds->(ticks[] += seconds), read_record=()->record,
+            read_checks=_ -> copy(checks))
+        after = cleanup_evidence(destination)
+        @test after["observation_errors"] == before["observation_errors"]
+        @test first(after["settling_observations"])["checks"]["manager_cgroup_empty"] === false
+        @test last(after["settling_observations"])["checks"]["manager_cgroup_empty"] === true
+    end
+end

@@ -39,26 +39,44 @@ prefix (default `/opt/pipewireao`). `--help` prints the complete CLI. Run cases
 serially, each with its own fresh stage root. Existing HIL and other sessions
 are not test targets.
 
-Each case captures registry identities and session links, injects one removal
-or signals only the verified controller unit's main process, requires Fault
-and absent session links, and verifies the source's held state. Calibration
-sources use the existing public paused-state query. AOS sources use read-only
-`pwao-dump` inspection of the existing run-control ACK and source snapshot. The
-AOS check binds the retained node ID/serial, mailbox instance, authenticated
-client PID and live source process incarnation. It requires a new stopped run
-ACK after the fault and a valid saved report matching the acknowledged report
-cursor. That report can precede the held acquisition cursor. The snapshot is
-the last owner acknowledgement, not continuous cursor telemetry. Three subsequent
-observations span 0.6 seconds and check that surviving owner incarnations stay
-unchanged, the session stays Fault, and no links reappear. This is a bounded
-observation of automatic recovery, not an unlimited no-retry guarantee.
+Each case captures registry identities and session links, then injects one removal
+or signals only the verified controller unit's main process. It qualifies two
+policy outcomes separately. A confirmed source Hold permits the session to stay
+Fault with withdrawn links and surviving owners. An unknown Hold requires the
+native policy to disconnect its endpoint and systemd to finish emergency
+cleanup. The test does not require a stopped source acknowledgement when the
+outstanding command was lost, and it does not create another cancellation path.
 
-The test then requests cleanup of its exact unit, checks the retained ledger,
-empty cgroups, and disappearance of captured processes. A service failure may
-remain recorded after successful fault cleanup; the stop exception is retained
-and cleanup must still be proved independently. The test explicitly starts a
-second fresh cohort, checks new session/owner identities and Ready→Running,
-then cleans that cohort up too.
+For the held outcome, calibration sources use the existing public paused-state
+query. AOS sources use read-only `pwao-dump` inspection of the existing run-control
+ACK and source snapshot. The AOS check binds the retained node ID/serial, mailbox
+instance, authenticated client PID and live source process incarnation. It
+requires a new stopped run ACK after the fault and a valid saved report matching
+the acknowledged report cursor. That report can precede the held acquisition
+cursor. The snapshot is the last owner acknowledgement, not continuous cursor
+telemetry. Three subsequent observations span 0.6 seconds and check that surviving
+owner incarnations stay unchanged, the session stays Fault, and no links reappear.
+This is a bounded observation of automatic recovery, not an unlimited no-retry
+guarantee.
+
+For policy shutdown, the exact manager invocation's journal must publish the
+source-Hold-uncertain emergency-cleanup reason. The test observes cleanup without
+sending another stop to a closed or deactivating manager. Both outcomes require
+the retained cleanup receipt and disappearance of every captured owner/manager
+process with empty cgroups and a quiescent manager unit. These checks settle
+together within a finite 320 second observation budget: `cleanup_complete` alone
+does not prove that `ExecStopPost` has exited. Changed intermediate checks and
+failed observations remain recorded. A service failure may remain in the receipt
+after successful emergency cleanup; the test retains that failure.
+
+The exact manager and source invocation journals are saved. The first policy
+Fault in a link-removal case must name the injected link ID/serial; a later
+source-port removal does not qualify the injection. Any logged source-command
+timeout must follow that first Fault. This compares journal events, without
+claiming when a missing command began waiting. The receipt also records the
+actual selected prefix's policy hashes. The test explicitly starts a second
+fresh cohort, checks new session/owner identities and Ready→Running, then cleans
+that cohort up too. Only an exact active manager may receive an explicit stop.
 
 `qualification.json`, `faulted/observed-cleanup.json`, and
 `readmitted/observed-cleanup.json` retain the observations. The qualification
@@ -90,8 +108,11 @@ julia --startup-file=no --project=. test/integration/test_session_fault_helpers.
 These tests preserve Classic/Copper calibration declarations and admit AOS
 source-control declarations. They reject stale hold ACKs, changed node/mailbox
 or authenticated owner identities, invalid scalar fields and invalid report
-cursors. They do not establish live fault recovery. Run each selected AOS case
-against a fresh sealed application separately; for Classic's JFG application,
+cursors. They distinguish held and policy-shutdown proof, reject secondary or
+wrong-incarnation link faults, and exercise delayed receipt/process/cgroup cleanup
+observations with a controlled clock. They preserve failed observations when a
+later read settles. They do not establish live fault recovery. Run each selected
+AOS case against a fresh sealed application separately; for Classic's JFG application,
 `--controller-role julia` selects its declared graph owner.
 
 ## Deterministic production-policy checks
@@ -121,7 +142,7 @@ and absence of automatic readmission. Several obligations share a case.
 | Source hold before graph hold and withdrawal | Production Lua callback with gated completions | Native/device timing is not measured. |
 | Repeated faults, unknown hold, graph/withdrawal failures | Production Lua callback | Controlled I/O failures do not inject native proxy errors. |
 | Sink removal, owned link removal, graph-child exit | Opt-in installed-session cases | Each selected sealed package/policy closure needs its own live result. |
-| Fault retention, held source, no automatic readmission | Installed-session observations | The finite window does not prove absence of every possible retry. |
+| Held Fault with surviving owners, or unknown Hold with complete policy shutdown | Installed-session observations and exact-invocation journals | The finite window does not prove absence of every possible retry. |
 | Complete cleanup and explicitly requested fresh admission | Installed-session cases and exact retained identities | This does not qualify physical command disposition. |
 | Native sink error and proxy-error injection | Gap: needs a cooperative owned sink or a declared plugin fault mechanism | A remotely bound Node has no public `set_error!` operation. |
 | Physical DM safe-state action and approval | Deferred outside the non-actuating RTC profile | The retired JFG harness is not evidence for this RTC path. |

@@ -44,13 +44,13 @@ function options(args)
         controller=get(values, "--controller-role", nothing))
 end
 
-function await(predicate, seconds, description)
-    deadline = clock() + seconds
+function await(predicate, seconds, description; now=clock, pause=sleep)
+    deadline = now() + seconds
     while true
         result = predicate()
         result === nothing || return result
-        clock() < deadline || error("deadline expired: $description")
-        sleep(0.02)
+        now() < deadline || error("deadline expired: $description")
+        pause(0.1)
     end
 end
 
@@ -179,27 +179,52 @@ end
 save_cleanup(destination, evidence) = C.write_json(
     joinpath(destination, "observed-cleanup.json"), evidence; atomic=true)
 
-function observe_cleanup!(handle, destination; failed)
+"Reject a replacement manager before either inspection or an exact-unit stop."
+function exact_manager(handle, values)
+    invocation, group = values["InvocationID"], values["ControlGroup"]
+    (isempty(invocation) || invocation == handle.invocation) &&
+        (isempty(group) || group == handle.cgroup) &&
+        values["MainPID"] in ("0", string(handle.main_pid)) ||
+        throw(ArgumentError("session manager incarnation changed"))
+    return values["LoadState"] == "loaded" && values["ActiveState"] == "active" &&
+        values["MainPID"] == string(handle.main_pid) && invocation == handle.invocation &&
+        group == handle.cgroup
+end
+
+function cleanup_checks(handle, record)
+    exact_manager(handle, S.properties(handle.unit; deadline=clock()+8))
+    checks = Dict(
+        "receipt_complete" => get(record, "cleanup_complete", false) === true,
+        "no_cleanup_errors" => isempty(get(record, "cleanup_errors", [])),
+        "unit_quiescent" => S.quiescent_unit(handle.unit; deadline=clock()+8),
+        "manager_exited" => !S.old_process_exists(handle.main_pid, handle.start_ticks),
+        "manager_cgroup_empty" => S.cgroup_empty(handle.cgroup),
+    )
+    for (role, owner) in record["owners"]
+        checks[role * "_exited"] = !S.old_process_exists(owner["pid"], UInt64(owner["start-ticks"]))
+        checks[role * "_cgroup_empty"] = S.cgroup_empty(owner["cgroup"])
+    end
+    return checks
+end
+
+function observe_cleanup!(handle, destination; failed, seconds=320, now=clock, pause=sleep,
+        read_record=()->W.final_record(destination), read_checks=record->cleanup_checks(handle, record))
     evidence = cleanup_evidence(destination)
+    observations = get!(evidence, "settling_observations", Any[])
     try
-        record = await(30, "retained cleanup receipt") do
-            value = W.final_record(destination)
-            get(value, "cleanup_complete", false) === true ? value : nothing
+        record = await(seconds, "complete exact session cleanup"; now, pause) do
+            record = read_record()
+            checks = read_checks(record)
+            failed || (checks["successful_stop"] = get(evidence, "stop_error", nothing) === nothing &&
+                get(record, "error", nothing) === nothing && get(record, "phase", nothing) == "stopped")
+            evidence["checks"], evidence["record"] = checks, record
+            if isempty(observations) || last(observations)["checks"] != checks
+                push!(observations, Dict("observed_at" => now(), "checks" => copy(checks)))
+            end
+            save_cleanup(destination, evidence)
+            all(values(checks)) ? record : nothing
         end
-        checks = Dict(
-            "no_cleanup_errors" => isempty(get(record, "cleanup_errors", [])),
-            "unit_quiescent" => S.quiescent_unit(handle.unit; deadline=clock()+8),
-            "manager_exited" => !S.old_process_exists(handle.main_pid, handle.start_ticks),
-            "manager_cgroup_empty" => S.cgroup_empty(handle.cgroup),
-        )
-        for (role, owner) in record["owners"]
-            checks[role * "_exited"] = !S.old_process_exists(owner["pid"], UInt64(owner["start-ticks"]))
-            checks[role * "_cgroup_empty"] = S.cgroup_empty(owner["cgroup"])
-        end
-        failed || (checks["successful_stop"] = get(evidence, "stop_error", nothing) === nothing)
-        evidence["checks"], evidence["record"] = checks, record
-        save_cleanup(destination, evidence)
-        checked(all(values(checks)), "exact session cleanup was not confirmed")
+        checked(all(values(evidence["checks"])), "exact session cleanup was not confirmed")
         return record
     catch error
         push!(evidence["observation_errors"], sprint(showerror, error))
@@ -210,29 +235,27 @@ end
 
 function cleanup!(handle, destination; failed)
     evidence = cleanup_evidence(destination)
-    evidence["stop_attempted"] = true
-    save_cleanup(destination, evidence)
-    evidence["stop_error"] = try
-        W.stop!(handle; deadline=clock()+320)
-        nothing
-    catch error
-        sprint(showerror, error)
+    active = exact_manager(handle, S.properties(handle.unit; deadline=clock()+8))
+    evidence["stop_attempted"] = handle.stop_attempted
+    if active && !handle.stop_attempted
+        evidence["action"] = "stop-exact-active-manager"
+        save_cleanup(destination, evidence)
+        evidence["stop_error"] = try
+            W.stop!(handle; deadline=clock()+320)
+            nothing
+        catch error
+            sprint(showerror, error)
+        end
+        # W.stop! sets its fence only after verifying the exact active identity.
+        evidence["stop_attempted"] = handle.stop_attempted
+    else
+        evidence["action"] = handle.stop_attempted ? "observe-submitted-stop" : "observe-policy-shutdown"
     end
-    save_cleanup(destination, evidence) # Persist the stop outcome before observing it.
+    save_cleanup(destination, evidence)
     return observe_cleanup!(handle, destination; failed)
 end
 
-function reconcile_cleanup!(handle, destination)
-    evidence = cleanup_evidence(destination)
-    evidence["reconciliation_error"] = try
-        W.reconcile_stop!(handle; deadline=clock()+30)
-        nothing
-    catch error
-        sprint(showerror, error)
-    end
-    save_cleanup(destination, evidence)
-    return observe_cleanup!(handle, destination; failed=true)
-end
+reconcile_cleanup!(handle, destination) = observe_cleanup!(handle, destination; failed=true)
 
 function qualification_source(spec)
     source = only(filter(x -> x["role"] == spec["source-owner"], spec["owners"]))
@@ -387,6 +410,64 @@ function require_aos_hold(before, after)
     return nothing
 end
 
+function journal_records(unit, invocation, pid, destination, label)
+    result = C.run_checked(["journalctl", "--user", "--no-pager", "--all", "-o", "json",
+        "-u", unit, "_SYSTEMD_INVOCATION_ID=" * invocation, "_PID=" * string(pid)];
+        timeout=8, maximum_output_bytes=16*1024*1024)
+    result.returncode == 0 || error("exact owner journal inspection failed: $(result.stderr)")
+    write(joinpath(destination, label * "-journal.jsonl"), result.stdout)
+    records = [C.parse_json(line) for line in split(result.stdout, '\n'; keepempty=false)]
+    for record in records
+        record["_SYSTEMD_USER_UNIT"] == unit && record["_SYSTEMD_INVOCATION_ID"] == invocation &&
+            record["_PID"] == string(pid) || error("journal entry belongs to a different owner incarnation")
+    end
+    return records
+end
+
+journal_time(record) = parse(UInt64, record["__MONOTONIC_TIMESTAMP"])
+
+function policy_fault_evidence(records, selected, injection; source_records=[])
+    faults = sort(filter(record -> occursin("AO session fault: ", record["MESSAGE"]), records); by=journal_time)
+    isempty(faults) && throw(ArgumentError("exact manager journal has no native policy Fault"))
+    first_fault = first(faults)
+    reason = first_fault["MESSAGE"]
+    if selected.case == "link-removal"
+        id = match(r"\bid=(\d+)(?: |$)", reason)
+        serial = match(r"\bserial=\"(\d+)\"", reason)
+        occursin("Required registry incarnation removed", reason) && occursin("kind=\"link\"", reason) &&
+            id !== nothing && serial !== nothing &&
+            parse(UInt32, id[1]) == injection.identity.id &&
+            parse(UInt64, serial[1]) == injection.identity.serial ||
+            throw(ArgumentError("first policy Fault does not identify the injected owned link"))
+    end
+    uncertain = filter(record -> occursin("AO source hold uncertain; systemd emergency cleanup required:",
+        record["MESSAGE"]), records)
+    all(record -> journal_time(record) >= journal_time(first_fault), uncertain) ||
+        throw(ArgumentError("source hold uncertainty predates the first policy Fault"))
+    timeouts = filter(record -> occursin("correction_command.sequence", record["MESSAGE"]) &&
+        occursin("timed out", record["MESSAGE"]), source_records)
+    all(record -> record["_BOOT_ID"] == first_fault["_BOOT_ID"] &&
+        journal_time(record) > journal_time(first_fault), timeouts) ||
+        throw(ArgumentError("source command timeout was logged before the injected policy Fault"))
+    return Dict("first_fault" => first_fault, "source_hold_uncertain" => uncertain,
+        "source_command_timeouts" => timeouts)
+end
+
+function require_fault_outcome(outcome, policy, cleanup=nothing)
+    if outcome == "held"
+        isempty(policy["source_hold_uncertain"]) ||
+            throw(ArgumentError("held outcome also published source Hold uncertainty"))
+    elseif outcome == "policy-shutdown"
+        !isempty(policy["source_hold_uncertain"]) && cleanup !== nothing &&
+            get(cleanup, "cleanup_complete", false) === true &&
+            isempty(get(cleanup, "cleanup_errors", [])) ||
+            throw(ArgumentError("policy shutdown lacks unknown-Hold and complete cleanup proof"))
+    else
+        throw(ArgumentError("unknown fault outcome"))
+    end
+    return nothing
+end
+
 function run_case(selected)
     !ispath(selected.stage) && !islink(selected.stage) || error("stage root must be fresh")
     spec = D.profile(joinpath(selected.package, "deployment.conf"), selected.prefix)
@@ -410,6 +491,8 @@ function run_case(selected)
         "deployment_sha256" => C.sha256_file(joinpath(selected.package, "deployment.conf")),
         "sealed_policy" => Dict(k => v for (k,v) in spec["artifacts"] if
             endswith(k, "ao/session.lua") || endswith(k, "lib/ao-connections.lua")),
+        "installed_policy" => Dict(relative => C.sha256_file(joinpath(selected.prefix, "share", "wireplumber",
+            "scripts", relative)) for relative in ("ao/session.lua", "lib/ao-connections.lua")),
         "source_protocol" => source["control-protocol"], "startup_budget_s" => startup_budget(spec),
         "test_sha256" => C.sha256_file(@__FILE__),
         "rtc_version" => string(pkgversion(PipeWireAORTC)),
@@ -450,46 +533,66 @@ function run_case(selected)
             end
             receipt["injection"] = inject!(selected, spec, session, ledger, loop, core, registry, captured, links)
             save()
-            status = await(15, "Fault publication") do
-                value = W.control!(handle, Command(:status); deadline=clock()+8)
-                value["state"] == "Fault" ? value : nothing
-            end
-            checked(status["ok"] === true, "Fault Status request failed")
-            receipt["fault_status"] = status
-            await(15, "session link withdrawal") do
-                isempty(cohort_links(snapshot(loop, registry))) ? true : nothing
-            end
-            source_status = if aos_source
-                await(15, "fresh native source held acknowledgement") do
-                    observation = inspect_aos_source(selected, first_stage, ledger, source,
-                        captured[source["control-node"]].identity, "source-after-fault";
-                        instance=source_before["instance"])
-                    if observation["snapshot"]["running"] ||
-                            observation["run_ack"]["completed-token"] <= source_before["run_ack"]["completed-token"]
-                        return nothing
+            observations = get!(receipt, "fault_observation_errors", Any[])
+            outcome = await(25, "held Fault or native policy shutdown") do
+                active = exact_manager(handle, S.properties(handle.unit; deadline=clock()+8))
+                active || return "policy-shutdown"
+                try
+                    status = W.control!(handle, Command(:status); deadline=clock()+8)
+                    status["ok"] === true && status["state"] == "Fault" || return nothing
+                    receipt["fault_status"] = status
+                    source_status = if aos_source
+                        observation = inspect_aos_source(selected, first_stage, ledger, source,
+                            captured[source["control-node"]].identity, "source-after-fault";
+                            instance=source_before["instance"])
+                        if observation["snapshot"]["running"] ||
+                                observation["run_ack"]["completed-token"] <= source_before["run_ack"]["completed-token"]
+                            return nothing
+                        end
+                        require_aos_hold(source_before, observation)
+                        observation
+                    else
+                        value = W.source_status(ready, source["instrument"]; deadline=clock()+8)
+                        value["ok"] === true && value["state"] == "paused" || return nothing
+                        value
                     end
-                    require_aos_hold(source_before, observation)
-                    observation
+                    receipt["source_after_fault"] = source_status
+                    isempty(cohort_links(snapshot(loop, registry))) || return nothing
+                    return "held"
+                catch error
+                    message = sprint(showerror, error)
+                    if isempty(observations) || last(observations)["error"] != message
+                        push!(observations, Dict("observed_at" => clock(), "error" => message))
+                        save()
+                    end
+                    return nothing
                 end
-            else
-                value = W.source_status(ready, source["instrument"]; deadline=clock()+8)
-                checked(value["ok"] === true && value["state"] == "paused",
-                    "source did not confirm paused state after fault")
-                value
             end
-            receipt["source_after_fault"] = source_status
-            # A finite observation window checks this cohort; it is not a general timing proof.
-            for _ in 1:3
-                sleep(0.2)
-                checked(W.control!(handle, Command(:status); deadline=clock()+8)["state"] == "Fault",
-                    "faulted session changed lifecycle without readmission")
-                objects = snapshot(loop, registry)
-                checked(isempty(cohort_links(objects)), "session links reappeared")
-                verify_nodes(captured, objects, spec, selected)
-                verify_owners(ledger; missing=selected.case == "controller-exit" ? selected.controller : nothing)
+            receipt["fault_outcome"] = outcome
+            save()
+            if outcome == "held"
+                # A finite window checks this cohort, without claiming a general timing proof.
+                for _ in 1:3
+                    sleep(0.2)
+                    checked(W.control!(handle, Command(:status); deadline=clock()+8)["state"] == "Fault",
+                        "faulted session changed lifecycle without readmission")
+                    objects = snapshot(loop, registry)
+                    checked(isempty(cohort_links(objects)), "session links reappeared")
+                    verify_nodes(captured, objects, spec, selected)
+                    verify_owners(ledger; missing=selected.case == "controller-exit" ? selected.controller : nothing)
+                end
             end
         end
+        # A closed/deactivating manager is observed only; cleanup! sends no redundant stop.
         receipt["fault_cleanup"] = cleanup!(handle, first_stage; failed=true)
+        manager_journal = journal_records(handle.unit, handle.invocation, handle.main_pid,
+            first_stage, "manager")
+        owner = ledger["owners"][ledger["source_role"]]
+        source_journal = journal_records(owner["unit"], owner["invocation"], owner["pid"], first_stage, "source")
+        receipt["policy_fault_evidence"] = policy_fault_evidence(manager_journal, selected,
+            receipt["injection"]; source_records=source_journal)
+        require_fault_outcome(receipt["fault_outcome"], receipt["policy_fault_evidence"], receipt["fault_cleanup"])
+        save()
         handle = nothing
         second_stage = joinpath(selected.stage, "readmitted")
         handle = W.start!(selected.package, second_stage; prefix=selected.prefix, deadline=clock()+startup_budget(spec))
