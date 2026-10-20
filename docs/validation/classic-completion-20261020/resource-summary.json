@@ -1,0 +1,54 @@
+{
+  "source_sha256": "d8c47c9c6008f1e7463dce0ae2f6fe53267167b0cbde32a3d7f7b38f7ab00b63",
+  "owner_pid": 763301,
+  "bootstrap_instance": 984656800573727,
+  "generation": 1,
+  "record_count": 32768,
+  "capture_complete": true,
+  "warmup_frames": 512,
+  "capacity": 32768,
+  "fixed_row_payload_bytes": 4456448,
+  "period_ns": 2000000,
+  "first_sequence": 513,
+  "last_sequence": 33280,
+  "retained_interval_s": 76.375823707,
+  "interval_exchange_rate_hz": 429.0231962106726,
+  "missed_periods": 5421,
+  "missed_period_semantics": "skipped future release slots, not count of late-start exchanges",
+  "process_allocated_bytes_delta": 5242720,
+  "process_gc_time_ns_delta": 0,
+  "counter_scope": "whole simulator process, cumulative counters; delta covers intervals between retained rows, excludes first row exchange",
+  "phase_distributions": {
+    "owner_exchange_ns": {
+      "min": 915145,
+      "median": 1556382.0,
+      "p95": 2605634,
+      "p99": 6140320,
+      "max": 26162741
+    },
+    "optics_step_ns": {
+      "min": 369642,
+      "median": 436548.0,
+      "p95": 539832,
+      "p99": 619552,
+      "max": 4268181
+    },
+    "frame_command_ns": {
+      "min": 236013,
+      "median": 572092.5,
+      "p95": 968014,
+      "p99": 4051374,
+      "max": 15290371
+    },
+    "optical_observation_tail_ns": {
+      "min": 260,
+      "median": 1463.0,
+      "p95": 4638,
+      "p99": 25889,
+      "max": 114806
+    }
+  },
+  "qualification": false,
+  "scope": "single warmed functional capture during concurrent local builds/GUI/observer tests; no deadline, tail SLO, hardware or 500Hz qualification",
+  "gpu": "NVIDIA GeForce RTX 3080, GPU-ace438b4-a57b-9194-d519-bdcbe42cb770, 615.71.09"
+}

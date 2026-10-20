@@ -12,6 +12,20 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Classic completion for review — 2026-10-20
+
+Complete the CUDA Classic Julia-builder plant with its CPU JFG RTC and RTC-owned
+operator views before moving to Copper. The
+[selected acceptance and coverage table](CLASSIC_REGISTERED_DEPLOYMENT.md#classic-completion-for-review--2026-10-20)
+tracks the immutable review candidate, lazy managed owner, complete lifecycle,
+scientific transport/calibration identity, GUI and observation behavior, faults,
+resource evidence and final review. Existing application/cohort evidence remains
+scoped to its original closure. The selected source, managed lifecycle/fault,
+finite replay/observer and GUI gates now pass independent review; a fresh Running
+cohort is retained. [Final evidence](validation/classic-completion-20261020/README.md)
+keeps private candidates, 429 Hz resource characterization and broader physical,
+convergence and wall-time qualification limits explicit.
+
 ### Independent simulator integration
 
 Classic, Copper and GPI 2.0 application environments select released AOS 0.2.1

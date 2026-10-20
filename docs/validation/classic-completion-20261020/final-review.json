@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "checks": [
+    "RTC disconnected with independent observer connected",
+    "Start Stop Reset Refresh disabled; session not observed",
+    "relocation receipt validates no source overrides",
+    "all 30 source and relocated file hashes match receipt; 27 replay inputs unchanged"
+  ],
+  "artifacts": {
+    "gui-live/rtc-idle-loss-live.json": "e0c3ba0be48ceaa59f0a4e5a9b71d06181c6f704e80572432d34774a52216005",
+    "gui-live/grouped-source-loss-001/05-widget_tree.json": "62d7670e3ae18b9e9303d222b5084d0355fca7a6ab271424a266cc856ace287b",
+    "gui-live/classic-source-lost-rtc-controls-fixed.png": "580a2150dd1b691fb7cf630d9854673124fcd2966ab5ff2424b1187ba47db4d7",
+    "relocate-application-c52-result.toml": "7aa02892f9f03e3142621629a4a7dfeed9eb20e7bf6db75b88d9e8b0c9f9588c"
+  }
+}

@@ -5,6 +5,10 @@
       "path": "."
     },
     {
+      "name": "classic-rtc",
+      "path": "../revolt-classic-rtc"
+    },
+    {
       "name": "revolt-rtc",
       "path": "../REVOLTRTC.jl"
     },

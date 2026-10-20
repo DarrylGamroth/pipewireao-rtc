@@ -1,0 +1,335 @@
+source = "/home/dgamroth/workspaces/codex/pipewire/revolt-classic-rtc"
+source_commit = "c52ceb58407e77a352eb8ac14b702f967642bbab"
+native_prefix = "/home/dgamroth/.local/opt/pipewireao-classic-review-20261020"
+replay_descriptor_reconstructed_sha256 = "b77bf9b2ed3c20367ca7d9b3cb5770e0dca2c0a1508848e89ea664815f2b839d"
+relocated = "/home/dgamroth/workspaces/codex/worktrees/classic-completion-20261020/relocated-application-c52"
+scope = "fresh relocation and sealed registered-environment instantiation using existing shared depot registries, package, artifact and compilation caches; no clean-room download, managed-session launch, GUI behavior, GPU replay or historical source-cache content audit"
+julia_version = "1.13.2"
+load_path = ["@", "@stdlib"]
+tracked_file_count = 30
+script_sha256 = "926a4410df7d69af0c8c5502c162f33037523e3a305578643b44ec28c7a85ee3"
+artifact_override_files = []
+instantiate_succeeded = true
+source_unchanged = true
+replay_changed_files = ["README.md", "deployment.conf", "operator-views.toml"]
+depot_path = ["/home/dgamroth/.local/share/classic-review-20261020/depot"]
+manifest_source_overrides = []
+git_metadata_copied = false
+seal_valid_before_after = true
+project_sources_override_present = false
+descriptor_only_changed_values = ["artifacts.README.md", "artifacts.operator-views.toml"]
+all_relocated_inputs_unchanged_after_instantiate = true
+replay_receipt_sha256 = "a157f1e9628e50b87d063597fad6c71acbe6e1ab90b461c0c7a4d2df99f2b710"
+
+[cache_directories.packages]
+path = "/home/dgamroth/.local/share/classic-review-20261020/depot/packages"
+realpath = "/home/dgamroth/.julia/packages"
+
+[cache_directories.compiled]
+path = "/home/dgamroth/.local/share/classic-review-20261020/depot/compiled"
+realpath = "/home/dgamroth/.julia/compiled"
+
+[cache_directories.artifacts]
+path = "/home/dgamroth/.local/share/classic-review-20261020/depot/artifacts"
+realpath = "/home/dgamroth/.julia/artifacts"
+
+[cache_directories.registries]
+path = "/home/dgamroth/.local/share/classic-review-20261020/depot/registries"
+realpath = "/home/dgamroth/.local/share/classic-review-20261020/depot/registries"
+
+[packages.FilterGraphPipeWire]
+source = "/home/dgamroth/.local/share/classic-review-20261020/depot/packages/FilterGraphPipeWire/iw1lK"
+version = "0.1.3"
+entrypoint = "/home/dgamroth/.julia/packages/FilterGraphPipeWire/iw1lK/src/FilterGraphPipeWire.jl"
+source_realpath = "/home/dgamroth/.julia/packages/FilterGraphPipeWire/iw1lK"
+is_tracking_path = false
+manifest_git_tree_sha1 = "683c2e32d16d6889a00c3f985c25f8e72a0af991"
+uuid = "0366a544-13dd-48a3-a3d6-bd2ba4547294"
+is_tracking_repo = false
+
+[packages.CUDA]
+source = "/home/dgamroth/.local/share/classic-review-20261020/depot/packages/CUDA/3Opfa"
+version = "6.4.2"
+entrypoint = "/home/dgamroth/.julia/packages/CUDA/3Opfa/src/CUDA.jl"
+source_realpath = "/home/dgamroth/.julia/packages/CUDA/3Opfa"
+is_tracking_path = false
+manifest_git_tree_sha1 = "3da65a61794b3a5c01ef1eb1eb4879da4a594ac3"
+uuid = "052768ef-5323-5732-b1bb-66c8b64840ba"
+is_tracking_repo = false
+
+[packages.AdaptiveOpticsSim]
+source = "/home/dgamroth/.local/share/classic-review-20261020/depot/packages/AdaptiveOpticsSim/uvrvC"
+version = "0.2.1"
+entrypoint = "/home/dgamroth/.julia/packages/AdaptiveOpticsSim/uvrvC/src/AdaptiveOpticsSim.jl"
+source_realpath = "/home/dgamroth/.julia/packages/AdaptiveOpticsSim/uvrvC"
+is_tracking_path = false
+manifest_git_tree_sha1 = "1a809e78c898ce01a58915b7f4fb71dc92d4711e"
+uuid = "002fb5eb-ad68-44a0-adbe-b299bfc2febc"
+is_tracking_repo = false
+
+[packages.AdaptiveOpticsSimPipeWireHIL]
+source = "/home/dgamroth/.local/share/classic-review-20261020/depot/packages/AdaptiveOpticsSimPipeWireHIL/RoNCD"
+version = "0.2.2"
+entrypoint = "/home/dgamroth/.julia/packages/AdaptiveOpticsSimPipeWireHIL/RoNCD/src/AdaptiveOpticsSimPipeWireHIL.jl"
+source_realpath = "/home/dgamroth/.julia/packages/AdaptiveOpticsSimPipeWireHIL/RoNCD"
+is_tracking_path = false
+manifest_git_tree_sha1 = "b86b36d35bf428be1f9b5bbf98eaf288302d2789"
+uuid = "355e2bce-7765-4934-ac1c-873e1c98ec3d"
+is_tracking_repo = false
+
+[packages.PipeWireAO]
+source = "/home/dgamroth/.local/share/classic-review-20261020/depot/packages/PipeWireAO/0KE3X"
+version = "0.6.18"
+entrypoint = "/home/dgamroth/.julia/packages/PipeWireAO/0KE3X/src/PipeWireAO.jl"
+source_realpath = "/home/dgamroth/.julia/packages/PipeWireAO/0KE3X"
+is_tracking_path = false
+manifest_git_tree_sha1 = "14dcef6fff816e5fc89459aca21cd1742b497be3"
+uuid = "5d815c25-fdf3-4508-8205-db8be38ea5d0"
+is_tracking_repo = false
+
+[packages.REVOLTClassicSim]
+source = "/home/dgamroth/.local/share/classic-review-20261020/depot/packages/REVOLTClassicSim/F0yjE"
+version = "0.2.1"
+entrypoint = "/home/dgamroth/.julia/packages/REVOLTClassicSim/F0yjE/src/REVOLTClassicSim.jl"
+source_realpath = "/home/dgamroth/.julia/packages/REVOLTClassicSim/F0yjE"
+is_tracking_path = false
+manifest_git_tree_sha1 = "4f895de09c12a49e9034b95cf87ee734ebdad09c"
+uuid = "c09822aa-3d1e-4a1e-903c-d4d0f13badd1"
+is_tracking_repo = false
+
+[packages.FilterGraphIsland]
+source = "/home/dgamroth/.local/share/classic-review-20261020/depot/packages/FilterGraphIsland/H1pzM"
+version = "0.1.2"
+entrypoint = "/home/dgamroth/.julia/packages/FilterGraphIsland/H1pzM/src/FilterGraphIsland.jl"
+source_realpath = "/home/dgamroth/.julia/packages/FilterGraphIsland/H1pzM"
+is_tracking_path = false
+manifest_git_tree_sha1 = "15c9c5ef8dd4222e36f90e5434e3bcabc3b7e182"
+uuid = "245ec3f5-bd83-45fe-abab-efac21027a22"
+is_tracking_repo = false
+
+[packages.FilterGraphAlgorithms]
+source = "/home/dgamroth/.local/share/classic-review-20261020/depot/packages/FilterGraphAlgorithms/NCUxM"
+version = "0.7.0"
+entrypoint = "/home/dgamroth/.julia/packages/FilterGraphAlgorithms/NCUxM/src/FilterGraphAlgorithms.jl"
+source_realpath = "/home/dgamroth/.julia/packages/FilterGraphAlgorithms/NCUxM"
+is_tracking_path = false
+manifest_git_tree_sha1 = "2fcfb7675152673c076d9a29adef34ab1be8fff9"
+uuid = "8914fa96-dfe6-4d3c-aced-40e6da1f6420"
+is_tracking_repo = false
+
+[packages.PipeWireAORTC]
+source = "/home/dgamroth/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yIICF"
+version = "0.1.9"
+entrypoint = "/home/dgamroth/.julia/packages/PipeWireAORTC/yIICF/src/PipeWireAORTC.jl"
+source_realpath = "/home/dgamroth/.julia/packages/PipeWireAORTC/yIICF"
+is_tracking_path = false
+manifest_git_tree_sha1 = "5c9ab53b7ac546b164865b012de75ec71ede49ba"
+uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
+is_tracking_repo = false
+
+[packages.JuliaFilterGraph]
+source = "/home/dgamroth/.local/share/classic-review-20261020/depot/packages/JuliaFilterGraph/VMb8v"
+version = "0.4.0"
+entrypoint = "/home/dgamroth/.julia/packages/JuliaFilterGraph/VMb8v/src/JuliaFilterGraph.jl"
+source_realpath = "/home/dgamroth/.julia/packages/JuliaFilterGraph/VMb8v"
+is_tracking_path = false
+manifest_git_tree_sha1 = "a6c81ed737e4dbf828cdc45ffc21b2f9c9c2c9f3"
+uuid = "febeb008-6177-4a1b-bafd-f7a6a3435ad8"
+is_tracking_repo = false
+
+[packages.PipeWireAO_jll]
+source = "/home/dgamroth/.local/share/classic-review-20261020/depot/packages/PipeWireAO_jll/S33Q5"
+version = "1.7.1+0"
+entrypoint = "/home/dgamroth/.julia/packages/PipeWireAO_jll/S33Q5/src/PipeWireAO_jll.jl"
+source_realpath = "/home/dgamroth/.julia/packages/PipeWireAO_jll/S33Q5"
+is_tracking_path = false
+manifest_git_tree_sha1 = "17e508fb0310a12153384dca1fc88c860955d2d2"
+uuid = "cde84cf6-9a21-5ce0-b5e3-1526e778c30b"
+is_tracking_repo = false
+
+[[replay_comparison]]
+equal = true
+file = "Manifest.toml"
+final_sha256 = "80c34d319940a9fc4eaa8a399415d59f5283a2121b878a4247280a5838f4816b"
+replay_sha256 = "80c34d319940a9fc4eaa8a399415d59f5283a2121b878a4247280a5838f4816b"
+[[replay_comparison]]
+equal = true
+file = "Project.toml"
+final_sha256 = "6f68293bce8181ae46dcff36dc7494f9e2dfad688bd50d0dc392c639d39e37df"
+replay_sha256 = "6f68293bce8181ae46dcff36dc7494f9e2dfad688bd50d0dc392c639d39e37df"
+[[replay_comparison]]
+equal = false
+file = "README.md"
+final_sha256 = "5661e49a8d649d7a12bcdc37ff43bd823ae09985c337d8d03bf927f45811b157"
+replay_sha256 = "12c84e6a5a4d212d1172760d0d0f1141552a75ceafd836d6816dbce14891a4e9"
+[[replay_comparison]]
+equal = true
+file = "artifacts/active-to-full.fits"
+final_sha256 = "35be859539f498abc8f7c9760b55aea1de1d553e4f37246532bca7f055d9e02e"
+replay_sha256 = "35be859539f498abc8f7c9760b55aea1de1d553e4f37246532bca7f055d9e02e"
+[[replay_comparison]]
+equal = true
+file = "artifacts/active.fits"
+final_sha256 = "2b62a06bd8dcb18ad997819600a5b8518a757e435704f682367856e83eba3e4f"
+replay_sha256 = "2b62a06bd8dcb18ad997819600a5b8518a757e435704f682367856e83eba3e4f"
+[[replay_comparison]]
+equal = true
+file = "artifacts/background.fits"
+final_sha256 = "d0662ed3172ec4dc7d9ad16853158e9394356e7842a49a42cbaf54f536ded569"
+replay_sha256 = "d0662ed3172ec4dc7d9ad16853158e9394356e7842a49a42cbaf54f536ded569"
+[[replay_comparison]]
+equal = true
+file = "artifacts/controller-to-vdm.fits"
+final_sha256 = "3c418f4c53c05d7e1671e3eace1d6de79a1d9b548c9a7b5723901785b1b77e4b"
+replay_sha256 = "3c418f4c53c05d7e1671e3eace1d6de79a1d9b548c9a7b5723901785b1b77e4b"
+[[replay_comparison]]
+equal = true
+file = "artifacts/coordinates.fits"
+final_sha256 = "bd6e55fa2567e3342d5c46a17ab5fa2f272b254bc26d573f2bad72451df7a963"
+replay_sha256 = "bd6e55fa2567e3342d5c46a17ab5fa2f272b254bc26d573f2bad72451df7a963"
+[[replay_comparison]]
+equal = true
+file = "artifacts/engineering-offset.fits"
+final_sha256 = "fee38aa4d12fbe478dc492c7d7046937121436d801cb2e70160ca55c16cde19a"
+replay_sha256 = "fee38aa4d12fbe478dc492c7d7046937121436d801cb2e70160ca55c16cde19a"
+[[replay_comparison]]
+equal = true
+file = "artifacts/full-to-active.fits"
+final_sha256 = "a1deb0f572455aaca9b4f69b6293eaa7220f34d02d7d0cbb9a238b5fb5613d18"
+replay_sha256 = "a1deb0f572455aaca9b4f69b6293eaa7220f34d02d7d0cbb9a238b5fb5613d18"
+[[replay_comparison]]
+equal = true
+file = "artifacts/hidden-to-shape.fits"
+final_sha256 = "92f0c618f8f451490055917105136cff5538f9a4e0b937e846fa2869727b6f06"
+replay_sha256 = "92f0c618f8f451490055917105136cff5538f9a4e0b937e846fa2869727b6f06"
+[[replay_comparison]]
+equal = true
+file = "artifacts/pdm-to-vdm.fits"
+final_sha256 = "33a96222a5ac7b3087dfa84e94b8be52b3af4a4cabc875eff20223074e13d79a"
+replay_sha256 = "33a96222a5ac7b3087dfa84e94b8be52b3af4a4cabc875eff20223074e13d79a"
+[[replay_comparison]]
+equal = true
+file = "artifacts/reconstructor.fits"
+final_sha256 = "7c5f3adeb386b1d9dccfbbf16f0907b9fd59b3ed57415785be34531121b29c32"
+replay_sha256 = "7c5f3adeb386b1d9dccfbbf16f0907b9fd59b3ed57415785be34531121b29c32"
+[[replay_comparison]]
+equal = true
+file = "artifacts/reference-slopes.fits"
+final_sha256 = "89fc8ac1c8537ef1c2d96414b3e3858915a60992a2708aa197dacb71b85e8954"
+replay_sha256 = "89fc8ac1c8537ef1c2d96414b3e3858915a60992a2708aa197dacb71b85e8954"
+[[replay_comparison]]
+equal = true
+file = "artifacts/shape-to-hidden.fits"
+final_sha256 = "28a827024effaa1bdb3d31acd8135a174dfb0b7f451ae3d43fbfd9b0bbc04068"
+replay_sha256 = "28a827024effaa1bdb3d31acd8135a174dfb0b7f451ae3d43fbfd9b0bbc04068"
+[[replay_comparison]]
+equal = true
+file = "artifacts/subaperture-origins.fits"
+final_sha256 = "5d16b89f0131c9b6322ecfa9916506652f5d062ab838fe766e57fdd541abcd40"
+replay_sha256 = "5d16b89f0131c9b6322ecfa9916506652f5d062ab838fe766e57fdd541abcd40"
+[[replay_comparison]]
+equal = true
+file = "artifacts/thresholds.fits"
+final_sha256 = "ee4ea17ee7544cac0d794f6f561413b4924979b2f269d9f3cfd9561aab48f5c9"
+replay_sha256 = "ee4ea17ee7544cac0d794f6f561413b4924979b2f269d9f3cfd9561aab48f5c9"
+[[replay_comparison]]
+equal = true
+file = "artifacts/vdm-to-controller.fits"
+final_sha256 = "3c418f4c53c05d7e1671e3eace1d6de79a1d9b548c9a7b5723901785b1b77e4b"
+replay_sha256 = "3c418f4c53c05d7e1671e3eace1d6de79a1d9b548c9a7b5723901785b1b77e4b"
+[[replay_comparison]]
+equal = true
+file = "artifacts/vdm-to-pdm.fits"
+final_sha256 = "33a96222a5ac7b3087dfa84e94b8be52b3af4a4cabc875eff20223074e13d79a"
+replay_sha256 = "33a96222a5ac7b3087dfa84e94b8be52b3af4a4cabc875eff20223074e13d79a"
+[[replay_comparison]]
+equal = true
+file = "client-julia.conf.in"
+final_sha256 = "ef39e5d8e9fae484b33ed5f1e6059d3dbb983e98d1ba46c4a422727c2a66a209"
+replay_sha256 = "ef39e5d8e9fae484b33ed5f1e6059d3dbb983e98d1ba46c4a422727c2a66a209"
+[[replay_comparison]]
+equal = true
+file = "client-rtc.conf.in"
+final_sha256 = "7b2b15f0b2c64748e6bf5323ae470d6850fe6d75fb60ce10e99e7afa48ea9069"
+replay_sha256 = "7b2b15f0b2c64748e6bf5323ae470d6850fe6d75fb60ce10e99e7afa48ea9069"
+[[replay_comparison]]
+equal = true
+file = "client-simulator.conf.in"
+final_sha256 = "a16f83e8279f71c28c64b44a67c43761813ee970d25038361ee9c32cfac8f719"
+replay_sha256 = "a16f83e8279f71c28c64b44a67c43761813ee970d25038361ee9c32cfac8f719"
+[[replay_comparison]]
+equal = true
+file = "core.conf.in"
+final_sha256 = "0726f2ec1989cfd9a12d116c1f680157ff4a7438a216dbf98646ee1c3e44b769"
+replay_sha256 = "0726f2ec1989cfd9a12d116c1f680157ff4a7438a216dbf98646ee1c3e44b769"
+[[replay_comparison]]
+equal = false
+file = "deployment.conf"
+final_sha256 = "3483703bc44105b02d1c485b272415669c2758b4ca6f9207cbc8b3f55d790a83"
+replay_sha256 = "b77bf9b2ed3c20367ca7d9b3cb5770e0dca2c0a1508848e89ea664815f2b839d"
+[[replay_comparison]]
+equal = true
+file = "graph.conf"
+final_sha256 = "25c18eb1614dece32c07adb1a74443e86b1f0adb6d9398ba58047220639a5e12"
+replay_sha256 = "25c18eb1614dece32c07adb1a74443e86b1f0adb6d9398ba58047220639a5e12"
+[[replay_comparison]]
+equal = false
+file = "operator-views.toml"
+final_sha256 = "28554f1e927a1306966721e369698852e31a55d37718c5c7d563ec6e25fe6023"
+replay_sha256 = "6a7af2104ab4583066bf2092d732a00f20dc33639c3282b9d3dfb4dc6600849c"
+[[replay_comparison]]
+equal = true
+file = "parameters.conf"
+final_sha256 = "5ff67c2086699f2b16eddc80354426f24ef6dc8e6506b22ca68d6b1f1cdaae1d"
+replay_sha256 = "5ff67c2086699f2b16eddc80354426f24ef6dc8e6506b22ca68d6b1f1cdaae1d"
+[[replay_comparison]]
+equal = true
+file = "provenance.toml"
+final_sha256 = "2ba343aa64ad0f1f015f39d833b2b3bb1d9fbd9c923fe9a93d4ccf28cb371cdc"
+replay_sha256 = "2ba343aa64ad0f1f015f39d833b2b3bb1d9fbd9c923fe9a93d4ccf28cb371cdc"
+[[replay_comparison]]
+equal = true
+file = "session.conf.in"
+final_sha256 = "3588c30dc1dd9198b698a7d9429bfcc24ad3c005da228e786b06494542ced3dc"
+replay_sha256 = "3588c30dc1dd9198b698a7d9429bfcc24ad3c005da228e786b06494542ced3dc"
+[[replay_comparison]]
+equal = true
+file = "simulation.conf"
+final_sha256 = "57cf4dfb97dc2756b2610c15ca4cdb4bd19d33f1fb71289286a594684b8b87af"
+replay_sha256 = "57cf4dfb97dc2756b2610c15ca4cdb4bd19d33f1fb71289286a594684b8b87af"
+
+[native_sha256]
+"bin/pipewire-ao" = "1f7018f14a8a51a529dc3a9eb8a0ad1050f207e1adcabbe44cb282572d0e33d3"
+"lib/pipewire-ao-0.3/libpipewire-module-queue.so" = "ddbb38bd96e8930a2a909686f3bc2d3cde2e4dcd3bbff6f22a180eb447083661"
+
+[source_sha256]
+"artifacts/full-to-active.fits" = "a1deb0f572455aaca9b4f69b6293eaa7220f34d02d7d0cbb9a238b5fb5613d18"
+"deployment.conf" = "3483703bc44105b02d1c485b272415669c2758b4ca6f9207cbc8b3f55d790a83"
+"parameters.conf" = "5ff67c2086699f2b16eddc80354426f24ef6dc8e6506b22ca68d6b1f1cdaae1d"
+"artifacts/background.fits" = "d0662ed3172ec4dc7d9ad16853158e9394356e7842a49a42cbaf54f536ded569"
+"client-simulator.conf.in" = "a16f83e8279f71c28c64b44a67c43761813ee970d25038361ee9c32cfac8f719"
+"artifacts/thresholds.fits" = "ee4ea17ee7544cac0d794f6f561413b4924979b2f269d9f3cfd9561aab48f5c9"
+"Project.toml" = "6f68293bce8181ae46dcff36dc7494f9e2dfad688bd50d0dc392c639d39e37df"
+"artifacts/engineering-offset.fits" = "fee38aa4d12fbe478dc492c7d7046937121436d801cb2e70160ca55c16cde19a"
+"artifacts/active-to-full.fits" = "35be859539f498abc8f7c9760b55aea1de1d553e4f37246532bca7f055d9e02e"
+"artifacts/reference-slopes.fits" = "89fc8ac1c8537ef1c2d96414b3e3858915a60992a2708aa197dacb71b85e8954"
+"client-rtc.conf.in" = "7b2b15f0b2c64748e6bf5323ae470d6850fe6d75fb60ce10e99e7afa48ea9069"
+"artifacts/shape-to-hidden.fits" = "28a827024effaa1bdb3d31acd8135a174dfb0b7f451ae3d43fbfd9b0bbc04068"
+"artifacts/controller-to-vdm.fits" = "3c418f4c53c05d7e1671e3eace1d6de79a1d9b548c9a7b5723901785b1b77e4b"
+"artifacts/hidden-to-shape.fits" = "92f0c618f8f451490055917105136cff5538f9a4e0b937e846fa2869727b6f06"
+"client-julia.conf.in" = "ef39e5d8e9fae484b33ed5f1e6059d3dbb983e98d1ba46c4a422727c2a66a209"
+"artifacts/pdm-to-vdm.fits" = "33a96222a5ac7b3087dfa84e94b8be52b3af4a4cabc875eff20223074e13d79a"
+"Manifest.toml" = "80c34d319940a9fc4eaa8a399415d59f5283a2121b878a4247280a5838f4816b"
+"artifacts/active.fits" = "2b62a06bd8dcb18ad997819600a5b8518a757e435704f682367856e83eba3e4f"
+"graph.conf" = "25c18eb1614dece32c07adb1a74443e86b1f0adb6d9398ba58047220639a5e12"
+"artifacts/reconstructor.fits" = "7c5f3adeb386b1d9dccfbbf16f0907b9fd59b3ed57415785be34531121b29c32"
+"provenance.toml" = "2ba343aa64ad0f1f015f39d833b2b3bb1d9fbd9c923fe9a93d4ccf28cb371cdc"
+"simulation.conf" = "57cf4dfb97dc2756b2610c15ca4cdb4bd19d33f1fb71289286a594684b8b87af"
+"artifacts/vdm-to-controller.fits" = "3c418f4c53c05d7e1671e3eace1d6de79a1d9b548c9a7b5723901785b1b77e4b"
+"README.md" = "5661e49a8d649d7a12bcdc37ff43bd823ae09985c337d8d03bf927f45811b157"
+"artifacts/subaperture-origins.fits" = "5d16b89f0131c9b6322ecfa9916506652f5d062ab838fe766e57fdd541abcd40"
+"artifacts/vdm-to-pdm.fits" = "33a96222a5ac7b3087dfa84e94b8be52b3af4a4cabc875eff20223074e13d79a"
+"core.conf.in" = "0726f2ec1989cfd9a12d116c1f680157ff4a7438a216dbf98646ee1c3e44b769"
+"operator-views.toml" = "28554f1e927a1306966721e369698852e31a55d37718c5c7d563ec6e25fe6023"
+"artifacts/coordinates.fits" = "bd6e55fa2567e3342d5c46a17ab5fa2f272b254bc26d573f2bad72451df7a963"
+"session.conf.in" = "3588c30dc1dd9198b698a7d9429bfcc24ad3c005da228e786b06494542ced3dc"

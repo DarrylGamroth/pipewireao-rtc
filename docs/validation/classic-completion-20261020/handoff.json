@@ -1,0 +1,63 @@
+{
+  "application_commit": "c52ceb58407e77a352eb8ac14b702f967642bbab",
+  "cohort": {
+    "runtime_root": "/run/user/1000/pipewireao-session-e3ea2343257c",
+    "main_pid": 922860,
+    "invocation": "c8febbbffefb408a9c97ad59b71168ae",
+    "unit": "pipewireao-session@e3ea2343257c.service",
+    "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-pipewireao\\x2dsession.slice/pipewireao-session@e3ea2343257c.service",
+    "start_ticks": 98833033
+  },
+  "rtc_session_id": "5ee74331-974c-4546-91fb-6c06eae3e5d9",
+  "ready_observed": true,
+  "running_observed": true,
+  "native_status": {
+    "state": "Running",
+    "version": 1,
+    "id": "329",
+    "result": {
+      "running": true,
+      "owned_nodes": 0,
+      "outcome": "observed",
+      "owned_links": 14,
+      "discarded_buffers": 0,
+      "lifecycle_state": "Running",
+      "discarded_by_sink": {}
+    },
+    "session_id": "5ee74331-974c-4546-91fb-6c06eae3e5d9",
+    "ok": true,
+    "owner_pid": 922860,
+    "authority": "wireplumber_session",
+    "error": null
+  },
+  "gui_launch": {
+    "unit": "pipewireao-gui-classic-grouped-20261020.service",
+    "binary": "/home/dgamroth/workspaces/codex/worktrees/classic-completion-20261020/gui-egui/pipewireao-gui-rtc-idle-inspection-97e2999",
+    "sha256": "61942cb383c8031c30417ca0c82a2b29ecac235bf5425eab55a39c7d2cd6051c",
+    "environment": {
+      "WAYLAND_DISPLAY": "wayland-x2ovokWRsD",
+      "XDG_RUNTIME_DIR": "/run/user/1000",
+      "XDG_DATA_HOME": "/home/dgamroth/workspaces/codex/worktrees/classic-completion-20261020/gui-live/data",
+      "XDG_CONFIG_HOME": "/home/dgamroth/workspaces/codex/worktrees/classic-completion-20261020/gui-live/config",
+      "LIBGL_ALWAYS_SOFTWARE": "1",
+      "LP_NUM_THREADS": "2",
+      "LD_LIBRARY_PATH": "/home/dgamroth/.local/opt/pipewireao-classic-review-20261020/lib",
+      "PIPEWIREAO_MODULE_DIR": "/home/dgamroth/.local/opt/pipewireao-classic-review-20261020/lib/pipewire-ao-0.3",
+      "PIPEWIREAO_SPA_PLUGIN_DIR": "/home/dgamroth/.local/opt/pipewireao-classic-review-20261020/lib/spa-ao-0.2",
+      "PIPEWIREAO_CONFIG_DIR": "/home/dgamroth/.local/opt/pipewireao-classic-review-20261020/share/pipewire-ao",
+      "EGUI_INSPECTION": "127.0.0.1:5729"
+    },
+    "source_commit": "97e29996c256b5ab021f8f1c9032383b5cb6fdba",
+    "service": "MainPID=919740\nInvocationID=845c9bbd9275405ab5acf2567022c260\n"
+  },
+  "gui_service": "MainPID=919740\nActiveState=active\nInvocationID=845c9bbd9275405ab5acf2567022c260\n",
+  "review2_cleanup_complete": true,
+  "review2_cleanup_record_sha256": "df5c03f29c56e46e09a6a047480f7c03cfcfba648007a188b40bab247de94531",
+  "original_unrelated_cohort": "MainPID=140602\nActiveState=active\nInvocationID=a63e9a54d04c416181e9afcec415853b\n",
+  "screenshots": [
+    "gui-live/classic-final-fresh-ready-verified.png",
+    "gui-live/classic-final-fresh-shwfs-verified.png",
+    "gui-live/classic-final-fresh-status-verified.png"
+  ],
+  "initial_reattachment_attempt": "Cached old-cohort hint correctly rejected as inaccessible; refreshed discovery, resolved new widget identity, explicitly selected fresh session; no source/runtime repair was needed."
+}

@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "gui_commit": "97e29996c256b5ab021f8f1c9032383b5cb6fdba",
+  "binary_sha256": "61942cb383c8031c30417ca0c82a2b29ecac235bf5425eab55a39c7d2cd6051c",
+  "cohort_unit": "pipewireao-session@a2e81b0ac796.service",
+  "cohort_invocation": "a55c4646d2884c67b9903a6dc9ed268c",
+  "mechanism": "Explicit orderly cohort shutdown removes exact native control endpoint; GUI idle read-only transport callbacks invalidate lifecycle without any GUI Status/control request",
+  "header": "RTC \u00b7 disconnected",
+  "lifecycle_inferred_stopped": false,
+  "controls_disabled": [
+    "Start",
+    "Stop",
+    "Reset",
+    "Refresh"
+  ],
+  "observer_axis_during_capture": "PipeWire \u00b7 connected \u00b7 26 nodes",
+  "actions_sha256": "1a16f4db24ed9746a8bb028c9088f046101e69ea74ed3b6657d14eff70e20ff6",
+  "before": "gui-live/classic-source-lost.png (abd50ea retained RUNNING after endpoint/core loss)",
+  "after": "gui-live/classic-source-lost-rtc-controls-fixed.png"
+}

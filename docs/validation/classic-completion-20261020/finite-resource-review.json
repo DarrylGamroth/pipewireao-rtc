@@ -1,0 +1,26 @@
+{
+  "reviewed_test_commit": "965aef03a1f282fbd368a8263c3e392b049a3edc",
+  "finite_receipt_sha256": "a157f1e9628e50b87d063597fad6c71acbe6e1ab90b461c0c7a4d2df99f2b710",
+  "finite_checks": {
+    "test_source": true,
+    "payload_hashes": true,
+    "modes_payloads_equal": true,
+    "replay_exact": true,
+    "frame_extent": true,
+    "command_extent": true,
+    "application_hashes": true,
+    "native_hashes": true,
+    "float32_scale_exact": true
+  },
+  "resource_checks": {
+    "phase_hash": true,
+    "contiguous": true,
+    "one_generation": true,
+    "rows": 32768,
+    "process_bytes_delta": 5242720,
+    "bytes_per_adjacent_exchange": 160.0,
+    "missed_periods": 5421,
+    "rate_hz": 429.0231962106726
+  },
+  "scope": "independent source review and retained-payload verification; no rerun, service or control mutation"
+}

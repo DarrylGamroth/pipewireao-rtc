@@ -1,0 +1,137 @@
+{
+  "passed": true,
+  "gui_commit": "73e9f0a5d166b557d4e217f50c87bf78334b317f",
+  "main_fields": 10,
+  "settings_fields": 11,
+  "fields": {
+    "pipewireao.source-snapshot.instance": {
+      "area": "display",
+      "title": "Last acknowledged snapshot \u00b7 Source instance",
+      "expected": "1562272625718861371",
+      "actual": "1562272625718861371"
+    },
+    "pipewireao.source-snapshot.kind": {
+      "area": "display",
+      "title": "Last acknowledged snapshot \u00b7 Last control kind",
+      "expected": "3",
+      "actual": "3"
+    },
+    "pipewireao.source-snapshot.completed-token": {
+      "area": "display",
+      "title": "Last acknowledged snapshot \u00b7 Last control token",
+      "expected": "6",
+      "actual": "6"
+    },
+    "pipewireao.source-snapshot.result": {
+      "area": "display",
+      "title": "Last acknowledged snapshot \u00b7 Last control result",
+      "expected": "0",
+      "actual": "0"
+    },
+    "pipewireao.source-snapshot.generation": {
+      "area": "display",
+      "title": "Last acknowledged snapshot \u00b7 Acquisition generation",
+      "expected": "1",
+      "actual": "1"
+    },
+    "pipewireao.source-snapshot.sequence": {
+      "area": "display",
+      "title": "Last acknowledged snapshot \u00b7 Acquisition sequence",
+      "expected": "0",
+      "actual": "0"
+    },
+    "pipewireao.source-snapshot.running": {
+      "area": "display",
+      "title": "Last acknowledged snapshot \u00b7 Acquisition running",
+      "expected": "false",
+      "actual": "false"
+    },
+    "pipewireao.source-snapshot.completed": {
+      "area": "display",
+      "title": "Last acknowledged snapshot \u00b7 Acquisition completed",
+      "expected": "false",
+      "actual": "false"
+    },
+    "pipewireao.source-snapshot.report-generation": {
+      "area": "display",
+      "title": "Last acknowledged snapshot \u00b7 Report generation",
+      "expected": "1",
+      "actual": "1"
+    },
+    "pipewireao.source-snapshot.report-sequence": {
+      "area": "display",
+      "title": "Last acknowledged snapshot \u00b7 Report sequence",
+      "expected": "0",
+      "actual": "0"
+    },
+    "aos.simulation.package": {
+      "area": "settings",
+      "title": "Plant",
+      "expected": "REVOLTClassicSim",
+      "actual": "REVOLTClassicSim"
+    },
+    "aos.simulation.package-version": {
+      "area": "settings",
+      "title": "Version",
+      "expected": "0.2.1",
+      "actual": "0.2.1"
+    },
+    "aos.simulation.profile": {
+      "area": "settings",
+      "title": "Profile",
+      "expected": "grid_gaussian",
+      "actual": "grid_gaussian"
+    },
+    "aos.simulation.backend": {
+      "area": "settings",
+      "title": "Backend",
+      "expected": "cuda",
+      "actual": "cuda"
+    },
+    "aos.simulation.device": {
+      "area": "settings",
+      "title": "Device",
+      "expected": "0",
+      "actual": "0"
+    },
+    "aos.simulation.model-period-ns": {
+      "area": "settings",
+      "title": "Period",
+      "expected": "2000000 ns",
+      "actual": "2000000 ns"
+    },
+    "aos.simulation.exposure-ns": {
+      "area": "settings",
+      "title": "Exposure",
+      "expected": "1896000 ns",
+      "actual": "1896000 ns"
+    },
+    "aos.simulation.configuration-sha256": {
+      "area": "settings",
+      "title": "Config SHA-256",
+      "expected": "57cf4dfb97dc2756b2610c15ca4cdb4bd19d33f1fb71289286a594684b8b87af",
+      "actual": "57cf4dfb97dc2756b2610c15ca4cdb4bd19d33f1fb71289286a594684b8b87af"
+    },
+    "aos.simulation.atmosphere-rng-seed": {
+      "area": "settings",
+      "title": "Atmosphere seed",
+      "expected": "1",
+      "actual": "1"
+    },
+    "aos.simulation.detector-rng-seed": {
+      "area": "settings",
+      "title": "Detector seed",
+      "expected": "0",
+      "actual": "0"
+    },
+    "aos.simulation.calibration-identity": {
+      "area": "settings",
+      "title": "Calibration",
+      "expected": "sha256:3f80f68c2eb0f1977f9656ff63f5f8548aed5276877204ac5a743ff8c2b513a6",
+      "actual": "sha256:3f80f68c2eb0f1977f9656ff63f5f8548aed5276877204ac5a743ff8c2b513a6"
+    }
+  },
+  "native_node_id": 97,
+  "native_object_serial": 98,
+  "scope": "Exact target node object parsed from pw-dump; whole raw dump has unrelated unnamed native parameter arrays, no normalization of selected node required."
+}

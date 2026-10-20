@@ -1,5 +1,7 @@
 # Delivery evidence catalog
 
+- [Classic completion for review, 2026-10-20](validation/classic-completion-20261020/README.md): immutable private candidates with released AOS/HIL, managed lifecycle and fault recovery, finite composed replay/observer invariance, calibration provenance and bounded resource characterization. Grouped GUI settings and native endpoint-loss invalidation pass; retained review identity is recorded separately.
+
 - [Released simulator dependencies and RTC boundary](validation/simulator-releases-20261019/README.md): HIL 0.2.2 timing/retry integration, registry dependency correction, fresh RTC loading/configuration/preparation, and private-core simulator checks; managed session, GPI controller and GUI qualification remain open.
 
 - [Classic 500 Hz target and timing investigation, 2026-10-19](validation/classic-rate-20261019/README.md): removes the 10 Hz throttle, enables native profiling, confirms reset/eight-stream delivery and replacement GUI attachment. Short windows achieve 280–300 frames/s; throughput and frame-clock telemetry gaps remain unresolved.

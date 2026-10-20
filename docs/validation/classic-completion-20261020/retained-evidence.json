@@ -1,0 +1,42 @@
+{
+  "resource-summary.json": {
+    "source": "/home/dgamroth/workspaces/codex/worktrees/classic-completion-20261020/review-session-001/resource-summary.json",
+    "sha256": "f43f9d141a14c5524834073411455b0f2d741f9b68fd64e1326aab68b776aba1"
+  },
+  "finite-result.toml": {
+    "source": "/home/dgamroth/workspaces/codex/worktrees/classic-completion-20261020/finite-replay/run-012/result.toml",
+    "sha256": "a157f1e9628e50b87d063597fad6c71acbe6e1ab90b461c0c7a4d2df99f2b710"
+  },
+  "finite-resource-review.json": {
+    "source": "/home/dgamroth/workspaces/codex/worktrees/classic-completion-20261020/review/finite-and-resource-independent.json",
+    "sha256": "72239b183a9e0bcb96dc557db7fb68de14ae1ae9ba76059c78062c9c1c3295b1"
+  },
+  "status-properties.json": {
+    "source": "/home/dgamroth/workspaces/codex/worktrees/classic-completion-20261020/gui-live/status-live-comparison.json",
+    "sha256": "c453a99ecef41758d3fd7d693d22c1ce59fb157bfa6db64c6163697ee5e1ddcb"
+  },
+  "relocation.toml": {
+    "source": "/home/dgamroth/workspaces/codex/worktrees/classic-completion-20261020/relocate-application-c52-result.toml",
+    "sha256": "7aa02892f9f03e3142621629a4a7dfeed9eb20e7bf6db75b88d9e8b0c9f9588c"
+  },
+  "rtc-idle-loss.json": {
+    "source": "/home/dgamroth/workspaces/codex/worktrees/classic-completion-20261020/gui-live/rtc-idle-loss-live.json",
+    "sha256": "e0c3ba0be48ceaa59f0a4e5a9b71d06181c6f704e80572432d34774a52216005"
+  },
+  "gui-focused-review.json": {
+    "source": "/home/dgamroth/workspaces/codex/worktrees/classic-completion-20261020/review/gui-rtc-idle-final-independent.json",
+    "sha256": "8744ad62844fe32c9130a3a4a248252f486695a1cc2abeb8390bc67d53014421"
+  },
+  "handoff.json": {
+    "source": "/home/dgamroth/workspaces/codex/worktrees/classic-completion-20261020/final-handoff.json",
+    "sha256": "13f983f54dc0baee3a20b951e5e4adf1142124b81a7d7e1a89ae38cb9d09a7c9"
+  },
+  "REVIEW.md": {
+    "source": "/home/dgamroth/workspaces/codex/worktrees/classic-completion-20261020/review/REVIEW.md",
+    "sha256": "46f71616bbc3db20f3653feb37deb9a038c6c9c021cf0120285fe82e0a6abc82"
+  },
+  "final-review.json": {
+    "source": "/home/dgamroth/workspaces/codex/worktrees/classic-completion-20261020/review/final-live-relocation-independent.json",
+    "sha256": "47db38e39b0693188265dc695329a7ed037ad60c51eef3b0c80bceceeaed8edd"
+  }
+}

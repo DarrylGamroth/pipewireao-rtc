@@ -1,0 +1,28 @@
+{
+  "revision": "97e29996c256b5ab021f8f1c9032383b5cb6fdba",
+  "reviewer": "independent classic_completion_review",
+  "timestamp_utc": "2026-10-20T09:52:24.054225+00:00",
+  "results": [
+    {
+      "path": "/home/dgamroth/.cache/classic-review-20261020-status-target/debug/deps/pipewireao_gui-8429045afcaee9d8",
+      "sha256": "829c4213b65915771a324bf459359a948534728d082f54e85c528dad75d0e9a0",
+      "selector": "rtc::tests",
+      "returncode": 0,
+      "output": "\nrunning 18 tests\ntest rtc::tests::accepted_failure_without_inner_result_requires_fresh_status ... ok\ntest rtc::tests::connection_loss_resolves_an_admitted_pending_mutation_as_unknown ... ok\ntest rtc::tests::fresh_direct_session_status_establishes_exact_identity_and_lifecycle ... ok\ntest rtc::tests::idle_connection_loss_clears_status_without_fabricating_a_command_or_stopped_state ... ok\ntest rtc::tests::lifecycle_completion_requires_status_refresh ... ok\ntest rtc::tests::mutations_require_status_and_detect_session_replacement ... ok\ntest rtc::tests::native_rejection_preserves_observations_and_failed_mutation_requires_refresh ... ok\ntest rtc::tests::pending_disconnect_and_old_reply_never_replay ... ok\ntest rtc::tests::pending_identity_and_query_cache_remain_bounded ... ok\ntest rtc::tests::unavailable_generation_replaces_old_observation ... ok\ntest rtc::tests::unknown_mutation_survives_later_status_and_missing_session_is_unknown ... ok\ntest view_panel::rtc::tests::disconnected_and_observed_busy_panels_render_without_automatic_actions ... ok\ntest view_panel::rtc::tests::hidden_session_panel_revokes_access_after_disconnect ... ok\ntest view_panel::rtc::tests::observation_refresh_does_not_change_operator_drafts ... ok\ntest view_panel::rtc::tests::session_details_render_owned_counts_as_body_rows ... ok\ntest view_panel::rtc::tests::session_help_keeps_unknown_outcome_guidance_in_the_shared_table ... ok\ntest view_panel::rtc::tests::shared_connection_editor_requires_explicit_click_and_trims_endpoint ... ok\ntest view_panel::rtc::tests::update_opt_in_resets_for_new_session_generation_or_unknown_status ... ok\n\ntest result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 447 filtered out; finished in 0.22s\n\n"
+    },
+    {
+      "path": "/home/dgamroth/.cache/classic-review-20261020-status-target/debug/deps/pipewireao_gui-8ad018798a46a7ed",
+      "sha256": "6ac20174626366cd8eb863dc21b5e52403fa8bdaae0f55ab0468288a1e26ec6d",
+      "selector": "rtc_adapter::tests",
+      "returncode": 0,
+      "output": "\nrunning 5 tests\ntest rtc_adapter::tests::idle_transport_loss_waits_behind_reply_and_detach_cancels_full_event_slot ... ok\ntest rtc_adapter::tests::idle_transport_loss_without_request_revokes_admission_and_reports_generation ... ok\ntest rtc_adapter::tests::prompt_detach_bounds_retired_workers_discards_queued_work_and_eventually_cleans_up ... ok\ntest rtc_adapter::tests::typed_commands_keep_names_scalars_shape_and_path_without_argv_or_json ... ok\ntest rtc_adapter::tests::unknown_retires_connection_without_retry_or_rebind ... ok\n\ntest result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 254 filtered out; finished in 0.12s\n\n"
+    },
+    {
+      "path": "/home/dgamroth/.cache/classic-review-20261020-status-target/debug/deps/pipewireao_gui-8ad018798a46a7ed",
+      "sha256": "6ac20174626366cd8eb863dc21b5e52403fa8bdaae0f55ab0468288a1e26ec6d",
+      "selector": "observation_disconnect_preserves_independent_selected_rtc_status",
+      "returncode": 0,
+      "output": "\nrunning 1 test\ntest rtc_session::tests::observation_disconnect_preserves_independent_selected_rtc_status ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 258 filtered out; finished in 0.00s\n\n"
+    }
+  ]
+}

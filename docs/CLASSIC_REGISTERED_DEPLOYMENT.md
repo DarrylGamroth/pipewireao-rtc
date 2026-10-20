@@ -1,5 +1,70 @@
 # Classic registered-package deployment
 
+## Classic completion for review — 2026-10-20
+
+User direction: complete Classic's managed integration and its RTC-owned panel
+profile, then review correctness and completeness before moving on to Copper.
+The selected development profile is the independent Classic Julia plant on
+CUDA with the CPU JFG controller. Released AOS 0.2.1, shared HIL adapter 0.2.2,
+PipeWireAO 0.6.18 and native artifact 1.7.1 remain selected. The RTC and Classic
+instrument additions are local immutable package candidates for this review;
+new public releases are not inferred from a working development checkout.
+
+Starting commits are RTC `fb4efbe`, Classic `e6569a1` and GUI `566b521`.
+Implementation uses their dedicated worktrees. The running old Classic cohort,
+canonical RTC/REVOLT source-control WIP and GUI review document remain preserved.
+The old sealed application is a source of retained controller/artifact bytes,
+not a qualification of the new dependency closure. Native source controls keep
+RTC-ARCH-024/025 and their existing v1 IDs; the common adapter supersedes the
+historical instrument-specific wrapper named in early RTC-DEV-017 text.
+
+The implementation uses version 2 simulation configuration with a lazy instrument
+package and immutable settings. The package's Julia graph builder is the sole
+plant definition. Wire schemas, dimensions, cadence and exposure are explicit
+and checked against that prepared plant before admission. Version 1 remains
+available for existing sealed TOML/FITS applications. This does not imply FGN
+parity, physical-device authority, an on-instrument calibration, or a guaranteed
+500 Hz wall-clock rate; those remain separate supported-profile claims.
+
+| Governing contract / selected obligation | Implementation allocation | Acceptance evidence | Status |
+| --- | --- | --- | --- |
+| Registered migration / immutable closure | Sealed independent application and candidate registry; released AOS/HIL | Fresh resolve, relocate and instantiate; no path/repository overrides or copied runtime code | Pass: isolated private registry; final sealed application `c52ceb5` validates and relocates with shared caches |
+| RTC-DEV-014/025/026 / prepared plant | Shared AOS owner, Classic settings builder | Early Preparing; strict config and wire rejection; one warm/reset of actual CPU/CUDA boundary; explicit unavailable-device failure | Pass: CPU/CUDA preparation and actual managed CUDA owner |
+| RTC-DEV-003/004/009/021/025/030 / lifecycle | Existing WirePlumber authority and systemd owners | Held Ready; Start, pause/resume, stopped Reset, fresh generation, invalid-control survival, orderly Quit and exact cleanup | Pass: managed session 68/68 |
+| RTC-DEV-005/007/014/024 / scientific transport | Unchanged JFG controller, physical command mapping and HIL boundary | Every accepted command/frame identity; next-frame causality; replay through direct graph at stated tolerances; scalar/parameter adoption and restoration | Pass: ADC transport 44/44, managed adoption/restoration and finite composed replay 1,318/1,318 |
+| RTC-DEV-024/027 / calibration identity | Retained hybrid reconstructor/projections and simulation-derived offsets | Exact unchanged controller/matrix hashes; background/reference provenance checked against current prepared plant; no implicit mask/threshold/gain changes | Pass: retained 16 FITS and graph exact; archived operational lineage/current estimator replay |
+| RTC-DEV-006 / operator views | RTC-owned schema-11 profile and generic GUI views | Real SHWFS/image/DM/focal bindings, actual geometry/units, readonly simulator properties; missing/lost-source behavior; rendered profile inspection | Pass: SHWFS/DM/focal, 21 Status/Settings values, grouped layout, GUI detach/reconnect and native endpoint-loss invalidation |
+| RTC-DEV-006 / bounded observation | Existing copy/drop-oldest exports | No observer, attached, slow, detached and reattached observation; compare accepted deterministic results and continuing lifecycle | Pass: eight-stream progress; exact detector/demanded/adopted results over 16 exchanges in each of four observer modes |
+| RTC-DEV-003/009/013/021/025 / faults | Existing policy and exact owned-cohort fault tests | Required endpoint/controller loss faults and holds ingress; bounded cleanup; unrelated session preserved; explicit fresh admission | Pass: link loss 41/41, controller exit 40/40; both emergency cleanup and fresh admission |
+| RTC-DEV-026 / resources and cadence | Existing bounded phase recorder and declared placement | Actual target/device/threads, achieved wall cadence/missed periods, bounded storage and warmed allocation counters; keep timing scope explicit | Characterized: 32,768 warmed rows, 429 Hz, 5,421 skipped release slots; 160 whole-process bytes per adjacent exchange, no 500 Hz claim |
+| Engineering completion / review | Independent source and final evidence review | All selected rows covered, fresh committed heads, usable launch/stop instructions and retained review candidate | Pass: selected gates independently accepted; fresh committed application and Running GUI review cohort retained |
+
+The detailed commands, initial failures, intermediate candidate identities and
+raw evidence live under
+`/home/dgamroth/workspaces/codex/worktrees/classic-completion-20261020/`.
+[The compact final evidence record](validation/classic-completion-20261020/README.md)
+retains the review and final session identity. Later sections retain the earlier
+application's exact historical claims.
+
+### Simulator settings and restart
+
+The agreed interactive configuration workflow is **edit, apply and restart the
+simulation**. Ordinary source Stop/Start pauses and resumes the existing
+prepared model; it does not adopt a new exposure. The current candidate displays
+startup facts and acknowledged protocol values, without claiming an editable
+simulator-configuration interface.
+
+Exposure is currently part of both the prepared detector and the HIL contract.
+A future configuration apply must validate the instrument builder settings and
+the timing contract, stop the old simulation, prepare the replacement and admit
+it through the existing WirePlumber/systemd ownership. Classic's 500 Hz model
+period is 2 ms; exposure must fit that period and the selected detector model.
+Changing exposure also changes the detector calibration conditions. The apply
+workflow must report that mismatch rather than treating the retained background
+and references as newly qualified. Backend/device, geometry and frame layout
+likewise require preparation; existing RTC gain and engineering-offset updates
+remain native live transactions.
+
 ## Baseline and scope
 
 Approved by the user on 2026-10-19: complete a configuration/FITS-only Classic
