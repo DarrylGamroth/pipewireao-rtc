@@ -86,7 +86,9 @@ function check_simulator_metadata(application, stage, graph)
         "aos.simulation.atmosphere-rng-seed" => "1",
         "aos.simulation.detector-rng-seed" => "0")
     properties = simulator_node(graph)["info"]["props"]
-    observed = Dict(key => get(properties, key, nothing) for key in keys(expected))
+    # pwao-dump presents numeric node-info strings as JSON numbers.
+    observed = Dict(key => haskey(properties, key) ? string(properties[key]) : nothing
+        for key in keys(expected))
     C.write_json(joinpath(stage, "simulator-metadata.json"), Dict(
         "configuration" => config_path, "expected" => expected, "observed" => observed,
         "calibration_identity_scope" => "declared startup identity; not live adoption"))
