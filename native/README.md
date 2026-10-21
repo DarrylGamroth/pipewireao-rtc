@@ -34,14 +34,17 @@ No custom Link, SessionItem, Lua or POD API is required. The RTC owns `ao-lua`,
 a small public-C-API binding used by its Lua modules; the clock uses upstream
 `GLib.get_monotonic_time` directly.
 
-Clean upstream builds qualify the RTC binding, native host and CPU-array paths.
-The production generator writes JSON string dependencies, which upstream
-0.5.18's component loader mishandles. That deployment path still requires the
-separate component-loader fix. Large POD filtering and Lua event properties have
-separate regression patches too. The RTC constructs its own epoch-bearing
-events through public native event APIs, retaining upstream event hooks.
-See the [upstream validation](../docs/validation/upstream-bindings-20261021/README.md)
-for the exact clean/fixed cohorts and their limits.
+The production generator writes standard relaxed SPA-JSON: simple strings such
+as component feature names are bare, while values needing quotes use JSON string
+escaping. Every document is normalized through the PipeWireAO dependency's
+`pwao-spa-json-dump` parser and compared before replacing its destination.
+Generated startup now works with unmodified upstream libwireplumber built
+against PipeWireAO; no component-loader patch is required. The separate large
+POD-filter and Lua event-property fixes remain independently reviewable rather
+than RTC dependency requirements. The RTC uses native event construction.
+See [SPA-JSON validation](../docs/validation/spa-json-20261021/README.md) and
+[upstream binding validation](../docs/validation/upstream-bindings-20261021/README.md)
+for exact cohorts and limits.
 
 ```sh
 meson setup native/build native --prefix=/absolute/isolated/prefix --libdir=lib \

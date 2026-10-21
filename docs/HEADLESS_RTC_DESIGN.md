@@ -165,3 +165,21 @@ selection for `libpipewire-ao-0.3` and `libspa-ao-0.2`. Any genuine upstream bug
 fix is a separate patch and validation cohort. API relocation must not conceal
 failed upstream behavior or weaken identity, Format, cancellation, deadlines,
 source-first fault handling, pending callback accounting or cleanup proof.
+
+## Standard SPA-JSON generation — 2026-10-21
+
+The existing configuration writer emits conventional SPA-JSON objects with
+`key = value`, whitespace-separated array entries and conservative bare simple
+strings. JSON3 supplies quoted-string escaping and scalar serialization; the
+PipeWireAO dependency's standard parser verifies the completed document before
+the destination is created or replaced. Ambiguous primitive-looking strings
+remain quoted. Invalid UTF-8, NUL and representations the native parser cannot
+roundtrip are rejected without changing the destination.
+
+This removes the generated configuration's dependence on the component-loader
+string patch. Upstream JSON syntax remains valid SPA-JSON; the selected relaxed
+spelling avoids the upstream 0.5.18 component loader's quoted-dependency behavior.
+No alternate parser or configuration language is introduced, and artifact/journal
+JSON remains unchanged. The loader source is restored to upstream. The separate
+POD-filter and Lua event-property fixes are preserved independently; the tested
+RTC dependency is the clean upstream library built against PipeWireAO.

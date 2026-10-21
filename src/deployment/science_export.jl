@@ -2,6 +2,7 @@ module ScienceExport
 
 using JSON3
 using SHA
+using PipeWireAO
 using ..Common
 import ..RuntimeExport: copy_file, copy_tree, copy_entries
 
@@ -30,14 +31,70 @@ parameter_dict(p::Parameter) = Dict{String,Any}("name" => p.name, "endpoint" => 
 sha256(path::AbstractString) = Common.sha256_file(path)
 write_json(path::AbstractString, value) = Common.write_json(path, value)
 
-"""Write native PipeWire SPA configuration with object-array delimiters on separate lines."""
+# Keep the bare-string subset conservative. Native SPA parsers also recognize
+# non-JSON numbers such as NaN and Inf, so those strings must remain quoted.
+spa_simple_string(value::AbstractString) =
+    occursin(r"\A[A-Za-z_][A-Za-z0-9_.-]*\z", value) &&
+    !(value in ("true", "false", "null")) &&
+    !(lowercase(value) in ("nan", "inf", "infinity"))
+
+function write_spa_value(io::IO, value::AbstractString, depth)
+    isvalid(value) || throw(ArgumentError("SPA configuration string must be valid UTF-8"))
+    occursin('\0', value) && throw(ArgumentError("SPA configuration strings must not contain NUL"))
+    spa_simple_string(value) ? print(io, value) : JSON3.write(io, value)
+end
+
+write_spa_value(io::IO, value::Union{Nothing,Bool,Integer,AbstractFloat}, depth) =
+    JSON3.write(io, value)
+
+function write_spa_value(io::IO, value::AbstractDict, depth)
+    println(io, '{')
+    for (key, item) in pairs(value)
+        print(io, "  " ^ (depth + 1))
+        write_spa_value(io, key, depth + 1)
+        print(io, " = ")
+        write_spa_value(io, item, depth + 1)
+        println(io)
+    end
+    print(io, "  " ^ depth, '}')
+end
+
+function write_spa_value(io::IO, value::AbstractVector, depth)
+    println(io, '[')
+    for item in value
+        print(io, "  " ^ (depth + 1))
+        write_spa_value(io, item, depth + 1)
+        println(io)
+    end
+    print(io, "  " ^ depth, ']')
+end
+
+write_spa_value(io::IO, value, depth) =
+    throw(ArgumentError("unsupported SPA configuration value: $(typeof(value))"))
+
+"""Write standard relaxed SPA-JSON with bare simple strings and `key = value` entries."""
 function write_spa_config(path::AbstractString, value)
     Common.finite_json(value)
-    io = IOBuffer()
-    JSON3.pretty(io, value, JSON3.AlignmentContext(indent=2))
-    payload = String(take!(io)) * "\n"
-    Common.parse_json(payload) == value ||
+    json = JSON3.write(value)
+    isequal(Common.parse_json(json), value) ||
         throw(ArgumentError("SPA configuration changed during JSON serialization"))
+    io = IOBuffer()
+    write_spa_value(io, value, 0)
+    println(io)
+    payload = String(take!(io))
+    # Use the upstream parser to verify the exact document that native consumers
+    # will read, including its string escaping and native object-key limits.
+    parser = joinpath(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir,
+        "bin", "pwao-spa-json-dump")
+    mktempdir() do directory
+        source = joinpath(directory, "configuration.conf")
+        write(source, payload)
+        normalized = Common.run_checked([parser, "-N", "-R", source]; timeout=10)
+        normalized.returncode == 0 ||
+            throw(ArgumentError("PipeWire rejected generated SPA-JSON: $(normalized.stderr)"))
+        isequal(Common.parse_json(normalized.stdout), value) ||
+            throw(ArgumentError("SPA configuration changed during native serialization"))
+    end
     mkpath(dirname(path))
     write(path, payload)
     return path

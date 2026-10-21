@@ -1,0 +1,1 @@
+{"rtc_prefix":"/home/dgamroth/.local/opt/pipewireao-rtc-upstream-bindings-20261021","expected":"configuring","result":"passed","rtc_pid":3827489,"wp_prefix":"/home/dgamroth/.local/opt/pipewireao-wp-upstream-stock-20261021","cleanup":"owned RTC child stopped; private-core helper owns daemon","exitcode":0}

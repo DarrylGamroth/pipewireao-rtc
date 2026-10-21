@@ -1,5 +1,15 @@
 # Delivery evidence catalog
 
+## Standard SPA-JSON generation — 2026-10-21
+
+[Validation](validation/spa-json-20261021/README.md) records 2,409 Julia assertions,
+80 focused serializer assertions, 925 independent native-parser assertions and
+generated native Status Configuring against clean upstream libwireplumber built
+with PipeWireAO. [Review](reviews/20261021-spa-json/REVIEW.md) verifies data fidelity,
+escaping and prewrite rejection. The component-loader patch is removed. This
+supersedes the earlier generated-JSON startup limitation; no GPU or full
+scientific lifecycle qualification follows.
+
 ## RTC-owned Lua/POD bindings — 2026-10-21
 
 [Validation](validation/upstream-bindings-20261021/README.md) separates clean

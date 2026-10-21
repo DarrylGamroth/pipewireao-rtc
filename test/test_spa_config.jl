@@ -1,0 +1,77 @@
+using Test, PipeWireAORTC, PipeWireAO, JSON3
+
+const E = PipeWireAORTC.ScienceExport
+const C = PipeWireAORTC.Common
+
+function parse_spa_config(path)
+    parser = joinpath(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir,
+        "bin", "pwao-spa-json-dump")
+    result = C.run_checked([parser, "-N", "-R", path]; timeout=10)
+    @test result.returncode == 0
+    return C.parse_json(result.stdout)
+end
+
+@testset "standard relaxed SPA-JSON configuration" begin
+    mktempdir() do directory
+        path = joinpath(directory, "configuration.conf")
+        features = Dict("requires" => ["support.lua-scripting", "ao.lua"],
+            "provides" => "ao.session", "type" => "script/lua")
+        @test E.write_spa_config(path, features) == path
+        payload = read(path, String)
+        @test occursin("requires = [\n", payload)
+        @test occursin("    support.lua-scripting\n", payload)
+        @test occursin("    ao.lua\n", payload)
+        @test occursin("provides = ao.session\n", payload)
+        @test occursin("type = \"script/lua\"\n", payload)
+        @test endswith(payload, "\n")
+        @test parse_spa_config(path) == features
+
+        strings = ["", "true", "false", "null", "0", "01", "+1", "-1", "1.0",
+            "1e3", ".1", "0x10", "NaN", "nan", "Inf", "-Inf", "Infinity",
+            "space separated", "#comment", "a=b", "a:b", "a,b", "[a]", "{a}",
+            "quote\"", "backslash\\", "apostrophe'", "(parentheses)", "λ 光学",
+            String(Char.(1:31))]
+        keys = ["", "space key", "#comment", "a=b", "a:b", "a,b", "[key]",
+            "{key}", "quote\"", "backslash\\", "line\nkey", "λ", "true", "null", "42"]
+        numbers = Any[typemin(Int64), typemax(Int64), typemax(UInt64), 0, -0.0,
+            0.125, 1.0e-100, 1.0e100]
+        document = Dict{String,Any}(
+            "strings" => strings, "numbers" => numbers,
+            "keys" => Dict(key => key for key in keys),
+            "nested" => Any[true, false, nothing, Dict("array" => Any[1, "two", false]),
+                Dict{String,Any}(), Any[], Any[Dict("value" => "support.lua-scripting")]])
+        E.write_spa_config(path, document)
+        payload = read(path, String)
+        for string in strings
+            @test occursin(JSON3.write(string), payload)
+        end
+        decoded = parse_spa_config(path)
+        @test isequal(decoded, document)
+        @test all(item -> item isa String, decoded["strings"])
+        @test all(item -> item isa String, values(decoded["keys"]))
+        @test decoded["numbers"][1] === typemin(Int64)
+        @test decoded["numbers"][2] === typemax(Int64)
+        @test decoded["numbers"][3] === typemax(UInt64)
+        @test decoded["numbers"][5] === -0.0
+        @test decoded["nested"][1] === true
+        @test decoded["nested"][2] === false
+        @test decoded["nested"][3] === nothing
+    end
+end
+
+@testset "SPA-JSON export validates before replacing a configuration" begin
+    mktempdir() do directory
+        path = joinpath(directory, "configuration.conf")
+        original = "existing configuration\n"
+        write(path, original)
+        for invalid in (Dict("bad" => [NaN]), Dict("bad" => Inf), Dict(1 => "value"),
+                Dict("bad" => big(typemax(UInt64)) + 1), Dict("bad" => 1 + 2im),
+                Dict("bad" => String(UInt8[0xff])), Dict(String(UInt8[0xff]) => "bad"),
+                Dict("bad" => "embedded\0NUL"), Dict("embedded\0NUL" => "bad"),
+                Dict(repeat("key", 342) => "too long"))
+            @test_throws ArgumentError E.write_spa_config(path, invalid)
+            @test read(path, String) == original
+            @test readdir(directory) == ["configuration.conf"]
+        end
+    end
+end

@@ -12,6 +12,19 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Standard SPA-JSON and unmodified library startup — 2026-10-21
+
+The configuration writer now emits standard relaxed SPA-JSON and verifies it
+through the native dependency parser before writing. The component-loader patch
+is removed; generated configuration answers native Status Configuring using
+unmodified libwireplumber 0.5.18 built against PipeWireAO. The full Julia suite
+passes 2,409 assertions; serializer tests pass 80 checks and independent native
+parser tests pass 925. Review has no blockers. See
+[validation](validation/spa-json-20261021/README.md),
+[review](reviews/20261021-spa-json/REVIEW.md) and
+[design](HEADLESS_RTC_DESIGN.md#standard-spa-json-generation--2026-10-21).
+The simulation remains stopped; no GPU or live workstation deployment is selected.
+
 ### RTC-owned Lua/POD bindings — 2026-10-21
 
 Move the remaining downstream Lua/POD bindings into the RTC using public C
@@ -22,8 +35,8 @@ suite passes 2,329 assertions; all ten native RTC and 55 generic WirePlumber
 suites pass in both clean and separately fixed upstream cohorts. CPU-array/
 coexistence checks pass 19 checks per cohort, and production fault ordering
 passes seven cases. Independent review has no unresolved binding blocker.
-Generated JSON configuration still requires the separate component-loader fix;
-its fixed-library probe receives native Status Configuring with owners absent.
+At that stage generated JSON required the separate component-loader fix;
+the standard SPA-JSON increment above removes that dependency.
 See [validation](validation/upstream-bindings-20261021/README.md),
 [review](reviews/20261021-upstream-bindings/REVIEW.md) and
 [design](HEADLESS_RTC_DESIGN.md#rtc-owned-lua-bindings--2026-10-21).

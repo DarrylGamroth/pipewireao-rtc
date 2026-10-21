@@ -1,0 +1,20 @@
+{
+  "rtc_base": "c868e9189268e70cd307fdd8d2e316b99425bdb5",
+  "wp_base": "9575d8524be7f78e0428702e30efe38e14357c5a",
+  "source_sha256": {
+    "src/deployment/science_export.jl": "166a77df6dd46f09ed6121d5f58ceae46d4c1834b671c687868f984493e80bec",
+    "test/test_spa_config.jl": "a79c3cf4b55e83a7a1d6352f69f27a42b5dbc0cb1f82e47ab5f0f349e4ec6506",
+    "test/runtests.jl": "c53bde17f89c0ec8d362d2e966645af1b3a4b38c06013504016b5a2a4e260404"
+  },
+  "julia_version": "1.13.2",
+  "julia_testsets": 77,
+  "julia_assertions": 2409,
+  "focused_serializer_assertions": 80,
+  "independent_parser_assertions": 925,
+  "stock_prefix": "/home/dgamroth/.local/opt/pipewireao-wp-upstream-stock-20261021",
+  "rtc_prefix": "/home/dgamroth/.local/opt/pipewireao-rtc-upstream-bindings-20261021",
+  "libwireplumber_sha256": "e786d1e78cd9749f92d6bb03bfdb1e889fb8cca450d9e68e8c112ab044066512",
+  "component_loader_upstream_blob": "6650e5e66da2aa92b8054f21e11eed6da845ce81",
+  "live_simulator": "inactive, MainPID=0; no GPU work",
+  "limits": "One Configuring Status exchange, not scientific readiness or full lifecycle. Prior native/CPU-array evidence remains scoped and unchanged; no new native runtime code in this increment."
+}

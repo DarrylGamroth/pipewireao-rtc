@@ -315,8 +315,9 @@ public C cancellation/disposal and negotiated Format observation. The RTC retain
 endpoint identity, scientific admission, downstream ordering, deadlines and
 Core-sync/correlated-absence proof. The remaining Lua/POD binding gaps are now supplied by RTC-local public C
 helpers, and the clock uses upstream GLib directly. Genuine library bug fixes
-remain separately tested; generated JSON deployment still needs the dependency
-string correction in upstream 0.5.18.
+remain separately tested. The generator now emits standard relaxed SPA-JSON
+with bare feature names, so generated startup no longer requires the component
+dependency-string correction.
 See the [standard link design](HEADLESS_RTC_DESIGN.md#standard-link-apis--2026-10-21)
 and [validation](validation/standard-links-20261021/README.md).
 

@@ -1,0 +1,4 @@
+Test Summary:                           | Pass  Total  Time
+standard relaxed SPA-JSON configuration |   50     50  4.3s
+Test Summary:                                              | Pass  Total  Time
+SPA-JSON export validates before replacing a configuration |   30     30  1.9s
