@@ -63,3 +63,8 @@ coexistence does not qualify hardware device policy. No simulator, GPU, physical
 device, sustained cadence, deadline or latency gate was run. Artifact management
 remains paused. The live simulation stays inactive, MainPID zero; no live
 workstation prefix or service was replaced.
+
+The changes are integrated into the normal WirePlumber `master` and RTC `main`
+checkouts. The [integration receipt](integration.json) records the commits,
+task-worktree/build cleanup and stopped service. Historical worktrees and the
+GitHub repository name are unchanged.
