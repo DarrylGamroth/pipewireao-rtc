@@ -10,6 +10,12 @@ PipeWire remotes are started or stopped; the pre-existing GUI is untouched.
 and final native Quit/cleanup pass. All task-owned simulation processes, GUI and
 virtual display are stopped. The default deployment remains CUDA.
 
+Both normal checkouts are on `main`, with Classic pinned to RTC 0.2.1. The two
+task worktrees and merged branches are removed; historical worktrees and
+unrelated edits are preserved. The [integration receipt](integration.json) and
+[canonical checker log](canonical-check.log) record a fresh 64-check pass from
+the normal Classic directory and a final stopped-service check.
+
 ## Results
 
 | Check | Observed result | Evidence |

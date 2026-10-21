@@ -32,6 +32,10 @@ Classic pins the private 0.2.1 candidate; all other package entries and its 32
 scientific assets are unchanged. Its normal CUDA default remains unchanged and
 stopped. Sustained cadence/latency, control stability, GPU and hardware gates
 remain separate. Artifact management remains paused.
+The changes are integrated into both normal `main` checkouts and the task
+worktrees are removed. The
+[integration receipt](validation/classic-live-cpu-20261021/integration.json)
+records the canonical configuration check and final stopped-service checks.
 
 ### Classic headless deployment refresh — 2026-10-21
 
