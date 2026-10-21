@@ -1,0 +1,10 @@
+     Project No packages added to or removed from `~/workspaces/codex/pipewire/pipewireao-rtc-classic-live-cpu/Project.toml`
+    Manifest No packages added to or removed from `~/workspaces/codex/pipewire/pipewireao-rtc-classic-live-cpu/Manifest.toml`
+Test Summary:                      | Pass  Total  Time
+declared core-hosted session nodes |   27     27  6.0s
+Test Summary:               | Pass  Total  Time
+bounded cold startup budget |   11     11  0.1s
+Test Summary:                                           | Pass  Total  Time
+exact headless RTC invocation and protected environment |   23     23  0.6s
+Test Summary:                                          | Pass  Total  Time
+ledger validation verifies the prepared native process |    8      8  0.4s

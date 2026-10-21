@@ -1,0 +1,13 @@
+ERROR: LoadError: There was an error during testing
+in expression starting at /home/dgamroth/workspaces/codex/worktrees/classic-live-cpu-20261021/shutdown.jl:22
+Error During Test at /home/dgamroth/workspaces/codex/worktrees/classic-live-cpu-20261021/shutdown.jl:22
+  Test threw exception
+  Expression: isempty(record["cleanup_errors"])
+  KeyError: key "cleanup_errors" not found
+  Stacktrace:
+   [1] getindex(h::Dict{String, Any}, key::String)
+     @ Base ./dict.jl:479
+   [2] top-level scope
+     @ ~/workspaces/codex/worktrees/classic-live-cpu-20261021/shutdown.jl:539
+   [3] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:755 [inlined]

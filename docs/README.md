@@ -21,6 +21,7 @@ claim; do not infer completion from prose.
 
 | Task | Relevant contract/design | Working guide or evidence |
 | --- | --- | --- |
+| Classic live CPU and GUI controls | RTC-ARCH-026, RTC-DEV-021/031; preserved scientific declarations | [Live validation](validation/classic-live-cpu-20261021/README.md), [cleanup review](reviews/20261021-classic-live-cpu/REVIEW.md) |
 | Classic headless deployment refresh | RTC-ARCH-026, RTC-DEV-019–023; preserved scientific declarations | [Offline CPU validation](validation/classic-headless-offline-20261021/README.md), [independent review](reviews/20261021-classic-headless-offline/REVIEW.md) |
 | Headless RTC lifecycle and application links | [RTC-ARCH-026](HEADLESS_RTC_DESIGN.md), [system boundary](architecture.md#accepted-workstation-integration-boundary); RTC-DEV-003/004/009/012/013/021/022/025/030 | [Implementation and acceptance](HEADLESS_RTC_DESIGN.md); completed link/systemd receipts remain scoped evidence |
 | Session fault and recovery tests | RTC-ARCH-026, RTC-DEV-009/013/021/022/030 | [Production-policy and installed-session procedures](../test/integration/README.md); physical-DM safe-state and approval remain deferred |

@@ -1,0 +1,155 @@
+fatal: git cat-file: could not get object info
+Test Summary:                                         | Pass  Total  Time
+full transport cache reuses existing materializations |    6      6  5.9s
+Test Summary:        | Pass  Total  Time
+headless Git catalog |   29     29  4.9s
+Test Summary:                             | Pass  Total  Time
+shared journal projection survives reopen |   15     15  3.8s
+Test Summary:                                               | Pass  Total  Time
+declared simulator settings and immutable structural fields |   15     15  3.0s
+Test Summary:                                | Pass  Total  Time
+cold replacement ordering and failure fences |   32     32  1.4s
+Test Summary:                           | Pass  Total  Time
+one replacement per managed incarnation |    4      4  0.2s
+Test Summary:                         | Pass  Total  Time
+bounded simulator management protocol |    7      7  0.0s
+Test Summary:                                       | Pass  Total  Time
+record reservation and ambiguous launch observation |   10     10  0.3s
+Test Summary:                                    | Pass  Total  Time
+FITS artifact selection and owned logical arrays |   61     61  2.4s
+Test Summary:                                          | Pass  Total  Time
+FITS artifact cancellation and captured byte ownership |   17     17  8.2s
+Test Summary:                               | Pass  Total  Time
+FITS artifact conversion rules and metadata |   45     45  1.9s
+Test Summary:                                       | Pass  Total  Time
+FITS artifact limits reject before image allocation |   17     17  0.2s
+Test Summary:                                          | Pass  Total  Time
+FITS sparse parameter preload and legacy compatibility |   33     33  2.0s
+Test Summary:                                        | Pass  Total  Time
+parameter owner arguments preserve endpoint contract |   24     24  1.5s
+Test Summary:                                | Pass  Total  Time
+cold owner options and deterministic cleanup |   16     16  0.4s
+Test Summary:                                       | Pass  Total  Time
+cooperative cancellation preserves cleanup failures |    9      9  0.2s
+Test Summary:                                        | Pass  Total  Time
+native graph bootstrap arguments and cold load order |   17     17  0.3s
+Test Summary:                                              | Pass  Total  Time
+FITS graph declarations, logical ordering and cancellation |   16     16  1.2s
+Test Summary:                                            | Pass  Total  Time
+AOS operational report records a saved cursor atomically |   26     26  1.3s
+Test Summary:                                  | Pass  Total  Time
+AOS cold declarations and bootstrap load order |   66     66  1.3s
+Test Summary:                                      | Pass  Total  Time
+AOS FITS binding ownership, order and cancellation |    7      7  0.5s
+Test Summary:                                                | Pass  Total  Time
+Instrument builders remain cold declarations until Preparing |   61     61  2.4s
+Test Summary:                                                        | Pass  Total  Time
+Default plant loader enforces active application dependency identity |   11     11  5.6s
+Test Summary:                                | Pass  Total  Time
+phase timing capture declarations and bounds |   40     40  0.9s
+Test Summary:                                                   | Pass  Total  Time
+phase timing same-generation save replaces only the report file |    5      5  0.1s
+Test Summary:                            | Pass  Total  Time
+phase timing warmed recording allocation |    1      1  0.1s
+Test Summary:                      | Pass  Total  Time
+registered application environment |   15     15  0.6s
+Test Summary:                               | Pass  Total  Time
+registered launcher selects the application |    4      4  0.0s
+Test Summary:                           | Pass  Total  Time
+native local session discovery contract |   62     62  1.5s
+Test Summary:                  | Pass  Total  Time
+fresh direct session lifecycle |    7      7  0.0s
+Test Summary:                                    | Pass  Total  Time
+invalid listings never initiate native selection |    4      4  0.5s
+Test Summary:                                 | Pass  Total  Time
+operator discovery never creates its registry |    7      7  0.1s
+Test Summary:                                               | Pass  Total  Time
+interaction driver typed completions and all settling rules |   36     36  3.6s
+Test Summary:                                              | Pass  Total  Time
+clipping and invalid causal evidence restore without retry |   90     90  7.7s
+Test Summary:                                            | Pass  Total  Time
+faults retain unconfirmed ownership and stop submissions |   54     54  2.6s
+Test Summary:                                                 | Pass  Total  Time
+boundary cancellation and elapsed completion recover finitely |    8      8  1.2s
+Test Summary:                        | Pass  Total  Time
+plan bounds and snapshot before Hold |   34     34  1.6s
+Test Summary:                               | Pass  Total  Time
+one-shot CLI and bounded exclusive evidence |   12     12  4.4s
+Test Summary:                                                              | Pass  Total  Time
+calibration installer validates Julia entrypoint and preserves sealed Rust |   11     11  0.5s
+Test Summary:                      | Pass  Total  Time
+declared core-hosted session nodes |   27     27  2.1s
+Test Summary:               | Pass  Total  Time
+bounded cold startup budget |   11     11  0.1s
+Test Summary:                                           | Pass  Total  Time
+exact headless RTC invocation and protected environment |   23     23  0.5s
+Test Summary:                                          | Pass  Total  Time
+ledger validation verifies the prepared native process |    8      8  0.3s
+Test Summary:                           | Pass  Total  Time
+Julia operational preparation utilities |   32     32  0.9s
+Test Summary:            | Pass  Total  Time
+explicit runtime entries |   31     31  0.3s
+Test Summary:                          | Pass  Total  Time
+file helpers preserve the exporter API |    5      5  0.2s
+Test Summary:                               | Pass  Total  Time
+SDK export uses the declared source closure |   12     12  0.3s
+Test Summary:                                          | Pass  Total  Time
+installed validation requires declared runtime entries |    9      9  0.2s
+Test Summary:                           | Pass  Total  Time
+standard relaxed SPA-JSON configuration |   50     50  1.0s
+Test Summary:                                              | Pass  Total  Time
+SPA-JSON export validates before replacing a configuration |   30     30  1.3s
+Test Summary:                                       | Pass  Total  Time
+placement identifies the owned native loop by event |   20     20  1.2s
+Test Summary:                                      | Pass  Total  Time
+systemd owner names and exact invocation discovery |    8      8  0.2s
+Test Summary:                                                                | Pass  Total  Time
+owner service rendering quotes arguments and applies isolated service policy |   20     20  0.5s
+Test Summary:                                        | Pass  Total  Time
+cohort service dependencies and target job filtering |    6      6  0.1s
+Test Summary:                                         | Pass  Total  Time
+retained owner identity and recursive cgroup evidence |   12     12  0.2s
+Test Summary:                      | Pass  Total  Time
+exact installed graceful stop hook |   12     12  0.0s
+Test Summary:              | Pass  Total  Time
+native control envelope v1 |   66     66  0.8s
+Test Summary:         | Pass  Total  Time
+native runner profile |  146    146  0.8s
+Test Summary:                 | Pass  Total  Time
+native owner profile dispatch |   14     14  0.8s
+Test Summary:                                     | Pass  Total  Time
+native reply envelope limits follow owner profile |    9      9  0.1s
+Test Summary:                   | Pass  Total  Time
+ordinary native bootstrap codec |   67     67  0.7s
+Test Summary:                         | Pass  Total  Time
+native acquisition lifecycle profiles |  174    174  0.9s
+Test Summary:                                     | Pass  Total  Time
+acquisition Connect retains typed failure details |   52     52  0.1s
+Test Summary:                                                                 | Pass  Total  Time
+fresh acquisition readiness preserves Status requirements and failure details |   37     37  0.0s
+Test Summary:                                  | Pass  Total  Time
+native calibration vectors use iteration order |   32     32  1.5s
+Test Summary:                   | Pass  Total  Time
+native calibration action codec |  163    163  1.2s
+Test Summary:                                                             | Pass  Total  Time
+native calibration action client preserves correlation and known outcomes |   20     20  0.5s
+Test Summary:                                    | Pass  Total  Time
+unknown native outcomes retire the action client |   14     14  0.1s
+Test Summary:                                               | Pass  Total  Time
+local validation does not consume or submit native requests |   13     13  0.3s
+Test Summary:                                      | Pass  Total  Time
+legacy command parser maps to typed codec commands |   58     58  0.5s
+Test Summary:                                             | Pass  Total  Time
+typed completion rendering preserves legacy result fields |   86     86  1.2s
+Test Summary:                                        | Pass  Total  Time
+separate generic dependency and headless RTC staging |   15     15  0.5s
+Test Summary:                                  | Pass  Total  Time
+RTC installed prefix and exact stage selection |    8      8  0.1s
+Test Summary:                                                | Pass  Total  Time
+generic dependency rejects daemon and RTC application policy |    2      2  0.0s
+Test Summary:                                    | Pass  Total  Time
+callable package modules and operational scripts |   29     29  0.2s
+Test Summary:                                           | Pass  Total  Time
+named deployment package and operational source closure |  155    155  9.1s
+Test Summary:                                      | Pass  Total  Time
+unsupported SDK rejection preserves sealed sources |    6      6  0.1s

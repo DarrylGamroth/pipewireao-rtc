@@ -1,5 +1,18 @@
 # Delivery evidence catalog
 
+## Classic live CPU and GUI validation — 2026-10-21
+
+[Validation](validation/classic-live-cpu-20261021/README.md) records actual rendered
+GUI Stop/Start, atmosphere replacement/reconnect, fresh native status/settings,
+unchanged scientific inputs and final exact cleanup with no GPU use. RTC 0.2.1
+corrects stopped-ledger verification; the original unknown operation and
+fail-before/pass-after evidence remain retained. Full Julia tests pass 2,416
+assertions, the focused regression 69, independent stopped checks six, and
+Classic's final offline checker 64. The
+[independent review](reviews/20261021-classic-live-cpu/REVIEW.md) has no blockers.
+All task sessions and temporary GUI/display are stopped; timing, stability,
+GPU execution and hardware qualification are not implied.
+
 ## Classic headless deployment refresh — 2026-10-21
 
 [Validation](validation/classic-headless-offline-20261021/README.md) records the

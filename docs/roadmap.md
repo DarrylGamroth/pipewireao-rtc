@@ -12,6 +12,27 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Classic live CPU and GUI validation — 2026-10-21
+
+Classic passes live CPU admission, rendered GUI Stop/Start and atmosphere
+Apply/restart with explicit reconnect. Fresh native status and settings confirm
+the new session, r₀ = 0.20 m, L₀ = 25 m and CPU backend. Final accepted Quit leaves
+all four owners gone, their cgroups empty and the locator removed. The temporary
+software-rendered GUI and display are stopped; no GPU was used.
+
+The first run exposed a stopped-ledger verifier that required the old process
+to remain alive. RTC 0.2.1 fixes that contradiction while preserving live
+executable checks and all cleanup fences. The original unknown operation stays
+retained without retry. Full Julia tests pass 2,416 assertions; the focused
+regression passes 69, independent stopped-incarnation checks six, and Classic's
+final offline checker 64. See the
+[validation](validation/classic-live-cpu-20261021/README.md) and
+[independent review](reviews/20261021-classic-live-cpu/REVIEW.md).
+Classic pins the private 0.2.1 candidate; all other package entries and its 32
+scientific assets are unchanged. Its normal CUDA default remains unchanged and
+stopped. Sustained cadence/latency, control stability, GPU and hardware gates
+remain separate. Artifact management remains paused.
+
 ### Classic headless deployment refresh — 2026-10-21
 
 Classic now pins the privately registered RTC 0.2.0 candidate and launches the
