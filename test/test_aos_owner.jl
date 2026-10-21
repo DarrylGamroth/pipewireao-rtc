@@ -323,4 +323,4 @@ end
     end
 end
 
-include("test_aos_plant_loading.jl")
+Base.include(@__MODULE__, joinpath(@__DIR__, "test_aos_plant_loading.jl"))

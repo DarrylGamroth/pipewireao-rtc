@@ -166,3 +166,97 @@ its Julia owner handles placement and public lifecycle commands. Accelerator
 selection in an HIL export does not establish CUDA or AMDGPU cadence.
 Migration qualification is recorded separately from interaction-matrix
 precision, physical suitability and correction acceptance.
+
+## Headless artifact registration and shared update history
+
+`PipeWireAORTC.ConfigurationStore` owns a local bare Git repository and SQLite
+catalog. GUI, CLI and Julia scripts use this implementation. The default root is
+`$XDG_STATE_HOME/pipewireao/configuration`, or
+`~/.local/state/pipewireao/configuration`. Pass an explicit root for isolated
+experiments. Registration is independent of live session attachment and never
+applies a value.
+
+A calibration script can register a generated host array directly:
+
+```julia
+using PipeWireAORTC: ConfigurationStore
+
+store = ConfigurationStore.Store()
+record = ConfigurationStore.register!(store, reconstructor;
+    label="Reconstructor candidate",
+    scope=Dict("session_label" => session_label,
+        "graph" => graph_name, "parameter" => "reconstructor"),
+    schema=reconstructor_schema,
+    metadata=Dict("generator_revision" => generator_revision))
+artifact_id = record["id"]
+```
+
+For an existing FITS file use `Artifacts.FITSArtifact(path; hdu=1, axes=...)`,
+with an explicit logical axis permutation for multidimensional data, plus the
+target element type and shape. `register!` validates one captured FITS snapshot,
+records its original bytes and scientific preparation manifest, pins their Git
+commit, then inserts the catalog reference. Registration does not infer units,
+transposition, scientific acceptance or compatibility with another instrument.
+
+`list_artifacts(store)` returns a bounded catalog page.
+`get_artifact(store, artifact_id)` verifies and returns the exact record.
+`materialize!(store, artifact_id; storage_order="row-major")` prepares an
+explicit-layout transport payload from the retained FITS. It returns its path,
+shape, element type, schema and digest. The caller still validates the exact
+parameter declaration and sends the existing native session parameter operation.
+Selection or preparation alone never applies the artifact. The materialized
+files are a bounded rebuildable transport cache, not a second artifact authority;
+they persist across frontend exits so an unresolved native request cannot lose
+its payload. Capacity exhaustion refuses preparation; maintenance is explicit.
+
+The command-line frontend accepts the same management operations as bounded
+JSON-lines requests and responses. For example, from the package checkout:
+
+```sh
+julia +1.13 --startup-file=no --project=. configuration_store_cli.jl serve
+```
+
+Send one JSON object per line:
+
+```json
+{"protocol":"pipewireao.configuration/1","op":"list","arguments":{"limit":50}}
+{"protocol":"pipewireao.configuration/1","op":"history","arguments":{"limit":50}}
+```
+
+`register` accepts the FITS path, type, shape, one-based HDU, axes, label, scope,
+schema and metadata. `get` accepts an artifact ID and optional `layout`.
+`root` optionally selects an explicit local store. This management interface
+performs catalog/import/history work only. It does not provide another live
+control protocol, calibration orchestrator or remote browser service.
+
+The native GUI's `PIPEWIREAO_CONFIGURATION_COMMAND` is a JSON array of executable
+and arguments for this helper. `PIPEWIREAO_CONFIGURATION_ROOT` optionally selects
+the root. The helper runs off the UI thread; the GUI does not open SQLite or Git.
+Without a helper the GUI reports the catalog unavailable while existing native
+controls remain usable. Browser/WASM presentation compilation does not establish
+a live browser management transport.
+
+New `WirePlumberConfiguration` session configurations include the asynchronous
+`ao-journal` module. The `configuration_store_root` keyword selects its store;
+`nothing` explicitly produces an unjournaled configuration for an older isolated
+runtime. The exporter and installer require the matching journal module. Existing
+sealed sessions are unchanged; no earlier history can be reconstructed.
+
+`ConfigurationStore.history(store; session_id=nothing, limit=50)` queries the
+shared journal. Its entries include the proven controller identity/name, native
+session and endpoint incarnation, token, requested property values or parameter
+binding, and correlated completion. All clients using the journal-enabled session
+endpoint contribute, even when the GUI is closed. Direct writes bypassing that
+endpoint are outside this history. Read-only queries are not update events.
+
+Requested operations lacking terminal evidence remain unknown. A submitted
+parameter is not necessarily active; an SQLite transaction and a Git commit do
+not make several scientific changes atomic. Existing owner generation/status
+queries remain the source of current adoption evidence. Reopening the journal
+never retries an operation or restores an old value.
+
+Backups must preserve both a consistent SQLite snapshot and the Git repository,
+including all retained artifact refs. Git maintenance must preserve registered
+objects. Do not place the SQLite WAL database on a network filesystem or copy a
+live database file without its consistent snapshot. Backup/restore automation
+and scientific stream recording are separate work.

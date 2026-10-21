@@ -1,5 +1,18 @@
 # Delivery evidence catalog
 
+## Headless Git artifacts and SQLite update history — 2026-10-20
+
+Implementation branches cover the shared Julia configuration store, native
+WirePlumber asynchronous journal and GUI management client. The workstation
+cross-repository evidence is retained at
+`/home/dgamroth/workspaces/codex/worktrees/classic-completion-20261020/configuration-store-20261020/`.
+It contains the independent review and resolved findings, native two-client
+private-core proof, headless import/reopen checks, package/GUI gates and rendered
+ownership diagram. This is local software and isolated transport evidence;
+scientific adoption, wall-time qualification and a production session upgrade
+are separate. Existing Running Classic ownership was preserved throughout.
+
+
 - [Classic completion for review, 2026-10-20](validation/classic-completion-20261020/README.md): immutable private candidates with released AOS/HIL, managed lifecycle and fault recovery, finite composed replay/observer invariance, calibration provenance and bounded resource characterization. Grouped GUI settings and native endpoint-loss invalidation pass; retained review identity is recorded separately.
 
 - [Released simulator dependencies and RTC boundary](validation/simulator-releases-20261019/README.md): HIL 0.2.2 timing/retry integration, registry dependency correction, fresh RTC loading/configuration/preparation, and private-core simulator checks; managed session, GPI controller and GUI qualification remain open.

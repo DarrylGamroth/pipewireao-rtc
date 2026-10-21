@@ -131,7 +131,8 @@ Validate exact node owners and retained process identities, then return the
 WirePlumber configuration for this invocation. This does not start a session.
 """
 function session_configuration(spec, session, bindings, records;
-                               node_owners::Dict{String,String})
+                               node_owners::Dict{String,String},
+                               configuration_store_root::Union{Nothing,AbstractString}=PipeWireAORTC.ConfigurationStore.default_root())
     name = get(spec, "name", nothing)
     name isa String && occursin(r"^[a-z0-9][a-z0-9-]{0,39}$", name) ||
         fail("deployment has no validated name")
@@ -194,21 +195,35 @@ function session_configuration(spec, session, bindings, records;
             "controller.instance" => string(controller_instance), "session.uuid" => uuid,
             "admission.controller-instance" => string(admission_instance),
             "startup.timeout-ms" => D.startup_timeout_ms(spec)))
+    components = Any[Dict("name" => "libwireplumber-module-lua-scripting",
+        "type" => "module", "provides" => "support.lua-scripting"),
+        public_endpoint, controller_endpoint]
+    features = Dict("support.lua-scripting" => "required",
+        "ao.session-control" => "required", "ao.session-controller" => "required",
+        "ao.rtc-session" => "required")
+    if configuration_store_root !== nothing
+        root = String(configuration_store_root)
+        isabspath(root) && !occursin('\0', root) ||
+            fail("configuration store root must be an absolute path without NUL")
+        push!(components, Dict("name" => "libwireplumber-module-ao-journal",
+            "type" => "module", "provides" => "ao.journal",
+            "arguments" => Dict("plugin.name" => "ao-journal",
+                "path" => joinpath(root, "history.sqlite3"))))
+        features["ao.journal"] = "required"
+        push!(script["requires"], "ao.journal")
+        script["arguments"]["journal.plugin"] = "ao-journal"
+        public_endpoint["arguments"]["properties"]["pipewireao.rtc.session.journal"] =
+            "pipewireao.configuration/1"
+    end
+    push!(components, script)
     return Dict{String,Any}(
         "context.properties" => Dict{String,Any}(
             "library.use-fallback" => false, "support.dbus" => false,
             "remote.name" => joinpath(runtime, remote_name)),
         "context.modules" => Any[Dict("name" => "libpipewire-module-protocol-native"),
             Dict("name" => "libpipewire-module-client-node")],
-        "wireplumber.profiles" => Dict("ao-rtc" => Dict(
-            "support.lua-scripting" => "required",
-            "ao.session-control" => "required",
-            "ao.session-controller" => "required",
-            "ao.rtc-session" => "required")),
-        "wireplumber.components" => Any[
-            Dict("name" => "libwireplumber-module-lua-scripting",
-                 "type" => "module", "provides" => "support.lua-scripting"),
-            public_endpoint, controller_endpoint, script])
+        "wireplumber.profiles" => Dict("ao-rtc" => features),
+        "wireplumber.components" => components)
 end
 
 """
@@ -218,10 +233,11 @@ Write validated native configuration below `runtime` and return its path.
 The runtime must match the invocation's `RUNTIME` binding.
 """
 function write_session_config(spec, session, bindings, records, runtime;
-                              node_owners::Dict{String,String})
+                              node_owners::Dict{String,String},
+                              configuration_store_root::Union{Nothing,AbstractString}=PipeWireAORTC.ConfigurationStore.default_root())
     get(bindings, "RUNTIME", nothing) == runtime ||
         fail("configuration runtime differs from launch binding")
-    config = session_configuration(spec, session, bindings, records; node_owners)
+    config = session_configuration(spec, session, bindings, records; node_owners, configuration_store_root)
     directory = joinpath(runtime, "wireplumber")
     mkpath(directory)
     path = joinpath(directory, "wireplumber.conf")

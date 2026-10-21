@@ -188,6 +188,15 @@ function prepare(source::FITSArtifact, ::Type{T}, shape; check=()->nothing) wher
     T in TARGET_TYPES || throw(ArgumentError("unsupported artifact target type: $T"))
     target_shape = checked_shape(shape, sizeof(T))
     original = snapshot(source.path; check)
+    return prepare_snapshot(source, T, shape, original; check)
+end
+
+# Internal shared preparation boundary: the catalog retains exactly these bytes.
+function prepare_snapshot(source::FITSArtifact, ::Type{T}, shape,
+        original::Vector{UInt8}; check=()->nothing) where T
+    check()
+    T in TARGET_TYPES || throw(ArgumentError("unsupported artifact target type: $T"))
+    target_shape = checked_shape(shape, sizeof(T))
     original_hash = bytes2hex(SHA.sha256(original))
     check()
     # A byte-vector FITS handle has no filename parser and cannot reopen the source.

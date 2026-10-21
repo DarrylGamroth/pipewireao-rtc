@@ -22,6 +22,20 @@ using PipeWireAORTC: WirePlumberConfiguration
     script = only(filter(component -> component["type"] == "script/lua",
         configuration["wireplumber.components"]))
     @test script["arguments"]["startup.timeout-ms"] == 300000
+    @test script["arguments"]["journal.plugin"] == "ao-journal"
+    @test "ao.journal" in script["requires"]
+    @test configuration["wireplumber.profiles"]["ao-rtc"]["ao.journal"] == "required"
+    journal = only(filter(component -> component["name"] == "libwireplumber-module-ao-journal",
+        configuration["wireplumber.components"]))
+    @test journal["arguments"]["path"] == joinpath(PipeWireAORTC.ConfigurationStore.default_root(), "history.sqlite3")
+    disabled = WirePlumberConfiguration.session_configuration(
+        spec, session, bindings, records; node_owners=mapping, configuration_store_root=nothing)
+    @test !haskey(disabled["wireplumber.profiles"]["ao-rtc"], "ao.journal")
+    @test all(component -> component["name"] != "libwireplumber-module-ao-journal",
+        disabled["wireplumber.components"])
+    @test_throws WirePlumberConfiguration.ConfigurationError WirePlumberConfiguration.session_configuration(
+        spec, session, bindings, records; node_owners=mapping, configuration_store_root="relative")
+
     spec["startup-timeout-ms"] = 900000
     budget_configuration = WirePlumberConfiguration.session_configuration(
         spec, session, bindings, records; node_owners=mapping)

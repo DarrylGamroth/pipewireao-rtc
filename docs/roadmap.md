@@ -12,6 +12,65 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Headless configuration store — 2026-10-20
+
+The user selected Git for immutable calibration artifact bytes and SQLite for
+catalog metadata and shared update history. GUI, CLI and Julia scripts use the
+same headless operations. The GUI does not own storage or decide adoption.
+This narrow configuration journal is now selected; full scientific stream
+recording and a browser/remote control service remain deferred.
+
+Implementation is isolated on `codex/artifact-history-20261020` worktrees based
+on RTC `7fd1349`, GUI `4ef2f22`, and WirePlumber `ce2dc766`. Pre-existing main
+checkout edits and the running Classic session are preserved.
+
+The ownership and data paths are:
+
+```mermaid
+flowchart LR
+    Clients["GUI / CLI / Julia scripts"]
+    Store["Headless configuration tooling"]
+    Git["Git artifact objects and retained refs"]
+    DB["SQLite catalog and operation journal"]
+    Session["WirePlumber session admission"]
+    Science["Scientific owner"]
+    Clients -->|register / browse / history| Store
+    Store --> Git
+    Store --> DB
+    Clients -->|existing native control| Session
+    Session -->|durable request before effect| DB
+    Session -->|admitted update| Science
+    Science -->|reported completion| Session
+    Session -->|durable completion| DB
+```
+
+The journal records native PropertiesSet and Parameter operations from every
+client using the session endpoint. It is not a replacement session manager or
+an inference of exact active configuration. Unsupported observations remain
+unknown; neither a SQL commit nor a Git commit establishes graph adoption.
+
+Delivery gates, in dependency order:
+
+1. Headless artifact registration, Git retention, metadata validation, exact
+   retrieval and a bounded management CLI shared by scripts and GUI.
+2. An asynchronous SQLite journal at native session ingress, with pre-effect
+   and completion durability, deadline/identity fencing and interruption tests.
+3. GUI catalog selection and shared paginated history through the headless
+   management client; existing native control and scientific validation remain.
+4. Focused package, native plugin, GUI/WASM/browser and isolated-session checks.
+   Promote only the evidence obtained; preserve the running session until a
+   replacement has independent validation.
+
+The implementation passes the complete Julia 1.13 package suite (2,219 assertions
+before the six additional full-cache regression assertions), plus the final
+50-assertion store selector and focused WirePlumber journal/Lua tests. An isolated
+private core with the actual WirePlumber endpoint and journal accepted two native
+client connections; both updates appeared as Submitted in the same database and
+survived headless reopen. This test owner performs no scientific computation and
+establishes no adoption or timing claim. Independent review found and verified
+fixes for post-effect fault uncertainty and full-cache reuse. GUI/browser checks
+and deployment provenance are recorded with the cross-repository evidence.
+
 ### Classic completion for review — 2026-10-20
 
 Complete the CUDA Classic Julia-builder plant with its CPU JFG RTC and RTC-owned

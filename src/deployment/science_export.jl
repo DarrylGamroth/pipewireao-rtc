@@ -170,7 +170,8 @@ function stage_wireplumber!(package; build=nothing, source=nothing, prefix=nothi
             chmod(joinpath(temporary, "bin/wireplumber"), stat(binary).mode & 0o777)
             copy_file(library, joinpath(temporary, "lib/wp/libwireplumber-0.5.so.0"))
             for name in ("libwireplumber-module-lua-scripting.so",
-                         "libwireplumber-module-ao-control-endpoint.so")
+                         "libwireplumber-module-ao-control-endpoint.so",
+                         "libwireplumber-module-ao-journal.so")
                 copy_file(joinpath(modules, name), joinpath(temporary, "modules", name))
             end
             validate_wireplumber(temporary)
@@ -188,6 +189,7 @@ function validate_wireplumber(target)
     for file in ("bin/wireplumber", "lib/wp/libwireplumber-0.5.so.0",
                  "modules/libwireplumber-module-lua-scripting.so",
                  "modules/libwireplumber-module-ao-control-endpoint.so",
+                 "modules/libwireplumber-module-ao-journal.so",
                  "scripts/ao/session.lua", "scripts/lib/ao-control.lua",
                  "scripts/lib/ao-owner.lua", "scripts/lib/ao-acquisition.lua",
                  "scripts/lib/ao-session-control.lua", "scripts/lib/ao-connections.lua")

@@ -200,7 +200,7 @@ The following are not part of the active baseline:
 - permission to enter a correction-authorized state;
 - operational instrument authority, safe-state arbitration, or multi-process
   fencing;
-- durable recording, audit, run reconstruction, or scientific FITS export;
+- scientific stream recording, full instrument-state audit, or run reconstruction;
 - row-block, region-block, fixed-worker, or multi-batch scheduling;
 - runner-hosted Julia graph execution;
 - remote control, a web gateway, or WebRTC preview;
@@ -211,6 +211,33 @@ The following are not part of the active baseline:
 These exclusions are deliberate. A later project may select one capability
 from the archive, revise it against current interfaces, and add it without
 changing scientist-authored algorithms.
+
+## Headless artifact catalog and configuration journal
+
+Selected by the user on 2026-10-20. Headless configuration tooling owns a
+Git repository of immutable artifact bytes and manifests, plus a local SQLite
+catalog and update journal. GUI, CLI and Julia calibration scripts are clients.
+Artifact registration does not apply a value or select a startup default.
+Scientific compatibility remains a declared owner contract.
+
+Git blobs identify original FITS bytes and manifests; retained Git refs preserve
+registered commits and their objects. SQLite holds searchable metadata and
+correlated operation events. Git publication precedes SQLite references; the two
+stores are not one atomic transaction. Git maintenance, FITS decoding and database
+I/O remain outside scientific frame processing.
+
+WirePlumber remains the sole session admission/lifecycle authority. Its optional
+journal module asynchronously records native property/parameter requests before
+effects, then records the reported completion before publication. Newly generated
+sessions require the journal; existing sealed sessions retain their previous
+configuration and have no retroactive history. A failed pre-effect durable write
+refuses the request. An uncertain or interrupted effect remains unknown, without
+automatic retry or inferred rollback. Requested, submitted and active are distinct.
+
+The headless management interface supports artifact registration, catalog reads,
+exact retrieval and paginated history. It does not introduce another live-control
+protocol, execute calibration acquisition or expose a browser gateway. The native
+GUI uses a local helper off its UI thread; shared panels remain WASM-buildable.
 
 ## System boundary
 

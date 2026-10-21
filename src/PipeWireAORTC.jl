@@ -39,6 +39,8 @@ include("deployment/runtime_export.jl")
 include("deployment/science_export.jl")
 include("native/native_control_codec.jl")
 include("native/native_runner_codec.jl")
+include("configuration_store.jl")
+include("configuration_store_cli.jl")
 include("native/native_control_client.jl")
 include("native/native_control_endpoint.jl")
 include("native/native_session_codec.jl")
@@ -69,7 +71,7 @@ include("deployment/wireplumber_install.jl")
 include("cli.jl")
 include("owners/graph_owner.jl")
 
-public AOSOwner, Artifacts, WirePlumberConfiguration, WirePlumberInstall, WirePlumberSessionRuntime,
+public ConfigurationStore, ConfigurationStoreCLI, AOSOwner, Artifacts, WirePlumberConfiguration, WirePlumberInstall, WirePlumberSessionRuntime,
     NativeSessionClient, CalibrationAcquisition, CalibrationCLI, WirePlumberCLI,
     NativeOwnerBootstrapRuntime, NativeParameterSource, NativeSourceControl, GraphOwner
 

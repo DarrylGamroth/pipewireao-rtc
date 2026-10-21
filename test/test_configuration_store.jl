@@ -1,0 +1,158 @@
+using Test, PipeWireAORTC, FITSIO, JSON3
+using PipeWireAO
+const CS = PipeWireAORTC.ConfigurationStore
+const CLI = PipeWireAORTC.ConfigurationStoreCLI
+const AC = PipeWireAORTC.Artifacts
+const NC = PipeWireAORTC.NativeControlCodec
+const NR = PipeWireAORTC.NativeRunnerCodec
+
+@testset "full transport cache reuses existing materializations" begin
+    mktempdir() do root
+        store=CS.Store(root)
+        record=CS.register!(store,Float32[1,2];label="Cached",scope="science")
+        materialized=CS.materialize!(store,record["id"])
+        cache=joinpath(root,"materialized")
+        # The existing original and prepared payload occupy two of 1024 slots.
+        for index in 1:1022
+            touch(joinpath(cache,"retained-$index"))
+        end
+        @test CS.materialize!(store,record["id"])["prepared_path"]==materialized["prepared_path"]
+        @test_throws ArgumentError CS.materialize!(store,record["id"];storage_order="column-major")
+        @test !isfile(joinpath(dirname(materialized["prepared_path"]),"column-major.bin"))
+        fresh=CS.register!(store,Float32[3,4];label="Uncached",scope="science")
+        @test_throws ArgumentError CS.materialize!(store,fresh["id"])
+        @test !ispath(joinpath(cache,fresh["id"]))
+        @test read(materialized["prepared_path"])==reinterpret(UInt8,Float32[1,2])
+    end
+end
+
+@testset "headless Git catalog" begin
+    mktempdir() do root
+        store = CS.Store(joinpath(root,"catalog"))
+        path = joinpath(root,"gain.fits")
+        data = reshape(Float32[1,2,3,4,5,6],2,3)
+        FITS(path,"w") do fits
+            write(fits,data)
+        end
+        original = read(path)
+        source = AC.FITSArtifact(path;axes=(1,2))
+        first_record = CS.register!(store,source,Float32,(2,3);label="Gain",scope="science",metadata=Dict("z"=>1,"a"=>Dict("y"=>2,"x"=>3)))
+        duplicate = CS.register!(store,source,Float32,(2,3);label="Gain",scope="science",metadata=Dict("a"=>Dict("x"=>3,"y"=>2),"z"=>1))
+        @test first_record["id"] == duplicate["id"]
+        @test first_record["commit_oid"] == duplicate["commit_oid"]
+        @test length(CS.list_artifacts(store)["items"]) == 1
+        other = CS.register!(store,source,Float32,(2,3);label="Other",scope=Dict("graph"=>"science"))
+        @test other["id"] != first_record["id"]
+        @test other["content_oid"] == first_record["content_oid"]
+        @test_throws ArgumentError CS.register!(store,AC.FITSArtifact(path),Float32,(2,3);label="Bad",scope="science")
+        @test_throws DimensionMismatch CS.register!(store,source,Float32,(3,2);label="Bad",scope="science")
+        @test length(CS.list_artifacts(store)["items"]) == 2
+        write(path,"mutated after capture")
+        @test CS.read_artifact(store,first_record["id"]) == original
+        reopened = CS.Store(store.root)
+        @test CS.get_artifact(reopened,first_record["id"])["manifest"]["preparation"]["target_shape"] == [2,3]
+        run(CS.git_command(store.repository,"gc","--prune=now"))
+        @test CS.read_artifact(reopened,first_record["id"]) == original
+        @test_throws ArgumentError CS.get_artifact(store,"HEAD")
+        @test length(CS.list_artifacts(store;limit=1)["items"]) == 1
+        @test_throws ArgumentError CS.list_artifacts(store;limit=101)
+        request=Dict("protocol"=>CS.PROTOCOL,"root"=>store.root,"op"=>"get","arguments"=>Dict("id"=>first_record["id"],"layout"=>"column-major"))
+        response=CLI.respond(JSON3.write(request))
+        @test response["ok"]
+        @test read(response["result"]["path"]) == original
+        @test reinterpret(Float32,read(response["result"]["prepared_path"])) == vec(data)
+        row_major=CS.materialize!(store,first_record["id"])
+        @test read(row_major["prepared_path"]) == AC.pack(AC.PreparedArtifact(data,Dict{String,Any}()))
+        @test CS.materialize!(CS.Store(store.root),first_record["id"])["prepared_path"] == row_major["prepared_path"]
+        chmod(row_major["prepared_path"],0o600)
+        write(row_major["prepared_path"],"corrupted cached payload")
+        @test_throws ArgumentError CS.materialize!(store,first_record["id"])
+        @test read(row_major["prepared_path"],String) == "corrupted cached payload"
+        @test !CLI.respond("{")["ok"]
+        @test !CLI.respond(JSON3.write(Dict("protocol"=>CS.PROTOCOL,"root"=>store.root,"op"=>"live-control")))["ok"]
+        input=IOBuffer("{\n"*JSON3.write(Dict("protocol"=>CS.PROTOCOL,"root"=>store.root,"op"=>"list"))*"\n")
+        output=IOBuffer(); @test CLI.serve(input,output) == 0
+        replies=JSON3.read.(split(String(take!(output)),'\n';keepempty=false))
+        @test !replies[1].ok && replies[2].ok
+        # Independently missing loose content objects must be detected at retrieval.
+        broken=CS.Store(joinpath(root,"broken"))
+        record=CS.register!(broken,data;label="Generated",scope="science")
+        oid=record["content_oid"]
+        rm(joinpath(broken.repository,"objects",oid[1:2],oid[3:end]))
+        @test_throws ProcessFailedException CS.get_artifact(broken,record["id"])
+        sha256root=joinpath(root,"sha256")
+        mkpath(sha256root)
+        repo=joinpath(sha256root,"artifacts.git")
+        CS.git_read(repo,"init","--bare","--quiet","--object-format=sha256",repo)
+        sha256store=CS.Store(sha256root)
+        record256=CS.register!(sha256store,data;label="SHA256",scope="science")
+        @test record256["object_format"]=="sha256"
+        @test length(record256["id"])==64
+        @test CS.get_artifact(sha256store,record256["id"])["id"]==record256["id"]
+    end
+end
+
+@testset "shared journal projection survives reopen" begin
+    mktempdir() do root
+        store=CS.Store(root)
+        controller=NC.ControllerIdentity(UInt32(21),UInt64(22),Int64(23))
+        header=NC.RequestHeader(controller,Int64(24),Int64(25),UInt32(13),Int64(1_000_000))
+        command=NR.RunnerCommand(:properties_set,"science",Dict("gain"=>NR.RunnerScalar(:float,reinterpret(UInt32,0.5f0))))
+        request=NR.encode_request(header,command)
+        CS.database(store) do db
+            CS.DBInterface.execute(db,"INSERT INTO operation_events(session_id,event,record,client_name,client_pid,operation_key) VALUES(?,?,?,?,?,?)",
+                ("session","requested",request.data,"gui",123,CS.header_key("session",header)))
+        end
+        items=CS.history(CS.Store(root))["items"]
+        @test length(items)==1
+        @test items[1]["outcome"]=="unknown"
+        @test items[1]["graph"]=="science"
+        @test items[1]["controller"]["serial"]==22
+        @test items[1]["client_name"]=="gui"
+        @test isempty(CS.history(store;session_id="other")["items"])
+        @test items[1]["changes"]["gain"]["value"] == 0.5f0
+        pod(x)=PipeWireAO.Pod(x)
+        spa(x...)=PipeWireAO.SPA.Struct(PipeWireAO.Pod[x...])
+        ident(x)=pod(PipeWireAO.SPA.Id(UInt32(x)))
+        for (token,outcome,active,event) in ((26,NR.Submitted,false,"completed"),(27,NR.Active,true,"completed"),(28,NR.Submitted,false,"unknown"))
+            h=NC.RequestHeader(controller,Int64(24),Int64(token),UInt32(13),Int64(1_000_000))
+            req=NR.encode_request(h,command)
+            rh=NC.ReplyHeader(controller,Int64(24),Int64(token),UInt32(13),Int32(0))
+            generations=spa(pod(spa(pod("node"),pod(Int64(2)),pod(Int64(active ? 2 : 1)))))
+            details=spa(pod("science"),pod(generations),pod(active))
+            completion=NC.encode_completion(rh,spa(ident(NR.Running),ident(outcome),pod(details)))
+            CS.database(store) do db
+                for (kind,record) in (("requested",req.data),(event,completion.data))
+                    CS.DBInterface.execute(db,"INSERT INTO operation_events(session_id,event,record,client_name,client_pid,operation_key) VALUES(?,?,?,?,?,?)",
+                        ("session",kind,record,"gui",123,CS.header_key("session",h)))
+                end
+            end
+        end
+        outcomes=CS.history(store)["items"]
+        @test getindex.(outcomes,"outcome") == ["unknown","Active","Submitted","unknown"]
+        @test length(CS.history(store;limit=1)["items"]) == 1
+        page=CS.history(store;limit=2)
+        next=CS.history(store;limit=2,before_sequence=page["next_before_sequence"])
+        @test getindex.(next["items"],"outcome") == ["Submitted","unknown"]
+        @test !haskey(outcomes[1],"completion_hex")
+        @test haskey(CS.history(store;include_records=true)["items"][1],"unknown_hex")
+        @test length(CS.history(CS.Store(root))["items"])==4
+        # Journal writes can retain a terminal no-effect completion without its request.
+        orphan=NC.ReplyHeader(controller,Int64(24),Int64(29),UInt32(13),Int32(-1))
+        failed=NC.encode_completion(orphan,spa(pod("journal"),pod("no effect"),ident(NR.Ready)))
+        CS.database(store) do db
+            CS.DBInterface.execute(db,"INSERT INTO operation_events(session_id,event,record,operation_key) VALUES(?,?,?,?)",
+                ("session","completed",failed.data,CS.header_key("session",orphan)))
+        end
+        @test CS.history(store;limit=1)["items"][1]["outcome"]=="failed"
+        artifact=CS.register!(store,Float32[1,2];label="Parameter",scope="science",schema="f32")
+        materialized=CS.materialize!(store,artifact["id"])
+        ph=NC.RequestHeader(controller,Int64(24),Int64(30),UInt32(14),Int64(1_000_000))
+        parameter=NR.encode_request(ph,NR.RunnerCommand(:parameter,"science","matrix","F32_LE",UInt32[2],"f32",materialized["prepared_path"]))
+        CS.database(store) do db
+            CS.DBInterface.execute(db,"INSERT INTO operation_events(session_id,event,record,operation_key) VALUES(?,?,?,?)",
+                ("session","requested",parameter.data,CS.header_key("session",ph)))
+        end
+        @test CS.history(CS.Store(root);limit=1)["items"][1]["artifact_id"]==artifact["id"]
+    end
+end

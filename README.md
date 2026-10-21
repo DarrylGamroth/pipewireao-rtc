@@ -47,6 +47,8 @@ The supported callable interfaces retain their existing module bindings:
 | `WirePlumberInstall` | Install a sealed session package |
 | `WirePlumberSessionRuntime` | Start, attach, inspect and stop an installed session |
 | `NativeSessionClient` | Send controls to a selected native session |
+| `ConfigurationStore` | Register and retrieve Git artifacts; query the shared SQLite journal |
+| `ConfigurationStoreCLI` | Headless management interface used by GUI, CLI and scripts |
 | `CalibrationAcquisition` | Sequence calibration acquisition actions |
 | `CalibrationCLI`, `WirePlumberCLI` | Translate command arguments and reports |
 | `NativeOwnerBootstrapRuntime`, `NativeParameterSource`, `NativeSourceControl` | Reusable cold owner entry points and native source controls |
@@ -166,6 +168,8 @@ reconnect or repeat a request after an unknown outcome. Normal Quit requests
 WirePlumber withdrawal; systemd cleanup reconciles the exact owned cohort.
 Emergency `systemctl --user stop UNIT` is process cleanup, not proof of a
 successful public shutdown.
+
+See [headless artifact registration and shared update history](docs/JULIA_DEPLOYMENT_USAGE.md#headless-artifact-registration-and-shared-update-history) for catalog, script and GUI usage.
 
 ## Source layout
 

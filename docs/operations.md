@@ -764,6 +764,24 @@ Verification intent: oversized input/file, dimension overflow, flood/slow
 client/disconnect, operator rejection, stopped submission, running adoption,
 unknown timeout outcome and required-object monitoring between commands.
 
+The selected headless configuration journal covers property-set and parameter
+requests admitted through the session endpoint. A journal-enabled session MUST
+persist the request before dispatching its scientific effect and persist the
+reported completion before publishing it. Journal I/O MUST run outside PipeWire
+callbacks and the session main context. The original finite request deadline
+includes journal work. A failure before dispatch MUST refuse the operation without
+faulting an otherwise healthy scientific session. An effect whose durable outcome
+cannot be established MUST remain unknown; history MUST NOT infer adoption,
+rollback or permission to retry. History queries MUST retain the original session,
+controller, endpoint and token identities across client exits.
+
+Verification intent: two independent native clients contribute to one SQLite
+history; refused pre-effect writes produce no scientific effect; expiry or
+controller loss while waiting for persistence does not dispatch later; restart
+retains unresolved requests without replay. Artifact registration and history
+queries run headlessly with the GUI absent. This is configuration-operation
+history, not complete scientific stream recording.
+
 ### RTC-DEV-023 — Deployment controls and documentation
 
 One documented command MUST start either selected REVOLT system from recorded

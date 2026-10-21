@@ -19,7 +19,7 @@ function wireplumber_prefix(root; library_dir="lib/x86_64-linux-gnu")
     library = joinpath(directory, "libwireplumber-0.5.so.0.0")
     write(library, "synthetic library")
     symlink(basename(library), joinpath(directory, "libwireplumber-0.5.so.0"))
-    for name in ("lua-scripting", "ao-control-endpoint")
+    for name in ("lua-scripting", "ao-control-endpoint", "ao-journal")
         write(joinpath(directory, "wireplumber-0.5", "libwireplumber-module-$name.so"),
             "synthetic $name module")
     end

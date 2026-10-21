@@ -61,6 +61,7 @@ function session_assets(spec, package, prefix)
         joinpath(package, "wireplumber/lib/wp/libwireplumber-0.5.so.0")
     for file in (binary, library,
                  joinpath(module_dir, "libwireplumber-module-ao-control-endpoint.so"),
+                 joinpath(module_dir, "libwireplumber-module-ao-journal.so"),
                  joinpath(module_dir, "libwireplumber-module-lua-scripting.so"),
                  joinpath(data_dir, "scripts/ao/session.lua"))
         isfile(file) && isabspath(file) ||
