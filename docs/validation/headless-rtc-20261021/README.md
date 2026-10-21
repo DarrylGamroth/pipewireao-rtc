@@ -22,6 +22,26 @@ workstation RTC were left unchanged. The candidate native install is
 applications require this executable and the matching libwireplumber cohort;
 there is no WirePlumber daemon or retired-coordinator fallback.
 
+## Main integration and worktree cleanup
+
+On 2026-10-21 the reviewed changes were committed and fast-forwarded into the
+normal checkouts: RTC `main` at `3a15aa0ebed6913aa74e280e57967b392b633667`
+and WirePlumberAO `master` at `2c55a872aeaff248c0aa2cbd5c134f8472639e2a`.
+The reviewed source hashes match both canonical checkouts. Fresh canonical CPU
+builds pass all seven native RTC suites and all five generic WirePlumber suites;
+the Julia package imports with the new session interfaces.
+
+Four clean worktrees were removed: the two reuse worktrees, the already-merged
+simulator-settings worktree and the old session-rejection checkout. The latter's
+unique commit remains on `codex/session-rejection-20261014`. Three fully merged
+feature branches were removed. Five historical RTC worktrees with uncommitted
+work were left intact. The [integration receipt](integration.json) identifies
+all removed and retained paths and records the focused test results.
+
+The simulation remains inactive with MainPID 0. No live prefix was replaced,
+service started, GPU initialized, release tagged or remote branch pushed.
+The worktree paths elsewhere in this evidence remain historical provenance.
+
 ## Verification
 
 | Check | Result | Scope |

@@ -1,0 +1,166 @@
+{
+  "rtc_commit": "3a15aa0ebed6913aa74e280e57967b392b633667",
+  "wireplumber_commit": "2c55a872aeaff248c0aa2cbd5c134f8472639e2a",
+  "removed": [
+    {
+      "repository": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc",
+      "worktree": "/home/dgamroth/workspaces/codex/worktrees/rtc-wireplumber-reuse-20261021",
+      "branch": "codex/wireplumber-reuse",
+      "head": "3a15aa0ebed6913aa74e280e57967b392b633667",
+      "merged": true,
+      "branch_preserved": false
+    },
+    {
+      "repository": "/home/dgamroth/workspaces/codex/pipewire/wireplumber",
+      "worktree": "/home/dgamroth/workspaces/codex/worktrees/wireplumber-reuse-20261021",
+      "branch": "codex/wireplumber-reuse",
+      "head": "2c55a872aeaff248c0aa2cbd5c134f8472639e2a",
+      "merged": true,
+      "branch_preserved": false
+    },
+    {
+      "repository": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc",
+      "worktree": "/home/dgamroth/workspaces/codex/worktrees/rtc-simulator-settings-20261021",
+      "branch": "codex/simulator-settings",
+      "head": "c1b7895b4032624a1024aafb1e858f029fce391b",
+      "merged": true,
+      "branch_preserved": false
+    },
+    {
+      "repository": "/home/dgamroth/workspaces/codex/pipewire/wireplumber",
+      "worktree": "/home/dgamroth/workspaces/codex/pipewire/wireplumber-session-rejection-20261014",
+      "branch": "codex/session-rejection-20261014",
+      "head": "63f2df2ff88c07add386e28912e54bdeb345661b",
+      "merged": false,
+      "branch_preserved": true
+    }
+  ],
+  "retained": [
+    {
+      "repository": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc",
+      "worktree": "/home/dgamroth/workspaces/codex/pipewire/PipeWireAORTC-classic-20261019",
+      "branch": "refs/heads/codex/classic-registered-20261019",
+      "head": "5a054b30f1e38c6450b3c65e786fc9d30407182b",
+      "dirty_entries": 2,
+      "reason": "Uncommitted historical work preserved"
+    },
+    {
+      "repository": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc",
+      "worktree": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-live-observation",
+      "branch": "refs/heads/work/live-observation-20261005",
+      "head": "03770074b590a73156c664ea0d4ea816b5853921",
+      "dirty_entries": 16,
+      "reason": "Uncommitted historical work preserved"
+    },
+    {
+      "repository": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc",
+      "worktree": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-progressive-requal",
+      "branch": "refs/heads/copper-progressive-requal-20260929",
+      "head": "f8dbb47930f8d24fa7711509bac557fe9d867077",
+      "dirty_entries": 3,
+      "reason": "Uncommitted historical work preserved"
+    },
+    {
+      "repository": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc",
+      "worktree": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-session-discovery",
+      "branch": "refs/heads/work/session-discovery-20261006",
+      "head": "f3f0815dc0ffa074e4265aebc51fb07a0d39dac4",
+      "dirty_entries": 5,
+      "reason": "Uncommitted historical work preserved"
+    },
+    {
+      "repository": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc",
+      "worktree": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-spiders",
+      "branch": "refs/heads/codex/spiders-source-control",
+      "head": "5ce1ca8503fbb4851f0412a11ae55f6d521ae0ff",
+      "dirty_entries": 3,
+      "reason": "Uncommitted historical work preserved"
+    }
+  ],
+  "simulation_restarted": false,
+  "pushed": false,
+  "date": "2026-10-21",
+  "rtc_branch": "main",
+  "wireplumber_branch": "master",
+  "canonical_source_matches_reviewed_hashes": true,
+  "canonical_package_import": "passed",
+  "canonical_native_tests": [
+    {
+      "name": "ao-acquisition",
+      "result": "OK",
+      "returncode": 0,
+      "duration": 0.017351388931274414
+    },
+    {
+      "name": "ao-owner",
+      "result": "OK",
+      "returncode": 0,
+      "duration": 0.02096080780029297
+    },
+    {
+      "name": "ao-connections",
+      "result": "OK",
+      "returncode": 0,
+      "duration": 0.025503873825073242
+    },
+    {
+      "name": "ao-session-journal",
+      "result": "OK",
+      "returncode": 0,
+      "duration": 0.019189834594726562
+    },
+    {
+      "name": "rtc-host",
+      "result": "OK",
+      "returncode": 0,
+      "duration": 0.05709552764892578
+    },
+    {
+      "name": "ao-session-hooks",
+      "result": "OK",
+      "returncode": 0,
+      "duration": 0.4575347900390625
+    },
+    {
+      "name": "ao-journal",
+      "result": "OK",
+      "returncode": 0,
+      "duration": 1.0308470726013184
+    }
+  ],
+  "canonical_wireplumber_tests": [
+    {
+      "name": "test-lua-event-hooks",
+      "result": "OK",
+      "returncode": 0,
+      "duration": 0.013797760009765625
+    },
+    {
+      "name": "test-si-node",
+      "result": "OK",
+      "returncode": 0,
+      "duration": 0.018969058990478516
+    },
+    {
+      "name": "test-si-audio-adapter",
+      "result": "OK",
+      "returncode": 0,
+      "duration": 0.018733978271484375
+    },
+    {
+      "name": "test-session-item",
+      "result": "OK",
+      "returncode": 0,
+      "duration": 0.033397674560546875
+    },
+    {
+      "name": "test-si-standard-link",
+      "result": "OK",
+      "returncode": 0,
+      "duration": 0.11915421485900879
+    }
+  ],
+  "main_pid": 0,
+  "active_state": "inactive",
+  "qualification_scope": "Fresh canonical-checkout CPU builds and native tests; no GPU, live systemd session or release"
+}

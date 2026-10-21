@@ -20,7 +20,10 @@ process. WirePlumberAO retains device/access/shared-routing policy. The RTC
 reuses libwireplumber discovery, hooks and existing SessionItems; no retired
 Statig/Julia coordinator or second command protocol is restored.
 
-Implementation is in the existing isolated `codex/wireplumber-reuse` worktrees.
+Integrated into the normal RTC `main` and WirePlumberAO `master` checkouts.
+The completed reuse worktrees are removed; historical dirty worktrees remain
+intact. The [integration receipt](validation/headless-rtc-20261021/integration.json)
+records the commits, cleanup and fresh canonical CPU checks.
 The native host, AO module/script/test relocation, sealed deployment/systemd
 integration and independent review are complete. The full Julia suite passes
 2,330 assertions; seven native suites, five generic WirePlumber suites and
