@@ -99,6 +99,7 @@ host_connection (gconstpointer signal_exit)
       "main = { test.missing = required } }\n"
       "wireplumber.components = [ "
       "{ name = libwireplumber-module-lua-scripting type = module provides = support.lua } "
+      "{ name = libwireplumber-module-ao-lua type = module provides = ao.lua } "
       "{ name = \"%s\" type = script/lua provides = test.ready requires = [ support.lua ] } ]\n",
       server.name, g_getenv ("RTC_TEST_SCRIPT"));
   g_assert_true (g_file_set_contents (path, config, -1, &error));
@@ -179,11 +180,12 @@ public_session_status (void)
       "wireplumber.profiles = { ao-rtc = { test.client = required } }\n"
       "wireplumber.components = [ "
       "{ name = libwireplumber-module-lua-scripting type = module provides = support.lua } "
+      "{ name = libwireplumber-module-ao-lua type = module provides = ao.lua } "
       "{ name = libwireplumber-module-ao-control-endpoint type = module provides = test.controller "
       "arguments = { plugin.name = test-status-controller node.name = test-status-controller "
       "profile = pipewireao.rtc.controller/1 instance = 303 } } "
       "{ name = \"%s\" type = script/lua provides = test.client "
-      "requires = [ support.lua test.controller ] arguments = { server-pid = %s } } ]\n",
+      "requires = [ support.lua ao.lua test.controller ] arguments = { server-pid = %s } } ]\n",
       server.name, client_script, pid);
   g_assert_true (g_file_set_contents (client_path, client_config, -1, &error));
   g_assert_no_error (error);

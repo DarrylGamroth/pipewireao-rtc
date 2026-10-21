@@ -3,6 +3,7 @@
 
 -- One session authority. systemd owns its scientific processes; this policy
 -- admits exact prepared owners, connects declared ports and controls acquisition.
+local lua = require ("ao-lua")
 local control = require ("ao-control")
 local owner = require ("ao-owner")
 local acquisition = require ("ao-acquisition")
@@ -61,7 +62,7 @@ local function guarded (operation, callback)
   return function (...)
     if operation.retired or state.operation ~= operation or state.epoch ~= operation.epoch or
         operation.session ~= instance then return end
-    if Core.get_monotonic_time () >= operation.deadline then
+    if GLib.get_monotonic_time () >= operation.deadline then
       fault ("Internal session effect expired; outcome unknown")
       return
     end
@@ -87,11 +88,11 @@ local function begin (kind, ticket, group)
   state.epoch = state.epoch + 1
   local operation = { epoch = state.epoch, session = instance, kind = kind,
     origin = state.lifecycle, group = group, ticket = ticket, cancels = {},
-    deadline = ticket and math.min (ticket.deadline, Core.get_monotonic_time () + 5000000) or
-        Core.get_monotonic_time () + startup_timeout_ms * 1000 }
+    deadline = ticket and math.min (ticket.deadline, GLib.get_monotonic_time () + 5000000) or
+        GLib.get_monotonic_time () + startup_timeout_ms * 1000 }
   state.operation = operation
   operation.expiry = Core.timeout_add (math.max (1, math.ceil (
-      (operation.deadline - Core.get_monotonic_time ()) / 1000)), function ()
+      (operation.deadline - GLib.get_monotonic_time ()) / 1000)), function ()
     if state.operation ~= operation then return false end
     if operation.ticket and not operation.effects_issued then
       operation_error (operation, "Session query expired")
@@ -154,7 +155,7 @@ local function hook (name, steps)
 end
 
 local function enqueue (operation, name)
-  operation.event = EventDispatcher.push_event {
+  operation.event = lua.push_event {
     type = "ao-session-" .. name, priority = 0,
     properties = { ["ao.session.epoch"] = tostring (operation.epoch) },
   }
@@ -244,7 +245,7 @@ fault = function (reason)
   state.lifecycle = 5
   pcall (publish)
   Log.warning ("AO session fault: " .. tostring (reason))
-  local deadline = Core.get_monotonic_time () + 5000000
+  local deadline = GLib.get_monotonic_time () + 5000000
   local function withdraw ()
     connections.withdraw (catalog, deadline, function (_, error)
       if error then Log.warning ("AO session cleanup uncertain: " .. tostring (error)) end
@@ -375,10 +376,9 @@ local function property_update (operation, name, transaction)
       count = count + 1
       assert (count <= 4096, "Property declaration count exceeds bound")
       assert (pod:get_type_name () == "Spa:Pod:Object:Param:PropInfo" and
-          pod:parse ().object_id == "PropInfo", "Malformed property declaration")
+          lua.object_id (pod) == "PropInfo", "Malformed property declaration")
       local fields, flags = {}, {}
-      for property in pod:new_iterator ():iterate () do
-        local key, value, property_flags = property:get_property ()
+      for key, value, property_flags in lua.properties (pod) do
         assert (not fields [key], "Duplicate property declaration field")
         fields [key], flags [key] = value, property_flags
       end
@@ -499,7 +499,7 @@ local function finish_shutdown (operation)
   end
   local armed, error = pcall (function ()
     expiry = Core.timeout_add (math.max (1, math.ceil (
-        (operation.deadline - Core.get_monotonic_time ()) / 1000)), function ()
+        (operation.deadline - GLib.get_monotonic_time ()) / 1000)), function ()
       quit ("deadline expired")
       return false
     end)

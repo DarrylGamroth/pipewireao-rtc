@@ -1,4 +1,5 @@
 -- Native property observation and cold shutdown validation with real PODs.
+local lua = require ("ao-lua")
 local control = require ("ao-control")
 local owner = require ("ao-owner")
 
@@ -8,13 +9,13 @@ local saved_identity = control.same_identity
 control.same_identity = function () return false end
 for _, duration in ipairs ({ 1000000, 300000000, 900000000, 3600000000 }) do
   local client, failure = {}, nil
-  owner.wait_prepared (client, Core.get_monotonic_time () + duration,
+  owner.wait_prepared (client, GLib.get_monotonic_time () + duration,
       function (_, error) failure = error end)
   assert (failure and failure:find ("Owner incarnation changed", 1, true),
       "Valid cold preparation budget was rejected")
   assert (not client.pending, "Rejected owner retained a pending operation")
 end
-for _, deadline in ipairs ({ Core.get_monotonic_time () + 3601000000, 1000.5, "900000000" }) do
+for _, deadline in ipairs ({ GLib.get_monotonic_time () + 3601000000, 1000.5, "900000000" }) do
   local client, failure = {}, nil
   owner.wait_prepared (client, deadline, function (_, error) failure = error end)
   assert (failure and failure:find ("Invalid preparation deadline", 1, true))
@@ -36,7 +37,7 @@ assert (requested > baseline.control and requested == active,
     "The counterexample must satisfy the previous generation-only predicate")
 assert (not control.properties_adopted (values, baseline, updates),
     "Unrequested initial configuration was reported adopted")
-for name, value in pairs (updates) do values [name] = value:copy () end
+for name, value in pairs (updates) do values [name] = lua.copy (value) end
 assert (control.properties_adopted (values, baseline, updates))
 assert (not control.properties_adopted (values, { control = 1 }, updates))
 values ["control:active-generation"] = Pod.Long (0)

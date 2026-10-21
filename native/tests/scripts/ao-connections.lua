@@ -1,3 +1,4 @@
+local lua = require ("ao-lua")
 -- Cold tests for the exact registry ownership used by ao-connections.
 
 Feature = {
@@ -11,9 +12,9 @@ local core_info = {
   name = "test-core",
 }
 
+GLib = { get_monotonic_time = function () return 1000 end }
 Core = {
   get_info = function () return core_info end,
-  get_monotonic_time = function () return 1000 end,
   timeout_add = function (_, callback)
     return { destroy = function () end, callback = callback }
   end,
@@ -49,7 +50,17 @@ for index = 1, 16 do
 end
 assert (connections_env, "ao-connections has no module environment upvalue")
 local test_env = setmetatable ({}, { __index = connections_env })
-test_env.ObjectManager = manager_new
+test_env.GLib = GLib
+local test_lua = setmetatable ({
+  object_manager = manager_new,
+  size = function (pod) return pod:get_size () end,
+  object_id = function (pod) return pod:get_object_id () end,
+  properties = function () return function () end end,
+}, { __index = lua })
+for index = 1, 16 do
+  local name = debug.getupvalue (connections.new, index)
+  if name == "lua" then debug.setupvalue (connections.new, index, test_lua); break end
+end
 test_env.Interest = Interest
 test_env.Core = Core
 test_env.Feature = Feature
@@ -494,10 +505,10 @@ end
 -- trigger a new registry proof. Native retirement is not retried by policy.
 do
   local catalog, _, _, activate = realized_link ({ pending = true })
-  local saved_sync, saved_clock, saved_timer = Core.sync, Core.get_monotonic_time, Core.timeout_add
+  local saved_sync, saved_clock, saved_timer = Core.sync, GLib.get_monotonic_time, Core.timeout_add
   local expiry, now, syncs, completions = nil, 1000, 0, 0
   Core.sync = function () syncs = syncs + 1 end
-  Core.get_monotonic_time = function () return now end
+  GLib.get_monotonic_time = function () return now end
   Core.timeout_add = function (_, callback)
     expiry = callback
     return { destroy = function () end }
@@ -510,7 +521,7 @@ do
   expiry ()
   activate ()
   assert (completions == 1 and syncs == 0 and catalog.cohort and catalog.withdrawing)
-  Core.sync, Core.get_monotonic_time, Core.timeout_add = saved_sync, saved_clock, saved_timer
+  Core.sync, GLib.get_monotonic_time, Core.timeout_add = saved_sync, saved_clock, saved_timer
 end
 
 -- A late first Link completion cannot start a second Link after withdrawal.
@@ -658,7 +669,7 @@ do
   local client = catalog.clients [72]
   local identity = control.identity (client)
   local timers, now = {}, 1000
-  Core.get_monotonic_time = function () return now end
+  GLib.get_monotonic_time = function () return now end
   Core.timeout_add = function (_, callback)
     local timer = { callback = callback, destroyed = false }
     function timer:destroy () self.destroyed = true end

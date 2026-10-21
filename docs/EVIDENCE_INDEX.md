@@ -1,5 +1,17 @@
 # Delivery evidence catalog
 
+## RTC-owned Lua/POD bindings — 2026-10-21
+
+[Validation](validation/upstream-bindings-20261021/README.md) separates clean
+upstream libwireplumber/PipeWireAO from upstream plus three genuine fixes.
+Both pass 55 generic suites, ten RTC suites and 19 CPU-array/coexistence checks.
+The full Julia suite passes 2,329 assertions; production fault ordering passes
+seven cases. [Independent review](reviews/20261021-upstream-bindings/REVIEW.md)
+records POD fidelity/ownership, selective discovery, error-path corrections and
+the generated-JSON dependency-loader limitation. Native Status Configuring is
+verified with the separate fix, without a full lifecycle claim. No GPU/live
+workstation deployment or timing qualification follows.
+
 ## Standard libwireplumber Link APIs — 2026-10-21
 
 The [validation record](validation/standard-links-20261021/README.md) records

@@ -201,7 +201,7 @@ local function begin (source, kind, argument, deadline, callback)
   check (source)
   assert (math.type (deadline) == "integer", "Invalid acquisition deadline")
   -- Readiness may span the session startup budget; ao-owner caps each request.
-  if kind ~= "prepare" then deadline = math.min (deadline, Core.get_monotonic_time () + 60000000) end
+  if kind ~= "prepare" then deadline = math.min (deadline, GLib.get_monotonic_time () + 60000000) end
   control.remaining_ns (deadline)
   local pending = { kind = kind, deadline = deadline, callback = callback }
   if kind == "run" then

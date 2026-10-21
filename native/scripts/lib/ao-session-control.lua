@@ -3,6 +3,7 @@
 
 -- Native public session control ingress. The policy executes operations;
 -- this adapter only proves controller incarnations and publishes typed records.
+local lua = require ("ao-lua")
 local control = require ("ao-control")
 local server = {}
 local PREFIX = "pipewireao.rtc.session."
@@ -57,7 +58,7 @@ end
 function server.check_ticket (self, ticket)
   assert (not self.transport_lost, "Session control transport lost")
   assert (self.pending == ticket, "Superseded public session operation")
-  assert (Core.get_monotonic_time () < ticket.deadline, "Session request expired")
+  assert (GLib.get_monotonic_time () < ticket.deadline, "Session request expired")
   for _, row in ipairs (self.controllers) do
     if not row.retired and identity_equal (row, ticket.header) then
       local fresh = prove (row.node)
@@ -145,7 +146,7 @@ function server.complete (self, ticket, outcome, details, error, uncertain)
   journal_append (self, ticket, ticket.unknown and "unknown" or "completed", record,
       function (ok, reason)
     if self.pending ~= ticket then return end
-    if Core.get_monotonic_time () >= ticket.deadline then
+    if GLib.get_monotonic_time () >= ticket.deadline then
       cancel_journal_ticket (self, ticket, "Session operation expired; effect outcome unknown")
     elseif ok then terminal (self, ticket, record)
     else
@@ -212,7 +213,7 @@ local function request (self, pod, received_us)
     if previous and header.token == previous.header.token and
         header.operation == previous.header.operation and
         identity_equal (header, previous.header) and
-        header.budget_ns == previous.header.budget_ns and payload:equals (previous.payload) then
+        header.budget_ns == previous.header.budget_ns and lua.equals (payload, previous.payload) then
       server.publish (self)
       return
     end
@@ -229,7 +230,7 @@ local function request (self, pod, received_us)
   local bounded, deadline = pcall (control.deadline, header.budget_ns)
   if not bounded then server.reject (self, header, -22, "Invalid request budget"); return end
   deadline = received_us + ((header.budget_ns + 999) // 1000)
-  if Core.get_monotonic_time () >= deadline then
+  if GLib.get_monotonic_time () >= deadline then
     server.reject (self, header, -110, "Request budget expired in transport handoff"); return
   end
   local journaled = self.journal and (header.operation == 13 or header.operation == 14)
@@ -246,7 +247,7 @@ local function request (self, pod, received_us)
       tostring (header.token) }, ":") or nil }
   self.last_token, self.pending = header.token, ticket
   ticket.expiry = Core.timeout_add (math.max (1, math.ceil (
-      (deadline - Core.get_monotonic_time ()) / 1000)), function ()
+      (deadline - GLib.get_monotonic_time ()) / 1000)), function ()
     if self.pending ~= ticket then return false end
     if ticket.journaled then
       cancel_journal_ticket (self, ticket, ticket.dispatched and
@@ -306,7 +307,7 @@ function server.new (endpoint, instance, request_handler, fault_handler, journal
   self.completion = control.encode ("completion", reply_header (self, nil, 0), Pod.Struct {})
   self.rejection = control.encode ("rejection", reply_header (self, nil, -11),
       Pod.Struct { "session", "No rejected request", Pod.Id (self.lifecycle) })
-  self.manager = ObjectManager ({ Interest { type = "node",
+  self.manager = lua.object_manager ({ Interest { type = "node",
     Constraint { "pipewireao.rtc-control.profile", "=", PROFILE, type = "pw" } } }, INFO)
   self.manager:connect ("object-added", function (_, node)
     if #self.controllers >= 32 then return end

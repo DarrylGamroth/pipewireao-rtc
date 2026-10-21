@@ -121,8 +121,8 @@ an invalid update cannot be hidden by a later valid update.
 
 The native RTC and libwireplumber build use `libpipewire-ao-0.3` and
 `libspa-ao-0.2`. This is upstream Link/SI API use with PipeWireAO's ABI and formats,
-not a claim that ordinary PipeWire implements NDArray transport. Existing generic
-Lua/POD bindings outside the Link API remain separately inventoried. Genuine
+not a claim that ordinary PipeWire implements NDArray transport. The generic Lua/POD bindings were separately inventoried at this stage and
+are removed in the RTC-owned binding increment below. Genuine
 component-loader, POD-filter-capacity and event-property defects are separate
 from the removed interface extensions.
 
@@ -133,3 +133,35 @@ to the corresponding caller invariant or an explicit no-longer-applicable
 surface; they must not disappear without a disposition. The library build must
 lack the removed symbols and match upstream Link/SI sources. Dynamic dependency
 inspection must show PipeWireAO and no regular PipeWire or GPU runtime.
+
+## RTC-owned Lua bindings — 2026-10-21
+
+RTC-ARCH-026 continues to use upstream libwireplumber as its application library.
+Application Lua modules use the existing `GLib.get_monotonic_time` binding for
+absolute deadlines. The redundant downstream Core clock binding is removed.
+
+A small RTC-native `ao-lua` plugin and its local Lua module expose the remaining
+public C operations missing from stock Lua: selected-feature ObjectManager
+construction, POD child/property inspection and copying, and native event
+construction with epoch properties. The plugin is a library binding; it owns no
+application lifecycle, routing decision, frame processing or external command
+protocol. Native event hooks and ordinary Link objects remain upstream.
+
+Discovery constructs a fresh upstream ObjectManager, requests only its declared
+features, adds interests and installs it through the standard interface. It must
+not construct the stock all-feature Lua manager and attempt to remove features
+afterwards. Selective subscriptions protect external scientific owners from
+unrequested property/parameter activation.
+
+POD bindings preserve types and full integer values. Property IDs and flags come
+from bounded traversal of the public SPA Object, rather than libwireplumber's
+private property wrapper. Returned child values have independent ownership;
+iteration preserves duplicates so existing validation can reject them. Metadata
+conversion cannot replace the typed values used for scientific/control checks.
+No global Lua class or constructor is monkeypatched.
+
+The library under test must be upstream source with only build dependency
+selection for `libpipewire-ao-0.3` and `libspa-ao-0.2`. Any genuine upstream bug
+fix is a separate patch and validation cohort. API relocation must not conceal
+failed upstream behavior or weaken identity, Format, cancellation, deadlines,
+source-first fault handling, pending callback accounting or cleanup proof.

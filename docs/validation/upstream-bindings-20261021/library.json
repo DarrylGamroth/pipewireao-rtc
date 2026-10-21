@@ -1,0 +1,382 @@
+{
+  "upstream_tag": "0.5.18",
+  "upstream_commit": "81606cbb32d29df20147d1b68b662c1082654d81",
+  "source_worktree": "/home/dgamroth/workspaces/codex/worktrees/wireplumber-upstream-stock-20261021",
+  "model": "gpt-6.1-sol",
+  "dependency_sdk": "/home/dgamroth/.local/opt/pipewireao-wp-reuse-20261021",
+  "records": {
+    "stock": {
+      "prefix": "/home/dgamroth/.local/opt/pipewireao-wp-upstream-stock-20261021",
+      "source_diff_sha256": "09efb4662c6fa15df9d4a3eee62c13af5d75528fc40adae642b2627592bac11f",
+      "source_diff": "/tmp/wp-upstream-stock-source-20261021.patch",
+      "additional_library_extensions": false,
+      "pkgconfig": {
+        "wireplumber-0.5": {
+          "version": "0.5.18",
+          "pcfiledir": "/home/dgamroth/.local/opt/pipewireao-wp-upstream-stock-20261021/lib/pkgconfig"
+        },
+        "libpipewire-ao-0.3": {
+          "version": "1.7.1",
+          "pcfiledir": "/home/dgamroth/.local/opt/pipewireao-wp-reuse-20261021/lib/pkgconfig"
+        },
+        "libspa-ao-0.2": {
+          "version": "0.2",
+          "pcfiledir": "/home/dgamroth/.local/opt/pipewireao-wp-reuse-20261021/lib/pkgconfig"
+        }
+      },
+      "artifacts": {
+        "bin/wireplumber": {
+          "sha256": "7e9446e546a20a3e27d317fa288fae23a36bf9256c1c264378bd70f6c93b2c04",
+          "needed": [
+            "libwireplumber-0.5.so.0",
+            "libgobject-2.0.so.0",
+            "libglib-2.0.so.0",
+            "libpipewire-ao-0.3.so.0",
+            "libc.so.6"
+          ],
+          "soname": [],
+          "resolved_dependencies": "\tlinux-vdso.so.1 (0x00007f9f1e71a000)\n\tlibwireplumber-0.5.so.0 => /home/dgamroth/.local/opt/pipewireao-wp-upstream-stock-20261021/lib/libwireplumber-0.5.so.0 (0x00007f9f1e66c000)\n\tlibgobject-2.0.so.0 => /lib/x86_64-linux-gnu/libgobject-2.0.so.0 (0x00007f9f1e5ec000)\n\tlibglib-2.0.so.0 => /lib/x86_64-linux-gnu/libglib-2.0.so.0 (0x00007f9f1e493000)\n\tlibpipewire-ao-0.3.so.0 => /home/dgamroth/.local/opt/pipewireao-wp-reuse-20261021/lib/libpipewire-ao-0.3.so.0 (0x00007f9f1e37d000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f9f1e187000)\n\tlibgmodule-2.0.so.0 => /lib/x86_64-linux-gnu/libgmodule-2.0.so.0 (0x00007f9f1e180000)\n\tlibgio-2.0.so.0 => /lib/x86_64-linux-gnu/libgio-2.0.so.0 (0x00007f9f1df88000)\n\tlibffi.so.8 => /lib/x86_64-linux-gnu/libffi.so.8 (0x00007f9f1df7b000)\n\tlibatomic.so.1 => /lib/x86_64-linux-gnu/libatomic.so.1 (0x00007f9f1df71000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f9f1de7f000)\n\tlibpcre2-8.so.0 => /lib/x86_64-linux-gnu/libpcre2-8.so.0 (0x00007f9f1ddd0000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f9f1e71c000)\n\tlibz.so.1 => /lib/x86_64-linux-gnu/libz.so.1 (0x00007f9f1ddb0000)\n\tlibmount.so.1 => /lib/x86_64-linux-gnu/libmount.so.1 (0x00007f9f1dd34000)\n\tlibselinux.so.1 => /lib/x86_64-linux-gnu/libselinux.so.1 (0x00007f9f1dd00000)\n\tlibblkid.so.1 => /lib/x86_64-linux-gnu/libblkid.so.1 (0x00007f9f1dc9d000)\n",
+          "exports_count": 1,
+          "exports_sha256": "9c3fdd1304c1f18e10b6862709e1edcfcc4a5afc6e4bc9d6ee7dfc8973233800",
+          "removed_symbols_absent": {
+            "wp_spa_pod_get_property_flags": true,
+            "wp_spa_pod_get_property_id": true,
+            "wp_link_get_format": true,
+            "wp_si_link_withdraw": true
+          }
+        },
+        "lib/libwireplumber-0.5.so": {
+          "sha256": "e786d1e78cd9749f92d6bb03bfdb1e889fb8cca450d9e68e8c112ab044066512",
+          "needed": [
+            "libgobject-2.0.so.0",
+            "libglib-2.0.so.0",
+            "libgmodule-2.0.so.0",
+            "libgio-2.0.so.0",
+            "libpipewire-ao-0.3.so.0",
+            "libc.so.6"
+          ],
+          "soname": [
+            "libwireplumber-0.5.so.0"
+          ],
+          "resolved_dependencies": "\tlinux-vdso.so.1 (0x00007fd244c6f000)\n\tlibgobject-2.0.so.0 => /lib/x86_64-linux-gnu/libgobject-2.0.so.0 (0x00007fd244b47000)\n\tlibglib-2.0.so.0 => /lib/x86_64-linux-gnu/libglib-2.0.so.0 (0x00007fd2449ee000)\n\tlibgmodule-2.0.so.0 => /lib/x86_64-linux-gnu/libgmodule-2.0.so.0 (0x00007fd2449e7000)\n\tlibgio-2.0.so.0 => /lib/x86_64-linux-gnu/libgio-2.0.so.0 (0x00007fd2447ef000)\n\tlibpipewire-ao-0.3.so.0 => /home/dgamroth/.local/opt/pipewireao-wp-reuse-20261021/lib/libpipewire-ao-0.3.so.0 (0x00007fd2446d7000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fd2444e3000)\n\tlibffi.so.8 => /lib/x86_64-linux-gnu/libffi.so.8 (0x00007fd2444d6000)\n\tlibatomic.so.1 => /lib/x86_64-linux-gnu/libatomic.so.1 (0x00007fd2444cc000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007fd2443dc000)\n\tlibpcre2-8.so.0 => /lib/x86_64-linux-gnu/libpcre2-8.so.0 (0x00007fd24432d000)\n\tlibz.so.1 => /lib/x86_64-linux-gnu/libz.so.1 (0x00007fd24430b000)\n\tlibmount.so.1 => /lib/x86_64-linux-gnu/libmount.so.1 (0x00007fd24428f000)\n\tlibselinux.so.1 => /lib/x86_64-linux-gnu/libselinux.so.1 (0x00007fd24425b000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007fd244c71000)\n\tlibblkid.so.1 => /lib/x86_64-linux-gnu/libblkid.so.1 (0x00007fd2441fa000)\n",
+          "exports_count": 661,
+          "exports_sha256": "af9081c609fb098297f41b5518b412589ff72677a5d43d06cb8404be9220992d",
+          "removed_symbols_absent": {
+            "wp_spa_pod_get_property_flags": true,
+            "wp_spa_pod_get_property_id": true,
+            "wp_link_get_format": true,
+            "wp_si_link_withdraw": true
+          }
+        },
+        "lib/wireplumber-0.5/libwireplumber-module-lua-scripting.so": {
+          "sha256": "a002e362ee38ca1c99f50f2e87ee8629c58f77528c3f3404b623673c07385e5c",
+          "needed": [
+            "libwireplumber-0.5.so.0",
+            "libgobject-2.0.so.0",
+            "libglib-2.0.so.0",
+            "libgio-2.0.so.0",
+            "libm.so.6",
+            "libc.so.6"
+          ],
+          "soname": [
+            "libwireplumber-module-lua-scripting.so"
+          ],
+          "resolved_dependencies": "\tlinux-vdso.so.1 (0x00007fa5f4d2d000)\n\tlibwireplumber-0.5.so.0 => /home/dgamroth/.local/opt/pipewireao-wp-upstream-stock-20261021/lib/libwireplumber-0.5.so.0 (0x00007fa5f4c14000)\n\tlibgobject-2.0.so.0 => /lib/x86_64-linux-gnu/libgobject-2.0.so.0 (0x00007fa5f4b94000)\n\tlibglib-2.0.so.0 => /lib/x86_64-linux-gnu/libglib-2.0.so.0 (0x00007fa5f4a3b000)\n\tlibgio-2.0.so.0 => /lib/x86_64-linux-gnu/libgio-2.0.so.0 (0x00007fa5f4843000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007fa5f4751000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fa5f455d000)\n\tlibgmodule-2.0.so.0 => /lib/x86_64-linux-gnu/libgmodule-2.0.so.0 (0x00007fa5f4556000)\n\tlibpipewire-ao-0.3.so.0 => /home/dgamroth/.local/opt/pipewireao-wp-reuse-20261021/lib/libpipewire-ao-0.3.so.0 (0x00007fa5f4440000)\n\tlibffi.so.8 => /lib/x86_64-linux-gnu/libffi.so.8 (0x00007fa5f4433000)\n\tlibatomic.so.1 => /lib/x86_64-linux-gnu/libatomic.so.1 (0x00007fa5f4427000)\n\tlibpcre2-8.so.0 => /lib/x86_64-linux-gnu/libpcre2-8.so.0 (0x00007fa5f4378000)\n\tlibz.so.1 => /lib/x86_64-linux-gnu/libz.so.1 (0x00007fa5f4358000)\n\tlibmount.so.1 => /lib/x86_64-linux-gnu/libmount.so.1 (0x00007fa5f42dc000)\n\tlibselinux.so.1 => /lib/x86_64-linux-gnu/libselinux.so.1 (0x00007fa5f42a8000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007fa5f4d2f000)\n\tlibblkid.so.1 => /lib/x86_64-linux-gnu/libblkid.so.1 (0x00007fa5f4245000)\n",
+          "exports_count": 156,
+          "exports_sha256": "beef3f68d4f483dde2d256ffac3ce5f6268ec1031ce15de31856f0ecb514c6ef",
+          "removed_symbols_absent": {
+            "wp_spa_pod_get_property_flags": true,
+            "wp_spa_pod_get_property_id": true,
+            "wp_link_get_format": true,
+            "wp_si_link_withdraw": true
+          }
+        },
+        "lib/wireplumber-0.5/libwireplumber-module-si-standard-link.so": {
+          "sha256": "811fd1714475d5e1406599798d09a34398505a700c4bf7d8d8f53ea85905c064",
+          "needed": [
+            "libwireplumber-0.5.so.0",
+            "libgobject-2.0.so.0",
+            "libglib-2.0.so.0",
+            "libc.so.6"
+          ],
+          "soname": [
+            "libwireplumber-module-si-standard-link.so"
+          ],
+          "resolved_dependencies": "\tlinux-vdso.so.1 (0x00007f7a1e86e000)\n\tlibwireplumber-0.5.so.0 => /home/dgamroth/.local/opt/pipewireao-wp-upstream-stock-20261021/lib/libwireplumber-0.5.so.0 (0x00007f7a1e7bc000)\n\tlibgobject-2.0.so.0 => /lib/x86_64-linux-gnu/libgobject-2.0.so.0 (0x00007f7a1e73c000)\n\tlibglib-2.0.so.0 => /lib/x86_64-linux-gnu/libglib-2.0.so.0 (0x00007f7a1e5e3000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f7a1e3ef000)\n\tlibgmodule-2.0.so.0 => /lib/x86_64-linux-gnu/libgmodule-2.0.so.0 (0x00007f7a1e3e6000)\n\tlibgio-2.0.so.0 => /lib/x86_64-linux-gnu/libgio-2.0.so.0 (0x00007f7a1e1ee000)\n\tlibpipewire-ao-0.3.so.0 => /home/dgamroth/.local/opt/pipewireao-wp-reuse-20261021/lib/libpipewire-ao-0.3.so.0 (0x00007f7a1e0d8000)\n\tlibffi.so.8 => /lib/x86_64-linux-gnu/libffi.so.8 (0x00007f7a1e0cb000)\n\tlibatomic.so.1 => /lib/x86_64-linux-gnu/libatomic.so.1 (0x00007f7a1e0c1000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f7a1dfcf000)\n\tlibpcre2-8.so.0 => /lib/x86_64-linux-gnu/libpcre2-8.so.0 (0x00007f7a1df20000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f7a1e870000)\n\tlibz.so.1 => /lib/x86_64-linux-gnu/libz.so.1 (0x00007f7a1df00000)\n\tlibmount.so.1 => /lib/x86_64-linux-gnu/libmount.so.1 (0x00007f7a1de84000)\n\tlibselinux.so.1 => /lib/x86_64-linux-gnu/libselinux.so.1 (0x00007f7a1de50000)\n\tlibblkid.so.1 => /lib/x86_64-linux-gnu/libblkid.so.1 (0x00007f7a1dded000)\n",
+          "exports_count": 1,
+          "exports_sha256": "b0e83876d8d5f6a9198adfa43a287eb83a64faf40bf196b48b2525d5514eb8e4",
+          "removed_symbols_absent": {
+            "wp_spa_pod_get_property_flags": true,
+            "wp_spa_pod_get_property_id": true,
+            "wp_link_get_format": true,
+            "wp_si_link_withdraw": true
+          }
+        }
+      },
+      "safe_environment": {
+        "PKG_CONFIG_PATH": "/home/dgamroth/.local/opt/pipewireao-wp-upstream-stock-20261021/lib/pkgconfig:/home/dgamroth/.local/opt/pipewireao-wp-reuse-20261021/lib/pkgconfig",
+        "LD_LIBRARY_PATH": "/home/dgamroth/.local/opt/pipewireao-wp-upstream-stock-20261021/lib:/home/dgamroth/.local/opt/pipewireao-wp-reuse-20261021/lib"
+      },
+      "installed_pod_header_identical_to_upstream": true
+    },
+    "threefixes": {
+      "prefix": "/home/dgamroth/.local/opt/pipewireao-wp-upstream-threefixes-20261021",
+      "source_diff_sha256": "fc86f9a7a999cffbc3e9602e29f97babacb8ff2f2020586090ff46f8c4f095a8",
+      "source_diff": "/tmp/wp-upstream-threefixes-source-20261021.patch",
+      "additional_library_extensions": false,
+      "pkgconfig": {
+        "wireplumber-0.5": {
+          "version": "0.5.18",
+          "pcfiledir": "/home/dgamroth/.local/opt/pipewireao-wp-upstream-threefixes-20261021/lib/pkgconfig"
+        },
+        "libpipewire-ao-0.3": {
+          "version": "1.7.1",
+          "pcfiledir": "/home/dgamroth/.local/opt/pipewireao-wp-reuse-20261021/lib/pkgconfig"
+        },
+        "libspa-ao-0.2": {
+          "version": "0.2",
+          "pcfiledir": "/home/dgamroth/.local/opt/pipewireao-wp-reuse-20261021/lib/pkgconfig"
+        }
+      },
+      "artifacts": {
+        "bin/wireplumber": {
+          "sha256": "76b197c17251e63f118683a38eb066e675dca249fd8595ea01fb733a0c1f882d",
+          "needed": [
+            "libwireplumber-0.5.so.0",
+            "libgobject-2.0.so.0",
+            "libglib-2.0.so.0",
+            "libpipewire-ao-0.3.so.0",
+            "libc.so.6"
+          ],
+          "soname": [],
+          "resolved_dependencies": "\tlinux-vdso.so.1 (0x00007f5c0ad28000)\n\tlibwireplumber-0.5.so.0 => /home/dgamroth/.local/opt/pipewireao-wp-upstream-threefixes-20261021/lib/libwireplumber-0.5.so.0 (0x00007f5c0ac7a000)\n\tlibgobject-2.0.so.0 => /lib/x86_64-linux-gnu/libgobject-2.0.so.0 (0x00007f5c0abfa000)\n\tlibglib-2.0.so.0 => /lib/x86_64-linux-gnu/libglib-2.0.so.0 (0x00007f5c0aaa1000)\n\tlibpipewire-ao-0.3.so.0 => /home/dgamroth/.local/opt/pipewireao-wp-reuse-20261021/lib/libpipewire-ao-0.3.so.0 (0x00007f5c0a98b000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f5c0a795000)\n\tlibgmodule-2.0.so.0 => /lib/x86_64-linux-gnu/libgmodule-2.0.so.0 (0x00007f5c0a78e000)\n\tlibgio-2.0.so.0 => /lib/x86_64-linux-gnu/libgio-2.0.so.0 (0x00007f5c0a596000)\n\tlibffi.so.8 => /lib/x86_64-linux-gnu/libffi.so.8 (0x00007f5c0a589000)\n\tlibatomic.so.1 => /lib/x86_64-linux-gnu/libatomic.so.1 (0x00007f5c0a57f000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f5c0a48d000)\n\tlibpcre2-8.so.0 => /lib/x86_64-linux-gnu/libpcre2-8.so.0 (0x00007f5c0a3de000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f5c0ad2a000)\n\tlibz.so.1 => /lib/x86_64-linux-gnu/libz.so.1 (0x00007f5c0a3be000)\n\tlibmount.so.1 => /lib/x86_64-linux-gnu/libmount.so.1 (0x00007f5c0a342000)\n\tlibselinux.so.1 => /lib/x86_64-linux-gnu/libselinux.so.1 (0x00007f5c0a30e000)\n\tlibblkid.so.1 => /lib/x86_64-linux-gnu/libblkid.so.1 (0x00007f5c0a2ab000)\n",
+          "exports_count": 1,
+          "exports_sha256": "9c3fdd1304c1f18e10b6862709e1edcfcc4a5afc6e4bc9d6ee7dfc8973233800",
+          "removed_symbols_absent": {
+            "wp_spa_pod_get_property_flags": true,
+            "wp_spa_pod_get_property_id": true,
+            "wp_link_get_format": true,
+            "wp_si_link_withdraw": true
+          }
+        },
+        "lib/libwireplumber-0.5.so": {
+          "sha256": "c89c94b7005ee832c95d09a9d1e8c50808217607dd59f797aef9d0a4e66fdc8f",
+          "needed": [
+            "libgobject-2.0.so.0",
+            "libglib-2.0.so.0",
+            "libgmodule-2.0.so.0",
+            "libgio-2.0.so.0",
+            "libpipewire-ao-0.3.so.0",
+            "libc.so.6"
+          ],
+          "soname": [
+            "libwireplumber-0.5.so.0"
+          ],
+          "resolved_dependencies": "\tlinux-vdso.so.1 (0x00007fecac49f000)\n\tlibgobject-2.0.so.0 => /lib/x86_64-linux-gnu/libgobject-2.0.so.0 (0x00007fecac377000)\n\tlibglib-2.0.so.0 => /lib/x86_64-linux-gnu/libglib-2.0.so.0 (0x00007fecac21e000)\n\tlibgmodule-2.0.so.0 => /lib/x86_64-linux-gnu/libgmodule-2.0.so.0 (0x00007fecac217000)\n\tlibgio-2.0.so.0 => /lib/x86_64-linux-gnu/libgio-2.0.so.0 (0x00007fecac01f000)\n\tlibpipewire-ao-0.3.so.0 => /home/dgamroth/.local/opt/pipewireao-wp-reuse-20261021/lib/libpipewire-ao-0.3.so.0 (0x00007fecabf07000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fecabd13000)\n\tlibffi.so.8 => /lib/x86_64-linux-gnu/libffi.so.8 (0x00007fecabd06000)\n\tlibatomic.so.1 => /lib/x86_64-linux-gnu/libatomic.so.1 (0x00007fecabcfc000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007fecabc0c000)\n\tlibpcre2-8.so.0 => /lib/x86_64-linux-gnu/libpcre2-8.so.0 (0x00007fecabb5d000)\n\tlibz.so.1 => /lib/x86_64-linux-gnu/libz.so.1 (0x00007fecabb3b000)\n\tlibmount.so.1 => /lib/x86_64-linux-gnu/libmount.so.1 (0x00007fecababf000)\n\tlibselinux.so.1 => /lib/x86_64-linux-gnu/libselinux.so.1 (0x00007fecaba8b000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007fecac4a1000)\n\tlibblkid.so.1 => /lib/x86_64-linux-gnu/libblkid.so.1 (0x00007fecaba2a000)\n",
+          "exports_count": 661,
+          "exports_sha256": "af9081c609fb098297f41b5518b412589ff72677a5d43d06cb8404be9220992d",
+          "removed_symbols_absent": {
+            "wp_spa_pod_get_property_flags": true,
+            "wp_spa_pod_get_property_id": true,
+            "wp_link_get_format": true,
+            "wp_si_link_withdraw": true
+          }
+        },
+        "lib/wireplumber-0.5/libwireplumber-module-lua-scripting.so": {
+          "sha256": "964d27f36507cb074a79c66cafa75fb5226ae4355105c9f98b3afb94f2288c81",
+          "needed": [
+            "libwireplumber-0.5.so.0",
+            "libgobject-2.0.so.0",
+            "libglib-2.0.so.0",
+            "libgio-2.0.so.0",
+            "libm.so.6",
+            "libc.so.6"
+          ],
+          "soname": [
+            "libwireplumber-module-lua-scripting.so"
+          ],
+          "resolved_dependencies": "\tlinux-vdso.so.1 (0x00007f1fbac84000)\n\tlibwireplumber-0.5.so.0 => /home/dgamroth/.local/opt/pipewireao-wp-upstream-threefixes-20261021/lib/libwireplumber-0.5.so.0 (0x00007f1fbab6b000)\n\tlibgobject-2.0.so.0 => /lib/x86_64-linux-gnu/libgobject-2.0.so.0 (0x00007f1fbaaeb000)\n\tlibglib-2.0.so.0 => /lib/x86_64-linux-gnu/libglib-2.0.so.0 (0x00007f1fba992000)\n\tlibgio-2.0.so.0 => /lib/x86_64-linux-gnu/libgio-2.0.so.0 (0x00007f1fba79a000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f1fba6a8000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f1fba4b4000)\n\tlibgmodule-2.0.so.0 => /lib/x86_64-linux-gnu/libgmodule-2.0.so.0 (0x00007f1fba4ad000)\n\tlibpipewire-ao-0.3.so.0 => /home/dgamroth/.local/opt/pipewireao-wp-reuse-20261021/lib/libpipewire-ao-0.3.so.0 (0x00007f1fba397000)\n\tlibffi.so.8 => /lib/x86_64-linux-gnu/libffi.so.8 (0x00007f1fba38a000)\n\tlibatomic.so.1 => /lib/x86_64-linux-gnu/libatomic.so.1 (0x00007f1fba37e000)\n\tlibpcre2-8.so.0 => /lib/x86_64-linux-gnu/libpcre2-8.so.0 (0x00007f1fba2cf000)\n\tlibz.so.1 => /lib/x86_64-linux-gnu/libz.so.1 (0x00007f1fba2af000)\n\tlibmount.so.1 => /lib/x86_64-linux-gnu/libmount.so.1 (0x00007f1fba233000)\n\tlibselinux.so.1 => /lib/x86_64-linux-gnu/libselinux.so.1 (0x00007f1fba1ff000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f1fbac86000)\n\tlibblkid.so.1 => /lib/x86_64-linux-gnu/libblkid.so.1 (0x00007f1fba19c000)\n",
+          "exports_count": 156,
+          "exports_sha256": "beef3f68d4f483dde2d256ffac3ce5f6268ec1031ce15de31856f0ecb514c6ef",
+          "removed_symbols_absent": {
+            "wp_spa_pod_get_property_flags": true,
+            "wp_spa_pod_get_property_id": true,
+            "wp_link_get_format": true,
+            "wp_si_link_withdraw": true
+          }
+        },
+        "lib/wireplumber-0.5/libwireplumber-module-si-standard-link.so": {
+          "sha256": "6f5d3a93aac7ffc4518e10a6423ac1df36d76a884d1524f920c30bdc5caea942",
+          "needed": [
+            "libwireplumber-0.5.so.0",
+            "libgobject-2.0.so.0",
+            "libglib-2.0.so.0",
+            "libc.so.6"
+          ],
+          "soname": [
+            "libwireplumber-module-si-standard-link.so"
+          ],
+          "resolved_dependencies": "\tlinux-vdso.so.1 (0x00007f99dda74000)\n\tlibwireplumber-0.5.so.0 => /home/dgamroth/.local/opt/pipewireao-wp-upstream-threefixes-20261021/lib/libwireplumber-0.5.so.0 (0x00007f99dd9c2000)\n\tlibgobject-2.0.so.0 => /lib/x86_64-linux-gnu/libgobject-2.0.so.0 (0x00007f99dd942000)\n\tlibglib-2.0.so.0 => /lib/x86_64-linux-gnu/libglib-2.0.so.0 (0x00007f99dd7e9000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f99dd5f5000)\n\tlibgmodule-2.0.so.0 => /lib/x86_64-linux-gnu/libgmodule-2.0.so.0 (0x00007f99dd5ec000)\n\tlibgio-2.0.so.0 => /lib/x86_64-linux-gnu/libgio-2.0.so.0 (0x00007f99dd3f4000)\n\tlibpipewire-ao-0.3.so.0 => /home/dgamroth/.local/opt/pipewireao-wp-reuse-20261021/lib/libpipewire-ao-0.3.so.0 (0x00007f99dd2de000)\n\tlibffi.so.8 => /lib/x86_64-linux-gnu/libffi.so.8 (0x00007f99dd2d1000)\n\tlibatomic.so.1 => /lib/x86_64-linux-gnu/libatomic.so.1 (0x00007f99dd2c7000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f99dd1d5000)\n\tlibpcre2-8.so.0 => /lib/x86_64-linux-gnu/libpcre2-8.so.0 (0x00007f99dd126000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f99dda76000)\n\tlibz.so.1 => /lib/x86_64-linux-gnu/libz.so.1 (0x00007f99dd106000)\n\tlibmount.so.1 => /lib/x86_64-linux-gnu/libmount.so.1 (0x00007f99dd08a000)\n\tlibselinux.so.1 => /lib/x86_64-linux-gnu/libselinux.so.1 (0x00007f99dd056000)\n\tlibblkid.so.1 => /lib/x86_64-linux-gnu/libblkid.so.1 (0x00007f99dcff3000)\n",
+          "exports_count": 1,
+          "exports_sha256": "b0e83876d8d5f6a9198adfa43a287eb83a64faf40bf196b48b2525d5514eb8e4",
+          "removed_symbols_absent": {
+            "wp_spa_pod_get_property_flags": true,
+            "wp_spa_pod_get_property_id": true,
+            "wp_link_get_format": true,
+            "wp_si_link_withdraw": true
+          }
+        }
+      },
+      "safe_environment": {
+        "PKG_CONFIG_PATH": "/home/dgamroth/.local/opt/pipewireao-wp-upstream-threefixes-20261021/lib/pkgconfig:/home/dgamroth/.local/opt/pipewireao-wp-reuse-20261021/lib/pkgconfig",
+        "LD_LIBRARY_PATH": "/home/dgamroth/.local/opt/pipewireao-wp-upstream-threefixes-20261021/lib:/home/dgamroth/.local/opt/pipewireao-wp-reuse-20261021/lib"
+      },
+      "installed_pod_header_identical_to_upstream": true
+    }
+  },
+  "same_exported_library_symbols": true,
+  "verification": {
+    "stock_generic_suite": {
+      "passed": 55,
+      "failed": 0,
+      "log": "/tmp/wp-upstream-stock-tests-20261021.log"
+    },
+    "threefixes_generic_suite": {
+      "passed": 55,
+      "failed": 0,
+      "log": "/tmp/wp-upstream-threefixes-tests-20261021.log"
+    },
+    "stock_regressions": {
+      "quoted-dependencies": {
+        "returncode": -6,
+        "command": [
+          "/home/dgamroth/workspaces/codex/worktrees/wireplumber-upstream-stock-20261021/build/tests/wp/test-component-loader",
+          "-p",
+          "/wp/comploader/dependencies"
+        ]
+      },
+      "filter-small": {
+        "returncode": 0,
+        "command": [
+          "/tmp/wp-upstream-bugtests-20261021/test-spa-pod",
+          "-p",
+          "/wp/spa-pod/filter-small"
+        ]
+      },
+      "filter-large": {
+        "returncode": -6,
+        "command": [
+          "/tmp/wp-upstream-bugtests-20261021/test-spa-pod",
+          "-p",
+          "/wp/spa-pod/filter-large"
+        ]
+      },
+      "filter-large-mismatch": {
+        "returncode": 0,
+        "command": [
+          "/tmp/wp-upstream-bugtests-20261021/test-spa-pod",
+          "-p",
+          "/wp/spa-pod/filter-large-mismatch"
+        ]
+      },
+      "filter-large-copy": {
+        "returncode": -6,
+        "command": [
+          "/tmp/wp-upstream-bugtests-20261021/test-spa-pod",
+          "-p",
+          "/wp/spa-pod/filter-large-copy"
+        ]
+      },
+      "filter-large-ownership": {
+        "returncode": -6,
+        "command": [
+          "/tmp/wp-upstream-bugtests-20261021/test-spa-pod",
+          "-p",
+          "/wp/spa-pod/filter-large-ownership"
+        ]
+      },
+      "event-properties": {
+        "returncode": -6,
+        "command": [
+          "/home/dgamroth/workspaces/codex/worktrees/wireplumber-upstream-stock-20261021/build/tests/wplua/script-tester",
+          "lua-api-tests",
+          "event-hooks.lua"
+        ]
+      }
+    },
+    "threefixes_regressions": {
+      "quoted-dependencies": {
+        "returncode": 0,
+        "command": [
+          "/home/dgamroth/workspaces/codex/worktrees/wireplumber-upstream-stock-20261021/build/tests/wp/test-component-loader",
+          "-p",
+          "/wp/comploader/dependencies"
+        ]
+      },
+      "filter-small": {
+        "returncode": 0,
+        "command": [
+          "/tmp/wp-upstream-bugtests-20261021/test-spa-pod",
+          "-p",
+          "/wp/spa-pod/filter-small"
+        ]
+      },
+      "filter-large": {
+        "returncode": 0,
+        "command": [
+          "/tmp/wp-upstream-bugtests-20261021/test-spa-pod",
+          "-p",
+          "/wp/spa-pod/filter-large"
+        ]
+      },
+      "filter-large-mismatch": {
+        "returncode": 0,
+        "command": [
+          "/tmp/wp-upstream-bugtests-20261021/test-spa-pod",
+          "-p",
+          "/wp/spa-pod/filter-large-mismatch"
+        ]
+      },
+      "filter-large-copy": {
+        "returncode": 0,
+        "command": [
+          "/tmp/wp-upstream-bugtests-20261021/test-spa-pod",
+          "-p",
+          "/wp/spa-pod/filter-large-copy"
+        ]
+      },
+      "filter-large-ownership": {
+        "returncode": 0,
+        "command": [
+          "/tmp/wp-upstream-bugtests-20261021/test-spa-pod",
+          "-p",
+          "/wp/spa-pod/filter-large-ownership"
+        ]
+      },
+      "event-properties": {
+        "returncode": 0,
+        "command": [
+          "/home/dgamroth/workspaces/codex/worktrees/wireplumber-upstream-stock-20261021/build/tests/wplua/script-tester",
+          "lua-api-tests",
+          "event-hooks.lua"
+        ]
+      }
+    },
+    "probe_runner": "/tmp/wp-upstream-bugtests-20261021/run-probes.py",
+    "removed_custom_c_symbols": {
+      "stock": {
+        "wp_spa_pod_get_property_flags": true,
+        "wp_spa_pod_get_property_id": true,
+        "wp_link_get_format": true,
+        "wp_session_item_withdraw": true
+      },
+      "threefixes": {
+        "wp_spa_pod_get_property_flags": true,
+        "wp_spa_pod_get_property_id": true,
+        "wp_link_get_format": true,
+        "wp_session_item_withdraw": true
+      }
+    }
+  },
+  "exports_digest_definition": "SHA-256 of sorted exported symbol names, each followed by newline; names measured by worker before summarization"
+}

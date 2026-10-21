@@ -21,9 +21,9 @@ julia --startup-file=no --project=. test/integration/session_items.jl \
 ```
 
 The candidate uses upstream Link and SessionItem interfaces built against
-PipeWireAO, plus the separately inventoried generic Lua/POD bindings. The
+PipeWireAO, without downstream Lua/POD API extensions. The RTC prefix supplies `ao-lua`. The
 RTC prefix contains its native control module; the generated profile selects
-Lua and that binding, without SessionItem factories, desktop audio policy or an
+Lua, `ao-lua` and the control binding, without SessionItem factories, desktop audio policy or an
 all-feature event source. Set `LD_LIBRARY_PATH` with the candidate WirePlumber
 library first, then RTC and PipeWireAO dependencies, so an older library cannot
 shadow the candidate. Endpoint client PID checks bind Client info; registry announcements

@@ -9,6 +9,7 @@ context.modules = [
 wireplumber.profiles = {
   ao-rtc = {
     support.lua = required
+    ao.lua = required
     test.endpoint = required
     test.controller = required
     test.policy = required
@@ -16,6 +17,7 @@ wireplumber.profiles = {
 }
 wireplumber.components = [
   { name = libwireplumber-module-lua-scripting type = module provides = support.lua }
+  { name = libwireplumber-module-ao-lua type = module provides = ao.lua }
   {
     name = libwireplumber-module-ao-control-endpoint type = module provides = test.endpoint
     arguments = {
@@ -36,7 +38,7 @@ wireplumber.components = [
   }
   {
     name = "@POLICY@" type = script/lua provides = test.policy
-    requires = [ support.lua test.endpoint test.controller ]
+    requires = [ support.lua ao.lua test.endpoint test.controller ]
     arguments = {
       instance = 101
       controller.instance = 202

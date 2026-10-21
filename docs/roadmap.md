@@ -12,6 +12,23 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### RTC-owned Lua/POD bindings — 2026-10-21
+
+Move the remaining downstream Lua/POD bindings into the RTC using public C
+interfaces, reusing upstream GLib time directly. Validate a clean upstream
+libwireplumber build against PipeWireAO separately from genuine bug fixes.
+Implemented from RTC `f21c0ed` and WirePlumberAO `0bef96ae`. The full Julia
+suite passes 2,329 assertions; all ten native RTC and 55 generic WirePlumber
+suites pass in both clean and separately fixed upstream cohorts. CPU-array/
+coexistence checks pass 19 checks per cohort, and production fault ordering
+passes seven cases. Independent review has no unresolved binding blocker.
+Generated JSON configuration still requires the separate component-loader fix;
+its fixed-library probe receives native Status Configuring with owners absent.
+See [validation](validation/upstream-bindings-20261021/README.md),
+[review](reviews/20261021-upstream-bindings/REVIEW.md) and
+[design](HEADLESS_RTC_DESIGN.md#rtc-owned-lua-bindings--2026-10-21).
+The simulator remains stopped; no GPU or live deployment was selected.
+
 ### Standard libwireplumber link APIs — 2026-10-21
 
 The user selected ordinary libwireplumber Link APIs in the headless RTC and

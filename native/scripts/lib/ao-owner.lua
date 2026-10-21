@@ -3,6 +3,7 @@
 
 -- Cold control queries exist only while one operation has an absolute deadline.
 -- A submitted mutation is never retried; frames and idle owners cause no polls.
+local lua = require ("ao-lua")
 local control = require ("ao-control")
 local owner = {}
 local token = 0
@@ -156,7 +157,7 @@ local function owner_records (iterator, client, pending)
       -- Initial sentinels and historical records cannot complete an unsent request.
       if pending.submitted and matches (client, pending, header) then
         assert (not reply_header, "Owner published conflicting terminal replies")
-        reply_header, reply_payload = header, payload:copy ()
+        reply_header, reply_payload = header, lua.copy (payload)
         if kind == "rejection" or header.result < 0 then reply_error = "Owner rejected operation" end
       end
     end
@@ -167,10 +168,10 @@ end
 
 local function arm_expiry (pending, deadline, callback)
   assert (math.type (deadline) == "integer" and
-      deadline - Core.get_monotonic_time () <= 60000000, "Invalid control deadline")
+      deadline - GLib.get_monotonic_time () <= 60000000, "Invalid control deadline")
   control.remaining_ns (deadline)
   pending.expiry = Core.timeout_add (math.max (1,
-      math.ceil ((deadline - Core.get_monotonic_time ()) / 1000)), callback)
+      math.ceil ((deadline - GLib.get_monotonic_time ()) / 1000)), callback)
 end
 
 local function schedule (pending, deadline, callback)
@@ -187,7 +188,7 @@ poll = function (client, pending)
     client.retired = true
     finish (client, pending, nil, nil, tostring (identity_error)); return
   end
-  if Core.get_monotonic_time () >= pending.deadline then
+  if GLib.get_monotonic_time () >= pending.deadline then
     finish (client, pending, nil, nil, pending.submitted and
         "Owner completion timed out; outcome unknown" or "Owner controller registration timed out")
     return
@@ -227,7 +228,7 @@ end
 
 function owner.request (client, operation, payload, deadline, callback)
   assert (not client.retired and not client.pending, "Owner already has a pending operation or is retired")
-  deadline = math.min (deadline, Core.get_monotonic_time () + 60000000)
+  deadline = math.min (deadline, GLib.get_monotonic_time () + 60000000)
   local pending = {
     operation = operation, payload = payload, deadline = deadline,
     callback = callback, submitted = false,
@@ -357,11 +358,11 @@ function owner.wait_prepared (client, deadline, callback)
   end
   local ok, error = pcall (function ()
     assert (math.type (deadline) == "integer" and
-        deadline - Core.get_monotonic_time () <= 3600000000, "Invalid preparation deadline")
+        deadline - GLib.get_monotonic_time () <= 3600000000, "Invalid preparation deadline")
     check_owner (client)
     control.remaining_ns (deadline)
     pending.expiry = Core.timeout_add (math.max (1,
-        math.ceil ((deadline - Core.get_monotonic_time ()) / 1000)), function ()
+        math.ceil ((deadline - GLib.get_monotonic_time ()) / 1000)), function ()
       done (nil, "Owner preparation expired")
       return false
     end)
@@ -457,7 +458,7 @@ local function node_records (iterator, source_instance)
 end
 
 function owner.node_operation (node, kind, requested_state, deadline, callback)
-  deadline = math.min (deadline, Core.get_monotonic_time () + 60000000)
+  deadline = math.min (deadline, GLib.get_monotonic_time () + 60000000)
   local pending = { done = false, submitted = false }
   local function finish_node (result, error)
     if pending.done then return end
@@ -522,7 +523,7 @@ function owner.node_operation (node, kind, requested_state, deadline, callback)
     if pending.done then return end
     local healthy, identity_error = pcall (check_node)
     if not healthy then finish_node (nil, tostring (identity_error)); return end
-    if Core.get_monotonic_time () >= deadline then
+    if GLib.get_monotonic_time () >= deadline then
       finish_node (nil, "Node operation expired; outcome unknown"); return
     end
     local queried, query_error = pcall (function ()

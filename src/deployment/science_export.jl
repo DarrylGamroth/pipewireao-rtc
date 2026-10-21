@@ -135,8 +135,8 @@ function port(name, direction, shape, schema, element_type="F32_LE"; parameter=f
 end
 
 const WIREPLUMBER_MODULES = ("lua-scripting",)
-const RTC_MODULES = ("ao-control-endpoint", "ao-journal")
-const RTC_SCRIPTS = ("ao/session.lua", "lib/ao-control.lua", "lib/ao-owner.lua",
+const RTC_MODULES = ("ao-control-endpoint", "ao-journal", "ao-lua")
+const RTC_SCRIPTS = ("ao/session.lua", "lib/ao-lua.lua", "lib/ao-control.lua", "lib/ao-owner.lua",
     "lib/ao-acquisition.lua", "lib/ao-session-control.lua", "lib/ao-connections.lua")
 
 "Copy the generic WirePlumber library, factories and scripts; never its daemon or AO policy."

@@ -1,0 +1,10 @@
+E 14:22:07.427043            wp-core (null):(null):(null): wp_core_get_remote_properties: assertion 'wp_core_is_connected (self)' failed
+E 14:22:07.427100            wp-core (null):(null):(null): wp_core_get_remote_cookie: assertion 'wp_core_is_connected (self)' failed
+E 14:22:07.427104            wp-core (null):(null):(null): wp_core_get_remote_name: assertion 'wp_core_is_connected (self)' failed
+E 14:22:07.427107            wp-core (null):(null):(null): wp_core_get_remote_user_name: assertion 'wp_core_is_connected (self)' failed
+E 14:22:07.427110            wp-core (null):(null):(null): wp_core_get_remote_host_name: assertion 'wp_core_is_connected (self)' failed
+E 14:22:07.427114            wp-core (null):(null):(null): wp_core_get_remote_version: assertion 'wp_core_is_connected (self)' failed
+E 14:22:07.427119      wp-properties (null):(null):(null): wp_properties_get: assertion 'self != NULL' failed
+N 14:22:07.427226 wp-event-dispatche ../lib/wp/event-dispatcher.c:246:on_event_hook_done: <WpAsyncEventHook:0x56167a288540> failed: [string "ao-connections.lua"]:78: Declared core incarnation changed
+W 14:22:07.427253 m-ao-control-endpo ../../home/dgamroth/workspaces/codex/worktrees/rtc-lua-bindings-20261021/native/modules/module-ao-control-endpoint.c:611:wp_ao_control_endpoint_publish_records: <WpAoControlEndpoint:0x56167a20c950> endpoint unavailable, reentrant publication, or invalid Props records (64 KiB combined limit)
+W 14:22:07.427264    m-lua-scripting session.lua:247:fault: AO session fault: [string "ao-connections.lua"]:78: Declared core incarnation changed

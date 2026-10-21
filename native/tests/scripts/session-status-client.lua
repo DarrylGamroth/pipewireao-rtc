@@ -1,9 +1,10 @@
 -- A native public-protocol client, with no scientific owner substitutes.
+local lua = require ("ao-lua")
 Script.async_activation = true
 local control, owner = require ("ao-control"), require ("ao-owner")
 local args = (...):parse ()
 local own = assert (Plugin.find ("test-status-controller"))
-local manager = ObjectManager ({ Interest { type = "node" } },
+local manager = lua.object_manager ({ Interest { type = "node" } },
     Feature.Proxy.BOUND | Feature.PipewireObject.INFO)
 local running = false
 local function fail (reason)
@@ -44,7 +45,7 @@ local function discover ()
     assert (control.scalar (capability ["pipewireao.rtc.session.owner-pid"], "Id") == args ["server-pid"])
     assert (control.scalar (capability ["pipewireao.rtc.session.lifecycle"], "Id") == 2,
         "Owner-absent production session must remain Configuring")
-    owner.request (client, 2, Pod.Struct {}, Core.get_monotonic_time () + 3000000,
+    owner.request (client, 2, Pod.Struct {}, GLib.get_monotonic_time () + 3000000,
         checked (function (header, payload, reason)
       assert (not reason, reason)
       assert (header.operation == 2 and header.result == 0 and header.instance == 303)

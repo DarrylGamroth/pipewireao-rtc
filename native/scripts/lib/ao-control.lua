@@ -3,6 +3,7 @@
 
 -- Native control envelope shared by AO session policy and owner clients.
 -- These helpers operate on control PODs; no frame buffers enter Lua.
+local lua = require ("ao-lua")
 local control = {}
 local PREFIX = "pipewireao.rtc.control."
 local PROPS = "Spa:Pod:Object:Param:Props"
@@ -20,8 +21,8 @@ end
 function control.fields (pod, count)
   assert (pod:get_type_name () == STRUCT, "Expected a control Struct")
   local result = {}
-  for child in pod:new_iterator ():iterate () do
-    result [#result + 1] = child:copy ()
+  for child in lua.fields (pod) do
+    result [#result + 1] = child
   end
   assert (count == nil or #result == count, "Incorrect control Struct arity")
   return result
@@ -29,10 +30,9 @@ end
 
 function control.properties (pod)
   assert (pod:get_type_name () == PROPS, "Expected a Props parameter")
-  assert (pod:parse ().object_id == "Props", "Incorrect Props object ID")
+  assert (lua.object_id (pod) == "Props", "Incorrect Props object ID")
   local properties = {}
-  for property in pod:new_iterator ():iterate () do
-    local key, value, flags = property:get_property ()
+  for key, value, flags in lua.properties (pod) do
     assert (key and not properties [key], "Duplicate control property")
     assert (flags == 0, "Unexpected control property flags")
     properties [key] = value
@@ -76,7 +76,7 @@ function control.properties_adopted (after, baseline, updates)
       if string.pack (format, observed:parse ()) ~= string.pack (format, expected:parse ()) then
         return false
       end
-    elseif not observed:equals (expected) then return false end
+    elseif not lua.equals (observed, expected) then return false end
   end
   return true
 end
@@ -188,11 +188,11 @@ end
 function control.deadline (budget_ns)
   assert (math.type (budget_ns) == "integer" and budget_ns > 0 and
       budget_ns <= 60000000000, "Control budget exceeds sixty seconds")
-  return Core.get_monotonic_time () + math.ceil (budget_ns / 1000)
+  return GLib.get_monotonic_time () + math.ceil (budget_ns / 1000)
 end
 
 function control.remaining_ns (deadline)
-  local remaining = deadline - Core.get_monotonic_time ()
+  local remaining = deadline - GLib.get_monotonic_time ()
   assert (remaining > 0, "Control operation expired")
   return remaining * 1000
 end

@@ -1,0 +1,1 @@
+pipewireao-rtc: initialization failed: failed to load components: no component provides '"support.lua-scripting"', required by 'ao.rtc-session [script/lua: /home/dgamroth/.local/opt/pipewireao-rtc-upstream-bindings-20261021/share/pipewireao-rtc/scripts/ao/session.lua]'

@@ -1,0 +1,304 @@
+diff --git a/lib/wp/private/internal-comp-loader.c b/lib/wp/private/internal-comp-loader.c
+index 6650e5e6..4d94dffb 100644
+--- a/lib/wp/private/internal-comp-loader.c
++++ b/lib/wp/private/internal-comp-loader.c
+@@ -218,7 +218,7 @@ component_data_new_from_json (WpSpaJson * json, WpProperties * features,
+ 
+     for (; wp_iterator_next (it, &item); g_value_unset (&item)) {
+       WpSpaJson *dep = g_value_get_boxed (&item);
+-      g_ptr_array_add (comp->requires, wp_spa_json_to_string (dep));
++      g_ptr_array_add (comp->requires, wp_spa_json_parse_string (dep));
+     }
+   }
+ 
+@@ -229,7 +229,7 @@ component_data_new_from_json (WpSpaJson * json, WpProperties * features,
+ 
+     for (; wp_iterator_next (it, &item); g_value_unset (&item)) {
+       WpSpaJson *dep = g_value_get_boxed (&item);
+-      g_ptr_array_add (comp->wants, wp_spa_json_to_string (dep));
++      g_ptr_array_add (comp->wants, wp_spa_json_parse_string (dep));
+     }
+   }
+ 
+@@ -240,7 +240,7 @@ component_data_new_from_json (WpSpaJson * json, WpProperties * features,
+ 
+     for (; wp_iterator_next (it, &item); g_value_unset (&item)) {
+       WpSpaJson *dep = g_value_get_boxed (&item);
+-      g_ptr_array_add (comp->before, wp_spa_json_to_string (dep));
++      g_ptr_array_add (comp->before, wp_spa_json_parse_string (dep));
+     }
+   }
+ 
+@@ -251,7 +251,7 @@ component_data_new_from_json (WpSpaJson * json, WpProperties * features,
+ 
+     for (; wp_iterator_next (it, &item); g_value_unset (&item)) {
+       WpSpaJson *dep = g_value_get_boxed (&item);
+-      g_ptr_array_add (comp->after, wp_spa_json_to_string (dep));
++      g_ptr_array_add (comp->after, wp_spa_json_parse_string (dep));
+     }
+   }
+ 
+diff --git a/lib/wp/spa-pod.c b/lib/wp/spa-pod.c
+index f6618155..b03f04d3 100644
+--- a/lib/wp/spa-pod.c
++++ b/lib/wp/spa-pod.c
+@@ -12,6 +12,7 @@
+ 
+ #include <spa/utils/type-info.h>
+ #include <spa/pod/builder.h>
++#include <spa/pod/dynamic.h>
+ #include <spa/pod/parser.h>
+ #include <spa/pod/filter.h>
+ 
+@@ -1842,14 +1843,19 @@ WpSpaPod *
+ wp_spa_pod_filter (WpSpaPod *self, WpSpaPod *filter)
+ {
+   char buffer[1024];
+-  struct spa_pod_builder b = SPA_POD_BUILDER_INIT(&buffer, sizeof(buffer));
++  struct spa_pod_dynamic_builder builder;
+   struct spa_pod *result = NULL;
++  WpSpaPod *copy = NULL;
+ 
+   g_return_val_if_fail (self, NULL);
+ 
+-  if (spa_pod_filter(&b, &result, self->pod, filter ? filter->pod : NULL) >= 0)
+-    return wp_spa_pod_new_wrap_copy (result);
+-  return NULL;
++  spa_pod_dynamic_builder_init (&builder, buffer, sizeof(buffer),
++      WP_SPA_POD_BUILDER_REALLOC_STEP_SIZE);
++  if (spa_pod_filter (&builder.b, &result, self->pod,
++          filter ? filter->pod : NULL) >= 0)
++    copy = wp_spa_pod_new_wrap_copy (result);
++  spa_pod_dynamic_builder_clean (&builder);
++  return copy;
+ }
+ 
+ /*!
+diff --git a/meson.build b/meson.build
+index 454c4d62..1225ca21 100644
+--- a/meson.build
++++ b/meson.build
+@@ -68,8 +68,8 @@ gobject_dep = dependency('gobject-2.0', version : glib_req_version)
+ gmodule_dep = dependency('gmodule-2.0', version : glib_req_version)
+ gio_dep = dependency('gio-2.0', version : glib_req_version)
+ giounix_dep = dependency('gio-unix-2.0', version : glib_req_version)
+-spa_dep = dependency('libspa-0.2', version: '>= 0.2')
+-pipewire_dep = dependency('libpipewire-0.3', version: '>= 1.0.2')
++spa_dep = dependency('libspa-ao-0.2', version: '>= 0.2')
++pipewire_dep = dependency('libpipewire-ao-0.3', version: '>= 1.0.2')
+ mathlib = cc.find_library('m')
+ threads_dep = dependency('threads')
+ libintl_dep = dependency('intl')
+diff --git a/modules/module-lua-scripting/api/api.c b/modules/module-lua-scripting/api/api.c
+index d9fbad32..0d1af347 100644
+--- a/modules/module-lua-scripting/api/api.c
++++ b/modules/module-lua-scripting/api/api.c
+@@ -2689,6 +2689,7 @@ event_dispatcher_push_event (lua_State *L)
+     lua_pop (L, 1);
+ 
+     lua_pushliteral (L, "properties");
++    lua_gettable (L, 1);
+     if (lua_istable (L, -1))
+       properties = wplua_table_to_properties (L, -1);
+     else if (!lua_isnil (L, -1) && !lua_isnone (L, -1) && !lua_isstring (L, -1))
+diff --git a/tests/wp/spa-pod.c b/tests/wp/spa-pod.c
+index af23d487..72cf2d88 100644
+--- a/tests/wp/spa-pod.c
++++ b/tests/wp/spa-pod.c
+@@ -7,6 +7,7 @@
+  */
+ 
+ #include "../common/test-log.h"
++#include <spa/pod/pod.h>
+ 
+ static void
+ test_spa_pod_basic (void)
+@@ -1036,6 +1037,88 @@ test_spa_pod_unique_owner (void)
+   g_value_unset (&next);
+ }
+ 
++static WpSpaPod *
++new_filter_struct (guint fields, gint64 last)
++{
++  g_autoptr (WpSpaPodBuilder) builder = wp_spa_pod_builder_new_struct ();
++  for (guint i = 0; i < fields; i++)
++    wp_spa_pod_builder_add_int (builder, i);
++  wp_spa_pod_builder_add_long (builder, last);
++  return wp_spa_pod_builder_end (builder);
++}
++
++static void
++test_spa_pod_filter_small (void)
++{
++  g_autoptr (WpSpaPod) pod = new_filter_struct (4, 42);
++  g_autoptr (WpSpaPod) filter = new_filter_struct (4, 42);
++  g_autoptr (WpSpaPod) result = wp_spa_pod_filter (pod, filter);
++  g_assert_nonnull (result);
++  g_assert_true (wp_spa_pod_equal (result, pod));
++  g_assert_true (wp_spa_pod_equal (pod, filter));
++}
++
++static void
++test_spa_pod_filter_large (void)
++{
++  g_autoptr (WpSpaPod) pod = new_filter_struct (128, 42);
++  g_autoptr (WpSpaPod) filter = new_filter_struct (128, 42);
++  g_assert_cmpuint (SPA_POD_SIZE (wp_spa_pod_get_spa_pod (pod)), >, 1024);
++  g_autoptr (WpSpaPod) result = wp_spa_pod_filter (pod, filter);
++  g_assert_nonnull (result);
++  g_assert_true (wp_spa_pod_equal (result, pod));
++  g_assert_true (wp_spa_pod_equal (pod, filter));
++}
++
++static void
++test_spa_pod_filter_large_mismatch (void)
++{
++  g_autoptr (WpSpaPod) pod = new_filter_struct (128, 42);
++  g_autoptr (WpSpaPod) filter = new_filter_struct (128, 43);
++  g_assert_cmpuint (SPA_POD_SIZE (wp_spa_pod_get_spa_pod (pod)), >, 1024);
++  g_autoptr (WpSpaPod) result = wp_spa_pod_filter (pod, filter);
++  g_assert_null (result);
++  g_autoptr (WpSpaPod) expected = new_filter_struct (128, 42);
++  g_assert_true (wp_spa_pod_equal (pod, expected));
++}
++
++static void
++test_spa_pod_filter_large_copy (void)
++{
++  g_autoptr (WpSpaPod) result = NULL;
++  {
++    g_autoptr (WpSpaPod) pod = new_filter_struct (128, 42);
++    result = wp_spa_pod_filter (pod, NULL);
++    g_assert_nonnull (result);
++    g_assert_true (wp_spa_pod_equal (result, pod));
++    g_assert_true (wp_spa_pod_is_unique_owner (result));
++  }
++  g_autoptr (WpSpaPod) expected = new_filter_struct (128, 42);
++  g_assert_true (wp_spa_pod_equal (result, expected));
++}
++
++static void
++test_spa_pod_filter_large_ownership (void)
++{
++  g_autoptr (WpSpaPod) result = NULL;
++  {
++    g_autoptr (WpSpaPod) pod = new_filter_struct (128, 42);
++    g_autoptr (WpSpaPod) filter = new_filter_struct (128, 42);
++    result = wp_spa_pod_filter (pod, filter);
++    g_assert_nonnull (result);
++    g_assert_true (wp_spa_pod_is_unique_owner (result));
++  }
++  g_autoptr (WpSpaPodParser) parser = wp_spa_pod_parser_new_struct (result);
++  for (gint32 i = 0; i < 128; i++) {
++    gint32 value = -1;
++    g_assert_true (wp_spa_pod_parser_get_int (parser, &value));
++    g_assert_cmpint (value, ==, i);
++  }
++  gint64 last = 0;
++  g_assert_true (wp_spa_pod_parser_get_long (parser, &last));
++  g_assert_cmpint (last, ==, 42);
++}
++
+ static void
+ test_spa_pod_port_config (void)
+ {
+@@ -1088,6 +1171,13 @@ main (int argc, char *argv[])
+   g_test_add_func ("/wp/spa-pod/iterator", test_spa_pod_iterator);
+   g_test_add_func ("/wp/spa-pod/unique-owner", test_spa_pod_unique_owner);
+   g_test_add_func ("/wp/spa-pod/port-config", test_spa_pod_port_config);
++  g_test_add_func ("/wp/spa-pod/filter-small", test_spa_pod_filter_small);
++  g_test_add_func ("/wp/spa-pod/filter-large", test_spa_pod_filter_large);
++  g_test_add_func ("/wp/spa-pod/filter-large-mismatch",
++      test_spa_pod_filter_large_mismatch);
++  g_test_add_func ("/wp/spa-pod/filter-large-copy", test_spa_pod_filter_large_copy);
++  g_test_add_func ("/wp/spa-pod/filter-large-ownership",
++      test_spa_pod_filter_large_ownership);
+ 
+   return g_test_run ();
+ }
+diff --git a/tests/wplua/scripts/event-hooks.lua b/tests/wplua/scripts/event-hooks.lua
+index ff7a0c35..d58a1f57 100644
+--- a/tests/wplua/scripts/event-hooks.lua
++++ b/tests/wplua/scripts/event-hooks.lua
+@@ -29,6 +29,59 @@ local common_interests = {
+   },
+ }
+ 
++local property_events_seen = 0
++
++local function check_property_event (event, expected)
++  local properties = event:get_properties ():parse ()
++  assert (properties ["custom.test-property"] == expected)
++  property_events_seen = property_events_seen + 1
++  if property_events_seen == 3 then
++    Script:finish_activation ()
++  end
++end
++
++SimpleEventHook {
++  name = "test-table-event-properties",
++  interests = {
++    EventInterest {
++      Constraint { "event.type", "=", "test-table-properties" },
++      Constraint { "custom.test-property", "=", "table-value" },
++    },
++  },
++  execute = function (event)
++    check_property_event (event, "table-value")
++  end,
++}:register ()
++
++SimpleEventHook {
++  name = "test-wp-properties-event-properties",
++  interests = {
++    EventInterest {
++      Constraint { "event.type", "=", "test-wp-properties" },
++      Constraint { "custom.test-property", "=", "properties-value" },
++    },
++  },
++  execute = function (event)
++    check_property_event (event, "properties-value")
++  end,
++}:register ()
++
++SimpleEventHook {
++  name = "test-omitted-event-properties",
++  interests = {
++    EventInterest {
++      Constraint { "event.type", "=", "test-omitted-properties" },
++    },
++  },
++  execute = function (event)
++    assert (event:get_properties ():parse () ["custom.test-property"] == nil)
++    property_events_seen = property_events_seen + 1
++    if property_events_seen == 3 then
++      Script:finish_activation ()
++    end
++  end,
++}:register ()
++
+ AsyncEventHook {
+   name = "test-async-hook",
+   before = "test-last-hook" ,
+@@ -97,7 +150,20 @@ SimpleEventHook {
+   execute = function (event)
+     checkpoint("simple-last")
+     check_results()
+-    Script:finish_activation()
++    EventDispatcher.push_event {
++      type = "test-table-properties",
++      priority = 1,
++      properties = { ["custom.test-property"] = "table-value" },
++    }
++    EventDispatcher.push_event {
++      type = "test-wp-properties",
++      priority = 1,
++      properties = Properties { ["custom.test-property"] = "properties-value" },
++    }
++    EventDispatcher.push_event {
++      type = "test-omitted-properties",
++      priority = 1,
++    }
+   end
+ }:register()
+ 

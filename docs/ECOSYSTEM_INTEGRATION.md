@@ -313,8 +313,10 @@ The former `si-node` / `si-standard-link` extensions and custom Link Format API
 are removed. Its existing native control module supplies a small Lua binding to
 public C cancellation/disposal and negotiated Format observation. The RTC retains
 endpoint identity, scientific admission, downstream ordering, deadlines and
-Core-sync/correlated-absence proof. Generic Lua/POD bindings remain separate
-from this Link API change; this is not a claim of an entirely unmodified library.
+Core-sync/correlated-absence proof. The remaining Lua/POD binding gaps are now supplied by RTC-local public C
+helpers, and the clock uses upstream GLib directly. Genuine library bug fixes
+remain separately tested; generated JSON deployment still needs the dependency
+string correction in upstream 0.5.18.
 See the [standard link design](HEADLESS_RTC_DESIGN.md#standard-link-apis--2026-10-21)
 and [validation](validation/standard-links-20261021/README.md).
 

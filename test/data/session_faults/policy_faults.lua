@@ -17,6 +17,9 @@ local function session()
   end }
   local fault, api
   local mocks = {
+    ["ao-lua"] = { push_event = function()
+      return { stop_processing = function() end }
+    end },
     ["ao-control"] = {},
     ["ao-owner"] = { node_operation = function(node, operation, value, _, callback)
       assert(operation == "run" and value == 1, "Fault must hold graph processing")
@@ -57,14 +60,11 @@ local function session()
     AsyncEventHook = function() return { register = function() end } end,
     EventInterest = function(value) return value end,
     Constraint = function(value) return value end,
-    EventDispatcher = { push_event = function()
-      return { stop_processing = function() end }
-    end },
     Log = { warning = function(message)
       observed.warnings[#observed.warnings + 1] = message
     end },
+    GLib = { get_monotonic_time = function() return 1000 end },
     Core = {
-      get_monotonic_time = function() return 1000 end,
       timeout_add = function()
         return { destroy = function() effect("cancel:timer") end }
       end,

@@ -26,13 +26,22 @@ owners during shutdown; queued completions receive a bounded drain.
 ## Build and install
 
 Requirements: C compiler, Meson, Ninja, pkg-config, GLib/GIO (including Unix
-support), libwireplumber 0.5.18 with the separately recorded generic Lua/POD
-bindings and bug fixes, PipeWireAO development libraries and SQLite 3.24 or
-newer. No custom Link/SI API is required. Both libwireplumber and this application
-must select `libpipewire-ao-0.3` and `libspa-ao-0.2`; ordinary PipeWire is not a
-substitute for the AO ABI/NDArray transport. Set `PKG_CONFIG_PATH` explicitly for
-the selected library/prefix. Link/SI sources and installed-symbol/dependency
-checks are recorded separately from the remaining generic bindings.
+support), upstream libwireplumber 0.5.18, PipeWireAO development libraries and
+SQLite 3.24 or newer. Both libwireplumber and this application must select
+`libpipewire-ao-0.3` and `libspa-ao-0.2`. Set `PKG_CONFIG_PATH` explicitly for
+the selected prefix; ordinary PipeWire does not supply the AO ABI/NDArray formats.
+No custom Link, SessionItem, Lua or POD API is required. The RTC owns `ao-lua`,
+a small public-C-API binding used by its Lua modules; the clock uses upstream
+`GLib.get_monotonic_time` directly.
+
+Clean upstream builds qualify the RTC binding, native host and CPU-array paths.
+The production generator writes JSON string dependencies, which upstream
+0.5.18's component loader mishandles. That deployment path still requires the
+separate component-loader fix. Large POD filtering and Lua event properties have
+separate regression patches too. The RTC constructs its own epoch-bearing
+events through public native event APIs, retaining upstream event hooks.
+See the [upstream validation](../docs/validation/upstream-bindings-20261021/README.md)
+for the exact clean/fixed cohorts and their limits.
 
 ```sh
 meson setup native/build native --prefix=/absolute/isolated/prefix --libdir=lib \
@@ -43,7 +52,8 @@ meson install -C native/build
 ```
 
 For a build without tests, use `-Dtests=false`; the upstream source checkout is
-then unnecessary. Tests compile the upstream Lua runner in place and include
+then unnecessary. Tests include the upstream Lua runner in place, load RTC's binding module before
+each script and include
 its private test-server headers through the explicit `wp_source_dir` option.
 No upstream test tree is copied. Test servers are isolated from the user's
 running PipeWire service. Runtime library discovery must include the selected

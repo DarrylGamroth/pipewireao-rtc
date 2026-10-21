@@ -1,8 +1,10 @@
 -- Real v1 PODs with deterministic fake transport, timers and async storage.
+local lua = require ("ao-lua")
 local control = require ("ao-control")
 local ingress = require ("ao-session-control")
 local now, timers = 1000000, {}
-local test_core = { get_monotonic_time = function () return now end }
+local test_glib = { get_monotonic_time = function () return now end }
+local test_core = {}
 test_core.timeout_add = function (_, callback)
   local timer = { callback = callback, destroy = function (self) self.destroyed = true end }
   timers [#timers + 1] = timer
@@ -13,12 +15,19 @@ local manager_new = function ()
     self.callbacks [signal] = callback
   end, activate = function () end }
 end
+for index = 1, 16 do
+  local name = debug.getupvalue (ingress.new, index)
+  if name == "lua" then
+    debug.setupvalue (ingress.new, index, setmetatable ({ object_manager = manager_new }, { __index = lua }))
+    break
+  end
+end
 -- Required modules use separate sandbox environments, as in ao-connections.
 for index = 1, 16 do
   local name, environment = debug.getupvalue (ingress.new, index)
   if name == "_ENV" then
     debug.setupvalue (ingress.new, index, setmetatable ({ Core = test_core,
-      ObjectManager = manager_new }, { __index = environment }))
+      GLib = test_glib }, { __index = environment }))
     break
   end
 end
@@ -45,7 +54,7 @@ local function setup (journal_enabled)
       tostring (header.token) }, ":"), "Journal key lost exact native identity")
     if self.reject then return 0 end
     self.next_id = self.next_id + 1
-    self.events [#self.events + 1] = { id = self.next_id, event = event, pod = pod:copy () }
+    self.events [#self.events + 1] = { id = self.next_id, event = event, pod = lua.copy (pod) }
     return self.next_id
   end
   function journal:finish (id, ok)
@@ -76,7 +85,7 @@ end
 local api, journal, request, counts = setup (true)
 local raw = request ()
 assert (counts () == 0 and #journal.events == 1 and journal.events [1].event == "requested")
-assert (journal.events [1].pod:equals (raw), "Request bytes/types changed before journaling")
+assert (lua.equals (journal.events [1].pod, raw), "Request bytes/types changed before journaling")
 request () -- pending duplicate must neither dispatch nor append
 assert (#journal.events == 1 and counts () == 0)
 journal:finish (1)
@@ -93,7 +102,7 @@ request () -- duplicate request while terminal storage is pending
 assert (#journal.events == 2 and counts () == 1)
 journal:finish (2)
 assert (not api.pending and api.terminal == ticket)
-assert (api.completion:equals (journal.events [2].pod))
+assert (lua.equals (api.completion, journal.events [2].pod))
 request () -- terminal duplicate remains idempotent
 assert (#journal.events == 2 and counts () == 1)
 

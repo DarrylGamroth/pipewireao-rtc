@@ -1,0 +1,5 @@
+local lua = require ('ao-lua')
+assert (not pcall (lua.fields, Pod.Int (1)))
+assert (not pcall (lua.properties, Pod.Int (1)))
+assert (not pcall (lua.array_info, Pod.Int (1)))
+assert (not pcall (lua.copy, nil))

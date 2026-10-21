@@ -1,0 +1,11 @@
+{
+  "baseline": "0bef96ae3a41f23f6f4763744edbf69ad277dc8b",
+  "worktree": "/home/dgamroth/workspaces/codex/worktrees/wireplumber-upstream-lua-20261021",
+  "files_identical_to_upstream": {
+    "modules/module-lua-scripting/api/pod.c": true,
+    "lib/wp/spa-pod.h": true,
+    "docs/rst/scripting/lua_api/lua_core_api.rst": true,
+    "docs/rst/scripting/lua_api/lua_object_manager_api.rst": true,
+    "docs/rst/scripting/lua_api/lua_spa_pod.rst": true
+  }
+}

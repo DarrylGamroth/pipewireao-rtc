@@ -8,7 +8,7 @@ local prefix = "session-items-validation: "
 local source = "fixture.session-items.ndarray-source"
 local sink = "fixture.session-items.ndarray-sink"
 local expected_pid = __EXPECTED_PIPEWIREAO_CLIENT_PID__
-local deadline = Core.get_monotonic_time () + 30000000
+local deadline = GLib.get_monotonic_time () + 30000000
 local generation = "validation/1"
 local specification = {
   links = {
@@ -38,7 +38,7 @@ local catalog = connections.new (specification,
   end)
 
 local function withdraw (reason)
-  connections.withdraw (catalog, Core.get_monotonic_time () + 10000000,
+  connections.withdraw (catalog, GLib.get_monotonic_time () + 10000000,
     function (ok, error)
       if ok then
         log:warning (prefix .. "WITHDRAWN " .. tostring (reason or "complete"))

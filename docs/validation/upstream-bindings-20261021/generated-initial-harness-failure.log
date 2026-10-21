@@ -1,0 +1,34 @@
+ERROR: LoadError: ArgumentError: native remote parent must be owned and private
+Stacktrace:
+   [1] private_remote(remote::String)
+     @ PipeWireAORTC.NativeControlClient ~/workspaces/codex/worktrees/rtc-lua-bindings-20261021/src/native/native_control_client.jl:288
+   [2] connect(profile::PipeWireAORTC.NativeSessionProfile.Profile, remote::String, node_name::String, expected_pid::Int32, expected_instance::Int64; deadline::Float64, check::Function, controller_instance::Nothing)
+     @ PipeWireAORTC.NativeControlClient ~/workspaces/codex/worktrees/rtc-lua-bindings-20261021/src/native/native_control_client.jl:410
+   [3] connect
+     @ ~/workspaces/codex/worktrees/rtc-lua-bindings-20261021/src/native/native_control_client.jl:402 [inlined]
+   [4] (::var"#19#20")(socket::String, ::String, daemon::Base.Process)
+     @ Main /tmp/rtc-generated-configuration-probe.jl:49
+   [5] (::var"#14#15"{String, String, var"#19#20"})()
+     @ Main ~/workspaces/codex/worktrees/rtc-lua-bindings-20261021/test/native_control_private_core.jl:80
+   [6] withenv(::var"#14#15"{String, String, var"#19#20"}, ::Pair{String, String}, ::Vararg{Pair{String, String}})
+     @ Base ./env.jl:273
+   [7] (::var"#10#11"{Bool, Bool, Nothing, var"#19#20", String, String})(directory::String)
+     @ Main ~/workspaces/codex/worktrees/rtc-lua-bindings-20261021/test/native_control_private_core.jl:79
+   [8] mktempdir(fn::var"#10#11"{Bool, Bool, Nothing, var"#19#20", String, String}, parent::String; prefix::String)
+     @ Base.Filesystem ./file.jl:975
+ ┌ [9] mktempdir
+ │   @ ./file.jl:971 [inlined]
+ ╰──── repeated 2 times
+  [11] with_control_private_core(f::var"#19#20"; check_running::Bool, allow_passive::Bool, temporary_prefix::String, remote_name::Nothing)
+     @ Main ~/workspaces/codex/worktrees/rtc-lua-bindings-20261021/test/native_control_private_core.jl:35
+  [12] with_control_private_core(f::Function)
+     @ Main ~/workspaces/codex/worktrees/rtc-lua-bindings-20261021/test/native_control_private_core.jl:28
+  [13] top-level scope
+     @ /tmp/rtc-generated-configuration-probe.jl:9
+  [14] include(mod::Module, _path::String)
+     @ Base ./Base.jl:309
+  [15] exec_options(opts::Base.JLOptions)
+     @ Base ./client.jl:344
+  [16] _start()
+     @ Base ./client.jl:577
+in expression starting at /tmp/rtc-generated-configuration-probe.jl:9

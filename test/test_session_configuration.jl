@@ -25,6 +25,10 @@ using PipeWireAORTC: SessionConfiguration
     @test script["name"] == "/sealed/rtc/scripts/ao/session.lua"
     @test script["arguments"]["startup.timeout-ms"] == 300000
     @test "support.lua-scripting" in script["requires"]
+    @test "ao.lua" in script["requires"]
+    @test configuration["wireplumber.profiles"]["ao-rtc"]["ao.lua"] == "required"
+    @test only(filter(component -> component["provides"] == "ao.lua",
+        configuration["wireplumber.components"]))["name"] == "libwireplumber-module-ao-lua"
     @test all(!startswith(feature, "si.") for feature in script["requires"])
     @test all(!startswith(feature, "si.") for feature in keys(configuration["wireplumber.profiles"]["ao-rtc"]))
     @test all(!startswith(component["name"], "libwireplumber-module-si-")

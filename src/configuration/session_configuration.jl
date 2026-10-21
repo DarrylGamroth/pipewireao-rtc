@@ -190,7 +190,7 @@ function session_configuration(spec, session, bindings, records;
     script = Dict{String,Any}(
         "name" => script_path, "type" => "script/lua",
         "provides" => "ao.rtc-session",
-        "requires" => ["support.lua-scripting", "ao.session-control", "ao.session-controller"],
+        "requires" => ["support.lua-scripting", "ao.lua", "ao.session-control", "ao.session-controller"],
             "arguments" => Dict{String,Any}(
             "session" => deepcopy(session), "owners" => owners, "source" => source,
             "node.pids" => pids, "core.owner" => core_owner,
@@ -200,8 +200,11 @@ function session_configuration(spec, session, bindings, records;
             "startup.timeout-ms" => D.startup_timeout_ms(spec)))
     components = Any[Dict("name" => "libwireplumber-module-lua-scripting",
         "type" => "module", "provides" => "support.lua-scripting"),
+        Dict("name" => "libwireplumber-module-ao-lua", "type" => "module",
+            "provides" => "ao.lua"),
         public_endpoint, controller_endpoint]
     features = Dict("support.lua-scripting" => "required",
+        "ao.lua" => "required",
         "ao.session-control" => "required", "ao.session-controller" => "required",
         "ao.rtc-session" => "required")
     if configuration_store_root !== nothing

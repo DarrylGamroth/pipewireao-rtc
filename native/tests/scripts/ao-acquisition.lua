@@ -50,7 +50,7 @@ end
 local function call (profile, payload, expected_error, header, error)
   response_payload, response_header, response_error = payload, header, error
   defer = false
-  expected_deadline = Core.get_monotonic_time () + 60000000
+  expected_deadline = GLib.get_monotonic_time () + 60000000
   local source, value, failure = source_for (profile), nil, nil
   local before = terminals
   acquisition.shutdown (source, expected_deadline, function (answer, reason)
@@ -97,7 +97,7 @@ end
 -- A duplicate terminal delivery cannot invoke the public completion twice.
 response_payload, response_header, response_error = result ("released", false, false, true),
     { operation = 6, result = 0 }, nil
-expected_deadline, duplicate = Core.get_monotonic_time () + 60000000, true
+expected_deadline, duplicate = GLib.get_monotonic_time () + 60000000, true
 local duplicate_source, duplicate_count = source_for (calibration), 0
 acquisition.shutdown (duplicate_source, expected_deadline, function () duplicate_count = duplicate_count + 1 end)
 duplicate = false
@@ -127,14 +127,14 @@ local before = #requests
 local legacy = source_for (calibration)
 legacy.profile = "pipewireao.source-control/1"
 local completed = false
-acquisition.shutdown (legacy, Core.get_monotonic_time () + 60000000,
+acquisition.shutdown (legacy, GLib.get_monotonic_time () + 60000000,
     function (value, failure) completed = value == nil and failure == nil end)
 assert (completed and #requests == before, "Legacy shutdown issued an acquisition request")
 
 -- Cancellation reaches the exact pending native request and fences its callback.
 local source = source_for (calibration)
 defer, cancelled = true, false
-expected_deadline = Core.get_monotonic_time () + 60000000
+expected_deadline = GLib.get_monotonic_time () + 60000000
 local before_terminals = terminals
 local cancel = acquisition.shutdown (source, expected_deadline, function () terminals = terminals + 1 end)
 cancel ()

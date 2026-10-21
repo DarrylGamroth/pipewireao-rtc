@@ -4,6 +4,7 @@
 -- Declared session connections. Scientific graph scheduling remains in its
 -- owner. Discovery captures registry incarnations once; a replacement with the
 -- same name cannot inherit an admitted session.
+local lua = require ("ao-lua")
 local control = require ("ao-control")
 local connections = {}
 local INFO = Feature.Proxy.BOUND | Feature.PipewireObject.INFO
@@ -98,7 +99,7 @@ function connections.new (spec, expected_pids, lost, core_owner, link_transport)
   catalog.managers = {}
   for kind, objects in pairs ({ node = catalog.nodes, port = catalog.ports,
       client = catalog.clients, factory = catalog.factories, link = catalog.links }) do
-    local manager = ObjectManager ({ Interest { type = kind } }, INFO)
+    local manager = lua.object_manager ({ Interest { type = kind } }, INFO)
     manager:connect ("object-added", function (_, object)
       local id = object ["bound-id"]
       objects [id] = object
@@ -324,40 +325,39 @@ local FORMAT_FIELDS = {
 }
 
 local function validate_format (pod, contract)
-  assert (pod:get_size () >= 16 and pod:get_size () <= 65536, "Invalid Format size")
+  assert (lua.size (pod) >= 16 and lua.size (pod) <= 65536, "Invalid Format size")
   assert (pod:get_type_name () == "Spa:Pod:Object:Param:Format", "Expected native Format object")
-  local object_id = pod:get_object_id ()
+  local object_id = lua.object_id (pod)
   assert (object_id == "Format" or object_id == "EnumFormat", "Invalid Format ID")
   -- Inspect only metadata until selected primitive extents are proved. Fixed
   -- Choice.None may retain trailing alternatives; only its default is active.
   -- The negotiated POD and its property/choice flags are never changed.
   local values, ids, selected, count = { "Spa:Pod:Object:Param:Format", object_id }, {}, {}, 0
   local schema_size
-  for property in pod:new_iterator ():iterate () do
+  for _, value, _, id in lua.properties (pod) do
     count = count + 1
     assert (count <= 32, "Too many negotiated Format fields")
-    local _, value, _, id = property:get_property ()
     assert (id and not ids [id], "Duplicate negotiated Format field")
     ids [id] = true
     local expected = FORMAT_FIELDS [id]
     if expected then
-      assert (value:get_size () >= 8 and value:get_size () <= 65536, "Invalid Format field size")
+      assert (lua.size (value) >= 8 and lua.size (value) <= 65536, "Invalid Format field size")
       if value:get_type_name () == "Spa:Pod:Choice" then
-        assert (value:get_choice_type () == "None", "Negotiated Format retains an unfixed choice")
-        local child, n_values = value:get_choice_child ()
+        assert (lua.choice_type (value) == "None", "Negotiated Format retains an unfixed choice")
+        local child, n_values = lua.choice_child (value)
         assert (child and n_values >= 1, "Negotiated Format choice has no complete default")
         value = child
       end
       assert (value:get_type_name () == "Spa:" .. expected, "Incorrect native Format field type")
       if expected == "Id" then
-        assert (value:get_size () == 12, "Invalid Format Id width")
+        assert (lua.size (value) == 12, "Invalid Format Id width")
       elseif expected == "Fraction" then
-        assert (value:get_size () == 16, "Invalid Format Fraction width")
+        assert (lua.size (value) == 16, "Invalid Format Fraction width")
       elseif expected == "String" then
-        assert (value:get_size () >= 9 and value:get_size () <= 4105, "Invalid Format schema extent")
-        schema_size = value:get_size ()
+        assert (lua.size (value) >= 9 and lua.size (value) <= 4105, "Invalid Format schema extent")
+        schema_size = lua.size (value)
       elseif expected == "Array" then
-        local kind, width, n_values = value:get_array_info ()
+        local kind, width, n_values = lua.array_info (value)
         assert (kind == "Spa:Int" and width == 4 and n_values and n_values > 0 and
             n_values <= 32 and n_values == #contract.shape, "Invalid ndarray shape extent")
       end
@@ -399,17 +399,17 @@ local function bounded (deadline, callback)
     if done then return end
     done = true
     if timer then timer:destroy () end
-    if select (1, ...) ~= nil and Core.get_monotonic_time () >= deadline then
+    if select (1, ...) ~= nil and GLib.get_monotonic_time () >= deadline then
       callback (nil, "Connection operation completed after its deadline")
     else callback (...) end
   end
   timer = Core.timeout_add (math.max (1, math.ceil (
-      (deadline - Core.get_monotonic_time ()) / 1000)), function ()
+      (deadline - GLib.get_monotonic_time ()) / 1000)), function ()
     finish (nil, "Connection operation expired; outcome unknown")
     return false
   end)
   return finish, function ()
-    if not done and Core.get_monotonic_time () >= deadline then
+    if not done and GLib.get_monotonic_time () >= deadline then
       finish (nil, "Connection operation expired; outcome unknown")
     end
     return done

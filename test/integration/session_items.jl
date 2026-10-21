@@ -61,6 +61,7 @@ function write_application_files(directory, socket, data_dir)
         wireplumber.profiles = {
           ao-rtc = {
             support.lua-scripting = required
+            ao.lua = required
             rtc.transport = required
             fixture.session-items = required
           }
@@ -68,13 +69,14 @@ function write_application_files(directory, socket, data_dir)
         wireplumber.components = [
           { name = libwireplumber-module-lua-scripting, type = module
             provides = support.lua-scripting }
+          { name = libwireplumber-module-ao-lua, type = module provides = ao.lua }
           { name = libwireplumber-module-ao-control-endpoint, type = module
             provides = rtc.transport
             arguments = { plugin.name = ao-session-control
               node.name = test-link-controller profile = pipewireao.rtc.controller/1 instance = 404 } }
           { name = "$(joinpath(data_dir, "scripts/session-items-validation.lua"))", type = script/lua
             provides = fixture.session-items
-            requires = [ support.lua-scripting rtc.transport ] }
+            requires = [ support.lua-scripting ao.lua rtc.transport ] }
         ]
         """)
     return config

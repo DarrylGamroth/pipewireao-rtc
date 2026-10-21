@@ -1,4 +1,4 @@
-foreach name : ['ao-control-endpoint', 'ao-journal']
+foreach name : ['ao-control-endpoint', 'ao-journal', 'ao-lua']
   sources = ['module-' + name + '.c']
   if name == 'ao-control-endpoint'
     sources += ['ao-link.c']

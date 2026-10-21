@@ -1,6 +1,7 @@
 -- Run the production policy through native WpEventDispatcher/AsyncEventHook.
 -- Only native control/discovery boundaries are gated; there is no Lua event or
 -- transition substitute. Fake monotonic time makes deadline races deterministic.
+local lua = require ("ao-lua")
 Script.async_activation = true
 local control = require ("ao-control")
 local function upvalue (fn, wanted)
@@ -40,7 +41,7 @@ local function session (options)
     beta = { name = "beta" }, bootstrap = { name = "bootstrap", properties = { ["client.id"] = "7" } },
     parameters = { name = "parameters" } }
   local catalog = { nodes = { [1] = { name = "controller" } }, clients = { [7] = {} } }
-  local mocks = {
+  local mocks = { ["ao-lua"] = lua,
     ["ao-control"] = setmetatable ({ identity = function () return { global_id = 1,
       serial = 2, instance = 3, pid = 4 } end }, { __index = control }),
     ["ao-owner"] = {
@@ -100,7 +101,8 @@ local function session (options)
     require = function (name) return assert (mocks [name], name) end,
     Plugin = { find = function () return endpoint end },
     Log = { warning = function (message) test.warnings [#test.warnings + 1] = message end },
-    Core = { get_monotonic_time = function () return test.now end,
+    GLib = { get_monotonic_time = function () return test.now end },
+    Core = {
       timeout_add = function (_, callback)
         local timer = { callback = callback, destroy = function (self) self.destroyed = true end }
         test.timers [#test.timers + 1] = timer
@@ -320,7 +322,7 @@ local function interrupted (opcode, phase, startup)
     execute = function () seen = true end,
   }
   sentinel:register ()
-  EventDispatcher.push_event { type = "ao-test-sentinel", priority = 0 }
+  lua.push_event { type = "ao-test-sentinel", priority = 0 }
   wait_for (function () return seen end)
   sentinel:remove ()
   test:close ()

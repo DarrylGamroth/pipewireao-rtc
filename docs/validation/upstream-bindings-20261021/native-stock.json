@@ -1,0 +1,82 @@
+[
+  {
+    "name": "ao-lua",
+    "result": "OK",
+    "returncode": 0,
+    "duration": 0.03189277648925781,
+    "stdout": "TAP version 14\n# random seed: R02S79b125210992c70bd22d278f43c12842\n1..1\n# Start of lua tests\n# GLib-GIO-DEBUG: _g_io_module_get_default: Found default implementation local (GLocalVfs) for ?gio-vfs?\nok 1 /lua/rtc\n# End of lua tests\n",
+    "stderr": null
+  },
+  {
+    "name": "ao-connections",
+    "result": "OK",
+    "returncode": 0,
+    "duration": 0.029606342315673828,
+    "stdout": "TAP version 14\n# random seed: R02S0f32980a0e23639e5c9144dee109a642\n1..1\n# Start of lua tests\n# GLib-GIO-DEBUG: _g_io_module_get_default: Found default implementation local (GLocalVfs) for ?gio-vfs?\nok 1 /lua/rtc\n# End of lua tests\n",
+    "stderr": null
+  },
+  {
+    "name": "ao-owner",
+    "result": "OK",
+    "returncode": 0,
+    "duration": 0.026792049407958984,
+    "stdout": "TAP version 14\n# random seed: R02Sb635ea677114d90bb7e2bfac94108cc5\n1..1\n# Start of lua tests\n# GLib-GIO-DEBUG: _g_io_module_get_default: Found default implementation local (GLocalVfs) for ?gio-vfs?\nok 1 /lua/rtc\n# End of lua tests\n",
+    "stderr": null
+  },
+  {
+    "name": "ao-acquisition",
+    "result": "OK",
+    "returncode": 0,
+    "duration": 0.024422168731689453,
+    "stdout": "TAP version 14\n# random seed: R02S65be6a8fa698d7ea6235b535c40f5f6c\n1..1\n# Start of lua tests\n# GLib-GIO-DEBUG: _g_io_module_get_default: Found default implementation local (GLocalVfs) for ?gio-vfs?\nok 1 /lua/rtc\n# End of lua tests\n",
+    "stderr": null
+  },
+  {
+    "name": "ao-session-journal",
+    "result": "OK",
+    "returncode": 0,
+    "duration": 0.021834373474121094,
+    "stdout": "TAP version 14\n# random seed: R02S3abf880f43858afc7e2da90b22dc0feb\n1..1\n# Start of lua tests\n# GLib-GIO-DEBUG: _g_io_module_get_default: Found default implementation local (GLocalVfs) for ?gio-vfs?\nok 1 /lua/rtc\n# End of lua tests\n",
+    "stderr": null
+  },
+  {
+    "name": "ao-lua-native",
+    "result": "OK",
+    "returncode": 0,
+    "duration": 0.010774850845336914,
+    "stdout": "TAP version 14\n# random seed: R02S4cc81393106712cde11750575c80f6b7\n1..7\n# Start of ao-lua tests\nok 1 /ao-lua/properties-owned-flags-duplicates\nok 2 /ao-lua/struct-owned-bounds\nok 3 /ao-lua/property-bounds\nok 4 /ao-lua/choice-array-bounds\nok 5 /ao-lua/unused-nested-value\nok 6 /ao-lua/native-event-properties\nok 7 /ao-lua/selected-features\n# End of ao-lua tests\n",
+    "stderr": null
+  },
+  {
+    "name": "rtc-host",
+    "result": "OK",
+    "returncode": 0,
+    "duration": 0.05187845230102539,
+    "stdout": "TAP version 14\n# random seed: R02Sb796c4ac8d9dd3d148dc23625fa30b15\n1..4\n# Start of rtc-host tests\nok 1 /rtc-host/missing-configuration\nok 2 /rtc-host/public-session-status\nok 3 /rtc-host/termination\nok 4 /rtc-host/connection-lost\n# End of rtc-host tests\n",
+    "stderr": "pipewireao-rtc: configuration failed: Could not locate configuration file '/invalid/rtc.conf'\nN 14:20:32.134415 wp-event-dispatche ../lib/wp/event-dispatcher.c:246:on_event_hook_done: <WpAsyncEventHook:0x55d96445db40> failed: Session control publication failed\nW 14:20:32.134464    m-lua-scripting session.lua:247:chunk: AO session fault: Session control publication failed\nW 14:20:32.142402         pw.context ../src/pipewire/context.c:548:pw_context_new: 0x55bc791f0a00: can't load dbus library: support/libspa-dbus\nW 14:20:32.150697         pw.context ../src/pipewire/context.c:548:pw_context_new: 0x55671f536a00: can't load dbus library: support/libspa-dbus\npipewireao-rtc: PipeWire connection lost\n"
+  },
+  {
+    "name": "ao-links",
+    "result": "OK",
+    "returncode": 0,
+    "duration": 0.049826860427856445,
+    "stdout": "TAP version 14\n# random seed: R02Sc0a35597f644da6cd1e0683f44583439\n1..14\n# Start of rtc-links tests\nok 1 /rtc-links/format-observation\nok 2 /rtc-links/exact\nok 3 /rtc-links/control-selection\nok 4 /rtc-links/never-activated\nok 5 /rtc-links/repeat-retirement\nok 6 /rtc-links/fresh-generation\n# Start of race tests\nok 7 /rtc-links/race/queued\nok 8 /rtc-links/race/unbound\nok 9 /rtc-links/race/created\nok 10 /rtc-links/race/bound\nok 11 /rtc-links/race/cancelled\nok 12 /rtc-links/race/child-error\nok 13 /rtc-links/race/deactivate\nok 14 /rtc-links/race/dropped-owner\n# End of race tests\n# End of rtc-links tests\n",
+    "stderr": null
+  },
+  {
+    "name": "ao-session-hooks",
+    "result": "OK",
+    "returncode": 0,
+    "duration": 0.3730900287628174,
+    "stdout": "TAP version 14\n# random seed: R02Sd6de2dd4a5836cdd0da5c1c7dd88fc17\n1..1\n# Start of lua tests\n# GLib-GIO-DEBUG: _g_io_module_get_default: Found default implementation local (GLocalVfs) for ?gio-vfs?\nok 1 /lua/rtc\n# End of lua tests\n",
+    "stderr": null
+  },
+  {
+    "name": "ao-journal",
+    "result": "OK",
+    "returncode": 0,
+    "duration": 1.0281078815460205,
+    "stdout": "TAP version 14\n# random seed: R02S8051d0db073c928a2de20507e91bff6c\n1..7\n# Start of ao-journal tests\nok 1 /ao-journal/ordered-bytes-and-bounds\nok 2 /ao-journal/record-size-limits\nok 3 /ao-journal/unique-operation-events\nok 4 /ao-journal/busy-worker-responsive\n# slow test /ao-journal/busy-worker-responsive executed in 1.01 secs\nok 5 /ao-journal/upgrade-version\nok 6 /ao-journal/core-destroy-drains\nok 7 /ao-journal/private-store\n# End of ao-journal tests\n",
+    "stderr": null
+  }
+]

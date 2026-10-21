@@ -1,0 +1,7 @@
+TAP version 14
+# random seed: R02Sfb58117a324bf718aac3463ab3aac8b5
+1..1
+# Start of lua tests
+# GLib-GIO-DEBUG: _g_io_module_get_default: Found default implementation local (GLocalVfs) for ?gio-vfs?
+ok 1 /lua/rtc
+# End of lua tests

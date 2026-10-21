@@ -23,11 +23,14 @@ test_env.set('PIPEWIREAO_SPA_PLUGIN_DIR', spa.get_variable(pkgconfig: 'plugindir
 test_env.set('PIPEWIREAO_MODULE_DIR', pw.get_variable(pkgconfig: 'moduledir'))
 test_env.set('PIPEWIREAO_CONFIG_DIR', pw.get_variable(pkgconfig: 'prefix') / 'share/pipewire-ao')
 
-# Compile the upstream runner in place; no WirePlumber test tree is vendored.
-script_tester = executable('script-tester', wp_source / 'tests/script-tester.c',
+# Include the upstream runner in place and add RTC's own native component.
+test_config = configuration_data()
+test_config.set_quoted('RTC_WP_SCRIPT_TESTER_SOURCE', wp_source / 'tests/script-tester.c')
+configure_file(output: 'rtc-test-build.h', configuration: test_config)
+script_tester = executable('script-tester', 'script-tester.c',
   include_directories: include_directories(wp_source / 'tests/wplua'),
   dependencies: [wp, pw])
-foreach name : ['ao-connections', 'ao-owner', 'ao-acquisition', 'ao-session-journal', 'ao-session-hooks']
+foreach name : ['ao-lua', 'ao-connections', 'ao-owner', 'ao-acquisition', 'ao-session-journal', 'ao-session-hooks']
   test(name, script_tester, args: ['lua-api-tests', name + '.lua'], env: test_env, timeout: 30)
 endforeach
 journal = executable('test-ao-journal', 'ao-journal.c', dependencies: [wp, pw, sqlite])
@@ -45,3 +48,8 @@ links = executable('test-ao-links',
   include_directories: include_directories(wp_source / 'tests/common'),
   dependencies: [wp, pw])
 test('ao-links', links, env: test_env, timeout: 30)
+
+lua_bindings = executable('test-ao-lua', 'ao-lua.c',
+  include_directories: include_directories(wp_source / 'tests/common'),
+  dependencies: [wp, pw])
+test('ao-lua-native', lua_bindings, env: test_env, timeout: 30)
