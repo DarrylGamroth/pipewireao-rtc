@@ -1,10 +1,10 @@
 # WirePlumber development probes
 
-Production sessions use the installed WirePlumberAO Lua policy and native
-modules. See the [session design](../../docs/WIREPLUMBER_SESSION_DESIGN.md),
-[installed runtime](../../docs/INSTALLED_RUNTIME.md) and
-[session quickstart](../../README.md#launch-a-sealed-session-package).
-The optional observer/coordinator architecture is retired.
+The headless RTC application owns production session lifecycle, admission and
+declared application links. Its modules and policy live with the RTC; see the
+[headless design](../../docs/HEADLESS_RTC_DESIGN.md) and
+[installed runtime](../../docs/INSTALLED_RUNTIME.md). Upstream WirePlumber
+provides separately configured site/device policy where needed.
 
 ## Retained development code
 

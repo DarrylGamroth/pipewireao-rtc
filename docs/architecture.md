@@ -123,7 +123,7 @@ The [headless design](HEADLESS_RTC_DESIGN.md) defines the implementation and gat
 | Component | Selected responsibility |
 | --- | --- |
 | Headless RTC application | Own lifecycle, exact admission, explicit application links, source-first stop, reset/update sequencing, deadlines, required-loss handling, cleanup and fresh readmission. Reuse libwireplumber hooks, discovery and public WpLink APIs. |
-| Upstream WirePlumber, with separately configured site/device policy where needed | Manage configured devices, access and shared routing; do not coordinate RTC application lifecycle or create its declared application links. No WirePlumberAO runtime fork is required. |
+| Upstream WirePlumber, with separately configured site/device policy where needed | Manage configured devices, access and shared routing; do not coordinate RTC application lifecycle or create its declared application links. |
 | systemd | Start, stop, reap and supervise processes and apply configured service resource policy. |
 | PipeWireAO | Negotiate and transport NDArray buffers, schedule published nodes, expose native controls and host FGN. |
 | FGN/JFG | Prepare and execute scientific graphs, manage workspaces/workers, and apply owner-local controls and adoption. |
@@ -232,11 +232,10 @@ GUI uses a local helper off its UI thread; shared panels remain WASM-buildable.
 
 ## System boundary
 
-### WirePlumberAO and application tooling
+### WirePlumber and application tooling
 
-This retained heading preserves existing links. Current runtime integration uses
-upstream WirePlumber; the ordinary Git fork is a contribution vehicle for
-upstream patches. Build and package integration lives in the sibling
+Current runtime integration uses upstream WirePlumber; the ordinary Git fork
+is a contribution vehicle for upstream patches. Build and package integration lives in the sibling
 [PipeWireAO package guide](../../wireplumber/packaging/pipewireao/README.md).
 Site/device policy is configured separately through stock WirePlumber
 configuration. No AO-specific device policy is currently defined or qualified.

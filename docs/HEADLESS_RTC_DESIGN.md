@@ -12,8 +12,8 @@ original providers and qualification scope.
 
 Upstream WirePlumber may manage separately configured site/device policy. No
 AO-specific device policy is currently defined or qualified. The ordinary Git
-fork is a contribution vehicle for upstream patches; no WirePlumberAO runtime
-is required. Device policy does not decide RTC scientific readiness,
+fork is a contribution vehicle for upstream patches. Device policy does not
+decide RTC scientific readiness,
 reset/update sequencing or the lifetime of declared RTC links. A private
 simulated RTC needs no device session manager. Hardware profiles may require
 one for their devices; hardware and access-policy qualification remain deferred.
