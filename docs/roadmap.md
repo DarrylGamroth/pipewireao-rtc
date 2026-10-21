@@ -25,6 +25,9 @@ generated unit verifies successfully. See the
 The simulation remains stopped and the GPU unused. Live admission/restart, GUI
 controls and cadence/latency remain the next qualification gates when requested;
 no public release or live service activation was selected.
+Both normal checkouts are on `main`; the two refresh worktrees are removed.
+The [integration receipt](validation/classic-headless-offline-20261021/integration.json)
+includes a fresh canonical-directory configuration check and stopped-service check.
 
 ### Upstream WirePlumber package integration — 2026-10-21
 

@@ -1,0 +1,16 @@
+{
+    "result": "passed",
+    "date": "2026-10-21",
+    "rtc_integrated_commit": "a9d73c837deed00ee6f3494f08850c4b93cee52c",
+    "classic_integrated_commit": "caaf9f4b02aff543ea9e2b737a6f7e7b7b5a8d4c",
+    "rtc_branch": "main",
+    "classic_branch": "main",
+    "canonical_configuration_assertions": 64,
+    "task_worktrees_removed": true,
+    "historical_worktrees_preserved": true,
+    "service_active": false,
+    "service_main_pid": 0,
+    "public_release": false,
+    "services_activated": false,
+    "gpu_used": false
+}

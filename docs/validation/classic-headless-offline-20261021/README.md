@@ -7,6 +7,13 @@ libwireplumber built against PipeWireAO. RTC 0.2.0 records the breaking public
 `WirePlumber*` to `Session*` namespace migration. It is registered only in the
 private workstation review registry; no public release or remote push was made.
 
+The changes are integrated into `main` in the normal RTC and Classic checkouts.
+Their two task worktrees and merged branches were removed; unrelated historical
+worktrees were preserved. The [integration receipt](integration.json),
+[canonical checker log](canonical-check.log) and
+[canonical configuration receipt](canonical-configuration.json) record a fresh
+64-check pass from the normal Classic directory and the stopped service.
+
 ## Source and preservation
 
 - RTC source commit: `fa8e4d5dcdb370f9acf3a9c28bc898e071ed919e`.

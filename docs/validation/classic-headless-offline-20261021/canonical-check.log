@@ -1,0 +1,3 @@
+Test Summary:                                    | Pass  Total  Time
+Classic headless application offline preparation |   64     64  2.9s
+Offline evidence: /home/dgamroth/workspaces/codex/worktrees/classic-headless-offline-20261021/canonical-configuration/offline-check.json
