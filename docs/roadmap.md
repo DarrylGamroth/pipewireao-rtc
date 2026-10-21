@@ -83,6 +83,14 @@ The old session shut down cleanly; one CUDA simulator remains. The evidence
 catalog records the new session identity and scope. This establishes live
 simulation journal integration, without a latency or hardware qualification claim.
 
+The Julia registration → GUI selection/apply → shared artifact history path also
+passes on this session. The 277-element zero baseline engineering offset was
+retained in Git, applied with unchanged values, and correlated to its exact
+manifest object ID in shared history. Its immediate acknowledgement is Submitted;
+a separate native query confirms requested/active parameter sequence 1/1.
+The evidence catalog links the registration script, Git/SQLite checks and GUI
+capture. This does not qualify a newly generated scientific calibration.
+
 ### Classic completion for review — 2026-10-20
 
 Complete the CUDA Classic Julia-builder plant with its CPU JFG RTC and RTC-owned

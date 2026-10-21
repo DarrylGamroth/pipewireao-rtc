@@ -18,6 +18,15 @@ closed, and the reopened GUI displayed both records. The former Classic session
 shut down through its supported lifecycle. This is live simulation/control
 evidence, not physical-device, scientific convergence or wall-time qualification.
 
+The subsequent artifact-path check is retained at
+`/home/dgamroth/workspaces/codex/worktrees/classic-completion-20261020/artifact-live-20261020/`.
+Julia registered the deployed zero engineering offset, then the GUI selected,
+prepared and applied it. Shared history resolved the native request to exact
+Git manifest ID `cf2726b8315a58222b223d36bdb256796b5fbdd2`; the actual retained
+Git objects, payload bytes and SQLite mapping were verified. The Submitted
+acknowledgement remains unchanged; a separate owner query confirmed requested
+and active parameter sequence 1/1. No new scientific calibration was introduced.
+
 
 - [Classic completion for review, 2026-10-20](validation/classic-completion-20261020/README.md): immutable private candidates with released AOS/HIL, managed lifecycle and fault recovery, finite composed replay/observer invariance, calibration provenance and bounded resource characterization. Grouped GUI settings and native endpoint-loss invalidation pass; retained review identity is recorded separately.
 

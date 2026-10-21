@@ -191,6 +191,12 @@ record = ConfigurationStore.register!(store, reconstructor;
 artifact_id = record["id"]
 ```
 
+`record["id"]` is the Git object ID of the canonical preparation manifest.
+`content_oid` identifies the original FITS bytes, and `commit_oid` pins the
+manifest and FITS together under `refs/artifacts/<id>`. Labels, target scope,
+schema, preparation rules and provenance are part of the manifest identity;
+registration does not make the artifact active.
+
 For an existing FITS file use `Artifacts.FITSArtifact(path; hdu=1, axes=...)`,
 with an explicit logical axis permutation for multidimensional data, plus the
 target element type and shape. `register!` validates one captured FITS snapshot,
@@ -248,6 +254,15 @@ session and endpoint incarnation, token, requested property values or parameter
 binding, and correlated completion. All clients using the journal-enabled session
 endpoint contribute, even when the GUI is closed. Direct writes bypassing that
 endpoint are outside this history. Read-only queries are not update events.
+
+For a registered artifact, select its target and catalog entry in the GUI, load
+it to prepare a verified read-only transport payload, then explicitly apply it.
+The current native parameter request carries the prepared file path. The
+headless history query correlates that path with the retained catalog mapping
+and returns the exact Git manifest ID in `artifact_id`; the GUI displays it in
+the selected update. The native journal retains the original request and reply.
+An immediate Submitted result is preserved even when a later
+`parameter-generation` query confirms equal requested and active sequences.
 
 Requested operations lacking terminal evidence remain unknown. A submitted
 parameter is not necessarily active; an SQLite transaction and a Git commit do
