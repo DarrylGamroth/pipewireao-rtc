@@ -123,7 +123,7 @@ The [headless design](HEADLESS_RTC_DESIGN.md) defines the implementation and gat
 | Component | Selected responsibility |
 | --- | --- |
 | Headless RTC application | Own lifecycle, exact admission, explicit application links, source-first stop, reset/update sequencing, deadlines, required-loss handling, cleanup and fresh readmission. Reuse libwireplumber hooks, discovery and public WpLink APIs. |
-| WirePlumberAO | Enable/configure devices, enforce access and shared routing policy; do not coordinate RTC application lifecycle or create its declared application links. |
+| Upstream WirePlumber, with separately configured site/device policy where needed | Manage configured devices, access and shared routing; do not coordinate RTC application lifecycle or create its declared application links. No WirePlumberAO runtime fork is required. |
 | systemd | Start, stop, reap and supervise processes and apply configured service resource policy. |
 | PipeWireAO | Negotiate and transport NDArray buffers, schedule published nodes, expose native controls and host FGN. |
 | FGN/JFG | Prepare and execute scientific graphs, manage workspaces/workers, and apply owner-local controls and adoption. |
@@ -234,11 +234,18 @@ GUI uses a local helper off its UI thread; shared panels remain WASM-buildable.
 
 ### WirePlumberAO and application tooling
 
+This retained heading preserves existing links. Current runtime integration uses
+upstream WirePlumber; the ordinary Git fork is a contribution vehicle for
+upstream patches. Build and package integration lives in the sibling
+[PipeWireAO package guide](../../wireplumber/packaging/pipewireao/README.md).
+Site/device policy is configured separately through stock WirePlumber
+configuration. No AO-specific device policy is currently defined or qualified.
+
 The headless RTC is the application lifecycle owner: it admits declared
 endpoints, owns application Links, serializes transitions and detects cohort
 failure. It uses libwireplumber's public discovery, hooks and WpLink APIs.
-WirePlumberAO retains device/access/shared-routing policy. Julia tools define
-application configuration, calibration bindings and one-shot deployment/control
+Upstream WirePlumber may manage separately configured site/device policy. Julia
+tools define application configuration, calibration bindings and one-shot deployment/control
 commands. systemd owns process lifetime; AOS/JFG/FGN execute scientific work.
 The GUI observes these owners and submits operator requests.
 
@@ -291,7 +298,7 @@ flowchart LR
 | Component | Active responsibility |
 | --- | --- |
 | `pipewireao-rtc` | Own live admission, application links, lifecycle/update ordering and cleanup. The package also supplies configuration, one-shot deployment/control tools and scientific-owner entry points. |
-| WirePlumberAO | Own device configuration, access and shared routing policy. |
+| Upstream WirePlumber (optional; separately configured site/device policy) | Manage devices, access and shared routing according to the installed site configuration. No AO-specific policy is currently defined or qualified. |
 | systemd | Own process lifetime and configured resource policy. |
 | PipeWireAO | Own ndarray transport, format negotiation, scheduling, FGN hosting, property and parameter publication, and standard PipeWire introspection. |
 | Scientific Algorithm packages | Own ordinary typed implementations and declarations of ports, shapes, schemas, scalar properties, ndarray parameters, and construction values. |
@@ -424,7 +431,9 @@ recovery behavior. RTC-ARCH-025 supersedes this implementation allocation;
 the identifier and original rationale remain reserved.
 
 The selected deployment uses separate PipeWire, headless RTC and scientific
-owner processes. Device profiles may additionally use WirePlumberAO. It does not require one process per graph operation.
+owner processes. Device profiles may additionally use upstream WirePlumber with
+separately configured site/device policy. It does not require one process per
+graph operation.
 
 ## Laboratory deployment profile
 

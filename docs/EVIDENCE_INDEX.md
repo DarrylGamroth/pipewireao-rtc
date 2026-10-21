@@ -1,5 +1,14 @@
 # Delivery evidence catalog
 
+## Upstream WirePlumber package integration — 2026-10-21
+
+[Validation](validation/upstream-package-20261021/README.md) records the pinned
+upstream source, dependency-only default overlay, independently optional bug
+fixes, 57 generic suites, ten RTC suites, 19 CPU-array/coexistence checks and
+generated Status Configuring. [Independent review](reviews/20261021-upstream-package/REVIEW.md)
+checks recipe provenance and separation from device policy. No simulator, GPU,
+hardware or live workstation deployment is implied.
+
 ## Standard SPA-JSON generation — 2026-10-21
 
 [Validation](validation/spa-json-20261021/README.md) records 2,409 Julia assertions,

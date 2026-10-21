@@ -10,11 +10,13 @@ identity checks, source hold/release, bounded waits and cleanup requirements in
 RTC-DEV-002/003/004/009/012/013/021/022/030/031. Historical results retain their
 original providers and qualification scope.
 
-WirePlumberAO owns device enablement/configuration, access and shared routing
-policy. It does not decide RTC scientific readiness, reset/update sequencing or
-the lifetime of declared RTC links. A private simulated RTC needs no device
-session manager. Hardware profiles may require one for their devices; hardware
-and access-policy qualification remain deferred.
+Upstream WirePlumber may manage separately configured site/device policy. No
+AO-specific device policy is currently defined or qualified. The ordinary Git
+fork is a contribution vehicle for upstream patches; no WirePlumberAO runtime
+is required. Device policy does not decide RTC scientific readiness,
+reset/update sequencing or the lifetime of declared RTC links. A private
+simulated RTC needs no device session manager. Hardware profiles may require
+one for their devices; hardware and access-policy qualification remain deferred.
 
 This boundary separates a device session manager from an application, as in a
 DAW. It does not change PipeWire's graph scheduler or create a scientific
@@ -29,7 +31,7 @@ flowchart LR
     Clients["GUI / CLI / Julia"]
     RTC["Headless RTC application"]
     PW["PipeWire core"]
-    WP["WirePlumberAO device and routing policy"]
+    WP["Optional upstream WirePlumber device policy"]
     Science["FGN / JFG / simulator"]
     Systemd["systemd"]
     Clients -->|existing native controls| RTC

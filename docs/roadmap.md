@@ -12,6 +12,21 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Upstream WirePlumber package integration — 2026-10-21
+
+The ordinary WirePlumber fork now keeps runtime source identical to the pinned
+upstream revision, with a separate PipeWireAO build recipe. Only the two Meson
+dependency names change in the default build. Large POD filtering and Lua event
+properties remain independent optional fixes, including their regression tests.
+Site/device configuration stays separate; the recipe installs or starts no
+services. The headless RTC remains the application authority.
+
+The isolated default build passes 57 upstream suites, ten freshly rebuilt RTC
+suites, 19 CPU-array/coexistence checks, generated native Status Configuring and
+package/dependency checks. See the [validation](validation/upstream-package-20261021/README.md)
+and [independent review](reviews/20261021-upstream-package/REVIEW.md).
+The simulation remains stopped; no GPU or live workstation deployment is selected.
+
 ### Standard SPA-JSON and unmodified library startup — 2026-10-21
 
 The configuration writer now emits standard relaxed SPA-JSON and verifies it

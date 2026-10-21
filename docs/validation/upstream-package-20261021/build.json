@@ -1,0 +1,267 @@
+{
+  "upstream_url": "https://gitlab.freedesktop.org/pipewire/wireplumber.git",
+  "upstream_revision": "bdc17eb2c419cbe41dbb248cf20cbe93370ee2f7",
+  "sdk": "/home/dgamroth/.local/opt/pipewireao-wp-reuse-20261021",
+  "prefix": "/home/dgamroth/.local/opt/wireplumber-pipewireao-upstream-20261021",
+  "meson_options": [
+    "--prefix=/home/dgamroth/.local/opt/wireplumber-pipewireao-upstream-20261021",
+    "--libdir=lib",
+    "-Dsystemd=disabled",
+    "-Delogind=disabled",
+    "-Dsystemd-user-service=false",
+    "-Dsystemd-system-service=false",
+    "-Ddoc=disabled",
+    "-Dintrospection=disabled",
+    "-Dtests=true",
+    "-Ddbus-tests=true",
+    "--wrap-mode=nodownload"
+  ],
+  "jobs": 2,
+  "lua_source_sha256": "ede725e1185f9cd3775a3074db99c37a7d3db1a2ffffd515550653dbe1a6ffe6",
+  "patches": [
+    {
+      "name": "dependencies.patch",
+      "sha256": "e859ba7378cefccccc555d1837bcf52cded44a2dc90d73ac4eb8a3da89cc7834"
+    }
+  ],
+  "tools": {
+    "git": "git version 2.47.3",
+    "meson": "1.7.0",
+    "ninja": "1.12.1",
+    "pkg-config": "1.8.1",
+    "cc": "cc (Debian 14.2.0-19) 14.2.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."
+  },
+  "upstream_archive_sha256": "9be605546b22db3975367c06c59a335ee2aef1904f21ad3335cb649041bd6f23",
+  "build": "passed",
+  "tests": [
+    {
+      "name": "test-component-loader",
+      "result": "OK"
+    },
+    {
+      "name": "test-core",
+      "result": "OK"
+    },
+    {
+      "name": "test-events",
+      "result": "OK"
+    },
+    {
+      "name": "test-metadata",
+      "result": "OK"
+    },
+    {
+      "name": "test-object-interest",
+      "result": "OK"
+    },
+    {
+      "name": "test-object-manager",
+      "result": "OK"
+    },
+    {
+      "name": "test-properties",
+      "result": "OK"
+    },
+    {
+      "name": "test-proxy",
+      "result": "OK"
+    },
+    {
+      "name": "test-session-item",
+      "result": "OK"
+    },
+    {
+      "name": "test-spa-json",
+      "result": "OK"
+    },
+    {
+      "name": "test-spa-pod",
+      "result": "OK"
+    },
+    {
+      "name": "test-spa-type",
+      "result": "OK"
+    },
+    {
+      "name": "test-state",
+      "result": "OK"
+    },
+    {
+      "name": "test-settings",
+      "result": "OK"
+    },
+    {
+      "name": "test-client-context",
+      "result": "OK"
+    },
+    {
+      "name": "test-transition",
+      "result": "OK"
+    },
+    {
+      "name": "test-factory",
+      "result": "OK"
+    },
+    {
+      "name": "test-conf",
+      "result": "OK"
+    },
+    {
+      "name": "test-json-utils",
+      "result": "OK"
+    },
+    {
+      "name": "test-wplua",
+      "result": "OK"
+    },
+    {
+      "name": "test-lua-pod",
+      "result": "OK"
+    },
+    {
+      "name": "test-dynamic-rules",
+      "result": "OK"
+    },
+    {
+      "name": "test-lua-json",
+      "result": "OK"
+    },
+    {
+      "name": "test-lua-json-utils",
+      "result": "OK"
+    },
+    {
+      "name": "test-lua-monitor-rules",
+      "result": "OK"
+    },
+    {
+      "name": "test-lua-require",
+      "result": "OK"
+    },
+    {
+      "name": "test-lua-settings",
+      "result": "OK"
+    },
+    {
+      "name": "test-lua-event-hooks",
+      "result": "OK"
+    },
+    {
+      "name": "test-lua-properties",
+      "result": "OK"
+    },
+    {
+      "name": "test-lua-node-utils",
+      "result": "OK"
+    },
+    {
+      "name": "test-lua-profile-utils",
+      "result": "OK"
+    },
+    {
+      "name": "test-linking-non-default-device-node",
+      "result": "OK"
+    },
+    {
+      "name": "test-linking-non-default-device-node-capture",
+      "result": "OK"
+    },
+    {
+      "name": "test-linking-default-device-node",
+      "result": "OK"
+    },
+    {
+      "name": "test-lua-async-activation",
+      "result": "OK"
+    },
+    {
+      "name": "test-linking-default-device-node-capture",
+      "result": "OK"
+    },
+    {
+      "name": "test-linking-defined-device-node-target-object-string",
+      "result": "OK"
+    },
+    {
+      "name": "test-linking-defined-device-node-target-object-int",
+      "result": "OK"
+    },
+    {
+      "name": "test-linking-defined-device-node-target-object-name",
+      "result": "OK"
+    },
+    {
+      "name": "test-linking-defined-device-node-target-object-string-capture",
+      "result": "OK"
+    },
+    {
+      "name": "test-linking-defined-device-node-target-object-int-capture",
+      "result": "OK"
+    },
+    {
+      "name": "test-linking-defined-device-node-target-object-name-capture",
+      "result": "OK"
+    },
+    {
+      "name": "test-linking-defined-device-node-node-target",
+      "result": "OK"
+    },
+    {
+      "name": "test-linking-defined-device-node-node-target-capture",
+      "result": "OK"
+    },
+    {
+      "name": "test-linking-defined-device-node-target-node-metadata",
+      "result": "OK"
+    },
+    {
+      "name": "test-linking-defined-device-node-target-node-metadata-capture",
+      "result": "OK"
+    },
+    {
+      "name": "test-linking-defined-device-node-target-object-metadata",
+      "result": "OK"
+    },
+    {
+      "name": "test-linking-defined-device-node-target-object-metadata-capture",
+      "result": "OK"
+    },
+    {
+      "name": "test-linking-defined-device-node-target-object-int-metadata",
+      "result": "OK"
+    },
+    {
+      "name": "test-linking-defined-device-node-target-object-int-metadata-capture",
+      "result": "OK"
+    },
+    {
+      "name": "00-test-default-nodes-initial-metadata-update",
+      "result": "OK"
+    },
+    {
+      "name": "test-dbus-connection",
+      "result": "OK"
+    },
+    {
+      "name": "test-file-monitor",
+      "result": "OK"
+    },
+    {
+      "name": "test-si-node",
+      "result": "OK"
+    },
+    {
+      "name": "test-reserve-device",
+      "result": "OK"
+    },
+    {
+      "name": "test-si-audio-adapter",
+      "result": "OK"
+    },
+    {
+      "name": "test-si-standard-link",
+      "result": "OK"
+    }
+  ],
+  "install": "passed"
+}

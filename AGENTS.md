@@ -39,7 +39,9 @@
 - RTC-ARCH-026 supersedes RTC-ARCH-025's ownership allocation. The headless RTC
   application owns session lifecycle, admission and declared application links.
   It reuses libwireplumber hooks, discovery and public WpLink APIs as a library;
-  WirePlumberAO retains device/access/shared-routing policy. systemd owns process
+  upstream WirePlumber remains the runtime, while site/device policy is
+  configured separately. The WirePlumber fork carries build integration and
+  independent upstream fixes, not another runtime API. systemd owns process
   lifetime; Julia tools export, install, inspect and send native controls as
   one-shot clients. Rust Statig and Julia DeploymentRunner coordinators remain
   retired. Do not introduce a second session authority or supervisor fallback.

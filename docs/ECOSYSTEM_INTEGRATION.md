@@ -1,15 +1,17 @@
 > Current ownership is [RTC-ARCH-026](HEADLESS_RTC_DESIGN.md): the headless RTC
 > owns lifecycle and explicit application links, using libwireplumber as a
-> library. WirePlumberAO owns device/access/shared-routing policy. Dated pilots
+> library. Upstream WirePlumber remains the runtime; site/device policy is
+> configured separately. No AO-specific device policy is currently defined or
+> qualified. Dated pilots
 > below retain their original providers and evidence scope.
 
 # PipeWireAO ecosystem integration
 
 Direction requested on 2026-10-06; ownership updated on 2026-10-21 to match
 [RTC-ARCH-026](HEADLESS_RTC_DESIGN.md). The headless RTC application owns its
-lifecycle and connections; WirePlumberAO owns device/access/shared-routing
-policy, systemd supervises processes, and PipeWireAORTC supplies native clients
-and application/deployment tools. The historical
+lifecycle and connections; upstream WirePlumber may run with separately
+configured site/device policy, systemd supervises processes, and PipeWireAORTC
+supplies native clients and application/deployment tools. The historical
 pilots below retain their original scope; they do not define current ownership.
 The [architecture](architecture.md), [operating contract](operations.md) and
 [current roadmap](roadmap.md#current-work) remain authoritative.
@@ -34,7 +36,7 @@ format.
 | **JFG** | Prepare and execute Julia scientific graphs; `FilterGraphAlgorithms` supplies algorithms and `FilterGraphPipeWire` publishes the graph | The same kind of ordinary processing node, implemented in Julia |
 | **AOS** | Simulate the instrument: atmosphere, optics, mirrors, wavefront sensors and detectors | An owner may publish multiple sources and sinks; the current HIL adapter exposes one WFS/command exchange |
 | **AOC** | Prepare probes, estimate interaction matrices, construct reconstructors and calculate calibration diagnostics | Numerical plans, workspaces and results; acquisition uses the deployed instrument endpoints |
-| **WirePlumberAO profile** | Own device configuration, access and shared routing policy | Existing WirePlumber device monitors, hooks and routing interfaces |
+| **Upstream WirePlumber** | Optionally apply separately configured site/device policy | Stock WirePlumber configuration and interfaces; no AO-specific device policy is currently defined or qualified |
 | **Headless RTC** | Own exact discovery, application links, readiness and coordinated start/stop/reset/failure policy using libwireplumber | Existing native session/owner contracts and public WpLink APIs |
 | **systemd** | Start, stop and supervise processes; apply resource and scheduling limits | User services and, where configured, administrator-provisioned resources |
 | **PipeWireAORTC application/deployment tools** | Export, install and preflight applications; verify processes and request operations as clients | Standard configuration, systemd services and native session controls |
@@ -291,15 +293,20 @@ The cloned WirePlumber 0.5.18 source already contains:
 - `wireplumber.service` and `wireplumber@.service` user-unit templates.
 
 The RTC application profile selects the library components needed for its
-explicit declared connections. The device-policy daemon selects its own profile. Desktop audio default-device selection and automatic rerouting are not
+explicit declared connections. Any separate site/device policy uses stock
+WirePlumber configuration. Desktop audio default-device selection and automatic
+rerouting are not
 appropriate substitutes for instrument identity, array shape and calibration
 matching. Existing generic mechanisms should be used before adding extensions.
 
-**WirePlumberAO provides device/access/shared-routing policy alongside upstream
-WirePlumber. Application lifecycle policy belongs to the headless RTC.**
+**Upstream WirePlumber is the runtime. Site/device policy is configured
+separately, and application lifecycle policy belongs to the headless RTC.** The
+ordinary Git fork is a contribution vehicle for upstream patches, not a runtime
+dependency. Build and package integration is documented in the sibling
+[PipeWireAO package guide](../../wireplumber/packaging/pipewireao/README.md).
 Native changes should fix demonstrated upstream defects or extend existing
-interfaces for a demonstrated integration gap. There is no established need for
-another session-manager framework or a permanently divergent fork.
+interfaces for a demonstrated integration gap. No AO-specific device policy is
+currently defined or qualified.
 
 The [reuse audit](reviews/20261021-wireplumber-reuse/REVIEW.md) distinguishes
 upstream asynchronous hooks from the AO rules they execute. PipeWire already
@@ -401,7 +408,7 @@ the RTC permanently.
 | Work | Owner |
 | --- | --- |
 | Process startup, termination and reaping | systemd; one-shot Julia deployment tools verify exact incarnations |
-| Device configuration, access and shared routing | WirePlumberAO |
+| Optional site/device configuration, access and shared routing | Upstream WirePlumber using separately maintained stock configuration; no AO-specific policy is currently defined or qualified |
 | RTC application links, scientific readiness and lifecycle coordination | Headless RTC application using libwireplumber hooks and public WpLink APIs |
 | NDArray buffers, scheduling and internal graph execution | PipeWireAO, FGN and JFG |
 | Instrument physics and calibration algorithms | AOS/adapter and AOC/Julia scientific owners |

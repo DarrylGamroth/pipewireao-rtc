@@ -2,9 +2,11 @@
 
 `pipewireao-rtc` is the headless, non-actuating adaptive-optics application. It
 owns admission, lifecycle and declared application links, reusing public
-libwireplumber interfaces. WirePlumberAO owns device/access/shared-routing policy.
-The Julia package provides configuration, installation and native clients. systemd user services own
-process lifetime and resource policy. PipeWireAO schedules NDArray transport;
+libwireplumber interfaces. Upstream WirePlumber may run with site-configured
+device policy, managed separately from this package. The ordinary Git fork is a
+contribution vehicle; the runtime remains upstream WirePlumber. The Julia
+package provides configuration, installation and native clients. systemd user
+services own process lifetime and resource policy. PipeWireAO schedules NDArray transport;
 FGN and JFG execute the scientific graphs. AOS/HIL supplies simulated instrument
 sources and sinks; AOC supplies calibration algorithms.
 
@@ -23,8 +25,9 @@ and command-line tools act as clients of the same headless RTC authority.
 ## Development workspace
 
 Open [rtc.code-workspace](rtc.code-workspace) to edit the shared RTC package,
-REVOLT application, scientific graph packages, PipeWireAO, WirePlumberAO, GUI
-and the Classic, Copper and GPI 2.0 plants together. The `rtc` folder is the
+REVOLT application, scientific graph packages, PipeWireAO, the WirePlumber
+upstream/package integration, GUI and the Classic, Copper and GPI 2.0 plants
+together. The `rtc` folder is the
 checkout containing this workspace file; opening it in a worktree selects that
 worktree explicitly. Each repository retains its own history and dependencies.
 The workspace does not start services or select a Julia deployment environment.

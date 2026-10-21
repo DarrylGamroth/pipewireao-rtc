@@ -1,0 +1,2 @@
+N 14:53:27.171420 wp-event-dispatche ../source/lib/wp/event-dispatcher.c:246:on_event_hook_done: <WpAsyncEventHook:0x558efd7f5690> failed: Session control publication failed
+W 14:53:27.171530    m-lua-scripting session.lua:247:chunk: AO session fault: Session control publication failed
