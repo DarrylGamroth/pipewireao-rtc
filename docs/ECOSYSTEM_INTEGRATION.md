@@ -1,11 +1,18 @@
+> Current ownership is [RTC-ARCH-026](HEADLESS_RTC_DESIGN.md): the headless RTC
+> owns lifecycle and explicit application links, using libwireplumber as a
+> library. WirePlumberAO owns device/access/shared-routing policy. Dated pilots
+> below retain their original providers and evidence scope.
+
 # PipeWireAO ecosystem integration
 
-Direction requested on 2026-10-06. This document explains the existing components
-and the selected target integration with WirePlumber. The responsibility table
-and target diagram describe intended ownership; the current-implementation table
-and [roadmap](roadmap.md#current-work) distinguish completed checks from pending
-transfers. The [architecture](architecture.md) and
-[operating contract](operations.md) remain authoritative.
+Direction requested on 2026-10-06; ownership updated on 2026-10-21 to match
+[RTC-ARCH-026](HEADLESS_RTC_DESIGN.md). The headless RTC application owns its
+lifecycle and connections; WirePlumberAO owns device/access/shared-routing
+policy, systemd supervises processes, and PipeWireAORTC supplies native clients
+and application/deployment tools. The historical
+pilots below retain their original scope; they do not define current ownership.
+The [architecture](architecture.md), [operating contract](operations.md) and
+[current roadmap](roadmap.md#current-work) remain authoritative.
 
 ## Component responsibilities
 
@@ -27,10 +34,11 @@ format.
 | **JFG** | Prepare and execute Julia scientific graphs; `FilterGraphAlgorithms` supplies algorithms and `FilterGraphPipeWire` publishes the graph | The same kind of ordinary processing node, implemented in Julia |
 | **AOS** | Simulate the instrument: atmosphere, optics, mirrors, wavefront sensors and detectors | An owner may publish multiple sources and sinks; the current HIL adapter exposes one WFS/command exchange |
 | **AOC** | Prepare probes, estimate interaction matrices, construct reconstructors and calculate calibration diagnostics | Numerical plans, workspaces and results; acquisition uses the deployed instrument endpoints |
-| **WirePlumber / proposed WirePlumberAO profile** | Discover objects, apply session policy and realize declared links using the existing WirePlumber framework | PipeWire registry, properties, SPA POD parameters and links |
+| **WirePlumberAO profile** | Own device configuration, access and shared routing policy | Existing WirePlumber device monitors, hooks and routing interfaces |
+| **Headless RTC** | Own exact discovery, application links, readiness and coordinated start/stop/reset/failure policy using libwireplumber | Existing native session/owner contracts and generic SessionItems |
 | **systemd** | Start, stop and supervise processes; apply resource and scheduling limits | User services and, where configured, administrator-provisioned resources |
-| **Headless RTC runtime** | Own the RTC lifecycle, scientific readiness, acquisition coordination and artifact adoption | Existing native controls; operation continues without a GUI or CLI client |
-| **Workstation GUI and CLI tools** | Edit/select configurations, request lifecycle and property/parameter changes, and observe status | Clients of the same headless runtime and native control contracts |
+| **PipeWireAORTC application/deployment tools** | Export, install and preflight applications; verify processes and request operations as clients | Standard configuration, systemd services and native session controls |
+| **Workstation GUI and CLI tools** | Edit/select configurations, request lifecycle and property/parameter changes, and observe status | Clients of the headless RTC and scientific owners |
 
 FGN and JFG are alternative implementations of a processing role. A session can
 contain either or both when their port contracts agree. Matching algorithms,
@@ -40,6 +48,14 @@ equivalence; choosing another executor alone does not establish equivalence.
 PipeWire schedules the published nodes. FGN or JFG schedules its own internal
 graph and manages its prepared workspaces and workers. WirePlumber does not
 execute the reconstructor or assign individual MVM shards.
+
+Instrument-facing terminology comes from the relevant REVOLT/HEART or GPI 2.0
+definitions, including the quantity, units and mirror identity. Applications
+publish those labels through the existing metadata surfaces; the GUI does not
+translate instruments through hard-coded handlers. A generic internal algorithm
+or schema name is not evidence that it matches an instrument-specific quantity.
+The [reuse audit](reviews/20261021-wireplumber-reuse/REVIEW.md) records the initial
+terminology evidence and unresolved offset mapping.
 
 ## Data path
 
@@ -67,37 +83,36 @@ that those deployment gates are complete.
 
 ## Control and deployment
 
-The proposed deployment separates process supervision from session policy and
+The selected deployment separates process supervision from session policy and
 scientific execution:
 
 ```mermaid
 flowchart TD
     Systemd["systemd user services"]
     Core["Selected PipeWireAO core"]
-    WP["WirePlumber with AO profile"]
+    RTC["Headless RTC application"]
+    WP["WirePlumber device and shared routing policy"]
     Owners["FGN/JFG and optional AOS owners"]
-    Runtime["Headless RTC runtime"]
+    Tools["PipeWireAORTC deployment tools"]
     Clients["GUI, CLI and calibration clients"]
     Systemd --> Core
+    Systemd --> RTC
     Systemd --> WP
     Systemd --> Owners
-    Systemd --> Runtime
-    Clients --> Runtime
-    Runtime --> WP
-    Runtime --> Owners
-    WP --> Core
+    Tools -->|install and preflight| Systemd
+    Clients -->|native requests| RTC
+    RTC -->|owner controls| Owners
+    RTC -->|declared application links| Core
+    WP -->|device and shared routing policy| Core
     Owners --> Core
 ```
 
-This is a target ownership diagram, not the current process topology. The
-runtime-to-WirePlumber interface remains to be selected using existing
-WirePlumber facilities. It is not a proposed new private control protocol.
-
-The accepted split keeps RTC lifecycle logic in the headless runtime.
-WirePlumberAO supplies instrument discovery, availability and declared external
-session-link realization and lifetime. The headless runtime owns the scientific
-lifecycle. The runtime retains readiness, source hold/release, reset
-coordination, artifact admission and required-owner failure handling. Scientific owners still perform preparation and adoption.
+The headless RTC owns application admission and lifecycle. Its native endpoint
+accepts requests from the GUI, CLI and Julia clients; those clients do not
+decide whether a requested transition succeeded. Scientific owners perform
+preparation, numerical execution and update adoption. One-shot deployment tools
+prepare application environments and systemd units without creating links or
+releasing acquisition. Systemd service activation alone never admits ingress.
 
 The [adversarial architecture review](APPLICATION_ARCHITECTURE_REVIEW.md) makes
 link-ownership transfer conditional on preserving admission, negotiation and
@@ -148,14 +163,15 @@ PipeWire serialization even when a CLI renders its result as JSON.
 5. On stop or reset, coordinate the source and processing owners so an unfinished
    frame cannot become a command from the next generation.
 
-The existing implementation already performs this admission sequence through its
-Julia deployment supervisor and Rust session runner. Moving general discovery
-and linking into WirePlumber should preserve these semantics.
+The headless RTC performs the live admission sequence. The Julia launcher prepares
+the systemd-owned processes and configuration, verifies effective resources and
+requests native admission; only the Lua session policy transitions to Ready.
+The retired Julia supervisor and Rust session runner are historical implementations.
 
 `After=` orders systemd service startup. It does not establish that a graph has
 prepared its reconstructor, completed Julia warmup or negotiated its ports.
 WirePlumber object activation likewise does not establish scientific readiness.
-The headless RTC runtime retains that domain-level admission responsibility.
+The headless RTC retains that domain-level admission responsibility.
 
 Systemd can provide the process CPU envelope and scheduling/memory-lock limits.
 Executor code retains per-thread placement and verifies its actual workers.
@@ -225,9 +241,9 @@ controls and systemd services. It should not require a second RTC implementation
 a second session core or optics calculations inside WirePlumber. The GUI can
 disconnect while the admitted RTC and simulation continue.
 
-The current supervisor already launches the single-exchange owner on its selected
-remote with native bootstrap and held acquisition (`deployment/hil/simulator.jl`,
-`simulator_owner.jl`). WirePlumber/systemd integration must preserve that behavior;
+The one-shot launcher prepares the single-exchange owner on its selected remote
+with native bootstrap and held acquisition (`src/deployment/session_launch.jl`
+and `src/owners/aos_owner.jl`). WirePlumber/systemd integration preserves that behavior;
 publishing endpoint nodes alone is not sufficient HIL admission. Calibration uses
 the existing held-probe/exposure path and its selected session topology.
 
@@ -274,15 +290,46 @@ The cloned WirePlumber 0.5.18 source already contains:
 - link creation and activation infrastructure;
 - `wireplumber.service` and `wireplumber@.service` user-unit templates.
 
-An AO profile should select the necessary components and exact declared link
-policy. Desktop audio default-device selection and automatic rerouting are not
+The RTC application profile selects the library components needed for its
+explicit declared connections. The device-policy daemon selects its own profile. Desktop audio default-device selection and automatic rerouting are not
 appropriate substitutes for instrument identity, array shape and calibration
 matching. Existing generic mechanisms should be used before adding extensions.
 
-**WirePlumberAO is a proposed integration name:** initially an AO profile and
-policy/configuration alongside upstream WirePlumber. Native changes are justified
-only by a demonstrated NDArray integration gap. There is no established need for
+**WirePlumberAO provides device/access/shared-routing policy alongside upstream
+WirePlumber. Application lifecycle policy belongs to the headless RTC.**
+Native changes should fix demonstrated upstream defects or extend existing
+interfaces for a demonstrated integration gap. There is no established need for
 another session-manager framework or a permanently divergent fork.
+
+The [reuse audit](reviews/20261021-wireplumber-reuse/REVIEW.md) distinguishes
+upstream asynchronous hooks from the AO rules they execute. PipeWire already
+links exact port IDs, and WirePlumber uses `si-node` for video as well as other
+non-audio nodes. NDArray data alone does not require a different linking
+framework. Our declared topology resolves symbolic node/port names to exact
+IDs, rather than asking automatic audio-channel policy to choose connections.
+
+The current implementation extends `si-node` port contexts and
+`si-standard-link` exact selection, Link properties, associated-proxy access and
+asynchronous withdrawal. Those existing factories own child Link creation,
+activation and retirement. AO no longer calls the Link factory or destroys its
+proxies directly. It retains endpoint identity, scientific admission, downstream
+ordering, operation deadlines and Core-sync/correlated-absence proof after native
+withdrawal. No AO-only SessionItem class or second linking implementation was
+added. Exact withdrawal currently supports non-adapter, non-lingering links;
+ordinary automatic audio pairing remains the default mode.
+
+Model new functionality on existing implementations and extend their interfaces
+where capabilities are missing. Loading the stock all-feature event source
+would also subscribe to unrelated scientific properties; the current profile
+uses the upstream dispatcher with selective ObjectManagers. The
+[CPU-only integration evidence](validation/wireplumber-reuse-20261021/SESSION_ITEMS.md)
+records real NDArray negotiation, delivery and withdrawal without a simulator.
+
+### Historical integration pilots — 2026-10-06/07
+
+The following paragraphs record the pre-transfer implementation. Their
+observer-only and supervisor allocations are superseded by RTC-ARCH-025;
+the linked evidence keeps its original revision and qualification scope.
 
 The [initial compatibility fixture](validation/wireplumber-compatibility-20261006/README.md)
 now passes with unmodified WirePlumber source built against AO through private
@@ -346,36 +393,29 @@ links remain the working migration state until the transfer gates pass. This
 startup arrangement is not an architectural reason to keep link realization in
 the RTC permanently.
 
-## Current implementation and proposed transfer
+## Current ownership
 
-| Work | Current owner | Proposed owner |
-| --- | --- | --- |
-| Private core and child-process startup, termination and reaping | Julia deployment supervisor | systemd services, with existing admission coordination retained |
-| Instrument discovery and connection policy | Rust RTC runner/session configuration | WirePlumber object and policy infrastructure |
-| Realization and lifetime of external session links | Rust RTC runner | WirePlumberAO policy, after admission/failure parity; one owner throughout migration |
-| Scientific readiness, source hold/release and reset coordination | RTC supervisor/runner and scientific owners | Headless RTC runtime and scientific owners |
-| NDArray buffers, scheduling and internal graph execution | PipeWireAO, FGN and JFG | Same existing components |
-| Plant simulation and instrument calibration | AOS/adapter and Julia acquisition application/AOC | Same existing components |
-| Optional operator interface | Workstation GUI and existing CLI | GUI and CLI clients of the same headless runtime using native controls |
+| Work | Owner |
+| --- | --- |
+| Process startup, termination and reaping | systemd; one-shot Julia deployment tools verify exact incarnations |
+| Device configuration, access and shared routing | WirePlumberAO |
+| RTC application links, scientific readiness and lifecycle coordination | Headless RTC application using libwireplumber hooks and SessionItems |
+| NDArray buffers, scheduling and internal graph execution | PipeWireAO, FGN and JFG |
+| Instrument physics and calibration algorithms | AOS/adapter and AOC/Julia scientific owners |
+| Operator interface | Optional GUI/CLI/Julia clients of the same native headless endpoint |
 
-Only one component should own each session link and lifecycle action during
-migration. Preserve existing controls until their replacement is demonstrated.
-The runtime declares the required session and uses actual object/link state for
-admission and failure handling. If WirePlumber owns a session's links, runtime
-loss must revoke that realization and a restarted owner must remain held until
-fresh admission. The selected target uses each component for its intended
-purpose: systemd supervises processes, WirePlumber manages session connections,
-and the RTC coordinates scientific readiness and acquisition. Internal executor
-graphs remain with FGN/JFG. If the transfer adds more coordination than it
-removes, record that evidence for architectural reconsideration; do not treat
-the current observer-only implementation as the final target. Neither GUI nor
-CLI owns links that the admitted session depends on.
+The RTC is the only application lifecycle and link owner. Required-owner loss
+revokes admission; fresh incarnations remain held until readmission. No
+WirePlumber daemon policy independently creates those links. Device-policy
+requirements remain profile-specific. See the [implementation and acceptance
+plan](HEADLESS_RTC_DESIGN.md); historical provider evidence below is not a
+qualification claim for the new host.
 
-Breaking the large Rust source files into modules is useful after establishing
-this boundary; copying all their responsibilities into a new manager would retain
-the duplication.
+## Historical migration sequence — 2026-10-07
 
-## Next implementation increment
+This sequence records the work planned at the earlier link-transfer baseline.
+The current owner allocation is above; follow the
+[current roadmap](roadmap.md#current-work) for remaining work.
 
 The isolated FITS/discard compatibility and Copper runtime-owned-link
 coexistence steps pass within their recorded scopes. Explicit WirePlumber link
@@ -419,15 +459,15 @@ remains scientific/lifecycle evidence.
 
 ## Source pointers
 
-Current source was inspected without changing the sibling repositories:
+The initial source inventory, preserved as historical provenance, inspected:
 RTC `dae581a`, WirePlumber `bdc17eb`, PipeWireAO `29da2d6`, JFG `b609116`,
 AOS `ed9a3f3`, HIL adapter `15fd37d` and AOC `f79104d`. AOS and
 `calculon-algorithms` have pre-existing working-tree edits; their observed APIs
 are not a claim that every edit has been committed or qualified.
 
-- RTC: `deployment/julia/src/deploy.jl`, `supervisor_controls.jl`,
-  `calibration_method.jl`; `deployment/hil/calibration_acquisition.jl`;
-  `deployment/pipewireao-rtc@.service.in`; `src/live.rs`.
+- Current RTC boundaries: `native/main.c`, `native/scripts/ao/session.lua`, `src/configuration/session_configuration.jl`,
+  `src/deployment/session_launch.jl`, `src/deployment/session_runtime.jl`, and
+  `src/simulator_configuration/jobs.jl`.
 - Scientific packages: JFG's root `README.md`; AOS's model cookbook;
   the HIL adapter's `README.md` and exchange implementation; AOC's `README.md`
   and public module documentation.

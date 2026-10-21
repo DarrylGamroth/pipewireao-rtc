@@ -46,8 +46,8 @@ end
 # Shared operational closure; instrument projects export their own sources.
 const RUNTIME_ENTRIES = (
     "Project.toml", "Manifest.toml", "src", "ext", "test",
-    "wireplumber_cli.jl", "wireplumber_launch.jl",
-    "wireplumber_configuration.jl", "wireplumber_install.jl",
+    "session_cli.jl", "session_launch.jl",
+    "session_configuration.jl", "session_install.jl",
 )
 const RESOURCE_ENTRYPOINTS = ()
 
@@ -134,15 +134,21 @@ function port(name, direction, shape, schema, element_type="F32_LE"; parameter=f
     return value
 end
 
-"Copy WirePlumber assets from an installed prefix or an explicit development build."
+const WIREPLUMBER_MODULES = ("lua-scripting", "si-node", "si-standard-link")
+const RTC_MODULES = ("ao-control-endpoint", "ao-journal")
+const RTC_SCRIPTS = ("ao/session.lua", "lib/ao-control.lua", "lib/ao-owner.lua",
+    "lib/ao-acquisition.lua", "lib/ao-session-control.lua", "lib/ao-connections.lua")
+
+"Copy the generic WirePlumber library, factories and scripts; never its daemon or AO policy."
 function stage_wireplumber!(package; build=nothing, source=nothing, prefix=nothing)
     (build === nothing) == (source === nothing) ||
         throw(ArgumentError("WirePlumber build and source must be supplied together"))
+    build === nothing || prefix === nothing ||
+        throw(ArgumentError("select one WirePlumber build or installed prefix"))
     target = joinpath(package, "wireplumber")
     if build !== nothing || prefix !== nothing
         if build !== nothing
             build, source = realpath(build), realpath(source)
-            binary = joinpath(build, "src/wireplumber")
             library = realpath(joinpath(build, "lib/wp/libwireplumber-0.5.so.0"))
             modules = joinpath(build, "modules")
             scripts = joinpath(source, "src/scripts")
@@ -155,24 +161,23 @@ function stage_wireplumber!(package; build=nothing, source=nothing, prefix=nothi
             length(libraries) == 1 ||
                 throw(ArgumentError("expected one installed WirePlumber library directory in $prefix"))
             directory = only(libraries)
-            binary = joinpath(prefix, "bin/wireplumber")
             library = realpath(joinpath(directory, "libwireplumber-0.5.so.0"))
             modules = joinpath(directory, "wireplumber-0.5")
             scripts = joinpath(prefix, "share/wireplumber/scripts")
         end
-        isfile(binary) && (stat(binary).mode & 0o111) != 0 ||
-            throw(ArgumentError("selected WirePlumber runtime has no executable"))
         islink(target) && throw(ArgumentError("staged WirePlumber directory must not be a symlink"))
         temporary = mktempdir(package; prefix="wireplumber-stage-")
         try
+            # Old custom prefixes may still contain AO files. They are owned by RTC now.
             copy_tree(scripts, joinpath(temporary, "scripts"); ignored=Set(["tests", "test"]))
-            copy_file(binary, joinpath(temporary, "bin/wireplumber"))
-            chmod(joinpath(temporary, "bin/wireplumber"), stat(binary).mode & 0o777)
+            for relative in RTC_SCRIPTS
+                path = joinpath(temporary, "scripts", relative)
+                ispath(path) && rm(path)
+            end
             copy_file(library, joinpath(temporary, "lib/wp/libwireplumber-0.5.so.0"))
-            for name in ("libwireplumber-module-lua-scripting.so",
-                         "libwireplumber-module-ao-control-endpoint.so",
-                         "libwireplumber-module-ao-journal.so")
-                copy_file(joinpath(modules, name), joinpath(temporary, "modules", name))
+            for name in WIREPLUMBER_MODULES
+                file = "libwireplumber-module-$name.so"
+                copy_file(joinpath(modules, file), joinpath(temporary, "modules", file))
             end
             validate_wireplumber(temporary)
             ispath(target) && rm(target; recursive=true)
@@ -186,19 +191,76 @@ function stage_wireplumber!(package; build=nothing, source=nothing, prefix=nothi
 end
 
 function validate_wireplumber(target)
-    for file in ("bin/wireplumber", "lib/wp/libwireplumber-0.5.so.0",
-                 "modules/libwireplumber-module-lua-scripting.so",
-                 "modules/libwireplumber-module-ao-control-endpoint.so",
-                 "modules/libwireplumber-module-ao-journal.so",
-                 "scripts/ao/session.lua", "scripts/lib/ao-control.lua",
-                 "scripts/lib/ao-owner.lua", "scripts/lib/ao-acquisition.lua",
-                 "scripts/lib/ao-session-control.lua", "scripts/lib/ao-connections.lua")
+    for file in ("lib/wp/libwireplumber-0.5.so.0",
+            ("modules/libwireplumber-module-$name.so" for name in WIREPLUMBER_MODULES)...)
         path = joinpath(target, file)
         isfile(path) && !islink(path) ||
-            throw(ArgumentError("sealed WirePlumber asset is missing: $file"))
+            throw(ArgumentError("sealed WirePlumber dependency asset is missing: $file"))
     end
-    (stat(joinpath(target, "bin/wireplumber")).mode & 0o111) != 0 ||
-        throw(ArgumentError("sealed WirePlumber executable is not executable"))
+    isdir(joinpath(target, "scripts")) && !islink(joinpath(target, "scripts")) ||
+        throw(ArgumentError("sealed WirePlumber dependency scripts are missing"))
+    for file in ("bin", "wireplumber",
+            ("modules/libwireplumber-module-$name.so" for name in RTC_MODULES)...,
+            ("scripts/$relative" for relative in RTC_SCRIPTS)...)
+        (ispath(joinpath(target, file)) || islink(joinpath(target, file))) &&
+            throw(ArgumentError("RTC application asset in WirePlumber dependency: $file"))
+    end
+    return nothing
+end
+
+"Copy the headless RTC executable, modules and policy from its native build or installed prefix."
+function stage_rtc!(package; native_build=nothing, native_source=nothing, native_prefix=nothing)
+    (native_build === nothing) == (native_source === nothing) ||
+        throw(ArgumentError("RTC native_build and native_source must be supplied together"))
+    native_build === nothing || native_prefix === nothing ||
+        throw(ArgumentError("select one RTC native build or installed prefix"))
+    target = joinpath(package, "rtc")
+    if native_build !== nothing || native_prefix !== nothing
+        if native_build !== nothing
+            build, source = realpath(native_build), realpath(native_source)
+            binary, modules, scripts = joinpath(build, "pipewireao-rtc"),
+                joinpath(build, "modules"), joinpath(source, "scripts")
+        else
+            prefix = realpath(native_prefix)
+            binary, modules, scripts = joinpath(prefix, "bin/pipewireao-rtc"),
+                joinpath(prefix, "lib/pipewireao-rtc/modules"),
+                joinpath(prefix, "share/pipewireao-rtc/scripts")
+        end
+        isfile(binary) && !islink(binary) && (stat(binary).mode & 0o111) != 0 ||
+            throw(ArgumentError("selected RTC native executable is unavailable"))
+        islink(target) && throw(ArgumentError("staged RTC directory must not be a symlink"))
+        temporary = mktempdir(package; prefix="rtc-stage-")
+        try
+            copy_file(binary, joinpath(temporary, "bin/pipewireao-rtc"))
+            chmod(joinpath(temporary, "bin/pipewireao-rtc"), stat(binary).mode & 0o777)
+            for name in RTC_MODULES
+                file = "libwireplumber-module-$name.so"
+                copy_file(joinpath(modules, file), joinpath(temporary, "modules", file))
+            end
+            for relative in RTC_SCRIPTS
+                copy_file(joinpath(scripts, relative), joinpath(temporary, "scripts", relative))
+            end
+            validate_rtc(temporary)
+            ispath(target) && rm(target; recursive=true)
+            mv(temporary, target)
+        finally
+            ispath(temporary) && rm(temporary; recursive=true)
+        end
+    end
+    validate_rtc(target)
+    return target
+end
+
+function validate_rtc(target)
+    for file in ("bin/pipewireao-rtc",
+            ("modules/libwireplumber-module-$name.so" for name in RTC_MODULES)...,
+            ("scripts/$relative" for relative in RTC_SCRIPTS)...)
+        path = joinpath(target, file)
+        isfile(path) && !islink(path) ||
+            throw(ArgumentError("sealed RTC asset is missing: $file"))
+    end
+    (stat(joinpath(target, "bin/pipewireao-rtc")).mode & 0o111) != 0 ||
+        throw(ArgumentError("sealed RTC native executable is not executable"))
     return nothing
 end
 

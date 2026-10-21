@@ -1,12 +1,12 @@
 # Ordinary systemd services for session startup
 
-Scope: one-shot launcher simplification under RTC-ARCH-025. WirePlumber Lua
-continues to own admission, links and source release; systemd owns processes.
+Scope: one-shot launcher under RTC-ARCH-026. The headless RTC
+owns admission, application links and source release; systemd owns processes.
 FGN/JFG algorithms, AOS simulation and native controls are unchanged.
 
 ## Startup
 
-The session service still executes WirePlumber directly. Its finite
+The session service executes the native `pipewireao-rtc` application directly. Its finite
 `ExecStartPre` helper renders the private configuration and ordinary owner
 service files, then starts the private core. After confirming the core socket
 and retaining its process identity, it starts the remaining held owners through
@@ -21,7 +21,7 @@ cannot silently restart either after its identity was retained.
 
 Target activation is not proof that every owner started. Check each loaded unit
 definition and actual active PID, invocation, start time and cgroup. Then render
-WirePlumber configuration from those retained identities. Existing native
+application configuration from those retained identities. Existing native
 warmup, placement inspection and Lua admission remain mandatory before release.
 
 ## Cleanup
@@ -29,11 +29,11 @@ warmup, placement inspection and Lua admission remain mandatory before release.
 An explicit service stop first runs the installed `ExecStop` one-shot client.
 It verifies the exact service invocation, main PID/start time, caller cgroup,
 and native session UUID, then requests native Quit once from an admitted healthy
-session. WirePlumber retains authority for source hold and outstanding command
+session. The headless RTC retains authority for source hold and outstanding command
 adoption, graph stop, link withdrawal and terminal owner acknowledgements. The
 client uses the existing eight-second request bound; Lua retains its five-second
 effect deadline. It records the attempt before submission and waits for the
-same WirePlumber process to exit within its cooperative 30-second helper budget.
+same RTC process to exit within its cooperative 30-second helper budget.
 That budget begins after package load and does not interrupt compilation, I/O
 or client close; systemd's unchanged 300-second watchdog bounds the process.
 A failed, missing or unknown acknowledgement is not retried.

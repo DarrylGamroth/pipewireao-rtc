@@ -1,7 +1,7 @@
 module CalibrationInstallTests
 using Test, PipeWireAORTC
-using PipeWireAORTC: WirePlumberInstall
-const Installer = WirePlumberInstall
+using PipeWireAORTC: SessionInstall
+const Installer = SessionInstall
 const Common = PipeWireAORTC.Common
 const Configuration = PipeWireAORTC.DeploymentConfiguration
 @testset "calibration installer validates Julia entrypoint and preserves sealed Rust" begin

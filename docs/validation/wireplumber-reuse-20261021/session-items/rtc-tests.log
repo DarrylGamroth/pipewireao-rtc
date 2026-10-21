@@ -1,0 +1,12 @@
+Test Summary:                      | Pass  Total  Time
+declared core-hosted session nodes |   22     22  2.0s
+Test Summary:               | Pass  Total  Time
+bounded cold startup budget |   11     11  0.1s
+Test Summary:                                                 | Pass  Total  Time
+installed WirePlumber prefix stages the sealed manager layout |   18     18  0.2s
+Test Summary:                                                       | Pass  Total  Time
+invalid installed WirePlumber prefix preserves prior staged manager |   15     15  0.2s
+Test Summary:                                                       | Pass  Total  Time
+installed WirePlumber library layout and source selection are exact |    5      5  0.1s
+Test Summary:                                          | Pass  Total  Time
+installed WirePlumber staging rejects a symlink target |    4      4  0.1s

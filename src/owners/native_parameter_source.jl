@@ -1,4 +1,4 @@
-"""Cold parameter-only control and sparse ndarray output; WirePlumber owns session policy."""
+"""Cold parameter-only control and sparse ndarray output; RTC owns session policy."""
 module NativeParameterSource
 
 using PipeWireAO
@@ -641,7 +641,7 @@ end
 
 Run the sparse parameter owner using explicit config, remote, bootstrap endpoint
 and control endpoint arguments. Publish bootstrap `Preparing` before reading the
-parameter declarations; WirePlumber controls admission and links. Return
+parameter declarations; RTC controls admission and links. Return
 `nothing` after cleanup, or throw the retained owner and cleanup failures.
 """
 function main(arguments=ARGS)

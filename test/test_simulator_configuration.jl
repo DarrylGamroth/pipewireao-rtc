@@ -1,7 +1,7 @@
 using Test, PipeWireAORTC
 const S = PipeWireAORTC.SimulatorConfiguration
 const C = PipeWireAORTC.Common
-const R = PipeWireAORTC.WirePlumberSessionRuntime
+const R = PipeWireAORTC.SessionRuntime
 operation(::PipeWireAORTC.NativeRunnerCodec.RunnerCommand{O}) where O = O
 
 module DeclaredPlant

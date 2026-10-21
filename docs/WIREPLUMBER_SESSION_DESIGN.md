@@ -1,4 +1,9 @@
-# WirePlumber-owned RTC session lifecycle
+# Historical WirePlumber-owned RTC session lifecycle
+
+Superseded on 2026-10-21 by [RTC-ARCH-026](HEADLESS_RTC_DESIGN.md). The
+following records RTC-ARCH-025 and its original evidence. It does not select
+the current owner. The same tested Lua policy now belongs to the headless
+RTC application; WirePlumberAO retains device/access/shared-routing policy.
 
 Status: the replacement Copper complete-frame FGN/JFG path passes installed
 admission, reset/start/stop, stopped and running gain/matrix adoption, 512

@@ -36,12 +36,14 @@
 
 ## Implementation
 
-- RTC-ARCH-025 selects WirePlumber Lua as the sole session lifecycle and
-  admission authority. systemd owns process lifetime; Julia tools export,
-  install, inspect and send native controls as one-shot clients. Rust Statig
-  and Julia DeploymentRunner coordinators are retired. Do not
-  restore a parallel session authority or supervisor fallback. One-shot clients
-  and scientific owners remain; qualify each selected profile separately.
+- RTC-ARCH-026 supersedes RTC-ARCH-025's ownership allocation. The headless RTC
+  application owns session lifecycle, admission and declared application links.
+  It reuses libwireplumber hooks, discovery and SessionItems as a library;
+  WirePlumberAO retains device/access/shared-routing policy. systemd owns process
+  lifetime; Julia tools export, install, inspect and send native controls as
+  one-shot clients. Rust Statig and Julia DeploymentRunner coordinators remain
+  retired. Do not introduce a second session authority or supervisor fallback.
+  One-shot clients and scientific owners remain; qualify each profile separately.
 - Production calibration orchestration uses Julia and the existing acquisition,
   protocol, analysis and AdaptiveOpticsCalibration APIs. Maintained repository
   scripts and scripting tests use Julia; do not add Python implementations.

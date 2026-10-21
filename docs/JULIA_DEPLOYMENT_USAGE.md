@@ -1,16 +1,16 @@
 # Julia deployment and calibration entrypoints
 
 Operational calibration preparation and acquisition clients use Julia ≥ 1.12.
-WirePlumber owns session policy; systemd owns process supervision. The numerical estimators and probe bases remain
+The headless RTC owns application session policy; systemd owns process supervision. The numerical estimators and probe bases remain
 in AdaptiveOpticsCalibration. Detector acquisition and graph algorithms retain
 their existing owners. The migration does not change illumination, noise,
 matrices, gains or scientific acceptance.
 
 The Julia DeploymentRunner and supervisor launchers are retired. Use the
-one-shot WirePlumber session tools described in the [repository quickstart](../README.md#launch-a-sealed-session-package).
+one-shot RTC session tools described in the [repository quickstart](../README.md#launch-a-sealed-session-package).
 The native session client controls admission and graph operations; local owner
 interfaces retain calibration acquisition actions. The new SDK includes sealed
-WirePlumber assets and rejects a missing session runtime before installation.
+headless RTC and libwireplumber assets and rejects a missing session runtime before installation.
 Scientific campaign qualification under this replacement remains separate from
 the recorded Copper complete-frame lifecycle checks.
 
@@ -55,7 +55,7 @@ julia --startup-file=no --project=. -e 'using Pkg; Pkg.precompile(); Pkg.test()'
 ```
 
 Reusable operational implementations live in package modules under `src`; root
-`wireplumber_*.jl` scripts are thin package entrypoints. REVOLT entrypoints
+`session_*.jl` scripts are thin package entrypoints. REVOLT entrypoints
 are under `../REVOLTRTC.jl/bin` and use that app's project. The shared package
 source checkout uses `assets/deployment/hil`, `assets/deployment/templates` and
 the service template as resources.
@@ -77,7 +77,7 @@ format instead of replacing sealed code.
 Install a sealed exported package using the one-shot CLI:
 
 ```sh
-julia --startup-file=no --project=. wireplumber_cli.jl install \
+julia --startup-file=no --project=. session_cli.jl install \
   --package /absolute/sealed-package \
   --destination /absolute/fresh-installation \
   --pipewire-prefix /opt/pipewireao
@@ -106,7 +106,8 @@ managed runtime. Generated wrappers record that absolute executable; reinstall
 to a fresh destination to select another runtime.
 
 All campaigns require a sealed scientist-authored complete-frame base package.
-The selected WirePlumber binary, modules and Lua scripts must be sealed with the
+The selected native RTC executable, application modules/scripts and generic
+libwireplumber dependencies must be sealed with the
 scientific assets. HIL and HEART exports select these assets from the installed
 `--pipewire-prefix` by default (`/opt/pipewireao` on this host). Development builds
 can supply both `--wireplumber-build` and `--wireplumber-source`. See the
@@ -117,7 +118,7 @@ records retain their original scope and Git source provenance.
 
 ## systemd session and owner services
 
-For generic shared packages, `WirePlumberSessionRuntime.start!` installs a
+For generic shared packages, `SessionRuntime.start!` installs a
 fresh exact instance of `pipewireao-session@.service`, prepares separate scientific owner services, and
 returns only after the admission hook completes. `ActiveState=active` alone
 never proves scientific readiness. The manager verifies native owners and held
@@ -126,7 +127,7 @@ acquisition; the one-shot admission hook checks their actual placement.
 The preparation helper renders ordinary user service files and an owner target.
 It starts the private core, verifies its socket, then starts the FGN/JFG cohort
 through one target transaction. It performs no frame processing and exits before
-WirePlumber runs. HEART retains its necessary controller-PID launch stage.
+the headless RTC runs. HEART retains its necessary controller-PID launch stage.
 See [startup and cleanup](SYSTEMD_SESSION_STARTUP.md) for identity checks and
 ingress-first removal of the generated runtime units.
 
@@ -242,7 +243,7 @@ Without a helper the GUI reports the catalog unavailable while existing native
 controls remain usable. Browser/WASM presentation compilation does not establish
 a live browser management transport.
 
-New `WirePlumberConfiguration` session configurations include the asynchronous
+New `SessionConfiguration` configurations include the RTC-owned asynchronous
 `ao-journal` module. The `configuration_store_root` keyword selects its store;
 `nothing` explicitly produces an unjournaled configuration for an older isolated
 runtime. The exporter and installer require the matching journal module. Existing
@@ -300,7 +301,7 @@ progress = SimulatorConfiguration.job(receipt["id"])
 
 Preparation first verifies the original sealed assets and warms the candidate
 on its declared backend. Invalid values leave the old session running. Only
-then does the one-shot job request native WirePlumber Quit, verify exact cleanup,
+then does the one-shot job request native RTC Quit, verify exact cleanup,
 and start a fresh installation/invocation. A completed receipt names the exact
 replacement discovery locator. Select it through the ordinary native session
 client; a saved receipt does not prove that the session is still available.

@@ -1,11 +1,11 @@
 [Unit]
-Description=WirePlumber-owned PipeWireAO RTC session %i
+Description=Headless PipeWireAO RTC session %i
 
 [Service]
 Type=exec
 ExecStartPre=@LAUNCHER@ prepare --package @PACKAGE@ --prefix @PIPEWIRE_PREFIX@ --unit %n --launcher @LAUNCHER@ --runtime-root %t/pipewireao-session-%i
 EnvironmentFile=-%t/pipewireao-session-%i/current.env
-ExecStart=@WIREPLUMBER@ -c ${WIREPLUMBER_CONFIG} -p ao-rtc
+ExecStart=@RTC_EXECUTABLE@ -c ${RTC_CONFIG}
 ExecStartPost=@LAUNCHER@ publish --package @PACKAGE@ --prefix @PIPEWIRE_PREFIX@ --unit %n --runtime-root %t/pipewireao-session-%i
 ExecStop=@LAUNCHER@ stop --unit %n --runtime-root %t/pipewireao-session-%i
 ExecStopPost=@LAUNCHER@ cleanup --invocation ${INVOCATION_ID} --runtime-root %t/pipewireao-session-%i --source-role @SOURCE_ROLE@

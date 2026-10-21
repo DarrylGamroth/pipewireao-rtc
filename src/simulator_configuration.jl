@@ -1,6 +1,6 @@
 """Cold simulator configuration and one-shot managed application replacement.
 
-This is deployment tooling. WirePlumber retains native session admission and
+This is deployment tooling. RTC retains native session admission and
 lifecycle authority; systemd retains process lifetime. No runtime control proxy
 or frame-processing work is provided by this management interface.
 """
@@ -10,8 +10,8 @@ using JSON3, UUIDs
 import ..Common
 import ..AOSOwner
 import ..DeploymentConfiguration
-import ..WirePlumberSessionRuntime
-import ..WirePlumberCLI
+import ..SessionRuntime
+import ..SessionCLI
 import ..SystemdOwners
 import ..NativeSessionCodec
 import ..NativeSessionDiscovery
@@ -19,7 +19,7 @@ import ..ConfigurationStoreCLI
 
 const C = Common
 const D = DeploymentConfiguration
-const R = WirePlumberSessionRuntime
+const R = SessionRuntime
 const PROTOCOL = "pipewireao.simulator-settings/1"
 const MAX_REQUEST_BYTES = 64 * 1024
 const MAX_REPLY_BYTES = 1024 * 1024

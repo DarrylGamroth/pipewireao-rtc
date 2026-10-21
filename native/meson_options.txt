@@ -1,0 +1,2 @@
+option('tests', type: 'boolean', value: true, description: 'Build focused policy and native tests')
+option('wp_source_dir', type: 'string', value: '', description: 'WirePlumber source checkout providing its upstream Lua test harness')

@@ -1,0 +1,22 @@
+{
+  "wireplumber_baseline": "0f64f9ef9d7f080a2668470f3904aa3d0ebf92af",
+  "rtc_baseline": "c1b7895b4032624a1024aafb1e858f029fce391b",
+  "source_sha256": {
+    "modules/module-lua-scripting/api/api.c": "fc9eb5330ce4937c225b34016524e05531cbc189f6662195a75152e566d4f83f",
+    "src/scripts/ao/session.lua": "39215eaf2deff21f8e1ee6be170cc64c8eb9bd01ce5030c299a7b9852faad93c",
+    "src/scripts/lib/ao-connections.lua": "e2ea8d08d9475442ecb7aff43c2804478c1fa0d84dcb77a115e562db0563919b",
+    "tests/wplua/scripts/ao-session-hooks.lua": "82278d739e4eb18d5e2c887dbac56bbb3e425838dd32e35cdf947b04c36b0a4a",
+    "tests/wplua/scripts/event-hooks.lua": "b5f07c92b3adefe7aca2f88fb6ca1a9f6515b7eafa6d1517ead70f89aa79f802"
+  },
+  "evidence_sha256": {
+    "native-tests.log": "be20febb3c1dcb298779f446c8fcbcff7df374b2ea0b6ef53c8ee0ff6ef08ab1",
+    "binding-fail-before.log": "e5ccac78d76fca7ba76229eeacbcea55b7befcb9830596df7e7ec4bc23c0fc2c",
+    "binding-pass-after.log": "be0b99e2c13a7bd1bd2d74daa94fb77688696452631433a39e4c4f4976ca24bd",
+    "rtc-tests.log": "12e34eeb72891782050144f863e937fa9a26e2f8fc9364d63aa9ed02aab3f320",
+    "link-fault.json": "d29b0b493743861a53be7027b272eb6d461703f1aee3bf425be8ec345ec72048",
+    "link-fault.log": "623707f97f6eca9f8632fb59b48cb538ac68b8d79e0cdbbde97e7fee752b6281",
+    "normal-lifecycle-probe.jl": "c86d8d289f6299296b73761827052f26df8a7256ee42eed2d7df27359db8f625",
+    "normal-lifecycle-start-failure.json": "d3f414067f0fd64bd08bef12724a25bc62cd04f3bc97647426048a77f5c25cf0",
+    "normal-lifecycle-interrupted.log": "cb84d5780952d82e8a5db5a233f47accdd04162066d540bd3a0aa602758c8487"
+  }
+}

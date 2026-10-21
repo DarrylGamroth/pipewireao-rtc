@@ -1,0 +1,121 @@
+ninja: Entering directory `/home/dgamroth/workspaces/codex/worktrees/wireplumber-reuse-20261021/build'
+ninja: no work to do.
+1/1 test-lua-event-hooks FAIL            7.88s   killed by signal 6 SIGABRT
+>>> MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 LD_LIBRARY_PATH=/home/dgamroth/workspaces/codex/worktrees/wireplumber-reuse-20261021/build/lib/wp FILE_MONITOR_DIR=/home/dgamroth/workspaces/codex/worktrees/wireplumber-reuse-20261021/build/tests/.local/file_monitor XDG_CONFIG_HOME=/home/dgamroth/workspaces/codex/worktrees/wireplumber-reuse-20261021/build/tests/.config G_TEST_BUILDDIR=/home/dgamroth/workspaces/codex/worktrees/wireplumber-reuse-20261021/build/tests/wplua G_TEST_SRCDIR=/home/dgamroth/workspaces/codex/worktrees/wireplumber-reuse-20261021/tests/wplua PIPEWIREAO_RUNTIME_DIR=/tmp PIPEWIREAO_SPA_PLUGIN_DIR=/home/dgamroth/.local/opt/pipewireao-classic-journal-20261020/lib/pkgconfig/../../lib/spa-ao-0.2 WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 XDG_RUNTIME_DIR=/invalid MALLOC_PERTURB_=196 XDG_STATE_HOME=/home/dgamroth/workspaces/codex/worktrees/wireplumber-reuse-20261021/build/tests/.local/state WIREPLUMBER_MODULE_DIR=/home/dgamroth/workspaces/codex/worktrees/wireplumber-reuse-20261021/build/tests/../modules MESON_TEST_ITERATION=1 PIPEWIREAO_MODULE_DIR=/home/dgamroth/.local/opt/pipewireao-classic-journal-20261020/lib/pkgconfig/../../lib/pipewire-ao-0.3 WIREPLUMBER_DATA_DIR=/home/dgamroth/workspaces/codex/worktrees/wireplumber-reuse-20261021/tests/wplua:/home/dgamroth/workspaces/codex/worktrees/wireplumber-reuse-20261021/tests/../src HOME=/invalid ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 /home/dgamroth/workspaces/codex/worktrees/wireplumber-reuse-20261021/build/tests/wplua/script-tester lua-api-tests event-hooks.lua
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+Listing only the last 100 lines from a long log.
+D 11:57:45.440087           wp-event ../lib/wp/event.c:325:wp_event_collect_hooks: <WpEventDispatcher:0x562393254660> Collecting hooks for event <0x5623932602f0>test-omitted-properties with type test-omitted-properties
+D 11:57:45.440089 wp-event-dispatche ../lib/wp/event-dispatcher.c:625:wp_event_dispatcher_new_hooks_for_event_type_iterator: <WpEventDispatcher:0x562393254660> Using 1 defined hooks for event type test-omitted-properties
+D 11:57:45.440092           wp-event ../lib/wp/event.c:335:wp_event_collect_hooks: <WpEvent:0x5623932602f0> added <WpSimpleEventHook:0x56239325de80>(test-omitted-event-properties)
+D 11:57:45.440094 wp-event-dispatche ../lib/wp/event-dispatcher.c:428:wp_event_dispatcher_push_event: <WpEventDispatcher:0x562393254660> pushed event (<0x5623932602f0>test-omitted-properties)
+T 11:57:45.440097              wplua ../modules/module-lua-scripting/wplua/boxed.c:188:wplua_pushboxed: <WpEvent:0x5623932602f0> pushing to Lua, v=0x56239325fbe8
+T 11:57:45.440110              wplua ../modules/module-lua-scripting/wplua/userdata.c:97:_wplua_gvalue_userdata___gc: <WpEvent:0x5623932602f0> collected, v=0x56239325fbe8
+T 11:57:45.440112              wplua ../modules/module-lua-scripting/wplua/userdata.c:97:_wplua_gvalue_userdata___gc: <WpEvent:0x56239324ac40> collected, v=0x56239325df18
+T 11:57:45.440117              wplua ../modules/module-lua-scripting/wplua/userdata.c:97:_wplua_gvalue_userdata___gc: <WpProperties:0x5623932178a0> collected, v=0x56239325efd8
+T 11:57:45.440119              wplua ../modules/module-lua-scripting/wplua/userdata.c:97:_wplua_gvalue_userdata___gc: <WpEvent:0x562393236840> collected, v=0x56239325f388
+T 11:57:45.440122              wplua ../modules/module-lua-scripting/wplua/userdata.c:97:_wplua_gvalue_userdata___gc: <WpEvent:0x56239325e5d0> collected, v=0x56239325f898
+T 11:57:45.440134 wp-event-dispatche ../lib/wp/event-dispatcher.c:289:wp_event_source_dispatch: <WpEventDispatcher:0x562393254660> dispatching event (<0x5623932602f0>test-omitted-properties) running hook <0x56239325de80>(test-omitted-event-properties)
+T 11:57:45.440136              wplua ../modules/module-lua-scripting/wplua/boxed.c:188:wplua_pushboxed: <WpEvent:0x5623932602f0> pushing to Lua, v=0x5623932600c8
+T 11:57:45.440139              wplua ../modules/module-lua-scripting/wplua/boxed.c:50:_wplua_gboxed___index: <GBoxed:0x5623932602f0> indexing GBoxed, looking for 'get_properties', found: 0x7f67bc4b86f0
+T 11:57:45.440141              wplua ../modules/module-lua-scripting/wplua/boxed.c:188:wplua_pushboxed: <WpProperties:0x562393237f30> pushing to Lua, v=0x56239325e908
+T 11:57:45.440144              wplua ../modules/module-lua-scripting/wplua/boxed.c:50:_wplua_gboxed___index: <GBoxed:0x562393237f30> indexing GBoxed, looking for 'parse', found: 0x7f67bc4b7ac0
+T 11:57:45.440159              wplua ../modules/module-lua-scripting/wplua/userdata.c:97:_wplua_gvalue_userdata___gc: <WpProperties:0x562393237f30> collected, v=0x56239325e908
+T 11:57:45.440161              wplua ../modules/module-lua-scripting/wplua/userdata.c:97:_wplua_gvalue_userdata___gc: <WpEvent:0x5623932602f0> collected, v=0x5623932600c8
+E 11:57:53.300570              tests ../tests/wplua/../common/base-test-fixture.h:46:timeout_callback: test timed out
+D 11:57:53.300622            wp-core ../lib/wp/core.c:1332:wp_core_sync_closure: <WpCore:0x5623931f03d0> sync, seq 0x40000003, task <GTask:0x56239321da90>
+D 11:57:53.300714            wp-core ../lib/wp/core.c:254:core_done: <WpCore:0x5623931f03d0> done, seq 0x40000003, task <GTask:0x56239321da90>
+T 11:57:53.300756        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x562393242890> remove global 25 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.300769        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x5623932434d0> remove global 24 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.300775        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x56239323e670> remove global 23 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.300780        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x56239321bbc0> remove global 22 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.300785        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x56239321b740> remove global 21 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.300791        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x56239321b4a0> remove global 20 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.300795        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x56239321b210> remove global 19 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.300800        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x56239321aeb0> remove global 18 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.300805        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x56239321ab50> remove global 17 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.300810        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x56239321a6e0> remove global 16 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.300815        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x56239321a380> remove global 15 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.300819        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x56239321a020> remove global 14 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.300824        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x562393219cc0> remove global 13 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.300829        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x562393219a20> remove global 12 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.300833        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x5623932196c0> remove global 11 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.300838        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x562393219420> remove global 10 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.300842        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x5623932190d0> remove global 9 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.300847        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x562393218da0> remove global 8 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.300851        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x562393218a40> remove global 7 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.300856        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x5623932187a0> remove global 6 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.300860        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x562393218470> remove global 5 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.300865        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x562393218180> remove global 4 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.300869        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x562393217c40> remove global 3 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.300874        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x562393217ee0> remove global 2 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.300878        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x562393217a10> remove global 1 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.300883        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x5623932175c0> remove global 0 flag 0x1 [flags:0x1, reg:(nil)]
+I 11:57:53.300911 mod.protocol-nativ ../src/modules/module-protocol-native.c:472:handle_client_error: 0x5623931b98a0: connection_data: client 0x7f67b8017890 disconnected
+D 11:57:53.300947            wp-core ../lib/wp/core.c:307:proxy_core_destroy: <WpCore:0x5623931f03d0> emit disconnected
+D 11:57:53.300953          wp-object ../lib/wp/object.c:611:wp_object_update_features: <WpCore:0x5623931f03d0> features changed 0x1 -> 0x0
+D 11:57:53.300965            wp-core ../lib/wp/core.c:1332:wp_core_sync_closure: <WpCore:0x5623931c8eb0> sync, seq 0x40000018, task <GTask:0x562393203940>
+D 11:57:53.300982        wp-registry ../lib/wp/private/registry.c:146:registry_global_remove: <WpCore:0x5623931c8eb0> global removed:22 type:WpClient
+T 11:57:53.300986        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x56239321c0c0> remove global 22 flag 0x1 [flags:0x1, reg:0x5623931c8f58]
+D 11:57:53.301045            wp-core ../lib/wp/core.c:254:core_done: <WpCore:0x5623931c8eb0> done, seq 0x40000018, task <GTask:0x562393203940>
+T 11:57:53.301069  wp-object-manager ../lib/wp/object-manager.c:684:wp_object_manager_maybe_objects_changed: <WpObjectManager:0x562393241d30> pending:0 changed:1 idle_source:(nil) installed:1
+T 11:57:53.301080        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x562393242c50> remove global 25 flag 0x1 [flags:0x3, reg:(nil)]
+T 11:57:53.301089           wp-proxy ../lib/wp/proxy.c:266:proxy_event_destroy: <WpImplMetadata:25:0x5623931d3d20> destroyed pw_proxy 0x562393243ea0 (25)
+D 11:57:53.301093          wp-object ../lib/wp/object.c:611:wp_object_update_features: <WpImplMetadata:0x5623931d3d20> features changed 0x10001 -> 0x10000
+D 11:57:53.301103          wp-object ../lib/wp/object.c:611:wp_object_update_features: <WpImplMetadata:0x5623931d3d20> features changed 0x10000 -> 0x0
+T 11:57:53.301110  wp-object-manager ../lib/wp/object-manager.c:684:wp_object_manager_maybe_objects_changed: <WpObjectManager:0x562393241d30> pending:0 changed:1 idle_source:0x56239324d950 installed:1
+T 11:57:53.301115        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x562393243010> remove global 24 flag 0x1 [flags:0x3, reg:(nil)]
+T 11:57:53.301120           wp-proxy ../lib/wp/proxy.c:266:proxy_event_destroy: <WpImplMetadata:24:0x5623931f4360> destroyed pw_proxy 0x562393241830 (24)
+D 11:57:53.301124          wp-object ../lib/wp/object.c:611:wp_object_update_features: <WpImplMetadata:0x5623931f4360> features changed 0x10001 -> 0x10000
+D 11:57:53.301129          wp-object ../lib/wp/object.c:611:wp_object_update_features: <WpImplMetadata:0x5623931f4360> features changed 0x10000 -> 0x0
+T 11:57:53.301135  wp-object-manager ../lib/wp/object-manager.c:684:wp_object_manager_maybe_objects_changed: <WpObjectManager:0x562393241d30> pending:0 changed:1 idle_source:0x56239324d950 installed:1
+T 11:57:53.301140        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x562393236030> remove global 23 flag 0x1 [flags:0x3, reg:(nil)]
+T 11:57:53.301144           wp-proxy ../lib/wp/proxy.c:266:proxy_event_destroy: <WpImplMetadata:23:0x562393203010> destroyed pw_proxy 0x5623931b1d00 (23)
+D 11:57:53.301148          wp-object ../lib/wp/object.c:611:wp_object_update_features: <WpImplMetadata:0x562393203010> features changed 0x10001 -> 0x10000
+D 11:57:53.301155          wp-object ../lib/wp/object.c:611:wp_object_update_features: <WpImplMetadata:0x562393203010> features changed 0x10000 -> 0x0
+T 11:57:53.301161        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x5623931efdb0> remove global 21 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.301166        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x5623931efb10> remove global 20 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.301172        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x5623931ef880> remove global 19 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.301176        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x5623931ef520> remove global 18 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.301181        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x5623931ef1c0> remove global 17 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.301185        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x5623931eed50> remove global 16 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.301190        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x5623931ee9f0> remove global 15 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.301195        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x5623931ee690> remove global 14 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.301200        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x5623931ee330> remove global 13 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.301204        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x5623931ee090> remove global 12 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.301209        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x5623931edd30> remove global 11 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.301213        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x5623931eda90> remove global 10 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.301218        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x5623931ed740> remove global 9 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.301223        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x5623931ed410> remove global 8 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.301228        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x5623931ed0b0> remove global 7 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.301232        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x5623931ece10> remove global 6 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.301237        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x5623931ecae0> remove global 5 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.301242        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x5623931ec7f0> remove global 4 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.301247        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x5623931ec2b0> remove global 3 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.301251        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x5623931ec550> remove global 2 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.301256        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x5623931ec190> remove global 1 flag 0x1 [flags:0x1, reg:(nil)]
+T 11:57:53.301261        wp-registry ../lib/wp/private/registry.c:492:wp_global_rm_flag: <WpGlobal:0x5623931ea9e0> remove global 0 flag 0x1 [flags:0x1, reg:(nil)]
+I 11:57:53.301279 mod.protocol-nativ ../src/modules/module-protocol-native.c:472:handle_client_error: 0x5623931b98a0: connection_data: client 0x7f67b80011a0 disconnected
+D 11:57:53.301302            wp-core ../lib/wp/core.c:307:proxy_core_destroy: <WpCore:0x5623931c8eb0> emit disconnected
+D 11:57:53.301305          wp-object ../lib/wp/object.c:611:wp_object_update_features: <WpCore:0x5623931c8eb0> features changed 0x1 -> 0x0
+T 11:57:53.301321  wp-object-manager ../lib/wp/object-manager.c:669:idle_emit_objects_changed: <WpObjectManager:0x562393241d30> emit objects-changed
+T 11:57:53.301336          wp-object ../lib/wp/object.c:192:wp_object_dispose: <WpCore:0x5623931f03d0> dispose
+T 11:57:53.301428            wp-core ../lib/wp/core.c:63:wp_loop_source_finalize: <GSource:0x5623931cdbd0> finalize loop source
+T 11:57:53.301433            wp-core ../lib/wp/core.c:71:wp_loop_source_finalize: <GSource:0x5623931cdbd0> leaving pw main loop
+D 11:57:53.301447            wp-core ../lib/wp/core.c:432:wp_core_finalize: <WpCore:0x5623931f03d0> WpCore destroyed
+I 11:57:53.301496           spa.loop ../spa/plugins/support/loop.c:271:loop_create_queue: 0x5623931ae038 created queue 0x562393203a00 idx:0 0x7f67bce79840
+I 11:57:53.301967           spa.loop ../spa/plugins/support/loop.c:223:loop_queue_destroy: 0x5623931ae038 destroyed queue 0x562393203a00 idx:0
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+
+Summary of Failures:
+
+1/1 test-lua-event-hooks FAIL            7.88s   killed by signal 6 SIGABRT
+
+Ok:                 0   
+Expected Fail:      0   
+Fail:               1   
+Unexpected Pass:    0   
+Skipped:            0   
+Timeout:            0   
+
+Full log written to /home/dgamroth/workspaces/codex/worktrees/wireplumber-reuse-20261021/build/meson-logs/testlog.txt

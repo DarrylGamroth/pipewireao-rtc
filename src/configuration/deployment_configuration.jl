@@ -11,7 +11,7 @@ export DeploymentError, fail, require, digest, atomic_record, installed_paths, d
     validate_environment, relative_asset, valid_cpu_list, native_bootstrap,
     bootstrap_instance_key, native_heart, native_source, native_acquisition,
     validate_acquisition_arguments, validate_bootstrap_arguments,
-    validate_session_manager, profile, substitute, validate_runtime,
+    validate_session_runtime, profile, substitute, validate_runtime,
     selected_julia_executable, shell_quote, installed_wrappers, registered_application,
     application_environment
 
@@ -134,26 +134,50 @@ function validate_bootstrap_arguments(owner)
     return nothing
 end
 
-# Older sealed export inputs may carry a marker, but a new session never does.
-function validate_session_manager(value; legacy_export_input::Bool=false)
-    require(value isa AbstractDict && Set(["argv", "environment"]) ⊆ Set(keys(value)) ⊆
-        (legacy_export_input ? Set(["argv", "environment", "marker-node"]) :
-            Set(["argv", "environment"])),
-        "session-manager requires argv and environment")
+const SESSION_PRIVATE_ENVIRONMENT = Set(["INVOCATION_ID", "NOTIFY_SOCKET", "SYSTEMD_EXEC_PID",
+    "RTC_CONFIG", "WIREPLUMBER_CONFIG", "WIREPLUMBER_CONFIG_DIR",
+    "WIREPLUMBER_MODULE_DIR", "WIREPLUMBER_DATA_DIR", "LD_LIBRARY_PATH",
+    "PIPEWIRE_RUNTIME_DIR", "PIPEWIRE_REMOTE", "PIPEWIREAO_REMOTE"])
+
+"Validate the sole headless RTC executable and its exact invocation."
+function validate_session_runtime(value)
+    require(value isa AbstractDict && Set(keys(value)) == Set(["argv", "environment"]),
+        "session-runtime requires argv and environment")
     argv = value["argv"]
-    require(argv isa AbstractVector && 1 <= length(argv) <= 256 &&
-        all(arg -> arg isa String && !occursin('\0', arg), argv) && !isempty(first(argv)),
-        "session-manager argv must be a bounded nonempty string list")
-    validate_environment(value["environment"], "session-manager")
-    if haskey(value, "marker-node")
-        require(value["marker-node"] isa String && occursin(r"^[a-zA-Z0-9_.-]{1,128}$", value["marker-node"]),
-            "legacy export input has an invalid session-manager marker name")
+    require(argv isa AbstractVector && length(argv) == 3 &&
+        all(arg -> arg isa String && !occursin('\0', arg), argv) &&
+        first(argv) in ("@PACKAGE@/rtc/bin/pipewireao-rtc", "@PREFIX@/bin/pipewireao-rtc") &&
+        argv[2] == "-c" && argv[3] == "@RUNTIME@/rtc/rtc.conf",
+        "session-runtime requires pipewireao-rtc -c @RUNTIME@/rtc/rtc.conf")
+    validate_environment(value["environment"], "session-runtime")
+    require(isempty(intersect(Set(keys(value["environment"])), SESSION_PRIVATE_ENVIRONMENT)),
+        "session-runtime environment cannot override private session bindings")
+    return nothing
+end
+
+"Resolve the required native executable from the sealed deployment contract."
+function session_executable(spec, package, prefix)
+    value = spec["session-runtime"]
+    validate_session_runtime(value)
+    expected = registered_application(spec) ? "@PREFIX@/bin/pipewireao-rtc" :
+        "@PACKAGE@/rtc/bin/pipewireao-rtc"
+    require(first(value["argv"]) == expected,
+        "session-runtime executable does not match its registered or sealed deployment")
+    return substitute(expected, Dict("PACKAGE" => package, "PREFIX" => prefix))
+end
+
+"Verify the process uses the exact prepared executable and private configuration."
+function verify_session_process(pid::Integer, executable::AbstractString, config::AbstractString)
+    require(basename(executable) == "pipewireao-rtc" && isabspath(executable) && isabspath(config),
+        "invalid headless RTC process binding")
+    observed = try
+        realpath("/proc/$pid/exe") == realpath(executable) &&
+            split(read("/proc/$pid/cmdline", String), '\0'; keepempty=false) ==
+                [executable, "-c", config]
+    catch
+        false
     end
-    for (flag, argument) in (("-c", "@RUNTIME@/wireplumber/wireplumber.conf"), ("-p", "ao-rtc"))
-        indices = findall(==(flag), argv)
-        require(length(indices) == 1 && only(indices) < length(argv) && argv[only(indices)+1] == argument,
-            "session-manager requires the exact $flag binding")
-    end
+    require(observed, "session MainPID is not the exact prepared headless RTC executable")
     return nothing
 end
 
@@ -240,7 +264,7 @@ end
 function profile(path::AbstractString, prefix::AbstractString; legacy_export_input::Bool=false)
     value = decode(path, prefix)
     require(value isa AbstractDict && REQUIRED_KEYS ⊆ Set(keys(value)) ⊆
-        union(REQUIRED_KEYS, Set(["source-owner","detector-observation","session-manager","node-owners","startup-timeout-ms","runtime"])) && get(value, "version", nothing) === 1,
+        union(REQUIRED_KEYS, Set(["source-owner","detector-observation","session-runtime","node-owners","startup-timeout-ms","runtime"])) && get(value, "version", nothing) === 1,
         "expected version 1 deployment with the documented fields")
     registered_application(value) && application_environment(value, dirname(path))
     startup_timeout_ms(value)
@@ -251,9 +275,9 @@ function profile(path::AbstractString, prefix::AbstractString; legacy_export_inp
         "deployment permits at most four external owners")
     validate_environment(value["environment"], "deployment")
     roles = Set(["core", "rtc"])
-    if haskey(value,"session-manager")
-        validate_session_manager(value["session-manager"]; legacy_export_input)
-        push!(roles,"wireplumber")
+    if haskey(value,"session-runtime")
+        validate_session_runtime(value["session-runtime"])
+        push!(roles,"session")
     end
     source_role = get(value, "source-owner", nothing)
     require(source_role === nothing || source_role isa String && !isempty(source_role),

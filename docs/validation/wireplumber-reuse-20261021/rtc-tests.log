@@ -1,0 +1,12 @@
+Test Summary:                      | Pass  Total  Time
+declared core-hosted session nodes |   14     14  2.4s
+Test Summary:               | Pass  Total  Time
+bounded cold startup budget |   11     11  0.2s
+Test Summary:                                             | Pass  Total  Time
+Fault harness source profiles and declared startup budget |    6      6  0.2s
+Test Summary:                                                   | Pass  Total  Time
+Fault source observations bind ACK, process and report identity |   23     23  2.5s
+Test Summary:                                         | Pass  Total  Time
+Fault harness binds the primary native policy failure |   16     16  0.7s
+Test Summary:                                                     | Pass  Total  Time
+Fault cleanup waits for receipt, manager and every owner together |   48     48  3.3s

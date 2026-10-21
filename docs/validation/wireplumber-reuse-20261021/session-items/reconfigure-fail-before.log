@@ -1,0 +1,119 @@
+1/1 test-si-standard-link FAIL            0.02s   killed by signal 6 SIGABRT
+>>> XDG_CONFIG_HOME=/home/dgamroth/workspaces/codex/worktrees/wireplumber-reuse-20261021/build/tests/.config PIPEWIREAO_SPA_PLUGIN_DIR=/home/dgamroth/.local/opt/pipewireao-classic-journal-20261020/lib/pkgconfig/../../lib/spa-ao-0.2 FILE_MONITOR_DIR=/home/dgamroth/workspaces/codex/worktrees/wireplumber-reuse-20261021/build/tests/.local/file_monitor HOME=/invalid PIPEWIREAO_RUNTIME_DIR=/tmp MALLOC_PERTURB_=55 XDG_STATE_HOME=/home/dgamroth/workspaces/codex/worktrees/wireplumber-reuse-20261021/build/tests/.local/state LD_LIBRARY_PATH=/home/dgamroth/workspaces/codex/worktrees/wireplumber-reuse-20261021/build/lib/wp WIREPLUMBER_MODULE_DIR=/home/dgamroth/workspaces/codex/worktrees/wireplumber-reuse-20261021/build/tests/../modules G_TEST_SRCDIR=/home/dgamroth/workspaces/codex/worktrees/wireplumber-reuse-20261021/tests/modules WIREPLUMBER_DEBUG='T,pw.*:I,spa.*:I,mod.*:I' PIPEWIREAO_MODULE_DIR=/home/dgamroth/.local/opt/pipewireao-classic-journal-20261020/lib/pkgconfig/../../lib/pipewire-ao-0.3 ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 WIREPLUMBER_DATA_DIR=/home/dgamroth/workspaces/codex/worktrees/wireplumber-reuse-20261021/tests/../src XDG_RUNTIME_DIR=/invalid G_TEST_BUILDDIR=/home/dgamroth/workspaces/codex/worktrees/wireplumber-reuse-20261021/build/tests/modules MESON_TEST_ITERATION=1 MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 /home/dgamroth/workspaces/codex/worktrees/wireplumber-reuse-20261021/build/tests/modules/test-si-standard-link -p /modules/si-standard-link/reconfigure
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+Listing only the last 100 lines from a long log.
+    Prop: key Spa:Pod:Object:Param:Format:NdArray:elementType (16777217), flags 00000000
+      Id 18       (Spa:Enum:ElementType:F32_LE)
+    Prop: key Spa:Pod:Object:Param:Format:NdArray:shape (16777218), flags 00000000
+      Array: child.size 4, child.type Spa:Int
+        Int 4
+    Prop: key Spa:Pod:Object:Param:Format:NdArray:layout (16777219), flags 00000000
+      Id 1        (Spa:Enum:NdArrayLayout:ROW_MAJOR)
+    Prop: key Spa:Pod:Object:Param:Format:NdArray:rate (16777220), flags 00000000
+      Fraction 10/1
+    Prop: key Spa:Pod:Object:Param:Format:NdArray:schema (16777221), flags 00000000
+      String "test.exact/1"
+
+D 12:35:54.166213            wp-core ../lib/wp/core.c:254:core_done: <WpCore:0x56487ea3ab90> done, seq 0x4000005c, task <GTask:0x56487eacb7c0>
+D 12:35:54.166217    wp-pw-obj-mixin ../lib/wp/private/pipewire-object-mixin.c:128:enum_params_done: <WpPort:36:0x56487eac81f0> got 1 params, ok, task <GTask:0x56487eaa22a0>
+D 12:35:54.166220    wp-pw-obj-mixin ../lib/wp/private/pipewire-object-mixin.c:616:enum_params_for_cache_done: <WpPort:36:0x56487eac81f0> cached params id:3 (EnumFormat), n_params:1
+D 12:35:54.166225            wp-core ../lib/wp/core.c:254:core_done: <WpCore:0x56487ea3ab90> done, seq 0x4000005d, task <GTask:0x56487eacb9b0>
+D 12:35:54.166229          wp-object ../lib/wp/object.c:611:wp_object_update_features: <WpPort:36:0x56487eac81f0> features changed 0x11 -> 0x51
+T 12:35:54.166237    wp-pw-obj-mixin ../lib/wp/private/pipewire-object-mixin.c:845:wp_pw_object_mixin_handle_event_param: <WpSpaPod:0x56487eacb6f0> <WpPort:0x56487eac86a0> param id:3, index:0:
+  Object: size 192, type Spa:Pod:Object:Param:Format (262147), id Spa:Enum:ParamId:EnumFormat (3)
+    Prop: key Spa:Pod:Object:Param:Format:mediaType (1), flags 00000000
+      Id 6        (Spa:Enum:MediaType:application)
+    Prop: key Spa:Pod:Object:Param:Format:mediaSubtype (2), flags 00000000
+      Id 16777216 (Spa:Enum:MediaSubtype:ndarray)
+    Prop: key Spa:Pod:Object:Param:Format:NdArray:elementType (16777217), flags 00000000
+      Id 18       (Spa:Enum:ElementType:F32_LE)
+    Prop: key Spa:Pod:Object:Param:Format:NdArray:shape (16777218), flags 00000000
+      Array: child.size 4, child.type Spa:Int
+        Int 4
+    Prop: key Spa:Pod:Object:Param:Format:NdArray:layout (16777219), flags 00000000
+      Id 1        (Spa:Enum:NdArrayLayout:ROW_MAJOR)
+    Prop: key Spa:Pod:Object:Param:Format:NdArray:rate (16777220), flags 00000000
+      Fraction 10/1
+    Prop: key Spa:Pod:Object:Param:Format:NdArray:schema (16777221), flags 00000000
+      String "test.exact/1"
+
+D 12:35:54.166243            wp-core ../lib/wp/core.c:254:core_done: <WpCore:0x56487ea3ab90> done, seq 0x4000005f, task <GTask:0x56487eacbfd0>
+D 12:35:54.166245    wp-pw-obj-mixin ../lib/wp/private/pipewire-object-mixin.c:128:enum_params_done: <WpPort:37:0x56487eac86a0> got 1 params, ok, task <GTask:0x56487eacbae0>
+D 12:35:54.166247    wp-pw-obj-mixin ../lib/wp/private/pipewire-object-mixin.c:616:enum_params_for_cache_done: <WpPort:37:0x56487eac86a0> cached params id:3 (EnumFormat), n_params:1
+D 12:35:54.166251            wp-core ../lib/wp/core.c:254:core_done: <WpCore:0x56487ea3ab90> done, seq 0x40000060, task <GTask:0x56487eacc1c0>
+D 12:35:54.166253          wp-object ../lib/wp/object.c:611:wp_object_update_features: <WpPort:37:0x56487eac86a0> features changed 0x11 -> 0x51
+T 12:35:54.166263          wp-object ../lib/wp/object.c:65:wp_feature_activation_transition_get_next_step: <WpPort:33:0x56487eac7700> missing features to activate: 0x0
+T 12:35:54.166266      wp-transition ../lib/wp/transition.c:448:wp_transition_advance: <WpPort:33:0x56487eac7700> transition: 18 -> 0
+T 12:35:54.166269      wp-transition ../lib/wp/transition.c:562:wp_transition_finish: <WpPort:33:0x56487eac7700> transition: finished ok
+T 12:35:54.166274  wp-object-manager ../lib/wp/object-manager.c:745:wp_object_manager_add_object: <WpObjectManager:0x56487eac60a0> added: <WpPort:0x56487eac7700>
+T 12:35:54.166277  wp-object-manager ../lib/wp/object-manager.c:684:wp_object_manager_maybe_objects_changed: <WpObjectManager:0x56487eac60a0> pending:1 changed:1 idle_source:(nil) installed:0
+T 12:35:54.166283          wp-object ../lib/wp/object.c:65:wp_feature_activation_transition_get_next_step: <WpPort:34:0x56487eac7a20> missing features to activate: 0x0
+T 12:35:54.166286      wp-transition ../lib/wp/transition.c:448:wp_transition_advance: <WpPort:34:0x56487eac7a20> transition: 18 -> 0
+T 12:35:54.166289      wp-transition ../lib/wp/transition.c:562:wp_transition_finish: <WpPort:34:0x56487eac7a20> transition: finished ok
+T 12:35:54.166293  wp-object-manager ../lib/wp/object-manager.c:745:wp_object_manager_add_object: <WpObjectManager:0x56487eac60a0> added: <WpPort:0x56487eac7a20>
+T 12:35:54.166295  wp-object-manager ../lib/wp/object-manager.c:684:wp_object_manager_maybe_objects_changed: <WpObjectManager:0x56487eac60a0> pending:0 changed:1 idle_source:(nil) installed:0
+T 12:35:54.166301          wp-object ../lib/wp/object.c:65:wp_feature_activation_transition_get_next_step: <WpPort:36:0x56487eac81f0> missing features to activate: 0x0
+T 12:35:54.166302      wp-transition ../lib/wp/transition.c:448:wp_transition_advance: <WpPort:36:0x56487eac81f0> transition: 18 -> 0
+T 12:35:54.166304      wp-transition ../lib/wp/transition.c:562:wp_transition_finish: <WpPort:36:0x56487eac81f0> transition: finished ok
+T 12:35:54.166306  wp-object-manager ../lib/wp/object-manager.c:745:wp_object_manager_add_object: <WpObjectManager:0x56487eac7720> added: <WpPort:0x56487eac81f0>
+T 12:35:54.166308  wp-object-manager ../lib/wp/object-manager.c:684:wp_object_manager_maybe_objects_changed: <WpObjectManager:0x56487eac7720> pending:1 changed:1 idle_source:(nil) installed:0
+T 12:35:54.166312          wp-object ../lib/wp/object.c:65:wp_feature_activation_transition_get_next_step: <WpPort:37:0x56487eac86a0> missing features to activate: 0x0
+T 12:35:54.166314      wp-transition ../lib/wp/transition.c:448:wp_transition_advance: <WpPort:37:0x56487eac86a0> transition: 18 -> 0
+T 12:35:54.166315      wp-transition ../lib/wp/transition.c:562:wp_transition_finish: <WpPort:37:0x56487eac86a0> transition: finished ok
+T 12:35:54.166317  wp-object-manager ../lib/wp/object-manager.c:745:wp_object_manager_add_object: <WpObjectManager:0x56487eac7720> added: <WpPort:0x56487eac86a0>
+T 12:35:54.166319  wp-object-manager ../lib/wp/object-manager.c:684:wp_object_manager_maybe_objects_changed: <WpObjectManager:0x56487eac7720> pending:0 changed:1 idle_source:(nil) installed:0
+T 12:35:54.166325  wp-object-manager ../lib/wp/object-manager.c:665:idle_emit_objects_changed: <WpObjectManager:0x56487eac60a0> installed
+D 12:35:54.166329          wp-object ../lib/wp/object.c:611:wp_object_update_features: <WpNode:32:0x56487eac61f0> features changed 0x11 -> 0x10011
+T 12:35:54.166332  wp-object-manager ../lib/wp/object-manager.c:669:idle_emit_objects_changed: <WpObjectManager:0x56487eac60a0> emit objects-changed
+T 12:35:54.166336  wp-object-manager ../lib/wp/object-manager.c:665:idle_emit_objects_changed: <WpObjectManager:0x56487eac7720> installed
+D 12:35:54.166338          wp-object ../lib/wp/object.c:611:wp_object_update_features: <WpNode:35:0x56487eac63e0> features changed 0x11 -> 0x10011
+T 12:35:54.166341  wp-object-manager ../lib/wp/object-manager.c:669:idle_emit_objects_changed: <WpObjectManager:0x56487eac7720> emit objects-changed
+T 12:35:54.166347          wp-object ../lib/wp/object.c:65:wp_feature_activation_transition_get_next_step: <WpNode:32:0x56487eac61f0> missing features to activate: 0x0
+T 12:35:54.166349      wp-transition ../lib/wp/transition.c:448:wp_transition_advance: <WpNode:32:0x56487eac61f0> transition: 19 -> 0
+T 12:35:54.166352      wp-transition ../lib/wp/transition.c:562:wp_transition_finish: <WpNode:32:0x56487eac61f0> transition: finished ok
+T 12:35:54.166355  wp-object-manager ../lib/wp/object-manager.c:745:wp_object_manager_add_object: <WpObjectManager:0x56487eab2d80> added: <WpNode:0x56487eac61f0>
+T 12:35:54.166357  wp-object-manager ../lib/wp/object-manager.c:684:wp_object_manager_maybe_objects_changed: <WpObjectManager:0x56487eab2d80> pending:1 changed:1 idle_source:(nil) installed:0
+T 12:35:54.166361          wp-object ../lib/wp/object.c:65:wp_feature_activation_transition_get_next_step: <WpNode:35:0x56487eac63e0> missing features to activate: 0x0
+T 12:35:54.166363      wp-transition ../lib/wp/transition.c:448:wp_transition_advance: <WpNode:35:0x56487eac63e0> transition: 19 -> 0
+T 12:35:54.166366      wp-transition ../lib/wp/transition.c:562:wp_transition_finish: <WpNode:35:0x56487eac63e0> transition: finished ok
+T 12:35:54.166369  wp-object-manager ../lib/wp/object-manager.c:745:wp_object_manager_add_object: <WpObjectManager:0x56487eab2d80> added: <WpNode:0x56487eac63e0>
+T 12:35:54.166372  wp-object-manager ../lib/wp/object-manager.c:684:wp_object_manager_maybe_objects_changed: <WpObjectManager:0x56487eab2d80> pending:0 changed:1 idle_source:(nil) installed:0
+T 12:35:54.166378  wp-object-manager ../lib/wp/object-manager.c:665:idle_emit_objects_changed: <WpObjectManager:0x56487eab2d80> installed
+T 12:35:54.166380  wp-object-manager ../lib/wp/object-manager.c:669:idle_emit_objects_changed: <WpObjectManager:0x56487eab2d80> emit objects-changed
+T 12:35:54.166410          wp-object ../lib/wp/object.c:65:wp_feature_activation_transition_get_next_step: <WpSiNode:0x56487eac89a0> missing features to activate: 0x1
+T 12:35:54.166414      wp-transition ../lib/wp/transition.c:448:wp_transition_advance: <WpSiNode:0x56487eac89a0> transition: 0 -> 16
+T 12:35:54.166416      wp-transition ../lib/wp/transition.c:475:wp_transition_advance: <WpSiNode:0x56487eac89a0> transition: execute 16
+T 12:35:54.166424          wp-object ../lib/wp/object.c:65:wp_feature_activation_transition_get_next_step: <WpNode:32:0x56487eac61f0> missing features to activate: 0x0
+T 12:35:54.166427      wp-transition ../lib/wp/transition.c:448:wp_transition_advance: <WpNode:32:0x56487eac61f0> transition: 0 -> 0
+T 12:35:54.166429      wp-transition ../lib/wp/transition.c:562:wp_transition_finish: <WpNode:32:0x56487eac61f0> transition: finished ok
+D 12:35:54.166431          wp-object ../lib/wp/object.c:611:wp_object_update_features: <WpSiNode:0x56487eac89a0> features changed 0x0 -> 0x1
+T 12:35:54.166437          wp-object ../lib/wp/object.c:65:wp_feature_activation_transition_get_next_step: <WpSiNode:0x56487eac89a0> missing features to activate: 0x0
+T 12:35:54.166440      wp-transition ../lib/wp/transition.c:448:wp_transition_advance: <WpSiNode:0x56487eac89a0> transition: 16 -> 0
+T 12:35:54.166443      wp-transition ../lib/wp/transition.c:562:wp_transition_finish: <WpSiNode:0x56487eac89a0> transition: finished ok
+T 12:35:54.166455          wp-object ../lib/wp/object.c:65:wp_feature_activation_transition_get_next_step: <WpSiNode:0x56487eac34f0> missing features to activate: 0x1
+T 12:35:54.166458      wp-transition ../lib/wp/transition.c:448:wp_transition_advance: <WpSiNode:0x56487eac34f0> transition: 0 -> 16
+T 12:35:54.166459      wp-transition ../lib/wp/transition.c:475:wp_transition_advance: <WpSiNode:0x56487eac34f0> transition: execute 16
+T 12:35:54.166464          wp-object ../lib/wp/object.c:65:wp_feature_activation_transition_get_next_step: <WpNode:35:0x56487eac63e0> missing features to activate: 0x0
+T 12:35:54.166466      wp-transition ../lib/wp/transition.c:448:wp_transition_advance: <WpNode:35:0x56487eac63e0> transition: 0 -> 0
+T 12:35:54.166468      wp-transition ../lib/wp/transition.c:562:wp_transition_finish: <WpNode:35:0x56487eac63e0> transition: finished ok
+D 12:35:54.166470          wp-object ../lib/wp/object.c:611:wp_object_update_features: <WpSiNode:0x56487eac34f0> features changed 0x0 -> 0x1
+T 12:35:54.166475          wp-object ../lib/wp/object.c:65:wp_feature_activation_transition_get_next_step: <WpSiNode:0x56487eac34f0> missing features to activate: 0x0
+T 12:35:54.166477      wp-transition ../lib/wp/transition.c:448:wp_transition_advance: <WpSiNode:0x56487eac34f0> transition: 16 -> 0
+T 12:35:54.166480      wp-transition ../lib/wp/transition.c:562:wp_transition_finish: <WpSiNode:0x56487eac34f0> transition: finished ok
+**
+m-si-standard-link:ERROR:../modules/module-si-standard-link.c:83:generation_free: assertion failed: (generation->retire_source == NULL)
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+
+Summary of Failures:
+
+1/1 test-si-standard-link FAIL            0.02s   killed by signal 6 SIGABRT
+
+Ok:                 0   
+Expected Fail:      0   
+Fail:               1   
+Unexpected Pass:    0   
+Skipped:            0   
+Timeout:            0   
+
+Full log written to /home/dgamroth/workspaces/codex/worktrees/wireplumber-reuse-20261021/build/meson-logs/testlog.txt

@@ -1,0 +1,40 @@
+{
+  "wireplumber_baseline": "0f64f9ef9d7f080a2668470f3904aa3d0ebf92af",
+  "rtc_baseline": "c1b7895b4032624a1024aafb1e858f029fce391b",
+  "source_sha256": {
+    "wireplumber/lib/wp/si-interfaces.c": "b72bbb38c5589d8281923c69999266e0748d47f3e16cc808ab30cb58991c3f76",
+    "wireplumber/lib/wp/si-interfaces.h": "14ddddd1e4ecd802f831e7dcec69794ac45a0ddfd4f30d0125eec9bbd028629f",
+    "wireplumber/modules/module-si-node.c": "966c19547624dc3d9e946fa1cd9d55401797811e006cf3b6bde98f27261c8cfa",
+    "wireplumber/modules/module-si-standard-link.c": "1756bb90fe9d33d155ad512a12aa413cf49de9cf9368f861aa1f95ad13f444b6",
+    "wireplumber/modules/module-lua-scripting/api/api.c": "f893bfc533db8067673331c7a57912044277632871ab65e325440f3d14b614f2",
+    "wireplumber/src/scripts/ao/session.lua": "39215eaf2deff21f8e1ee6be170cc64c8eb9bd01ce5030c299a7b9852faad93c",
+    "wireplumber/src/scripts/lib/ao-connections.lua": "664c7e33b61439cd2164cfece04045f78871e2bdb397716f081677bf43f99abf",
+    "wireplumber/tests/modules/si-node.c": "14f7218dc18d81a2d1956686f8e9709ecdf0700086c2e74b096471a9d41d6b19",
+    "wireplumber/tests/modules/si-standard-link.c": "e5210eb641a25fad6e1db5a3034bb7ac5065587efd404ba47845485a57e58376",
+    "wireplumber/tests/wplua/scripts/ao-connections.lua": "aff0863e5a22d5d8a53a067ed28e1157c44836d4dbed4acb1c7f21b1b2dd4e4c",
+    "rtc/src/configuration/wireplumber_configuration.jl": "5de45d8479e9daa1d1d8261d61d8616fa5dc1c64253e62583897003a457b8ebf",
+    "rtc/src/deployment/science_export.jl": "12b1b61916e5453a854d7c820178d80ceacb6c08bf2fec5a825bea0deafbbdb3",
+    "rtc/src/deployment/wireplumber_install.jl": "d82e410006c90f59219fdb95e135b529d6d327d83fc63389695cb75511942300",
+    "rtc/test/test_wireplumber_configuration.jl": "cf63c6ca15e0d92da0e9e1c001ab0488b3a91380c00620379fbbffdaef4ff296",
+    "rtc/test/test_installed_wireplumber.jl": "5a29ee0c44a5ad8756381049f7caaca2c248cb452079a48353538a428f6760d1",
+    "rtc/test/integration/session_items.jl": "832340b031b95cc45599072cd7a78809e0d49122200dcd8e6576d7dcf850e2b6",
+    "rtc/test/data/session_items/validation.lua": "ad6128885b89e73fc9f8bc10c6942b0b639ce7c3facd76450b5ca7d34c702f33"
+  },
+  "candidate_prefix": "/home/dgamroth/.local/opt/pipewireao-wp-reuse-20261021",
+  "installed_sha256": {
+    "bin/wireplumber": "09990352c3a889644081164df0965966a829a27f89d6c5fe9eade48ffcbcb371",
+    "lib/libwireplumber-0.5.so.0": "53f64215b8a4d2ebe471cb19407e4b73357e4b5e1f3e8dadfaa247a82e302afa",
+    "lib/wireplumber-0.5/libwireplumber-module-si-node.so": "1bedf0c0ac4ce8e437565f37c2b459a172e1429d3d0e09a968553b24f84aba6d",
+    "lib/wireplumber-0.5/libwireplumber-module-si-standard-link.so": "eb03aff29cb97c4ceca2c0f33bb62e11e2bd80a6708db4bb8d27ec91abf3db39",
+    "lib/wireplumber-0.5/libwireplumber-module-lua-scripting.so": "6abe870233ab60292a95c0b575403cbc07f924510faa0ae278bf7026008c4ae4",
+    "share/wireplumber/scripts/lib/ao-connections.lua": "664c7e33b61439cd2164cfece04045f78871e2bdb397716f081677bf43f99abf"
+  },
+  "evidence_sha256": {
+    "cpu-integration.log": "bf53262eb348d661d0ed9d6cb25f1e04deedd1dade59aff6e70ef2e6c0c71bcd",
+    "native-summary.json": "f5336db445a58bdbc2ec4b6cdfc2cce3440c131de1db2cdfc4292ffb8c0f2603",
+    "reconfigure-pass-after.log": "a021f432716f1bdcdd98467c39f0100bde1cfeac8b4efc2a4efd08ab0ec40207",
+    "rtc-tests.log": "bfba2cbb1484951f055506d6a361c80ec8fbb421bc039f2c6268e8c5edd9e69e",
+    "cpu-receipt.json": "cdf167252f85d3e22fa36f6c1f9b634f96a8b7d3a72a7785570bf109ca9dc28b",
+    "reconfigure-fail-before.log": "cabafb695c13a75ee07c7f5c9546e27c9b31bab025b5b7affc77090602966975"
+  }
+}

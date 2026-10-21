@@ -1,0 +1,42 @@
+[
+  {
+    "name": "test-lua-event-hooks",
+    "result": "OK",
+    "returncode": 0,
+    "duration": 0.014163732528686523,
+    "cases": [
+      "/lua/wprun/tests"
+    ]
+  },
+  {
+    "name": "test-si-node",
+    "result": "OK",
+    "returncode": 0,
+    "duration": 0.016716957092285156,
+    "cases": [
+      "/modules/si-node/configure-activate/nullsink",
+      "/modules/si-node/configure-activate/audiotestsrc"
+    ]
+  },
+  {
+    "name": "test-si-standard-link",
+    "result": "OK",
+    "returncode": 0,
+    "duration": 0.11693263053894043,
+    "cases": [
+      "/modules/si-standard-link/main",
+      "/modules/si-standard-link/exact",
+      "/modules/si-standard-link/exact-refusal",
+      "/modules/si-standard-link/unsupported-withdrawal",
+      "/modules/si-standard-link/reconfigure",
+      "/modules/si-standard-link/race/queued",
+      "/modules/si-standard-link/race/unbound",
+      "/modules/si-standard-link/race/created",
+      "/modules/si-standard-link/race/bound",
+      "/modules/si-standard-link/race/reset",
+      "/modules/si-standard-link/race/deactivate",
+      "/modules/si-standard-link/race/cancelled",
+      "/modules/si-standard-link/race/child-error"
+    ]
+  }
+]

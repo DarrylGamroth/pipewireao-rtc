@@ -1,4 +1,4 @@
-"""Direct WirePlumber profile with private one-shot admission operations."""
+"""Direct RTC profile with private one-shot admission operations."""
 module NativeSessionCodec
 
 using PipeWireAO
@@ -26,7 +26,7 @@ const Lifecycle = Runner.Lifecycle
 const Outcome = Runner.Outcome
 const GroupState = Runner.GroupState
 
-"Read-only query that retains Configuring while WirePlumber warms the session."
+"Read-only query that retains Configuring while RTC warms the session."
 struct WarmupCommand end
 "One-shot transition to Ready after the external placement check."
 struct AdmitCommand end

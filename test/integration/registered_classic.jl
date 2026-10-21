@@ -4,7 +4,7 @@ using Test, PipeWireAORTC, PipeWireAO, TOML
 include("classic_observation.jl")
 
 const R = PipeWireAORTC
-const W = R.WirePlumberSessionRuntime
+const W = R.SessionRuntime
 const C = R.Common
 const Commands = R.RunnerCommands
 
@@ -104,7 +104,7 @@ function check_invalid_control(handle, stage, graph, properties)
     baseline = request(handle, stage, "invalid-control-baseline",
         ["property-generation", graph, "closed-loop-correction"])
     # The supported CLI accepts Bool, but PropInfo declares this property Float.
-    # WirePlumber rejects this mismatch before issuing a property transaction.
+    # The headless RTC rejects this mismatch before issuing a property transaction.
     fields = ["property", graph, key, "bool", "true"]
     reply = W.control!(handle, Commands.parse(fields); deadline=W.monotonic()+15)
     C.write_json(joinpath(stage, "invalid-control.json"), Dict("argv" => fields, "reply" => reply))

@@ -1,0 +1,16 @@
+1/7 test-lua-ao-connections     OK              0.05s
+2/7 test-lua-event-hooks        OK              0.06s
+3/7 test-lua-ao-owner           OK              0.06s
+4/7 test-lua-ao-acquisition     OK              0.09s
+5/7 test-lua-ao-session-journal OK              0.14s
+6/7 test-lua-ao-session-hooks   OK              0.51s
+7/7 test-ao-journal             OK              1.04s
+
+Ok:                 7   
+Expected Fail:      0   
+Fail:               0   
+Unexpected Pass:    0   
+Skipped:            0   
+Timeout:            0   
+
+Full log written to /home/dgamroth/workspaces/codex/worktrees/wireplumber-reuse-20261021/build/meson-logs/testlog.txt

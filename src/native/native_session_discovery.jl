@@ -64,7 +64,7 @@ struct FreshSessionStatus
             throw(ArgumentError("invalid fresh session identity or status token"))
         lifecycle in (:preparing, :ready, :fault, :stopped, :offline, :configuring, :running) ||
             throw(ArgumentError("unknown session lifecycle"))
-        authority in (:deployment_session, :standalone_runner, :wireplumber_session) ||
+        authority in (:deployment_session, :standalone_runner, :rtc_session) ||
             throw(ArgumentError("unknown native endpoint authority"))
         private_remote = _string(remote; limit=MAX_REMOTE_BYTES)
         isabspath(private_remote) || throw(ArgumentError("fresh session remote must be absolute"))
@@ -333,7 +333,7 @@ function _matches(record::SessionRecord, status::FreshSessionStatus)
     return status.session_id == record.session_id && status.owner_pid == record.owner_pid &&
         status.incarnation == record.incarnation && status.remote == record.remote &&
         status.node_name == record.node_name &&
-        status.authority === :wireplumber_session
+        status.authority === :rtc_session
 end
 
 "Verify an explicitly selected listing against a fresh native session status callback."
@@ -350,7 +350,7 @@ function select_session(entry::DiscoveryEntry, verifier)
 end
 
 function _selected_result(record::SessionRecord, status::FreshSessionStatus)
-    status.authority === :wireplumber_session || return DiscoveryEntry(record, Replaced,
+    status.authority === :rtc_session || return DiscoveryEntry(record, Replaced,
         "verified endpoint is not a session authority")
     _matches(record, status) || return DiscoveryEntry(record, Replaced,
         "fresh endpoint identity does not match the selected session incarnation")

@@ -1,20 +1,21 @@
 # PipeWireAORTC
 
-`pipewireao-rtc` provides configuration, installation and native control clients
-for a headless, non-actuating adaptive-optics workstation. WirePlumberAO Lua
-owns session admission, lifecycle and external links. systemd user services own
+`pipewireao-rtc` is the headless, non-actuating adaptive-optics application. It
+owns admission, lifecycle and declared application links, reusing public
+libwireplumber interfaces. WirePlumberAO owns device/access/shared-routing policy.
+The Julia package provides configuration, installation and native clients. systemd user services own
 process lifetime and resource policy. PipeWireAO schedules NDArray transport;
 FGN and JFG execute the scientific graphs. AOS/HIL supplies simulated instrument
 sources and sinks; AOC supplies calibration algorithms.
 
 The Rust Statig runner and Julia `DeploymentRunner` are retired. Scientists
 continue to develop typed algorithms and ordinary graph configurations. The GUI
-and command-line tools act as clients of the same WirePlumber session authority.
+and command-line tools act as clients of the same headless RTC authority.
 
 ## Start here
 
 - [Current work and qualification](docs/roadmap.md#current-work)
-- [Ownership and migration design](docs/WIREPLUMBER_SESSION_DESIGN.md)
+- [Ownership and migration design](docs/HEADLESS_RTC_DESIGN.md)
 - [Julia deployment and calibration tools](docs/JULIA_DEPLOYMENT_USAGE.md)
 - [Proposed Julia RTC structure and migration](docs/JULIA_RTC_STRUCTURE_PLAN.md)
 - [Installed replacement checks](docs/validation/wireplumber-session-20261007/SESSION_CHECKS.md)
@@ -39,19 +40,20 @@ The shared Julia package is `PipeWireAORTC` (UUID
 to `using PipeWireAORTC` and resolve the environment after upgrading. Existing
 native protocol names and v1 records retain their identities.
 
-The supported callable interfaces retain their existing module bindings:
+The callable session modules use application names. Update former
+`WirePlumber*` module references to the following bindings when upgrading:
 
 | Module | Purpose |
 | --- | --- |
-| `WirePlumberConfiguration` | Generate and write native session configuration |
-| `WirePlumberInstall` | Install a sealed session package |
-| `WirePlumberSessionRuntime` | Start, attach, inspect and stop an installed session |
+| `SessionConfiguration` | Generate and write native session configuration |
+| `SessionInstall` | Install a sealed session package |
+| `SessionRuntime` | Start, attach, inspect and stop an installed session |
 | `NativeSessionClient` | Send controls to a selected native session |
 | `ConfigurationStore` | Register and retrieve Git artifacts; query the shared SQLite journal |
 | `ConfigurationStoreCLI` | Headless management interface used by GUI, CLI and scripts |
 | `SimulatorConfiguration` | Describe declared simulator settings and submit/observe cold application replacement jobs |
 | `CalibrationAcquisition` | Sequence calibration acquisition actions |
-| `CalibrationCLI`, `WirePlumberCLI` | Translate command arguments and reports |
+| `CalibrationCLI`, `SessionCLI` | Translate command arguments and reports |
 | `NativeOwnerBootstrapRuntime`, `NativeParameterSource`, `NativeSourceControl` | Reusable cold owner entry points and native source controls |
 | `Artifacts` | Select FITS images and prepare owned arrays and transient wire bytes |
 | `GraphOwner`, `AOSOwner` | Package-owned optional scientific owners, configured with graphs and FITS bindings |
@@ -71,9 +73,9 @@ Both publish native Preparing before optional scientific packages load. These
 modules load no science during an ordinary operational client import. See the
 [Classic delivery and validation record](docs/CLASSIC_REGISTERED_DEPLOYMENT.md).
 
-For example, `PipeWireAORTC.WirePlumberCLI.main(["sessions"])` is the callable
-counterpart of the root `wireplumber_cli.jl` command. Root `wireplumber_*.jl`
-files are compatibility entry points; their implementation loads with the package
+For example, `PipeWireAORTC.SessionCLI.main(["sessions"])` is the callable
+counterpart of the root `session_cli.jl` command. Root `session_*.jl`
+files are thin command entry points; their implementation loads with the package
 from `src/configuration/`, `src/deployment/` and `src/cli.jl`. Native protocols
 live under `src/native/`, and reusable owner runtimes live under `src/owners/`.
 The sealed SDK launch path remains available during application migration.
@@ -108,15 +110,16 @@ julia --startup-file=no --project=. -e 'using Pkg; Pkg.instantiate()'
 ```
 
 A sealed package includes its scientific configurations, calibration artifacts,
-scientific owners, Julia SDK and selected WirePlumberAO binary/modules/scripts.
+scientific owners, Julia SDK, native headless RTC and selected libwireplumber
+library/modules. Build the native host from [native/](native/README.md).
 The start helper installs to a fresh stage, starts an exact systemd instance,
-and returns after held admission. The helper exits; WirePlumber remains the
-session authority.
+and returns after held admission. The helper exits; the headless RTC remains
+the session authority.
 
 ```sh
 julia --startup-file=no --project=. -e '
     using PipeWireAORTC
-    W = PipeWireAORTC.WirePlumberSessionRuntime
+    W = PipeWireAORTC.SessionRuntime
     println(W.start!(ARGS[1], ARGS[2]))
 ' /absolute/sealed-package /absolute/fresh-stage
 ```
@@ -124,14 +127,16 @@ julia --startup-file=no --project=. -e '
 The default PipeWireAO prefix is `/opt/pipewireao`. Select another installed
 prefix with the helper's `prefix` keyword. Startup verifies actual process
 incarnations, native readiness and declared placement before acquisition is
-released. Packages with missing WirePlumber assets are rejected.
+released. Packages missing the headless RTC or required library assets are rejected.
+Old sealed deployments keep their recorded runtime; generate a new package to
+use this ownership change. There is no fallback to the WirePlumber daemon.
 
 Cold Julia/CUDA compilation can need a longer preparation budget. A sealed
 profile may explicitly set `startup-timeout-ms` (1000–3600000); the default is
 300000. This setting applies to systemd startup, owner admission and initial
 session publication. The caller's absolute deadline must also cover installation
 and startup. Live controls and acquisition retain their existing deadlines.
-Budgets above five minutes require the matching WirePlumberAO owner policy.
+Budgets above five minutes require the matching RTC owner policy.
 
 For an exported REVOLT instrument package, use its preflight before session
 startup. From this shared repository root:
@@ -148,25 +153,25 @@ julia --startup-file=no --project=../REVOLTRTC.jl -e '
 List candidate sessions with the Julia client:
 
 ```sh
-julia --startup-file=no --project=. wireplumber_cli.jl sessions
+julia --startup-file=no --project=. session_cli.jl sessions
 ```
 
 Explicit selection proves the exact live endpoint and fresh Status. Commands
 use native PipeWire serialization; JSON on stdout is only a local report.
 
 ```sh
-julia --startup-file=no --project=. wireplumber_cli.jl control --session UUID -- status
-julia --startup-file=no --project=. wireplumber_cli.jl control --session UUID -- session-start
-julia --startup-file=no --project=. wireplumber_cli.jl control --session UUID -- session-stop
-julia --startup-file=no --project=. wireplumber_cli.jl control --session UUID -- reset
-julia --startup-file=no --project=. wireplumber_cli.jl control --session UUID -- properties GRAPH
-julia --startup-file=no --project=. wireplumber_cli.jl control --session UUID -- quit
+julia --startup-file=no --project=. session_cli.jl control --session UUID -- status
+julia --startup-file=no --project=. session_cli.jl control --session UUID -- session-start
+julia --startup-file=no --project=. session_cli.jl control --session UUID -- session-stop
+julia --startup-file=no --project=. session_cli.jl control --session UUID -- reset
+julia --startup-file=no --project=. session_cli.jl control --session UUID -- properties GRAPH
+julia --startup-file=no --project=. session_cli.jl control --session UUID -- quit
 ```
 
 Gain updates and sparse ndarray parameter publication use the same endpoint.
 Submission and graph adoption are separate observations. Clients never
 reconnect or repeat a request after an unknown outcome. Normal Quit requests
-WirePlumber withdrawal; systemd cleanup reconciles the exact owned cohort.
+headless RTC withdrawal; systemd cleanup reconciles the exact owned cohort.
 Emergency `systemctl --user stop UNIT` is process cleanup, not proof of a
 successful public shutdown.
 
@@ -177,13 +182,14 @@ See [headless artifact registration and shared update history](docs/JULIA_DEPLOY
 | Path | Responsibility |
 | --- | --- |
 | `Project.toml`, `Manifest.toml` | Julia package identity and pinned operational environment |
-| `src/` | Native clients, shared operational tools |
+| `src/` | Julia native clients, shared operational tools |
+| `native/` | Headless executable, application Lua policy, native control and journal modules |
 | `test/` | Package tests and native protocol records under `test/data/` |
 | `assets/deployment/` | Generic systemd, PipeWire and parameter-source resources |
 | `configs/` | Retained development graph/session configurations |
-| `wireplumber_*.jl` | One-shot native session and systemd installation commands |
+| `session_*.jl` | One-shot native session and systemd installation commands |
 
-Session lifecycle policy lives in WirePlumberAO Lua. The RTC Rust crate is
+Session lifecycle policy lives in the headless RTC process under `native/`. The RTC Rust crate is
 retired: the GUI owns its native Rust client, and calibration driving uses the
 shared Julia implementation. Existing sealed SDKs retain their original files
 and launchers. REVOLT Classic/Copper/HEART integration is in the independent
@@ -193,7 +199,9 @@ session clients remain instrument-independent.
 
 ## Qualification scope
 
-Copper complete-frame CPU FGN/JFG with CUDA AOS passes the recorded 512-exchange
+The following historical checks used the former WirePlumber-owned runtime;
+they do not qualify the new headless host. Copper complete-frame CPU FGN/JFG
+with CUDA AOS passes the recorded 512-exchange
 scientific checks and exact retained per-engine prefixes, plus live gain/matrix
 adoption. Simulator tail allocation/GC counters are zero. These checks do not
 establish target timing, physical authority, every failure case, Classic or
@@ -214,6 +222,6 @@ with each instrument; callbacks stage only bounded scalar requests.
 
 [RTC fault tests](test/integration/README.md) cover the production Lua fault path
 and opt-in installed-session sink/link loss and graph-owner exit. They run in
-isolated sessions and preserve the WirePlumber/systemd authority boundary.
+isolated sessions and preserve the headless RTC/systemd authority boundary.
 Physical-device safe-state and recovery qualification remain outside the current
 non-actuating profile.

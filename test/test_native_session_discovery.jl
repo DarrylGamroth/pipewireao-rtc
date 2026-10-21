@@ -92,7 +92,7 @@ directory(root) = Discovery.registry_directory(root)
 
             fresh = Discovery.FreshSessionStatus(SESSION_A, current_pid(), Int64(100),
                 record(SESSION_A).remote, "rtc.supervisor.copper", UInt32(9), UInt64(200), Int64(1), :stopped,
-                :wireplumber_session)
+                :rtc_session)
             selected = Discovery.select_session(only(filter(
                 item -> item.record.session_id == SESSION_A, listed)), StatusVerifier(fresh))
             @test selected isa Discovery.SelectedSession
@@ -107,13 +107,13 @@ directory(root) = Discovery.registry_directory(root)
             @test inaccessible.record.session_id == SESSION_B
             replaced_status = Discovery.FreshSessionStatus(SESSION_B, current_pid(), Int64(101),
                 record(SESSION_B).remote, "rtc.supervisor.copper", UInt32(10), UInt64(201), Int64(2), :ready,
-                :wireplumber_session)
+                :rtc_session)
             replaced = Discovery.select_session(only(filter(
                 item -> item.record.session_id == SESSION_B, listed)), _ -> replaced_status)
             @test replaced.verification === Discovery.Replaced
             wrong_remote = Discovery.FreshSessionStatus(SESSION_B, current_pid(), Int64(100),
                 "/run/user/$(Discovery._uid())/other-remote", "rtc.supervisor.copper",
-                UInt32(11), UInt64(202), Int64(3), :ready, :wireplumber_session)
+                UInt32(11), UInt64(202), Int64(3), :ready, :rtc_session)
             remote_mismatch = Discovery.select_session(only(filter(
                 item -> item.record.session_id == SESSION_B, listed)), _ -> wrong_remote)
             @test remote_mismatch.verification === Discovery.Replaced
@@ -161,10 +161,10 @@ directory(root) = Discovery.registry_directory(root)
             @test_throws ArgumentError directory(linked)
             @test_throws ArgumentError Discovery.FreshSessionStatus(SESSION_A,
                 current_pid(), Int64(1), "/run/user/$(Discovery._uid())/pw", "rtc.supervisor", UInt32(2), UInt64(1), Int64(1),
-                :unknown, :wireplumber_session)
+                :unknown, :rtc_session)
             @test_throws ArgumentError Discovery.FreshSessionStatus(SESSION_A,
                 current_pid(), Int64(1), "/run/user/$(Discovery._uid())/pw", "rtc.supervisor", UInt32(2), UInt64(1), Int64(0),
-                :ready, :wireplumber_session)
+                :ready, :rtc_session)
         end
 
         mktempdir() do root

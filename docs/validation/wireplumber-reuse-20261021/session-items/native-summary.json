@@ -1,0 +1,120 @@
+[
+  {
+    "name": "test-lua-ao-connections",
+    "result": "OK",
+    "duration": 0.054270029067993164,
+    "returncode": 0,
+    "cases": [
+      "1..1",
+      "ok 1 /lua/wprun/tests"
+    ]
+  },
+  {
+    "name": "test-lua-event-hooks",
+    "result": "OK",
+    "duration": 0.06250190734863281,
+    "returncode": 0,
+    "cases": [
+      "1..1",
+      "ok 1 /lua/wprun/tests"
+    ]
+  },
+  {
+    "name": "test-si-node",
+    "result": "OK",
+    "duration": 0.04799461364746094,
+    "returncode": 0,
+    "cases": [
+      "1..2",
+      "ok 1 /modules/si-node/configure-activate/nullsink",
+      "ok 2 /modules/si-node/configure-activate/audiotestsrc"
+    ]
+  },
+  {
+    "name": "test-si-audio-adapter",
+    "result": "OK",
+    "duration": 0.050957441329956055,
+    "returncode": 0,
+    "cases": [
+      "1..1",
+      "ok 1 /modules/si-audio-adapter/configure-activate"
+    ]
+  },
+  {
+    "name": "test-session-item",
+    "result": "OK",
+    "duration": 0.08890986442565918,
+    "returncode": 0,
+    "cases": [
+      "1..6",
+      "ok 1 /wp/session-item/configuration",
+      "ok 2 /wp/session-item/activation",
+      "ok 3 /wp/session-item/activation-error",
+      "ok 4 /wp/session-item/export",
+      "ok 5 /wp/session-item/export-error",
+      "ok 6 /wp/session-item/registration"
+    ]
+  },
+  {
+    "name": "test-lua-ao-owner",
+    "result": "OK",
+    "duration": 0.08912134170532227,
+    "returncode": 0,
+    "cases": [
+      "1..1",
+      "ok 1 /lua/wprun/tests"
+    ]
+  },
+  {
+    "name": "test-lua-ao-acquisition",
+    "result": "OK",
+    "duration": 0.10602426528930664,
+    "returncode": 0,
+    "cases": [
+      "1..1",
+      "ok 1 /lua/wprun/tests"
+    ]
+  },
+  {
+    "name": "test-lua-ao-session-journal",
+    "result": "OK",
+    "duration": 0.1550462245941162,
+    "returncode": 0,
+    "cases": [
+      "1..1",
+      "ok 1 /lua/wprun/tests"
+    ]
+  },
+  {
+    "name": "test-si-standard-link",
+    "result": "OK",
+    "duration": 0.2709810733795166,
+    "returncode": 0,
+    "cases": [
+      "1..13",
+      "ok 1 /modules/si-standard-link/main",
+      "ok 2 /modules/si-standard-link/exact",
+      "ok 3 /modules/si-standard-link/exact-refusal",
+      "ok 4 /modules/si-standard-link/unsupported-withdrawal",
+      "ok 5 /modules/si-standard-link/reconfigure",
+      "ok 6 /modules/si-standard-link/race/queued",
+      "ok 7 /modules/si-standard-link/race/unbound",
+      "ok 8 /modules/si-standard-link/race/created",
+      "ok 9 /modules/si-standard-link/race/bound",
+      "ok 10 /modules/si-standard-link/race/reset",
+      "ok 11 /modules/si-standard-link/race/deactivate",
+      "ok 12 /modules/si-standard-link/race/cancelled",
+      "ok 13 /modules/si-standard-link/race/child-error"
+    ]
+  },
+  {
+    "name": "test-lua-ao-session-hooks",
+    "result": "OK",
+    "duration": 0.5947573184967041,
+    "returncode": 0,
+    "cases": [
+      "1..1",
+      "ok 1 /lua/wprun/tests"
+    ]
+  }
+]

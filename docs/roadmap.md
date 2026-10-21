@@ -12,6 +12,54 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Headless RTC ownership — 2026-10-21
+
+The user selected [RTC-ARCH-026](HEADLESS_RTC_DESIGN.md), moving application
+lifecycle, readiness and declared RTC connections into a real headless RTC
+process. WirePlumberAO retains device/access/shared-routing policy. The RTC
+reuses libwireplumber discovery, hooks and existing SessionItems; no retired
+Statig/Julia coordinator or second command protocol is restored.
+
+Implementation is in the existing isolated `codex/wireplumber-reuse` worktrees.
+The native host, AO module/script/test relocation, sealed deployment/systemd
+integration and independent review are complete. The full Julia suite passes
+2,330 assertions; seven native suites, five generic WirePlumber suites and
+seven controlled production-policy fault cases pass. The real native endpoint
+returns Status Configuring/Observed through the unchanged public protocol. An actual CPU-array test
+passes 19 checks for RTC link ownership, data delivery, withdrawal, unrelated-node
+preservation and coexistence with an independent minimal WirePlumber daemon.
+See the [validation record](validation/headless-rtc-20261021/README.md).
+Prior hook and SessionItem receipts below retain their original providers.
+The live simulator remains stopped; no GPU validation or live deployment is
+selected for this increment.
+
+### WirePlumber reuse audit — 2026-10-21
+
+The [audit and independent verification](reviews/20261021-wireplumber-reuse/REVIEW.md)
+support using native asynchronous hooks for Prepare, Start, Stop, Reset and Quit.
+That refactor and a Lua event-property binding fix are implemented in isolated
+`codex/wireplumber-reuse` worktrees, with AO epoch/deadline/ticket fences and
+source-first compensation preserved. Native and Julia tests pass; an isolated
+Classic CUDA/JFG check passes link-loss handling, complete cleanup and fresh
+admission. See the [scoped evidence](validation/wireplumber-reuse-20261021/README.md).
+No live deployment or all-profile timing qualification is claimed.
+
+The existing `si-node`/`si-standard-link` selection, properties and
+pending-activation retirement extensions are now implemented in those worktrees;
+AO's duplicate raw-Link creation/destruction path is removed. Independent review
+and ten native tests pass, including 15 selector/link cases with zero skips.
+Seventy-five RTC configuration/staging assertions and a 13-check CPU-only
+private-core NDArray delivery/withdrawal fixture pass. The
+[SessionItem evidence](validation/wireplumber-reuse-20261021/SESSION_ITEMS.md)
+records this later increment separately from the earlier GPU hook-only check.
+No GPU simulation was started for the extension. Video already demonstrates non-audio SessionItem use;
+exact port IDs are ordinary PipeWire topology, not an NDArray-specific mechanism.
+Scientific identity, Format and cohort-absence checks remain AO policy. New
+functionality should follow existing implementations and extend their interfaces.
+Instrument-facing terminology should come from REVOLT/HEART and GPI 2.0 sources,
+with application metadata supplying labels to the generic GUI; the audit records
+the initial mapping and unresolved offset equivalence.
+
 ### Classic optical sampling and atmosphere settings — 2026-10-21
 
 Local AOS `f08feb60` corrects odd/even Shack–Hartmann FFT centering and honors

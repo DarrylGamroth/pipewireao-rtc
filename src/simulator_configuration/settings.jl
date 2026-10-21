@@ -115,7 +115,7 @@ function config_asset(spec)
 end
 
 function selected_session(session_id)
-    connection = WirePlumberCLI.select_direct_session(session_id)
+    connection = SessionCLI.select_direct_session(session_id)
     try
         selected = connection.selected
         status = selected.status
@@ -138,8 +138,8 @@ function selected_session(session_id)
         handle = installed
         executable = realpath("/proc/$(handle.main_pid)/exe")
         prefix = dirname(dirname(executable))
-        realpath(joinpath(prefix, "bin", "wireplumber")) == executable ||
-            throw(ArgumentError("managed WirePlumber prefix is unavailable"))
+        realpath(joinpath(prefix, "bin", "pipewireao-rtc")) == executable ||
+            throw(ArgumentError("managed RTC prefix is unavailable"))
         spec = D.profile(joinpath(application, "deployment.conf"), prefix)
         relative = config_asset(spec)
         config = D.relative_asset(application, relative)

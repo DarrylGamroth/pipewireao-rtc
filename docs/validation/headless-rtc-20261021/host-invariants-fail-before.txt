@@ -1,0 +1,10 @@
+1/1 rtc-host FAIL            5.01s   killed by signal 6 SIGABRT
+stdout:
+# random seed: R02S0846161609d0795bd5634909a2e7ba6a
+# Start of rtc-host tests
+ok 1 /rtc-host/missing-configuration
+not ok /rtc-host/termination - ERROR:../tests/host.c:125:host_connection: 'ready' should be TRUE
+Bail out!
+stderr:
+ERROR:../tests/host.c:125:host_connection: 'ready' should be TRUE
+1/1 rtc-host FAIL            5.01s   killed by signal 6 SIGABRT

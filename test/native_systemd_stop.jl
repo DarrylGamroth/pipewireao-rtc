@@ -18,7 +18,7 @@ function stop_case(remote, directory, mode)
     mkpath(root)
     unit = "codex-rtc-stop-$(getpid())-$(mode).service"
     fragment = joinpath(root, unit)
-    hook = "ExecStop=$julia --startup-file=no --project=$repo $repo/test/native_systemd_stop_launcher.jl $repo/wireplumber_cli.jl $root stop --unit $unit --runtime-root $root"
+    hook = "ExecStop=$julia --startup-file=no --project=$repo $repo/test/native_systemd_stop_launcher.jl $repo/session_cli.jl $root stop --unit $unit --runtime-root $root"
     environment = join(["Environment=" * String(JSON3.write(key * "=" * ENV[key]))
         for key in ("PIPEWIREAO_CONFIG_DIR", "PIPEWIREAO_MODULE_DIR", "PIPEWIREAO_SPA_PLUGIN_DIR", "LD_LIBRARY_PATH")], '\n')
     write(fragment, """

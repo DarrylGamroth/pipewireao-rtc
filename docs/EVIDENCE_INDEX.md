@@ -1,5 +1,31 @@
 # Delivery evidence catalog
 
+## Headless RTC application ownership — 2026-10-21
+
+[RTC-ARCH-026](HEADLESS_RTC_DESIGN.md) moves lifecycle and declared application
+links out of the WirePlumber daemon. The [validation record](validation/headless-rtc-20261021/README.md)
+contains the full 2,330-assertion Julia result, native/generic suite summaries,
+seven controlled production-policy fault cases, the 19-check actual CPU-array
+and WirePlumber-peer receipt, source/binary identities and scope limits. The
+[independent review](reviews/20261021-headless-rtc/REVIEW.md) records three
+corrected startup/deployment findings. The live simulator remains stopped;
+GPU, hardware, timing, all-instrument and live systemd qualification are not
+claimed.
+
+## WirePlumber mechanism reuse — 2026-10-21
+
+The [independent audit](reviews/20261021-wireplumber-reuse/REVIEW.md) separates
+WirePlumber mechanisms from AO admission policy and identifies existing
+SessionItem interfaces to extend for explicit scientific topologies. Native
+asynchronous hooks replace generic session callback sequencing; cancellation,
+identity, source-first stop and exact-link guarantees remain. The
+[validation record](validation/wireplumber-reuse-20261021/README.md) contains
+native/Julia tests, fail-before/pass-after event-property evidence and isolated
+Classic CUDA/JFG link-loss, cleanup and fresh-admission checks. The SessionItem
+link transfer is implemented and independently verified in the later
+[CPU-only SessionItem increment](validation/wireplumber-reuse-20261021/SESSION_ITEMS.md).
+No all-profile or timing claim follows.
+
 ## Generic simulator settings and cold replacement — 2026-10-21
 
 Evidence root:

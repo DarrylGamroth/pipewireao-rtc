@@ -1,0 +1,75 @@
+[
+  {
+    "name": "ao-connections",
+    "result": "OK",
+    "returncode": 0,
+    "duration": 0.02311992645263672,
+    "cases": [
+      "/lua/wprun/tests"
+    ]
+  },
+  {
+    "name": "ao-owner",
+    "result": "OK",
+    "returncode": 0,
+    "duration": 0.020828962326049805,
+    "cases": [
+      "/lua/wprun/tests"
+    ]
+  },
+  {
+    "name": "ao-acquisition",
+    "result": "OK",
+    "returncode": 0,
+    "duration": 0.017940282821655273,
+    "cases": [
+      "/lua/wprun/tests"
+    ]
+  },
+  {
+    "name": "ao-session-journal",
+    "result": "OK",
+    "returncode": 0,
+    "duration": 0.01775646209716797,
+    "cases": [
+      "/lua/wprun/tests"
+    ]
+  },
+  {
+    "name": "rtc-host",
+    "result": "OK",
+    "returncode": 0,
+    "duration": 0.06315422058105469,
+    "cases": [
+      "/rtc-host/missing-configuration",
+      "/rtc-host/public-session-status",
+      "/rtc-host/termination",
+      "/rtc-host/connection-lost"
+    ],
+    "verification": "Subsequent independent focused rerun after public Status case was added"
+  },
+  {
+    "name": "ao-session-hooks",
+    "result": "OK",
+    "returncode": 0,
+    "duration": 0.39708900451660156,
+    "cases": [
+      "/lua/wprun/tests"
+    ]
+  },
+  {
+    "name": "ao-journal",
+    "result": "OK",
+    "returncode": 0,
+    "duration": 1.0339839458465576,
+    "cases": [
+      "/ao-journal/ordered-bytes-and-bounds",
+      "/ao-journal/record-size-limits",
+      "/ao-journal/unique-operation-events",
+      "/ao-journal/busy-worker-responsive",
+      "/ao-journal/upgrade-version",
+      "/ao-journal/core-destroy-drains",
+      "/ao-journal/private-store"
+    ]
+  }
+]

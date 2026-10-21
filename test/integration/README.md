@@ -1,7 +1,38 @@
-# Actual WirePlumber RTC fault qualification
+# Actual headless RTC fault qualification
+
+## CPU-only SessionItem link qualification
+
+`session_items.jl` uses the existing private-core helper and real
+`PipeWireAO.NdArraySource` / `NdArraySink` endpoints. It loads the installed
+candidate's production `ao-connections` and existing `si-node` /
+`si-standard-link` modules, checks exact endpoint identities and port IDs,
+checks that the link creator client belongs to the actual RTC PID, exchanges
+three CPU arrays, and proves link withdrawal while preserving an unrelated node. A separate
+WirePlumber daemon shares the private core through a minimal profile with no
+device monitors or desktop auto-connect policy; this is process coexistence,
+not hardware or full desktop-policy qualification. It starts no systemd
+session, simulator, CUDA runtime or physical device. It stops only its own
+headless RTC child and private daemon; the evidence directory must be fresh.
+
+```sh
+julia --startup-file=no --project=. test/integration/session_items.jl \
+  /absolute/path/to/wireplumber-library-prefix /absolute/path/to/rtc-prefix \
+  /absolute/path/to/fresh-evidence-directory
+```
+
+The candidate must contain the SessionItem exact-link and asynchronous
+withdrawal extensions. The generated profile selects only Lua and the two
+SessionItem factories, without desktop audio policy or an all-feature event
+source. Endpoint client PID checks bind Client info; registry announcements
+alone do not guarantee the PID property. The fixture leaves the link available
+for 30 seconds for first-use compilation and sample exchange, then checks
+retirement and remote absence. This is a functional test, not a latency bound.
+Logs and `receipt.json` remain in the evidence directory, including failures.
+
+## Actual session fault cases
 
 `session_faults.jl` is opt-in. It creates new private sessions through
-`PipeWireAORTC.WirePlumberSessionRuntime`; it never attaches to an existing
+`PipeWireAORTC.SessionRuntime`; it never attaches to an existing
 session. Use only a sealed, non-actuating simulation or recorded-data package.
 Physical DM safe-state actions and operator approval are outside this test.
 
@@ -11,7 +42,7 @@ Prerequisites:
 - The package's installed PipeWireAO/WirePlumber dependencies, scientific
   packages, data, and configured CPU/resource rights.
 - A sealed package accepted by the current deployment validator, containing a
-  WirePlumber session manager, node-owner declarations, and a source using
+  headless RTC application, node-owner declarations, and a source using
   `pipewireao.rtc.calibration-lifecycle/1` with `instrument=classic` or `copper`,
   or an AOS source using `pipewireao.source-control/1` with an exact control node.
 - A fresh stage root. The test retains its receipt and installed assets there.
@@ -126,10 +157,10 @@ the test; native discovery, transport and systemd are outside this check.
 ```sh
 julia --startup-file=no --project=test test/integration/session_policy_faults.jl
 julia --startup-file=no --project=test test/integration/session_policy_faults.jl \
-  /absolute/path/to/wireplumber/src/scripts/ao/session.lua
+  /absolute/path/to/pipewireao-rtc/native/scripts/ao/session.lua
 ```
 
-The default policy is `/opt/pipewireao/share/wireplumber/scripts/ao/session.lua`.
+The default policy is `/opt/pipewireao/share/pipewireao-rtc/scripts/ao/session.lua`.
 Install the Lua 5.4 shared library for this optional test. Output records the
 selected policy path and SHA-256; each case creates and closes a separate Lua
 state. The seven cases check source-first hold acknowledgement, both graph

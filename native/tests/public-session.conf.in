@@ -1,0 +1,63 @@
+context.properties = {
+  remote.name = "@REMOTE@"
+  support.dbus = false
+}
+context.modules = [
+  { name = libpipewire-module-protocol-native }
+  { name = libpipewire-module-client-node }
+]
+wireplumber.profiles = {
+  ao-rtc = {
+    support.lua = required
+    si.node = required
+    si.standard-link = required
+    test.endpoint = required
+    test.controller = required
+    test.policy = required
+  }
+}
+wireplumber.components = [
+  { name = libwireplumber-module-lua-scripting type = module provides = support.lua }
+  { name = libwireplumber-module-si-node type = module provides = si.node }
+  { name = libwireplumber-module-si-standard-link type = module provides = si.standard-link }
+  {
+    name = libwireplumber-module-ao-control-endpoint type = module provides = test.endpoint
+    arguments = {
+      plugin.name = ao-session-control
+      node.name = test-public-session
+      profile = pipewireao.rtc.session/1
+      instance = 101
+    }
+  }
+  {
+    name = libwireplumber-module-ao-control-endpoint type = module provides = test.controller
+    arguments = {
+      plugin.name = ao-session-controller
+      node.name = test-policy-controller
+      profile = pipewireao.rtc.controller/1
+      instance = 202
+    }
+  }
+  {
+    name = "@POLICY@" type = script/lua provides = test.policy
+    requires = [ support.lua si.node si.standard-link test.endpoint test.controller ]
+    arguments = {
+      instance = 101
+      controller.instance = 202
+      admission.controller-instance = 303
+      startup.timeout-ms = 60000
+      node.pids = { absent-source = 1 absent-graph = 1 }
+      owners = []
+      source = { control-node = absent-source pid = 1 role = source }
+      session = {
+        authority = none
+        profile = development
+        sources = [ { node.name = absent-source } ]
+        graphs = [ { node.name = absent-graph } ]
+        sinks = []
+        links = [ { output = "absent-source:out" input = "absent-graph:in" } ]
+        execution-groups = [ { name = science nodes = [ absent-graph ] } ]
+      }
+    }
+  }
+]

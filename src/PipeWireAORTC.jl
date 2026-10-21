@@ -63,17 +63,17 @@ include("native/native_session_client.jl")
 include("configuration/deployment_configuration.jl")
 include("owners/phase_timing.jl")
 include("owners/aos_owner.jl")
-include("deployment/wireplumber_session_runtime.jl")
+include("deployment/session_runtime.jl")
 
-include("configuration/wireplumber_configuration.jl")
-include("deployment/wireplumber_launch.jl")
-include("deployment/wireplumber_install.jl")
-include("cli.jl")
+include("configuration/session_configuration.jl")
+include("deployment/session_launch.jl")
+include("deployment/session_install.jl")
+include("session_cli.jl")
 include("owners/graph_owner.jl")
 include("simulator_configuration.jl")
 
-public ConfigurationStore, ConfigurationStoreCLI, SimulatorConfiguration, AOSOwner, Artifacts, WirePlumberConfiguration, WirePlumberInstall, WirePlumberSessionRuntime,
-    NativeSessionClient, CalibrationAcquisition, CalibrationCLI, WirePlumberCLI,
+public ConfigurationStore, ConfigurationStoreCLI, SimulatorConfiguration, AOSOwner, Artifacts, SessionConfiguration, SessionInstall, SessionRuntime,
+    NativeSessionClient, CalibrationAcquisition, CalibrationCLI, SessionCLI,
     NativeOwnerBootstrapRuntime, NativeParameterSource, NativeSourceControl, GraphOwner
 
 end

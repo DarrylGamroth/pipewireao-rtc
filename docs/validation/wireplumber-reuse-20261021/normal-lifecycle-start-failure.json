@@ -1,0 +1,1 @@
+{"invocation":"79c88d56c03648a28c2859b383da3966","unit":"pipewireao-session@bad59733ce64.service","failure":"ArgumentError: systemd session operation failed (1): Job for pipewireao-session@bad59733ce64.service canceled.","stop_command_error":null,"cleanup_confirmed":true}

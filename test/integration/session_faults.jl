@@ -1,8 +1,8 @@
 #!/usr/bin/env julia
-# Opt-in actual WirePlumber/systemd qualification; never attaches to a live session.
+# Opt-in actual headless RTC/systemd qualification; never attaches to a live session.
 using Test, PipeWireAO, PipeWireAORTC
 
-const W = PipeWireAORTC.WirePlumberSessionRuntime
+const W = PipeWireAORTC.SessionRuntime
 const S = PipeWireAORTC.SystemdOwners
 const C = PipeWireAORTC.Common
 const D = PipeWireAORTC.DeploymentConfiguration
@@ -491,14 +491,14 @@ function run_case(selected)
         "deployment_sha256" => C.sha256_file(joinpath(selected.package, "deployment.conf")),
         "sealed_policy" => Dict(k => v for (k,v) in spec["artifacts"] if
             endswith(k, "ao/session.lua") || endswith(k, "lib/ao-connections.lua")),
-        "installed_policy" => Dict(relative => C.sha256_file(joinpath(selected.prefix, "share", "wireplumber",
+        "installed_policy" => Dict(relative => C.sha256_file(joinpath(selected.prefix, "share", "pipewireao-rtc",
             "scripts", relative)) for relative in ("ao/session.lua", "lib/ao-connections.lua")),
         "source_protocol" => source["control-protocol"], "startup_budget_s" => startup_budget(spec),
         "test_sha256" => C.sha256_file(@__FILE__),
         "rtc_version" => string(pkgversion(PipeWireAORTC)),
         "sdk_version" => string(pkgversion(PipeWireAO)),
         "runtime_source_sha256" => C.sha256_file(joinpath(pkgdir(PipeWireAORTC),
-            "src", "deployment", "wireplumber_session_runtime.jl")),
+            "src", "deployment", "session_runtime.jl")),
         "completed" => false)
     save() = C.write_json(joinpath(selected.stage, "qualification.json"), receipt; atomic=true)
     save()

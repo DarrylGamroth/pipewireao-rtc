@@ -5,7 +5,7 @@ source_path, evidence_root = ARGS[1:2]
 stop_test_event(name) = write(joinpath(evidence_root, name), string(time_ns()))
 stop_test_event("helper-launch")
 using PipeWireAORTC
-source_path = joinpath(PipeWireAORTC.package_root(), "src", "cli.jl")
+source_path = joinpath(PipeWireAORTC.package_root(), "src", "session_cli.jl")
 source = read(source_path, String)
 first_byte = findfirst("function stop!(args)", source)
 last_byte = findnext("\n\"List local POD hints", source, last(first_byte))
@@ -28,15 +28,15 @@ for (before, after) in [
 end
 source = source[1:first(first_byte)-1] * body * source[first(last_byte):end]
 sandbox = Module(:InstrumentedStopCLI)
-for name in (:PipeWireAORTC, :WirePlumberConfiguration, :WirePlumberLaunch, :WirePlumberInstall)
+for name in (:PipeWireAORTC, :SessionConfiguration, :SessionLaunch, :SessionInstall)
     value = name === :PipeWireAORTC ? PipeWireAORTC : getproperty(PipeWireAORTC, name)
     Core.eval(sandbox, Expr(:const, Expr(:(=), name, value)))
 end
 include_string(sandbox, source, source_path)
-const WirePlumberCLI = sandbox.WirePlumberCLI
+const SessionCLI = sandbox.SessionCLI
 stop_test_event("helper-loaded")
 try
-    WirePlumberCLI.main(ARGS[3:end])
+    SessionCLI.main(ARGS[3:end])
 finally
     stop_test_event("helper-finish")
 end

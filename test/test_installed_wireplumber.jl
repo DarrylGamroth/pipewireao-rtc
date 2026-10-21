@@ -1,134 +1,115 @@
 using Test, PipeWireAORTC
 
-const InstalledWirePlumber = PipeWireAORTC.ScienceExport
-const InstalledWirePlumberCommon = PipeWireAORTC.Common
+const E = PipeWireAORTC.ScienceExport
+const C = PipeWireAORTC.Common
 
-function wireplumber_prefix(root; library_dir="lib/x86_64-linux-gnu")
-    prefix = joinpath(root, "prefix")
+function dependency_prefix(root; library_dir="lib/x86_64-linux-gnu")
+    prefix = joinpath(root, "dependency")
     directory = joinpath(prefix, library_dir)
     scripts = joinpath(prefix, "share/wireplumber/scripts")
-    mkpath(joinpath(prefix, "bin"))
-    mkpath(directory)
     mkpath(joinpath(directory, "wireplumber-0.5"))
-    mkpath(joinpath(scripts, "ao"))
     mkpath(joinpath(scripts, "lib"))
-
-    binary = joinpath(prefix, "bin/wireplumber")
-    write(binary, "synthetic executable")
-    chmod(binary, 0o755)
     library = joinpath(directory, "libwireplumber-0.5.so.0.0")
-    write(library, "synthetic library")
+    write(library, "library")
     symlink(basename(library), joinpath(directory, "libwireplumber-0.5.so.0"))
-    for name in ("lua-scripting", "ao-control-endpoint", "ao-journal")
-        write(joinpath(directory, "wireplumber-0.5", "libwireplumber-module-$name.so"),
-            "synthetic $name module")
+    for name in E.WIREPLUMBER_MODULES
+        write(joinpath(directory, "wireplumber-0.5/libwireplumber-module-$name.so"), name)
     end
-    for relative in ("ao/session.lua", "lib/ao-control.lua", "lib/ao-owner.lua",
-                     "lib/ao-acquisition.lua", "lib/ao-session-control.lua",
-                     "lib/ao-connections.lua")
-        path = joinpath(scripts, relative)
-        mkpath(dirname(path))
-        write(path, "synthetic $relative")
+    write(joinpath(scripts, "lib/common.lua"), "generic dependency helper")
+    # Stale custom prefix files must not become application assets.
+    mkpath(joinpath(prefix, "bin"))
+    write(joinpath(prefix, "bin/wireplumber"), "old daemon")
+    for relative in E.RTC_SCRIPTS
+        mkpath(dirname(joinpath(scripts, relative)))
+        write(joinpath(scripts, relative), "old application policy")
     end
-    mkpath(joinpath(scripts, "tests"))
-    write(joinpath(scripts, "tests/ignored.lua"), "not packaged")
-    mkpath(joinpath(scripts, "test"))
-    write(joinpath(scripts, "test/ignored.lua"), "not packaged")
     return prefix
 end
 
-function wireplumber_hashes(root)
-    return Dict(relpath(path, root) => InstalledWirePlumberCommon.sha256_file(path)
-        for (directory, _, names) in walkdir(root) for name in names
-        for path in (joinpath(directory, name),))
+function native_build(root)
+    build = joinpath(root, "native-build")
+    source = joinpath(root, "native-source")
+    mkpath(joinpath(build, "modules"))
+    binary = joinpath(build, "pipewireao-rtc")
+    write(binary, "native RTC")
+    chmod(binary, 0o755)
+    for name in E.RTC_MODULES
+        write(joinpath(build, "modules/libwireplumber-module-$name.so"), name)
+    end
+    for relative in E.RTC_SCRIPTS
+        path = joinpath(source, "scripts", relative)
+        mkpath(dirname(path))
+        write(path, relative)
+    end
+    return build, source
 end
 
-function check_failed_wireplumber_stage(change, prefix, package)
-    target = joinpath(package, "wireplumber")
-    before = wireplumber_hashes(target)
-    change(prefix)
-    @test_throws ArgumentError InstalledWirePlumber.stage_wireplumber!(package; prefix)
-    @test wireplumber_hashes(target) == before
-    @test isempty(filter(name -> startswith(name, "wireplumber-stage-"), readdir(package)))
-end
+hashes(root) = Dict(relpath(joinpath(parent, name), root) => C.sha256_file(joinpath(parent, name))
+    for (parent, _, names) in walkdir(root) for name in names)
 
-@testset "installed WirePlumber prefix stages the sealed manager layout" begin
+@testset "separate generic dependency and headless RTC staging" begin
     mktempdir() do root
-        prefix = wireplumber_prefix(root)
-        package = joinpath(root, "package")
-        mkpath(package)
-        target = InstalledWirePlumber.stage_wireplumber!(package; prefix)
-        @test target == joinpath(package, "wireplumber")
-        @test isfile(joinpath(target, "bin/wireplumber"))
-        @test (stat(joinpath(target, "bin/wireplumber")).mode & 0o111) != 0
-        @test read(joinpath(target, "lib/wp/libwireplumber-0.5.so.0"), String) == "synthetic library"
-        @test read(joinpath(target, "modules/libwireplumber-module-lua-scripting.so"), String) ==
-            "synthetic lua-scripting module"
-        @test read(joinpath(target, "modules/libwireplumber-module-ao-control-endpoint.so"), String) ==
-            "synthetic ao-control-endpoint module"
-        for relative in ("ao/session.lua", "lib/ao-control.lua", "lib/ao-owner.lua",
-                         "lib/ao-acquisition.lua", "lib/ao-session-control.lua",
-                         "lib/ao-connections.lua")
-            @test read(joinpath(target, "scripts", relative), String) == "synthetic $relative"
-        end
-        @test !ispath(joinpath(target, "scripts/tests"))
-        @test !ispath(joinpath(target, "scripts/test"))
-        @test InstalledWirePlumber.validate_wireplumber(target) === nothing
-        @test InstalledWirePlumber.stage_wireplumber!(package) == target
+        prefix = dependency_prefix(root)
+        build, source = native_build(root)
+        package = mkpath(joinpath(root, "package"))
+        dependency = E.stage_wireplumber!(package; prefix)
+        rtc = E.stage_rtc!(package; native_build=build, native_source=source)
+        @test read(joinpath(dependency, "scripts/lib/common.lua"), String) == "generic dependency helper"
+        @test !ispath(joinpath(dependency, "bin"))
+        @test all(!ispath(joinpath(dependency, "scripts", path)) for path in E.RTC_SCRIPTS)
+        @test read(joinpath(rtc, "bin/pipewireao-rtc"), String) == "native RTC"
+        @test (stat(joinpath(rtc, "bin/pipewireao-rtc")).mode & 0o111) != 0
+        @test all(isfile(joinpath(rtc, "scripts", path)) for path in E.RTC_SCRIPTS)
+        @test E.stage_wireplumber!(package) == dependency
+        @test E.stage_rtc!(package) == rtc
+        @test E.validate_wireplumber(dependency) === nothing
+        @test E.validate_rtc(rtc) === nothing
+        before_dependency, before_rtc = hashes(dependency), hashes(rtc)
+        rm(joinpath(prefix, "lib/x86_64-linux-gnu/wireplumber-0.5/libwireplumber-module-si-node.so"))
+        @test_throws ArgumentError E.stage_wireplumber!(package; prefix)
+        @test hashes(dependency) == before_dependency
+        rm(joinpath(source, "scripts/lib/ao-owner.lua"))
+        @test_throws ArgumentError E.stage_rtc!(package; native_build=build, native_source=source)
+        @test hashes(rtc) == before_rtc
+        @test isempty(filter(name -> occursin("-stage-", name), readdir(package)))
     end
 end
 
-@testset "invalid installed WirePlumber prefix preserves prior staged manager" begin
-    for missing in (:library, :module, :script)
-        mktempdir() do root
-            prefix = wireplumber_prefix(root)
-            package = joinpath(root, "package")
-            mkpath(package)
-            InstalledWirePlumber.stage_wireplumber!(package; prefix)
-            check_failed_wireplumber_stage(prefix, package) do selected_prefix
-                if missing == :library
-                    rm(joinpath(selected_prefix, "lib/x86_64-linux-gnu/libwireplumber-0.5.so.0"))
-                elseif missing == :module
-                    rm(joinpath(selected_prefix,
-                        "lib/x86_64-linux-gnu/wireplumber-0.5/libwireplumber-module-lua-scripting.so"))
-                else
-                    rm(joinpath(selected_prefix, "share/wireplumber/scripts/lib/ao-owner.lua"))
-                end
-            end
-        end
+@testset "RTC installed prefix and exact stage selection" begin
+    mktempdir() do root
+        build, source = native_build(root)
+        prefix = mkpath(joinpath(root, "prefix"))
+        mkpath(joinpath(prefix, "bin"))
+        cp(joinpath(build, "pipewireao-rtc"), joinpath(prefix, "bin/pipewireao-rtc"))
+        mkpath(joinpath(prefix, "lib/pipewireao-rtc"))
+        cp(joinpath(build, "modules"), joinpath(prefix, "lib/pipewireao-rtc/modules"))
+        mkpath(joinpath(prefix, "share/pipewireao-rtc"))
+        cp(joinpath(source, "scripts"), joinpath(prefix, "share/pipewireao-rtc/scripts"))
+        package = mkpath(joinpath(root, "package"))
+        @test isdir(E.stage_rtc!(package; native_prefix=prefix))
+        @test_throws ArgumentError E.stage_rtc!(package; native_build=build)
+        @test_throws ArgumentError E.stage_rtc!(package; native_source=source)
+        @test_throws ArgumentError E.stage_rtc!(package; native_build=build, native_source=source, native_prefix=prefix)
+        @test_throws ArgumentError E.stage_wireplumber!(package; build=build)
+        @test_throws ArgumentError E.stage_wireplumber!(package; source=source)
+        external = mkpath(joinpath(root, "external"))
+        rm(joinpath(package, "rtc"); recursive=true)
+        symlink(external, joinpath(package, "rtc"))
+        @test_throws ArgumentError E.stage_rtc!(package; native_prefix=prefix)
+        @test islink(joinpath(package, "rtc"))
     end
 end
 
-@testset "installed WirePlumber library layout and source selection are exact" begin
+@testset "generic dependency rejects daemon and RTC application policy" begin
     mktempdir() do root
-        prefix = wireplumber_prefix(root)
-        package = joinpath(root, "package")
-        mkpath(package)
-        target = InstalledWirePlumber.stage_wireplumber!(package; prefix)
-        before = wireplumber_hashes(target)
-        duplicate = joinpath(prefix, "lib64")
-        mkpath(duplicate)
-        write(joinpath(duplicate, "libwireplumber-0.5.so.0"), "ambiguous library")
-        @test_throws ArgumentError InstalledWirePlumber.stage_wireplumber!(package; prefix)
-        @test wireplumber_hashes(target) == before
-        @test isempty(filter(name -> startswith(name, "wireplumber-stage-"), readdir(package)))
-        @test_throws ArgumentError InstalledWirePlumber.stage_wireplumber!(package; build="build")
-        @test_throws ArgumentError InstalledWirePlumber.stage_wireplumber!(package; source="source")
-    end
-end
-
-@testset "installed WirePlumber staging rejects a symlink target" begin
-    mktempdir() do root
-        prefix = wireplumber_prefix(root)
-        package = joinpath(root, "package")
-        external = joinpath(root, "external")
-        mkpath(package)
-        mkpath(external)
-        write(joinpath(external, "sentinel"), "unchanged")
-        symlink(external, joinpath(package, "wireplumber"))
-        @test_throws ArgumentError InstalledWirePlumber.stage_wireplumber!(package; prefix)
-        @test read(joinpath(external, "sentinel"), String) == "unchanged"
-        @test islink(joinpath(package, "wireplumber"))
-        @test isempty(filter(name -> startswith(name, "wireplumber-stage-"), readdir(package)))
+        prefix = dependency_prefix(root)
+        package = mkpath(joinpath(root, "package"))
+        target = E.stage_wireplumber!(package; prefix)
+        mkpath(joinpath(target, "bin"))
+        @test_throws ArgumentError E.validate_wireplumber(target)
+        rm(joinpath(target, "bin"); recursive=true)
+        mkpath(joinpath(target, "scripts/ao"))
+        write(joinpath(target, "scripts/ao/session.lua"), "untrusted")
+        @test_throws ArgumentError E.validate_wireplumber(target)
     end
 end

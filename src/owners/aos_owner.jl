@@ -327,7 +327,7 @@ SPA-JSON configuration declares the simulation TOML graph and FITS bindings;
 version 2 selects an instrument package and immutable settings. Both declare
 command/frame names, extents, timing and backend/device. Paths are relative to
 the configuration. Preparing is published before optional science imports.
-FITS preparation is cold startup only; WirePlumber retains lifecycle authority.
+FITS preparation is cold startup only; RTC retains lifecycle authority.
 """
 main(args) = _main(args)
 

@@ -3,7 +3,7 @@
 using REVOLTRTC
 const P = REVOLTRTC
 const C = P.Common
-const W = P.WirePlumberSessionRuntime
+const W = P.SessionRuntime
 const S = P.SystemdOwners
 include(ENV["RTC_OPERATOR_VIEW_WRITER"])
 if length(ARGS) == 4 && (last(ARGS) == "systemd" || get(ENV, "RTC_FINITE_CONTROLS", "0") == "1")

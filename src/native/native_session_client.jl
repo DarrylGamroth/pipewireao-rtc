@@ -40,14 +40,14 @@ function _fresh_session_status(record::Discovery.SessionRecord, client, completi
         Discovery.FreshSessionStatus(client.observation.node_identity,
             client.observation.owner_pid, client.observation.instance,
             record.remote, client.node_name, client.global_id, client.serial,
-            completion.header.token, state, :wireplumber_session)
+            completion.header.token, state, :rtc_session)
     end
 end
 
-"Select only WirePlumber; coordinator fallback and automatic rebinding are forbidden."
+"Select only RTC; coordinator fallback and automatic rebinding are forbidden."
 select_session(entry::Discovery.DiscoveryEntry; kwargs...) = select_direct_session(entry; kwargs...)
 
-"Select a WirePlumber session using only the direct native session profile."
+"Select an RTC session using only the direct native session profile."
 function select_direct_session(entry::Discovery.DiscoveryEntry; deadline::Float64,
         check=()->nothing)
     entry.record === nothing && return Discovery.DiscoveryEntry(nothing,
@@ -90,7 +90,7 @@ function render_direct(connection::Connection,
         throw(ArgumentError("direct reply came from a different endpoint incarnation"))
     result = RunnerCommands.render(reply)
     result["session_id"] = selected.status.session_id
-    result["authority"] = "wireplumber_session"
+    result["authority"] = "rtc_session"
     result["owner_pid"] = selected.status.owner_pid
     return result
 end

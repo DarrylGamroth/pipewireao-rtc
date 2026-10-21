@@ -2,27 +2,27 @@ using Test, PipeWireAORTC, JSON3, TOML
 const P = PipeWireAORTC
 tree_identity(root) = Dict(relpath(joinpath(parent, file), root) => P.Common.sha256_file(joinpath(parent, file)) for (parent, _, files) in walkdir(root) for file in files)
 
-@testset "callable package modules and compatibility scripts" begin
+@testset "callable package modules and operational scripts" begin
     @test Base.PkgId(P).uuid == Base.UUID("a3e2c7da-f73f-4284-8482-36ac422b34e6")
     manifest = TOML.parsefile(joinpath(P.package_root(), "Manifest.toml"))
     self = filter(row -> row["uuid"] == string(Base.PkgId(P).uuid),
         [merge(item, Dict("name" => name)) for (name, rows) in manifest["deps"] for item in rows])
     @test only(self)["name"] == "PipeWireAORTC"
-    @test P.WirePlumberCLI.WirePlumberConfiguration === P.WirePlumberConfiguration
-    @test P.WirePlumberCLI.WirePlumberLaunch === P.WirePlumberLaunch
-    @test P.WirePlumberCLI.WirePlumberInstall === P.WirePlumberInstall
-    for name in (:WirePlumberConfiguration, :WirePlumberInstall, :WirePlumberSessionRuntime,
+    @test P.SessionCLI.SessionConfiguration === P.SessionConfiguration
+    @test P.SessionCLI.SessionLaunch === P.SessionLaunch
+    @test P.SessionCLI.SessionInstall === P.SessionInstall
+    for name in (:SessionConfiguration, :SessionInstall, :SessionRuntime,
                  :NativeSessionClient, :CalibrationAcquisition, :CalibrationCLI,
-                 :WirePlumberCLI, :NativeOwnerBootstrapRuntime, :NativeParameterSource,
+                 :SessionCLI, :NativeOwnerBootstrapRuntime, :NativeParameterSource,
                  :NativeSourceControl)
         @test Base.ispublic(P, name)
         @test parentmodule(getproperty(P, name)) === P
     end
-    for (script, name) in (("configuration", :WirePlumberConfiguration),
-                           ("launch", :WirePlumberLaunch),
-                           ("install", :WirePlumberInstall), ("cli", :WirePlumberCLI))
-        sandbox = Module(gensym(:CompatibilityScript))
-        Base.include(sandbox, joinpath(P.package_root(), "wireplumber_" * script * ".jl"))
+    for (script, name) in (("configuration", :SessionConfiguration),
+                           ("launch", :SessionLaunch),
+                           ("install", :SessionInstall), ("cli", :SessionCLI))
+        sandbox = Module(gensym(:OperationalScript))
+        Base.include(sandbox, joinpath(P.package_root(), "session_" * script * ".jl"))
         @test Base.invokelatest(getproperty, sandbox, name) === getproperty(P, name)
     end
 end
@@ -96,7 +96,7 @@ end
         @test isfile(joinpath(copied, "julia", "src", "common.jl"))
         # Missing declared entrypoints must not silently disappear from provenance.
         missing = "using PipeWireAORTC; P=PipeWireAORTC; " *
-            "rm(joinpath(P.package_root(), \"wireplumber_cli.jl\")); " *
+            "rm(joinpath(P.package_root(), \"session_cli.jl\")); " *
             "try P.ScienceExport.orchestration_sources(); error(\"missing entry accepted\") " *
             "catch e; @assert e isa ArgumentError end"
         @test P.Common.run_checked([Base.julia_cmd().exec[1], "--startup-file=no",

@@ -114,46 +114,37 @@ implemented.
 
 ## Accepted workstation integration boundary
 
-On 2026-10-07 the user selected **RTC-ARCH-025**, which supersedes the
-headless-runtime session ownership allocation. WirePlumberAO Lua is the sole
-session lifecycle, admission and connection-policy authority. systemd owns
-process lifetime. Julia deployment tooling is limited to one-shot export,
-installation and preflight. Julia calibration clients and scientific Julia
-owners, including JFG graph processes, remain. This is the target architecture,
-not an implementation or qualification claim; the
-[migration design](WIREPLUMBER_SESSION_DESIGN.md) defines the removal gates.
+On 2026-10-21 the user selected **RTC-ARCH-026**: the headless RTC application
+owns session lifecycle, admission and declared application connections.
+This supersedes RTC-ARCH-025's assignment to the WirePlumber daemon, without
+restoring the retired Rust Statig or Julia DeploymentRunner coordinators.
+The [headless design](HEADLESS_RTC_DESIGN.md) defines the implementation and gates.
 
-| Component | Selected target responsibility |
+| Component | Selected responsibility |
 | --- | --- |
-| WirePlumberAO Lua profile | Own session lifecycle, exact admission, declared connection policy, source-first stop, reset/update sequencing, deadlines, required-loss handling, cleanup and fresh readmission. |
-| systemd | Start, stop, reap and supervise session processes and apply configured service resource policy. |
+| Headless RTC application | Own lifecycle, exact admission, explicit application links, source-first stop, reset/update sequencing, deadlines, required-loss handling, cleanup and fresh readmission. Reuse libwireplumber hooks, discovery and SessionItems. |
+| WirePlumberAO | Enable/configure devices, enforce access and shared routing policy; do not coordinate RTC application lifecycle or create its declared application links. |
+| systemd | Start, stop, reap and supervise processes and apply configured service resource policy. |
 | PipeWireAO | Negotiate and transport NDArray buffers, schedule published nodes, expose native controls and host FGN. |
-| FGN/JFG | Prepare and execute internal scientific graphs, manage workspaces and executor workers, and apply owner-local scientific controls and adoption. |
-| AOS and its HIL adapter | Simulate instrument physics, own model time and frame/command causality, and publish the declared sources and sinks. |
-| AOC and Julia calibration clients | AOC owns calibration algorithms and estimates; clients prepare/export artifacts and coordinate acquisition through deployed endpoints. |
-| Julia deployment tools and GUI/CLI | Export, install, preflight, request operations and observe status as clients; Julia scientific owners remain. Clients do not own runtime lifecycle or process supervision. |
+| FGN/JFG | Prepare and execute scientific graphs, manage workspaces/workers, and apply owner-local controls and adoption. |
+| AOS and its HIL adapter | Own instrument physics, model time and frame/command causality, and publish declared sources and sinks. |
+| AOC and Julia calibration clients | Own calibration algorithms/estimates and coordinate acquisition through deployed endpoints. |
+| Julia deployment tools and GUI/CLI | Export/install/preflight or request and observe bounded native operations as clients; do not duplicate live lifecycle ownership. |
 
-WirePlumber Lua owns session policy; a narrow PipeWireAO native typed endpoint
-and C transport shim supply PipeWire operations without adding a second
-authority. Selective `ObjectManager` features must limit observation to the
-declared session surface. PipeWire schedules published nodes; FGN/JFG own
-internal graph connections, workspaces and workers. systemd sets process
-resource policy. Startup alone does not admit acquisition: WirePlumber must
-observe scientific owner readiness and source hold before release. Source-first
-stop, reset, adoption and required-loss handling remain migration gates. The selected FGN host is a separate ordinary PipeWire client service.
-LocalModule hosting inside WirePlumber has a different process/failure boundary
-and remains unqualified by the selected checks. Preserve the FGN/JFG full-frame and row-block data
-paths; those do not represent two hosting alternatives.
-See [RTC-ARCH-025 and its gates](WIREPLUMBER_SESSION_DESIGN.md) and
-[current work](roadmap.md#current-work).
+The headless executable uses public libwireplumber APIs as an ordinary
+application. Its minimal configuration excludes desktop auto-connect policy,
+manager-socket preference and the WirePlumber daemon identity. Selective
+`ObjectManager` features observe declared identities and Links without
+subscribing to unrelated scientific Node Props. Scientific owners retain
+internal graphs and workers. Startup alone does not authorize source release.
 
 ## Active scope
 
 The former implementation began with the Rust Statig runner described below.
 The paragraphs and milestones through this historical scope record the
 original implementation baseline; they are not current provider allocations.
-Current target work is the WirePlumber-owned session lifecycle in
-[RTC-ARCH-025](WIREPLUMBER_SESSION_DESIGN.md); the existing implementation and
+Current ownership follows
+[RTC-ARCH-026](HEADLESS_RTC_DESIGN.md); the existing implementation and
 its receipts remain evidence for their recorded scope, not qualification of
 that replacement. The following baseline and increments describe the former
 implementation, not current ownership:
@@ -226,7 +217,7 @@ correlated operation events. Git publication precedes SQLite references; the two
 stores are not one atomic transaction. Git maintenance, FITS decoding and database
 I/O remain outside scientific frame processing.
 
-WirePlumber remains the sole session admission/lifecycle authority. Its optional
+The headless RTC remains the sole session admission/lifecycle authority. Its optional
 journal module asynchronously records native property/parameter requests before
 effects, then records the reported completion before publication. Newly generated
 sessions require the journal; existing sealed sessions retain their previous
@@ -243,14 +234,13 @@ GUI uses a local helper off its UI thread; shared panels remain WASM-buildable.
 
 ### WirePlumberAO and application tooling
 
-WirePlumberAO is the live session manager: it admits declared endpoints, owns
-session Links, serializes lifecycle transitions and detects cohort failure.
-`pipewireao-rtc` is the Julia application/deployment toolkit: it defines the
-application's graphs, calibration bindings, simulator configuration, installed
-processes and one-shot operator clients. It supplies tooling used by the session
-manager; it is not a second running session manager. systemd owns process
-lifetime, while AOS/JFG/FGN owners execute their scientific work. The GUI observes
-these owners and submits operator requests.
+The headless RTC is the application lifecycle owner: it admits declared
+endpoints, owns application Links, serializes transitions and detects cohort
+failure. It uses libwireplumber's public discovery, hooks and SessionItems.
+WirePlumberAO retains device/access/shared-routing policy. Julia tools define
+application configuration, calibration bindings and one-shot deployment/control
+commands. systemd owns process lifetime; AOS/JFG/FGN execute scientific work.
+The GUI observes these owners and submits operator requests.
 
 Selected on 2026-10-21, cold simulator settings management is a narrow
 application-replacement operation. Plants declare immutable defaults and JSON
@@ -258,7 +248,7 @@ Schema metadata for their startup settings. A separate headless management
 interface describes that saved configuration and accepts a candidate for a
 systemd-owned, finite one-shot deployment job. The job prepares the candidate
 using the pinned application environment before requesting any old-session
-effect. It then uses the existing native WirePlumber Quit/Status/Start controls
+effect. It then uses the existing native RTC Quit/Status/Start controls
 and ordinary installation/admission path. Management messages carry candidate
 configuration and deployment receipts; they do not proxy live Start, Stop,
 Reset, properties, parameters or authoritative status. The artifact/catalog
@@ -277,7 +267,7 @@ flowchart LR
     Config["RTC application configuration"]
     Tools["pipewireao-rtc<br/>one-shot deployment and clients"]
     Systemd["systemd<br/>process lifetime"]
-    Session["WirePlumberAO<br/>live session policy"]
+    Session["Headless RTC<br/>application lifecycle"]
     Source["Instrument plant<br/>shared AOS HIL adapter"]
     Graph["FGN or JFG<br/>scientific graph owner"]
     Sink["Declared non-actuating sink"]
@@ -300,8 +290,8 @@ flowchart LR
 
 | Component | Active responsibility |
 | --- | --- |
-| `pipewireao-rtc` | Define/export/install application configuration, start systemd-owned process cohorts, provide one-shot native clients and calibration tools, and provide optional scientific-owner entry points. |
-| WirePlumberAO Lua profile | Own live session admission, exact external Links, lifecycle/update ordering, required-loss handling and session cleanup. |
+| `pipewireao-rtc` | Own live admission, application links, lifecycle/update ordering and cleanup. The package also supplies configuration, one-shot deployment/control tools and scientific-owner entry points. |
+| WirePlumberAO | Own device configuration, access and shared routing policy. |
 | systemd | Own process lifetime and configured resource policy. |
 | PipeWireAO | Own ndarray transport, format negotiation, scheduling, FGN hosting, property and parameter publication, and standard PipeWire introspection. |
 | Scientific Algorithm packages | Own ordinary typed implementations and declarations of ports, shapes, schemas, scalar properties, ndarray parameters, and construction values. |
@@ -313,7 +303,7 @@ flowchart LR
 | `JuliaFilterGraph.jl` and `FilterGraphPipeWire` | Optionally own and publish one prepared RTC processing graph as an ordinary external PipeWire node. |
 | `REVOLTClassicSim.jl` | Own the REVOLT Classic atmosphere, optics, 352-by-352 Shack–Hartmann detector model, provisional HSDM277 plant, science diagnostics, and deterministic HIL boundary without a PipeWire dependency. |
 
-WirePlumberAO is the live control plane for this session. It does not process
+The headless RTC is the live application control plane for this session. It does not process
 frame data or replace PipeWire scheduling. PipeWireAO and scientific executors
 remain the data plane. The Julia deployment clients are finite operator tools.
 
@@ -415,12 +405,14 @@ executor such as AdaptiveOpticsSim.
 
 ## Implementation language and placement
 
-Rust is the default language for the runner because it is a small stateful
-PipeWire client and configuration tool. This choice is not part of the
-scientist-facing ABI. C remains at existing SPA and PipeWireAO ABI boundaries;
-scientific Algorithms remain in their owning implementation language.
+Under RTC-ARCH-026, RTC-owned Lua implements the session policy through
+libwireplumber, C supplies
+native PipeWire control boundaries, and Julia supplies deployment tools and
+scientific owners. systemd supervises the processes. These implementation
+languages are not part of the scientist-facing ABI; scientific Algorithms
+remain in their owning implementation language.
 
-This is decision **RTC-ARCH-012**: implement the runner lifecycle with
+Historical decision **RTC-ARCH-012** selected the former runner lifecycle with
 Statig's blocking state-machine API and a single serialized dispatcher from
 the first increment. The public lifecycle remains the domain model in
 RTC-DEV-004; Statig types stay private. State handlers produce typed effects,
@@ -428,14 +420,11 @@ potentially blocking configuration and PipeWire work executes outside the
 handlers, and results return as typed completion events. This establishes the
 same lifecycle mechanism that later operational work can extend without
 selecting any archived physical-device, correction-authority, supervision, or
-recovery behavior.
+recovery behavior. RTC-ARCH-025 supersedes this implementation allocation;
+the identifier and original rationale remain reserved.
 
-The runner, PipeWire daemon, and optional observer are separate ordinary
-processes. The baseline does not prescribe systemd units, affinity, scheduler
-classes, or one process per graph operation.
-
-The selected deployment extension below supplies an optional process launcher
-and user units without changing that ordinary development invocation.
+The selected deployment uses separate PipeWire, headless RTC and scientific
+owner processes. Device profiles may additionally use WirePlumberAO. It does not require one process per graph operation.
 
 ## Laboratory deployment profile
 
@@ -471,9 +460,10 @@ process-management exclusions. It does not select the archived physical RTC
 architecture. AdaptiveOpticsSim and AdaptiveOpticsSimPipeWireHIL deployment
 graphs follow completion of this increment.
 
-The Rust runner retains the sole Statig dispatcher. A companion launcher owns
-the private core, optional external scientific owner, startup admission and
-owned-process cleanup. Scientific packages export standard PipeWire graph
+Under RTC-ARCH-026, the headless RTC retains the sole live application policy.
+One-shot Julia tools prepare configuration and systemd-owned processes,
+verify resources, and request native admission. systemd supervises the private
+core, headless RTC and scientific owners. Scientific packages export standard PipeWire graph
 configurations and typed calibration artifacts. A deployment description may
 declare process arguments, environment, readiness and placement; it must not
 describe or reinterpret scientific operations. Runtime execution must not
@@ -490,9 +480,10 @@ RUNNING state is replayed automatically.
 The private native PipeWire control endpoint and console share one typed command executor.
 Reader/preparation/writer work stays outside the sole owner. Requests, clients,
 queues, parameter bytes and reply sizes have finite bounds. Replies distinguish
-submission, requested generation and observed active generation. Existing
-blocking effects may hold the dispatcher for up to their documented five-second
-deadline; health and stop must not claim a shorter bound. A client timeout or
+submission, requested generation and observed active generation. The headless RTC
+coordinates asynchronous effects with finite deadlines; its Lua policy must
+not block on process, filesystem or scientific work. Health and stop must not
+claim a bound shorter than the effects they depend on. A client timeout or
 disconnect has an unknown mutation outcome until generations are observed.
 
 Systemd manages deployment processes, not scientific workers. User units cannot
@@ -517,12 +508,12 @@ In the selected workstation/WirePlumber integration, AOS HIL is an optional
 instrument provider that becomes a required session participant when selected.
 An instance may provide multiple sensor/diagnostic sources and command sinks on
 the selected PipeWireAO core. The session declares endpoint roles, exact owner
-identities, per-endpoint contracts and required/optional status. The headless
-runtime admits the required endpoint set and coordinates native acquisition and
+identities, per-endpoint contracts and required/optional status. The RTC
+admits the required endpoint set and coordinates native acquisition and
 lifecycle controls; simulator or required endpoint loss revokes admission.
 The compatibility pilot includes the existing HIL path with
 both CPU FGN and CPU JFG, not only a recorded source and discard sink. This is
-a migration obligation, not a claim that WirePlumber HIL integration is complete.
+a migration obligation, not a claim that headless RTC HIL qualification is complete.
 
 AOS retains shared plant state, model-time advancement and declared sensor/command
 coherence. Optional observation endpoints do not gate required simulation progress.
@@ -539,12 +530,12 @@ RTC's micrometre OPD command to the plant's metre OPD command. HSDM277 order is
 preserved. These transfers and encoding changes are explicit, not zero-copy.
 
 An optional source-owner declaration selects a prepared application with a
-bounded, acknowledged pause/resume/reset interface. The supervisor releases
+bounded, acknowledged pause/resume/reset interface. The RTC releases
 that source only after stopped-session admission and acknowledged RTC start.
 The source completes its outstanding command before acknowledging pause; stop
-and reset then reach the RTC owner. A local supervisor endpoint coordinates
-these deployment actions and forwards scientific commands to the existing
-single Rust dispatcher. It adds no data scheduler or second scientific parser.
+and reset then reach the graph owner. The native session endpoint admits
+client requests to the single Lua session policy; scientific commands use
+the existing owner endpoints. It adds no data scheduler or second scientific parser.
 Unconfirmed source control fails the owned deployment; mutations are not retried.
 
 Wall pacing and model time are distinct. The installed plant graph uses the

@@ -1,5 +1,30 @@
 # WirePlumber realization and withdrawal design
 
+## Current allocation — 2026-10-21
+
+[RTC-ARCH-026](HEADLESS_RTC_DESIGN.md) selects the headless RTC application as
+the sole application lifecycle and connection authority. It reuses libwireplumber
+as a library. The SessionItem increment moves raw Link
+creation, activation and retirement from `ao-connections.lua` into the existing
+`si-node` / `si-standard-link` interfaces. AO policy retains declared endpoint
+identity, scientific Format checks, downstream ordering, deadlines and the
+Core-sync/registry-absence proof after native withdrawal. See the
+[reuse audit](reviews/20261021-wireplumber-reuse/REVIEW.md) for the reviewed
+interface gaps and current implementation evidence.
+
+These are correctness requirements for the selected session, not a requirement
+to add AO policy to ordinary WirePlumber audio/video sessions. They do not
+establish a real-time deadline or require transactional rollback. A timed-out
+operation remains unknown; cleanup cannot report success while creation may
+still complete. The native withdrawal interface applies to explicit,
+non-adapter, non-lingering links; existing automatic audio linking remains its
+own supported mode.
+
+The remainder records the **2026-10-07 historical projection pilot** and its
+original receipts. Its separate runtime authority, intent Filter and fallback
+allocation are superseded by RTC-ARCH-025; they are not current implementation
+instructions or evidence for the SessionItem extension.
+
 ## Status and scope
 
 The opt-in integration passes native primitive, clean deployment, held adapter

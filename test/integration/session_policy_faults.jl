@@ -6,8 +6,8 @@ using Libdl
 using SHA
 
 const POLICY = abspath(isempty(ARGS) ?
-    "/opt/pipewireao/share/wireplumber/scripts/ao/session.lua" : only(ARGS))
-isfile(POLICY) || error("production WirePlumber session policy was not found: $POLICY")
+    "/opt/pipewireao/share/pipewireao-rtc/scripts/ao/session.lua" : only(ARGS))
+isfile(POLICY) || error("production RTC session policy was not found: $POLICY")
 const LUA = Libdl.find_library(["lua5.4", "liblua5.4.so.0"])
 isempty(LUA) && error("the optional policy test requires the Lua 5.4 shared library")
 const SCRIPT = joinpath(@__DIR__, "..", "data", "session_faults", "policy_faults.lua")

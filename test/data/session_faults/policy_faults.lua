@@ -52,6 +52,14 @@ local function session()
   local environment = setmetatable({
     require = function(name) return assert(mocks[name], "Unexpected dependency: " .. name) end,
     Plugin = { find = function() return endpoint end },
+    -- This harness extracts only the compensation callback; native hooks are
+    -- exercised by WirePlumber's ao-session-hooks test instead.
+    AsyncEventHook = function() return { register = function() end } end,
+    EventInterest = function(value) return value end,
+    Constraint = function(value) return value end,
+    EventDispatcher = { push_event = function()
+      return { stop_processing = function() end }
+    end },
     Log = { warning = function(message)
       observed.warnings[#observed.warnings + 1] = message
     end },

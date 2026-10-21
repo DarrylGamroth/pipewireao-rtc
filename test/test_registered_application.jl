@@ -1,7 +1,7 @@
 using Test, TOML, JSON3, PipeWireAORTC
 
 const D = PipeWireAORTC.DeploymentConfiguration
-const I = PipeWireAORTC.WirePlumberInstall
+const I = PipeWireAORTC.SessionInstall
 
 @testset "registered application environment" begin
     mktempdir() do directory
@@ -63,7 +63,7 @@ end
     environment = "/application/a space's environment"
     launcher = I.installed_launcher("/julia/bin/julia"; environment)
     @test occursin(D.shell_quote(environment), launcher)
-    @test occursin("PipeWireAORTC.WirePlumberCLI.main(ARGS)", launcher)
-    @test !occursin("wireplumber_cli.jl", launcher)
-    @test occursin("wireplumber_cli.jl", I.installed_launcher("/julia/bin/julia"))
+    @test occursin("PipeWireAORTC.SessionCLI.main(ARGS)", launcher)
+    @test !occursin("session_cli.jl", launcher)
+    @test occursin("session_cli.jl", I.installed_launcher("/julia/bin/julia"))
 end
