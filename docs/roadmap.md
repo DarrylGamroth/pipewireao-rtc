@@ -20,7 +20,7 @@ same headless operations. The GUI does not own storage or decide adoption.
 This narrow configuration journal is now selected; full scientific stream
 recording and a browser/remote control service remain deferred.
 
-Implementation is isolated on `codex/artifact-history-20261020` worktrees based
+Implementation is isolated on dedicated artifact-history worktrees based
 on RTC `7fd1349`, GUI `4ef2f22`, and WirePlumber `ce2dc766`. Pre-existing main
 checkout edits and the running Classic session are preserved.
 
