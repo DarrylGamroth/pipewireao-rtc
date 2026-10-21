@@ -89,6 +89,11 @@ results deliberately omit inherited environment values. The Julia log retains
 an expected missing-Git-object diagnostic from a rejection test; all assertions
 pass.
 
+The tested commits are fast-forward integrated into the normal RTC `main` and
+WirePlumberAO `master` checkouts. The two temporary worktrees were removed;
+unrelated historical worktrees remain. [integration.json](integration.json)
+records the exact commits and cleanup.
+
 No workstation deployment, simulator or GPU was started. The known simulator
 service remained inactive with MainPID zero. These are CPU software results,
 not hardware, sustained cadence, latency, allocation or all-instrument

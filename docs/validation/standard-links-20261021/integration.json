@@ -1,0 +1,26 @@
+{
+  "rtc": {
+    "checkout": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc",
+    "branch": "main",
+    "implementation_commit": "d72483d29777fe107b193a21a9687d797ff5e8cc",
+    "clean_after_integration": true
+  },
+  "wireplumber": {
+    "checkout": "/home/dgamroth/workspaces/codex/pipewire/wireplumber",
+    "branch": "master",
+    "implementation_commit": "0bef96ae3a41f23f6f4763744edbf69ad277dc8b",
+    "clean_after_integration": true
+  },
+  "temporary_worktrees_removed": [
+    "/home/dgamroth/workspaces/codex/worktrees/rtc-standard-links-20261021",
+    "/home/dgamroth/workspaces/codex/worktrees/wireplumber-standard-links-20261021"
+  ],
+  "unrelated_historical_worktrees": "preserved",
+  "integration": "fast-forward only; no history rewrite, push or live deployment",
+  "simulation": {
+    "service": "pipewireao-session@1581f3130b5c.service",
+    "ActiveState": "inactive",
+    "MainPID": 0
+  },
+  "validation": "same implementation commits as tested in isolated worktrees; source hashes retained in receipt.json; no new runtime change during integration"
+}
