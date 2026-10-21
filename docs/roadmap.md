@@ -6,7 +6,7 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-10-19. This section is the current delivery summary. Later sections
+Updated 2026-10-20. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
@@ -90,6 +90,19 @@ manifest object ID in shared history. Its immediate acknowledgement is Submitted
 a separate native query confirms requested/active parameter sequence 1/1.
 The evidence catalog links the registration script, Git/SQLite checks and GUI
 capture. This does not qualify a newly generated scientific calibration.
+
+This increment is complete for continued RTC development. The deployed GUI
+stages scalar values and registered offsets/reconstructors in one table, with
+proposals filled before Add. A live gain/offset/reconstructor sequence retained
+the exact Git artifact IDs in shared history; later parameter queries confirmed
+adoption. Mixed updates remain sequential, not atomic, and stop on failure or
+an unknown outcome without retry or rollback.
+
+Further artifact-management work is paused. Whole-configuration checkpoints,
+restore, observing-run records and journaled device admission remain deferred.
+Before extending the custom artifact store, evaluate an existing tool such as
+DVC against a Julia calibration workflow. No migration is selected; the existing
+headless Git/SQLite interface remains usable while core RTC work continues.
 
 ### Classic completion for review — 2026-10-20
 
