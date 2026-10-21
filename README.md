@@ -46,6 +46,10 @@ native protocol names and v1 records retain their identities.
 The callable session modules use application names. Update former
 `WirePlumber*` module references to the following bindings when upgrading:
 
+Version 0.2 packages the headless application and these renamed modules. Native
+RTC assets and upstream libwireplumber are installed separately from the Julia
+package; Classic seals their selected prefix alongside its registered package pins.
+
 | Module | Purpose |
 | --- | --- |
 | `SessionConfiguration` | Generate and write native session configuration |
