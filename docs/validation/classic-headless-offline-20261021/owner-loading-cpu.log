@@ -1,0 +1,3 @@
+AOS_DEFAULT_LOADING julia=1.13.2 rtc=0.2.0 source=/home/dgamroth/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/o8Gp3/src/PipeWireAORTC.jl backend=cpu route=instrument
+Test Summary:                                    | Pass  Total  Time
+AOS actual default loaders after bootstrap (cpu) |   33     33  3.8s

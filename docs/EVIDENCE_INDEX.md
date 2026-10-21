@@ -1,5 +1,15 @@
 # Delivery evidence catalog
 
+## Classic headless deployment refresh — 2026-10-21
+
+[Validation](validation/classic-headless-offline-20261021/README.md) records the
+private RTC 0.2.0 candidate, unchanged scientific assets, 2,409 RTC assertions,
+64 configuration checks, 30 CPU replay checks, 33 CPU loader checks, nine offline
+installer checks and generated unit verification. The
+[independent review](reviews/20261021-classic-headless-offline/REVIEW.md) verifies
+dependency preservation and repaired symlink containment. The simulation stays
+stopped; live, GUI, GPU and timing qualification remain separate.
+
 ## Upstream WirePlumber package integration — 2026-10-21
 
 [Validation](validation/upstream-package-20261021/README.md) records the pinned

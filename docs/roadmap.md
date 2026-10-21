@@ -12,6 +12,20 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Classic headless deployment refresh — 2026-10-21
+
+Classic now pins the privately registered RTC 0.2.0 candidate and launches the
+headless RTC with upstream libwireplumber built against PipeWireAO. Its other
+package entries and 32 scientific/configuration assets are preserved. Offline
+validation passes 2,409 RTC assertions, 64 configuration checks, 30 three-frame
+CPU replay checks, 33 CPU owner-loader checks and nine installer checks. The
+generated unit verifies successfully. See the
+[validation](validation/classic-headless-offline-20261021/README.md) and
+[independent review](reviews/20261021-classic-headless-offline/REVIEW.md).
+The simulation remains stopped and the GPU unused. Live admission/restart, GUI
+controls and cadence/latency remain the next qualification gates when requested;
+no public release or live service activation was selected.
+
 ### Upstream WirePlumber package integration — 2026-10-21
 
 The ordinary WirePlumber fork now keeps runtime source identical to the pinned

@@ -48,7 +48,8 @@ The callable session modules use application names. Update former
 
 Version 0.2 packages the headless application and these renamed modules. Native
 RTC assets and upstream libwireplumber are installed separately from the Julia
-package; Classic seals their selected prefix alongside its registered package pins.
+package. Classic records the selected native prefix and seals its registered
+package pins.
 
 | Module | Purpose |
 | --- | --- |

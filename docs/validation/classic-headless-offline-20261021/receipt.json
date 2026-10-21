@@ -1,0 +1,24 @@
+{
+    "result": "passed",
+    "date": "2026-10-21",
+    "rtc_version": "0.2.0",
+    "rtc_source_commit": "fa8e4d5dcdb370f9acf3a9c28bc898e071ed919e",
+    "rtc_registered_tree": "77e169a9512fa557ff3ee1e4871537fc5468d0ef",
+    "classic_commit": "caaf9f4b02aff543ea9e2b737a6f7e7b7b5a8d4c",
+    "julia": "1.13.2",
+    "checks": {
+        "rtc_assertions": 2409,
+        "rtc_testsets": 77,
+        "configuration": 64,
+        "cpu_science": 30,
+        "cpu_owner_loading": 33,
+        "offline_install": 9,
+        "unit_verify_exit": 0,
+        "preserved_scientific_assets": 32
+    },
+    "scope": "Offline CPU only; no live admission, GUI, GPU or timing qualification",
+    "native_prefix": "/home/dgamroth/.local/opt/pipewireao-classic-headless-20261021",
+    "service": "pipewireao-session@1581f3130b5c.service",
+    "service_active": false,
+    "service_main_pid": 0
+}

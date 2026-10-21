@@ -1,0 +1,25 @@
+[Unit]
+Description=Headless PipeWireAO RTC session %i
+
+[Service]
+Type=exec
+ExecStartPre="/home/dgamroth/workspaces/codex/worktrees/classic-headless-offline-20261021/installed/bin/pipewireao-rtc-session" prepare --package "/home/dgamroth/workspaces/codex/worktrees/classic-headless-offline-20261021/installed" --prefix "/home/dgamroth/.local/opt/pipewireao-classic-headless-20261021" --unit %n --launcher "/home/dgamroth/workspaces/codex/worktrees/classic-headless-offline-20261021/installed/bin/pipewireao-rtc-session" --runtime-root %t/pipewireao-session-%i
+EnvironmentFile=-%t/pipewireao-session-%i/current.env
+ExecStart="/home/dgamroth/.local/opt/pipewireao-classic-headless-20261021/bin/pipewireao-rtc" -c ${RTC_CONFIG}
+ExecStartPost="/home/dgamroth/workspaces/codex/worktrees/classic-headless-offline-20261021/installed/bin/pipewireao-rtc-session" publish --package "/home/dgamroth/workspaces/codex/worktrees/classic-headless-offline-20261021/installed" --prefix "/home/dgamroth/.local/opt/pipewireao-classic-headless-20261021" --unit %n --runtime-root %t/pipewireao-session-%i
+ExecStop="/home/dgamroth/workspaces/codex/worktrees/classic-headless-offline-20261021/installed/bin/pipewireao-rtc-session" stop --unit %n --runtime-root %t/pipewireao-session-%i
+ExecStopPost="/home/dgamroth/workspaces/codex/worktrees/classic-headless-offline-20261021/installed/bin/pipewireao-rtc-session" cleanup --invocation ${INVOCATION_ID} --runtime-root %t/pipewireao-session-%i --source-role simulator
+RuntimeDirectory=pipewireao-session-%i
+RuntimeDirectoryMode=0700
+RuntimeDirectoryPreserve=yes
+UMask=0077
+LimitRTPRIO=95
+LimitMEMLOCK=4294967296
+CPUAffinity=15
+KillMode=control-group
+TimeoutStartSec=900.0
+TimeoutStopSec=300
+Restart=no
+
+[Install]
+WantedBy=default.target
