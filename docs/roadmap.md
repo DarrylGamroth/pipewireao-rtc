@@ -19,8 +19,9 @@ the requested detector pixel scale using conservative native-cell overlap.
 Classic `3f30ae01` exposes pupil resolution and strict startup atmosphere
 overrides (r0/reference wavelength, outer scale, layer strengths, winds,
 altitudes/identities and seed). Both are integrated on local main; these changes
-are privately registered as AOS/Classic 0.2.2; deployment validation is in progress. Classic retains the 240-sample default and admits
-480 for the higher-resolution validation configuration. No documented serial-specific HSDM277 surface
+are privately registered as AOS/Classic 0.2.2 and deployed with RTC 0.1.11.
+Classic retains the 240-sample default and admits 480 for the higher-resolution
+validation configuration. No documented serial-specific HSDM277 surface
 influence dataset was found in the available REVOLT/HEART files; the Gaussian
 mirror remains explicitly provisional.
 
@@ -44,10 +45,15 @@ survive client exit, serialize across clients and retain uncertain outcomes
 without retry. Structural/calibration settings remain read-only. A cold rebuild
 resets science/controller state and does not checkpoint unsaved live updates.
 
-Local RTC tests pass 2,301 assertions; GUI native/shared and portability checks
-and independent source review passed. Actual managed CUDA replacement and live
-GUI reconnect remain validation gates. The old live session remains untouched
-until those gates pass. Evidence is indexed in the [delivery catalog](EVIDENCE_INDEX.md).
+Local RTC tests pass 2,301 assertions; the final GUI native suite passes 271
+and focused shared settings tests pass 18, alongside portability checks and
+independent review. Actual managed CUDA admission, no-effect invalid proposal,
+client-independent replacement, GUI editing and explicit native reconnect pass.
+The old live GUI/session were shut down; one CUDA simulator remains. The generic
+layer table fills pane width and explanations use tooltips. This qualifies the
+selected local Classic workflow, not other profiles, hardware or timing.
+See the [validation record](validation/simulator-settings-20261021/README.md)
+and [delivery catalog](EVIDENCE_INDEX.md).
 
 ### Headless configuration store — 2026-10-20
 

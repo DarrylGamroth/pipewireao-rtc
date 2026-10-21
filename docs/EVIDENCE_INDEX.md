@@ -9,9 +9,13 @@ settings, immutable fields, no-effect preparation failures, capacity and exact
 invocation fences. `launch-smoke.log` records an actual durable systemd worker
 continuing after its launching client exits and failing before any live effect.
 `render/owners.svg` is the rendered updated ownership diagram. Independent source
-review found no confirmed blockers; it does not substitute for managed CUDA
-replacement or GUI application/reconnect validation, which remain in progress.
-GUI feature commits are `df44d09` and `8a49ddc`; Classic metadata is `abcbc28`.
+review found no confirmed blockers. Actual managed CUDA replacement and GUI
+application/reconnect now pass as recorded below.
+The [final validation record](validation/simulator-settings-20261021/README.md)
+records actual managed CUDA replacement, invalid-proposal rejection with no
+live effects, GUI Apply and restart, exact native reconnect and automatic
+settings reload. Final GUI is `0e5166c` (271 native and 18 focused shared checks);
+Classic metadata is `abcbc28`.
 Private registration receipts and exact immutable application manifests are
 retained alongside these checks. Public release and hardware/cadence/latency
 qualification are outside this increment.
@@ -42,7 +46,7 @@ Workstation evidence is retained in these directories under
 This evidence is finite simulation/software validation with the provisional
 Gaussian mirror and concurrent live GPU load. It is not measured-mirror,
 hardware, sustained 500 Hz, tail-latency or GUI startup-editing qualification.
-The live registered application was preserved; the new source is local only.
+Subsequent private registration, deployment and GUI editing are recorded above.
 
 ## Headless Git artifacts and SQLite update history — 2026-10-20
 
