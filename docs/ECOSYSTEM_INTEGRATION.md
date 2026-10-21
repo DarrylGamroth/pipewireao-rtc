@@ -35,7 +35,7 @@ format.
 | **AOS** | Simulate the instrument: atmosphere, optics, mirrors, wavefront sensors and detectors | An owner may publish multiple sources and sinks; the current HIL adapter exposes one WFS/command exchange |
 | **AOC** | Prepare probes, estimate interaction matrices, construct reconstructors and calculate calibration diagnostics | Numerical plans, workspaces and results; acquisition uses the deployed instrument endpoints |
 | **WirePlumberAO profile** | Own device configuration, access and shared routing policy | Existing WirePlumber device monitors, hooks and routing interfaces |
-| **Headless RTC** | Own exact discovery, application links, readiness and coordinated start/stop/reset/failure policy using libwireplumber | Existing native session/owner contracts and generic SessionItems |
+| **Headless RTC** | Own exact discovery, application links, readiness and coordinated start/stop/reset/failure policy using libwireplumber | Existing native session/owner contracts and public WpLink APIs |
 | **systemd** | Start, stop and supervise processes; apply resource and scheduling limits | User services and, where configured, administrator-provisioned resources |
 | **PipeWireAORTC application/deployment tools** | Export, install and preflight applications; verify processes and request operations as clients | Standard configuration, systemd services and native session controls |
 | **Workstation GUI and CLI tools** | Edit/select configurations, request lifecycle and property/parameter changes, and observe status | Clients of the headless RTC and scientific owners |
@@ -308,15 +308,15 @@ non-audio nodes. NDArray data alone does not require a different linking
 framework. Our declared topology resolves symbolic node/port names to exact
 IDs, rather than asking automatic audio-channel policy to choose connections.
 
-The current implementation extends `si-node` port contexts and
-`si-standard-link` exact selection, Link properties, associated-proxy access and
-asynchronous withdrawal. Those existing factories own child Link creation,
-activation and retirement. AO no longer calls the Link factory or destroys its
-proxies directly. It retains endpoint identity, scientific admission, downstream
-ordering, operation deadlines and Core-sync/correlated-absence proof after native
-withdrawal. No AO-only SessionItem class or second linking implementation was
-added. Exact withdrawal currently supports non-adapter, non-lingering links;
-ordinary automatic audio pairing remains the default mode.
+The RTC now creates ordinary `WpLink` objects through the upstream Link factory.
+The former `si-node` / `si-standard-link` extensions and custom Link Format API
+are removed. Its existing native control module supplies a small Lua binding to
+public C cancellation/disposal and negotiated Format observation. The RTC retains
+endpoint identity, scientific admission, downstream ordering, deadlines and
+Core-sync/correlated-absence proof. Generic Lua/POD bindings remain separate
+from this Link API change; this is not a claim of an entirely unmodified library.
+See the [standard link design](HEADLESS_RTC_DESIGN.md#standard-link-apis--2026-10-21)
+and [validation](validation/standard-links-20261021/README.md).
 
 Model new functionality on existing implementations and extend their interfaces
 where capabilities are missing. Loading the stock all-feature event source
@@ -399,7 +399,7 @@ the RTC permanently.
 | --- | --- |
 | Process startup, termination and reaping | systemd; one-shot Julia deployment tools verify exact incarnations |
 | Device configuration, access and shared routing | WirePlumberAO |
-| RTC application links, scientific readiness and lifecycle coordination | Headless RTC application using libwireplumber hooks and SessionItems |
+| RTC application links, scientific readiness and lifecycle coordination | Headless RTC application using libwireplumber hooks and public WpLink APIs |
 | NDArray buffers, scheduling and internal graph execution | PipeWireAO, FGN and JFG |
 | Instrument physics and calibration algorithms | AOS/adapter and AOC/Julia scientific owners |
 | Operator interface | Optional GUI/CLI/Julia clients of the same native headless endpoint |

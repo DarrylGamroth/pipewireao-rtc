@@ -1,5 +1,16 @@
 # Delivery evidence catalog
 
+## Standard libwireplumber Link APIs — 2026-10-21
+
+The [validation record](validation/standard-links-20261021/README.md) records
+2,326 Julia assertions, eight native RTC suites, five generic WirePlumber suites,
+seven production-policy fault cases and 19 actual CPU-array/coexistence checks.
+The [independent review](reviews/20261021-standard-links/REVIEW.md) maps the
+former SI extension tests and confirms retirement/Format regression evidence.
+Upstream Link/SI APIs are restored; generic Lua/POD bindings remain separately
+inventoried and genuine fixes retained as independent patches. Both builds use
+PipeWireAO. The simulator stays stopped; no hardware/GPU/timing qualification.
+
 ## Headless RTC application ownership — 2026-10-21
 
 [RTC-ARCH-026](HEADLESS_RTC_DESIGN.md) moves lifecycle and declared application

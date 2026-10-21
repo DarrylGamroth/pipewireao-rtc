@@ -9,8 +9,8 @@ endif
 
 test_env = environment()
 test_env.set('HOME', '/invalid')
-test_env.prepend('LD_LIBRARY_PATH', wp.get_variable(pkgconfig: 'libdir'))
 test_env.prepend('LD_LIBRARY_PATH', pw.get_variable(pkgconfig: 'libdir'))
+test_env.prepend('LD_LIBRARY_PATH', wp.get_variable(pkgconfig: 'libdir'))
 test_env.set('XDG_RUNTIME_DIR', '/invalid')
 test_env.set('PIPEWIREAO_RUNTIME_DIR', '/tmp')
 test_env.set('XDG_CONFIG_HOME', meson.current_build_dir() / '.config')
@@ -39,3 +39,9 @@ test_env.set('RTC_TEST_BINARY', rtc.full_path())
 test_env.set('RTC_TEST_SOURCE', meson.current_source_dir())
 test_env.set('RTC_TEST_SCRIPT', meson.current_source_dir() / 'scripts/host-ready.lua')
 test('rtc-host', host_test, env: test_env, depends: [rtc] + rtc_modules, timeout: 30)
+
+links = executable('test-ao-links',
+  ['ao-links.c', '../modules/ao-link.c', '../modules/module-ao-control-endpoint.c'],
+  include_directories: include_directories(wp_source / 'tests/common'),
+  dependencies: [wp, pw])
+test('ao-links', links, env: test_env, timeout: 30)

@@ -56,25 +56,25 @@ function write_application_files(directory, socket, data_dir)
         }
         context.modules = [
           { name = libpipewire-module-protocol-native }
+          { name = libpipewire-module-client-node }
         ]
         wireplumber.profiles = {
           ao-rtc = {
             support.lua-scripting = required
-            si.node = required
-            si.standard-link = required
+            rtc.transport = required
             fixture.session-items = required
           }
         }
         wireplumber.components = [
           { name = libwireplumber-module-lua-scripting, type = module
             provides = support.lua-scripting }
-          { name = libwireplumber-module-si-node, type = module
-            provides = si.node }
-          { name = libwireplumber-module-si-standard-link, type = module
-            provides = si.standard-link }
+          { name = libwireplumber-module-ao-control-endpoint, type = module
+            provides = rtc.transport
+            arguments = { plugin.name = ao-session-control
+              node.name = test-link-controller profile = pipewireao.rtc.controller/1 instance = 404 } }
           { name = "$(joinpath(data_dir, "scripts/session-items-validation.lua"))", type = script/lua
             provides = fixture.session-items
-            requires = [ support.lua-scripting si.node si.standard-link ] }
+            requires = [ support.lua-scripting rtc.transport ] }
         ]
         """)
     return config
@@ -141,7 +141,7 @@ function start_application(directory, socket, logfile, data_dir)
     candidate_lib = isdir(joinpath(prefix, "lib/x86_64-linux-gnu")) ?
         joinpath(prefix, "lib/x86_64-linux-gnu") : joinpath(prefix, "lib")
     environment = Dict(
-        "WIREPLUMBER_MODULE_DIR" => module_directory(prefix),
+        "WIREPLUMBER_MODULE_DIR" => joinpath(RTC_PREFIX, "lib/pipewireao-rtc/modules") * ":" * module_directory(prefix),
         "WIREPLUMBER_DATA_DIR" => data_dir,
         "WIREPLUMBER_DEBUG" => "W,session-items-validation:W",
         "LD_LIBRARY_PATH" => candidate_lib * ":" * get(ENV, "LD_LIBRARY_PATH", ""),
@@ -197,7 +197,7 @@ function main()
     receipt = Dict{String,Any}("result" => "running", "run_directory" => directory,
         "cleanup" => Dict{String,Any}(), "samples" => Vector{Vector{Float32}}())
     try
-        @testset "CPU-only headless RTC SessionItems link" begin
+        @testset "CPU-only headless RTC standard Link" begin
         with_control_private_core() do socket, runtime, daemon
             receipt["private_core_pid"] = getpid(daemon)
             loop = ThreadLoop("session-items-validation")

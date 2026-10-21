@@ -1,0 +1,84 @@
+{
+  "rtc": [
+    {
+      "name": "ao-connections",
+      "result": "OK",
+      "returncode": 0,
+      "duration": 0.02567124366760254
+    },
+    {
+      "name": "ao-owner",
+      "result": "OK",
+      "returncode": 0,
+      "duration": 0.022604942321777344
+    },
+    {
+      "name": "ao-acquisition",
+      "result": "OK",
+      "returncode": 0,
+      "duration": 0.019524812698364258
+    },
+    {
+      "name": "ao-session-journal",
+      "result": "OK",
+      "returncode": 0,
+      "duration": 0.017910242080688477
+    },
+    {
+      "name": "rtc-host",
+      "result": "OK",
+      "returncode": 0,
+      "duration": 0.0510406494140625
+    },
+    {
+      "name": "ao-links",
+      "result": "OK",
+      "returncode": 0,
+      "duration": 0.04907798767089844
+    },
+    {
+      "name": "ao-session-hooks",
+      "result": "OK",
+      "returncode": 0,
+      "duration": 0.3650681972503662
+    },
+    {
+      "name": "ao-journal",
+      "result": "OK",
+      "returncode": 0,
+      "duration": 1.0278441905975342
+    }
+  ],
+  "wireplumber": [
+    {
+      "name": "test-lua-event-hooks",
+      "result": "OK",
+      "returncode": 0,
+      "duration": 0.013480424880981445
+    },
+    {
+      "name": "test-si-node",
+      "result": "OK",
+      "returncode": 0,
+      "duration": 0.01634073257446289
+    },
+    {
+      "name": "test-si-audio-adapter",
+      "result": "OK",
+      "returncode": 0,
+      "duration": 0.01885700225830078
+    },
+    {
+      "name": "test-session-item",
+      "result": "OK",
+      "returncode": 0,
+      "duration": 0.03006291389465332
+    },
+    {
+      "name": "test-si-standard-link",
+      "result": "OK",
+      "returncode": 0,
+      "duration": 0.028064727783203125
+    }
+  ]
+}

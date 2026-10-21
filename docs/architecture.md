@@ -122,7 +122,7 @@ The [headless design](HEADLESS_RTC_DESIGN.md) defines the implementation and gat
 
 | Component | Selected responsibility |
 | --- | --- |
-| Headless RTC application | Own lifecycle, exact admission, explicit application links, source-first stop, reset/update sequencing, deadlines, required-loss handling, cleanup and fresh readmission. Reuse libwireplumber hooks, discovery and SessionItems. |
+| Headless RTC application | Own lifecycle, exact admission, explicit application links, source-first stop, reset/update sequencing, deadlines, required-loss handling, cleanup and fresh readmission. Reuse libwireplumber hooks, discovery and public WpLink APIs. |
 | WirePlumberAO | Enable/configure devices, enforce access and shared routing policy; do not coordinate RTC application lifecycle or create its declared application links. |
 | systemd | Start, stop, reap and supervise processes and apply configured service resource policy. |
 | PipeWireAO | Negotiate and transport NDArray buffers, schedule published nodes, expose native controls and host FGN. |
@@ -236,7 +236,7 @@ GUI uses a local helper off its UI thread; shared panels remain WASM-buildable.
 
 The headless RTC is the application lifecycle owner: it admits declared
 endpoints, owns application Links, serializes transitions and detects cohort
-failure. It uses libwireplumber's public discovery, hooks and SessionItems.
+failure. It uses libwireplumber's public discovery, hooks and WpLink APIs.
 WirePlumberAO retains device/access/shared-routing policy. Julia tools define
 application configuration, calibration bindings and one-shot deployment/control
 commands. systemd owns process lifetime; AOS/JFG/FGN execute scientific work.

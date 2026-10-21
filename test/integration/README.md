@@ -1,11 +1,11 @@
 # Actual headless RTC fault qualification
 
-## CPU-only SessionItem link qualification
+## CPU-only standard Link qualification
 
 `session_items.jl` uses the existing private-core helper and real
 `PipeWireAO.NdArraySource` / `NdArraySink` endpoints. It loads the installed
-candidate's production `ao-connections` and existing `si-node` /
-`si-standard-link` modules, checks exact endpoint identities and port IDs,
+candidate's production `ao-connections`, upstream Link APIs and RTC-local
+control-module binding, checks exact endpoint identities and port IDs,
 checks that the link creator client belongs to the actual RTC PID, exchanges
 three CPU arrays, and proves link withdrawal while preserving an unrelated node. A separate
 WirePlumber daemon shares the private core through a minimal profile with no
@@ -20,10 +20,13 @@ julia --startup-file=no --project=. test/integration/session_items.jl \
   /absolute/path/to/fresh-evidence-directory
 ```
 
-The candidate must contain the SessionItem exact-link and asynchronous
-withdrawal extensions. The generated profile selects only Lua and the two
-SessionItem factories, without desktop audio policy or an all-feature event
-source. Endpoint client PID checks bind Client info; registry announcements
+The candidate uses upstream Link and SessionItem interfaces built against
+PipeWireAO, plus the separately inventoried generic Lua/POD bindings. The
+RTC prefix contains its native control module; the generated profile selects
+Lua and that binding, without SessionItem factories, desktop audio policy or an
+all-feature event source. Set `LD_LIBRARY_PATH` with the candidate WirePlumber
+library first, then RTC and PipeWireAO dependencies, so an older library cannot
+shadow the candidate. Endpoint client PID checks bind Client info; registry announcements
 alone do not guarantee the PID property. The fixture leaves the link available
 for 30 seconds for first-use compilation and sample exchange, then checks
 retirement and remote absence. This is a functional test, not a latency bound.

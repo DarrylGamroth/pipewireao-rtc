@@ -1,0 +1,3 @@
+RTC_SESSION_POLICY source=/home/dgamroth/workspaces/codex/worktrees/rtc-standard-links-20261021/native/scripts/ao/session.lua sha256=abb2b16c3056a41b4895f02958e3157da9d5f0572479067350c0a1335899fafc lua=liblua5.4.so.0
+Test Summary:                 | Pass  Total  Time
+Production RTC fault ordering |    7      7  0.1s

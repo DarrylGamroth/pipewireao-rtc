@@ -1,0 +1,9 @@
+1/1 ao-links FAIL            0.01s   killed by signal 6 SIGABRT
+# Start of rtc-links tests
+not ok /rtc-links/format-observation - ERROR:native/tests/ao-links.c:326:format_observation: assertion failed (observations.calls == 2): (0 == 2)
+Bail out!
+ERROR:native/tests/ao-links.c:326:format_observation: assertion failed (observations.calls == 2): (0 == 2)
+1/1 ao-links FAIL            0.01s   killed by signal 6 SIGABRT
+Ok:                 0
+Fail:               1
+Timeout:            0

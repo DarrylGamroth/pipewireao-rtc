@@ -4,10 +4,12 @@
  */
 
 #include <wp/wp.h>
+#include "ao-link.h"
 #include <errno.h>
 #include <unistd.h>
 #include <pipewire/filter.h>
 #include <pipewire/keys.h>
+#include <pipewire/link.h>
 #include <spa/param/props.h>
 
 WP_DEFINE_LOCAL_LOG_TOPIC ("m-ao-control-endpoint")
@@ -42,6 +44,12 @@ typedef struct {
  *   the complete advertised Props record list in one update (64 KiB combined).
  *   get-node-id() -> uint (SPA_ID_INVALID when
  *   unavailable); get-owner-pid() -> uint.
+ *   observe-link(WpLink) -> boolean: observe every Format change through
+ *   link-info-changed(WpLink) on the control context.
+ *   get-link-format(WpLink) -> WpSpaPod: owned native-info snapshot or nil.
+ *   retire-link(WpLink) -> boolean: deferred abort/dispose; link-retired
+ *   (WpLink, string) follows native retirement (empty string means success).
+ *   Lua must also account for pending activation and prove registry absence.
  *   disconnect(): defer wp_core_disconnect; systemd handles owner cleanup.
  *
  * publish replaces the advertised Props with pw_filter_update_params, which
@@ -84,6 +92,11 @@ enum {
   ACTION_GET_NODE_ID,
   ACTION_GET_OWNER_PID,
   ACTION_DISCONNECT,
+  ACTION_RETIRE_LINK,
+  SIGNAL_LINK_RETIRED,
+  SIGNAL_LINK_INFO_CHANGED,
+  ACTION_OBSERVE_LINK,
+  ACTION_GET_LINK_FORMAT,
   N_SIGNALS
 };
 static guint signals[N_SIGNALS];
@@ -103,6 +116,109 @@ wp_ao_control_endpoint_disconnect (WpAoControlEndpoint *self)
   if (core)
     wp_core_idle_add (core, NULL, disconnect_core, g_object_ref (core), g_object_unref);
 }
+/* Native lifetime only. Lua owns terminal fencing, callback accounting,
+ * exact registry identity and the subsequent Core sync/absence proof. */
+static void
+link_retired (GObject *object, GAsyncResult *result, gpointer data)
+{
+  g_autoptr (WpAoControlEndpoint) self = data;
+  g_autoptr (GError) error = NULL;
+  ao_link_retire_finish (WP_LINK (object), result, &error);
+  g_signal_emit (self, signals[SIGNAL_LINK_RETIRED], 0, object,
+      error ? error->message : "");
+}
+
+static gboolean
+wp_ao_control_endpoint_retire_link (WpAoControlEndpoint *self, WpLink *link)
+{
+  if (!link) return FALSE;
+  g_autoptr (WpCore) core = wp_object_get_core (WP_OBJECT (self));
+  g_autoptr (WpCore) link_core = wp_object_get_core (WP_OBJECT (link));
+  if (!core || core != link_core) return FALSE;
+  ao_link_retire (link, link_retired, g_object_ref (self));
+  return TRUE;
+}
+
+/* Standard WpLink does not notify Format-only info changes. This observer
+ * forwards every observation from the public PipeWire control-context listener.
+ * Each watched Link owns one observer; no session or admission state lives here. */
+typedef struct {
+  struct spa_hook listener;
+  WpAoControlEndpoint *endpoint;
+  WpLink *link; /* weak: owned by the GObject carrying this qdata */
+} LinkObserver;
+
+static void
+link_info (void *data, const struct pw_link_info *info)
+{
+  LinkObserver *observer = data;
+  if (!(info->change_mask & PW_LINK_CHANGE_MASK_FORMAT)) return;
+  g_autoptr (WpLink) link = g_object_ref (observer->link);
+  g_autoptr (WpAoControlEndpoint) endpoint = g_object_ref (observer->endpoint);
+  /* WpLink installs its own info listener first. Its native_info snapshot is
+   * current here. Forward each change: coalescing invalid->valid updates would
+   * erase a required scientific-contract failure. Retirement remains deferred
+   * to protect the currently executing native proxy callback. */
+  g_signal_emit (endpoint, signals[SIGNAL_LINK_INFO_CHANGED], 0, link);
+}
+
+static const struct pw_link_events observed_link_events = {
+  PW_VERSION_LINK_EVENTS, .info = link_info,
+};
+
+static void
+link_observer_detach (WpProxy *link, LinkObserver *observer)
+{
+  (void) link;
+  spa_hook_remove (&observer->listener);
+}
+
+static void
+link_observer_free (gpointer data)
+{
+  LinkObserver *observer = data;
+  link_observer_detach (NULL, observer);
+  g_object_unref (observer->endpoint);
+  g_free (observer);
+}
+
+static void
+link_observer_attach (WpProxy *link, gpointer native, LinkObserver *observer)
+{
+  (void) link;
+  pw_link_add_listener (native, &observer->listener, &observed_link_events, observer);
+}
+
+static gboolean
+wp_ao_control_endpoint_observe_link (WpAoControlEndpoint *self, WpLink *link)
+{
+  static GQuark key;
+  if (!link) return FALSE;
+  if (!key) key = g_quark_from_static_string ("pipewireao-rtc-link-observer");
+  LinkObserver *observer = g_object_get_qdata (G_OBJECT (link), key);
+  if (observer) return observer->endpoint == self;
+  g_autoptr (WpCore) core = wp_object_get_core (WP_OBJECT (self));
+  g_autoptr (WpCore) link_core = wp_object_get_core (WP_OBJECT (link));
+  if (!core || core != link_core) return FALSE;
+  observer = g_new0 (LinkObserver, 1);
+  spa_list_init (&observer->listener.link);
+  observer->endpoint = g_object_ref (self);
+  observer->link = link;
+  g_object_set_qdata_full (G_OBJECT (link), key, observer, link_observer_free);
+  g_signal_connect (link, "pw-proxy-created", G_CALLBACK (link_observer_attach), observer);
+  g_signal_connect (link, "pw-proxy-destroyed", G_CALLBACK (link_observer_detach), observer);
+  gpointer native = wp_proxy_get_pw_proxy (WP_PROXY (link));
+  if (native) link_observer_attach (WP_PROXY (link), native, observer);
+  return TRUE;
+}
+
+static WpSpaPod *
+wp_ao_control_endpoint_get_link_format (WpAoControlEndpoint *self, WpLink *link)
+{
+  (void) self;
+  return link ? ao_link_get_format (link) : NULL;
+}
+
 static const gchar *identity_keys[] = {
   PW_KEY_NODE_NAME, "node.cache-params", "pipewireao.rtc-control.protocol",
   "pipewireao.rtc-control.profile", "pipewireao.rtc-control.instance",
@@ -623,6 +739,24 @@ wp_ao_control_endpoint_class_init (WpAoControlEndpointClass *klass)
       G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
       (GCallback) wp_ao_control_endpoint_get_owner_pid, NULL, NULL, NULL,
       G_TYPE_UINT, 0);
+  signals[ACTION_GET_LINK_FORMAT] = g_signal_new_class_handler ("get-link-format",
+      G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
+      (GCallback) wp_ao_control_endpoint_get_link_format, NULL, NULL, NULL,
+      WP_TYPE_SPA_POD, 1, WP_TYPE_LINK);
+  signals[ACTION_OBSERVE_LINK] = g_signal_new_class_handler ("observe-link",
+      G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
+      (GCallback) wp_ao_control_endpoint_observe_link, NULL, NULL, NULL,
+      G_TYPE_BOOLEAN, 1, WP_TYPE_LINK);
+  signals[SIGNAL_LINK_INFO_CHANGED] = g_signal_new ("link-info-changed",
+      G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST, 0, NULL, NULL, NULL,
+      G_TYPE_NONE, 1, WP_TYPE_LINK);
+  signals[ACTION_RETIRE_LINK] = g_signal_new_class_handler ("retire-link",
+      G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
+      (GCallback) wp_ao_control_endpoint_retire_link, NULL, NULL, NULL,
+      G_TYPE_BOOLEAN, 1, WP_TYPE_LINK);
+  signals[SIGNAL_LINK_RETIRED] = g_signal_new ("link-retired",
+      G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST, 0, NULL, NULL, NULL,
+      G_TYPE_NONE, 2, WP_TYPE_LINK, G_TYPE_STRING);
   signals[ACTION_DISCONNECT] = g_signal_new_class_handler ("disconnect",
       G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
       (GCallback) wp_ao_control_endpoint_disconnect, NULL, NULL, NULL,

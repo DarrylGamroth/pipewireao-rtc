@@ -1,0 +1,9 @@
+# Start of lua tests
+# Start of wprun tests
+not ok 1 /lua/wprun/tests
+# slow test /lua/wprun/tests executed in 8.54 secs
+Bail out!
+1/1 test-lua-event-hooks FAIL            8.54s   killed by signal 6 SIGABRT
+Ok:                 0
+Fail:               1
+Timeout:            0

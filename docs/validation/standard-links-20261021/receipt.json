@@ -1,0 +1,31 @@
+{
+  "rtc_base": "60556ad871748939c297492a57b2721188f19f74",
+  "wp_base": "2c55a872aeaff248c0aa2cbd5c134f8472639e2a",
+  "julia_version": "1.13.2",
+  "julia_testsets": 75,
+  "julia_assertions": 2326,
+  "policy_assertions": 7,
+  "array_assertions": 19,
+  "rtc_source_sha256": {
+    "native/modules/ao-link.c": "01e95e5a0610b3f9e5787529dc8a2c70672a045603e57c0b5509087b9fcdb3a0",
+    "native/modules/ao-link.h": "278737282bbf202328830e931bc74856cdf6c1dfcd2c2628ab857c2c204b428b",
+    "native/modules/module-ao-control-endpoint.c": "18d3159e2bded9b8002387d8dcbc680bed03cc7b743aa439bf474bd735b9af9b",
+    "native/scripts/lib/ao-connections.lua": "c79f1cb4b3fd67bb5a668a4dac04477ecd8c31d7476cfbe5ac41a9bfb8beffd6",
+    "native/tests/ao-links.c": "1f7462f0355fa1663cffffebad6bbd12398248b5122070d98aa428bbca25fe41",
+    "native/tests/scripts/ao-connections.lua": "053adde4cc49475bd969ad4caf184fc39f8e1a055ab60952dad7f0f7e8cda30e",
+    "native/scripts/ao/session.lua": "abb2b16c3056a41b4895f02958e3157da9d5f0572479067350c0a1335899fafc",
+    "src/configuration/session_configuration.jl": "285c133fbb1cc401539401288d19fa2bf1b2d77e877bfbd58bc053d9e7565851",
+    "src/deployment/science_export.jl": "8d6670f4b5d2a6424f3ecb14c504fb0a09b1162d617957444c249e09f0abaee9",
+    "test/integration/session_items.jl": "ac4f9e7e751339b9f8cd6b5e91b31472bbfa29da2a4744ea5faf8c825736cb9d"
+  },
+  "binary_sha256": {
+    "/home/dgamroth/.local/opt/pipewireao-rtc-standard-links-20261021/bin/pipewireao-rtc": "7be4a9a07dc19a1eade3ac6dddf27834e1a383bc4ba10e9683a510b753fb2890",
+    "/home/dgamroth/.local/opt/pipewireao-wp-standard-links-20261021/lib/libwireplumber-0.5.so.0": "02b7607c43120091088af281b43298753b7793d4a81d2ef133660c6ab1d17765"
+  },
+  "simulation_service": {
+    "name": "pipewireao-session@1581f3130b5c.service",
+    "ActiveState": "inactive",
+    "MainPID": 0
+  },
+  "scope": "CPU-only isolated software validation; no live deployment, GPU, physical devices, all-instrument or timing qualification"
+}

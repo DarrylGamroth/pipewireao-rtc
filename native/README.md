@@ -10,8 +10,9 @@ ordinary-client mode are imposed after configuration properties are merged.
 The host does not select the manager socket.
 
 The RTC owns `scripts/ao/session.lua`, `scripts/lib/ao-*.lua`, its control
-endpoint and journal plugins. Reusable SessionItems, factories and event hooks
-remain in libwireplumber and its generic modules. The application modules keep
+endpoint and journal plugins. Upstream Link objects, factories and event hooks remain in libwireplumber.
+RTC uses ordinary Link creation/activation plus its own narrow Lua-to-C
+retirement and negotiated-Format bindings. The application modules keep
 `libwireplumber-module-*.so` filenames because that is the library's plugin
 loading boundary. The control endpoint hosts no frame-processing callback.
 
@@ -25,13 +26,13 @@ owners during shutdown; queued completions receive a bounded drain.
 ## Build and install
 
 Requirements: C compiler, Meson, Ninja, pkg-config, GLib/GIO (including Unix
-support), the reviewed WirePlumberAO 0.5.18 cohort with generic ndarray
-SessionItem exact-port support, acknowledged link withdrawal (`withdraw()`),
-and native event-hook support, PipeWireAO development libraries and SQLite
-3.24 or newer. The package version check alone does not distinguish those
-SessionItem extensions from unmodified upstream libwireplumber; build against
-the reviewed source cohort. Export `PKG_CONFIG_PATH` for that cohort before
-configuring.
+support), libwireplumber 0.5.18 with the separately recorded generic Lua/POD
+bindings and bug fixes, PipeWireAO development libraries and SQLite 3.24 or
+newer. No custom Link/SI API is required. Both libwireplumber and this application
+must select `libpipewire-ao-0.3` and `libspa-ao-0.2`; ordinary PipeWire is not a
+substitute for the AO ABI/NDArray transport. Set `PKG_CONFIG_PATH` explicitly for
+the selected library/prefix. Link/SI sources and installed-symbol/dependency
+checks are recorded separately from the remaining generic bindings.
 
 ```sh
 meson setup native/build native --prefix=/absolute/isolated/prefix --libdir=lib \

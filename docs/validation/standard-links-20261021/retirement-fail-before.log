@@ -1,0 +1,10 @@
+1/1 ao-links FAIL            0.01s   killed by signal 6 SIGABRT
+# Start of rtc-links tests
+# Start of race tests
+not ok /rtc-links/race/created - ERROR:native/tests/ao-links.c:144:retirement_finished: 'wp_proxy_get_pw_proxy (WP_PROXY (object))' should be NULL
+Bail out!
+ERROR:native/tests/ao-links.c:144:retirement_finished: 'wp_proxy_get_pw_proxy (WP_PROXY (object))' should be NULL
+1/1 ao-links FAIL            0.01s   killed by signal 6 SIGABRT
+Ok:                 0
+Fail:               1
+Timeout:            0

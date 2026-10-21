@@ -12,12 +12,32 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Standard libwireplumber link APIs — 2026-10-21
+
+The user selected ordinary libwireplumber Link APIs in the headless RTC and
+removal of custom Link/SessionItem interfaces. Scientific readiness, exact
+identity, Format, cancellation, deadline and cleanup guarantees remain RTC
+policy. The build continues to use PipeWireAO's headers and ABI. Genuine
+upstream bug fixes remain separately reviewable; earlier generic Lua/POD
+bindings are not represented as Link API requirements.
+
+Implemented from RTC `60556ad` and WirePlumberAO `2c55a872`. The full Julia
+suite passes 2,326 assertions, all eight native RTC and five generic WirePlumber
+suites pass, production fault ordering passes seven cases and the real CPU-array/
+coexistence check passes 19 checks. The original SI test obligations are mapped
+at their RTC owner, with removed API-only cases explicit. Independent review
+has no unresolved blocker. See the [validation record](validation/standard-links-20261021/README.md),
+[review](reviews/20261021-standard-links/REVIEW.md) and
+[maintained design](HEADLESS_RTC_DESIGN.md#standard-link-apis--2026-10-21).
+The live simulator stays stopped; no GPU or live service qualification is selected.
+
 ### Headless RTC ownership — 2026-10-21
 
 The user selected [RTC-ARCH-026](HEADLESS_RTC_DESIGN.md), moving application
 lifecycle, readiness and declared RTC connections into a real headless RTC
 process. WirePlumberAO retains device/access/shared-routing policy. The RTC
-reuses libwireplumber discovery, hooks and existing SessionItems; no retired
+reuses libwireplumber discovery, hooks and public Link APIs (the original
+SessionItem increment is superseded above); no retired
 Statig/Julia coordinator or second command protocol is restored.
 
 Integrated into the normal RTC `main` and WirePlumberAO `master` checkouts.

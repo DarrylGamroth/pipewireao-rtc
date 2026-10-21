@@ -65,7 +65,7 @@ hashes(root) = Dict(relpath(joinpath(parent, name), root) => C.sha256_file(joinp
         @test E.validate_wireplumber(dependency) === nothing
         @test E.validate_rtc(rtc) === nothing
         before_dependency, before_rtc = hashes(dependency), hashes(rtc)
-        rm(joinpath(prefix, "lib/x86_64-linux-gnu/wireplumber-0.5/libwireplumber-module-si-node.so"))
+        rm(joinpath(prefix, "lib/x86_64-linux-gnu/wireplumber-0.5/libwireplumber-module-lua-scripting.so"))
         @test_throws ArgumentError E.stage_wireplumber!(package; prefix)
         @test hashes(dependency) == before_dependency
         rm(joinpath(source, "scripts/lib/ao-owner.lua"))

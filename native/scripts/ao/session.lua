@@ -911,7 +911,7 @@ hook ("prepare", {
 })
 
 catalog = connections.new (spec, assert (args ["node.pids"], "Owner PID map missing"),
-    fault, args ["core.owner"])
+    fault, args ["core.owner"], endpoint)
 api = ingress.new (endpoint, instance, function (ticket)
   local previous = state.operation
   local valid, error = pcall (dispatch, ticket)

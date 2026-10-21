@@ -2,8 +2,7 @@
 
 Feature = {
   Proxy = { BOUND = 1 },
-  PipewireObject = { INFO = 2 },
-  SessionItem = { ACTIVE = 4 },
+  PipewireObject = { INFO = 16 },
 }
 
 local core_info = {
@@ -304,6 +303,7 @@ local function realized_link (options)
   local catalog = discovery_session ()
   local rows, err = discover (catalog)
   assert (rows and not err, "Discovery failed before link test: " .. tostring (err))
+  if options.two_links then rows [2] = rows [1] end
   local saved_get_own_bound_id = Core.get_own_bound_id
   Core.get_own_bound_id = function () return 77 end
   local format = {
@@ -318,62 +318,64 @@ local function realized_link (options)
       value_type = "Spa:Int", 1 },
   } } end } end }
   local link, registry, activate
-  test_env.SessionItem = function (factory)
-    local item = { factory = factory }
-    function item:configure (props) self.props = props; return true end
-    if factory == "si-node" then
-      function item:activate (features, callback)
-        assert (features == Feature.SessionItem.ACTIVE)
-        callback (self, nil)
-      end
-      return item
-    end
-    assert (factory == "si-standard-link")
-    function item:activate (features, callback)
-      assert (features == Feature.SessionItem.ACTIVE and self.props ["link.exact"] == true)
-      assert (self.props ["out.item"].props ["item.node"] == catalog.nodes [70])
-      assert (self.props ["in.item"].props ["item.node"] == catalog.nodes [80])
-      assert (self.props ["out.item.port.context"] == "output:71" and
-          self.props ["in.item.port.context"] == "input:81")
-      local copied = {}
-      for _, key in ipairs ({ "link.passive", "object.path", "object.linger" }) do
-        copied [key] = tostring (self.props [key])
-      end
-      copied ["link.output.node"], copied ["link.output.port"] = "70", "71"
-      copied ["link.input.node"], copied ["link.input.port"] = "80", "81"
-      copied ["object.serial"], copied ["client.id"] = "70000", "77"
-      link = object (100, "70000", copied)
-      link.state = "paused"
-      link.get_format = function () return format end
-      registry = object (100, "70000", copied)
-      if options.alias then registry = link end
-      -- The native item owns destruction; AO receives an observational proxy.
-      link.deactivate = function () error ("AO must not destroy a SessionItem's Link") end
-      self.link = link
-      if options.add_before then add (catalog, "link", registry) end
+  local transport = { handlers = {} }
+  function transport:connect (signal, callback) self.handlers [signal] = callback end
+  function transport:call (action, owned)
+    assert (owned == link)
+    if action == "observe-link" then return true end
+    if action == "get-link-format" then return owned._format end
+    assert (action == "retire-link")
+    owned:emit ("fixture-withdraw")
+    local function retired () self.handlers ["link-retired"] (self, owned, options.withdraw_error or "") end
+    if options.pending then self.retired = retired else retired () end
+    return true
+  end
+  catalog.link_transport = transport
+  local factories = 0
+  test_env.Link = function (factory, props)
+    factories = factories + 1
+    if factories > 1 then error ("resumed native failure") end
+    assert (factory == "link-factory")
+    assert (props ["link.output.node"] == 70 and props ["link.output.port"] == 71)
+    assert (props ["link.input.node"] == 80 and props ["link.input.port"] == 81)
+    assert (props ["object.linger"] == false)
+    local copied = {}
+    for key, value in pairs (props) do copied [key] = tostring (value) end
+    copied ["object.serial"], copied ["client.id"] = "70000", "77"
+    link = object (100, "70000", copied)
+    link.state = "paused"
+    link._format = format
+    link._transport = transport
+    registry = object (100, "70000", copied)
+    if options.alias then registry = link end
+    if options.add_before then add (catalog, "link", registry) end
+    function link:activate (features, callback)
+      assert (features == (Feature.Proxy.BOUND | Feature.PipewireObject.INFO))
       activate = function ()
         callback (self, nil)
-        if self.withdrawn then self.withdrawn (self, nil) end
+        if transport.retired then transport.retired () end
       end
       if not options.pending then activate () end
     end
-    function item:get_associated_proxy (kind)
-      assert (kind == "link")
-      return self.link
-    end
-    function item:withdraw (callback)
-      self.link:emit ("fixture-withdraw")
-      if options.pending then self.withdrawn = callback
-      else callback (self, options.withdraw_error) end
-    end
-    return item
+    return link
   end
   local result, failure
   connections.realize (catalog, rows, 1, 1000000, function (value, error)
     result, failure = value, error
+    catalog.test_failure = error
   end)
+  local pod_builder, factory = test_env.Pod, test_env.Link
+  local activate_native = activate
+  activate = function ()
+    test_env.Pod, test_env.Link = pod_builder, factory
+    local saved = Core.get_own_bound_id
+    Core.get_own_bound_id = function () return 77 end
+    activate_native ()
+    Core.get_own_bound_id = saved
+    test_env.Pod, test_env.Link = nil, nil
+  end
   Core.get_own_bound_id = saved_get_own_bound_id
-  test_env.Pod, test_env.SessionItem = nil, nil
+  test_env.Pod, test_env.Link = nil, nil
   assert (link and not failure and (result or options.pending),
       "Link realization failed: " .. tostring (failure))
   if not options.add_before then add (catalog, "link", registry) end
@@ -511,41 +513,63 @@ do
   Core.sync, Core.get_monotonic_time, Core.timeout_add = saved_sync, saved_clock, saved_timer
 end
 
--- Pending node wrapping cannot create a Link after withdrawal. If a resumed
--- native operation throws instead, realization reports that error immediately.
+-- A late first Link completion cannot start a second Link after withdrawal.
+-- A resumed factory exception reports unknown realization without losing the
+-- already retained proxy. No wrapping or SessionItem API is involved.
 for _, retire in ipairs ({ true, false }) do
-  local catalog = discovery_session ()
-  local rows = assert (discover (catalog))
-  local wrapped, nodes, links = nil, 0, 0
-  test_env.SessionItem = function (factory)
-    if factory == "si-standard-link" then links = links + 1 end
-    assert (factory == "si-node")
-    nodes = nodes + 1
-    if nodes > 1 then error ("resumed native failure") end
-    return {
-      configure = function () return true end,
-      activate = function (item, _, callback) wrapped = function () callback (item, nil) end end,
-    }
-  end
-  local realized, failure
-  connections.realize (catalog, rows, 1, 1000000, function (value, error)
-    realized, failure = value, error
-  end)
+  local catalog, link, registry, activated = realized_link ({ pending = true, two_links = true })
   if retire then
     local saved_sync, completed = Core.sync, false
     Core.sync = function (callback) callback (nil) end
     connections.withdraw (catalog, 1000000, function (result, error)
       assert (result and not error); completed = true
     end)
-    wrapped ()
+    assert (not completed, "Pending activation was ignored")
+    registry.properties, registry ["bound-id"] = {}, nil
+    catalog.managers.link:emit ("object-removed", registry)
+    activated ()
     Core.sync = saved_sync
-    assert (completed and not catalog.cohort and not failure and nodes == 1)
+    assert (completed and not catalog.cohort and #catalog_losses == 0)
   else
-    wrapped ()
-    assert (not realized and failure:find ("resumed native failure", 1, true) and nodes == 2)
+    activated ()
+    assert (catalog.cohort and catalog.cohort.pending == 0 and #catalog.cohort.proxies == 1)
+    -- A resumed factory failure stops progression while retaining the first
+    -- owned Link for subsequent cleanup. Its callback is completed once.
+    assert (catalog.cohort.ids [100] and catalog.test_failure and
+        catalog.test_failure:find ("resumed native failure", 1, true), tostring (catalog.test_failure))
   end
-  test_env.SessionItem = nil
-  assert (links == 0)
+end
+
+-- A Format-only notification revalidates admitted scientific contracts.
+for _, missing in ipairs ({ true, false }) do
+  local catalog, link = realized_link ()
+  if missing then link._format = nil
+  else link._format = { get_size = function () return 1 end } end
+  link._transport.handlers ["link-info-changed"] (link._transport, link)
+  assert (#catalog_losses == 1, "Changed Format failed to revoke admission")
+end
+
+-- Invalid and sentinel exact IDs are rejected before the standard factory.
+for _, id in ipairs ({ -1, 0xffffffff, 1.5 }) do
+  for _, role in ipairs ({ "output", "input" }) do
+    for _, kind in ipairs ({ "node_identity", "port_identity" }) do
+      local catalog = discovery_session ()
+      local rows = assert (discover (catalog))
+      local identity = rows [1] [role] [kind]
+      local original = identity.global_id
+      identity.global_id = id
+      -- Mirror the identity in lookup so the exact-ID guard itself is reached.
+      local objects = kind == "node_identity" and catalog.nodes or catalog.ports
+      objects [id] = objects [original]
+      objects [id] ["bound-id"] = id
+      catalog.link_transport = { connect = function () end }
+      test_env.Link = function () error ("Invalid endpoint reached factory") end
+      local failure
+      connections.realize (catalog, rows, 1, 1000000, function (_, error) failure = error end)
+      assert (failure and failure:find ("Invalid exact Link endpoint ID", 1, true), tostring (failure))
+      test_env.Link = nil
+    end
+  end
 end
 
 local function resolved_catalog ()

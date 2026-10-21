@@ -79,10 +79,11 @@ function connections.check_core (catalog)
       "Declared core incarnation changed")
 end
 
-function connections.new (spec, expected_pids, lost, core_owner)
+function connections.new (spec, expected_pids, lost, core_owner, link_transport)
   local catalog = { spec = spec, expected_pids = expected_pids,
     nodes = {}, ports = {}, clients = {}, factories = {}, links = {},
-    captured = {}, link_identities = {}, lost = lost, core_nodes = {} }
+    captured = {}, link_identities = {}, lost = lost, core_nodes = {},
+    link_transport = link_transport }
   if core_owner then
     local identity = remote_core_identity ()
     assert (math.type (core_owner.pid) == "integer" and core_owner.pid > 0 and
@@ -463,22 +464,47 @@ function connections.await_node (catalog, name, pid, deadline, callback)
   catalog.waiting ()
 end
 
--- Standard SessionItems own child Link creation, activation and retirement.
--- The cohort retains only declaration/admission evidence and registry proofs.
+-- Ordinary WpLinks are owned by this cohort. A narrow native idle bridge
+-- aborts pending activation and disposes proxies; policy counts every callback
+-- and proves exact registry absence after the Core sync.
 function connections.realize (catalog, rows, generation, deadline, callback)
   assert (not catalog.cohort and not catalog.withdrawing, "Old connection cohort remains")
   local order = downstream_order (rows)
-  local cohort = { items = {}, node_items = {}, proxies = {}, ids = {}, captured = {}, terminal = false,
+  if not catalog.link_transport then
+    catalog.link_transport = assert (Plugin.find ("ao-session-control"), "Link retirement transport missing")
+  end
+  if not catalog.retirement_connected then
+    catalog.link_transport:connect ("link-retired", function (_, link, error)
+      local current = catalog.cohort
+      if not current or not current.retirements then return end
+      -- Signal userdata wrappers differ; compare GObjects rather than keys.
+      for _, retirement in ipairs (current.retirements) do
+        if retirement.link == link and not retirement.completed then
+          retirement.completed = true
+          current.remaining = current.remaining - 1
+          if error and error ~= "" then current.failure = current.failure or error end
+          current.progress ()
+          return
+        end
+      end
+    end)
+    catalog.link_transport:connect ("link-info-changed", function (_, link)
+      local current = catalog.cohort
+      if not current or current.terminal then return end
+      for _, observed in ipairs (current.observers) do
+        if observed.link == link then observed.inspect (); return end
+      end
+    end)
+    catalog.retirement_connected = true
+  end
+  local cohort = { proxies = {}, observers = {}, ids = {}, captured = {}, pending = 0, terminal = false,
     generation = generation, path = "pipewireao/session/" .. generation .. "/" }
   catalog.cohort = cohort
   local finish, done, cancel = bounded (deadline, callback)
   cohort.cancel_realization = cancel
   local next_link
 
-  local function observe (item, row, index)
-    local link = item:get_associated_proxy ("link")
-    if not link then finish (nil, "Standard link has no associated Link"); return end
-    cohort.proxies [#cohort.proxies + 1] = link
+  local function observe (link, row, index)
     local advanced = false
     local function inspect ()
       if cohort.terminal then return end
@@ -489,7 +515,7 @@ function connections.realize (catalog, rows, generation, deadline, callback)
         if advanced then catalog.lost ("Admitted link left negotiated state") end
         return
       end
-      local format = link:get_format ()
+      local format = catalog.link_transport:call ("get-link-format", link)
       if not format then
         if advanced then catalog.lost ("Admitted link lost its negotiated Format") end
         return
@@ -529,61 +555,52 @@ function connections.realize (catalog, rows, generation, deadline, callback)
     link:connect ("pw-proxy-destroyed", function ()
       if not cohort.terminal then catalog.lost ("Required session link destroyed") end
     end)
-    link:connect ("notify::format", inspect)
+    cohort.observers [#cohort.observers + 1] = { link = link, inspect = inspect }
     link:connect ("notify::properties", inspect)
     inspect ()
-  end
-
-  local function node_item (endpoint, ready)
-    local id = endpoint.node_identity.global_id
-    local item = cohort.node_items [id]
-    if item then ready (item); return end
-    item = SessionItem ("si-node")
-    if not item or not item:configure ({ ["item.node"] = endpoint.node }) then
-      finish (nil, "Node SessionItem configuration failed"); return
-    end
-    cohort.node_items [id] = item
-    item:activate (Feature.SessionItem.ACTIVE, function (_, error)
-      -- Activation only wraps an existing node. A late completion must never
-      -- create a new Link after the cohort has been retired.
-      if cohort.terminal or done () then return end
-      if error then finish (nil, error); return end
-      local ok, reason = pcall (ready, item)
-      if not ok then finish (nil, "SessionItem activation outcome unknown: " .. tostring (reason)) end
-    end)
   end
 
   next_link = function (index)
     if done () or cohort.terminal then return end
     if index > #order then finish (cohort, nil); return end
     local row = rows [order [index]]
-    local function create (output, input)
-      if done () or cohort.terminal then return end
+    local ok, error = pcall (function ()
       if not present (catalog, row.output) or not present (catalog, row.input) then
         finish (nil, "Endpoint lost during connection realization"); return
       end
-      local item = SessionItem ("si-standard-link")
-      if not item or not item:configure ({
-          ["out.item"] = output, ["in.item"] = input,
-          ["out.item.port.context"] = "output:" .. row.output.port_identity.global_id,
-          ["in.item.port.context"] = "input:" .. row.input.port_identity.global_id,
-          ["link.exact"] = true, ["link.passive"] = row.passive,
-          ["object.linger"] = false, ["object.path"] = cohort.path .. order [index],
-      }) then finish (nil, "Standard link configuration failed"); return end
-      cohort.items [#cohort.items + 1] = item
-      item:activate (Feature.SessionItem.ACTIVE, function (_, error)
+      local props = { ["link.passive"] = row.passive, ["object.linger"] = false,
+        ["object.path"] = cohort.path .. order [index],
+        ["link.output.node"] = row.output.node_identity.global_id,
+        ["link.output.port"] = row.output.port_identity.global_id,
+        ["link.input.node"] = row.input.node_identity.global_id,
+        ["link.input.port"] = row.input.port_identity.global_id }
+      for _, name in ipairs ({ "link.output.node", "link.output.port", "link.input.node", "link.input.port" }) do
+        local id = props [name]
+        assert (math.type (id) == "integer" and id >= 0 and id < 0xffffffff,
+            "Invalid exact Link endpoint ID")
+      end
+      local link = assert (Link ("link-factory", props), "Link creation failed")
+      cohort.proxies [#cohort.proxies + 1] = link
+      assert (catalog.link_transport:call ("observe-link", link), "Link observation unavailable")
+      cohort.pending = cohort.pending + 1
+      -- Count before activation: completion can be synchronous on failure.
+      local completed = false
+      local function activated (_, activation_error)
+        if completed then return end
+        completed = true
+        cohort.pending = cohort.pending - 1
+        if cohort.progress then cohort.progress () end
         if cohort.terminal or done () then return end
-        if error then finish (nil, error); return end
-        local ok, reason = pcall (observe, item, row, index)
-        if not ok then finish (nil, "SessionItem observation failed: " .. tostring (reason)) end
-      end)
-    end
-    local ok, error = pcall (function ()
-      node_item (row.output, function (output)
-        node_item (row.input, function (input) create (output, input) end)
-      end)
+        if activation_error then finish (nil, activation_error); return end
+        local observed, reason = pcall (observe, link, row, index)
+        if not observed then finish (nil, "Link observation failed: " .. tostring (reason)) end
+      end
+      local started, reason = pcall (link.activate, link, INFO, activated)
+      -- A thrown native call has unknown callback ownership. Keep its pending
+      -- count until a completion arrives; cleanup must not infer success.
+      if not started then finish (nil, "Link activation outcome unknown: " .. tostring (reason)) end
     end)
-    if not ok then finish (nil, "SessionItem activation outcome unknown: " .. tostring (error)) end
+    if not ok then finish (nil, "Link creation outcome unknown: " .. tostring (error)) end
   end
   next_link (1)
 end
@@ -601,10 +618,11 @@ function connections.withdraw (catalog, deadline, callback)
   cohort.terminal = true
   if cohort.cancel_realization then cohort.cancel_realization () end
   local finish, done = bounded (deadline, callback)
-  local remaining, failure, syncing = #cohort.items, nil, false
+  local syncing = false
+  cohort.remaining, cohort.retirements = #cohort.proxies, {}
   local function prove_absent ()
-    if done () or remaining ~= 0 or syncing then return end
-    if failure then finish (nil, failure); return end
+    if done () or cohort.remaining ~= 0 or cohort.pending ~= 0 or syncing then return end
+    if cohort.failure then finish (nil, cohort.failure); return end
     syncing = true
     Core.sync (function (error)
       if done () then return end
@@ -621,17 +639,19 @@ function connections.withdraw (catalog, deadline, callback)
       finish (true, nil)
     end)
   end
-  for _, item in ipairs (cohort.items) do
-    local completed = false
-    local function withdrawn (_, error)
-      if completed then return end
-      completed = true
-      remaining = remaining - 1
-      failure = failure or error
-      prove_absent ()
+  cohort.progress = prove_absent
+  -- Publish every expected completion before requesting any retirement.
+  for _, link in ipairs (cohort.proxies) do
+    cohort.retirements [#cohort.retirements + 1] = { link = link }
+  end
+  for _, retirement in ipairs (cohort.retirements) do
+    local ok, accepted = pcall (catalog.link_transport.call, catalog.link_transport,
+        "retire-link", retirement.link)
+    if not ok or not accepted then
+      retirement.completed = true
+      cohort.remaining = cohort.remaining - 1
+      cohort.failure = cohort.failure or "Link retirement outcome unknown: " .. tostring (accepted)
     end
-    local ok, error = pcall (item.withdraw, item, withdrawn)
-    if not ok then withdrawn (item, "SessionItem retirement outcome unknown: " .. tostring (error)) end
   end
   prove_absent ()
 end

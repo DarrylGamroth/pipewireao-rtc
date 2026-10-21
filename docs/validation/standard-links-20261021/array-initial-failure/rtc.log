@@ -1,0 +1,3 @@
+E 13:48:15.162006            pw.core ../src/pipewire/core.c:307:pw_core_export: 0x562a2187a380: can't export type PipeWire:Interface:Node: Protocol error
+E 13:48:15.162038          pw.filter ../src/pipewire/filter.c:1883:pw_filter_connect: 0x562a218c5aa0: can't make proxy: Protocol error
+pipewireao-rtc: initialization failed: failed to load components: failed to load required component 'rtc.transport [module: libwireplumber-module-ao-control-endpoint]': could not connect control endpoint: Protocol error
