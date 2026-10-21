@@ -74,10 +74,10 @@ function bounded_line(input)
     return String(bytes)
 end
 "Serve bounded JSON-lines requests until EOF; materializations survive client exit."
-function serve(input::IO=stdin,output::IO=stdout)
+function serve(input::IO=stdin,output::IO=stdout; responder=respond)
     while !eof(input)
         line = bounded_line(input)
-        result = line === nothing ? Dict("ok"=>false,"error"=>"request exceeds byte limit") : respond(line)
+        result = line === nothing ? Dict("ok"=>false,"error"=>"request exceeds byte limit") : responder(line)
         JSON3.write(output,result)
         write(output,'\n'); flush(output)
     end

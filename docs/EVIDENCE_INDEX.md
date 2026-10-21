@@ -1,5 +1,21 @@
 # Delivery evidence catalog
 
+## Generic simulator settings and cold replacement — 2026-10-21
+
+Evidence root:
+`/home/dgamroth/workspaces/codex/worktrees/simulator-settings-validation-20261021/`.
+`rtc-tests-final.log` records 2,301 passing assertions, including declared
+settings, immutable fields, no-effect preparation failures, capacity and exact
+invocation fences. `launch-smoke.log` records an actual durable systemd worker
+continuing after its launching client exits and failing before any live effect.
+`render/owners.svg` is the rendered updated ownership diagram. Independent source
+review found no confirmed blockers; it does not substitute for managed CUDA
+replacement or GUI application/reconnect validation, which remain in progress.
+GUI feature commits are `df44d09` and `8a49ddc`; Classic metadata is `abcbc28`.
+Private registration receipts and exact immutable application manifests are
+retained alongside these checks. Public release and hardware/cadence/latency
+qualification are outside this increment.
+
 ## Classic optical sampling and atmosphere settings — 2026-10-21
 
 Workstation evidence is retained in these directories under

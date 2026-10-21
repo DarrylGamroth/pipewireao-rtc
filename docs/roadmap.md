@@ -19,7 +19,7 @@ the requested detector pixel scale using conservative native-cell overlap.
 Classic `3f30ae01` exposes pupil resolution and strict startup atmosphere
 overrides (r0/reference wavelength, outer scale, layer strengths, winds,
 altitudes/identities and seed). Both are integrated on local main; these changes
-are not released or deployed. Classic retains the 240-sample default and admits
+are privately registered as AOS/Classic 0.2.2; deployment validation is in progress. Classic retains the 240-sample default and admits
 480 for the higher-resolution validation configuration. No documented serial-specific HSDM277 surface
 influence dataset was found in the available REVOLT/HEART files; the Gaussian
 mirror remains explicitly provisional.
@@ -36,13 +36,18 @@ retains 216 of 221 modes; doubled finite probes differ by up to 16.3%, and
 335 command components reach the existing limit across the full run including
 the transient. Gains, thresholds and allocation were preserved.
 
-GUI editing of these startup settings is still outstanding. Existing Start/Stop
-changes run state without replacing the prepared plant. A generic settings
-editor needs declared plant settings and an RTC-owned configuration/rebuild
-operation under the existing WirePlumber lifecycle authority. No GUI-owned
-configuration mutation or alternative lifecycle coordinator is introduced.
-The live registered Classic session and GUI remain unchanged. Evidence is
-indexed in the [delivery catalog](EVIDENCE_INDEX.md).
+The generic Simulator Settings editor and headless cold replacement job are
+implemented under RTC-DEV-031. Classic supplies immutable setting declarations;
+the GUI edits a draft and the management client validates/prepares the pinned
+plant before using native WirePlumber Quit and fresh session admission. Jobs
+survive client exit, serialize across clients and retain uncertain outcomes
+without retry. Structural/calibration settings remain read-only. A cold rebuild
+resets science/controller state and does not checkpoint unsaved live updates.
+
+Local RTC tests pass 2,301 assertions; GUI native/shared and portability checks
+and independent source review passed. Actual managed CUDA replacement and live
+GUI reconnect remain validation gates. The old live session remains untouched
+until those gates pass. Evidence is indexed in the [delivery catalog](EVIDENCE_INDEX.md).
 
 ### Headless configuration store — 2026-10-20
 

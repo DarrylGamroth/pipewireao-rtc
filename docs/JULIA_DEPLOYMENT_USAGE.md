@@ -275,3 +275,64 @@ including all retained artifact refs. Git maintenance must preserve registered
 objects. Do not place the SQLite WAL database on a network filesystem or copy a
 live database file without its consistent snapshot. Backup/restore automation
 and scientific stream recording are separate work.
+
+## Simulator startup settings and rebuild
+
+`PipeWireAORTC.SimulatorConfiguration` is the headless implementation used by
+Julia scripts, the CLI and generic GUI Simulator Settings. The plant package
+declares `describe_hil_settings()` metadata for its strict startup builder.
+The selected application's pinned environment supplies that declaration and
+performs physical validation; the GUI contains no instrument prescriptions.
+
+For an explicitly selected managed session:
+
+```julia
+using PipeWireAORTC: SimulatorConfiguration
+
+settings = SimulatorConfiguration.describe(session_id)
+proposal = deepcopy(settings["settings"])
+proposal["atmosphere"]["r0"] = 0.20
+proposal["atmosphere"]["wind_speed"][1] = 8.0
+receipt = SimulatorConfiguration.start_rebuild(session_id,
+    settings["configuration_sha256"], proposal; resume_running=true)
+progress = SimulatorConfiguration.job(receipt["id"])
+```
+
+Preparation first verifies the original sealed assets and warms the candidate
+on its declared backend. Invalid values leave the old session running. Only
+then does the one-shot job request native WirePlumber Quit, verify exact cleanup,
+and start a fresh installation/invocation. A completed receipt names the exact
+replacement discovery locator. Select it through the ordinary native session
+client; a saved receipt does not prove that the session is still available.
+
+Cold replacement resets controller and simulator state and reloads saved startup
+gains and calibration. It does not preserve unsaved live property/artifact edits.
+Profile and pupil resolution are read-only in this atmosphere-editing increment;
+changing those requires corresponding calibration and a separate deployment.
+
+For the native GUI, set `PIPEWIREAO_SIMULATOR_COMMAND` to the JSON argv array
+that runs Julia in the same registered application environment:
+
+```julia
+using JSON3
+command = [Base.julia_cmd().exec[1], "--startup-file=no", "--project=" * application,
+    "-e", "using PipeWireAORTC; PipeWireAORTC.SimulatorConfiguration.serve()"]
+println(JSON3.write(command))
+```
+
+Mark the simulator's existing `node_properties` view with
+`simulator_settings = true` in its operator-view declaration. Its Display remains
+status/metadata; Settings contains the declared scalar controls and per-layer
+array table, drafts, Apply and restart, progress and explicit reconnect.
+Other instrument packages opt in through the same declaration and builder
+contract; no GUI handler is selected by instrument name.
+
+Jobs are owned by finite systemd user oneshots and survive GUI/helper exit.
+Their bounded records default to `~/.local/state/pipewireao/simulator-settings`
+(or `$XDG_STATE_HOME/pipewireao/simulator-settings`); an explicit
+`PIPEWIREAO_SIMULATOR_ROOT` selects an isolated root. Each retains the old exact
+identity, immutable request, candidate, preflight logs, shutdown/startup receipts
+and final result. A failed/unknown effect is never retried or rolled back
+automatically. Use the retained original application for explicit recovery.
+Archive completed records explicitly before reaching the 256-record limit.
+The saved Git artifact catalog and SQLite journal are not changed by this tool.

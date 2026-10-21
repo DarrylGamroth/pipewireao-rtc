@@ -70,8 +70,9 @@ include("deployment/wireplumber_launch.jl")
 include("deployment/wireplumber_install.jl")
 include("cli.jl")
 include("owners/graph_owner.jl")
+include("simulator_configuration.jl")
 
-public ConfigurationStore, ConfigurationStoreCLI, AOSOwner, Artifacts, WirePlumberConfiguration, WirePlumberInstall, WirePlumberSessionRuntime,
+public ConfigurationStore, ConfigurationStoreCLI, SimulatorConfiguration, AOSOwner, Artifacts, WirePlumberConfiguration, WirePlumberInstall, WirePlumberSessionRuntime,
     NativeSessionClient, CalibrationAcquisition, CalibrationCLI, WirePlumberCLI,
     NativeOwnerBootstrapRuntime, NativeParameterSource, NativeSourceControl, GraphOwner
 

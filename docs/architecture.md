@@ -241,43 +241,68 @@ GUI uses a local helper off its UI thread; shared panels remain WASM-buildable.
 
 ## System boundary
 
+### WirePlumberAO and application tooling
+
+WirePlumberAO is the live session manager: it admits declared endpoints, owns
+session Links, serializes lifecycle transitions and detects cohort failure.
+`pipewireao-rtc` is the Julia application/deployment toolkit: it defines the
+application's graphs, calibration bindings, simulator configuration, installed
+processes and one-shot operator clients. It supplies tooling used by the session
+manager; it is not a second running session manager. systemd owns process
+lifetime, while AOS/JFG/FGN owners execute their scientific work. The GUI observes
+these owners and submits operator requests.
+
+Selected on 2026-10-21, cold simulator settings management is a narrow
+application-replacement operation. Plants declare immutable defaults and JSON
+Schema metadata for their startup settings. A separate headless management
+interface describes that saved configuration and accepts a candidate for a
+systemd-owned, finite one-shot deployment job. The job prepares the candidate
+using the pinned application environment before requesting any old-session
+effect. It then uses the existing native WirePlumber Quit/Status/Start controls
+and ordinary installation/admission path. Management messages carry candidate
+configuration and deployment receipts; they do not proxy live Start, Stop,
+Reset, properties, parameters or authoritative status. The artifact/catalog
+management interface above is unchanged.
+
+The GUI renders the declared settings in the simulator panel's Settings area.
+It does not write configuration files, prepare science, stop owners or manage
+links. A cold replacement resets scientific/controller state and reloads saved
+startup configuration; preserving unsaved runtime changes through a checkpoint
+remains deferred. The old saved application and operation receipts remain
+available for explicit recovery. GUI exit ends observation of an accepted job,
+without cancelling it or authorizing a retry.
+
 ```mermaid
 flowchart LR
-    Config["Standard PipeWireAO configuration"]
-    Runner["pipewireao-rtc<br/>one session lifecycle<br/>selective run control"]
-    Source["Admitted complete-frame source"]
-    GraphA["fgn-native graph A"]
-    GraphB["fgn-native graph B"]
-    Sink["Admitted non-actuating sink"]
-    Parallel["Independent declared<br/>source to graph to sink path"]
-    Observer["Optional PipeWire tools<br/>or read-only GUI"]
-    Plant["AdaptiveOpticsSim<br/>transport-neutral plant"]
-    Adapter["AdaptiveOpticsSimPipeWireHIL.jl<br/>external node owner"]
-    JuliaGraph["JuliaFilterGraph.jl<br/>optional external processing node"]
-    Revolt["REVOLTClassicSim.jl<br/>transport-neutral plant"]
-    RevoltAdapter["REVOLTClassicSimPipeWireHIL.jl<br/>external node owner"]
+    Config["RTC application configuration"]
+    Tools["pipewireao-rtc<br/>one-shot deployment and clients"]
+    Systemd["systemd<br/>process lifetime"]
+    Session["WirePlumberAO<br/>live session policy"]
+    Source["Instrument plant<br/>shared AOS HIL adapter"]
+    Graph["FGN or JFG<br/>scientific graph owner"]
+    Sink["Declared non-actuating sink"]
+    GUI["GUI / CLI / Julia clients"]
 
-    Config --> Runner
-    Runner -.->|create, connect, configure| Source
-    Runner -.->|create, connect, configure| GraphA
-    Runner -.->|create, connect, configure| GraphB
-    Runner -.->|create, connect, configure| Sink
-    Runner -.->|create, connect, configure| Parallel
-    Source -->|typed ndarray| GraphA
-    GraphA -->|typed ndarray| GraphB
-    GraphB -->|typed ndarray| Sink
-    GraphA -.->|introspection or declared observation| Observer
-    Plant <--> Adapter
-    Adapter -->|complete WFS frame| GraphA
-    GraphB -->|same-sequence command| Adapter
-    Adapter -.->|same declared contracts| JuliaGraph
-    Revolt <--> RevoltAdapter
-    RevoltAdapter -.->|352 by 352 frame and 277 command| JuliaGraph
+    Config --> Tools
+    Tools -->|install / launch| Systemd
+    Systemd -->|process lifetime| Session
+    Systemd -->|process lifetime| Source
+    Systemd -->|process lifetime| Graph
+    Session -.->|admission / links / run control| Source
+    Session -.->|admission / links / run control| Graph
+    Session -.->|admission / links| Sink
+    Source -->|PipeWire ndarray frames| Graph
+    Graph -->|PipeWire ndarray commands| Sink
+    Graph -->|simulated commands| Source
+    GUI -->|native session controls| Session
+    GUI -->|cold configuration replacement| Tools
 ```
 
 | Component | Active responsibility |
 | --- | --- |
-| `pipewireao-rtc` | Validate the development configuration, realize its exact session topology, serialize session and execution-group control, report observed status, and clean up the objects it owns. |
+| `pipewireao-rtc` | Define/export/install application configuration, start systemd-owned process cohorts, provide one-shot native clients and calibration tools, and provide optional scientific-owner entry points. |
+| WirePlumberAO Lua profile | Own live session admission, exact external Links, lifecycle/update ordering, required-loss handling and session cleanup. |
+| systemd | Own process lifetime and configured resource policy. |
 | PipeWireAO | Own ndarray transport, format negotiation, scheduling, FGN hosting, property and parameter publication, and standard PipeWire introspection. |
 | Scientific Algorithm packages | Own ordinary typed implementations and declarations of ports, shapes, schemas, scalar properties, ndarray parameters, and construction values. |
 | Source | Produce complete frames for simulation or deterministic replay. |
@@ -287,11 +312,10 @@ flowchart LR
 | `AdaptiveOpticsSimPipeWireHIL.jl` | Map one prepared AdaptiveOpticsSim HIL boundary to an externally owned PipeWire source and non-actuating sink using public PipeWireAO interfaces. |
 | `JuliaFilterGraph.jl` and `FilterGraphPipeWire` | Optionally own and publish one prepared RTC processing graph as an ordinary external PipeWire node. |
 | `REVOLTClassicSim.jl` | Own the REVOLT Classic atmosphere, optics, 352-by-352 Shack–Hartmann detector model, provisional HSDM277 plant, science diagnostics, and deterministic HIL boundary without a PipeWire dependency. |
-| `REVOLTClassicSimPipeWireHIL.jl` | Narrow integration package that maps the prepared REVOLT Classic HIL boundary to external PipeWire nodes without moving simulation behavior into the adapter. |
 
-The runner is the control plane for this small session. It does not process
-frame data, create execution threads for graph operations, or replace
-PipeWire scheduling. PipeWireAO and FGN remain the data plane.
+WirePlumberAO is the live control plane for this session. It does not process
+frame data or replace PipeWire scheduling. PipeWireAO and scientific executors
+remain the data plane. The Julia deployment clients are finite operator tools.
 
 ## Configuration boundary
 

@@ -49,6 +49,7 @@ The supported callable interfaces retain their existing module bindings:
 | `NativeSessionClient` | Send controls to a selected native session |
 | `ConfigurationStore` | Register and retrieve Git artifacts; query the shared SQLite journal |
 | `ConfigurationStoreCLI` | Headless management interface used by GUI, CLI and scripts |
+| `SimulatorConfiguration` | Describe declared simulator settings and submit/observe cold application replacement jobs |
 | `CalibrationAcquisition` | Sequence calibration acquisition actions |
 | `CalibrationCLI`, `WirePlumberCLI` | Translate command arguments and reports |
 | `NativeOwnerBootstrapRuntime`, `NativeParameterSource`, `NativeSourceControl` | Reusable cold owner entry points and native source controls |

@@ -1157,6 +1157,11 @@ on public PipeWire owner nodes. JSON embedded in a POD MUST NOT be treated as
 native serialization. Saved configuration and scientific artifacts MAY retain
 JSON; their existence MUST NOT substitute for a fresh live completion.
 
+Cold application replacement under RTC-DEV-031 is deployment management, not
+a second live-control endpoint. Its candidate documents and saved job receipts
+MAY use JSON. Every live session effect and authoritative session observation
+within that operation MUST still use this native contract.
+
 Each live authority MUST have one owner. WirePlumber Lua MUST own session
 lifecycle and admission; FGN/JFG and AOS MUST retain their owner-local scientific
 and source controls. Callbacks MUST stage bounded owned values and MUST NOT
@@ -1227,3 +1232,55 @@ malformed/busy/duplicate/stale and competing callers, removal and deadline
 expiry, restoration/disconnect/inactivity, startup and bounded cleanup. Installed
 Classic/Copper functional, scientific and allocation gates remain distinct from
 CPU transport tests or host real-time qualification.
+
+## RTC-DEV-031 — Cold simulator configuration replacement
+
+For a registered managed development application, the headless RTC tooling MUST
+describe startup settings using the selected plant package's declared defaults
+and schema in the application's pinned environment. The GUI MUST render those
+declarations generically in Simulator Settings without instrument-specific
+handlers. Read-only structural fields MUST NOT be changed through this
+atmosphere-editing operation. Physical and cross-field validation MUST remain
+with the scientific plant.
+
+Before any old-session effect, the deployment client MUST verify all original
+sealed application assets, prepare a fresh candidate changing only declared
+simulator settings, reseal its changed configuration asset and successfully
+prepare/warm the actual selected backend. Candidate rejection MUST leave the old
+session untouched. The replacement MUST fence the exact old session UUID,
+manager invocation, owner PID/start time, endpoint incarnation and configuration
+SHA-256 immediately before shutdown. Concurrent callers MUST serialize on that
+managed incarnation.
+
+Accepted work MUST have a durable bounded operation record and a finite
+systemd-owned one-shot lifetime independent of the GUI/helper connection.
+Before a possible Quit effect the client MUST retain a durable attempt fence.
+Unknown results MUST remain unknown and MUST NOT authorize an automatic retry,
+rollback or replacement start. Only accepted native Quit to Offline plus
+confirmed cleanup permits fresh installation/startup through the existing
+WirePlumber admission path. Confirmed startup cleanup and uncertain cleanup
+MUST remain distinguishable.
+
+The replacement MUST preserve the previous saved application and identify the
+exact newly admitted session locator in its completion receipt. The GUI MUST
+use ordinary fresh native verification when explicitly attaching that locator;
+it MUST NOT select another discovered RTC after an unrelated connection loss.
+The GUI MUST disclose that cold replacement resets controller/simulator state
+and reloads saved startup configuration, rather than promising preservation of
+unsaved runtime edits. Management receipts MUST NOT substitute for live status.
+
+Requests MUST be bounded to 64 KiB and replies to 1 MiB. The local deployment
+tool MUST admit at most 256 retained job records and 256 entries in one settings
+array, and MUST reject capacity exhaustion rather than discard recovery data.
+The selected one-shot runtime bound is 2,400 seconds, including cold preparation,
+native shutdown, startup and cleanup. Progress polling MUST be read-only and
+bounded to at most once per second per observing panel. This increment claims
+local Linux management only; browser/remote execution is not selected.
+
+Verification intent (informative): check schema/defaults from two unrelated
+plant declarations, read-only and stale-draft rejection, malformed/bounded
+requests, scientific rejection before shutdown, competing clients, persisted
+Quit uncertainty without retry, GUI exit during an accepted job, and exact
+replacement locator attachment. Demonstrate changed atmosphere values in an
+actual managed simulator on the selected CUDA host. Keep software/lifecycle,
+numerical and wall-time qualification distinct.
