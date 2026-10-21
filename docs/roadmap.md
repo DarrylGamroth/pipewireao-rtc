@@ -6,11 +6,43 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-10-20. This section is the current delivery summary. Later sections
+Updated 2026-10-21. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
+
+### Classic optical sampling and atmosphere settings — 2026-10-21
+
+Local AOS `f08feb60` corrects odd/even Shack–Hartmann FFT centering and honors
+the requested detector pixel scale using conservative native-cell overlap.
+Classic `3f30ae01` exposes pupil resolution and strict startup atmosphere
+overrides (r0/reference wavelength, outer scale, layer strengths, winds,
+altitudes/identities and seed). Both are integrated on local main; these changes
+are not released or deployed. Classic retains the 240-sample default and admits
+480 for the higher-resolution validation configuration. No documented serial-specific HSDM277 surface
+influence dataset was found in the available REVOLT/HEART files; the Gaussian
+mirror remains explicitly provisional.
+
+The corrected 480-sample optical study differs from the 1440-sample numerical
+reference by at most 0.236% normalized image L2 and 0.000720 pixel centroid
+response RMS over eight deterministic cases. A fresh AOC 0.17 calibration and
+isolated actual PipeWireAO/shared-HIL/JFG run pass 512-frame controller and
+optical replay plus the matched zero-command trajectory. After excluding 128
+frames, mean piston-removed OPD RMS improves from 243 to 52 nm; nominal-axis
+Strehl at 800 nm improves from 0.110 to 0.846. This finite seeded simulation
+does not qualify mirror metrology, sustained cadence or latency. Calibration
+retains 216 of 221 modes; doubled finite probes differ by up to 16.3%, and
+335 command components reach the existing limit across the full run including
+the transient. Gains, thresholds and allocation were preserved.
+
+GUI editing of these startup settings is still outstanding. Existing Start/Stop
+changes run state without replacing the prepared plant. A generic settings
+editor needs declared plant settings and an RTC-owned configuration/rebuild
+operation under the existing WirePlumber lifecycle authority. No GUI-owned
+configuration mutation or alternative lifecycle coordinator is introduced.
+The live registered Classic session and GUI remain unchanged. Evidence is
+indexed in the [delivery catalog](EVIDENCE_INDEX.md).
 
 ### Headless configuration store — 2026-10-20
 

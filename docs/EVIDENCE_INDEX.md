@@ -1,5 +1,33 @@
 # Delivery evidence catalog
 
+## Classic optical sampling and atmosphere settings — 2026-10-21
+
+Workstation evidence is retained in these directories under
+`/home/dgamroth/workspaces/codex/worktrees/`:
+
+- `revolt-dm-study-20261020/`: REVOLT/HEART dataset inventory, frozen instrument
+  prescription and original sampling study; superseded invalid command-lag
+  results are retained separately.
+- `sh-detector-sampling-20261021-evidence/`: analytic fail-before/pass-after,
+  1,837-assertion focused CPU selectors, 156-assertion CUDA stream/capture
+  sampler, final 250-assertion admission rerun, and corrected 240/480 versus
+  1440 convergence with hashes in `fixed-sampling-provenance.json`.
+- `sh-sampling-review-20261021/review.txt`: independent numerical review and
+  verified coarse-scale clipping/phasor admission fixes. A pre-existing sodium
+  convolution-origin concern is recorded separately and remains outside this
+  NGS change, with public-API experimental validation outstanding.
+- `classic-sampling-validation-20261021/`: exact source/dependency records,
+  fresh 480-sample calibration, 268-assertion combined Classic package checks,
+  actual private-core frames/commands, exact CPU and optical replay, matched
+  zero-command comparison, and `closed-loop-480-complete/result.toml`.
+  Initial external test-environment/import failures remain alongside corrected
+  runs; no production source fix was inferred from those harness failures.
+
+This evidence is finite simulation/software validation with the provisional
+Gaussian mirror and concurrent live GPU load. It is not measured-mirror,
+hardware, sustained 500 Hz, tail-latency or GUI startup-editing qualification.
+The live registered application was preserved; the new source is local only.
+
 ## Headless Git artifacts and SQLite update history — 2026-10-20
 
 Implementation branches cover the shared Julia configuration store, native
