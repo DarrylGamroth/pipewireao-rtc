@@ -110,6 +110,11 @@ Structured Meson evidence omits inherited environments; verbatim patch files
 retain unified-diff context spaces and are excluded from whitespace checks.
 The Julia log retains an expected missing-Git-object rejection diagnostic.
 
+The tested changes are fast-forward integrated into the normal RTC `main` and
+WirePlumberAO `master` checkouts. [integration.json](integration.json) records
+the commits and removal of the three temporary worktrees/builds; unrelated
+historical worktrees remain intact.
+
 No live workstation deployment, simulator or GPU workload was started. The
 known simulator service remained inactive with MainPID zero. These results
 are CPU software verification, not hardware, all-instrument, allocation,

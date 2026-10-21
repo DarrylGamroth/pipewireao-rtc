@@ -1,0 +1,31 @@
+{
+  "rtc": {
+    "checkout": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc",
+    "branch": "main",
+    "implementation_commit": "f057b614e853a3725267e2e2f6ae5ea112028ece",
+    "clean": true
+  },
+  "wireplumber": {
+    "checkout": "/home/dgamroth/workspaces/codex/pipewire/wireplumber",
+    "branch": "master",
+    "implementation_commit": "9575d8524be7f78e0428702e30efe38e14357c5a",
+    "clean": true
+  },
+  "temporary_worktrees_removed": [
+    "rtc-lua-bindings-20261021",
+    "wireplumber-upstream-lua-20261021",
+    "wireplumber-upstream-stock-20261021"
+  ],
+  "temporary_builds_removed": [
+    "/tmp/rtc-lua-bindings-build",
+    "/tmp/rtc-lua-bindings-prefix"
+  ],
+  "historical_worktrees": "preserved unchanged",
+  "integration": "fast-forward only; no push, release or live deployment",
+  "simulation": {
+    "service": "pipewireao-session@1581f3130b5c.service",
+    "ActiveState": "inactive",
+    "MainPID": 0
+  },
+  "qualification": "implementation source matches tested receipt hashes; no runtime changes during canonical integration"
+}
