@@ -20,7 +20,7 @@ same headless operations. The GUI does not own storage or decide adoption.
 This narrow configuration journal is now selected; full scientific stream
 recording and a browser/remote control service remain deferred.
 
-Implementation is isolated on dedicated artifact-history worktrees based
+Initial implementation used dedicated artifact-history worktrees based
 on RTC `7fd1349`, GUI `4ef2f22`, and WirePlumber `ce2dc766`. Initial implementation
 preserved pre-existing main checkout edits and the running Classic session.
 The journal deployment below records its subsequent orderly replacement.
@@ -103,6 +103,8 @@ restore, observing-run records and journaled device admission remain deferred.
 Before extending the custom artifact store, evaluate an existing tool such as
 DVC against a Julia calibration workflow. No migration is selected; the existing
 headless Git/SQLite interface remains usable while core RTC work continues.
+The completed RTC and GUI branches are integrated into local `main`, with the
+matching WirePlumber journal on local `master`; no runtime restart was needed.
 
 ### Classic completion for review — 2026-10-20
 
