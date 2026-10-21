@@ -164,7 +164,7 @@ function _identity(unit, runtime_root; deadline=monotonic()+8)
         S.start_ticks(pid), cgroup, false, false, false, nothing)
 end
 
-function _ledger(handle::Handle)
+function _retained_ledger(handle::Handle)
     path = joinpath(handle.runtime_root, handle.invocation, "launch.json")
     record = Common.read_json(path; maximum=1024 * 1024)
     record["unit"] == handle.unit && record["invocation"] == handle.invocation &&
@@ -172,6 +172,11 @@ function _ledger(handle::Handle)
         record["wireplumber_pid"] == handle.main_pid &&
         UInt64(record["wireplumber_start_ticks"]) == handle.start_ticks ||
         throw(ArgumentError("retained launch ledger differs from the live RTC unit"))
+    return record
+end
+
+function _ledger(handle::Handle)
+    record = _retained_ledger(handle)
     DeploymentConfiguration.verify_session_process(handle.main_pid, record["session_executable"], record["config"])
     return record
 end
@@ -570,7 +575,9 @@ function _stopped_record(handle::Handle, deadline)
         if quiet && !_unit_has_jobs(handle.unit, deadline) &&
                 !S.old_process_exists(handle.main_pid, handle.start_ticks) &&
                 S.cgroup_empty(handle.cgroup)
-            record = _ledger(handle)
+            # The exact old process is already gone. Validate its retained
+            # identity without requiring /proc/<old-pid>/exe to still exist.
+            record = _retained_ledger(handle)
             if get(record, "cleanup_complete", false) === true
                 isempty(get(record, "cleanup_errors", [])) ||
                     throw(ArgumentError("RTC emergency cleanup retained errors"))

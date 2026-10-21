@@ -135,5 +135,19 @@ end
             "session_executable" => "/sealed/rtc/bin/pipewireao-rtc",
             "config" => joinpath(runtime, "rtc/rtc.conf")))
         @test_throws D.DeploymentError R._ledger(handle)
+        retained = R._retained_ledger(handle)
+        @test retained["wireplumber_pid"] == getpid()
+        # A stopped record still has every incarnation fence, even though it
+        # cannot require a live native executable. Test each fence separately.
+        path = joinpath(runtime, "launch.json")
+        for (key, value) in (("unit", "pipewireao-session@other.service"),
+                ("invocation", "1"^32), ("runtime", joinpath(root, "other")),
+                ("wireplumber_pid", getpid()+1), ("wireplumber_start_ticks", 2))
+            changed = merge(retained, Dict(key=>value))
+            C.write_json(path, changed)
+            @test_throws ArgumentError R._retained_ledger(handle)
+        end
+        C.write_json(path, retained)
+        @test_throws D.DeploymentError R._ledger(handle)
     end
 end
