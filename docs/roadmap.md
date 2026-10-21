@@ -21,8 +21,9 @@ This narrow configuration journal is now selected; full scientific stream
 recording and a browser/remote control service remain deferred.
 
 Implementation is isolated on dedicated artifact-history worktrees based
-on RTC `7fd1349`, GUI `4ef2f22`, and WirePlumber `ce2dc766`. Pre-existing main
-checkout edits and the running Classic session are preserved.
+on RTC `7fd1349`, GUI `4ef2f22`, and WirePlumber `ce2dc766`. Initial implementation
+preserved pre-existing main checkout edits and the running Classic session.
+The journal deployment below records its subsequent orderly replacement.
 
 The ownership and data paths are:
 
@@ -70,6 +71,17 @@ survived headless reopen. This test owner performs no scientific computation and
 establishes no adoption or timing claim. Independent review found and verified
 fixes for post-effect fault uncertainty and full-cache reuse. GUI/browser checks
 and deployment provenance are recorded with the cross-repository evidence.
+
+Classic now runs registered private RTC candidate 0.1.10 with the matching
+journal module in a separate native prefix. All prior dependency entries except
+RTC, science configurations and calibration bytes were preserved. A GUI gain
+submission and a Julia-script gain submission were both reported Active and
+recorded with distinct controller identities in the same journal. Both retained
+the observed gain of −0.3. The Julia update ran while the GUI was closed;
+headless reopen and the restarted GUI both showed the two durable outcomes.
+The old session shut down cleanly; one CUDA simulator remains. The evidence
+catalog records the new session identity and scope. This establishes live
+simulation journal integration, without a latency or hardware qualification claim.
 
 ### Classic completion for review — 2026-10-20
 

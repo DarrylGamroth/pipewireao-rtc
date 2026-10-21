@@ -8,9 +8,15 @@ cross-repository evidence is retained at
 `/home/dgamroth/workspaces/codex/worktrees/classic-completion-20261020/configuration-store-20261020/`.
 It contains the independent review and resolved findings, native two-client
 private-core proof, headless import/reopen checks, package/GUI gates and rendered
-ownership diagram. This is local software and isolated transport evidence;
-scientific adoption, wall-time qualification and a production session upgrade
-are separate. Existing Running Classic ownership was preserved throughout.
+ownership diagram. The subsequent Classic journal deployment and actual GUI/Julia
+update checks are retained at
+`/home/dgamroth/workspaces/codex/worktrees/classic-completion-20261020/journal-live-20261020/`.
+The replacement uses registered private RTC candidate 0.1.10 with unchanged
+science dependencies and inputs. Both unchanged-gain submissions were reported
+Active and persisted centrally; the Julia submission succeeded with the GUI
+closed, and the reopened GUI displayed both records. The former Classic session
+shut down through its supported lifecycle. This is live simulation/control
+evidence, not physical-device, scientific convergence or wall-time qualification.
 
 
 - [Classic completion for review, 2026-10-20](validation/classic-completion-20261020/README.md): immutable private candidates with released AOS/HIL, managed lifecycle and fault recovery, finite composed replay/observer invariance, calibration provenance and bounded resource characterization. Grouped GUI settings and native endpoint-loss invalidation pass; retained review identity is recorded separately.
