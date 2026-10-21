@@ -18,7 +18,7 @@ The ordinary WirePlumber fork now keeps runtime source identical to the pinned
 upstream revision, with a separate PipeWireAO build recipe. Only the two Meson
 dependency names change in the default build. Large POD filtering and Lua event
 properties remain independent optional fixes, including their regression tests.
-The fork is available at <https://github.com/DarrylGamroth/WirePlumber>.
+The fork is available at <https://github.com/DarrylGamroth/wireplumber>.
 Site/device configuration stays separate; the recipe installs or starts no
 services. The headless RTC remains the application authority.
 
