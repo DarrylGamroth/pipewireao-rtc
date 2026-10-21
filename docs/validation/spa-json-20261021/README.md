@@ -84,3 +84,7 @@ julia +1.13 --startup-file=no --project=. \
 All checks used CPU/private sessions only. The simulator remains inactive with
 MainPID zero. No GPU, physical-device, cadence, allocation, latency, live
 workstation deployment or artifact-management work was performed.
+
+The tested commits are integrated into the normal RTC `main` and WirePlumberAO
+`master` checkouts. [integration.json](integration.json) records their identities
+and removal of the two temporary worktrees; unrelated historical worktrees remain.

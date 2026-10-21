@@ -1,0 +1,24 @@
+{
+  "rtc": {
+    "checkout": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc",
+    "branch": "main",
+    "implementation_commit": "ebb3103d1fff2f22ddd694b92325f49d12c1a463",
+    "clean": true
+  },
+  "wireplumber": {
+    "checkout": "/home/dgamroth/workspaces/codex/pipewire/wireplumber",
+    "branch": "master",
+    "implementation_commit": "0a492fe2184eb3e1fbdbc8b8c08a5e3535cd6bdc",
+    "clean": true
+  },
+  "temporary_worktrees_removed": [
+    "rtc-spa-json-20261021",
+    "wireplumber-spa-json-20261021"
+  ],
+  "unrelated_worktrees": "preserved",
+  "integration": "fast-forward only; no push, release or live deployment",
+  "simulation": {
+    "ActiveState": "inactive",
+    "MainPID": 0
+  }
+}
