@@ -1,0 +1,5 @@
+┌ Warning: The active manifest file has dependencies that were resolved with a different julia version (1.12.7). Unexpected behavior may occur.
+└ @ ~/workspaces/codex/pipewire/pipewireao-gui-series/scripts/Manifest.toml:0
+   Installed Preferences ──── v1.5.2
+   Installed PipeWireAO_jll ─ v1.7.0+18
+   Installed PipeWireAO ───── v0.6.12

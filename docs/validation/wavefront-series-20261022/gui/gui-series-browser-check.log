@@ -1,0 +1,8 @@
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on shared package cache
+    Blocking waiting for file lock on build directory
+    Checking pipewireao-gui v0.1.0 (/home/dgamroth/workspaces/codex/pipewire/pipewireao-gui-series)
+    Checking pipewireao-gui-browser-review v0.1.0 (/home/dgamroth/workspaces/codex/pipewire/pipewireao-gui-series/tools/browser-review)
+    Finished `dev` profile [unoptimized] target(s) in 9.29s

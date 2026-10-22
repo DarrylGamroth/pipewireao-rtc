@@ -1,0 +1,22 @@
+{
+  "observed_process_pid": 782306,
+  "observation_source": "Read-only /proc mappings and fd inspection recorded by Codex before stopping the GUI",
+  "failed_check_log": "check-live-gpu-failed.log",
+  "unique_gpu_devices_observed": [
+    "/dev/nvidiactl",
+    "/dev/nvidia0",
+    "/dev/nvidia-modeset",
+    "/dev/dri/renderD129",
+    "/dev/dri/renderD128"
+  ],
+  "vulkan_driver_mappings_observed": [
+    "libvulkan_radeon.so",
+    "libvulkan_gfxstream.so",
+    "libvulkan_lvp.so"
+  ],
+  "action": "Stopped only the GUI immediately; CPU RTC stayed running",
+  "initial_launch_environment": "LIBGL_ALWAYS_SOFTWARE=1 GALLIUM_DRIVER=llvmpipe CUDA_VISIBLE_DEVICES= ROCR_VISIBLE_DEVICES=",
+  "handoff_cause": "Temporary Cargo integration test replaced the standalone Glow binary with the dev-dependency-unified Wgpu binary before the handoff copy",
+  "intermediate_correction": "WGPU_BACKEND=vulkan and VK_DRIVER_FILES/VK_ICD_FILENAMES restricted to /usr/share/vulkan/icd.d/lvp_icd.json; subsequent 32-sample audit passed",
+  "scope": "Device handles and driver loading observed; no GPU compute workload or interference measurement claimed"
+}

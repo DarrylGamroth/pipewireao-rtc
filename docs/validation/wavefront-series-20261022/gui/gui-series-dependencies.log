@@ -1,0 +1,2 @@
+Cargo.toml: 110 normal dependencies; native exclusions pass
+tools/browser-review/Cargo.toml: 135 normal dependencies; native exclusions pass

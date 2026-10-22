@@ -1,0 +1,61 @@
+GUI time-series validation — 2026-10-22
+Worktree: /home/dgamroth/workspaces/codex/pipewire/pipewireao-gui-series
+Branch: codex/wavefront-series-20261022
+Starting revision: 4a3d94e; clean starting worktree; no commits made by worker.
+Source changes remain available for parent review.
+
+Runtime: rustc 1.99.1 (58cf8f9c3 2026-10-13), egui 0.37.0, egui_plot 0.38.0.
+Cargo target resolved through metadata: /home/dgamroth/.cache/pipewireao-series-target
+Target size after required checks: 13 GiB; disk free: 190 GiB.
+Shared external target retained; no local repository target created/cleaned.
+
+Native environment for final Rust checks:
+CARGO_TARGET_DIR=/home/dgamroth/.cache/pipewireao-series-target
+PKG_CONFIG_PATH=/home/dgamroth/workspaces/codex/pipewire/pipewire/build/meson-uninstalled
+LD_LIBRARY_PATH=/home/dgamroth/workspaces/codex/pipewire/pipewire/build/src/pipewire
+PIPEWIREAO_SPA_PLUGIN_DIR=/home/dgamroth/workspaces/codex/pipewire/pipewire/build/spa/plugins
+PIPEWIREAO_CONFIG_DIR=/home/dgamroth/workspaces/codex/pipewire/pipewire/build/src/daemon
+PIPEWIREAO_MODULE_DIR=/home/dgamroth/workspaces/codex/pipewire/pipewire/build/src/modules
+LIBGL_ALWAYS_SOFTWARE=1
+GALLIUM_DRIVER=llvmpipe
+
+Checks:
+- cargo fmt --package pipewireao-gui -- --check: PASS
+- git diff --check: PASS
+- cargo test --lib time_series: 10 PASS
+- cargo test: 554 library + 271 binary + 12 integration PASS; 16 ignored; doc tests PASS.
+- cargo check-wasm: PASS
+- cargo check-browser: PASS
+- python3 tools/browser-review/check_dependencies.py: PASS; native exclusions pass for root110/browser135 normal dependencies.
+- julia --startup-file=no --project=scripts scripts/runtests.jl: PASS47+27+8+24 after Pkg.instantiate(;allow_autoprecomp=false) with registered dependencies.
+- cargo clippy --all-targets -- -D warnings: FAIL on pre-existing Rust1.99 chunks_exact_to_as_chunks warnings (5sites).
+- cargo clippy --all-targets -- -D warnings -A clippy::chunks_exact_to_as_chunks -A deprecated: PASS.
+  Strict command would also reject existing Atomic::fetch_update deprecations in binary ownership code. Five vendor warnings are pre-existing dependency warnings.
+  Confirmed affected source files unchanged against4a3d94e with git diff --quiet for:
+  src/view_panel/deformable_mirror/live_data.rs
+  src/view_panel/deformable_mirror/native_feedback.rs
+  src/view_panel/wfs_overlay/native.rs
+  src/native_rtc/session/transport.rs
+  src/pipewire_worker.rs
+  src/rtc_adapter.rs
+- cargo build --bin pipewireao-gui: PASS; native binary /home/dgamroth/.cache/pipewireao-series-target/debug/pipewireao-gui
+- Temporary public-parser integration check: PASS actual /home/dgamroth/workspaces/codex/pipewire/revolt-classic-rtc-series/operator-views.toml,6views, exact time-series schema/source,channel indices[0,1],0.002s model time. No native adapter/display/connection opened. Temporary test removed from repository; source retained task_series_profile.rs here.
+
+Browser fixture checks:
+- CARGO_TARGET_DIR as above, env -u NO_COLOR trunk build --release: PASS
+- Task-owned HTTP fixture served127.0.0.1:18084 only, stopped after checks.
+- Playwright1.64.0 installed in /home/dgamroth/.cache/pipewireao-series-python
+- Chromium /home/dgamroth/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome
+- Browser scripts force --use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader; software-only rendering.
+- review.py DPR1:28checks PASS; DPR2:28checks PASS; browser_errors[] both.
+- tiles_review.py DPR1:7checks PASS; DPR2:7checks PASS; browser_errors[] both.
+- Commands used --url http://127.0.0.1:18084 --chromium above --output corresponding browser-dpr1/browser-dpr2/tiles-dpr1/tiles-dpr2 directories.
+- Visually reviewed initial workspace screenshots at both DPRs. New time-series egui renderer exercised in10targeted tests, including real plot bounds. Actual live time-series queue/rendering acceptance remains with parent.
+
+Sources:
+https://raw.githubusercontent.com/emilk/egui_plot/0.37.0/Cargo.toml declares egui0.36, so incompatible.
+https://raw.githubusercontent.com/emilk/egui_plot/0.38.0/Cargo.toml declares egui0.37, used pinned0.38.0.
+
+Binary handoff: pipewireao-gui here is a copy of the final fresh dev binary, with debug sections stripped; SHA256 in pipewireao-gui.sha256. Parent owns final immutable deployment/cutover.
+
+Initial socket test failed before complete native environment was provided; this was corrected by setting PIPEWIREAO_SPA_PLUGIN_DIR/CONFIG_DIR/MODULE_DIR. Final full test suite passes. Initial system Python lacked Playwright and registered Julia dependencies needed instantiation; final required checks use prepared environments above. No RTC service or GPU workload was started by worker. Tests/browser screenshots establish software behavior only, not RTC non-gating qualification, scientific validity or hardware validation.

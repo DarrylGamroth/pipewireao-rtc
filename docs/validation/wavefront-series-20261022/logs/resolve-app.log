@@ -1,0 +1,18 @@
+  Activating project at `~/workspaces/codex/pipewire/revolt-classic-rtc-series`
+      Compat entry set:
+  PipeWireAORTC = "=0.2.4"
+     Resolve checking for compliance with the new compat rules...
+       Error empty intersection between PipeWireAORTC@0.2.3 and project compatibility 0.2.4
+  Suggestion Call `update` to attempt to meet the compatibility requirements.
+    Updating registry at `~/.local/share/classic-review-20261020/depot/registries/DarrylGamrothRegistry`
+    Updating registry at `~/.local/share/classic-review-20261020/depot/registries/General.toml`
+┌ Error: Some registries failed to update:
+│     — `~/.local/share/classic-review-20261020/depot/registries/DarrylGamrothRegistry` — origin not in the list of remotes
+└ @ Pkg.Registry ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Pkg/src/Registry/Registry.jl:705
+    Updating git-repo `file:///home/dgamroth/.local/share/classic-review-20261020/packages/PipeWireAORTC.git`
+   Installed PipeWireAORTC ─ v0.2.4
+    Updating `~/workspaces/codex/pipewire/revolt-classic-rtc-series/Project.toml`
+  [a3e2c7da] ↑ PipeWireAORTC v0.2.3 ⇒ v0.2.4
+    Updating `~/workspaces/codex/pipewire/revolt-classic-rtc-series/Manifest.toml`
+  [a3e2c7da] ↑ PipeWireAORTC v0.2.3 ⇒ v0.2.4
+Only PipeWireAORTC changed; all other locked dependencies preserved

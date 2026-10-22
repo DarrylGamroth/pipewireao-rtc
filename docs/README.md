@@ -21,6 +21,7 @@ claim; do not infer completion from prose.
 
 | Task | Relevant contract/design | Working guide or evidence |
 | --- | --- | --- |
+| Headless wavefront RMS and generic time series | RTC-DEV-006 optional analysis; paired source identity and explicit source clocks | [Validation](validation/wavefront-series-20261022/README.md), [review](reviews/20261022-wavefront-series/REVIEW.md), [usage](JULIA_DEPLOYMENT_USAGE.md#headless-rms-measurements) |
 | Generic simulator residual wavefront | RTC-DEV-006 optional observation; simulator-owned optical truth | [CPU validation](validation/live-wavefront-20261022/README.md), [independent review](reviews/20261022-live-wavefront/REVIEW.md), [usage](JULIA_DEPLOYMENT_USAGE.md#optional-simulator-wavefront-images) |
 | Classic central actuator extrapolation | Instrument-owned completion/calibration; RTC-ARCH-026 finite CPU integration | [CPU comparison and replay](validation/classic-extrapolation-20261021/README.md), [independent review](reviews/20261021-classic-extrapolation/REVIEW.md) |
 | Classic shutdown correction and recovery | Native observer lifetime; preserved deadlines, CPU science and exact cleanup | [Shutdown validation](validation/classic-shutdown-20261021/README.md), [independent review](reviews/20261021-classic-shutdown/REVIEW.md) |

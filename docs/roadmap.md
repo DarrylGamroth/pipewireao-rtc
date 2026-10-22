@@ -12,6 +12,26 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Headless wavefront RMS and generic time series — 2026-10-22
+
+The optional shared optical worker now publishes uncorrected-atmosphere and
+corrected-pupil RMS in one frame-associated ndarray sample, with the same pupil
+mask and piston removal. The generic GUI time-series view selects declared
+measurement channels; it does not calculate scientific WFE or depend on an
+image panel being open. Classic's Simulator profile plots model elapsed time
+from the source sequence and 2 ms period. Scientific inputs and calibration are
+unchanged; the live simulation and GUI use CPU/software rendering.
+
+CPU product/fault checks pass 98 assertions, package metadata 190 and offline
+preparation 71. Native capture/reset passes all new measurement checks but its
+original detector oracle records 1,024 passes and two one-count failures.
+Independent verification of the retained capture passes 222 checks, including
+exact ADC/controller replay; one prepared owner's analysis-on/off outputs are
+also identical. The earlier reference discrepancy remains unexplained and is
+not relabeled as corrected. See [validation](validation/wavefront-series-20261022/README.md)
+and [review](reviews/20261022-wavefront-series/REVIEW.md). GPU, hardware and
+cadence qualification remain excluded.
+
 ### Generic simulator residual wavefront — 2026-10-22
 
 The shared optional optical observer publishes pupil residual OPD in nm, with

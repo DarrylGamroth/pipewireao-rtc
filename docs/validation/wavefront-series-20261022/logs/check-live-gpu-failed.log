@@ -1,0 +1,13 @@
+ERROR: LoadError: GPU use by gui
+Stacktrace:
+ [1] error(s::String)
+   @ Base ./error.jl:44
+ [2] top-level scope
+   @ ~/workspaces/codex/worktrees/wavefront-series-20261022/check-live.jl:84
+ [3] include(mod::Module, _path::String)
+   @ Base ./Base.jl:309
+ [4] exec_options(opts::Base.JLOptions)
+   @ Base ./client.jl:344
+ [5] _start()
+   @ Base ./client.jl:577
+in expression starting at /home/dgamroth/workspaces/codex/worktrees/wavefront-series-20261022/check-live.jl:77

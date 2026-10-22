@@ -1,5 +1,17 @@
 # Delivery evidence catalog
 
+## Headless wavefront RMS and generic time series — 2026-10-22
+
+[Validation](validation/wavefront-series-20261022/README.md) records paired
+atmospheric/corrected RMS, 98 product/fault assertions, 71 offline checks,
+the original 1,024-pass/two-failure native oracle and separate 222-check exact
+verification of its retained capture. Same-owner analysis-on/off science is
+identical. GUI evidence covers the generic bounded time-series view, source
+clocks and live CPU subscription. The [review](reviews/20261022-wavefront-series/REVIEW.md)
+retains the earlier unexplained ADC discrepancy, GUI artifact handoff correction
+and unchanged strict-Clippy baseline failures. These are scoped software and CPU
+simulation results, not hardware or cadence qualification.
+
 ## Generic simulator residual wavefront — 2026-10-22
 
 [Validation](validation/live-wavefront-20261022/README.md) preserves 60 optical,

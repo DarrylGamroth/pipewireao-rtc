@@ -1,0 +1,8 @@
+{
+  "pid": 797504,
+  "executable": "/home/dgamroth/.local/opt/pipewireao-classic-headless-20261021/bin/pipewireao-gui-630198f-glow",
+  "hardware_graphics_mappings": [],
+  "gpu_device_handles": [],
+  "mesa_egl_loaded": true,
+  "scope": "Final explicit Mesa EGL/llvmpipe GUI observation; absence of GPU device handles and listed vendor modules, not a hardware execution qualification"
+}

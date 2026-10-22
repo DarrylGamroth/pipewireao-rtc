@@ -1,0 +1,8 @@
+2026-10-22T09:32:53.197384Z  INFO 🚀 Starting trunk 0.21.14
+2026-10-22T09:32:53.198795Z  INFO ⏫ Found an update of trunk: 0.21.14 -> 0.22.0
+2026-10-22T09:32:53.506503Z  INFO 📦 starting build
+   Compiling pipewireao-gui v0.1.0 (/home/dgamroth/workspaces/codex/pipewire/pipewireao-gui-series)
+   Compiling pipewireao-gui-browser-review v0.1.0 (/home/dgamroth/workspaces/codex/pipewire/pipewireao-gui-series/tools/browser-review)
+    Finished `release` profile [optimized] target(s) in 12.69s
+2026-10-22T09:33:25.533850Z  INFO applying new distribution
+2026-10-22T09:33:25.536851Z  INFO ✅ success

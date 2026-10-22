@@ -1,0 +1,7 @@
+Preparing A
+a1 native differing frames=0 target ADC=110
+a2-reset native differing frames=0 target ADC=110
+Preparing B
+b1 native differing frames=0 target ADC=110
+b2-reset native differing frames=0 target ADC=110
+COMPLETE /home/dgamroth/workspaces/codex/worktrees/wavefront-series-20261022/independent-oracle-check/result.json

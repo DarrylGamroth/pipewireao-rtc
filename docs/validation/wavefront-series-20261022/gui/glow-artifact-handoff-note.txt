@@ -1,0 +1,24 @@
+Standalone native Glow artifact handoff
+Timestamp: 2026-10-22T09:58:38.753721+00:00
+Source revision: 630198f88fd07cdba5c0c316f1c0307b4f58c2f2
+Source worktree: /home/dgamroth/workspaces/codex/pipewire/pipewireao-gui-series
+Branch: codex/wavefront-series-20261022; clean before build.
+Command: cargo build --bin pipewireao-gui --message-format=json-render-diagnostics
+Target: /home/dgamroth/.cache/pipewireao-series-target
+Executable captured from Cargo JSON: /home/dgamroth/.cache/pipewireao-series-target/debug/pipewireao-gui
+Cargo artifact fresh: True
+Corresponding dependency artifact: /home/dgamroth/.cache/pipewireao-series-target/debug/deps/pipewireao_gui-422bdf879f42c590
+Binary fingerprint: /home/dgamroth/.cache/pipewireao-series-target/debug/.fingerprint/pipewireao-gui-422bdf879f42c590/bin-pipewireao-gui.json
+eframe fingerprint: /home/dgamroth/.cache/pipewireao-series-target/debug/.fingerprint/eframe-78df45c3f311f96d/lib-eframe.json
+eframe features: ['default_fonts', 'glow', 'persistence', 'ron', 'serde', 'wayland', 'x11']
+Verified Glow present and Wgpu absent in the binary's actual eframe dependency.
+Immediate handoff copy: /home/dgamroth/workspaces/codex/worktrees/wavefront-series-20261022/gui/pipewireao-gui-glow
+Copied directly after successful standalone build and Cargo JSON parsing, then strip --strip-debug.
+SHA256: 14dbfbc20c97ccc917c76bd0cfa354118ea667fa5828bfa87c0c645ed8c46aab
+No tests or builds ran after this copy. Subsequent actions inspected metadata and saved evidence only.
+
+Original handoff diagnosis:
+The earlier standalone native build produced a Glow-only artifact, but a subsequent temporary integration test for the actual application profile restored Cargo's cached dev-dependency-unified binary as target/debug/pipewireao-gui. The original handoff copied that replacement after the integration test. It was the dependency artifact pipewireao_gui-3b3f444e5f9b8754, whose eframe-f72011b8168e8a12 fingerprint included glow, wgpu and wgpu_no_default_features. eframe0.37 selects Wgpu when both renderers are compiled. The production dependency graph requests Glow only; the test-only egui_kittest/wgpu feature enabled Wgpu in the replaced artifact.
+
+Scope:
+No source changes, tests, GUI launches or service changes were made for this handoff. The standalone production build is the existing production flavor; no renderer source fix was introduced. No physical-GPU isolation claim is inferred from build metadata. Parent owns immutable installation, exact GUI unit restart and final live process/device-descriptor and RMS acceptance checks.

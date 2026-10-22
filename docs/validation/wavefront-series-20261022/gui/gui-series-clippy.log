@@ -1,0 +1,418 @@
+   Compiling unicode-ident v1.0.24
+    Checking cfg-if v1.0.4
+   Compiling equivalent v1.0.2
+    Checking once_cell v1.21.4
+    Checking log v0.4.34
+   Compiling winnow v1.0.4
+    Checking serde_core v1.0.229
+    Checking libc v0.2.189
+   Compiling memchr v2.8.3
+    Checking linux-raw-sys v0.12.1
+    Checking scopeguard v1.2.0
+    Checking foldhash v0.2.0
+    Checking pin-project-lite v0.2.17
+    Checking libm v0.2.16
+    Checking crossbeam-utils v0.8.22
+    Checking libloading v0.8.9
+   Compiling proc-macro2 v1.0.107
+   Compiling indexmap v2.14.0
+    Checking parking v2.2.1
+    Checking hashbrown v0.17.1
+    Checking slab v0.4.12
+    Checking rustc-hash v2.1.3
+    Checking arrayvec v0.7.8
+    Checking futures-core v0.3.34
+    Checking dlib v0.5.3
+    Checking lock_api v0.4.14
+    Checking fastrand v2.5.0
+    Checking wayland-sys v0.31.11
+    Checking futures-io v0.3.34
+    Checking event-listener v5.4.2
+    Checking downcast-rs v1.2.1
+    Checking static_assertions v1.1.0
+   Compiling quote v1.0.47
+    Checking scoped-tls v1.0.1
+   Compiling endi v1.1.1
+   Compiling quick-xml v0.41.0
+    Checking event-listener-strategy v0.5.4
+    Checking futures-lite v2.6.1
+    Checking concurrent-queue v2.5.0
+    Checking raw-window-handle v0.6.2
+   Compiling syn v3.0.4
+   Compiling syn v2.0.119
+    Checking polycool v0.4.0
+    Checking tracing-core v0.1.36
+    Checking profiling v1.0.18
+    Checking linebender_resource_handle v0.1.1
+    Checking async-task v4.7.1
+    Checking async-channel v2.5.0
+    Checking unicode-width v0.2.2
+    Checking either v1.18.0
+    Checking num-traits v0.2.19
+    Checking atomic-waker v1.1.2
+    Checking fearless_simd v0.4.1
+    Checking piper v0.2.5
+   Compiling nom v7.1.3
+    Checking async-lock v3.4.2
+    Checking rustc-hash v1.1.0
+   Compiling toml_parser v1.1.3+spec-1.1.0
+    Checking linux-raw-sys v0.4.15
+    Checking getrandom v0.3.4
+    Checking errno v0.3.14
+   Compiling annotate-snippets v0.11.5
+   Compiling clang-sys v1.9.1
+    Checking blocking v1.7.0
+    Checking signal-hook-registry v1.4.8
+   Compiling wayland-scanner v0.31.11
+    Checking euclid v0.22.14
+    Checking async-executor v1.14.0
+    Checking unicode-general-category v1.1.0
+    Checking typeid v1.0.3
+   Compiling toml_edit v0.25.13+spec-1.1.0
+   Compiling toml v1.1.4+spec-1.1.0
+    Checking async-broadcast v0.7.2
+    Checking ordered-stream v0.2.0
+    Checking hex v0.4.3
+    Checking bitflags v2.13.1
+    Checking uuid v1.26.0
+    Checking guillotiere v0.7.0
+   Compiling system-deps v7.0.8
+    Checking unicode-segmentation v1.13.3
+   Compiling siphasher v1.0.4
+    Checking rustix v1.1.4
+    Checking rustix v0.38.44
+    Checking nohash-hasher v0.2.0
+    Checking epaint_default_fonts v0.37.0
+    Checking self_cell v1.3.0
+    Checking bit-vec v0.9.1
+    Checking unicode-properties v0.1.4
+   Compiling proc-macro-crate v3.5.0
+   Compiling phf_shared v0.14.0
+    Checking spirv v0.4.0+sdk-1.4.341.0
+    Checking bit-set v0.10.0
+    Checking x11-dl v2.21.0
+   Compiling cexpr v0.6.0
+    Checking codespan-reporting v0.13.1
+    Checking itertools v0.15.0
+    Checking cursor-icon v1.2.0
+    Checking xkeysym v0.2.1
+    Checking allocator-api2 v0.2.21
+    Checking xcursor v0.3.11
+   Compiling phf_generator v0.14.0
+    Checking ash v0.38.0+1.3.281
+    Checking memmap2 v0.9.11
+    Checking hashbrown v0.16.1
+   Compiling psm v0.1.24
+    Checking x11rb-protocol v0.13.2
+    Checking as-raw-xcb-connection v1.0.1
+    Checking simd-adler32 v0.3.10
+    Checking presser v0.3.1
+    Checking percent-encoding v2.3.2
+    Checking glow v0.17.0
+    Checking xkbcommon-dl v0.4.2
+   Compiling stacker v0.1.25
+    Checking khronos-egl v6.0.0
+    Checking ordered-float v5.5.0
+    Checking smol_str v0.2.2
+    Checking dpi v0.1.2
+    Checking renderdoc-sys v1.1.0
+   Compiling ucd-trie v0.1.7
+    Checking adler2 v2.0.1
+    Checking crc32fast v1.5.1
+   Compiling bindgen v0.72.1
+    Checking miniz_oxide v0.8.9
+    Checking futures-task v0.3.34
+    Checking fdeflate v0.3.7
+   Compiling pest v2.9.4
+    Checking pxfm v0.1.30
+    Checking glutin_egl_sys v0.7.1
+    Checking zmij v1.0.23
+    Checking flate2 v1.1.9
+    Checking byteorder-lite v0.1.0
+    Checking itoa v1.0.18
+    Checking web-time v1.1.0
+    Checking serde_json v1.0.151
+    Checking crossbeam-epoch v0.9.21
+    Checking png v0.18.1
+   Compiling libspa-ao v0.10.1 (https://github.com/DarrylGamroth/PipeWireAO-rs.git?rev=f2d8689#f2d86899)
+    Checking type-map v0.5.1
+    Checking crossbeam-deque v0.8.8
+    Checking getrandom v0.4.3
+    Checking glutin_glx_sys v0.6.1
+    Checking nom v8.0.0
+    Checking serde_spanned v1.1.1
+    Checking glutin v0.32.3
+    Checking toml_datetime v1.1.1+spec-1.1.0
+    Checking pollster v1.0.1
+    Checking toml_writer v1.1.2+spec-1.1.0
+    Checking cookie-factory v0.3.3
+    Checking org-eclipse-elk-alg-graphviz-dot v0.11.0
+    Checking rayon-core v1.13.0
+    Checking fitsio-sys v0.5.7
+    Checking is-docker v0.2.0
+   Compiling pest_meta v2.9.4
+    Checking lazy_static v1.5.1
+    Checking vec1 v1.12.1
+    Checking fitsio v0.21.10
+    Checking colored v2.2.0
+    Checking rayon v1.12.0
+    Checking is-wsl v0.4.0
+    Checking nix v0.29.0
+    Checking anyhow v1.0.104
+   Compiling enumflags2_derive v0.7.12
+   Compiling zerocopy-derive v0.8.56
+    Checking polling v3.11.0
+   Compiling enumn v0.1.14
+   Compiling tracing-attributes v0.1.31
+    Checking async-io v2.6.0
+   Compiling thiserror-impl v1.0.69
+   Compiling serde_derive v1.0.229
+   Compiling bytemuck_derive v1.12.0
+   Compiling thiserror-impl v2.0.20
+   Compiling serde_repr v0.1.21
+    Checking async-signal v0.2.14
+   Compiling async-recursion v1.2.0
+    Checking async-process v2.5.0
+   Compiling async-trait v0.1.92
+    Checking gethostname v1.1.0
+   Compiling phf_macros v0.14.0
+   Compiling futures-macro v0.3.34
+   Compiling pest_generator v2.9.4
+    Checking tracing v0.1.44
+    Checking moxcms v0.8.1
+    Checking tempfile v3.27.0
+    Checking thiserror v1.0.69
+    Checking phf v0.14.0
+    Checking bytemuck v1.25.2
+    Checking calloop v0.13.0
+    Checking thiserror v2.0.20
+    Checking futures-util v0.3.34
+    Checking getopts v0.2.24
+    Checking crossbeam-queue v0.3.13
+    Checking naga-types v30.0.1
+    Checking open v5.4.4
+    Checking color v0.3.3
+    Checking wgpu-types v30.0.1
+    Checking zerocopy v0.8.56
+   Compiling pest_derive v2.9.4
+    Checking serde v1.0.229
+   Compiling libspa-ao-sys v0.10.1 (https://github.com/DarrylGamroth/PipeWireAO-rs.git?rev=f2d8689#f2d86899)
+   Compiling pipewire-ao-sys v0.10.1 (https://github.com/DarrylGamroth/PipeWireAO-rs.git?rev=f2d8689#f2d86899)
+    Checking smallvec v1.16.3
+    Checking zvariant_utils v4.2.0
+    Checking accesskit v0.25.1
+    Checking zcheapstr v1.1.0
+    Checking enumflags2 v0.7.12
+    Checking font-types v0.12.7
+    Checking emath v0.37.0
+    Checking ron v0.12.2
+    Checking json5 v0.4.1
+    Checking parking_lot_core v0.9.12
+   Compiling toml_datetime v0.6.11
+   Compiling serde_spanned v0.6.9
+    Checking parking_lot v0.12.5
+   Compiling toml_edit v0.22.27
+    Checking wayland-backend v0.3.17
+    Checking kurbo v0.13.1
+    Checking org-eclipse-elk-graph v0.11.0
+    Checking ecolor v0.37.0
+    Checking read-fonts v0.41.0
+    Checking org-eclipse-elk-core v0.11.0
+    Checking image v0.25.10
+    Checking wayland-client v0.31.15
+    Checking wayland-csd-frame v0.3.0
+    Checking accesskit_consumer v0.39.1
+    Checking peniko v0.6.1
+   Compiling zvariant_derive v5.15.0
+    Checking vello_common v0.2.0
+   Compiling zvariant v5.15.0
+    Checking kittest v0.5.0
+   Compiling toml v0.8.23
+    Checking vello_cpu v0.2.0
+    Checking wayland-protocols v0.32.13
+    Checking calloop-wayland-source v0.3.0
+    Checking wayland-cursor v0.31.14
+    Checking ahash v0.8.12
+    Checking half v2.7.1
+   Compiling system-deps v6.2.2
+    Checking dify v0.8.0
+    Checking org-eclipse-elk-alg-common v0.11.0
+    Checking org-eclipse-elk-alg-topdownpacking v0.11.0
+    Checking org-eclipse-elk-conn-gmf v0.11.0
+    Checking naga v30.0.1
+   Compiling glib-sys v0.18.1
+   Compiling gobject-sys v0.18.0
+   Compiling gio-sys v0.18.1
+   Compiling gdk-sys v0.18.2
+   Compiling atk-sys v0.18.2
+   Compiling cairo-sys-rs v0.18.2
+   Compiling pango-sys v0.18.0
+   Compiling gdk-pixbuf-sys v0.18.0
+   Compiling gtk-sys v0.18.2
+   Compiling rfd v0.17.2
+    Checking zbus_names v4.3.4
+    Checking org-eclipse-elk-alg-vertiflex v0.11.0
+    Checking org-eclipse-elk-alg-spore v0.11.0
+    Checking org-eclipse-elk-alg-rectpacking v0.11.0
+    Checking org-eclipse-elk-alg-radial v0.11.0
+    Checking org-eclipse-elk-alg-mrtree v0.11.0
+    Checking x11rb v0.13.2
+    Checking zbus_xml v5.2.1
+    Checking org-eclipse-elk-alg-layered v0.11.0
+    Checking org-eclipse-elk-alg-force v0.11.0
+    Checking org-eclipse-elk-alg-disco v0.11.0
+    Checking org-eclipse-elk-alg-libavoid v0.11.0
+    Checking org-eclipse-elk-alg-graphviz-layouter v0.11.0
+   Compiling zbus_macros v5.19.0
+    Checking zbus-lockstep v0.5.2
+   Compiling zbus-lockstep-macros v0.5.2
+    Checking gpu-allocator v0.28.0
+    Checking skrifa v0.44.0
+    Checking harfrust v0.12.0
+    Checking zbus v5.19.0
+    Checking wayland-protocols-wlr v0.3.12
+    Checking wayland-protocols-plasma v0.3.12
+    Checking smithay-client-toolkit v0.19.2 (/home/dgamroth/workspaces/codex/pipewire/pipewireao-gui-series/vendor/smithay-client-toolkit)
+warning: unnecessary parentheses around type
+   --> vendor/smithay-client-toolkit/src/compositor.rs:478:21
+    |
+478 |     ) -> Option<Arc<(dyn wayland_client::backend::ObjectData + 'static)>> {
+    |                     ^                                                 ^
+    |
+    = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+    |
+478 -     ) -> Option<Arc<(dyn wayland_client::backend::ObjectData + 'static)>> {
+478 +     ) -> Option<Arc<dyn wayland_client::backend::ObjectData + 'static>> {
+    |
+
+warning: unnecessary parentheses around type
+   --> vendor/smithay-client-toolkit/src/shell/xdg/mod.rs:214:21
+    |
+214 |     ) -> Option<Arc<(dyn wayland_client::backend::ObjectData + 'static)>> {
+    |                     ^                                                 ^
+    |
+help: remove these parentheses
+    |
+214 -     ) -> Option<Arc<(dyn wayland_client::backend::ObjectData + 'static)>> {
+214 +     ) -> Option<Arc<dyn wayland_client::backend::ObjectData + 'static>> {
+    |
+
+warning: unnecessary parentheses around type
+   --> vendor/smithay-client-toolkit/src/shm/raw.rs:262:21
+    |
+262 |     ) -> Option<Arc<(dyn ObjectData + 'static)>> {
+    |                     ^                        ^
+    |
+help: remove these parentheses
+    |
+262 -     ) -> Option<Arc<(dyn ObjectData + 'static)>> {
+262 +     ) -> Option<Arc<dyn ObjectData + 'static>> {
+    |
+
+    Checking epaint v0.37.0
+warning: hiding a lifetime that's elided elsewhere is confusing
+  --> vendor/smithay-client-toolkit/src/data_device_manager/write_pipe.rs:88:14
+   |
+88 |     fn as_fd(&self) -> BorrowedFd {
+   |              ^^^^^     ^^^^^^^^^^ the same lifetime is hidden here
+   |              |
+   |              the lifetime is elided here
+   |
+   = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+   = note: `#[warn(mismatched_lifetime_syntaxes)]` on by default
+help: use `'_` for type paths
+   |
+88 |     fn as_fd(&self) -> BorrowedFd<'_> {
+   |                                  ++++
+
+warning: eliding a lifetime that's named elsewhere is confusing
+   --> vendor/smithay-client-toolkit/src/registry.rs:195:31
+    |
+193 |         &'a self,
+    |          -- the lifetime is named here
+194 |         interface: &'a str,
+    |                     -- the lifetime is named here
+195 |     ) -> impl Iterator<Item = &Global> + 'a {
+    |                               ^^^^^^^    -- the same lifetime is named here
+    |                               |
+    |                               the same lifetime is elided here
+    |
+    = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+help: consistently use `'a`
+    |
+195 |     ) -> impl Iterator<Item = &'a Global> + 'a {
+    |                                ++
+
+warning: `smithay-client-toolkit` (lib) generated 5 warnings (run `cargo clippy --fix --lib -p smithay-client-toolkit -- -D warnings` to apply 5 suggestions)
+    Checking winit v0.30.13
+    Checking org-eclipse-elk-graph-json v0.11.0
+    Checking wgpu-naga-bridge v30.0.1
+    Checking elk-layout v0.11.0
+    Checking egui v0.37.0
+    Checking wgpu-hal v30.0.1
+    Checking atspi-common v0.13.0
+    Checking glutin-winit v0.5.0
+    Checking wgpu-core-deps-windows-linux-android v30.0.1
+    Checking wgpu-core v30.0.1
+    Checking atspi-proxies v0.13.0
+    Checking accesskit_atspi_common v0.21.0
+    Checking pipewire-ao v0.10.1 (https://github.com/DarrylGamroth/PipeWireAO-rs.git?rev=f2d8689#f2d86899)
+    Checking atspi v0.29.0
+    Checking accesskit_unix v0.24.0
+    Checking egui_glow v0.37.0
+    Checking egui_plot v0.38.0
+    Checking egui_table v0.11.0
+    Checking egui_tiles v0.18.0
+    Checking wgpu v30.0.1
+    Checking accesskit_winit v0.34.1
+    Checking egui-winit v0.37.0
+    Checking egui-wgpu v0.37.0
+    Checking eframe v0.37.0
+    Checking egui_kittest v0.37.0
+    Checking pipewireao-gui v0.1.0 (/home/dgamroth/workspaces/codex/pipewire/pipewireao-gui-series)
+error: using `chunks_exact` with a constant chunk size
+   --> src/view_panel/deformable_mirror/live_data.rs:149:18
+    |
+149 |                 .chunks_exact(4)
+    |                  ^^^^^^^^^^^^^^^ help: consider using `as_chunks` instead: `as_chunks::<4>().0.iter()`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#chunks_exact_to_as_chunks
+    = note: `-D clippy::chunks-exact-to-as-chunks` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::chunks_exact_to_as_chunks)]`
+
+error: using `chunks_exact` with a constant chunk size
+   --> src/view_panel/deformable_mirror/native_feedback.rs:103:33
+    |
+103 |                     frame.bytes.chunks_exact(4).any(|bytes| {
+    |                                 ^^^^^^^^^^^^^^^ help: consider using `as_chunks` instead: `as_chunks::<4>().0.iter()`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#chunks_exact_to_as_chunks
+
+error: using `chunks_exact` with a constant chunk size
+   --> src/view_panel/deformable_mirror/native_feedback.rs:159:47
+    |
+159 |             for (index, bytes) in frame.bytes.chunks_exact(4).enumerate() {
+    |                                               ^^^^^^^^^^^^^^^ help: consider using `as_chunks` instead: `as_chunks::<4>().0.iter()`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#chunks_exact_to_as_chunks
+
+error: using `chunks_exact` with a constant chunk size
+   --> src/view_panel/deformable_mirror/native_feedback.rs:227:10
+    |
+227 |         .chunks_exact(4)
+    |          ^^^^^^^^^^^^^^^ help: consider using `as_chunks` instead: `as_chunks::<4>().0.iter()`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#chunks_exact_to_as_chunks
+
+error: using `chunks_exact` with a constant chunk size
+   --> src/view_panel/wfs_overlay/native.rs:512:14
+    |
+512 |             .chunks_exact(4)
+    |              ^^^^^^^^^^^^^^^ help: consider using `as_chunks` instead: `as_chunks::<4>().0.iter()`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#chunks_exact_to_as_chunks
+
+error: could not compile `pipewireao-gui` (lib) due to 5 previous errors
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `pipewireao-gui` (lib test) due to 5 previous errors
