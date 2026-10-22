@@ -25,8 +25,8 @@ when isolation is required. The GUI continues to consume the same summary
 schema and source for its existing readouts and charts. Generic readouts and
 charts are unchanged.
 
-The candidate uses JuliaFilterGraph 0.4.1, FilterGraphPipeWire 0.1.6 and
-PipeWireAORTC 0.2.5; final profile registration awaits validation. Remove both
+The deployment uses locally registered JuliaFilterGraph 0.4.1, FilterGraphPipeWire
+0.1.6 and PipeWireAORTC 0.2.5. Remove both
 `analysis` and `client.analysis` from a resealed profile to omit the process.
 Supported recovery is restart of the RTC deployment. A manual restart of the
 optional systemd service changes retained identity and is fenced from RTC
@@ -38,9 +38,20 @@ Sealed core queue modules remain stable during an invocation; SDK factory
 creation is not atomic against manual queue replacement. The separate process
 architecture, configuration and evidence scope are recorded in the
 [optional analysis validation](validation/optional-analysis-20261022/README.md)
-and [review](reviews/20261022-optional-analysis/REVIEW.md). The primary
-end-to-end fault gate is still running; live and systemd fault behavior are not
-yet qualified.
+and [review](reviews/20261022-optional-analysis/REVIEW.md). The finite CPU gate
+passes 3,944 assertions across five 32-frame generations: normal, suspended,
+resumed, crashed and analysis preparation failure. Controller replay is exact
+throughout; detector replay and summary oracles pass in the first three
+generations. All three sessions clean up. Final offline preparation passes 74
+checks, and a real-manager ordering experiment passes six checks. This does
+not qualify cadence, tail latency, arbitrary overload or hardware.
+
+The final local release is deployed live with Classic on CPU and the existing
+software-rendered GUI. A fresh capture has 31 matching identity/PTS cohorts with
+bitwise-exact independent summaries. Analysis is outside required ownership,
+its four links are active, and all seven owned process roles have no GPU device
+handles or runtime mappings. The GUI's summary subscription is active. The
+live closure and limits are recorded in the validation linked above.
 
 The preceding in-process WFS gate is preserved as
 [historical validation](validation/wfs-measurements-20261022/README.md) and its

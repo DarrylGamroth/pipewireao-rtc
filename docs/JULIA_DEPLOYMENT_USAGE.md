@@ -58,12 +58,12 @@ restart the RTC deployment. Manually restarting the optional systemd service
 changes its retained invocation identity, so RTC cleanup fences that service
 from cleanup.
 
-This deployment candidate uses JuliaFilterGraph 0.4.1, FilterGraphPipeWire
-0.1.6 and PipeWireAORTC 0.2.5. The final profile has not been registered while
-validation is in progress. See the [optional analysis validation scope](validation/optional-analysis-20261022/README.md)
+This deployment uses locally registered JuliaFilterGraph 0.4.1, FilterGraphPipeWire
+0.1.6 and PipeWireAORTC 0.2.5. See the [optional analysis validation scope](validation/optional-analysis-20261022/README.md)
 and [independent review](reviews/20261022-optional-analysis/REVIEW.md) for
-current evidence and limitations; the primary end-to-end fault gate is still
-running. Existing sealed core queue modules remain stable for an invocation;
+current evidence and limitations. The finite CPU gate passes 3,944 assertions
+across normal, suspended, resumed, crashed and preparation-failure cases.
+Existing sealed core queue modules remain stable for an invocation;
 SDK factory creation is not atomic against manual queue replacement.
 
 A `time_series` view can declare `xy_axes` with `x_index`, `y_index`, axis titles,

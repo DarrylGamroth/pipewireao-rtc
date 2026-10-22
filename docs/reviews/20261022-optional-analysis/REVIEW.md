@@ -4,9 +4,11 @@ The revised design plausibly preserves the required control path: WFS summary
 science runs in a separate Julia process behind capacity-one copy/drop-oldest
 queues, and its output reaches the generic GUI through another such queue.
 Confirmed lifecycle, identity, and startup defects found during implementation
-were remediated. Software checks and a scoped real-manager ordering experiment
-support those repairs. End-to-end fault isolation and control-loop scheduling
-remain limited to the completed evidence explicitly recorded below.
+were remediated. Independent software checks and reviewed primary-agent live
+receipts support those repairs: five finite CPU generations completed with exact
+controller replay despite optional suspension, termination, and preparation
+failure. This establishes the tested functional isolation, not a cadence or
+tail-latency guarantee.
 
 ## Scope and source identity
 
@@ -23,9 +25,13 @@ No live service was started/stopped, no GPU was used, and nothing was pushed.
 
 All three worktrees already contained implementation changes when review began.
 The JFG remediation reviewed and tested is commit
-`5a8dc2fdb0f5ae58e7f7dc3b108448ea2a1d1b48`; RTC and application evidence below
-refers to the contemporaneous working changes, not their untouched starting
-commits. Final publication must identify the resulting RTC/application commits.
+`5a8dc2fdb0f5ae58e7f7dc3b108448ea2a1d1b48`. Final RTC source inspection is at
+commit `aa6ca4f9c9a9d797060683572bf14c0f0e73413e`, package tree
+`0289467179b49448e4323354a496896b858a38bb`; the Classic application HEAD is
+`d81e3de9bfe6a3bf2d9ccc1604d55fd97f0aef96`. The CPU fault gate used the earlier
+immutable RTC tree explicitly identified under OA-007, with an independently
+checked single runtime delta. The evidence hashes below identify the actual
+gate harness and application Manifest.
 
 Primary-agent raw live receipts referenced by filename below are under
 `/home/dgamroth/workspaces/codex/worktrees/optional-wfs-analysis-20261022`.
@@ -95,9 +101,10 @@ is prepared. Ordinary `:sequence` matching retains its prior API behavior.
   core and simulator. Four assertions passed. A durable two-assertion regression
   was subsequently added to `test/test_analysis.jl` and independently passed.
   No systemd was contacted.
-- Disposition: remediated and independently verified for ordering. Live manager
-  fault/cleanup behavior remains a separate gate. An optional identity failure
-  may still retain optional resources and a failed-cleanup diagnostic; it no
+- Disposition: remediated and independently verified for ordering. The final
+  primary-agent fault gate also completed all three session cleanups. An
+  optional identity failure may still retain optional resources and a
+  failed-cleanup diagnostic; it no
   longer prevents verified required-owner teardown. Final source inspection
   also confirms that missing optional receipts cannot silently hide leftover
   optional units/jobs: cleanup reports their presence without stopping an
@@ -130,7 +137,9 @@ is prepared. Ordinary `:sequence` matching retains its prior API behavior.
   transport work on the required processing loop.
 - Remediation: summary capture and playback both select `observer-loop`.
 - Disposition: remediated by application configuration and independently
-  inspected. Runtime loop placement remains to be checked in a live gate.
+  inspected. The retained live `fault-final3/analysis-ready.json` exposes
+  `node.loop.name=observer-loop` on both summary queue nodes. This verifies
+  published placement properties; it does not measure callback scheduling time.
 
 ### OA-004 — Endpoint identity needed checking around link creation
 
@@ -171,13 +180,13 @@ is prepared. Ordinary `:sequence` matching retains its prior API behavior.
   fake-manager fragment with `CPUAffinity=6-7`; disabling RestrictRealtime still
   fails verification.
 - Disposition: remediated and independently verified at software level. The
-  later candidate reached published analysis links, independently supporting
-  resolution of the earlier submission failure. Final live gate remains open.
+  completed final live gate reached analysis Ready; its CPU audit reports all
+  eight observed analysis threads on `6-7` with ordinary scheduler policy 0.
 
 ### OA-006 — Readiness printing waited for the native owner loop to return
 
-- Severity: P2. Confidence: high for the reproduced mechanism; the final live
-  remedy must still pass the isolated integration gate.
+- Severity: P2. Confidence: high for the reproduced mechanism and its scoped
+  repair, supported by independent reproduction and the completed live gate.
 - Affected code: RTC `ext/analysis.jl`, readiness notice in
   `analysis_connections` and its replacement `analysis_ready_notice`.
 - Observed: candidate tree `689ce2e39db397b4ad2c1b167d37bf30a8cc253a` published
@@ -212,8 +221,8 @@ is prepared. Ordinary `:sequence` matching retains its prior API behavior.
 - Disposition: readiness-notice helper source inspected; three independent
   checks confirm the actual helper finishes on thread 2 while the main thread
   remains in native code, with no GPU packages loaded.
-  The final isolated live gate must demonstrate analysis Ready and subsequent
-  fault/replay behavior before the end-to-end defect is declared closed.
+  The completed final isolated gate reached analysis Ready and passed the
+  subsequent fault/replay checks described below. Remediated within that scope.
 
 An additional proposed timeout defect was rejected after checking the caller:
 `run_analysis_graph` wraps `analysis_connections` in a monitor `try/finally`
@@ -259,13 +268,119 @@ cleanup obligation and did not establish a production leak.
   The reviewer read `ordering.jl`: it invokes the actual `service_unit`
   renderer, changes only the After dependency, waits for the optional completion
   marker and manager quiescence, and removes both pairs' units/fragments.
-- Source scope: the concurrently running `fault-final3` science gate uses RTC
+- Source scope: the completed `fault-final3` science gate uses RTC
   tree `fc59c6c6a1c60ae816ada147476b7c4c012aa15a`, which still has the old
   After argument. Its `ext/analysis.jl` matches the reviewed final source; its
   `src/analysis.jl` differs solely by OA-007's argument removal and explanation.
   Keep that bounded delta explicit. The dummy-manager gate supports the new
   ordering, but the science gate must not be described as executing the final
   source revision of that unit declaration.
+
+## Primary live evidence independently reviewed
+
+The reviewer read the completed `fault-final3/optional-analysis-result.json`,
+the actual `harness-final3/classic_optional_analysis.jl`, phase observations,
+both full summary identity records, all three final launch receipts, resource
+audits, and `integration-final3.log`. These services were operated by the primary
+agent; the reviewer did not rerun or control them. The log records 2,999 + 473 +
+472 = **3,944 passing assertions**, with no failure. The retained earlier failed
+candidates remain evidence of the repaired startup problems; they are not
+superseded with a claim that all development runs passed.
+
+| Phase | Generation | Captured control frames | Verified replay |
+| --- | --- | --- | --- |
+| Analysis running | 1 | 32 | Exact controller and detector |
+| Analysis suspended during the run | 2 | 32 | Exact controller and detector |
+| Analysis resumed | 3 | 32 | Exact controller and detector |
+| Analysis killed during the run, separate session | 1 | 32 | Exact controller |
+| Analysis preparation failed, separate session | 1 | 32 | Exact controller |
+
+Every observed control stream has 32 distinct sequences, from 1 through 32,
+with the expected generation and domain `a0000000000000000000000000000000`.
+Normal/resumed records additionally retain all six streams, including summary:
+their complete 32-element identity and PTS arrays match, and every sequence is
+present. The harness checks the eight summary fields against their source
+samples. Controller replay compares current and pre-summary baseline outputs
+bitwise and compares them with captured outputs. All 320 reported warmed
+controller calls allocate zero bytes. This is a replay allocation observation,
+not an allocation claim for every live process or callback.
+
+The configured offered wall rate is 2 Hz, with 32 finite exchanges per
+generation. The science configuration's nominal rate does not turn this into a
+500 Hz runtime qualification. The normal/stalled/resumed capture-and-replay
+durations are approximately 46.39/25.13/20.39 seconds and include replay work;
+they are not transport latency distributions. Suspension/termination is
+scheduled asynchronously three seconds after Start so observation continues
+during fault injection. Stop and status remain usable, resets advance the main
+session generations, and native Quit performs teardown, including teardown
+while analysis is suspended. Direct manager stop ordering is separately covered
+by OA-007's six-assertion experiment.
+
+All three `final-launch.json` files report `phase=stopped`,
+`service_result=success`, `cleanup_complete=true`, `unit_files_removed=true`,
+and no error. Their invocation identities are
+`0071ee40bc6143869f806f679291ba19`, `f3f7369d60e34f48bd6f5accf084813d`, and
+`b30228ed4569452e908df2efba011307`. The reviewer also read each invocation's
+separate runtime `analysis.json`: all report cleanup complete with an empty
+error list. Their durable copies, `retained-analysis.json` in each of the three
+fault-stage directories, were subsequently inspected and agree. Retained owner
+PID/state entries are historical launch identity,
+not a fresh process-state query. The harness independently checks that the
+analysis MainPID is zero after each cleanup.
+
+The main-session analysis audit records eight threads, all ordinary policy 0
+on CPUs 6/7; its harness checks the analysis process for GPU-library mappings.
+The separate required-process GPU audit records no such mappings. The summary
+queue exposes observer-loop placement on both ends. These are snapshots for
+this CPU gate, not a general hardware-resource or GPU qualification.
+
+The report's harness SHA-256
+`e304684bf55ad8d9f739cea11a1d0f6ae0b29a9b894a927d40fae722df0f40b6` and Manifest
+SHA-256 `110e6096e4ab626c2f4192338a358de14b650338f3144c0791af2f36c8064f05`
+match the retained files. Independent `git diff` of the fault-gate and final RTC
+trees confirms that the only runtime change under `src/`, `ext/`, and `assets/`
+is removal of the optional After argument plus explanatory comments, matching
+`final-runtime-delta.json`. Final-source `offline-final.log` records 74 passes;
+`analysis-policy-final.log` records 97 passes. Those two are primary runs; the
+reviewer's separate focused executions are recorded below.
+
+### Final installed CPU application and GUI subscriptions
+
+The reviewer inspected the primary agent's read-only live checks under
+`/home/dgamroth/.local/state/pipewireao/classic-cpu-analysis-live-20261022`,
+their `check_live.jl` implementation, and `check-live.log` in the evidence root.
+Both application and installed Manifests select PipeWireAORTC 0.2.5, tree
+`0289467179b49448e4323354a496896b858a38bb`; `live-identity.json` records Classic
+commit `d81e3de9bfe6a3bf2d9ccc1604d55fd97f0aef96`. This is a final-tree live
+observation, distinct from the earlier fault gate and its bounded source delta.
+
+`live-wfs-check.json` reports 32 samples in each of detector, slopes, flux,
+validity, and summary, with **31 shared identity/PTS cohorts** and bitwise-exact
+summary values against the numerical oracle. The observation receipt explains
+the overlap: the detector spans sequences 603–634, while the other streams span
+602–633, all in generation 1 of the same acquisition domain. The checker
+compares every shared cohort's PTS and eight summary fields; it does not claim
+32 complete five-stream cohorts. Saved status responses show Running both
+before and after observation. This deployment has an offered wall rate of
+10 Hz and nominal model rate of 500 Hz; no cadence claim follows from this
+short observation.
+
+`live-analysis-policy.json` confirms the final optional unit is active, outside
+the required owners, with Nice=10, RestrictRealtime=yes, LimitRTPRIO=0, and
+CPUAffinity=6-7. Requisite and PartOf name the RTC, while its After list omits
+the RTC and the RTC's Requires/Wants lists omit analysis. The retained graph
+has exactly four active links touching the unique analysis node. Thus the live
+loaded policy agrees with the reviewed one-way dependency and ordering repair.
+
+The GUI has one active summary subscription and one active slopes subscription;
+detector, flux, and validity have zero recorded GUI subscriptions. The checker
+explicitly allows this subset (`all_readout_views_required=false`). This
+supports those two active bindings, not a claim that all views were displayed
+or manually inspected. `live-gpu-audit.json` records no matching GPU-library
+mappings or GPU device handles for all seven observed roles: core, RTC, Julia
+controller, parameters, simulator, analysis, and GUI. It is a CPU-only process
+snapshot. No services were operated during this independent receipt review,
+and no new blocking finding was identified.
 
 ## Independent verification
 
@@ -310,16 +425,16 @@ from `julia/FilterGraphPipeWire/test/runtests.jl`.
 
 ## Remaining validation and claim limits
 
-No live RTC/control-loop equivalence experiment, analysis SIGSTOP/SIGKILL test,
-GUI stall/reattach test, systemd activation race, shutdown fault injection, or
-cadence/tail-latency measurement was performed by this reviewer. Acceptance of
-runtime isolation still requires identical finite control inputs with analysis
-absent, running, stalled, crashed, and GUI stalled/disconnected, comparing
-accepted commands and acquisition identities while observing RTC lifecycle.
-Verify installed unit policy, physical CPU affinity, actual loop placement,
-ordinary scheduling, and exact cleanup in that same isolated private session.
-Record offered rate, duration, sample counts, drops, and latency distributions;
-functional/allocation checks alone do not establish a deadline guarantee.
+The completed primary-agent CPU gate supports finite functional equivalence
+with analysis running, suspended, resumed, killed, and unable to prepare.
+Baseline equivalence is established by exact local replay, not by a separate
+live session with the feature removed. The final unit-ordering delta has its
+own real-manager before/after experiment; the science gate did not execute that
+final declaration. GUI stall/reattach, arbitrary systemd activation races,
+production-rate overload, latency distributions, deadline/tail guarantees, and
+hardware actuation remain unqualified here. No live services were operated by
+the reviewer. Functional/allocation evidence must not be promoted into an
+unmeasured scheduling guarantee.
 
 This first service requires a graph with at least two synchronized data inputs
 and a single acquisition domain. Future analysis graphs must declare their own

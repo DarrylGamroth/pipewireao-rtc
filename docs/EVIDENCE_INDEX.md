@@ -8,7 +8,11 @@ row-major adapter, ordinary service policy and scoped CPU fault/replay gate.
 The [independent review](reviews/20261022-optional-analysis/REVIEW.md) includes
 the cleanup ordering and strict-reset regressions. The GUI's measurement
 schema and sources are unchanged. This supersedes the following in-process
-deployment while retaining its historical evidence.
+deployment while retaining its historical evidence. The finite CPU gate passes
+3,944 assertions across five normal/fault generations and three cleaned-up
+sessions. The final locally registered closure is live on CPU: 31 matched
+summary cohorts, active GUI subscription, ordinary isolated analysis policy,
+and no GPU mappings or device handles in the seven owned process roles.
 
 ## Headless WFS measurements and generic X/Y — 2026-10-22
 
