@@ -20,6 +20,25 @@ for the native memory regression, deployment and fault recovery evidence.
 `classic_wavefront.jl APPLICATION FRESH_STATE PREFIX` additionally validates the
 shared residual-wavefront transport against direct pupil OPD replay. Use a sealed
 CPU application with optical observation, 32 exchanges and 2 Hz wall pacing.
+First create its test-only FFT witness wrapper in a fresh application directory:
+
+```sh
+julia --startup-file=no --project=/absolute/CPU_BASE \
+  test/integration/prepare_classic_wavefront.jl /absolute/CPU_BASE /absolute/CPU_TEST
+julia --startup-file=no --project=/absolute/CPU_TEST \
+  test/integration/classic_wavefront.jl /absolute/CPU_TEST /absolute/FRESH_STATE /absolute/PREFIX
+```
+
+The wrapper records FFTW wisdom and retained plan descriptions after native
+science warmup. The reference uses `WISDOM_ONLY` for repeated optical transforms
+and checks its retained plans against that witness before comparing pixels.
+Missing wisdom, changed provider/version/thread settings or different retained
+plans fail the gate; the test does not silently remeasure or relax the ADC
+comparison. Ordinary preparation transforms retain their existing behavior.
+Independently measured FFT plans need not be bitwise identical: last-bit optical
+differences can cross noisy detector sampling thresholds. See the
+[controlled CPU investigation](../../docs/validation/classic-detector-20261022/README.md).
+
 It checks two generations separated by native Reset, the emitting frame's
 acquisition identity/PTS, pupil masking, nm units, piston removal, RMS, unchanged
 detector/controller replay and final Quit cleanup. The separate

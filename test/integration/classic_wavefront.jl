@@ -4,6 +4,7 @@ using Test, Statistics, Libdl, LinearAlgebra
 using PipeWireAORTC, PipeWireAO, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
 using AdaptiveOpticsSim.AlgorithmGraphs
 include("classic_managed_replay.jl")
+include("classic_fft_oracle.jl")
 const M=ClassicManagedReplay
 const R=PipeWireAORTC.SessionRuntime
 const C=PipeWireAORTC.Common
@@ -121,6 +122,8 @@ function main(application,stage,prefix)
     options=PipeWireAORTC.AOSOwner.configuration(joinpath(application,"simulation.conf"))
     @assert options.backend===:cpu && options.total_exchanges==COUNT && options.wall_rate==2
     @assert options.optical_observation
+    isfile(joinpath(application,"classic_fft_oracle.jl")) || throw(ArgumentError(
+        "prepare the isolated test application with prepare_classic_wavefront.jl first"))
     BLAS.set_num_threads(1)
     AdaptiveOpticsSim.Backends.set_fft_provider_threads!(1)
     handle=R.start!(application,stage;prefix,deadline=R.monotonic()+1030)
@@ -129,7 +132,13 @@ function main(application,stage,prefix)
         try
             M.gpu_audit(handle,stage)
             previous=nothing
-            science=prepare_replay(application)
+            # Exact noisy ADC replay requires the same measured FFT execution
+            # contract, not a separately timed FFTW search in this process.
+            fft_directory=joinpath(R._ledger(handle)["runtime"],"fft-oracle")
+            fft_contract=ClassicFFTOracle.restore!(fft_directory)
+            science=Base.invokelatest(prepare_replay,application)
+            @test ClassicFFTOracle.verify(science,fft_contract)
+            cp(fft_directory,joinpath(stage,"fft-oracle"))
             for generation in 1:2
                 directory=joinpath(stage,"generation-$generation")
                 records,snapshot=capture(handle,directory,prefix)
@@ -156,6 +165,7 @@ function main(application,stage,prefix)
     C.write_json(joinpath(stage,"wavefront-result.json"),Dict("complete"=>true,"backend"=>"cpu",
         "generations"=>reports,"reset_and_restart"=>true,"cleanup_complete"=>true,
         "calibration_identity"=>options.calibration_identity,"manifest_sha256"=>C.sha256_file(joinpath(application,"Manifest.toml")),
+        "fft_execution_contract"=>C.read_json(joinpath(stage,"fft-oracle","plans.json")),
         "scope"=>"Two finite32-frame CPU generations with transport, pixels, RMS and reset; no cadence or hardware qualification"))
 end
 abspath(PROGRAM_FILE)==(@__FILE__) && main(ARGS...)
