@@ -17,8 +17,34 @@ for the native memory regression, deployment and fault recovery evidence.
 
 ## Managed Classic CPU closed-loop replay
 
+`classic_optional_analysis.jl CPU_TEST FRESH_STATE PREFIX BASELINE_APPLICATION`
+checks the separate optional analysis deployment. Prepare the sealed 32-frame,
+2 Hz CPU application and FFT witness described below, using the released
+application environment. The baseline retains the original controller graph
+and parameter bindings before the diagnostic reduction was added.
+
+The gate checks normal, SIGSTOP-stalled and SIGCONT-resumed analysis across
+Reset generations, then Quit with the worker stopped. Separate fresh sessions
+check a killed analysis process and an analysis graph preparation failure.
+Required Start/Stop/Reset/Quit, complete five-stream control prefixes, bitwise
+controller replay, exact detector replay under the retained FFT witness, and
+the independent summary identity/PTS/numerical oracle remain required for
+their respective phases. Analysis CPU affinity, ordinary scheduling, lack of
+GPU runtimes and exact cleanup are checked. No pre-existing session is used.
+
+```sh
+julia +1.13 --startup-file=no --threads=2,0 --project=/absolute/CPU_TEST \
+  test/integration/classic_optional_analysis.jl \
+  /absolute/CPU_TEST /absolute/FRESH_STATE /absolute/PREFIX /absolute/BASELINE_APPLICATION
+```
+
+This is finite CPU functional evidence, not latency, wall-rate or hardware
+qualification. See [optional analysis evidence](../../docs/validation/optional-analysis-20261022/README.md).
+
 `classic_wfs_summary.jl CPU_TEST FRESH_STATE PREFIX [BASELINE_APPLICATION]`
-checks the headless WFS summary from two 32-frame CPU generations. Prepare the
+preserves the earlier in-process WFS gate for its historical sealed application;
+use the optional-analysis gate for the current deployment. It checks two
+32-frame CPU generations. Prepare the
 same sealed 2 Hz CPU application and test-only FFT witness described below.
 It captures detector, demanded commands, slopes, flux, validity and summary;
 checks all six acquisition identities and Header sequence/PTS; independently

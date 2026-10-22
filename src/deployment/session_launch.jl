@@ -662,15 +662,25 @@ function cleanup_record!(runtime, record, invocation, source_role)
         role in roles || continue
         cleanup_role!(record, role, deadline)
     end
+    optional(role) = startswith(role,"analysis-") && !haskey(record["owners"],role)
     for role in sort!(collect(setdiff(roles, Set(["core", String(source_role)]))))
+        optional(role) && continue
         cleanup_role!(record, role, deadline)
     end
     # Start requests may materialize after the first enumeration. Repeat the
     # exact-prefix sweep; never accept a single empty listing as completion.
     quiet = 0
     while monotonic() < deadline
-        units = S.listed_units(invocation; deadline)
-        jobs = S.listed_jobs(invocation; deadline)
+        units = filter(S.listed_units(invocation; deadline)) do unit
+            role = unit[ncodeunits(prefix)+1:end-ncodeunits(".service")]
+            !optional(role)
+        end
+        jobs = filter(S.listed_jobs(invocation; deadline)) do job
+            unit = job.second
+            endswith(unit,".service") || return true
+            role = unit[ncodeunits(prefix)+1:end-ncodeunits(".service")]
+            !optional(role)
+        end
         if isempty(jobs) && all(unit -> S.quiescent_unit(unit; deadline), units)
             quiet += 1
             quiet >= 3 && break
@@ -697,6 +707,7 @@ function cleanup_record!(runtime, record, invocation, source_role)
         S.cleanup_unit(record["cohort_unit"]; deadline)
     end
     get(record, "unit_files_removed", false) || S.remove_fragments!(runtime, record, deadline)
+    PipeWireAORTC.Analysis.cleanup!(runtime, record, deadline)
     result = get(ENV, "SERVICE_RESULT", "")
     record["service_result"] = result
     record["cleanup_complete"] = true

@@ -9,6 +9,8 @@ import PipeWireAO
 const Owner = PipeWireAORTC.GraphOwner
 const Bootstrap = PipeWireAORTC.NativeOwnerBootstrapRuntime
 
+include("analysis.jl")
+
 function Owner.run_owner(island::Module, options, runtime, entries)
     Bootstrap.preparation_check!(runtime)
     options.check && throw(ArgumentError("native graph owner cannot run --check"))

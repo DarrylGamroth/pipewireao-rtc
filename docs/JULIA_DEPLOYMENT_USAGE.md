@@ -16,11 +16,11 @@ the recorded Copper complete-frame lifecycle checks.
 
 ## Headless WFS measurements
 
-An application can connect the ordinary `shack-hartmann-summary-f32` Algorithm
-to its measurement node's `slopes`, `flux` and `validity` outputs. Configure the
-subaperture count, export `summary`, and connect it to an existing capacity-one
-copy/drop-oldest observation queue. The calculation runs in the numerical graph
-owner; the headless RTC only admits and controls the declared topology.
+An optional analysis graph uses the ordinary `shack-hartmann-summary-f32`
+Algorithm with `slopes`, `flux` and `validity` from observation queues. Configure
+the subaperture count, export `summary`, and connect it to an exclusive
+capacity-one copy/drop-oldest observation queue. Numerical work stays in the
+analysis graph; the RTC's required controller has no diagnostic reduction.
 
 The F32 vector has shape `(8,)` and schema
 `org.calculon.ao.shack-hartmann-summary/1`. Zero-based fields are total count,
@@ -30,11 +30,41 @@ units. Mean slopes do not establish calibrated physical tip/tilt or focus.
 Invalid subapertures are excluded; no valid rows or nonfinite valid inputs
 produce NaN aggregates while retaining the counts.
 
-The GUI overlay's optional `native_products.summary` binding uses this packet
-for its existing readouts. A configured summary joins detector/slopes/flux/
-validity in the same bounded, exact-identity and Header-sequence/PTS cohort.
+The current REVOLT Classic profile computes this packet in a separate optional
+JFG analysis process. The required WFS/controller graph remains unchanged. Its
+three inputs come from capacity-one copy/drop-oldest queues, and its summary
+uses a separate capacity-one copy/drop-oldest output queue. The analysis graph
+joins slopes, flux and validity by exact acquisition identity and PTS before
+computing a summary. It uses ordinary CPU scheduling on CPUs 6/7, outside
+required-owner admission; Classic's required control graph remains on its
+existing CPUs. The initial profile has one analysis process, which can contain
+several Algorithm nodes. Add more analysis processes when process isolation is
+needed; each needs its own exclusive output queue.
+
+The RTC submits the optional service under a locked invocation after checking
+its own native Ready state and active invocation identity. The optional unit
+uses systemd `Requisite` and `PartOf` relationships to the RTC, with no
+`After=` ordering edge. Its ordinary CPU scheduling and separate lifecycle
+keep it outside required-owner admission.
+
+The GUI overlay's optional `native_products.summary` binding consumes the
+same eight-element packet for its existing readouts and charts. It uses the
+same summary schema and source; generic readouts and charts are unchanged.
 Missing products make readouts unavailable; the GUI does not recompute them.
-Scripts can subscribe to the same queue without any GUI connection.
+Scripts can subscribe to the same queue without any GUI connection. To omit
+analysis, remove both `analysis` and `client.analysis` from the deployment
+profile and reseal it. The supported recovery after an analysis failure is to
+restart the RTC deployment. Manually restarting the optional systemd service
+changes its retained invocation identity, so RTC cleanup fences that service
+from cleanup.
+
+This deployment candidate uses JuliaFilterGraph 0.4.1, FilterGraphPipeWire
+0.1.6 and PipeWireAORTC 0.2.5. The final profile has not been registered while
+validation is in progress. See the [optional analysis validation scope](validation/optional-analysis-20261022/README.md)
+and [independent review](reviews/20261022-optional-analysis/REVIEW.md) for
+current evidence and limitations; the primary end-to-end fault gate is still
+running. Existing sealed core queue modules remain stable for an invocation;
+SDK factory creation is not atomic against manual queue replacement.
 
 A `time_series` view can declare `xy_axes` with `x_index`, `y_index`, axis titles,
 units and `equal_axes`. Both coordinates come from one admitted ndarray sample;
@@ -43,12 +73,13 @@ Classic selects summary channels 6/7 for its WFS mean-slope trajectory, and
 channel 2 for mean-flux history. Other RTCs declare their own matching sources
 and schemas in their view profiles; no instrument-specific GUI handler is used.
 
-Small frame reductions fit existing graph owners. Expensive spectra, long-run
-statistics, recording and calibration/reconstructor generation belong in
-optional consumers behind bounded observation queues when implemented. Such
-workers need no additional RTC lifecycle authority, GUI dependency or data
-scheduler in the runner. Device control and scientific feedback remain with
-their established owners.
+Small frame reductions can fit existing graph owners. Expensive spectra,
+long-run statistics, recording and calibration/reconstructor generation
+belong in optional consumers behind bounded observation queues. The Classic
+summary is now an optional separate analysis process. Such workers need no
+additional RTC lifecycle authority, GUI dependency or data scheduler in the
+runner. Device control and scientific feedback remain with their established
+owners.
 
 An optional observation service is a future integration point for shared
 discovery, subscription delivery limits and a browser/WebSocket bridge.

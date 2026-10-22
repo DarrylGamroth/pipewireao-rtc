@@ -6,6 +6,7 @@ and checks live native identities. It does not coordinate session effects.
 module SessionRuntime
 
 using UUIDs
+import ..Analysis
 import ..Common
 import ..DeploymentConfiguration
 import ..SystemdOwners
@@ -363,10 +364,13 @@ function start!(package::AbstractString, base::AbstractString;
         checked(["systemctl", "--user", "start", unit], deadline;
             limit=DeploymentConfiguration.startup_timeout_ms(spec) / 1000)
         handle = _identity(unit, root; deadline)
-        _ledger(handle)["phase"] == "prepared" ||
+        launch_record = _ledger(handle)
+        launch_record["phase"] == "prepared" ||
             throw(ArgumentError("RTC session did not retain prepared launch evidence"))
         handle.stage_root = target
         _receipt(target, handle)
+        Analysis.start!(installed, launch_record, unit; prefix, deadline=min(deadline, monotonic()+20),
+            ready=()->_analysis_ready(handle, launch_record, min(deadline, monotonic()+10)))
         return handle
     catch primary
         try
@@ -421,6 +425,29 @@ function _selected(record, deadline)
     connection isa Session.Connection ||
         throw(ArgumentError("direct session verification failed: $(connection.detail)"))
     return connection
+end
+
+# Optional graphs are submitted only after a fresh native Ready/Running status.
+# This bounded wait belongs to optional startup and never changes RTC readiness.
+function _analysis_ready(handle, record, deadline)
+    last_error = nothing
+    while monotonic() < deadline
+        connection = nothing
+        try
+            connection = _selected(record, deadline)
+            status = connection.selected.status
+            status.lifecycle in (:ready, :running) && status.owner_pid == UInt32(handle.main_pid) &&
+                status.incarnation == record["session_control_instance"] && status.remote == record["remote"] ||
+                throw(ArgumentError("optional analysis requires an admitted RTC status"))
+            return nothing
+        catch error
+            last_error = error
+        finally
+            connection === nothing || close(connection)
+        end
+        sleep(min(0.05, max(0, deadline-monotonic())))
+    end
+    throw(ArgumentError("RTC was not ready for optional analysis: " * sprint(showerror,last_error)))
 end
 
 function _verify_owners(handle::Handle, record, deadline)

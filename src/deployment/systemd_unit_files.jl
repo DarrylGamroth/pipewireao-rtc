@@ -15,12 +15,12 @@ function runtime_unit_directory()
     return directory
 end
 
-function install_fragment!(unit, text, runtime, record)
+function install_fragment!(unit, text, runtime, record; save=save_unit_record!, deadline=nothing)
     path = joinpath(runtime, "units", unit)
     link = joinpath(runtime_unit_directory(), unit)
     ispath(path) || islink(path) || ispath(link) || islink(link) ?
         fail("invocation unit name is already reserved: $unit") : nothing
-    properties(unit)["LoadState"] == "not-found" || fail("unit name is already loaded: $unit")
+    properties(unit;deadline)["LoadState"] == "not-found" || fail("unit name is already loaded: $unit")
     mkpath(dirname(path); mode=0o700)
     temporary, io = mktemp(dirname(path); cleanup=false)
     try
@@ -33,31 +33,43 @@ function install_fragment!(unit, text, runtime, record)
         ispath(temporary) && rm(temporary)
     end
     record["unit_files"][unit] = Dict("path" => path, "sha256" => Common.sha256_file(path))
-    save_unit_record!(runtime, record) # Retain intent before installing the manager link.
+    save(runtime, record) # Retain intent before installing the manager link.
     symlink(path, link) # Exclusive creation; never replace an existing unit.
     return path
 end
 
-function verify_fragment!(unit, record)
+function verify_fragment!(unit, record; placement=nothing, ordinary=false, deadline=nothing)
     entry = record["unit_files"][unit]
     path = entry["path"]
     extra = "FragmentPath,DropInPaths"
     service = endswith(unit, ".service")
     service && (extra *= ",Type,Restart,KillMode,CPUAffinity,LimitRTPRIO,LimitMEMLOCK,UMask")
-    values = properties(unit; extra)
+    ordinary && (extra *= ",RestrictRealtime,Nice")
+    values = properties(unit; extra, deadline)
     values["LoadState"] == "loaded" && isempty(values["DropInPaths"]) &&
         isfile(values["FragmentPath"]) && realpath(values["FragmentPath"]) == realpath(path) &&
         Common.sha256_file(path) == entry["sha256"] || fail("loaded unit definition differs: $unit")
     if service
         role = unit[ncodeunits(PREFIX * record["invocation"] * "-")+1:end-8]
-        placement = record["owners"][role]["placement"]
+        placement === nothing && (placement = record["owners"][role]["placement"])
+        if ordinary
+            _unit_cpus(values["CPUAffinity"]) == sort(placement["cpus"]) &&
+                values["LimitRTPRIO"] == "0" && values["RestrictRealtime"] == "yes" &&
+                values["Nice"] == "10" || fail("loaded optional analysis resource policy differs: $unit")
+        end
         values["Type"] == "exec" && values["Restart"] == "no" &&
             values["KillMode"] == "control-group" && values["UMask"] == "0077" &&
-            values["CPUAffinity"] == string(placement["leader-cpu"]) &&
-            values["LimitRTPRIO"] == "95" && values["LimitMEMLOCK"] == "4294967296" ||
+            (ordinary || values["CPUAffinity"] == string(placement["leader-cpu"])) &&
+            (ordinary || values["LimitRTPRIO"] == "95") && values["LimitMEMLOCK"] == "4294967296" ||
             fail("loaded owner resource/lifetime policy differs: $unit")
     end
     return nothing
+end
+
+# The user manager canonicalizes adjacent CPUs as ranges (for example 6-7),
+# regardless of whether CPUAffinity was written as "6 7".
+function _unit_cpus(value)
+    return unique!(Placement.cpus_from_list(join(split(value), ',')))
 end
 
 function reload_fragments!(record)
@@ -111,7 +123,8 @@ function cancel_start_jobs!(invocation, deadline)
     fail("invocation start jobs did not quiesce")
 end
 
-function remove_fragments!(runtime, record, deadline)
+function remove_fragments!(runtime, record, deadline;
+        roles=keys(record["owners"]), save=save_unit_record!)
     files = get(record, "unit_files", Dict())
     isempty(files) && return nothing # Older launch records have transient services.
     directory = runtime_unit_directory()
@@ -121,7 +134,7 @@ function remove_fragments!(runtime, record, deadline)
     # insufficient: links, contents and manager definitions must still match.
     for (unit, entry) in files
         (unit == cohort_name(record["invocation"]) ||
-            unit in (prefix * role * ".service" for role in keys(record["owners"]))) ||
+            unit in (prefix * role * ".service" for role in roles)) ||
             fail("cleanup ledger names a foreign unit")
         path = joinpath(runtime, "units", unit)
         entry["path"] == path && !islink(path) &&
@@ -139,7 +152,7 @@ function remove_fragments!(runtime, record, deadline)
         quiescent_unit(unit; deadline) || fail("cleanup unit remains active: $unit")
     end
     record["unit_file_removal_started"] = true
-    save_unit_record!(runtime, record) # Recovery can recognize our own partial removal.
+    save(runtime, record) # Recovery can recognize our own partial removal.
     for (unit, entry) in files
         link = joinpath(directory, unit)
         islink(link) && rm(link)

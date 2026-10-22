@@ -3,6 +3,7 @@ module DeploymentConfiguration
 using JSON3, TOML
 using ..Common
 using ..Placement
+import ..PipeWireAORTC
 import ..ScienceExport
 import ..NativeControlClient
 import ..NativeOwnerBootstrapCodec
@@ -264,7 +265,7 @@ end
 function profile(path::AbstractString, prefix::AbstractString; legacy_export_input::Bool=false)
     value = decode(path, prefix)
     require(value isa AbstractDict && REQUIRED_KEYS ⊆ Set(keys(value)) ⊆
-        union(REQUIRED_KEYS, Set(["source-owner","detector-observation","session-runtime","node-owners","startup-timeout-ms","runtime"])) && get(value, "version", nothing) === 1,
+        union(REQUIRED_KEYS, Set(["source-owner","detector-observation","session-runtime","node-owners","startup-timeout-ms","runtime","analysis"])) && get(value, "version", nothing) === 1,
         "expected version 1 deployment with the documented fields")
     registered_application(value) && application_environment(value, dirname(path))
     startup_timeout_ms(value)
@@ -273,6 +274,8 @@ function profile(path::AbstractString, prefix::AbstractString; legacy_export_inp
     owners = value["owners"]
     require(owners isa AbstractVector && length(owners) <= 4,
         "deployment permits at most four external owners")
+    require(!haskey(value,"analysis") || value["analysis"] isa AbstractVector && length(value["analysis"]) <= 8,
+        "deployment analysis must be a list of at most eight entries")
     validate_environment(value["environment"], "deployment")
     roles = Set(["core", "rtc"])
     if haskey(value,"session-runtime")
@@ -400,8 +403,9 @@ function profile(path::AbstractString, prefix::AbstractString; legacy_export_inp
     latency = value["cpu-latency-us"]
     require(latency === nothing || typeof(latency) === Int && 0 <= latency <= typemax(Int32),
         "cpu-latency-us must be null or a nonnegative Int32")
-    require(value["client"] isa AbstractDict && Set(keys(value["client"])) == roles,
-        "each owned process requires an explicit client configuration")
+    client_roles = isempty(get(value, "analysis", [])) ? roles : union(roles, Set(["analysis"]))
+    require(value["client"] isa AbstractDict && Set(keys(value["client"])) == client_roles,
+        "each owned process and optional analysis require an explicit client configuration")
     for name in values(value["client"])
         relative_asset(dirname(path), name)
     end
@@ -478,6 +482,7 @@ function profile(path::AbstractString, prefix::AbstractString; legacy_export_inp
             end
         end
     end
+    PipeWireAORTC.Analysis.validate_deployment(value, path, prefix)
     Dict{String,Any}(value)
 end
 

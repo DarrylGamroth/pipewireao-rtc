@@ -41,7 +41,8 @@ function _after_units(after)
 end
 
 """Render a standalone owner service with the existing owner limits."""
-function service_unit(service::Service, argv, env, cwd, placement; after=String[])
+function service_unit(service::Service, argv, env, cwd, placement; after=String[],
+        binds_to=String[], part_of=String[], requisite=String[], ordinary=false)
     service.state == :pending || fail("owner unit rendering requires a pending handle")
     unit = _unit_name(service.unit, "owner")
     unit == PREFIX * valid_invocation(service.coordinator.invocation) * "-" *
@@ -54,7 +55,7 @@ function service_unit(service::Service, argv, env, cwd, placement; after=String[
         fail("owner working directory must exist and be absolute")
     !occursin(r"[\n\r\0]", cwd) && strip(cwd) == cwd ||
         fail("owner working directory must be a literal single-line path")
-    cpu, _ = validate_placement(placement)
+    cpu, cpus = validate_placement(placement)
 
     environment = Dict{String,String}()
     for (key, value) in pairs(env)
@@ -70,6 +71,10 @@ function service_unit(service::Service, argv, env, cwd, placement; after=String[
 
     lines = String["[Unit]", "Description=PipeWireAO owner $(service.role)"]
     isempty(dependencies) || push!(lines, "After=" * join(dependencies, " "))
+    for (key, units) in (("BindsTo", binds_to), ("PartOf", part_of), ("Requisite", requisite))
+        names = _after_units(units)
+        isempty(names) || push!(lines, key * "=" * join(names, " "))
+    end
     append!(lines, ["", "[Service]", "Type=exec",
         "ExecStart=:" * join(unit_argument.(String.(argv)), " "),
         # Path directives consume the whole value, not a quoted argument list.
@@ -77,7 +82,9 @@ function service_unit(service::Service, argv, env, cwd, placement; after=String[
     for key in sort!(collect(keys(environment)))
         push!(lines, "Environment=" * unit_argument(key * "=" * environment[key]))
     end
-    append!(lines, ["CPUAffinity=$(cpu)", "LimitRTPRIO=95", "LimitMEMLOCK=4294967296",
+    ordinary && append!(lines, ["RestrictRealtime=yes", "Nice=10"])
+    append!(lines, ["CPUAffinity=" * (ordinary ? join(cpus, " ") : string(cpu)),
+        "LimitRTPRIO=" * (ordinary ? "0" : "95"), "LimitMEMLOCK=4294967296",
         "KillMode=control-group", "Restart=no", "UMask=0077", "TimeoutStartSec=20",
         "TimeoutStopSec=15", "StandardOutput=journal", "StandardError=journal", ""])
     return join(lines, "\n")

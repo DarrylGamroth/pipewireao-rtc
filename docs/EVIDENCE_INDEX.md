@@ -1,5 +1,15 @@
 # Delivery evidence catalog
 
+## Optional WFS analysis process — 2026-10-22
+
+[Validation](validation/optional-analysis-20261022/README.md) records the separate
+optional CPU analysis boundary, strict acquisition/PTS synchronization,
+row-major adapter, ordinary service policy and scoped CPU fault/replay gate.
+The [independent review](reviews/20261022-optional-analysis/REVIEW.md) includes
+the cleanup ordering and strict-reset regressions. The GUI's measurement
+schema and sources are unchanged. This supersedes the following in-process
+deployment while retaining its historical evidence.
+
 ## Headless WFS measurements and generic X/Y — 2026-10-22
 
 [Validation](validation/wfs-measurements-20261022/README.md) preserves the

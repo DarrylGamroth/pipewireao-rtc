@@ -1,6 +1,7 @@
 module SystemdOwners
 
 using ..Common
+import ..Placement
 
 export Coordinator, Service, pid, alive, failure, record, verify!, stop!
 

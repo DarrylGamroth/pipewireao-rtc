@@ -14,28 +14,51 @@ chronology. Architecture/requirement decisions remain authoritative.
 
 ### Headless WFS measurements and generic X/Y — 2026-10-22
 
-The existing JFG owner publishes a bounded eight-field WFS summary through
-FilterGraphAlgorithms 0.7.1. GUI SHWFS readouts consume it directly; GUI WFS
-reductions and smoothing are removed. Generic X/Y reuses the ordinary chart
-source, history and persistence, with both axes from one sample. Classic's
-TOML declares mean-slope X/Y in detector pixels and mean-flux history; no
-instrument-specific rendering or additional management daemon is introduced.
+Classic now computes its bounded eight-field WFS summary in an optional,
+separate JFG analysis process. Three capacity-one copy/drop-oldest queues carry
+slopes, flux and validity to that process; it joins exact acquisition identity
+and PTS before calculation. A separate exclusive capacity-one queue carries
+the summary to the GUI. The configured CPU service uses ordinary scheduling on
+CPUs 6/7 and is outside required-owner admission. The initial process can
+contain several Algorithm nodes; additional analysis processes can be added
+when isolation is required. The GUI continues to consume the same summary
+schema and source for its existing readouts and charts. Generic readouts and
+charts are unchanged.
 
-Numerical/graph checks pass in the deployed closure, GUI tests pass 864 Rust
-and 151 Julia assertions plus WASM/browser compilation, and offline Classic
-preparation passes 71 checks. Two native 32-frame CPU generations pass 2,618
-assertions: exact six-stream identity/PTS and summary oracle, exact detector
-replay under the retained FFT witness, bitwise unchanged original controller
-outputs, zero warmed graph allocations, Reset and complete Quit cleanup.
-The independent review closes two small X/Y settings defects. Live CPU and
-software-GUI deployment receipts are maintained with the
-[validation](validation/wfs-measurements-20261022/README.md) and
-[review](reviews/20261022-wfs-measurements/REVIEW.md).
+The candidate uses JuliaFilterGraph 0.4.1, FilterGraphPipeWire 0.1.6 and
+PipeWireAORTC 0.2.5; final profile registration awaits validation. Remove both
+`analysis` and `client.analysis` from a resealed profile to omit the process.
+Supported recovery is restart of the RTC deployment. A manual restart of the
+optional systemd service changes retained identity and is fenced from RTC
+cleanup. Submission occurs under a locked invocation after native RTC Ready
+and active invocation identity checks. The unit has `Requisite` and `PartOf`
+relationships to the RTC and no `After=` ordering edge. The optional process
+uses ordinary CPU scheduling and remains outside required-owner admission.
+Sealed core queue modules remain stable during an invocation; SDK factory
+creation is not atomic against manual queue replacement. The separate process
+architecture, configuration and evidence scope are recorded in the
+[optional analysis validation](validation/optional-analysis-20261022/README.md)
+and [review](reviews/20261022-optional-analysis/REVIEW.md). The primary
+end-to-end fault gate is still running; live and systemd fault behavior are not
+yet qualified.
 
-Calibrated physical tip/tilt/focus, other instrument deployment, GPU, hardware,
-cadence and latency qualification remain outside this gate. Heavier analysis,
-recording and a shared discovery/browser observation service are future optional
-consumers behind existing bounded queues; RTC lifecycle ownership stays unchanged.
+The preceding in-process WFS gate is preserved as
+[historical validation](validation/wfs-measurements-20261022/README.md) and its
+[review](reviews/20261022-wfs-measurements/REVIEW.md); it does not qualify the
+new separate-process deployment. That gate recorded numerical/graph checks in
+the deployed closure, GUI tests with 864 Rust and 151 Julia assertions plus
+WASM/browser compilation, offline Classic preparation with 71 checks, and two
+native 32-frame CPU generations with 2,618 assertions. It covered exact
+six-stream identity/PTS and the summary oracle, detector replay under its
+retained FFT witness, unchanged controller outputs, zero warmed graph
+allocations, Reset and Quit cleanup. The independent review closed two X/Y
+settings defects. Its live CPU and software-GUI receipts remain specific to
+that earlier in-process profile.
+
+Calibrated physical tip/tilt/focus, other
+instrument deployment, GPU, hardware, cadence and latency qualification remain
+outside this gate. A shared discovery/browser observation service also remains
+future work; RTC lifecycle ownership stays unchanged.
 
 ### Classic exact CPU detector replay and chart controls — 2026-10-22
 
