@@ -1,5 +1,17 @@
 # Delivery evidence catalog
 
+## Generic simulator residual wavefront — 2026-10-22
+
+[Validation](validation/live-wavefront-20261022/README.md) preserves 60 optical,
+eight capture-regression, 71 offline and 716 managed CPU assertions, including
+two reset generations with exact detector/controller replay and per-pixel
+wavefront agreement. The [independent review](reviews/20261022-live-wavefront/REVIEW.md)
+checks piston, units, mask, bounded ownership and acquisition identity. The
+ordinary ndarray GUI renders the Simulator view; no instrument-specific GUI
+handler is added. Sixteen fresh live images and the GUI subscription were
+verified, with no GPU mappings or device handles in the owned processes. The
+CPU RTC and GUI are left running. Hardware and cadence qualification are excluded.
+
 ## Classic central actuator extrapolation — 2026-10-22
 
 [Validation](validation/classic-extrapolation-20261021/README.md) preserves

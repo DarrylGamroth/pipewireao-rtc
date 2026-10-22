@@ -1,0 +1,507 @@
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [-205.4268341064453, -206.39633178710938, -207.30050659179688, -206.3983612060547, -200.95028686523438, -195.97743225097656, -195.39645385742188, -195.7994384765625, -196.3737335205078, -198.08628845214844  …  223.80661010742188, 234.7541961669922, 238.8297576904297, 238.0255889892578, 235.10890197753906, 233.15036010742188, 225.0935516357422, 227.5641326904297, 239.1992645263672, 248.1420135498047] ≈ [-205.42684075734576, -206.39633368772627, -207.3005135298357, -206.39836583995054, -200.9502936243647, -195.9774323904552, -195.3964500171336, -195.7994414351473, -196.37373049589803, -198.08629480848174  …  223.80661157968427, 234.754199304925, 238.82975875040725, 238.02559490378337, 235.10890223861645, 233.1503622417673, 225.09354658269297, 227.56413209664026, 239.19926939471193, 248.1420181584414] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [-102.2559814453125, -110.2829360961914, -121.22516632080078, -125.14903259277344, -127.64568328857422, -126.93488311767578, -124.58181762695312, -132.27000427246094, -137.77073669433594, -134.91954040527344  …  159.8893585205078, 162.50369262695312, 164.3944854736328, 159.13885498046875, 158.84312438964844, 161.29409790039062, 163.7736358642578, 165.0515899658203, 160.66580200195312, 157.5121307373047] ≈ [-102.25598026399385, -110.28293891731155, -121.22516915032466, -125.14903482714945, -127.64568304864443, -126.93488451749946, -124.58181566661952, -132.27000885980888, -137.77073229211456, -134.91953745633  …  159.88935450887365, 162.50369702911993, 164.394479670687, 159.1388508496544, 158.84312296303105, 161.29409749747137, 163.77363584988925, 165.05158959271793, 160.66580718880286, 157.51213431040523] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [-56.83403396606445, -54.62236404418945, -52.52576446533203, -53.79814147949219, -42.14948272705078, -36.53700637817383, -35.131351470947266, -35.015193939208984, -38.277435302734375, -44.44047927856445  …  105.50635528564453, 109.57536315917969, 105.28394317626953, 92.18595123291016, 88.6694107055664, 89.30177307128906, 86.21259307861328, 83.77562713623047, 84.3594970703125, 80.28739166259766] ≈ [-56.83403472393996, -54.62236387747628, -52.525765427068954, -53.79814140942192, -42.14948248308877, -36.53700488930274, -35.13135240600325, -35.01519287956119, -38.27743668798296, -44.4404783205727  …  105.50635707213867, 109.57536531359717, 105.28394298499104, 92.18595451339122, 88.66940745984091, 89.30177628381269, 86.21259226411264, 83.77562963242151, 84.3594968092503, 80.28739060146388] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [21.36903953552246, 13.9227933883667, 11.049600601196289, 4.053411960601807, 6.156135082244873, 13.713254928588867, 19.602375030517578, 22.69801139831543, 24.352169036865234, 26.67926597595215  …  56.77183151245117, 50.90085983276367, 41.09661865234375, 31.72787094116211, 20.923927307128906, 19.87850570678711, 26.566730499267578, 23.246265411376953, 19.07280731201172, 13.635024070739746] ≈ [21.369039850234515, 13.922793563998821, 11.049600325115135, 4.0534118077098915, 6.156135136499471, 13.713254511223168, 19.602374813750032, 22.698010561490776, 24.352168261195004, 26.67926677508291  …  56.77183165948151, 50.90085861842596, 41.09661942015151, 31.727871864624433, 20.923927458844958, 19.878505931721122, 26.566731016593224, 23.24626533640327, 19.07280731278803, 13.63502375601598] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [14.800862312316895, 15.579730987548828, 19.740341186523438, 25.161256790161133, 34.1832160949707, 39.24440002441406, 40.650604248046875, 41.83403015136719, 41.39816665649414, 36.133060455322266  …  14.58646297454834, 5.143065929412842, -1.8727904558181763, -0.78574538230896, -4.612970352172852, -10.75649356842041, -16.118745803833008, -14.992308616638184, -6.020086288452148, -3.5179953575134277] ≈ [14.800862169372143, 15.579730694602935, 19.74034210555563, 25.161257377780732, 34.18321744569274, 39.24439914165722, 40.6506058482906, 41.834028985553765, 41.398167860583804, 36.13306039945618  …  14.58646300428389, 5.143065828937854, -1.872790511393229, -0.785745390808567, -4.612970150142625, -10.756493173781033, -16.118746037741783, -14.992308427886579, -6.020086351477782, -3.5179953726268804] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [24.70134925842285, 19.25664520263672, 21.112199783325195, 24.928255081176758, 29.115156173706055, 37.2534294128418, 44.85354995727539, 51.750732421875, 66.2529067993164, 72.59941864013672  …  13.847624778747559, 12.554948806762695, 6.253713607788086, -1.1103514432907104, -3.4071240425109863, -3.1362082958221436, -2.7921066284179688, 0.26463407278060913, -0.11976955831050873, -6.852758884429932] ≈ [24.701349821656116, 19.256645578637766, 21.112199511365837, 24.928254538893746, 29.115156031069567, 37.25342830937145, 44.85354973046335, 51.75073122306778, 66.25290845993143, 72.59941933232179  …  13.84762479180929, 12.554948603495655, 6.253713514227934, -1.1103513991897445, -3.4071239491154075, -3.1362082148247965, -2.792106578750895, 0.2646340596343407, -0.11976956041187349, -6.852758837636861] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [24.294984817504883, 27.55265235900879, 35.7889518737793, 44.431724548339844, 50.613502502441406, 55.08230209350586, 59.58907699584961, 57.84077453613281, 56.49123764038086, 57.012420654296875  …  37.72808074951172, 26.196481704711914, 10.693150520324707, 7.165660858154297, 8.279166221618652, 7.7112298011779785, 4.228404998779297, 1.1743360757827759, 0.832067608833313, 1.732097864151001] ≈ [24.294984543576422, 27.5526524567799, 35.78895121090724, 44.43172304245351, 50.613501686985245, 55.08230390414653, 59.58907752510683, 57.84077291291439, 56.49123909488523, 57.012422191565264  …  37.72807918021542, 26.19648216959874, 10.693150218049114, 7.165660806368097, 8.279166538432465, 7.711229729739417, 4.228405034428279, 1.1743360367295017, 0.8320676009138613, 1.7320978734464652] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [48.62809371948242, 47.474769592285156, 43.85105895996094, 34.67482376098633, 31.084793090820312, 33.84147262573242, 38.0268669128418, 49.1121711730957, 55.56709671020508, 53.49943161010742  …  46.286582946777344, 40.55402374267578, 35.07200241088867, 32.26814651489258, 27.3912353515625, 23.216413497924805, 21.110435485839844, 27.566015243530273, 35.74882507324219, 29.361669540405273] ≈ [48.6280931511872, 47.47476860421084, 43.85105749525319, 34.67482438855295, 31.084793005270324, 33.84147144634407, 38.02686658792008, 49.11217170620584, 55.56709718921847, 53.499432039011296  …  46.28658483061808, 40.5540255144886, 35.07200356698813, 32.268145088259914, 27.391235545387456, 23.216413279719557, 21.110435665200196, 27.566014847529726, 35.748823944509056, 29.36167002763322] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [16.484182357788086, 13.701513290405273, 11.461868286132812, 12.929594039916992, 18.463783264160156, 23.914228439331055, 25.744998931884766, 34.288394927978516, 45.25181198120117, 55.17988586425781  …  66.0746078491211, 64.92638397216797, 60.21116638183594, 58.85731506347656, 65.24593353271484, 64.90019226074219, 64.52073669433594, 63.58140182495117, 58.824302673339844, 53.301551818847656] ≈ [16.484183233227366, 13.701513138879514, 11.461868224908963, 12.929593721604457, 18.463783716764436, 23.914229145087727, 25.744999347192486, 34.288394671715345, 45.25181328910882, 55.17988587537153  …  66.07460922107173, 64.92638637093812, 60.211167933015226, 58.857314015152646, 65.24593165006415, 64.900195765698, 64.52073752309268, 63.58140002641782, 58.82430219964923, 53.30155194253499] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [3.5428061485290527, 12.879650115966797, 20.119810104370117, 26.44176483154297, 29.052156448364258, 27.851594924926758, 34.24580001831055, 46.408782958984375, 55.35625076293945, 53.15922546386719  …  67.15674591064453, 63.0821533203125, 61.99490737915039, 64.11735534667969, 65.5262451171875, 61.51293182373047, 59.62840270996094, 61.35493469238281, 69.0775146484375, 72.61189270019531] ≈ [3.542806109190228, 12.87965029588168, 20.11981076703751, 26.441765282479995, 29.05215718511545, 27.851595757065756, 34.24579825788033, 46.408783543493435, 55.35625031098835, 53.15922375030869  …  67.15674511452607, 63.0821520071645, 61.99490793461383, 64.1173559297481, 65.52624848792266, 61.51293258609304, 59.62840272060067, 61.35493630336942, 69.07751265954221, 72.6118943357601] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [1.9803359508514404, 15.267165184020996, 26.775121688842773, 37.562339782714844, 52.31163024902344, 65.3612289428711, 72.49169921875, 81.27722930908203, 82.78423309326172, 80.14488220214844  …  63.34664535522461, 55.96498489379883, 55.21186828613281, 52.7205924987793, 51.849552154541016, 52.78504943847656, 55.128990173339844, 57.25001525878906, 60.61875534057617, 65.3814926147461] ≈ [1.9803359434647427, 15.267165357947524, 26.775122611745463, 37.56234084152515, 52.31163063103144, 65.36123114232599, 72.49169802593518, 81.27723210395037, 82.78423640307868, 80.14488277853364  …  63.3466435344801, 55.964985582925, 55.21186712643816, 52.720590608025525, 51.84955047911193, 52.78505104501368, 55.1289894217391, 57.25001633140186, 60.618756285059355, 65.38149582114987] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [57.705562591552734, 59.22038269042969, 69.33916473388672, 80.08673095703125, 82.17277526855469, 85.11133575439453, 87.10401153564453, 84.14229583740234, 84.0995101928711, 85.29354858398438  …  50.398284912109375, 46.50664138793945, 43.869873046875, 45.33072280883789, 44.036224365234375, 40.7625846862793, 45.63764572143555, 51.81504821777344, 55.729713439941406, 51.81180953979492] ≈ [57.70556202019999, 59.220382289421664, 69.33916454596239, 80.08673449108666, 82.17277427644059, 85.11133744701421, 87.10401191688926, 84.14229926398458, 84.09951038043711, 85.29354902617253  …  50.39828368222426, 46.50664111846619, 43.86987386947932, 45.330721312492656, 44.036226134775475, 40.76258522087211, 45.63764735263159, 51.81504905391104, 55.729713202307735, 51.81180897903597] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [107.82673645019531, 104.27808380126953, 103.45702362060547, 95.60877990722656, 87.4652328491211, 93.84160614013672, 102.19671630859375, 102.95853424072266, 102.09587860107422, 101.67980194091797  …  32.853759765625, 34.60428237915039, 33.39706802368164, 38.561946868896484, 39.958675384521484, 39.6480827331543, 46.65810012817383, 55.79536437988281, 63.50739669799805, 65.25218200683594] ≈ [107.82673368343723, 104.27808430908527, 103.45702375620505, 95.60878081178572, 87.4652363063845, 93.84160418453149, 102.19671989493264, 102.95853539450519, 102.09587966987357, 101.67980005466717  …  32.8537600762914, 34.604281581819414, 33.397069473763004, 38.56194777658431, 39.958675843122656, 39.6480834024672, 46.658099081510336, 55.79536602458149, 63.507397926555605, 65.25217824677867] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [133.1490020751953, 130.44851684570312, 126.10501861572266, 117.11459350585938, 112.5528793334961, 106.00531768798828, 96.63463592529297, 84.27953338623047, 79.59368896484375, 80.12117767333984  …  19.909305572509766, 28.786741256713867, 30.963218688964844, 30.10167121887207, 34.13121795654297, 47.355072021484375, 60.832672119140625, 67.55608367919922, 64.1728515625, 63.98046112060547] ≈ [133.14899868518074, 130.44852417450562, 126.10501906336827, 117.11459288206932, 112.55288009678004, 106.00531405187901, 96.63463382011066, 84.27953198960275, 79.59368738837618, 80.12118010454977  …  19.90930550717856, 28.78674118263696, 30.963218847398437, 30.1016715694346, 34.13121626734899, 47.35507027916135, 60.832673312768364, 67.5560844739153, 64.1728494484483, 63.9804628973139] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [131.87020874023438, 129.89996337890625, 130.9060516357422, 136.66876220703125, 136.42117309570312, 127.56539916992188, 111.38813018798828, 103.73078155517578, 94.04116821289062, 90.62928009033203  …  8.043383598327637, 12.378575325012207, 22.9246768951416, 38.64390182495117, 47.49103927612305, 55.2307243347168, 68.44346618652344, 71.98151397705078, 76.31932067871094, 82.67642974853516] ≈ [131.87020580851288, 129.89997027823313, 130.90605615950528, 136.6687566984857, 136.42117518763746, 127.56539685476503, 111.38812932920166, 103.73078079617164, 94.04116635203002, 90.62928224345717  …  8.043383235121048, 12.378574996250002, 22.924677654076852, 38.64390091045983, 47.49103904366542, 55.230725268915315, 68.44346639234038, 71.9815144690748, 76.31932102747135, 82.67643319747924] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [135.14808654785156, 130.44691467285156, 125.4666519165039, 120.84938049316406, 118.33792114257812, 111.907470703125, 109.83246612548828, 105.02033233642578, 98.44086456298828, 92.00717163085938  …  25.303150177001953, 41.34038543701172, 55.69002151489258, 62.301395416259766, 69.06021881103516, 65.85834503173828, 71.71841430664062, 77.24004364013672, 78.2882080078125, 84.75323486328125] ≈ [135.14808344986955, 130.44691954726, 125.46665445804388, 120.84937723081816, 118.33792129870996, 111.9074669075169, 109.83246895627668, 105.02033248919612, 98.44086307545946, 92.00716860939134  …  25.30315030050839, 41.34038406370816, 55.690021986058824, 62.30139476863111, 69.06021937972834, 65.85834328213674, 71.71841659762573, 77.24004419721747, 78.28820841930134, 84.75323782001648] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [106.16427612304688, 100.82527923583984, 94.99999237060547, 86.35673522949219, 79.28897857666016, 72.3319320678711, 73.30180358886719, 78.72872924804688, 83.56873321533203, 94.70548248291016  …  35.0830192565918, 36.96803283691406, 42.06333541870117, 49.2170524597168, 55.38652420043945, 65.44783782958984, 72.12165069580078, 76.7952880859375, 88.69463348388672, 91.3569564819336] ≈ [106.16427981764504, 100.82527591199836, 94.99999076885219, 86.3567357682456, 79.2889813864946, 72.33192956297502, 73.30180618643284, 78.72873265020247, 83.56873660337955, 94.70548501573434  …  35.08301982853085, 36.968032863083536, 42.063334821219215, 49.21705066314247, 55.38652270749084, 65.44783626756329, 72.12165154575418, 76.79528902278038, 88.69463453171706, 91.35695289748186] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [83.99363708496094, 83.73184204101562, 84.15892028808594, 88.0890884399414, 91.93173217773438, 91.93592834472656, 99.4035873413086, 102.65362548828125, 102.76806640625, 97.82237243652344  …  34.907466888427734, 36.551292419433594, 31.264741897583008, 26.259763717651367, 28.288192749023438, 38.99331283569336, 49.185909271240234, 54.81460189819336, 64.9776382446289, 73.52861785888672] ≈ [83.99363435234903, 83.73184198678558, 84.15892080354155, 88.08908899443253, 91.93173253113258, 91.93592473327357, 99.40358677756507, 102.65362346178648, 102.768063474808, 97.82237339511397  …  34.907466333218906, 36.55129274154518, 31.264741100652312, 26.259763335086458, 28.28819231542496, 38.993314437514925, 49.18590787344641, 54.81460005246248, 64.97763491058635, 73.52861883152713] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [87.30528259277344, 88.5423355102539, 81.0357894897461, 72.2364273071289, 73.02320098876953, 75.37984466552734, 77.26590728759766, 78.20494842529297, 77.60185241699219, 76.37345123291016  …  -18.74367904663086, -9.895289421081543, 0.7133976817131042, 11.301650047302246, 22.73706817626953, 37.003173828125, 48.61406707763672, 54.3638916015625, 57.511085510253906, 58.864044189453125] ≈ [87.30527977236764, 88.54233467532598, 81.03579173253368, 72.2364304928806, 73.02320025333304, 75.37984313417385, 77.26590777197546, 78.2049468407013, 77.60185237744284, 76.37345188500606  …  -18.743678287178206, -9.895289598757678, 0.7133976632349226, 11.301649716147061, 22.737067662051253, 37.00317418038596, 48.61406776031347, 54.36389326492192, 57.51108599356942, 58.86404462758494] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [51.75951385498047, 48.62309265136719, 53.74675750732422, 61.129920959472656, 65.69896697998047, 66.69245147705078, 59.202903747558594, 53.763668060302734, 57.36558151245117, 62.26039505004883  …  -7.428129196166992, -5.296046257019043, -1.5399467945098877, -0.30093076825141907, 0.9630963206291199, 3.22881817817688, 6.870434761047363, 17.880237579345703, 26.234174728393555, 32.55126953125] ≈ [51.75951229625952, 48.62309139548615, 53.74675821963337, 61.12992252178828, 65.6989681081106, 66.69244896125038, 59.20290220069746, 53.76366913674446, 57.36558079456899, 62.2603960143826  …  -7.428129158368212, -5.296046203737025, -1.5399467722525528, -0.3009307713435204, 0.9630963338642674, 3.228818166237214, 6.870434952136018, 17.88023779931991, 26.2341740087797, 32.55126841190958] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [15.774468421936035, 23.73413848876953, 32.32957458496094, 37.17877197265625, 44.657833099365234, 50.408878326416016, 56.951385498046875, 64.82730102539062, 61.566558837890625, 55.76605987548828  …  -40.69020080566406, -36.78966522216797, -36.53986358642578, -33.22018051147461, -23.174074172973633, -13.978058815002441, -7.163754940032959, -8.440231323242188, -9.689279556274414, -6.181358814239502] ≈ [15.774468717281637, 23.734138973522864, 32.32957444801279, 37.1787728241906, 44.657831973963695, 50.408879612077655, 56.951386592700075, 64.8272980712499, 61.56656061342793, 55.766059200905076  …  -40.690202443656815, -36.78966388484703, -36.53986548066321, -33.22018139748259, -23.174073451955405, -13.978058835491607, -7.163755047586234, -8.440230861524538, -9.689279725862503, -6.181358661124319] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [1.040199875831604, 1.5357892513275146, 5.699939250946045, 11.37586784362793, 19.325761795043945, 25.280195236206055, 32.26991653442383, 39.78666305541992, 45.707191467285156, 52.533203125  …  -34.24995803833008, -39.981422424316406, -40.74264144897461, -38.65756607055664, -32.62483215332031, -34.571632385253906, -38.16919708251953, -38.06650924682617, -33.734500885009766, -27.545360565185547] ≈ [1.0401999353855398, 1.5357892827234945, 5.699939196500277, 11.375868256589678, 19.325761444786846, 25.280194835584776, 32.2699174140946, 39.78666375057241, 45.70719004201987, 52.53320357421057  …  -34.24995663938876, -39.981421719705175, -40.742640363379685, -38.657566916146386, -32.62483171586769, -34.571633546722076, -38.169196683003754, -38.066509046831705, -33.734500517158956, -27.545360649884746] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [9.292503356933594, 14.382973670959473, 18.300365447998047, 21.561189651489258, 25.991594314575195, 31.593711853027344, 39.55738830566406, 44.76970291137695, 54.19184112548828, 62.61518478393555  …  -22.799386978149414, -26.442935943603516, -26.550342559814453, -21.70355987548828, -16.894350051879883, -20.88387680053711, -19.618343353271484, -13.255887985229492, -13.902510643005371, -14.261505126953125] ≈ [9.29250346933338, 14.382973736865889, 18.300366369367904, 21.561189092318156, 25.991593580038963, 31.593711460737605, 39.55738917800851, 44.769703313869165, 54.19184105056126, 62.6151830744501  …  -22.79938656494699, -26.44293602708706, -26.550341667024558, -21.703559136148332, -16.8943501051391, -20.88387703617548, -19.61834358036788, -13.25588812898707, -13.902510440238192, -14.261505052053625] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [14.649508476257324, 15.39395809173584, 29.44698715209961, 39.23127365112305, 39.012908935546875, 38.52226638793945, 40.700191497802734, 43.779998779296875, 52.2221565246582, 58.31500244140625  …  -29.640155792236328, -31.306264877319336, -28.31593132019043, -29.368160247802734, -29.933069229125977, -26.748388290405273, -25.576675415039062, -29.12174415588379, -26.603012084960938, -26.071439743041992] ≈ [14.64950801285678, 15.393957847967352, 29.446986810702324, 39.23127396895662, 39.01290997540283, 38.52226600550576, 40.70019317744819, 43.7799980330362, 52.22215522856796, 58.31500234429196  …  -29.640155479379505, -31.30626450789922, -28.31593119359812, -29.36815972013054, -29.93306961676925, -26.74838865338305, -25.576675260405214, -29.121743499368936, -26.603011609646533, -26.071440378169687] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [17.634397506713867, 15.651045799255371, 9.96451473236084, 6.093108654022217, 7.060441493988037, 6.699429035186768, 5.595103740692139, 2.5904173851013184, 4.122432708740234, 13.260068893432617  …  -50.01347732543945, -51.54191207885742, -57.05396270751953, -58.47720718383789, -55.82935333251953, -44.820289611816406, -37.10282897949219, -27.823909759521484, -12.07333755493164, -4.48698616027832] ≈ [17.634397638846526, 15.651045489664641, 9.964515131957699, 6.0931088253140775, 7.060441705777878, 6.699429152592886, 5.5951036326745385, 2.590417355111088, 4.122432758538155, 13.260069183831904  …  -50.013477218510715, -51.54191148654955, -57.053960970063244, -58.477206491500155, -55.82935477583543, -44.820290893096725, -37.102830444621404, -27.823909701749113, -12.073337299864404, -4.486986196991536] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [11.329546928405762, 0.6036768555641174, -5.952785015106201, -13.390263557434082, -14.042939186096191, -14.971931457519531, -18.197824478149414, -27.153873443603516, -32.330318450927734, -37.7723388671875  …  -40.671607971191406, -38.09748458862305, -29.134355545043945, -20.572486877441406, -14.400541305541992, -15.57293701171875, -11.272590637207031, -6.484327793121338, -0.14671310782432556, 10.23388957977295] ≈ [11.329546839405326, 0.603676869431171, -5.952785170521578, -13.39026335939799, -14.042939494757787, -14.971931489199973, -18.197823931260256, -27.153874055003154, -32.33031999356264, -37.772338385039816  …  -40.6716085423259, -38.09748274092364, -29.134355611532566, -20.57248617587994, -14.40054144281113, -15.572936956815296, -11.272590211448017, -6.4843279802889935, -0.1467131029503555, 10.233889940863252] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [-18.467716217041016, -21.114288330078125, -20.508394241333008, -22.88692283630371, -26.096132278442383, -33.710792541503906, -43.606719970703125, -46.5572624206543, -47.11924362182617, -46.025489807128906  …  6.960476398468018, 4.591782569885254, 0.349814236164093, 7.044093132019043, 18.46333885192871, 20.520076751708984, 18.826284408569336, 20.457435607910156, 18.704923629760742, 13.178720474243164] ≈ [-18.467716417920965, -21.114289156661325, -20.508395155023972, -22.886922752126193, -26.09613165075083, -33.710790776216385, -43.60671840911331, -46.557261330211844, -47.11924379077922, -46.025491146768985  …  6.960476466725739, 4.5917827810864384, 0.34981422688920993, 7.044093135869987, 18.46333912910828, 20.520076132039467, 18.82628435853454, 20.457434684454856, 18.704923659266715, 13.17872016445668] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [-49.89921569824219, -40.730770111083984, -32.878135681152344, -29.4974308013916, -35.08616256713867, -37.526451110839844, -37.066673278808594, -33.75983428955078, -30.76549530029297, -34.07295608520508  …  -9.746248245239258, -6.663515567779541, -3.3364417552948, 3.084477186203003, 8.215164184570312, 9.291096687316895, 12.332247734069824, 14.769267082214355, 17.6998291015625, 17.031009674072266] ≈ [-49.89921676902101, -40.7307712107047, -32.87813711217838, -29.497431618850687, -35.086162874407606, -37.526450846102094, -37.06667285264645, -33.75983538212837, -30.765494606797592, -34.07295735492313  …  -9.74624781925174, -6.663515527592399, -3.3364417999598763, 3.0844771077192754, 8.215164094095806, 9.29109632629318, 12.33224765705584, 14.769267132165831, 17.69982959153479, 17.031009925218523] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [-53.7130012512207, -42.955894470214844, -36.23469924926758, -27.99880027770996, -18.362560272216797, -15.880265235900879, -15.424352645874023, -7.501204490661621, 2.3040578365325928, 13.618995666503906  …  0.2923407256603241, 3.7102787494659424, 6.552051544189453, 11.528465270996094, 11.145312309265137, 11.622570037841797, 11.671653747558594, 10.619226455688477, 8.957836151123047, 3.3866121768951416] ≈ [-53.712999921551166, -42.955894492912996, -36.234700225101626, -27.99879937490631, -18.362560901074982, -15.880265642842357, -15.424353001869246, -7.501204642246089, 2.3040577375678506, 13.61899605719656  …  0.2923407223744246, 3.7102786550559497, 6.552051694164325, 11.528465641752623, 11.145312576921347, 11.622569921676691, 11.671654213862999, 10.619226735364569, 8.957835710610302, 3.386612228062509] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [-15.935176849365234, -15.133088111877441, -10.985905647277832, -7.913859844207764, -3.8880667686462402, -6.015005588531494, -5.826228618621826, -4.7938666343688965, 0.478502482175827, -0.06446586549282074  …  6.674491882324219, 9.740626335144043, 12.954723358154297, 19.01431655883789, 17.748783111572266, 3.262636184692383, -8.348285675048828, -14.103341102600098, -15.20317554473877, -12.304900169372559] ≈ [-15.935176836005034, -15.133087774169603, -10.985905620922772, -7.913859892009264, -3.888066859739688, -6.0150054849639725, -5.826228490927229, -4.793866739286664, 0.4785024686004315, -0.06446586835800666  …  6.6744919678473655, 9.74062598119935, 12.954723413846018, 19.014317129536444, 17.748783673728845, 3.2626362809839473, -8.348285720652989, -14.103340819796635, -15.203175709624979, -12.30490031216896] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Test Failed at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+  Expression: ≈(Float64.(image[pupil]), expected, atol = 0.0001)
+   Evaluated: [9.375557899475098, 10.023686408996582, 8.57429313659668, 7.07726526260376, 2.818925619125366, -1.4236682653427124, -3.787445068359375, 1.4311219453811646, 6.417028903961182, 9.065590858459473  …  17.66651153564453, 12.099523544311523, 10.28681468963623, 12.026195526123047, 4.731564521789551, -9.147125244140625, -20.388452529907227, -24.443832397460938, -28.137033462524414, -35.28898620605469] ≈ [9.37555813758798, 10.023686799438913, 8.57429330532603, 7.077265026207789, 2.818925567378648, -1.423668264426049, -3.7874449943338897, 1.4311219176014511, 6.417028716139504, 9.065590974539994  …  17.66651183894999, 12.09952319110733, 10.286814985345593, 12.026195180776888, 4.731564503497686, -9.147125693591185, -20.38845178579515, -24.443831817581778, -28.137034006096766, -35.288987702035335] (atol=0.0001)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] replay(application::String, records::Vector{Any}, destination::String, generation::Int64)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:64
+   [3] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:96 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [5] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+
+Managed CPU residual wavefront and reset: Error During Test at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:86
+  Got exception outside of a @test
+  Classic observation acquisition domain or generation changed
+  Stacktrace:
+    [1] (::Main.ClassicWavefront.ClassicManagedReplay.var"#84#85"{Float64, Main.ClassicWavefront.var"#capture##8#capture##9"{Vector{Any}}, Main.ClassicWavefront.var"#capture##2#capture##3", Tuple{Main.ClassicWavefront.ClassicManagedReplay.ClassicObservationCapture{UInt16, 2}, Main.ClassicWavefront.ClassicManagedReplay.ClassicObservationCapture{Float32, 1}, Main.ClassicWavefront.ClassicManagedReplay.ClassicObservationCapture{Float32, 2}}, Vector{Any}, Vector{Any}, Bool, Tuple{@NamedTuple{name::String, node::String, media::String, type::DataType, wire::PipeWireAO.NdArray.ElementType, shape::Tuple{Int64, Int64}, schema::String, rate::PipeWireAO.SPA.Fraction}, @NamedTuple{name::String, node::String, media::String, type::DataType, wire::PipeWireAO.NdArray.ElementType, shape::Tuple{Int64}, schema::String, rate::Nothing}, @NamedTuple{name::String, node::String, media::String, type::DataType, wire::PipeWireAO.NdArray.ElementType, shape::Tuple{Int64, Int64}, schema::String, rate::PipeWireAO.SPA.Fraction}}})()
+      @ Main.ClassicWavefront.ClassicManagedReplay ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_observation.jl:398
+    [2] #7
+      @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_observation.jl:172 [inlined]
+    [3] _with_thread_loop_lock(f::Main.ClassicWavefront.ClassicManagedReplay.var"#7#8"{Main.ClassicWavefront.ClassicManagedReplay.var"#84#85"{Float64, Main.ClassicWavefront.var"#capture##8#capture##9"{Vector{Any}}, Main.ClassicWavefront.var"#capture##2#capture##3", Tuple{Main.ClassicWavefront.ClassicManagedReplay.ClassicObservationCapture{UInt16, 2}, Main.ClassicWavefront.ClassicManagedReplay.ClassicObservationCapture{Float32, 1}, Main.ClassicWavefront.ClassicManagedReplay.ClassicObservationCapture{Float32, 2}}, Vector{Any}, Vector{Any}, Bool, Tuple{@NamedTuple{name::String, node::String, media::String, type::DataType, wire::PipeWireAO.NdArray.ElementType, shape::Tuple{Int64, Int64}, schema::String, rate::PipeWireAO.SPA.Fraction}, @NamedTuple{name::String, node::String, media::String, type::DataType, wire::PipeWireAO.NdArray.ElementType, shape::Tuple{Int64}, schema::String, rate::Nothing}, @NamedTuple{name::String, node::String, media::String, type::DataType, wire::PipeWireAO.NdArray.ElementType, shape::Tuple{Int64, Int64}, schema::String, rate::PipeWireAO.SPA.Fraction}}}, Base.RefValue{Any}}, loop::PipeWireAO.ThreadLoop)
+      @ PipeWireAO ~/.local/share/classic-review-20261020/depot/packages/PipeWireAO/PRL3A/src/thread_loop.jl:138
+    [4] #with_thread_loop_lock##0
+      @ ~/.local/share/classic-review-20261020/depot/packages/PipeWireAO/PRL3A/src/thread_loop.jl:119 [inlined]
+    [5] disable_sigint
+      @ ./c.jl:167 [inlined]
+    [6] with_thread_loop_lock
+      @ ~/.local/share/classic-review-20261020/depot/packages/PipeWireAO/PRL3A/src/thread_loop.jl:118 [inlined]
+    [7] _classic_wait(predicate::Main.ClassicWavefront.ClassicManagedReplay.var"#84#85"{Float64, Main.ClassicWavefront.var"#capture##8#capture##9"{Vector{Any}}, Main.ClassicWavefront.var"#capture##2#capture##3", Tuple{Main.ClassicWavefront.ClassicManagedReplay.ClassicObservationCapture{UInt16, 2}, Main.ClassicWavefront.ClassicManagedReplay.ClassicObservationCapture{Float32, 1}, Main.ClassicWavefront.ClassicManagedReplay.ClassicObservationCapture{Float32, 2}}, Vector{Any}, Vector{Any}, Bool, Tuple{@NamedTuple{name::String, node::String, media::String, type::DataType, wire::PipeWireAO.NdArray.ElementType, shape::Tuple{Int64, Int64}, schema::String, rate::PipeWireAO.SPA.Fraction}, @NamedTuple{name::String, node::String, media::String, type::DataType, wire::PipeWireAO.NdArray.ElementType, shape::Tuple{Int64}, schema::String, rate::Nothing}, @NamedTuple{name::String, node::String, media::String, type::DataType, wire::PipeWireAO.NdArray.ElementType, shape::Tuple{Int64, Int64}, schema::String, rate::PipeWireAO.SPA.Fraction}}}, loop::PipeWireAO.ThreadLoop, deadline::Float64, description::Main.ClassicWavefront.ClassicManagedReplay.var"#78#79"{Tuple{Main.ClassicWavefront.ClassicManagedReplay.ClassicObservationCapture{UInt16, 2}, Main.ClassicWavefront.ClassicManagedReplay.ClassicObservationCapture{Float32, 1}, Main.ClassicWavefront.ClassicManagedReplay.ClassicObservationCapture{Float32, 2}}, PipeWireAO.ThreadLoop, Tuple{@NamedTuple{name::String, node::String, media::String, type::DataType, wire::PipeWireAO.NdArray.ElementType, shape::Tuple{Int64, Int64}, schema::String, rate::PipeWireAO.SPA.Fraction}, @NamedTuple{name::String, node::String, media::String, type::DataType, wire::PipeWireAO.NdArray.ElementType, shape::Tuple{Int64}, schema::String, rate::Nothing}, @NamedTuple{name::String, node::String, media::String, type::DataType, wire::PipeWireAO.NdArray.ElementType, shape::Tuple{Int64, Int64}, schema::String, rate::PipeWireAO.SPA.Fraction}}}, core_error::Base.RefValue{Any}; interval::Float64)
+      @ Main.ClassicWavefront.ClassicManagedReplay ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_observation.jl:170
+ERROR: LoadError: Some tests did not pass: 326 passed, 31 failed, 1 errored, 0 broken.
+in expression starting at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:2
+    [8] observe_classic(remote::String; timeout::Int64, selected_streams::Tuple{String, String, String}, drive_interval::Float64, minimum_duration::Float64, process_capture::Main.ClassicWavefront.var"#capture##0#capture##1"{Vector{Any}}, on_ready::Main.ClassicWavefront.var"#capture##6#capture##7"{PipeWireAORTC.SessionRuntime.Handle, String}, finished::Main.ClassicWavefront.var"#capture##8#capture##9"{Vector{Any}}, stream_specs::Tuple{@NamedTuple{name::String, node::String, media::String, type::DataType, wire::PipeWireAO.NdArray.ElementType, shape::Tuple{Int64, Int64}, schema::String, rate::PipeWireAO.SPA.Fraction}, @NamedTuple{name::String, node::String, media::String, type::DataType, wire::PipeWireAO.NdArray.ElementType, shape::Tuple{Int64, Int64}, schema::String, rate::Nothing}, @NamedTuple{name::String, node::String, media::String, type::DataType, wire::PipeWireAO.NdArray.ElementType, shape::Tuple{Int64}, schema::String, rate::Nothing}, @NamedTuple{name::String, node::String, media::String, type::DataType, wire::PipeWireAO.NdArray.ElementType, shape::Tuple{Int64}, schema::String, rate::Nothing}, @NamedTuple{name::String, node::String, media::String, type::DataType, wire::PipeWireAO.NdArray.ElementType, shape::Tuple{Int64}, schema::String, rate::Nothing}, @NamedTuple{name::String, node::String, media::String, type::DataType, wire::PipeWireAO.NdArray.ElementType, shape::Tuple{Int64}, schema::String, rate::Nothing}, @NamedTuple{name::String, node::String, media::String, type::DataType, wire::PipeWireAO.NdArray.ElementType, shape::Tuple{Int64}, schema::String, rate::Nothing}, @NamedTuple{name::String, node::String, media::String, type::DataType, wire::PipeWireAO.NdArray.ElementType, shape::Tuple{Int64, Int64}, schema::String, rate::Nothing}, @NamedTuple{name::String, node::String, media::String, type::DataType, wire::PipeWireAO.NdArray.ElementType, shape::Tuple{Int64, Int64}, schema::String, rate::PipeWireAO.SPA.Fraction}}, valid_payload::Main.ClassicWavefront.var"#capture##2#capture##3")
+      @ Main.ClassicWavefront.ClassicManagedReplay ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_observation.jl:439
+    [9] capture(handle::PipeWireAORTC.SessionRuntime.Handle, stage::String, prefix::String)
+      @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:22
+   [10] macro expansion
+      @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:92 [inlined]
+   [11] macro expansion
+      @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [12] main(application::String, stage::String, prefix::String)
+      @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:87
+   [13] top-level scope
+      @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:115
+   [14] include(mod::Module, _path::String)
+      @ Base ./Base.jl:309
+   [15] exec_options(opts::Base.JLOptions)
+      @ Base ./client.jl:344
+   [16] _start()
+      @ Base ./client.jl:577
+Test Summary:                            | Pass  Fail  Error  Total     Time
+Managed CPU residual wavefront and reset |  326    31      1    358  1m22.0s
+RNG of the outermost testset: Random.Xoshiro(0x571fe9f8923b7d71, 0xfef03dc9d0b4ca5d, 0x73be7ee51e7c618d, 0x5b6534a9d1197cdb, 0x166d8e74547a2e46)

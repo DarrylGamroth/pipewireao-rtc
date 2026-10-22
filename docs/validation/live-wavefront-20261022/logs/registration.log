@@ -1,0 +1,32 @@
+From /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront
+ * [new ref]         HEAD       -> codex/live-wavefront-20261022
+Already on 'main'
+┌ Info: Registering package
+│   package_path = "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront"
+│   registry_path = "/home/dgamroth/.local/share/classic-review-20261020/depot/registries/DarrylGamrothRegistry"
+│   package_repo = "file:///home/dgamroth/.local/share/classic-review-20261020/packages/PipeWireAORTC.git"
+│   uuid = Base.UUID("a3e2c7da-f73f-4284-8482-36ac422b34e6")
+│   version = v"0.2.2"
+│   tree_hash = "4a9021f7e501957c790461ad99f24052ca8f1098"
+└   subdir = ""
+ERROR: LoadError: parsing command `git -C $source rev-parse HEAD^{tree}`: special characters "#{}()[]<>|&*?~;" must be quoted in commands
+Stacktrace:
+ [1] error(s::String)
+   @ Base ./error.jl:44
+ [2] shell_parse(str::String, interpolate::Bool; special::String, filename::String)
+   @ Base ./shell.jl:134
+ [3] shell_parse
+   @ ./shell.jl:31 [inlined]
+ [4] var"@cmd"(__source__::LineNumberNode, __module__::Module, str::String)
+   @ Base ./cmd.jl:591
+ [5] fl_lower(ex::Expr, mod::Module, filename::String, lineno::UInt64, world::UInt64, warn::Bool)
+   @ Base ./flfrontend.jl:24
+ [6] include(mod::Module, _path::String)
+   @ Base ./Base.jl:309
+ [7] exec_options(opts::Base.JLOptions)
+   @ Base ./client.jl:344
+ [8] _start()
+   @ Base ./client.jl:577
+in expression starting at /home/dgamroth/workspaces/codex/worktrees/live-wavefront-20261022/register.jl:8
+in expression starting at /home/dgamroth/workspaces/codex/worktrees/live-wavefront-20261022/register.jl:8
+candidate_commit=61fcdf64973437f771982d859e781a66e2ee7bbd

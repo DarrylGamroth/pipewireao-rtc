@@ -1,0 +1,1 @@
+{"state":"Running","version":1,"id":"304","result":{"running":true,"owned_nodes":0,"outcome":"observed","owned_links":15,"discarded_buffers":0,"lifecycle_state":"Running","discarded_by_sink":{}},"session_id":"72ab3294-4d08-41ce-9547-b28b1537ccfa","ok":true,"owner_pid":691238,"authority":"rtc_session","error":null}

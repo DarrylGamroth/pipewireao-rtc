@@ -46,13 +46,22 @@ mutable struct ClassicObservationCapture{T,N}
     canonical_boolean::Bool
     identities::Vector{Union{Nothing,AcquisitionIdentity}}
     error::Any
+    expected_generation::Union{Nothing,UInt64}
 end
 
-function ClassicObservationCapture(spec)
+function ClassicObservationCapture(spec; expected_generation=nothing)
     format=NdArrayFormat(spec.wire, spec.shape; layout=NdArray.ROW_MAJOR, rate=spec.rate)
     return ClassicObservationCapture(StreamBuffer(), zeros(spec.type, prod(spec.shape)),
         format, spec.schema, nothing, nothing, nothing, nothing, nothing, 0, 0, true, true,
-        Union{Nothing,AcquisitionIdentity}[nothing for _ in 1:256], nothing)
+        Union{Nothing,AcquisitionIdentity}[nothing for _ in 1:256], nothing,
+        expected_generation === nothing ? nothing : UInt64(expected_generation))
+end
+
+function _classic_in_generation(identity, expected)
+    expected === nothing && return true
+    identity === nothing && error("expected an acquisition identity")
+    identity.generation > expected && error("unexpected future acquisition generation")
+    return identity.generation == expected
 end
 
 # SPA's public ChoiceNone wire representation embeds one child POD after its
@@ -125,6 +134,9 @@ function (capture::ClassicObservationCapture{T})(stream) where {T}
         identity=metadata===nothing ? nothing : acquisition_identity(metadata)
         identity===nothing || identity.sequence==header.sequence ||
             error("Classic observation Header and acquisition sequence differ")
+        # A newly attached display queue may retain the previous generation.
+        # Discard it before it can establish this explicitly selected epoch.
+        _classic_in_generation(identity,capture.expected_generation) || return nothing
         data=buffer_data(capture.buffer)
         chunk=chunk_info(data)
         packed_stride=Int(last(capture.format.shape))*sizeof(T)
@@ -265,6 +277,9 @@ Additional diagnostic declarations may be supplied as `stream_specs`. Their
 `valid_payload(capture)` predicate must validate the declared special values;
 the default retains the existing all-finite payload requirement. Masked OPD
 validation checks its NaNs against the actual pupil during scientific replay.
+`expected_generation` selects an acquisition generation before storing samples:
+older cached samples are discarded; missing or future identities fail. The
+default retains the ordinary single-generation observation behavior.
 `drive_interval` spaces observer driver requests; its sleep is outside the native
 loop lock. `minimum_duration` keeps this attachment observing for at least that
 many seconds after all streams first deliver samples. These are client settings,
@@ -273,7 +288,8 @@ not source controls.
 function observe_classic(remote::AbstractString; timeout::Real=30.0, selected_streams=nothing,
         drive_interval::Real=0.02, minimum_duration::Real=0.0,
         process_capture=identity, on_ready=nothing, finished=captures -> true,
-        stream_specs=CLASSIC_OBSERVATION_STREAMS, valid_payload=capture -> capture.finite)
+        stream_specs=CLASSIC_OBSERVATION_STREAMS, valid_payload=capture -> capture.finite,
+        expected_generation=nothing)
     _classic_observation_timing(timeout, drive_interval, minimum_duration)
     Base.ENDIAN_BOM==0x04030201 || error("Classic observation requires a little-endian host")
     names=selected_streams===nothing ? map(s -> s.name,stream_specs) :
@@ -292,7 +308,7 @@ function observe_classic(remote::AbstractString; timeout::Real=30.0, selected_st
     link_trackers=Any[]
     probes=Any[]
     trackers=Any[nothing for _ in specs]
-    captures=map(ClassicObservationCapture, specs)
+    captures=map(spec -> ClassicObservationCapture(spec; expected_generation), specs)
     core_error=Ref{Any}(nothing)
     sync_done=Ref{Cint}(-1)
     endpoints=Any[]

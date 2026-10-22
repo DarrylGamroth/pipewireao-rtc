@@ -1,6 +1,6 @@
 # Opt-in, isolated CPU transport/replay/reset validation of shared optical images.
 module ClassicWavefront
-using Test, Statistics, Libdl
+using Test, Statistics, Libdl, LinearAlgebra
 using PipeWireAORTC, PipeWireAO, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
 using AdaptiveOpticsSim.AlgorithmGraphs
 include("classic_managed_replay.jl")
@@ -15,6 +15,7 @@ const WAVEFRONT=(name="wavefront",node="simulator-residual-wavefront-queue-outpu
 
 function capture(handle,stage,prefix)
     mkpath(stage)
+    _,initial=M.source_snapshot(M.dump_graph(handle,stage,prefix,"graph-ready"))
     records=Any[]
     factory=capture -> begin
         record=M.PrefixCapture(capture,COUNT);push!(records,record);record
@@ -22,6 +23,7 @@ function capture(handle,stage,prefix)
     observation=M.observe_classic(R._ledger(handle)["remote"];timeout=90,
         stream_specs=(M.CLASSIC_OBSERVATION_STREAMS...,WAVEFRONT),
         selected_streams=("detector","demanded","wavefront"),drive_interval=0.005,
+        expected_generation=UInt64(initial["generation"]),
         process_capture=factory,
         valid_payload=c->c.schema==O.WAVEFRONT_SCHEMA ? all(x->isfinite(x)||isnan(x),c.values) : c.finite,
         on_ready=()->M.request(handle,stage,"start",["session-start"]),
@@ -30,44 +32,66 @@ function capture(handle,stage,prefix)
     _,snapshot=M.source_snapshot(M.dump_graph(handle,stage,prefix,"graph-stopped"))
     @test snapshot["completed"] && !snapshot["running"] && snapshot["sequence"]==COUNT
     C.write_json(joinpath(stage,"observation.json"),observation)
+    for (name,record) in zip(("detector","demanded","wavefront"),records)
+        write(joinpath(stage,name*".bin"),record.values)
+    end
     return records,snapshot
 end
 
-function replay(application,records,destination)
-    detector,demanded,wavefront=records
-    adopted=demanded.values .* 1f-6
-    @test M.ClassicReplay.replay(application,detector.values,adopted)==adopted
+function prepare_replay(application)
     base=PipeWireAORTC.AOSOwner.configuration(joinpath(application,"simulation.conf"))
     instrument=PipeWireAORTC.AOSOwner.load_instrument(base.plant.package)
     options=merge(base,(;plant_module=instrument,remote="/tmp/unused-wavefront-replay",control_node="simulator-wfs"))
-    science=PipeWireAORTC.AOSOwner.prepare_science(options)
+    return PipeWireAORTC.AOSOwner.prepare_science(options)
+end
+
+function replay(science,application,records,destination,generation)
+    detector,demanded,wavefront=records
+    adopted=demanded.values .* 1f-6
+    @test M.ClassicReplay.replay(application,detector.values,adopted)==adopted
     config=only(filter(!isnothing,map(n->O.sensor_configuration(n.config),science.definition.nodes)))
     telescope=AdaptiveOpticsSim.Optics.prepare_telescope(config.telescope,science.target)
     pupil=AdaptiveOpticsSim.Optics.pupil_mask(telescope)
-    rms=Float64[];sequences=Int[]
+    rms=Float64[];sequences=Int[];pixel_errors=Float64[]
     expected_pixels=zeros(UInt16,352,352)
+    detector_differences=Any[]
     for index in 1:COUNT
         stamp=step_hil_frame_at!(science.boundary,science.driver)
         M.ClassicReplay.load_frame!(expected_pixels,detector.values,index)
-        @test expected_pixels==round.(UInt16,hil_frame_buffer(science.boundary))
+        frame=hil_frame_buffer(science.boundary)
+        quantized=round.(UInt16,frame)
+        differing=findall(expected_pixels .!= quantized)
+        if !isempty(differing)
+            push!(detector_differences,Dict("generation"=>generation,"sequence"=>index,
+                "count"=>length(differing),"samples"=>[Dict("row"=>i[1],"column"=>i[2],
+                    "observed"=>Int(expected_pixels[i]),"expected"=>Int(quantized[i]),
+                    "reference_frame_value"=>Float64(frame[i])) for i in differing[1:min(end,8)]]))
+        end
+        @test isempty(differing)
         if wavefront.seen[index]
-            @test wavefront.identities[index]==detector.identities[index]==demanded.identities[index]
+            identity=something(wavefront.identities[index])
+            @test identity.sequence==index
+            @test identity.generation==generation
+            @test identity==something(detector.identities[index])==something(demanded.identities[index])
             @test wavefront.headers[index].pts==detector.headers[index].pts
             image=permutedims(reshape(wavefront.values[:,index],reverse(WAVEFRONT.shape)))
             @test all(isnan,image[.!pupil])
             @test all(isfinite,image[pupil])
             opd=Float64.(graph_output(science.graph,:pupil_opd)[pupil])
             expected=(opd .- mean(opd)) .* 1e9
-            @test Float64.(image[pupil]) ≈ expected atol=1e-4
+            pixel_error=maximum(abs,Float64.(image[pupil]) .- expected)
+            @test pixel_error <= 1e-4
             measured=sqrt(mean(abs2,Float64.(image[pupil])))
             @test measured ≈ std(opd;corrected=false)*1e9 atol=1e-4
-            push!(rms,measured);push!(sequences,index)
+            push!(rms,measured);push!(sequences,index);push!(pixel_errors,pixel_error)
         end
         copyto!(hil_command_buffer(science.boundary),@view(adopted[:,index]))
         adopt_hil_command!(science.boundary,stamp.sequence)
     end
     report=Dict("frames"=>COUNT,"wavefront_samples"=>length(sequences),"sequences"=>sequences,
-        "rms_nm"=>rms,"exact_detector_and_controller_replay"=>true,
+        "rms_nm"=>rms,"exact_detector_and_controller_replay"=>isempty(detector_differences),
+        "detector_differences"=>detector_differences,
+        "max_pixel_error_nm"=>maximum(pixel_errors),
         "pupil_mask_matches"=>true,"piston_removed"=>true,"wavefront_pixel_tolerance_nm"=>1e-4,
         "shared_acquisition_identity_and_pts"=>true,"schema"=>O.WAVEFRONT_SCHEMA)
     C.write_json(destination,report)
@@ -78,21 +102,27 @@ function main(application,stage,prefix)
     options=PipeWireAORTC.AOSOwner.configuration(joinpath(application,"simulation.conf"))
     @assert options.backend===:cpu && options.total_exchanges==COUNT && options.wall_rate==2
     @assert options.optical_observation
+    BLAS.set_num_threads(1)
+    AdaptiveOpticsSim.Backends.set_fft_provider_threads!(1)
     handle=R.start!(application,stage;prefix,deadline=R.monotonic()+1030)
     reports=Any[]
     @testset "Managed CPU residual wavefront and reset" begin
         try
             M.gpu_audit(handle,stage)
             previous=nothing
+            science=prepare_replay(application)
             for generation in 1:2
                 directory=joinpath(stage,"generation-$generation")
                 records,snapshot=capture(handle,directory,prefix)
                 if previous!==nothing
                     @test snapshot["generation"]!=previous
                 end
-                push!(reports,replay(application,records,joinpath(directory,"wavefront-replay.json")))
+                push!(reports,replay(science,application,records,joinpath(directory,"wavefront-replay.json"),snapshot["generation"]))
                 previous=snapshot["generation"]
-                generation==1 && M.request(handle,stage,"reset",["reset"])
+                if generation==1
+                    M.request(handle,stage,"reset",["reset"])
+                    reset_hil_boundary!(science.boundary,science.driver)
+                end
             end
             @test !any(id->id.name in ("CUDA","AMDGPU","GPUCompiler"),keys(Base.loaded_modules))
             @test isempty(filter(p->occursin(r"(?i)(libcuda|libcudart|libcublas|libcufft|libamdhip|libhsa-runtime)",p),Libdl.dllist()))

@@ -37,7 +37,7 @@ function (record::PrefixCapture)(stream)
         1<=sequence<=length(record.seen) || error("sample outside selected finite prefix")
         index = Int(sequence)
         if record.seen[index]
-            @views record.values[:,index]==capture.values || error("duplicate sequence changed payload")
+            @views isequal(record.values[:,index],capture.values) || error("duplicate sequence changed payload")
         else
             copyto!(@view(record.values[:,index]),capture.values)
             record.headers[index]=capture.header

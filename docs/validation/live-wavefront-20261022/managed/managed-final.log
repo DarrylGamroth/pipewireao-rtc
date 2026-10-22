@@ -1,0 +1,20 @@
+ERROR: LoadError: ArgumentError: systemd session operation failed (1): Job for pipewireao-session@ad89143dc1d7.service failed because the control process exited with error code.
+See "systemctl --user status pipewireao-session@ad89143dc1d7.service" and "journalctl --user -xeu pipewireao-session@ad89143dc1d7.service" for details.
+Stacktrace:
+ [1] checked(argv::Vector{String}, deadline::Float64; limit::Float64)
+   @ PipeWireAORTC.SessionRuntime ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/3lh9H/src/deployment/session_runtime.jl:51
+ [2] start!(package::String, base::String; prefix::String, deadline::Float64)
+   @ PipeWireAORTC.SessionRuntime ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/3lh9H/src/deployment/session_runtime.jl:363
+ [3] start!
+   @ ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/3lh9H/src/deployment/session_runtime.jl:324 [inlined]
+ [4] main(application::String, stage::String, prefix::String)
+   @ Main.ClassicWavefront ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:84
+ [5] top-level scope
+   @ ~/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:115
+ [6] include(mod::Module, _path::String)
+   @ Base ./Base.jl:309
+ [7] exec_options(opts::Base.JLOptions)
+   @ Base ./client.jl:344
+ [8] _start()
+   @ Base ./client.jl:577
+in expression starting at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront/test/integration/classic_wavefront.jl:2

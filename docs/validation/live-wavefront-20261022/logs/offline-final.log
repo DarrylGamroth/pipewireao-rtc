@@ -1,0 +1,3 @@
+Test Summary:                                    | Pass  Total  Time
+Classic headless application offline preparation |   71     71  3.6s
+Offline evidence: /home/dgamroth/workspaces/codex/worktrees/live-wavefront-20261022/offline-final/offline-check.json

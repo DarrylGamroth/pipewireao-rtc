@@ -1,0 +1,13 @@
+From /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront
+   61fcdf6..fc52a69  HEAD       -> codex/live-wavefront-20261022
+Already on 'main'
+┌ Info: Registering package
+│   package_path = "/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-wavefront"
+│   registry_path = "/home/dgamroth/.local/share/classic-review-20261020/depot/registries/DarrylGamrothRegistry"
+│   package_repo = "file:///home/dgamroth/.local/share/classic-review-20261020/packages/PipeWireAORTC.git"
+│   uuid = Base.UUID("a3e2c7da-f73f-4284-8482-36ac422b34e6")
+│   version = v"0.2.3"
+│   tree_hash = "07c4146c0e62d318b369d2fc55fbdbfc022e310c"
+└   subdir = ""
+candidate_commit=fc52a69983db6d985ec36d3b85f4411ece99bf21
+candidate_tree=07c4146c0e62d318b369d2fc55fbdbfc022e310c

@@ -12,6 +12,22 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Generic simulator residual wavefront — 2026-10-22
+
+The shared optional optical observer publishes pupil residual OPD in nm, with
+piston removed, tip/tilt retained and NaNs outside the actual transmitting pupil.
+Instrument profiles bind an ordinary ndarray view under Simulator, reusing the
+GUI's finite-sample RMS readout. No instrument-specific renderer is introduced.
+Classic's sealed CPU candidate passes 716 managed checks across two reset
+generations, plus 60 optical, eight capture and 71 offline checks. Scientific
+parameters and calibration are unchanged. The saved CUDA default remains;
+the separate live deployment explicitly selects CPU. The RTC and GUI are live;
+16 fresh masked images and the GUI subscription were verified with no GPU use.
+See
+[validation](validation/live-wavefront-20261022/README.md) and
+[review](reviews/20261022-live-wavefront/REVIEW.md). Cadence, GPU and hardware
+qualification remain outside this diagnostic change.
+
 ### Classic central actuator extrapolation — 2026-10-22
 
 Classic now extrapolates the nine obscured central DM commands using a

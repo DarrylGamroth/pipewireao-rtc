@@ -1,0 +1,6 @@
+Test Summary:                                    | Pass  Total  Time
+callable package modules and operational scripts |   29     29  0.5s
+Test Summary:                                           | Pass  Total   Time
+named deployment package and operational source closure |  155    155  10.8s
+Test Summary:                                      | Pass  Total  Time
+unsupported SDK rejection preserves sealed sources |    6      6  0.2s
