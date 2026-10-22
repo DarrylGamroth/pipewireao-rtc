@@ -108,4 +108,3 @@ test view_panel::wfs_overlay::tests::aperture_hover_wins_over_pixel_hover_and_pi
 test view_panel::wfs_overlay::pyramid::tests::pupil_hover_reports_the_displayed_raw_or_calibrated_pixel ... ok
 
 test result: ok. 32 passed; 0 failed; 0 ignored; 0 measured; 543 filtered out; finished in 0.13s
-

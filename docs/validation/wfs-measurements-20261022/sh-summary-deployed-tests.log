@@ -5,7 +5,7 @@
   1 dependency had output during precompilation:
 ┌ JuliaFilterGraph
 │  [Output was shown above]
-└  
+└
 Only deployed dependency changed: FilterGraphAlgorithms
 Test Summary:                       | Pass  Total  Time
 summary declaration and preparation |   12     12  0.9s
