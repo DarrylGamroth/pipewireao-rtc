@@ -1,0 +1,211 @@
+ninja: Entering directory `/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/wp-asan-build'
+[1/210] Generating GObject enum file lib/wp/wpenums.c (wrapped by meson because command contains newlines, to capture output)
+[2/210] Generating GObject enum file lib/wp/wpenums.h (wrapped by meson because command contains newlines, to capture output)
+[3/210] Generating modules/module-lua-scripting/wplua/wplua-resources_c with a custom command
+[4/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/meson-generated_.._wpenums.c.o
+[5/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/base-dirs.c.o
+[6/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/client.c.o
+[7/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/component-loader.c.o
+[8/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/dynamic-rules.c.o
+[9/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/core.c.o
+[10/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/conf.c.o
+[11/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/error.c.o
+[12/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/event.c.o
+[13/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/device.c.o
+[14/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/event-dispatcher.c.o
+[15/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/event-hook.c.o
+[16/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/factory.c.o
+[17/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/iterator.c.o
+[18/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/global-proxy.c.o
+[19/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/link.c.o
+[20/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/json-utils.c.o
+[21/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/metadata.c.o
+[22/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/log.c.o
+[23/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/settings.c.o
+[24/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/module.c.o
+[25/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/node.c.o
+[26/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/object.c.o
+[27/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/object-manager.c.o
+[28/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/object-interest.c.o
+[29/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/plugin.c.o
+[30/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/permission-manager.c.o
+[31/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/port.c.o
+[32/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/proc-utils.c.o
+[33/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/properties.c.o
+[34/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/proxy.c.o
+[35/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/proxy-interfaces.c.o
+[36/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/session-item.c.o
+[37/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/si-factory.c.o
+[38/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/si-interfaces.c.o
+[39/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/spa-json.c.o
+[40/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/spa-type.c.o
+[41/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/state.c.o
+[42/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/transition.c.o
+[43/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/wp.c.o
+[44/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/private_client-context.c.o
+[45/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/private_pipewire-object-mixin.c.o
+[46/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/private_internal-comp-loader.c.o
+[47/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/private_registry.c.o
+[48/210] Generating modules/module-lua-scripting/wplua/wplua-resources_h with a custom command
+[49/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_lapi.c.o
+[50/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_lauxlib.c.o
+[51/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_lbaselib.c.o
+[52/210] Compiling C object lib/wp/libwireplumber-0.5.so.0.518.0.p/spa-pod.c.o
+[53/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_lcode.c.o
+[54/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_lcorolib.c.o
+[55/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_lctype.c.o
+[56/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_ldblib.c.o
+[57/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_ldebug.c.o
+[58/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_ldo.c.o
+[59/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_ldump.c.o
+[60/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_lfunc.c.o
+[61/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_linit.c.o
+[62/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_liolib.c.o
+[63/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_lgc.c.o
+[64/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_lmathlib.c.o
+[65/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_llex.c.o
+[66/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_lmem.c.o
+[67/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_loadlib.c.o
+[68/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_lopcodes.c.o
+[69/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_loslib.c.o
+[70/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_lobject.c.o
+[71/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_lstate.c.o
+[72/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_lstring.c.o
+[73/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_lstrlib.c.o
+[74/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_lparser.c.o
+[75/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_ltablib.c.o
+[76/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_ltm.c.o
+[77/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_ltable.c.o
+[78/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_lundump.c.o
+[79/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_lutf8lib.c.o
+[80/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_lzio.c.o
+[81/210] Linking target lib/wp/libwireplumber-0.5.so.0.518.0
+[82/210] Generating GObject enum file modules/dbus-connection-enums.c (wrapped by meson because command contains newlines, to capture output)
+[83/210] Generating GObject enum file modules/dbus-connection-enums.h (wrapped by meson because command contains newlines, to capture output)
+[84/210] Generating gdbus source modules/module-reserve-device/reserve-device-interface.c
+[85/210] Generating gdbus header modules/module-reserve-device/reserve-device-interface.h
+[86/210] Generating GObject enum file modules/module-reserve-device/reserve-device-enums.c (wrapped by meson because command contains newlines, to capture output)
+[87/210] Generating GObject enum file modules/module-reserve-device/reserve-device-enums.h (wrapped by meson because command contains newlines, to capture output)
+[88/210] Compiling C object modules/module-lua-scripting/wplua/libwplua-0.5.a.p/meson-generated_.._wplua-resources.c.o
+[89/210] Compiling C object modules/module-lua-scripting/wplua/libwplua-0.5.a.p/boxed.c.o
+[90/210] Compiling C object modules/module-lua-scripting/wplua/libwplua-0.5.a.p/closure.c.o
+[91/210] Compiling C object modules/module-lua-scripting/wplua/libwplua-0.5.a.p/object.c.o
+[92/210] Compiling C object modules/module-lua-scripting/wplua/libwplua-0.5.a.p/userdata.c.o
+[93/210] Compiling C object modules/module-lua-scripting/wplua/libwplua-0.5.a.p/value.c.o
+[94/210] Compiling C object modules/module-lua-scripting/wplua/libwplua-0.5.a.p/wplua.c.o
+[95/210] Generating modules/module-lua-scripting/api/m-lua-scripting-resources_c with a custom command
+[96/210] Generating modules/module-lua-scripting/api/m-lua-scripting-resources_h with a custom command
+[97/210] Compiling C object subprojects/lua-5.5.0/lua.p/src_lua.c.o
+[98/210] Compiling C object subprojects/lua-5.5.0/luac.p/src_luac.c.o
+[99/210] Generating symbol file lib/wp/libwireplumber-0.5.so.0.518.0.p/libwireplumber-0.5.so.0.518.0.symbols
+[100/210] Compiling C object modules/libwireplumber-module-settings.so.p/module-settings.c.o
+[101/210] Compiling C object modules/libwireplumber-module-dbus-connection.so.p/meson-generated_.._dbus-connection-enums.c.o
+[102/210] Compiling C object subprojects/lua-5.5.0/liblua.a.p/src_lvm.c.o
+[103/210] Linking static target subprojects/lua-5.5.0/liblua.a
+[104/210] Compiling C object modules/libwireplumber-module-dbus-connection.so.p/module-dbus-connection.c.o
+[105/210] Compiling C object modules/libwireplumber-module-default-nodes-api.so.p/module-default-nodes-api.c.o
+[106/210] Compiling C object modules/libwireplumber-module-reserve-device.so.p/meson-generated_.._module-reserve-device_reserve-device-enums.c.o
+[107/210] Compiling C object modules/libwireplumber-module-reserve-device.so.p/module-reserve-device_plugin.c.o
+[108/210] Compiling C object modules/libwireplumber-module-reserve-device.so.p/meson-generated_.._module-reserve-device_reserve-device-interface.c.o
+[109/210] Compiling C object modules/libwireplumber-module-reserve-device.so.p/module-reserve-device_transitions.c.o
+[110/210] Compiling C object modules/libwireplumber-module-reserve-device.so.p/module-reserve-device_reserve-device.c.o
+[111/210] Compiling C object modules/libwireplumber-module-portal-permissionstore.so.p/module-portal-permissionstore.c.o
+[112/210] Compiling C object modules/libwireplumber-module-notifications-api.so.p/module-notifications-api.c.o
+[113/210] Compiling C object modules/libwireplumber-module-si-node.so.p/module-si-node.c.o
+[114/210] Compiling C object modules/libwireplumber-module-si-standard-link.so.p/module-si-standard-link.c.o
+[115/210] Linking static target modules/module-lua-scripting/wplua/libwplua-0.5.a
+[116/210] Compiling C object modules/libwireplumber-module-si-audio-adapter.so.p/module-si-audio-adapter.c.o
+[117/210] Compiling C object modules/libwireplumber-module-lua-scripting.so.p/meson-generated_.._module-lua-scripting_api_m-lua-scripting-resources.c.o
+[118/210] Compiling C object modules/libwireplumber-module-lua-scripting.so.p/module-lua-scripting_module.c.o
+[119/210] Compiling C object modules/libwireplumber-module-lua-scripting.so.p/module-lua-scripting_script.c.o
+[120/210] Compiling C object modules/libwireplumber-module-lua-scripting.so.p/module-lua-scripting_api_json.c.o
+[121/210] Compiling C object modules/libwireplumber-module-lua-scripting.so.p/module-lua-scripting_api_pod.c.o
+[122/210] Compiling C object modules/libwireplumber-module-mixer-api.so.p/module-mixer-api.c.o
+[123/210] Compiling C object modules/libwireplumber-module-file-monitor-api.so.p/module-file-monitor-api.c.o
+[124/210] Compiling C object modules/libwireplumber-module-lua-scripting.so.p/module-lua-scripting_api_api.c.o
+[125/210] Compiling C object modules/libwireplumber-module-log-settings.so.p/module-log-settings.c.o
+[126/210] Compiling C object modules/libwireplumber-module-standard-event-source.so.p/module-standard-event-source.c.o
+[127/210] Compiling C object modules/libwireplumber-module-mpris.so.p/module-mpris.c.o
+[128/210] Compiling C object modules/libwireplumber-module-modem-manager.so.p/module-modem-manager.c.o
+[129/210] Compiling C object src/tools/wpexec.p/wpexec.c.o
+[130/210] Compiling C object src/wireplumber.p/main.c.o
+[131/210] Linking target subprojects/lua-5.5.0/lua
+[132/210] Linking target subprojects/lua-5.5.0/luac
+[133/210] Linking target modules/libwireplumber-module-settings.so
+[134/210] Linking target modules/libwireplumber-module-dbus-connection.so
+[135/210] Linking target modules/libwireplumber-module-default-nodes-api.so
+[136/210] Linking target modules/libwireplumber-module-reserve-device.so
+[137/210] Linking target modules/libwireplumber-module-portal-permissionstore.so
+[138/210] Linking target modules/libwireplumber-module-notifications-api.so
+[139/210] Linking target modules/libwireplumber-module-si-audio-adapter.so
+[140/210] Linking target modules/libwireplumber-module-si-node.so
+[141/210] Linking target modules/libwireplumber-module-si-standard-link.so
+[142/210] Linking target modules/libwireplumber-module-lua-scripting.so
+[143/210] Linking target modules/libwireplumber-module-mixer-api.so
+[144/210] Linking target modules/libwireplumber-module-file-monitor-api.so
+[145/210] Compiling C object src/tools/wpctl.p/wpctl.c.o
+[146/210] Linking target modules/libwireplumber-module-log-settings.so
+[147/210] Linking target modules/libwireplumber-module-standard-event-source.so
+[148/210] Linking target modules/libwireplumber-module-modem-manager.so
+[149/210] Linking target modules/libwireplumber-module-mpris.so
+[150/210] Linking target src/tools/wpexec
+[151/210] Linking target src/tools/wpctl
+[152/210] Linking target src/wireplumber
+[153/210] Building translation po/af/LC_MESSAGES/wireplumber-af.mo
+[154/210] Building translation po/as/LC_MESSAGES/wireplumber-as.mo
+[155/210] Building translation po/be/LC_MESSAGES/wireplumber-be.mo
+[156/210] Building translation po/bg/LC_MESSAGES/wireplumber-bg.mo
+[157/210] Building translation po/bn_IN/LC_MESSAGES/wireplumber-bn_IN.mo
+[158/210] Building translation po/ca/LC_MESSAGES/wireplumber-ca.mo
+[159/210] Building translation po/cs/LC_MESSAGES/wireplumber-cs.mo
+[160/210] Building translation po/da/LC_MESSAGES/wireplumber-da.mo
+[161/210] Building translation po/de/LC_MESSAGES/wireplumber-de.mo
+[162/210] Building translation po/de_CH/LC_MESSAGES/wireplumber-de_CH.mo
+[163/210] Building translation po/el/LC_MESSAGES/wireplumber-el.mo
+[164/210] Building translation po/eo/LC_MESSAGES/wireplumber-eo.mo
+[165/210] Generating po/conf.pot with a custom command (wrapped by meson to capture output)
+[166/210] Building translation po/es/LC_MESSAGES/wireplumber-es.mo
+[167/210] Building translation po/fa/LC_MESSAGES/wireplumber-fa.mo
+[168/210] Building translation po/fi/LC_MESSAGES/wireplumber-fi.mo
+[169/210] Building translation po/fr/LC_MESSAGES/wireplumber-fr.mo
+[170/210] Building translation po/gl/LC_MESSAGES/wireplumber-gl.mo
+[171/210] Building translation po/gu/LC_MESSAGES/wireplumber-gu.mo
+[172/210] Building translation po/he/LC_MESSAGES/wireplumber-he.mo
+[173/210] Building translation po/hi/LC_MESSAGES/wireplumber-hi.mo
+[174/210] Building translation po/hr/LC_MESSAGES/wireplumber-hr.mo
+[175/210] Building translation po/hu/LC_MESSAGES/wireplumber-hu.mo
+[176/210] Building translation po/it/LC_MESSAGES/wireplumber-it.mo
+[177/210] Building translation po/id/LC_MESSAGES/wireplumber-id.mo
+[178/210] Building translation po/ja/LC_MESSAGES/wireplumber-ja.mo
+[179/210] Building translation po/ka/LC_MESSAGES/wireplumber-ka.mo
+[180/210] Building translation po/kk/LC_MESSAGES/wireplumber-kk.mo
+[181/210] Building translation po/kn/LC_MESSAGES/wireplumber-kn.mo
+[182/210] Building translation po/lt/LC_MESSAGES/wireplumber-lt.mo
+[183/210] Building translation po/ko/LC_MESSAGES/wireplumber-ko.mo
+[184/210] Building translation po/ml/LC_MESSAGES/wireplumber-ml.mo
+[185/210] Building translation po/mr/LC_MESSAGES/wireplumber-mr.mo
+[186/210] Building translation po/nb/LC_MESSAGES/wireplumber-nb.mo
+[187/210] Building translation po/my/LC_MESSAGES/wireplumber-my.mo
+[188/210] Building translation po/nl/LC_MESSAGES/wireplumber-nl.mo
+[189/210] Building translation po/nn/LC_MESSAGES/wireplumber-nn.mo
+[190/210] Building translation po/oc/LC_MESSAGES/wireplumber-oc.mo
+[191/210] Building translation po/or/LC_MESSAGES/wireplumber-or.mo
+[192/210] Building translation po/pa/LC_MESSAGES/wireplumber-pa.mo
+[193/210] Building translation po/pl/LC_MESSAGES/wireplumber-pl.mo
+[194/210] Building translation po/pt/LC_MESSAGES/wireplumber-pt.mo
+[195/210] Building translation po/pt_BR/LC_MESSAGES/wireplumber-pt_BR.mo
+[196/210] Building translation po/ru/LC_MESSAGES/wireplumber-ru.mo
+[197/210] Building translation po/ro/LC_MESSAGES/wireplumber-ro.mo
+[198/210] Building translation po/sk/LC_MESSAGES/wireplumber-sk.mo
+[199/210] Building translation po/si/LC_MESSAGES/wireplumber-si.mo
+[200/210] Building translation po/sr/LC_MESSAGES/wireplumber-sr.mo
+[201/210] Building translation po/sl/LC_MESSAGES/wireplumber-sl.mo
+[202/210] Building translation po/sv/LC_MESSAGES/wireplumber-sv.mo
+[203/210] Building translation po/sr@latin/LC_MESSAGES/wireplumber-sr@latin.mo
+[204/210] Building translation po/ta/LC_MESSAGES/wireplumber-ta.mo
+[205/210] Building translation po/te/LC_MESSAGES/wireplumber-te.mo
+[206/210] Building translation po/uk/LC_MESSAGES/wireplumber-uk.mo
+[207/210] Building translation po/tr/LC_MESSAGES/wireplumber-tr.mo
+[208/210] Building translation po/zh_TW/LC_MESSAGES/wireplumber-zh_TW.mo
+[209/210] Building translation po/zh_CN/LC_MESSAGES/wireplumber-zh_CN.mo
+[210/210] Generating wp-uninstalled with a custom command

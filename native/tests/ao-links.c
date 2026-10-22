@@ -275,6 +275,13 @@ struct format_observations {
 };
 
 static void
+object_finalized (gpointer data, GObject *object)
+{
+  (void) object;
+  *(gboolean *) data = TRUE;
+}
+
+static void
 format_changed (WpPlugin *endpoint, WpLink *link, gpointer data)
 {
   struct format_observations *observations = data;
@@ -335,6 +342,50 @@ format_observation (TestFixture *f, gconstpointer data)
   ao_link_retire (link, retirement_finished, &retirement);
   wait_operation (f, &retirement); g_assert_true (retirement.success);
   assert_link_absent (f, &exact);
+  /* Native remove-id has completed. Finalizing the retained WpLink must not
+   * detach its observer a second time through the now-freed native proxy. */
+  gboolean finalized = FALSE;
+  g_object_weak_ref (G_OBJECT (link), object_finalized, &finalized);
+  g_clear_object (&link);
+  g_assert_true (finalized);
+  exact_fixture_clear (&exact);
+}
+
+static void
+format_observer_rebind (TestFixture *f, gconstpointer data)
+{
+  (void) data;
+  struct exact_fixture exact = {0}; exact_fixture_init (f, &exact);
+  g_autoptr (WpLink) link = create_link (f, &exact, FALSE);
+  g_autoptr (WpPlugin) endpoint = g_object_new (wp_ao_control_endpoint_get_type (),
+      "name", "rebind-observer", "core", f->base.core, NULL);
+  struct format_observations observations = {0};
+  gboolean accepted = FALSE;
+  g_signal_emit_by_name (endpoint, "observe-link", link, &accepted);
+  g_assert_true (accepted);
+  g_signal_connect (endpoint, "link-info-changed", G_CALLBACK (format_changed), &observations);
+  for (guint cycle = 0; cycle < 2; cycle++) {
+    struct operation_result activation = {0};
+    wp_object_activate (WP_OBJECT (link), WP_PIPEWIRE_OBJECT_FEATURES_MINIMAL,
+        NULL, (GAsyncReadyCallback) activation_finished, &activation);
+    wait_operation (f, &activation); g_assert_true (activation.success);
+    for (guint i = 0; i < observations.calls; i++)
+      g_clear_pointer (&observations.snapshots[i], wp_spa_pod_unref);
+    observations.calls = 0;
+    struct pw_link_info info = { .id = wp_proxy_get_bound_id (WP_PROXY (link)),
+        .change_mask = PW_LINK_CHANGE_MASK_FORMAT, .format = NULL };
+    pw_proxy_notify (wp_proxy_get_pw_proxy (WP_PROXY (link)),
+        struct pw_link_events, info, 0, &info);
+    g_assert_cmpuint (observations.calls, ==, 1);
+    wp_object_deactivate (WP_OBJECT (link), WP_OBJECT_FEATURES_ALL);
+    g_assert_null (wp_proxy_get_pw_proxy (WP_PROXY (link)));
+    assert_link_absent (f, &exact);
+    observations.calls = 0;
+  }
+  gboolean finalized = FALSE;
+  g_object_weak_ref (G_OBJECT (link), object_finalized, &finalized);
+  g_clear_object (&link);
+  g_assert_true (finalized);
   exact_fixture_clear (&exact);
 }
 
@@ -342,6 +393,7 @@ int main (int argc, gchar **argv)
 {
   g_test_init (&argc, &argv, NULL); wp_init (WP_INIT_ALL);
   g_test_add ("/rtc-links/format-observation", TestFixture, NULL, setup, format_observation, teardown);
+  g_test_add ("/rtc-links/format-observer-rebind", TestFixture, NULL, setup, format_observer_rebind, teardown);
   const gchar *normal[] = {"exact", "control-selection", "never-activated", "repeat-retirement", "fresh-generation"};
   const gchar *races[] = {"queued", "unbound", "created", "bound", "cancelled", "child-error", "deactivate", "dropped-owner"};
   for (guint i = 0; i < G_N_ELEMENTS (normal); i++) {

@@ -1,0 +1,22 @@
+ninja: Entering directory `/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-asan-build'
+[1/5] Compiling C object modules/libwireplumber-module-ao-control-endpoint.so.p/module-ao-control-endpoint.c.o
+../../../pipewire/pipewireao-rtc-classic-shutdown/native/modules/module-ao-control-endpoint.c: In function ‘on_filter_state_changed’:
+../../../pipewire/pipewireao-rtc-classic-shutdown/native/modules/module-ao-control-endpoint.c:508:59: warning: unused parameter ‘old’ [-Wunused-parameter]
+  508 | on_filter_state_changed (void *data, enum pw_filter_state old,
+      |                                      ~~~~~~~~~~~~~~~~~~~~~^~~
+../../../pipewire/pipewireao-rtc-classic-shutdown/native/modules/module-ao-control-endpoint.c: In function ‘wp_ao_control_endpoint_get_owner_pid’:
+../../../pipewire/pipewireao-rtc-classic-shutdown/native/modules/module-ao-control-endpoint.c:634:60: warning: unused parameter ‘self’ [-Wunused-parameter]
+  634 | wp_ao_control_endpoint_get_owner_pid (WpAoControlEndpoint *self)
+      |                                       ~~~~~~~~~~~~~~~~~~~~~^~~~
+[2/5] Compiling C object tests/test-ao-links.p/ao-links.c.o
+[3/5] Linking target modules/libwireplumber-module-ao-control-endpoint.so
+[4/5] Compiling C object tests/test-ao-links.p/.._modules_module-ao-control-endpoint.c.o
+../../../pipewire/pipewireao-rtc-classic-shutdown/native/modules/module-ao-control-endpoint.c: In function ‘on_filter_state_changed’:
+../../../pipewire/pipewireao-rtc-classic-shutdown/native/modules/module-ao-control-endpoint.c:508:59: warning: unused parameter ‘old’ [-Wunused-parameter]
+  508 | on_filter_state_changed (void *data, enum pw_filter_state old,
+      |                                      ~~~~~~~~~~~~~~~~~~~~~^~~
+../../../pipewire/pipewireao-rtc-classic-shutdown/native/modules/module-ao-control-endpoint.c: In function ‘wp_ao_control_endpoint_get_owner_pid’:
+../../../pipewire/pipewireao-rtc-classic-shutdown/native/modules/module-ao-control-endpoint.c:634:60: warning: unused parameter ‘self’ [-Wunused-parameter]
+  634 | wp_ao_control_endpoint_get_owner_pid (WpAoControlEndpoint *self)
+      |                                       ~~~~~~~~~~~~~~~~~~~~~^~~~
+[5/5] Linking target tests/test-ao-links

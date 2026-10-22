@@ -1,0 +1,30 @@
+The Meson build system
+Version: 1.7.0
+Source dir: /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown/native
+Build dir: /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-fixed-build
+Build type: native build
+Project name: pipewireao-rtc
+Project version: 0.1.0
+C compiler for the host machine: cc (gcc 14.2.0 "cc (Debian 14.2.0-19) 14.2.0")
+C linker for the host machine: cc ld.bfd 2.44
+Host machine cpu family: x86_64
+Host machine cpu: x86_64
+Found pkg-config: YES (/usr/bin/pkg-config) 1.8.1
+Run-time dependency wireplumber-0.5 found: YES 0.5.18
+Run-time dependency libpipewire-ao-0.3 found: YES 1.7.1
+Run-time dependency libspa-ao-0.2 found: YES 0.2
+Run-time dependency sqlite3 found: YES 3.46.1
+Run-time dependency gio-unix-2.0 found: YES 2.84.4
+Configuring rtc-build.h using configuration
+Configuring rtc-test-build.h using configuration
+Build targets in project: 9
+
+pipewireao-rtc 0.1.0
+
+  User defined options
+    libdir       : lib
+    prefix       : /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-fixed
+    tests        : true
+    wp_source_dir: /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/wp-asan-source
+
+Found ninja-1.12.1 at /usr/bin/ninja

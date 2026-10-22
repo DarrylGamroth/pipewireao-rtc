@@ -1,0 +1,130 @@
+The Meson build system
+Version: 1.7.0
+Source dir: /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/wp-asan-source
+Build dir: /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/wp-asan-build
+Build type: native build
+Project name: wireplumber
+Project version: 0.5.18
+C compiler for the host machine: cc (gcc 14.2.0 "cc (Debian 14.2.0-19) 14.2.0")
+C linker for the host machine: cc ld.bfd 2.44
+Host machine cpu family: x86_64
+Host machine cpu: x86_64
+Checking if "check short_name" compiles: YES 
+Found pkg-config: YES (/usr/bin/pkg-config) 1.8.1
+Run-time dependency glib-2.0 found: YES 2.84.4
+Run-time dependency gobject-2.0 found: YES 2.84.4
+Run-time dependency gmodule-2.0 found: YES 2.84.4
+Run-time dependency gio-2.0 found: YES 2.84.4
+Run-time dependency gio-unix-2.0 found: YES 2.84.4
+Run-time dependency libspa-ao-0.2 found: YES 0.2
+Run-time dependency libpipewire-ao-0.3 found: YES 1.7.1
+Library m found: YES
+Run-time dependency threads found: YES
+Run-time dependency intl found: YES
+
+Executing subproject lua 
+
+lua| Project name: lua
+lua| Project version: 5.5.0
+lua| C compiler for the host machine: cc (gcc 14.2.0 "cc (Debian 14.2.0-19) 14.2.0")
+lua| C linker for the host machine: cc ld.bfd 2.44
+lua| Compiler for C supports arguments -Wno-string-plus-int: NO
+lua| Compiler for C supports arguments -Wno-stringop-overflow: YES
+lua| Library m found: YES
+lua| Run-time dependency dl found: YES
+lua| Found CMake: /usr/bin/cmake (3.31.6)
+lua| Run-time dependency readline found: NO (tried pkgconfig and cmake)
+lua| Run-time dependency libedit found: NO (tried pkgconfig and cmake)
+lua| Build targets in project: 3
+lua| Subproject lua finished.
+
+Dependency systemd skipped: feature systemd disabled
+Dependency libsystemd skipped: feature systemd disabled
+Dependency libelogind skipped: feature elogind disabled
+Compiler for C supports arguments -fvisibility=hidden: YES 
+Compiler for C supports arguments -Wsuggest-attribute=format: YES 
+Compiler for C supports arguments -Wsign-compare: YES 
+Compiler for C supports arguments -Wpointer-arith: YES 
+Compiler for C supports arguments -Wpointer-sign: YES 
+Compiler for C supports arguments -Wformat: YES 
+Compiler for C supports arguments -Wformat-security: YES 
+Compiler for C supports arguments -Wimplicit-fallthrough: YES 
+Compiler for C supports arguments -Wmissing-braces: YES 
+Compiler for C supports arguments -Wtype-limits: YES 
+Compiler for C supports arguments -Wvariadic-macros: YES 
+Compiler for C supports arguments -Wno-missing-field-initializers: YES 
+Compiler for C supports arguments -Wno-unused-parameter: YES 
+Compiler for C supports arguments -Wno-pedantic: YES 
+Compiler for C supports arguments -Wold-style-declaration: YES 
+Compiler for C supports arguments -Wunused-result: YES 
+Checking if "SPA_AUDIO_MAX_CHANNELS override" with dependency libspa-ao-0.2 compiles: YES 
+Dependency glib-2.0 found: YES 2.84.4 (cached)
+Program /usr/bin/glib-mkenums found: YES (/usr/bin/glib-mkenums)
+Dependency glib-2.0 found: YES 2.84.4 (cached)
+Program /usr/bin/glib-mkenums found: YES (/usr/bin/glib-mkenums)
+Configuring wpversion.h using configuration
+Configuring wpbuildbasedirs.h using configuration
+Dependency glib-2.0 found: YES 2.84.4 (cached)
+Program /usr/bin/glib-mkenums found: YES (/usr/bin/glib-mkenums)
+Dependency glib-2.0 found: YES 2.84.4 (cached)
+Program /usr/bin/glib-mkenums found: YES (/usr/bin/glib-mkenums)
+Dependency gio-2.0 found: YES 2.84.4 (cached)
+Program /usr/bin/gdbus-codegen found: YES (/usr/bin/gdbus-codegen)
+Dependency glib-2.0 found: YES 2.84.4 (cached)
+Program /usr/bin/glib-mkenums found: YES (/usr/bin/glib-mkenums)
+Dependency glib-2.0 found: YES 2.84.4 (cached)
+Program /usr/bin/glib-mkenums found: YES (/usr/bin/glib-mkenums)
+Dependency gio-2.0 found: YES 2.84.4 (cached)
+Program /usr/bin/glib-compile-resources found: YES (/usr/bin/glib-compile-resources)
+Dependency gio-2.0 found: YES 2.84.4 (cached)
+Program /usr/bin/glib-compile-resources found: YES (/usr/bin/glib-compile-resources)
+Has header "sys/vfs.h" : YES 
+Program python3 found: YES (/usr/bin/python3)
+Program spa-json-dump found: YES (/usr/bin/spa-json-dump)
+Program msgfmt found: YES (/usr/bin/msgfmt)
+Program msginit found: YES (/usr/bin/msginit)
+Program msgmerge found: YES (/usr/bin/msgmerge)
+Program xgettext found: YES (/usr/bin/xgettext)
+Program python3 found: NO (disabled by: doc )
+Program python3 found: NO (disabled by: introspection )
+Program sphinx-build skipped: feature doc disabled
+Program g-ir-scanner skipped: feature introspection disabled
+Configuring wp-uninstalled.sh.in using configuration
+Build targets in project: 97
+
+wireplumber 0.5.18
+
+    Lua version                    : 5.5.0 (built-in)
+    systemd conf data              : NO
+    libsystemd                     : NO
+    libelogind                     : NO
+    SPA_AUDIO_MAX_CHANNELS         : 128
+
+  For documentation
+    Python 3 Sphinx related modules: NO
+    Doxygen                        : NO
+    sphinx-build                   : NO
+
+  For introspection
+    Python 3 lxml module           : NO
+    Doxygen                        : NO
+    g-ir-scanner                   : NO
+
+  Subprojects
+    lua                            : YES
+
+  User defined options
+    b_lundef                       : false
+    b_sanitize                     : address
+    doc                            : disabled
+    elogind                        : disabled
+    introspection                  : disabled
+    libdir                         : lib
+    prefix                         : /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan
+    systemd                        : disabled
+    systemd-system-service         : false
+    systemd-user-service           : false
+    tests                          : false
+    wrap_mode                      : nodownload
+
+Found ninja-1.12.1 at /usr/bin/ninja

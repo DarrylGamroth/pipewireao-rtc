@@ -1,0 +1,24 @@
+WirePlumber archive SHA-256: 9be605546b22db3975367c06c59a335ee2aef1904f21ad3335cb649041bd6f23
+e859ba7378cefccccc555d1837bcf52cded44a2dc90d73ac4eb8a3da89cc7834  /home/dgamroth/workspaces/codex/pipewire/wireplumber/packaging/pipewireao/dependencies.patch
+31538616076bab7261d54d53331ce24651563254ec0baac33f6e55b8aeda2c09  -
+1c37543517275612ff1f35adc8794bf3cb239643
+56e1945d52292b506c1f0bcb77543fea289ccee857c478dcddded40226e1594d  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/sqlite-dev/libsqlite3-dev_3.46.1-7+deb13u2_amd64.deb
+72e73e09fea5b45a110fdcea971358cfaf284ab246fac8d6675dfb7618ec77b3  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/sqlite-dev/extracted/usr/lib/x86_64-linux-gnu/pkgconfig/sqlite3.pc
+317d80bf5d592f98a71e14d2330591d6a339f631f37c5977835af748a1f26715  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/sqlite-dev/extracted/usr/lib/x86_64-linux-gnu/libsqlite3.so.0.8.6
+f319f664239fdd3154721a70b7cf37fa1475703c6a4deaf7605511851c1edb17  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/sqlite-dev/extracted/usr/include/sqlite3.h
+b184dd1586d935133d37ad76fa353faf0a1021ff2fdedeedcc3498fff74bbb94  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/sqlite-dev/extracted/usr/include/sqlite3ext.h
+d56fed30c1d4fc9460f9e49b6954afd3645f80ede0c68f8a2ef75448e57c41b5  -
+bea4c4c09b32f1e4931c5172305faf2ab9c699e721d11312bfc1566abf9200d8  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/bin/wireplumber
+4518936f365c2071d33e968928232a1196da1c0fd3977ab02dd086ef834d63e5  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/bin/pipewireao-rtc
+c4885a18d12e6d27c508853d250863534de32fd74fde496baa4e952fae4526e6  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/lib/libwireplumber-0.5.so.0.518.0
+580d0edb84ff65ecb9dbbbad21eda761027fe0026ff8bda0d96a2f8b6eb02d9c  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/share/pipewireao-rtc/scripts/ao/session.lua
+eb467791ab02959e00d53dbcf98af2c4d4b10334c2f33fff35a7815f366cec1f  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/share/pipewireao-rtc/scripts/lib/ao-owner.lua
+134292c574e3f4b84a2d067ba5aee513ab59189d5efc82d3eba19227b79828a4  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/wp-asan-options.txt
+f8050457e21fa108e11827e9b3ef3c7b5609932e9566ade26802dcea45cf49b2  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-asan-options.txt
+40d4232660c966278391ffd1d6852bf599805a74a729537d5a8a732bd1442410  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/wp-asan-setup.log
+808ed5d40448470e21d9148f881a4014a482540e3898d96a261e971d459d5386  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/wp-asan-build.log
+1c2a6f5341f380ce1816f25fde129c7f6359e8eb7d3dac64cbab406541023518  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/wp-asan-install.log
+7ced9394f8eccda5a84b8a39c2a52971cb89ee0d5adf7a7e9d4d0ff68de92f35  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-asan-setup.log
+6c83e5c6be0151c5f4b6013d40ca0b8db97a61d22e2df6fe46c67a48b2756cc9  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-asan-build.log
+7f91492ec866968b0632cda3e0b387743942dd5c62a43e18bd21c86639abd4a0  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-asan-install.log
+143c0893fe288d7c97e7c4711d075a06a6211ab4284415977ba105f72745c4ad  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/sqlite-dev-download.log

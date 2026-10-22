@@ -1,0 +1,5 @@
+meson setup /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-asan-build /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown/native --prefix=/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan --libdir=lib -Db_sanitize=address -Dtests=false
+PKG_CONFIG_PATH=/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/lib/pkgconfig:/home/dgamroth/.local/opt/pipewireao-classic-headless-20261021/lib/pkgconfig:/opt/pipewireao/lib/x86_64-linux-gnu/pkgconfig:/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/sqlite-dev/extracted/usr/lib/x86_64-linux-gnu/pkgconfig
+LD_LIBRARY_PATH=/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/lib:/home/dgamroth/.local/opt/pipewireao-classic-headless-20261021/lib:/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/sqlite-dev/extracted/usr/lib/x86_64-linux-gnu
+Build: ninja -C /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-asan-build -j2
+Install: meson install -C /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-asan-build

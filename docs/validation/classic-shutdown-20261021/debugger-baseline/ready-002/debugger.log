@@ -1,0 +1,72 @@
+[New LWP 108203]
+[New LWP 108197]
+[New LWP 108196]
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+0x00007f10b0aeb72e in ?? () from /lib/x86_64-linux-gnu/libc.so.6
+DEBUGGER_READY
+
+Thread 1 "pipewireao-rtc" received signal SIGSEGV, Segmentation fault.
+0x00007f10b0ca5209 in ?? () from /lib/x86_64-linux-gnu/libglib-2.0.so.0
+
+Thread 4 (Thread 0x7f10b01ff6c0 (LWP 108196) "gmain"):
+#0  0x00007f10b0aeb72e in ??? () at /lib/x86_64-linux-gnu/libc.so.6
+#1  0x00007f10b0ae0388 in ??? () at /lib/x86_64-linux-gnu/libc.so.6
+#2  0x00007f10b0ae03cd in ??? () at /lib/x86_64-linux-gnu/libc.so.6
+#3  0x00007f10b0b54bee in ppoll () at /lib/x86_64-linux-gnu/libc.so.6
+#4  0x00007f10b0ca578c in ??? () at /lib/x86_64-linux-gnu/libglib-2.0.so.0
+#5  0x00007f10b0ca5e20 in g_main_context_iteration () at /lib/x86_64-linux-gnu/libglib-2.0.so.0
+#6  0x00007f10b0ca5e71 in ??? () at /lib/x86_64-linux-gnu/libglib-2.0.so.0
+#7  0x00007f10b0cd6b83 in ??? () at /lib/x86_64-linux-gnu/libglib-2.0.so.0
+#8  0x00007f10b0ae38bb in ??? () at /lib/x86_64-linux-gnu/libc.so.6
+#9  0x00007f10b0b61538 in ??? () at /lib/x86_64-linux-gnu/libc.so.6
+
+Thread 3 (Thread 0x7f10af9fe6c0 (LWP 108197) "pool-spawner"):
+#0  0x00007f10b0b5f4f9 in syscall () at /lib/x86_64-linux-gnu/libc.so.6
+#1  0x00007f10b0cd6484 in g_cond_wait () at /lib/x86_64-linux-gnu/libglib-2.0.so.0
+#2  0x00007f10b0c6c77b in ??? () at /lib/x86_64-linux-gnu/libglib-2.0.so.0
+#3  0x00007f10b0cd6e40 in ??? () at /lib/x86_64-linux-gnu/libglib-2.0.so.0
+#4  0x00007f10b0cd6b83 in ??? () at /lib/x86_64-linux-gnu/libglib-2.0.so.0
+#5  0x00007f10b0ae38bb in ??? () at /lib/x86_64-linux-gnu/libc.so.6
+#6  0x00007f10b0b61538 in ??? () at /lib/x86_64-linux-gnu/libc.so.6
+
+Thread 2 (Thread 0x7f10af0596c0 (LWP 108203) "data-loop.0"):
+#0  0x00007f10b0aeb72e in ??? () at /lib/x86_64-linux-gnu/libc.so.6
+#1  0x00007f10b0ae0388 in ??? () at /lib/x86_64-linux-gnu/libc.so.6
+#2  0x00007f10b0ae03cd in ??? () at /lib/x86_64-linux-gnu/libc.so.6
+#3  0x00007f10b0b617ed in epoll_wait () at /lib/x86_64-linux-gnu/libc.so.6
+#4  0x00007f10b06335f3 in impl_pollfd_wait () at /home/dgamroth/.local/opt/pipewireao-classic-headless-20261021/lib/spa-ao-0.2/support/libspa-support.so
+#5  0x00007f10b060e082 in loop_iterate () at /home/dgamroth/.local/opt/pipewireao-classic-headless-20261021/lib/spa-ao-0.2/support/libspa-support.so
+#6  0x00007f10b09723b1 in do_loop (user_data=0x559066d10b00) at ../src/pipewire/data-loop.c:68
+        __cancel_buf = {__cancel_jmp_buf = {{__cancel_jmp_buf = {139709632584924, -8522594041067943468, 32, 0, 140720782554304, 139709624193024, -8617910380235508181, -8617858826880207317}, __mask_was_saved = 0}}, __pad = {0x7f10af058df0, 0x0, 0x3330323830, 0x0}}
+        __cancel_routine = 0x7f10b0971f60 <thread_cleanup>
+        __cancel_arg = 0x559066d10b00
+        __not_first_call = <optimized out>
+        this = 0x559066d10b00
+        res = <optimized out>
+        cb = <optimized out>
+        m = <optimized out>
+        data = 0x559066d10ca8
+        iterate = 0x7f10b060dfd0 <loop_iterate>
+#7  0x00007f10b0ae38bb in ??? () at /lib/x86_64-linux-gnu/libc.so.6
+#8  0x00007f10b0b61538 in ??? () at /lib/x86_64-linux-gnu/libc.so.6
+
+Thread 1 (Thread 0x7f10b0648340 (LWP 108179) "pipewireao-rtc"):
+#0  0x00007f10b0ca5209 in ??? () at /lib/x86_64-linux-gnu/libglib-2.0.so.0
+#1  0x00007f10b0ca547e in ??? () at /lib/x86_64-linux-gnu/libglib-2.0.so.0
+#2  0x00007f10b0ca611f in g_main_loop_run () at /lib/x86_64-linux-gnu/libglib-2.0.so.0
+#3  0x0000559041c8cd8c in main (argc=1, argv=0x7ffc1c41c238) at ../../../home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-upstream-package/native/main.c:166
+        options = 0x559066d03f90
+        error = 0x0
+        config_file = 0x559066d05130 "/run/user/1000/pipewireao-session-06b753aa76d7/d2a31650832048d4bfe9aeaebb2a4577/rtc/rtc.conf"
+        conf = 0x0
+        version = 0
+        entries = {{long_name = 0x559041c8d095 "config-file", short_name = 99 'c', flags = 0, arg = G_OPTION_ARG_FILENAME, arg_data = 0x7ffc1c41c0c0, description = 0x559041c8d0a8 "Generated RTC configuration (required)", arg_description = 0x559041c8d0cf "FILE"}, {long_name = 0x559041c8d0d4 "version", short_name = 118 'v', flags = 0, arg = G_OPTION_ARG_NONE, arg_data = 0x7ffc1c41c0b4, description = 0x559041c8d0dc "Show linked library version", arg_description = 0x0}, {long_name = 0x0, short_name = 0 '\000', flags = 0, arg = G_OPTION_ARG_NONE, arg_data = 0x0, description = 0x0, arg_description = 0x0}}
+        host = 0x559066d0a4c0
+        status = 0
+[Thread 0x7f10af0596c0 (LWP 108203) exited]
+[Thread 0x7f10af9fe6c0 (LWP 108197) exited]
+[Thread 0x7f10b01ff6c0 (LWP 108196) exited]
+
+Program terminated with signal SIGSEGV, Segmentation fault.
+The program no longer exists.

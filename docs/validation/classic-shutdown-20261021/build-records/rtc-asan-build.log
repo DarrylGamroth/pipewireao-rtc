@@ -1,0 +1,30 @@
+ninja: Entering directory `/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-asan-build'
+[1/9] Compiling C object pipewireao-rtc.p/main.c.o
+[2/9] Compiling C object modules/libwireplumber-module-ao-control-endpoint.so.p/module-ao-control-endpoint.c.o
+../../../pipewire/pipewireao-rtc-classic-shutdown/native/modules/module-ao-control-endpoint.c: In function ‘on_filter_state_changed’:
+../../../pipewire/pipewireao-rtc-classic-shutdown/native/modules/module-ao-control-endpoint.c:505:59: warning: unused parameter ‘old’ [-Wunused-parameter]
+  505 | on_filter_state_changed (void *data, enum pw_filter_state old,
+      |                                      ~~~~~~~~~~~~~~~~~~~~~^~~
+../../../pipewire/pipewireao-rtc-classic-shutdown/native/modules/module-ao-control-endpoint.c: In function ‘wp_ao_control_endpoint_get_owner_pid’:
+../../../pipewire/pipewireao-rtc-classic-shutdown/native/modules/module-ao-control-endpoint.c:631:60: warning: unused parameter ‘self’ [-Wunused-parameter]
+  631 | wp_ao_control_endpoint_get_owner_pid (WpAoControlEndpoint *self)
+      |                                       ~~~~~~~~~~~~~~~~~~~~~^~~~
+[3/9] Compiling C object modules/libwireplumber-module-ao-control-endpoint.so.p/ao-link.c.o
+[4/9] Compiling C object modules/libwireplumber-module-ao-journal.so.p/module-ao-journal.c.o
+../../../pipewire/pipewireao-rtc-classic-shutdown/native/modules/module-ao-journal.c: In function ‘append_worker’:
+../../../pipewire/pipewireao-rtc-classic-shutdown/native/modules/module-ao-journal.c:196:75: warning: unused parameter ‘cancel’ [-Wunused-parameter]
+  196 | append_worker (GTask *task, gpointer source, gpointer data, GCancellable *cancel)
+      |                                                             ~~~~~~~~~~~~~~^~~~~~
+../../../pipewire/pipewireao-rtc-classic-shutdown/native/modules/module-ao-journal.c: In function ‘append_done’:
+../../../pipewire/pipewireao-rtc-classic-shutdown/native/modules/module-ao-journal.c:207:62: warning: unused parameter ‘data’ [-Wunused-parameter]
+  207 | append_done (GObject *object, GAsyncResult *result, gpointer data)
+      |                                                     ~~~~~~~~~^~~~
+../../../pipewire/pipewireao-rtc-classic-shutdown/native/modules/module-ao-journal.c: In function ‘wp_ao_journal_enable’:
+../../../pipewire/pipewireao-rtc-classic-shutdown/native/modules/module-ao-journal.c:273:55: warning: unused parameter ‘transition’ [-Wunused-parameter]
+  273 | wp_ao_journal_enable (WpPlugin *plugin, WpTransition *transition)
+      |                                         ~~~~~~~~~~~~~~^~~~~~~~~~
+[5/9] Linking target pipewireao-rtc
+[6/9] Compiling C object modules/libwireplumber-module-ao-lua.so.p/module-ao-lua.c.o
+[7/9] Linking target modules/libwireplumber-module-ao-control-endpoint.so
+[8/9] Linking target modules/libwireplumber-module-ao-journal.so
+[9/9] Linking target modules/libwireplumber-module-ao-lua.so

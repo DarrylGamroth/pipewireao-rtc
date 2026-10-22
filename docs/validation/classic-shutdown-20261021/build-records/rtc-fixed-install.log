@@ -1,0 +1,15 @@
+ninja: Entering directory `/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-fixed-build'
+ninja: no work to do.
+Installing subdir /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown/native/scripts to /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-fixed/share/pipewireao-rtc/scripts
+Installing /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown/native/scripts/lib/ao-session-control.lua to /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-fixed/share/pipewireao-rtc/scripts/lib
+Installing /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown/native/scripts/lib/ao-control.lua to /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-fixed/share/pipewireao-rtc/scripts/lib
+Installing /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown/native/scripts/lib/ao-lua.lua to /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-fixed/share/pipewireao-rtc/scripts/lib
+Installing /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown/native/scripts/lib/ao-connections.lua to /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-fixed/share/pipewireao-rtc/scripts/lib
+Installing /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown/native/scripts/lib/ao-owner.lua to /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-fixed/share/pipewireao-rtc/scripts/lib
+Installing /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown/native/scripts/lib/ao-acquisition.lua to /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-fixed/share/pipewireao-rtc/scripts/lib
+Installing /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown/native/scripts/ao/session.lua to /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-fixed/share/pipewireao-rtc/scripts/ao
+Installing pipewireao-rtc to /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-fixed/bin
+Installing modules/libwireplumber-module-ao-control-endpoint.so to /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-fixed/lib/pipewireao-rtc/modules
+Installing modules/libwireplumber-module-ao-journal.so to /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-fixed/lib/pipewireao-rtc/modules
+Installing modules/libwireplumber-module-ao-lua.so to /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-fixed/lib/pipewireao-rtc/modules
+Installing /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown/native/LICENSE to /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-fixed/share/licenses/pipewireao-rtc

@@ -1,0 +1,451 @@
+{
+  "audit": "read-only /proc fd and maps check; no GPU runtime query or device operation",
+  "captured_utc_epoch": 1792647578.337766,
+  "case": "fault-link-fixed",
+  "stages": [
+    {
+      "ledger": "first_ledger",
+      "pids": [
+        {
+          "expected_start_ticks": 2262580,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 443866,
+          "present_at_audit": false,
+          "role": "core"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 443867,
+          "present_at_audit": false,
+          "role": "core-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 443868,
+          "present_at_audit": false,
+          "role": "core-thread"
+        },
+        {
+          "expected_start_ticks": 2262629,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 443925,
+          "present_at_audit": false,
+          "role": "julia"
+        },
+        {
+          "expected_start_ticks": 2262629,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 443926,
+          "present_at_audit": false,
+          "role": "parameters"
+        },
+        {
+          "expected_start_ticks": 2262629,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 443927,
+          "present_at_audit": false,
+          "role": "simulator"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 443928,
+          "present_at_audit": false,
+          "role": "simulator-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 443929,
+          "present_at_audit": false,
+          "role": "simulator-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 443930,
+          "present_at_audit": false,
+          "role": "parameters-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 443931,
+          "present_at_audit": false,
+          "role": "julia-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 443932,
+          "present_at_audit": false,
+          "role": "julia-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 443934,
+          "present_at_audit": false,
+          "role": "parameters-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 443938,
+          "present_at_audit": false,
+          "role": "simulator-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 443944,
+          "present_at_audit": false,
+          "role": "julia-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 443945,
+          "present_at_audit": false,
+          "role": "parameters-thread"
+        },
+        {
+          "expected_start_ticks": 2263021,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 443999,
+          "present_at_audit": false,
+          "role": "wireplumber"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 444001,
+          "present_at_audit": false,
+          "role": "session-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 444002,
+          "present_at_audit": false,
+          "role": "session-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 444004,
+          "present_at_audit": false,
+          "role": "session-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 444059,
+          "present_at_audit": false,
+          "role": "simulator-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 444137,
+          "present_at_audit": false,
+          "role": "julia-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 444183,
+          "present_at_audit": false,
+          "role": "parameters-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 444398,
+          "present_at_audit": false,
+          "role": "simulator-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 444399,
+          "present_at_audit": false,
+          "role": "simulator-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 445022,
+          "present_at_audit": false,
+          "role": "julia-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 445374,
+          "present_at_audit": false,
+          "role": "julia-thread"
+        }
+      ],
+      "session_json": {
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-pipewireao\\x2dsession.slice/pipewireao-session@4c7f0918c8c6.service",
+        "invocation": "b03f168d88244d04bb2b4ecb854b94dc",
+        "main_pid": 443999,
+        "runtime_root": "/run/user/1000/pipewireao-session-4c7f0918c8c6",
+        "start_ticks": 2263021,
+        "unit": "pipewireao-session@4c7f0918c8c6.service"
+      },
+      "stage": "faulted"
+    },
+    {
+      "ledger": "fresh_ledger",
+      "pids": [
+        {
+          "expected_start_ticks": 2275823,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 446910,
+          "present_at_audit": false,
+          "role": "core"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 446911,
+          "present_at_audit": false,
+          "role": "core-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 446912,
+          "present_at_audit": false,
+          "role": "core-thread"
+        },
+        {
+          "expected_start_ticks": 2275869,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 446938,
+          "present_at_audit": false,
+          "role": "julia"
+        },
+        {
+          "expected_start_ticks": 2275869,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 446939,
+          "present_at_audit": false,
+          "role": "parameters"
+        },
+        {
+          "expected_start_ticks": 2275870,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 446940,
+          "present_at_audit": false,
+          "role": "simulator"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 446941,
+          "present_at_audit": false,
+          "role": "simulator-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 446942,
+          "present_at_audit": false,
+          "role": "simulator-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 446943,
+          "present_at_audit": false,
+          "role": "julia-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 446944,
+          "present_at_audit": false,
+          "role": "parameters-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 446945,
+          "present_at_audit": false,
+          "role": "parameters-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 446947,
+          "present_at_audit": false,
+          "role": "julia-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 446951,
+          "present_at_audit": false,
+          "role": "simulator-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 446963,
+          "present_at_audit": false,
+          "role": "parameters-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 446964,
+          "present_at_audit": false,
+          "role": "julia-thread"
+        },
+        {
+          "expected_start_ticks": 2276266,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 447038,
+          "present_at_audit": false,
+          "role": "wireplumber"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 447040,
+          "present_at_audit": false,
+          "role": "session-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 447041,
+          "present_at_audit": false,
+          "role": "session-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 447044,
+          "present_at_audit": false,
+          "role": "session-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 447068,
+          "present_at_audit": false,
+          "role": "simulator-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 447180,
+          "present_at_audit": false,
+          "role": "julia-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 447242,
+          "present_at_audit": false,
+          "role": "parameters-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 447443,
+          "present_at_audit": false,
+          "role": "simulator-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 447444,
+          "present_at_audit": false,
+          "role": "simulator-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 448192,
+          "present_at_audit": false,
+          "role": "julia-thread"
+        },
+        {
+          "expected_start_ticks": null,
+          "gpu_device_fds": [],
+          "gpu_library_maps": [],
+          "pid": 448516,
+          "present_at_audit": false,
+          "role": "julia-thread"
+        }
+      ],
+      "session_json": {
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-pipewireao\\x2dsession.slice/pipewireao-session@efe464865980.service",
+        "invocation": "4926a13e9c7b407a9629136933a155d8",
+        "main_pid": 447038,
+        "runtime_root": "/run/user/1000/pipewireao-session-efe464865980",
+        "start_ticks": 2276266,
+        "unit": "pipewireao-session@efe464865980.service"
+      },
+      "stage": "readmitted"
+    }
+  ]
+}

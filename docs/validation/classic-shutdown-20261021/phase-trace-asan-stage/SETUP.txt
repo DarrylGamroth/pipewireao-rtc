@@ -1,0 +1,11 @@
+Classic Quit temporary trace copy
+
+Source prefix: /home/dgamroth/.local/opt/pipewireao-classic-headless-20261021
+Copied prefix: /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-traced
+Original policy backup: /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/uninstrumented-policy/share/pipewireao-rtc/scripts
+
+Only these copied Lua files were changed:
+- share/pipewireao-rtc/scripts/ao/session.lua: for Quit hook steps, logs phase entry and synchronous execute return with GLib monotonic microseconds and operation epoch; logs invocation/return of effects for operation kind 1.
+- share/pipewireao-rtc/scripts/lib/ao-owner.lua: logs owner shutdown request and callback entry with GLib monotonic microseconds, namespace, owner PID, and callback error.
+
+No deadlines, operation ordering, service files, package source, or live services were changed/operated. Diff files and SHA256SUMS record the instrumentation and original/copy hashes.

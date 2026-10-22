@@ -1,5 +1,15 @@
 # Delivery evidence catalog
 
+## Classic shutdown correction and recovery — 2026-10-21
+
+[Validation](validation/classic-shutdown-20261021/README.md) records the native
+observer use-after-free fail-before/pass-after regression, ten native suites
+in ordinary and sanitizer builds, 2,859 CPU replay assertions, 134 link-loss
+and 40 controller-exit assertions, and two 11-assertion Ready → Quit checks.
+The corrected module is installed in the normal local prefix; all sessions
+are stopped. [Independent review](reviews/20261021-classic-shutdown/REVIEW.md)
+distinguishes the confirmed defect from the historical untraced Quit expiry.
+
 ## Classic CPU closed-loop and fault validation — 2026-10-21
 
 [Validation](validation/classic-cpu-loop-20261021/README.md) records the managed

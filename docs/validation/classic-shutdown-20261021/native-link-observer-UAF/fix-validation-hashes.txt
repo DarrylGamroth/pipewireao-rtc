@@ -1,0 +1,15 @@
+1c37543517275612ff1f35adc8794bf3cb239643
+16127f062905bb53f785870afa3437aebc6f114b5c05d16826a6d50d7c583154  /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown/native/modules/module-ao-control-endpoint.c
+77cf2056f8eb9bed925bb813d94f35444c9995f3f4459188c1bdf4ae0cbc0ea9  /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown/native/tests/ao-links.c
+beb75dfe28ae3145213da1f5df8c00ac9b4556d9c35dae7f99508f4b49efd7d6  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-asan-fix-build.log
+adf336b2e656547e962a9c2ac05a955d18f1509b5e9976fb908f656f3780993d  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/ao-links-after.log
+e251c840875bc25bc420549934c76bfce96ec9f8b04c6f5c2d9b66c218a69227  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/asan-native-suites.log
+7f91492ec866968b0632cda3e0b387743942dd5c62a43e18bd21c86639abd4a0  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-asan-fixed-install.log
+5d22780185c2d66004d5083f223d6e17923fbe85f635831d4852f632eba0f425  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-fixed-options.txt
+7745355f114b9e8449d2e512d1546a12894e66701dbb12467a5e8db0034364ec  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-fixed-setup.log
+abcac35bae5b10c2120abde4567c91cbc7e9f3ffc2c5bbc229470d41d33d99e5  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-fixed-build.log
+dcdff289a880b5b8894530a730effe6db654d91a7095909531c5e63e2789417a  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-fixed-install.log
+a8c189c863008b55ef4917efa68f1c3fe068ea5fd180b0f42724f3b208e5417b  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-fixed-test-command.txt
+b2fa40f49406f8fef6ebede83cf2702ed6ecf32553bdf5ecfe0aa08ebd34471b  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/fixed-native-suites.log
+4518936f365c2071d33e968928232a1196da1c0fd3977ab02dd086ef834d63e5  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/bin/pipewireao-rtc
+26c0cd67031bdc534b0564cc32ab168f174fccc2116efaff6a3d6524a3154e07  /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-fixed/bin/pipewireao-rtc

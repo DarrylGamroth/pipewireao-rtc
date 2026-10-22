@@ -1,0 +1,42 @@
+--- /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/uninstrumented-policy/share/pipewireao-rtc/scripts/ao/session.lua	2026-10-21 14:48:52.363233392 -0700
++++ /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-traced/share/pipewireao-rtc/scripts/ao/session.lua	2026-10-21 17:25:44.403598248 -0700
+@@ -46,7 +46,15 @@
+ 
+ local function effect (operation, action, ...)
+   if catalog and operation.kind ~= 1 then connections.check_core (catalog) end
++  if operation.kind == 1 then
++    Log.warning (string.format ("AO_QUIT_EFFECT edge=invoke monotonic_us=%d epoch=%s action=%s",
++        GLib.get_monotonic_time (), tostring (operation.epoch), tostring (action)))
++  end
+   local cancel = action (...)
++  if operation.kind == 1 then
++    Log.warning (string.format ("AO_QUIT_EFFECT edge=return monotonic_us=%d epoch=%s action=%s",
++        GLib.get_monotonic_time (), tostring (operation.epoch), tostring (action)))
++  end
+   if type (cancel) == "function" then
+     if state.operation == operation and not operation.retired then
+       operation.cancels [#operation.cancels + 1] = cancel
+@@ -141,6 +149,23 @@
+ end
+ 
+ local function hook (name, steps)
++  if name == "quit" then
++    for step_name, step in pairs (steps) do
++      if step.execute then
++        local execute = step.execute
++        step.execute = function (...)
++          local operation = event_operation (...)
++          local epoch = operation and operation.epoch or "unknown"
++          Log.warning (string.format ("AO_QUIT_PHASE phase=%s edge=entry monotonic_us=%d epoch=%s",
++              tostring (step_name), GLib.get_monotonic_time (), tostring (epoch)))
++          local result = table.pack (execute (...))
++          Log.warning (string.format ("AO_QUIT_PHASE phase=%s edge=execute-return monotonic_us=%d epoch=%s",
++              tostring (step_name), GLib.get_monotonic_time (), tostring (epoch)))
++          return table.unpack (result, 1, result.n)
++        end
++      end
++    end
++  end
+   steps.error = { execute = function (event)
+     local operation = event_operation (event)
+     -- The native transition is already terminal here. Fault compensation owns

@@ -1,0 +1,144 @@
+ERROR: LoadError: Some tests did not pass: 10 passed, 0 failed, 1 errored, 0 broken.
+in expression starting at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:2
+
+Managed Classic CPU closed-loop replay: Error During Test at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:192
+  Got exception outside of a @test
+  ArgumentError: RTC session unit is not active with the installed policy
+  Stacktrace:
+    [1] _identity(unit::String, runtime_root::String; deadline::Float64)
+      @ PipeWireAORTC.SessionRuntime ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/deployment/session_runtime.jl:149
+    [2] _identity
+      @ ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/deployment/session_runtime.jl:147 [inlined]
+    [3] stop!(handle::PipeWireAORTC.SessionRuntime.Handle; deadline::Float64)
+      @ PipeWireAORTC.SessionRuntime ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/deployment/session_runtime.jl:661
+    [4] stop!
+      @ ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/deployment/session_runtime.jl:659 [inlined]
+    [5] capture_session(application::String, stage::String, prefix::String, count::Int64)
+      @ Main.ClassicManagedReplay ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:133
+    [6] macro expansion
+      @ ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:193 [inlined]
+    [7] macro expansion
+      @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+    [8] main(application::String, stage::String, prefix::String)
+      @ Main.ClassicManagedReplay ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:193
+    [9] top-level scope
+      @ ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:229
+   [10] include(mod::Module, _path::String)
+      @ Base ./Base.jl:309
+   [11] exec_options(opts::Base.JLOptions)
+      @ Base ./client.jl:344
+   [12] _start()
+      @ Base ./client.jl:577
+  caused by: native control outcome unknown: owner proxy was removed
+  Stacktrace:
+    [1] request!(client::PipeWireAORTC.NativeControlClient.Client{PipeWireAORTC.NativeControlClient.Observation{PipeWireAORTC.NativeSessionProfile.Profile, PipeWireAORTC.NativeRunnerCodec.Lifecycle, Union{PipeWireAORTC.NativeRunnerCodec.Completion, PipeWireAORTC.NativeSessionCodec.AdministrativeCompletion}, PipeWireAORTC.NativeRunnerCodec.Rejection}}, command::PipeWireAORTC.NativeRunnerCodec.RunnerCommand{:quit, Tuple{}}; deadline::Float64, check::Function)
+      @ PipeWireAORTC.NativeControlClient ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/native/native_control_client.jl:568
+    [2] request!
+      @ ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/native/native_control_client.jl:505 [inlined]
+    [3] request!
+      @ ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/native/native_session_client.jl:82 [inlined]
+    [4] control!(handle::PipeWireAORTC.SessionRuntime.Handle, command::PipeWireAORTC.NativeRunnerCodec.RunnerCommand{:quit, Tuple{}}; deadline::Float64, before_request::PipeWireAORTC.SessionRuntime.var"#mark_attempt!#_native_quit!##0"{PipeWireAORTC.SessionRuntime.Handle})
+      @ PipeWireAORTC.SessionRuntime ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/deployment/session_runtime.jl:525
+    [5] control!
+      @ ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/deployment/session_runtime.jl:510 [inlined]
+    [6] #23
+      @ ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/deployment/session_runtime.jl:645 [inlined]
+    [7] _native_quit!(send::PipeWireAORTC.SessionRuntime.var"#23#24"{Float64, PipeWireAORTC.SessionRuntime.Handle}, handle::PipeWireAORTC.SessionRuntime.Handle)
+      @ PipeWireAORTC.SessionRuntime ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/deployment/session_runtime.jl:629
+    [8] #shutdown!#21
+      @ ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/deployment/session_runtime.jl:644 [inlined]
+    [9] shutdown!
+      @ ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/deployment/session_runtime.jl:643 [inlined]
+   [10] capture_session(application::String, stage::String, prefix::String, count::Int64)
+      @ Main.ClassicManagedReplay ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:129
+   [11] macro expansion
+      @ ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:193 [inlined]
+   [12] macro expansion
+      @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [13] main(application::String, stage::String, prefix::String)
+      @ Main.ClassicManagedReplay ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:193
+   [14] top-level scope
+      @ ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:229
+   [15] include(mod::Module, _path::String)
+      @ Base ./Base.jl:309
+   [16] exec_options(opts::Base.JLOptions)
+      @ Base ./client.jl:344
+   [17] _start()
+      @ Base ./client.jl:577
+  caused by: native control outcome unknown: owner proxy was removed
+  Stacktrace:
+    [1] matching_reply(observation::PipeWireAORTC.NativeControlClient.Observation{PipeWireAORTC.NativeSessionProfile.Profile, PipeWireAORTC.NativeRunnerCodec.Lifecycle, Union{PipeWireAORTC.NativeRunnerCodec.Completion, PipeWireAORTC.NativeSessionCodec.AdministrativeCompletion}, PipeWireAORTC.NativeRunnerCodec.Rejection}, deadline::Float64)
+      @ PipeWireAORTC.NativeControlClient ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/native/native_control_client.jl:238
+    [2] #73
+      @ ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/native/native_control_client.jl:554 [inlined]
+    [3] _with_thread_loop_lock(f::PipeWireAORTC.NativeControlClient.var"#73#74"{Float64, PipeWireAORTC.NativeControlClient.Client{PipeWireAORTC.NativeControlClient.Observation{PipeWireAORTC.NativeSessionProfile.Profile, PipeWireAORTC.NativeRunnerCodec.Lifecycle, Union{PipeWireAORTC.NativeRunnerCodec.Completion, PipeWireAORTC.NativeSessionCodec.AdministrativeCompletion}, PipeWireAORTC.NativeRunnerCodec.Rejection}}}, loop::PipeWireAO.ThreadLoop)
+      @ PipeWireAO ~/.local/share/classic-review-20261020/depot/packages/PipeWireAO/PRL3A/src/thread_loop.jl:138
+    [4] #with_thread_loop_lock##0
+      @ ~/.local/share/classic-review-20261020/depot/packages/PipeWireAO/PRL3A/src/thread_loop.jl:119 [inlined]
+    [5] disable_sigint
+      @ ./c.jl:167 [inlined]
+    [6] with_thread_loop_lock
+      @ ~/.local/share/classic-review-20261020/depot/packages/PipeWireAO/PRL3A/src/thread_loop.jl:118 [inlined]
+    [7] request!(client::PipeWireAORTC.NativeControlClient.Client{PipeWireAORTC.NativeControlClient.Observation{PipeWireAORTC.NativeSessionProfile.Profile, PipeWireAORTC.NativeRunnerCodec.Lifecycle, Union{PipeWireAORTC.NativeRunnerCodec.Completion, PipeWireAORTC.NativeSessionCodec.AdministrativeCompletion}, PipeWireAORTC.NativeRunnerCodec.Rejection}}, command::PipeWireAORTC.NativeRunnerCodec.RunnerCommand{:quit, Tuple{}}; deadline::Float64, check::Function)
+      @ PipeWireAORTC.NativeControlClient ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/native/native_control_client.jl:553
+    [8] request!
+      @ ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/native/native_control_client.jl:505 [inlined]
+    [9] request!
+      @ ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/native/native_session_client.jl:82 [inlined]
+   [10] control!(handle::PipeWireAORTC.SessionRuntime.Handle, command::PipeWireAORTC.NativeRunnerCodec.RunnerCommand{:quit, Tuple{}}; deadline::Float64, before_request::PipeWireAORTC.SessionRuntime.var"#mark_attempt!#_native_quit!##0"{PipeWireAORTC.SessionRuntime.Handle})
+      @ PipeWireAORTC.SessionRuntime ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/deployment/session_runtime.jl:525
+   [11] control!
+      @ ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/deployment/session_runtime.jl:510 [inlined]
+   [12] #23
+      @ ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/deployment/session_runtime.jl:645 [inlined]
+   [13] _native_quit!(send::PipeWireAORTC.SessionRuntime.var"#23#24"{Float64, PipeWireAORTC.SessionRuntime.Handle}, handle::PipeWireAORTC.SessionRuntime.Handle)
+      @ PipeWireAORTC.SessionRuntime ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/deployment/session_runtime.jl:629
+   [14] #shutdown!#21
+      @ ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/deployment/session_runtime.jl:644 [inlined]
+   [15] shutdown!
+      @ ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/deployment/session_runtime.jl:643 [inlined]
+   [16] capture_session(application::String, stage::String, prefix::String, count::Int64)
+      @ Main.ClassicManagedReplay ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:129
+   [17] macro expansion
+      @ ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:193 [inlined]
+   [18] macro expansion
+      @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [19] main(application::String, stage::String, prefix::String)
+      @ Main.ClassicManagedReplay ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:193
+   [20] top-level scope
+      @ ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:229
+   [21] include(mod::Module, _path::String)
+      @ Base ./Base.jl:309
+   [22] exec_options(opts::Base.JLOptions)
+      @ Base ./client.jl:344
+   [23] _start()
+      @ Base ./client.jl:577
+  caused by: timed out waiting for held observer format negotiation
+  Stacktrace:
+    [1] error(s::String)
+      @ Base ./error.jl:44
+    [2] _classic_wait(predicate::Main.ClassicManagedReplay.var"#75#76"{Tuple{Main.ClassicManagedReplay.ClassicObservationCapture{UInt16, 2}, Main.ClassicManagedReplay.ClassicObservationCapture{Float32, 1}, Main.ClassicManagedReplay.ClassicObservationCapture{Float32, 1}}, Vector{Any}}, loop::PipeWireAO.ThreadLoop, deadline::Float64, description::String, core_error::Base.RefValue{Any}; interval::Float64)
+      @ Main.ClassicManagedReplay ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_observation.jl:177
+    [3] _classic_wait(predicate::Function, loop::PipeWireAO.ThreadLoop, deadline::Float64, description::String, core_error::Base.RefValue{Any})
+      @ Main.ClassicManagedReplay ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_observation.jl:168
+    [4] observe_classic(remote::String; timeout::Int64, selected_streams::Tuple{String, String, String}, drive_interval::Float64, minimum_duration::Float64, process_capture::Main.ClassicManagedReplay.var"#capture_session##0#capture_session##1"{Int64, Vector{Any}}, on_ready::Main.ClassicManagedReplay.var"#capture_session##2#capture_session##3"{String, PipeWireAORTC.SessionRuntime.Handle}, finished::Main.ClassicManagedReplay.var"#capture_session##4#capture_session##5"{Vector{Any}})
+      @ Main.ClassicManagedReplay ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_observation.jl:377
+    [5] capture_session(application::String, stage::String, prefix::String, count::Int64)
+      @ Main.ClassicManagedReplay ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:111
+    [6] macro expansion
+      @ ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:193 [inlined]
+    [7] macro expansion
+      @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+    [8] main(application::String, stage::String, prefix::String)
+      @ Main.ClassicManagedReplay ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:193
+    [9] top-level scope
+      @ ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:229
+   [10] include(mod::Module, _path::String)
+      @ Base ./Base.jl:309
+   [11] exec_options(opts::Base.JLOptions)
+      @ Base ./client.jl:344
+   [12] _start()
+      @ Base ./client.jl:577
+Test Summary:                          | Pass  Error  Total     Time
+Managed Classic CPU closed-loop replay |   10      1     11  5m31.9s
+RNG of the outermost testset: Random.Xoshiro(0xc3a76ee3b7fc1002, 0x9f64e65bf1e90ed4, 0x0a7b6138dc559163, 0xd6f8d5370da18be9, 0xb70cdc953acde6cc)

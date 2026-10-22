@@ -1,0 +1,17 @@
+These prepared commands were subsequently executed serially after the primary agent confirmed the managed-loop gate. Results and compact retained receipts are in FAULT-SESSION-RESULTS.txt and fault-sessions/.
+
+Run from any directory. The test receives the canonical Classic registered application project/depot, forces GPU visibility empty, and uses the repaired non-ASan private prefix. Each stage path must still be absent immediately before its invocation; the test creates and owns it. Do not pre-create the stages. Stop if the first command fails; do not run the second after a failed first command without primary-agent direction.
+
+Source package: /home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/application-fault
+Deployment SHA-256: 945ac369b719c87c43ddbab1d210b72082fd65556ba9e05984b0ffa9fd970af6
+Project.toml SHA-256: a044e19f383eca2ad56b941c1068259c6af3c97e8f655fec7253a4ab5ccb5a47
+Manifest.toml SHA-256: 7a6d7b7acec8ebc9cc7573dc072456328c1ceb2efe103780264e57f03a35b371
+Current test SHA-256: be57020d2726ba4b3b16d227242378b7a4fe903d666ce8bb4987b62a0450d2a7
+Private fixed prefix: /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-fixed
+JULIA_DEPOT_PATH: /home/dgamroth/.local/share/classic-review-20261020/depot
+
+1. Link removal, using its own fresh stage:
+JULIA_DEPOT_PATH=/home/dgamroth/.local/share/classic-review-20261020/depot CUDA_VISIBLE_DEVICES= ROCR_VISIBLE_DEVICES= julia +1.13 --startup-file=no --project=/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown/test/integration/session_faults.jl /home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/application-fault /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/fault-link-fixed --case link-removal --prefix /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-fixed
+
+2. Controller exit, only after the first command completes successfully, using a separate fresh stage:
+JULIA_DEPOT_PATH=/home/dgamroth/.local/share/classic-review-20261020/depot CUDA_VISIBLE_DEVICES= ROCR_VISIBLE_DEVICES= julia +1.13 --startup-file=no --project=/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown/test/integration/session_faults.jl /home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/application-fault /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/fault-controller-fixed --case controller-exit --controller-role julia --prefix /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-fixed

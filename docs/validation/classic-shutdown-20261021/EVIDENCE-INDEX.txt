@@ -1,0 +1,31 @@
+Evidence index and interpretation
+
+shutdown-timeout-CCPU04 records the prior Classic CPU loop Ready/Quit timeout. The retained manager journal directly shows an async-hook expiration with unknown outcome, session fault, two null-property assertions, uncertain source hold due to a missing object serial, and PipeWire connection loss. This is the observed timeout sequence; it does not identify the initiating defect.
+
+native-link-observer-UAF records a separate native regression test. Before the fix, ASan reported heap use-after-free during link observer detach following core remove-id demarshalling. The patch clears the removed listener after spa_hook_remove. The same ao-links test passes after the patch; all 10 native Meson suites pass serially in both ASan and ordinary builds. This confirms and repairs the native UAF, but does not establish that it caused the earlier five-second shutdown timeout.
+
+phase-trace-asan-stage contains compact receipts and journals from the temporary phase-traced ASan application attempt, together with the temporary-only Lua trace diffs and hashes. ready-fixed-stage contains the later fixed-prefix Ready-stage qualification and journals. They are distinct experimental stages; neither supplies proof for the old timeout's cause.
+
+prior-fault-qualification retains only the original CPU application provenance. The earlier link-removal and controller-exit qualifications are already retained in [the prior Classic CPU loop report](../classic-cpu-loop-20261021/README.md). Both previous qualifications selected deployment hash 945ac369b719c87c43ddbab1d210b72082fd65556ba9e05984b0ffa9fd970af6 and installed policy hashes ao/session.lua=4f6f75997db6d2cae2b416a7ec0d6d8de0ef529582582c740356f025705c209e and lib/ao-connections.lua=e70f6cbbdfaaff3733b677fa1e640bcf334694c91b1b0a243180d42aeda9602a. A previous controller-exit fault run reports 124/124 tests passing in 7m24.4s. A later invocation failed before starting because it reused a non-fresh stage root; that later error is not a fault-test result.
+
+FAULT-SESSION-COMMANDS.txt prepares the next two serial fault cases but does not run them. Both destination stage paths were absent when checked; the integration test itself requires absence and creates the stage. The retained CPU package is pinned by provenance to source commit 934b9db3e696c9f8ac31db16f833c27bba646bd1, model rate 500 Hz, wall rate 10 Hz, and unchanged Julia manifest. The CPU copy changes simulation.conf only among declared scientific assets.
+
+
+Prepared fault sessions (executed after the managed-loop completion gate)
+
+fault-sessions/link-removal and fault-sessions/controller-exit-julia hold the exact test output, qualification receipt, session/cleanup receipts, owner and manager journals, systemd journals, and read-only post-run /proc audit. The app deployment, manifest, test script, and ordinary fixed-prefix policy hashes matched the prepared command record. The application package and prefix were not modified by these runs.
+
+Link removal: actual RTC link-removal passed 134/134 tests in 4m19.8s; qualification completed=true and fault_outcome=held. The source acknowledged stopped (completed token advanced); policy evidence has zero uncertain Holds and zero source command timeouts. Faulted-cohort cleanup reports the expected failed service result because native stop rejects an already-faulted session, but all cleanup checks settled true, every owned cgroup emptied, the unit became quiescent, and unit files were removed. Fresh readmission then cleaned up with phase=stopped and service_result=success.
+
+Controller exit: actual RTC controller-exit passed 40/40 tests in 4m19.2s; qualification completed=true and fault_outcome=policy-shutdown. Policy evidence records one unknown-Hold and zero source command timeouts. The faulted unit exited with result exit-code, and cleanup observation confirms all owned cgroups empty, no cleanup errors, unit quiescent, receipt complete, and unit files removed. Fresh readmission then cleaned up with phase=stopped and service_result=success. This is the expected unknown-Hold/emergency-cleanup branch for controller loss; it does not reproduce the healthy Ready/Running Quit timeout from CCPU-04.
+
+Both stage process sets and all pipewireao-session@ units were stopped at completion. The /proc audit was collected after each case had finished, so it confirms captured PIDs were no longer present at audit time; it is not a runtime GPU-device-use measurement. The audit only inspected /proc fd links and memory maps and did not query or operate a GPU.
+
+
+Managed CPU loop and canonical Ready/Quit receipts
+
+closed-loop-fixed/ retains the finite science result, observation, phase timing, session identity, Ready/Start/Stop/Quit request receipts, GPU visibility audit, and a final-launch ledger with arrays omitted. The science receipt reports complete=true, cleanup_complete=true, CPU backend, 500 Hz model rate, 1 Hz requested wall rate, 256 frames and matching replay. This finite run does not establish hardware/GPU behavior, cadence, latency, or long-run stability.
+
+debugger-baseline/ready-001 and ready-002 retain the first two failed Ready-stage compact receipts and their exact manager journals; ready-002 also retains the debugger log. These preserve the earlier g_main_context_prepare_unlocked failure evidence.
+
+ready-canonical/ retains the canonical-prefix Ready/Quit qualification and cleanup receipts, test log, visibility audit, available journals and canonical module hashes. The Ready-to-Quit suite passed 11/11 in 2m07.9s; qualification complete=true, started=false, native_quit_accepted=true, and shutdown plus cleanup took 19.5268 s. The canonical test prefix has the repaired control-endpoint module hash recorded alongside the pre-copy original hash and private fixed-prefix hash. This is an observed successful canonical Quit run; it does not by itself identify the cause of the earlier CCPU-04 timeout.

@@ -1,5 +1,20 @@
 # Actual headless RTC fault qualification
 
+## Classic CPU Ready-to-Quit regression
+
+`classic_shutdown.jl CPU_APPLICATION FRESH_STAGE NATIVE_PREFIX` starts a fresh
+non-actuating CPU session, requests one native Quit and checks exact owned
+process/cgroup cleanup. Use the registered Classic project and pinned depot,
+the prefix's client config/module/SPA/library paths, and empty CUDA/ROCm device
+visibility. Automatic package GC and precompilation should be disabled.
+The test retains native identities, installed hashes and manager/owner journals;
+success is written only after the outer testset passes. It does not retry an
+unknown operation. Cleanup elapsed time includes systemd owner termination and
+is distinct from the unchanged five-second native effect bound.
+
+See the [shutdown qualification](../../docs/validation/classic-shutdown-20261021/README.md)
+for the native memory regression, deployment and fault recovery evidence.
+
 ## Managed Classic CPU closed-loop replay
 
 `classic_managed_replay.jl` starts only a new non-actuating managed session.

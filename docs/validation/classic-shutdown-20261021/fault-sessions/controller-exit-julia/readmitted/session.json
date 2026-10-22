@@ -1,0 +1,1 @@
+{"runtime_root":"/run/user/1000/pipewireao-session-a6fae305d537","main_pid":453339,"invocation":"870e135b2d6c4624b918a20a2f5cf8a1","unit":"pipewireao-session@a6fae305d537.service","cgroup":"/user.slice/user-1000.slice/user@1000.service/app.slice/app-pipewireao\\x2dsession.slice/pipewireao-session@a6fae305d537.service","start_ticks":2303480}

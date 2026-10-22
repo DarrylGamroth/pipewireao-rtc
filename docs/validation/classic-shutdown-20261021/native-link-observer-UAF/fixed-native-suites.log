@@ -1,0 +1,19 @@
+ 1/10 ao-lua             OK              0.01s
+ 2/10 ao-connections     OK              0.02s
+ 3/10 ao-owner           OK              0.01s
+ 4/10 ao-acquisition     OK              0.02s
+ 5/10 ao-session-journal OK              0.02s
+ 6/10 ao-session-hooks   OK              0.34s
+ 7/10 ao-journal         OK              1.03s
+ 8/10 rtc-host           OK              0.06s
+ 9/10 ao-links           OK              0.05s
+10/10 ao-lua-native      OK              0.01s
+
+Ok:                 10  
+Expected Fail:      0   
+Fail:               0   
+Unexpected Pass:    0   
+Skipped:            0   
+Timeout:            0   
+
+Full log written to /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-fixed-build/meson-logs/testlog.txt

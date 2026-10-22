@@ -1,0 +1,25 @@
+Ready; requesting one native Quit
+ERROR: LoadError: Some tests did not pass: 7 passed, 0 failed, 1 errored, 0 broken.
+in expression starting at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown/test/integration/classic_shutdown.jl:2
+
+Classic CPU Ready to Quit: Error During Test at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown/test/integration/classic_shutdown.jl:52
+  Got exception outside of a @test
+  native control outcome unknown: owner proxy was removed
+  Stacktrace:
+   [1] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown/test/integration/classic_shutdown.jl:94 [inlined]
+   [2] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [3] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicShutdown ~/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown/test/integration/classic_shutdown.jl:53
+   [4] top-level scope
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown/test/integration/classic_shutdown.jl:98
+   [5] include(mod::Module, _path::String)
+     @ Base ./Base.jl:309
+   [6] exec_options(opts::Base.JLOptions)
+     @ Base ./client.jl:344
+   [7] _start()
+     @ Base ./client.jl:577
+Test Summary:             | Pass  Error  Total     Time
+Classic CPU Ready to Quit |    7      1      8  2m24.3s
+RNG of the outermost testset: Random.Xoshiro(0xba58bad2b446c350, 0x88f1ba7d61ae9245, 0x988c4920e9cdceef, 0x46558b0e2b43f54f, 0x3c422552993339f3)

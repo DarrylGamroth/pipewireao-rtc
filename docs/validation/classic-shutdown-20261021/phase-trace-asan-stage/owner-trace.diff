@@ -1,0 +1,21 @@
+--- /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/uninstrumented-policy/share/pipewireao-rtc/scripts/lib/ao-owner.lua	2026-10-21 14:48:52.363233392 -0700
++++ /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-traced/share/pipewireao-rtc/scripts/lib/ao-owner.lua	2026-10-21 17:25:46.483609252 -0700
+@@ -301,6 +301,8 @@
+ end
+ 
+ function owner.shutdown (client, deadline, callback)
++  Log.warning (string.format ("AO_QUIT_OWNER edge=request monotonic_us=%d namespace=%s owner_pid=%s",
++      GLib.get_monotonic_time (), tostring (client.namespace), tostring (client.owner_pid)))
+   local operation, validate
+   if client.profile == "pipewireao.rtc.owner-bootstrap/1" then
+     operation, validate = 3, stopped_bootstrap
+@@ -309,6 +311,9 @@
+   else error ("Owner has no supported native shutdown profile") end
+   return owner.request (client, operation, Pod.Struct {}, deadline,
+       function (header, payload, error)
++    Log.warning (string.format ("AO_QUIT_OWNER edge=callback monotonic_us=%d namespace=%s owner_pid=%s error=%s",
++        GLib.get_monotonic_time (), tostring (client.namespace), tostring (client.owner_pid),
++        tostring (error)))
+     if error then callback (nil, error); return end
+     local valid, failure = pcall (function ()
+       assert (header and header.operation == operation and header.result == 0,

@@ -1,0 +1,86 @@
+1/1 ao-links FAIL            0.04s   killed by signal 6 SIGABRT
+>>> MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 RTC_TEST_BINARY=/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-asan-build/pipewireao-rtc HOME=/invalid WIREPLUMBER_MODULE_DIR=/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-asan-build/modules:/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/lib/wireplumber-0.5 PIPEWIREAO_CONFIG_DIR=/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/lib/pkgconfig/../../share/pipewire-ao RTC_TEST_SOURCE=/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown/native/tests XDG_STATE_HOME=/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-asan-build/tests/.state MESON_TEST_ITERATION=1 WIREPLUMBER_DATA_DIR=/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown/native/tests:/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown/native:/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/share/wireplumber LD_LIBRARY_PATH=/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/lib:/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/lib/pkgconfig/../../lib:/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/lib:/home/dgamroth/.local/opt/pipewireao-classic-headless-20261021/lib:/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/sqlite-dev/extracted/usr/lib/x86_64-linux-gnu MALLOC_PERTURB_=51 G_TEST_BUILDDIR=/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-asan-build/tests PIPEWIREAO_RUNTIME_DIR=/tmp G_TEST_SRCDIR=/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/wp-asan-source/tests/wplua UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIREAO_MODULE_DIR=/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/lib/pkgconfig/../../lib/pipewire-ao-0.3 XDG_RUNTIME_DIR=/invalid XDG_CONFIG_HOME=/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-asan-build/tests/.config PIPEWIREAO_SPA_PLUGIN_DIR=/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/lib/pkgconfig/../../lib/spa-ao-0.2 RTC_TEST_SCRIPT=/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown/native/tests/scripts/host-ready.lua /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-asan-build/tests/test-ao-links
+――――――――――――――――――――――――――――――――――――― ✀  ―――――――――――――――――――――――――――――――――――――
+stdout:
+TAP version 14
+# random seed: R02S271d39c8975891d23822ecd4a3675db7
+1..14
+# Start of rtc-links tests
+stderr:
+=================================================================
+==130119==ERROR: AddressSanitizer: heap-use-after-free on address 0x50c000005a98 at pc 0x5617cf2b9e5a bp 0x7ffcfed51fc0 sp 0x7ffcfed51fb8
+WRITE of size 8 at 0x50c000005a98 thread T0
+    #0 0x5617cf2b9e59 in spa_list_remove /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/lib/pkgconfig/../../include/spa-ao-0.2/spa/utils/list.h:71
+    #1 0x5617cf2b9ebc in spa_hook_remove /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/lib/pkgconfig/../../include/spa-ao-0.2/spa/utils/hook.h:460
+    #2 0x5617cf2baab9 in link_observer_detach ../../../pipewire/pipewireao-rtc-classic-shutdown/native/modules/module-ao-control-endpoint.c:173
+    #3 0x5617cf2baae1 in link_observer_free ../../../pipewire/pipewireao-rtc-classic-shutdown/native/modules/module-ao-control-endpoint.c:180
+    #4 0x7fefd210a3c9  (/lib/x86_64-linux-gnu/libglib-2.0.so.0+0x393c9) (BuildId: 4b881c2eb20a863a8c8f695345453dd32248ffb4)
+    #5 0x7fefd2d234fd in g_object_unref (/lib/x86_64-linux-gnu/libgobject-2.0.so.0+0x1d4fd) (BuildId: 765f13ef7fd604fb084c7603dd4c0e101e024d00)
+    #6 0x5617cf2b8728 in format_observation ../../../pipewire/pipewireao-rtc-classic-shutdown/native/tests/ao-links.c:349
+    #7 0x7fefd215d0d8  (/lib/x86_64-linux-gnu/libglib-2.0.so.0+0x8c0d8) (BuildId: 4b881c2eb20a863a8c8f695345453dd32248ffb4)
+    #8 0x7fefd215d052  (/lib/x86_64-linux-gnu/libglib-2.0.so.0+0x8c052) (BuildId: 4b881c2eb20a863a8c8f695345453dd32248ffb4)
+    #9 0x7fefd215d5e1 in g_test_run_suite (/lib/x86_64-linux-gnu/libglib-2.0.so.0+0x8c5e1) (BuildId: 4b881c2eb20a863a8c8f695345453dd32248ffb4)
+    #10 0x7fefd215d667 in g_test_run (/lib/x86_64-linux-gnu/libglib-2.0.so.0+0x8c667) (BuildId: 4b881c2eb20a863a8c8f695345453dd32248ffb4)
+    #11 0x5617cf2b8f28 in main ../../../pipewire/pipewireao-rtc-classic-shutdown/native/tests/ao-links.c:368
+    #12 0x7fefd1df0ca7  (/lib/x86_64-linux-gnu/libc.so.6+0x29ca7) (BuildId: 5e5b51f4c39af9ac589408c1dc432ba390a273cc)
+    #13 0x7fefd1df0d64 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x29d64) (BuildId: 5e5b51f4c39af9ac589408c1dc432ba390a273cc)
+    #14 0x5617cf2aad30 in _start (/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-asan-build/tests/test-ao-links+0x9d30) (BuildId: c069debb54ce7212b97b421693a0d41d9a077ee1)
+
+0x50c000005a98 is located 88 bytes inside of 120-byte region [0x50c000005a40,0x50c000005ab8)
+freed by thread T0 here:
+    #0 0x7fefd26f38f8 in free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52
+    #1 0x7fefd157b61e in core_event_demarshal_remove_id (/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/lib/pkgconfig/../../lib/pipewire-ao-0.3/libpipewire-module-protocol-native.so+0x1e61e) (BuildId: 20c16be472de4627a251cb0924ed23c7eb066a67)
+    #2 0x513000003e1f  (<unknown module>)
+
+previously allocated by thread T0 here:
+    #0 0x7fefd26f4610 in calloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:77
+    #1 0x7fefd206a0e7 in pw_proxy_new ../src/pipewire/proxy.c:80
+
+SUMMARY: AddressSanitizer: heap-use-after-free /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/lib/pkgconfig/../../include/spa-ao-0.2/spa/utils/list.h:71 in spa_list_remove
+Shadow bytes around the buggy address:
+  0x50c000005800: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x50c000005880: fa fa fa fa fa fa fa fa 00 00 00 00 00 00 00 00
+  0x50c000005900: 00 00 00 00 00 00 00 00 fa fa fa fa fa fa fa fa
+  0x50c000005980: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x50c000005a00: fa fa fa fa fa fa fa fa fd fd fd fd fd fd fd fd
+=>0x50c000005a80: fd fd fd[fd]fd fd fd fa fa fa fa fa fa fa fa fa
+  0x50c000005b00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x50c000005b80: fa fa fa fa fa fa fa fa fd fd fd fd fd fd fd fd
+  0x50c000005c00: fd fd fd fd fd fd fd fd fa fa fa fa fa fa fa fa
+  0x50c000005c80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x50c000005d00: fa fa fa fa fa fa fa fa fd fd fd fd fd fd fd fd
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==130119==ABORTING
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+
+Summary of Failures:
+
+1/1 ao-links FAIL            0.04s   killed by signal 6 SIGABRT
+
+Ok:                 0   
+Expected Fail:      0   
+Fail:               1   
+Unexpected Pass:    0   
+Skipped:            0   
+Timeout:            0   
+
+Full log written to /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-asan-build/meson-logs/testlog.txt

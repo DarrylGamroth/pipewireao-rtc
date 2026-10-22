@@ -1,0 +1,150 @@
+{
+  "admission_controller_instance": 23224092116350,
+  "cleanup_complete": true,
+  "cohort_unit": "pipewireao-owner-0821ab62027f43378f8027c8b4df7e6e-cohort.target",
+  "config": "/run/user/1000/pipewireao-session-1e1b68c7e617/0821ab62027f43378f8027c8b4df7e6e/rtc/rtc.conf",
+  "credentials": {
+    "cpu_latency_us": null,
+    "uid": 1000
+  },
+  "discovery_locator": "/run/user/1000/pipewireao-rtc/sessions/session-d4ca30d2-71ab-4658-8f44-ccd4596dd8d4.pod",
+  "error": null,
+  "invocation": "0821ab62027f43378f8027c8b4df7e6e",
+  "name": "classic-cpu-validation-20261021-closed",
+  "owners": {
+    "core": {
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/pipewireao-owner-0821ab62027f43378f8027c8b4df7e6e-core.service",
+      "error": "",
+      "invocation": "e769203c8b5f40f9990f7c9ebfb51245",
+      "pid": 457453,
+      "placement": {
+        "leader-cpu": 15,
+        "locked-bytes": 0,
+        "rt-priority": 83
+      },
+      "role": "core",
+      "start-ticks": 2322529,
+      "state": "running",
+      "unit": "pipewireao-owner-0821ab62027f43378f8027c8b4df7e6e-core.service"
+    },
+    "julia": {
+      "bootstrap-instance": "23224092116353",
+      "bootstrap-node": "pipewireao.rtc.bootstrap.julia",
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/pipewireao-owner-0821ab62027f43378f8027c8b4df7e6e-julia.service",
+      "control-instance": null,
+      "control-node": null,
+      "control-protocol": null,
+      "error": "",
+      "invocation": "1d7d2c59a61144dfb7dd483d4fa15428",
+      "pid": 457495,
+      "placement": {
+        "leader-cpu": 15,
+        "locked-bytes": 0,
+        "rt-priority": 83
+      },
+      "role": "julia",
+      "start-ticks": 2322577,
+      "state": "running",
+      "unit": "pipewireao-owner-0821ab62027f43378f8027c8b4df7e6e-julia.service"
+    },
+    "parameters": {
+      "bootstrap-instance": "23224092116355",
+      "bootstrap-node": "pipewireao.rtc.bootstrap.parameters",
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/pipewireao-owner-0821ab62027f43378f8027c8b4df7e6e-parameters.service",
+      "control-instance": "23224092116356",
+      "control-node": "pipewireao.rtc.parameters.classic-cpu-validation-20261021-closed",
+      "control-protocol": "pipewireao.rtc.parameter-source/1",
+      "error": "",
+      "invocation": "b51e87df28834b4baa8aa8efb5a7ab54",
+      "pid": 457496,
+      "placement": {
+        "leader-cpu": 15,
+        "locked-bytes": 0,
+        "rt-priority": 0
+      },
+      "role": "parameters",
+      "start-ticks": 2322577,
+      "state": "running",
+      "unit": "pipewireao-owner-0821ab62027f43378f8027c8b4df7e6e-parameters.service"
+    },
+    "simulator": {
+      "bootstrap-instance": "23224092116354",
+      "bootstrap-node": "pipewireao.rtc.bootstrap.simulator",
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/pipewireao-owner-0821ab62027f43378f8027c8b4df7e6e-simulator.service",
+      "control-instance": null,
+      "control-node": "simulator-wfs",
+      "control-protocol": "pipewireao.source-control/1",
+      "error": "",
+      "invocation": "e57c419788ff41578e9276dc0e68bad5",
+      "pid": 457497,
+      "placement": {
+        "leader-cpu": 9,
+        "locked-bytes": 0,
+        "rt-priority": 0
+      },
+      "role": "simulator",
+      "start-ticks": 2322577,
+      "state": "running",
+      "unit": "pipewireao-owner-0821ab62027f43378f8027c8b4df7e6e-simulator.service"
+    }
+  },
+  "phase": "stopped",
+  "placement_snapshot": {
+    "core": {
+      "locked_bytes": 11866112,
+      "pid": 457453
+    },
+    "julia": {
+      "locked_bytes": 1466368,
+      "pid": 457495
+    },
+    "parameters": {
+      "locked_bytes": 675840,
+      "pid": 457496
+    },
+    "session": {
+      "locked_bytes": 0,
+      "pid": 457612
+    },
+    "simulator": {
+      "locked_bytes": 11833344,
+      "pid": 457497
+    }
+  },
+  "remote": "/run/user/1000/pipewireao-session-1e1b68c7e617/0821ab62027f43378f8027c8b4df7e6e/rtc-0821ab62027f",
+  "runtime": "/run/user/1000/pipewireao-session-1e1b68c7e617/0821ab62027f43378f8027c8b4df7e6e",
+  "service_result": "success",
+  "session_control_instance": 23224092116351,
+  "session_controller_instance": 23224092116352,
+  "session_executable": "/home/dgamroth/.local/opt/pipewireao-classic-headless-20261021/bin/pipewireao-rtc",
+  "session_uuid": "d4ca30d2-71ab-4658-8f44-ccd4596dd8d4",
+  "source_role": "simulator",
+  "unit": "pipewireao-session@1e1b68c7e617.service",
+  "unit_file_removal_started": true,
+  "unit_files": {
+    "pipewireao-owner-0821ab62027f43378f8027c8b4df7e6e-cohort.target": {
+      "path": "/run/user/1000/pipewireao-session-1e1b68c7e617/0821ab62027f43378f8027c8b4df7e6e/units/pipewireao-owner-0821ab62027f43378f8027c8b4df7e6e-cohort.target",
+      "sha256": "017738be851655fa93775ca0e36fd29eb8f6ec3cbe15c1dbe851872a1a89660c"
+    },
+    "pipewireao-owner-0821ab62027f43378f8027c8b4df7e6e-core.service": {
+      "path": "/run/user/1000/pipewireao-session-1e1b68c7e617/0821ab62027f43378f8027c8b4df7e6e/units/pipewireao-owner-0821ab62027f43378f8027c8b4df7e6e-core.service",
+      "sha256": "d7eef8ecf98e69d7f7f969cd78725dc11c16424c3a74e2192129bf9c2667d5ac"
+    },
+    "pipewireao-owner-0821ab62027f43378f8027c8b4df7e6e-julia.service": {
+      "path": "/run/user/1000/pipewireao-session-1e1b68c7e617/0821ab62027f43378f8027c8b4df7e6e/units/pipewireao-owner-0821ab62027f43378f8027c8b4df7e6e-julia.service",
+      "sha256": "416777f70e367a142b2fa1debb316a2a0b9a49f1c6bd88d5be80ab79578a56ec"
+    },
+    "pipewireao-owner-0821ab62027f43378f8027c8b4df7e6e-parameters.service": {
+      "path": "/run/user/1000/pipewireao-session-1e1b68c7e617/0821ab62027f43378f8027c8b4df7e6e/units/pipewireao-owner-0821ab62027f43378f8027c8b4df7e6e-parameters.service",
+      "sha256": "2b5ea379598af7480a14b5fdd7d8f55ec2f639b1860741441f5f621e2ddc4e56"
+    },
+    "pipewireao-owner-0821ab62027f43378f8027c8b4df7e6e-simulator.service": {
+      "path": "/run/user/1000/pipewireao-session-1e1b68c7e617/0821ab62027f43378f8027c8b4df7e6e/units/pipewireao-owner-0821ab62027f43378f8027c8b4df7e6e-simulator.service",
+      "sha256": "a38fde84b832546c830a27b0729bbe290e9a4c7aedd3b275f3da1ee820a3df80"
+    }
+  },
+  "unit_files_removed": true,
+  "version": 1,
+  "wireplumber_pid": 457612,
+  "wireplumber_start_ticks": 2322968
+}

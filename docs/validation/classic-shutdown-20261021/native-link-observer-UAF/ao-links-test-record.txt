@@ -1,0 +1,8 @@
+Pre-fix native regression result
+Build path: /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-asan-build
+Configuration: ASan, tests=true, wp_source_dir=/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/wp-asan-source; SQLite staged at /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/sqlite-dev/extracted/usr
+Build log: rtc-asan-test-build.log
+Only test run: ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 meson test -C /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-asan-build --no-rebuild --print-errorlogs ao-links
+Raw runner log: ao-links-before.log
+Meson test log copy: ao-links-meson-testlog.txt
+Result: expected fail-before heap-use-after-free in link_observer_detach while removing SPA hook after the proxy backing allocation has already been freed by core_event_demarshal_remove_id; test stack enters format_observation at native/tests/ao-links.c:349. ASan allocation/free/use stacks are retained in ao-links-before.log. Stop requested after this reproduction; no source fix or additional test/gate run.

@@ -171,6 +171,9 @@ link_observer_detach (WpProxy *link, LinkObserver *observer)
 {
   (void) link;
   spa_hook_remove (&observer->listener);
+  /* SPA removal leaves the old list pointers behind. Destruction and later
+   * qdata finalization may both detach; never revisit a freed native proxy. */
+  spa_zero (observer->listener);
 }
 
 static void

@@ -1,0 +1,91 @@
+Log of Meson test suite run on 2026-10-21T17:46:46.909968
+
+Inherited environment: PKG_CONFIG_PATH=/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/lib/pkgconfig:/home/dgamroth/.local/opt/pipewireao-classic-headless-20261021/lib/pkgconfig:/opt/pipewireao/lib/x86_64-linux-gnu/pkgconfig:/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/sqlite-dev/extracted/usr/lib/x86_64-linux-gnu/pkgconfig LD_LIBRARY_PATH=/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/lib:/home/dgamroth/.local/opt/pipewireao-classic-headless-20261021/lib:/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/sqlite-dev/extracted/usr/lib/x86_64-linux-gnu ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 SHELL=/bin/bash CODEX_MANAGED_PACKAGE_ROOT=/home/dgamroth/.nvm/versions/node/v24.12.0/lib/node_modules/@openai/codex EURESYS_GRABLINK_GENTL64_CTI=/opt/euresys/egrabber/lib/x86_64/grablink.cti COLORTERM='' NVM_INC=/home/dgamroth/.nvm/versions/node/v24.12.0/include/node JULIA_GLFW_PLATFORM=wayland KAIMON_API_KEY=kaimon_589f2d5a1eaa65a775a1634a3bfd384f9ced37e5 CODEX_VERSION=0.163.0 SSH_AUTH_SOCK=/home/dgamroth/.codex/app-server-control/forwarded-ssh-agent.sock GH_PAGER=cat GENICAM_GENTL64_PATH=/opt/euresys/egrabber/lib/x86_64::/opt/baumer-gapi-sdk-c/lib:/opt/baumer-gapi-sdk-cpp/lib:/opt/baumer-gapi-sdk-c/lib:/opt/baumer-gapi-sdk-cpp/lib PWD=/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc LOGNAME=dgamroth XDG_SESSION_TYPE=tty CODEX_MANAGED_BY_NPM=1 MOTD_SHOWN=pam HOME=/home/dgamroth CODEX_SESSION_ID=01a15518-cea7-7fd0-ad14-5c3545cd9248 LANG=C.UTF-8 LS_COLORS='' EURESYS_PLAYLINK_GENTL64_CTI=/opt/euresys/egrabber/lib/x86_64/playlink.cti CODEX_REMOTE_PAYLOAD='printf '"'"'%b'"'"' '"'"'\102\104\064\327\111\237\023\104'"'"'; PATH="${CODEX_INSTALL_DIR:-$HOME/.local/bin}:$PATH"; export PATH; if [ "${CODEX_SSH_SKIP_APP_SERVER_BOOT:-}" = "true" ]; then exit 0; fi; (umask 077; mkdir -p -- "${CODEX_HOME:-$HOME/.codex}/app-server-control" && (pkill -9 -U "$(id -u)" -f '"'"'codex.*[d]esktop-ssh-websocket-v0.sock'"'"' || true) && if [ -S "${SSH_AUTH_SOCK:-}" ]; then ln -sfn -- "$SSH_AUTH_SOCK" "${CODEX_HOME:-$HOME/.codex}/app-server-control/forwarded-ssh-agent.sock"; elif [ ! -S "${CODEX_HOME:-$HOME/.codex}/app-server-control/forwarded-ssh-agent.sock" ]; then rm -f -- "${CODEX_HOME:-$HOME/.codex}/app-server-control/forwarded-ssh-agent.sock"; fi && : >"${CODEX_HOME:-$HOME/.codex}/app-server-control/app-server.log") && { SSH_AUTH_SOCK="${CODEX_HOME:-$HOME/.codex}/app-server-control/forwarded-ssh-agent.sock" nohup codex -c features.code_mode_host=true app-server --listen unix:// </dev/null >"${CODEX_HOME:-$HOME/.codex}/app-server-control/app-server.log" 2>&1 & }' SSH_CONNECTION='10.0.0.70 59368 10.0.0.203 22' EURESYS_EGRABBER_LIB64=/opt/euresys/egrabber/lib/x86_64 CODEX_HOME=/home/dgamroth/.codex NVM_DIR=/home/dgamroth/.nvm CODEX_PERMISSION_PROFILE=:danger-full-access XDG_SESSION_CLASS=user TERM=dumb CODEX_THREAD_ID=01a160fe-00f9-7540-8eb0-83c261116457 USER=dgamroth GIT_PAGER=cat EURESYS_COAXLINK_GENTL64_CTI=/opt/euresys/egrabber/lib/x86_64/coaxlink.cti CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS=1 SHLVL=1 NVM_CD_FLAGS='' PAGER=cat EURESYS_DEFAULT_GENTL_PRODUCER=gigelink XDG_SESSION_ID=6 NO_COLOR=1 CODEX_CI=1 LC_CTYPE=C.UTF-8 XDG_RUNTIME_DIR=/run/user/1000 SSH_CLIENT='10.0.0.70 59368 22' DOCKER_HOST=unix:///run/user/1000/podman/podman.sock CODEX_TOOL_CALL_ID=exec-f76b1b61-09a4-404d-8e15-6f2c02b822da LC_ALL=C.UTF-8 PATH=/home/dgamroth/.cargo/bin:/home/dgamroth/.julia/bin:/home/dgamroth/.juliaup/bin:/home/dgamroth/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games:/usr/local/go/bin HSA_OVERRIDE_GFX_VERSION=10.3.0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus NVM_BIN=/home/dgamroth/.nvm/versions/node/v24.12.0/bin EURESYS_GIGELINK_GENTL64_CTI=/opt/euresys/egrabber/lib/x86_64/gigelink.cti _=/usr/bin/meson 
+
+==================================== 1/1 =====================================
+test:         ao-links
+start time:   00:46:46
+duration:     0.04s
+result:       killed by signal 6 SIGABRT
+command:      MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 RTC_TEST_BINARY=/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-asan-build/pipewireao-rtc HOME=/invalid WIREPLUMBER_MODULE_DIR=/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-asan-build/modules:/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/lib/wireplumber-0.5 PIPEWIREAO_CONFIG_DIR=/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/lib/pkgconfig/../../share/pipewire-ao RTC_TEST_SOURCE=/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown/native/tests XDG_STATE_HOME=/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-asan-build/tests/.state MESON_TEST_ITERATION=1 WIREPLUMBER_DATA_DIR=/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown/native/tests:/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown/native:/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/share/wireplumber LD_LIBRARY_PATH=/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/lib:/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/lib/pkgconfig/../../lib:/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/lib:/home/dgamroth/.local/opt/pipewireao-classic-headless-20261021/lib:/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/sqlite-dev/extracted/usr/lib/x86_64-linux-gnu MALLOC_PERTURB_=51 G_TEST_BUILDDIR=/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-asan-build/tests PIPEWIREAO_RUNTIME_DIR=/tmp G_TEST_SRCDIR=/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/wp-asan-source/tests/wplua UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 PIPEWIREAO_MODULE_DIR=/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/lib/pkgconfig/../../lib/pipewire-ao-0.3 XDG_RUNTIME_DIR=/invalid XDG_CONFIG_HOME=/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-asan-build/tests/.config PIPEWIREAO_SPA_PLUGIN_DIR=/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/lib/pkgconfig/../../lib/spa-ao-0.2 RTC_TEST_SCRIPT=/home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-shutdown/native/tests/scripts/host-ready.lua /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-asan-build/tests/test-ao-links
+----------------------------------- stdout -----------------------------------
+TAP version 14
+# random seed: R02S271d39c8975891d23822ecd4a3675db7
+1..14
+# Start of rtc-links tests
+----------------------------------- stderr -----------------------------------
+=================================================================
+==130119==ERROR: AddressSanitizer: heap-use-after-free on address 0x50c000005a98 at pc 0x5617cf2b9e5a bp 0x7ffcfed51fc0 sp 0x7ffcfed51fb8
+WRITE of size 8 at 0x50c000005a98 thread T0
+    #0 0x5617cf2b9e59 in spa_list_remove /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/lib/pkgconfig/../../include/spa-ao-0.2/spa/utils/list.h:71
+    #1 0x5617cf2b9ebc in spa_hook_remove /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/lib/pkgconfig/../../include/spa-ao-0.2/spa/utils/hook.h:460
+    #2 0x5617cf2baab9 in link_observer_detach ../../../pipewire/pipewireao-rtc-classic-shutdown/native/modules/module-ao-control-endpoint.c:173
+    #3 0x5617cf2baae1 in link_observer_free ../../../pipewire/pipewireao-rtc-classic-shutdown/native/modules/module-ao-control-endpoint.c:180
+    #4 0x7fefd210a3c9  (/lib/x86_64-linux-gnu/libglib-2.0.so.0+0x393c9) (BuildId: 4b881c2eb20a863a8c8f695345453dd32248ffb4)
+    #5 0x7fefd2d234fd in g_object_unref (/lib/x86_64-linux-gnu/libgobject-2.0.so.0+0x1d4fd) (BuildId: 765f13ef7fd604fb084c7603dd4c0e101e024d00)
+    #6 0x5617cf2b8728 in format_observation ../../../pipewire/pipewireao-rtc-classic-shutdown/native/tests/ao-links.c:349
+    #7 0x7fefd215d0d8  (/lib/x86_64-linux-gnu/libglib-2.0.so.0+0x8c0d8) (BuildId: 4b881c2eb20a863a8c8f695345453dd32248ffb4)
+    #8 0x7fefd215d052  (/lib/x86_64-linux-gnu/libglib-2.0.so.0+0x8c052) (BuildId: 4b881c2eb20a863a8c8f695345453dd32248ffb4)
+    #9 0x7fefd215d5e1 in g_test_run_suite (/lib/x86_64-linux-gnu/libglib-2.0.so.0+0x8c5e1) (BuildId: 4b881c2eb20a863a8c8f695345453dd32248ffb4)
+    #10 0x7fefd215d667 in g_test_run (/lib/x86_64-linux-gnu/libglib-2.0.so.0+0x8c667) (BuildId: 4b881c2eb20a863a8c8f695345453dd32248ffb4)
+    #11 0x5617cf2b8f28 in main ../../../pipewire/pipewireao-rtc-classic-shutdown/native/tests/ao-links.c:368
+    #12 0x7fefd1df0ca7  (/lib/x86_64-linux-gnu/libc.so.6+0x29ca7) (BuildId: 5e5b51f4c39af9ac589408c1dc432ba390a273cc)
+    #13 0x7fefd1df0d64 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x29d64) (BuildId: 5e5b51f4c39af9ac589408c1dc432ba390a273cc)
+    #14 0x5617cf2aad30 in _start (/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/rtc-asan-build/tests/test-ao-links+0x9d30) (BuildId: c069debb54ce7212b97b421693a0d41d9a077ee1)
+
+0x50c000005a98 is located 88 bytes inside of 120-byte region [0x50c000005a40,0x50c000005ab8)
+freed by thread T0 here:
+    #0 0x7fefd26f38f8 in free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52
+    #1 0x7fefd157b61e in core_event_demarshal_remove_id (/home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/lib/pkgconfig/../../lib/pipewire-ao-0.3/libpipewire-module-protocol-native.so+0x1e61e) (BuildId: 20c16be472de4627a251cb0924ed23c7eb066a67)
+    #2 0x513000003e1f  (<unknown module>)
+
+previously allocated by thread T0 here:
+    #0 0x7fefd26f4610 in calloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:77
+    #1 0x7fefd206a0e7 in pw_proxy_new ../src/pipewire/proxy.c:80
+
+SUMMARY: AddressSanitizer: heap-use-after-free /home/dgamroth/workspaces/codex/worktrees/classic-shutdown-20261021/prefix-asan/lib/pkgconfig/../../include/spa-ao-0.2/spa/utils/list.h:71 in spa_list_remove
+Shadow bytes around the buggy address:
+  0x50c000005800: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x50c000005880: fa fa fa fa fa fa fa fa 00 00 00 00 00 00 00 00
+  0x50c000005900: 00 00 00 00 00 00 00 00 fa fa fa fa fa fa fa fa
+  0x50c000005980: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x50c000005a00: fa fa fa fa fa fa fa fa fd fd fd fd fd fd fd fd
+=>0x50c000005a80: fd fd fd[fd]fd fd fd fa fa fa fa fa fa fa fa fa
+  0x50c000005b00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x50c000005b80: fa fa fa fa fa fa fa fa fd fd fd fd fd fd fd fd
+  0x50c000005c00: fd fd fd fd fd fd fd fd fa fa fa fa fa fa fa fa
+  0x50c000005c80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x50c000005d00: fa fa fa fa fa fa fa fa fd fd fd fd fd fd fd fd
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==130119==ABORTING
+==============================================================================
+
+
+Summary of Failures:
+
+1/1 ao-links FAIL            0.04s   killed by signal 6 SIGABRT
+
+Ok:                 0   
+Expected Fail:      0   
+Fail:               1   
+Unexpected Pass:    0   
+Skipped:            0   
+Timeout:            0   

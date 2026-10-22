@@ -12,6 +12,26 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Classic shutdown correction and recovery — 2026-10-21
+
+The RTC link observer now clears its SPA hook after removal, preventing a
+second detach from writing into a freed native proxy. The focused regression
+fails before correction under AddressSanitizer and passes afterward. All ten
+native suites pass in both ordinary and sanitizer builds. Managed Classic CPU
+checks pass: 2,859 closed-loop assertions, 134 required-link fault assertions,
+40 controller-exit assertions, and two 11-assertion Ready → Quit runs, including
+the normal installed prefix. Exact cleanup and fresh admission pass.
+
+The corrected module is installed locally against unchanged upstream
+libwireplumber. No healthy Quit expiry has recurred; the original untraced
+expiry's initiating cause remains unproved. Expected uncertainty following
+injected controller loss is retained. See the
+[validation](validation/classic-shutdown-20261021/README.md) and
+[independent review](reviews/20261021-classic-shutdown/REVIEW.md).
+All campaign sessions are stopped, scientific settings and the normal CUDA
+default are unchanged, and the GPU remains free. Next: GPI 2.0 headless RTC
+integration using CPU checks. Artifact management stays paused.
+
 ### Classic CPU closed-loop and fault validation — 2026-10-21
 
 The new headless RTC and unmodified upstream libwireplumber/PipeWireAO complete
