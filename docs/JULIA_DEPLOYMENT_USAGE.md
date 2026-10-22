@@ -16,6 +16,39 @@ the recorded Copper complete-frame lifecycle checks.
 
 ## Optional simulator wavefront images
 
+### Headless RMS measurements
+
+With `optical_observation = true` and an atmospheric graph declaring both
+`:atmosphere_opd` and `:pupil_opd`, the shared observer publishes
+`simulator-wavefront-rms` (media
+`wavefront-rms`). Its row-major F32 array has shape `(1, 2)` and schema
+`org.calculon.ao.pupil-opd-rms.nm.f32/1`. Zero-based channel 0 is uncorrected
+atmospheric pupil OPD RMS; channel 1 is corrected pupil OPD RMS. Both are spatial
+population RMS in nm after subtracting pupil piston, using the same transmitting
+pupil mask; tip/tilt remain included. This comparison includes all modeled
+corrections in `:pupil_opd`. The atmospheric reference excludes any additional
+non-atmospheric aberrations a future plant might introduce.
+
+The producer captures both graph outputs before advancing the model. One bounded
+cohort stays owned until both snapshots are transferred and consumed. Both RMS
+values travel in one sample with the originating sequence, PTS and acquisition
+generation, so independent observer drops cannot mispair the curves. No zero-DM
+run, changed controller gain or second atmosphere simulation is used. The RMS
+calculation runs in the optional headless optical worker, not the GUI or required
+controller callback. Scripts and GUI clients can observe the same measurement
+stream through an ordinary capacity-one copy/drop-oldest queue.
+
+Graphs without an atmospheric output retain their ordinary optical images and
+do not advertise this comparison stream. No uncorrected value is synthesized.
+The diagnostic is sampled at most 20 times per wall-clock second and is not a
+full-rate telemetry recorder or cadence guarantee. Generic GUI time-series views
+can select the declared channels. Source Header PTS gives wall-clock elapsed
+time; a declared fixed model period times Header sequence differences gives
+simulation elapsed time. The CPU development session advances model time more
+slowly than wall time; the graph must label which basis it uses.
+
+### Pupil image
+
 `optical_observation = true` enables the shared AOS optical observer. It uses
 the declared guide-sensor aperture and the completed `pupil_opd` graph output;
 the GUI needs no instrument-specific rendering code. Alongside the ideal

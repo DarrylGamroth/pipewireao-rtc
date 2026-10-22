@@ -9,19 +9,24 @@ using AdaptiveOpticsSim.AlgorithmGraphs: prepare_graph_output_snapshot, snapshot
 using AdaptiveOpticsSimPipeWireHIL
 using PipeWireAO
 using ThreadPinning
-using Base.Threads: Atomic, atomic_add!
+using Base.Threads: Atomic, atomic_add!, atomic_cas!
 
 const Optics = AdaptiveOpticsSim.Optics
 const FOCAL_IMAGE_SCHEMA = "org.calculon.ao.focal-photon-rate.f32/1"
 # Piston-removed OPD in nm on the transmitting pupil; excluded pixels are NaN.
 const WAVEFRONT_SCHEMA = "org.calculon.ao.residual-pupil-opd.nm.f32/1"
+# One row: uncorrected atmosphere RMS, corrected pupil RMS; both in nm OPD.
+const RMS_SCHEMA = "org.calculon.ao.pupil-opd-rms.nm.f32/1"
 const PERIOD_NS = UInt64(50_000_000)
 
-mutable struct Observation{S,I,V,M}
+mutable struct Observation{S,U,I,V,M}
     snapshot::S
+    atmosphere_snapshot::U
+    busy::Atomic{Bool}
     imaging::I
     values::V
     wavefront::V
+    rms::V
     pupil::M
     stop::Atomic{Bool}
     failed::Atomic{Bool}
@@ -36,6 +41,13 @@ prepare(::Nothing, graph) = nothing
 sensor_configuration(config) = nothing
 sensor_configuration(config::ShackHartmannRateNodeConfig) = config
 sensor_configuration(config::PyramidRateNodeConfig) = config
+atmosphere_output(output) = false
+atmosphere_output(::AdaptiveOpticsSim.AlgorithmGraphs.GraphOutputDefinition{:atmosphere_opd}) = true
+reference_snapshots(::Nothing) = ()
+reference_snapshots(snapshot) = (snapshot,)
+snapshots(observation::Observation) =
+    (observation.snapshot, reference_snapshots(observation.atmosphere_snapshot)...)
+
 function prepare(definition::AlgorithmGraphDefinition, graph)
     sensors = filter(!isnothing, map(node -> sensor_configuration(node.config), definition.nodes))
     length(sensors) == 1 || throw(ArgumentError("optical observation needs exactly one declared guide sensor"))
@@ -45,7 +57,13 @@ function prepare(definition::AlgorithmGraphDefinition, graph)
     telescope = Optics.prepare_telescope(config.telescope, AdaptiveOpticsSim.Backends.HostComputeDevice())
     source = config.source
     snapshot = prepare_graph_output_snapshot(graph, Val(:pupil_opd))
+    atmosphere_snapshot = nothing
     try
+        if any(atmosphere_output, definition.outputs)
+            atmosphere_snapshot = prepare_graph_output_snapshot(graph, Val(:atmosphere_opd))
+            axes(snapshot_values(atmosphere_snapshot)) == axes(snapshot_values(snapshot)) ||
+                throw(DimensionMismatch("atmosphere and pupil OPD axes must match"))
+        end
         pupil = Optics.PupilFunction(telescope, snapshot_values(snapshot))
         imaging = Optics.prepare_direct_imaging(pupil, source; zero_padding=2)
         Optics.form_direct_image!(imaging)
@@ -53,10 +71,15 @@ function prepare(definition::AlgorithmGraphDefinition, graph)
         pupil_mask = Matrix{Bool}(Optics.pupil_mask(telescope))
         any(pupil_mask) || throw(ArgumentError("optical observation needs a transmitting pupil"))
         wavefront = Matrix{Float32}(undef, size(pupil_mask))
-        return Observation(snapshot, imaging, focal, wavefront, pupil_mask, Atomic{Bool}(false),
+        return Observation(snapshot, atmosphere_snapshot, Atomic{Bool}(false),
+            imaging, focal, wavefront, zeros(Float32, 1, 2), pupil_mask, Atomic{Bool}(false),
             Atomic{Bool}(false), Atomic{UInt64}(0), Atomic{UInt64}(0), UInt64(0), UInt64(0), nothing)
-    catch
-        close(snapshot)
+    catch error
+        try
+            finalize_snapshots!(close, (snapshot, reference_snapshots(atmosphere_snapshot)...))
+        catch cleanup
+            throw(CompositeException([error, cleanup]))
+        end
         rethrow()
     end
 end
@@ -66,7 +89,7 @@ function source_options(observation::Observation)
     properties = Dict("node.loop.name"=>"observer-loop",
         "node.group"=>"pipewireao-optical-observation",
         "node.sync-group"=>"sync.pipewireao-optical-observation")
-    return (PipeWireImageSourceOptions(node_name="simulator-focal-image",
+    images = (PipeWireImageSourceOptions(node_name="simulator-focal-image",
             media_name="focal-image", schema=FOCAL_IMAGE_SCHEMA,
             shape=size(observation.values), rate=SPA.Fraction(UInt32(20), UInt32(1)),
             buffers=3, properties=properties),
@@ -74,12 +97,53 @@ function source_options(observation::Observation)
             media_name="residual-wavefront", schema=WAVEFRONT_SCHEMA,
             shape=size(observation.wavefront), rate=SPA.Fraction(UInt32(20), UInt32(1)),
             buffers=3, properties=properties))
+    return (images..., rms_source_options(observation.atmosphere_snapshot, properties)...)
+end
+
+rms_source_options(::Nothing, properties) = ()
+rms_source_options(snapshot, properties) =
+    (PipeWireImageSourceOptions(node_name="simulator-wavefront-rms",
+        media_name="wavefront-rms", schema=RMS_SCHEMA, shape=(1, 2),
+        rate=SPA.Fraction(UInt32(20), UInt32(1)), buffers=3, properties=properties),)
+
+# One producer admits the complete cohort before advancing the graph. Its busy
+# flag stays set until the consumer releases every transfer, so independent
+# snapshot slots cannot pair different graph frames under observer backpressure.
+function submit!(observation::Observation; generation=observation.generation,
+    pts=Int64(0), model_time_ns=Int64(0))
+    atomic_cas!(observation.busy, false, true) == false || return false
+    for snapshot in snapshots(observation)
+        try_snapshot_graph_output!(snapshot; generation, pts, model_time_ns) ||
+            throw(ArgumentError("optical snapshot cohort was not free"))
+    end
+    return true
+end
+
+function poll!(observation::Observation)
+    observation.busy[] || return false
+    ready = true
+    for snapshot in snapshots(observation)
+        ready &= poll_graph_output_snapshot!(snapshot)
+    end
+    return ready
+end
+
+function release!(observation::Observation)
+    for snapshot in snapshots(observation)
+        release_graph_output_snapshot!(snapshot)
+    end
+    observation.busy[] = false
+    return nothing
 end
 
 function process_sample!(observation::Observation, pipewire)
-    poll_graph_output_snapshot!(observation.snapshot) || return false
+    poll!(observation) || return false
     try
         metadata = snapshot_metadata(observation.snapshot)
+        for snapshot in reference_snapshots(observation.atmosphere_snapshot)
+            snapshot_metadata(snapshot) == metadata ||
+                throw(ArgumentError("optical snapshot cohort metadata differs"))
+        end
         # Reset may have advanced the source generation during optional imaging.
         metadata.generation == observation.generation || return false
         form_products!(observation)
@@ -87,19 +151,54 @@ function process_sample!(observation::Observation, pipewire)
             metadata.pts, metadata.generation)
         stage_pipewire_image!(pipewire, 2, observation.wavefront, metadata.sequence,
             metadata.pts, metadata.generation)
+        stage_rms!(observation.atmosphere_snapshot, observation, pipewire, metadata)
     finally
-        release_graph_output_snapshot!(observation.snapshot)
+        release!(observation)
     end
     atomic_add!(observation.completed, UInt64(1))
     return true
 end
+
+stage_rms!(::Nothing, observation, pipewire, metadata) = nothing
+stage_rms!(snapshot, observation, pipewire, metadata) =
+    stage_pipewire_image!(pipewire, 3, observation.rms, metadata.sequence,
+        metadata.pts, metadata.generation)
 
 function form_products!(observation::Observation)
     Optics.form_direct_image!(observation.imaging)
     copyto!(observation.values,
         Optics.intensity_values(Optics.direct_imaging_output(observation.imaging)))
     form_wavefront!(observation.wavefront, snapshot_values(observation.snapshot), observation.pupil)
+    form_rms!(observation.atmosphere_snapshot, observation)
     return nothing
+end
+
+form_rms!(::Nothing, observation) = nothing
+function form_rms!(atmosphere_snapshot, observation)
+    observation.rms[1, 1] = pupil_rms_nm(snapshot_values(atmosphere_snapshot), observation.pupil)
+    observation.rms[1, 2] = pupil_rms_nm(snapshot_values(observation.snapshot), observation.pupil)
+    return nothing
+end
+
+# Spatial population RMS after removing pupil piston. Welford's update avoids
+# subtracting two large moments and uses the same actual mask for both signals.
+function pupil_rms_nm(opd, pupil)
+    axes(opd) == axes(pupil) || throw(DimensionMismatch("OPD and pupil axes must match"))
+    count = 0
+    mean = 0.0
+    variance_sum = 0.0
+    for index in eachindex(opd, pupil)
+        if pupil[index]
+            value = Float64(opd[index])
+            isfinite(value) || throw(ArgumentError("nonfinite OPD on the transmitting pupil"))
+            count += 1
+            delta = value - mean
+            mean += delta / count
+            variance_sum += delta * (value - mean)
+        end
+    end
+    count > 0 || throw(ArgumentError("wavefront observation needs a transmitting pupil"))
+    return Float32(sqrt(max(0.0, variance_sum / count)) * 1e9)
 end
 
 # Presentation of the same owned pupil snapshot used for ideal imaging. Uniform
@@ -189,7 +288,7 @@ function warm!(observation::Observation, pipewire; check=()->nothing)
     pin_image_thread!(parse(Int, ENV["PIPEWIREAO_OPTICAL_CPU"]))
     start!(observation, pipewire)
     target = observation.completed[] + UInt64(1)
-    try_snapshot_graph_output!(observation.snapshot;
+    submit!(observation;
         generation=observation.generation) ||
         throw(ArgumentError("cannot warm the optical snapshot"))
     deadline = time_ns() + UInt64(30_000_000_000)
@@ -213,7 +312,7 @@ function sample!(observation::Observation, timing::PipeWireFrameCommandTiming, m
     observation.next_sample_ns = now + PERIOD_NS
     pts = timing.source_published_nanoseconds
     admitted = try
-        try_snapshot_graph_output!(observation.snapshot;
+        submit!(observation;
             generation=observation.generation, pts, model_time_ns=model_ns)
     catch
         observation.failed[] = true
@@ -243,14 +342,26 @@ end
 drain!(::Nothing) = nothing
 function drain!(observation::Observation)
     stop_worker!(observation)
-    reset_graph_output_snapshot!(observation.snapshot)
+    finalize_snapshots!(reset_graph_output_snapshot!, observation)
+    observation.busy[] = false
     return nothing
 end
 
 close!(::Nothing) = nothing
 function close!(observation::Observation)
     stop_worker!(observation)
-    close(observation.snapshot)
+    finalize_snapshots!(close, observation)
+    return nothing
+end
+
+finalize_snapshots!(operation, observation::Observation) =
+    finalize_snapshots!(operation, snapshots(observation))
+function finalize_snapshots!(operation, owned::Tuple)
+    failures = Exception[]
+    for snapshot in owned
+        try operation(snapshot) catch error; push!(failures, error) end
+    end
+    isempty(failures) || throw(length(failures) == 1 ? only(failures) : CompositeException(failures))
     return nothing
 end
 

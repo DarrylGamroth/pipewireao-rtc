@@ -12,6 +12,9 @@ const COUNT=32
 const WAVEFRONT=(name="wavefront",node="simulator-residual-wavefront-queue-output",
     media="residual-wavefront",type=Float32,wire=NdArray.F32_LE,shape=(480,480),
     schema=O.WAVEFRONT_SCHEMA,rate=SPA.Fraction(20,1))
+const RMS=(name="rms",node="simulator-wavefront-rms-queue-output",
+    media="wavefront-rms",type=Float32,wire=NdArray.F32_LE,shape=(1,2),
+    schema=O.RMS_SCHEMA,rate=SPA.Fraction(20,1))
 
 function capture(handle,stage,prefix)
     mkpath(stage)
@@ -21,18 +24,19 @@ function capture(handle,stage,prefix)
         record=M.PrefixCapture(capture,COUNT);push!(records,record);record
     end
     observation=M.observe_classic(R._ledger(handle)["remote"];timeout=90,
-        stream_specs=(M.CLASSIC_OBSERVATION_STREAMS...,WAVEFRONT),
-        selected_streams=("detector","demanded","wavefront"),drive_interval=0.005,
+        stream_specs=(M.CLASSIC_OBSERVATION_STREAMS...,WAVEFRONT,RMS),
+        selected_streams=("detector","demanded","wavefront","rms"),drive_interval=0.005,
         expected_generation=UInt64(initial["generation"]),
         process_capture=factory,
         valid_payload=c->c.schema==O.WAVEFRONT_SCHEMA ? all(x->isfinite(x)||isnan(x),c.values) : c.finite,
         on_ready=()->M.request(handle,stage,"start",["session-start"]),
-        finished=_ -> all(records[1].seen) && all(records[2].seen) && count(records[3].seen)>=2)
+        finished=_ -> all(records[1].seen) && all(records[2].seen) &&
+            count(records[3].seen)>=2 && count(records[4].seen)>=2)
     @test M.request(handle,stage,"stop",["session-stop"])["state"]=="Ready"
     _,snapshot=M.source_snapshot(M.dump_graph(handle,stage,prefix,"graph-stopped"))
     @test snapshot["completed"] && !snapshot["running"] && snapshot["sequence"]==COUNT
     C.write_json(joinpath(stage,"observation.json"),observation)
-    for (name,record) in zip(("detector","demanded","wavefront"),records)
+    for (name,record) in zip(("detector","demanded","wavefront","rms"),records)
         write(joinpath(stage,name*".bin"),record.values)
     end
     return records,snapshot
@@ -46,13 +50,14 @@ function prepare_replay(application)
 end
 
 function replay(science,application,records,destination,generation)
-    detector,demanded,wavefront=records
+    detector,demanded,wavefront,meter=records
     adopted=demanded.values .* 1f-6
     @test M.ClassicReplay.replay(application,detector.values,adopted)==adopted
     config=only(filter(!isnothing,map(n->O.sensor_configuration(n.config),science.definition.nodes)))
     telescope=AdaptiveOpticsSim.Optics.prepare_telescope(config.telescope,science.target)
     pupil=AdaptiveOpticsSim.Optics.pupil_mask(telescope)
     rms=Float64[];sequences=Int[];pixel_errors=Float64[]
+    uncorrected=Float64[];corrected=Float64[];meter_sequences=Int[]
     expected_pixels=zeros(UInt16,352,352)
     detector_differences=Any[]
     for index in 1:COUNT
@@ -85,6 +90,18 @@ function replay(science,application,records,destination,generation)
             @test measured ≈ std(opd;corrected=false)*1e9 atol=1e-4
             push!(rms,measured);push!(sequences,index);push!(pixel_errors,pixel_error)
         end
+        if meter.seen[index]
+            identity=something(meter.identities[index])
+            @test identity==something(detector.identities[index])
+            @test identity.sequence==index && identity.generation==generation
+            @test meter.headers[index].pts==detector.headers[index].pts
+            atmosphere=Float64.(graph_output(science.graph,:atmosphere_opd)[pupil])
+            residual=Float64.(graph_output(science.graph,:pupil_opd)[pupil])
+            @test meter.values[1,index] ≈ std(atmosphere;corrected=false)*1e9 atol=1e-4
+            @test meter.values[2,index] ≈ std(residual;corrected=false)*1e9 atol=1e-4
+            push!(uncorrected,meter.values[1,index]);push!(corrected,meter.values[2,index])
+            push!(meter_sequences,index)
+        end
         copyto!(hil_command_buffer(science.boundary),@view(adopted[:,index]))
         adopt_hil_command!(science.boundary,stamp.sequence)
     end
@@ -92,6 +109,8 @@ function replay(science,application,records,destination,generation)
         "rms_nm"=>rms,"exact_detector_and_controller_replay"=>isempty(detector_differences),
         "detector_differences"=>detector_differences,
         "max_pixel_error_nm"=>maximum(pixel_errors),
+        "rms_stream_schema"=>O.RMS_SCHEMA,"rms_sequences"=>meter_sequences,
+        "uncorrected_rms_nm"=>uncorrected,"corrected_rms_nm"=>corrected,
         "pupil_mask_matches"=>true,"piston_removed"=>true,"wavefront_pixel_tolerance_nm"=>1e-4,
         "shared_acquisition_identity_and_pts"=>true,"schema"=>O.WAVEFRONT_SCHEMA)
     C.write_json(destination,report)
