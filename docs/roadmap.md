@@ -34,6 +34,9 @@ All task sessions are stopped, the normal CUDA default is preserved, and the
 GPU was unused. This closes the selected finite CPU functional/scientific and
 two fault cases, not sustained cadence, latency, long-run stability, physical
 model validation or other RTC/backend profiles. Artifact management stays paused.
+The tests and evidence are integrated into canonical RTC `main`; the task
+worktree is removed. The [integration receipt](validation/classic-cpu-loop-20261021/integration.json)
+records 125 final canonical-source, evidence and stopped-state checks.
 
 ### Classic live CPU and GUI validation — 2026-10-21
 

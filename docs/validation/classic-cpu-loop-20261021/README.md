@@ -135,3 +135,11 @@ stage rather than Git. The frozen original harness is under
 `test/integration/`. All task sessions are stopped and no simulation owner
 remains running. Canonical Classic scientific files and its normal CUDA default
 are unchanged.
+
+Integrated into canonical RTC `main` at `b11f900a8e167011bdc8c0ae8e108fc2951385ed`;
+the clean task worktree and its merged branch are removed. The subsequent
+[125-check integration result](integration.log) verifies canonical source and
+evidence hashes, unchanged clean Classic `main`, and no active simulation
+session units. The [integration receipt](integration.json) records this final
+state. Raw GPU audit text is kept byte-identical, including trailing spaces in
+process argument dumps.
