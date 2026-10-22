@@ -1,0 +1,27 @@
+Observers negotiated; releasing exact headless session
+ERROR: LoadError: Some tests did not pass: 16 passed, 0 failed, 1 errored, 0 broken.
+in expression starting at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-extrapolation/test/integration/classic_managed_replay.jl:2
+
+Managed Classic CPU closed-loop replay: Error During Test at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-extrapolation/test/integration/classic_managed_replay.jl:271
+  Got exception outside of a @test
+  IOError: open("/run/user/1000/pipewireao-session-521dfbf4a7aa/b2aebf48f13a4ab58cec8dbb886a438c/phase-timing/phase-timing-1.json", 0, 0): no such file or directory (ENOENT)
+  Stacktrace:
+   [1] capture_session(application::String, stage::String, prefix::String, count::Int64)
+     @ Main.ClassicManagedReplay ~/workspaces/codex/pipewire/pipewireao-rtc-classic-extrapolation/test/integration/classic_managed_replay.jl:164
+   [2] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-classic-extrapolation/test/integration/classic_managed_replay.jl:272 [inlined]
+   [3] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [4] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicManagedReplay ~/workspaces/codex/pipewire/pipewireao-rtc-classic-extrapolation/test/integration/classic_managed_replay.jl:272
+   [5] top-level scope
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-classic-extrapolation/test/integration/classic_managed_replay.jl:278
+   [6] include(mod::Module, _path::String)
+     @ Base ./Base.jl:309
+   [7] exec_options(opts::Base.JLOptions)
+     @ Base ./client.jl:344
+   [8] _start()
+     @ Base ./client.jl:577
+Test Summary:                          | Pass  Error  Total     Time
+Managed Classic CPU closed-loop replay |   16      1     17  7m31.0s
+RNG of the outermost testset: Random.Xoshiro(0xae465f3755fb201c, 0xb24a02b29064e81b, 0xe59dadbdb130f038, 0x4433e46f8db75797, 0x1ea40b105d21eea6)

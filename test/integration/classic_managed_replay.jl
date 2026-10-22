@@ -215,6 +215,15 @@ function replay_options(application)
     @assert options.backend===:cpu && options.plant.settings.pupil_resolution==480
     count=Int(something(options.total_exchanges))
     @assert count==256 && 1<=options.wall_rate<=10 && options.period_ns==2_000_000
+    deployment=C.read_json(joinpath(application,"deployment.conf"))
+    owner=only(filter(item -> item["role"]==deployment["source-owner"],deployment["owners"]))
+    arguments=owner["argv"]
+    phase=findfirst(==("--phase-timing-directory"),arguments)
+    phase!==nothing && phase<length(arguments) && arguments[phase+1]=="@RUNTIME@/phase-timing" ||
+        throw(ArgumentError("managed replay requires source --phase-timing-directory @RUNTIME@/phase-timing"))
+    warmup=findfirst(==("--phase-timing-warmup"),arguments)
+    warmup!==nothing && warmup<length(arguments) && 0<=parse(Int,arguments[warmup+1])<count ||
+        throw(ArgumentError("managed replay requires phase-timing warmup shorter than its finite frame count"))
     BLAS.set_num_threads(1)
     AdaptiveOpticsSim.Backends.set_fft_provider_threads!(1)
     return options,count

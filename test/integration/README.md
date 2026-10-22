@@ -18,8 +18,12 @@ for the native memory regression, deployment and fault recovery evidence.
 ## Managed Classic CPU closed-loop replay
 
 `classic_managed_replay.jl` starts only a new non-actuating managed session.
+The finite source must declare `--phase-timing-directory @RUNTIME@/phase-timing`
+and a `--phase-timing-warmup` shorter than its 256 exchanges (for example 128).
+A warmup longer than the run produces no timing file; the preflight rejects
+that configuration before admission. A capacity of 256 timing rows is sufficient.
 Use a separately sealed Classic CPU application: 480-sample pupil, unchanged
-500 Hz model period and calibration, 1 Hz requested wall pacing and
+500 Hz model period and calibration, 1–2 Hz requested wall pacing and
 `total_exchanges=256`. Its simulator owner must retain phase timing under
 `@RUNTIME@/phase-timing` with capacity 256 and zero excluded warmup frames.
 Clear CUDA/ROCm visibility in the deployment and each scientific owner; the

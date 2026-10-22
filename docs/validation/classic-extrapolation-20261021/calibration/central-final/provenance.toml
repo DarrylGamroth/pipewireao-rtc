@@ -1,0 +1,68 @@
+purpose = "Registered Classic 480-sample headless RTC application with simulator startup controls"
+source_deployment_sha256 = "b5bf8509d485e6ab0c1bbc6cff7321aeb47e54da216a2e059b2ca8aaed9e9dec"
+scope = "CPU simulation-local calibration with dimensionless command extrapolation; provisional Gaussian mirror; no measured hardware stroke"
+source_application = "/home/dgamroth/workspaces/codex/worktrees/classic-sampling-validation-20261021/environment"
+
+[calibration]
+interaction_units = "pixel / controller-coordinate micrometre surface OPD"
+method = "AOC ZonalPushPull and TSVDInverse"
+pupil_resolution = 480
+tsvd_rtol = 0.02
+poke_um = 0.009999999776482582
+reconstructor_units = "controller-coordinate micrometre surface OPD / pixel; dimensionless completed physical command basis"
+response_units = "pixel centroid offset"
+active = "noiseless flat flux validity with unchanged 20/1000 ADC thresholds"
+background = "zero expected dark signal of noiseless calibration detector"
+package_version = "0.17.0"
+
+[headless_candidate]
+native_prefix = "/home/dgamroth/.local/opt/pipewireao-classic-headless-20261021"
+source_application_commit = "841a6e665c5dc0d3d31eac3ba4e42b25cba5e713"
+date = "2026-10-21"
+rtc_git_tree_sha1 = "77e169a9512fa557ff3ee1e4871537fc5468d0ef"
+validation_scope = "Offline CPU configuration and artifact checks only; simulator stopped and no CUDA initialization"
+lifecycle_owner = "pipewireao-rtc using upstream libwireplumber"
+process_owner = "systemd"
+scientific_inputs = "Preserved calibration, scientific configuration, numerical declarations and CPU/GPU placement values"
+live_validation = "Not run; prior daemon-based live evidence is historical"
+rtc_version = "0.2.0"
+rtc_commit = "fa8e4d5dcdb370f9acf3a9c28bc898e071ed919e"
+registry_commit = "a39d81a32d6225ae1c2e160334cabba848635aad"
+
+[headless_cleanup_candidate]
+rtc_version = "0.2.1"
+rtc_commit = "4d13493f6e4e91e260c71e6ba65636dc5483b32e"
+correction = "Verify retained incarnation after exact process exit, preserving live executable checks"
+validation_scope = "Live CPU simulation and generic GUI controls in a separately sealed CPU copy; default deployment remains CUDA"
+registry_commit = "a3e16d15ee4b4241606d709bcb634c38cac201fc"
+date = "2026-10-21"
+rtc_git_tree_sha1 = "eba8af0f017060d784df5ecbcbf2f0449794b3ba"
+scientific_inputs = "Unchanged from the headless candidate above"
+
+[preserved]
+controller_gain = -0.3
+pole = 0.99
+allocation = "Preserved identity 277-coordinate physical projections; regenerated active completion, feedback selector and controller coordinate maps"
+wire_to_plant_scale = 1.0e-6
+
+[simulator_settings_validation]
+pupil_resolution = 480
+rtc_commit = "3359222"
+rtc_version = "0.1.11"
+classic_version = "0.2.4"
+date = "2026-10-21"
+calibration_identity_scope = "SHA-256 of calibration-result.toml, including artifact SHA-256 manifest"
+aos_version = "0.2.2"
+
+[extrapolation_calibration]
+policy = "central"
+preparation_sha256 = "97eb1558d4db9349a0973717a11e0e200936e6500c2320c61f2592d191aa0890"
+backend = "cpu"
+method = "Discrete harmonic completion of obscured central coordinates, composed with original outer completion"
+hardware_conversion = "Unavailable; no ALPAO normalized command conversion or hardware stroke claim"
+heart_source = "revolt-on-sky@31a86a7 config/ExtrapolatorVegaTT.csv"
+heart_extrapolator_sha256 = "ec6b38669279fa0f7bfdd75a356dfb5a2c5b5b41e37c2501ec6723df097525cc"
+units = "micrometre unit-peak actuator surface OPD"
+model_command_limit_um = 0.8
+generator_sha256 = "b20a2a14b67b93804298a9283920fd88265d31818b118508827f98e4215c24c9"
+active_command_count = 212

@@ -1,0 +1,13 @@
+ERROR: LoadError: FieldError: type PipeWireAORTC.SessionRuntime.Handle has no field `stage`, available fields: `unit`, `runtime_root`, `invocation`, `main_pid`, `start_ticks`, `cgroup`, `stop_attempted`, `shutdown_attempted`, `shutdown_accepted`, `stage_root`
+Stacktrace:
+ [1] getproperty(x::PipeWireAORTC.SessionRuntime.Handle, f::Symbol)
+   @ Base ./Base_compiler.jl:57
+ [2] top-level scope
+   @ ~/workspaces/codex/worktrees/classic-extrapolation-20261021/cutover.jl:34
+ [3] include(mod::Module, _path::String)
+   @ Base ./Base.jl:309
+ [4] exec_options(opts::Base.JLOptions)
+   @ Base ./client.jl:344
+ [5] _start()
+   @ Base ./client.jl:577
+in expression starting at /home/dgamroth/workspaces/codex/worktrees/classic-extrapolation-20261021/cutover.jl:34

@@ -1,5 +1,17 @@
 # Delivery evidence catalog
 
+## Classic central actuator extrapolation — 2026-10-22
+
+[Validation](validation/classic-extrapolation-20261021/README.md) preserves
+baseline, archived HEART and model-matched completion comparisons, the selected
+2,048-frame CPU run, 60 completion assertions, 71 offline assertions and the
+2,859-assertion managed exact replay with native Stop/Quit and complete cleanup.
+The first failed timing-evidence capture remains retained. The
+[independent review](reviews/20261021-classic-extrapolation/REVIEW.md) checks
+coordinate registration, calibration ordering, units, clipping feedback and
+reference repeatability. Physical stroke, GPU, cadence and latency qualification
+are excluded. A separately sealed CPU deployment supports live GUI inspection.
+
 ## Classic shutdown correction and recovery — 2026-10-21
 
 [Validation](validation/classic-shutdown-20261021/README.md) records the native

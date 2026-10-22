@@ -25,7 +25,7 @@ function replay(application, frames, adopted)
     graph = prepare_controller(application)
     try
         raw = zeros(UInt16,352,352)
-        feedback = zeros(Float32,221)
+        feedback = zeros(Float32,getproperty(graph.input_formats,FEEDBACK_IN).shape)
         inputs = NamedTuple{(:raw,FEEDBACK_IN)}((raw,feedback))
         outputs = map(format -> zeros(format.element_type,format.shape),graph.output_formats)
         load_frame!(raw,frames,1)

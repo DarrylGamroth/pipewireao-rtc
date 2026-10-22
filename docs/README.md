@@ -21,6 +21,7 @@ claim; do not infer completion from prose.
 
 | Task | Relevant contract/design | Working guide or evidence |
 | --- | --- | --- |
+| Classic central actuator extrapolation | Instrument-owned completion/calibration; RTC-ARCH-026 finite CPU integration | [CPU comparison and replay](validation/classic-extrapolation-20261021/README.md), [independent review](reviews/20261021-classic-extrapolation/REVIEW.md) |
 | Classic shutdown correction and recovery | Native observer lifetime; preserved deadlines, CPU science and exact cleanup | [Shutdown validation](validation/classic-shutdown-20261021/README.md), [independent review](reviews/20261021-classic-shutdown/REVIEW.md) |
 | Classic CPU closed-loop and faults | RTC-ARCH-026, RTC-DEV-021/024; finite science and exact cleanup | [CPU validation](validation/classic-cpu-loop-20261021/README.md), [independent review](reviews/20261021-classic-cpu-loop/REVIEW.md) |
 | Classic live CPU and GUI controls | RTC-ARCH-026, RTC-DEV-021/031; preserved scientific declarations | [Live validation](validation/classic-live-cpu-20261021/README.md), [cleanup review](reviews/20261021-classic-live-cpu/REVIEW.md) |

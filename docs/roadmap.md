@@ -6,11 +6,34 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-10-21. This section is the current delivery summary. Later sections
+Updated 2026-10-22. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
+
+### Classic central actuator extrapolation — 2026-10-22
+
+Classic now extrapolates the nine obscured central DM commands using a
+four-neighbour harmonic extension composed with its existing outer completion.
+The recalibrated 480-sample model has 212 direct coordinates and 208 retained
+TSVD modes. The same-seed CPU comparisons remove observed clipping in three
+512-frame cases and a 2,048-frame run. The managed RTC passes 2,859 assertions,
+including exact detector/controller replay, native Stop/Quit and cleanup.
+Completion invariants pass 60 assertions and the final sealed application passes
+71 offline checks. The archived HEART allocation is retained as a comparison,
+with its registration and repeatability limitations recorded separately.
+
+Command units remain µm OPD with a 10⁻⁶ wire-to-plant conversion. The ±0.8 µm
+software bound is not a measured ALPAO stroke or normalized-command conversion.
+Gains, pole, physical command order, released dependencies and the saved CUDA
+default are unchanged. A separate CPU live deployment is selected for GUI
+inspection; GPU execution remains unused. See the
+[validation](validation/classic-extrapolation-20261021/README.md) and
+[independent review](reviews/20261021-classic-extrapolation/REVIEW.md).
+These finite results do not qualify cadence, latency, arbitrary-condition
+stability or hardware. Next instrument: GPI 2.0 using CPU checks. Artifact
+management stays paused.
 
 ### Classic shutdown correction and recovery — 2026-10-21
 
