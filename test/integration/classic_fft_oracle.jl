@@ -6,14 +6,22 @@ const B = AdaptiveOpticsSim.Backends
 const C = PipeWireAORTC.Common
 
 # This inspects test-owner storage only. No production API or callback depends
-# on an AOS workspace layout. The current graph retains plans in named fields;
-# arrays are numerical storage and are deliberately not traversed.
+# on an AOS workspace layout. Skip numerical storage, but include bounded
+# collections of owners such as atmosphere layers and their retained plans.
 function plans(value, path="graph", depth=0)
     depth <= 16 || throw(ArgumentError("FFT plan inventory exceeds its traversal bound"))
     value isa F.FFTWPlan && return [path => sprint(show, value)]
-    value isa Union{AbstractArray,Number,Symbol,AbstractString,Function,Module,Type,Nothing} &&
+    value isa Union{Number,Symbol,AbstractString,Function,Module,Type,Nothing} &&
         return Pair{String,String}[]
     result = Pair{String,String}[]
+    if value isa AbstractArray
+        eltype(value) <: Union{Number,Symbol,AbstractString} && return result
+        length(value) <= 1024 || throw(ArgumentError("FFT owner collection exceeds its traversal bound"))
+        for (index, item) in enumerate(value)
+            append!(result, plans(item, path * "." * string(index), depth + 1))
+        end
+        return result
+    end
     for field in fieldnames(typeof(value))
         append!(result, plans(getfield(value, field), path * "." * string(field), depth + 1))
     end
