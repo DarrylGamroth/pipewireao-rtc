@@ -180,6 +180,8 @@ function session_configuration(spec, session, bindings, records;
             "node.name" => public_node, "profile" => "pipewireao.rtc.session/1",
             "instance" => public_instance,
             "properties" => Dict("pipewireao.rtc.session.session-uuid" => uuid)))
+    merge!(public_endpoint["arguments"]["properties"],
+        PipeWireAORTC.InstrumentDefinition.publication(spec,bindings))
     controller_endpoint = Dict{String,Any}(
         "name" => "libwireplumber-module-ao-control-endpoint", "type" => "module",
         "provides" => "ao.session-controller",

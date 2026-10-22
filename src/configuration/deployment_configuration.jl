@@ -265,7 +265,7 @@ end
 function profile(path::AbstractString, prefix::AbstractString; legacy_export_input::Bool=false)
     value = decode(path, prefix)
     require(value isa AbstractDict && REQUIRED_KEYS ⊆ Set(keys(value)) ⊆
-        union(REQUIRED_KEYS, Set(["source-owner","detector-observation","session-runtime","node-owners","startup-timeout-ms","runtime","analysis"])) && get(value, "version", nothing) === 1,
+        union(REQUIRED_KEYS, Set(["source-owner","detector-observation","session-runtime","node-owners","startup-timeout-ms","runtime","analysis","instrument"])) && get(value, "version", nothing) === 1,
         "expected version 1 deployment with the documented fields")
     registered_application(value) && application_environment(value, dirname(path))
     startup_timeout_ms(value)
@@ -483,6 +483,11 @@ function profile(path::AbstractString, prefix::AbstractString; legacy_export_inp
         end
     end
     PipeWireAORTC.Analysis.validate_deployment(value, path, prefix)
+    if haskey(value,"instrument")
+        asset=relative_asset(dirname(path),value["instrument"])
+        haskey(value["artifacts"],value["instrument"]) || fail("instrument definition must be sealed")
+        PipeWireAORTC.InstrumentDefinition.load(asset)
+    end
     Dict{String,Any}(value)
 end
 

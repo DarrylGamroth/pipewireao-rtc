@@ -7,6 +7,7 @@ import UUIDs
 import ..Artifacts
 import ..Common
 import ..DeploymentConfiguration
+import ..InstrumentDefinition
 import ..NativeOwnerBootstrapRuntime
 
 public main
@@ -138,7 +139,7 @@ function configuration(path::AbstractString)
     shared_fields = ("version", "command_input", "frame_output", "command_count", "frame_shape",
         "rate", "exposure_ns", "wall_rate", "backend", "device", "command_node",
         "frame_schema", "command_schema", "command_scale", "total_exchanges", "optical_observation",
-        "detector_observation", "command_observation", "applied_command_observation", "calibration_identity")
+        "detector_observation", "command_observation", "applied_command_observation", "calibration_identity", "instrument")
     shared_required = ("version", "command_input", "frame_output", "command_count", "frame_shape",
         "rate", "exposure_ns", "wall_rate", "backend", "device")
     route_fields = version == 1 ? ("graph", "artifacts") : ("plant", "frame_encoding")
@@ -183,6 +184,10 @@ function configuration(path::AbstractString)
     applied_command_observation = boolean(get(document, "applied_command_observation", false), "applied_command_observation")
     calibration_identity = haskey(document, "calibration_identity") ?
         text(document["calibration_identity"], "calibration_identity") : nothing
+    instrument = haskey(document,"instrument") ?
+        DeploymentConfiguration.relative_asset(dirname(config_path),document["instrument"]) : nothing
+    instrument===nothing || version==2 && calibration_identity!==nothing ||
+        throw(ArgumentError("instrument definition requires a package plant and calibration identity"))
     entries = version == 1 ? document["artifacts"] : ()
     (entries isa AbstractVector || entries === ()) && length(entries) <= 64 || throw(ArgumentError("artifacts must be an array of at most 64 entries"))
     artifacts = FITSBinding[]
@@ -210,7 +215,7 @@ function configuration(path::AbstractString)
     return (; version, config_path, plant, graph, command_input, frame_output, command_count, frame_shape, rate, period_ns,
         exposure_ns, wall_rate, wall_period_ns, backend, device, artifacts, command_node,
         frame_encoding, frame_schema, command_schema, command_scale, total_exchanges, optical_observation,
-        detector_observation, command_observation, applied_command_observation, calibration_identity)
+        detector_observation, command_observation, applied_command_observation, calibration_identity, instrument)
 end
 
 "Prepare owned logical FITS arrays; preserve their provenance for the science owner."
@@ -311,6 +316,7 @@ function _main(args; with_owner=Bootstrap.with_owner,
         if admitted.plant !== nothing
             plant_module = load_plant(admitted.plant.package)
             admitted.owner_check()
+            InstrumentDefinition.verify_plant(admitted,plant_module)
             admitted = merge(admitted, (; plant_module))
         end
         Base.invokelatest(run, admitted)

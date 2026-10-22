@@ -718,6 +718,44 @@ establish application, finite owner execution, restoration or real-time
 qualification. Existing JSON interfaces remain explicitly unmigrated until
 their corresponding native gates pass; they are not a native fallback.
 
+## Shared instrument definition
+
+Scientific instrument packages define geometry, channel order, units and
+coordinate conventions independently of RTC deployment configuration. The RTC
+application selects that definition and its calibration, and publishes the
+resolved operational description for clients. Simulators consume their normal
+scientific APIs; the integration adapter checks compatibility before execution.
+GUI operator-view files select sources/components and presentation, rather than
+carrying copies of instrument or calibration arrays.
+
+The first implementation uses existing read-only properties on the freshly
+verified native public session endpoint. `pipewireao.rtc.session.instrument`
+contains one bounded JSON document (maximum 256 KiB), and the companion
+`pipewireao.rtc.session.instrument.sha256` identifies its exact bytes. These are
+ordinary NodeInfo properties, not mutable Props controls or a new command API.
+The sealed deployment's optional `instrument` field names the contained asset.
+It is immutable for the session incarnation; changing/removing it invalidates
+client scientific bindings and drafts until a fresh selection and resolution.
+
+Schema version 1 declares `id`, `calibration_identity`, `scientific_identity`,
+`deformable_mirrors` and `wavefront_sensors`. Component keys identify owner-defined
+instrument components, not GUI panel IDs. DM declarations carry source-grid
+`layout` in explicit `command_positions` order, `units`, `command_scale_m`,
+amplitude `limiter` bounds and `shape_control` declarations. Optional
+`pupil_coordinates` use the scientific model's normalized pupil radius convention;
+they are distinct from source-grid Zernike/Fourier coordinates. WFS `layout`
+declares detector/subaperture extents and zero-based `[row,column]` origins.
+Published source-grid geometry does not imply measured optical registration.
+
+`scientific_identity` is the SHA-256 of the deterministic scientific package
+API result serialized by the integration adapter. The AOS adapter checks it
+against the loaded package, selected calibration, channel dimensions and command
+scale before execution. Its initial instrument-aware boundary supports one DM
+and one WFS; further instruments need explicit channel contracts. The RTC still
+owns control/update validation; publication does not create physical authority,
+new parameter atomicity or a second artifact/journal store. Missing/incompatible
+definitions make client views unavailable rather than supplying guessed geometry.
+
 ## Authoritative lower contracts
 
 This repository does not duplicate the data-plane contracts:
