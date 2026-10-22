@@ -69,11 +69,11 @@ function source_options(observation::Observation)
     return (PipeWireImageSourceOptions(node_name="simulator-focal-image",
             media_name="focal-image", schema=FOCAL_IMAGE_SCHEMA,
             shape=size(observation.values), rate=SPA.Fraction(UInt32(20), UInt32(1)),
-            buffers=3, properties),
+            buffers=3, properties=properties),
         PipeWireImageSourceOptions(node_name="simulator-residual-wavefront",
             media_name="residual-wavefront", schema=WAVEFRONT_SCHEMA,
             shape=size(observation.wavefront), rate=SPA.Fraction(UInt32(20), UInt32(1)),
-            buffers=3, properties))
+            buffers=3, properties=properties))
 end
 
 function process_sample!(observation::Observation, pipewire)

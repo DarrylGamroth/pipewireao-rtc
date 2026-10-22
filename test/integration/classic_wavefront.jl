@@ -109,5 +109,5 @@ function main(application,stage,prefix)
         "calibration_identity"=>options.calibration_identity,"manifest_sha256"=>C.sha256_file(joinpath(application,"Manifest.toml")),
         "scope"=>"Two finite32-frame CPU generations with transport, pixels, RMS and reset; no cadence or hardware qualification"))
 end
-abspath(PROGRAM_FILE)==@__FILE__ && main(ARGS...)
+abspath(PROGRAM_FILE)==(@__FILE__) && main(ARGS...)
 end
