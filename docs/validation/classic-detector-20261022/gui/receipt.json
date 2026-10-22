@@ -1,0 +1,54 @@
+{
+  "commit": "758a6b3e5bb8dd252167cd070d7859c021917938",
+  "branch": "codex/chart-interaction",
+  "worktree": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-gui-chart-interaction",
+  "binary": "/tmp/pipewireao-gui-chart-handoff/pipewireao-gui-758a6b3-glow",
+  "sha256": "6bc15b26647b552fd6cd1171935a6537c915bfd9e9b53248f851453b9989b2d3",
+  "build_command": [
+    "cargo",
+    "build",
+    "--locked",
+    "--no-default-features",
+    "--bin",
+    "pipewireao-gui",
+    "--message-format=json"
+  ],
+  "build_environment": {
+    "PKG_CONFIG_PATH": "/home/dgamroth/workspaces/codex/pipewire/pipewire/build/meson-uninstalled",
+    "LD_LIBRARY_PATH": "/home/dgamroth/workspaces/codex/pipewire/pipewire/build/src/pipewire",
+    "CARGO_TARGET_DIR": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-gui-chart-interaction/target",
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_BUILD_JOBS": "8"
+  },
+  "eframe_features": [
+    "default_fonts",
+    "glow",
+    "persistence",
+    "ron",
+    "serde",
+    "wayland",
+    "x11"
+  ],
+  "eframe_fingerprint_source": "/home/dgamroth/workspaces/codex/pipewire/pipewireao-gui-chart-interaction/target/debug/.fingerprint/eframe-5fc0896e92d03319/lib-eframe.json",
+  "validation": {
+    "rustc": "1.99.1",
+    "julia": "1.13.2",
+    "cargo_test": {
+      "library_passed": 564,
+      "native_passed": 271,
+      "integration_passed": 12,
+      "ignored": 16
+    },
+    "focused_chart_passed": 20,
+    "julia_fixture_assertions": 151,
+    "wasm_and_browser_checks": "pass",
+    "dependency_exclusions": "pass",
+    "format_and_whitespace": "pass",
+    "clippy": "strict blocked by pre-existing chunks_exact_to_as_chunks and Atomic fetch_update deprecation diagnostics; all-targets passes with only those lint classes allowed",
+    "fail_before": "wheel regression fails on default panning; final cursor regression fails against original renderer, passes with new renderer",
+    "live_or_gpu_launch": "none"
+  },
+  "original_worktree_preexisting_change": "docs/workstation-review.md preserved",
+  "cleanup": "Resolved task-owned local target cleaned after copied binary and fingerprint receipt; handoff retained outside target."
+}

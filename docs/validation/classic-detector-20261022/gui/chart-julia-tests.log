@@ -1,0 +1,10 @@
+Test Summary:                    | Pass  Total  Time
+offline actuator-layout exporter |   45     45  2.5s
+Test Summary:                 | Pass  Total  Time
+eGrabber Video/Source fixture |   47     47  0.3s
+Test Summary:                            | Pass  Total  Time
+hardware-independent observation fixture |   27     27  0.3s
+Test Summary:        | Pass  Total  Time
+test-graph discovery |    8      8  0.2s
+Test Summary:             | Pass  Total  Time
+pixel-calibration fixture |   24     24  0.1s

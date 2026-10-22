@@ -1,5 +1,18 @@
 # Delivery evidence catalog
 
+## Classic exact CPU detector replay and chart controls — 2026-10-22
+
+[Validation](validation/classic-detector-20261022/README.md) preserves controlled
+same-RNG photon-rate threshold experiments, the historical-pixel one-ULP
+counterfactual and the matching-plan native/oracle execution witness. Exact
+ADC/controller replay, optics/RMS, two Reset generations and Quit cleanup pass
+1,027 assertions with all 20 retained FFT plan paths checked; 11 negative/precondition checks pass. The original failed
+gate remains preserved and its lost input cannot be recovered retrospectively.
+The [independent review](reviews/20261022-classic-detector/REVIEW.md) accepts
+this scoped CPU gate. GUI evidence records wheel/cursor/source selection,
+847 Rust and 151 Julia checks, WASM/browser checks, exact TOML source defaults
+and live CPU DM/WFS data. No hardware or cadence qualification is claimed.
+
 ## Headless wavefront RMS and generic time series — 2026-10-22
 
 [Validation](validation/wavefront-series-20261022/README.md) records paired

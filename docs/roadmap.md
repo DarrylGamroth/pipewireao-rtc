@@ -12,6 +12,31 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Classic exact CPU detector replay and chart controls — 2026-10-22
+
+The current finite CPU gate passes 1,027 assertions across two 32-frame native
+Reset generations with exact detector/controller replay, optical/RMS checks and
+clean Quit. The test now records the native FFTW wisdom and retained plans,
+restores the repeated transforms with WISDOM_ONLY and verifies the execution
+contract before exact comparison, including five retained atmosphere plans.
+Eleven precondition checks reject unavailable
+or mismatched witnesses. No production detector/RTC code, gains or ADC
+tolerances changed. Controlled same-RNG experiments show that last-bit FFT
+differences can cross photon-noise sampling thresholds; a one-ULP change at the
+historical pixel reproduces 110 → 109, but the lost original optical inputs
+prevent retrospective root-cause proof. The historical failed gate is retained.
+
+The live generic chart supports pointer wheel zoom, nearest-sample multi-channel
+cursor readouts and selectable ndarray source/channel overrides. Classic adds
+TOML-defined DM command and WFS slope history views under Charts, initially
+closed. GUI software checks pass 847 Rust and 151 Julia assertions, plus
+WASM/browser checks; strict Clippy retains existing lint failures. Live CPU
+DM/WFS data and GPU-free process audits pass. The RTC remains running, with
+only its software-rendered GUI replaced. See
+[validation](validation/classic-detector-20261022/README.md) and
+[independent review](reviews/20261022-classic-detector/REVIEW.md).
+Cadence, hardware and physical-loop qualification remain excluded.
+
 ### Headless wavefront RMS and generic time series — 2026-10-22
 
 The optional shared optical worker now publishes uncorrected-atmosphere and

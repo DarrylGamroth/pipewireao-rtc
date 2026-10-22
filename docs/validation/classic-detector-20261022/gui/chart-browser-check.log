@@ -1,0 +1,41 @@
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on build directory
+   Compiling num-traits v0.2.19
+   Compiling wasm-bindgen v0.2.127
+    Checking emath v0.37.0
+    Checking simd-adler32 v0.3.10
+   Compiling slotmap v1.1.1
+    Checking adler2 v2.0.1
+   Compiling crc32fast v1.5.1
+    Checking pxfm v0.1.30
+    Checking byteorder-lite v0.1.0
+    Checking send_wrapper v0.6.0
+    Checking raw-window-handle v0.6.2
+    Checking percent-encoding v2.3.2
+    Checking static_assertions v1.1.0
+    Checking miniz_oxide v0.8.9
+    Checking fdeflate v0.3.7
+    Checking flate2 v1.1.9
+    Checking ecolor v0.37.0
+    Checking png v0.18.1
+    Checking euclid v0.22.14
+    Checking js-sys v0.3.104
+    Checking guillotiere v0.7.0
+    Checking vello_common v0.2.0
+    Checking moxcms v0.8.1
+    Checking vello_cpu v0.2.0
+    Checking epaint v0.37.0
+    Checking image v0.25.10
+    Checking web-sys v0.3.104
+    Checking web-time v1.1.0
+    Checking wasm-bindgen-futures v0.4.77
+    Checking egui v0.37.0
+    Checking glow v0.17.0
+    Checking egui_table v0.11.0
+    Checking egui_glow v0.37.0
+    Checking egui_plot v0.38.0
+    Checking egui_tiles v0.18.0
+    Checking eframe v0.37.0
+    Checking pipewireao-gui v0.1.0 (/home/dgamroth/workspaces/codex/pipewire/pipewireao-gui-chart-interaction)
+    Checking pipewireao-gui-browser-review v0.1.0 (/home/dgamroth/workspaces/codex/pipewire/pipewireao-gui-chart-interaction/tools/browser-review)
+    Finished `dev` profile [unoptimized] target(s) in 33.44s
