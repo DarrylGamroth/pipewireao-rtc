@@ -1,6 +1,6 @@
 using Test
 using TOML
-using JSON3
+using JSON
 using PipeWireAORTC
 
 @testset "Default plant loader enforces active application dependency identity" begin
@@ -35,7 +35,7 @@ using PipeWireAORTC
             "backend" => "cpu", "device" => 0, "frame_encoding" => "uint16",
             "frame_schema" => "test.detector/1", "command_schema" => "test.command/1",
             "command_scale" => 1.0)
-        write(config, JSON3.write(document))
+        write(config, JSON.json(document))
         args = ["--config", config, "--remote", "/tmp/aos-loader-identity",
             "--control-node", "simulator-wfs", "--bootstrap-node", "rtc.bootstrap.aos",
             "--bootstrap-instance", "7"]

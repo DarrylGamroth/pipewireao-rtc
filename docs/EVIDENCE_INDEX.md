@@ -672,3 +672,5 @@ exact retained per-engine prefixes, zero simulator inclusive heap/GC tails and
 empty owner cgroups. The headless RTC keeps native science/source authority and
 WirePlumber keeps external links. Direct foreground, other profiles, target
 timing, general multiple endpoints and physical actuation retain separate scopes.
+
+- [Classic supplied mirror description, CPU/metadata validation](validation/mirror-description-20261022/README.md) — 2026-10-22.

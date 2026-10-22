@@ -2,7 +2,7 @@
 module SessionInstall
 
 import ..PipeWireAORTC
-using JSON3
+using JSON
 
 const D = PipeWireAORTC.DeploymentConfiguration
 const C = PipeWireAORTC.Common
@@ -144,7 +144,7 @@ function install(options)
         write(launcher, script)
     end
     chmod(launcher, 0o755)
-    quote_unit(value) = String(JSON3.write(replace(String(value), "%" => "%%")))
+    quote_unit(value) = String(JSON.json(replace(String(value), "%" => "%%")))
     template = read(joinpath(runtime, "assets/deployment/pipewireao-session@.service.in"), String)
     cpus = sort!(collect(installed_spec["placement"]["session"]["cpus"]))
     unit = replace(template,

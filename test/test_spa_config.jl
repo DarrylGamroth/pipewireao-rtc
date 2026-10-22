@@ -1,4 +1,4 @@
-using Test, PipeWireAORTC, PipeWireAO, JSON3
+using Test, PipeWireAORTC, PipeWireAO, JSON
 
 const E = PipeWireAORTC.ScienceExport
 const C = PipeWireAORTC.Common
@@ -43,7 +43,7 @@ end
         E.write_spa_config(path, document)
         payload = read(path, String)
         for string in strings
-            @test occursin(JSON3.write(string), payload)
+            @test occursin(JSON.json(string), payload)
         end
         decoded = parse_spa_config(path)
         @test isequal(decoded, document)

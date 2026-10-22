@@ -1,51 +1,38 @@
 module Common
 
-using JSON3
+using JSON
 using SHA
-using StructTypes
 
 export read_json, parse_json, write_json, sha256_file, cli_arguments, run_checked
 
-struct RawJSON
-    text::String
+# JSON.jl preserves decimal tokens and materializes large integers exactly.
+# Bound its general-purpose numeric range to the existing operational contract.
+json_number(value) = value
+function json_number(value::BigInt)
+    typemin(Int64) <= value <= typemax(Int64) && return Int64(value)
+    0 <= value <= typemax(UInt64) && return UInt64(value)
+    throw(ArgumentError("JSON integer exceeds supported 64-bit range"))
 end
-StructTypes.StructType(::Type{RawJSON}) = JSON3.RawType()
-StructTypes.construct(::Type{RawJSON}, raw::JSON3.RawValue) =
-    RawJSON(String(copy(@view raw.bytes[raw.pos:raw.pos + raw.len - 1])))
+function json_number(value::AbstractFloat)
+    converted = Float64(value)
+    isfinite(converted) || throw(ArgumentError("JSON contains a nonfinite number"))
+    return converted
+end
+function json_number(value::AbstractDict)
+    return Dict{String,Any}(key => json_number(item) for (key,item) in value)
+end
+json_number(value::AbstractVector) = Any[json_number(item) for item in value]
 
-"""Read JSON without rounding integer identities or treating decimal tokens as integers."""
-function parse_json(payload::AbstractString; depth::Int=0)
-    depth <= 64 || throw(ArgumentError("JSON nesting exceeds 64 levels"))
+"""Read bounded JSON with exact 64-bit integer identities and distinct decimal values."""
+function parse_json(payload::AbstractString)
+    isvalid(payload) || throw(ArgumentError("JSON input is not UTF-8"))
     token = strip(payload, [' ', '\t', '\n', '\r'])
     isempty(token) && throw(ArgumentError("empty JSON input"))
-    if depth == 0
-        JSON3.read(token, RawJSON).text == token ||
-            throw(ArgumentError("JSON input has trailing data"))
-    end
-    if startswith(token, "{")
-        raw = JSON3.read(token, Dict{String,RawJSON})
-        return Dict{String,Any}(key => parse_json(value.text; depth=depth+1) for (key,value) in raw)
-    elseif startswith(token, "[")
-        raw = JSON3.read(token, Vector{RawJSON})
-        return Any[parse_json(value.text; depth=depth+1) for value in raw]
-    elseif occursin(r"^-?(?:0|[1-9][0-9]*)$", token)
-        signed = tryparse(Int64, token)
-        signed !== nothing && return signed
-        unsigned = tryparse(UInt64, token)
-        unsigned !== nothing && return unsigned
-        throw(ArgumentError("JSON integer exceeds supported 64-bit range"))
-    elseif first(token) in ('-', '0':'9'...)
-        occursin(r"^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?$", token) ||
-            throw(ArgumentError("invalid JSON number"))
-        JSON3.read(token) # Validate JSON number grammar before conversion.
-        value = parse(Float64, token)
-        return finite_json(value)
-    end
-    startswith(token, "\"") && return JSON3.read(token, String)
-    token == "true" && return true
-    token == "false" && return false
-    token == "null" && return nothing
-    throw(ArgumentError("invalid JSON scalar"))
+    # The operational interface accepts JSON ASCII whitespace, without a BOM.
+    first(token) in ('{','[','"','t','f','n','-', '0':'9'...) ||
+        throw(ArgumentError("invalid JSON input"))
+    value = JSON.parse(token; dicttype=Dict{String,Any}, maxdepth=64)
+    return json_number(value)
 end
 
 finite_json(value) = value
@@ -82,7 +69,7 @@ end
 
 function write_json(path::AbstractString, value; atomic::Bool=false)
     finite_json(value)
-    payload = JSON3.write(value) * "\n"
+    payload = JSON.json(value) * "\n"
     mkpath(dirname(path))
     if atomic
         temporary, io = mktemp(dirname(path))

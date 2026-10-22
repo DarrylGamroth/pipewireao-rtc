@@ -1,6 +1,6 @@
 using Test
 using FITSIO
-using JSON3
+using JSON
 using PipeWireAORTC
 
 const Owner = PipeWireAORTC.AOSOwner
@@ -73,7 +73,7 @@ end
     mktempdir() do directory
         path = joinpath(directory, "owner.conf")
         document = owner_configuration(directory)
-        write(path, JSON3.write(document))
+        write(path, JSON.json(document))
         argv = ["--config", path, "--remote", "/tmp/aos-private", "--control-node", "simulator-wfs",
             "--bootstrap-node", "rtc.bootstrap.aos", "--bootstrap-instance", "7"]
         default_timing = Owner.arguments(argv)
@@ -143,7 +143,7 @@ end
         @test events == [:preparing, :check, :science, :check, :check, :run, :cleanup]
         empty!(events)
         document["backend"] = "cuda"
-        write(path, JSON3.write(document))
+        write(path, JSON.json(document))
         @test Owner._main(argv; with_owner, load_science=() -> push!(events, :science),
             load_cuda=() -> push!(events, :cuda), run=options -> push!(events, :run)) == 0
         @test events == [:preparing, :check, :science, :check, :cuda, :check, :run, :cleanup]
@@ -166,7 +166,7 @@ end
             ("optical_observation", "true"), ("unexpected", 1))
             invalid = deepcopy(document)
             invalid[key] = value
-            write(path, JSON3.write(invalid))
+            write(path, JSON.json(invalid))
             @test_throws ArgumentError Owner.configuration(path)
         end
         for mutation in (
@@ -179,11 +179,11 @@ end
         )
             invalid = deepcopy(document)
             mutation(only(invalid["artifacts"]))
-            write(path, JSON3.write(invalid))
+            write(path, JSON.json(invalid))
             @test_throws Exception Owner.configuration(path)
         end
         document["artifacts"] = repeat(document["artifacts"], 2)
-        write(path, JSON3.write(document))
+        write(path, JSON.json(document))
         @test_throws ArgumentError Owner.configuration(path)
     end
 end
@@ -192,7 +192,7 @@ end
     mktempdir() do directory
         path = joinpath(directory, "owner.conf")
         document = owner_configuration(directory)
-        write(path, JSON3.write(document))
+        write(path, JSON.json(document))
         values = UInt32[1 2 3; 4 5 6]
         FITS(joinpath(directory, "grid.fits"), "w") do fits
             write(fits, values)
@@ -208,7 +208,7 @@ end
         @test sort(readdir(directory)) == ["grid.fits", "owner.conf", "simulation.toml"]
         # Selection is exact, and the square case still requires explicit axes.
         document["artifacts"][1]["shape"] = [2, 3]
-        write(path, JSON3.write(document))
+        write(path, JSON.json(document))
         @test_throws DimensionMismatch Owner.prepare_bindings(Owner.configuration(path).artifacts)
     end
 end
@@ -227,7 +227,7 @@ end
         delete!(document, "artifacts")
         document["plant"] = Dict("package" => "REVOLTClassicSim",
             "settings" => Dict("profile" => "grid_gaussian"))
-        write(path, JSON3.write(document))
+        write(path, JSON.json(document))
         options = Owner.configuration(path)
         @test options.version == 2
         @test options.graph === nothing
@@ -265,7 +265,7 @@ end
         )
             invalid = deepcopy(document)
             mutation(invalid)
-            write(path, JSON3.write(invalid))
+            write(path, JSON.json(invalid))
             @test_throws ArgumentError Owner.configuration(path)
         end
         for key in ("version", "plant", "command_input", "frame_output", "command_count",
@@ -273,16 +273,16 @@ end
                 "frame_encoding", "frame_schema", "command_schema", "command_scale")
             invalid = deepcopy(document)
             delete!(invalid, key)
-            write(path, JSON3.write(invalid))
+            write(path, JSON.json(invalid))
             @test_throws ArgumentError Owner.configuration(path)
         end
         for identity in (nothing, true, 42, "", "invalid\0identity", repeat("a", 16 * 1024 + 1))
             invalid = deepcopy(document)
             invalid["calibration_identity"] = identity
-            write(path, JSON3.write(invalid))
+            write(path, JSON.json(invalid))
             @test_throws ArgumentError Owner.configuration(path)
         end
-        write(path, JSON3.write(document))
+        write(path, JSON.json(document))
         args = ["--config", path, "--remote", "/tmp/aos-private", "--control-node", "simulator-wfs",
             "--bootstrap-node", "rtc.bootstrap.aos", "--bootstrap-instance", "7"]
         events = Symbol[]

@@ -1,7 +1,7 @@
 """Bounded JSON-lines management interface; no live RTC control operations."""
 module ConfigurationStoreCLI
 
-using JSON3
+using JSON
 using ..ConfigurationStore
 using ..Artifacts
 
@@ -48,9 +48,9 @@ end
 function respond(line::AbstractString)
     try
         ncodeunits(line) <= MAX_LINE_BYTES || throw(ArgumentError("request exceeds byte limit"))
-        request = JSON3.read(line,Dict{String,Any})
+        request = JSON.parse(line,Dict{String,Any})
         response = Dict("ok"=>true,"result"=>request_result(request))
-        ncodeunits(JSON3.write(response)) <= MAX_REPLY_BYTES || throw(ArgumentError("reply exceeds byte limit; use a smaller page"))
+        ncodeunits(JSON.json(response)) <= MAX_REPLY_BYTES || throw(ArgumentError("reply exceeds byte limit; use a smaller page"))
         return response
     catch exception
         return Dict("ok"=>false,"error"=>sprint(showerror,exception))
@@ -78,7 +78,7 @@ function serve(input::IO=stdin,output::IO=stdout; responder=respond)
     while !eof(input)
         line = bounded_line(input)
         result = line === nothing ? Dict("ok"=>false,"error"=>"request exceeds byte limit") : responder(line)
-        JSON3.write(output,result)
+        JSON.json(output,result)
         write(output,'\n'); flush(output)
     end
     return 0
@@ -91,7 +91,7 @@ function main(args=ARGS; input::IO=stdin,output::IO=stdout)
     # Materialized transport bytes persist across one-shot client lifetimes.
     length(args) == 1 || throw(ArgumentError("usage: configuration_store_cli.jl [serve|JSON_REQUEST]"))
     response = respond(only(args))
-    JSON3.write(output,response); write(output,'\n'); flush(output)
+    JSON.json(output,response); write(output,'\n'); flush(output)
     return response["ok"] ? 0 : 1
 end
 

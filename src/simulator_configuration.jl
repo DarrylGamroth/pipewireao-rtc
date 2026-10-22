@@ -6,7 +6,7 @@ or frame-processing work is provided by this management interface.
 """
 module SimulatorConfiguration
 
-using JSON3, UUIDs
+using JSON, UUIDs
 import ..Common
 import ..AOSOwner
 import ..DeploymentConfiguration

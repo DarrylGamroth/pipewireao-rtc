@@ -4,7 +4,7 @@ module SessionCLI
 
 import ..PipeWireAORTC
 using PipeWireAO: with_thread_loop_lock
-using JSON3
+using JSON
 
 import ..SessionConfiguration
 import ..SessionLaunch
@@ -424,18 +424,18 @@ function main(argv=ARGS)
         cleanup_error === nothing || throw(cleanup_error)
     elseif command == "sessions"
         isempty(rest) || throw(ArgumentError("sessions takes no arguments"))
-        println(JSON3.write(sessions()))
+        println(JSON.json(sessions()))
     elseif command == "select-session"
         args = C.cli_arguments(rest; required=["session"])
         connection = select_direct_session(args.session)
         try
-            println(JSON3.write(session_status(connection)))
+            println(JSON.json(session_status(connection)))
         finally
             close(connection)
         end
     elseif command == "control"
         session_id, fields = _control_arguments(rest)
-        println(JSON3.write(control_session(session_id, fields)))
+        println(JSON.json(control_session(session_id, fields)))
     else
         throw(ArgumentError("unknown one-shot RTC command"))
     end

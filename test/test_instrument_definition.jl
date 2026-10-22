@@ -1,4 +1,4 @@
-using Test, JSON3, SHA, PipeWireAORTC
+using Test, JSON, SHA, PipeWireAORTC
 
 const Instrument = PipeWireAORTC.InstrumentDefinition
 
@@ -21,12 +21,13 @@ const DEFINITION = (;
         subaperture_shape=(2, 3), subaperture_origins=((0, 0),),
         provenance="zero-based [row,column]"))),
 )
-instrument_definition() = DEFINITION
+instrument_definition(settings::NamedTuple=NamedTuple()) = merge(DEFINITION,(;selected_settings=settings))
 end
 
 function operational_instrument()
     source = InstrumentPlantForTest.instrument_definition()
-    document = JSON3.read(JSON3.write(source), Dict{String,Any})
+    document = JSON.parse(JSON.json(source), Dict{String,Any})
+    delete!(document,"selected_settings")
     document["calibration_identity"] = "sha256:" * repeat("a", 64)
     document["scientific_identity"] = Instrument.scientific_identity(source)
     dm = document["deformable_mirrors"]["dm"]
@@ -47,7 +48,7 @@ end
         path = joinpath(package, "instrument.json")
         document = operational_instrument()
         # Keep formatting and Unicode: the property digest covers exact bytes.
-        json = " \n" * JSON3.write(document) * "\n"
+        json = " \n" * JSON.json(document) * "\n"
         write(path, json)
         sealed = bytes2hex(sha256(read(path)))
         spec = Dict{String,Any}("instrument" => "instrument.json",
@@ -107,7 +108,7 @@ end
         )
             invalid = deepcopy(document)
             mutation(invalid)
-            write(path, JSON3.write(invalid))
+            write(path, JSON.json(invalid))
             @test_throws ArgumentError Instrument.load(path)
         end
         @test_throws ArgumentError Instrument.bounded(Dict("value" => Inf))
@@ -143,7 +144,7 @@ end
         )
             invalid = operational_instrument()
             mutation(invalid["deformable_mirrors"]["dm"])
-            write(path, JSON3.write(invalid))
+            write(path, JSON.json(invalid))
             spec = Dict("instrument" => "instrument.json", "artifacts" =>
                 Dict("instrument.json" => Instrument.digest(read(path, String))))
             @test_throws ArgumentError Instrument.load(path)
@@ -164,13 +165,21 @@ end
     mktempdir() do root
         path = joinpath(root, "instrument.json")
         document = operational_instrument()
-        write(path, JSON3.write(document))
+        write(path, JSON.json(document))
         options = (; instrument=path, calibration_identity=document["calibration_identity"],
             command_count=3, frame_shape=(2, 3), command_scale=1f-6,
-            frame_schema="org.calculon.ao.raw-detector-pixels/1")
+            frame_schema="org.calculon.ao.raw-detector-pixels/1",plant=(;settings=NamedTuple()))
         @test Instrument.verify_plant(options, InstrumentPlantForTest) === nothing
         @test Instrument.verify_plant((; instrument=nothing), Module(:NoDefinition)) === nothing
         @test_throws ArgumentError Instrument.verify_plant(options, Module(:NoDefinition))
+        selected=(;pupil_registration=(;actuator_pitch=0.125))
+        selected_document=deepcopy(document)
+        selected_document["scientific_identity"]=Instrument.scientific_identity(
+            InstrumentPlantForTest.instrument_definition(selected))
+        write(path,JSON.json(selected_document))
+        @test Instrument.verify_plant(merge(options,(;plant=(;settings=selected))),InstrumentPlantForTest)===nothing
+        @test_throws ArgumentError Instrument.verify_plant(options,InstrumentPlantForTest)
+        write(path,JSON.json(document))
         for changed in ((; calibration_identity="sha256:" * repeat("b", 64)),
                 (; command_scale=1f0), (; frame_schema="org.revolt.classic.shwfs-frame.f32/1"))
             @test_throws ArgumentError Instrument.verify_plant(merge(options, changed), InstrumentPlantForTest)
@@ -191,7 +200,7 @@ end
         )
             invalid = deepcopy(document)
             mutation(invalid)
-            write(path, JSON3.write(invalid))
+            write(path, JSON.json(invalid))
             @test_throws ArgumentError Instrument.verify_plant(options, InstrumentPlantForTest)
         end
     end
@@ -201,7 +210,7 @@ end
     mktempdir() do package
         path = joinpath(package, "simulation.conf")
         instrument = operational_instrument()
-        write(joinpath(package, "instrument.json"), JSON3.write(instrument))
+        write(joinpath(package, "instrument.json"), JSON.json(instrument))
         document = Dict{String,Any}("version" => 2, "plant" => Dict(
                 "package" => "InstrumentPlantForTest", "settings" => Dict()),
             "command_input" => "pdm_command", "frame_output" => "detector_frame",
@@ -210,7 +219,7 @@ end
             "frame_encoding" => "uint16", "frame_schema" => "org.calculon.ao.raw-detector-pixels/1",
             "command_schema" => "org.calculon.ao.demanded-pdm-command/1", "command_scale" => 1e-6,
             "calibration_identity" => instrument["calibration_identity"], "instrument" => "instrument.json")
-        write(path, JSON3.write(document))
+        write(path, JSON.json(document))
         selected = PipeWireAORTC.AOSOwner.configuration(path)
         @test selected.instrument == joinpath(package, "instrument.json")
         @test selected.plant.package === :InstrumentPlantForTest
@@ -229,28 +238,28 @@ end
         ran[] = false
         incompatible = deepcopy(instrument)
         incompatible["scientific_identity"] = "sha256:" * repeat("b", 64)
-        write(joinpath(package, "instrument.json"), JSON3.write(incompatible))
+        write(joinpath(package, "instrument.json"), JSON.json(incompatible))
         @test_throws ArgumentError PipeWireAORTC.AOSOwner._main(argv; with_owner,
             load_science=() -> nothing, load_plant=package -> InstrumentPlantForTest, run)
         @test !ran[]
-        write(joinpath(package, "instrument.json"), JSON3.write(instrument))
+        write(joinpath(package, "instrument.json"), JSON.json(instrument))
         delete!(document, "instrument")
-        write(path, JSON3.write(document))
+        write(path, JSON.json(document))
         @test PipeWireAORTC.AOSOwner.configuration(path).instrument === nothing
         document["instrument"] = "instrument.json"
         delete!(document, "calibration_identity")
-        write(path, JSON3.write(document))
+        write(path, JSON.json(document))
         @test_throws ArgumentError PipeWireAORTC.AOSOwner.configuration(path)
         document["calibration_identity"] = instrument["calibration_identity"]
         document["instrument"] = joinpath(package, "instrument.json")
-        write(path, JSON3.write(document))
+        write(path, JSON.json(document))
         @test_throws PipeWireAORTC.DeploymentConfiguration.DeploymentError PipeWireAORTC.AOSOwner.configuration(path)
     end
 end
 
 @testset "instrument properties belong to the public session endpoint" begin
     mktempdir() do package
-        json = JSON3.write(operational_instrument()) * "\n"
+        json = JSON.json(operational_instrument()) * "\n"
         write(joinpath(package, "instrument.json"), json)
         spec = Dict("name" => "instrument-test", "source-owner" => "simulator",
             "instrument" => "instrument.json", "artifacts" => Dict("instrument.json" => Instrument.digest(json)),
@@ -281,6 +290,57 @@ end
             properties = get(get(component, "arguments", Dict()), "properties", Dict())
             @test !haskey(properties, Instrument.PROPERTY)
             @test !haskey(properties, Instrument.HASH_PROPERTY)
+        end
+    end
+end
+
+@testset "simulated mirror uses the device NodeInfo description" begin
+    mktempdir() do root
+        instrument_path=joinpath(root,"instrument.json")
+        mirror_path=joinpath(root,"mirror.json")
+        operational=operational_instrument()
+        write(instrument_path,JSON.json(operational))
+        description=Dict("schema_version"=>1,"id"=>"test-mirror","manufacturer"=>"Test",
+            "model"=>"Three actuators","layout"=>operational["deformable_mirrors"]["dm"]["layout"])
+        json="\n"*JSON.json(description)*"\n"
+        write(mirror_path,json)
+        options=(;instrument=instrument_path,mirror_description=mirror_path)
+        @test Instrument.mirror_properties(options)==Dict("device.mirror.description"=>json)
+        @test isempty(Instrument.mirror_properties((;mirror_description=nothing)))
+        @test_throws ArgumentError Instrument.mirror_properties(merge(options,(;instrument=nothing)))
+        for suffix in ("junk"," {}","\n{}")
+            write(mirror_path,json*suffix)
+            @test_throws ArgumentError Instrument.mirror_properties(options)
+        end
+        write(mirror_path,json)
+        for mutation in (d->(d["pupil_registration"]=Dict("actuator_pitch"=>0.125)),
+                d->(d["schema_version"]=true),d->(d["manufacturer"]=""),
+                d->(d["layout"]["command_positions"][1]=[2,1]))
+            invalid=deepcopy(description)
+            mutation(invalid)
+            write(mirror_path,JSON.json(invalid))
+            @test_throws ArgumentError Instrument.mirror_properties(options)
+        end
+        write(mirror_path,zeros(UInt8,64*1024+1))
+        @test_throws ArgumentError Instrument.mirror_properties(options)
+        write(mirror_path,UInt8[0xff])
+        @test_throws ArgumentError Instrument.mirror_properties(options)
+    end
+end
+
+@testset "mirror input is relocated with its application" begin
+    mktempdir() do application
+        filename="mirror.json"
+        write(joinpath(application,filename),"{}")
+        declared=Dict("package"=>"TestPlant","settings"=>Dict("mirror_description"=>filename))
+        plant=PipeWireAORTC.AOSOwner.plant_declaration(declared;directory=application)
+        @test plant.settings.mirror_description==joinpath(application,filename)
+        @test declared["settings"]["mirror_description"]==filename
+        @test PipeWireAORTC.AOSOwner.plant_declaration(declared).settings.mirror_description==filename
+        for path in ("../outside.json",joinpath(application,filename),"missing.json")
+            invalid=deepcopy(declared)
+            invalid["settings"]["mirror_description"]=path
+            @test_throws Exception PipeWireAORTC.AOSOwner.plant_declaration(invalid;directory=application)
         end
     end
 end

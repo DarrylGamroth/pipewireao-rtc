@@ -10,7 +10,7 @@ import ..DeploymentConfiguration
 import ..InstrumentDefinition
 import ..NativeOwnerBootstrapRuntime
 
-public main
+public main, plant_settings, plant_declaration
 
 const Bootstrap = NativeOwnerBootstrapRuntime
 const MAX_RETAINED_BYTES = 512 * 1024 * 1024
@@ -74,12 +74,17 @@ Base.@nospecializeinfer function plant_settings(@nospecialize(value), remaining=
     throw(ArgumentError("plant settings must contain finite basic JSON values"))
 end
 
-function plant_declaration(value)
+function plant_declaration(value; directory=nothing)
     value isa AbstractDict && Set(keys(value)) == Set(("package", "settings")) ||
         throw(ArgumentError("plant requires exactly package and settings"))
     package = identifier(value["package"], "plant package")
     value["settings"] isa AbstractDict || throw(ArgumentError("plant settings must be an object"))
-    return (; package, settings=plant_settings(value["settings"]))
+    settings = plant_settings(value["settings"])
+    if directory !== nothing && haskey(settings,:mirror_description)
+        settings=merge(settings,(;mirror_description=DeploymentConfiguration.relative_asset(
+            directory,settings.mirror_description)))
+    end
+    return (; package, settings)
 end
 
 "Parse the complete native bootstrap invocation without loading science."
@@ -151,7 +156,7 @@ function configuration(path::AbstractString)
     config_path = abspath(path)
     graph = version == 1 ? abspath(joinpath(dirname(config_path), text(document["graph"], "graph"))) : nothing
     graph === nothing || isfile(graph) || throw(ArgumentError("AOS graph does not exist: $graph"))
-    plant = version == 2 ? plant_declaration(document["plant"]) : nothing
+    plant = version == 2 ? plant_declaration(document["plant"]; directory=dirname(config_path)) : nothing
     command_input = identifier(document["command_input"], "command_input")
     frame_output = identifier(document["frame_output"], "frame_output")
     command_count = integer(document["command_count"], "command_count", 1, Artifacts.MAX_IMAGE_BYTES ÷ sizeof(Float32))
@@ -188,6 +193,9 @@ function configuration(path::AbstractString)
         DeploymentConfiguration.relative_asset(dirname(config_path),document["instrument"]) : nothing
     instrument===nothing || version==2 && calibration_identity!==nothing ||
         throw(ArgumentError("instrument definition requires a package plant and calibration identity"))
+    mirror_description = plant === nothing ? nothing : get(plant.settings,:mirror_description,nothing)
+    mirror_description===nothing || instrument!==nothing ||
+        throw(ArgumentError("mirror description requires the selected instrument definition"))
     entries = version == 1 ? document["artifacts"] : ()
     (entries isa AbstractVector || entries === ()) && length(entries) <= 64 || throw(ArgumentError("artifacts must be an array of at most 64 entries"))
     artifacts = FITSBinding[]
@@ -215,7 +223,7 @@ function configuration(path::AbstractString)
     return (; version, config_path, plant, graph, command_input, frame_output, command_count, frame_shape, rate, period_ns,
         exposure_ns, wall_rate, wall_period_ns, backend, device, artifacts, command_node,
         frame_encoding, frame_schema, command_schema, command_scale, total_exchanges, optical_observation,
-        detector_observation, command_observation, applied_command_observation, calibration_identity, instrument)
+        detector_observation, command_observation, applied_command_observation, calibration_identity, instrument, mirror_description)
 end
 
 "Prepare owned logical FITS arrays; preserve their provenance for the science owner."

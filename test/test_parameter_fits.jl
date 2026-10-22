@@ -1,4 +1,4 @@
-using Test, PipeWireAORTC, FITSIO, JSON3, SHA
+using Test, PipeWireAORTC, FITSIO, JSON, SHA
 
 const Parameters = PipeWireAORTC.NativeParameterSource
 
@@ -14,7 +14,7 @@ const Parameters = PipeWireAORTC.NativeParameterSource
             "layout" => "row-major", "schema" => "test.reconstructor/1",
             "initial_artifact" => Dict("path" => basename(artifact), "hdu" => 1, "axes" => [2, 1]))
         config = joinpath(directory, "parameters.json")
-        save(version, rows) = write(config, JSON3.write(Dict("version" => version, "sources" => rows)))
+        save(version, rows) = write(config, JSON.json(Dict("version" => version, "sources" => rows)))
         initial_files = sort(readdir(directory))
         for layout in ("row-major", "column-major")
             row["layout"] = layout

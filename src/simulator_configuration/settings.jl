@@ -1,14 +1,16 @@
-json_value(value) = C.parse_json(String(JSON3.write(value)))
+json_value(value) = C.parse_json(String(JSON.json(value)))
 
-function merge_settings(defaults::AbstractDict, overrides::AbstractDict)
+function merge_settings(defaults::AbstractDict, overrides::AbstractDict, schema::AbstractDict)
     result = deepcopy(defaults)
     for (key, value) in overrides
-        haskey(defaults, key) || throw(ArgumentError("unknown simulator setting $key"))
-        result[key] = value isa AbstractDict && defaults[key] isa AbstractDict ?
-            merge_settings(defaults[key], value) : deepcopy(value)
+        haskey(schema["properties"], key) || throw(ArgumentError("unknown simulator setting $key"))
+        result[key] = merge_setting(get(defaults,key,nothing),value,schema["properties"][key])
     end
     return result
 end
+
+merge_setting(default, value, schema) = deepcopy(value)
+merge_setting(default::AbstractDict, value::AbstractDict, schema) = merge_settings(default,value,schema)
 
 "Enforce the declared editable shape; physical validation remains with the plant."
 function validate_settings(schema, proposed, current; path="settings", readonly=false)
@@ -59,7 +61,7 @@ function declared_settings(instrument::Module, overrides)
         throw(ArgumentError("$(nameof(instrument)) does not declare editable simulator settings; update the application"))
     declaration = json_value(Base.invokelatest(getproperty(instrument, :describe_hil_settings)))
     defaults, schema = declaration["defaults"], declaration["schema"]
-    settings = merge_settings(defaults, overrides)
+    settings = merge_settings(defaults, overrides, schema)
     validate_settings(schema, settings, settings)
     return Dict("package" => string(nameof(instrument)), "settings" => settings, "schema" => schema)
 end
@@ -69,7 +71,10 @@ function scientific_worker(config, output; prepare=false)
     options = AOSOwner.configuration(config)
     options.plant !== nothing || throw(ArgumentError("editable settings require a declared instrument plant"))
     instrument = AOSOwner.load_instrument(options.plant.package)
-    result = declared_settings(instrument, json_value(options.plant.settings))
+    # Return configured relative filenames; scientific preparation uses the
+    # independently resolved application-local file inputs in options.
+    configured = D.decode(config,get(ENV,"PIPEWIREAO_PREFIX","/opt/pipewireao"))["plant"]["settings"]
+    result = declared_settings(instrument, configured)
     if prepare
         Base.require(Main, :AdaptiveOpticsSim)
         Base.require(Main, :AdaptiveOpticsSimPipeWireHIL)

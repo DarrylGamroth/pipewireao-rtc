@@ -175,7 +175,7 @@ function prepare_julia_overlay!(request, paths, spec, runtime)
     mkpath(artifacts)
     write(joinpath(artifacts, "Overrides.toml"),
         "[cde84cf6-9a21-5ce0-b5e3-1526e778c30b]\nPipeWireAO = " *
-        String(C.JSON3.write(overlay)) * "\n")
+        String(C.JSON.json(overlay)) * "\n")
     return nothing
 end
 

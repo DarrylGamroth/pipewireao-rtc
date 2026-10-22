@@ -720,8 +720,10 @@ their corresponding native gates pass; they are not a native fallback.
 
 ## Shared instrument definition
 
-Scientific instrument packages define geometry, channel order, units and
-coordinate conventions independently of RTC deployment configuration. The RTC
+Device descriptions define intrinsic actuator geometry and physical command
+order. Scientific instrument packages combine the explicitly supplied description
+with instrument pupil registration, units and model response independently of
+RTC deployment configuration. The RTC
 application selects that definition and its calibration, and publishes the
 resolved operational description for clients. Simulators consume their normal
 scientific APIs; the integration adapter checks compatibility before execution.
@@ -746,6 +748,22 @@ amplitude `limiter` bounds and `shape_control` declarations. Optional
 they are distinct from source-grid Zernike/Fourier coordinates. WFS `layout`
 declares detector/subaperture extents and zero-based `[row,column]` origins.
 Published source-grid geometry does not imply measured optical registration.
+
+Classic selects an application-contained `mirror-description.json` through
+`plant.settings.mirror_description`. The RTC resolves that filename relative to
+the installed application before calling the scientific API. The simulator reads
+this ordinary JSON file with JSON.jl and owns an immutable preparation snapshot;
+it does not read RTC configuration. Settings clients retain the configured relative
+filename, so a rebuild does not persist an old installation's absolute path.
+
+The ALPAO adapter and simulated command sink/applied-command source publish the
+same bounded description through the custom `device.mirror.description` property
+using existing NodeInfo interfaces. This is static metadata, not a new control
+protocol or a promise of interchangeable command units: physical ASDK commands
+remain normalized, while the selected simulator boundary uses explicitly declared
+OPD units and scale. The existing one-mirror boundary validates the description
+against the selected instrument before admission. The description carries no
+pupil registration, influence functions, conversion factor or stroke claim.
 
 `scientific_identity` is the SHA-256 of the deterministic scientific package
 API result serialized by the integration adapter. The AOS adapter checks it

@@ -102,7 +102,7 @@ function start_rebuild(session_id::AbstractString, configuration_sha256::Abstrac
         "id"=>id, "identity"=>selected.identity, "application"=>selected.application,
         "prefix"=>selected.prefix, "relative_config"=>selected.relative,
         "settings"=>settings, "resume_running"=>resume_running)
-    ncodeunits(JSON3.write(request)) <= MAX_REQUEST_BYTES ||
+    ncodeunits(JSON.json(request)) <= MAX_REQUEST_BYTES ||
         throw(ArgumentError("rebuild record exceeds 64 KiB"))
     directory = reserve_job(root, request)
     try

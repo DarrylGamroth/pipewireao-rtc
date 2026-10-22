@@ -12,6 +12,20 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Supplied Classic mirror description — 2026-10-22
+
+Intrinsic HSDM277 command geometry is now supplied as a sealed JSON file from the
+ALPAO adapter. Classic reads it with JSON.jl independently of RTC configuration;
+no mirror-description Julia package is introduced. Instrument pupil registration
+stays separate and defaults remain numerically unchanged. Ordinary NodeInfo
+properties publish the same description on the adapter and simulated mirror
+interfaces, with explicit, distinct physical/simulation command units.
+
+The [validation record](validation/mirror-description-20261022/README.md) records
+602 cold scientific, 876 CPU and 2,645 RTC checks. Local registration, final
+application checks and the CPU live replacement are being completed. GPU and
+physical-device qualification are outside this increment.
+
 ### Shared Classic instrument definition — 2026-10-22
 
 Classic's scientific package now owns the ordered DM geometry, source-grid shape

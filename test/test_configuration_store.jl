@@ -1,4 +1,4 @@
-using Test, PipeWireAORTC, FITSIO, JSON3
+using Test, PipeWireAORTC, FITSIO, JSON
 using PipeWireAO
 const CS = PipeWireAORTC.ConfigurationStore
 const CLI = PipeWireAORTC.ConfigurationStoreCLI
@@ -57,7 +57,7 @@ end
         @test length(CS.list_artifacts(store;limit=1)["items"]) == 1
         @test_throws ArgumentError CS.list_artifacts(store;limit=101)
         request=Dict("protocol"=>CS.PROTOCOL,"root"=>store.root,"op"=>"get","arguments"=>Dict("id"=>first_record["id"],"layout"=>"column-major"))
-        response=CLI.respond(JSON3.write(request))
+        response=CLI.respond(JSON.json(request))
         @test response["ok"]
         @test read(response["result"]["path"]) == original
         @test reinterpret(Float32,read(response["result"]["prepared_path"])) == vec(data)
@@ -69,10 +69,10 @@ end
         @test_throws ArgumentError CS.materialize!(store,first_record["id"])
         @test read(row_major["prepared_path"],String) == "corrupted cached payload"
         @test !CLI.respond("{")["ok"]
-        @test !CLI.respond(JSON3.write(Dict("protocol"=>CS.PROTOCOL,"root"=>store.root,"op"=>"live-control")))["ok"]
-        input=IOBuffer("{\n"*JSON3.write(Dict("protocol"=>CS.PROTOCOL,"root"=>store.root,"op"=>"list"))*"\n")
+        @test !CLI.respond(JSON.json(Dict("protocol"=>CS.PROTOCOL,"root"=>store.root,"op"=>"live-control")))["ok"]
+        input=IOBuffer("{\n"*JSON.json(Dict("protocol"=>CS.PROTOCOL,"root"=>store.root,"op"=>"list"))*"\n")
         output=IOBuffer(); @test CLI.serve(input,output) == 0
-        replies=JSON3.read.(split(String(take!(output)),'\n';keepempty=false))
+        replies=JSON.parse.(split(String(take!(output)),'\n';keepempty=false))
         @test !replies[1].ok && replies[2].ok
         # Independently missing loose content objects must be detected at retrieval.
         broken=CS.Store(joinpath(root,"broken"))

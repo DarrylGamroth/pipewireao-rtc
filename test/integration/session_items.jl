@@ -1,5 +1,5 @@
 #!/usr/bin/env julia
-using Test, PipeWireAO, JSON3
+using Test, PipeWireAO, JSON
 
 include(joinpath(@__DIR__, "..", "native_control_private_core.jl"))
 
@@ -359,7 +359,7 @@ function main()
         receipt["error"] = sprint(showerror, error)
         rethrow()
     finally
-        write(receipt_path, JSON3.write(receipt))
+        write(receipt_path, JSON.json(receipt))
     end
 end
 

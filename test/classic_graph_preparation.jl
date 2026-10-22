@@ -1,10 +1,10 @@
 # Optional application check, run in its resolved scientific environment.
-using Test, PipeWireAORTC, FilterGraphIsland, JSON3
+using Test, PipeWireAORTC, FilterGraphIsland, JSON
 
 function check_application(application)
     R = PipeWireAORTC
     application = realpath(application)
-    spec = JSON3.read(read(joinpath(application, "deployment.conf"), String), Dict{String,Any})
+    spec = JSON.parse(read(joinpath(application, "deployment.conf"), String), Dict{String,Any})
     owner = only(filter(owner -> owner["role"] == "julia", spec["owners"]))
     arguments = owner["argv"][findfirst(==("--"), owner["argv"]) + 1:end]
     bindings = Dict("PACKAGE" => application, "RUNTIME" => dirname(application),

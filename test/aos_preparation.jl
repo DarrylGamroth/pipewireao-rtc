@@ -2,7 +2,7 @@
 # and HIL, plus this RTC checkout. No PipeWire daemon or GPU is required.
 using Test
 using FITSIO
-using JSON3
+using JSON
 using PipeWireAORTC
 using AdaptiveOpticsSim
 using AdaptiveOpticsSim.AlgorithmGraphs
@@ -111,7 +111,7 @@ end
                 Dict("binding" => "basis", "path" => "basis.fits", "axes" => [1,2,3], "type" => "Float32", "shape" => [2,3,3]),
                 Dict("binding" => "pupil", "path" => "pupil.fits", "axes" => [1,2], "type" => "Bool", "shape" => [2,3])])
         config_path = joinpath(directory, "owner.conf")
-        write(config_path, JSON3.write(document))
+        write(config_path, JSON.json(document))
         options = merge(AOSPreparationOwner.configuration(config_path),
             (; remote=joinpath(directory, "native"), control_node="simulator-wfs"))
         science = AOSPreparationOwner.prepare_science(options)

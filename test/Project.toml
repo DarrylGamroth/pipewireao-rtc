@@ -1,6 +1,6 @@
 [deps]
 FITSIO = "525bcba6-941b-5504-bd06-fd0dc1a4d2eb"
-JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
 PipeWireAO = "5d815c25-fdf3-4508-8205-db8be38ea5d0"
 PipeWireAORTC = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
@@ -15,7 +15,7 @@ PipeWireAORTC = {path = ".."}
 
 [compat]
 FITSIO = "0.17"
-JSON3 = "1"
+JSON = "1.12"
 Libdl = "1"
 PipeWireAO = "0.6.18"
 PipeWireAORTC = "0.2"

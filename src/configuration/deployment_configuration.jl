@@ -1,6 +1,6 @@
 module DeploymentConfiguration
 
-using JSON3, TOML
+using JSON, TOML
 using ..Common
 using ..Placement
 import ..PipeWireAORTC
@@ -494,7 +494,7 @@ end
 function substitute(value::AbstractString, bindings::AbstractDict; quoted=false)
     result = String(value)
     for (name, replacement) in bindings
-        escaped = quoted ? String(JSON3.write(replacement))[2:end-1] : string(replacement)
+        escaped = quoted ? String(JSON.json(replacement))[2:end-1] : string(replacement)
         result = replace(result, "@$name@" => escaped)
     end
     occursin(r"@[A-Z_]+@", result) && fail("unresolved deployment binding in $(first(result, min(length(result), 200)))")

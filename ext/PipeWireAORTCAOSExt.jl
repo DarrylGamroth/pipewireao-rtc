@@ -321,19 +321,26 @@ function Owner.run_owner(options)
         observation = OpticalObservation.prepare(options.optical_observation ? science.definition : nothing, science.graph)
         options.owner_check()
         mailbox = prepare_source_control(options, state, source_instance)
+        mirror_properties = PipeWireAORTC.InstrumentDefinition.mirror_properties(options)
         pipewire = prepare_pipewire_hil(science.boundary, science.configuration;
             frame_buffers=options.detector_observation ? 3 : 2,
             command_buffers=options.command_observation ? 3 : 2,
             applied_command_node_name=options.applied_command_observation ? "simulator-applied-command" : nothing,
             applied_command_buffers=3,
-            applied_command_properties=Dict("node.group" => "pipewireao-applied-observation",
+            applied_command_properties=merge(Dict("node.group" => "pipewireao-applied-observation",
                 "node.sync-group" => "sync.pipewireao-applied-observation", "node.loop.name" => "observer-loop"),
+                mirror_properties),
             image_sources=OpticalObservation.source_options(observation),
             frame_properties=merge(SourceControl.source_properties(mailbox), simulation_properties(options, science)),
             frame_params=mailbox.parameters.params,
             on_frame_param_changed=SourceControl.ParameterChanged(mailbox),
             frame_param_buffer=PodBuffer(4096),
             on_frame_param_overflow=SourceControl.ParameterOverflow(mailbox))
+        if !isempty(mirror_properties)
+            with_thread_loop_lock(pipewire.loop) do _
+                update_properties!(pipewire.command_stream,mirror_properties)
+            end
+        end
         transport_cpu = get(options, :transport_cpu, nothing)
         if transport_cpu !== nothing
             PipeWireAORTC.Placement.pin_loop!(pipewire.loop, transport_cpu; check=options.owner_check)

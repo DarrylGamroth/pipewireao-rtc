@@ -1,6 +1,6 @@
 # Opt-in integration: owns only its uniquely named user units/private core.
 # CPU 12/13, no CUDA, no science/hardware or installed live sessions.
-using Test, PipeWireAORTC, JSON3
+using Test, PipeWireAORTC, JSON
 include("native_control_private_core.jl")
 const C = PipeWireAORTC.Common
 const S = PipeWireAORTC.SystemdOwners
@@ -19,7 +19,7 @@ function stop_case(remote, directory, mode)
     unit = "codex-rtc-stop-$(getpid())-$(mode).service"
     fragment = joinpath(root, unit)
     hook = "ExecStop=$julia --startup-file=no --project=$repo $repo/test/native_systemd_stop_launcher.jl $repo/session_cli.jl $root stop --unit $unit --runtime-root $root"
-    environment = join(["Environment=" * String(JSON3.write(key * "=" * ENV[key]))
+    environment = join(["Environment=" * String(JSON.json(key * "=" * ENV[key]))
         for key in ("PIPEWIREAO_CONFIG_DIR", "PIPEWIREAO_MODULE_DIR", "PIPEWIREAO_SPA_PLUGIN_DIR", "LD_LIBRARY_PATH")], '\n')
     write(fragment, """
     [Service]

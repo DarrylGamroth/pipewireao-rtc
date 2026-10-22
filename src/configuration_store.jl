@@ -1,7 +1,7 @@
 """Headless, content-addressed configuration artifacts and native operation history."""
 module ConfigurationStore
 
-using SQLite, DBInterface, JSON3, SHA, FITSIO
+using SQLite, DBInterface, JSON, SHA, FITSIO
 using ..Artifacts
 using ..NativeControlCodec
 using ..NativeRunnerCodec
@@ -137,17 +137,17 @@ end
 
 # JSON identity is independent of dictionary iteration order, including nested metadata.
 function canonical_json(value)
-    if value isa AbstractDict || value isa JSON3.Object
+    if value isa AbstractDict
         all(key -> key isa AbstractString, keys(value)) || throw(ArgumentError("metadata keys must be strings"))
         names = sort!(String.(collect(keys(value))))
-        return "{" * join((String(JSON3.write(name)) * ":" * canonical_json(value[name]) for name in names), ",") * "}"
+        return "{" * join((String(JSON.json(name)) * ":" * canonical_json(value[name]) for name in names), ",") * "}"
     elseif value isa Union{AbstractVector,Tuple}
         return "[" * join(canonical_json.(value), ",") * "]"
     elseif value isa Union{AbstractString,Bool,Integer,Nothing}
-        return String(JSON3.write(value))
+        return String(JSON.json(value))
     elseif value isa AbstractFloat
         isfinite(value) || throw(ArgumentError("metadata numbers must be finite"))
-        return String(JSON3.write(value))
+        return String(JSON.json(value))
     end
     throw(ArgumentError("metadata must contain JSON values"))
 end
@@ -161,7 +161,7 @@ end
 function register!(store::Store, source::Artifacts.FITSArtifact, ::Type{T}, shape;
         label, scope, metadata=Dict{String,Any}(), schema="") where T
     label = bounded_name(label, "label")
-    scope = scope isa AbstractDict ? JSON3.read(canonical_json(scope), Dict{String,Any}) : bounded_name(scope, "scope")
+    scope = scope isa AbstractDict ? JSON.parse(canonical_json(scope), Dict{String,Any}) : bounded_name(scope, "scope")
     schema = bounded_name(schema, "schema"; empty=true)
     metadata isa AbstractDict || throw(ArgumentError("metadata must be a JSON object"))
     T in Artifacts.TARGET_TYPES || throw(ArgumentError("unsupported target type"))
@@ -219,7 +219,7 @@ function row_record(store, row; verify=true)
         String(read_blob(store, String(row.id); limit=MAX_MANIFEST_BYTES)) == text ||
             throw(ArgumentError("catalog manifest differs from Git"))
     end
-    manifest = JSON3.read(text, Dict{String,Any})
+    manifest = JSON.parse(text, Dict{String,Any})
     manifest["content_oid"] == String(row.content_oid) && manifest["object_format"] == store.object_format ||
         throw(ArgumentError("catalog manifest identity mismatch"))
     checked_oid(store,String(row.content_oid)); checked_oid(store,String(row.commit_oid))

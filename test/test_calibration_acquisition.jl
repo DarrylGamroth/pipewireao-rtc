@@ -68,7 +68,7 @@ ops(client) = C._operation.([c.action for c in client.client.commands])
         @test all(b->b.values==Float32[3,4] && b.valid,result.responses)
         document = A.document(result)
         @test document["run"] == typemax(UInt64)
-        @test Common.parse_json(PipeWireAORTC.CalibrationCLI.JSON3.write(document)) == document
+        @test Common.parse_json(PipeWireAORTC.CalibrationCLI.JSON.json(document)) == document
         @test all(b->length(b["exposures"])==2,document["responses"])
         @test_throws ArgumentError A.acquire!(client,plan(rule))
     end
@@ -197,7 +197,7 @@ end
             seek(io,A.MAX_PLAN_BYTES);write(io,UInt8(' '))
         end
         @test_throws ArgumentError A.read_plan(path)
-        payload=CLI.JSON3.write(plan_document())
+        payload=CLI.JSON.json(plan_document())
         write(path,payload)
         @test A.read_plan(path).run==typemax(UInt64)
         for duplicate in (replace(payload,"\"run\":"=>"\"run\":1,\"run\":"),

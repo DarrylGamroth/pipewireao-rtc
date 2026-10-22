@@ -13,6 +13,19 @@ describe_hil_settings() = (; defaults=(; geometry=16, atmosphere=(; r0=0.15,
         ids=(;type="array",uniqueItems=true,items=(;type="string")))))))
 end
 
+module FileConfiguredPlant
+describe_hil_settings() = (;defaults=(;gain=0.5),schema=(;type="object",properties=(;
+    gain=(;type="number"),mirror_description=(;type="string",readOnly=true))))
+end
+@testset "required scientific file input has no invented default" begin
+    configured=Dict("mirror_description"=>"mirror-description.json")
+    declaration=S.declared_settings(FileConfiguredPlant,configured)
+    @test declaration["settings"]==merge(configured,Dict("gain"=>0.5))
+    @test_throws ArgumentError S.declared_settings(FileConfiguredPlant,Dict())
+    changed=merge(declaration["settings"],Dict("mirror_description"=>"other.json"))
+    @test_throws ArgumentError S.validate_settings(declaration["schema"],changed,declaration["settings"])
+end
+
 @testset "declared simulator settings and immutable structural fields" begin
     description = S.declared_settings(DeclaredPlant, Dict("atmosphere"=>Dict("r0"=>0.2)))
     current = description["settings"]

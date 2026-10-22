@@ -1,7 +1,7 @@
 """Finite interaction acquisition on the control context; no science or session policy."""
 module CalibrationAcquisition
 
-using JSON3
+using JSON
 
 import ..Common
 import ..NativeCalibrationActionClient
@@ -83,18 +83,19 @@ function read_plan(path::AbstractString)
     length(bytes) <= MAX_PLAN_BYTES || throw(ArgumentError("plan exceeds 16 MiB"))
     text = String(bytes)
     value = Common.parse_json(text)
-    # JSON dictionaries otherwise collapse duplicate keys. Rust's v1 plan
-    # rejects them; inspect the parsed object pairs before adopting a plan.
-    _unique_fields(JSON3.read(text))
+    # Preserve rejection of duplicate fields before adopting a plan; eager
+    # JSON objects otherwise retain only the final value of each repeated key.
+    try
+        JSON.parse(text; duplicate_keys=:error, maxdepth=64)
+    catch exception
+        _plan_parse_error(exception)
+    end
     return Plan(value)
 end
-function _unique_fields(value::AbstractDict)
-    length(Set(keys(value))) == length(value) || throw(ArgumentError("duplicate calibration plan field"))
-    foreach(_unique_fields, values(value))
-    return nothing
-end
-_unique_fields(value::AbstractVector) = (foreach(_unique_fields, value); nothing)
-_unique_fields(value) = nothing
+
+_plan_parse_error(::JSON.DuplicateKeyError) =
+    throw(ArgumentError("duplicate calibration plan field"))
+_plan_parse_error(exception) = throw(exception)
 
 struct Cancelled <: Exception end
 struct AcquisitionFailure <: Exception

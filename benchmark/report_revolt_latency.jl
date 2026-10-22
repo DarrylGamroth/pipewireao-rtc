@@ -1,7 +1,7 @@
 #!/usr/bin/env julia
 
 using HdrHistogram
-using JSON3
+using JSON
 using Pkg
 using TOML
 
@@ -116,7 +116,7 @@ function environment_record()
     dependencies = Dict{String,String}()
     for dependency in values(Pkg.dependencies())
         isnothing(dependency.version) && continue
-        dependency.name in ("HdrHistogram", "JSON3") || continue
+        dependency.name in ("HdrHistogram", "JSON") || continue
         dependencies[dependency.name] = string(dependency.version)
     end
     return Dict(
@@ -229,7 +229,7 @@ function main(arguments)
         )
     end
     open(options.output, "w") do io
-        JSON3.pretty(io, result)
+        JSON.json(io, result; pretty=true)
         println(io)
     end
     println("wrote ", abspath(options.output))

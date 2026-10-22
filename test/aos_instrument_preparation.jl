@@ -1,7 +1,7 @@
 # Optional science test. Run in an environment containing RTC, AOS, HIL and
 # REVOLTClassicSim; select cpu (default) or cuda as the first argument.
 using Test
-using JSON3
+using JSON
 using PipeWireAORTC
 using AdaptiveOpticsSim
 using AdaptiveOpticsSim.AlgorithmGraphs
@@ -83,7 +83,7 @@ function instrument_document(; backend="cpu", package="CountingInstrument", sett
 end
 
 function instrument_options(document, path, plant_module)
-    write(path, JSON3.write(document))
+    write(path, JSON.json(document))
     return merge(InstrumentOwner.configuration(path),
         (; remote="/tmp/aos-instrument-preparation", control_node="simulator-wfs", plant_module))
 end

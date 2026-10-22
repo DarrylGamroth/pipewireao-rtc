@@ -1,4 +1,4 @@
-using Test, TOML, JSON3, PipeWireAORTC
+using Test, TOML, JSON, PipeWireAORTC
 
 const D = PipeWireAORTC.DeploymentConfiguration
 const I = PipeWireAORTC.SessionInstall

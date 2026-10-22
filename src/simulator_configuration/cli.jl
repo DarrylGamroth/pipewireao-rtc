@@ -30,7 +30,7 @@ function respond(line::AbstractString)
     try
         ncodeunits(line) <= MAX_REQUEST_BYTES || throw(ArgumentError("request exceeds 64 KiB"))
         result = request_result(C.parse_json(line))
-        ncodeunits(JSON3.write(result)) <= MAX_REPLY_BYTES || throw(ArgumentError("reply exceeds 1 MiB"))
+        ncodeunits(JSON.json(result)) <= MAX_REPLY_BYTES || throw(ArgumentError("reply exceeds 1 MiB"))
         return Dict("ok"=>true, "result"=>result)
     catch error
         return Dict("ok"=>false, "error"=>sprint(showerror,error))
@@ -45,6 +45,6 @@ function main(args=ARGS; input::IO=stdin, output::IO=stdout)
         throw(ArgumentError("usage: simulator settings [serve|JSON_REQUEST]"))
     (isempty(args) || args == ["serve"]) && return serve(input, output)
     response = respond(only(args))
-    JSON3.write(output, response); write(output, '\n'); flush(output)
+    JSON.json(output, response); write(output, '\n'); flush(output)
     return response["ok"] ? 0 : 1
 end

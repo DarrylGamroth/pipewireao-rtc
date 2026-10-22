@@ -1,6 +1,6 @@
 module ScienceExport
 
-using JSON3
+using JSON
 using SHA
 using PipeWireAO
 using ..Common
@@ -41,11 +41,11 @@ spa_simple_string(value::AbstractString) =
 function write_spa_value(io::IO, value::AbstractString, depth)
     isvalid(value) || throw(ArgumentError("SPA configuration string must be valid UTF-8"))
     occursin('\0', value) && throw(ArgumentError("SPA configuration strings must not contain NUL"))
-    spa_simple_string(value) ? print(io, value) : JSON3.write(io, value)
+    spa_simple_string(value) ? print(io, value) : JSON.json(io, value)
 end
 
 write_spa_value(io::IO, value::Union{Nothing,Bool,Integer,AbstractFloat}, depth) =
-    JSON3.write(io, value)
+    JSON.json(io, value)
 
 function write_spa_value(io::IO, value::AbstractDict, depth)
     println(io, '{')
@@ -75,7 +75,7 @@ write_spa_value(io::IO, value, depth) =
 """Write standard relaxed SPA-JSON with bare simple strings and `key = value` entries."""
 function write_spa_config(path::AbstractString, value)
     Common.finite_json(value)
-    json = JSON3.write(value)
+    json = JSON.json(value)
     isequal(Common.parse_json(json), value) ||
         throw(ArgumentError("SPA configuration changed during JSON serialization"))
     io = IOBuffer()

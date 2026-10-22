@@ -1,6 +1,6 @@
 """One-shot interaction acquisition; JSON files are plans and saved evidence only."""
 module CalibrationCLI
-using JSON3
+using JSON
 import ..Common
 import ..CalibrationAcquisition
 import ..NativeCalibrationActionClient
@@ -21,7 +21,7 @@ function Journal(path, probes)
     flags = Base.Filesystem.JL_O_WRONLY | Base.Filesystem.JL_O_CREAT | Base.Filesystem.JL_O_EXCL
     file = Base.Filesystem.open(path, flags, 0o600)
     try
-        header = JSON3.write(Dict("event"=>"header", "version"=>2,
+        header = JSON.json(Dict("event"=>"header", "version"=>2,
             "probe_count"=>probes, "max_charged_bytes"=>MAX_EVIDENCE_BYTES)) * "\n"
         write(file, header)
         return Journal(file, ncodeunits(header), Any[], nothing)
@@ -60,10 +60,10 @@ function finish!(journal::Journal, result)
             Dict("event"=>"acquisition", "result"=>Dict(k=>v for (k,v) in result if k != "responses"))
         end
         for record in journal.records
-            write(journal.file, JSON3.write(record), '\n')
+            write(journal.file, JSON.json(record), '\n')
         end
         if journal.error !== nothing
-            write(journal.file, JSON3.write(Dict("event"=>"evidence_error", "reason"=>journal.error)), '\n')
+            write(journal.file, JSON.json(Dict("event"=>"evidence_error", "reason"=>journal.error)), '\n')
         end
     finally
         close(journal.file)
@@ -87,7 +87,7 @@ function run(argv=ARGS; acquire=Acquisition.acquire)
         end
         result = Acquisition.document(acquired)
         # Emit the report even when evidence finalization later fails.
-        println(JSON3.write(result))
+        println(JSON.json(result))
         journal === nothing || finish!(journal, result)
         journal = nothing
         return result["phase"] == "complete" ? 0 : 1
