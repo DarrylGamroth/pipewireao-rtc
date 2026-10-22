@@ -12,6 +12,24 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Shared Classic instrument definition — 2026-10-22
+
+Classic's scientific package now owns the ordered DM geometry, source-grid shape
+coordinates and SHWFS regions. The RTC application selects calibrated assets and
+interface bounds, seals the resulting definition and publishes it on the existing
+native session endpoint. Generic GUI references replace the duplicated arrays in
+`operator-views.toml`. Fresh verification is required to resolve the definition;
+metadata replacement invalidates the binding and native drafts. Workspace state
+stores presentation and configured references, not resolved science.
+
+Locally registered REVOLTClassicSim 0.2.5 and PipeWireAORTC 0.2.6 are selected;
+AOS, HIL, JFG and calibration assets remain unchanged. The [CPU software gate](validation/instrument-definition-20261022/README.md)
+and [independent review](reviews/20261022-instrument-definition/REVIEW.md) record
+265 scientific, 2,622 RTC and 17 application assertions, plus generic GUI tests,
+exact application JSON/TOML resolution and WASM compilation. This increment
+validates the existing one-DM/one-WFS transport and retains the provisional
+physical registration. Installed offline and live CPU closure is the final gate.
+
 ### Headless WFS measurements and generic X/Y — 2026-10-22
 
 Classic now computes its bounded eight-field WFS summary in an optional,
