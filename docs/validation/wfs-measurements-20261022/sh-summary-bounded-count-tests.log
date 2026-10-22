@@ -1,0 +1,19 @@
+Test Summary:                       | Pass  Total  Time
+summary declaration and preparation |   14     14  0.7s
+Test Summary:                                     | Pass  Total  Time
+independent numerical oracle and immutable inputs |   18     18  0.1s
+Test Summary:                                                             | Pass  Total  Time
+invalid diagnostics complete successfully and replay without stale fields |   53     53  1.3s
+Test Summary:                                | Pass  Total  Time
+checked shapes, aliases, and strided storage |   10     10  2.2s
+Test Summary:                                    | Pass  Total  Time
+Every public algorithm binding has documentation |    7      7  0.6s
+Test Summary:             | Pass  Total  Time
+scientific schema catalog |  147    147  1.3s
+Test Summary:                                                         | Pass  Total  Time
+FGN Algorithm migration inventory matches the Node-ready declarations |  154    154  1.9s
+Test Summary:                                                             | Pass  Total  Time
+complete-frame measurement and summary compile into an ordinary CPU Graph |   18     18  5.4s
+Test Summary:                                    | Pass  Total  Time
+nonfinite valid diagnostics do not fault a Graph |    6      6  0.7s
+No CUDA/AMDGPU modules loaded; Julia 1.13.2

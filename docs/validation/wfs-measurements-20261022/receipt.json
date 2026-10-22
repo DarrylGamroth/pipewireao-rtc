@@ -1,0 +1,23 @@
+{
+  "commit": "44c919030e4905f8eb66d1a027d400510c42d16c",
+  "branch": "codex/wfs-xy",
+  "worktree": "/tmp/pipewireao-gui-wfs-xy",
+  "artifact": "/tmp/pipewireao-wfs-gui-handoff/pipewireao-gui-44c9190-glow",
+  "sha256": "6c595f54ca06d4a6d0d8096244a3b4e224adc663a77194700744e2419d2483bb",
+  "bytes": 69680432,
+  "eframe_features": [
+    "default_fonts",
+    "glow",
+    "persistence",
+    "ron",
+    "serde",
+    "wayland",
+    "x11"
+  ],
+  "tests": "576 library + 276 binary + 12 integration pass; 1 library +15 binary ignored live tests",
+  "profile": "dev, debug info disabled, incremental disabled; copied and stripped immediately after standalone build",
+  "external_profile_parser": "/home/dgamroth/workspaces/codex/pipewire/revolt-classic-rtc-wfs/operator-views.toml passed",
+  "strict_clippy": "existing four DM chunks_exact lint + existing Atomic fetch_update deprecations with Rust1.99.1; all-targets passes allowing those baseline classes",
+  "deployment": "none",
+  "browser_runtime": "not run; WASM/browser-host compilation, dependency exclusion and real headless egui tests passed"
+}

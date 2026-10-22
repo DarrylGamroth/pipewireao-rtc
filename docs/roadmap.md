@@ -12,6 +12,31 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Headless WFS measurements and generic X/Y — 2026-10-22
+
+The existing JFG owner publishes a bounded eight-field WFS summary through
+FilterGraphAlgorithms 0.7.1. GUI SHWFS readouts consume it directly; GUI WFS
+reductions and smoothing are removed. Generic X/Y reuses the ordinary chart
+source, history and persistence, with both axes from one sample. Classic's
+TOML declares mean-slope X/Y in detector pixels and mean-flux history; no
+instrument-specific rendering or additional management daemon is introduced.
+
+Numerical/graph checks pass in the deployed closure, GUI tests pass 864 Rust
+and 151 Julia assertions plus WASM/browser compilation, and offline Classic
+preparation passes 71 checks. Two native 32-frame CPU generations pass 2,618
+assertions: exact six-stream identity/PTS and summary oracle, exact detector
+replay under the retained FFT witness, bitwise unchanged original controller
+outputs, zero warmed graph allocations, Reset and complete Quit cleanup.
+The independent review closes two small X/Y settings defects. Live CPU and
+software-GUI deployment receipts are maintained with the
+[validation](validation/wfs-measurements-20261022/README.md) and
+[review](reviews/20261022-wfs-measurements/REVIEW.md).
+
+Calibrated physical tip/tilt/focus, other instrument deployment, GPU, hardware,
+cadence and latency qualification remain outside this gate. Heavier analysis,
+recording and a shared discovery/browser observation service are future optional
+consumers behind existing bounded queues; RTC lifecycle ownership stays unchanged.
+
 ### Classic exact CPU detector replay and chart controls — 2026-10-22
 
 The current finite CPU gate passes 1,027 assertions across two 32-frame native

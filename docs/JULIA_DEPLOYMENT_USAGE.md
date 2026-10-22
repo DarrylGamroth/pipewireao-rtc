@@ -14,6 +14,50 @@ headless RTC and libwireplumber assets and rejects a missing session runtime bef
 Scientific campaign qualification under this replacement remains separate from
 the recorded Copper complete-frame lifecycle checks.
 
+## Headless WFS measurements
+
+An application can connect the ordinary `shack-hartmann-summary-f32` Algorithm
+to its measurement node's `slopes`, `flux` and `validity` outputs. Configure the
+subaperture count, export `summary`, and connect it to an existing capacity-one
+copy/drop-oldest observation queue. The calculation runs in the numerical graph
+owner; the headless RTC only admits and controls the declared topology.
+
+The F32 vector has shape `(8,)` and schema
+`org.calculon.ao.shack-hartmann-summary/1`. Zero-based fields are total count,
+valid count, mean valid flux, X slope RMS, Y slope RMS, combined RMS, mean X
+slope and mean Y slope. RMS is uncentered. Flux and slopes retain their input
+units. Mean slopes do not establish calibrated physical tip/tilt or focus.
+Invalid subapertures are excluded; no valid rows or nonfinite valid inputs
+produce NaN aggregates while retaining the counts.
+
+The GUI overlay's optional `native_products.summary` binding uses this packet
+for its existing readouts. A configured summary joins detector/slopes/flux/
+validity in the same bounded, exact-identity and Header-sequence/PTS cohort.
+Missing products make readouts unavailable; the GUI does not recompute them.
+Scripts can subscribe to the same queue without any GUI connection.
+
+A `time_series` view can declare `xy_axes` with `x_index`, `y_index`, axis titles,
+units and `equal_axes`. Both coordinates come from one admitted ndarray sample;
+history, source selection and bounds reuse the ordinary time-series machinery.
+Classic selects summary channels 6/7 for its WFS mean-slope trajectory, and
+channel 2 for mean-flux history. Other RTCs declare their own matching sources
+and schemas in their view profiles; no instrument-specific GUI handler is used.
+
+Small frame reductions fit existing graph owners. Expensive spectra, long-run
+statistics, recording and calibration/reconstructor generation belong in
+optional consumers behind bounded observation queues when implemented. Such
+workers need no additional RTC lifecycle authority, GUI dependency or data
+scheduler in the runner. Device control and scientific feedback remain with
+their established owners.
+
+An optional observation service is a future integration point for shared
+discovery, subscription delivery limits and a browser/WebSocket bridge.
+PipeWire's registry remains authoritative, and existing bounded queues remain
+the transport boundary. Observation delivery limits must preserve whole
+measurement cohorts and their original sequence/PTS; they do not change the
+control loop's sample rate. This service has not been implemented and is not a
+new session owner or a prerequisite for native GUI operation.
+
 ## Optional simulator wavefront images
 
 ### Headless RMS measurements

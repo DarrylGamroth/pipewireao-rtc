@@ -17,6 +17,17 @@ for the native memory regression, deployment and fault recovery evidence.
 
 ## Managed Classic CPU closed-loop replay
 
+`classic_wfs_summary.jl CPU_TEST FRESH_STATE PREFIX [BASELINE_APPLICATION]`
+checks the headless WFS summary from two 32-frame CPU generations. Prepare the
+same sealed 2 Hz CPU application and test-only FFT witness described below.
+It captures detector, demanded commands, slopes, flux, validity and summary;
+checks all six acquisition identities and Header sequence/PTS; independently
+reconstructs the eight summary fields; and requires exact detector/controller
+replay and zero warmed graph allocations. The optional baseline application
+must retain the original science graph and parameter bindings; every common
+output is compared bitwise. Reset and Quit cleanup are required. This is a
+finite functional/numerical test, not wall-rate or hardware qualification.
+
 `classic_wavefront.jl APPLICATION FRESH_STATE PREFIX` additionally validates the
 shared residual-wavefront transport against direct pupil OPD replay. Use a sealed
 CPU application with optical observation, 32 exchanges and 2 Hz wall pacing.

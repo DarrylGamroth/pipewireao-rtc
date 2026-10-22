@@ -1,5 +1,18 @@
 # Delivery evidence catalog
 
+## Headless WFS measurements and generic X/Y — 2026-10-22
+
+[Validation](validation/wfs-measurements-20261022/README.md) preserves the
+transport-neutral summary's numerical/metadata/allocation checks, generic
+five-frame GUI cohort and X/Y tests, immutable local package registration,
+71 offline checks and the 2,618-assertion two-generation CPU gate. All six
+streams match identity/PTS, summary bits match the independent oracle, detector
+replay is exact under the retained FFT witness, original controller outputs
+are unchanged and cleanup completes. The [review](reviews/20261022-wfs-measurements/REVIEW.md)
+records the two corrected X/Y settings issues and bounded owner semantics.
+Live CPU/software-GUI receipts and their scope are included with validation.
+No physical modal, GPU, cadence, latency or other-instrument qualification is claimed.
+
 ## Classic exact CPU detector replay and chart controls — 2026-10-22
 
 [Validation](validation/classic-detector-20261022/README.md) preserves controlled

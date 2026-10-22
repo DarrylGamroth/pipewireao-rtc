@@ -1,0 +1,1 @@
+{"state":"Running","complete":true,"scope":"16 distinct summary frames delivered to a CLI observer while GUI process/nodes absent; not an all-observers-absent timing gate","gui_nodes_absent":true,"before_sequence":6422,"after_sequence":6437,"generation":1}

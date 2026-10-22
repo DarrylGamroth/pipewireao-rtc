@@ -1,0 +1,3 @@
+Test Summary:                                    | Pass  Total  Time
+Classic headless application offline preparation |   71     71  3.2s
+Offline evidence: /home/dgamroth/workspaces/codex/worktrees/wfs-measurements-20261022/offline/offline-check.json

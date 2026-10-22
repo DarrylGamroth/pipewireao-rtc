@@ -1,0 +1,62 @@
+┌ Warning: Module FilterGraphAlgorithms with build ID fafbfcfd-9ad0-21ba-c167-124ab4f4ad74 is missing from the cache.
+│ This may mean FilterGraphAlgorithms [8914fa96-dfe6-4d3c-aced-40e6da1f6420] does not support precompilation but is imported by a module that does.
+└ @ Base loading.jl:2768
+
+  1 dependency had output during precompilation:
+┌ JuliaFilterGraph
+│  [Output was shown above]
+└  
+Only deployed dependency changed: FilterGraphAlgorithms
+Test Summary:                       | Pass  Total  Time
+summary declaration and preparation |   12     12  0.9s
+Test Summary:                                     | Pass  Total  Time
+independent numerical oracle and immutable inputs |   18     18  0.4s
+Test Summary:                                                             | Pass  Total  Time
+invalid diagnostics complete successfully and replay without stale fields |   53     53  0.3s
+Test Summary:                                | Pass  Total  Time
+checked shapes, aliases, and strided storage |   10     10  1.0s
+Test Summary:                                               | Pass  Total  Time
+Shack-Hartmann image declaration preserves the FGN contract |   13     13  1.1s
+Test Summary:                                      | Pass  Total  Time
+image-backed centroids match the frozen FGN oracle |    3      3  0.5s
+Test Summary:                                                    | Pass  Total  Time
+complete-frame calibration matches the frozen AOS plant boundary |   26     26  1.8s
+Test Summary:                                                   | Pass  Total  Time
+image-backed measurement matches materialized Julia composition |    6      6  1.6s
+Test Summary:                                             | Pass  Total  Time
+all sparse calibration replacements match frozen outcomes |   25     25  0.4s
+Test Summary:                                         | Pass  Total  Time
+threshold, validity, and active state remain distinct |   12     12  0.1s
+Test Summary:                                            | Pass  Total  Time
+preparation and parameter replacement are failure-atomic |   13     13  0.2s
+Test Summary:                                              | Pass  Total  Time
+logical CPU views work and overlapping storage is rejected |    8      8  1.1s
+Test Summary:                                                   | Pass  Total  Time
+REVOLT-shaped checked and admitted calls allocate no Julia heap |    4      4  0.1s
+Test Summary:                                                          | Pass  Total  Time
+contiguous detector rows preserve calibrated pixel order and CPU views |   15     15  1.4s
+Test Summary:                                                          | Pass  Total  Time
+SIMD centroids retain serial exceptional and threshold classifications |   21     21  0.2s
+Test Summary:                                                     | Pass  Total  Time
+nondefault floating-point modes retain serial centroid arithmetic |   23     23  0.1s
+Test Summary:                                                       | Pass  Total  Time
+weighted Shack-Hartmann declaration has distinct weighted artifacts |   15     15  0.5s
+Test Summary:                                                        | Pass  Total  Time
+weighted Shack-Hartmann matches standalone and independent centroids |   13     13  1.2s
+Test Summary:                                                     | Pass  Total  Time
+weighted Shack-Hartmann weights are owned and replaced atomically |   15     15  0.5s
+Test Summary:                                                      | Pass  Total  Time
+weighted Shack-Hartmann preserves thresholding and rejects aliases |   11     11  1.0s
+Test Summary:                                                       | Pass  Total  Time
+weighted Shack-Hartmann checked and admitted calls allocate no heap |    3      3  0.0s
+Test Summary:                                    | Pass  Total  Time
+Every public algorithm binding has documentation |    7      7  0.2s
+Test Summary:             | Pass  Total  Time
+scientific schema catalog |  147    147  0.3s
+Test Summary:                                                         | Pass  Total  Time
+FGN Algorithm migration inventory matches the Node-ready declarations |  154    154  0.8s
+Test Summary:                                                             | Pass  Total  Time
+complete-frame measurement and summary compile into an ordinary CPU Graph |   18     18  4.0s
+Test Summary:                                    | Pass  Total  Time
+nonfinite valid diagnostics do not fault a Graph |    6      6  0.7s
+CPU-only focused closure tests complete on Julia 1.13.2

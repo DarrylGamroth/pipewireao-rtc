@@ -1,0 +1,111 @@
+warning: unnecessary parentheses around type
+   --> vendor/smithay-client-toolkit/src/compositor.rs:478:21
+    |
+478 |     ) -> Option<Arc<(dyn wayland_client::backend::ObjectData + 'static)>> {
+    |                     ^                                                 ^
+    |
+    = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+    |
+478 -     ) -> Option<Arc<(dyn wayland_client::backend::ObjectData + 'static)>> {
+478 +     ) -> Option<Arc<dyn wayland_client::backend::ObjectData + 'static>> {
+    |
+
+warning: unnecessary parentheses around type
+   --> vendor/smithay-client-toolkit/src/shell/xdg/mod.rs:214:21
+    |
+214 |     ) -> Option<Arc<(dyn wayland_client::backend::ObjectData + 'static)>> {
+    |                     ^                                                 ^
+    |
+help: remove these parentheses
+    |
+214 -     ) -> Option<Arc<(dyn wayland_client::backend::ObjectData + 'static)>> {
+214 +     ) -> Option<Arc<dyn wayland_client::backend::ObjectData + 'static>> {
+    |
+
+warning: unnecessary parentheses around type
+   --> vendor/smithay-client-toolkit/src/shm/raw.rs:262:21
+    |
+262 |     ) -> Option<Arc<(dyn ObjectData + 'static)>> {
+    |                     ^                        ^
+    |
+help: remove these parentheses
+    |
+262 -     ) -> Option<Arc<(dyn ObjectData + 'static)>> {
+262 +     ) -> Option<Arc<dyn ObjectData + 'static>> {
+    |
+
+warning: hiding a lifetime that's elided elsewhere is confusing
+  --> vendor/smithay-client-toolkit/src/data_device_manager/write_pipe.rs:88:14
+   |
+88 |     fn as_fd(&self) -> BorrowedFd {
+   |              ^^^^^     ^^^^^^^^^^ the same lifetime is hidden here
+   |              |
+   |              the lifetime is elided here
+   |
+   = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+   = note: `#[warn(mismatched_lifetime_syntaxes)]` on by default
+help: use `'_` for type paths
+   |
+88 |     fn as_fd(&self) -> BorrowedFd<'_> {
+   |                                  ++++
+
+warning: eliding a lifetime that's named elsewhere is confusing
+   --> vendor/smithay-client-toolkit/src/registry.rs:195:31
+    |
+193 |         &'a self,
+    |          -- the lifetime is named here
+194 |         interface: &'a str,
+    |                     -- the lifetime is named here
+195 |     ) -> impl Iterator<Item = &Global> + 'a {
+    |                               ^^^^^^^    -- the same lifetime is named here
+    |                               |
+    |                               the same lifetime is elided here
+    |
+    = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+help: consistently use `'a`
+    |
+195 |     ) -> impl Iterator<Item = &'a Global> + 'a {
+    |                                ++
+
+warning: `smithay-client-toolkit` (lib) generated 5 warnings (run `cargo fix --lib -p smithay-client-toolkit` to apply 5 suggestions)
+   Compiling pipewireao-gui v0.1.0 (/tmp/pipewireao-gui-wfs-xy)
+    Finished `test` profile [unoptimized] target(s) in 10.05s
+     Running unittests src/lib.rs (/tmp/pipewireao-wfs-gui-target/debug/deps/pipewireao_gui-97dd09d94faa28ea)
+
+running 32 tests
+test view_panel::wfs_overlay::native::tests::malformed_or_corrupted_native_products_are_rejected ... ok
+test view_panel::wfs_overlay::native::tests::matched_products_preserve_raw_units_and_only_convert_glyphs ... ok
+test view_panel::wfs_overlay::native::tests::mismatched_or_missing_products_never_supply_dynamic_layers ... ok
+test view_panel::wfs_overlay::native::tests::explicit_groups_keep_owned_pixels_and_products_together_when_individuals_advance ... ok
+test view_panel::wfs_overlay::native::tests::discontinuity_missing_timestamp_and_visibility_clear_complete_tuples ... ok
+test view_panel::wfs_overlay::native::tests::same_identity_reset_cannot_resurrect_a_pre_reset_tuple ... ok
+test view_panel::wfs_overlay::native::tests::summary_contract_accepts_nan_aggregates_and_rejects_invalid_counts_shape_and_values ... ok
+test view_panel::wfs_overlay::native::tests::summary_is_required_and_preserves_owner_rms_without_reducing_vectors ... ok
+test view_panel::wfs_overlay::pyramid::tests::opacity_restoration_is_finite_and_bounded ... ok
+test view_panel::wfs_overlay::native::tests::newest_complete_tuple_is_selected_without_sequence_or_timestamp_fusion ... ok
+test view_panel::wfs_overlay::native::tests::retained_tuple_uses_its_own_pixels_and_expires_from_first_gui_receipt ... ok
+test view_panel::wfs_overlay::native::tests::caches_are_bounded_and_stale_or_replaced_sources_clear_values ... ok
+test view_panel::wfs_overlay::native::tests::latest_detector_advance_hides_dynamic_layers_until_exact_products_arrive ... ok
+test view_panel::wfs_overlay::native::tests::native_layer_toggles_control_the_shared_renderer ... ok
+test view_panel::wfs_overlay::tests::native_pixels_never_receive_fixture_layers ... ok
+test view_panel::wfs_overlay::tests::overlay_measurement_selection_round_trips_in_workspace_ron ... ok
+test view_panel::wfs_overlay::tests::overlay_measurement_selection_round_trips_and_legacy_toml_selects_all ... ok
+test view_panel::wfs_overlay::tests::wrong_overlay_kind_cannot_restore_layers ... ok
+test view_panel::wfs_overlay::pyramid::fixture::tests::detector_and_pupil_flux_are_finite ... ok
+test view_panel::wfs_overlay::pyramid::tests::pupil_hit_test_tracks_zoom_pan_non_square_canvas_and_clip ... ok
+test view_panel::wfs_overlay::pyramid::fixture::tests::regions_are_exact_nonoverlapping_crops ... ok
+test view_panel::wfs_overlay::pyramid::fixture::tests::fixture_is_deterministic_and_explicitly_four_face ... ok
+test view_panel::wfs_overlay::tests::native_settings_preserve_all_layer_and_display_controls ... ok
+test view_panel::wfs_overlay::native::tests::missing_summary_readouts_are_all_unavailable_including_counts ... ok
+test view_panel::wfs_overlay::native::tests::missing_frame_products_keep_the_summary_geometry_and_show_no_stale_numbers ... ok
+test view_panel::wfs_overlay::pyramid::tests::pyramid_measurements_filter_existing_pupil_fluxes ... ok
+test view_panel::wfs_overlay::tests::disabled_preview_never_exposes_fixture_frames ... ok
+test view_panel::wfs_overlay::tests::incompatible_pixel_dimensions_do_not_paint_overlays ... ok
+test view_panel::wfs_overlay::tests::shared_preview_preserves_independent_panel_layers ... ok
+test view_panel::wfs_overlay::tests::shack_hartmann_measurements_filter_summaries_and_release_empty_space ... ok
+test view_panel::wfs_overlay::tests::aperture_hover_wins_over_pixel_hover_and_pixels_remain_available_outside_apertures ... ok
+test view_panel::wfs_overlay::pyramid::tests::pupil_hover_reports_the_displayed_raw_or_calibrated_pixel ... ok
+
+test result: ok. 32 passed; 0 failed; 0 ignored; 0 measured; 543 filtered out; finished in 0.13s
+
