@@ -28,7 +28,11 @@ and [independent review](reviews/20261022-instrument-definition/REVIEW.md) recor
 265 scientific, 2,622 RTC and 17 application assertions, plus generic GUI tests,
 exact application JSON/TOML resolution and WASM compilation. This increment
 validates the existing one-DM/one-WFS transport and retains the provisional
-physical registration. Installed offline and live CPU closure is the final gate.
+physical registration. Installed offline preparation passes 79 checks and the
+unchanged calibration completion checks pass 60. The new CPU session and
+software GUI are live. Exact endpoint metadata, fresh production-adapter
+resolution, 31 independent WFS cohorts and seven-role GPU exclusion pass;
+receipts and remaining scope limits are linked in the validation record.
 
 ### Headless WFS measurements and generic X/Y — 2026-10-22
 

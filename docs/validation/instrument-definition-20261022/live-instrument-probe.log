@@ -1,0 +1,4 @@
+fresh_native_selection uuid=dcd70071-374e-429d-b80f-0dfc9e0851b4 global_id=99 serial=100 query_token=522 lifecycle=Running
+resolved_dm id=dm-command component=hsdm277 actuators=277 units=µm OPD shape_parameter=engineering-offset graph=revolt-classic-jfg-frame-graph zernike_modes=9 fourier_frequencies=112
+resolved_wfs id=classic-shwfs component=shwfs subapertures=188 detector=[352, 352] subaperture=[22, 22]
+PASS gui_revision=feba24997ad85429b4f933fc20bc8e6818171274 exact_uuid=dcd70071-374e-429d-b80f-0dfc9e0851b4 views=10 fresh_status=true native_shape_binding=true scientific_metadata=verified_NodeInfo lifecycle_mutations=0 parameter_mutations=0 property_mutations=0 sample_observations=0

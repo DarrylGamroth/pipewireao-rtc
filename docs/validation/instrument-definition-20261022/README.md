@@ -70,5 +70,39 @@ Host preparation logs and scripts are retained under
 `~/workspaces/codex/worktrees/classic-instrument-definition-20261022`.
 The [independent review](../../reviews/20261022-instrument-definition/REVIEW.md)
 records three corrected configuration defects and the boundary analysis.
-Pinned offline preparation and live publication are recorded below after the
-installed-application gate.
+## Installed offline and live closure
+
+The final application commit is `958f11199e05a84e1dbd39bb8367f924781eb25c`.
+Pinned offline preparation passes **79 assertions** and the unchanged actuator
+completion/HEART checks pass **60 assertions**. All 50 sealed assets match.
+The generated public endpoint contains the exact instrument bytes and hash.
+
+The old CPU session `0506e9722c2a` and its GUI were stopped through retained
+identities. Its final receipt records `cleanup_complete=true` and service result
+`success`. New session `ea307b4d06d7`, invocation
+`01fb75c8945144c1b83cf73702cb37b8`, is Running with UUID
+`dcd70071-374e-429d-b80f-0dfc9e0851b4`. Its installed application is under
+`~/.local/state/pipewireao/classic-cpu-instrument-live-20261022`.
+Classic remains on CPU, model rate 500 Hz and wall pacing 10 Hz. The GUI uses
+Mesa software rendering through the existing forwarded display.
+
+The [live receipt](live-instrument-check.json) checks exact published bytes and
+hash against the sealed file, endpoint PID/profile/UUID against the retained RTC,
+and 31 matching WFS acquisition identities/PTS with a bitwise-exact independent
+summary oracle. The summary and slopes GUI subscriptions are active. The
+[GPU audit](live-gpu-audit.json) records no GPU runtime mappings or device handles
+for the seven owned roles, including the optional analysis process and GUI.
+
+A separate [read-only production-adapter probe](live-instrument-probe.log)
+fresh-selects that exact session and receives an accepted Status. It obtains the
+definition through the same verified native adapter as the GUI and resolves
+10 views, the 277-command DM and 188-subaperture SHWFS. The shape binding is
+available with nine Zernike modes and 112 Fourier frequencies. The probe sends
+no lifecycle, scalar, artifact or parameter changes and takes no frame streams.
+This validates installed delivery and resolver availability; it does not claim
+a manual rendered-window inspection or a live command-application test.
+
+The implementation commits are merged to each normal checkout's local `main`;
+the four temporary implementation worktrees and merged branches are removed.
+The pre-existing GUI workstation-review edit is preserved byte-for-byte.
+No GitHub publication or new native library build was required for this gate.
