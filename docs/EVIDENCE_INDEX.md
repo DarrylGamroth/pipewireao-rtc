@@ -1,5 +1,18 @@
 # Delivery evidence catalog
 
+## Classic CPU closed-loop and fault validation — 2026-10-21
+
+[Validation](validation/classic-cpu-loop-20261021/README.md) records the managed
+256-exchange CPU capture and native Stop/Quit, separate corrected saved-data
+verification (2,846 checks), exact controller/noisy plant replay and matched
+281.05 → 51.03 nm pupil OPD RMS comparison. Read-only order/cleanup passes 808
+checks, link removal 41, controller exit 124 and private-core observer replay
+1,327. [Independent review](reviews/20261021-classic-cpu-loop/REVIEW.md) checks
+provenance, contract correction, metrics and evidence limits. Original failed
+attempts, including an unresolved uncertain Quit, remain retained. All task
+sessions are stopped; no GPU, sustained timing, hardware or other-profile
+qualification is claimed. No production runtime or calibration asset changed.
+
 ## Classic live CPU and GUI validation — 2026-10-21
 
 [Validation](validation/classic-live-cpu-20261021/README.md) records actual rendered

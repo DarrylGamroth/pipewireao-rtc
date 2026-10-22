@@ -1,0 +1,11 @@
+Initial link-removal invocation (pre-service failure; console excerpt retained)
+
+actual RTC link-removal: Error During Test at test/integration/session_faults.jl:644
+  Got exception outside of a @test
+  stage root must be fresh
+
+Test Summary: actual RTC link-removal | 1 error, 1 total, 5.3s
+
+No session/service was started. The original tee log was overwritten by the
+successful rerun; this concise record preserves the observed console result,
+not a raw process log.

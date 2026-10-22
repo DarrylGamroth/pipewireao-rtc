@@ -1,0 +1,135 @@
+native_prefix = "/home/dgamroth/.local/opt/pipewireao-classic-headless-20261021"
+source_published_ns = [3003273813025, 3003379118345, 3003413686651, 3003442498179, 3003471906027, 3003500902533, 3003529776728, 3003558702902, 3003587942534, 3003616731390, 3003647411355, 3003677834629, 3003707507034, 3003736041071, 3003763789974, 3003791573623]
+frame_max_adc = 0x016e
+scope = "finite software composition, exact numerical replay and selected detector/demanded copy-queue observation invariance; no cadence, latency, convergence, physical validation, lossless-observer or other-output invariance claim"
+adopted_max_abs_m = 3.9680980989942327e-7
+observation_helper_sha256 = "29a56734bfdf022e62092cd4ad6b851dfa1f4638ccb31be946f51bbce1278ef6"
+domain = "a0000000000000000000000000000000"
+julia_version = "1.13.2"
+backend = "cpu"
+frame_changed_components = 1240355
+sequences = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10]
+test_sha256 = "a92226d828f213789d55471c21712df81b75f8f02830f4056778e637ca02c76a"
+cuda_device = "not used"
+core_name = "classic-finite-70247-2959424211430"
+demanded_max_abs_um = 0.39680981636047363
+controller_replay_sha256 = "ea0b4f5a5a2aacfb5d20157e19764754f54f29ed7b90041424119bbf55dcc44c"
+derived_model_timestamps_ns = [0, 2000000, 4000000, 6000000, 8000000, 10000000, 12000000, 14000000, 16000000, 18000000, 20000000, 22000000, 24000000, 26000000, 28000000, 30000000]
+generation = 0x01
+exact_replay = true
+command_received_ns = [3003307837760, 3003379547200, 3003414168516, 3003443121559, 3003472562229, 3003501537885, 3003530412712, 3003559355206, 3003588605088, 3003617337337, 3003647829560, 3003678208862, 3003707927934, 3003736534297, 3003764395922, 3003792132823]
+adopted_changed_components = 4155
+command_scale = 9.999999974752427e-7
+frames = 16
+frame_min_adc = 0x00
+application = "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/application-closed-loop"
+model_period_ns = 2000000
+support_sha256 = "5f43072b156602a8d1d167ee52ce56e1f13631d658618018a38c456623d8cab7"
+
+[native_sha256]
+"bin/pipewire-ao" = "1f7018f14a8a51a529dc3a9eb8a0ad1050f207e1adcabbe44cb282572d0e33d3"
+"lib/pipewire-ao-0.3/libpipewire-module-queue.so" = "49aa222ac270c5f858ae11a0560ee36a57d20f02c9fe2a824cea74ad94f03fdf"
+
+[payload_sha256]
+"frames-u16-row-major.bin" = "2deac6128133139a34bd8d606e952d09b305e320ad262363c0ee77de1dcdc870"
+"demanded-f32-micrometre.bin" = "3d0b54c6211acbe9c9e04462c282b2195faf99d90c691b4cb6042649683ef7c0"
+"replayed-f32-metre.bin" = "e54ffb364882fe43e4ac08f5cedfb32c1ebb15dd3bb4e6b37646e23cd048ea3e"
+"adopted-f32-metre.bin" = "e54ffb364882fe43e4ac08f5cedfb32c1ebb15dd3bb4e6b37646e23cd048ea3e"
+
+[application_sha256]
+"artifacts/full-to-active.fits" = "a1deb0f572455aaca9b4f69b6293eaa7220f34d02d7d0cbb9a238b5fb5613d18"
+"parameters.conf" = "5ff67c2086699f2b16eddc80354426f24ef6dc8e6506b22ca68d6b1f1cdaae1d"
+"deployment.conf" = "bb0223255cdee89796e0bc1e10e33066b7bf883a40e8b9fc5bf0498a35a74b8f"
+"artifacts/background.fits" = "eb374d191f83eea42e15c1c8b4c4c882b36fb5db63f666559fa5e8e8ff48eeb3"
+"client-simulator.conf.in" = "a16f83e8279f71c28c64b44a67c43761813ee970d25038361ee9c32cfac8f719"
+"artifacts/thresholds.fits" = "ee4ea17ee7544cac0d794f6f561413b4924979b2f269d9f3cfd9561aab48f5c9"
+"Project.toml" = "a044e19f383eca2ad56b941c1068259c6af3c97e8f655fec7253a4ab5ccb5a47"
+"artifacts/engineering-offset.fits" = "fee38aa4d12fbe478dc492c7d7046937121436d801cb2e70160ca55c16cde19a"
+"artifacts/controller-to-physical.fits" = "35be859539f498abc8f7c9760b55aea1de1d553e4f37246532bca7f055d9e02e"
+"artifacts/active-to-full.fits" = "35be859539f498abc8f7c9760b55aea1de1d553e4f37246532bca7f055d9e02e"
+"artifacts/reference-slopes.fits" = "e0f0cd666d917cbdc88c877267e10e5ec2e506c19039009493b08bdb7e50a54b"
+"client-rtc.conf.in" = "7b2b15f0b2c64748e6bf5323ae470d6850fe6d75fb60ce10e99e7afa48ea9069"
+"artifacts/shape-to-hidden.fits" = "28a827024effaa1bdb3d31acd8135a174dfb0b7f451ae3d43fbfd9b0bbc04068"
+"artifacts/controller-to-vdm.fits" = "3c418f4c53c05d7e1671e3eace1d6de79a1d9b548c9a7b5723901785b1b77e4b"
+"calibration-result.toml" = "ff09bfd9644a1e936221eacd5cc251e768c9b98891a9bf155804df5401577d69"
+"artifacts/interaction-matrix.fits" = "c552054a8678e039dd590d937a5c7b937e8f444b7e3f0a633bc25cd0a54babc6"
+"client-julia.conf.in" = "ef39e5d8e9fae484b33ed5f1e6059d3dbb983e98d1ba46c4a422727c2a66a209"
+"artifacts/hidden-to-shape.fits" = "92f0c618f8f451490055917105136cff5538f9a4e0b937e846fa2869727b6f06"
+"artifacts/flat-flux.fits" = "1feda8904d724578af80455a67a25e87d4471b160cac7712f2aded7be11ecd4b"
+"artifacts/pdm-to-vdm.fits" = "33a96222a5ac7b3087dfa84e94b8be52b3af4a4cabc875eff20223074e13d79a"
+"Manifest.toml" = "7a6d7b7acec8ebc9cc7573dc072456328c1ceb2efe103780264e57f03a35b371"
+"check-offline.jl" = "90ba2a53e0d9393a3e7d368667cc53c95d4a4b414e6d31b4c5245a44347a35d9"
+"simulation.conf" = "d08f62a6527b5dd75f98805f70fb47422442a7142476d83d685b5f4a27f4755f"
+"provenance.toml" = "98200f3d25f4a7f4e0af87577e8dc987ed628b1773ac97ccb6ab87612632e94f"
+"graph.conf" = "25c18eb1614dece32c07adb1a74443e86b1f0adb6d9398ba58047220639a5e12"
+"artifacts/active.fits" = "2b62a06bd8dcb18ad997819600a5b8518a757e435704f682367856e83eba3e4f"
+"artifacts/reconstructor.fits" = "25ac0676b2b3def1cd0dcbea5e2e85b42452bb9ca695af332d4ad324dd57bd2b"
+"artifacts/flat-frame.fits" = "00f1c5fdd66cb5ce404598d663cf664840baa6448de5e182ed6d8b3c2ea3baa4"
+"core.conf.in" = "33315d5d546b2c3ea44acc0b87a682c6a43894397f183c5a0a21e021c26872c3"
+"README.md" = "97dbca28c536e3f3531a4b4ae1e8fd28f45fc24b5c2c971ec356f91efb4514a0"
+"operator-views.toml" = "8115e810eebce9b215f8963e2c5d9aad7987bf99411ce9a32277eac9cad0a5a3"
+"artifacts/vdm-to-pdm.fits" = "33a96222a5ac7b3087dfa84e94b8be52b3af4a4cabc875eff20223074e13d79a"
+"artifacts/singular-values.fits" = "037d04233504aeadb5ae378e0fa3ece0093b8506e79f8453f84ebd5cf89c55c1"
+"artifacts/push-pull-responses.fits" = "bc2c535777fb19e58a10a1a076f1d42457ed8beb401a871d46add3c6eca9ea74"
+"artifacts/vdm-to-controller.fits" = "3c418f4c53c05d7e1671e3eace1d6de79a1d9b548c9a7b5723901785b1b77e4b"
+"artifacts/subaperture-origins.fits" = "5d16b89f0131c9b6322ecfa9916506652f5d062ab838fe766e57fdd541abcd40"
+"session.conf.in" = "14016ece060912c09992dfce2ba02f23b4634978ee64eedea9ec27bc09bf08e8"
+"artifacts/coordinates.fits" = "bd6e55fa2567e3342d5c46a17ab5fa2f272b254bc26d573f2bad72451df7a963"
+
+[[observation_modes]]
+"adopted-f32-metre.bin-sha256" = "e54ffb364882fe43e4ac08f5cedfb32c1ebb15dd3bb4e6b37646e23cd048ea3e"
+"demanded-f32-micrometre.bin-sha256" = "3d0b54c6211acbe9c9e04462c282b2195faf99d90c691b4cb6042649683ef7c0"
+mode = "none"
+selected_queues = []
+"frames-u16-row-major.bin-sha256" = "2deac6128133139a34bd8d606e952d09b305e320ad262363c0ee77de1dcdc870"
+[[observation_modes]]
+"adopted-f32-metre.bin-sha256" = "e54ffb364882fe43e4ac08f5cedfb32c1ebb15dd3bb4e6b37646e23cd048ea3e"
+"demanded-f32-micrometre.bin-sha256" = "3d0b54c6211acbe9c9e04462c282b2195faf99d90c691b4cb6042649683ef7c0"
+mode = "normal"
+selected_queues = ["simulator-detector-queue-output", "rtc-command-queue-output"]
+"frames-u16-row-major.bin-sha256" = "2deac6128133139a34bd8d606e952d09b305e320ad262363c0ee77de1dcdc870"
+
+    [[observation_modes.streams]]
+    samples = 16
+    sequences = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10]
+    name = "detector"
+    distinct_sequences = 16
+    [[observation_modes.streams]]
+    samples = 16
+    sequences = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10]
+    name = "demanded"
+    distinct_sequences = 16
+[[observation_modes]]
+"adopted-f32-metre.bin-sha256" = "e54ffb364882fe43e4ac08f5cedfb32c1ebb15dd3bb4e6b37646e23cd048ea3e"
+"demanded-f32-micrometre.bin-sha256" = "3d0b54c6211acbe9c9e04462c282b2195faf99d90c691b4cb6042649683ef7c0"
+mode = "slow"
+selected_queues = ["simulator-detector-queue-output", "rtc-command-queue-output"]
+"frames-u16-row-major.bin-sha256" = "2deac6128133139a34bd8d606e952d09b305e320ad262363c0ee77de1dcdc870"
+
+    [[observation_modes.streams]]
+    samples = 2
+    sequences = [0x01, 0x10]
+    name = "detector"
+    distinct_sequences = 2
+    [[observation_modes.streams]]
+    samples = 2
+    sequences = [0x01, 0x10]
+    name = "demanded"
+    distinct_sequences = 2
+[[observation_modes]]
+"adopted-f32-metre.bin-sha256" = "e54ffb364882fe43e4ac08f5cedfb32c1ebb15dd3bb4e6b37646e23cd048ea3e"
+"demanded-f32-micrometre.bin-sha256" = "3d0b54c6211acbe9c9e04462c282b2195faf99d90c691b4cb6042649683ef7c0"
+mode = "churn"
+selected_queues = ["simulator-detector-queue-output", "rtc-command-queue-output"]
+"frames-u16-row-major.bin-sha256" = "2deac6128133139a34bd8d606e952d09b305e320ad262363c0ee77de1dcdc870"
+
+    [[observation_modes.streams]]
+    samples = 11
+    sequences = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x0c, 0x0d, 0x0e, 0x0f, 0x10]
+    name = "detector"
+    distinct_sequences = 11
+    [[observation_modes.streams]]
+    samples = 11
+    sequences = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x0c, 0x0d, 0x0e, 0x0f, 0x10]
+    name = "demanded"
+    distinct_sequences = 11

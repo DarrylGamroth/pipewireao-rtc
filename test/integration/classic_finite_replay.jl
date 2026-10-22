@@ -6,7 +6,7 @@ module ClassicFiniteReplay
 
 using Test, SHA, TOML
 using AdaptiveOpticsSim.AlgorithmGraphs, AdaptiveOpticsSim.Backends
-using AdaptiveOpticsSimPipeWireHIL, REVOLTClassicSim, CUDA
+using AdaptiveOpticsSimPipeWireHIL, REVOLTClassicSim
 using PipeWireAO, PipeWireAO_jll, PipeWireAORTC
 using FilterGraphIsland, FilterGraphPipeWire, FilterGraphAlgorithms, JuliaFilterGraph
 
@@ -16,6 +16,9 @@ const SUPPORT = get(ENV, "CLASSIC_EXCHANGE_SUPPORT", normpath(joinpath(@__DIR__,
     "../../../../adaptive-optics-simulations/test/exchange_fixture.jl")))
 include(SUPPORT)
 include(joinpath(@__DIR__,"classic_observation.jl"))
+include(joinpath(@__DIR__,"classic_replay.jl"))
+using .ClassicReplay: prepare_controller, replay
+const REPLAY_SHA256_AT_LOAD = bytes2hex(sha256(read(joinpath(@__DIR__,"classic_replay.jl"))))
 const OBSERVATION_SHA256_AT_LOAD = bytes2hex(sha256(read(joinpath(@__DIR__,"classic_observation.jl"))))
 const FEEDBACK_IN = Symbol("constraint-feedback")
 const FEEDBACK_OUT = Symbol("controller-constraint-feedback")
@@ -55,15 +58,6 @@ function write_private_configuration(path, application, core_name)
         "context.modules"=>modules,"context.objects"=>installed["context.objects"])
     PipeWireAORTC.ScienceExport.write_spa_config(path,configuration)
     return nothing
-end
-
-function prepare_controller(application)
-    options = FilterGraphIsland.parse_arguments([
-        "--graph", joinpath(application, "graph.conf"), "--check",
-        "--execution", "complete-frame"])
-    entries = PipeWireAORTC.GraphOwner.bindings(joinpath(application, "parameters.conf"))
-    return FilterGraphIsland.prepare_service_graph(options;
-        initial_parameters=formats -> PipeWireAORTC.GraphOwner.prepare_bindings(entries, formats))
 end
 
 function capture(::Type{T}, count) where {T}
@@ -425,58 +419,29 @@ function run_prefix(application, output, system, count;mode=:none)
     return result
 end
 
-function load_frame!(raw, frames, index)
-    for row in axes(raw,1), column in axes(raw,2)
-        raw[row,column] = frames[(row-1)*size(raw,2)+column,index]
-    end
-end
-
-function replay(application, frames, adopted)
-    graph = prepare_controller(application)
-    try
-        raw = zeros(UInt16,352,352)
-        feedback = zeros(Float32,221)
-        inputs = NamedTuple{(:raw,FEEDBACK_IN)}((raw,feedback))
-        outputs = map(format -> zeros(format.element_type,format.shape),graph.output_formats)
-        load_frame!(raw,frames,1)
-        JuliaFilterGraph.process!(outputs,graph,inputs)
-        JuliaFilterGraph.reset!(graph)
-        fill!(feedback,0)
-        predicted = similar(adopted)
-        for index in axes(frames,2)
-            load_frame!(raw,frames,index)
-            result = JuliaFilterGraph.process!(outputs,graph,inputs)
-            @test all(values(result))
-            @test all(isfinite,outputs.demanded)
-            for actuator in axes(predicted,1)
-                predicted[actuator,index] = outputs.demanded[actuator]*SCALE
-            end
-            copyto!(feedback,getproperty(outputs,FEEDBACK_OUT))
-        end
-        @test predicted == adopted
-        return predicted
-    finally
-        FilterGraphIsland.close_execution(graph)
-    end
-end
-
-function main(arguments)
+function run_replay(arguments)
     length(arguments) in (2,3) || error("expected APPLICATION NEW_OUTPUT [FRAME_COUNT]")
     application, output = abspath.(arguments[1:2])
     count = length(arguments)==3 ? parse(Int,arguments[3]) : 32
     6<=count<=256 || error("frame count must be 6:256")
     ispath(output) && error("evidence directory must be new")
     Threads.nthreads(:interactive)>=1 || error("use --threads=2,1 for the native controller owner")
-    CUDA.functional() || error("CUDA is unavailable")
-    CUDA.allowscalar(false)
+    options = PipeWireAORTC.AOSOwner.configuration(joinpath(application,"simulation.conf"))
+    target = if options.backend===:cpu
+        Backends.HostComputeDevice()
+    elseif options.backend===:cuda
+        CUDA.functional() || error("CUDA is unavailable")
+        CUDA.allowscalar(false)
+        compute_device(CUDA.zeros(Float32,1))
+    else
+        error("finite Classic replay supports explicit CPU or CUDA selection")
+    end
     mkpath(output)
     declared = PipeWireAORTC.Common.read_json(joinpath(application,"deployment.conf"))["artifacts"]
     before = Dict(name=>digest(joinpath(application,name)) for name in keys(declared))
     all(name -> before[name]==declared[name],keys(declared)) || error("application artifact hash mismatch")
     before["deployment.conf"] = digest(joinpath(application,"deployment.conf"))
-    @testset "Classic finite CUDA plant / CPU JFG replay" begin
-        target = compute_device(CUDA.zeros(Float32,1))
-        options = PipeWireAORTC.AOSOwner.configuration(joinpath(application,"simulation.conf"))
+    @testset "Classic finite $(options.backend) plant / CPU JFG replay" begin
         system = REVOLTClassicSim.prepare_hil_system(options.plant.settings;target)
         @test compute_device(system.boundary.frame_output)==target
         @test compute_device(system.boundary.command_input)==target
@@ -506,11 +471,13 @@ function main(arguments)
             @test digest(joinpath(application,name))==hash
         end
         @test digest(@__FILE__)==TEST_SHA256_AT_LOAD
+        @test digest(joinpath(@__DIR__,"classic_replay.jl"))==REPLAY_SHA256_AT_LOAD
         period_ns = round(Int,Float64(system.frame_period_s)*1e9)
         report = Dict("frames"=>count,"exact_replay"=>predicted==result.adopted,
             "application"=>application,"application_sha256"=>before,
             "support_sha256"=>digest(SUPPORT),"test_sha256"=>TEST_SHA256_AT_LOAD,
             "observation_helper_sha256"=>OBSERVATION_SHA256_AT_LOAD,
+            "controller_replay_sha256"=>REPLAY_SHA256_AT_LOAD,
             "observation_modes"=>observation_records,
             "generation"=>result.generation,"core_name"=>result.core_name,
             "native_prefix"=>result.native_prefix,
@@ -522,7 +489,8 @@ function main(arguments)
             "command_received_ns"=>[timing.command_received_nanoseconds for timing in result.timings],
             "model_period_ns"=>period_ns,"derived_model_timestamps_ns"=>collect(0:count-1).*period_ns,
             "command_scale"=>Float64(SCALE),"julia_version"=>string(VERSION),
-            "cuda_device"=>string(CUDA.device()),
+            "backend"=>string(options.backend),
+            "cuda_device"=>options.backend===:cuda ? string(CUDA.device()) : "not used",
             "frame_min_adc"=>minimum(result.frames),"frame_max_adc"=>maximum(result.frames),
             "frame_changed_components"=>sum(index -> sum(result.frames[:,index].!=result.frames[:,1]),2:count;init=0),
             "demanded_max_abs_um"=>maximum(abs,result.demanded),
@@ -534,6 +502,14 @@ function main(arguments)
             TOML.print(io,report)
         end
     end
+end
+
+function main(arguments)
+    length(arguments) in (2,3) || error("expected APPLICATION NEW_OUTPUT [FRAME_COUNT]")
+    options=PipeWireAORTC.AOSOwner.configuration(joinpath(abspath(arguments[1]),"simulation.conf"))
+    options.backend===:cuda && (@eval import CUDA)
+    # Optional backend methods/extensions must be visible throughout preparation.
+    return Base.invokelatest(run_replay,arguments)
 end
 
 abspath(PROGRAM_FILE)==(@__FILE__) && main(ARGS)

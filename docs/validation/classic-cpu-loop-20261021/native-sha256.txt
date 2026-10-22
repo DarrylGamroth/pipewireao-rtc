@@ -1,0 +1,6 @@
+b00d2bc3c6f21adc608a9cd9022ddcdba978c982d6e8c7bce6016f0aae0332aa  /home/dgamroth/.local/opt/pipewireao-classic-headless-20261021/bin/pipewireao-rtc
+1f7018f14a8a51a529dc3a9eb8a0ad1050f207e1adcabbe44cb282572d0e33d3  /home/dgamroth/.local/opt/pipewireao-classic-headless-20261021/bin/pipewire-ao
+01a466da9539fd04ccdd8fc44dee1529dd6d36c934cf09a655950419a8f7d0ba  /home/dgamroth/.local/opt/pipewireao-classic-headless-20261021/lib/libwireplumber-0.5.so.0
+49aa222ac270c5f858ae11a0560ee36a57d20f02c9fe2a824cea74ad94f03fdf  /home/dgamroth/.local/opt/pipewireao-classic-headless-20261021/lib/pipewire-ao-0.3/libpipewire-module-queue.so
+4f6f75997db6d2cae2b416a7ec0d6d8de0ef529582582c740356f025705c209e  /home/dgamroth/.local/opt/pipewireao-classic-headless-20261021/share/pipewireao-rtc/scripts/ao/session.lua
+e70f6cbbdfaaff3733b677fa1e640bcf334694c91b1b0a243180d42aeda9602a  /home/dgamroth/.local/opt/pipewireao-classic-headless-20261021/share/pipewireao-rtc/scripts/lib/ao-connections.lua

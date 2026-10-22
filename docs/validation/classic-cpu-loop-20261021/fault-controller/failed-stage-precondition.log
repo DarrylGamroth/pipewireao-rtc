@@ -1,0 +1,30 @@
+
+actual RTC controller-exit: Error During Test at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/session_faults.jl:644
+  Got exception outside of a @test
+  stage root must be fresh
+  Stacktrace:
+    [1] error(s::String)
+      @ Base ./error.jl:44
+    [2] run_case(selected::@NamedTuple{package::String, stage::String, case::String, prefix::String, sink::Nothing, controller::String})
+      @ Main ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/session_faults.jl:472
+    [3] macro expansion
+      @ ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/session_faults.jl:645 [inlined]
+    [4] macro expansion
+      @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+    [5] main(args::Vector{String})
+      @ Main ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/session_faults.jl:645
+    [6] main()
+      @ Main ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/session_faults.jl:640
+    [7] top-level scope
+      @ ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/session_faults.jl:650
+    [8] include(mod::Module, _path::String)
+      @ Base ./Base.jl:309
+    [9] exec_options(opts::Base.JLOptions)
+      @ Base ./client.jl:344
+   [10] _start()
+      @ Base ./client.jl:577
+Test Summary:              | Error  Total  Time
+actual RTC controller-exit |     1      1  5.5s
+RNG of the outermost testset: Random.Xoshiro(0xc334e1c90c8a414d, 0x825e0d9d2923f0b4, 0x037d8f4916b99ef3, 0x395d39e3cf045d0c, 0xed4f6c48a2b4b97c)
+ERROR: LoadError: Some tests did not pass: 0 passed, 0 failed, 1 errored, 0 broken.
+in expression starting at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/session_faults.jl:650

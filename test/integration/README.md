@@ -1,5 +1,53 @@
 # Actual headless RTC fault qualification
 
+## Managed Classic CPU closed-loop replay
+
+`classic_managed_replay.jl` starts only a new non-actuating managed session.
+Use a separately sealed Classic CPU application: 480-sample pupil, unchanged
+500 Hz model period and calibration, 1 Hz requested wall pacing and
+`total_exchanges=256`. Its simulator owner must retain phase timing under
+`@RUNTIME@/phase-timing` with capacity 256 and zero excluded warmup frames.
+Clear CUDA/ROCm visibility in the deployment and each scientific owner; the
+normal CUDA application is not edited. The integration client and observed
+owners must load no GPU runtime.
+
+```sh
+julia +1.13 --startup-file=no --threads=2,0 --project=CPU_APPLICATION \
+  test/integration/classic_managed_replay.jl \
+  /absolute/path/to/CPU_APPLICATION /absolute/path/to/FRESH_STAGE \
+  /absolute/path/to/NATIVE_PREFIX
+```
+
+Select the application's pinned depot and the prefix's ordinary client config,
+module, SPA-plugin and library directories in the environment. This is the
+same upstream-libwireplumber/PipeWireAO prefix used by installed fault checks.
+The headless RTC owns admission and required application links. The test client
+uses the unchanged capacity-one display queues, compiles collection while held,
+and requires a complete detector/command prefix at the selected slow pace.
+These queues still permit drops; this is not a general losslessness claim.
+The applied-command display queue may deliver a subset of the prefix.
+It supplies Header sequence/PTS and payload, without Acquisition metadata;
+the detector and demanded-command streams carry the mandatory Acquisition identity.
+
+Checks cover held startup, backend and calibration identity, complete ordered
+frame/command acquisition identities, PTS association, Float32 micrometre/metre
+conversion, exact direct JFG and noisy plant replay, and finite piston-removed
+pupil-OPD improvement against the same seeded zero-command trajectory. Raw
+prefix bytes, seen masks and identities remain available on failed collection
+or replay. A success receipt is written only after the outer testset passes.
+Native Quit is never retried; an uncertain Quit stays a failure while the
+existing exact-manager fault cleanup reconciles process/cgroup removal.
+
+This is functional CPU simulation evidence. It does not qualify 500 Hz wall
+cadence, latency, long-run control stability, GPU execution or physical hardware.
+
+`classic_saved_replay.jl CPU_APPLICATION CAPTURE_STAGE CANDIDATE_PROVENANCE_JSON
+COLLECTED_HARNESS_DIRECTORY` separately revalidates preserved bytes without
+starting any service. It verifies payload hashes, candidate inputs and retained
+lifecycle receipts, then reruns the same scientific oracles. It writes
+`offline-verification.json` only after all assertions pass and refuses to
+overwrite an existing receipt. The original live test outcome is retained.
+
 ## CPU-only standard Link qualification
 
 `session_items.jl` uses the existing private-core helper and real

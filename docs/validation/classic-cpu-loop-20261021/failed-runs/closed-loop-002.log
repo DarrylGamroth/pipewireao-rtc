@@ -1,0 +1,33 @@
+Observers negotiated; releasing exact headless session
+ERROR: LoadError: Some tests did not pass: 12 passed, 0 failed, 1 errored, 0 broken.
+in expression starting at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:2
+
+Managed Classic CPU closed-loop replay: Error During Test at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:210
+  Got exception outside of a @test
+  timed out waiting for Classic samples and matching WFS acquisition identity (detector=250 sequences, demanded=250 sequences, applied=251 sequences)
+  Stacktrace:
+    [1] error(s::String)
+      @ Base ./error.jl:44
+    [2] _classic_wait(predicate::Main.ClassicManagedReplay.var"#87#88"{Float64, Main.ClassicManagedReplay.var"#capture_session##4#capture_session##5"{Vector{Any}}, Tuple{Main.ClassicManagedReplay.ClassicObservationCapture{UInt16, 2}, Main.ClassicManagedReplay.ClassicObservationCapture{Float32, 1}, Main.ClassicManagedReplay.ClassicObservationCapture{Float32, 1}}, Vector{Any}, Vector{Any}, Bool, Tuple{@NamedTuple{name::String, node::String, media::String, type::DataType, wire::PipeWireAO.NdArray.ElementType, shape::Tuple{Int64, Int64}, schema::String, rate::PipeWireAO.SPA.Fraction}, @NamedTuple{name::String, node::String, media::String, type::DataType, wire::PipeWireAO.NdArray.ElementType, shape::Tuple{Int64}, schema::String, rate::Nothing}, @NamedTuple{name::String, node::String, media::String, type::DataType, wire::PipeWireAO.NdArray.ElementType, shape::Tuple{Int64}, schema::String, rate::Nothing}}}, loop::PipeWireAO.ThreadLoop, deadline::Float64, description::Main.ClassicManagedReplay.var"#81#82"{Tuple{Main.ClassicManagedReplay.ClassicObservationCapture{UInt16, 2}, Main.ClassicManagedReplay.ClassicObservationCapture{Float32, 1}, Main.ClassicManagedReplay.ClassicObservationCapture{Float32, 1}}, PipeWireAO.ThreadLoop, Tuple{@NamedTuple{name::String, node::String, media::String, type::DataType, wire::PipeWireAO.NdArray.ElementType, shape::Tuple{Int64, Int64}, schema::String, rate::PipeWireAO.SPA.Fraction}, @NamedTuple{name::String, node::String, media::String, type::DataType, wire::PipeWireAO.NdArray.ElementType, shape::Tuple{Int64}, schema::String, rate::Nothing}, @NamedTuple{name::String, node::String, media::String, type::DataType, wire::PipeWireAO.NdArray.ElementType, shape::Tuple{Int64}, schema::String, rate::Nothing}}}, core_error::Base.RefValue{Any}; interval::Float64)
+      @ Main.ClassicManagedReplay ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_observation.jl:177
+    [3] observe_classic(remote::String; timeout::Int64, selected_streams::Tuple{String, String, String}, drive_interval::Float64, minimum_duration::Float64, process_capture::Main.ClassicManagedReplay.var"#capture_session##0#capture_session##1"{Int64, Vector{Any}}, on_ready::Main.ClassicManagedReplay.var"#capture_session##2#capture_session##3"{String, PipeWireAORTC.SessionRuntime.Handle}, finished::Main.ClassicManagedReplay.var"#capture_session##4#capture_session##5"{Vector{Any}})
+      @ Main.ClassicManagedReplay ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_observation.jl:399
+    [4] capture_session(application::String, stage::String, prefix::String, count::Int64)
+      @ Main.ClassicManagedReplay ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:125
+    [5] macro expansion
+      @ ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:211 [inlined]
+    [6] macro expansion
+      @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+    [7] main(application::String, stage::String, prefix::String)
+      @ Main.ClassicManagedReplay ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:211
+    [8] top-level scope
+      @ ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:247
+    [9] include(mod::Module, _path::String)
+      @ Base ./Base.jl:309
+   [10] exec_options(opts::Base.JLOptions)
+      @ Base ./client.jl:344
+   [11] _start()
+      @ Base ./client.jl:577
+Test Summary:                          | Pass  Error  Total     Time
+Managed Classic CPU closed-loop replay |   12      1     13  6m36.9s
+RNG of the outermost testset: Random.Xoshiro(0xc5cf56895681264a, 0x86525a738eedd2d6, 0x46b8da90238884e9, 0x89dc0a6b8907b3d9, 0x7f66f3a5742b2248)

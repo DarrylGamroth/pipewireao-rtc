@@ -12,6 +12,29 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Classic CPU closed-loop and fault validation — 2026-10-21
+
+The new headless RTC and unmodified upstream libwireplumber/PipeWireAO complete
+a 256-exchange Classic CPU/JFG capture, native Stop/Quit and exact cleanup.
+Separate offline revalidation passes 2,846 checks: every recorded noisy detector
+frame and controller command matches direct replay. Over frames 129–256,
+mean piston-removed pupil OPD RMS improves from 281.05 to 51.03 nm against
+the matched zero-command trajectory. Read-only exchange ordering/cleanup passes
+808 checks. Required-link removal passes 41 checks; controller exit passes 124,
+including complete cleanup and fresh admission. The additional private-core
+CPU replay passes 1,327 checks across four observer modes.
+
+See the [validation](validation/classic-cpu-loop-20261021/README.md) and
+[independent review](reviews/20261021-classic-cpu-loop/REVIEW.md). The original
+managed harness's unsupported applied-Acquisition assertion remains failed
+evidence; corrected verification of the same bytes is recorded separately.
+An initial uncertain Quit remains unresolved and is not relabeled by later
+successful Quit operations. No production runtime or scientific asset changed.
+All task sessions are stopped, the normal CUDA default is preserved, and the
+GPU was unused. This closes the selected finite CPU functional/scientific and
+two fault cases, not sustained cadence, latency, long-run stability, physical
+model validation or other RTC/backend profiles. Artifact management stays paused.
+
 ### Classic live CPU and GUI validation — 2026-10-21
 
 Classic passes live CPU admission, rendered GUI Stop/Start and atmosphere

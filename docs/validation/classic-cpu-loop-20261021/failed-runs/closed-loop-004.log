@@ -1,0 +1,38 @@
+ERROR: LoadError: Some tests did not pass: 0 passed, 0 failed, 1 errored, 0 broken.
+in expression starting at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:2
+
+Managed Classic CPU closed-loop replay: Error During Test at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:223
+  Got exception outside of a @test
+  deployment name must use 1..40 lowercase letters, digits or hyphens
+  Stacktrace:
+    [1] fail(message::String)
+      @ PipeWireAORTC.DeploymentConfiguration ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/configuration/deployment_configuration.jl:26
+    [2] require
+      @ ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/configuration/deployment_configuration.jl:27 [inlined]
+    [3] profile(path::String, prefix::String; legacy_export_input::Bool)
+      @ PipeWireAORTC.DeploymentConfiguration ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/configuration/deployment_configuration.jl:271
+    [4] profile
+      @ ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/configuration/deployment_configuration.jl:264 [inlined]
+    [5] start!(package::String, base::String; prefix::String, deadline::Float64)
+      @ PipeWireAORTC.SessionRuntime ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/deployment/session_runtime.jl:327
+    [6] start!
+      @ ~/.local/share/classic-review-20261020/depot/packages/PipeWireAORTC/yT8mF/src/deployment/session_runtime.jl:324 [inlined]
+    [7] capture_session(application::String, stage::String, prefix::String, count::Int64)
+      @ Main.ClassicManagedReplay ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:111
+    [8] macro expansion
+      @ ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:224 [inlined]
+    [9] macro expansion
+      @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [10] main(application::String, stage::String, prefix::String)
+      @ Main.ClassicManagedReplay ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:224
+   [11] top-level scope
+      @ ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:267
+   [12] include(mod::Module, _path::String)
+      @ Base ./Base.jl:309
+   [13] exec_options(opts::Base.JLOptions)
+      @ Base ./client.jl:344
+   [14] _start()
+      @ Base ./client.jl:577
+Test Summary:                          | Error  Total  Time
+Managed Classic CPU closed-loop replay |     1      1  5.2s
+RNG of the outermost testset: Random.Xoshiro(0x28bf2e1d887882ab, 0xdb6e563ee3b9cd33, 0xeec3461bb5bb8d6c, 0xaa8a03a380c3b1bd, 0x0ea0a8dd45a9898b)

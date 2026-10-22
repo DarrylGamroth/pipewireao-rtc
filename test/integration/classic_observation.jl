@@ -255,13 +255,20 @@ The caller starts/stops the application and saves the returned record, e.g.
 For a narrow diagnostic, select queue products by name with
 `selected_streams=("detector",)`. The common WFS identity check applies when
 all four WFS products are selected. The default observes and checks all eight.
+Opt-in integration clients may wrap each process callback with `process_capture`
+to retain bounded prefixes, extend collection with `finished(captures)`, and
+release their own session with `on_ready` after format negotiation. Collection
+is compiled while held before `on_ready`, which runs outside the loop lock.
+`finished` runs under that lock; process callbacks run on its native thread.
+Neither may block. These hooks do not change the display queues' loss policy.
 `drive_interval` spaces observer driver requests; its sleep is outside the native
 loop lock. `minimum_duration` keeps this attachment observing for at least that
 many seconds after all streams first deliver samples. These are client settings,
 not source controls.
 """
 function observe_classic(remote::AbstractString; timeout::Real=30.0, selected_streams=nothing,
-        drive_interval::Real=0.02, minimum_duration::Real=0.0)
+        drive_interval::Real=0.02, minimum_duration::Real=0.0,
+        process_capture=identity, on_ready=nothing, finished=captures -> true)
     _classic_observation_timing(timeout, drive_interval, minimum_duration)
     Base.ENDIAN_BOM==0x04030201 || error("Classic observation requires a little-endian host")
     names=selected_streams===nothing ? map(s -> s.name,CLASSIC_OBSERVATION_STREAMS) :
@@ -299,12 +306,13 @@ function observe_classic(remote::AbstractString; timeout::Real=30.0, selected_st
             registry=Registry(core)
             for (index, capture) in enumerate(captures)
                 name="classic-integration-observer-$(getpid())-$index"
+                process=process_capture(capture)
                 stream=Stream(core, name; properties=Dict("node.name"=>name,
                     "node.want-driver"=>"true", "priority.driver"=>"100",
                     "node.loop.name"=>"observer-loop"),
-                    on_process=capture, on_param_changed=ClassicObservationFormat(capture))
+                    on_process=process, on_param_changed=ClassicObservationFormat(capture))
                 push!(streams, stream)
-                precompile(capture, (typeof(stream),))
+                precompile(process, (typeof(stream),))
                 precompile(stream.callbacks.on_param_changed, (typeof(stream), UInt32, Pod))
                 connect!(stream, :input;
                     flags=STREAM_MAP_BUFFERS | STREAM_INACTIVE | STREAM_DONT_RECONNECT |
@@ -379,7 +387,7 @@ function observe_classic(remote::AbstractString; timeout::Real=30.0, selected_st
         observation_started=_classic_now()
         all_streams_sampled=nothing
         matching_wfs_identity=nothing
-        _classic_wait(loop, deadline, progress, core_error; interval=Float64(drive_interval)) do
+        collection_ready = () -> begin
             for (stream,capture) in zip(streams,captures)
                 stream_state(stream)
                 capture.error===nothing || throw(capture.error)
@@ -395,7 +403,8 @@ function observe_classic(remote::AbstractString; timeout::Real=30.0, selected_st
             current_identity===nothing || (matching_wfs_identity=current_identity)
             if all(c -> c.distinct_sequences>=2, captures) &&
                 (!require_wfs_identity || matching_wfs_identity!==nothing) &&
-                all_streams_sampled!==nothing && _classic_now()-all_streams_sampled>=minimum_duration
+                all_streams_sampled!==nothing && _classic_now()-all_streams_sampled>=minimum_duration &&
+                finished(captures)
                 return true
             end
             for (stream,tracker) in zip(streams,link_trackers)
@@ -409,6 +418,20 @@ function observe_classic(remote::AbstractString; timeout::Real=30.0, selected_st
             end
             return false
         end
+        if on_ready!==nothing
+            _classic_wait(loop,deadline,"held observer format negotiation",core_error) do
+                all(capture -> capture.negotiated!==nothing,captures) &&
+                    all(tracker -> has_current_info(tracker) &&
+                        current_info(tracker).state in
+                            (PipeWireAO.LINK_STATE_PAUSED,PipeWireAO.LINK_STATE_ACTIVE),link_trackers)
+            end
+            with_thread_loop_lock(loop) do _
+                collection_ready()
+                finished(captures)
+            end
+            on_ready()
+        end
+        _classic_wait(collection_ready,loop,deadline,progress,core_error;interval=Float64(drive_interval))
         return with_thread_loop_lock(loop) do _
             for capture in captures
                 capture.error===nothing || throw(capture.error)

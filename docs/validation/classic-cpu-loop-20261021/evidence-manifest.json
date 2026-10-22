@@ -1,0 +1,427 @@
+{
+  "schema": 1,
+  "generated_utc": "2026-10-22T00:19:40Z",
+  "managed_005_outcome": {
+    "status": "failed",
+    "passed": 2603,
+    "failed": 256,
+    "errored": 0,
+    "broken": 0,
+    "reason": "unsupported applied Acquisition requirement assertion"
+  },
+  "offline_revalidation": {
+    "status": "passed",
+    "passed": 2846,
+    "failed": 0,
+    "errored": 0,
+    "broken": 0,
+    "source": "saved managed-005 bytes; see managed-005/offline-verification.json and managed-005/offline-revalidation.log"
+  },
+  "final_postvalidation": {
+    "status": "passed",
+    "passed": 808,
+    "failed": 0,
+    "errored": 0,
+    "broken": 0,
+    "source": "final-verification.json and final-verification.log"
+  },
+  "files": [
+    {
+      "path": "managed-005/offline-verification.json",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/closed-loop-005/offline-verification.json",
+      "kind": "curated_copy",
+      "bytes": 17829,
+      "sha256": "8f912b26e144f9d0e3e60a4183c701d849906043869ae2c229e87eb01f06b9b7"
+    },
+    {
+      "path": "managed-005/phase-timing.json",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/closed-loop-005/phase-timing.json",
+      "kind": "curated_copy",
+      "bytes": 51595,
+      "sha256": "c73c943fbb3c54c9bf017d50d01a5b549aa6a820f883a043abf06cc71b7ebb79"
+    },
+    {
+      "path": "managed-005/pending-session.json",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/closed-loop-005/pending-session.json",
+      "kind": "curated_copy",
+      "bytes": 229,
+      "sha256": "1bdf9244c429bbb36986ae3a5b2221768d487362cfa9dfe90d0a90b35ff1cb02"
+    },
+    {
+      "path": "managed-005/collected-harness/classic_managed_replay.jl",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/collected-005-harness/classic_managed_replay.jl",
+      "kind": "curated_copy",
+      "bytes": 13845,
+      "sha256": "37d4b32b2ede1a21afe7c99c73943659917422d8d200dd64ed27aa29d5664d55"
+    },
+    {
+      "path": "managed-005/collected-harness/classic_observation.jl",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/collected-005-harness/classic_observation.jl",
+      "kind": "curated_copy",
+      "bytes": 26628,
+      "sha256": "29a56734bfdf022e62092cd4ad6b851dfa1f4638ccb31be946f51bbce1278ef6"
+    },
+    {
+      "path": "managed-005/collected-harness/session_faults.jl",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/collected-005-harness/session_faults.jl",
+      "kind": "curated_copy",
+      "bytes": 33803,
+      "sha256": "be57020d2726ba4b3b16d227242378b7a4fe903d666ce8bb4987b62a0450d2a7"
+    },
+    {
+      "path": "managed-005/collected-harness/classic_replay.jl",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/collected-005-harness/classic_replay.jl",
+      "kind": "curated_copy",
+      "bytes": 2040,
+      "sha256": "ea0b4f5a5a2aacfb5d20157e19764754f54f29ed7b90041424119bbf55dcc44c"
+    },
+    {
+      "path": "managed-005/session.json",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/closed-loop-005/session.json",
+      "kind": "curated_copy",
+      "bytes": 341,
+      "sha256": "10f094a0b066dd6662370f5f1cdf515b39ce61aa6cf564e5a34cec0d0899e3da"
+    },
+    {
+      "path": "managed-005/ready.json",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/closed-loop-005/ready.json",
+      "kind": "curated_copy",
+      "bytes": 312,
+      "sha256": "bf2199b25efc88f8c4e7982f9822f8dcab6916cae8676de11575422e247eac7f"
+    },
+    {
+      "path": "managed-005/offline-revalidation.log",
+      "source_raw_path": null,
+      "kind": "curated_summary_or_reconstructed_note",
+      "bytes": 136,
+      "sha256": "6e799fd39d40a1a932f3a30b58adc93447747e6cf558009a10b8e7002bf0c442"
+    },
+    {
+      "path": "managed-005/prefix-identities.json",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/closed-loop-005/prefix-identities.json",
+      "kind": "curated_copy",
+      "bytes": 54767,
+      "sha256": "0c1fcdcca3e0e598cf42c055508eb2abc433e0c65556ab6594d428c204b67e29"
+    },
+    {
+      "path": "managed-005/stop.json",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/closed-loop-005/stop.json",
+      "kind": "curated_copy",
+      "bytes": 217,
+      "sha256": "a0704c5c3ebe39ba5ae237db86d928658ef85fd9b5309bf7547438cd0a7b974d"
+    },
+    {
+      "path": "managed-005/gpu-audit.json",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/closed-loop-005/gpu-audit.json",
+      "kind": "curated_copy",
+      "bytes": 208,
+      "sha256": "0026e2d38465436e684daf4c6a7b85b9027dffa226d483c3db7f730dd37a20ad"
+    },
+    {
+      "path": "managed-005/failed-closed-loop-005.log",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/closed-loop-005.log",
+      "kind": "curated_copy",
+      "bytes": 286783,
+      "sha256": "190421819769493f2631cd443ae3a6fbde4bad65fde74cd58af4e92332b2d1c0"
+    },
+    {
+      "path": "managed-005/observation.json",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/closed-loop-005/observation.json",
+      "kind": "curated_copy",
+      "bytes": 2913,
+      "sha256": "67fdd7a9b575ddff47e6ccb6ad2bb81fa5f4a886df0aa2de5d17f9adfbb0536b"
+    },
+    {
+      "path": "managed-005/shutdown-attempt.json",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/closed-loop-005/shutdown-attempt.json",
+      "kind": "curated_copy",
+      "bytes": 115,
+      "sha256": "ba69a6d5a0458e22f61f47faa48e2b990542cfd9a6a6ce1584b3dd09030d3804"
+    },
+    {
+      "path": "managed-005/start.json",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/closed-loop-005/start.json",
+      "kind": "curated_copy",
+      "bytes": 221,
+      "sha256": "21aacd34c08353e634f86887cd2904650afa202bb872906811bc1fa1e4fc8afe"
+    },
+    {
+      "path": "managed-005/final-launch.json",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/closed-loop-005/final-launch.json",
+      "kind": "curated_copy",
+      "bytes": 7939,
+      "sha256": "89450132d3f4d9a2362fd3985e14117eea93afb8f063713345eeb81e9d6a334c"
+    },
+    {
+      "path": "failed-runs/closed-loop-001.log",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/closed-loop-001.log",
+      "kind": "curated_copy",
+      "bytes": 13644,
+      "sha256": "a65e8b87932c73a25aa3b8fc1cff7e65b79ddb7a88ed067bb91d0a0294511a13"
+    },
+    {
+      "path": "failed-runs/closed-loop-002.log",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/closed-loop-002.log",
+      "kind": "curated_copy",
+      "bytes": 4663,
+      "sha256": "da7bd2a0e44934898fd2bd565c9bdd34c79a84eb79297e3478db817e57ddd1e9"
+    },
+    {
+      "path": "failed-runs/closed-loop-004.log",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/closed-loop-004.log",
+      "kind": "curated_copy",
+      "bytes": 3011,
+      "sha256": "742fbc3403779e354f4c42bf08f212906ee7accb0dbe13be1bd1c1e0299873d1"
+    },
+    {
+      "path": "failed-runs/closed-loop-003-quit-failure.json",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/closed-loop-003/quit-failure.json",
+      "kind": "curated_copy",
+      "bytes": 84,
+      "sha256": "533c8c3e14386894e9096bfc7e4fe4603dffc026180e1eacb8a91df64fd5b610"
+    },
+    {
+      "path": "failed-runs/closed-loop-001-retained-cleanup.json",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/closed-loop-001-retained-cleanup.json",
+      "kind": "curated_copy",
+      "bytes": 8004,
+      "sha256": "c29e466682bc86e67f7d001d73d1d1f20815613ba97acdba2f650ee75893af85"
+    },
+    {
+      "path": "failed-runs/closed-loop-003-retained-cleanup.json",
+      "source_raw_path": null,
+      "kind": "curated_summary_or_reconstructed_note",
+      "bytes": 8004,
+      "sha256": "69a9b1cafcbe375d2e2b0588346eb19aa0dfe9ab483bf30f1852d54394f2e6f7"
+    },
+    {
+      "path": "failed-runs/closed-loop-003-observed-cleanup.json",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/closed-loop-003/observed-cleanup.json",
+      "kind": "curated_copy",
+      "bytes": 8818,
+      "sha256": "c61adafd28465e968a3c6af52003ed8012379b3a99316bbc4e050dfd10c53e2f"
+    },
+    {
+      "path": "failed-runs/closed-loop-003.log",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/closed-loop-003.log",
+      "kind": "curated_copy",
+      "bytes": 2212,
+      "sha256": "56cb253c63acedf5dee2f68cb6b0ebdfabae5add0cd34bee445bb850ee8ad66a"
+    },
+    {
+      "path": "failed-runs/closed-loop-002-retained-cleanup.json",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/closed-loop-002-retained-cleanup.json",
+      "kind": "curated_copy",
+      "bytes": 7965,
+      "sha256": "54e8c5381a0d27fe7b5ccd53f26123e5665ff19cc2575df7161dd62a96c76cb8"
+    },
+    {
+      "path": "failed-runs/closed-loop-003-gpu-audit.json",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/closed-loop-003/gpu-audit.json",
+      "kind": "curated_copy",
+      "bytes": 208,
+      "sha256": "92783e3fd463e52f079987ef1e2d47a9390c5000db9402358a28d220a5d4c636"
+    },
+    {
+      "path": "fault-link/gpu-audit-running.txt",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/fault-link-001/gpu-audit-running.txt",
+      "kind": "curated_copy",
+      "bytes": 3585,
+      "sha256": "076fb07de100b0bb097d9965369c0432c13a3cf0118234575520fd7f77ad239e"
+    },
+    {
+      "path": "fault-link/readmitted/observed-cleanup.json",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/fault-link-001/readmitted/observed-cleanup.json",
+      "kind": "curated_copy",
+      "bytes": 8892,
+      "sha256": "de3243a400fd518af637a5bd3b5f3a39eafd856638e60a5ab2f866b9a6b66e66"
+    },
+    {
+      "path": "fault-link/readmitted/final-launch.json",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/fault-link-001/readmitted/final-launch.json",
+      "kind": "curated_copy",
+      "bytes": 8013,
+      "sha256": "1733c63a049e5360be617bfcd21f60551eb56bc4ecd1fbb9bad2bc5aca6ecbd2"
+    },
+    {
+      "path": "fault-link/gpu-audit-readmitted.txt",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/fault-link-001/gpu-audit-readmitted.txt",
+      "kind": "curated_copy",
+      "bytes": 3603,
+      "sha256": "f2ea49a0048c3d81cbcc8899a593d07cf0e0b60b586a09f2746c113db5f0b68f"
+    },
+    {
+      "path": "fault-link/failed-stage-precondition.txt",
+      "source_raw_path": null,
+      "kind": "curated_summary_or_reconstructed_note",
+      "bytes": 469,
+      "sha256": "dfa24a1f6592606a283de139029960e73518a723657e7ca054bddfdaeb57b318"
+    },
+    {
+      "path": "fault-link/faulted/observed-cleanup.json",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/fault-link-001/faulted/observed-cleanup.json",
+      "kind": "curated_copy",
+      "bytes": 10294,
+      "sha256": "988bfadea4988d8d35aa934cce33724bf6f6d95216aeb202fdccb7bfd8c46358"
+    },
+    {
+      "path": "fault-link/faulted/source-journal.jsonl",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/fault-link-001/faulted/source-journal.jsonl",
+      "kind": "curated_copy",
+      "bytes": 63307,
+      "sha256": "88d95dea905d70aa4c046b2d9b4e3ce29464b7e06252bd3651e14334584b6c0e"
+    },
+    {
+      "path": "fault-link/faulted/manager-journal.jsonl",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/fault-link-001/faulted/manager-journal.jsonl",
+      "kind": "curated_copy",
+      "bytes": 5090,
+      "sha256": "0d665794332517bfea962f28e1818e8e51cebd59e3349020ec139459a15bce63"
+    },
+    {
+      "path": "fault-link/qualification.json",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/fault-link-001/qualification.json",
+      "kind": "curated_copy",
+      "bytes": 50533,
+      "sha256": "727a109124212ea40f80555cd870770b1e43019e77f2ccca1540fb9cc0f8d7a5"
+    },
+    {
+      "path": "fault-controller/gpu-audit-running.txt",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/fault-controller-001/run-001/gpu-audit-running.txt",
+      "kind": "curated_copy",
+      "bytes": 3669,
+      "sha256": "03df41cfc4f3001bcfceb314e5a39fed9783ba1b1b3158089c4b10afaf0cd206"
+    },
+    {
+      "path": "fault-controller/readmitted/observed-cleanup.json",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/fault-controller-001/run-001/readmitted/observed-cleanup.json",
+      "kind": "curated_copy",
+      "bytes": 8892,
+      "sha256": "a3dbb3cb8478a8b136bf6f669cb6918f548a8af20436ff6a7c713550715318ee"
+    },
+    {
+      "path": "fault-controller/readmitted/final-launch.json",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/fault-controller-001/run-001/readmitted/final-launch.json",
+      "kind": "curated_copy",
+      "bytes": 8013,
+      "sha256": "eb4e1f2262743d991158a6c88a70aeab687740d9ee76b51464219fd0bf593fe0"
+    },
+    {
+      "path": "fault-controller/gpu-audit-readmitted.txt",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/fault-controller-001/run-001/gpu-audit-readmitted.txt",
+      "kind": "curated_copy",
+      "bytes": 3687,
+      "sha256": "fd5816803d8358713a7dfcb450d11028f72793499f8dff52aab0ad25643ceb2a"
+    },
+    {
+      "path": "fault-controller/failed-stage-precondition.log",
+      "source_raw_path": null,
+      "kind": "curated_summary_or_reconstructed_note",
+      "bytes": 1914,
+      "sha256": "edd72a08279baa1a6b0c0b5f2765dc7cd9b6057847fe7d80d8d4d8b895986fa6"
+    },
+    {
+      "path": "fault-controller/faulted/observed-cleanup.json",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/fault-controller-001/run-001/faulted/observed-cleanup.json",
+      "kind": "curated_copy",
+      "bytes": 8891,
+      "sha256": "fd913dbf4116b5be6e7d19b4fc1d749ea69712d48c4d24131f1335a22b29c988"
+    },
+    {
+      "path": "fault-controller/faulted/source-journal.jsonl",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/fault-controller-001/run-001/faulted/source-journal.jsonl",
+      "kind": "curated_copy",
+      "bytes": 61886,
+      "sha256": "3486008deb99d4ee30359ce46456fcde56810af61b90c952001939c8eec46b2c"
+    },
+    {
+      "path": "fault-controller/faulted/manager-journal.jsonl",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/fault-controller-001/run-001/faulted/manager-journal.jsonl",
+      "kind": "curated_copy",
+      "bytes": 6803,
+      "sha256": "a0d263414cf6f0ec75299dbf80a718c9e6318c51551780a66693a3b13a26b04c"
+    },
+    {
+      "path": "fault-controller/faulted/final-launch.json",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/fault-controller-001/run-001/faulted/final-launch.json",
+      "kind": "curated_copy",
+      "bytes": 8002,
+      "sha256": "e0763dbd7de8ba28a910763a2b4c903afe3aa1b0bba51b2703287cac19ea3fdb"
+    },
+    {
+      "path": "fault-controller/qualification.json",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/fault-controller-001/run-001/qualification.json",
+      "kind": "curated_copy",
+      "bytes": 50452,
+      "sha256": "0f8a1d7ee2fc12b44a924abbe4048081bc4f418ee0c28cead00e3343d8782d34"
+    },
+    {
+      "path": "fault-link.log",
+      "source_raw_path": null,
+      "kind": "curated_summary_or_reconstructed_note",
+      "bytes": 94,
+      "sha256": "6ca38a62950885c1502024846ce245d7871c1a4d8cf9bcbb0bd5e932cc9f2a9e"
+    },
+    {
+      "path": "fault-controller.log",
+      "source_raw_path": null,
+      "kind": "curated_summary_or_reconstructed_note",
+      "bytes": 100,
+      "sha256": "52abf0bb47ba5dde33412a7e231c184a2bf533d799cce9d19104d1b0e9394a66"
+    },
+    {
+      "path": "final-verification.json",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/final-verification.json",
+      "kind": "curated_copy",
+      "bytes": 311,
+      "sha256": "7bbd76a3e507e2d832567374076b00ecf0c55ebe5e21bdf4de0544abbe77f6a7"
+    },
+    {
+      "path": "final-verification.log",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/final-verification.log",
+      "kind": "curated_copy",
+      "bytes": 130,
+      "sha256": "2ea135165da8a322b1681b263b7f4efb6e7c9856456130963f91d285d361ec30"
+    },
+    {
+      "path": "verify-final.jl",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/verify-final.jl",
+      "kind": "curated_copy",
+      "bytes": 3164,
+      "sha256": "045ea35fcc4843091ebd85e52d310b79e27b9834ef646a9617f3c0319ef9276c"
+    },
+    {
+      "path": "prior-cleanup-summary.json",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/prior-cleanup-summary.json",
+      "kind": "curated_copy",
+      "bytes": 301,
+      "sha256": "377547de29f4d30d7f3659e4c15647260f5cf10606bf3045bb05454f16604b1e"
+    },
+    {
+      "path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/closed-loop-005/applied-f32-micrometre.bin",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/closed-loop-005/applied-f32-micrometre.bin",
+      "kind": "raw_binary_retained_excluded_from_git",
+      "bytes": 283648,
+      "sha256": "89158640772e53f2d2777603a34a27aa8a7682e349f9bb6ce155c59f6a2ff42e"
+    },
+    {
+      "path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/closed-loop-005/frames-u16-row-major.bin",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/closed-loop-005/frames-u16-row-major.bin",
+      "kind": "raw_binary_retained_excluded_from_git",
+      "bytes": 63438848,
+      "sha256": "2c1b13a18c231f3dddb60575a34f1b72a75d750da785d6ebf037080dd26344b1"
+    },
+    {
+      "path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/closed-loop-005/demanded-f32-micrometre.bin",
+      "source_raw_path": "/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/closed-loop-005/demanded-f32-micrometre.bin",
+      "kind": "raw_binary_retained_excluded_from_git",
+      "bytes": 283648,
+      "sha256": "ca7aa74e873adae71e275eaa15cd7d7a16f9d8a1bc1b222cc60cac05a3e97f45"
+    }
+  ],
+  "exclusions": [
+    "frame and vector binary files remain at raw source paths; hashes retained, binaries not copied",
+    "installed trees and installed application/assets/binaries excluded",
+    "graph-ready and graph-stopped full registry dumps excluded; compact final-launch/observation/cleanup receipts retained"
+  ]
+}

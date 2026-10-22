@@ -1,0 +1,30 @@
+invocation=bf3b41ac63b744af9ec1dc4d93af386c unit=pipewireao-session@79d4cbe97881.service
+
+PID 50938
+CMD /home/dgamroth/.local/opt/pipewireao-classic-headless-20261021/bin/pipewireao-rtc -c /run/user/1000/pipewireao-session-79d4cbe97881/bf3b41ac63b744af9ec1dc4d93af386c/rtc/rtc.conf 
+GPU visibility env: unset
+GPU runtime mappings: none
+
+PID 50778
+CMD /home/dgamroth/.local/opt/pipewireao-classic-headless-20261021/bin/pipewire-ao -c daemon.conf 
+GPU visibility env: CUDA_VISIBLE_DEVICES=
+ROCR_VISIBLE_DEVICES=
+GPU runtime mappings: none
+
+PID 50837
+CMD /home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/bin/julia --startup-file=no --threads=2,0 --project=/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/fault-controller-001/run-001/readmitted/installed -e using PipeWireAORTC; PipeWireAORTC.GraphOwner.main(ARGS) -- --graph /home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/fault-controller-001/run-001/readmitted/installed/graph.conf --name revolt-classic-jfg-frame-graph --remote /run/user/1000/pipewireao-session-79d4cbe97881/bf3b41ac63b744af9ec1dc4d93af386c/rtc-bf3b41ac63b7 --rate 500/1 --boundary-layout row-major --session-run-control --fifo-inputs --execution complete-frame --pin-cpus 15,11 --feedback constraint-feedback controller-constraint-feedback --warmup-output demanded --warmup-output controller-constraint-feedback --bootstrap-node pipewireao.rtc.bootstrap.julia --bootstrap-instance 1998306997665 --warmup-output slopes --warmup-output flux --warmup-output validity --warmup-output current-offset --warmup-output constraint-feedback --warmup-output correction-role --fits-bindings /home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/fault-controller-001/run-001/readmitted/installed/parameters.conf 
+GPU visibility env: CUDA_VISIBLE_DEVICES=
+ROCR_VISIBLE_DEVICES=
+GPU runtime mappings: none
+
+PID 50838
+CMD /home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/bin/julia --startup-file=no --threads=2,0 --project=/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/fault-controller-001/run-001/readmitted/installed -e using PipeWireAORTC; PipeWireAORTC.NativeParameterSource.main(ARGS) -- --config /run/user/1000/pipewireao-session-79d4cbe97881/bf3b41ac63b744af9ec1dc4d93af386c/parameters/sources.json --remote /run/user/1000/pipewireao-session-79d4cbe97881/bf3b41ac63b744af9ec1dc4d93af386c/rtc-bf3b41ac63b7 --bootstrap-node pipewireao.rtc.bootstrap.parameters --bootstrap-instance 1998306997667 --control-node pipewireao.rtc.parameters.classic-cpu-validation-20261021-fault --control-instance 1998306997668 
+GPU visibility env: CUDA_VISIBLE_DEVICES=
+ROCR_VISIBLE_DEVICES=
+GPU runtime mappings: none
+
+PID 50839
+CMD /home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/bin/julia --startup-file=no --threads=2,0 --project=/home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/fault-controller-001/run-001/readmitted/installed -e using PipeWireAORTC; PipeWireAORTC.AOSOwner.main(ARGS) -- --config /home/dgamroth/workspaces/codex/worktrees/classic-cpu-validation-20261021/fault-controller-001/run-001/readmitted/installed/simulation.conf --remote /run/user/1000/pipewireao-session-79d4cbe97881/bf3b41ac63b744af9ec1dc4d93af386c/rtc-bf3b41ac63b7 --control-node simulator-wfs --bootstrap-node pipewireao.rtc.bootstrap.simulator --bootstrap-instance 1998306997666 --phase-timing-directory /run/user/1000/pipewireao-session-79d4cbe97881/bf3b41ac63b744af9ec1dc4d93af386c/phase-timing --phase-timing-frames 256 --phase-timing-warmup 0 --transport-cpu 12 
+GPU visibility env: CUDA_VISIBLE_DEVICES=
+ROCR_VISIBLE_DEVICES=
+GPU runtime mappings: none

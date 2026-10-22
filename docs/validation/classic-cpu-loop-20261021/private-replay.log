@@ -1,0 +1,10 @@
+Starting finite prefix: none
+Completed finite prefix: none
+Starting finite prefix: normal
+Completed finite prefix: normal
+Starting finite prefix: slow
+Completed finite prefix: slow
+Starting finite prefix: churn
+Completed finite prefix: churn
+Test Summary:                             | Pass  Total     Time
+Classic finite cpu plant / CPU JFG replay | 1327   1327  1m09.5s

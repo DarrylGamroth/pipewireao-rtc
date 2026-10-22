@@ -1,0 +1,29 @@
+Observers negotiated; releasing exact headless session
+ERROR: LoadError: Some tests did not pass: 13 passed, 0 failed, 1 errored, 0 broken.
+in expression starting at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:2
+
+Managed Classic CPU closed-loop replay: Error During Test at /home/dgamroth/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:226
+  Got exception outside of a @test
+  Classic observer core object=0 sequence=423 endpoint=[rtc-applied-queue-output global=60:61 -> observer global=149:150; simulator-wfs global=95:96 -> observer global=100:146; revolt-classic-jfg-frame-graph global=102:120 -> observer global=147:148]: pw_core failed: connection error (-32)
+  ...and 1 more exception.
+  ...and 1 more exception.
+  Stacktrace:
+   [1] capture_session(application::String, stage::String, prefix::String, count::Int64)
+     @ Main.ClassicManagedReplay ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:167
+   [2] macro expansion
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:227 [inlined]
+   [3] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [4] main(application::String, stage::String, prefix::String)
+     @ Main.ClassicManagedReplay ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:227
+   [5] top-level scope
+     @ ~/workspaces/codex/pipewire/pipewireao-rtc-classic-cpu-validation/test/integration/classic_managed_replay.jl:270
+   [6] include(mod::Module, _path::String)
+     @ Base ./Base.jl:309
+   [7] exec_options(opts::Base.JLOptions)
+     @ Base ./client.jl:344
+   [8] _start()
+     @ Base ./client.jl:577
+Test Summary:                          | Pass  Error  Total     Time
+Managed Classic CPU closed-loop replay |   13      1     14  2m30.2s
+RNG of the outermost testset: Random.Xoshiro(0xc64631046da82d3c, 0xd32a5a3bf81aabab, 0xb13355276e478dd8, 0x27830244348003eb, 0xca5af95aecde10e2)
