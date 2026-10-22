@@ -261,6 +261,10 @@ release their own session with `on_ready` after format negotiation. Collection
 is compiled while held before `on_ready`, which runs outside the loop lock.
 `finished` runs under that lock; process callbacks run on its native thread.
 Neither may block. These hooks do not change the display queues' loss policy.
+Additional diagnostic declarations may be supplied as `stream_specs`. Their
+`valid_payload(capture)` predicate must validate the declared special values;
+the default retains the existing all-finite payload requirement. Masked OPD
+validation checks its NaNs against the actual pupil during scientific replay.
 `drive_interval` spaces observer driver requests; its sleep is outside the native
 loop lock. `minimum_duration` keeps this attachment observing for at least that
 many seconds after all streams first deliver samples. These are client settings,
@@ -268,16 +272,17 @@ not source controls.
 """
 function observe_classic(remote::AbstractString; timeout::Real=30.0, selected_streams=nothing,
         drive_interval::Real=0.02, minimum_duration::Real=0.0,
-        process_capture=identity, on_ready=nothing, finished=captures -> true)
+        process_capture=identity, on_ready=nothing, finished=captures -> true,
+        stream_specs=CLASSIC_OBSERVATION_STREAMS, valid_payload=capture -> capture.finite)
     _classic_observation_timing(timeout, drive_interval, minimum_duration)
     Base.ENDIAN_BOM==0x04030201 || error("Classic observation requires a little-endian host")
-    names=selected_streams===nothing ? map(s -> s.name,CLASSIC_OBSERVATION_STREAMS) :
+    names=selected_streams===nothing ? map(s -> s.name,stream_specs) :
         Tuple(String.(selected_streams))
     isempty(names) && throw(ArgumentError("select at least one Classic stream"))
     length(unique(names))==length(names) || throw(ArgumentError("duplicate Classic stream selection"))
-    all(name -> any(s -> s.name==name,CLASSIC_OBSERVATION_STREAMS),names) ||
+    all(name -> any(s -> s.name==name,stream_specs),names) ||
         throw(ArgumentError("unknown Classic stream selection"))
-    specs=filter(spec -> spec.name in names,CLASSIC_OBSERVATION_STREAMS)
+    specs=filter(spec -> spec.name in names,stream_specs)
     require_wfs_identity=all(name -> name in names,("detector","slopes","flux","validity"))
     deadline=_classic_now()+timeout
     loop=ThreadLoop("classic-integration-observer")
@@ -391,7 +396,7 @@ function observe_classic(remote::AbstractString; timeout::Real=30.0, selected_st
             for (stream,capture) in zip(streams,captures)
                 stream_state(stream)
                 capture.error===nothing || throw(capture.error)
-                capture.finite || error("Classic observation received a nonfinite payload")
+                valid_payload(capture) || error("Classic observation received an invalid payload")
                 capture.canonical_boolean || error("Classic validity payload contains a value above one")
             end
             # Completion must be checked before submitting another asynchronous
@@ -435,7 +440,7 @@ function observe_classic(remote::AbstractString; timeout::Real=30.0, selected_st
         return with_thread_loop_lock(loop) do _
             for capture in captures
                 capture.error===nothing || throw(capture.error)
-                capture.finite && capture.canonical_boolean || error("invalid final Classic payload")
+                valid_payload(capture) && capture.canonical_boolean || error("invalid final Classic payload")
             end
             Dict("remote"=>String(remote), "boundary"=>"capacity-one copy/drop-oldest queues",
                 "drive_interval_s"=>Float64(drive_interval), "minimum_duration_s"=>Float64(minimum_duration),

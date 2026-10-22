@@ -13,12 +13,16 @@ using Base.Threads: Atomic, atomic_add!
 
 const Optics = AdaptiveOpticsSim.Optics
 const FOCAL_IMAGE_SCHEMA = "org.calculon.ao.focal-photon-rate.f32/1"
+# Piston-removed OPD in nm on the transmitting pupil; excluded pixels are NaN.
+const WAVEFRONT_SCHEMA = "org.calculon.ao.residual-pupil-opd.nm.f32/1"
 const PERIOD_NS = UInt64(50_000_000)
 
-mutable struct Observation{S,I,V}
+mutable struct Observation{S,I,V,M}
     snapshot::S
     imaging::I
     values::V
+    wavefront::V
+    pupil::M
     stop::Atomic{Bool}
     failed::Atomic{Bool}
     completed::Atomic{UInt64}
@@ -46,7 +50,10 @@ function prepare(definition::AlgorithmGraphDefinition, graph)
         imaging = Optics.prepare_direct_imaging(pupil, source; zero_padding=2)
         Optics.form_direct_image!(imaging)
         focal = Matrix{Float32}(Optics.intensity_values(Optics.direct_imaging_output(imaging)))
-        return Observation(snapshot, imaging, focal, Atomic{Bool}(false),
+        pupil_mask = Matrix{Bool}(Optics.pupil_mask(telescope))
+        any(pupil_mask) || throw(ArgumentError("optical observation needs a transmitting pupil"))
+        wavefront = Matrix{Float32}(undef, size(pupil_mask))
+        return Observation(snapshot, imaging, focal, wavefront, pupil_mask, Atomic{Bool}(false),
             Atomic{Bool}(false), Atomic{UInt64}(0), Atomic{UInt64}(0), UInt64(0), UInt64(0), nothing)
     catch
         close(snapshot)
@@ -56,12 +63,17 @@ end
 
 source_options(::Nothing) = ()
 function source_options(observation::Observation)
+    properties = Dict("node.loop.name"=>"observer-loop",
+        "node.group"=>"pipewireao-optical-observation",
+        "node.sync-group"=>"sync.pipewireao-optical-observation")
     return (PipeWireImageSourceOptions(node_name="simulator-focal-image",
             media_name="focal-image", schema=FOCAL_IMAGE_SCHEMA,
             shape=size(observation.values), rate=SPA.Fraction(UInt32(20), UInt32(1)),
-            buffers=3, properties=Dict("node.loop.name"=>"observer-loop",
-                "node.group"=>"pipewireao-optical-observation",
-                "node.sync-group"=>"sync.pipewireao-optical-observation")),)
+            buffers=3, properties),
+        PipeWireImageSourceOptions(node_name="simulator-residual-wavefront",
+            media_name="residual-wavefront", schema=WAVEFRONT_SCHEMA,
+            shape=size(observation.wavefront), rate=SPA.Fraction(UInt32(20), UInt32(1)),
+            buffers=3, properties))
 end
 
 function process_sample!(observation::Observation, pipewire)
@@ -72,6 +84,8 @@ function process_sample!(observation::Observation, pipewire)
         metadata.generation == observation.generation || return false
         form_products!(observation)
         stage_pipewire_image!(pipewire, 1, observation.values, metadata.sequence,
+            metadata.pts, metadata.generation)
+        stage_pipewire_image!(pipewire, 2, observation.wavefront, metadata.sequence,
             metadata.pts, metadata.generation)
     finally
         release_graph_output_snapshot!(observation.snapshot)
@@ -84,7 +98,32 @@ function form_products!(observation::Observation)
     Optics.form_direct_image!(observation.imaging)
     copyto!(observation.values,
         Optics.intensity_values(Optics.direct_imaging_output(observation.imaging)))
+    form_wavefront!(observation.wavefront, snapshot_values(observation.snapshot), observation.pupil)
     return nothing
+end
+
+# Presentation of the same owned pupil snapshot used for ideal imaging. Uniform
+# pupil-sample weighting matches the CPU replay metric; tip/tilt remain included.
+# No controller state, graph output or physical command is modified.
+function form_wavefront!(destination, opd, pupil)
+    axes(destination) == axes(opd) == axes(pupil) ||
+        throw(DimensionMismatch("wavefront image and pupil axes must match the OPD"))
+    total = 0.0
+    count = 0
+    for index in eachindex(opd, pupil)
+        if pupil[index]
+            value = opd[index]
+            isfinite(value) || throw(ArgumentError("nonfinite OPD on the transmitting pupil"))
+            total += Float64(value)
+            count += 1
+        end
+    end
+    count > 0 || throw(ArgumentError("wavefront observation needs a transmitting pupil"))
+    piston = total / count
+    for index in eachindex(destination, opd, pupil)
+        destination[index] = pupil[index] ? Float32((Float64(opd[index]) - piston) * 1e9) : NaN32
+    end
+    return destination
 end
 
 function worker!(observation::Observation, pipewire)

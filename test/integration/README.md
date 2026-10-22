@@ -17,6 +17,14 @@ for the native memory regression, deployment and fault recovery evidence.
 
 ## Managed Classic CPU closed-loop replay
 
+`classic_wavefront.jl APPLICATION FRESH_STATE PREFIX` additionally validates the
+shared residual-wavefront transport against direct pupil OPD replay. Use a sealed
+CPU application with optical observation, 32 exchanges and 2 Hz wall pacing.
+It checks two generations separated by native Reset, the emitting frame's
+acquisition identity/PTS, pupil masking, nm units, piston removal, RMS, unchanged
+detector/controller replay and final Quit cleanup. The separate
+`test/aos_optical_observation.jl simulation.conf` check needs no live session.
+
 `classic_managed_replay.jl` starts only a new non-actuating managed session.
 The finite source must declare `--phase-timing-directory @RUNTIME@/phase-timing`
 and a `--phase-timing-warmup` shorter than its 256 exchanges (for example 128).

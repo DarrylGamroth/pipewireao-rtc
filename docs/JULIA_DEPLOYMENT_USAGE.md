@@ -14,6 +14,49 @@ headless RTC and libwireplumber assets and rejects a missing session runtime bef
 Scientific campaign qualification under this replacement remains separate from
 the recorded Copper complete-frame lifecycle checks.
 
+## Optional simulator wavefront images
+
+`optical_observation = true` enables the shared AOS optical observer. It uses
+the declared guide-sensor aperture and the completed `pupil_opd` graph output;
+the GUI needs no instrument-specific rendering code. Alongside the ideal
+focal photon-rate image, it publishes `simulator-residual-wavefront` with media
+name `residual-wavefront` and schema
+`org.calculon.ao.residual-pupil-opd.nm.f32/1`.
+
+The Float32 image contains pupil OPD in nm after subtracting the mean over
+transmitting pupil samples. Tip/tilt remain included. Obscured and outside-pupil
+pixels contain NaN. The generic ndarray viewer excludes these pixels from
+scaling and measurements; its whole-image RMS is therefore the pupil
+piston-removed wavefront error, with uniform sample weighting. This is simulated
+optical truth, not a wavefront reconstructed from the detector.
+
+Both images originate from the same bounded snapshot and carry its acquisition
+generation, sequence and original WFS PTS. Each image source may drop snapshots
+independently. Slow or absent GUI consumers cannot gate the WFS/control exchange.
+Observation is capped at 20 snapshots per wall second and runs outside PipeWire
+callbacks; the diagnostic is not a recording or timing qualification.
+
+The application declares its ordinary image queue, source/sink shapes and link,
+then places an existing ndarray view in the Simulator navigation group:
+
+```toml
+[[view]]
+id = "residual-wavefront"
+kind = "ndarray"
+group = "simulator"
+title = "Residual wavefront · nm OPD"
+source = { node_name = "simulator-residual-wavefront-queue-output", media_name = "residual-wavefront" }
+
+[view.egui]
+open_on_start = true
+preserve_square_elements = true
+colormap = "viridis"
+measurements = { scope = "whole_image", selected = ["root_mean_square"] }
+```
+
+The view group is presentation only. Array transport, metadata, rendering and
+measurement selection use the existing interfaces for every simulator.
+
 ## REVOLT instrument entrypoints
 
 The Classic and Copper exporters and acquisition commands belong to the

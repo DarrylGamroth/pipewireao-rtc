@@ -224,7 +224,7 @@ version = "0.6.18"
 deps = ["DBInterface", "FITSIO", "JSON3", "PipeWireAO", "SHA", "SQLite", "Sockets", "StructTypes", "TOML", "ThreadPinning", "UUIDs"]
 path = "."
 uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
-version = "0.2.1"
+version = "0.2.2"
 
     [deps.PipeWireAORTC.extensions]
     PipeWireAORTCAOSExt = ["AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL"]
