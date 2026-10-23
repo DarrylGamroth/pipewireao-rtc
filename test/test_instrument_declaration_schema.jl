@@ -12,18 +12,22 @@ const IC = PipeWireAORTC.InstrumentConfiguration
 
         open(joinpath(directory, "production.yaml"), "w") do io
             YAML.write(io, Dict(
+                "schema_version" => 1,
                 "name" => "test-graph",
-                "nodes" => [Dict("name" => "source"), Dict("name" => "mirror")],
-                "inputs" => [Dict("name" => "command", "binding" => "commands")],
-                "outputs" => [Dict("name" => "frame")],
+                "nodes" => [Dict("name" => "source", "type" => "declared_source", "config" => Dict()),
+                    Dict("name" => "mirror", "type" => "declared_mirror", "config" => Dict())],
+                "inputs" => [Dict("name" => "command", "binding" => "commands", "destination" => "mirror.command")],
+                "outputs" => [Dict("name" => "frame", "source" => "source.frame")],
             ))
         end
         open(joinpath(directory, "calibration.yaml"), "w") do io
             YAML.write(io, Dict(
+                "schema_version" => 1,
                 "name" => "test-graph",
-                "nodes" => [Dict("name" => "source"), Dict("name" => "mirror")],
-                "inputs" => [Dict("name" => "command", "binding" => "commands")],
-                "outputs" => [Dict("name" => "frame")],
+                "nodes" => [Dict("name" => "source", "type" => "declared_source", "config" => Dict()),
+                    Dict("name" => "mirror", "type" => "declared_mirror", "config" => Dict())],
+                "inputs" => [Dict("name" => "command", "binding" => "commands", "destination" => "mirror.command")],
+                "outputs" => [Dict("name" => "frame", "source" => "source.frame")],
             ))
         end
         write_json(joinpath(directory, "mirror.json"), Dict(
@@ -138,8 +142,9 @@ const IC = PipeWireAORTC.InstrumentConfiguration
     mktempdir() do directory
         documents = declaration_documents(directory)
         physical, declaration = documents.physical, documents.simulation
+        graphs = Dict(mode => C.read_yaml(joinpath(directory, declaration["graphs"][mode])) for mode in ("production", "calibration"))
         @test IC.validate_declaration(physical, directory) === nothing
-        @test IC.validate_simulation(declaration, physical, directory) === nothing
+        @test IC.validate_simulation(declaration, physical, directory, graphs) === nothing
         @test IC.load(documents.paths.physical).document == physical
         @test IC.load_simulation(documents.paths.simulation).document == declaration
         documents.rtc["dimensions"] = Dict("controller_command_count" => 5, "active_vdm_count" => 3)
@@ -158,17 +163,17 @@ const IC = PipeWireAORTC.InstrumentConfiguration
 
         invalid_wire_contract = deepcopy(declaration)
         invalid_wire_contract["wire_contracts"][1]["command_scale"] = true
-        @test_throws ArgumentError IC.validate_simulation(invalid_wire_contract, physical, directory)
+        @test_throws ArgumentError IC.validate_simulation(invalid_wire_contract, physical, directory, graphs)
 
         unknown_parameter = deepcopy(declaration)
         unknown_parameter["profiles"]["basic"]["parameters"][1]["paramaters"] =
             unknown_parameter["profiles"]["basic"]["parameters"][1]["destination"]
-        @test_throws ArgumentError IC.validate_simulation(unknown_parameter, physical, directory)
+        @test_throws ArgumentError IC.validate_simulation(unknown_parameter, physical, directory, graphs)
 
         unknown_binding = deepcopy(declaration)
         unknown_binding["bindings"]["commands"]["shpae"] =
             unknown_binding["bindings"]["commands"]["shape"]
-        @test_throws ArgumentError IC.validate_simulation(unknown_binding, physical, directory)
+        @test_throws ArgumentError IC.validate_simulation(unknown_binding, physical, directory, graphs)
 
         inactive_profile_typo = deepcopy(declaration)
         inactive_profile_typo["settings_bindings"] = [Dict(
@@ -176,7 +181,7 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             "nodes" => ["mirror"],
             "profiles" => ["grid_gaussain"],
         )]
-        @test_throws ArgumentError IC.validate_simulation(inactive_profile_typo, physical, directory)
+        @test_throws ArgumentError IC.validate_simulation(inactive_profile_typo, physical, directory, graphs)
 
         unknown_transform = deepcopy(declaration)
         unknown_transform["settings_bindings"] = [Dict(
@@ -184,7 +189,7 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             "nodes" => ["mirror"],
             "transform" => "gaussian_wdith",
         )]
-        @test_throws ArgumentError IC.validate_simulation(unknown_transform, physical, directory)
+        @test_throws ArgumentError IC.validate_simulation(unknown_transform, physical, directory, graphs)
 
         misplaced_coupling = deepcopy(declaration)
         misplaced_coupling["settings_bindings"] = [Dict(
@@ -193,16 +198,16 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             "transform" => "identity",
             "coupling" => 0.35,
         )]
-        @test_throws ArgumentError IC.validate_simulation(misplaced_coupling, physical, directory)
+        @test_throws ArgumentError IC.validate_simulation(misplaced_coupling, physical, directory, graphs)
 
         absent_mirror = deepcopy(declaration)
         absent_mirror["bindings"]["coordinates"] = Dict("kind" => "mirror_coordinates", "mirror" => "missing")
-        @test_throws ArgumentError IC.validate_simulation(absent_mirror, physical, directory)
+        @test_throws ArgumentError IC.validate_simulation(absent_mirror, physical, directory, graphs)
 
         for setting in ("missing", "atmosphere.missing")
             invalid = deepcopy(declaration)
             invalid["settings_bindings"] = [Dict("setting" => setting, "nodes" => ["mirror"])]
-            @test_throws ArgumentError IC.validate_simulation(invalid, physical, directory)
+            @test_throws ArgumentError IC.validate_simulation(invalid, physical, directory, graphs)
         end
 
         for (key, value) in (("defaults", declaration["defaults"]), ("dimensions", documents.rtc["dimensions"]))

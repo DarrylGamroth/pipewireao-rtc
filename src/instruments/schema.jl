@@ -18,7 +18,7 @@ function validate_declaration(document::AbstractDict, directory::AbstractString)
 end
 validate_declaration(document, directory) = throw(ArgumentError("physical instrument must be an object"))
 
-function validate_simulation(document, instrument, directory)
+function validate_simulation(document, instrument, directory, graphs)
     document["schema_version"] === 1 || throw(ArgumentError("unsupported simulation definition schema"))
     _declaration_identifier(document["id"], "simulation identifier")
     defaults = document["defaults"]
@@ -74,8 +74,7 @@ function validate_simulation(document, instrument, directory)
     graph_inputs = Dict{String,Set{String}}()
     graph_outputs = Dict{String,Set{String}}()
     for mode in ("production", "calibration")
-        graph_path = D.relative_asset(directory, graph_paths[mode])
-        graph = _declaration_graph(graph_path)
+        graph = _declaration_graph(graphs[mode])
         graph_nodes[mode] = graph.nodes
         graph_inputs[mode] = graph.inputs
         graph_outputs[mode] = graph.outputs
@@ -469,8 +468,8 @@ function _validate_hil(value, graph_inputs, graph_outputs)
     return nothing
 end
 
-function _declaration_graph(path)
-    graph = bounded_yaml(path)
+_declaration_graph(path::AbstractString) = _declaration_graph(bounded_yaml(path))
+function _declaration_graph(graph)
     InstrumentDefinition.object_value(graph) || throw(ArgumentError("declared graph must be an object"))
     nodes = _declaration_array(get(graph, "nodes", nothing), "graph nodes"; nonempty=true)
     inputs = _declaration_array(get(graph, "inputs", nothing), "graph inputs")

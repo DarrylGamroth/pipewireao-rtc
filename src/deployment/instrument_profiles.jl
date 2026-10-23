@@ -1,0 +1,59 @@
+const INSTRUMENT_PROFILE_FIELDS = Set(["mode", "bindings", "devices", "calibration"])
+const HOST_PROFILE_FIELDS = Set(["placement", "bindings", "environment", "analysis", "simulation"])
+
+function profile_fields(document, allowed, label)
+    document isa AbstractDict || throw(ArgumentError("$label must be a mapping"))
+    InstrumentDefinition.bounded(document, Ref(131072))
+    Set(keys(document)) ⊆ allowed || throw(ArgumentError("unknown $label fields"))
+    bindings = get(document, "bindings", Dict())
+    bindings isa AbstractDict || throw(ArgumentError("$label bindings must be a mapping"))
+    for (name, value) in bindings
+        occursin(r"^[A-Z][A-Z0-9_]*$", name) ||
+            throw(ArgumentError("profile binding names must be uppercase identifiers"))
+        (name in RUNTIME_BINDINGS || name == "JULIA" || startswith(name, "BOOTSTRAP_INSTANCE_")) &&
+            throw(ArgumentError("profile bindings cannot replace runtime or Julia executable bindings"))
+        binding_value(value)
+    end
+    return document
+end
+
+function merge_profile(profile::AbstractDict, host::AbstractDict, path="")
+    combined = Dict{String,Any}(key => deepcopy(value) for (key, value) in profile)
+    for (key, value) in host
+        field = isempty(path) ? key : "$path.$key"
+        if !haskey(combined, key)
+            combined[key] = deepcopy(value)
+        elseif combined[key] isa AbstractDict && value isa AbstractDict
+            combined[key] = merge_profile(combined[key], value, field)
+        elseif !isequal(combined[key], value)
+            throw(ArgumentError("conflicting instrument and host profile field: $field"))
+        end
+    end
+    return combined
+end
+
+"""Combine portable instrument choices and host configuration without overriding values.
+
+The instrument profile accepts `mode`, device `bindings`, `devices` and
+`calibration`. The host accepts `placement`, `bindings`, `environment`, `analysis`
+and `simulation`. Host configuration cannot replace instrument choices. Mappings
+merge recursively; repeated leaves must be identical, and lists never append.
+The ordinary exporter still requires exact placement for all selected roles.
+"""
+function combine_profile(profile, host=nothing)
+    profile_fields(profile, INSTRUMENT_PROFILE_FIELDS, "instrument profile")
+    for name in keys(get(profile, "bindings", Dict()))
+        (name == "RT_PRIORITY" || endswith(name, "_CPU") || endswith(name, "_CPUS")) &&
+            throw(ArgumentError("host placement binding belongs in the host profile: $name"))
+    end
+    host === nothing && return deepcopy(profile)
+    profile_fields(host, HOST_PROFILE_FIELDS, "host profile")
+    return merge_profile(profile, host)
+end
+
+"Read bounded YAML instrument and optional host profiles before export."
+function load_profile(path::AbstractString; host=nothing)
+    profile = InstrumentConfiguration.bounded_yaml(path)
+    host_profile = host === nothing ? nothing : InstrumentConfiguration.bounded_yaml(host)
+    return combine_profile(profile, host_profile)
+end

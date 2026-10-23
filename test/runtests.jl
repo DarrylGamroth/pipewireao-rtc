@@ -15,6 +15,6 @@ for name in ("common", "runtime_export", "spa_config", "loop_placement", "system
     Base.include(suite, joinpath(@__DIR__, "test_" * name * ".jl"))
 end
 
-for name in ("instrument_geometry", "instrument_influences", "instrument_declaration_schema", "instrument_catalogs", "instrument_dimensions", "instrument_export", "graph_configuration")
+for name in ("instrument_geometry", "instrument_influences", "instrument_declaration_schema", "instrument_catalogs", "instrument_components", "instrument_profiles", "instrument_authoring", "instrument_dimensions", "instrument_export", "graph_configuration")
     Base.include(Module(gensym(:InstrumentSuite)), joinpath(@__DIR__, "test_" * name * ".jl"))
 end

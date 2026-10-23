@@ -313,7 +313,7 @@ end
     mktempdir() do directory
         mkpath(joinpath(directory,"rtc"))
         mode = Dict("application"=>Dict(),"requires"=>["devices","calibration"])
-        C.write_json(joinpath(directory,"rtc/modes.conf"),Dict("default"=>"synthetic", "modes"=>Dict("synthetic"=>mode)))
+        C.write_yaml(joinpath(directory,"rtc/modes.yaml"),Dict("default"=>"synthetic", "modes"=>Dict("synthetic"=>mode)))
         @test_throws ArgumentError E.selected_mode(directory,Dict())
         @test_throws ArgumentError E.selected_mode(directory,Dict("mode"=>"unknown"))
         @test_throws ArgumentError E.selected_mode(directory,Dict("devices"=>[],"calibration"=>Dict()))

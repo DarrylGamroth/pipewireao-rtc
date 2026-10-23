@@ -1,0 +1,40 @@
+type: cmos_detector_acquisition_f32
+config:
+  columns:
+    $ref: /sensor/detector_shape/1
+  exposure_duration_s:
+    $ref: /sensor/acquisition/exposure_duration_s
+  gain:
+    $ref: /response/post_readout_gain
+  pixel_scale_arcsec:
+    $ref: /sensor/optical_prescription/pixel_scale_arcsec
+  rows:
+    $ref: /sensor/detector_shape/0
+  wavelength_m:
+    $ref: /source/source_wavelength_m
+  binning:
+    $ref: /values/binning
+  bits:
+    $ref: /values/bits
+  column_readout_noise_e:
+    $ref: /values/column_readout_noise_e
+  dark_current_e_per_pixel_s:
+    $ref: /values/dark_current_e_per_pixel_s
+  frame_schema:
+    $ref: /schemas/frame_schema
+  full_well_e:
+    $ref: /values/full_well_e
+  photon_noise:
+    $ref: /values/photon_noise
+  photon_rate_schema:
+    $ref: /schemas/photon_rate_schema
+  quantum_efficiency:
+    $ref: /values/quantum_efficiency
+  readout_noise:
+    $ref: /values/readout_noise
+  readout_noise_e:
+    $ref: /values/readout_noise_e
+  rng_seed:
+    $ref: /values/rng_seed
+  row_readout_noise_e:
+    $ref: /values/row_readout_noise_e

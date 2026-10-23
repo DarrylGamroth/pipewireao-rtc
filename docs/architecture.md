@@ -808,7 +808,7 @@ Classic separates physical, simulation, RTC and mirror-control authoring:
 | Simulation | `simulation/definition.yaml` and optical graph YAML | Atmosphere, source photometry, detector response, sampling, numerical profiles and graph bindings |
 | RTC | `rtc/configuration.yaml` | Physical instrument reference, controller dimensions, calibration identity and publication destination |
 | RTC mirror controls | `rtc/mirror-controls.yaml` | Mirror command limits, analytic basis descriptors and custom sampled basis artifacts |
-| RTC deployment | `rtc/application.conf`, `rtc/modes.conf` | Owners, native configuration and simulation/hardware connections |
+| RTC deployment | `rtc/application.yaml`, `rtc/modes.yaml` | Owners, native configuration and simulation/hardware connections |
 | GUI | `gui/operator-views.yaml` | Panel/source presentation and selected published basis IDs |
 
 Physical instrument and RTC authoring use bounded, single-document YAML, with
@@ -817,6 +817,32 @@ remains SPA-JSON, and published instrument/device metadata remains JSON.
 Shared mirror descriptions are authored in YAML and validated before JSON
 serialization at the device publication boundary. Valid native JSON inputs remain
 supported for package/device transport, with their exact bytes preserved.
+
+Shared package `data/simulation/components/` contains reference-only templates
+for existing AOS node types and mirror profiles. A simulation names optical
+components, selects physical mirror/sensor/source references and declares
+instrument-specific schemas and detector response. Its production/calibration
+YAML files use the ordinary AOS node, input, output and link schema. Preparation
+expands component references, mirror parameters, zero inputs and HIL endpoints;
+AOS remains the only optical graph compiler/executor. Canonical geometry and
+acquisition values cannot be replaced by component config overrides. Calibration
+may override explicitly supplied detector-response values. Mirror graph overrides
+are rejected; mirror component/profile declarations own their settings.
+
+Application/mode selection, simulator process settings, analysis settings,
+calibration recipes and FITS bindings are authored in YAML. An application's
+`runtime-configurations` explicitly maps YAML `source` to native runtime `path`
+and `format` (`json` or `spa-json`). Export validates those entries before writing
+fresh generated files in its copied application. Source and existing runtime
+files cannot be overwritten. Native graphs, queues, session templates and device
+adapter files retain SPA-JSON. Published metadata retains JSON. Strict JSON
+outputs have no comment header; the deployment manifest records their identity.
+
+Named portable profile YAML declares mode, device owners, calibration and
+endpoint bindings. A separate host YAML declares placement, CPU/priority bindings,
+environment, analysis CPUs and simulator execution overrides. Conflicting values
+and host attempts to change portable device/mode/calibration choices are rejected.
+These deployment profiles are separate from numerical mirror profile selections.
 
 Package `data/simulation/` supplies shared startup-settings schemas. A simulation
 selects `settings_schema: {template: atmosphere, title: ..., description: ...}`;

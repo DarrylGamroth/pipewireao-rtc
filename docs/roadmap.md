@@ -12,6 +12,24 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Optical components, named profiles and consistency review — 2026-10-23
+
+Classic simulation YAML now names optical components and connections; shared RTC
+component templates provide physical/settings references and reusable mirror/HIL
+preparation. AOS remains the numerical graph compiler. Named simulator and
+hardware YAML profiles share the instrument/controller; separate host YAML owns
+placement and backend. Remaining application/mode, simulator/analysis settings,
+calibration recipe and FITS-binding authoring uses YAML, compiled to existing
+native runtime contracts only in a fresh output. Native PipeWire graphs, queues,
+session/device configuration and JSON metadata retain their native formats.
+
+The requested whole-project consistency review found and fixed protected-value
+overrides, silently ignored mirror overrides and implicit Gaussian inference for
+explicit profiles. Active documentation and selectors were updated together.
+See the [review](reviews/20261023-optical-authoring/REVIEW.md) and instrument
+`MIGRATION.md` for exact baseline and CPU validation. Calibration bytes are
+unchanged. The live RTC and installed configuration remain untouched.
+
 ### Shared authoring definitions and derived controller dimensions — 2026-10-23
 
 Shared mirror source now uses YAML; the common reader validates it and serializes

@@ -1,0 +1,34 @@
+type: multilayer_atmosphere_opd_f32
+config:
+  L0:
+    $ref: /settings/atmosphere/L0
+  altitude:
+    $ref: /settings/atmosphere/altitude
+  aperture_revision:
+    $ref: /instrument/telescope/aperture_revision
+  atmosphere_step:
+    $ref: /simulation/frame_period_s
+  central_obstruction_ratio:
+    $ref: /instrument/telescope/central_obstruction_ratio
+  fractional_cn2:
+    $ref: /settings/atmosphere/fractional_cn2
+  layer_ids:
+    $ref: /settings/atmosphere/layer_ids
+  pupil_reflectivity:
+    $ref: /instrument/telescope/pupil_reflectivity
+  r0:
+    $ref: /settings/atmosphere/r0
+  reference_wavelength_m:
+    $ref: /settings/atmosphere/reference_wavelength_m
+  resolution:
+    $ref: /settings/pupil_resolution
+  rng_seed:
+    $ref: /settings/atmosphere/rng_seed
+  telescope_diameter_m:
+    $ref: /instrument/telescope/telescope_diameter_m
+  wind_direction_deg:
+    $ref: /settings/atmosphere/wind_direction_deg
+  wind_speed:
+    $ref: /settings/atmosphere/wind_speed
+  atmosphere_opd_schema:
+    $ref: /schemas/atmosphere_opd_schema

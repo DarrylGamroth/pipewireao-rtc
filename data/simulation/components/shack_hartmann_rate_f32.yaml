@@ -1,0 +1,42 @@
+type: shack_hartmann_rate_f32
+config:
+  aperture_revision:
+    $ref: /instrument/telescope/aperture_revision
+  central_obstruction_ratio:
+    $ref: /instrument/telescope/central_obstruction_ratio
+  diffraction_padding:
+    $ref: /response/diffraction_padding
+  half_pixel_shift:
+    $ref: /response/half_pixel_shift
+  n_lenslets:
+    $ref: /sensor/optical_prescription/n_lenslets
+  n_pix_subap:
+    $ref: /sensor/subaperture_shape/0
+  pixel_scale_arcsec:
+    $ref: /sensor/optical_prescription/pixel_scale_arcsec
+  pupil_reflectivity:
+    $ref: /instrument/telescope/pupil_reflectivity
+  resolution:
+    $ref: /settings/pupil_resolution
+  shannon_sampling:
+    $ref: /response/shannon_sampling
+  source_band:
+    $ref: /source/source_band
+  source_magnitude:
+    $ref: /source/source_magnitude
+  source_position_angle_deg:
+    $ref: /source/source_position_angle_deg
+  source_separation_arcsec:
+    $ref: /source/source_separation_arcsec
+  source_wavelength_m:
+    $ref: /source/source_wavelength_m
+  telescope_diameter_m:
+    $ref: /instrument/telescope/telescope_diameter_m
+  threshold_convolution:
+    $ref: /response/threshold_convolution
+  valid_subaperture_threshold:
+    $ref: /response/valid_subaperture_threshold
+  opd_schema:
+    $ref: /schemas/opd_schema
+  photon_rate_schema:
+    $ref: /schemas/photon_rate_schema

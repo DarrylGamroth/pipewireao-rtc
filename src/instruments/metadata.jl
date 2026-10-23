@@ -35,12 +35,41 @@ function artifact_paths(declaration,configured)
     return paths
 end
 
+graph_source_identity(directory, source::AbstractString) = Common.sha256_file(D.relative_asset(directory, source))
+graph_source_identity(directory, source::AbstractDict) = InstrumentDefinition.scientific_identity(canonical(source))
+
+# Hash selected settings catalogs as well as their resolved declarations. A
+# catalog change after loading must also change startup prescription identity.
+simulation_catalog_name(value::AbstractString) = String(value)
+simulation_catalog_name(value::AbstractDict) = simulation_catalog_selector(get(value, "template", nothing))
+simulation_catalog_name(value) = nothing
+simulation_catalog_selector(value::AbstractString) = String(value)
+simulation_catalog_selector(value) = nothing
+
+function simulation_catalog_identities(authoring)
+    identities = Dict{String,String}()
+    selections = Any[get(authoring, "settings_schema", nothing)]
+    append!(selections, (get(profile, "settings_schema", nothing) for profile in values(authoring["profiles"])))
+    any(profile -> get(profile, "template", nothing) == "measured", values(authoring["profiles"])) &&
+        push!(selections, "measured_influences")
+    for selection in selections
+        name = simulation_catalog_name(selection)
+        name === nothing && continue
+        catalog_document("simulation", name) # validate the bounded catalog name/path
+        path = joinpath(@__DIR__, "..", "..", "data", "simulation", name * ".yaml")
+        identities[name] = Common.sha256_file(path)
+    end
+    return identities
+end
+
 function prescription_identity(declaration,configured)
     schema = settings_description(declaration,configured)["schema"]
     structural = Dict(key=>configured[key] for (key,field) in schema["properties"]
         if get(field,"readOnly",false))
-    graph_hashes = Dict(name=>Common.sha256_file(D.relative_asset(declaration.directory,path))
-        for (name,path) in declaration.document["graphs"])
+    graph_hashes = Dict(name=>graph_source_identity(declaration.directory, source)
+        for (name,source) in declaration.document["graphs"])
+    templates = Dict(name=>Common.sha256_file(component_template_path(name)) for name in declaration.templates)
+    catalogs = simulation_catalog_identities(declaration.authoring)
     assets = Dict{String,String}()
     for path in artifact_paths(declaration,configured)
         file = mirror_description_path(declaration.directory,path)
@@ -49,6 +78,7 @@ function prescription_identity(declaration,configured)
     end
     body = (;instrument=canonical(declaration.instrument.document),
         simulation=canonical(declaration.document),graphs=canonical(graph_hashes),
+        resolved_graphs=canonical(declaration.graphs),templates=canonical(templates),catalogs=canonical(catalogs),
         settings=canonical(structural),artifacts=canonical(assets))
     return InstrumentDefinition.scientific_identity(body)
 end

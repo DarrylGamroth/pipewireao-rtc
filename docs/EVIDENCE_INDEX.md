@@ -1,5 +1,14 @@
 # Delivery evidence catalog
 
+## Optical authoring and project consistency — 2026-10-23
+
+The [independent review](reviews/20261023-optical-authoring/REVIEW.md) records
+three confirmed loader defects, their same-case verification and the final
+whole-project consistency audit. See the
+[current work](roadmap.md#optical-components-named-profiles-and-consistency-review--2026-10-23)
+and instrument `MIGRATION.md` for CPU and baseline evidence. No live deployment
+or scientific calibration bytes changed.
+
 ## Shared authoring definitions — 2026-10-23
 
 The [independent review](reviews/20261023-shared-authoring/REVIEW.md) records

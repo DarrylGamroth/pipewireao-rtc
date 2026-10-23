@@ -1,0 +1,20 @@
+type: gaussian_deformable_mirror_surface_f32
+config:
+  actuator_count:
+    $ref: /mirror/actuator_count
+  aperture_revision:
+    $ref: /instrument/telescope/aperture_revision
+  central_obstruction_ratio:
+    $ref: /instrument/telescope/central_obstruction_ratio
+  pupil_reflectivity:
+    $ref: /instrument/telescope/pupil_reflectivity
+  resolution:
+    $ref: /settings/pupil_resolution
+  telescope_diameter_m:
+    $ref: /instrument/telescope/telescope_diameter_m
+  actuator_coordinates_schema:
+    $ref: /schemas/actuator_coordinates_schema
+  pdm_command_schema:
+    $ref: /schemas/pdm_command_schema
+  surface_opd_schema:
+    $ref: /schemas/surface_opd_schema

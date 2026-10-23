@@ -1,0 +1,10 @@
+type: pupil_opd_composition_f32
+config:
+  resolution:
+    $ref: /settings/pupil_resolution
+  pupil_opd_schema:
+    $ref: /schemas/pupil_opd_schema
+  surface_opd_schema:
+    $ref: /schemas/surface_opd_schema
+  uncompensated_opd_schema:
+    $ref: /schemas/uncompensated_opd_schema

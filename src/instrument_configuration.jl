@@ -21,6 +21,7 @@ include("instruments/influence_functions.jl")
 include("instruments/schema.jl")
 include("instruments/catalogs.jl")
 include("instruments/dimensions.jl")
+include("instruments/components.jl")
 
 function fields(value::AbstractDict, allowed, required, label)
     all(key -> key in allowed, keys(value)) && all(key -> haskey(value,key),required) ||
@@ -59,11 +60,12 @@ function load_simulation(path::AbstractString)
     document = deepcopy(authoring)
     fields(document, ("schema_version", "id", "instrument", "defaults", "settings_schema",
         "wire_contracts", "graphs", "profiles", "bindings", "settings_bindings",
-        "frame_period_s", "hil", "sensors", "sources"),
+        "frame_period_s", "hil", "sensors", "sources", "components"),
         ("schema_version", "id", "instrument", "defaults", "settings_schema",
-        "wire_contracts", "graphs", "profiles", "bindings", "settings_bindings",
+        "wire_contracts", "graphs", "profiles",
         "frame_period_s", "hil"), "simulation definition")
     instrument = referenced_instrument(path, document["instrument"])
+    expanded = expand_simulation_components!(document, instrument.document, instrument.directory)
     document["settings_schema"] = resolve_settings_schema(document["settings_schema"])
     if shared_settings_schema(authoring["settings_schema"]) && haskey(document["settings_schema"]["properties"], "profile")
         document["settings_schema"]["properties"]["profile"]["enum"] = sort!(collect(keys(document["profiles"])))
@@ -75,8 +77,9 @@ function load_simulation(path::AbstractString)
             profile["settings_schema"] = resolve_profile_settings_schema(profile["settings_schema"])
         end
     end
-    validate_simulation(document, instrument.document, instrument.directory)
-    return (;path=abspath(path),directory=instrument.directory,document,instrument)
+    validate_simulation(document, instrument.document, instrument.directory, expanded.graphs)
+    return (;path=abspath(path),directory=instrument.directory,document,instrument,authoring,
+        graphs=expanded.graphs,templates=expanded.templates)
 end
 
 "Read RTC dimensions and mirror-control definitions independently of the simulator."
@@ -210,7 +213,7 @@ transform(kind::Val, value, entry) = throw(ArgumentError("unknown instrument set
 "Resolve profile and scalar settings into the existing AOS graph declaration schema."
 function graph_document(declaration, configured; calibration=false)
     mode = calibration ? "calibration" : "production"
-    graph = bounded_yaml(D.relative_asset(declaration.directory,declaration.document["graphs"][mode]))
+    graph = deepcopy(declaration.graphs[mode])
     profile_name = configured["profile"]
     profile = declaration.document["profiles"][profile_name]
     nodes = graph["nodes"]
@@ -231,8 +234,7 @@ function graph_document(declaration, configured; calibration=false)
     all_names = Set(names)
     # A binding may target a production-only node (e.g. atmosphere). Validate
     # against both declared modes so a misspelled target cannot disappear.
-    for other in values(declaration.document["graphs"])
-        root = bounded_yaml(D.relative_asset(declaration.directory,other))
+    for root in values(declaration.graphs)
         union!(all_names,(node["name"] for node in root["nodes"]))
     end
     for entry in declaration.document["settings_bindings"]

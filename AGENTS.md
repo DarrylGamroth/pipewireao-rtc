@@ -52,8 +52,10 @@
   Historical Python tools remain in Git history with their recorded evidence.
 - Live controls use native PipeWire serialization (`RTC-ARCH-024`/`RTC-DEV-030`).
   Saved reports/configuration may use JSON. Saved files never prove live readiness.
-- Use maintained standard PipeWire relaxed SPA-JSON configuration/generators.
-  Do not introduce another configuration language or operational bundle format.
+- Native PipeWire configuration uses maintained standard relaxed SPA-JSON.
+  Human-authored instrument, simulation, RTC, process/profile, calibration and
+  GUI configuration uses bounded YAML and is compiled to existing native runtime
+  contracts at export. Do not create another optical graph language or executor.
 - Keep the runner outside frame processing. Scientists declare typed Algorithms,
   ports, properties, parameters, shapes and schemas; they do not write SPA
   callbacks, pointer/errno handling, publication or worker machinery.
