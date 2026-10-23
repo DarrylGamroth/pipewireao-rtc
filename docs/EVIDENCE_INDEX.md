@@ -1,5 +1,13 @@
 # Delivery evidence catalog
 
+## Shared camera acquisition configuration — 2026-10-23
+
+The [current-work record](roadmap.md#shared-camera-acquisition-configuration--2026-10-23)
+and instrument `MIGRATION.md` retain shared ROI/exposure/gain semantics, unchanged
+default optical declarations, 1,277 Julia assertions, plugin parser/scalar and
+sanitizer checks. The startup list uses ordered single-feature calls; no physical
+camera, group atomicity or hardware qualification is claimed.
+
 ## Offline Classic hardware example — 2026-10-23
 
 The [current-work record](roadmap.md#offline-classic-hardware-example--2026-10-23)

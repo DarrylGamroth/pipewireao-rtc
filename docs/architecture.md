@@ -811,6 +811,22 @@ The cold declaration context also provides exact `description_json` file bytes
 for the mirror's existing NodeInfo property and a WFS `video_frame_size` string
 in native width-by-height order. These serialize existing device interfaces;
 they do not infer camera configuration or physical command conversion.
+An optional sensor `acquisition` object declares ROI origin in `[row,column]`
+order, exposure in seconds and the simulator's linear post-readout gain. The
+existing detector shape is the ROI extent. Cold references derive exposure
+nanoseconds for the simulator and microseconds when explicitly selected by a
+hardware control binding. Hardware gain units remain device-specific; neither
+dB nor an analogue/ADU conversion is inferred from the simulation multiplier.
+The simulator models an ROI-local array, not a crop of a larger synthetic sensor;
+physical ROI offsets require matching registration/calibration.
+
+The eGrabber adapter's optional initial-control list applies ordinary named SPA
+Props one feature at a time before format and buffer negotiation. The entire
+bounded scalar list is parsed before camera creation. Writes are ordered and
+non-atomic; a failed write prevents node creation from succeeding without
+promising restoration of prior physical device settings. Runtime single-feature
+Props requests remain one feature per call. Device-specific writability, ranges and layout
+validation stay with the existing GenICam control path.
 AOS source graphs and profile configurations use the same plain JSON Pointer
 syntax with `/instrument` for declaration geometry and `/settings` for selected
 settings. Cold preparation resolves these references before calling existing AOS

@@ -91,6 +91,28 @@ registered by this task. CPU and private-core results are recorded in the
 instrument repository migration record. The live CPU RTC and GUI stay unchanged;
 GPU and hardware qualification remain outside this source cleanup.
 
+### Shared camera acquisition configuration — 2026-10-23
+
+Classic now shares ROI extent, exposure and explicit acquisition metadata between
+its simulator and inactive eGrabber example. Exposure is authored in seconds and
+converted at the selected ns/us boundaries. ROI origin uses `[row,column]`;
+camera X/Y writes preserve that ordering. Simulator linear post-readout gain and
+the camera's device-specific gain remain distinct. The simulator models ROI-local
+pixels and does not claim to crop a larger synthetic detector.
+
+RTC `bc78ce2`, instruments `dade4bc` and eGrabber plugin `569c9e7` retain the changes.
+The plugin applies a bounded ordered list through existing scalar Props setters
+before negotiation. Runtime requests remain one feature per call, as requested;
+there is no group transaction/rollback claim. The incomplete hardware example
+still requires serials, gain units/value, calibration and device owner integration.
+
+The instrument migration record retains 1,277 Julia CPU/source assertions,
+SDK-disabled and SDK-enabled scalar/parser checks, full plugin compilation and
+the integer-conversion sanitizer result. All four default Gaussian optical graph
+documents are unchanged. Independent review is clear. Vendor-header unused
+parameter warnings remain; physical camera and producer behavior is unqualified.
+No device, installed application or live session was changed.
+
 ### Offline Classic hardware example — 2026-10-23
 
 Classic's instrument repository contains an inactive eGrabber/ALPAO profile and
