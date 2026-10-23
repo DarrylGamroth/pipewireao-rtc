@@ -91,6 +91,35 @@ registered by this task. CPU and private-core results are recorded in the
 instrument repository migration record. The live CPU RTC and GUI stay unchanged;
 GPU and hardware qualification remain outside this source cleanup.
 
+### Shared simulator geometry and consumer contracts — 2026-10-23
+
+Classic's instrument declaration now owns the common telescope prescription and
+WFS sampling. Mirror dimensions come from the shared mirror description. AOS
+source/profile configurations, initial command bindings and simulator boundary
+dimensions resolve through the existing JSON Pointer mechanism before typed AOS
+preparation. GUI parameter shapes and calibration estimator dimensions resolve
+from prepared graph ports. Calibration obtains obstruction from its prepared
+optical model and refreshes parameter metadata by graph/parameter identity after
+resizing. Scientific schemas, types, units, limits and artifact bytes are unchanged.
+Square Classic SH sampling is validated explicitly; this does not claim new
+rectangular optical support. Generic graph metadata and GUI normalization retain
+rectangular row/column ordering.
+
+Work began from RTC `8ce9b3a` and instruments `bd9cbd4` in dedicated
+`codex/instrument-geometry` worktrees. RTC implementation commits `9a53295`,
+`22ffcbd` and `4eb0971` retain the consumer, geometry and shared-reference changes;
+instrument commits `fe10995` and `16d9585` retain the source migration.
+The instrument migration record lists the focused Julia 1.13.2 CPU checks.
+The existing Gaussian production/calibration configurations were independently
+compared as complete resolved documents. RTC selectors passed 226 assertions;
+instrument geometry, configuration, startup mask, calibration and stable mode
+selectors passed 1,205. Nine independent final-export checks confirm unchanged
+default graph, GUI and simulator boundary values. Formatting and whitespace
+checks passed, and independent implementation review found no actionable defects.
+These are offline software checks;
+physical devices, GPU execution, cadence and latency are not qualified.
+No installation or live session changes occurred.
+
 ### Instrument-derived session and queue contracts — 2026-10-23
 
 Classic's composed simulation and hardware session declarations now reference

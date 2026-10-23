@@ -801,6 +801,19 @@ existing AOS factories/compiler. No per-instrument Julia implementation or RTC
 configuration reader is needed in AOS. The older version 2 route remains for
 instruments that still select a package and `plant.settings.mirror_description`.
 
+The source declaration may supply a common `telescope` prescription and WFS
+`optical_prescription`. Classic's latter prescription states lenslet geometry
+explicitly, independently of its selected active-subaperture mask. Its current
+Shack-Hartmann simulator requires square detector/subaperture sampling and exact
+lenslet coverage; unsupported combinations reject declaration preparation.
+Mirror command counts and grid dimensions come from the shared mirror description.
+AOS source graphs and profile configurations use the same plain JSON Pointer
+syntax with `/instrument` for declaration geometry and `/settings` for selected
+settings. Cold preparation resolves these references before calling existing AOS
+factories; AOS does not parse RTC files. Initial zero bindings and simulator
+boundary dimensions use the same context. Selected settings still take precedence
+over node defaults. Generated simulator configuration carries a source notice.
+
 Instrument source keeps its controller graph, parameter bindings, session and
 queue fragments under `rtc/`, optional analysis under `analysis/`, GUI views
 under `gui/`, and calibration recipe/inputs/artifacts/records under `calibration/`.
@@ -854,13 +867,36 @@ Edit instrument source and rebuild; generated output is not authority.
 
 Composed session and core configuration can use the same explicit references.
 After graph materialization, session export provides
-`/graphs/<node.name>/{inputs,parameters,outputs}/<port>/{shape,element-type}`.
+`/graphs/<node.name>/{inputs,parameters,outputs}/<port>/{shape,element-type,element-count}`.
 These contracts come from the prepared scientific graph's public boundary
 formats, with no FITS binding or control-loop execution. The graph's dimensions
 have already been resolved from the instrument. Wire type names use the existing
 PipeWire ndarray enum, including distinct `BOOL8` and `U8` representations.
 The scientific providers remain optional and are loaded only when the session
 requests their contracts.
+
+Exporter-only `configuration-files` entries select application-relative `path`
+and `format` (`yaml` or `spa-json`). They resolve against the same context after
+mode composition and graph preparation. Classic uses this for GUI parameter
+shapes and calibration estimator dimensions; GUI schemas, units and layout stay
+explicit. `element-count` is the checked product of a prepared port's shape.
+WFS `pixel_to_image` is `[1/columns,1/rows]`, explicitly selected for native
+pixel-unit slopes rather than inferred for other scientific slope units.
+All documents resolve before any are written, and generated files carry notices.
+Calibration validates its estimator dimensions against prepared ports and uses
+the prepared optical prescription for obstruction. Resizing refreshes parameter
+metadata through graph/parameter identities and declared session links, preserving
+scientific schemas and physical command order.
+
+For physical endpoints, the instrument remains the expected scientific contract:
+detector sampling, physical actuator order, units and pupil registration. Device
+adapters own capability discovery and expose ordinary PipeWire formats, controls
+and device descriptions. The hardware mode selects explicit endpoints and owners;
+admission validates them against the declared controller contracts. Camera ROI,
+pixel format and exposure must be supported by the selected source; actuator
+limits and command-unit conversion must be supported by the selected sink.
+Equal array sizes alone do not establish device compatibility. Physical-device
+admission and calibration qualification remain separate from these offline checks.
 
 Optional simulator optical contracts are under
 `/simulator/{focal-image,residual-wavefront,wavefront-rms}`. The observation owner

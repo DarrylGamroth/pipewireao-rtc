@@ -1,5 +1,13 @@
 # Delivery evidence catalog
 
+## Shared simulator geometry and consumer contracts — 2026-10-23
+
+The [current-work record](roadmap.md#shared-simulator-geometry-and-consumer-contracts--2026-10-23)
+identifies source revisions and the instrument migration record with CPU checks.
+The [configuration boundary](architecture.md#configuration-boundary) describes
+shared geometry, typed consumer contracts and physical-device ownership limits.
+The live RTC remains unchanged; no hardware or timing qualification is claimed.
+
 ## Instrument-derived session and queue contracts — 2026-10-23
 
 The [current-work record](roadmap.md#instrument-derived-session-and-queue-contracts--2026-10-23)
