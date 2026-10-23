@@ -170,8 +170,9 @@ end
 
 @testset "Classic managed $(InstrumentBackend) preparation without transport" begin
     mktempdir() do directory
+        cp(ENV["REVOLT_CLASSIC_MIRROR_DESCRIPTION"],joinpath(directory,"mirror-description.json"))
         document = instrument_document(backend=string(InstrumentBackend), package="REVOLTClassicSim",
-            settings=Dict("profile" => "grid_gaussian"))
+            settings=Dict("profile" => "grid_gaussian", "mirror_description"=>"mirror-description.json"))
         document["command_input"] = "pdm_command"
         document["frame_output"] = "shwfs_frame"
         document["command_count"] = 277

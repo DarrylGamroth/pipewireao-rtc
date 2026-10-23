@@ -304,10 +304,21 @@ end
             "model"=>"Three actuators","layout"=>operational["deformable_mirrors"]["dm"]["layout"])
         json="\n"*JSON.json(description)*"\n"
         write(mirror_path,json)
-        options=(;instrument=instrument_path,mirror_description=mirror_path)
+        options=(;instrument=instrument_path,mirror_description=mirror_path,command_count=3)
         @test Instrument.mirror_properties(options)==Dict("device.mirror.description"=>json)
         @test isempty(Instrument.mirror_properties((;mirror_description=nothing)))
-        @test_throws ArgumentError Instrument.mirror_properties(merge(options,(;instrument=nothing)))
+        @test Instrument.mirror_properties(merge(options,(;instrument=nothing)))==Dict("device.mirror.description"=>json)
+        @test_throws ArgumentError Instrument.mirror_properties(merge(options,(;instrument=nothing,command_count=2)))
+        for change in (d->(d["layout"]["grid_shape"]=Any[true,1]),
+                d->(d["layout"]["command_positions"][1]=Any[1.0,1]),
+                d->(d["layout"]["command_positions"][1]=[0,1]),
+                d->(d["layout"]["command_positions"][1]=[4,1]),
+                d->(d["layout"]["command_positions"][1]=[2,1]))
+            invalid=deepcopy(description); change(invalid)
+            write(mirror_path,JSON.json(invalid))
+            @test_throws ArgumentError Instrument.mirror_properties(merge(options,(;instrument=nothing)))
+        end
+        write(mirror_path,json)
         for suffix in ("junk"," {}","\n{}")
             write(mirror_path,json*suffix)
             @test_throws ArgumentError Instrument.mirror_properties(options)

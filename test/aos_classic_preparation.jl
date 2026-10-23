@@ -1,6 +1,8 @@
 # Optional Classic qualification. ARGS: simulation.conf, package directory
 # containing the historical REVOLTClassicSim reference package, backend.
 # The reference package is used only as an oracle by this test.
+# Its graph_path/no-argument geometry APIs intentionally belong to that archived
+# graph-export version. Use aos_instrument_preparation.jl for current plant APIs.
 using Test
 using TOML
 using PipeWireAORTC

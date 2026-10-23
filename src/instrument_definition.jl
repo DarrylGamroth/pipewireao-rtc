@@ -126,11 +126,39 @@ function publication(spec,bindings)
     return Dict(PROPERTY=>definition.json,HASH_PROPERTY=>definition.sha256)
 end
 
+grid_index(value::Integer, upper) = 1<=value<=upper
+grid_index(::Bool, upper) = false
+grid_index(value, upper) = false
+function grid_pair(value::AbstractVector, bounds)
+    length(value)==2 && all(grid_index.(value,bounds)) ||
+        throw(ArgumentError("mirror grid coordinates must be bounded positive integers"))
+    return (Int(value[1]),Int(value[2]))
+end
+grid_pair(value,bounds) = throw(ArgumentError("mirror grid coordinates require a pair"))
+function mirror_layout(layout::AbstractDict, count)
+    Set(keys(layout))==Set(("schema_version","name","grid_shape","axis_labels",
+        "command_positions","command_order","provenance")) && layout["schema_version"]===1 ||
+        throw(ArgumentError("expected mirror layout schema version 1"))
+    for key in ("name","command_order","provenance")
+        nonempty_text(layout[key]) || throw(ArgumentError("invalid mirror layout $key"))
+    end
+    labels=layout["axis_labels"]
+    array_value(labels) && length(labels)==2 && all(nonempty_text,labels) ||
+        throw(ArgumentError("mirror layout requires two axis labels"))
+    shape=grid_pair(layout["grid_shape"],(4096,4096))
+    positions=layout["command_positions"]
+    array_value(positions) && 1<=length(positions)<=16384 && length(positions)==count ||
+        throw(ArgumentError("mirror layout command count differs"))
+    coordinates=map(position->grid_pair(position,shape),positions)
+    length(Set(coordinates))==count || throw(ArgumentError("duplicate mirror command positions"))
+    return nothing
+end
+mirror_layout(layout,count) = throw(ArgumentError("mirror layout requires an object"))
+
 "Read the selected device description for ordinary simulated-mirror NodeInfo."
 function mirror_properties(options)
     path = get(options,:mirror_description,nothing)
     path===nothing && return Dict{String,String}()
-    options.instrument!==nothing || throw(ArgumentError("mirror description requires an instrument"))
     isfile(path) && filesize(path)<=64*1024 || throw(ArgumentError("mirror description exceeds 64 KiB or is absent"))
     json = read(path,String)
     isvalid(json) || throw(ArgumentError("mirror description is not UTF-8"))
@@ -142,10 +170,13 @@ function mirror_properties(options)
         value=description[key]
         nonempty_text(value) || throw(ArgumentError("invalid mirror $key"))
     end
-    instrument = load(options.instrument).document
-    mirrors = instrument["deformable_mirrors"]
-    length(mirrors)==1 || throw(ArgumentError("this transport requires one mirror description"))
-    description["layout"]==only(values(mirrors))["layout"] || throw(ArgumentError("mirror and instrument layouts differ"))
+    mirror_layout(description["layout"],options.command_count)
+    if options.instrument!==nothing
+        instrument = load(options.instrument).document
+        mirrors = instrument["deformable_mirrors"]
+        length(mirrors)==1 || throw(ArgumentError("this transport requires one mirror description"))
+        description["layout"]==only(values(mirrors))["layout"] || throw(ArgumentError("mirror and instrument layouts differ"))
+    end
     return Dict(MIRROR_PROPERTY=>json)
 end
 

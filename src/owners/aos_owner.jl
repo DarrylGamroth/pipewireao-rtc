@@ -194,8 +194,6 @@ function configuration(path::AbstractString)
     instrument===nothing || version==2 && calibration_identity!==nothing ||
         throw(ArgumentError("instrument definition requires a package plant and calibration identity"))
     mirror_description = plant === nothing ? nothing : get(plant.settings,:mirror_description,nothing)
-    mirror_description===nothing || instrument!==nothing ||
-        throw(ArgumentError("mirror description requires the selected instrument definition"))
     entries = version == 1 ? document["artifacts"] : ()
     (entries isa AbstractVector || entries === ()) && length(entries) <= 64 || throw(ArgumentError("artifacts must be an array of at most 64 entries"))
     artifacts = FITSBinding[]
