@@ -453,13 +453,16 @@ reconstructing or destroying its graph nodes.
 
 ### RTC-DEV-017 — REVOLT Classic simulated-plant fixture
 
-The maintained REVOLT Classic fixture MUST use `REVOLTClassicSim.jl` as a
-transport-neutral simulated plant. A separate
-`REVOLTClassicSimPipeWireHIL.jl` package MUST expose the prepared 352-by-352
+The maintained REVOLT Classic fixture MUST declare its optical prescription,
+mirror geometry, pupil registration and calibration inputs in its instrument
+directory. Shared cold preparation MUST compile its AOS TOML graphs through
+AdaptiveOpticsSim's existing factories and compiler. The shared
+`AdaptiveOpticsSimPipeWireHIL.jl` adapter MUST expose the prepared 352-by-352
 Shack–Hartmann frame and 277-element HSDM277 command boundary as external
 PipeWire nodes using exact versioned schemas and the RTC-DEV-014 sequence
-contract. `REVOLTClassicSim.jl` MUST NOT depend on PipeWireAO, and the RTC
-runner MUST NOT load Julia or interpret simulation internals.
+contract. The instrument directory MUST NOT require a per-instrument Julia
+implementation. AdaptiveOpticsSim MUST remain transport-neutral, and the native
+RTC runner MUST NOT load Julia or interpret simulation internals.
 
 The fixture MUST admit and link the external plant to the maintained REVOLT
 Classic RTC component. It MUST cover a runner-owned `fgn-native` realization

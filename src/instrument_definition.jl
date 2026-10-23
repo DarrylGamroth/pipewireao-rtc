@@ -215,4 +215,23 @@ function verify_plant(options,plant_module)
     return nothing
 end
 
+
+"Verify a configuration-built plant against its sealed RTC publication."
+function verify_declaration(options)
+    options.instrument === nothing && throw(ArgumentError("declarative plants require an instrument publication"))
+    actual = load(options.instrument).document
+    declaration = getproperty(parentmodule(@__MODULE__),:InstrumentConfiguration)
+    expected = declaration.json_value(declaration.publication(options.plant.definition,
+        options.plant.settings;calibration_identity=options.calibration_identity))
+    actual == expected || throw(ArgumentError("instrument publication differs from its declaration or selected calibration"))
+    mirrors,sensors=actual["deformable_mirrors"],actual["wavefront_sensors"]
+    length(mirrors)==length(sensors)==1 || throw(ArgumentError("this AOS boundary requires one DM and one WFS"))
+    dm,wfs=only(values(mirrors)),only(values(sensors))
+    length(dm["layout"]["command_positions"]) == options.command_count || throw(DimensionMismatch("instrument DM command count differs"))
+    Tuple(wfs["layout"]["detector_shape"]) == options.frame_shape || throw(DimensionMismatch("instrument WFS detector shape differs"))
+    wfs["layout"]["expected_schema"] == options.frame_schema || throw(ArgumentError("instrument frame schema differs"))
+    Float32(dm["command_scale_m"]) == options.command_scale || throw(ArgumentError("instrument command scale differs"))
+    return nothing
+end
+
 end

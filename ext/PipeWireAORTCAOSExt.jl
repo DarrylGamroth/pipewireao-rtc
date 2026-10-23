@@ -15,6 +15,7 @@ const Backends = AdaptiveOpticsSim.Backends
 include("aos/optical_observation.jl")
 include("aos/phase_timing.jl")
 include("aos/metadata.jl")
+include("aos/instruments.jl")
 
 mutable struct OwnerState
     running::Bool
@@ -154,7 +155,8 @@ function Owner.prepare_science(options; check=()->nothing)
     check()
     device = target(options)
     check()
-    science = options.plant === nothing ? prepare_declared_science(options, device; check) :
+    science = options.version == 3 ? prepare_configured_science(options,device;check) :
+        options.plant === nothing ? prepare_declared_science(options, device; check) :
         prepare_instrument_science(options, device; check)
     check()
     boundary = science.boundary

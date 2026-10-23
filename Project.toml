@@ -1,12 +1,14 @@
 name = "PipeWireAORTC"
 uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
-version = "0.2.7"
+version = "0.2.8"
 authors = ["Darryl Gamroth <dgamroth@rubus.ca>"]
 
 [workspace]
 projects = ["test"]
 
 [deps]
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
 DBInterface = "a10d1c49-ce27-4219-8d33-6db1a4562965"
 FITSIO = "525bcba6-941b-5504-bd06-fd0dc1a4d2eb"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
@@ -19,6 +21,7 @@ ThreadPinning = "811555cd-349b-4f26-b7bc-1f208b848042"
 UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
 [weakdeps]
+AdaptiveOpticsCalibration = "3c8b5851-926e-4ebb-af30-f8544b98d45f"
 AdaptiveOpticsSim = "002fb5eb-ad68-44a0-adbe-b299bfc2febc"
 AdaptiveOpticsSimPipeWireHIL = "355e2bce-7765-4934-ac1c-873e1c98ec3d"
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
@@ -27,11 +30,15 @@ FilterGraphPipeWire = "0366a544-13dd-48a3-a3d6-bd2ba4547294"
 JuliaFilterGraph = "febeb008-6177-4a1b-bafd-f7a6a3435ad8"
 
 [extensions]
+PipeWireAORTCCalibrationExt = ["AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL", "AdaptiveOpticsCalibration", "FilterGraphIsland", "FilterGraphPipeWire", "JuliaFilterGraph"]
 PipeWireAORTCAOSExt = ["AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL"]
 PipeWireAORTCGraphExt = ["FilterGraphIsland", "FilterGraphPipeWire", "JuliaFilterGraph"]
 
 [compat]
-AdaptiveOpticsSim = "0.2"
+LinearAlgebra = "1"
+AdaptiveOpticsCalibration = "0.17"
+Interpolations = "0.16"
+AdaptiveOpticsSim = "0.2.3"
 AdaptiveOpticsSimPipeWireHIL = "0.2.2"
 CUDA = "6.4.2"
 DBInterface = "2.7.0"

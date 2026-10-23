@@ -307,7 +307,7 @@ flowchart LR
 | AdaptiveOpticsSim | Own the simulated atmosphere, optics, WFS, deformable mirror, science diagnostics, model time, and frame-to-command causality without a PipeWire dependency. |
 | `AdaptiveOpticsSimPipeWireHIL.jl` | Map one prepared AdaptiveOpticsSim HIL boundary to an externally owned PipeWire source and non-actuating sink using public PipeWireAO interfaces. |
 | `JuliaFilterGraph.jl` and `FilterGraphPipeWire` | Optionally own and publish one prepared RTC processing graph as an ordinary external PipeWire node. |
-| `REVOLTClassicSim.jl` | Own the REVOLT Classic atmosphere, optics, 352-by-352 Shack–Hartmann detector model, provisional HSDM277 plant, science diagnostics, and deterministic HIL boundary without a PipeWire dependency. |
+| Instrument directory | Own scientific prescriptions, ordered device geometry, pupil registration, AOS TOML graphs and calibration artifacts; shared RTC code prepares them through AOS and the HIL adapter. Classic is the first migrated instrument. |
 
 The headless RTC is the live application control plane for this session. It does not process
 frame data or replace PipeWire scheduling. PipeWireAO and scientific executors
@@ -749,12 +749,21 @@ they are distinct from source-grid Zernike/Fourier coordinates. WFS `layout`
 declares detector/subaperture extents and zero-based `[row,column]` origins.
 Published source-grid geometry does not imply measured optical registration.
 
-Classic selects an application-contained `mirror-description.json` through
-`plant.settings.mirror_description`. The RTC resolves that filename relative to
-the installed application before calling the scientific API. The simulator reads
-this ordinary JSON file with JSON.jl and owns an immutable preparation snapshot;
-it does not read RTC configuration. Settings clients retain the configured relative
-filename, so a rebuild does not persist an old installation's absolute path.
+The data-only Classic application selects `instrument.conf` through version 3
+`plant.definition`. This SPA-JSON declaration references the mirror's ordinary
+JSON description, separate pupil registration, AOS TOML graph files, profile
+settings and FITS artifacts. Shared cold `InstrumentConfiguration` preparation
+resolves application-relative paths, validates the declaration, and calls the
+existing AOS factories/compiler. No per-instrument Julia implementation or RTC
+configuration reader is needed in AOS. The older version 2 route remains for
+instruments that still select a package and `plant.settings.mirror_description`.
+
+The authoring declaration and generated `instrument.json` publication have
+distinct paths. Both preparation and publication use the same resolved settings
+and physical command order. Identity includes structural settings, graph content,
+mirror/WFS descriptions and selected calibration payloads. Atmosphere-only
+startup changes keep the structural identity stable and use the existing cold
+replacement path. The GUI continues to read the RTC publication.
 
 The ALPAO adapter and simulated command sink/applied-command source publish the
 same bounded description through the custom `device.mirror.description` property
@@ -765,9 +774,9 @@ OPD units and scale. The existing one-mirror boundary validates the description
 against the selected instrument before admission. The description carries no
 pupil registration, influence functions, conversion factor or stroke claim.
 
-`scientific_identity` is the SHA-256 of the deterministic scientific package
-API result serialized by the integration adapter. The AOS adapter checks it
-against the loaded package, selected calibration, channel dimensions and command
+`scientific_identity` is the SHA-256 of the deterministic scientific definition
+serialized by the integration adapter. The AOS adapter checks it against the
+selected declaration or package, calibration, channel dimensions and command
 scale before execution. Its initial instrument-aware boundary supports one DM
 and one WFS; further instruments need explicit channel contracts. The RTC still
 owns control/update validation; publication does not create physical authority,

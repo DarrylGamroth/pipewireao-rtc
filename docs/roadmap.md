@@ -12,6 +12,24 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Data-only Classic instrument migration — 2026-10-22
+
+Classic's new instrument directory holds SPA-JSON, AOS TOML and artifacts.
+Shared `InstrumentConfiguration` and optional calibration preparation are in RTC;
+AOS gains an already-parsed graph entry point to its existing compiler. The
+single-DM/single-WFS transport, native lifecycle and CPU/GPU selection stay with
+the existing owners. Copper, GPI 2.0 and SPIDERS still use their packages.
+
+Local source validation passed exact Gaussian production/calibration parity
+(192 assertions), 14 CPU owner/settings preflight assertions, 23 declaration
+assertions, 84 calibration assertions and the existing affected RTC checks.
+A fresh 212-coordinate calibration retained rank 208; the 129-frame seeded CPU
+replay had zero clipped commands. These are numerical/software results, with no
+new installed-session, GPU, cadence or hardware claim. Source versions AOS 0.2.3
+and RTC 0.2.8 are prepared but have not been published/registered in this task.
+The existing live CPU session and GUI were untouched. See the instrument
+repository's `MIGRATION.md` and `MIGRATION-REVIEW.md` for evidence and scope.
+
 ### Supplied Classic mirror description — 2026-10-22
 
 Intrinsic HSDM277 command geometry is now supplied as a sealed JSON file from the

@@ -8,6 +8,7 @@ import ..Artifacts
 import ..Common
 import ..DeploymentConfiguration
 import ..InstrumentDefinition
+import ..InstrumentConfiguration
 import ..NativeOwnerBootstrapRuntime
 
 public main, plant_settings, plant_declaration
@@ -146,7 +147,7 @@ end
 function configuration(path::AbstractString)
     document = DeploymentConfiguration.decode(path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
     document isa AbstractDict || throw(ArgumentError("AOS configuration must be an object"))
-    version = integer(get(document, "version", nothing), "version", 1, 2)
+    version = integer(get(document, "version", nothing), "version", 1, 3)
     shared_fields = ("version", "command_input", "frame_output", "command_count", "frame_shape",
         "rate", "exposure_ns", "wall_rate", "backend", "device", "command_node",
         "frame_schema", "command_schema", "command_scale", "total_exchanges", "optical_observation",
@@ -157,12 +158,24 @@ function configuration(path::AbstractString)
     fields = (shared_fields..., route_fields...)
     required = version == 1 ? (shared_required..., route_fields...) :
         (shared_required..., route_fields..., "frame_schema", "command_schema", "command_scale")
+    version == 3 && (required = (required...,"instrument","calibration_identity"))
     all(key -> key in fields, keys(document)) &&
         all(key -> haskey(document, key), required) || throw(ArgumentError("invalid AOS configuration fields"))
     config_path = abspath(path)
     graph = version == 1 ? abspath(joinpath(dirname(config_path), text(document["graph"], "graph"))) : nothing
     graph === nothing || isfile(graph) || throw(ArgumentError("AOS graph does not exist: $graph"))
-    plant = version == 2 ? plant_declaration(document["plant"]; directory=dirname(config_path)) : nothing
+    plant = if version == 3
+        entry = document["plant"]
+        InstrumentConfiguration.fields(entry,("definition","settings"),("definition","settings"),"declarative plant")
+        definition = DeploymentConfiguration.relative_asset(dirname(config_path),entry["definition"])
+        declaration = InstrumentConfiguration.load(definition)
+        configured = InstrumentConfiguration.settings(declaration,entry["settings"])
+        (; definition,settings=plant_settings(configured))
+    elseif version == 2
+        plant_declaration(document["plant"]; directory=dirname(config_path))
+    else
+        nothing
+    end
     command_input = identifier(document["command_input"], "command_input")
     frame_output = identifier(document["frame_output"], "frame_output")
     command_count = integer(document["command_count"], "command_count", 1, Artifacts.MAX_IMAGE_BYTES ÷ sizeof(Float32))
@@ -197,9 +210,15 @@ function configuration(path::AbstractString)
         text(document["calibration_identity"], "calibration_identity") : nothing
     instrument = haskey(document,"instrument") ?
         DeploymentConfiguration.relative_asset(dirname(config_path),document["instrument"]) : nothing
-    instrument===nothing || version==2 && calibration_identity!==nothing ||
-        throw(ArgumentError("instrument definition requires a package plant and calibration identity"))
+    instrument===nothing || version in (2,3) && calibration_identity!==nothing ||
+        throw(ArgumentError("instrument definition requires an instrument plant and calibration identity"))
     mirror_description = plant === nothing ? nothing : get(plant.settings,:mirror_description,nothing)
+    if version == 3
+        declaration = InstrumentConfiguration.load(plant.definition)
+        mirrors = declaration.document["deformable_mirrors"]
+        mirror_description = length(mirrors)==1 ? DeploymentConfiguration.relative_asset(
+            declaration.directory,only(values(mirrors))["description"]) : nothing
+    end
     entries = version == 1 ? document["artifacts"] : ()
     (entries isa AbstractVector || entries === ()) && length(entries) <= 64 || throw(ArgumentError("artifacts must be an array of at most 64 entries"))
     artifacts = FITSBinding[]
@@ -325,7 +344,9 @@ function _main(args; with_owner=Bootstrap.with_owner,
         admitted.owner_check()
         admitted.backend === :cuda && load_cuda()
         admitted.owner_check()
-        if admitted.plant !== nothing
+        if admitted.version == 3
+            InstrumentDefinition.verify_declaration(admitted)
+        elseif admitted.plant !== nothing
             plant_module = load_plant(admitted.plant.package)
             admitted.owner_check()
             InstrumentDefinition.verify_plant(admitted,plant_module)
@@ -342,7 +363,9 @@ end
 Run a native AOS scientific owner from `--config PATH`, with explicit `--remote`,
 `--control-node`, `--bootstrap-node` and `--bootstrap-instance`. The version 1
 SPA-JSON configuration declares the simulation TOML graph and FITS bindings;
-version 2 selects an instrument package and immutable settings. Both declare
+version 2 selects an instrument package and immutable settings. Version 3 selects
+a SPA-JSON instrument declaration and immutable settings without an instrument
+package. All versions declare
 command/frame names, extents, timing and backend/device. Paths are relative to
 the configuration. Preparing is published before optional science imports.
 FITS preparation is cold startup only; RTC retains lifecycle authority.
