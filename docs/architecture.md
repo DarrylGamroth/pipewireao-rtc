@@ -854,8 +854,12 @@ into its own native context. Application owners explicitly select `kind: jfg`
 or `kind: aos`; shared launcher adapters derive Julia thread counts and worker
 arguments. JFG's ordered `workers.julia` starts with the process leader CPU.
 AOS's `workers.pipewire` places its PipeWire loop; optional
-`workers.observation` places diagnostics separately from its source thread.
-Application role names and executable strings do not select adapters.
+`workers.optical-diagnostics` places diagnostics separately from its source thread.
+Application role names and executable strings do not select adapters. The shared
+core's `rtc-data-loop` carries control-path data; `telemetry-loop` serves monitoring
+queue outputs. Native loop names are local to their process, not shared threads.
+`leader-cpu` pins the process main thread within its allowed `cpus`; worker
+assignments place other threads within that same envelope.
 
 Native `placement` is derived for runtime verification. Host authors do not
 provide a binding map or CPU/priority argument aliases. Ordinary endpoint

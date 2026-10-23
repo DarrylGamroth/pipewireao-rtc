@@ -28,18 +28,18 @@ end
 
 function owner_scheduling!(::Val{:aos}, owner, process)
     workers = process["workers"]
-    Set(keys(workers)) ⊆ Set(["pipewire", "observation"]) || throw(ArgumentError("unknown AOS worker placement"))
+    Set(keys(workers)) ⊆ Set(["pipewire", "optical-diagnostics"]) || throw(ArgumentError("unknown AOS worker placement"))
     argv = owner["argv"]
-    any(arg -> first(split(arg, '=')) in ("--pipewire-cpu", "--observation-cpu", "--transport-cpu"), argv) &&
+    any(arg -> first(split(arg, '=')) in ("--pipewire-cpu", "--optical-diagnostics-cpu", "--transport-cpu"), argv) &&
         throw(ArgumentError("launcher owns AOS worker arguments"))
     haskey(owner["environment"], "PIPEWIREAO_OPTICAL_CPU") &&
         throw(ArgumentError("obsolete optical CPU environment setting"))
     julia_threads!(argv, 2) # source plus bootstrap/optional observation thread
     append!(argv, ["--pipewire-cpu", string(worker_cpu(workers, "pipewire"))])
-    if haskey(workers, "observation")
-        cpu = worker_cpu(workers, "observation")
-        cpu != process["leader-cpu"] || throw(ArgumentError("observation worker must differ from source CPU"))
-        append!(argv, ["--observation-cpu", string(cpu)])
+    if haskey(workers, "optical-diagnostics")
+        cpu = worker_cpu(workers, "optical-diagnostics")
+        cpu != process["leader-cpu"] || throw(ArgumentError("optical diagnostics worker must differ from source CPU"))
+        append!(argv, ["--optical-diagnostics-cpu", string(cpu)])
     end
     return nothing
 end

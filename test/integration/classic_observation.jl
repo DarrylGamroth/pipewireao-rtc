@@ -330,7 +330,7 @@ function observe_classic(remote::AbstractString; timeout::Real=30.0, selected_st
                 process=process_capture(capture)
                 stream=Stream(core, name; properties=Dict("node.name"=>name,
                     "node.want-driver"=>"true", "priority.driver"=>"100",
-                    "node.loop.name"=>"observer-loop"),
+                    "node.loop.name"=>"telemetry-loop"),
                     on_process=process, on_param_changed=ClassicObservationFormat(capture))
                 push!(streams, stream)
                 precompile(process, (typeof(stream),))

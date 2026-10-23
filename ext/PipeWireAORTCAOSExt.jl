@@ -263,7 +263,7 @@ function run_prepared!(options, science, pipewire, observation, mailbox, state, 
         state.deadline_ns = 0
         reset_phase_timing!(phase, state.generation)
         OpticalObservation.reset!(observation, pipewire; check=options.owner_check,
-            cpu=get(options, :observation_cpu, nothing))
+            cpu=get(options, :optical_diagnostics_cpu, nothing))
     end
     ticket = Bootstrap.take_connect!(runtime)
     Bootstrap.check_connect!(runtime, ticket)
@@ -334,7 +334,7 @@ function Owner.run_owner(options)
             applied_command_node_name=options.applied_command_observation ? "simulator-applied-command" : nothing,
             applied_command_buffers=3,
             applied_command_properties=merge(Dict("node.group" => "pipewireao-applied-observation",
-                "node.sync-group" => "sync.pipewireao-applied-observation", "node.loop.name" => "observer-loop"),
+                "node.sync-group" => "sync.pipewireao-applied-observation", "node.loop.name" => "telemetry-loop"),
                 mirror_properties),
             image_sources=OpticalObservation.source_options(observation),
             frame_properties=merge(SourceControl.source_properties(mailbox), simulation_properties(options, science)),
@@ -352,7 +352,7 @@ function Owner.run_owner(options)
             PipeWireAORTC.Placement.pin_loop!(pipewire.loop, pipewire_cpu; check=options.owner_check)
         end
         OpticalObservation.warm!(observation, pipewire; check=options.owner_check,
-            cpu=get(options, :observation_cpu, nothing))
+            cpu=get(options, :optical_diagnostics_cpu, nothing))
         precompile(exchange_frame!, (typeof(pipewire), typeof(science.driver))) ||
             error("cannot compile prepared frame exchange before admission")
         if phase !== nothing

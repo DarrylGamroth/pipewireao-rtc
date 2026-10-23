@@ -16,7 +16,7 @@ function native_configuration_input(directory)
             "analysis" => "shared-runtime/client-analysis.conf.in"))
     profile = Dict("scheduling" => Dict("processes" => Dict(
         "core" => Dict("rt-priority" => 12, "data-loops" =>
-            Dict("rtc-data-loop" => [2, 3], "observer-loop" => [4])),
+            Dict("rtc-data-loop" => [2, 3], "telemetry-loop" => [4])),
         "reconstructor" => Dict("rt-priority" => 17, "data-loops" =>
             Dict("julia-data-loop" => [5, 6])),
         "wavefront" => Dict("rt-priority" => 19, "data-loops" =>
@@ -48,7 +48,7 @@ end
         core = ND.decode(corepath, prefix)
         loops = Dict(loop["loop.name"] => loop for loop in core["context.properties"]["context.data-loops"])
         @test loops["rtc-data-loop"]["thread.affinity"] == [2, 3]
-        @test loops["observer-loop"]["thread.affinity"] == [4]
+        @test loops["telemetry-loop"]["thread.affinity"] == [4]
         @test all(loop["loop.rt-prio"] == 12 for loop in values(loops))
         @test length(core["context.objects"]) == 3
         queue = only(filter(item -> item["name"] == "libpipewire-module-queue", core["context.modules"]))
@@ -71,7 +71,7 @@ end
 @testset "native loop declarations are exact and paths bounded" begin
     prefix = get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
     for mutate in (
-            (_, profile) -> delete!(profile["scheduling"]["processes"]["core"]["data-loops"], "observer-loop"),
+            (_, profile) -> delete!(profile["scheduling"]["processes"]["core"]["data-loops"], "telemetry-loop"),
             (spec, _) -> (spec["client"]["core"] = "shared-runtime/client-julia.conf.in"),
             (_, profile) -> (profile["scheduling"]["processes"]["wavefront"]["data-loops"]["extra-loop"] = [7]),
             (spec, _) -> (spec["client"]["../escape"] = "shared-runtime/client-julia.conf.in"),

@@ -78,13 +78,13 @@ end
             "--bootstrap-node", "rtc.bootstrap.aos", "--bootstrap-instance", "7"]
         default_timing = Owner.arguments(argv)
         @test default_timing.pipewire_cpu === nothing
-        @test default_timing.observation_cpu === nothing
-        @test Owner.arguments([argv; ["--observation-cpu", "8"]]).observation_cpu == 8
+        @test default_timing.optical_diagnostics_cpu === nothing
+        @test Owner.arguments([argv; ["--optical-diagnostics-cpu", "8"]]).optical_diagnostics_cpu == 8
         @test_throws ArgumentError Owner.arguments([argv; ["--transport-cpu", "7"]])
         @test Owner.arguments([argv; ["--pipewire-cpu", "7"]]).pipewire_cpu == 7
         for cpu in ("-1", "0", "1", "many", "1.5")
             @test_throws ArgumentError Owner.arguments([argv; ["--pipewire-cpu", cpu]])
-            @test_throws ArgumentError Owner.arguments([argv; ["--observation-cpu", cpu]])
+            @test_throws ArgumentError Owner.arguments([argv; ["--optical-diagnostics-cpu", cpu]])
         end
         @test default_timing.phase_timing_directory === nothing
         @test default_timing.phase_timing_frames == 0

@@ -12,6 +12,16 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Clear host loop and worker names — 2026-10-23
+
+Native monitoring delivery now uses `telemetry-loop`; the simulator's separate
+PSF/wavefront worker uses `optical-diagnostics`. Queue assignments and simulator
+publishers use the same loop declaration. The launcher supplies
+`--optical-diagnostics-cpu`; superseded scheduling spellings have no aliases.
+All host examples explain process roles, per-process native loops, worker roles
+and the main-thread CPU selected by `leader-cpu`. Loop routing and CPU assignments
+are otherwise unchanged; live deployments retain their current configuration.
+
 ### CUDA and AMDGPU simulator host profiles — 2026-10-23
 
 Classic's portable simulator profile now has CPU, CUDA and AMDGPU host examples.

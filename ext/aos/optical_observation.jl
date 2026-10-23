@@ -115,7 +115,7 @@ end
 
 source_options(::Nothing) = ()
 function source_options(observation::Observation)
-    properties = Dict("node.loop.name"=>"observer-loop",
+    properties = Dict("node.loop.name"=>"telemetry-loop",
         "node.group"=>"pipewireao-optical-observation",
         "node.sync-group"=>"sync.pipewireao-optical-observation")
     images = (PipeWireImageSourceOptions(node_name="simulator-focal-image",

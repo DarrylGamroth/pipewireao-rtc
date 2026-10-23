@@ -99,7 +99,7 @@ function arguments(args)
     values = Dict{String,String}()
     required = ("--config", "--remote", "--control-node", "--bootstrap-node", "--bootstrap-instance")
     optional = ("--phase-timing-directory", "--phase-timing-frames", "--phase-timing-warmup")
-    allowed = (required..., optional..., "--pipewire-cpu", "--observation-cpu")
+    allowed = (required..., optional..., "--pipewire-cpu", "--optical-diagnostics-cpu")
     iseven(length(args)) || throw(ArgumentError("each AOS owner option requires a value"))
     for index in 1:2:length(args)
         key, value = args[index], args[index + 1]
@@ -122,11 +122,11 @@ function arguments(args)
         pipewire_cpu !== nothing && pipewire_cpu >= 2 ||
             throw(ArgumentError("PipeWire loop CPU must be an integer excluding CPUs 0 and 1"))
     end
-    observation_cpu = nothing
-    if haskey(values, "--observation-cpu")
-        observation_cpu = tryparse(Int, values["--observation-cpu"])
-        observation_cpu !== nothing && observation_cpu >= 2 ||
-            throw(ArgumentError("observation CPU must exclude CPUs 0 and 1"))
+    optical_diagnostics_cpu = nothing
+    if haskey(values, "--optical-diagnostics-cpu")
+        optical_diagnostics_cpu = tryparse(Int, values["--optical-diagnostics-cpu"])
+        optical_diagnostics_cpu !== nothing && optical_diagnostics_cpu >= 2 ||
+            throw(ArgumentError("optical diagnostics CPU must exclude CPUs 0 and 1"))
     end
     requested_timing = any(key -> haskey(values, key), optional)
     timing_directory = nothing
@@ -146,7 +146,7 @@ function arguments(args)
     end
     return (; remote, control_node, bootstrap_node, bootstrap_instance=instance,
         config=abspath(values["--config"]), phase_timing_directory=timing_directory,
-        phase_timing_frames=timing_frames, phase_timing_warmup=timing_warmup, pipewire_cpu, observation_cpu)
+        phase_timing_frames=timing_frames, phase_timing_warmup=timing_warmup, pipewire_cpu, optical_diagnostics_cpu)
 end
 
 "Validate every configuration declaration before preparing any FITS artifact."

@@ -274,7 +274,7 @@ end
             [Dict("name" => "libpipewire-module-queue", "args" => Dict("node.name" => "test-data-queue"))]))
         spec=Dict("core"=>"shared-runtime/core.conf.in","client"=>Dict("rtc"=>"shared-runtime/client-rtc.conf.in"))
         process(cpus)=Dict("rt-priority"=>0,"data-loops"=>cpus)
-        profile=Dict("scheduling"=>Dict("processes"=>Dict("core"=>process(Dict("rtc-data-loop"=>[2],"observer-loop"=>[3])),
+        profile=Dict("scheduling"=>Dict("processes"=>Dict("core"=>process(Dict("rtc-data-loop"=>[2],"telemetry-loop"=>[3])),
             "rtc"=>process(Dict("rtc-data-loop"=>[2])))))
         E.render_templates!(directory, spec, profile, prefix)
         core = D.decode(joinpath(directory, "shared-runtime", "core.conf.in"), prefix)

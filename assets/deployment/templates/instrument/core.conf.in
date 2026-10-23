@@ -14,7 +14,7 @@
     {
       "factory": "spa-node-factory",
       "args": {
-        "node.loop.name": "observer-loop",
+        "node.loop.name": "telemetry-loop",
         "node.name": "PipeWireAO-Applied-Observation-Driver",
         "factory.name": "support.node.driver",
         "node.sync-group": "sync.pipewireao-applied-observation",
@@ -25,7 +25,7 @@
     {
       "factory": "spa-node-factory",
       "args": {
-        "node.loop.name": "observer-loop",
+        "node.loop.name": "telemetry-loop",
         "node.name": "PipeWireAO-Optical-Observation-Driver",
         "factory.name": "support.node.driver",
         "node.sync-group": "sync.pipewireao-optical-observation",
@@ -49,9 +49,9 @@
       {
         "loop.idle": "eventfd",
         "loop.rt-prio": 0,
-        "loop.name": "observer-loop",
+        "loop.name": "telemetry-loop",
         "loop.class": [],
-        "thread.name": "observer-loop"
+        "thread.name": "telemetry-loop"
       }
     ],
     "default.clock.quantum-floor": 1,

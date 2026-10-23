@@ -53,7 +53,7 @@ function write_private_configuration(path, application, core_name)
     configuration = Dict("context.properties"=>Dict("core.daemon"=>true,
         "core.name"=>core_name,"support.dbus"=>false,"library.use-fallback"=>false,
         "context.data-loops"=>[Dict("loop.name"=>name,"thread.name"=>name,
-            "loop.rt-prio"=>-1,"loop.idle"=>"eventfd") for name in ("rtc-data-loop","observer-loop")]),
+            "loop.rt-prio"=>-1,"loop.idle"=>"eventfd") for name in ("rtc-data-loop","telemetry-loop")]),
         "context.spa-libs"=>Dict("support.*"=>"support/libspa-support"),
         "context.modules"=>modules,"context.objects"=>installed["context.objects"])
     PipeWireAORTC.ScienceExport.write_spa_config(path,configuration)
@@ -104,7 +104,7 @@ function prepare_observers(prepared,registry)
             stream = Stream(prepared.core,"finite-observer-"*spec.name;
                 properties=Dict("node.name"=>"finite-observer-"*spec.name,
                     "node.want-driver"=>"true","priority.driver"=>"100",
-                    "node.loop.name"=>"observer-loop"),on_process=capture,
+                    "node.loop.name"=>"telemetry-loop"),on_process=capture,
                 on_param_changed=ClassicObservationFormat(capture))
             precompile(capture,(typeof(stream),))
             precompile(stream.callbacks.on_param_changed,(typeof(stream),UInt32,Pod))
