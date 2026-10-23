@@ -355,3 +355,21 @@ end
         end
     end
 end
+
+@testset "measured influence-function input is relocated with its application" begin
+    mktempdir() do application
+        filename = "influence-functions.fits"
+        write(joinpath(application, filename), "fits")
+        declared = Dict("package"=>"TestPlant", "settings"=>Dict(
+            "influence_functions"=>Dict("path"=>filename, "wavelength_nm"=>650.0)))
+        plant = PipeWireAORTC.AOSOwner.plant_declaration(declared; directory=application)
+        @test plant.settings.influence_functions.path == joinpath(application, filename)
+        @test plant.settings.influence_functions.wavelength_nm == 650.0
+        @test declared["settings"]["influence_functions"]["path"] == filename
+        for path in ("../outside.fits", joinpath(application, filename), "missing.fits")
+            invalid = deepcopy(declared)
+            invalid["settings"]["influence_functions"]["path"] = path
+            @test_throws Exception PipeWireAORTC.AOSOwner.plant_declaration(invalid; directory=application)
+        end
+    end
+end

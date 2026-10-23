@@ -17,6 +17,14 @@ module FileConfiguredPlant
 describe_hil_settings() = (;defaults=(;gain=0.5),schema=(;type="object",properties=(;
     gain=(;type="number"),mirror_description=(;type="string",readOnly=true))))
 end
+module SettingsAwarePlant
+describe_hil_settings() = (;defaults=(;profile="default"),schema=(;type="object",properties=(;
+    profile=(;type="string"))))
+describe_hil_settings(settings::NamedTuple) = (;defaults=(;profile=settings.profile,
+    command_indices=settings.command_indices, atmosphere=settings.atmosphere),schema=(;type="object",properties=(;
+    profile=(;type="string",readOnly=true),command_indices=(;type="array",maxItems=277,readOnly=true,
+        items=(;type="integer",minimum=1)),atmosphere=(;type="array",items=(;type="number")))))
+end
 @testset "required scientific file input has no invented default" begin
     configured=Dict("mirror_description"=>"mirror-description.json")
     declaration=S.declared_settings(FileConfiguredPlant,configured)
@@ -24,6 +32,24 @@ end
     @test_throws ArgumentError S.declared_settings(FileConfiguredPlant,Dict())
     changed=merge(declaration["settings"],Dict("mirror_description"=>"other.json"))
     @test_throws ArgumentError S.validate_settings(declaration["schema"],changed,declaration["settings"])
+end
+
+@testset "profile-specific simulator declarations and bounded readonly arrays" begin
+    command_indices = collect(1:277)
+    overrides = Dict("profile"=>"measured", "command_indices"=>command_indices,
+        "atmosphere"=>collect(1.0:256.0))
+    description = S.declared_settings(SettingsAwarePlant, overrides)
+    @test description["settings"]["profile"] == "measured"
+    @test description["settings"]["command_indices"] == command_indices
+    @test length(description["settings"]["command_indices"]) == 277
+    @test_throws ArgumentError S.validate_settings(description["schema"],
+        merge(deepcopy(description["settings"]), Dict("atmosphere"=>collect(1.0:257.0))),
+        description["settings"])
+    oversized = merge(deepcopy(description["settings"]), Dict("command_indices"=>collect(1:278)))
+    @test_throws ArgumentError S.validate_settings(description["schema"],oversized,oversized)
+    unbounded_schema = Dict("type"=>"array", "readOnly"=>true,
+        "maxItems"=>4097, "items"=>Dict("type"=>"integer"))
+    @test_throws ArgumentError S.validate_settings(unbounded_schema,[1],[1])
 end
 
 @testset "declared simulator settings and immutable structural fields" begin

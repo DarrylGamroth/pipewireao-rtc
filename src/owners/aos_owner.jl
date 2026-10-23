@@ -84,6 +84,12 @@ function plant_declaration(value; directory=nothing)
         settings=merge(settings,(;mirror_description=DeploymentConfiguration.relative_asset(
             directory,settings.mirror_description)))
     end
+    if directory !== nothing && haskey(settings,:influence_functions) &&
+            hasproperty(settings.influence_functions, :path)
+        influences = settings.influence_functions
+        settings = merge(settings, (; influence_functions=merge(influences,
+            (; path=DeploymentConfiguration.relative_asset(directory, influences.path)))))
+    end
     return (; package, settings)
 end
 

@@ -28,9 +28,13 @@ function validate_settings(schema, proposed, current; path="settings", readonly=
         end
     elseif kind == "array"
         proposed isa AbstractVector && current isa AbstractVector || throw(ArgumentError("$path must be an array"))
-        length(proposed) <= 256 || throw(ArgumentError("$path exceeds 256 values"))
+        max_items = get(schema, "maxItems", readonly ? 4096 : 256)
+        max_items isa Integer && !(max_items isa Bool) && 0 <= max_items <= 4096 ||
+            throw(ArgumentError("$path has an invalid maxItems limit"))
+        limit = readonly ? max_items : min(max_items, 256)
+        length(proposed) <= limit || throw(ArgumentError("$path exceeds $limit values"))
         length(proposed) >= get(schema, "minItems", 0) || throw(ArgumentError("$path has too few values"))
-        length(proposed) <= get(schema, "maxItems", 256) || throw(ArgumentError("$path has too many values"))
+        length(proposed) <= max_items || throw(ArgumentError("$path has too many values"))
         get(schema, "uniqueItems", false) && length(unique(proposed)) != length(proposed) &&
             throw(ArgumentError("$path requires unique values"))
         for (index, value) in enumerate(proposed)
@@ -59,7 +63,10 @@ end
 function declared_settings(instrument::Module, overrides)
     isdefined(instrument, :describe_hil_settings) ||
         throw(ArgumentError("$(nameof(instrument)) does not declare editable simulator settings; update the application"))
-    declaration = json_value(Base.invokelatest(getproperty(instrument, :describe_hil_settings)))
+    describe = getproperty(instrument, :describe_hil_settings)
+    selected = AOSOwner.plant_settings(overrides)
+    declaration = json_value(Base.invokelatest(applicable, describe, selected) ?
+        Base.invokelatest(describe, selected) : Base.invokelatest(describe))
     defaults, schema = declaration["defaults"], declaration["schema"]
     settings = merge_settings(defaults, overrides, schema)
     validate_settings(schema, settings, settings)
