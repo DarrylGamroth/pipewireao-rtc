@@ -67,12 +67,12 @@ function prepare_mode!(application, spec, mode, profile, bindings, prefix)
     end
     omitted = get(mode, "omit-views", [])
     if !isempty(omitted)
-        path = joinpath(application, "gui", "operator-views.toml")
-        views = TOML.parsefile(path)
+        path = joinpath(application, "gui", "operator-views.yaml")
+        views = Common.read_yaml(path)
         ids = Set(view["id"] for view in views["view"])
         Set(omitted) ⊆ ids || throw(ArgumentError("mode omits an unknown GUI view"))
         filter!(view -> !(view["id"] in omitted), views["view"])
-        open(io -> TOML.print(io, views), path, "w")
+        YAML.write_file(path, views)
     end
     return nothing
 end

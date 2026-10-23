@@ -90,6 +90,9 @@
 
 - `test/test_instrument_export.jl` is the focused cold export/profile/template
   selector; it runs without scientific optional packages or GPU access.
+- The optional CPU selector `test/aos_instrument_preparation.jl cpu` requires
+  `REVOLT_CLASSIC_MIRROR_DESCRIPTION` to name Classic's `mirror-description.json`
+  in the instrument repository, in addition to the scientific test environment.
 - Instrument-source build/calibration/private-core selectors live in the
   instrument repository. Its README owns environment prerequisites and commands.
   Builds do not install or launch sessions. Keep source files and live RTCs

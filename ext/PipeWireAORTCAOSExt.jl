@@ -5,7 +5,7 @@ using AdaptiveOpticsSim
 using AdaptiveOpticsSim.AlgorithmGraphs
 using AdaptiveOpticsSimPipeWireHIL
 using PipeWireAO
-using TOML
+using YAML
 
 const Owner = PipeWireAORTC.AOSOwner
 const Bootstrap = PipeWireAORTC.NativeOwnerBootstrapRuntime
@@ -44,7 +44,7 @@ end
 
 "Validate all graph binding names and declared timing before reading FITS."
 function validate_graph(options)
-    document = TOML.parsefile(options.graph)
+    document = PipeWireAORTC.Common.read_yaml(options.graph)
     inputs = get(document, "inputs", Any[])
     command = filter(entry -> get(entry, "name", nothing) == string(options.command_input), inputs)
     length(command) == 1 && get(only(command), "binding", nothing) == string(options.command_input) ||

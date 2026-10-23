@@ -1,11 +1,11 @@
 """Declarative instrument preparation shared by independent RTC applications.
 
-SPA-JSON selects settings and artifacts for existing AOS TOML graphs. Only cold
+SPA-JSON selects settings and artifacts for existing AOS YAML graphs. Only cold
 preparation runs here; numerical execution remains in the prepared AOS graph.
 """
 module InstrumentConfiguration
 
-import JSON, SHA, TOML, FITSIO, Interpolations
+import JSON, SHA, FITSIO, Interpolations
 import ..Common, ..DeploymentConfiguration, ..InstrumentDefinition, ..Artifacts
 const D = DeploymentConfiguration
 
@@ -37,8 +37,8 @@ end
 
 function graph_file(path)
     isfile(path) && filesize(path) <= 1024 * 1024 ||
-        throw(ArgumentError("AOS graph must be a TOML file of at most 1 MiB"))
-    document = TOML.parsefile(path)
+        throw(ArgumentError("AOS graph must be a YAML file of at most 1 MiB"))
+    document = Common.read_yaml(path)
     InstrumentDefinition.bounded(document, Ref(131072))
     return document
 end

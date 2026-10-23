@@ -90,34 +90,33 @@ end
 
 @testset "Managed builder warms and resets its exact boundary once" begin
     mktempdir() do directory
-        graph_path = joinpath(directory, "model.toml")
+        graph_path = joinpath(directory, "model.yaml")
         write(graph_path, """
-            schema_version = 1
-            name = "counted_instrument"
-            [[nodes]]
-            name = "modal"
-            type = "modal_opd_expansion_f32"
-            [nodes.config]
-            pupil_rows = 2
-            pupil_columns = 3
-            mode_count = 3
-            coefficients_schema = "test.aos.command/1"
-            opd_schema = "test.aos.frame/1"
-            basis_schema = "test.aos.basis/1"
-            pupil_support_schema = "test.aos.pupil/1"
-            [[inputs]]
-            name = "command"
-            destination = "modal.coefficients"
-            binding = "command"
-            [[outputs]]
-            name = "frame"
-            source = "modal.opd"
-            [[parameters]]
-            destination = "modal.basis"
-            binding = "basis"
-            [[parameters]]
-            destination = "modal.pupil_support"
-            binding = "pupil"
+            schema_version: 1
+            name: "counted_instrument"
+            parameters:
+              - binding: "basis"
+                destination: "modal.basis"
+              - binding: "pupil"
+                destination: "modal.pupil_support"
+            nodes:
+              - type: "modal_opd_expansion_f32"
+                name: "modal"
+                config:
+                  basis_schema: "test.aos.basis/1"
+                  pupil_columns: 3
+                  coefficients_schema: "test.aos.command/1"
+                  opd_schema: "test.aos.frame/1"
+                  pupil_support_schema: "test.aos.pupil/1"
+                  mode_count: 3
+                  pupil_rows: 2
+            outputs:
+              - source: "modal.opd"
+                name: "frame"
+            inputs:
+              - binding: "command"
+                name: "command"
+                destination: "modal.coefficients"
             """)
         document = instrument_document(settings=Dict{String,Any}("graph_path" => graph_path))
         path = joinpath(directory, "owner.conf")

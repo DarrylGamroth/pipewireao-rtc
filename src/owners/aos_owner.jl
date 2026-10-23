@@ -362,7 +362,7 @@ end
 
 Run a native AOS scientific owner from `--config PATH`, with explicit `--remote`,
 `--control-node`, `--bootstrap-node` and `--bootstrap-instance`. The version 1
-SPA-JSON configuration declares the simulation TOML graph and FITS bindings;
+SPA-JSON configuration declares the simulation YAML graph and FITS bindings;
 version 2 selects an instrument package and immutable settings. Version 3 selects
 a SPA-JSON instrument declaration and immutable settings without an instrument
 package. All versions declare

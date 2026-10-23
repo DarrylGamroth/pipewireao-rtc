@@ -1,7 +1,7 @@
 """Cold preparation of command completion, allocation and calibration artifacts."""
 module InstrumentCalibration
 
-using LinearAlgebra, SHA, TOML
+using LinearAlgebra, SHA, YAML
 import ..Common
 import ..Artifacts
 import ..InstrumentConfiguration
@@ -207,12 +207,12 @@ function replace_dimensions!(application, parameters, n; measurement_count, comm
     session = DeploymentConfiguration.decode(session_path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
     update_reconstructor!(session, n, measurement_count)
     Common.write_json(session_path, session)
-    profile_path = joinpath(application, "gui", "operator-views.toml")
-    profile = TOML.parsefile(profile_path)
+    profile_path = joinpath(application, "gui", "operator-views.yaml")
+    profile = Common.read_yaml(profile_path)
     for parameter in profile["parameter"]
         parameter["parameter"] == "reconstructor" && (parameter["shape"] = [n, measurement_count])
     end
-    open(io -> TOML.print(io, profile), profile_path, "w")
+    YAML.write_file(profile_path, profile)
     return nothing
 end
 

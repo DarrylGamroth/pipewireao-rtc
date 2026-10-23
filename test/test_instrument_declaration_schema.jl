@@ -1,4 +1,4 @@
-using Test, JSON, TOML, PipeWireAORTC
+using Test, JSON, YAML, PipeWireAORTC
 
 const IC = PipeWireAORTC.InstrumentConfiguration
 
@@ -9,15 +9,15 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             JSON.print(io, value)
         end
 
-        open(joinpath(directory, "production.toml"), "w") do io
-            TOML.print(io, Dict(
+        open(joinpath(directory, "production.yaml"), "w") do io
+            YAML.write(io, Dict(
                 "nodes" => [Dict("name" => "source"), Dict("name" => "mirror")],
                 "inputs" => [Dict("name" => "command")],
                 "outputs" => [Dict("name" => "frame")],
             ))
         end
-        open(joinpath(directory, "calibration.toml"), "w") do io
-            TOML.print(io, Dict(
+        open(joinpath(directory, "calibration.yaml"), "w") do io
+            YAML.write(io, Dict(
                 "nodes" => [Dict("name" => "source"), Dict("name" => "mirror")],
                 "inputs" => [Dict("name" => "command")],
                 "outputs" => [Dict("name" => "frame")],
@@ -74,7 +74,7 @@ const IC = PipeWireAORTC.InstrumentConfiguration
                 "expected_schema" => "test-v1",
                 "provenance" => "synthetic test fixture",
             )),
-            "graphs" => Dict("production" => "production.toml", "calibration" => "calibration.toml"),
+            "graphs" => Dict("production" => "production.yaml", "calibration" => "calibration.yaml"),
             "profiles" => Dict("basic" => Dict(
                 "nodes" => [Dict("name" => "mirror", "type" => "Mirror", "config" => Dict())],
                 "parameters" => [Dict("destination" => "mirror.command", "binding" => "commands")],

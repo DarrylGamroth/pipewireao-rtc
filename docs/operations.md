@@ -455,7 +455,7 @@ reconstructing or destroying its graph nodes.
 
 The maintained REVOLT Classic fixture MUST declare its optical prescription,
 mirror geometry, pupil registration and calibration inputs in its instrument
-directory. Shared cold preparation MUST compile its AOS TOML graphs through
+directory. Shared cold preparation MUST compile its AOS YAML graphs through
 AdaptiveOpticsSim's existing factories and compiler. The shared
 `AdaptiveOpticsSimPipeWireHIL.jl` adapter MUST expose the prepared 352-by-352
 Shack–Hartmann frame and 277-element HSDM277 command boundary as external

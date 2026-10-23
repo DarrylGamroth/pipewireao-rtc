@@ -307,7 +307,7 @@ flowchart LR
 | AdaptiveOpticsSim | Own the simulated atmosphere, optics, WFS, deformable mirror, science diagnostics, model time, and frame-to-command causality without a PipeWire dependency. |
 | `AdaptiveOpticsSimPipeWireHIL.jl` | Map one prepared AdaptiveOpticsSim HIL boundary to an externally owned PipeWire source and non-actuating sink using public PipeWireAO interfaces. |
 | `JuliaFilterGraph.jl` and `FilterGraphPipeWire` | Optionally own and publish one prepared RTC processing graph as an ordinary external PipeWire node. |
-| Instrument directory | Own scientific prescriptions, ordered device geometry, pupil registration, AOS TOML graphs and calibration artifacts; shared RTC code prepares them through AOS and the HIL adapter. Classic is the first migrated instrument. |
+| Instrument directory | Own scientific prescriptions, ordered device geometry, pupil registration, AOS YAML graphs and calibration artifacts; shared RTC code prepares them through AOS and the HIL adapter. Classic is the first migrated instrument. |
 
 The headless RTC is the live application control plane for this session. It does not process
 frame data or replace PipeWire scheduling. PipeWireAO and scientific executors
@@ -751,7 +751,7 @@ Published source-grid geometry does not imply measured optical registration.
 
 The data-only Classic application selects `instrument.conf` through version 3
 `plant.definition`. This SPA-JSON declaration references the mirror's ordinary
-JSON description, separate pupil registration, AOS TOML graph files, profile
+JSON description, separate pupil registration, AOS YAML graph files, profile
 settings and FITS artifacts. Shared cold `InstrumentConfiguration` preparation
 resolves application-relative paths, validates the declaration, and calls the
 existing AOS factories/compiler. No per-instrument Julia implementation or RTC

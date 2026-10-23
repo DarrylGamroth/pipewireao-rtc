@@ -40,3 +40,20 @@ using PipeWireAORTC.Common
     @test_throws Exception run_checked(["/bin/sh", "-c", "head -c 1000 /dev/zero"];
         maximum_output_bytes=100)
 end
+
+@testset "single-document YAML configuration" begin
+    mktempdir() do directory
+        path = joinpath(directory,"settings.yaml")
+        write(path,"schema_version: 1\nvalues: [1.0, 2.0]\n")
+        @test read_yaml(path)["values"] == [1.0,2.0]
+        @test_throws ArgumentError read_yaml(path;maximum=2)
+        for malformed in ("x: 1\nx: 2\n", "---\nx: 1\n---\nx: 2\n", "")
+            write(path,malformed)
+            @test_throws Exception read_yaml(path)
+        end
+        write(path,"defaults: &defaults\n  gain: 1.0\nselected:\n  <<: *defaults\n  gain: 2.0\n")
+        @test read_yaml(path)["selected"]["gain"] == 2.0
+        write(path,"defaults: &defaults\n  gain: 1.0\nselected:\n  <<: *defaults\n  gain: 2.0\n  gain: 3.0\n")
+        @test_throws Exception read_yaml(path)
+    end
+end

@@ -2,8 +2,36 @@ module Common
 
 using JSON
 using SHA
+using YAML
 
-export read_json, parse_json, write_json, sha256_file, cli_arguments, run_checked
+export read_json, read_yaml, parse_json, write_json, sha256_file, cli_arguments, run_checked
+
+"Read a single bounded YAML configuration, rejecting duplicate mapping keys."
+function read_yaml(path::AbstractString; maximum::Integer=1024 * 1024)
+    maximum >= 0 || throw(ArgumentError("negative YAML size bound"))
+    isfile(path) && filesize(path) <= maximum || throw(ArgumentError("YAML input exceeds size bound or is missing: $path"))
+    function mapping(constructor, node)
+        explicit = Set{String}()
+        for (key, _) in node.value
+            key.tag == "tag:yaml.org,2002:merge" && continue
+            name = YAML.construct_object(constructor, key)
+            json_key(name) || throw(ArgumentError("YAML configuration keys must be strings"))
+            name in explicit && throw(ArgumentError("duplicate YAML key: $name"))
+            push!(explicit, name)
+        end
+        return YAML.construct_mapping(Dict{String,Any}, constructor, node; strict_unique_keys=true)
+    end
+    constructors = Dict("tag:yaml.org,2002:map" => mapping)
+    payload = open(path, "r") do io
+        read(io, maximum + 1)
+    end
+    length(payload) <= maximum || throw(ArgumentError("YAML input grew beyond size bound: $path"))
+    documents = collect(YAML.load_all(IOBuffer(payload), constructors))
+    length(documents) == 1 || throw(ArgumentError("YAML configuration requires exactly one document: $path"))
+    return yaml_configuration(only(documents))
+end
+yaml_configuration(value::AbstractDict) = value
+yaml_configuration(value) = throw(ArgumentError("YAML configuration requires a root mapping"))
 
 # JSON.jl preserves decimal tokens and materializes large integers exactly.
 # Bound its general-purpose numeric range to the existing operational contract.

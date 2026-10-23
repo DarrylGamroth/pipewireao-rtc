@@ -2,6 +2,7 @@
 module InstrumentExport
 
 using TOML
+using YAML
 using ..Common
 using ..RuntimeExport
 using ..ScienceExport

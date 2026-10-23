@@ -674,3 +674,6 @@ WirePlumber keeps external links. Direct foreground, other profiles, target
 timing, general multiple endpoints and physical actuation retain separate scopes.
 
 - [Classic supplied mirror description, CPU/metadata validation](validation/mirror-description-20261022/README.md) — 2026-10-22.
+
+- YAML configuration migration — 2026-10-23: instrument repository's `MIGRATION.md`
+  and `MIGRATION-REVIEW.md` record CPU parity, focused checks and unchanged live state.

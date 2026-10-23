@@ -30,8 +30,8 @@ AdaptiveOpticsSimPipeWireHIL.frame_acquisition_generation(transport::ReportContr
 
 @testset "AOS report save precedes native report readiness and reset ACK" begin
     mktempdir() do directory
-        graph = joinpath(directory, "simulation.toml")
-        write(graph, "schema_version = 1\nname = \"report_order\"\n")
+        graph = joinpath(directory, "simulation.yaml")
+        write(graph, "schema_version: 1\nname: report_order\n")
         options = (; remote=joinpath(directory, "native"), control_node="simulator-wfs",
             bootstrap_instance=Int64(7), backend=:cpu, graph)
         state = AOSReportExtension.OwnerState()
@@ -66,34 +66,33 @@ end
 
 @testset "FITS-driven AOS graph preparation and deterministic reset" begin
     mktempdir() do directory
-        graph_path = joinpath(directory, "simulation.toml")
+        graph_path = joinpath(directory, "simulation.yaml")
         write(graph_path, """
-            schema_version = 1
-            name = "declared_modal_detector"
-            [[nodes]]
-            name = "modal"
-            type = "modal_opd_expansion_f32"
-            [nodes.config]
-            pupil_rows = 2
-            pupil_columns = 3
-            mode_count = 3
-            coefficients_schema = "test.aos.command/1"
-            opd_schema = "test.aos.frame/1"
-            basis_schema = "test.aos.basis/1"
-            pupil_support_schema = "test.aos.pupil/1"
-            [[inputs]]
-            name = "command"
-            destination = "modal.coefficients"
-            binding = "command"
-            [[outputs]]
-            name = "frame"
-            source = "modal.opd"
-            [[parameters]]
-            destination = "modal.basis"
-            binding = "basis"
-            [[parameters]]
-            destination = "modal.pupil_support"
-            binding = "pupil"
+            schema_version: 1
+            name: "declared_modal_detector"
+            parameters:
+              - binding: "basis"
+                destination: "modal.basis"
+              - binding: "pupil"
+                destination: "modal.pupil_support"
+            nodes:
+              - type: "modal_opd_expansion_f32"
+                name: "modal"
+                config:
+                  basis_schema: "test.aos.basis/1"
+                  pupil_columns: 3
+                  coefficients_schema: "test.aos.command/1"
+                  opd_schema: "test.aos.frame/1"
+                  pupil_support_schema: "test.aos.pupil/1"
+                  mode_count: 3
+                  pupil_rows: 2
+            outputs:
+              - source: "modal.opd"
+                name: "frame"
+            inputs:
+              - binding: "command"
+                name: "command"
+                destination: "modal.coefficients"
             """)
         basis = reshape(Float32.(1:18), 2, 3, 3)
         pupil = UInt8[1 1 0; 0 1 1]
@@ -103,7 +102,7 @@ end
             end
         end
         document = Dict{String,Any}(
-            "version" => 1, "graph" => "simulation.toml", "command_input" => "command",
+            "version" => 1, "graph" => "simulation.yaml", "command_input" => "command",
             "frame_output" => "frame", "command_count" => 3, "frame_shape" => [2, 3],
             "rate" => 500, "exposure_ns" => 1_896_000, "wall_rate" => 10,
             "backend" => "cpu", "device" => 0,

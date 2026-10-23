@@ -12,6 +12,20 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### YAML simulation and GUI configuration — 2026-10-23
+
+AOS simulation graphs and GUI presentation now use YAML; native PipeWire files
+remain SPA-JSON. The shared cold readers, calibration/export paths and CPU
+preparation selectors consume the migrated files. GUI colormaps can be loaded
+from relative YAML catalogs. Package metadata and frozen calibration records
+retain TOML. No live deployment was changed.
+
+Focused software checks and Classic CPU preparation passed. Matched-process
+TOML/YAML graph execution produced bit-identical outputs, including detector
+quantization and reset. Fresh-process closed-loop replay variation also occurs
+with the unchanged original stack; its cause remains unconfirmed. Commands,
+limits and review evidence are in the instrument repository migration records.
+
 ### Configurable instrument application modes — 2026-10-23
 
 Shared preparation selects native application/session/core fragments from

@@ -6,9 +6,9 @@ using PipeWireAORTC
 const Owner = PipeWireAORTC.AOSOwner
 
 function owner_configuration(directory; backend="cpu")
-    write(joinpath(directory, "simulation.toml"), "schema_version = 1\nname = \"declared_test\"\n")
+    write(joinpath(directory, "simulation.yaml"), "schema_version: 1\nname: declared_test\n")
     return Dict{String,Any}(
-        "version" => 1, "graph" => "simulation.toml", "command_input" => "pdm_command",
+        "version" => 1, "graph" => "simulation.yaml", "command_input" => "pdm_command",
         "frame_output" => "detector_frame", "command_count" => 3, "frame_shape" => [2, 3],
         "rate" => 500, "exposure_ns" => 1_896_000, "wall_rate" => 10,
         "backend" => backend, "device" => 0,
@@ -18,7 +18,7 @@ end
 
 @testset "AOS operational report records a saved cursor atomically" begin
     mktempdir() do directory
-        graph = joinpath(directory, "simulation.toml")
+        graph = joinpath(directory, "simulation.yaml")
         write(graph, "schema_version = 1\nname = \"report_test\"\n")
         options = (; remote=joinpath(directory, "native"), control_node="simulator-wfs",
             bootstrap_instance=Int64(7), backend=:cpu, graph,
@@ -56,14 +56,14 @@ end
         unknown = PipeWireAORTC.Common.read_json(path)
         @test unknown["generation"] === nothing
         @test unknown["failures"] == ["cannot query the final generation"]
-        @test sort(readdir(directory)) == ["simulation.toml", "simulator-wfs-report.json"]
+        @test sort(readdir(directory)) == ["simulation.yaml", "simulator-wfs-report.json"]
         rm(path)
         mkdir(path)
         write(joinpath(path, "retained"), "preserve the conflicting directory")
         @test_throws Base.IOError Owner.write_report(options, state, Int64(3), Int64(9))
         @test isdir(path)
         @test read(joinpath(path, "retained"), String) == "preserve the conflicting directory"
-        @test sort(readdir(directory)) == ["simulation.toml", "simulator-wfs-report.json"]
+        @test sort(readdir(directory)) == ["simulation.yaml", "simulator-wfs-report.json"]
         @test_throws ArgumentError Owner.write_report(options,
             (; sequence=typemax(UInt64), running=false, completed=false), Int64(3), Int64(9))
     end
@@ -110,7 +110,7 @@ end
             @test_throws ArgumentError Owner.arguments(invalid_timing)
         end
         options = Owner.configuration(path)
-        @test options.graph == joinpath(directory, "simulation.toml")
+        @test options.graph == joinpath(directory, "simulation.yaml")
         @test options.frame_shape == (2, 3)
         @test options.period_ns == 2_000_000
         @test options.exposure_ns == 1_896_000
@@ -205,7 +205,7 @@ end
         @test only(prepared).provenance["target_shape"] == [3, 2]
         @test_throws InterruptException Owner.prepare_bindings(options.artifacts;
             check=() -> throw(InterruptException()))
-        @test sort(readdir(directory)) == ["grid.fits", "owner.conf", "simulation.toml"]
+        @test sort(readdir(directory)) == ["grid.fits", "owner.conf", "simulation.yaml"]
         # Selection is exact, and the square case still requires explicit axes.
         document["artifacts"][1]["shape"] = [2, 3]
         write(path, JSON.json(document))
@@ -252,7 +252,7 @@ end
         @test_throws ArgumentError Owner.plant_settings(deep)
         for mutation in (
             item -> (item["frame_encoding"] = "float32"),
-            item -> (item["graph"] = "simulation.toml"),
+            item -> (item["graph"] = "simulation.yaml"),
             item -> (item["artifacts"] = []),
             item -> (item["plant"]["package"] = "REVOLTClassicSim.path"),
             item -> (item["plant"]["package"] = "../REVOLTClassicSim"),
