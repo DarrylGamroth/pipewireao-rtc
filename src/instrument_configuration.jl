@@ -100,6 +100,12 @@ function configuration_context(declaration, configured)
         rows, columns = sensor["detector_shape"]
         # SPA's packed-video construction property is width x height.
         sensor["video_frame_size"] = string(columns, 'x', rows)
+        if haskey(sensor, "acquisition")
+            acquisition = sensor["acquisition"]
+            seconds = acquisition["exposure_duration_s"]
+            acquisition["exposure_ns"] = round(UInt64, seconds * 1e9)
+            acquisition["exposure_us"] = seconds * 1e6
+        end
     end
     return Dict("instrument" => instrument, "settings" => deepcopy(configured))
 end
