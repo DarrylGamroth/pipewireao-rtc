@@ -1,0 +1,66 @@
+type: object
+properties:
+  influence_functions:
+    additionalProperties: false
+    properties:
+      axes:
+        items:
+          maximum: 3
+          minimum: 1
+          type: integer
+        maxItems: 3
+        minItems: 3
+        title: FITS axes (column, row, command)
+        type: array
+        uniqueItems: true
+      command_indices:
+        items:
+          minimum: 1
+          type: integer
+        maxItems: 4096
+        minItems: 1
+        title: Physical command indices in plane order
+        type: array
+        uniqueItems: true
+      hdu:
+        minimum: 1
+        title: Image HDU
+        type: integer
+      opd_scale_m:
+        exclusiveMinimum: 0
+        title: OPD metres per stored value
+        type: number
+      path:
+        minLength: 1
+        title: FITS file
+        type: string
+      reference_command_m:
+        title: Reference command (OPD m)
+        type: number
+      sample_origin:
+        items:
+          type: number
+        maxItems: 2
+        minItems: 2
+        title: First sample (source column, row)
+        type: array
+      sample_pitch:
+        items:
+          exclusiveMinimum: 0
+          type: number
+        maxItems: 2
+        minItems: 2
+        title: Sample pitch (source column, row)
+        type: array
+    readOnly: true
+    required:
+      - path
+      - hdu
+      - axes
+      - command_indices
+      - sample_origin
+      - sample_pitch
+      - opd_scale_m
+      - reference_command_m
+    title: Measured influence functions
+    type: object

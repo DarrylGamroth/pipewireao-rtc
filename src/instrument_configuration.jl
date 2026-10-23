@@ -19,6 +19,8 @@ include("instruments/settings.jl")
 include("instruments/geometry.jl")
 include("instruments/influence_functions.jl")
 include("instruments/schema.jl")
+include("instruments/catalogs.jl")
+include("instruments/dimensions.jl")
 
 function fields(value::AbstractDict, allowed, required, label)
     all(key -> key in allowed, keys(value)) && all(key -> haskey(value,key),required) ||
@@ -53,7 +55,8 @@ end
 
 "Read an independent simulation definition and its shared physical instrument."
 function load_simulation(path::AbstractString)
-    document = bounded_yaml(path)
+    authoring = bounded_yaml(path)
+    document = deepcopy(authoring)
     fields(document, ("schema_version", "id", "instrument", "defaults", "settings_schema",
         "wire_contracts", "graphs", "profiles", "bindings", "settings_bindings",
         "frame_period_s", "hil", "sensors", "sources"),
@@ -61,21 +64,34 @@ function load_simulation(path::AbstractString)
         "wire_contracts", "graphs", "profiles", "bindings", "settings_bindings",
         "frame_period_s", "hil"), "simulation definition")
     instrument = referenced_instrument(path, document["instrument"])
+    document["settings_schema"] = resolve_settings_schema(document["settings_schema"])
+    if shared_settings_schema(authoring["settings_schema"]) && haskey(document["settings_schema"]["properties"], "profile")
+        document["settings_schema"]["properties"]["profile"]["enum"] = sort!(collect(keys(document["profiles"])))
+    end
+    profiles = _declaration_object(document["profiles"], "simulation profiles")
+    for profile in values(profiles)
+        _declaration_object(profile, "simulation profile")
+        if haskey(profile,"settings_schema")
+            profile["settings_schema"] = resolve_profile_settings_schema(profile["settings_schema"])
+        end
+    end
     validate_simulation(document, instrument.document, instrument.directory)
     return (;path=abspath(path),directory=instrument.directory,document,instrument)
 end
 
 "Read RTC dimensions and mirror-control definitions independently of the simulator."
 function load_rtc(path::AbstractString)
-    document = bounded_yaml(path)
-    fields(document, ("schema_version", "instrument", "dimensions", "mirror_controls", "publication", "calibration_identity"),
+    authoring = bounded_yaml(path)
+    document = deepcopy(authoring)
+    fields(document, ("schema_version", "instrument", "dimensions", "controller", "mirror_controls", "publication", "calibration_identity"),
         ("schema_version", "instrument", "dimensions", "mirror_controls", "publication", "calibration_identity"), "RTC configuration")
     document["schema_version"] === 1 || throw(ArgumentError("unsupported RTC configuration schema"))
-    _validate_dimensions(document["dimensions"])
     _declaration_text(document["publication"], "RTC publication")
     _declaration_text(document["calibration_identity"], "RTC calibration identity")
     instrument = referenced_instrument(path, document["instrument"])
-    controls = bounded_yaml(D.relative_asset(instrument.directory, document["mirror_controls"]))
+    document["dimensions"] = controller_dimensions(authoring, instrument)
+    control_authoring = bounded_yaml(D.relative_asset(instrument.directory, document["mirror_controls"]))
+    controls = deepcopy(control_authoring)
     fields(controls, ("schema_version", "deformable_mirrors"),
         ("schema_version", "deformable_mirrors"), "mirror controls")
     controls["schema_version"] === 1 || throw(ArgumentError("unsupported mirror control schema"))
@@ -85,10 +101,14 @@ function load_rtc(path::AbstractString)
     for (name, control) in mirrors
         fields(control, ("limiter", "shape_control"), ("limiter", "shape_control"), "mirror control $name")
         _validate_limiter(control["limiter"])
+        shape = _declaration_fields(control["shape_control"], ("bases",), ("bases",), "shape_control")
+        bases = _declaration_array(shape["bases"], "bases")
+        length(bases) <= 16 || throw(ArgumentError("shape_control requires at most 16 bases"))
+        shape["bases"] = [resolve_basis_definition(basis) for basis in bases]
         _validate_shape_control(control["shape_control"],
             instrument.document["deformable_mirrors"][name]["units"], instrument.directory)
     end
-    return (;path=abspath(path),directory=instrument.directory,document,instrument,controls)
+    return (;path=abspath(path),directory=instrument.directory,document,instrument,controls,authoring,control_authoring)
 end
 
 "Merge the declared defaults and validate the selected profile's startup settings."
@@ -145,7 +165,8 @@ function configuration_context(declaration, configured)
         spec["actuator_count"] = command_count(geometry.description)
         spec["actuator_axis_count"] = _mirror_axis_count(geometry.description)
         spec["grid_shape"] = collect(geometry.description.layout.grid_shape)
-        spec["description_json"] = read(mirror_description_path(declaration.directory, spec["description"]), String)
+        spec["description_json"] = InstrumentDefinition.mirror_description_json(
+            mirror_description_path(declaration.directory, spec["description"]))
     end
     for sensor in values(instrument["wavefront_sensors"])
         rows, columns = sensor["detector_shape"]

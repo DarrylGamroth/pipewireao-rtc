@@ -1,0 +1,32 @@
+normalization: sampled_peak
+provenance: Analytic engineering shapes on the mirror source grid; explicit radial/azimuthal orders, positive m cosine and negative m sine. Unit sampled absolute peak, not calibrated pupil modes or Noll ordering.
+definition:
+  kind: zernike
+  modes:
+    - n: 0
+      m: 0
+      name: Piston
+    - n: 1
+      m: 1
+      name: Tip
+    - n: 1
+      m: -1
+      name: Tilt
+    - n: 2
+      m: 0
+      name: Defocus
+    - n: 2
+      m: -2
+      name: Astigmatism x/y
+    - n: 2
+      m: 2
+      name: Astigmatism axes
+    - n: 3
+      m: 1
+      name: Coma x
+    - n: 3
+      m: -1
+      name: Coma y
+    - n: 4
+      m: 0
+      name: Spherical

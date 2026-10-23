@@ -364,6 +364,25 @@ end
         mechanical_json="\n"*JSON.json(mechanical)*"\n"
         write(mirror_path,mechanical_json)
         @test Instrument.mirror_properties(options)==Dict("device.mirror.description"=>mechanical_json)
+        @test Instrument.mirror_description_json(mirror_path) == mechanical_json
+        for extension in (".yaml", ".yml")
+            yaml_path = joinpath(root, "mirror" * extension)
+            PipeWireAORTC.Common.write_yaml(yaml_path, mechanical)
+            yaml_options = merge(options, (;mirror_description=yaml_path))
+            published = Instrument.mirror_properties(yaml_options)[Instrument.MIRROR_PROPERTY]
+            @test Instrument.read_object(published) == mechanical
+            @test startswith(published, "{")
+            @test Instrument.mirror_description_json(yaml_path) == published
+            @test_throws ArgumentError Instrument.mirror_properties(
+                merge(yaml_options, (;command_count=2)))
+            write(yaml_path, read(yaml_path, String) * "model: duplicate\n")
+            @test_throws ArgumentError Instrument.mirror_properties(yaml_options)
+        end
+        # A JSON transport path never falls back to YAML authoring.
+        PipeWireAORTC.Common.write_yaml(mirror_path, mechanical)
+        @test_throws ArgumentError Instrument.mirror_properties(options)
+        write(mirror_path, replace(mechanical_json, "{" => "{\"schema_version\":1,"; count=1))
+        @test_throws ArgumentError Instrument.mirror_properties(options)
         for key in ("actuator_pitch_m", "actuator_pitch_provenance")
             invalid=deepcopy(mechanical); delete!(invalid,key)
             write(mirror_path,JSON.json(invalid))

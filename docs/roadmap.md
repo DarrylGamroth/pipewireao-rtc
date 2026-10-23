@@ -12,6 +12,22 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Shared authoring definitions and derived controller dimensions — 2026-10-23
+
+Shared mirror source now uses YAML; the common reader validates it and serializes
+JSON only at native device publication. Package `data/bases/` supplies standard
+basis definitions, and `data/simulation/` supplies atmosphere and measured-influence
+settings schemas. Applications select definitions without copying their schemas
+or scientific conventions. Custom inline schemas and sampled bases remain valid.
+Profile enums derive from the application's profiles. Raw authoring stays separate
+from resolved values, preserving templates and references during calibration.
+Classic declares its controller command count and ordered hidden-mode labels;
+controller/hidden counts and referenced mirror dimensions are derived. State
+length references the controller count in the graph. FITS shapes are validated
+against these contracts. Calibration rejects mismatched hidden projections before
+writing files. See the [review](reviews/20261023-shared-authoring/REVIEW.md) and
+instrument `MIGRATION.md` for CPU validation and the unchanged live-RTC boundary.
+
 ### YAML instrument and RTC authoring, explicit pitch units — 2026-10-23
 
 Classic physical and RTC authoring now use `instrument.yaml` and

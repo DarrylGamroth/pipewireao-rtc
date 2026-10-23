@@ -1,0 +1,93 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+type: object
+additionalProperties: false
+required: []
+properties:
+  profile:
+    type: string
+    title: Profile
+    readOnly: true
+    description: Deformable-mirror response implementation. Changing it requires rebuilding the plant and corresponding calibration.
+  pupil_resolution:
+    type: integer
+    title: Pupil resolution (pixels)
+    readOnly: true
+    description: Pixels across the common square pupil sampling. Changing sampling requires rebuilding the plant and corresponding calibration; detector dimensions stay fixed.
+    minimum: 1
+  atmosphere:
+    type: object
+    title: Atmosphere
+    readOnly: false
+    description: Multilayer turbulence parameters. All layer arrays must have the same nonzero length. AOS validates physical values when rebuilding the plant.
+    additionalProperties: false
+    properties:
+      r0:
+        type: number
+        title: Fried parameter r0 (m)
+        readOnly: false
+        description: Fried parameter at the reference wavelength. Kolmogorov seeing FWHM is approximately 0.98 × reference_wavelength_m / r0 radians (multiply by 206265 for arcseconds); finite outer scale changes that relation.
+        exclusiveMinimum: 0
+      reference_wavelength_m:
+        type: number
+        title: Reference wavelength (m)
+        readOnly: false
+        x-display-scale: 1000000000.0
+        x-display-title: Reference wavelength (nm)
+        description: Wavelength defining the atmosphere Fried parameter and phase-to-OPD conversion, independently of the guide-source or science-source wavelength. Stored in metres; displayed in nanometres.
+        exclusiveMinimum: 0
+      L0:
+        type: number
+        title: Outer scale L0 (m)
+        readOnly: false
+        description: Finite von Kármán turbulence outer scale.
+        exclusiveMinimum: 0
+      fractional_cn2:
+        type: array
+        title: Layer turbulence fractions (dimensionless)
+        readOnly: false
+        description: Nonnegative fractions of integrated Cn² in layer order. Fractions must sum to one.
+        minItems: 1
+        items:
+          type: number
+          minimum: 0
+      wind_speed:
+        type: array
+        title: Layer wind speeds (m/s)
+        readOnly: false
+        description: Frozen-flow wind speed of each layer, in layer order.
+        minItems: 1
+        items:
+          type: number
+          minimum: 0
+      wind_direction_deg:
+        type: array
+        title: Layer wind directions (degrees)
+        readOnly: false
+        description: 'Wind-velocity direction in each layer: x = speed × cosd(direction), y = speed × sind(direction).'
+        minItems: 1
+        items:
+          type: number
+      altitude:
+        type: array
+        title: Layer altitudes (m)
+        readOnly: false
+        description: Altitude of each turbulence layer, in layer order.
+        minItems: 1
+        items:
+          type: number
+          minimum: 0
+      layer_ids:
+        type: array
+        title: Layer IDs
+        readOnly: false
+        description: Unique stochastic identities in layer order, used with the seed for reproducible atmosphere generation.
+        minItems: 1
+        uniqueItems: true
+        items:
+          type: string
+      rng_seed:
+        type: integer
+        title: RNG seed
+        readOnly: false
+        description: Nonnegative seed for deterministic atmosphere generation.
+        minimum: 0

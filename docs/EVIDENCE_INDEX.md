@@ -1,5 +1,13 @@
 # Delivery evidence catalog
 
+## Shared authoring definitions — 2026-10-23
+
+The [independent review](reviews/20261023-shared-authoring/REVIEW.md) records
+schema-selector findings and their resolutions. The
+[current work](roadmap.md#shared-authoring-definitions-and-derived-controller-dimensions--2026-10-23)
+and instrument `MIGRATION.md` retain software-only validation and baseline
+comparisons; no live deployment was changed.
+
 ## YAML authoring and explicit pitch units — 2026-10-23
 
 The [review](reviews/20261023-yaml-authoring-units/REVIEW.md) and instrument

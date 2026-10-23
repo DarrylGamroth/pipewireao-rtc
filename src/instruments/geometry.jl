@@ -1,28 +1,10 @@
 """Read a bounded, generic physical mirror description into immutable values."""
 function read_mirror_description(path::AbstractString)
-    isvalid(path) && !isempty(path) && !occursin('\0', path) ||
-        throw(ArgumentError("mirror description path must be a nonempty valid file path"))
-    isfile(path) || throw(ArgumentError("mirror description must be a regular file"))
-    bytes = open(path) do io
-        read(io, 64 * 1024 + 1)
-    end
-    length(bytes) <= 64 * 1024 || throw(ArgumentError("mirror description exceeds 64 KiB"))
-    json = String(bytes)
-    isvalid(json) || throw(ArgumentError("mirror description is not valid UTF-8"))
-    parsed = try
-        JSON.parse(json; dicttype=Dict{String,Any}, duplicate_keys=:error, maxdepth=64)
-    catch error
-        throw(_mirror_json_error(error))
-    end
-    document = Common.json_number(parsed)
-    InstrumentDefinition.validate_mirror_description(document)
+    document = InstrumentDefinition._mirror_description(path).document
     return _instrument_seal(document)
 end
 
 read_mirror_description(path) = throw(ArgumentError("mirror description path must be a string"))
-
-_mirror_json_error(error::JSON.DuplicateKeyError) = ArgumentError("duplicate mirror description field")
-_mirror_json_error(error) = error
 
 # Keep this cold parser's owned tree separate from InstrumentDefinition's JSON
 # publication representation. Objects become named tuples; arrays become tuples.

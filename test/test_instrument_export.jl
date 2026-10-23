@@ -7,13 +7,13 @@ const D = PipeWireAORTC.DeploymentConfiguration
 @testset "shared mirror source descriptions become independent application assets" begin
     mktempdir() do repository
         source = joinpath(repository, "instrument-a")
-        shared = joinpath(repository, "mirrors", "vendor", "mirror.json")
+        shared = joinpath(repository, "mirrors", "vendor", "mirror.yaml")
         mkpath(source)
         mkpath(dirname(shared))
-        bytes = "{\"schema_version\":1,\"provenance\":\"retained source\"}\n"
+        bytes = "schema_version: 1\nprovenance: retained source\n"
         write(shared, bytes)
         document = Dict("deformable_mirrors" => Dict(name =>
-            Dict("description" => "../mirrors/vendor/mirror.json") for name in ("dm1", "dm2")))
+            Dict("description" => "../mirrors/vendor/mirror.yaml") for name in ("dm1", "dm2")))
         path = joinpath(source, "instrument.yaml")
         C.write_yaml(path, document)
         before = read(path)
@@ -21,9 +21,9 @@ const D = PipeWireAORTC.DeploymentConfiguration
         @test read(path) == before
         @test read(shared, String) == bytes
         copied = C.read_yaml(joinpath(output, "instrument.yaml"))
-        @test all(mirror["description"] == "mirrors/vendor/mirror.json"
+        @test all(mirror["description"] == "mirrors/vendor/mirror.yaml"
             for mirror in values(copied["deformable_mirrors"]))
-        @test read(D.relative_asset(output, "mirrors/vendor/mirror.json"), String) == bytes
+        @test read(D.relative_asset(output, "mirrors/vendor/mirror.yaml"), String) == bytes
         # Removing the source cannot break the exported application's local reference.
         rm(shared)
         @test read(PipeWireAORTC.InstrumentConfiguration.mirror_description_path(output,
@@ -32,7 +32,7 @@ const D = PipeWireAORTC.DeploymentConfiguration
         @test !ispath(joinpath(repository, "missing"))
         write(shared, bytes)
         mkpath(joinpath(source, "mirrors", "vendor"))
-        write(joinpath(source, "mirrors", "vendor", "mirror.json"), "conflict")
+        write(joinpath(source, "mirrors", "vendor", "mirror.yaml"), "conflict")
         @test_throws ArgumentError E.copy_source(source, joinpath(repository, "conflict"))
         @test !ispath(joinpath(repository, "conflict"))
         rm(joinpath(source, "mirrors"); recursive=true)
@@ -46,11 +46,11 @@ const D = PipeWireAORTC.DeploymentConfiguration
             @test !ispath(joinpath(repository, "escape"))
         end
         for mirror in values(document["deformable_mirrors"])
-            mirror["description"] = "../mirrors/vendor/mirror.json"
+            mirror["description"] = "../mirrors/vendor/mirror.yaml"
         end
         C.write_yaml(path, document)
         rm(shared)
-        symlink(joinpath(output, "mirrors/vendor/mirror.json"), shared)
+        symlink(joinpath(output, "mirrors/vendor/mirror.yaml"), shared)
         @test_throws ArgumentError E.copy_source(source, joinpath(repository, "linked"))
         @test !ispath(joinpath(repository, "linked"))
     end

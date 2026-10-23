@@ -778,7 +778,13 @@ limits still apply; bounds reject oversized definitions without truncation.
 The schema 1 publication's fixed Zernike/Fourier fields are removed.
 
 RTC-owned `rtc/mirror-controls.yaml` declares `shape_control.bases` using
-the same seven basis fields. The physical instrument contains no control bases. Zernike source definitions declare `kind` and
+shared package-owned definitions selected with `template: zernike` or
+`template: fourier`. The application retains `id`, `name`, command `units` and
+`coefficient_limit`, and may override `definition.modes` or
+`definition.max_frequency`. Package `data/bases/` owns normalization and scientific
+provenance; resolved definitions retain the same seven publication fields.
+Inline sampled/custom definitions remain supported. The physical instrument
+contains no control bases. Zernike source definitions declare `kind` and
 `modes`; Fourier source definitions declare `kind` and `max_frequency`. The RTC
 derives both coordinate arrays from the selected mirror source grid. Fourier
 frequencies remain strictly below the source-axis Nyquist frequency, excluding
@@ -808,6 +814,29 @@ Classic separates physical, simulation, RTC and mirror-control authoring:
 Physical instrument and RTC authoring use bounded, single-document YAML, with
 string mapping keys and duplicate-key rejection. Native PipeWire configuration
 remains SPA-JSON, and published instrument/device metadata remains JSON.
+Shared mirror descriptions are authored in YAML and validated before JSON
+serialization at the device publication boundary. Valid native JSON inputs remain
+supported for package/device transport, with their exact bytes preserved.
+
+Package `data/simulation/` supplies shared startup-settings schemas. A simulation
+selects `settings_schema: {template: atmosphere, title: ..., description: ...}`;
+scientific values remain in `defaults`. Optional `properties` declare application
+extensions, and inline schemas remain available for other model components.
+Shared profile enum values derive from the simulation's declared profiles.
+Schemas resolve before validation, GUI description and prescription hashing.
+
+The RTC's optional `controller` declaration has authoritative `command_count`
+and ordered `hidden_modes` labels. These derive `controller_command_count` and
+`hidden_mode_count`. An empty list resolves to zero; the selected algorithm's
+own dimension constraints still apply (the current closed-loop correction
+constructor requires at least one hidden coordinate). Other dimensions may be
+integer counts or existing JSON Pointer references to controller/instrument data.
+Classic's closed-loop state length references its command count in the graph;
+state length is not assumed for arbitrary controller algorithms. Parameter FITS
+files must match declared graph contracts and never establish expected sizes.
+Cold loaders retain separate raw authoring and resolved views. Calibration writes
+raw declarations, preserving basis templates and dimension references, and rejects
+inconsistent hidden projections/allocation dimensions before writing files.
 `actuator_pitch_m` in a mirror description is intrinsic mechanical centre-to-centre
 spacing in metres, paired with `actuator_pitch_provenance`. It does not rescale
 optical geometry. Instrument `pupil_registration.actuator_pitch_pupil_radius`

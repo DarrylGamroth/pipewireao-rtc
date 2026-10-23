@@ -137,3 +137,80 @@ end
         @test_throws ArgumentError IC.read_mirror_description(path)
     end
 end
+
+@testset "YAML mirror authoring preserves physical geometry" begin
+    mktempdir() do directory
+        document = mirror_document()
+        document["actuator_pitch_m"] = 0.0015
+        document["actuator_pitch_provenance"] = "Nominal synthetic specification; no metrology claim."
+        json_path = joinpath(directory, "mirror.json")
+        baseline = write_mirror(json_path, document)
+        registration = (; actuator_pitch_pupil_radius=0.125)
+        for suffix in (".yaml", ".yml")
+            path = joinpath(directory, "mirror" * suffix)
+            PipeWireAORTC.Common.write_yaml(path, document)
+            description = IC.read_mirror_description(path)
+            @test IC.json_value(description) == IC.json_value(baseline)
+            @test description.layout.command_positions == baseline.layout.command_positions
+            @test description.layout.provenance == baseline.layout.provenance
+            @test description.actuator_pitch_provenance == baseline.actuator_pitch_provenance
+            @test IC.actuator_coordinates(description; pupil_registration=registration) ==
+                IC.actuator_coordinates(baseline; pupil_registration=registration)
+            @test IC.source_grid_coordinates(description) == IC.source_grid_coordinates(baseline)
+        end
+    end
+end
+
+@testset "bounded YAML mirror authoring rejects invalid descriptions" begin
+    mktempdir() do directory
+        path = joinpath(directory, "mirror.yaml")
+        for change in (
+            d -> (d["unknown"] = 1),
+            d -> (d["pupil_registration"] = Dict("actuator_pitch_pupil_radius" => 0.125)),
+            d -> (d["layout"]["unknown"] = true),
+            d -> (d["layout"]["command_positions"] = [[3, 4], [3, 4]]),
+            d -> (d["layout"]["command_positions"] = [[5, 4]]),
+            d -> (d["layout"]["command_positions"] = Any[Any[true, 4]]),
+            d -> (d["layout"]["grid_shape"] = [4097, 4]),
+            d -> (d["actuator_pitch_m"] = 0.0015),
+        )
+            invalid = mirror_document()
+            change(invalid)
+            PipeWireAORTC.Common.write_yaml(path, invalid)
+            @test_throws ArgumentError IC.read_mirror_description(path)
+        end
+        PipeWireAORTC.Common.write_yaml(path, mirror_document())
+        yaml = read(path, String)
+        for suffix in ("model: duplicate\n", "unknown: .inf\n", "unknown: .nan\n",
+                "---\nschema_version: 1\n", "1: integer key\n")
+            write(path, yaml * suffix)
+            @test_throws ArgumentError IC.read_mirror_description(path)
+        end
+        # A comment can reach the byte limit without changing scientific values.
+        at_limit = yaml * "#" * repeat("x", 64 * 1024 - ncodeunits(yaml) - 1)
+        write(path, at_limit)
+        @test IC.command_count(IC.read_mirror_description(path)) == 3
+        write(path, at_limit * "x")
+        @test_throws ArgumentError IC.read_mirror_description(path)
+        # YAML aliases must not bypass the native JSON description byte limit.
+        expanded = """
+        schema_version: 1
+        id: &text $(repeat("x", 16000))
+        model: *text
+        manufacturer: *text
+        layout:
+          schema_version: 1
+          name: *text
+          command_order: *text
+          provenance: *text
+          grid_shape: [4, 4]
+          axis_labels: [source column, source row]
+          command_positions: [[3, 4], [2, 2], [4, 1]]
+        """
+        write(path, expanded)
+        @test ncodeunits(expanded) < 64 * 1024
+        @test_throws ArgumentError IC.read_mirror_description(path)
+        write(path, UInt8[0xff, 0xfe])
+        @test_throws Exception IC.read_mirror_description(path)
+    end
+end

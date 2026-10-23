@@ -120,7 +120,8 @@ function _validate_dimensions(dimensions)
     _declaration_object(dimensions, "RTC dimensions")
     for (name, count) in dimensions
         _declaration_identifier(name, "dimension name")
-        ispositive_integer(count) && count <= typemax(Int) ||
+        valid = name == "hidden_mode_count" ? isnonnegative_integer(count) : ispositive_integer(count)
+        valid && count <= typemax(Int) ||
             throw(ArgumentError("RTC dimension $name must be a positive Int"))
     end
     return nothing
@@ -166,16 +167,8 @@ function _validate_shape_control(value, units, directory)
         basis["id"] in ids && throw(ArgumentError("duplicate basis id"))
         push!(ids,basis["id"])
         kind = definition["kind"]
-        if kind == "zernike"
-            _declaration_fields(definition,("kind","modes"),("kind","modes"),"Zernike definition")
-            InstrumentDefinition.zernike_modes(definition["modes"])
-        elseif kind == "fourier"
-            _declaration_fields(definition,("kind","max_frequency"),("kind","max_frequency"),"Fourier definition")
-            cap = definition["max_frequency"]
-            ispositive_integer(cap) && cap <= 64 || throw(ArgumentError("Fourier max_frequency must be in 1:64"))
-        else
-            _declaration_fields(definition,("kind","artifact","command_order","names"),
-                ("kind","artifact","command_order","names"),"sampled definition")
+        validate_basis_definition(definition)
+        if kind == "sampled"
             definition["command_order"] == "mirror" || throw(ArgumentError("sampled command_order must be mirror"))
             _validate_artifact(definition["artifact"],directory,"sampled basis artifact")
             shape = definition["artifact"]["shape"]

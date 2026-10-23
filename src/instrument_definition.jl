@@ -305,14 +305,50 @@ function validate_mirror_description(description; command_count=nothing)
     return nothing
 end
 
+function _mirror_description(path::AbstractString)
+    isvalid(path) && !isempty(path) && !occursin('\0', path) ||
+        throw(ArgumentError("mirror description path must be a nonempty valid file path"))
+    if lowercase(splitext(path)[2]) in (".yaml", ".yml")
+        document = Common.read_yaml(path; maximum=64 * 1024)
+        validate_mirror_description(document)
+        document = Common.json_number(document)
+        json = JSON.json(document)
+        ncodeunits(json) <= 64 * 1024 || throw(ArgumentError("mirror description JSON exceeds 64 KiB"))
+        return (; json, document)
+    end
+    isfile(path) || throw(ArgumentError("mirror description must be a regular file"))
+    bytes = open(path) do io
+        read(io, 64 * 1024 + 1)
+    end
+    length(bytes) <= 64 * 1024 || throw(ArgumentError("mirror description exceeds 64 KiB"))
+    json = String(bytes)
+    isvalid(json) || throw(ArgumentError("mirror description is not valid UTF-8"))
+    # Preserve strict JSON transport and original publication bytes. Mirror
+    # descriptions reject duplicate fields in both geometry and publication.
+    token = strip(json, [' ', '\t', '\n', '\r'])
+    startswith(token, "{") || throw(ArgumentError("mirror description requires a JSON object"))
+    parsed = try
+        JSON.parse(token; dicttype=Dict{String,Any}, duplicate_keys=:error, maxdepth=64)
+    catch error
+        throw(_mirror_json_error(error))
+    end
+    document = Common.json_number(parsed)
+    validate_mirror_description(document)
+    return (; json, document)
+end
+
+_mirror_json_error(error::JSON.DuplicateKeyError) = ArgumentError("duplicate mirror description field")
+_mirror_json_error(error) = error
+
+"Return JSON for device publication, compiling bounded YAML authoring when selected."
+mirror_description_json(path::AbstractString) = _mirror_description(path).json
+
 "Read the selected device description for ordinary simulated-mirror NodeInfo."
 function mirror_properties(options)
     path = get(options,:mirror_description,nothing)
     path===nothing && return Dict{String,String}()
-    isfile(path) && filesize(path)<=64*1024 || throw(ArgumentError("mirror description exceeds 64 KiB or is absent"))
-    json = read(path,String)
-    isvalid(json) || throw(ArgumentError("mirror description is not UTF-8"))
-    description = read_object(json)
+    (;json,document) = _mirror_description(path)
+    description = document
     validate_mirror_description(description; command_count=options.command_count)
     if options.instrument!==nothing
         instrument = load(options.instrument).document
