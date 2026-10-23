@@ -12,6 +12,23 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Configuration ownership separation — 2026-10-23
+
+Work started from RTC `8215cf2` and instruments `c7e71f5` in clean dedicated
+`codex/configuration-owners` worktrees. Physical `instrument.conf`, simulation
+YAML, RTC controller configuration and RTC-owned mirror-control YAML now have
+separate loaders and validation boundaries. Basis definitions are RTC data;
+custom sampled FITS bases retain command-order, shape, unit and provenance
+checks. GUI presentation stays separate. Export derives dimensions from the RTC
+configuration and copies shared mirror descriptions into sealed applications.
+CPU validation and independent review passed. RTC selectors passed 62 schema,
+132 export, 40 graph-reference and 36 rectangular SH/Pyramid CPU-product checks;
+seven typed scalar/vector helper checks and an independent eleven-assertion
+regression probe also passed. Instrument selectors passed, including a first
+480-sample CPU frame and four complete resolved optical-graph comparisons.
+See the [review](reviews/20261023-configuration-owners/REVIEW.md) and instrument
+`MIGRATION.md` for findings and software-only evidence. The live RTC is unchanged.
+
 ### Consistent algorithm counts and FITS startup — 2026-10-23
 
 FilterGraphAlgorithms names now distinguish controller, active/full VDM,
@@ -30,7 +47,7 @@ warmup, bootstrap Prepared/Connect and downstream session admission. This is CPU
 software/source evidence, not a live native admission or hardware test. The live
 RTC is unchanged. Commands and scope are in the instrument migration records.
 
-### Instrument-defined modal controls — 2026-10-23
+### RTC-published modal controls — 2026-10-23
 
 Instrument publication schema 2 declares named Zernike, Fourier and sampled
 bases, with command units, per-basis coefficient limits, normalization and

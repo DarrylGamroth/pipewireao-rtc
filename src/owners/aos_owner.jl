@@ -151,14 +151,14 @@ function configuration(path::AbstractString)
     shared_fields = ("version", "command_input", "frame_output", "command_count", "frame_shape",
         "rate", "exposure_ns", "wall_rate", "backend", "device", "command_node",
         "frame_schema", "command_schema", "command_scale", "total_exchanges", "optical_observation",
-        "detector_observation", "command_observation", "applied_command_observation", "calibration_identity", "instrument")
+        "detector_observation", "command_observation", "applied_command_observation", "calibration_identity", "instrument", "rtc_configuration", "prescription_identity")
     shared_required = ("version", "command_input", "frame_output", "command_count", "frame_shape",
         "rate", "exposure_ns", "wall_rate", "backend", "device")
     route_fields = version == 1 ? ("graph", "artifacts") : ("plant", "frame_encoding")
     fields = (shared_fields..., route_fields...)
     required = version == 1 ? (shared_required..., route_fields...) :
         (shared_required..., route_fields..., "frame_schema", "command_schema", "command_scale")
-    version == 3 && (required = (required...,"instrument","calibration_identity"))
+    version == 3 && (required = (required...,"instrument","calibration_identity","rtc_configuration","prescription_identity"))
     all(key -> key in fields, keys(document)) &&
         all(key -> haskey(document, key), required) || throw(ArgumentError("invalid AOS configuration fields"))
     config_path = abspath(path)
@@ -168,7 +168,7 @@ function configuration(path::AbstractString)
         entry = document["plant"]
         InstrumentConfiguration.fields(entry,("definition","settings"),("definition","settings"),"declarative plant")
         definition = DeploymentConfiguration.relative_asset(dirname(config_path),entry["definition"])
-        declaration = InstrumentConfiguration.load(definition)
+        declaration = InstrumentConfiguration.load_simulation(definition)
         configured = InstrumentConfiguration.settings(declaration,entry["settings"])
         (; definition,settings=plant_settings(configured))
     elseif version == 2
@@ -212,10 +212,12 @@ function configuration(path::AbstractString)
         DeploymentConfiguration.relative_asset(dirname(config_path),document["instrument"]) : nothing
     instrument===nothing || version in (2,3) && calibration_identity!==nothing ||
         throw(ArgumentError("instrument definition requires an instrument plant and calibration identity"))
+    rtc_configuration = version == 3 ? DeploymentConfiguration.relative_asset(dirname(config_path), document["rtc_configuration"]) : nothing
+    prescription_identity = version == 3 ? text(document["prescription_identity"], "prescription identity") : nothing
     mirror_description = plant === nothing ? nothing : get(plant.settings,:mirror_description,nothing)
     if version == 3
-        declaration = InstrumentConfiguration.load(plant.definition)
-        mirrors = declaration.document["deformable_mirrors"]
+        declaration = InstrumentConfiguration.load_simulation(plant.definition)
+        mirrors = declaration.instrument.document["deformable_mirrors"]
         mirror_description = length(mirrors)==1 ? DeploymentConfiguration.relative_asset(
             declaration.directory,only(values(mirrors))["description"]) : nothing
     end
@@ -246,7 +248,7 @@ function configuration(path::AbstractString)
     return (; version, config_path, plant, graph, command_input, frame_output, command_count, frame_shape, rate, period_ns,
         exposure_ns, wall_rate, wall_period_ns, backend, device, artifacts, command_node,
         frame_encoding, frame_schema, command_schema, command_scale, total_exchanges, optical_observation,
-        detector_observation, command_observation, applied_command_observation, calibration_identity, instrument, mirror_description)
+        detector_observation, command_observation, applied_command_observation, calibration_identity, instrument, mirror_description, rtc_configuration, prescription_identity)
 end
 
 "Prepare owned logical FITS arrays; preserve their provenance for the science owner."

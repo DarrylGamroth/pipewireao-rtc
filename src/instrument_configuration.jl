@@ -9,7 +9,7 @@ import JSON, SHA, FITSIO, Interpolations
 import ..Common, ..DeploymentConfiguration, ..InstrumentDefinition, ..Artifacts
 const D = DeploymentConfiguration
 
-public load, settings, graph_document, scientific_definition, prepare_system,
+public load, load_simulation, load_rtc, settings, graph_document, scientific_definition, prepare_system,
     prepare_publication, prepare_simulation_configuration!, mirror, read_mirror_description, actuator_coordinates,
     actuator_grid_indices, actuator_index_map, source_grid_coordinates, configuration_context
 
@@ -43,12 +43,62 @@ function graph_file(path)
     return document
 end
 
-"Read one instrument declaration, retaining its application-relative asset boundary."
+"Read a physical instrument declaration without loading simulation or RTC configuration."
 function load(path::AbstractString)
     document = bounded_document(path)
     declaration = (;path=abspath(path),directory=dirname(abspath(path)),document)
     validate_declaration(document,declaration.directory)
     return declaration
+end
+
+physical(declaration) = get(declaration, :instrument, declaration)
+
+function referenced_instrument(path, reference)
+    InstrumentDefinition.nonempty_text(reference) && !isabspath(reference) && !occursin('\0', reference) ||
+        throw(ArgumentError("instrument reference must be a relative filename"))
+    instrument = load(normpath(joinpath(dirname(abspath(path)), reference)))
+    D.relative_asset(instrument.directory, relpath(abspath(path), instrument.directory))
+    return instrument
+end
+
+"Read an independent simulation definition and its shared physical instrument."
+function load_simulation(path::AbstractString)
+    document = graph_file(path)
+    fields(document, ("schema_version", "id", "instrument", "defaults", "settings_schema",
+        "wire_contracts", "graphs", "profiles", "bindings", "settings_bindings",
+        "frame_period_s", "hil", "sensors", "sources"),
+        ("schema_version", "id", "instrument", "defaults", "settings_schema",
+        "wire_contracts", "graphs", "profiles", "bindings", "settings_bindings",
+        "frame_period_s", "hil"), "simulation definition")
+    instrument = referenced_instrument(path, document["instrument"])
+    validate_simulation(document, instrument.document, instrument.directory)
+    return (;path=abspath(path),directory=instrument.directory,document,instrument)
+end
+
+"Read RTC dimensions and mirror-control definitions independently of the simulator."
+function load_rtc(path::AbstractString)
+    document = bounded_document(path)
+    fields(document, ("schema_version", "instrument", "dimensions", "mirror_controls", "publication", "calibration_identity"),
+        ("schema_version", "instrument", "dimensions", "mirror_controls", "publication", "calibration_identity"), "RTC configuration")
+    document["schema_version"] === 1 || throw(ArgumentError("unsupported RTC configuration schema"))
+    _validate_dimensions(document["dimensions"])
+    _declaration_text(document["publication"], "RTC publication")
+    _declaration_text(document["calibration_identity"], "RTC calibration identity")
+    instrument = referenced_instrument(path, document["instrument"])
+    controls = graph_file(D.relative_asset(instrument.directory, document["mirror_controls"]))
+    fields(controls, ("schema_version", "deformable_mirrors"),
+        ("schema_version", "deformable_mirrors"), "mirror controls")
+    controls["schema_version"] === 1 || throw(ArgumentError("unsupported mirror control schema"))
+    mirrors = _declaration_object(controls["deformable_mirrors"], "mirror controls")
+    Set(keys(mirrors)) == Set(keys(instrument.document["deformable_mirrors"])) ||
+        throw(ArgumentError("RTC mirror controls must name each instrument mirror exactly once"))
+    for (name, control) in mirrors
+        fields(control, ("limiter", "shape_control"), ("limiter", "shape_control"), "mirror control $name")
+        _validate_limiter(control["limiter"])
+        _validate_shape_control(control["shape_control"],
+            instrument.document["deformable_mirrors"][name]["units"], instrument.directory)
+    end
+    return (;path=abspath(path),directory=instrument.directory,document,instrument,controls)
 end
 
 "Merge the declared defaults and validate the selected profile's startup settings."
@@ -89,16 +139,17 @@ end
 mirror_description_path(directory, name) = D.relative_asset(directory, name)
 
 function mirror(declaration, configured, name)
-    spec = declaration.document["deformable_mirrors"][name]
-    description = read_mirror_description(mirror_description_path(declaration.directory,spec["description"]))
-    registration = _pupil_registration(_instrument_seal(setting(configured,spec["pupil_registration_setting"])))
+    instrument = physical(declaration)
+    spec = instrument.document["deformable_mirrors"][name]
+    description = read_mirror_description(mirror_description_path(instrument.directory,spec["description"]))
+    registration = _pupil_registration(_instrument_seal(spec["pupil_registration"]))
     _require_pupil_geometry(description,registration)
     return (; description, registration)
 end
 
 "Build the cold reference context from selected settings and physical mirror descriptions."
 function configuration_context(declaration, configured)
-    instrument = deepcopy(declaration.document)
+    instrument = deepcopy(physical(declaration).document)
     for (name, spec) in instrument["deformable_mirrors"]
         geometry = mirror(declaration, configured, name)
         spec["actuator_count"] = command_count(geometry.description)
@@ -117,7 +168,20 @@ function configuration_context(declaration, configured)
             acquisition["exposure_us"] = seconds * 1e6
         end
     end
-    return Dict("instrument" => instrument, "settings" => deepcopy(configured))
+    context = Dict("instrument" => instrument)
+    if haskey(declaration.document, "frame_period_s")
+        simulation = deepcopy(declaration.document)
+        period_ns = round(UInt64, Float64(Float32(simulation["frame_period_s"])) * 1e9)
+        period_ns > 0 || throw(ArgumentError("simulation frame period rounds to zero nanoseconds"))
+        rate = round(Int, 1e9 / period_ns)
+        1 <= rate <= 1_000_000_000 &&
+            UInt64(div(1_000_000_000 + div(rate, 2), rate)) == period_ns ||
+            throw(ArgumentError("simulation frame period must agree with an integer transport rate"))
+        simulation["rate"] = rate
+        context["simulation"] = simulation
+        context["settings"] = deepcopy(configured)
+    end
+    return context
 end
 
 transform(value, entry) = transform(Val(Symbol(get(entry,"transform","identity"))),value,entry)
@@ -161,11 +225,13 @@ function graph_document(declaration, configured; calibration=false)
         union!(all_names,(node["name"] for node in root["nodes"]))
     end
     for entry in declaration.document["settings_bindings"]
-        fields(entry,("setting","nodes","config","profiles","transform","coupling"),
-            ("setting","nodes"),"settings binding")
+        fields(entry,("setting","value","nodes","config","profiles","transform","coupling"),
+            ("nodes",),"settings binding")
         all(name -> name in all_names,entry["nodes"]) || throw(ArgumentError("settings binding names an absent graph node"))
         profile_name in get(entry,"profiles",[profile_name]) || continue
-        value = transform(setting(configured,entry["setting"]),entry)
+        input = haskey(entry, "setting") ? setting(configured,entry["setting"]) :
+            Common.configuration_value(entry["value"], configuration_context(declaration, configured))
+        value = transform(input,entry)
         for node in nodes
             node["name"] in entry["nodes"] || continue
             if haskey(entry,"config")

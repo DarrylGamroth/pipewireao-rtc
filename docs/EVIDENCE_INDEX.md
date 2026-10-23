@@ -1,5 +1,14 @@
 # Delivery evidence catalog
 
+## Configuration ownership separation — 2026-10-23
+
+The [independent review](reviews/20261023-configuration-owners/REVIEW.md) records
+confirmed identity, limit and path findings and their dispositions. The
+[current-work record](roadmap.md#configuration-ownership-separation--2026-10-23)
+and instrument `MIGRATION.md` retain CPU selectors, baseline comparisons and
+validation boundaries. Physical instrument data, simulation YAML, RTC dimensions
+and RTC mirror-control YAML have separate owners; the live RTC is unchanged.
+
 ## Shared camera acquisition configuration — 2026-10-23
 
 The [current-work record](roadmap.md#shared-camera-acquisition-configuration--2026-10-23)

@@ -38,7 +38,7 @@ function simulation_properties(options, science)
         "aos.simulation.model-period-ns" => string(options.period_ns),
         "aos.simulation.exposure-ns" => string(science.configuration.exposure_duration_ns))
     if get(options,:version,nothing) == 3
-        declaration = PipeWireAORTC.InstrumentConfiguration.load(options.plant.definition)
+        declaration = PipeWireAORTC.InstrumentConfiguration.load_simulation(options.plant.definition)
         properties["aos.simulation.package"] = declaration.document["id"]
         properties["aos.simulation.profile"] = string(options.plant.settings.profile)
     elseif options.plant !== nothing

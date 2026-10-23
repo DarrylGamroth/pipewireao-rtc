@@ -68,9 +68,9 @@ end
         reference(pointer) = Dict("\$ref" => pointer)
         declarations = [Dict("path" => "views.yaml", "format" => "yaml"),
             Dict("path" => "recipe.conf", "format" => "spa-json")]
-        recipe = Dict("measurement_count" => reference("/instrument/dimensions/measurements"))
+        recipe = Dict("measurement_count" => reference("/rtc/dimensions/measurements"))
         prefix = get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
-        write(joinpath(directory, "views.yaml"), "parameter:\n  - shape: {\"\$ref\": /instrument/dimensions/shape}\nslope_to_image: {\"\$ref\": /instrument/wavefront_sensors/sensor/pixel_to_image}\n")
+        write(joinpath(directory, "views.yaml"), "parameter:\n  - shape: {\"\$ref\": /rtc/dimensions/shape}\nslope_to_image: {\"\$ref\": /instrument/wavefront_sensors/sensor/pixel_to_image}\n")
         C.write_json(joinpath(directory, "recipe.conf"), recipe)
         E.prepare_session_configuration!(directory, spec, [], "instrument.json", prefix;
             configurations=declarations, dimensions=Dict("shape" => [5, 9], "measurements" => 18))
@@ -115,12 +115,12 @@ end
         C.write_json(joinpath(directory, "instrument.json"), instrument)
         spec = Dict("session" => "session.conf.in", "core" => "core.conf.in")
         session = Dict("graphs" => [Dict("node.name" => "arbitrary-science",
-            "ports" => [Dict("shape" => reference("/instrument/dimensions/image"),
+            "ports" => [Dict("shape" => reference("/rtc/dimensions/image"),
                 "element-type" => "F32_LE", "schema" => "test.quantity/1", "layout" => "row-major")])],
             "policy" => Dict("rate" => "500/1", "nested" => [Dict("shape" =>
-                reference("/instrument/dimensions/command"))]))
+                reference("/rtc/dimensions/command"))]))
         core = Dict("context.modules" => [Dict("args" => Dict("shape" =>
-            reference("/instrument/dimensions/image"), "schema" => "test.applied/1"))])
+            reference("/rtc/dimensions/image"), "schema" => "test.applied/1"))])
         C.write_json(joinpath(directory, spec["session"]), session)
         C.write_json(joinpath(directory, spec["core"]), core)
         dimensions = Dict("image" => [3, 7], "command" => [11])
@@ -144,7 +144,7 @@ end
             C.sha256_file(joinpath(directory, spec["session"]))
 
         # A later invalid core reference must leave both authored files intact.
-        for invalid in (reference("/missing"), reference("/instrument/dimensions/missing"),
+        for invalid in (reference("/missing"), reference("/rtc/dimensions/missing"),
                 reference(7), reference(reference("/instrument")),
                 Dict("\$ref" => "/instrument", "extra" => true))
             C.write_json(joinpath(directory, spec["session"]), session)

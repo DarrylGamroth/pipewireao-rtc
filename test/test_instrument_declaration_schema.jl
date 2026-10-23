@@ -4,7 +4,7 @@ const IC = PipeWireAORTC.InstrumentConfiguration
 
 @testset "instrument declaration schema" begin
 
-    function declaration_fixture(directory)
+    function declaration_documents(directory)
         write_json(path, value) = open(path, "w") do io
             JSON.print(io, value)
         end
@@ -30,22 +30,28 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             "id" => "synthetic-mirror",
             "manufacturer" => "Example",
             "model" => "Synthetic",
-            "layout" => Dict("grid_shape" => [2, 2], "command_positions" => [[1, 1], [2, 2]]),
+            "layout" => Dict("schema_version" => 1, "name" => "Test grid",
+                "grid_shape" => [5, 5], "command_positions" => [[3, 1], [1, 3]],
+                "axis_labels" => ["source column", "source row"],
+                "command_order" => "physical", "provenance" => "explicit physical order"),
         ))
-        write(joinpath(directory, "artifact.fits"), "fixture")
+        FITS(joinpath(directory, "artifact.fits"), "w") do fits
+            write(fits, zeros(Float32, 1, 2))
+        end
 
-        return Dict{String,Any}(
+        simulation = Dict{String,Any}(
             "schema_version" => 1,
-            "id" => "synthetic-instrument",
+            "id" => "synthetic-simulation",
+            "instrument" => "../instrument.conf",
             "defaults" => Dict(
                 "profile" => "basic",
-                "pupil_registration" => Dict("actuator_pitch" => 0.2),
+                "atmosphere" => Dict("r0" => 0.2),
                 "actuator_count" => 2,
             ),
             "settings_schema" => Dict("type" => "object", "properties" => Dict(
                 "profile" => Dict("type" => "string"),
-                "pupil_registration" => Dict("type" => "object", "properties" => Dict(
-                    "actuator_pitch" => Dict("type" => "number"),
+                "atmosphere" => Dict("type" => "object", "properties" => Dict(
+                    "r0" => Dict("type" => "number"),
                 )),
                 "actuator_count" => Dict("type" => "integer"),
             )),
@@ -55,29 +61,6 @@ const IC = PipeWireAORTC.InstrumentConfiguration
                 "command_schema" => "example.command/1",
                 "command_scale" => 1.0,
             )],
-            "deformable_mirrors" => Dict("primary" => Dict(
-                "description" => "mirror.json",
-                "pupil_registration_setting" => "pupil_registration.actuator_pitch",
-                "units" => "m",
-                "command_scale_m" => 1e-6,
-                "limiter" => Dict("kind" => "amplitude", "lower" => -1.0, "upper" => 1.0),
-                "shape_control" => Dict("bases" => [
-                    Dict("id"=>"zernike","name"=>"Zernike","units"=>"m","coefficient_limit"=>1.0,
-                        "normalization"=>"sampled_peak","provenance"=>"synthetic test declaration",
-                        "definition"=>Dict("kind"=>"zernike","modes"=>[Dict("n"=>2,"m"=>0,"name"=>"defocus")])),
-                    Dict("id"=>"fourier","name"=>"Fourier","units"=>"m","coefficient_limit"=>1.0,
-                        "normalization"=>"sampled_rms","provenance"=>"synthetic test declaration",
-                        "definition"=>Dict("kind"=>"fourier","max_frequency"=>2)),
-                ]),
-            )),
-            "wavefront_sensors" => Dict("sensor" => Dict(
-                "detector_shape" => [2, 2],
-                "subaperture_shape" => [1, 1],
-                "subaperture_origins" => Dict("path" => "artifact.fits", "hdu" => 1,
-                    "axes" => [1, 2], "type" => "Float32", "shape" => [2, 2]),
-                "expected_schema" => "test-v1",
-                "provenance" => "synthetic test fixture",
-            )),
             "graphs" => Dict("production" => "production.yaml", "calibration" => "calibration.yaml"),
             "profiles" => Dict("basic" => Dict(
                 "nodes" => [Dict("name" => "mirror", "type" => "Mirror", "config" => Dict())],
@@ -88,71 +71,187 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             "frame_period_s" => 0.01,
             "hil" => Dict("command_input" => "command", "frame_output" => "frame"),
         )
+        physical = Dict{String,Any}(
+            "schema_version" => 1,
+            "id" => "synthetic-instrument",
+            "deformable_mirrors" => Dict("primary" => Dict(
+                "description" => "mirror.json",
+                "pupil_registration" => Dict("actuator_pitch" => 0.2),
+                "units" => "m",
+                "command_scale_m" => 1e-6,
+            )),
+            "wavefront_sensors" => Dict("sensor" => Dict(
+                "detector_shape" => [2, 2],
+                "subaperture_shape" => [1, 1],
+                "subaperture_origins" => Dict("path" => "artifact.fits", "hdu" => 1,
+                    "axes" => [1, 2], "type" => "Float32", "shape" => [1, 2]),
+                "expected_schema" => "test-v1",
+                "provenance" => "synthetic detector layout",
+            )),
+        )
+        controls = Dict{String,Any}("schema_version" => 1,
+            "deformable_mirrors" => Dict("primary" => Dict(
+                "limiter" => Dict("kind" => "amplitude", "lower" => -1.0, "upper" => 1.0),
+                "shape_control" => Dict("bases" => [
+                    Dict("id"=>"zernike","name"=>"Zernike","units"=>"m","coefficient_limit"=>1.0,
+                        "normalization"=>"sampled_peak","provenance"=>"synthetic test declaration",
+                        "definition"=>Dict("kind"=>"zernike","modes"=>[Dict("n"=>2,"m"=>0,"name"=>"defocus")])),
+                    Dict("id"=>"fourier","name"=>"Fourier","units"=>"m","coefficient_limit"=>1.0,
+                        "normalization"=>"sampled_rms","provenance"=>"synthetic test declaration",
+                        "definition"=>Dict("kind"=>"fourier","max_frequency"=>2)),
+                ]),
+            )))
+        rtc = Dict{String,Any}("schema_version" => 1,
+            "instrument" => "../instrument.conf", "dimensions" => Dict{String,Any}(),
+            "mirror_controls" => "rtc/mirror-controls.yaml",
+            "publication" => "publication.json", "calibration_identity" => "sha256:" * repeat("a", 64))
+        mkpath(joinpath(directory, "simulation"))
+        mkpath(joinpath(directory, "rtc"))
+        paths = (;physical=joinpath(directory, "instrument.conf"),
+            simulation=joinpath(directory, "simulation", "definition.yaml"),
+            rtc=joinpath(directory, "rtc", "configuration.conf"),
+            controls=joinpath(directory, "rtc", "mirror-controls.yaml"))
+        documents = (;physical, simulation, rtc, controls, paths)
+        write_documents(documents)
+        return documents
+    end
+
+    function write_documents(documents)
+        write(documents.paths.physical, JSON.json(documents.physical))
+        write(documents.paths.rtc, JSON.json(documents.rtc))
+        for name in (:simulation, :controls)
+            open(getproperty(documents.paths, name), "w") do io
+                YAML.write(io, getproperty(documents, name))
+            end
+        end
+    end
+
+    function write_simulator(directory)
+        write(joinpath(directory, "simulation.conf"), JSON.json(Dict(
+            "version" => 3, "rtc_configuration" => "rtc/configuration.conf",
+            "plant" => Dict("definition" => "simulation/definition.yaml", "settings" => Dict()),
+            "instrument" => Dict("\$ref" => "/rtc/publication"),
+            "calibration_identity" => Dict("\$ref" => "/rtc/calibration_identity"))))
     end
 
     mktempdir() do directory
-        declaration = declaration_fixture(directory)
-        @test IC.validate_declaration(declaration, directory) === nothing
-        declared = deepcopy(declaration)
-        declared["dimensions"] = Dict("controller_command_count" => 5, "active_vdm_count" => 3)
-        @test IC.validate_declaration(declared, directory) === nothing
+        documents = declaration_documents(directory)
+        physical, declaration = documents.physical, documents.simulation
+        @test IC.validate_declaration(physical, directory) === nothing
+        @test IC.validate_simulation(declaration, physical, directory) === nothing
+        @test IC.load(documents.paths.physical).document == physical
+        @test IC.load_simulation(documents.paths.simulation).document == declaration
+        documents.rtc["dimensions"] = Dict("controller_command_count" => 5, "active_vdm_count" => 3)
+        write_documents(documents)
+        @test IC.load_rtc(documents.paths.rtc).document["dimensions"] == documents.rtc["dimensions"]
         for dimensions in (Dict("controller_command_count" => 0),
                 Dict("controller_command_count" => -1), Dict("controller_command_count" => true),
                 Dict("controller_command_count" => 2.5), Dict("bad name" => 2),
                 Dict("controller_command_count" => [2, 3]), [2, 3])
-            invalid = deepcopy(declaration)
+            invalid = deepcopy(documents.rtc)
             invalid["dimensions"] = dimensions
-            @test_throws ArgumentError IC.validate_declaration(invalid, directory)
+            write(documents.paths.rtc, JSON.json(invalid))
+            @test_throws ArgumentError IC.load_rtc(documents.paths.rtc)
         end
+        write_documents(documents)
 
         invalid_wire_contract = deepcopy(declaration)
         invalid_wire_contract["wire_contracts"][1]["command_scale"] = true
-        @test_throws ArgumentError IC.validate_declaration(invalid_wire_contract, directory)
+        @test_throws ArgumentError IC.validate_simulation(invalid_wire_contract, physical, directory)
 
         unknown_parameter = deepcopy(declaration)
         unknown_parameter["profiles"]["basic"]["parameters"][1]["paramaters"] =
             unknown_parameter["profiles"]["basic"]["parameters"][1]["destination"]
-        @test_throws ArgumentError IC.validate_declaration(unknown_parameter, directory)
+        @test_throws ArgumentError IC.validate_simulation(unknown_parameter, physical, directory)
 
         unknown_binding = deepcopy(declaration)
         unknown_binding["bindings"]["commands"]["shpae"] =
             unknown_binding["bindings"]["commands"]["shape"]
-        @test_throws ArgumentError IC.validate_declaration(unknown_binding, directory)
+        @test_throws ArgumentError IC.validate_simulation(unknown_binding, physical, directory)
 
         inactive_profile_typo = deepcopy(declaration)
         inactive_profile_typo["settings_bindings"] = [Dict(
-            "setting" => "pupil_registration.actuator_pitch",
+            "setting" => "atmosphere.r0",
             "nodes" => ["mirror"],
             "profiles" => ["grid_gaussain"],
         )]
-        @test_throws ArgumentError IC.validate_declaration(inactive_profile_typo, directory)
+        @test_throws ArgumentError IC.validate_simulation(inactive_profile_typo, physical, directory)
 
         unknown_transform = deepcopy(declaration)
         unknown_transform["settings_bindings"] = [Dict(
-            "setting" => "pupil_registration.actuator_pitch",
+            "setting" => "atmosphere.r0",
             "nodes" => ["mirror"],
             "transform" => "gaussian_wdith",
         )]
-        @test_throws ArgumentError IC.validate_declaration(unknown_transform, directory)
+        @test_throws ArgumentError IC.validate_simulation(unknown_transform, physical, directory)
 
         misplaced_coupling = deepcopy(declaration)
         misplaced_coupling["settings_bindings"] = [Dict(
-            "setting" => "pupil_registration.actuator_pitch",
+            "setting" => "atmosphere.r0",
             "nodes" => ["mirror"],
             "transform" => "identity",
             "coupling" => 0.35,
         )]
-        @test_throws ArgumentError IC.validate_declaration(misplaced_coupling, directory)
+        @test_throws ArgumentError IC.validate_simulation(misplaced_coupling, physical, directory)
 
         absent_mirror = deepcopy(declaration)
         absent_mirror["bindings"]["coordinates"] = Dict("kind" => "mirror_coordinates", "mirror" => "missing")
-        @test_throws ArgumentError IC.validate_declaration(absent_mirror, directory)
+        @test_throws ArgumentError IC.validate_simulation(absent_mirror, physical, directory)
+
+        for setting in ("missing", "atmosphere.missing")
+            invalid = deepcopy(declaration)
+            invalid["settings_bindings"] = [Dict("setting" => setting, "nodes" => ["mirror"])]
+            @test_throws ArgumentError IC.validate_simulation(invalid, physical, directory)
+        end
+
+        for (key, value) in (("defaults", declaration["defaults"]), ("dimensions", documents.rtc["dimensions"]))
+            invalid = deepcopy(physical)
+            invalid[key] = value
+            @test_throws ArgumentError IC.validate_declaration(invalid, directory)
+        end
+        for key in ("limiter", "shape_control")
+            invalid = deepcopy(physical)
+            invalid["deformable_mirrors"]["primary"][key] = documents.controls["deformable_mirrors"]["primary"][key]
+            @test_throws ArgumentError IC.validate_declaration(invalid, directory)
+        end
+        invalid = deepcopy(physical)
+        invalid["wavefront_sensors"]["sensor"]["post_readout_gain"] = 1.0
+        @test_throws ArgumentError IC.validate_declaration(invalid, directory)
+        for key in ("dimensions", "mirror_controls", "deformable_mirrors")
+            invalid = deepcopy(declaration)
+            invalid[key] = Dict()
+            open(documents.paths.simulation, "w") do io
+                YAML.write(io, invalid)
+            end
+            @test_throws ArgumentError IC.load_simulation(documents.paths.simulation)
+        end
+        invalid = deepcopy(documents.rtc)
+        invalid["defaults"] = declaration["defaults"]
+        write(documents.paths.rtc, JSON.json(invalid))
+        @test_throws ArgumentError IC.load_rtc(documents.paths.rtc)
+    end
+
+    @testset "physical loading and RTC publication are independent of simulation" begin
+        mktempdir() do directory
+            documents = declaration_documents(directory)
+            rm(dirname(documents.paths.simulation); recursive=true)
+            rm(joinpath(directory, "production.yaml"))
+            rm(joinpath(directory, "calibration.yaml"))
+            @test IC.load(documents.paths.physical).document == documents.physical
+            @test !isfile(joinpath(directory, "simulation.conf"))
+            publication = IC.publication(documents.paths.rtc)
+            @test publication.id == "synthetic-instrument"
+            @test length(publication.deformable_mirrors.primary.layout.command_positions) == 2
+            target = IC.prepare_publication(directory)
+            @test JSON.parsefile(target)["scientific_identity"] == publication.scientific_identity
+            @test !isfile(joinpath(directory, "simulation.conf"))
+        end
     end
 
     @testset "sampled artifact publication preserves scientific values and identity" begin
         mktempdir() do directory
-            declaration = declaration_fixture(directory)
-            declaration["deformable_mirrors"]["primary"]["pupil_registration_setting"] = "pupil_registration"
+            documents = declaration_documents(directory)
+            declaration, controls = documents.physical, documents.controls
             mirror = Dict("schema_version"=>1,"id"=>"test-mirror","manufacturer"=>"Example","model"=>"Three commands",
                 "layout"=>Dict("schema_version"=>1,"name"=>"Test grid","grid_shape"=>[5,5],
                     "axis_labels"=>["source column","source row"],"command_positions"=>[[3,1],[1,3],[2,2]],
@@ -173,12 +272,12 @@ const IC = PipeWireAORTC.InstrumentConfiguration
                 "normalization"=>"supplied","provenance"=>"test calibration",
                 "definition"=>Dict("kind"=>"sampled","command_order"=>"mirror","names"=>["First","Second"],
                     "artifact"=>Dict("path"=>"modes.fits","hdu"=>1,"axes"=>[2,1],"type"=>"Float32","shape"=>[3,2])))
-            push!(declaration["deformable_mirrors"]["primary"]["shape_control"]["bases"],basis)
-            path = joinpath(directory,"instrument.conf")
-            write_declaration() = write(path,JSON.json(declaration))
+            push!(controls["deformable_mirrors"]["primary"]["shape_control"]["bases"],basis)
+            path = documents.paths.rtc
+            write_declaration() = write_documents(documents)
             write_declaration()
             @test IC.validate_declaration(declaration,directory) === nothing
-            publication = IC.publication(path,NamedTuple();calibration_identity="sha256:"*repeat("a",64))
+            publication = IC.publication(path)
             @test publication.schema_version == 2
             definitions = publication.deformable_mirrors.primary.shape_control.bases
             @test map(b -> b.definition.kind,definitions) == ("zernike","fourier","sampled")
@@ -187,14 +286,21 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             @test definitions[3].definition.modes[1].values == Tuple(samples[:,1])
             @test definitions[3].definition.modes[2].values == Tuple(samples[:,2])
             @test definitions[3].definition.artifact_sha256 == PipeWireAORTC.Common.sha256_file(joinpath(directory,"modes.fits"))
-            original_identity = IC.scientific_definition(path).prescription_identity
+            original_identity = publication.scientific_identity
+            simulation_identity = IC.scientific_definition(documents.paths.simulation).prescription_identity
+            @test !hasproperty(IC.scientific_definition(documents.paths.simulation).deformable_mirrors.primary, :shape_control)
+            controls_text = read(documents.paths.controls, String)
+            rm(documents.paths.controls)
+            @test IC.scientific_definition(documents.paths.simulation).prescription_identity == simulation_identity
+            write(documents.paths.controls, controls_text)
             changed = copy(samples); changed[1,1] = 0.75f0
             write_samples(changed)
-            @test IC.scientific_definition(path).prescription_identity != original_identity
+            @test IC.publication(path).scientific_identity != original_identity
+            @test IC.scientific_definition(documents.paths.simulation).prescription_identity == simulation_identity
             write_samples(zeros(Float32,3,2))
-            @test_throws ArgumentError IC.scientific_definition(path)
+            @test_throws ArgumentError IC.publication(path)
             changed[1,1] = Inf32; write_samples(changed)
-            @test_throws ArgumentError IC.scientific_definition(path)
+            @test_throws ArgumentError IC.publication(path)
             write_samples(samples)
             for mutation in (
                     d -> (d["command_order"] = "source-grid"),
@@ -203,27 +309,41 @@ const IC = PipeWireAORTC.InstrumentConfiguration
                     d -> (d["artifact"]["axes"] = [1,1]),
                     d -> (d["artifact"]["shape"] = [6]),
                 )
-                invalid = deepcopy(declaration)
+                invalid = deepcopy(controls)
                 mutation(invalid["deformable_mirrors"]["primary"]["shape_control"]["bases"][3]["definition"])
-                @test_throws ArgumentError IC.validate_declaration(invalid,directory)
+                open(documents.paths.controls, "w") do io
+                    YAML.write(io, invalid)
+                end
+                @test_throws ArgumentError IC.load_rtc(path)
             end
             basis["definition"]["artifact"]["shape"] = [2,2]
             write_declaration()
-            @test_throws DimensionMismatch IC.scientific_definition(path)
-            oversized = [deepcopy(declaration["deformable_mirrors"]["primary"]["shape_control"]["bases"][1]) for _ in 1:16]
+            @test_throws DimensionMismatch IC.publication(path)
+            basis["definition"]["artifact"]["shape"] = [3,2]
+            write_declaration()
+            write_simulator(directory)
+            simulation_text = read(joinpath(directory, "simulation.conf"), String)
+            target = IC.prepare_publication(directory)
+            @test read(joinpath(directory, "simulation.conf"), String) == simulation_text
+            IC.prepare_simulation_configuration!(directory)
+            generated = PipeWireAORTC.DeploymentConfiguration.decode(joinpath(directory, "simulation.conf"), get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
+            @test generated["prescription_identity"] == simulation_identity
+            @test JSON.parsefile(target)["scientific_identity"] == original_identity
+            @test IC.prepare_publication(directory) == target
+            oversized = [deepcopy(controls["deformable_mirrors"]["primary"]["shape_control"]["bases"][1]) for _ in 1:16]
             for (index,entry) in enumerate(oversized)
                 entry["id"] = "basis-$index"
                 entry["provenance"] = repeat("p",4096)
             end
-            declaration["deformable_mirrors"]["primary"]["shape_control"]["bases"] = oversized
+            controls["deformable_mirrors"]["primary"]["shape_control"]["bases"] = oversized
+            original_control = controls["deformable_mirrors"]["primary"]
+            controls["deformable_mirrors"] = Dict("mirror-$i"=>deepcopy(original_control) for i in 1:4)
             original = declaration["deformable_mirrors"]["primary"]
             declaration["deformable_mirrors"] = Dict("mirror-$i"=>deepcopy(original) for i in 1:4)
             write_declaration()
             target = joinpath(directory,"publication.json")
             write(target,"existing sealed publication")
-            write(joinpath(directory,"simulation.conf"),JSON.json(Dict(
-                "version"=>3,"plant"=>Dict("definition"=>"instrument.conf","settings"=>Dict()),
-                "instrument"=>"publication.json","calibration_identity"=>"sha256:"*repeat("a",64))))
+            write_simulator(directory)
             @test_throws r"256 KiB" IC.prepare_publication(directory)
             @test read(target,String) == "existing sealed publication"
 

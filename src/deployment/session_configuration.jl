@@ -67,7 +67,7 @@ end
 
 "Resolve references across the composed session and core before validation and sealing."
 function prepare_session_configuration!(application, spec, declarations, instrumentpath, prefix;
-        dimensions::AbstractDict=Dict(), configurations=[])
+        dimensions::AbstractDict=Dict(), mirror_controls::AbstractDict=Dict(), configurations=[])
     files = [map(("session", "core")) do field
         path = D.relative_asset(application, spec[field])
         (; path, format="spa-json", document=D.decode(path, prefix))
@@ -92,7 +92,7 @@ function prepare_session_configuration!(application, spec, declarations, instrum
     end
     isempty(roots) && return nothing
     instrument = Common.read_json(D.relative_asset(application, instrumentpath))
-    context = graph_context(instrument; dimensions)
+    context = graph_context(instrument; dimensions, mirror_controls)
     if "graphs" in roots
         context["graphs"] = graph_contract_context(application, declarations, prefix)
     end

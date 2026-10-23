@@ -20,14 +20,10 @@ end
 
 function artifact_paths(declaration,configured)
     paths = Set{String}()
-    for spec in values(declaration.document["deformable_mirrors"])
+    for spec in values(declaration.instrument.document["deformable_mirrors"])
         push!(paths,spec["description"])
-        for basis in spec["shape_control"]["bases"]
-            definition = basis["definition"]
-            definition["kind"] == "sampled" && push!(paths,definition["artifact"]["path"])
-        end
     end
-    for spec in values(declaration.document["wavefront_sensors"])
+    for spec in values(declaration.instrument.document["wavefront_sensors"])
         push!(paths,spec["subaperture_origins"]["path"])
     end
     for name in selected_binding_names(declaration,configured)
@@ -47,11 +43,12 @@ function prescription_identity(declaration,configured)
         for (name,path) in declaration.document["graphs"])
     assets = Dict{String,String}()
     for path in artifact_paths(declaration,configured)
-        file = D.relative_asset(declaration.directory,path)
+        file = mirror_description_path(declaration.directory,path)
         filesize(file) <= Artifacts.MAX_FITS_BYTES || throw(ArgumentError("instrument artifact exceeds 512 MiB"))
         assets[path] = Common.sha256_file(file)
     end
-    body = (;declaration=canonical(declaration.document),graphs=canonical(graph_hashes),
+    body = (;instrument=canonical(declaration.instrument.document),
+        simulation=canonical(declaration.document),graphs=canonical(graph_hashes),
         settings=canonical(structural),artifacts=canonical(assets))
     return InstrumentDefinition.scientific_identity(body)
 end
@@ -108,42 +105,45 @@ function resolve_basis(declaration, basis, description, source)
     return merge(_instrument_seal(basis),(;definition=resolved))
 end
 
-"Resolve immutable geometry and scientific identities without preparing a frame."
-function scientific_definition(path::AbstractString,overrides=NamedTuple())
-    declaration = load(path)
-    configured = settings(declaration,overrides)
-    mirror_keys = sort!(collect(keys(declaration.document["deformable_mirrors"])))
-    mirror_names = Tuple(Symbol.(mirror_keys))
+"Resolve immutable physical geometry without a simulator or RTC control definition."
+function physical_definition(declaration)
+    document = declaration.document
+    mirror_keys = sort!(collect(keys(document["deformable_mirrors"])))
     mirrors = map(mirror_keys) do name
-        spec = declaration.document["deformable_mirrors"][name]
-        geometry = mirror(declaration,configured,name)
+        geometry = mirror(declaration,NamedTuple(),name)
         description,registration = geometry.description,geometry.registration
-        source = source_grid_coordinates(description)
         coordinates = actuator_coordinates(description; pupil_registration=registration)
-        bases = Tuple(resolve_basis(declaration,basis,description,source) for basis in spec["shape_control"]["bases"])
-        InstrumentDefinition.validate_shape_control(json_value((;bases)),spec["units"],length(description.layout.command_positions))
-        result = (; layout=description.layout,shape_control=(;bases),pupil_registration=registration,
+        return (;layout=description.layout,pupil_registration=registration,
             pupil_coordinates=Tuple(Tuple(column) for column in eachcol(coordinates)))
+    end
+    sensor_keys = sort!(collect(keys(document["wavefront_sensors"])))
+    sensors = Tuple((;layout=sensor_layout(declaration,document["wavefront_sensors"][name])) for name in sensor_keys)
+    telescope = haskey(document,"telescope") ? (;telescope=_instrument_seal(document["telescope"])) : NamedTuple()
+    return (;telescope...,schema_version=1,id=document["id"],
+        deformable_mirrors=NamedTuple{Tuple(Symbol.(mirror_keys))}(Tuple(mirrors)),
+        wavefront_sensors=NamedTuple{Tuple(Symbol.(sensor_keys))}(sensors))
+end
+
+"Resolve simulation geometry and prescription identity independently of RTC mirror controls."
+function scientific_definition(path::AbstractString,overrides=NamedTuple())
+    declaration = load_simulation(path)
+    configured = settings(declaration,overrides)
+    result = physical_definition(declaration.instrument)
+    mirrors = map(keys(result.deformable_mirrors)) do name
+        geometry = getproperty(result.deformable_mirrors,name)
         active = selected_binding_names(declaration,configured)
         bindings = [binding for (binding_name,binding) in declaration.document["bindings"]
             if binding_name in active && get(binding,"kind",nothing)=="measured_influences" &&
-                get(binding,"mirror",nothing)==name]
+                get(binding,"mirror",nothing)==String(name)]
         length(bindings)<=1 || throw(ArgumentError("mirror declares multiple selected influence calibrations"))
-        if !isempty(bindings)
-            result = merge(result,(;influence_functions=measured_influences(declaration,configured,only(bindings)).provenance))
-        end
-        return result
+        return isempty(bindings) ? geometry : merge(geometry,
+            (;influence_functions=measured_influences(declaration,configured,only(bindings)).provenance))
     end
-    sensor_keys = sort!(collect(keys(declaration.document["wavefront_sensors"])))
-    sensor_names = Tuple(Symbol.(sensor_keys))
-    sensors = Tuple((;layout=sensor_layout(declaration,declaration.document["wavefront_sensors"][name])) for name in sensor_keys)
-    telescope = haskey(declaration.document, "telescope") ?
-        (;telescope=merge(_instrument_seal(declaration.document["telescope"]),
-            (;resolution=configured["pupil_resolution"]))) : NamedTuple()
-    return (; telescope..., schema_version=1,id=declaration.document["id"],
-        deformable_mirrors=NamedTuple{mirror_names}(Tuple(mirrors)),
-        wavefront_sensors=NamedTuple{sensor_names}(sensors),
-        prescription_identity=prescription_identity(declaration,configured))
+    result = merge(result,(;deformable_mirrors=NamedTuple{keys(result.deformable_mirrors)}(Tuple(mirrors))))
+    if hasproperty(result,:telescope)
+        result = merge(result,(;telescope=merge(result.telescope,(;resolution=configured["pupil_resolution"]))))
+    end
+    return merge(result,(;prescription_identity=prescription_identity(declaration,configured)))
 end
 
 limit_values(value::Real,count) = ntuple(_->Float64(value),count)
@@ -151,28 +151,35 @@ limit_values(value::AbstractVector,count) = length(value)==count ? Tuple(value) 
     throw(DimensionMismatch("mirror limits must be command-sized"))
 limit_values(value,count) = throw(ArgumentError("mirror limits must be numeric scalars or arrays"))
 
-"Materialize the RTC's existing sealed publication from the authoring declaration."
-function publication(path,overrides;calibration_identity)
-    declaration = load(path)
-    scientific = scientific_definition(path,overrides)
+"Materialize the RTC publication from physical geometry and RTC-owned mirror controls."
+function publication(path)
+    declaration = load_rtc(path)
+    calibration_identity = declaration.document["calibration_identity"]
+    scientific = physical_definition(declaration.instrument)
     mirrors = NamedTuple{keys(scientific.deformable_mirrors)}(Tuple(
         map(keys(scientific.deformable_mirrors)) do name
-            spec = declaration.document["deformable_mirrors"][String(name)]
-            dm = getproperty(scientific.deformable_mirrors,Symbol(name))
+            spec = declaration.instrument.document["deformable_mirrors"][String(name)]
+            control = declaration.controls["deformable_mirrors"][String(name)]
+            dm = getproperty(scientific.deformable_mirrors,name)
+            description = mirror(declaration,NamedTuple(),String(name)).description
+            source = source_grid_coordinates(description)
+            bases = Tuple(resolve_basis(declaration,basis,description,source) for basis in control["shape_control"]["bases"])
+            shape_control = (;bases)
             n = length(dm.layout.command_positions)
+            InstrumentDefinition.validate_shape_control(json_value(shape_control),spec["units"],n)
             return (;layout=dm.layout,units=spec["units"],command_scale_m=spec["command_scale_m"],
                 pupil_coordinates=dm.pupil_coordinates,
-                limiter=(;kind=spec["limiter"]["kind"],
-                    lower=limit_values(spec["limiter"]["lower"],n),upper=limit_values(spec["limiter"]["upper"],n)),
-                shape_control=dm.shape_control)
+                limiter=(;kind=control["limiter"]["kind"],
+                    lower=limit_values(control["limiter"]["lower"],n),upper=limit_values(control["limiter"]["upper"],n)),
+                shape_control)
         end))
     sensors = NamedTuple{keys(scientific.wavefront_sensors)}(Tuple(
-        (;layout=merge(getproperty(scientific.wavefront_sensors,Symbol(name)).layout,
-            (;expected_schema=declaration.document["wavefront_sensors"][String(name)]["expected_schema"])))
+        (;layout=merge(getproperty(scientific.wavefront_sensors,name).layout,
+            (;expected_schema=declaration.instrument.document["wavefront_sensors"][String(name)]["expected_schema"])))
         for name in keys(scientific.wavefront_sensors)))
+    identity = InstrumentDefinition.scientific_identity((;physical=scientific,mirrors))
     result = (;schema_version=2,id=scientific.id,calibration_identity,
-        scientific_identity=InstrumentDefinition.scientific_identity(scientific),
-        deformable_mirrors=mirrors,wavefront_sensors=sensors)
+        scientific_identity=identity,deformable_mirrors=mirrors,wavefront_sensors=sensors)
     InstrumentDefinition.validate(json_value(result))
     return result
 end
@@ -183,9 +190,17 @@ function prepare_simulation_configuration!(application::AbstractString; simulati
     source = D.decode(path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
     source["version"] == 3 || throw(ArgumentError("declarative instrument publication requires simulator version 3"))
     plant = source["plant"]
-    declaration = load(D.relative_asset(application, plant["definition"]))
+    declaration = load_simulation(D.relative_asset(application, plant["definition"]))
     configured = settings(declaration, get(plant, "settings", Dict()))
-    concrete = Common.configuration_value(source, configuration_context(declaration, configured))
+    rtc = load_rtc(D.relative_asset(application, source["rtc_configuration"]))
+    rtc.instrument.path == declaration.instrument.path ||
+        throw(ArgumentError("simulation and RTC must reference the same physical instrument"))
+    context = configuration_context(declaration, configured)
+    context["rtc"] = rtc.document
+    concrete = Common.configuration_value(source, context)
+    concrete["instrument"] = rtc.document["publication"]
+    concrete["calibration_identity"] = rtc.document["calibration_identity"]
+    concrete["prescription_identity"] = prescription_identity(declaration, configured)
     if concrete != source
         temporary, io = mktemp(dirname(path))
         try
@@ -200,17 +215,27 @@ function prepare_simulation_configuration!(application::AbstractString; simulati
     return concrete
 end
 
-function prepare_publication(application::AbstractString;simulation="simulation.conf")
-    config = prepare_simulation_configuration!(application; simulation)
-    config["version"] == 3 || throw(ArgumentError("declarative instrument publication requires simulator version 3"))
-    plant = config["plant"]
-    path = D.relative_asset(application,plant["definition"])
-    output = joinpath(application,config["instrument"])
-    abspath(output) == abspath(path) && throw(ArgumentError("instrument publication must differ from its authoring declaration"))
-    body = publication(path,plant["settings"]; calibration_identity=config["calibration_identity"])
-    # Validate the output location even on first generation.
-    isabspath(config["instrument"]) && throw(ArgumentError("publication must be application-relative"))
-    startswith(abspath(output),realpath(application)*"/") || throw(ArgumentError("publication escapes application"))
+function prepare_publication(application::AbstractString; configuration="rtc/configuration.conf")
+    path = D.relative_asset(application, configuration)
+    rtc = load_rtc(path)
+    name = rtc.document["publication"]
+    !isabspath(name) && endswith(name,".json") ||
+        throw(ArgumentError("publication must be an application-relative .json file distinct from authoring inputs"))
+    output = abspath(joinpath(application,name))
+    startswith(output,realpath(application)*"/") && !islink(output) || throw(ArgumentError("publication escapes application"))
+    protected = Set([path, rtc.instrument.path, D.relative_asset(application, rtc.document["mirror_controls"])])
+    for mirror in values(rtc.instrument.document["deformable_mirrors"])
+        push!(protected,mirror_description_path(application,mirror["description"]))
+    end
+    for sensor in values(rtc.instrument.document["wavefront_sensors"])
+        push!(protected,D.relative_asset(application,sensor["subaperture_origins"]["path"]))
+    end
+    for control in values(rtc.controls["deformable_mirrors"]), basis in control["shape_control"]["bases"]
+        definition = basis["definition"]
+        definition["kind"] == "sampled" && push!(protected,D.relative_asset(application,definition["artifact"]["path"]))
+    end
+    output in protected && throw(ArgumentError("publication must differ from its authoring inputs"))
+    body = publication(path)
     ncodeunits(JSON.json(body)) + 1 <= InstrumentDefinition.MAX_BYTES ||
         throw(ArgumentError("instrument publication exceeds 256 KiB"))
     Common.write_json(output,body;atomic=true)

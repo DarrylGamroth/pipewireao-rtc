@@ -12,7 +12,7 @@ import ..InstrumentExport
 
 public digest, source_completion, read_parameters, write_fits, heart_completion,
     controlled_rows, central_completion, allocation_parameters, replace_dimensions!,
-    require_prepared_application, estimator_dimensions, shack_hartmann_configuration,
+    require_prepared_application, estimator_dimensions, checked_command_limits, shack_hartmann_configuration,
     controller_graph, controller_storage, measure!, calibration_frame!
 
 "Return the SHA-256 digest of a file's bytes."
@@ -175,12 +175,51 @@ function allocation_parameters(parameters, completion, controlled; measurement_c
     return parameters
 end
 
+function command_limit(::Type{T}, value::Real, count) where {T<:AbstractFloat}
+    InstrumentConfiguration.isfinite_real(value) && isfinite(T(value)) ||
+        throw(ArgumentError("command limit must be finite in $T"))
+    return T(value)
+end
+function command_limit(::Type{T}, value::AbstractVector, count) where {T<:AbstractFloat}
+    length(value) == count || throw(DimensionMismatch("per-actuator command limit length differs"))
+    all(InstrumentConfiguration.isfinite_real,value) || throw(ArgumentError("per-actuator command limits must be finite numbers"))
+    return [command_limit(T, item, count) for item in value]
+end
+command_limit(::Type{T}, value, count) where {T<:AbstractFloat} =
+    throw(ArgumentError("command limit must be a scalar or per-actuator vector"))
+limit_at(value::Real, index) = value
+limit_at(value::AbstractVector, index) = value[index]
+
+"Validate scalar or per-actuator limits without changing their representation."
+function checked_command_limits(::Type{T}, lower, upper, count::Integer) where {T<:AbstractFloat}
+    InstrumentConfiguration.ispositive_integer(count) || throw(ArgumentError("physical actuator count must be positive"))
+    lower, upper = command_limit(T, lower, count), command_limit(T, upper, count)
+    all(index -> limit_at(lower,index) < limit_at(upper,index), 1:count) ||
+        throw(ArgumentError("lower command limit must be strictly below upper command limit"))
+    return (;lower,upper)
+end
+
 "Update declared controller dimensions and artifacts in a prepared application."
-function replace_dimensions!(application, parameters, n; measurement_count, command_limits=nothing)
+function replace_dimensions!(application, parameters, n; measurement_count, command_limits=nothing, mirror=nothing)
     n > 0 && measurement_count > 0 || throw(ArgumentError("controller dimensions must be positive"))
-    if command_limits !== nothing
-        isfinite(command_limits.lower) && isfinite(command_limits.upper) &&
-            command_limits.lower <= command_limits.upper || throw(ArgumentError("invalid command limits"))
+    limits = command_limits === nothing ? nothing : checked_command_limits(Float64,
+        command_limits.lower, command_limits.upper, size(parameters[Symbol("vdm-to-pdm")],1))
+    authoring = DeploymentConfiguration.decode(joinpath(application, "rtc", "application.conf"),
+        get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
+    configuration_path = DeploymentConfiguration.relative_asset(application, get(authoring,"configuration","rtc/configuration.conf"))
+    rtc = InstrumentConfiguration.load_rtc(configuration_path)
+    if limits !== nothing
+        names = keys(rtc.controls["deformable_mirrors"])
+        mirror === nothing && length(names) != 1 &&
+            throw(ArgumentError("calibration limit updates require an explicit mirror when several are declared"))
+        selected = mirror === nothing ? only(names) : String(mirror)
+        haskey(rtc.controls["deformable_mirrors"], selected) || throw(ArgumentError("unknown calibration mirror"))
+        expected_count = InstrumentConfiguration.command_count(
+            InstrumentConfiguration.mirror(rtc, NamedTuple(), selected).description)
+        expected_count == size(parameters[Symbol("vdm-to-pdm")],1) ||
+            throw(DimensionMismatch("calibration command count differs from selected mirror"))
+        limiter = rtc.controls["deformable_mirrors"][selected]["limiter"]
+        limiter["lower"], limiter["upper"] = limits.lower, limits.upper
     end
     graph_path = joinpath(application, "rtc", "graph.conf")
     graph = DeploymentConfiguration.decode(graph_path,
@@ -192,8 +231,8 @@ function replace_dimensions!(application, parameters, n; measurement_count, comm
         for key in ("active_vdm_count", "controller_command_count")
             haskey(config, key) && (config[key] = n)
         end
-        if name == "pdm-command" && command_limits !== nothing
-            config["command_limits"] = [Float64(command_limits.lower), Float64(command_limits.upper)]
+        if name == "pdm-command" && limits !== nothing
+            config["command_limits"] = [limits.lower, limits.upper]
         end
     end
     ScienceExport.write_spa_config(graph_path, graph)
@@ -203,21 +242,21 @@ function replace_dimensions!(application, parameters, n; measurement_count, comm
         array = parameters[Symbol(entry["port"])]
         write_fits(joinpath(dirname(path), entry["path"]), array)
     end
-    simulation = DeploymentConfiguration.decode(joinpath(application, "simulation.conf"),
-        get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
-    instrument_path = DeploymentConfiguration.relative_asset(application, simulation["plant"]["definition"])
-    instrument = DeploymentConfiguration.decode(instrument_path,
-        get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
-    dimensions = get!(instrument, "dimensions", Dict{String,Any}())
+    dimensions = rtc.document["dimensions"]
     for name in ("controller_command_count", "active_vdm_count", "state_length")
         dimensions[name] = n
     end
-    Common.write_json(instrument_path, instrument; atomic=true)
-    InstrumentConfiguration.prepare_publication(application)
+    Common.write_json(configuration_path, rtc.document; atomic=true)
+    if limits !== nothing
+        controls_path = DeploymentConfiguration.relative_asset(application,rtc.document["mirror_controls"])
+        open(controls_path,"w") do io
+            write(io,"# Generated by PipeWireAORTC calibration; edit source RTC mirror controls and rebuild.\n")
+            YAML.write(io,rtc.controls)
+        end
+    end
+    InstrumentConfiguration.prepare_publication(application; configuration=relpath(configuration_path,application))
     session_path = joinpath(application, "rtc", "session.conf.in")
     session = DeploymentConfiguration.decode(session_path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
-    authoring = DeploymentConfiguration.decode(joinpath(application, "rtc", "application.conf"),
-        get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
     contracts = InstrumentExport.graph_contract_context(application, authoring["graph-configurations"],
         get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
     refresh_session_parameters!(session, contracts)

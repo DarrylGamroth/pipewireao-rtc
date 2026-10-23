@@ -38,7 +38,7 @@ function selected_mode(source, profile)
     return mode
 end
 
-function prepare_mode!(application, spec, mode, profile, bindings, prefix)
+function prepare_mode!(application, spec, mode, profile, bindings, prefix; configuration="rtc/configuration.conf")
     for (field, path) in (("session", spec["session"]), ("core", spec["core"]))
         fullpath = D.relative_asset(application, path)
         original = D.decode(fullpath, prefix)
@@ -62,9 +62,10 @@ function prepare_mode!(application, spec, mode, profile, bindings, prefix)
             parameter["path"] = relpath(asset, dirname(destination))
         end
         Common.write_json(destination, document)
-        simulation = D.decode(joinpath(application, "simulation.conf"), prefix)
-        simulation["calibration_identity"] = identity
-        Common.write_json(joinpath(application, "simulation.conf"), simulation)
+        configuration_path = D.relative_asset(application, configuration)
+        rtc = D.decode(configuration_path, prefix)
+        rtc["calibration_identity"] = identity
+        Common.write_json(configuration_path, rtc)
     end
     omitted = get(mode, "omit-views", [])
     if !isempty(omitted)

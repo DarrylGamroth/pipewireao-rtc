@@ -23,7 +23,7 @@ function graph()
             "props" => Dict("gain" => -0.3), "config" => Dict(
                 "image_size" => reference("/instrument/wavefront_sensors/sensor-one/layout/detector_shape"),
                 "actuator_count" => reference("/instrument/deformable_mirrors/mirror-one/actuator_count"),
-                "controller_command_count" => reference("/instrument/dimensions/controller_command_count"),
+                "controller_command_count" => reference("/rtc/dimensions/controller_command_count"),
                 "nested" => [reference("/instrument/wavefront_sensors/sensor-one/subaperture_count"), 9]))],
         "links" => [], "inputs" => ["arbitrary-node:input"], "outputs" => ["arbitrary-node:output"]))
 end

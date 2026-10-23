@@ -2,7 +2,7 @@ const Instruments = PipeWireAORTC.InstrumentConfiguration
 
 function PipeWireAORTC.InstrumentExport.simulator_port_contracts(path::AbstractString;
         settings=Dict())
-    declaration = Instruments.load(path)
+    declaration = Instruments.load_simulation(path)
     configured = Instruments.settings(declaration, settings)
     document = Instruments.graph_document(declaration, configured)
     # Public AOS factories return cold typed declarations. They do not prepare
@@ -20,7 +20,7 @@ end
 "Prepare an ordinary typed AOS graph from an instrument's SPA-JSON declaration."
 function Instruments.prepare_system(path::AbstractString;settings=NamedTuple(),calibration=false,
         target=Backends.HostComputeDevice(),execution=StreamGraphExecution())
-    declaration = Instruments.load(path)
+    declaration = Instruments.load_simulation(path)
     configured = Instruments.settings(declaration,settings)
     document = Instruments.graph_document(declaration,configured;calibration)
     names = String[]
@@ -50,10 +50,10 @@ function Instruments.prepare_system(path::AbstractString;settings=NamedTuple(),c
     isfinite(frame_period_s) && frame_period_s>0 || throw(ArgumentError("invalid instrument frame period"))
     period_ns = round(UInt64,Float64(frame_period_s)*1e9)
     driver = FixedStepModelTimeDriver(PeriodicSchedule(;period_ns))
-    mirror_names = Tuple(Symbol.(collect(keys(declaration.document["deformable_mirrors"]))))
+    mirror_names = Tuple(Symbol.(collect(keys(declaration.instrument.document["deformable_mirrors"]))))
     mirror_descriptions = NamedTuple{mirror_names}(Tuple(
         Instruments.mirror(declaration,configured,name).description
-        for name in keys(declaration.document["deformable_mirrors"])))
+        for name in keys(declaration.instrument.document["deformable_mirrors"])))
     return (;definition,graph,boundary,target,frame_period_s,driver,mirror_descriptions,
         settings=Instruments._instrument_seal(configured))
 end
@@ -66,7 +66,7 @@ function prepare_configured_science(options,device;check=()->nothing)
     AdaptiveOpticsSimPipeWireHIL.validate_hil_system(system;
         command_input=options.command_input,frame_output=options.frame_output,
         command_shape=(options.command_count,),frame_shape=options.frame_shape)
-    declaration = Instruments.load(options.plant.definition)
+    declaration = Instruments.load_simulation(options.plant.definition)
     contracts = Tuple((;frame_encoding=Symbol(entry["frame_encoding"]),
         frame_schema=entry["frame_schema"],command_schema=entry["command_schema"],
         command_scale=Float32(entry["command_scale"])) for entry in declaration.document["wire_contracts"])

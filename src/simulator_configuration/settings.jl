@@ -22,7 +22,7 @@ function scientific_worker(config, output; prepare=false)
     # independently resolved application-local file inputs in options.
     configured = D.decode(config,get(ENV,"PIPEWIREAO_PREFIX","/opt/pipewireao"))["plant"]["settings"]
     result = options.version == 3 ?
-        InstrumentConfiguration.settings_description(InstrumentConfiguration.load(options.plant.definition),configured) :
+        InstrumentConfiguration.settings_description(InstrumentConfiguration.load_simulation(options.plant.definition),configured) :
         declared_settings(instrument, configured)
     if prepare
         Base.require(Main, :AdaptiveOpticsSim)

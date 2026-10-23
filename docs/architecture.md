@@ -777,8 +777,8 @@ prepare builtin modes. The existing 256 KiB publication limit and structural
 limits still apply; bounds reject oversized definitions without truncation.
 The schema 1 publication's fixed Zernike/Fourier fields are removed.
 
-The source `instrument.conf` schema remains version 1. Its `shape_control.bases`
-uses the same seven basis fields. Zernike source definitions declare `kind` and
+RTC-owned `rtc/mirror-controls.yaml` declares `shape_control.bases` using
+the same seven basis fields. The physical instrument contains no control bases. Zernike source definitions declare `kind` and
 `modes`; Fourier source definitions declare `kind` and `max_frequency`. The RTC
 derives both coordinate arrays from the selected mirror source grid. Fourier
 frequencies remain strictly below the source-axis Nyquist frequency, excluding
@@ -789,17 +789,38 @@ source definitions declare `kind`, `artifact`, `command_order`, and `names`.
 explicit logical axes: rows are commands and columns are modes. Mandatory
 `command_order: "mirror"` asserts that artifact rows already follow the mirror's
 physical command order. The RTC performs no order inference or remapping.
-Artifact content hashes contribute to the prescription identity, and the sealed
-publication is compared against a fresh declaration resolution before execution.
+Custom basis content hashes contribute to the RTC publication identity.
+Simulation graph/artifact hashes contribute separately to the simulation
+prescription identity. Both are checked before execution; changing a control
+basis does not change the simulated plant prescription.
 
-The data-only Classic application selects `instrument.conf` through version 3
-`plant.definition`. This SPA-JSON declaration references the mirror's ordinary
-JSON description, separate pupil registration, AOS YAML graph files, profile
-settings and FITS artifacts. Shared cold `InstrumentConfiguration` preparation
-resolves application-relative paths, validates the declaration, and calls the
-existing AOS factories/compiler. No per-instrument Julia implementation or RTC
-configuration reader is needed in AOS. The older version 2 route remains for
-instruments that still select a package and `plant.settings.mirror_description`.
+Classic separates physical, simulation, RTC and mirror-control authoring:
+
+| Owner | Source | Responsibility |
+| --- | --- | --- |
+| Physical instrument | `instrument.conf` | Telescope, mirror reference, pupil registration, WFS geometry and acquisition requirements |
+| Simulation | `simulation/definition.yaml` and optical graph YAML | Atmosphere, source photometry, detector response, sampling, numerical profiles and graph bindings |
+| RTC | `rtc/configuration.conf` | Physical instrument reference, controller dimensions, calibration identity and publication destination |
+| RTC mirror controls | `rtc/mirror-controls.yaml` | Mirror command limits, analytic basis descriptors and custom sampled basis artifacts |
+| RTC deployment | `rtc/application.conf`, `rtc/modes.conf` | Owners, native configuration and simulation/hardware connections |
+| GUI | `gui/operator-views.yaml` | Panel/source presentation and selected published basis IDs |
+
+`load` reads only physical data. `load_simulation` reads simulation YAML plus its
+physical instrument; `load_rtc` reads the RTC configuration, physical instrument
+and control YAML. Each descriptor's `instrument` path is relative to its own
+file; all remaining graph, calibration, control and output paths are relative to
+the physical instrument directory. Shared cold preparation invokes existing AOS
+factories/compiler; AOS has no RTC configuration reader. The version 3 PipeWire
+simulator wrapper selects the YAML definition with `plant.definition` and the RTC
+configuration explicitly with `rtc_configuration`. The older version 2 route
+remains for instruments that select a package and `plant.settings.mirror_description`.
+
+The RTC can generate its schema 2 publication with no simulation files present.
+The wrapper's `instrument` and `calibration_identity` values derive from the RTC
+configuration. Its generated `prescription_identity` separately binds the
+selected simulation definition, structural settings, physical input, graphs and
+scientific artifacts. Native publication and wrapper formats remain JSON/SPA-JSON;
+the source configuration split adds no per-instrument implementation.
 
 Instrument source may reference a mirror description under a sibling `mirrors/`
 directory using `../mirrors/…`. This exception is limited to mirror descriptions;
@@ -809,7 +830,7 @@ the declaration to the local path, and includes the file in the deployment seal.
 The generated application has no source-repository dependency. Device geometry
 and command order remain separate from instrument pupil registration.
 
-The source declaration may supply a common `telescope` prescription and WFS
+The physical declaration may supply a common `telescope` prescription and WFS
 `optical_prescription`. Classic's latter prescription states lenslet geometry
 explicitly, independently of its selected active-subaperture mask. Its current
 Shack-Hartmann simulator requires square detector/subaperture sampling and exact
@@ -820,7 +841,8 @@ for the mirror's existing NodeInfo property and a WFS `video_frame_size` string
 in native width-by-height order. These serialize existing device interfaces;
 they do not infer camera configuration or physical command conversion.
 An optional sensor `acquisition` object declares ROI origin in `[row,column]`
-order, exposure in seconds and the simulator's linear post-readout gain. The
+order and exposure in seconds. The simulation definition owns its linear
+post-readout gain and source photometry. The
 existing detector shape is the ROI extent. Cold references derive exposure
 nanoseconds for the simulator and microseconds when explicitly selected by a
 hardware control binding. Hardware gain units remain device-specific; neither
@@ -836,8 +858,8 @@ promising restoration of prior physical device settings. Runtime single-feature
 Props requests remain one feature per call. Device-specific writability, ranges and layout
 validation stay with the existing GenICam control path.
 AOS source graphs and profile configurations use the same plain JSON Pointer
-syntax with `/instrument` for declaration geometry and `/settings` for selected
-settings. Cold preparation resolves these references before calling existing AOS
+syntax with `/instrument` for physical geometry, `/simulation` for numerical
+configuration and `/settings` for selected simulation settings. Cold preparation resolves these references before calling existing AOS
 factories; AOS does not parse RTC files. Initial zero bindings and simulator
 boundary dimensions use the same context. Selected settings still take precedence
 over node defaults. Generated simulator configuration carries a source notice.
@@ -862,8 +884,8 @@ References select typed values, not interpolated text or evaluated expressions;
 JSON Pointer array indices are zero-based.
 
 The reference context contains the resolved `instrument` geometry plus the
-optional authoring declaration's `dimensions`: named, positive integer counts
-and lengths. Controller, active/full VDM and hidden-state dimensions are
+RTC configuration's `dimensions` at `/rtc/dimensions`: named, positive integer
+counts and lengths. Controller, active/full VDM and hidden-state dimensions are
 explicitly declared there. Mirror entries additionally expose `actuator_count`,
 computed from physical command positions, and sensor entries expose
 `subaperture_count`, computed from validated ordered origins. These derived
@@ -884,7 +906,7 @@ from file contents, and close prepared graph execution owners after the read.
 Export resolves references after mode/calibration selection and instrument
 publication, before sealing the fresh output. Selecting another calibration
 changes the file bindings; it does not change expected graph dimensions.
-Changing those dimensions requires changing the instrument declaration and
+Changing those dimensions requires changing the RTC configuration and
 rebuilding, with compatible calibration artifacts. The existing calibration
 resize helper updates declared controller dimensions and publication identity
 alongside its graph and artifact updates, while leaving binding metadata intact.

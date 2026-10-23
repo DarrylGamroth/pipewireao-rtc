@@ -338,9 +338,17 @@ function verify_declaration(options)
     options.instrument === nothing && throw(ArgumentError("declarative plants require an instrument publication"))
     actual = load(options.instrument).document
     declaration = getproperty(parentmodule(@__MODULE__),:InstrumentConfiguration)
-    expected = declaration.json_value(declaration.publication(options.plant.definition,
-        options.plant.settings;calibration_identity=options.calibration_identity))
+    expected = declaration.json_value(declaration.publication(options.rtc_configuration))
     actual == expected || throw(ArgumentError("instrument publication differs from its declaration or selected calibration"))
+    simulation = declaration.load_simulation(options.plant.definition)
+    rtc = declaration.load_rtc(options.rtc_configuration)
+    options.calibration_identity == rtc.document["calibration_identity"] ||
+        throw(ArgumentError("simulator calibration identity differs from the RTC configuration"))
+    simulation.instrument.path == rtc.instrument.path ||
+        throw(ArgumentError("simulator and RTC must reference the same physical instrument"))
+    configured = declaration.settings(simulation, options.plant.settings)
+    options.prescription_identity == declaration.prescription_identity(simulation, configured) ||
+        throw(ArgumentError("simulation prescription differs from its prepared identity"))
     mirrors,sensors=actual["deformable_mirrors"],actual["wavefront_sensors"]
     length(mirrors)==length(sensors)==1 || throw(ArgumentError("this AOS boundary requires one DM and one WFS"))
     dm,wfs=only(values(mirrors)),only(values(sensors))

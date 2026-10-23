@@ -1,21 +1,30 @@
-"""Validate declaration structure, references, and all application asset paths."""
+"Validate physical instrument data without loading a simulation or controller."
 function validate_declaration(document::AbstractDict, directory::AbstractString)
-    top_fields = ("schema_version", "id", "defaults", "settings_schema", "wire_contracts",
-        "deformable_mirrors", "wavefront_sensors", "graphs", "profiles",
-        "bindings", "settings_bindings", "frame_period_s", "hil")
-    fields(document, (top_fields..., "dimensions", "telescope"), top_fields, "instrument declaration")
-    _validate_dimensions(get(document, "dimensions", Dict()))
+    required = ("schema_version", "id", "deformable_mirrors", "wavefront_sensors")
+    fields(document, (required..., "telescope"), required, "physical instrument")
+    document["schema_version"] === 1 || throw(ArgumentError("unsupported physical instrument schema"))
+    _declaration_identifier(document["id"], "instrument identifier")
     haskey(document, "telescope") && _validate_telescope(document["telescope"])
-    document["schema_version"] === 1 || throw(ArgumentError("unsupported instrument declaration schema"))
-    InstrumentDefinition.identifier(document["id"]) || throw(ArgumentError("invalid instrument identifier"))
-    for key in ("defaults", "settings_schema", "deformable_mirrors", "wavefront_sensors",
-            "graphs", "profiles", "bindings")
-        InstrumentDefinition.object_value(document[key]) || throw(ArgumentError("instrument $key must be an object"))
+    for key in ("deformable_mirrors", "wavefront_sensors")
+        values = _declaration_object(document[key], key)
+        1 <= length(values) <= 16 || throw(ArgumentError("instrument requires 1:16 $key"))
+        for (name, value) in values
+            _declaration_identifier(name, key)
+            key == "deformable_mirrors" ? _validate_mirror_declaration(value, directory, name) :
+                _validate_sensor_declaration(value, directory, name)
+        end
     end
+    return nothing
+end
+validate_declaration(document, directory) = throw(ArgumentError("physical instrument must be an object"))
+
+function validate_simulation(document, instrument, directory)
+    document["schema_version"] === 1 || throw(ArgumentError("unsupported simulation definition schema"))
+    _declaration_identifier(document["id"], "simulation identifier")
     defaults = document["defaults"]
     settings_schema = document["settings_schema"]
-    mirrors = document["deformable_mirrors"]
-    sensors = document["wavefront_sensors"]
+    mirrors = instrument["deformable_mirrors"]
+    sensors = instrument["wavefront_sensors"]
     profiles = document["profiles"]
     bindings = document["bindings"]
     1 <= length(mirrors) <= 16 || throw(ArgumentError("instrument requires 1:16 mirrors"))
@@ -27,6 +36,37 @@ function validate_declaration(document::AbstractDict, directory::AbstractString)
     settings_schema["type"] == "object" && InstrumentDefinition.object_value(settings_schema["properties"]) ||
         throw(ArgumentError("settings_schema must declare object properties"))
     _validate_wire_contracts(document["wire_contracts"])
+    for key in ("defaults", "profiles", "bindings", "sensors", "sources")
+        _declaration_object(get(document,key,Dict()), "simulation $key")
+    end
+    for (name, response) in get(document,"sensors",Dict())
+        haskey(sensors,name) || throw(ArgumentError("simulation response names an unknown sensor"))
+        fields(response,("post_readout_gain", "diffraction_padding", "half_pixel_shift", "shannon_sampling",
+            "threshold_convolution", "valid_subaperture_threshold"),("post_readout_gain",),"simulation sensor response")
+        gain = response["post_readout_gain"]
+        isfinite_positive(gain) && isfinite_positive(Float32(gain)) ||
+            throw(ArgumentError("simulation post_readout_gain must be positive and finite in Float32"))
+        haskey(response,"diffraction_padding") && !isfinite_positive(response["diffraction_padding"]) &&
+            throw(ArgumentError("simulation diffraction_padding must be positive and finite"))
+        for key in ("half_pixel_shift", "shannon_sampling")
+            haskey(response,key) && !(response[key] === true || response[key] === false) &&
+                throw(ArgumentError("simulation $key must be Boolean"))
+        end
+        for key in ("threshold_convolution", "valid_subaperture_threshold")
+            haskey(response,key) && !isfinite_real(response[key]) && throw(ArgumentError("simulation $key must be finite"))
+        end
+    end
+    for (name, source) in get(document,"sources",Dict())
+        _declaration_identifier(name,"simulation source")
+        names = ("source_band", "source_magnitude", "source_position_angle_deg",
+            "source_separation_arcsec", "source_wavelength_m")
+        fields(source,names,names,"simulation source")
+        _declaration_text(source["source_band"],"source band")
+        all(isfinite_real, (source["source_magnitude"],source["source_position_angle_deg"],
+            source["source_separation_arcsec"])) && source["source_separation_arcsec"] >= 0 &&
+            isfinite_positive(source["source_wavelength_m"]) ||
+            throw(ArgumentError("simulation source requires finite photometry and positive wavelength"))
+    end
 
     graph_paths = _declaration_fields(document["graphs"], ("production", "calibration"),
         ("production", "calibration"), "graphs")
@@ -42,22 +82,12 @@ function validate_declaration(document::AbstractDict, directory::AbstractString)
     end
     all_graph_nodes = union(values(graph_nodes)...)
     _validate_profiles(profiles, bindings, all_graph_nodes)
-    for name in keys(mirrors)
-        _declaration_identifier(name, "mirror name")
-        _validate_mirror_declaration(mirrors[name], directory, name, defaults, settings_schema, profiles)
-    end
-    for name in keys(sensors)
-        _declaration_identifier(name, "sensor name")
-        _validate_sensor_declaration(sensors[name], directory, name)
-    end
     _validate_bindings(bindings, mirrors, defaults, settings_schema, profiles, directory)
     _validate_settings_bindings(document["settings_bindings"], profiles, defaults,
         settings_schema, all_graph_nodes)
     _validate_hil(document["hil"], graph_inputs, graph_outputs)
     return nothing
 end
-
-validate_declaration(document, directory) = throw(ArgumentError("instrument declaration and directory must have supported types"))
 
 _declaration_object(value, label) = InstrumentDefinition.object_value(value) ? value :
     throw(ArgumentError("$label must be an object"))
@@ -85,28 +115,30 @@ isnonnegative_integer(value::Integer) = value >= 0
 isnonnegative_integer(::Bool) = false
 isnonnegative_integer(value) = false
 
-# Expected graph dimensions belong to the instrument, not to an artifact file.
+# Expected controller dimensions belong to the RTC, not to an artifact file.
 function _validate_dimensions(dimensions)
-    _declaration_object(dimensions, "instrument dimensions")
+    _declaration_object(dimensions, "RTC dimensions")
     for (name, count) in dimensions
         _declaration_identifier(name, "dimension name")
         ispositive_integer(count) && count <= typemax(Int) ||
-            throw(ArgumentError("instrument dimension $name must be a positive Int"))
+            throw(ArgumentError("RTC dimension $name must be a positive Int"))
     end
     return nothing
 end
 
-function _validate_mirror_declaration(spec, directory, name, defaults, settings_schema, profiles)
+function _validate_mirror_declaration(spec, directory, name)
     mirror = _declaration_fields(spec,
-        ("description", "pupil_registration_setting", "units", "command_scale_m", "limiter", "shape_control"),
-        ("description", "pupil_registration_setting", "units", "command_scale_m", "limiter", "shape_control"),
-        "mirror $name")
+        ("description", "pupil_registration", "units", "command_scale_m"),
+        ("description", "pupil_registration", "units", "command_scale_m"), "mirror $name")
     mirror_description_path(directory, mirror["description"])
-    _validate_setting_reference(mirror["pupil_registration_setting"], defaults, settings_schema,
-        profiles, "mirror pupil registration setting")
+    _pupil_registration(_instrument_seal(mirror["pupil_registration"]))
     _declaration_text(mirror["units"], "mirror units")
     isfinite_positive(mirror["command_scale_m"]) || throw(ArgumentError("mirror command_scale_m must be finite and positive"))
-    limiter = _declaration_fields(mirror["limiter"], ("kind", "lower", "upper"),
+    return nothing
+end
+
+function _validate_limiter(value)
+    limiter = _declaration_fields(value, ("kind", "lower", "upper"),
         ("kind", "lower", "upper"), "mirror limiter")
     limiter["kind"] == "amplitude" || throw(ArgumentError("mirror limiter kind must be amplitude"))
     for key in ("lower", "upper")
@@ -117,7 +149,6 @@ function _validate_mirror_declaration(spec, directory, name, defaults, settings_
             isfinite_real(value) || throw(ArgumentError("mirror limiter $key must be finite"))
         end
     end
-    _validate_shape_control(mirror["shape_control"],mirror["units"],directory)
     return nothing
 end
 
@@ -174,13 +205,13 @@ end
 
 function _validate_acquisition(value)
     acquisition = _declaration_fields(value,
-        ("roi_origin", "exposure_duration_s", "post_readout_gain"),
-        ("roi_origin", "exposure_duration_s", "post_readout_gain"), "sensor acquisition")
+        ("roi_origin", "exposure_duration_s"),
+        ("roi_origin", "exposure_duration_s"), "sensor acquisition")
     origin = acquisition["roi_origin"]
     InstrumentDefinition.array_value(origin) && length(origin) == 2 &&
         all(x -> isnonnegative_integer(x) && x <= typemax(Int32), origin) ||
         throw(ArgumentError("ROI origin requires two nonnegative Int32 [row,column] offsets"))
-    for name in ("exposure_duration_s", "post_readout_gain")
+    for name in ("exposure_duration_s",)
         number = acquisition[name]
         isfinite_positive(number) && isfinite_positive(Float32(number)) ||
             throw(ArgumentError("sensor $name must be positive and finite in Float32"))
@@ -211,9 +242,7 @@ end
 function _validate_sensor_optics(sensor)
     # Explicit lenslet geometry is independent of the selected active-subaperture mask.
     optics = _declaration_fields(sensor["optical_prescription"],
-        ("n_lenslets", "pixel_scale_arcsec", "diffraction_padding", "half_pixel_shift",
-         "shannon_sampling", "source_band", "source_magnitude", "source_position_angle_deg",
-         "source_separation_arcsec", "source_wavelength_m", "threshold_convolution", "valid_subaperture_threshold"),
+        ("n_lenslets", "pixel_scale_arcsec"),
         ("n_lenslets",), "sensor optical_prescription")
     count = optics["n_lenslets"]
     ispositive_integer(count) || throw(ArgumentError("n_lenslets must be a positive integer"))
@@ -222,16 +251,8 @@ function _validate_sensor_optics(sensor)
         throw(ArgumentError("Shack-Hartmann optical prescription requires square detector and subapertures"))
     all(axis -> BigInt(count) * subaperture[axis] == detector[axis], 1:2) ||
         throw(ArgumentError("lenslet geometry differs from the declared detector shape"))
-    for key in ("pixel_scale_arcsec", "source_wavelength_m", "diffraction_padding")
-        haskey(optics, key) && !isfinite_positive(optics[key]) && throw(ArgumentError("invalid sensor $key"))
-    end
-    for key in ("half_pixel_shift", "shannon_sampling")
-        haskey(optics, key) && !(optics[key] isa Bool) && throw(ArgumentError("invalid sensor $key"))
-    end
-    for key in ("source_magnitude", "source_position_angle_deg", "source_separation_arcsec", "threshold_convolution", "valid_subaperture_threshold")
-        haskey(optics, key) && !isfinite_real(optics[key]) && throw(ArgumentError("invalid sensor $key"))
-    end
-    haskey(optics, "source_band") && _declaration_text(optics["source_band"], "sensor source_band")
+    haskey(optics,"pixel_scale_arcsec") && !isfinite_positive(optics["pixel_scale_arcsec"]) &&
+        throw(ArgumentError("invalid sensor pixel_scale_arcsec"))
     return nothing
 end
 
@@ -373,9 +394,11 @@ end
 function _validate_settings_bindings(entries, profiles, defaults, settings_schema, graph_nodes)
     for entry_value in _declaration_array(entries, "settings_bindings")
         entry = _declaration_fields(entry_value,
-            ("setting", "nodes", "config", "profiles", "transform", "coupling"),
-            ("setting", "nodes"), "settings binding")
-        _validate_setting_reference(entry["setting"], defaults, settings_schema, profiles,
+            ("setting", "value", "nodes", "config", "profiles", "transform", "coupling"),
+            ("nodes",), "settings binding")
+        haskey(entry,"setting") != haskey(entry,"value") ||
+            throw(ArgumentError("settings binding requires exactly one setting or value"))
+        haskey(entry,"setting") && _validate_setting_reference(entry["setting"], defaults, settings_schema, profiles,
             "settings binding setting")
         nodes = _declaration_array(entry["nodes"], "settings binding nodes"; nonempty=true)
         for node in nodes

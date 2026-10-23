@@ -181,7 +181,7 @@ function simulation_override!(application, profile)
     overrides isa AbstractDict && Set(keys(overrides)) ⊆ Set(["backend", "device", "wall_rate"]) ||
         throw(ArgumentError("profile simulation permits only backend, device and wall_rate"))
     path = joinpath(application, "simulation.conf")
-    simulation = Common.read_json(path)
+    simulation = D.decode(path, get(ENV,"PIPEWIREAO_PREFIX","/opt/pipewireao"))
     backend = get(overrides, "backend", simulation["backend"])
     backend in ("cpu", "cuda") || throw(ArgumentError("unsupported simulation backend"))
     device = get(overrides, "device", simulation["device"])
@@ -241,6 +241,7 @@ function prepare(source::AbstractString, destination::AbstractString;
     authoring = merge_configuration(authoring, mode["application"])
     graph_configurations = pop!(authoring, "graph-configurations", [])
     configurations = pop!(authoring, "configuration-files", [])
+    configuration = pop!(authoring, "configuration", nothing)
     append!(authoring["owners"], get(profile, "devices", []))
     authoring = substitute(authoring, bindings)
     !haskey(authoring, "artifacts") && !haskey(authoring, "placement") ||
@@ -256,16 +257,24 @@ function prepare(source::AbstractString, destination::AbstractString;
         copy_source(source, application)
         manifest === nothing || RuntimeExport.copy_file(checked_path(manifest), joinpath(application, "Manifest.toml"))
         render_templates!(application, bindings, prefix)
-        simulation_override!(application, profile)
-        prepare_mode!(application, spec, mode, profile, bindings, prefix)
-        instrument = InstrumentConfiguration.prepare_publication(application)
-        simulation = D.decode(D.relative_asset(application, "simulation.conf"), prefix)
-        definition = D.decode(D.relative_asset(application, simulation["plant"]["definition"]), prefix)
+        prepare_mode!(application, spec, mode, profile, bindings, prefix;
+            configuration=something(configuration, "rtc/configuration.conf"))
+        instrument = configuration === nothing ? InstrumentConfiguration.prepare_publication(application) :
+            InstrumentConfiguration.prepare_publication(application; configuration)
+        spec["instrument"] = relpath(instrument, application)
+        if isfile(joinpath(application,"simulation.conf"))
+            simulation = D.decode(joinpath(application,"simulation.conf"),prefix)
+            get(simulation,"version",nothing) == 3 && InstrumentConfiguration.prepare_simulation_configuration!(application)
+            simulation_override!(application, profile)
+        end
+        rtc = InstrumentConfiguration.load_rtc(D.relative_asset(application,
+            something(configuration, "rtc/configuration.conf")))
         prepare_graph_configurations!(application, graph_configurations,
-            relpath(instrument, application), prefix; dimensions=get(definition, "dimensions", Dict()))
+            relpath(instrument, application), prefix; dimensions=rtc.document["dimensions"],
+            mirror_controls=rtc.controls["deformable_mirrors"])
         prepare_session_configuration!(application, spec, graph_configurations,
             relpath(instrument, application), prefix;
-            dimensions=get(definition, "dimensions", Dict()), configurations)
+            dimensions=rtc.document["dimensions"], mirror_controls=rtc.controls["deformable_mirrors"], configurations)
         Common.write_json(joinpath(application, "deployment.conf"), spec; atomic=true)
         seal!(application)
         D.validate_application(Common.read_json(joinpath(application, "deployment.conf")),
