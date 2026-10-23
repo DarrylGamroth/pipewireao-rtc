@@ -839,9 +839,32 @@ adapter files retain SPA-JSON. Published metadata retains JSON. Strict JSON
 outputs have no comment header; the deployment manifest records their identity.
 
 Named portable profile YAML declares mode, device owners, calibration and
-endpoint bindings. A separate host YAML declares placement, CPU/priority bindings,
-environment, analysis CPUs and simulator execution overrides. Conflicting values
-and host attempts to change portable device/mode/calibration choices are rejected.
+endpoint bindings. A separate host YAML declares `scheduling.processes`,
+environment, analysis CPUs and simulator execution overrides. Scheduling process
+entries use the existing native placement fields. `cpus` and `leader-cpu` are
+required; `rt-priority`, `locked-bytes` and `threads` default to `0`, `0` and `[]`.
+Optional `scheduling.defaults` supplies common values for those three fields,
+with explicit process fields taking precedence. The existing placement validator
+checks each effective contract before template expansion.
+
+`scheduling.bindings` maps application template names to ordinary RFC 6901
+`{$ref: /processes/<role>/...}` selectors into those effective contracts.
+A scalar selector returns an integer. A selector for a CPU list, or an ordered
+list of scalar CPU selectors, produces the comma-separated argument required by
+existing worker interfaces; CPU order is preserved. Selectors cannot refer to
+bindings or evaluate expressions. Native `placement` and scalar/string `bindings`
+are generated together; they are not separate host authoring inputs. Ordinary
+non-scheduling arguments can remain in top-level `bindings`. Existing reserved
+CPU/priority binding conventions must use scheduling references. Arbitrary
+application binding names carry no inferred meaning; their selectors are explicit.
+
+`locked-bytes` remains a minimum observed locked-memory requirement in bytes,
+not an allocation or an mlock request. `threads` remains a list of observed
+thread requirements (CPU affinity, scheduler policy, priority, exact count and
+optional exact name), not a thread-creation instruction. An empty list imposes
+no particular thread matches; process-wide affinity/scheduling checks still apply.
+Conflicting values and host attempts to change portable device/mode/calibration
+choices are rejected. No runtime scheduler, admission or native contract changes.
 These deployment profiles are separate from numerical mirror profile selections.
 
 Package `data/simulation/` supplies shared startup-settings schemas. A simulation

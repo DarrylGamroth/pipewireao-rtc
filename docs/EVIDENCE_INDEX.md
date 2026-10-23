@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## Host scheduling derivation — 2026-10-23
+
+The [review](reviews/20261023-host-scheduling/REVIEW.md) records generic scheduling
+normalization, exact host-output equality, unchanged runtime boundaries and CPU
+verification. See the [current work](roadmap.md#one-host-scheduling-description--2026-10-23).
+
 ## Optical authoring and project consistency — 2026-10-23
 
 The [independent review](reviews/20261023-optical-authoring/REVIEW.md) records

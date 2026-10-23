@@ -23,6 +23,7 @@ const TEMPLATE_FILES = ("core.conf.in", "client-rtc.conf.in", "client-julia.conf
     "client-simulator.conf.in", "client-analysis.conf.in")
 
 include("authoring.jl")
+include("host_scheduling.jl")
 include("instrument_profiles.jl")
 include("instrument_modes.jl")
 include("graph_configuration.jl")

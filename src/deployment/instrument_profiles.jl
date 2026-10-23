@@ -1,5 +1,5 @@
 const INSTRUMENT_PROFILE_FIELDS = Set(["mode", "bindings", "devices", "calibration"])
-const HOST_PROFILE_FIELDS = Set(["placement", "bindings", "environment", "analysis", "simulation"])
+const HOST_PROFILE_FIELDS = Set(["scheduling", "bindings", "environment", "analysis", "simulation"])
 
 function profile_fields(document, allowed, label)
     document isa AbstractDict || throw(ArgumentError("$label must be a mapping"))
@@ -35,8 +35,10 @@ end
 """Combine portable instrument choices and host configuration without overriding values.
 
 The instrument profile accepts `mode`, device `bindings`, `devices` and
-`calibration`. The host accepts `placement`, `bindings`, `environment`, `analysis`
-and `simulation`. Host configuration cannot replace instrument choices. Mappings
+`calibration`. The host accepts `scheduling`, non-scheduling `bindings`, `environment`,
+`analysis` and `simulation`. Scheduling derives native placement and template
+bindings from one process declaration using JSON Pointer references. Host
+configuration cannot replace instrument choices. Mappings
 merge recursively; repeated leaves must be identical, and lists never append.
 The ordinary exporter still requires exact placement for all selected roles.
 """
@@ -48,7 +50,13 @@ function combine_profile(profile, host=nothing)
     end
     host === nothing && return deepcopy(profile)
     profile_fields(host, HOST_PROFILE_FIELDS, "host profile")
-    return merge_profile(profile, host)
+    for name in keys(get(host, "bindings", Dict()))
+        (name == "RT_PRIORITY" || endswith(name, "_CPU") || endswith(name, "_CPUS")) &&
+            throw(ArgumentError("scheduling binding must be derived from host scheduling: $name"))
+    end
+    compiled = host_scheduling(host)
+    profile_fields(compiled, union(setdiff(HOST_PROFILE_FIELDS, Set(["scheduling"])), Set(["placement"])), "resolved host profile")
+    return merge_profile(profile, compiled)
 end
 
 "Read bounded YAML instrument and optional host profiles before export."

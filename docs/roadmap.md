@@ -12,6 +12,20 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### One host scheduling description — 2026-10-23
+
+Host authoring now declares `scheduling.processes` once. Existing JSON Pointer
+references in `scheduling.bindings` derive template arguments from the completed
+contracts; native bindings and placement checks are generated together. Optional
+common defaults retain existing priority, locked-memory and thread requirements.
+Ordered CPU subsets preserve worker pinning order. No scheduler or native runtime
+contract changed, and there are no instrument-specific role mappings.
+Both Classic host examples have identical resolved output to their predecessors.
+Independent review found no confirmed issue. CPU validation passed, including
+all 841 mode assertions, the 480-sample owner/settings worker and focused
+scheduling/export tests. See the [review](reviews/20261023-host-scheduling/REVIEW.md)
+and instrument `MIGRATION.md`. The live RTC remains unchanged.
+
 ### Optical components, named profiles and consistency review — 2026-10-23
 
 Classic simulation YAML now names optical components and connections; shared RTC
