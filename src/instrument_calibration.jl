@@ -27,9 +27,11 @@ function source_completion(path; expected_sha256, shape, axes=(2, 1))
 end
 
 function read_parameters(application)
-    entries = GraphOwner.bindings(joinpath(application, "rtc", "parameters.conf"))
-    return Dict(entry.port => Artifacts.prepare(
-        entry.source, entry.element_type, entry.shape).data for entry in entries)
+    # This cold API loads the optional scientific owner; core startup stays independent.
+    Base.require(Main, :FilterGraphIsland)
+    return Base.invokelatest(GraphOwner.read_bindings,
+        joinpath(application, "rtc", "graph.conf"),
+        joinpath(application, "rtc", "parameters.conf"))
 end
 
 "Reject source instruments before numerical calibration or validation starts."
@@ -198,10 +200,19 @@ function replace_dimensions!(application, parameters, n; measurement_count, comm
     document = DeploymentConfiguration.decode(path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
     for entry in document["parameters"]
         array = parameters[Symbol(entry["port"])]
-        entry["shape"] = collect(size(array))
         write_fits(joinpath(dirname(path), entry["path"]), array)
     end
-    Common.write_json(path, document)
+    simulation = DeploymentConfiguration.decode(joinpath(application, "simulation.conf"),
+        get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
+    instrument_path = DeploymentConfiguration.relative_asset(application, simulation["plant"]["definition"])
+    instrument = DeploymentConfiguration.decode(instrument_path,
+        get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
+    dimensions = get!(instrument, "dimensions", Dict{String,Any}())
+    for name in ("controller_command_count", "active_vdm_count", "state_length")
+        dimensions[name] = n
+    end
+    Common.write_json(instrument_path, instrument; atomic=true)
+    InstrumentConfiguration.prepare_publication(application)
     session_path = joinpath(application, "rtc", "session.conf.in")
     session = DeploymentConfiguration.decode(session_path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
     update_reconstructor!(session, n, measurement_count)

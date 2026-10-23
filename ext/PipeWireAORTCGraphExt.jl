@@ -11,6 +11,23 @@ const Bootstrap = PipeWireAORTC.NativeOwnerBootstrapRuntime
 
 include("analysis.jl")
 
+function Owner.read_bindings(graph_path::AbstractString, binding_path::AbstractString)
+    options = FilterGraphIsland.parse_arguments([
+        "--graph", String(graph_path), "--check", "--execution", "complete-frame"])
+    entries = Owner.bindings(binding_path)
+    updates = Pair{Symbol,Array}[]
+    graph = FilterGraphIsland.prepare_service_graph(options;
+        initial_parameters=formats -> begin
+            append!(updates, Owner.prepare_bindings(entries, formats))
+            updates
+        end)
+    try
+        return Dict(updates)
+    finally
+        FilterGraphIsland.close_execution(graph)
+    end
+end
+
 function Owner.run_owner(island::Module, options, runtime, entries)
     Bootstrap.preparation_check!(runtime)
     options.check && throw(ArgumentError("native graph owner cannot run --check"))

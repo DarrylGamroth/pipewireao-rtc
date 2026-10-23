@@ -5,11 +5,10 @@ import ..Artifacts
 import ..DeploymentConfiguration
 import ..NativeOwnerBootstrapRuntime
 
-public main
+public main, read_bindings
 
 const Bootstrap = NativeOwnerBootstrapRuntime
 const MAX_RETAINED_BYTES = 512 * 1024 * 1024
-const ELEMENT_TYPES = Dict(string(T) => T for T in Artifacts.TARGET_TYPES)
 
 """Extract RTC bootstrap and FITS bindings while preserving graph CLI arguments."""
 function arguments(arguments)
@@ -55,8 +54,6 @@ end
 struct FITSBinding
     port::Symbol
     source::Artifacts.FITSArtifact
-    element_type::DataType
-    shape::Tuple{Vararg{Int}}
 end
 
 function bindings(path::AbstractString)
@@ -67,11 +64,10 @@ function bindings(path::AbstractString)
     entries isa AbstractVector || throw(ArgumentError("FITS parameters must be an array"))
     result = FITSBinding[]
     ports = Set{Symbol}()
-    total = 0
     for entry in entries
-        entry isa AbstractDict && all(key -> key in ("port", "path", "hdu", "axes", "type", "shape"), keys(entry)) ||
+        entry isa AbstractDict && all(key -> key in ("port", "path", "hdu", "axes"), keys(entry)) ||
             throw(ArgumentError("invalid FITS binding fields"))
-        for key in ("port", "path", "type")
+        for key in ("port", "path")
             value = get(entry, key, nothing)
             value isa String && !isempty(value) && !occursin('\0', value) ||
                 throw(ArgumentError("FITS binding requires nonempty $key"))
@@ -79,41 +75,48 @@ function bindings(path::AbstractString)
         port = Symbol(entry["port"])
         port in ports && throw(ArgumentError("duplicate FITS parameter $port"))
         push!(ports, port)
-        T = get(ELEMENT_TYPES, entry["type"], nothing)
-        T === nothing && throw(ArgumentError("unsupported FITS parameter type"))
-        shape = Artifacts.checked_shape(get(entry, "shape", nothing), sizeof(T))
         axes = get(entry, "axes", nothing)
-        length(shape) > 1 && axes === nothing && throw(ArgumentError("multidimensional FITS binding requires axes"))
         source = Artifacts.FITSArtifact(joinpath(dirname(abspath(path)), entry["path"]);
             hdu=get(entry, "hdu", 1), axes)
-        source.axes === nothing || length(source.axes) == length(shape) ||
-            throw(DimensionMismatch("FITS binding axes and shape ranks differ"))
-        total += prod(shape) * sizeof(T)
-        total <= MAX_RETAINED_BYTES || throw(ArgumentError("retained FITS parameters exceed 512 MiB"))
-        push!(result, FITSBinding(port, source, T, shape))
+        push!(result, FITSBinding(port, source))
     end
     return result
 end
 
 """Validate every declaration before reading FITS, then retain owned logical arrays."""
 function prepare_bindings(entries, formats; check=()->nothing)
+    total = 0
+    ports = Set{Symbol}()
     for entry in entries
         check()
+        entry.port in ports && throw(ArgumentError("duplicate FITS parameter $(entry.port)"))
+        push!(ports, entry.port)
         haskey(formats, entry.port) || throw(ArgumentError("Graph has no external Parameter Port '$(entry.port)'"))
         format = getproperty(formats, entry.port)
-        format.element_type === entry.element_type || throw(ArgumentError("Parameter $(entry.port) requires $(format.element_type)"))
-        format.shape == entry.shape || throw(DimensionMismatch("Parameter $(entry.port) requires $(format.shape)"))
+        T = format.element_type
+        T in Artifacts.TARGET_TYPES || throw(ArgumentError("unsupported FITS parameter type: $T"))
+        shape = Artifacts.checked_shape(format.shape, sizeof(T))
+        length(shape) > 1 && entry.source.axes === nothing &&
+            throw(ArgumentError("multidimensional FITS binding requires axes"))
+        entry.source.axes === nothing || length(entry.source.axes) == length(shape) ||
+            throw(DimensionMismatch("FITS binding axes and graph parameter ranks differ"))
+        total += prod(shape) * sizeof(T)
+        total <= MAX_RETAINED_BYTES || throw(ArgumentError("retained FITS parameters exceed 512 MiB"))
     end
     prepared = Artifacts.PreparedArtifact[]
     for entry in entries
         check()
-        push!(prepared, Artifacts.prepare(entry.source, entry.element_type, entry.shape; check))
+        format = getproperty(formats, entry.port)
+        push!(prepared, Artifacts.prepare(entry.source, format.element_type, format.shape; check))
     end
     check()
     return [entry.port => artifact.data for (entry, artifact) in zip(entries, prepared)]
 end
 
 function run_owner end
+
+"""Read FITS startup arrays against a graph's typed parameter formats (optional JFG extension)."""
+function read_bindings end
 
 function _main(args; with_owner=Bootstrap.with_owner,
         load_science=() -> Base.require(Main, :FilterGraphIsland), run=run_owner)
@@ -137,8 +140,9 @@ Run a package-owned JFG scientific process. Publish bootstrap Preparing before
 loading FilterGraphIsland. Required bootstrap flags are `--bootstrap-node`,
 `--bootstrap-instance`, and absolute `--remote`; other graph flags are forwarded.
 `--fits-bindings PATH` selects a native SPA-JSON document with `parameters` entries
-containing `port`, `path`, `type`, `shape`, optional one-based `hdu` and FITS `axes`.
-Paths resolve relative to the manifest. Multidimensional images require explicit
+containing `port`, `path`, optional one-based `hdu` and FITS `axes`. The graph's
+typed Parameter Ports define element types and shapes. Paths resolve relative to
+the manifest. Multidimensional images require explicit
 axes. FITS startup does not change legacy raw `--parameter` file semantics.
 """
 main(args) = _main(args)
