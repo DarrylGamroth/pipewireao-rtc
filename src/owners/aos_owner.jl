@@ -193,9 +193,10 @@ function configuration(path::AbstractString)
     pacing_rate_hz = integer(document["pacing_rate_hz"], "pacing_rate_hz", 0, rate)
     pacing_period_ns = pacing_rate_hz == 0 ? UInt64(0) : UInt64(div(1_000_000_000 + div(pacing_rate_hz, 2), pacing_rate_hz))
     backend = Symbol(text(document["backend"], "backend"))
-    backend in (:cpu, :cuda) || throw(ArgumentError("AOS backend must be cpu or cuda"))
+    backend in (:cpu, :cuda, :amdgpu) || throw(ArgumentError("AOS backend must be cpu, cuda or amdgpu"))
     device = integer(document["device"], "device", 0, typemax(Int32))
     backend == :cpu && device != 0 && throw(ArgumentError("CPU backend requires device 0"))
+    backend == :amdgpu && device == 0 && throw(ArgumentError("AMDGPU device identifiers start at 1"))
     command_node = node_name(get(document, "command_node", "simulator-command"), "command node")
     frame_encoding = version == 1 ? :uint16 : Symbol(text(document["frame_encoding"], "frame_encoding"))
     frame_encoding === :uint16 || throw(ArgumentError("AOS frame_encoding must be uint16"))
@@ -341,6 +342,7 @@ function _main(args; with_owner=Bootstrap.with_owner,
             Base.require(Main, :AdaptiveOpticsSimPipeWireHIL)
         end,
         load_cuda=() -> Base.require(Main, :CUDA),
+        load_amdgpu=() -> Base.require(Main, :AMDGPU),
         load_plant=load_instrument, run=run_owner)
     invocation = arguments(args)
     options = configuration(invocation.config)
@@ -351,6 +353,7 @@ function _main(args; with_owner=Bootstrap.with_owner,
         load_science()
         admitted.owner_check()
         admitted.backend === :cuda && load_cuda()
+        admitted.backend === :amdgpu && load_amdgpu()
         admitted.owner_check()
         if admitted.version == 3
             InstrumentDefinition.verify_declaration(admitted)

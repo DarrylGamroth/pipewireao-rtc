@@ -862,7 +862,11 @@ provide a binding map or CPU/priority argument aliases. Ordinary endpoint
 arguments can remain in top-level `bindings`. Simulator `pacing_rate_hz` is the
 requested exchange cadence, separate from its physical model sample rate; zero
 means unpaced execution. Model period, exposure and per-exchange stepping are
-unchanged by this scheduling derivation.
+unchanged by this scheduling derivation. Optional accelerator dependencies are
+standard source `Project.toml` weak dependencies; export promotes the selected
+simulator backend into the generated application's direct dependencies. Each
+backend resolves and freezes its own environment rather than requiring CUDA and
+AMDGPU compiler stacks to coexist. CPU builds promote neither dependency.
 
 `locked-bytes` remains a minimum observed locked-memory requirement in bytes,
 not an allocation or an mlock request. `threads` remains a list of observed

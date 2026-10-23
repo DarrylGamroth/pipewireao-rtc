@@ -27,9 +27,12 @@ mutable struct OwnerState
 end
 OwnerState() = OwnerState(false, false, 0, 0, 0, 1)
 
+target_device(::Val{:cpu}, device) = Backends.HostComputeDevice()
+target_device(::Val{:cuda}, device) = Backends.AcceleratorComputeDevice(Backends.CUDABackend(), device)
+target_device(::Val{:amdgpu}, device) = Backends.AcceleratorComputeDevice(Backends.AMDGPUBackend(), device)
+
 function target(options)
-    device = options.backend === :cpu ? Backends.HostComputeDevice() :
-        Backends.AcceleratorComputeDevice(Backends.CUDABackend(), options.device)
+    device = target_device(Val(options.backend), options.device)
     availability = Backends.compute_device_availability(device)
     Backends.compute_device_is_available(availability) || throw(ArgumentError(
         "requested $(options.backend) backend is unavailable: $(Backends.compute_device_unavailable_reason(availability))"))

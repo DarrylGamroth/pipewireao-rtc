@@ -168,6 +168,20 @@ end
             load_cuda=() -> push!(events, :cuda), run=options -> push!(events, :run)) == 0
         @test events == [:preparing, :check, :science, :check, :cuda, :check, :run, :cleanup]
         empty!(events)
+        document["backend"] = "amdgpu"
+        document["device"] = 1
+        write(path, JSON.json(document))
+        @test Owner.configuration(path).backend === :amdgpu
+        @test Owner._main(argv; with_owner, load_science=() -> push!(events, :science),
+            load_cuda=() -> error("CUDA must not load for AMDGPU"),
+            load_amdgpu=() -> push!(events, :amdgpu), run=options -> push!(events, :run)) == 0
+        @test events == [:preparing, :check, :science, :check, :amdgpu, :check, :run, :cleanup]
+        document["device"] = 0
+        write(path, JSON.json(document))
+        @test_throws ArgumentError Owner.configuration(path)
+        document["device"] = 1
+        write(path, JSON.json(document))
+        empty!(events)
         cancelled = (f, options) -> begin
             push!(events, :preparing)
             try
@@ -179,7 +193,7 @@ end
         @test_throws InterruptException Owner._main(argv; with_owner=cancelled,
             load_science=() -> push!(events, :science))
         @test events == [:preparing, :cleanup]
-        @test !any(id -> id.name in ("AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL", "CUDA", "REVOLTClassicSim"), keys(Base.loaded_modules))
+        @test !any(id -> id.name in ("AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL", "CUDA", "AMDGPU", "REVOLTClassicSim"), keys(Base.loaded_modules))
         for (key, value) in (("version", true), ("command_count", false), ("frame_shape", [2, 0]),
             ("backend", "automatic"), ("device", -1), ("pacing_rate_hz", 501), ("pacing_rate_hz", -1),
             ("pacing_rate_hz", true), ("pacing_rate_hz", 1.5), ("rate", 0),
@@ -340,7 +354,7 @@ end
         @test report["plant"]["package"] == "REVOLTClassicSim"
         @test report["plant"]["settings"]["profile"] == "grid_gaussian"
         @test report["startup_calibration_identity"] == "classic-test-startup-calibration"
-        @test !any(id -> id.name in ("AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL", "CUDA", "REVOLTClassicSim"), keys(Base.loaded_modules))
+        @test !any(id -> id.name in ("AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL", "CUDA", "AMDGPU", "REVOLTClassicSim"), keys(Base.loaded_modules))
     end
 end
 

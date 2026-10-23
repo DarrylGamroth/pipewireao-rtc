@@ -153,6 +153,27 @@ function profile!(spec, profile, bindings)
     return spec
 end
 
+# Optional accelerator packages become direct dependencies only in the selected
+# generated application. Package UUIDs and compatibility remain source metadata.
+function prepare_backend_environment!(application, backend)
+    path = joinpath(application, "Project.toml")
+    project = TOML.parsefile(path)
+    optional = get(project, "weakdeps", Dict())
+    package = backend == "cuda" ? "CUDA" : backend == "amdgpu" ? "AMDGPU" : nothing
+    package === nothing && return nothing
+    haskey(optional, package) || return nothing
+    dependencies = get!(project, "deps", Dict{String,Any}())
+    haskey(dependencies, package) && dependencies[package] != optional[package] &&
+        throw(ArgumentError("conflicting backend package UUID: $package"))
+    dependencies[package] = pop!(optional, package)
+    isempty(optional) && pop!(project, "weakdeps", nothing)
+    open(path, "w") do io
+        println(io, "# Generated from application package metadata and the selected simulator backend.")
+        TOML.print(io, project; sorted=true)
+    end
+    return nothing
+end
+
 function simulation_override!(application, profile)
     overrides = get(profile, "simulation", Dict())
     overrides isa AbstractDict && Set(keys(overrides)) ⊆ Set(["backend", "device", "pacing_rate_hz"]) ||
@@ -160,10 +181,11 @@ function simulation_override!(application, profile)
     path = joinpath(application, "simulation.conf")
     simulation = D.decode(path, get(ENV,"PIPEWIREAO_PREFIX","/opt/pipewireao"))
     backend = get(overrides, "backend", simulation["backend"])
-    backend in ("cpu", "cuda") || throw(ArgumentError("unsupported simulation backend"))
+    backend in ("cpu", "cuda", "amdgpu") || throw(ArgumentError("unsupported simulation backend"))
     device = get(overrides, "device", simulation["device"])
     typeof(device) === Int && 0 <= device <= typemax(Int32) || throw(ArgumentError("simulation device must be a nonnegative integer"))
     backend == "cpu" && device != 0 && throw(ArgumentError("CPU simulation backend requires device 0"))
+    backend == "amdgpu" && device == 0 && throw(ArgumentError("AMDGPU device identifiers start at 1"))
     pacing_rate_hz = get(overrides, "pacing_rate_hz", simulation["pacing_rate_hz"])
     typeof(pacing_rate_hz) === Int && 0 <= pacing_rate_hz <= simulation["rate"] ||
         throw(ArgumentError("simulation pacing_rate_hz must be an integer between zero and the model rate"))
@@ -233,6 +255,7 @@ function prepare(source::AbstractString, destination::AbstractString;
     metadata = TOML.parsefile(joinpath(source, "Project.toml"))
     !haskey(metadata, "sources") || throw(ArgumentError("instrument Project.toml must not override package sources"))
     spec = profile!(substitute(authoring, bindings), profile, bindings)
+    uses_aos = any(owner -> get(owner, "kind", nothing) == "aos", spec["owners"])
     prepare_owner_scheduling!(spec, profile)
     mkpath(dirname(destination))
     staging = mktempdir(dirname(destination); prefix="instrument-export-")
@@ -251,6 +274,8 @@ function prepare(source::AbstractString, destination::AbstractString;
             simulation = D.decode(joinpath(application,"simulation.conf"),prefix)
             get(simulation,"version",nothing) == 3 && InstrumentConfiguration.prepare_simulation_configuration!(application)
             simulation_override!(application, profile)
+            selected = D.decode(joinpath(application,"simulation.conf"),prefix)
+            uses_aos && prepare_backend_environment!(application, selected["backend"])
         end
         rtc = InstrumentConfiguration.load_rtc(D.relative_asset(application,
             something(configuration, "rtc/configuration.yaml")))

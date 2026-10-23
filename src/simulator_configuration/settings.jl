@@ -28,6 +28,7 @@ function scientific_worker(config, output; prepare=false)
         Base.require(Main, :AdaptiveOpticsSim)
         Base.require(Main, :AdaptiveOpticsSimPipeWireHIL)
         options.backend === :cuda && Base.require(Main, :CUDA)
+        options.backend === :amdgpu && Base.require(Main, :AMDGPU)
         invocation = merge(options, (; plant_module=instrument,
             remote=joinpath(dirname(output), "unused-preflight-socket"), control_node="simulator-preflight"))
         Base.invokelatest(AOSOwner.prepare_science, invocation)

@@ -165,3 +165,18 @@ end
         @test_throws ArgumentError AOSPreparationOwner.prepare_science(mismatched)
     end
 end
+
+@testset "AOS backend selection preserves vendor device identifiers" begin
+    backends = AdaptiveOpticsSim.Backends
+    cpu = AOSReportExtension.target_device(Val(:cpu), 0)
+    cuda = AOSReportExtension.target_device(Val(:cuda), 0)
+    amd = AOSReportExtension.target_device(Val(:amdgpu), 1)
+    @test backends.compute_device_backend(cpu) isa backends.CPUBackend
+    @test backends.compute_device_backend(cuda) isa backends.CUDABackend
+    @test backends.compute_device_identifier(cuda) == 0
+    @test backends.compute_device_backend(amd) isa backends.AMDGPUBackend
+    @test backends.compute_device_identifier(amd) == 1
+    @test !any(id.name in ("CUDA", "AMDGPU") for id in keys(Base.loaded_modules))
+    @test_throws ArgumentError AOSReportExtension.target((;backend=:cuda,device=0))
+    @test_throws ArgumentError AOSReportExtension.target((;backend=:amdgpu,device=1))
+end

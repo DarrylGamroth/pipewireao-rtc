@@ -12,6 +12,24 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### CUDA and AMDGPU simulator host profiles — 2026-10-23
+
+Classic's portable simulator profile now has CPU, CUDA and AMDGPU host examples.
+The shared RTC accepts `amdgpu`, loads AMDGPU only when selected (including
+Settings preflight), and uses AOS's existing AMDGPU compute-device interface.
+Device identifiers preserve backend conventions: CUDA starts at zero, AMDGPU at
+one. Invalid AMDGPU zero is rejected before artifact loading/export. Neither
+backend falls back to CPU. GPU examples request 500 Hz pacing; this is not a
+throughput claim. Instrument/controller contracts are shared across profiles. Source package
+metadata declares optional GPU packages; generated applications depend directly
+on only the selected backend. CUDA 6.4.2 and AMDGPU 2.8.0 resolve separately;
+forcing both into one environment conflicts on LLVM. AMDGPU 2.9 also conflicts
+with the current AOS KernelAbstractions constraint, so no numerical dependency
+upgrade is included.
+Focused owner/export tests and CPU graph/reset checks pass; new profile exports
+are checked without loading either GPU package. No live deployment changed and
+no new GPU execution or timing qualification is claimed.
+
 ### Launcher-owned scheduling arguments — 2026-10-23
 
 This supersedes the binding-map interface recorded below. Host YAML declares

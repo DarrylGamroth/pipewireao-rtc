@@ -1,4 +1,4 @@
-using Test, PipeWireAORTC, JSON
+using Test, PipeWireAORTC, JSON, TOML
 
 const E = PipeWireAORTC.InstrumentExport
 const C = PipeWireAORTC.Common
@@ -251,11 +251,17 @@ end
         @test prepared["pacing_rate_hz"] == 10
         @test prepared["plant"] == simulation["plant"]
         for overrides in (Dict("rate" => 10), Dict("plant" => Dict()), Dict("backend" => "unknown"),
-                Dict("device" => -1), Dict("device" => true), Dict("pacing_rate_hz" => 501))
+                Dict("device" => -1), Dict("device" => true), Dict("pacing_rate_hz" => 501),
+                Dict("backend" => "amdgpu", "device" => 0))
             before = read(path)
             @test_throws ArgumentError E.simulation_override!(directory, Dict("simulation" => overrides))
             @test read(path) == before
         end
+        E.simulation_override!(directory, Dict("simulation" => Dict("backend" => "amdgpu", "device" => 1)))
+        amd = C.read_json(path)
+        @test amd["backend"] == "amdgpu"
+        @test amd["device"] == 1
+        @test amd["plant"] == simulation["plant"]
     end
 end
 
@@ -318,5 +324,22 @@ end
         @test_throws ArgumentError E.selected_mode(directory,Dict("devices"=>[Dict("role"=>"camera")],"calibration"=>nothing))
         @test_throws ArgumentError E.selected_mode(directory,Dict("devices"=>nothing,"calibration"=>Dict()))
         @test E.selected_mode(directory,Dict("devices"=>[Dict("role"=>"camera")],"calibration"=>Dict())) == mode
+    end
+end
+
+@testset "generated application selects one optional accelerator dependency" begin
+    mktempdir() do directory
+        path = joinpath(directory, "Project.toml")
+        source = "[deps]\nJSON = \"682c06a0-de6a-54ab-a142-c8b1cf79cde6\"\n[weakdeps]\nCUDA = \"052768ef-5323-5732-b1bb-66c8b64840ba\"\nAMDGPU = \"21141c5a-9bdb-4563-92ae-f87d6854732e\"\n[compat]\nCUDA = \"=6.4.2\"\nAMDGPU = \"=2.8.0\"\n"
+        for (backend, selected) in (("cpu", nothing), ("cuda", "CUDA"), ("amdgpu", "AMDGPU"))
+            write(path, source)
+            E.prepare_backend_environment!(directory, backend)
+            project = TOML.parsefile(path)
+            @test haskey(project["deps"], "CUDA") == (selected == "CUDA")
+            @test haskey(project["deps"], "AMDGPU") == (selected == "AMDGPU")
+            @test project["compat"] == Dict("CUDA" => "=6.4.2", "AMDGPU" => "=2.8.0")
+            selected === nothing ? (@test read(path, String) == source) :
+                (@test startswith(read(path, String), "# Generated"))
+        end
     end
 end
