@@ -22,9 +22,12 @@ properties publish the same description on the adapter and simulated mirror
 interfaces, with explicit, distinct physical/simulation command units.
 
 The [validation record](validation/mirror-description-20261022/README.md) records
-602 cold scientific, 876 CPU and 2,645 RTC checks. Local registration, final
-application checks and the CPU live replacement are being completed. GPU and
-physical-device qualification are outside this increment.
+602 cold scientific, 876 CPU and 2,645 RTC checks, plus 194 final focused checks.
+Locally registered ClassicSim 0.2.6/RTC 0.2.7 pass 25 application, 60 calibration
+and 80 offline checks. The CPU RTC and software GUI are live: both mirror nodes
+publish the exact file, WFS summaries agree across 31 cohorts, and all seven owned
+roles exclude GPU use. The old session shut down cleanly. Physical-device,
+measured-influence, sustained cadence and latency qualification remain separate.
 
 ### Shared Classic instrument definition — 2026-10-22
 
