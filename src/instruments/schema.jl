@@ -104,7 +104,7 @@ function _validate_mirror_declaration(spec, directory, name, defaults, settings_
             isfinite_real(value) || throw(ArgumentError("mirror limiter $key must be finite"))
         end
     end
-    _validate_shape_control(mirror["shape_control"])
+    _validate_shape_control(mirror["shape_control"],mirror["units"],directory)
     return nothing
 end
 
@@ -112,22 +112,35 @@ isfinite_real(value::Real) = isfinite(value)
 isfinite_real(::Bool) = false
 isfinite_real(value) = false
 
-function _validate_shape_control(value)
-    shape = _declaration_fields(value, ("coefficient_limit", "zernike", "fourier", "provenance"),
-        ("coefficient_limit", "zernike", "fourier", "provenance"), "shape_control")
-    isfinite_positive(shape["coefficient_limit"]) || throw(ArgumentError("shape coefficient_limit must be finite and positive"))
-    _declaration_text(shape["provenance"], "shape-control provenance")
-    zernike = _declaration_fields(shape["zernike"], ("modes",), ("modes",), "Zernike settings")
-    modes = _declaration_array(zernike["modes"], "Zernike modes"; nonempty=true)
-    for mode in modes
-        entry = _declaration_fields(mode, ("n", "m", "name"), ("n", "m", "name"), "Zernike mode")
-        isnonnegative_integer(entry["n"]) || throw(ArgumentError("Zernike n must be a nonnegative integer"))
-        isinteger_value(entry["m"]) || throw(ArgumentError("Zernike m must be an integer"))
-        _declaration_text(entry["name"], "Zernike mode name")
+function _validate_shape_control(value, units, directory)
+    shape = _declaration_fields(value,("bases",),("bases",),"shape_control")
+    bases = _declaration_array(shape["bases"],"bases")
+    length(bases) <= 16 || throw(ArgumentError("shape_control requires at most 16 bases"))
+    ids = Set{String}()
+    for basis in bases
+        definition = InstrumentDefinition.basis_header(basis,units)
+        basis["id"] in ids && throw(ArgumentError("duplicate basis id"))
+        push!(ids,basis["id"])
+        kind = definition["kind"]
+        if kind == "zernike"
+            _declaration_fields(definition,("kind","modes"),("kind","modes"),"Zernike definition")
+            InstrumentDefinition.zernike_modes(definition["modes"])
+        elseif kind == "fourier"
+            _declaration_fields(definition,("kind","max_frequency"),("kind","max_frequency"),"Fourier definition")
+            cap = definition["max_frequency"]
+            ispositive_integer(cap) && cap <= 64 || throw(ArgumentError("Fourier max_frequency must be in 1:64"))
+        else
+            _declaration_fields(definition,("kind","artifact","command_order","names"),
+                ("kind","artifact","command_order","names"),"sampled definition")
+            definition["command_order"] == "mirror" || throw(ArgumentError("sampled command_order must be mirror"))
+            _validate_artifact(definition["artifact"],directory,"sampled basis artifact")
+            shape = definition["artifact"]["shape"]
+            length(shape) == 2 || throw(ArgumentError("sampled basis artifact must have rank 2"))
+            names = _declaration_array(definition["names"],"sampled mode names";nonempty=true)
+            length(names) == shape[2] && length(names) <= 64 && all(InstrumentDefinition.bounded_text,names) &&
+                length(unique(names)) == length(names) || throw(ArgumentError("sampled modes require 1:64 unique names matching artifact columns"))
+        end
     end
-    fourier = _declaration_fields(shape["fourier"], ("max_frequency",),
-        ("max_frequency",), "Fourier settings")
-    isnonnegative_integer(fourier["max_frequency"]) || throw(ArgumentError("Fourier max_frequency must be a nonnegative integer"))
     return nothing
 end
 

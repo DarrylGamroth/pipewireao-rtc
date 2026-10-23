@@ -22,6 +22,10 @@ function artifact_paths(declaration,configured)
     paths = Set{String}()
     for spec in values(declaration.document["deformable_mirrors"])
         push!(paths,spec["description"])
+        for basis in spec["shape_control"]["bases"]
+            definition = basis["definition"]
+            definition["kind"] == "sampled" && push!(paths,definition["artifact"]["path"])
+        end
     end
     for spec in values(declaration.document["wavefront_sensors"])
         push!(paths,spec["subaperture_origins"]["path"])
@@ -73,6 +77,37 @@ function sensor_layout(declaration,spec)
         provenance=spec["provenance"])
 end
 
+function resolve_basis(declaration, basis, description, source)
+    definition = basis["definition"]
+    kind = definition["kind"]
+    resolved = if kind == "zernike"
+        (;kind,positions=source.zernike_positions,modes=_instrument_seal(definition["modes"]))
+    elseif kind == "fourier"
+        columns,rows = description.layout.grid_shape
+        cap = definition["max_frequency"]
+        max_x,max_y = min(cap,max(0,(columns-2)÷2)),min(cap,max(0,(rows-2)÷2))
+        # Bound the descriptor before constructing it; never truncate a basis.
+        count = max_x + max_y * (2 * max_x + 1)
+        1 <= count <= 256 || throw(ArgumentError("Fourier basis requires 1:256 frequencies; reduce max_frequency"))
+        frequencies = Tuple((x,y) for y in 0:max_y for x in -max_x:max_x if y > 0 || x > 0)
+        (;kind,positions=source.fourier_positions,frequencies,axis_units="cycles / source axis")
+    else
+        artifact = definition["artifact"]
+        shape = Tuple(artifact["shape"])
+        shape[1] == length(description.layout.command_positions) || throw(DimensionMismatch("sampled basis artifact rows must match mirror command count"))
+        T = only(T for T in Artifacts.TARGET_TYPES if string(T) == artifact["type"])
+        selected = Artifacts.FITSArtifact(D.relative_asset(declaration.directory,artifact["path"]);
+            hdu=artifact["hdu"],axes=artifact["axes"])
+        prepared = Artifacts.prepare(selected,T,shape)
+        # Published samples are Float32 and dimensionless. The declared row
+        # order is already mirror command order; no remapping or normalization.
+        modes = Tuple((;name,values=Tuple(Float32.(view(prepared.data,:,column))))
+            for (column,name) in enumerate(definition["names"]))
+        (;kind,modes,artifact_sha256=prepared.provenance["original_sha256"])
+    end
+    return merge(_instrument_seal(basis),(;definition=resolved))
+end
+
 "Resolve immutable geometry and scientific identities without preparing a frame."
 function scientific_definition(path::AbstractString,overrides=NamedTuple())
     declaration = load(path)
@@ -85,15 +120,9 @@ function scientific_definition(path::AbstractString,overrides=NamedTuple())
         description,registration = geometry.description,geometry.registration
         source = source_grid_coordinates(description)
         coordinates = actuator_coordinates(description; pupil_registration=registration)
-        shape = spec["shape_control"]
-        columns,rows = description.layout.grid_shape
-        cap = shape["fourier"]["max_frequency"]
-        max_x,max_y = min(cap,(columns-1)÷2),min(cap,(rows-1)÷2)
-        frequencies = Tuple((x,y) for y in 0:max_y for x in -max_x:max_x if y > 0 || x > 0)
-        result = (; layout=description.layout,
-            zernike=(; positions=source.zernike_positions,modes=_instrument_seal(shape["zernike"]["modes"])),
-            fourier=(; positions=source.fourier_positions,frequencies,axis_units="cycles / source axis"),
-            provenance=shape["provenance"],pupil_registration=registration,
+        bases = Tuple(resolve_basis(declaration,basis,description,source) for basis in spec["shape_control"]["bases"])
+        InstrumentDefinition.validate_shape_control(json_value((;bases)),spec["units"],length(description.layout.command_positions))
+        result = (; layout=description.layout,shape_control=(;bases),pupil_registration=registration,
             pupil_coordinates=Tuple(Tuple(column) for column in eachcol(coordinates)))
         active = selected_binding_names(declaration,configured)
         bindings = [binding for (binding_name,binding) in declaration.document["bindings"]
@@ -132,14 +161,13 @@ function publication(path,overrides;calibration_identity)
                 pupil_coordinates=dm.pupil_coordinates,
                 limiter=(;kind=spec["limiter"]["kind"],
                     lower=limit_values(spec["limiter"]["lower"],n),upper=limit_values(spec["limiter"]["upper"],n)),
-                shape_control=(;modes=(),coefficient_limit=spec["shape_control"]["coefficient_limit"],
-                    zernike=dm.zernike,fourier=dm.fourier,provenance=dm.provenance))
+                shape_control=dm.shape_control)
         end))
     sensors = NamedTuple{keys(scientific.wavefront_sensors)}(Tuple(
         (;layout=merge(getproperty(scientific.wavefront_sensors,Symbol(name)).layout,
             (;expected_schema=declaration.document["wavefront_sensors"][String(name)]["expected_schema"])))
         for name in keys(scientific.wavefront_sensors)))
-    result = (;schema_version=1,id=scientific.id,calibration_identity,
+    result = (;schema_version=2,id=scientific.id,calibration_identity,
         scientific_identity=InstrumentDefinition.scientific_identity(scientific),
         deformable_mirrors=mirrors,wavefront_sensors=sensors)
     InstrumentDefinition.validate(json_value(result))
@@ -157,6 +185,8 @@ function prepare_publication(application::AbstractString;simulation="simulation.
     # Validate the output location even on first generation.
     isabspath(config["instrument"]) && throw(ArgumentError("publication must be application-relative"))
     startswith(abspath(output),realpath(application)*"/") || throw(ArgumentError("publication escapes application"))
+    ncodeunits(JSON.json(body)) + 1 <= InstrumentDefinition.MAX_BYTES ||
+        throw(ArgumentError("instrument publication exceeds 256 KiB"))
     Common.write_json(output,body;atomic=true)
     return output
 end

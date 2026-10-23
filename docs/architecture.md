@@ -739,7 +739,7 @@ The sealed deployment's optional `instrument` field names the contained asset.
 It is immutable for the session incarnation; changing/removing it invalidates
 client scientific bindings and drafts until a fresh selection and resolution.
 
-Schema version 1 declares `id`, `calibration_identity`, `scientific_identity`,
+Schema version 2 declares `id`, `calibration_identity`, `scientific_identity`,
 `deformable_mirrors` and `wavefront_sensors`. Component keys identify owner-defined
 instrument components, not GUI panel IDs. DM declarations carry source-grid
 `layout` in explicit `command_positions` order, `units`, `command_scale_m`,
@@ -748,6 +748,49 @@ amplitude `limiter` bounds and `shape_control` declarations. Optional
 they are distinct from source-grid Zernike/Fourier coordinates. WFS `layout`
 declares detector/subaperture extents and zero-based `[row,column]` origins.
 Published source-grid geometry does not imply measured optical registration.
+
+A mirror's `shape_control` contains only `bases`, an ordered array of at most
+16 instrument-defined bases. Each basis has exactly `id`, `name`, `units`,
+`coefficient_limit`, `normalization`, `provenance`, and `definition`. Basis IDs
+are unique per mirror. Names use at most 128 UTF-8 bytes and provenance uses at
+most 4096 UTF-8 bytes. Coefficients use the mirror's command units; basis samples
+are dimensionless. Each basis owns its positive coefficient limit.
+
+The tagged `definition.kind` is `zernike`, `fourier`, or `sampled`:
+
+- Zernike definitions carry command-ordered Float64 `positions` and up to
+  64 named `{n,m}` modes with radial order 0–12. Positive `m` uses cosine;
+  negative `m` uses sine. `sampled_peak` divides Float32 polynomial samples by
+  their maximum absolute sample.
+- Fourier definitions carry command-ordered Float32 `positions`, up to
+  256 unique integer `frequencies` `[kx,ky]`, and `axis_units`. The source-axis
+  spatial sinusoid uses `2π(kx x + ky y)`; `sampled_rms` gives the sine and cosine
+  quadratures separate unit sampled RMS before phase composition.
+- Sampled definitions carry up to 64 named command-sized Float32 `values`
+  vectors and the source file's lowercase, 64-digit `artifact_sha256`.
+  `supplied` preserves supplied values without normalization. Nonfinite,
+  overflowing and identically zero modes are rejected.
+
+Builtin descriptors preserve scientific conventions without adding numerical
+basis evaluation to the RTC. Consumers validate sampled degeneracy when they
+prepare builtin modes. The existing 256 KiB publication limit and structural
+limits still apply; bounds reject oversized definitions without truncation.
+The schema 1 publication's fixed Zernike/Fourier fields are removed.
+
+The source `instrument.conf` schema remains version 1. Its `shape_control.bases`
+uses the same seven basis fields. Zernike source definitions declare `kind` and
+`modes`; Fourier source definitions declare `kind` and `max_frequency`. The RTC
+derives both coordinate arrays from the selected mirror source grid. Fourier
+frequencies remain strictly below the source-axis Nyquist frequency, excluding
+the zero sine quadrature at Nyquist. A singleton axis has coordinate zero and no
+nonzero frequencies. Sampled
+source definitions declare `kind`, `artifact`, `command_order`, and `names`.
+`artifact` uses the existing FITS `{path,hdu,axes,type,shape}` contract with
+explicit logical axes: rows are commands and columns are modes. Mandatory
+`command_order: "mirror"` asserts that artifact rows already follow the mirror's
+physical command order. The RTC performs no order inference or remapping.
+Artifact content hashes contribute to the prescription identity, and the sealed
+publication is compared against a fresh declaration resolution before execution.
 
 The data-only Classic application selects `instrument.conf` through version 3
 `plant.definition`. This SPA-JSON declaration references the mirror's ordinary

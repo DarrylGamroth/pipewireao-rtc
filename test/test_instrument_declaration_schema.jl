@@ -1,4 +1,4 @@
-using Test, JSON, YAML, PipeWireAORTC
+using Test, JSON, YAML, FITSIO, PipeWireAORTC
 
 const IC = PipeWireAORTC.InstrumentConfiguration
 
@@ -11,15 +11,17 @@ const IC = PipeWireAORTC.InstrumentConfiguration
 
         open(joinpath(directory, "production.yaml"), "w") do io
             YAML.write(io, Dict(
+                "name" => "test-graph",
                 "nodes" => [Dict("name" => "source"), Dict("name" => "mirror")],
-                "inputs" => [Dict("name" => "command")],
+                "inputs" => [Dict("name" => "command", "binding" => "commands")],
                 "outputs" => [Dict("name" => "frame")],
             ))
         end
         open(joinpath(directory, "calibration.yaml"), "w") do io
             YAML.write(io, Dict(
+                "name" => "test-graph",
                 "nodes" => [Dict("name" => "source"), Dict("name" => "mirror")],
-                "inputs" => [Dict("name" => "command")],
+                "inputs" => [Dict("name" => "command", "binding" => "commands")],
                 "outputs" => [Dict("name" => "frame")],
             ))
         end
@@ -59,12 +61,14 @@ const IC = PipeWireAORTC.InstrumentConfiguration
                 "units" => "m",
                 "command_scale_m" => 1e-6,
                 "limiter" => Dict("kind" => "amplitude", "lower" => -1.0, "upper" => 1.0),
-                "shape_control" => Dict(
-                    "coefficient_limit" => 1.0,
-                    "zernike" => Dict("modes" => [Dict("n" => 2, "m" => 0, "name" => "defocus")]),
-                    "fourier" => Dict("max_frequency" => 2),
-                    "provenance" => "synthetic test fixture",
-                ),
+                "shape_control" => Dict("bases" => [
+                    Dict("id"=>"zernike","name"=>"Zernike","units"=>"m","coefficient_limit"=>1.0,
+                        "normalization"=>"sampled_peak","provenance"=>"synthetic test declaration",
+                        "definition"=>Dict("kind"=>"zernike","modes"=>[Dict("n"=>2,"m"=>0,"name"=>"defocus")])),
+                    Dict("id"=>"fourier","name"=>"Fourier","units"=>"m","coefficient_limit"=>1.0,
+                        "normalization"=>"sampled_rms","provenance"=>"synthetic test declaration",
+                        "definition"=>Dict("kind"=>"fourier","max_frequency"=>2)),
+                ]),
             )),
             "wavefront_sensors" => Dict("sensor" => Dict(
                 "detector_shape" => [2, 2],
@@ -132,6 +136,87 @@ const IC = PipeWireAORTC.InstrumentConfiguration
         absent_mirror = deepcopy(declaration)
         absent_mirror["bindings"]["coordinates"] = Dict("kind" => "mirror_coordinates", "mirror" => "missing")
         @test_throws ArgumentError IC.validate_declaration(absent_mirror, directory)
+    end
+
+    @testset "sampled artifact publication preserves scientific values and identity" begin
+        mktempdir() do directory
+            declaration = declaration_fixture(directory)
+            declaration["deformable_mirrors"]["primary"]["pupil_registration_setting"] = "pupil_registration"
+            mirror = Dict("schema_version"=>1,"id"=>"test-mirror","manufacturer"=>"Example","model"=>"Three commands",
+                "layout"=>Dict("schema_version"=>1,"name"=>"Test grid","grid_shape"=>[5,5],
+                    "axis_labels"=>["source column","source row"],"command_positions"=>[[3,1],[1,3],[2,2]],
+                    "command_order"=>"physical","provenance"=>"explicit physical order"))
+            write(joinpath(directory,"mirror.json"),JSON.json(mirror))
+            origins = declaration["wavefront_sensors"]["sensor"]["subaperture_origins"]
+            origins["shape"] = [1,2]
+            FITS(joinpath(directory,"artifact.fits"),"w") do fits
+                write(fits,zeros(Float32,1,2))
+            end
+            samples = Float32[0.25 2.0; -0.5 0.0; 1.0 -1.0]
+            write_samples(values) = FITS(joinpath(directory,"modes.fits"),"w") do fits
+                # On-disk axes deliberately differ from logical command/mode axes.
+                write(fits,permutedims(values))
+            end
+            write_samples(samples)
+            basis = Dict{String,Any}("id"=>"custom","name"=>"Custom modes","units"=>"m","coefficient_limit"=>0.2,
+                "normalization"=>"supplied","provenance"=>"test calibration",
+                "definition"=>Dict("kind"=>"sampled","command_order"=>"mirror","names"=>["First","Second"],
+                    "artifact"=>Dict("path"=>"modes.fits","hdu"=>1,"axes"=>[2,1],"type"=>"Float32","shape"=>[3,2])))
+            push!(declaration["deformable_mirrors"]["primary"]["shape_control"]["bases"],basis)
+            path = joinpath(directory,"instrument.conf")
+            write_declaration() = write(path,JSON.json(declaration))
+            write_declaration()
+            @test IC.validate_declaration(declaration,directory) === nothing
+            publication = IC.publication(path,NamedTuple();calibration_identity="sha256:"*repeat("a",64))
+            @test publication.schema_version == 2
+            definitions = publication.deformable_mirrors.primary.shape_control.bases
+            @test map(b -> b.definition.kind,definitions) == ("zernike","fourier","sampled")
+            @test definitions[1].normalization == "sampled_peak"
+            @test definitions[2].normalization == "sampled_rms"
+            @test definitions[3].definition.modes[1].values == Tuple(samples[:,1])
+            @test definitions[3].definition.modes[2].values == Tuple(samples[:,2])
+            @test definitions[3].definition.artifact_sha256 == PipeWireAORTC.Common.sha256_file(joinpath(directory,"modes.fits"))
+            original_identity = IC.scientific_definition(path).prescription_identity
+            changed = copy(samples); changed[1,1] = 0.75f0
+            write_samples(changed)
+            @test IC.scientific_definition(path).prescription_identity != original_identity
+            write_samples(zeros(Float32,3,2))
+            @test_throws ArgumentError IC.scientific_definition(path)
+            changed[1,1] = Inf32; write_samples(changed)
+            @test_throws ArgumentError IC.scientific_definition(path)
+            write_samples(samples)
+            for mutation in (
+                    d -> (d["command_order"] = "source-grid"),
+                    d -> (d["names"] = ["First","First"]),
+                    d -> (d["names"] = ["First"]),
+                    d -> (d["artifact"]["axes"] = [1,1]),
+                    d -> (d["artifact"]["shape"] = [6]),
+                )
+                invalid = deepcopy(declaration)
+                mutation(invalid["deformable_mirrors"]["primary"]["shape_control"]["bases"][3]["definition"])
+                @test_throws ArgumentError IC.validate_declaration(invalid,directory)
+            end
+            basis["definition"]["artifact"]["shape"] = [2,2]
+            write_declaration()
+            @test_throws DimensionMismatch IC.scientific_definition(path)
+            oversized = [deepcopy(declaration["deformable_mirrors"]["primary"]["shape_control"]["bases"][1]) for _ in 1:16]
+            for (index,entry) in enumerate(oversized)
+                entry["id"] = "basis-$index"
+                entry["provenance"] = repeat("p",4096)
+            end
+            declaration["deformable_mirrors"]["primary"]["shape_control"]["bases"] = oversized
+            original = declaration["deformable_mirrors"]["primary"]
+            declaration["deformable_mirrors"] = Dict("mirror-$i"=>deepcopy(original) for i in 1:4)
+            write_declaration()
+            target = joinpath(directory,"publication.json")
+            write(target,"existing sealed publication")
+            write(joinpath(directory,"simulation.conf"),JSON.json(Dict(
+                "version"=>3,"plant"=>Dict("definition"=>"instrument.conf","settings"=>Dict()),
+                "instrument"=>"publication.json","calibration_identity"=>"sha256:"*repeat("a",64))))
+            @test_throws r"256 KiB" IC.prepare_publication(directory)
+            @test read(target,String) == "existing sealed publication"
+
+        end
     end
 
     if haskey(ENV, "MONOREPO_CLASSIC")

@@ -51,6 +51,22 @@ end
                 (Float64(Float32(-1 / 6)), Float64(Float32(-1 / 6))),
                 (Float64(Float32(1 / 2)), Float64(Float32(-1 / 2)))),
         )
+        singleton = merge(description,(;layout=merge(description.layout,
+            (;grid_shape=(3,1),command_positions=((1,1),(2,1),(3,1))))))
+        @test IC.source_grid_coordinates(singleton).fourier_positions == ((-0.5,0.0),(0.0,0.0),(0.5,0.0))
+        basis = Dict("id"=>"fourier","name"=>"Fourier","units"=>"m","coefficient_limit"=>1.0,
+            "normalization"=>"sampled_rms","provenance"=>"test source geometry",
+            "definition"=>Dict("kind"=>"fourier","max_frequency"=>64))
+        # A 3-point source axis has only the Nyquist frequency: do not publish
+        # its identically-zero sine quadrature. Singleton axes carry no modes.
+        @test_throws ArgumentError IC.resolve_basis(nothing,basis,singleton,IC.source_grid_coordinates(singleton))
+        odd_grid = merge(description,(;layout=merge(description.layout,
+            (;grid_shape=(5,1),command_positions=Tuple((i,1) for i in 1:5)))))
+        resolved = IC.resolve_basis(nothing,basis,odd_grid,IC.source_grid_coordinates(odd_grid))
+        @test resolved.definition.frequencies == ((1,0),)
+        @test all(p -> p[2] == 0.0,resolved.definition.positions)
+        large_grid = merge(description,(;layout=merge(description.layout,(;grid_shape=(65,65)))))
+        @test_throws ArgumentError IC.resolve_basis(nothing,basis,large_grid,IC.source_grid_coordinates(large_grid))
         registered = IC.actuator_coordinates(description, Float64;
             pupil_registration=(; actuator_pitch=0.2))
         @test registered[:, 1] ≈ [0.1, -0.3]

@@ -10,11 +10,16 @@ const DEFINITION = (;
             axis_labels=("source column", "source row"),
             command_positions=((1, 1), (2, 1), (3, 1)),
             command_order="physical", provenance="test source grid"),
-        zernike=(; positions=((-0.5, 0.0), (0.0, 0.0), (0.5, 0.0)),
-            modes=((; n=0, m=0, name="Piston"),)),
-        fourier=(; positions=((-0.5, 0.0), (0.0, 0.0), (0.5, 0.0)),
-            frequencies=((1, 0),), axis_units="cycles / source axis"),
-        provenance="analytic geometry only",
+        shape_control=(; bases=(
+            (;id="zernike",name="Zernike",units="µm OPD",coefficient_limit=0.05,
+                normalization="sampled_peak",provenance="analytic geometry only",
+                definition=(;kind="zernike",positions=((-0.5,0.0),(0.0,0.0),(0.5,0.0)),
+                    modes=((;n=0,m=0,name="Piston"),))),
+            (;id="fourier",name="Fourier",units="µm OPD",coefficient_limit=0.05,
+                normalization="sampled_rms",provenance="analytic geometry only",
+                definition=(;kind="fourier",positions=((-0.5,0.0),(0.0,0.0),(0.5,0.0)),
+                    frequencies=((1,0),),axis_units="cycles / source axis")),
+        )),
         pupil_coordinates=((-0.75, 0.0), (0.0, 0.0), (0.75, 0.0)),
     )),
     wavefront_sensors=(; wfs=(; layout=(; detector_shape=(2, 3),
@@ -34,9 +39,7 @@ function operational_instrument()
     dm["units"] = "µm OPD"
     dm["command_scale_m"] = 1e-6
     dm["limiter"] = Dict("kind" => "amplitude", "lower" => fill(-0.5, 3), "upper" => fill(0.5, 3))
-    dm["shape_control"] = Dict("coefficient_limit" => 0.05, "modes" => [],
-        "zernike" => pop!(dm, "zernike"), "fourier" => pop!(dm, "fourier"),
-        "provenance" => pop!(dm, "provenance"))
+    document["schema_version"] = 2
     document["wavefront_sensors"]["wfs"]["layout"]["expected_schema"] =
         "org.calculon.ao.raw-detector-pixels/1"
     return document
@@ -96,7 +99,7 @@ end
 
         for mutation in (
             d -> delete!(d, "scientific_identity"),
-            d -> (d["schema_version"] = 2),
+            d -> (d["schema_version"] = 1),
             d -> (d["schema_version"] = true),
             d -> (d["unknown"] = 1),
             d -> (d["id"] = "Invalid instrument"),
@@ -191,8 +194,8 @@ end
             d -> (d["scientific_identity"] = "sha256:" * repeat("b", 64)),
             d -> (d["id"] = "other-instrument"),
             d -> (d["deformable_mirrors"]["dm"]["layout"]["command_positions"][1] = [3, 1]),
-            d -> (d["deformable_mirrors"]["dm"]["shape_control"]["zernike"]["positions"][1] = [-0.25, 0]),
-            d -> (d["deformable_mirrors"]["dm"]["shape_control"]["fourier"]["frequencies"][1] = [2, 0]),
+            d -> (d["deformable_mirrors"]["dm"]["shape_control"]["bases"][1]["definition"]["positions"][1] = [-0.25, 0]),
+            d -> (d["deformable_mirrors"]["dm"]["shape_control"]["bases"][2]["definition"]["frequencies"][1] = [2, 0]),
             d -> (d["deformable_mirrors"]["dm"]["pupil_coordinates"][1] = [-0.5, 0]),
             d -> (d["wavefront_sensors"]["wfs"]["layout"]["subaperture_origins"][1] = [1, 0]),
             d -> (d["wavefront_sensors"]["wfs"]["layout"]["expected_schema"] = "org.revolt.classic.shwfs-frame.f32/1"),
@@ -204,6 +207,55 @@ end
             @test_throws ArgumentError Instrument.verify_plant(options, InstrumentPlantForTest)
         end
     end
+end
+
+@testset "basis publication rejects malformed and unbounded definitions" begin
+    document = operational_instrument()
+    bases(d) = d["deformable_mirrors"]["dm"]["shape_control"]["bases"]
+    sampled = Dict{String,Any}("id"=>"custom","name"=>"Custom","units"=>"µm OPD",
+        "coefficient_limit"=>0.1,"normalization"=>"supplied","provenance"=>"measured modes",
+        "definition"=>Dict("kind"=>"sampled","artifact_sha256"=>repeat("b",64),
+            "modes"=>[Dict("name"=>"First","values"=>[0.25,-0.5,1.0])]))
+    push!(bases(document),sampled)
+    @test Instrument.validate(document) === document
+    bases(document)[3]["provenance"] = repeat("p",4096)
+    @test Instrument.validate(document) === document
+    for mutation in (
+            d -> (bases(d)[1]["extra"] = true),
+            d -> (bases(d)[3]["provenance"] = repeat("p",4097)),
+            d -> (bases(d)[2]["id"] = "zernike"),
+            d -> (bases(d)[1]["units"] = "m"),
+            d -> (bases(d)[1]["coefficient_limit"] = true),
+            d -> (bases(d)[1]["normalization"] = "supplied"),
+            d -> (bases(d)[1]["definition"]["modes"][1]["n"] = 13),
+            d -> (bases(d)[1]["definition"]["modes"][1]["m"] = 1),
+            d -> push!(bases(d)[1]["definition"]["modes"],deepcopy(bases(d)[1]["definition"]["modes"][1])),
+            d -> (bases(d)[1]["definition"]["positions"][2] = bases(d)[1]["definition"]["positions"][1]),
+            d -> (bases(d)[2]["definition"]["frequencies"] = [[0,0]]),
+            d -> (bases(d)[2]["definition"]["frequencies"] = [[65,0]]),
+            d -> (bases(d)[2]["definition"]["frequencies"] = [[1,0],[1,0]]),
+            d -> (bases(d)[2]["definition"]["frequencies"] = fill([1,0],257)),
+            d -> (bases(d)[3]["definition"]["artifact_sha256"] = "sha256:"*repeat("b",64)),
+            d -> (bases(d)[3]["definition"]["modes"][1]["values"] = [0,0,0]),
+            d -> (bases(d)[3]["definition"]["modes"][1]["values"] = [1,2]),
+            d -> (bases(d)[3]["definition"]["modes"][1]["values"] = [1,Inf,2]),
+            d -> (bases(d)[3]["definition"]["modes"][1]["values"] = [1,1e100,2]),
+            d -> (d["deformable_mirrors"]["dm"]["shape_control"]["modes"] = []),
+            d -> (d["deformable_mirrors"]["dm"]["shape_control"]["bases"] = fill(sampled,17)),
+        )
+        invalid = deepcopy(document)
+        mutation(invalid)
+        @test_throws ArgumentError Instrument.validate(invalid)
+    end
+    oversized = deepcopy(document)
+    expanded = [deepcopy(bases(oversized)[3]) for _ in 1:16]
+    for (index,basis) in enumerate(expanded)
+        basis["id"] = "sampled-$index"
+    end
+    oversized["deformable_mirrors"]["dm"]["shape_control"]["bases"] = expanded
+    # Preserve provenance, count and structural bounds while exceeding bytes.
+    oversized["deformable_mirrors"] = Dict("dm$i"=>deepcopy(oversized["deformable_mirrors"]["dm"]) for i in 1:4)
+    @test_throws ArgumentError Instrument.validate(oversized)
 end
 
 @testset "AOS instrument selection remains a cold declaration" begin

@@ -69,8 +69,9 @@ sealed_hash(value,expected) = false
 function validate(document)
     object_value(document) && Set(keys(document))==Set(("schema_version","id",
         "calibration_identity","scientific_identity","deformable_mirrors","wavefront_sensors")) &&
-        get(document,"schema_version",nothing)===1 || throw(ArgumentError("expected instrument definition schema version 1"))
+        get(document,"schema_version",nothing)===2 || throw(ArgumentError("expected instrument definition schema version 2"))
     bounded(document)
+    ncodeunits(JSON.json(document)) <= MAX_BYTES || throw(ArgumentError("instrument definition exceeds 256 KiB"))
     identifier(document["id"]) ||
         throw(ArgumentError("invalid instrument identifier"))
     for field in ("calibration_identity","scientific_identity")
@@ -93,6 +94,10 @@ function validate(document)
         scale = get(mirror, "command_scale_m", nothing)
         positive_scale(scale) ||
             throw(ArgumentError("instrument mirror requires a positive command scale"))
+        mirror_layout(layout,length(positions))
+        units = get(mirror,"units",nothing)
+        nonempty_text(units) || throw(ArgumentError("instrument mirror requires command units"))
+        validate_shape_control(get(mirror,"shape_control",nothing),units,length(positions))
         limiter = get(mirror, "limiter", nothing)
         object_value(limiter) && get(limiter, "kind", nothing) == "amplitude" ||
             throw(ArgumentError("instrument mirror requires amplitude bounds"))
@@ -104,6 +109,119 @@ function validate(document)
             end || throw(ArgumentError("instrument amplitude bounds must be finite, ordered and command-sized"))
     end
     return document
+end
+
+# Basis definitions are cold descriptors. Numerical sampling of builtin bases
+# belongs to the scientific consumer, not to RTC publication.
+function exact_fields(value, names, label)
+    object_value(value) && Set(keys(value)) == Set(names) || throw(ArgumentError("invalid $label fields"))
+    return value
+end
+
+bounded_text(value) = nonempty_text(value) && ncodeunits(value) <= 128
+integer_value(value::Integer) = true
+integer_value(::Bool) = false
+integer_value(value) = false
+
+function basis_header(basis, units)
+    exact_fields(basis,("id","name","units","coefficient_limit","normalization","provenance","definition"),"basis")
+    identifier(basis["id"]) || throw(ArgumentError("invalid basis id"))
+    bounded_text(basis["name"]) || throw(ArgumentError("invalid basis name"))
+    basis["units"] == units || throw(ArgumentError("basis units must match mirror command units"))
+    positive_scale(basis["coefficient_limit"]) && positive_scale(Float32(basis["coefficient_limit"])) ||
+        throw(ArgumentError("basis coefficient_limit must be positive and finite Float32"))
+    nonempty_text(basis["provenance"]) && ncodeunits(basis["provenance"]) <= 4096 ||
+        throw(ArgumentError("basis provenance must contain 1:4096 UTF-8 bytes"))
+    definition = basis["definition"]
+    object_value(definition) || throw(ArgumentError("basis definition must be an object"))
+    kind = get(definition,"kind",nothing)
+    normalization = kind == "zernike" ? "sampled_peak" : kind == "fourier" ? "sampled_rms" : kind == "sampled" ? "supplied" : nothing
+    normalization !== nothing && basis["normalization"] == normalization ||
+        throw(ArgumentError("invalid basis kind or normalization"))
+    return definition
+end
+
+function basis_names(modes, maximum, label)
+    array_value(modes) && 1 <= length(modes) <= maximum || throw(ArgumentError("$label requires 1:$maximum modes"))
+    names = Set{String}()
+    for mode in modes
+        object_value(mode) && bounded_text(get(mode,"name",nothing)) || throw(ArgumentError("invalid $label mode name"))
+        mode["name"] in names && throw(ArgumentError("duplicate $label mode name"))
+        push!(names,mode["name"])
+    end
+    return nothing
+end
+
+function zernike_modes(modes)
+    basis_names(modes,64,"Zernike")
+    orders = Set{Tuple{Int,Int}}()
+    for mode in modes
+        exact_fields(mode,("name","n","m"),"Zernike mode")
+        n,m = mode["n"],mode["m"]
+        integer_value(n) && integer_value(m) && 0 <= n <= 12 && -n <= m <= n && iseven(n-m) ||
+            throw(ArgumentError("invalid Zernike radial or azimuthal order"))
+        (n,m) in orders && throw(ArgumentError("duplicate Zernike order"))
+        push!(orders,(n,m))
+    end
+    return nothing
+end
+
+function basis_positions(positions, count, bound; float32=false)
+    array_value(positions) && length(positions) == count || throw(ArgumentError("basis positions must be command-sized"))
+    occupied = Set{Tuple{Float64,Float64}}()
+    for position in positions
+        array_value(position) && length(position) == 2 && all(x -> finite_bound(x) && abs(x) <= bound,position) ||
+            throw(ArgumentError("invalid basis coordinates"))
+        pair = Tuple(float32 ? Float64(Float32(x)) : Float64(x) for x in position)
+        pair in occupied && throw(ArgumentError("duplicate basis coordinates"))
+        push!(occupied,pair)
+    end
+    return nothing
+end
+
+function validate_shape_control(shape, units, count)
+    exact_fields(shape,("bases",),"shape_control")
+    bases = shape["bases"]
+    array_value(bases) && length(bases) <= 16 || throw(ArgumentError("shape_control requires at most 16 bases"))
+    ids = Set{String}()
+    for basis in bases
+        definition = basis_header(basis,units)
+        basis["id"] in ids && throw(ArgumentError("duplicate basis id"))
+        push!(ids,basis["id"])
+        kind = definition["kind"]
+        if kind == "zernike"
+            exact_fields(definition,("kind","positions","modes"),"Zernike definition")
+            basis_positions(definition["positions"],count,1.0)
+            zernike_modes(definition["modes"])
+        elseif kind == "fourier"
+            exact_fields(definition,("kind","positions","frequencies","axis_units"),"Fourier definition")
+            basis_positions(definition["positions"],count,0.5;float32=true)
+            bounded_text(definition["axis_units"]) || throw(ArgumentError("invalid Fourier axis_units"))
+            frequencies = definition["frequencies"]
+            array_value(frequencies) && 1 <= length(frequencies) <= 256 || throw(ArgumentError("Fourier definition requires 1:256 frequencies"))
+            occupied = Set{Tuple{Int,Int}}()
+            for frequency in frequencies
+                array_value(frequency) && length(frequency) == 2 && all(integer_value,frequency) || throw(ArgumentError("invalid Fourier wavevector"))
+                x,y = frequency
+                -64 <= x <= 64 && 0 <= y <= 64 && (y > 0 || x > 0) || throw(ArgumentError("invalid Fourier wavevector"))
+                pair = (Int(x),Int(y))
+                pair in occupied && throw(ArgumentError("duplicate Fourier wavevector"))
+                push!(occupied,pair)
+            end
+        else
+            exact_fields(definition,("kind","modes","artifact_sha256"),"sampled definition")
+            hash = definition["artifact_sha256"]
+            hash isa String && occursin(r"^[0-9a-f]{64}$",hash) || throw(ArgumentError("invalid sampled artifact_sha256"))
+            basis_names(definition["modes"],64,"sampled")
+            for mode in definition["modes"]
+                exact_fields(mode,("name","values"),"sampled mode")
+                values = mode["values"]
+                array_value(values) && length(values) == count && all(x -> finite_bound(x) && isfinite(Float32(x)),values) &&
+                    any(x -> Float32(x) != 0,values) || throw(ArgumentError("sampled modes must be finite, nonzero and command-sized"))
+            end
+        end
+    end
+    return nothing
 end
 
 function load(path::AbstractString)
@@ -202,9 +320,8 @@ function verify_plant(options,plant_module)
     for (name,mirror) in mirrors
         original=source["deformable_mirrors"][name]
         mirror["layout"]==original["layout"] || throw(ArgumentError("instrument DM source-grid layout differs"))
-        for family in ("zernike","fourier")
-            get(mirror["shape_control"],family,nothing)==get(original,family,nothing) || throw(ArgumentError("instrument DM $family declaration differs"))
-        end
+        mirror["shape_control"]==get(original,"shape_control",nothing) ||
+            throw(ArgumentError("instrument DM basis declaration differs"))
         get(mirror,"pupil_coordinates",nothing)==get(original,"pupil_coordinates",nothing) || throw(ArgumentError("instrument pupil coordinates differ"))
     end
     for (name,sensor) in sensors

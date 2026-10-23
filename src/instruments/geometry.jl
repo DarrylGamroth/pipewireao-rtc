@@ -139,8 +139,8 @@ function source_grid_coordinates(description::NamedTuple)
             (row - centre_row) / (rows / 2))
     end
     fourier_positions = map(positions) do (column, row)
-        (Float64(Float32((column - centre_column) / (columns - 1))),
-            Float64(Float32((row - centre_row) / (rows - 1))))
+        (Float64(Float32(columns == 1 ? 0.0 : (column - centre_column) / (columns - 1))),
+            Float64(Float32(rows == 1 ? 0.0 : (row - centre_row) / (rows - 1))))
     end
     return (; zernike_positions, fourier_positions)
 end
