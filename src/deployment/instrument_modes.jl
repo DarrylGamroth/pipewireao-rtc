@@ -28,6 +28,7 @@ function selected_mode(source, profile)
     for field in get(mode, "requires", [])
         field in ("devices", "calibration") || throw(ArgumentError("unknown application mode requirement"))
         haskey(profile, field) || throw(ArgumentError("selected mode requires explicit $field configuration"))
+        profile[field] === nothing && throw(ArgumentError("selected mode requires non-null $field configuration"))
     end
     devices = get(profile, "devices", [])
     devices isa AbstractVector && all(device -> device isa AbstractDict, devices) ||

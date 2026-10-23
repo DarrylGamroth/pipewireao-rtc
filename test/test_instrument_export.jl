@@ -265,6 +265,8 @@ end
         @test_throws ArgumentError E.selected_mode(directory,Dict())
         @test_throws ArgumentError E.selected_mode(directory,Dict("mode"=>"unknown"))
         @test_throws ArgumentError E.selected_mode(directory,Dict("devices"=>[],"calibration"=>Dict()))
+        @test_throws ArgumentError E.selected_mode(directory,Dict("devices"=>[Dict("role"=>"camera")],"calibration"=>nothing))
+        @test_throws ArgumentError E.selected_mode(directory,Dict("devices"=>nothing,"calibration"=>Dict()))
         @test E.selected_mode(directory,Dict("devices"=>[Dict("role"=>"camera")],"calibration"=>Dict())) == mode
     end
 end

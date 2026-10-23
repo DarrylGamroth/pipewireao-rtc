@@ -94,6 +94,12 @@ function configuration_context(declaration, configured)
         spec["actuator_count"] = command_count(geometry.description)
         spec["actuator_axis_count"] = _mirror_axis_count(geometry.description)
         spec["grid_shape"] = collect(geometry.description.layout.grid_shape)
+        spec["description_json"] = read(D.relative_asset(declaration.directory, spec["description"]), String)
+    end
+    for sensor in values(instrument["wavefront_sensors"])
+        rows, columns = sensor["detector_shape"]
+        # SPA's packed-video construction property is width x height.
+        sensor["video_frame_size"] = string(columns, 'x', rows)
     end
     return Dict("instrument" => instrument, "settings" => deepcopy(configured))
 end
