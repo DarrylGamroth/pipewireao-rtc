@@ -1,5 +1,12 @@
 # Delivery evidence catalog
 
+## Offline Classic hardware example — 2026-10-23
+
+The [current-work record](roadmap.md#offline-classic-hardware-example--2026-10-23)
+and instrument `MIGRATION.md` record the incomplete eGrabber/ALPAO example and
+310 offline assertions. Missing calibration and device ownership reject export;
+these checks create no devices and do not qualify physical hardware.
+
 ## Shared simulator geometry and consumer contracts — 2026-10-23
 
 The [current-work record](roadmap.md#shared-simulator-geometry-and-consumer-contracts--2026-10-23)
