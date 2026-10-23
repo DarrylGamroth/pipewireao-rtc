@@ -73,10 +73,11 @@ include("deployment/session_launch.jl")
 include("deployment/session_install.jl")
 include("session_cli.jl")
 include("owners/graph_owner.jl")
+include("deployment/instrument_export.jl")
 include("instrument_calibration.jl")
 include("simulator_configuration.jl")
 
-public Analysis, InstrumentCalibration, InstrumentConfiguration, InstrumentDefinition, ConfigurationStore, ConfigurationStoreCLI, SimulatorConfiguration, AOSOwner, Artifacts, SessionConfiguration, SessionInstall, SessionRuntime,
+public Analysis, InstrumentExport, InstrumentCalibration, InstrumentConfiguration, InstrumentDefinition, ConfigurationStore, ConfigurationStoreCLI, SimulatorConfiguration, AOSOwner, Artifacts, SessionConfiguration, SessionInstall, SessionRuntime,
     NativeSessionClient, CalibrationAcquisition, CalibrationCLI, SessionCLI,
     NativeOwnerBootstrapRuntime, NativeParameterSource, NativeSourceControl, GraphOwner
 

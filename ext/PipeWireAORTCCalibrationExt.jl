@@ -12,10 +12,17 @@ const Calibration = PipeWireAORTC.InstrumentCalibration
 const GraphOwner = PipeWireAORTC.GraphOwner
 const HIL = AdaptiveOpticsSim.AlgorithmGraphs
 
+shack_hartmann_configuration(config) = nothing
+shack_hartmann_configuration(config::HIL.ShackHartmannRateNodeConfig) = config
+function Calibration.shack_hartmann_configuration(system)
+    return only(filter(!isnothing,
+        map(node -> shack_hartmann_configuration(node.config), system.definition.nodes)))
+end
+
 function Calibration.controller_graph(application; overrides=Dict())
     options = FilterGraphIsland.parse_arguments([
-        "--graph", joinpath(application, "graph.conf"), "--check", "--execution", "complete-frame"])
-    entries = GraphOwner.bindings(joinpath(application, "parameters.conf"))
+        "--graph", joinpath(application, "rtc", "graph.conf"), "--check", "--execution", "complete-frame"])
+    entries = GraphOwner.bindings(joinpath(application, "rtc", "parameters.conf"))
     return FilterGraphIsland.prepare_service_graph(options; initial_parameters=formats ->
         [port => get(overrides, port, data) for (port, data) in
             GraphOwner.prepare_bindings(entries, formats)])

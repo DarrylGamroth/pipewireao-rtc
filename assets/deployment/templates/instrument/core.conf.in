@@ -1,0 +1,110 @@
+{
+  "context.objects": [
+    {
+      "factory": "spa-node-factory",
+      "args": {
+        "node.loop.name": "rtc-data-loop",
+        "node.name": "PipeWireAO-RTC-Dummy-Driver",
+        "factory.name": "support.node.driver",
+        "node.sync-group": "sync.pipewireao-rtc-dummy",
+        "priority.driver": 200000,
+        "node.group": "pipewireao-rtc-dummy"
+      }
+    },
+    {
+      "factory": "spa-node-factory",
+      "args": {
+        "node.loop.name": "observer-loop",
+        "node.name": "PipeWireAO-Applied-Observation-Driver",
+        "factory.name": "support.node.driver",
+        "node.sync-group": "sync.pipewireao-applied-observation",
+        "priority.driver": 100,
+        "node.group": "pipewireao-applied-observation"
+      }
+    },
+    {
+      "factory": "spa-node-factory",
+      "args": {
+        "node.loop.name": "observer-loop",
+        "node.name": "PipeWireAO-Optical-Observation-Driver",
+        "factory.name": "support.node.driver",
+        "node.sync-group": "sync.pipewireao-optical-observation",
+        "priority.driver": 100,
+        "node.group": "pipewireao-optical-observation"
+      }
+    }
+  ],
+  "context.properties": {
+    "core.daemon": true,
+    "mem.mlock-all": false,
+    "core.name": "@REMOTE@",
+    "context.data-loops": [
+      {
+        "loop.idle": "eventfd",
+        "loop.rt-prio": @RT_PRIORITY@,
+        "loop.name": "rtc-data-loop",
+        "thread.affinity": [
+          @CORE_CPU@
+        ],
+        "loop.class": "data.rt",
+        "thread.name": "rtc-data-loop"
+      },
+      {
+        "loop.idle": "eventfd",
+        "loop.rt-prio": @RT_PRIORITY@,
+        "loop.name": "observer-loop",
+        "thread.affinity": [
+          @OBSERVER_CPU@
+        ],
+        "loop.class": [],
+        "thread.name": "observer-loop"
+      }
+    ],
+    "default.clock.quantum-floor": 1,
+    "default.clock.min-quantum": 1,
+    "library.use-fallback": false
+  },
+  "context.modules": [
+    {
+      "name": "libpipewire-module-rt",
+      "args": {
+        "rtportal.enabled": false,
+        "rt.prio": @RT_PRIORITY@,
+        "rtkit.enabled": false
+      }
+    },
+    {
+      "name": "libpipewire-module-scheduler-v1"
+    },
+    {
+      "name": "libpipewire-module-protocol-native"
+    },
+    {
+      "name": "libpipewire-module-profiler"
+    },
+    {
+      "name": "libpipewire-module-spa-node-factory"
+    },
+    {
+      "name": "libpipewire-module-client-node"
+    },
+    {
+      "name": "libpipewire-module-metadata"
+    },
+    {
+      "name": "libpipewire-module-access"
+    },
+    {
+      "name": "libpipewire-module-link-factory",
+      "args": {
+        "allow.link.passive": true
+      }
+    }
+  ],
+  "context.spa-libs": {
+    "api.pipewireao.discard": "discard/libspa-pipewireao-discard",
+    "api.ndarray.*": "ndarray/libspa-ndarray",
+    "support.*": "support/libspa-support",
+    "api.fits.source": "fits/libspa-fits"
+  }
+}

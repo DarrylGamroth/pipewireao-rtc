@@ -262,6 +262,42 @@ function application_environment(spec::AbstractDict, package::AbstractString)
     return environment
 end
 
+"Validate the existing process and thread placement contracts without reading an application."
+function validate_placements(placements, roles)
+    require(placements isa AbstractDict && Set(keys(placements)) == roles,
+        "each owned process requires an explicit placement contract")
+    for (role, placement) in placements
+        require(placement isa AbstractDict && Set(keys(placement)) ==
+            Set(["cpus", "leader-cpu", "rt-priority", "threads", "locked-bytes"]),
+            "invalid placement contract for $role")
+        envelope = valid_cpu_list(placement["cpus"])
+        require(typeof(placement["leader-cpu"]) === Int && placement["leader-cpu"] in envelope,
+            "process leader CPU must belong to its declared envelope")
+        priority = placement["rt-priority"]
+        require(typeof(priority) === Int && 0 <= priority <= 99,
+            "RT priority must be an integer in 0..99")
+        require(typeof(placement["locked-bytes"]) === Int && placement["locked-bytes"] >= 0,
+            "locked-bytes must be nonnegative")
+        threads = placement["threads"]
+        require(threads isa AbstractVector && length(threads) <= 128,
+            "thread requirements must be a bounded list")
+        for thread in threads
+            require(thread isa AbstractDict && Set(["cpus", "policy", "priority", "count"]) ⊆ Set(keys(thread)) ⊆
+                Set(["cpus", "policy", "priority", "count", "name"]), "invalid required thread fields")
+            require(thread["cpus"] isa AbstractVector, "required thread CPUs must be a list")
+            require(Placement.cpu_set(thread["cpus"]) ⊆ envelope, "required thread exceeds process envelope")
+            require(thread["policy"] in ("fifo", "other") && typeof(thread["count"]) === Int &&
+                typeof(thread["priority"]) === Int && 1 <= thread["count"] <= 128 &&
+                thread["priority"] == (thread["policy"] == "fifo" ? priority : 0),
+                "invalid required thread policy/count")
+            require(!haskey(thread, "name") || thread["name"] isa String &&
+                !isempty(thread["name"]) && !occursin('\0', thread["name"]),
+                "required thread name must be a nonempty string")
+        end
+    end
+    return nothing
+end
+
 function profile(path::AbstractString, prefix::AbstractString; legacy_export_input::Bool=false)
     value = decode(path, prefix)
     require(value isa AbstractDict && REQUIRED_KEYS ⊆ Set(keys(value)) ⊆
@@ -368,38 +404,7 @@ function profile(path::AbstractString, prefix::AbstractString; legacy_export_inp
         staging = splitext(source["control-request"])[1] * ".new"
         require(!(staging in markers || staging in reserved), "source request staging path conflicts with runtime paths")
     end
-    placements = value["placement"]
-    require(placements isa AbstractDict && Set(keys(placements)) == roles,
-        "each owned process requires an explicit placement contract")
-    for (role, placement) in placements
-        require(placement isa AbstractDict && Set(keys(placement)) ==
-            Set(["cpus", "leader-cpu", "rt-priority", "threads", "locked-bytes"]),
-            "invalid placement contract for $role")
-        envelope = valid_cpu_list(placement["cpus"])
-        require(typeof(placement["leader-cpu"]) === Int && placement["leader-cpu"] in envelope,
-            "process leader CPU must belong to its declared envelope")
-        priority = placement["rt-priority"]
-        require(typeof(priority) === Int && 0 <= priority <= 99,
-            "RT priority must be an integer in 0..99")
-        require(typeof(placement["locked-bytes"]) === Int && placement["locked-bytes"] >= 0,
-            "locked-bytes must be nonnegative")
-        threads = placement["threads"]
-        require(threads isa AbstractVector && length(threads) <= 128,
-            "thread requirements must be a bounded list")
-        for thread in threads
-            require(thread isa AbstractDict && Set(["cpus", "policy", "priority", "count"]) ⊆ Set(keys(thread)) ⊆
-                Set(["cpus", "policy", "priority", "count", "name"]), "invalid required thread fields")
-            require(thread["cpus"] isa AbstractVector, "required thread CPUs must be a list")
-            require(Placement.cpu_set(thread["cpus"]) ⊆ envelope, "required thread exceeds process envelope")
-            require(thread["policy"] in ("fifo", "other") && typeof(thread["count"]) === Int &&
-                typeof(thread["priority"]) === Int && 1 <= thread["count"] <= 128 &&
-                thread["priority"] == (thread["policy"] == "fifo" ? priority : 0),
-                "invalid required thread policy/count")
-            require(!haskey(thread, "name") || thread["name"] isa String &&
-                !isempty(thread["name"]) && !occursin('\0', thread["name"]),
-                "required thread name must be a nonempty string")
-        end
-    end
+    validate_placements(value["placement"], roles)
     latency = value["cpu-latency-us"]
     require(latency === nothing || typeof(latency) === Int && 0 <= latency <= typemax(Int32),
         "cpu-latency-us must be null or a nonnegative Int32")

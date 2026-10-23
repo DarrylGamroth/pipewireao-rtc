@@ -758,6 +758,17 @@ existing AOS factories/compiler. No per-instrument Julia implementation or RTC
 configuration reader is needed in AOS. The older version 2 route remains for
 instruments that still select a package and `plant.settings.mirror_description`.
 
+Instrument source keeps its controller graph, parameter bindings, session and
+queue fragments under `rtc/`, optional analysis under `analysis/`, GUI views
+under `gui/`, and calibration recipe/inputs/artifacts/records under `calibration/`.
+`InstrumentExport.prepare` copies this source into fresh output, applies an
+explicit host deployment profile, renders shared core/client templates, generates
+the publication and seals the deployment catalog. Source contains neither a
+sealed runtime deployment nor a generated publication. Registered dependency
+validation is unchanged: output without a matching sealed registered Manifest
+is usable only for offline preparation, not installation. The exporter owns no
+processes, links or live controls.
+
 The authoring declaration and generated `instrument.json` publication have
 distinct paths. Both preparation and publication use the same resolved settings
 and physical command order. Identity includes structural settings, graph content,

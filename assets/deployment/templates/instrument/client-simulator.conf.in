@@ -1,0 +1,10 @@
+context.properties = {
+    log.level = 0
+    library.use-fallback = false
+    mem.mlock-all = false
+}
+context.spa-libs = { support.* = support/libspa-support }
+context.modules = [
+    { name = libpipewire-module-protocol-native }
+    { name = libpipewire-module-client-node }
+]

@@ -12,6 +12,21 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Instrument source and deployment separation — 2026-10-22
+
+Classic groups RTC, analysis, GUI and calibration files beneath its instrument
+source. Generated publications, dependency manifests, process templates and
+sealed deployment catalogs are prepared outside source by `InstrumentExport`.
+The shared exporter uses explicit host placement/environment bindings and the
+existing native SPA-JSON writer and registered-runtime validator. It does not
+install processes or create another lifecycle owner. Common templates live in
+RTC; instrument queues and controller graphs remain instrument data.
+
+RTC source version 0.2.9 is prepared for this API; it is not published or locally
+registered by this task. CPU and private-core results are recorded in the
+instrument repository migration record. The live CPU RTC and GUI stay unchanged;
+GPU and hardware qualification remain outside this source cleanup.
+
 ### Data-only Classic instrument migration — 2026-10-22
 
 Classic's new instrument directory holds SPA-JSON, AOS TOML and artifacts.

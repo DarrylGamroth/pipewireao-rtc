@@ -11,6 +11,7 @@ import ..ScienceExport
 
 public digest, source_completion, read_parameters, write_fits, heart_completion,
     controlled_rows, central_completion, allocation_parameters, replace_dimensions!,
+    require_prepared_application, shack_hartmann_configuration,
     controller_graph, controller_storage, measure!, calibration_frame!
 
 "Return the SHA-256 digest of a file's bytes."
@@ -26,9 +27,18 @@ function source_completion(path; expected_sha256, shape, axes=(2, 1))
 end
 
 function read_parameters(application)
-    entries = GraphOwner.bindings(joinpath(application, "parameters.conf"))
+    entries = GraphOwner.bindings(joinpath(application, "rtc", "parameters.conf"))
     return Dict(entry.port => Artifacts.prepare(
         entry.source, entry.element_type, entry.shape).data for entry in entries)
+end
+
+"Reject source instruments before numerical calibration or validation starts."
+function require_prepared_application(application)
+    for path in ("deployment.conf", "instrument.json", joinpath("rtc", "parameters.conf"))
+        isfile(joinpath(application, path)) || throw(ArgumentError(
+            "calibration requires a built application; run tools/build.jl on the source instrument first (missing $path)"))
+    end
+    return nothing
 end
 
 "Write the existing row-major calibration FITS convention."
@@ -169,7 +179,7 @@ function replace_dimensions!(application, parameters, n; measurement_count, comm
         isfinite(command_limits.lower) && isfinite(command_limits.upper) &&
             command_limits.lower <= command_limits.upper || throw(ArgumentError("invalid command limits"))
     end
-    graph_path = joinpath(application, "graph.conf")
+    graph_path = joinpath(application, "rtc", "graph.conf")
     graph = DeploymentConfiguration.decode(graph_path,
         get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
     for node in graph["filter.graph"]["nodes"]
@@ -185,19 +195,19 @@ function replace_dimensions!(application, parameters, n; measurement_count, comm
         end
     end
     ScienceExport.write_spa_config(graph_path, graph)
-    path = joinpath(application, "parameters.conf")
+    path = joinpath(application, "rtc", "parameters.conf")
     document = DeploymentConfiguration.decode(path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
     for entry in document["parameters"]
         array = parameters[Symbol(entry["port"])]
         entry["shape"] = collect(size(array))
-        write_fits(joinpath(application, entry["path"]), array)
+        write_fits(joinpath(dirname(path), entry["path"]), array)
     end
     Common.write_json(path, document)
-    session_path = joinpath(application, "session.conf.in")
+    session_path = joinpath(application, "rtc", "session.conf.in")
     session = DeploymentConfiguration.decode(session_path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
     update_reconstructor!(session, n, measurement_count)
     Common.write_json(session_path, session)
-    profile_path = joinpath(application, "operator-views.toml")
+    profile_path = joinpath(application, "gui", "operator-views.toml")
     profile = TOML.parsefile(profile_path)
     for parameter in profile["parameter"]
         parameter["parameter"] == "reconstructor" && (parameter["shape"] = [n, measurement_count])
@@ -220,6 +230,7 @@ end
 update_reconstructor!(value, n, measurement_count) = nothing
 
 # Scientific/graph dependencies remain optional and extend these cold APIs.
+function shack_hartmann_configuration end
 function controller_graph end
 function controller_storage end
 function measure! end

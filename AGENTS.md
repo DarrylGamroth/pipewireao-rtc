@@ -85,3 +85,12 @@
 - Maintain current work in the roadmap's **Current work** section. Keep dated
   integration/review/validation records as evidence, indexed in
   `docs/EVIDENCE_INDEX.md`; do not append another competing status narrative.
+
+## Instrument export checks
+
+- `test/test_instrument_export.jl` is the focused cold export/profile/template
+  selector; it runs without scientific optional packages or GPU access.
+- Instrument-source build/calibration/private-core selectors live in the
+  instrument repository. Its README owns environment prerequisites and commands.
+  Builds do not install or launch sessions. Keep source files and live RTCs
+  unchanged while validating a fresh output.
