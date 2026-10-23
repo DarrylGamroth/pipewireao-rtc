@@ -31,7 +31,7 @@ using PipeWireAORTC
             "plant" => Dict("package" => "DeclaredOwnerPlant", "settings" => Dict()),
             "command_input" => "command", "frame_output" => "frame",
             "command_count" => 3, "frame_shape" => [2, 3],
-            "rate" => 500, "exposure_ns" => 1_896_000, "wall_rate" => 10,
+            "rate" => 500, "exposure_ns" => 1_896_000, "pacing_rate_hz" => 10,
             "backend" => "cpu", "device" => 0, "frame_encoding" => "uint16",
             "frame_schema" => "test.detector/1", "command_schema" => "test.command/1",
             "command_scale" => 1.0)

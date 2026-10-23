@@ -36,8 +36,8 @@ end
 
 The instrument profile accepts `mode`, device `bindings`, `devices` and
 `calibration`. The host accepts `scheduling`, non-scheduling `bindings`, `environment`,
-`analysis` and `simulation`. Scheduling derives native placement and template
-bindings from one process declaration using JSON Pointer references. Host
+`analysis` and `simulation`. Named loops and workers let launcher adapters derive native placement,
+client configuration and worker arguments from the same process declaration. Host
 configuration cannot replace instrument choices. Mappings
 merge recursively; repeated leaves must be identical, and lists never append.
 The ordinary exporter still requires exact placement for all selected roles.
@@ -55,7 +55,7 @@ function combine_profile(profile, host=nothing)
             throw(ArgumentError("scheduling binding must be derived from host scheduling: $name"))
     end
     compiled = host_scheduling(host)
-    profile_fields(compiled, union(setdiff(HOST_PROFILE_FIELDS, Set(["scheduling"])), Set(["placement"])), "resolved host profile")
+    profile_fields(compiled, union(HOST_PROFILE_FIELDS, Set(["placement"])), "resolved host profile")
     return merge_profile(profile, compiled)
 end
 

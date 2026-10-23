@@ -11,7 +11,7 @@ function prepare_phase_timing(options)
     directory = get(options, :phase_timing_directory, nothing)
     directory === nothing && return nothing
     return OwnerPhaseTiming(PhaseTiming.Capture(directory, options.phase_timing_warmup,
-        options.phase_timing_frames, options.wall_period_ns, options.bootstrap_instance),
+        options.phase_timing_frames, options.pacing_period_ns, options.bootstrap_instance),
         PipeWireExchangeTiming(), Ref{Int64}(0))
 end
 

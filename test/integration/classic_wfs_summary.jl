@@ -209,7 +209,7 @@ end
 
 function main(application, stage, prefix; baseline_application=nothing)
     options = PipeWireAORTC.AOSOwner.configuration(joinpath(application, "simulation.conf"))
-    @assert options.backend === :cpu && options.total_exchanges == COUNT && options.wall_rate == 2
+    @assert options.backend === :cpu && options.total_exchanges == COUNT && options.pacing_rate_hz == 2
     isfile(joinpath(application, "classic_fft_oracle.jl")) || throw(ArgumentError("prepare an isolated sealed application with the Classic FFT witness first"))
     BLAS.set_num_threads(1)
     AdaptiveOpticsSim.Backends.set_fft_provider_threads!(1)

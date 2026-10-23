@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## Launcher-owned scheduling arguments — 2026-10-23
+
+The [review](reviews/20261023-launcher-scheduling/REVIEW.md) records removal of
+the host binding map, framework worker adapters, pacing terminology and CPU
+verification boundaries. It supersedes the binding-map interface below.
+
 ## Host scheduling derivation — 2026-10-23
 
 The [review](reviews/20261023-host-scheduling/REVIEW.md) records generic scheduling

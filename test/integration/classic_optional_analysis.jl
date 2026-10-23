@@ -142,7 +142,7 @@ end
 
 function main(application,stage,prefix,baseline)
     settings=PipeWireAORTC.AOSOwner.configuration(joinpath(application,"simulation.conf"))
-    @assert settings.backend===:cpu && settings.total_exchanges==W.COUNT && settings.wall_rate==2
+    @assert settings.backend===:cpu && settings.total_exchanges==W.COUNT && settings.pacing_rate_hz==2
     BLAS.set_num_threads(1); AdaptiveOpticsSim.Backends.set_fft_provider_threads!(1)
     reports=Any[]
     @testset "Optional analysis cannot gate CPU control" begin

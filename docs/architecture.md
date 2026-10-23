@@ -546,8 +546,8 @@ client requests to the single Lua session policy; scientific commands use
 the existing owner endpoints. It adds no data scheduler or second scientific parser.
 Unconfirmed source control fails the owned deployment; mutations are not retried.
 
-Wall pacing and model time are distinct. The installed plant graph uses the
-selected model period and its declared exposure. Missed wall periods are
+Simulation pacing and model time are distinct. The installed plant graph uses the
+selected model period and its declared exposure. Missed pacing periods are
 reported, never hidden by bursts or skipped model/command sequences. A finite
 qualification batch retains its bounded output and remains held until reset or
 shutdown. Simulated offsets are separate from recorded-input calibration: an
@@ -847,16 +847,22 @@ Optional `scheduling.defaults` supplies common values for those three fields,
 with explicit process fields taking precedence. The existing placement validator
 checks each effective contract before template expansion.
 
-`scheduling.bindings` maps application template names to ordinary RFC 6901
-`{$ref: /processes/<role>/...}` selectors into those effective contracts.
-A scalar selector returns an integer. A selector for a CPU list, or an ordered
-list of scalar CPU selectors, produces the comma-separated argument required by
-existing worker interfaces; CPU order is preserved. Selectors cannot refer to
-bindings or evaluate expressions. Native `placement` and scalar/string `bindings`
-are generated together; they are not separate host authoring inputs. Ordinary
-non-scheduling arguments can remain in top-level `bindings`. Existing reserved
-CPU/priority binding conventions must use scheduling references. Arbitrary
-application binding names carry no inferred meaning; their selectors are explicit.
+Each process declares native `data-loops` by their existing PipeWire loop names
+and optional framework `workers` by role. All assigned CPUs must belong to that
+process's CPU envelope. The builder writes each process's affinity and priority
+into its own native context. Application owners explicitly select `kind: jfg`
+or `kind: aos`; shared launcher adapters derive Julia thread counts and worker
+arguments. JFG's ordered `workers.julia` starts with the process leader CPU.
+AOS's `workers.pipewire` places its PipeWire loop; optional
+`workers.observation` places diagnostics separately from its source thread.
+Application role names and executable strings do not select adapters.
+
+Native `placement` is derived for runtime verification. Host authors do not
+provide a binding map or CPU/priority argument aliases. Ordinary endpoint
+arguments can remain in top-level `bindings`. Simulator `pacing_rate_hz` is the
+requested exchange cadence, separate from its physical model sample rate; zero
+means unpaced execution. Model period, exposure and per-exchange stepping are
+unchanged by this scheduling derivation.
 
 `locked-bytes` remains a minimum observed locked-memory requirement in bytes,
 not an allocation or an mlock request. `threads` remains a list of observed

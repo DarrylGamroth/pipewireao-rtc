@@ -41,21 +41,15 @@
     "context.data-loops": [
       {
         "loop.idle": "eventfd",
-        "loop.rt-prio": @RT_PRIORITY@,
+        "loop.rt-prio": 0,
         "loop.name": "rtc-data-loop",
-        "thread.affinity": [
-          @CORE_CPU@
-        ],
         "loop.class": "data.rt",
         "thread.name": "rtc-data-loop"
       },
       {
         "loop.idle": "eventfd",
-        "loop.rt-prio": @RT_PRIORITY@,
+        "loop.rt-prio": 0,
         "loop.name": "observer-loop",
-        "thread.affinity": [
-          @OBSERVER_CPU@
-        ],
         "loop.class": [],
         "thread.name": "observer-loop"
       }
@@ -69,7 +63,7 @@
       "name": "libpipewire-module-rt",
       "args": {
         "rtportal.enabled": false,
-        "rt.prio": @RT_PRIORITY@,
+        "rt.prio": 0,
         "rtkit.enabled": false
       }
     },

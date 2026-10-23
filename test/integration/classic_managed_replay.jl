@@ -127,7 +127,7 @@ function capture_session(application,stage,prefix,count)
         end
         ledger=W._ledger(handle)
         settings=R.AOSOwner.configuration(joinpath(application,"simulation.conf"))
-        observation=observe_classic(ledger["remote"];timeout=count/settings.wall_rate+120,
+        observation=observe_classic(ledger["remote"];timeout=count/settings.pacing_rate_hz+120,
             selected_streams=("detector","demanded","applied"),drive_interval=0.005,
             process_capture=factory,
             on_ready=() -> begin
@@ -214,7 +214,7 @@ function replay_options(application)
     options=R.AOSOwner.configuration(joinpath(application,"simulation.conf"))
     @assert options.backend===:cpu && options.plant.settings.pupil_resolution==480
     count=Int(something(options.total_exchanges))
-    @assert count==256 && 1<=options.wall_rate<=10 && options.period_ns==2_000_000
+    @assert count==256 && 1<=options.pacing_rate_hz<=10 && options.period_ns==2_000_000
     deployment=C.read_json(joinpath(application,"deployment.conf"))
     owner=only(filter(item -> item["role"]==deployment["source-owner"],deployment["owners"]))
     arguments=owner["argv"]
@@ -256,7 +256,7 @@ function verify_science(application,records,observation,ledger,source)
         @test all(C.sha256_file(joinpath(@__DIR__,path))==hash for (path,hash) in SOURCE_HASHES)
         return Dict("complete"=>true,
             "frames"=>count,"backend"=>"cpu","pupil_resolution"=>480,
-            "model_rate_hz"=>options.rate,"requested_wall_rate_hz"=>options.wall_rate,
+            "model_rate_hz"=>options.rate,"requested_wall_rate_hz"=>options.pacing_rate_hz,
             "exact_controller_replay"=>true,"exact_plant_detector_replay"=>true,
             "applied_observation_count"=>Base.count(applied.seen),
             "collection"=>"Unchanged capacity-one display queues; assert complete detector/command prefix at slow functional pacing; applied queue may drop samples",

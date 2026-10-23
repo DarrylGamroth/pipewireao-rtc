@@ -76,7 +76,7 @@ function instrument_document(; backend="cpu", package="CountingInstrument", sett
         "version" => 2, "plant" => Dict("package" => package, "settings" => settings),
         "command_input" => "command", "frame_output" => "frame",
         "command_count" => 3, "frame_shape" => [2, 3],
-        "rate" => 500, "exposure_ns" => 1_896_000, "wall_rate" => 10,
+        "rate" => 500, "exposure_ns" => 1_896_000, "pacing_rate_hz" => 10,
         "backend" => backend, "device" => 0, "frame_encoding" => "uint16",
         "frame_schema" => "org.calculon.ao.raw-detector-pixels/1",
         "command_schema" => "org.calculon.ao.demanded-pdm-command/1", "command_scale" => 1e-6)

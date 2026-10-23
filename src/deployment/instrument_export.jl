@@ -16,14 +16,15 @@ public prepare, load_profile, combine_profile, seal!, prepare_session_configurat
     simulator_port_contracts
 
 const PROFILE_FIELDS = Set(["placement", "bindings", "environment", "analysis", "simulation",
-    "mode", "devices", "calibration"])
+    "mode", "devices", "calibration", "scheduling"])
 const RUNTIME_BINDINGS = Set(["PACKAGE", "PREFIX", "REMOTE", "RUNTIME", "SOURCE_OWNER_INSTANCE"])
-const TEMPLATE_BINDINGS = ("CORE_CPU", "OBSERVER_CPU", "JULIA_CPU", "RT_PRIORITY")
 const TEMPLATE_FILES = ("core.conf.in", "client-rtc.conf.in", "client-julia.conf.in",
     "client-simulator.conf.in", "client-analysis.conf.in")
 
 include("authoring.jl")
 include("host_scheduling.jl")
+include("owner_scheduling.jl")
+include("native_configuration.jl")
 include("instrument_profiles.jl")
 include("instrument_modes.jl")
 include("graph_configuration.jl")
@@ -102,12 +103,8 @@ function profile_bindings(profile, julia)
         throw(ArgumentError("profile bindings cannot replace runtime or Julia executable bindings"))
     bindings = Dict(String(key) => binding_value(value) for (key, value) in raw)
     bindings["JULIA"] = String(julia)
-    for name in TEMPLATE_BINDINGS
-        value = get(raw, name, nothing)
-        typeof(value) === Int || throw(ArgumentError("profile requires integer binding $name"))
-        (name == "RT_PRIORITY" ? 0 <= value <= 99 : value >= 2) ||
-            throw(ArgumentError("profile binding $name is outside its supported range"))
-    end
+    any(name -> name == "RT_PRIORITY" || endswith(name,"_CPU") || endswith(name,"_CPUS"), keys(raw)) &&
+        throw(ArgumentError("CPU/priority bindings are launcher-owned; use process scheduling"))
     return bindings
 end
 
@@ -156,33 +153,10 @@ function profile!(spec, profile, bindings)
     return spec
 end
 
-function render_templates!(application, bindings, prefix)
-    runtime = joinpath(application, "shared-runtime")
-    !ispath(runtime) || throw(ArgumentError("instrument source must not contain generated runtime templates"))
-    mkpath(runtime)
-    for name in TEMPLATE_FILES
-        template = joinpath(resource_root(), "templates", "instrument", name)
-        write(joinpath(runtime, name), substitute(read(template, String), bindings))
-    end
-    path = joinpath(runtime, "core.conf.in")
-    core = D.decode(path, prefix)
-    modules = D.decode(joinpath(application, "rtc", "core.conf"), prefix)
-    modules isa AbstractDict && Set(keys(modules)) == Set(["context.modules"]) ||
-        throw(ArgumentError("instrument rtc/core.conf must contain only context.modules"))
-    declarations = modules["context.modules"]
-    declarations isa AbstractVector || throw(ArgumentError("instrument context.modules must be a list"))
-    append!(core["context.modules"], declarations)
-    ScienceExport.write_spa_config(path, core)
-    for name in TEMPLATE_FILES
-        D.decode(joinpath(runtime, name), prefix)
-    end
-    return runtime
-end
-
 function simulation_override!(application, profile)
     overrides = get(profile, "simulation", Dict())
-    overrides isa AbstractDict && Set(keys(overrides)) ⊆ Set(["backend", "device", "wall_rate"]) ||
-        throw(ArgumentError("profile simulation permits only backend, device and wall_rate"))
+    overrides isa AbstractDict && Set(keys(overrides)) ⊆ Set(["backend", "device", "pacing_rate_hz"]) ||
+        throw(ArgumentError("profile simulation permits only backend, device and pacing_rate_hz"))
     path = joinpath(application, "simulation.conf")
     simulation = D.decode(path, get(ENV,"PIPEWIREAO_PREFIX","/opt/pipewireao"))
     backend = get(overrides, "backend", simulation["backend"])
@@ -190,9 +164,9 @@ function simulation_override!(application, profile)
     device = get(overrides, "device", simulation["device"])
     typeof(device) === Int && 0 <= device <= typemax(Int32) || throw(ArgumentError("simulation device must be a nonnegative integer"))
     backend == "cpu" && device != 0 && throw(ArgumentError("CPU simulation backend requires device 0"))
-    wall_rate = get(overrides, "wall_rate", simulation["wall_rate"])
-    typeof(wall_rate) === Int && 0 <= wall_rate <= simulation["rate"] ||
-        throw(ArgumentError("simulation wall_rate must be an integer between zero and the model rate"))
+    pacing_rate_hz = get(overrides, "pacing_rate_hz", simulation["pacing_rate_hz"])
+    typeof(pacing_rate_hz) === Int && 0 <= pacing_rate_hz <= simulation["rate"] ||
+        throw(ArgumentError("simulation pacing_rate_hz must be an integer between zero and the model rate"))
     merge!(simulation, overrides)
     Common.write_json(path, simulation; atomic=true)
     return path
@@ -240,6 +214,10 @@ function prepare(source::AbstractString, destination::AbstractString;
     !ispath(destination) && !islink(destination) || throw(ArgumentError("instrument export destination must be fresh"))
     outside(relpath(destination, source)) || throw(ArgumentError("instrument export destination must be outside source"))
     application_files(source)
+    resolved = host_scheduling(profile)
+    haskey(profile, "placement") && profile["placement"] != resolved["placement"] &&
+        throw(ArgumentError("placement must match its authoritative process scheduling"))
+    profile = resolved
     bindings = profile_bindings(profile, julia)
     authoring = source_application(source)
     pop!(authoring, "runtime-configurations", nothing)
@@ -255,6 +233,7 @@ function prepare(source::AbstractString, destination::AbstractString;
     metadata = TOML.parsefile(joinpath(source, "Project.toml"))
     !haskey(metadata, "sources") || throw(ArgumentError("instrument Project.toml must not override package sources"))
     spec = profile!(substitute(authoring, bindings), profile, bindings)
+    prepare_owner_scheduling!(spec, profile)
     mkpath(dirname(destination))
     staging = mktempdir(dirname(destination); prefix="instrument-export-")
     # copy_tree requires a new destination; only this function owns staging.
@@ -262,7 +241,7 @@ function prepare(source::AbstractString, destination::AbstractString;
     try
         copy_source(source, application)
         manifest === nothing || RuntimeExport.copy_file(checked_path(manifest), joinpath(application, "Manifest.toml"))
-        render_templates!(application, bindings, prefix)
+        render_templates!(application, spec, profile, prefix)
         prepare_mode!(application, spec, mode, profile, bindings, prefix;
             configuration=something(configuration, "rtc/configuration.yaml"))
         instrument = configuration === nothing ? InstrumentConfiguration.prepare_publication(application) :

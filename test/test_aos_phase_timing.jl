@@ -11,7 +11,7 @@ const TimingRecorder = PipeWireAORTC.PhaseTiming
     @test TimingExt.next_deadline(UInt64(100), UInt64(20), UInt64(161)) == 180
     mktempdir() do directory
         owner = TimingExt.prepare_phase_timing((; phase_timing_directory=directory,
-            phase_timing_frames=4, phase_timing_warmup=0, wall_period_ns=UInt64(20),
+            phase_timing_frames=4, phase_timing_warmup=0, pacing_period_ns=UInt64(20),
             bootstrap_instance=Int64(7)))
         timing = owner.exchange
         timing.generation = 1
@@ -46,7 +46,7 @@ const TimingRecorder = PipeWireAORTC.PhaseTiming
         @test owner.capture.used == 0
         @test TimingExt.exchange_timing(owner) === timing
         unpaced = TimingExt.prepare_phase_timing((; phase_timing_directory=directory,
-            phase_timing_frames=1, phase_timing_warmup=0, wall_period_ns=UInt64(0),
+            phase_timing_frames=1, phase_timing_warmup=0, pacing_period_ns=UInt64(0),
             bootstrap_instance=Int64(8)))
         TimingExt.record_phase_timing!(unpaced, timing, frame, UInt64(0), UInt64(110), UInt64(0))
         @test unpaced.capture.rows[1][15] == 0

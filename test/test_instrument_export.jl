@@ -103,8 +103,7 @@ function export_profile()
     placement() = Dict("cpus" => [2, 3], "leader-cpu" => 3,
         "rt-priority" => 0, "locked-bytes" => 0, "threads" => [])
     Dict("placement" => Dict(role => placement() for role in ("core", "rtc", "session", "julia")),
-        "bindings" => Dict{String,Any}("CORE_CPU" => 2, "OBSERVER_CPU" => 3,
-            "JULIA_CPU" => 2, "RT_PRIORITY" => 0))
+        "bindings" => Dict{String,Any}("DEVICE_NODE" => "camera"))
 end
 
 @testset "session references resolve the whole composed document before sealing" begin
@@ -184,17 +183,12 @@ end
 @testset "instrument exporter profile bindings" begin
     profile = export_profile()
     bindings = E.profile_bindings(profile, "/julia/bin/julia")
-    @test E.substitute("@JULIA@ --cpu @CORE_CPU@ @REMOTE@", bindings) ==
-        "/julia/bin/julia --cpu 2 @REMOTE@"
+    @test E.substitute("@JULIA@ --node @DEVICE_NODE@ @REMOTE@", bindings) ==
+        "/julia/bin/julia --node camera @REMOTE@"
     @test E.substitute("@BOOTSTRAP_INSTANCE_JULIA@", bindings) == "@BOOTSTRAP_INSTANCE_JULIA@"
     @test_throws ArgumentError E.substitute("@UNDECLARED@", bindings)
     @test E.substitute(Dict("argv" => ["@JULIA@", "@PACKAGE@"]), bindings) ==
         Dict("argv" => ["/julia/bin/julia", "@PACKAGE@"])
-    for key in ("CORE_CPU", "OBSERVER_CPU", "JULIA_CPU", "RT_PRIORITY")
-        missing = deepcopy(profile)
-        delete!(missing["bindings"], key)
-        @test_throws ArgumentError E.profile_bindings(missing, "julia")
-    end
     for (key, value) in (("CORE_CPU", 1), ("RT_PRIORITY", 100), ("CORE_CPU", true),
             ("PREFIX", "/wrong"), ("JULIA", "/wrong"), ("BOOTSTRAP_INSTANCE_JULIA", "wrong"),
             ("OTHER", 1.5), ("other", "bad"))
@@ -248,16 +242,16 @@ end
 @testset "simulation profile changes only deployment fields" begin
     mktempdir() do directory
         path = joinpath(directory, "simulation.conf")
-        simulation = Dict("backend" => "cuda", "device" => 0, "wall_rate" => 500,
+        simulation = Dict("backend" => "cuda", "device" => 0, "pacing_rate_hz" => 500,
             "rate" => 500, "plant" => Dict("settings" => Dict("seed" => 17)))
         C.write_json(path, simulation)
-        E.simulation_override!(directory, Dict("simulation" => Dict("backend" => "cpu", "wall_rate" => 10)))
+        E.simulation_override!(directory, Dict("simulation" => Dict("backend" => "cpu", "pacing_rate_hz" => 10)))
         prepared = C.read_json(path)
         @test prepared["backend"] == "cpu"
-        @test prepared["wall_rate"] == 10
+        @test prepared["pacing_rate_hz"] == 10
         @test prepared["plant"] == simulation["plant"]
         for overrides in (Dict("rate" => 10), Dict("plant" => Dict()), Dict("backend" => "unknown"),
-                Dict("device" => -1), Dict("device" => true), Dict("wall_rate" => 501))
+                Dict("device" => -1), Dict("device" => true), Dict("pacing_rate_hz" => 501))
             before = read(path)
             @test_throws ArgumentError E.simulation_override!(directory, Dict("simulation" => overrides))
             @test read(path) == before
@@ -272,14 +266,18 @@ end
         mkpath(joinpath(directory, "rtc"))
         C.write_json(joinpath(directory, "rtc", "core.conf"), Dict("context.modules" =>
             [Dict("name" => "libpipewire-module-queue", "args" => Dict("node.name" => "test-data-queue"))]))
-        E.render_templates!(directory, bindings, prefix)
+        spec=Dict("core"=>"shared-runtime/core.conf.in","client"=>Dict("rtc"=>"shared-runtime/client-rtc.conf.in"))
+        process(cpus)=Dict("rt-priority"=>0,"data-loops"=>cpus)
+        profile=Dict("scheduling"=>Dict("processes"=>Dict("core"=>process(Dict("rtc-data-loop"=>[2],"observer-loop"=>[3])),
+            "rtc"=>process(Dict("rtc-data-loop"=>[2])))))
+        E.render_templates!(directory, spec, profile, prefix)
         core = D.decode(joinpath(directory, "shared-runtime", "core.conf.in"), prefix)
         @test count(module_ -> module_["name"] == "libpipewire-module-queue", core["context.modules"]) == 1
         @test length(core["context.objects"]) == 3
         @test core["context.properties"]["core.name"] == "@REMOTE@"
         @test core["context.properties"]["context.data-loops"][1]["thread.affinity"] == [2]
         @test core["context.properties"]["context.data-loops"][2]["thread.affinity"] == [3]
-        @test_throws ArgumentError E.render_templates!(directory, bindings, prefix)
+        @test_throws ArgumentError E.render_templates!(directory, spec, profile, prefix)
     end
 end
 

@@ -14,7 +14,7 @@ function idle_owner_polls!(options, mailbox, state, payload, count)
         state.running = false
         return nothing
     end
-    period = options.wall_period_ns
+    period = options.pacing_period_ns
     for _ in 1:count
         # The real transport specialization is large enough to keep this call
         # out of line. Enforce that boundary for the headless Nothing fixture;
@@ -32,7 +32,7 @@ end
 println("AOS_IDLE_OWNER julia=$(VERSION) rtc=$(pkgversion(PipeWireAORTC)) source=$(pathof(PipeWireAORTC))")
 
 @testset "idle AOS owner retains its locally captured reset callback" begin
-    options = (; wall_period_ns=UInt64(2_000_000), owner_check=()->nothing)
+    options = (; pacing_period_ns=UInt64(2_000_000), owner_check=()->nothing)
     mailbox = PipeWireAORTC.NativeSourceControl.Mailbox(Int64(1))
     state = IdleOwnerExtension.OwnerState()
     payload = ntuple(index -> UInt64(index), 512)

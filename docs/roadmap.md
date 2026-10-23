@@ -12,6 +12,19 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Launcher-owned scheduling arguments — 2026-10-23
+
+This supersedes the binding-map interface recorded below. Host YAML declares
+process envelopes, named native data loops and framework worker roles. Shared
+JFG/AOS adapters derive worker arguments and Julia thread counts; each native
+context uses its own declared CPU affinity and priority. Active simulator
+configuration uses `pacing_rate_hz`, independently of model sample rate.
+Classic's examples now reject or correct conflicting thread/leader, observation
+and session-loop assignments before launch. CPU/software checks passed,
+including 841 mode assertions, owner/settings checks and isolated core startup.
+Independent source review found no remaining confirmed defect. No live deployment
+changed. See the [review](reviews/20261023-launcher-scheduling/REVIEW.md).
+
 ### One host scheduling description — 2026-10-23
 
 Host authoring now declares `scheduling.processes` once. Existing JSON Pointer

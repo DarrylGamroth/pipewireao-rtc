@@ -104,7 +104,7 @@ end
         document = Dict{String,Any}(
             "version" => 1, "graph" => "simulation.yaml", "command_input" => "command",
             "frame_output" => "frame", "command_count" => 3, "frame_shape" => [2, 3],
-            "rate" => 500, "exposure_ns" => 1_896_000, "wall_rate" => 10,
+            "rate" => 500, "exposure_ns" => 1_896_000, "pacing_rate_hz" => 10,
             "backend" => "cpu", "device" => 0,
             "artifacts" => [
                 Dict("binding" => "basis", "path" => "basis.fits", "axes" => [1,2,3], "type" => "Float32", "shape" => [2,3,3]),

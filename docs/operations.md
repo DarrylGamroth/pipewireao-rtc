@@ -874,9 +874,9 @@ A selected unavailable backend MUST fail before source admission; it MUST NOT
 silently fall back. AOS MUST complete and stage device work outside transport
 callbacks. Backend packages MUST remain optional to CPU deployment.
 
-The profile MUST declare wall pacing, model period and exposure, require a
+The profile MUST declare simulation pacing, model period and exposure, require a
 positive period and exposure no longer than that period, and report achieved
-cadence and missed wall periods. It MUST preserve one model step per accepted
+cadence and missed pacing periods. It MUST preserve one model step per accepted
 command exchange and MUST NOT produce catch-up bursts or silently skip model
 sequences. Preparation/warm/reset costs MUST precede admission. Hardware results
 MUST identify the tested backend/device; CPU checks alone do not qualify GPUs.
@@ -885,7 +885,7 @@ The bounded sustained qualification mode MAY preserve continuous plant and
 controller state for up to 65,536 exchanges while retaining at most 256 complete
 frames. It MUST validate every exchange beyond that retained prefix and report
 actual total delivery separately from retained payload counts. Its report MUST
-distinguish model period from wall pacing, exclude the declared warmup from
+distinguish model period from simulation pacing, exclude the declared warmup from
 timing distributions, and disclose histogram resolution and overflow. An
 unpaced completed-exchange rate MUST NOT be presented as a scheduled frame rate
 or maximum isolated RTC throughput. Simulator-process allocation measurements

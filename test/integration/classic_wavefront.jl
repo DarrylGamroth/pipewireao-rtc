@@ -120,7 +120,7 @@ end
 
 function main(application,stage,prefix)
     options=PipeWireAORTC.AOSOwner.configuration(joinpath(application,"simulation.conf"))
-    @assert options.backend===:cpu && options.total_exchanges==COUNT && options.wall_rate==2
+    @assert options.backend===:cpu && options.total_exchanges==COUNT && options.pacing_rate_hz==2
     @assert options.optical_observation
     isfile(joinpath(application,"classic_fft_oracle.jl")) || throw(ArgumentError(
         "prepare the isolated test application with prepare_classic_wavefront.jl first"))

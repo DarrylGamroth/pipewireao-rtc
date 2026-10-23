@@ -10,7 +10,7 @@ function owner_configuration(directory; backend="cpu")
     return Dict{String,Any}(
         "version" => 1, "graph" => "simulation.yaml", "command_input" => "pdm_command",
         "frame_output" => "detector_frame", "command_count" => 3, "frame_shape" => [2, 3],
-        "rate" => 500, "exposure_ns" => 1_896_000, "wall_rate" => 10,
+        "rate" => 500, "exposure_ns" => 1_896_000, "pacing_rate_hz" => 10,
         "backend" => backend, "device" => 0,
         "artifacts" => [Dict{String,Any}("binding" => "grid", "path" => "grid.fits",
             "hdu" => 1, "axes" => [2, 1], "type" => "UInt32", "shape" => [3, 2])])
@@ -77,10 +77,14 @@ end
         argv = ["--config", path, "--remote", "/tmp/aos-private", "--control-node", "simulator-wfs",
             "--bootstrap-node", "rtc.bootstrap.aos", "--bootstrap-instance", "7"]
         default_timing = Owner.arguments(argv)
-        @test default_timing.transport_cpu === nothing
-        @test Owner.arguments([argv; ["--transport-cpu", "7"]]).transport_cpu == 7
+        @test default_timing.pipewire_cpu === nothing
+        @test default_timing.observation_cpu === nothing
+        @test Owner.arguments([argv; ["--observation-cpu", "8"]]).observation_cpu == 8
+        @test_throws ArgumentError Owner.arguments([argv; ["--transport-cpu", "7"]])
+        @test Owner.arguments([argv; ["--pipewire-cpu", "7"]]).pipewire_cpu == 7
         for cpu in ("-1", "0", "1", "many", "1.5")
-            @test_throws ArgumentError Owner.arguments([argv; ["--transport-cpu", cpu]])
+            @test_throws ArgumentError Owner.arguments([argv; ["--pipewire-cpu", cpu]])
+            @test_throws ArgumentError Owner.arguments([argv; ["--observation-cpu", cpu]])
         end
         @test default_timing.phase_timing_directory === nothing
         @test default_timing.phase_timing_frames == 0
@@ -114,7 +118,23 @@ end
         @test options.frame_shape == (2, 3)
         @test options.period_ns == 2_000_000
         @test options.exposure_ns == 1_896_000
-        @test options.wall_period_ns == 100_000_000
+        @test options.pacing_period_ns == 100_000_000
+        @test options.pacing_rate_hz == 10
+        for (pacing, period) in ((0, 0), (3, 333_333_333), (6, 166_666_667), (500, 2_000_000))
+            paced = deepcopy(document)
+            paced["pacing_rate_hz"] = pacing
+            write(path, JSON.json(paced))
+            parsed = Owner.configuration(path)
+            @test parsed.pacing_rate_hz == pacing
+            @test parsed.pacing_period_ns == UInt64(period)
+            @test parsed.period_ns == options.period_ns
+            @test parsed.exposure_ns == options.exposure_ns
+        end
+        legacy = deepcopy(document)
+        legacy["wall_rate"] = pop!(legacy, "pacing_rate_hz")
+        write(path, JSON.json(legacy))
+        @test_throws ArgumentError Owner.configuration(path)
+        write(path, JSON.json(document))
         @test options.total_exchanges === nothing
         @test options.calibration_identity === nothing
         @test only(options.artifacts).source.path == joinpath(directory, "grid.fits")
@@ -161,7 +181,8 @@ end
         @test events == [:preparing, :cleanup]
         @test !any(id -> id.name in ("AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL", "CUDA", "REVOLTClassicSim"), keys(Base.loaded_modules))
         for (key, value) in (("version", true), ("command_count", false), ("frame_shape", [2, 0]),
-            ("backend", "automatic"), ("device", -1), ("wall_rate", 501), ("rate", 0),
+            ("backend", "automatic"), ("device", -1), ("pacing_rate_hz", 501), ("pacing_rate_hz", -1),
+            ("pacing_rate_hz", true), ("pacing_rate_hz", 1.5), ("rate", 0),
             ("exposure_ns", 2_000_001), ("command_scale", 1e-100), ("total_exchanges", 0),
             ("optical_observation", "true"), ("unexpected", 1))
             invalid = deepcopy(document)
@@ -269,7 +290,7 @@ end
             @test_throws ArgumentError Owner.configuration(path)
         end
         for key in ("version", "plant", "command_input", "frame_output", "command_count",
-                "frame_shape", "rate", "exposure_ns", "wall_rate", "backend", "device",
+                "frame_shape", "rate", "exposure_ns", "pacing_rate_hz", "backend", "device",
                 "frame_encoding", "frame_schema", "command_schema", "command_scale")
             invalid = deepcopy(document)
             delete!(invalid, key)

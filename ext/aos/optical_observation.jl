@@ -254,13 +254,12 @@ function form_wavefront!(destination, opd, pupil)
     return destination
 end
 
-function worker!(observation::Observation, pipewire)
+function worker!(observation::Observation, pipewire, cpu::Int)
     # The cold static initializer schedules this task on default thread two.
     # Its CPU is declared by deployment; the source remains on thread one.
     current_task().sticky = true
     try
         Threads.threadid() == 2 || throw(ArgumentError("optical worker must run on Julia thread two"))
-        cpu = parse(Int, ENV["PIPEWIREAO_OPTICAL_CPU"])
         ThreadPinning.pinthread(cpu)
         println("OPTICAL_WORKER thread=$(Threads.threadid()) cpu=$(ThreadPinning.getcpuid())")
         while !observation.stop[]
@@ -276,24 +275,22 @@ function worker!(observation::Observation, pipewire)
     return nothing
 end
 
-start!(::Nothing, pipewire) = nothing
-function start!(observation::Observation, pipewire)
+start!(::Nothing, pipewire, cpu) = nothing
+function start!(observation::Observation, pipewire, cpu)
     observation.task === nothing || throw(ArgumentError("optical worker already started"))
     Threads.nthreads(:default) >= 2 && Threads.nthreads(:interactive) == 0 &&
         Threads.threadid() == 1 || throw(ArgumentError(
             "optical observation requires two default Julia threads with the source on thread one"))
-    haskey(ENV, "PIPEWIREAO_OPTICAL_CPU") || throw(ArgumentError("optical worker CPU is not configured"))
-    cpu = tryparse(Int, ENV["PIPEWIREAO_OPTICAL_CPU"])
     cpu !== nothing && cpu > 1 && cpu != ThreadPinning.getcpuid() ||
-        throw(ArgumentError("optical worker CPU must differ from the source CPU and exclude CPU0/1"))
+        throw(ArgumentError("observation worker CPU must differ from the source CPU and exclude CPU0/1"))
     observation.stop[] = false
     # Thread two also serves cold bootstrap polling. Both tasks yield; science
     # stays on thread one and no observation work enters a native callback.
-    observation.task = ThreadPinning.@spawnat 2 worker!(observation, pipewire)
+    observation.task = ThreadPinning.@spawnat 2 worker!(observation, pipewire, cpu)
     return nothing
 end
 
-warm!(::Nothing, pipewire; check=()->nothing) = nothing
+warm!(::Nothing, pipewire; check=()->nothing, cpu=nothing) = nothing
 function pin_image_thread!(cpu::Integer)
     cpu > 1 || throw(ArgumentError("image thread CPU must exclude CPU0/1"))
     # pw_thread_loop_start passes only its name to the native thread creator.
@@ -311,11 +308,12 @@ function pin_image_thread!(cpu::Integer)
         throw(ArgumentError("native image thread CPU placement was not applied"))
     return nothing
 end
-function warm!(observation::Observation, pipewire; check=()->nothing)
+function warm!(observation::Observation, pipewire; check=()->nothing, cpu=nothing)
     check()
     observation.generation = UInt64(frame_acquisition_generation(pipewire))
-    pin_image_thread!(parse(Int, ENV["PIPEWIREAO_OPTICAL_CPU"]))
-    start!(observation, pipewire)
+    cpu !== nothing && cpu > 1 || throw(ArgumentError("observation worker CPU is not configured"))
+    pin_image_thread!(cpu)
+    start!(observation, pipewire, cpu)
     target = observation.completed[] + UInt64(1)
     submit!(observation;
         generation=observation.generation) ||
@@ -360,11 +358,11 @@ function stop_worker!(observation::Observation)
     return nothing
 end
 
-reset!(::Nothing, pipewire; check=()->nothing) = nothing
-function reset!(observation::Observation, pipewire; check=()->nothing)
+reset!(::Nothing, pipewire; check=()->nothing, cpu=nothing) = nothing
+function reset!(observation::Observation, pipewire; check=()->nothing, cpu=nothing)
     observation.next_sample_ns = 0
     observation.failed[] = false
-    warm!(observation, pipewire; check)
+    warm!(observation, pipewire; check, cpu)
     return nothing
 end
 

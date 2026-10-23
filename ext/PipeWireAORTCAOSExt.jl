@@ -195,7 +195,7 @@ end
 
 # The idle poll forwards this callable; explicit specialization keeps its
 # prepared science captures from being boxed again on every poll.
-function consume_control!(options, mailbox, pipewire, state, wall_period,
+function consume_control!(options, mailbox, pipewire, state, pacing_period,
         reset_owner!::F, phase=nothing) where {F}
     mailbox.ready[] || return nothing
     kind, token, requested_running = with_frame_stream(pipewire) do _
@@ -203,7 +203,7 @@ function consume_control!(options, mailbox, pipewire, state, wall_period,
     end
     if kind != SourceControl.INITIAL
         result = SourceControl.apply!(state, kind, token, requested_running,
-            time_ns(), max(wall_period, UInt64(1)), reset_owner!)
+            time_ns(), max(pacing_period, UInt64(1)), reset_owner!)
         request_generation = Int64(frame_acquisition_generation(pipewire))
         if result == 0 && !state.running
             save_phase_timing!(phase)
@@ -259,7 +259,8 @@ function run_prepared!(options, science, pipewire, observation, mailbox, state, 
         state.completed = false
         state.deadline_ns = 0
         reset_phase_timing!(phase, state.generation)
-        OpticalObservation.reset!(observation, pipewire; check=options.owner_check)
+        OpticalObservation.reset!(observation, pipewire; check=options.owner_check,
+            cpu=get(options, :observation_cpu, nothing))
     end
     ticket = Bootstrap.take_connect!(runtime)
     Bootstrap.check_connect!(runtime, ticket)
@@ -270,7 +271,7 @@ function run_prepared!(options, science, pipewire, observation, mailbox, state, 
     println("SIMULATOR_CONNECTED sequence=0 held=true")
     flush(stdout)
     while !Bootstrap.cancelled(runtime)
-        consume_control!(options, mailbox, pipewire, state, options.wall_period_ns, reset_owner!, phase)
+        consume_control!(options, mailbox, pipewire, state, options.pacing_period_ns, reset_owner!, phase)
         Bootstrap.cancelled(runtime) && break
         if !state.running || time_ns() < state.deadline_ns
             yield()
@@ -288,8 +289,8 @@ function run_prepared!(options, science, pipewire, observation, mailbox, state, 
         frame_timing = frame_command_timing(pipewire)
         OpticalObservation.sample!(observation, frame_timing, model_ns, time_ns())
         optical_finished = timing === nothing ? UInt64(0) : time_ns()
-        state.deadline_ns = options.wall_period_ns == 0 ? UInt64(0) :
-            next_deadline(state.deadline_ns, options.wall_period_ns, time_ns())
+        state.deadline_ns = options.pacing_period_ns == 0 ? UInt64(0) :
+            next_deadline(state.deadline_ns, options.pacing_period_ns, time_ns())
         timing === nothing || record_phase_timing!(phase, timing, frame_timing, deadline,
             optical_finished, state.deadline_ns)
         if options.total_exchanges !== nothing && sequence == options.total_exchanges
@@ -343,11 +344,12 @@ function Owner.run_owner(options)
                 update_properties!(pipewire.command_stream,mirror_properties)
             end
         end
-        transport_cpu = get(options, :transport_cpu, nothing)
-        if transport_cpu !== nothing
-            PipeWireAORTC.Placement.pin_loop!(pipewire.loop, transport_cpu; check=options.owner_check)
+        pipewire_cpu = get(options, :pipewire_cpu, nothing)
+        if pipewire_cpu !== nothing
+            PipeWireAORTC.Placement.pin_loop!(pipewire.loop, pipewire_cpu; check=options.owner_check)
         end
-        OpticalObservation.warm!(observation, pipewire; check=options.owner_check)
+        OpticalObservation.warm!(observation, pipewire; check=options.owner_check,
+            cpu=get(options, :observation_cpu, nothing))
         precompile(exchange_frame!, (typeof(pipewire), typeof(science.driver))) ||
             error("cannot compile prepared frame exchange before admission")
         if phase !== nothing

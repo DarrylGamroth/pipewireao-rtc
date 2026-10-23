@@ -5,7 +5,7 @@ length(ARGS) == 2 || error("usage: prepare_classic_wavefront.jl CPU_APPLICATION 
 source, destination = abspath.(ARGS)
 options = PipeWireAORTC.AOSOwner.configuration(joinpath(source, "simulation.conf"))
 options.backend === :cpu && options.total_exchanges == 32 &&
-    options.wall_rate == 2 && options.optical_observation ||
+    options.pacing_rate_hz == 2 && options.optical_observation ||
     error("base must select CPU, 32 exchanges, 2 Hz wall rate and optical observation")
 spec = C.read_json(joinpath(source, "deployment.conf"))
 all(C.sha256_file(joinpath(source, path)) == hash for (path, hash) in spec["artifacts"]) ||

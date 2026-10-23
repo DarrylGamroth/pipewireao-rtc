@@ -25,7 +25,7 @@ println("AOS_DEFAULT_LOADING julia=$(VERSION) rtc=$(pkgversion(PipeWireAORTC)) s
         write(config, """
             {"version":1,"graph":"simulation.toml","command_input":"command",
              "frame_output":"frame","command_count":3,"frame_shape":[2,3],
-             "rate":500,"exposure_ns":1896000,"wall_rate":10,
+             "rate":500,"exposure_ns":1896000,"pacing_rate_hz":10,
              "backend":"$LoadingBackend","device":0,"artifacts":[]}
             """)
         if LoadingRoute == "instrument"
@@ -33,7 +33,7 @@ println("AOS_DEFAULT_LOADING julia=$(VERSION) rtc=$(pkgversion(PipeWireAORTC)) s
                 {"version":2,"plant":{"package":"REVOLTClassicSim","settings":{"profile":"grid_gaussian"}},
                  "command_input":"pdm_command","frame_output":"shwfs_frame",
                  "command_count":277,"frame_shape":[352,352],
-                 "rate":500,"exposure_ns":1896000,"wall_rate":10,
+                 "rate":500,"exposure_ns":1896000,"pacing_rate_hz":10,
                  "backend":"$LoadingBackend","device":0,"frame_encoding":"uint16",
                  "frame_schema":"org.calculon.ao.raw-detector-pixels/1",
                  "command_schema":"org.calculon.ao.demanded-pdm-command/1","command_scale":0.000001}

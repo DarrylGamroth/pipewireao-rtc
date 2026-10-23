@@ -1,49 +1,36 @@
-# Resolve authoring once; native process contracts and template consumers remain
-# unchanged. References use the same RFC 6901 resolver as instrument metadata.
+# Source configuration describes process envelopes and named loop/worker CPUs.
+# Native placement remains the existing runtime verification contract.
 const SCHEDULING_DEFAULTS = Dict{String,Any}("rt-priority" => 0,
     "locked-bytes" => 0, "threads" => [])
-
-function scheduling_binding(value::Integer)
-    typeof(value) === Int || throw(ArgumentError("scheduling binding must be an integer or CPU list"))
-    return value
-end
-function scheduling_binding(value::AbstractVector)
-    D.valid_cpu_list(value)
-    return join(value, ',')
-end
-scheduling_binding(value) = throw(ArgumentError("scheduling binding must select an integer or CPU list"))
-
-function scheduling_reference(selector::AbstractDict, context)
-    pointer = Common.configuration_reference_pointer(selector)
-    startswith(pointer, "/processes/") || throw(ArgumentError("scheduling binding must reference a process"))
-    return Common.configuration_pointer(context, pointer)
-end
-scheduling_reference(selectors::AbstractVector, context) =
-    [scheduling_reference(selector, context) for selector in selectors]
-scheduling_reference(selector, context) = throw(ArgumentError("scheduling binding requires JSON Pointer references"))
+const PLACEMENT_FIELDS = ("cpus", "leader-cpu", "rt-priority", "locked-bytes", "threads")
 
 function host_scheduling(host)
     result = Dict{String,Any}(key => deepcopy(value) for (key, value) in host)
-    scheduling = pop!(result, "scheduling", nothing)
-    scheduling === nothing && throw(ArgumentError("host profile requires scheduling"))
-    InstrumentConfiguration.fields(scheduling, ("processes", "bindings", "defaults"),
-        ("processes", "bindings"), "host scheduling")
-    processes = InstrumentConfiguration._declaration_object(scheduling["processes"], "scheduled processes")
-    isempty(processes) && throw(ArgumentError("host scheduling requires at least one process"))
+    scheduling = get(result, "scheduling", nothing)
+    InstrumentConfiguration.fields(scheduling, ("processes", "defaults"), ("processes",), "host scheduling")
+    declarations = InstrumentConfiguration._declaration_object(scheduling["processes"], "scheduled processes")
+    isempty(declarations) && throw(ArgumentError("host scheduling requires at least one process"))
     defaults = get(scheduling, "defaults", Dict())
     InstrumentConfiguration.fields(defaults, ("rt-priority", "locked-bytes", "threads"), (), "scheduling defaults")
-    placement = Dict(role => deepcopy(merge(SCHEDULING_DEFAULTS, defaults,
-        InstrumentConfiguration._declaration_object(contract, "process scheduling")))
-        for (role, contract) in processes)
-    D.validate_placements(placement, Set(keys(placement)))
-    selectors = InstrumentConfiguration._declaration_object(scheduling["bindings"], "scheduling bindings")
-    context = Dict("processes" => placement)
-    bindings = Dict{String,Any}(key => deepcopy(value) for (key, value) in get(result, "bindings", Dict()))
-    result["bindings"] = bindings
-    for (name, selector) in selectors
-        haskey(bindings, name) && throw(ArgumentError("duplicate scheduling binding $name"))
-        bindings[name] = scheduling_binding(scheduling_reference(selector, context))
+    processes = Dict{String,Any}()
+    placement = Dict{String,Any}()
+    for (role, declaration) in declarations
+        InstrumentConfiguration.fields(declaration, (PLACEMENT_FIELDS..., "data-loops", "workers"),
+            ("cpus", "leader-cpu"), "process scheduling")
+        process = deepcopy(merge(SCHEDULING_DEFAULTS, defaults, declaration))
+        envelope = D.valid_cpu_list(process["cpus"])
+        for key in ("data-loops", "workers")
+            assignments = InstrumentConfiguration._declaration_object(get!(process, key, Dict()), key)
+            for (name, cpus) in assignments
+                InstrumentDefinition.identifier(name) || throw(ArgumentError("invalid scheduled $key name"))
+                D.valid_cpu_list(cpus) ⊆ envelope || throw(ArgumentError("$key CPUs exceed process envelope"))
+            end
+        end
+        processes[role] = process
+        placement[role] = Dict(key => deepcopy(process[key]) for key in PLACEMENT_FIELDS)
     end
+    D.validate_placements(placement, Set(keys(placement)))
+    result["scheduling"] = Dict("processes" => processes)
     result["placement"] = placement
     return result
 end

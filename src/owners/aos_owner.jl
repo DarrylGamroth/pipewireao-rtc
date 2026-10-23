@@ -99,7 +99,7 @@ function arguments(args)
     values = Dict{String,String}()
     required = ("--config", "--remote", "--control-node", "--bootstrap-node", "--bootstrap-instance")
     optional = ("--phase-timing-directory", "--phase-timing-frames", "--phase-timing-warmup")
-    allowed = (required..., optional..., "--transport-cpu")
+    allowed = (required..., optional..., "--pipewire-cpu", "--observation-cpu")
     iseven(length(args)) || throw(ArgumentError("each AOS owner option requires a value"))
     for index in 1:2:length(args)
         key, value = args[index], args[index + 1]
@@ -116,11 +116,17 @@ function arguments(args)
     control_node != bootstrap_node || throw(ArgumentError("source and bootstrap nodes must differ"))
     instance = tryparse(Int64, values["--bootstrap-instance"])
     instance !== nothing && instance > 0 || throw(ArgumentError("bootstrap instance must be positive"))
-    transport_cpu = nothing
-    if haskey(values, "--transport-cpu")
-        transport_cpu = tryparse(Int, values["--transport-cpu"])
-        transport_cpu !== nothing && transport_cpu >= 2 ||
-            throw(ArgumentError("transport CPU must be an integer excluding CPUs 0 and 1"))
+    pipewire_cpu = nothing
+    if haskey(values, "--pipewire-cpu")
+        pipewire_cpu = tryparse(Int, values["--pipewire-cpu"])
+        pipewire_cpu !== nothing && pipewire_cpu >= 2 ||
+            throw(ArgumentError("PipeWire loop CPU must be an integer excluding CPUs 0 and 1"))
+    end
+    observation_cpu = nothing
+    if haskey(values, "--observation-cpu")
+        observation_cpu = tryparse(Int, values["--observation-cpu"])
+        observation_cpu !== nothing && observation_cpu >= 2 ||
+            throw(ArgumentError("observation CPU must exclude CPUs 0 and 1"))
     end
     requested_timing = any(key -> haskey(values, key), optional)
     timing_directory = nothing
@@ -140,7 +146,7 @@ function arguments(args)
     end
     return (; remote, control_node, bootstrap_node, bootstrap_instance=instance,
         config=abspath(values["--config"]), phase_timing_directory=timing_directory,
-        phase_timing_frames=timing_frames, phase_timing_warmup=timing_warmup, transport_cpu)
+        phase_timing_frames=timing_frames, phase_timing_warmup=timing_warmup, pipewire_cpu, observation_cpu)
 end
 
 "Validate every configuration declaration before preparing any FITS artifact."
@@ -149,11 +155,11 @@ function configuration(path::AbstractString)
     document isa AbstractDict || throw(ArgumentError("AOS configuration must be an object"))
     version = integer(get(document, "version", nothing), "version", 1, 3)
     shared_fields = ("version", "command_input", "frame_output", "command_count", "frame_shape",
-        "rate", "exposure_ns", "wall_rate", "backend", "device", "command_node",
+        "rate", "exposure_ns", "pacing_rate_hz", "backend", "device", "command_node",
         "frame_schema", "command_schema", "command_scale", "total_exchanges", "optical_observation",
         "detector_observation", "command_observation", "applied_command_observation", "calibration_identity", "instrument", "rtc_configuration", "prescription_identity")
     shared_required = ("version", "command_input", "frame_output", "command_count", "frame_shape",
-        "rate", "exposure_ns", "wall_rate", "backend", "device")
+        "rate", "exposure_ns", "pacing_rate_hz", "backend", "device")
     route_fields = version == 1 ? ("graph", "artifacts") : ("plant", "frame_encoding")
     fields = (shared_fields..., route_fields...)
     required = version == 1 ? (shared_required..., route_fields...) :
@@ -184,8 +190,8 @@ function configuration(path::AbstractString)
     rate = integer(document["rate"], "rate", 1, 1_000_000_000)
     period_ns = UInt64(div(1_000_000_000 + div(rate, 2), rate))
     exposure_ns = UInt64(integer(document["exposure_ns"], "exposure_ns", 1, period_ns))
-    wall_rate = integer(document["wall_rate"], "wall_rate", 0, rate)
-    wall_period_ns = wall_rate == 0 ? UInt64(0) : UInt64(div(1_000_000_000 + div(wall_rate, 2), wall_rate))
+    pacing_rate_hz = integer(document["pacing_rate_hz"], "pacing_rate_hz", 0, rate)
+    pacing_period_ns = pacing_rate_hz == 0 ? UInt64(0) : UInt64(div(1_000_000_000 + div(pacing_rate_hz, 2), pacing_rate_hz))
     backend = Symbol(text(document["backend"], "backend"))
     backend in (:cpu, :cuda) || throw(ArgumentError("AOS backend must be cpu or cuda"))
     device = integer(document["device"], "device", 0, typemax(Int32))
@@ -246,7 +252,7 @@ function configuration(path::AbstractString)
         push!(artifacts, FITSBinding(binding, source, T, shape))
     end
     return (; version, config_path, plant, graph, command_input, frame_output, command_count, frame_shape, rate, period_ns,
-        exposure_ns, wall_rate, wall_period_ns, backend, device, artifacts, command_node,
+        exposure_ns, pacing_rate_hz, pacing_period_ns, backend, device, artifacts, command_node,
         frame_encoding, frame_schema, command_schema, command_scale, total_exchanges, optical_observation,
         detector_observation, command_observation, applied_command_observation, calibration_identity, instrument, mirror_description, rtc_configuration, prescription_identity)
 end
