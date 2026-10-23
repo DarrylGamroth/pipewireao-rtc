@@ -807,6 +807,10 @@ explicitly, independently of its selected active-subaperture mask. Its current
 Shack-Hartmann simulator requires square detector/subaperture sampling and exact
 lenslet coverage; unsupported combinations reject declaration preparation.
 Mirror command counts and grid dimensions come from the shared mirror description.
+The cold declaration context also provides exact `description_json` file bytes
+for the mirror's existing NodeInfo property and a WFS `video_frame_size` string
+in native width-by-height order. These serialize existing device interfaces;
+they do not infer camera configuration or physical command conversion.
 AOS source graphs and profile configurations use the same plain JSON Pointer
 syntax with `/instrument` for declaration geometry and `/settings` for selected
 settings. Cold preparation resolves these references before calling existing AOS

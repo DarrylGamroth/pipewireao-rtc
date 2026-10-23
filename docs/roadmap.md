@@ -91,6 +91,23 @@ registered by this task. CPU and private-core results are recorded in the
 instrument repository migration record. The live CPU RTC and GUI stay unchanged;
 GPU and hardware qualification remain outside this source cleanup.
 
+### Offline Classic hardware example — 2026-10-23
+
+Classic's instrument repository contains an inactive eGrabber/ALPAO profile and
+native adapter templates. Geometry references derive video size, physical count
+and exact mirror-description JSON from the shared instrument definition. The
+camera/mirror serials, hardware calibration, ALPAO normalization scale/profile,
+native device hosts and acknowledgement source remain explicitly missing.
+No model calibration, physical command conversion or readback is invented.
+Required application-mode fields reject null as well as absence, so the ordinary
+builder rejects the incomplete example. This is not a deployment authorization.
+
+The instrument migration record records 33 offline example checks and 117 RTC
+exporter checks, plus 160 existing geometry checks, with Julia 1.13.2/CPU SDK.
+Formatting and whitespace checks passed. Native templates were inspected against
+the existing plugin interfaces. No vendor SDK, device, node or live session was
+opened; physical acquisition and command qualification remain outside scope.
+
 ### Shared simulator geometry and consumer contracts — 2026-10-23
 
 Classic's instrument declaration now owns the common telescope prescription and
