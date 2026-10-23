@@ -7,7 +7,7 @@ using ..Common
 using ..RuntimeExport
 using ..ScienceExport
 using ..InstrumentConfiguration
-import ..Artifacts, ..InstrumentDefinition
+import ..InstrumentDefinition
 import ..DeploymentConfiguration as D
 import ..resource_root
 
@@ -229,8 +229,10 @@ function prepare(source::AbstractString, destination::AbstractString;
         simulation_override!(application, profile)
         prepare_mode!(application, spec, mode, profile, bindings, prefix)
         instrument = InstrumentConfiguration.prepare_publication(application)
+        simulation = D.decode(D.relative_asset(application, "simulation.conf"), prefix)
+        definition = D.decode(D.relative_asset(application, simulation["plant"]["definition"]), prefix)
         prepare_graph_configurations!(application, graph_configurations,
-            relpath(instrument, application), prefix)
+            relpath(instrument, application), prefix; dimensions=get(definition, "dimensions", Dict()))
         Common.write_json(joinpath(application, "deployment.conf"), spec; atomic=true)
         seal!(application)
         D.validate_application(Common.read_json(joinpath(application, "deployment.conf")),

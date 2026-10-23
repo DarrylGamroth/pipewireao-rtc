@@ -93,6 +93,17 @@ const IC = PipeWireAORTC.InstrumentConfiguration
     mktempdir() do directory
         declaration = declaration_fixture(directory)
         @test IC.validate_declaration(declaration, directory) === nothing
+        declared = deepcopy(declaration)
+        declared["dimensions"] = Dict("controller_command_count" => 5, "active_vdm_count" => 3)
+        @test IC.validate_declaration(declared, directory) === nothing
+        for dimensions in (Dict("controller_command_count" => 0),
+                Dict("controller_command_count" => -1), Dict("controller_command_count" => true),
+                Dict("controller_command_count" => 2.5), Dict("bad name" => 2),
+                Dict("controller_command_count" => [2, 3]), [2, 3])
+            invalid = deepcopy(declaration)
+            invalid["dimensions"] = dimensions
+            @test_throws ArgumentError IC.validate_declaration(invalid, directory)
+        end
 
         invalid_wire_contract = deepcopy(declaration)
         invalid_wire_contract["wire_contracts"][1]["command_scale"] = true

@@ -3,7 +3,8 @@ function validate_declaration(document::AbstractDict, directory::AbstractString)
     top_fields = ("schema_version", "id", "defaults", "settings_schema", "wire_contracts",
         "deformable_mirrors", "wavefront_sensors", "graphs", "profiles",
         "bindings", "settings_bindings", "frame_period_s", "hil")
-    fields(document, top_fields, top_fields, "instrument declaration")
+    fields(document, (top_fields..., "dimensions"), top_fields, "instrument declaration")
+    _validate_dimensions(get(document, "dimensions", Dict()))
     document["schema_version"] === 1 || throw(ArgumentError("unsupported instrument declaration schema"))
     InstrumentDefinition.identifier(document["id"]) || throw(ArgumentError("invalid instrument identifier"))
     for key in ("defaults", "settings_schema", "deformable_mirrors", "wavefront_sensors",
@@ -82,6 +83,17 @@ isinteger_value(value) = false
 isnonnegative_integer(value::Integer) = value >= 0
 isnonnegative_integer(::Bool) = false
 isnonnegative_integer(value) = false
+
+# Expected graph dimensions belong to the instrument, not to an artifact file.
+function _validate_dimensions(dimensions)
+    _declaration_object(dimensions, "instrument dimensions")
+    for (name, count) in dimensions
+        _declaration_identifier(name, "dimension name")
+        ispositive_integer(count) && count <= typemax(Int) ||
+            throw(ArgumentError("instrument dimension $name must be a positive Int"))
+    end
+    return nothing
+end
 
 function _validate_mirror_declaration(spec, directory, name, defaults, settings_schema, profiles)
     mirror = _declaration_fields(spec,

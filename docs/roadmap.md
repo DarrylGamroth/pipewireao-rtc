@@ -91,6 +91,39 @@ registered by this task. CPU and private-core results are recorded in the
 instrument repository migration record. The live CPU RTC and GUI stay unchanged;
 GPU and hardware qualification remain outside this source cleanup.
 
+### Instrument-authoritative parameter contracts — 2026-10-23
+
+This supersedes the calibration-shape reference context described below.
+The instrument declaration now owns expected controller/VDM/state dimensions;
+prepared typed graph parameter ports own expected array types and shapes.
+`parameters.conf` contains only port/file/HDU/axis mappings. Selecting FITS data
+cannot redefine those contracts. All binding metadata and retained-memory limits
+are checked before file access, then actual FITS data is checked before execution.
+Generated graph headers remain, and calibration resizing updates the instrument
+declaration/publication without rewriting binding metadata.
+
+Work began from RTC `43883d1` and instruments `7048f0d`, with clean dedicated
+`codex/parameter-contract` worktrees. Loader commit `92e9ca6` and instrument
+commit `954c900` retain the implementation and caller evidence. All 16 FITS
+mappings and source artifact bytes are unchanged apart from removing redundant
+binding types/shapes. See [architecture](architecture.md#configuration-boundary)
+and instrument `MIGRATION.md` for the contract and integration evidence.
+
+Julia 1.13.2 CPU source validation used the existing CPU SDK wrapper and private
+`parameter-contract-validation` environment. RTC selectors passed 304 assertions:
+`test_graph_configuration.jl`, `test_instrument_declaration_schema.jl`,
+`test_graph_owner.jl`, `test_graph_owner_integration.jl`, `test_spa_config.jl`
+and `test_instrument_export.jl`. Instrument selectors passed 295 assertions:
+configuration 36, graph references 29, first-frame mask 39, calibration 100,
+mode composition/selection 41 and formatting 50. Actual mismatched rectangular
+FITS, wrong axes, nonfinite values, invalid Boolean values and fractional integer
+conversion reject preparation. A 9-coordinate artifact regeneration/reload
+succeeds against updated declared dimensions while binding bytes remain intact.
+Independent source review found no confirmed defect. Software checks do not
+qualify hardware, GPU execution or deadlines. No installation or live session
+change occurred; MainPID 1877367 and InvocationID
+`d2fa50c0f07740428be9c27d0d0e4152` remained unchanged.
+
 ### Instrument-derived graph configuration — 2026-10-23
 
 The exporter resolves explicit node-configuration references from the instrument
