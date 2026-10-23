@@ -10,8 +10,8 @@ import ..Common, ..DeploymentConfiguration, ..InstrumentDefinition, ..Artifacts
 const D = DeploymentConfiguration
 
 public load, settings, graph_document, scientific_definition, prepare_system,
-    prepare_publication, mirror, read_mirror_description, actuator_coordinates,
-    actuator_grid_indices, actuator_index_map, source_grid_coordinates
+    prepare_publication, prepare_simulation_configuration!, mirror, read_mirror_description, actuator_coordinates,
+    actuator_grid_indices, actuator_index_map, source_grid_coordinates, configuration_context
 
 function prepare_system end
 
@@ -86,6 +86,18 @@ function mirror(declaration, configured, name)
     return (; description, registration)
 end
 
+"Build the cold reference context from selected settings and physical mirror descriptions."
+function configuration_context(declaration, configured)
+    instrument = deepcopy(declaration.document)
+    for (name, spec) in instrument["deformable_mirrors"]
+        geometry = mirror(declaration, configured, name)
+        spec["actuator_count"] = command_count(geometry.description)
+        spec["actuator_axis_count"] = _mirror_axis_count(geometry.description)
+        spec["grid_shape"] = collect(geometry.description.layout.grid_shape)
+    end
+    return Dict("instrument" => instrument, "settings" => deepcopy(configured))
+end
+
 transform(value, entry) = transform(Val(Symbol(get(entry,"transform","identity"))),value,entry)
 transform(::Val{:identity}, value, entry) = deepcopy(value)
 function transform(::Val{:gaussian_width}, value, entry)
@@ -143,7 +155,7 @@ function graph_document(declaration, configured; calibration=false)
         end
     end
     graph["name"] = calibration ? graph["name"] : graph["name"] * "_" * profile_name
-    return graph
+    return Common.configuration_value(graph, configuration_context(declaration, configured))
 end
 
 function binding_values(declaration, configured, binding::AbstractDict)
@@ -153,7 +165,8 @@ end
 function binding_values(::Val{:zeros}, declaration, configured, binding)
     T = get(Dict(string(T)=>T for T in Artifacts.TARGET_TYPES),binding["type"],nothing)
     T === nothing && throw(ArgumentError("unsupported zero binding element type"))
-    shape = map(binding["shape"]) do extent
+    context = configuration_context(declaration, configured)
+    shape = map(Common.configuration_value(binding["shape"], context)) do extent
         dimension(configured,extent)
     end
     dims = Artifacts.checked_shape(shape,sizeof(T))

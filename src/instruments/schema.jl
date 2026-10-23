@@ -3,8 +3,9 @@ function validate_declaration(document::AbstractDict, directory::AbstractString)
     top_fields = ("schema_version", "id", "defaults", "settings_schema", "wire_contracts",
         "deformable_mirrors", "wavefront_sensors", "graphs", "profiles",
         "bindings", "settings_bindings", "frame_period_s", "hil")
-    fields(document, (top_fields..., "dimensions"), top_fields, "instrument declaration")
+    fields(document, (top_fields..., "dimensions", "telescope"), top_fields, "instrument declaration")
     _validate_dimensions(get(document, "dimensions", Dict()))
+    haskey(document, "telescope") && _validate_telescope(document["telescope"])
     document["schema_version"] === 1 || throw(ArgumentError("unsupported instrument declaration schema"))
     InstrumentDefinition.identifier(document["id"]) || throw(ArgumentError("invalid instrument identifier"))
     for key in ("defaults", "settings_schema", "deformable_mirrors", "wavefront_sensors",
@@ -158,14 +159,59 @@ end
 
 function _validate_sensor_declaration(spec, directory, name)
     sensor = _declaration_fields(spec,
-        ("detector_shape", "subaperture_shape", "subaperture_origins", "expected_schema", "provenance"),
+        ("detector_shape", "subaperture_shape", "subaperture_origins", "expected_schema", "provenance", "optical_prescription"),
         ("detector_shape", "subaperture_shape", "subaperture_origins", "expected_schema", "provenance"),
         "sensor $name")
     _validate_positive_shape(sensor["detector_shape"], "sensor detector_shape")
     _validate_positive_shape(sensor["subaperture_shape"], "sensor subaperture_shape")
+    haskey(sensor, "optical_prescription") && _validate_sensor_optics(sensor)
     _validate_artifact(sensor["subaperture_origins"], directory, "subaperture_origins")
     _declaration_text(sensor["expected_schema"], "sensor expected_schema")
     _declaration_text(sensor["provenance"], "sensor provenance")
+    return nothing
+end
+
+function _validate_telescope(value)
+    telescope = _declaration_fields(value,
+        ("telescope_diameter_m", "central_obstruction_ratio", "pupil_reflectivity", "aperture_revision"),
+        ("telescope_diameter_m", "central_obstruction_ratio", "pupil_reflectivity", "aperture_revision"), "telescope")
+    for key in ("telescope_diameter_m", "central_obstruction_ratio", "pupil_reflectivity")
+        number = telescope[key]
+        isfinite_real(number) && isfinite(Float32(number)) || throw(ArgumentError("invalid telescope $key"))
+    end
+    isfinite_positive(Float32(telescope["telescope_diameter_m"])) || throw(ArgumentError("invalid telescope diameter"))
+    0 <= telescope["central_obstruction_ratio"] < 1 && Float32(telescope["central_obstruction_ratio"]) < 1 ||
+        throw(ArgumentError("invalid central obstruction ratio"))
+    0 < telescope["pupil_reflectivity"] <= 1 && Float32(telescope["pupil_reflectivity"]) > 0 ||
+        throw(ArgumentError("invalid pupil reflectivity"))
+    ispositive_integer(telescope["aperture_revision"]) || throw(ArgumentError("invalid aperture revision"))
+    return nothing
+end
+
+function _validate_sensor_optics(sensor)
+    # Explicit lenslet geometry is independent of the selected active-subaperture mask.
+    optics = _declaration_fields(sensor["optical_prescription"],
+        ("n_lenslets", "pixel_scale_arcsec", "diffraction_padding", "half_pixel_shift",
+         "shannon_sampling", "source_band", "source_magnitude", "source_position_angle_deg",
+         "source_separation_arcsec", "source_wavelength_m", "threshold_convolution", "valid_subaperture_threshold"),
+        ("n_lenslets",), "sensor optical_prescription")
+    count = optics["n_lenslets"]
+    ispositive_integer(count) || throw(ArgumentError("n_lenslets must be a positive integer"))
+    detector, subaperture = sensor["detector_shape"], sensor["subaperture_shape"]
+    length(detector) == length(subaperture) == 2 && detector[1] == detector[2] && subaperture[1] == subaperture[2] ||
+        throw(ArgumentError("Shack-Hartmann optical prescription requires square detector and subapertures"))
+    all(axis -> BigInt(count) * subaperture[axis] == detector[axis], 1:2) ||
+        throw(ArgumentError("lenslet geometry differs from the declared detector shape"))
+    for key in ("pixel_scale_arcsec", "source_wavelength_m", "diffraction_padding")
+        haskey(optics, key) && !isfinite_positive(optics[key]) && throw(ArgumentError("invalid sensor $key"))
+    end
+    for key in ("half_pixel_shift", "shannon_sampling")
+        haskey(optics, key) && !(optics[key] isa Bool) && throw(ArgumentError("invalid sensor $key"))
+    end
+    for key in ("source_magnitude", "source_position_angle_deg", "source_separation_arcsec", "threshold_convolution", "valid_subaperture_threshold")
+        haskey(optics, key) && !isfinite_real(optics[key]) && throw(ArgumentError("invalid sensor $key"))
+    end
+    haskey(optics, "source_band") && _declaration_text(optics["source_band"], "sensor source_band")
     return nothing
 end
 
@@ -289,6 +335,11 @@ end
 _valid_zero_extent(value::Integer, defaults, settings_schema, profiles) = ispositive_integer(value)
 function _valid_zero_extent(value::AbstractString, defaults, settings_schema, profiles)
     _validate_setting_reference(value, defaults, settings_schema, profiles, "zero shape setting")
+    return true
+end
+function _valid_zero_extent(value::AbstractDict, defaults, settings_schema, profiles)
+    Set(keys(value)) == Set(("\$ref",)) && value["\$ref"] isa AbstractString &&
+        startswith(value["\$ref"], "/") || throw(ArgumentError("invalid zero binding reference"))
     return true
 end
 _valid_zero_extent(value, defaults, settings_schema, profiles) = false
