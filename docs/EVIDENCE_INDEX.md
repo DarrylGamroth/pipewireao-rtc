@@ -677,3 +677,7 @@ timing, general multiple endpoints and physical actuation retain separate scopes
 
 - YAML configuration migration — 2026-10-23: instrument repository's `MIGRATION.md`
   and `MIGRATION-REVIEW.md` record CPU parity, focused checks and unchanged live state.
+
+- Instrument-defined modal controls — 2026-10-23: instrument repository's
+  `MIGRATION.md` and `MIGRATION-REVIEW.md` record schema, artifact and cross-language
+  verification plus independent review dispositions.

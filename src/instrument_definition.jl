@@ -211,7 +211,7 @@ function validate_shape_control(shape, units, count)
         else
             exact_fields(definition,("kind","modes","artifact_sha256"),"sampled definition")
             hash = definition["artifact_sha256"]
-            hash isa String && occursin(r"^[0-9a-f]{64}$",hash) || throw(ArgumentError("invalid sampled artifact_sha256"))
+            nonempty_text(hash) && occursin(r"^[0-9a-f]{64}$",hash) || throw(ArgumentError("invalid sampled artifact_sha256"))
             basis_names(definition["modes"],64,"sampled")
             for mode in definition["modes"]
                 exact_fields(mode,("name","values"),"sampled mode")

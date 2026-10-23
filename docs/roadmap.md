@@ -12,6 +12,21 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Instrument-defined modal controls — 2026-10-23
+
+Instrument publication schema 2 declares named Zernike, Fourier and sampled
+bases, with command units, per-basis coefficient limits, normalization and
+provenance. Builtins retain compact descriptors; custom FITS matrices resolve
+through existing cold artifact preparation with explicit command rows/mode
+columns and content hashes. The instrument identity includes those artifacts.
+GUI YAML selects IDs, order, labels and initial collapsed state. The generic
+coefficient editor retains the existing RTC-mediated offset path and fresh
+session/rebase rules. No live deployment or numerical plant code changed.
+
+Focused RTC, instrument, CPU preparation and cross-language mathematical checks
+are recorded in the instrument repository migration records. These software
+checks do not qualify physical mirrors or real-time performance.
+
 ### YAML simulation and GUI configuration — 2026-10-23
 
 AOS simulation graphs and GUI presentation now use YAML; native PipeWire files

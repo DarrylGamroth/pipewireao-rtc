@@ -765,7 +765,7 @@ The tagged `definition.kind` is `zernike`, `fourier`, or `sampled`:
 - Fourier definitions carry command-ordered Float32 `positions`, up to
   256 unique integer `frequencies` `[kx,ky]`, and `axis_units`. The source-axis
   spatial sinusoid uses `2π(kx x + ky y)`; `sampled_rms` gives the sine and cosine
-  quadratures separate unit sampled RMS before phase composition.
+  quadratures separate unit sampled RMS before coefficient-weighted addition.
 - Sampled definitions carry up to 64 named command-sized Float32 `values`
   vectors and the source file's lowercase, 64-digit `artifact_sha256`.
   `supplied` preserves supplied values without normalization. Nonfinite,
