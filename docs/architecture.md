@@ -801,6 +801,14 @@ existing AOS factories/compiler. No per-instrument Julia implementation or RTC
 configuration reader is needed in AOS. The older version 2 route remains for
 instruments that still select a package and `plant.settings.mirror_description`.
 
+Instrument source may reference a mirror description under a sibling `mirrors/`
+directory using `../mirrors/…`. This exception is limited to mirror descriptions;
+other assets retain their application-relative boundary. Export copies the exact
+shared description bytes into the application's `mirrors/` directory, rewrites
+the declaration to the local path, and includes the file in the deployment seal.
+The generated application has no source-repository dependency. Device geometry
+and command order remain separate from instrument pupil registration.
+
 The source declaration may supply a common `telescope` prescription and WFS
 `optical_prescription`. Classic's latter prescription states lenslet geometry
 explicitly, independently of its selected active-subaperture mask. Its current

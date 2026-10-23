@@ -101,7 +101,7 @@ function _validate_mirror_declaration(spec, directory, name, defaults, settings_
         ("description", "pupil_registration_setting", "units", "command_scale_m", "limiter", "shape_control"),
         ("description", "pupil_registration_setting", "units", "command_scale_m", "limiter", "shape_control"),
         "mirror $name")
-    D.relative_asset(directory, mirror["description"])
+    mirror_description_path(directory, mirror["description"])
     _validate_setting_reference(mirror["pupil_registration_setting"], defaults, settings_schema,
         profiles, "mirror pupil registration setting")
     _declaration_text(mirror["units"], "mirror units")

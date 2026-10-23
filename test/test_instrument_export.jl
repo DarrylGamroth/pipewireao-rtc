@@ -4,6 +4,58 @@ const E = PipeWireAORTC.InstrumentExport
 const C = PipeWireAORTC.Common
 const D = PipeWireAORTC.DeploymentConfiguration
 
+@testset "shared mirror source descriptions become independent application assets" begin
+    mktempdir() do repository
+        source = joinpath(repository, "instrument-a")
+        shared = joinpath(repository, "mirrors", "vendor", "mirror.json")
+        mkpath(source)
+        mkpath(dirname(shared))
+        bytes = "{\"schema_version\":1,\"provenance\":\"retained source\"}\n"
+        write(shared, bytes)
+        document = Dict("deformable_mirrors" => Dict(name =>
+            Dict("description" => "../mirrors/vendor/mirror.json") for name in ("dm1", "dm2")))
+        path = joinpath(source, "instrument.conf")
+        C.write_json(path, document)
+        before = read(path)
+        output = E.copy_source(source, joinpath(repository, "application"))
+        @test read(path) == before
+        @test read(shared, String) == bytes
+        copied = C.read_json(joinpath(output, "instrument.conf"))
+        @test all(mirror["description"] == "mirrors/vendor/mirror.json"
+            for mirror in values(copied["deformable_mirrors"]))
+        @test read(D.relative_asset(output, "mirrors/vendor/mirror.json"), String) == bytes
+        # Removing the source cannot break the exported application's local reference.
+        rm(shared)
+        @test read(PipeWireAORTC.InstrumentConfiguration.mirror_description_path(output,
+            copied["deformable_mirrors"]["dm1"]["description"]), String) == bytes
+        @test_throws Base.IOError E.copy_source(source, joinpath(repository, "missing"))
+        @test !ispath(joinpath(repository, "missing"))
+        write(shared, bytes)
+        mkpath(joinpath(source, "mirrors", "vendor"))
+        write(joinpath(source, "mirrors", "vendor", "mirror.json"), "conflict")
+        @test_throws ArgumentError E.copy_source(source, joinpath(repository, "conflict"))
+        @test !ispath(joinpath(repository, "conflict"))
+        rm(joinpath(source, "mirrors"); recursive=true)
+        write(joinpath(repository, "outside.json"), bytes)
+        for name in ("../mirrors/../outside.json", "../outside.json")
+            for mirror in values(document["deformable_mirrors"])
+                mirror["description"] = name
+            end
+            C.write_json(path, document)
+            @test_throws D.DeploymentError E.copy_source(source, joinpath(repository, "escape"))
+            @test !ispath(joinpath(repository, "escape"))
+        end
+        for mirror in values(document["deformable_mirrors"])
+            mirror["description"] = "../mirrors/vendor/mirror.json"
+        end
+        C.write_json(path, document)
+        rm(shared)
+        symlink(joinpath(output, "mirrors/vendor/mirror.json"), shared)
+        @test_throws ArgumentError E.copy_source(source, joinpath(repository, "linked"))
+        @test !ispath(joinpath(repository, "linked"))
+    end
+end
+
 @testset "derived YAML and calibration files share the export reference contract" begin
     mktempdir() do directory
         C.write_json(joinpath(directory, "instrument.json"),

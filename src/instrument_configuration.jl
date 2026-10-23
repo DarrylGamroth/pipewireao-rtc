@@ -78,9 +78,19 @@ function setting(value, path::AbstractString)
     return value
 end
 
+# Source instruments may share mirror descriptions in a sibling mirrors directory.
+# All other assets retain the application-relative boundary.
+function mirror_description_path(directory, name::AbstractString)
+    if startswith(name, "../mirrors/")
+        return D.relative_asset(joinpath(dirname(directory), "mirrors"), name[12:end])
+    end
+    return D.relative_asset(directory, name)
+end
+mirror_description_path(directory, name) = D.relative_asset(directory, name)
+
 function mirror(declaration, configured, name)
     spec = declaration.document["deformable_mirrors"][name]
-    description = read_mirror_description(D.relative_asset(declaration.directory,spec["description"]))
+    description = read_mirror_description(mirror_description_path(declaration.directory,spec["description"]))
     registration = _pupil_registration(_instrument_seal(setting(configured,spec["pupil_registration_setting"])))
     _require_pupil_geometry(description,registration)
     return (; description, registration)
@@ -94,7 +104,7 @@ function configuration_context(declaration, configured)
         spec["actuator_count"] = command_count(geometry.description)
         spec["actuator_axis_count"] = _mirror_axis_count(geometry.description)
         spec["grid_shape"] = collect(geometry.description.layout.grid_shape)
-        spec["description_json"] = read(D.relative_asset(declaration.directory, spec["description"]), String)
+        spec["description_json"] = read(mirror_description_path(declaration.directory, spec["description"]), String)
     end
     for sensor in values(instrument["wavefront_sensors"])
         rows, columns = sensor["detector_shape"]

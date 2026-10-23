@@ -95,7 +95,7 @@
   prepares small CPU Shack-Hartmann and Pyramid products without a live session
   or GPU access; the core exporter selector remains independent of these packages.
 - The optional CPU selector `test/aos_instrument_preparation.jl cpu` requires
-  `REVOLT_CLASSIC_MIRROR_DESCRIPTION` to name Classic's `mirror-description.json`
+  `REVOLT_CLASSIC_MIRROR_DESCRIPTION` to name `mirrors/alpao/hsdm277.json`
   in the instrument repository, in addition to the scientific test environment.
 - Instrument-source build/calibration/private-core selectors live in the
   instrument repository. Its README owns environment prerequisites and commands.

@@ -195,6 +195,32 @@ function simulation_override!(application, profile)
     return path
 end
 
+"Copy instrument source, localizing shared mirror descriptions for independent deployment."
+function copy_source(source::AbstractString, destination::AbstractString)
+    path = joinpath(source, "instrument.conf")
+    document = isfile(path) ? InstrumentConfiguration.bounded_document(path) : nothing
+    descriptions = Pair{String,String}[]
+    if document !== nothing
+        for mirror in values(get(document, "deformable_mirrors", Dict()))
+            name = mirror["description"]
+            checked_path(joinpath(source, name))
+            from = InstrumentConfiguration.mirror_description_path(source, name)
+            startswith(name, "../mirrors/") || continue
+            local_name = name[4:end]
+            !ispath(joinpath(source, local_name)) ||
+                throw(ArgumentError("shared mirror conflicts with instrument asset: $local_name"))
+            push!(descriptions, from => local_name)
+            mirror["description"] = local_name
+        end
+    end
+    RuntimeExport.copy_tree(source, destination)
+    for (from, name) in unique(descriptions)
+        RuntimeExport.copy_file(from, joinpath(destination, name))
+    end
+    isempty(descriptions) || Common.write_json(joinpath(destination, "instrument.conf"), document)
+    return destination
+end
+
 """Copy an instrument into a fresh application and seal its prepared files.
 
 A supplied registered Manifest is validated through the ordinary deployment
@@ -227,7 +253,7 @@ function prepare(source::AbstractString, destination::AbstractString;
     # copy_tree requires a new destination; only this function owns staging.
     application = joinpath(staging, "application")
     try
-        RuntimeExport.copy_tree(source, application)
+        copy_source(source, application)
         manifest === nothing || RuntimeExport.copy_file(checked_path(manifest), joinpath(application, "Manifest.toml"))
         render_templates!(application, bindings, prefix)
         simulation_override!(application, profile)
