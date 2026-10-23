@@ -184,9 +184,9 @@ function replace_dimensions!(application, parameters, n; measurement_count, comm
         get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
     for node in graph["filter.graph"]["nodes"]
         config, name = node["config"], node["name"]
-        name == "reconstruction" && (config["actuator_count"] = n)
+        name == "reconstruction" && (config["reconstructed_count"] = n)
         name == "closed-loop-correction" && (config["state_length"] = n)
-        for key in ("active_vdm_size", "controller_command_extent", "vdm_size")
+        for key in ("active_vdm_count", "controller_command_count")
             haskey(config, key) && (config[key] = n)
         end
         if name == "pdm-command" && command_limits !== nothing

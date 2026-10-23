@@ -12,6 +12,24 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Consistent algorithm counts and FITS startup — 2026-10-23
+
+FilterGraphAlgorithms names now distinguish controller, active/full VDM,
+physical-actuator, reconstructed and calibration-coordinate counts. RTC
+calibration rewrites and Classic graph configuration use those same owner APIs.
+Dependent source minimums require the newly prepared framework releases; none
+were registered or deployed. A full naming audit and independent dispositions
+are maintained in JuliaFilterGraph's `docs/naming-review.md`.
+
+Classic's duplicate inline subaperture mask is removed; `parameters.conf` remains
+the FITS authority. Source Island lacked the startup callback already present in
+its released package; that implementation is restored separately. Cold tests
+prove mask adoption on the first executed full graph frame and fail preparation
+for missing/invalid mask FITS. Source ordering places adoption before node
+warmup, bootstrap Prepared/Connect and downstream session admission. This is CPU
+software/source evidence, not a live native admission or hardware test. The live
+RTC is unchanged. Commands and scope are in the instrument migration records.
+
 ### Instrument-defined modal controls — 2026-10-23
 
 Instrument publication schema 2 declares named Zernike, Fourier and sampled

@@ -681,3 +681,7 @@ timing, general multiple endpoints and physical actuation retain separate scopes
 - Instrument-defined modal controls — 2026-10-23: instrument repository's
   `MIGRATION.md` and `MIGRATION-REVIEW.md` record schema, artifact and cross-language
   verification plus independent review dispositions.
+
+- Algorithm counts and FITS startup — 2026-10-23: JuliaFilterGraph
+  `docs/naming-review.md` and instrument `MIGRATION.md`/`MIGRATION-REVIEW.md` record
+  the full audit, reference-boundary exceptions and first-frame mask regression.
