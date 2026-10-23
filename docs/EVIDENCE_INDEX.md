@@ -1,5 +1,13 @@
 # Delivery evidence catalog
 
+## Instrument-derived session and queue contracts — 2026-10-23
+
+The [current-work record](roadmap.md#instrument-derived-session-and-queue-contracts--2026-10-23)
+records focused offline CPU checks and source revisions. The contract is in
+[configuration boundary](architecture.md#configuration-boundary); instrument
+`MIGRATION.md` retains mode-composition, unchanged-baseline and variation checks.
+The live RTC was unchanged; hardware and timing qualification are outside scope.
+
 ## Optional WFS analysis process — 2026-10-22
 
 [Validation](validation/optional-analysis-20261022/README.md) records the separate

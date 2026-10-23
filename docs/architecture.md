@@ -852,6 +852,33 @@ No node-name inference or new Algorithm/transport parser is introduced. Emitted
 graphs contain concrete ordinary SPA-JSON and a generated-file comment header.
 Edit instrument source and rebuild; generated output is not authority.
 
+Composed session and core configuration can use the same explicit references.
+After graph materialization, session export provides
+`/graphs/<node.name>/{inputs,parameters,outputs}/<port>/{shape,element-type}`.
+These contracts come from the prepared scientific graph's public boundary
+formats, with no FITS binding or control-loop execution. The graph's dimensions
+have already been resolved from the instrument. Wire type names use the existing
+PipeWire ndarray enum, including distinct `BOOL8` and `U8` representations.
+The scientific providers remain optional and are loaded only when the session
+requests their contracts.
+
+Optional simulator optical contracts are under
+`/simulator/{focal-image,residual-wavefront,wavefront-rms}`. The observation owner
+derives them from cold, typed node definitions using the selected instrument
+settings and the same sampling rules as its prepared products. Simulator metadata
+export does not prepare atmosphere screens, telescope state, images or GPU resources.
+Actual observation preparation checks its product dimensions against the
+descriptor before publishing them.
+
+Session source explicitly maps each endpoint to its required structural
+contract. Schemas, parameter flags, layout, rates, endpoint identity and routing
+remain explicit: sharing a shape/type does not make commanded and applied data
+the same quantity. Queue modules continue ordinary ndarray negotiation and
+retain their existing buffering, copying, overflow and loop policies. No queue
+or instrument-specific contract inference is introduced. All references are
+resolved after mode composition and selected settings, before ordinary native
+session validation and sealing; generated files carry their source header.
+
 The authoring declaration and generated `instrument.json` publication have
 distinct paths. Both preparation and publication use the same resolved settings
 and physical command order. Identity includes structural settings, graph content,

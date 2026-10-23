@@ -91,6 +91,31 @@ registered by this task. CPU and private-core results are recorded in the
 instrument repository migration record. The live CPU RTC and GUI stay unchanged;
 GPU and hardware qualification remain outside this source cleanup.
 
+### Instrument-derived session and queue contracts — 2026-10-23
+
+Classic's composed simulation and hardware session declarations now reference
+typed graph boundary formats rather than repeating shapes and element types.
+The exporter resolves these after instrument dimensions, mode and settings
+selection. Optical observation contracts come from cold typed simulator
+configuration; changing pupil sampling updates the associated queue endpoints.
+Schemas, layout, rates, routing and queue policies remain explicit and unchanged.
+Queue modules retain their existing ndarray format negotiation. Generated
+session/core files carry a generated-file header.
+
+Work began from RTC `36259f5` and instruments `954c900` in clean dedicated
+`codex/session-contract` worktrees. Implementation `cf1c674` passed 179 focused
+RTC assertions with Julia 1.13.2 and the CPU SDK in the private
+`session-contract-validation` environment: exporter 103, graph references 40,
+and optional JFG/SH/Pyramid boundary and actual observation products 36.
+The latter selector was independently rerun with the same result. Instrument
+selectors passed 1,035 assertions: mode/session contracts 831, configuration 36,
+graph references 29, first-frame mask 39 and calibration 100. Formatting and
+whitespace checks passed. Independent review found no actionable defects.
+These are offline software checks, not physical-device or timing qualification.
+See instrument `MIGRATION.md` for source-contract and mode-composition evidence.
+No installation or live session change was performed; MainPID 1877367 and
+InvocationID `d2fa50c0f07740428be9c27d0d0e4152` remained unchanged.
+
 ### Instrument-authoritative parameter contracts — 2026-10-23
 
 This supersedes the calibration-shape reference context described below.
