@@ -134,3 +134,26 @@ end
         @test_throws D.DeploymentError E.profile!(application_spec(), invalid, bindings)
     end
 end
+
+@testset "generic application mode composition" begin
+    shared = Dict{String,Any}("owners"=>[Dict("role"=>"controller")],
+        "node-owners"=>Dict("controller"=>"controller"),"rate"=>"500/1")
+    fragment = Dict("owners"=>[Dict("role"=>"camera")],
+        "node-owners"=>Dict("@CAMERA_NODE@"=>"camera"))
+    merged = E.merge_configuration(shared,fragment)
+    @test length(merged["owners"]) == 2
+    @test length(shared["owners"]) == 1
+    @test merged["rate"] == "500/1"
+    bound = E.substitute(merged,Dict("CAMERA_NODE"=>"arbitrary-instrument-camera"))
+    @test bound["node-owners"]["arbitrary-instrument-camera"] == "camera"
+    @test_throws ArgumentError E.substitute(Dict("@NODE@"=>1,"camera"=>2),Dict("NODE"=>"camera"))
+    mktempdir() do directory
+        mkpath(joinpath(directory,"rtc"))
+        mode = Dict("application"=>Dict(),"requires"=>["devices","calibration"])
+        C.write_json(joinpath(directory,"rtc/modes.conf"),Dict("default"=>"synthetic", "modes"=>Dict("synthetic"=>mode)))
+        @test_throws ArgumentError E.selected_mode(directory,Dict())
+        @test_throws ArgumentError E.selected_mode(directory,Dict("mode"=>"unknown"))
+        @test_throws ArgumentError E.selected_mode(directory,Dict("devices"=>[],"calibration"=>Dict()))
+        @test E.selected_mode(directory,Dict("devices"=>[Dict("role"=>"camera")],"calibration"=>Dict())) == mode
+    end
+end

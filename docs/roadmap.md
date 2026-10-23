@@ -6,11 +6,28 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-10-22. This section is the current delivery summary. Later sections
+Updated 2026-10-23. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
+
+### Configurable instrument application modes — 2026-10-23
+
+Shared preparation selects native application/session/core fragments from
+instrument data. Classic now declares simulation and hardware choices sharing
+the instrument definition, controller graph and scientific artifacts. Hardware
+selection requires explicit native device owners, endpoint bindings, placement
+and calibration. It omits simulated optical diagnostics and never starts AOS.
+This is offline configuration support; physical adapters and hardware operation
+are not qualified. The existing bootstrap contract still requires Julia owner
+arguments. No live session, GPU task or deployment was changed.
+
+Local checks passed 67 exporter, 35 Classic mode, 26 instrument configuration,
+165 affected deployment/session/settings and four isolated native-core assertions.
+An independent review found missing hardware client-role declarations; these were
+corrected and the exact owner/client role set is tested. Evidence and commands
+are maintained in the instrument repository's migration records.
 
 ### Instrument source and deployment separation — 2026-10-22
 

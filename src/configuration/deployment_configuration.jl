@@ -300,10 +300,17 @@ end
 
 function profile(path::AbstractString, prefix::AbstractString; legacy_export_input::Bool=false)
     value = decode(path, prefix)
+    result = validate_application(value, path, prefix; legacy_export_input)
+    registered_application(value) && application_environment(value, dirname(path))
+    return result
+end
+
+# Shared structural, asset and ownership checks. This does not qualify a
+# dependency environment; installation always goes through profile above.
+function validate_application(value, path, prefix; legacy_export_input::Bool=false)
     require(value isa AbstractDict && REQUIRED_KEYS ⊆ Set(keys(value)) ⊆
         union(REQUIRED_KEYS, Set(["source-owner","detector-observation","session-runtime","node-owners","startup-timeout-ms","runtime","analysis","instrument"])) && get(value, "version", nothing) === 1,
         "expected version 1 deployment with the documented fields")
-    registered_application(value) && application_environment(value, dirname(path))
     startup_timeout_ms(value)
     require(value["name"] isa String && occursin(r"^[a-z0-9][a-z0-9-]{0,39}$", value["name"]),
         "deployment name must use 1..40 lowercase letters, digits or hyphens")

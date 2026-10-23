@@ -827,3 +827,19 @@ ownership-safe cleanup. It is not a qualified multirate RTC path until live
 driver association and hold Position cadence, READY reset, selective-group
 recovery, cross-process pool replacement, steady-state allocation, and
 latency-distribution evidence are complete.
+
+### Instrument application modes
+
+Instrument preparation may select a mode declared in `rtc/modes.conf`. Mode
+fragments compose ordinary application, session and core objects: mappings merge,
+arrays append, and scalar mode values replace common values. The shared
+controller graph and instrument declaration remain unchanged. No live mode
+switch or alternate session authority is introduced.
+
+Device owners use the existing native bootstrap/source-control contracts and
+explicit process placement. A mode can require explicit devices and calibration;
+Classic hardware mode does so. Missing identities, native contracts, ownership
+coverage or calibration inputs fail offline preparation. Structural validation is
+shared with deployment, while installation additionally requires the registered
+dependency closure. Configured hardware support does not establish adapter or
+physical-loop qualification. Application mode selection adds no device plugin.

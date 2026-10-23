@@ -11,11 +11,14 @@ import ..resource_root
 
 public prepare, seal!
 
-const PROFILE_FIELDS = Set(["placement", "bindings", "environment", "analysis", "simulation"])
+const PROFILE_FIELDS = Set(["placement", "bindings", "environment", "analysis", "simulation",
+    "mode", "devices", "calibration"])
 const RUNTIME_BINDINGS = Set(["PACKAGE", "PREFIX", "REMOTE", "RUNTIME", "SOURCE_OWNER_INSTANCE"])
 const TEMPLATE_BINDINGS = ("CORE_CPU", "OBSERVER_CPU", "JULIA_CPU", "RT_PRIORITY")
 const TEMPLATE_FILES = ("core.conf.in", "client-rtc.conf.in", "client-julia.conf.in",
     "client-simulator.conf.in", "client-analysis.conf.in")
+
+include("instrument_modes.jl")
 
 outside(path) = path == ".." || startswith(path, ".." * string(Base.Filesystem.path_separator))
 
@@ -72,7 +75,11 @@ function substitute(value::AbstractString, bindings)
         throw(ArgumentError("missing deployment profile binding: $key"))
     end)
 end
-substitute(value::AbstractDict, bindings) = Dict{String,Any}(key => substitute(item, bindings) for (key, item) in value)
+function substitute(value::AbstractDict, bindings)
+    pairs = [substitute(key, bindings) => substitute(item, bindings) for (key, item) in value]
+    length(unique(first.(pairs))) == length(pairs) || throw(ArgumentError("duplicate bound configuration key"))
+    return Dict{String,Any}(pairs)
+end
 substitute(value::AbstractVector, bindings) = [substitute(item, bindings) for item in value]
 substitute(value, bindings) = value
 
@@ -198,6 +205,10 @@ function prepare(source::AbstractString, destination::AbstractString;
     application_files(source)
     bindings = profile_bindings(profile, julia)
     authoring = D.decode(joinpath(source, "rtc", "application.conf"), prefix)
+    mode = selected_mode(source, profile)
+    authoring = merge_configuration(authoring, mode["application"])
+    append!(authoring["owners"], get(profile, "devices", []))
+    authoring = substitute(authoring, bindings)
     !haskey(authoring, "artifacts") && !haskey(authoring, "placement") ||
         throw(ArgumentError("instrument application must not contain generated seals or machine placement"))
     metadata = TOML.parsefile(joinpath(source, "Project.toml"))
@@ -212,9 +223,12 @@ function prepare(source::AbstractString, destination::AbstractString;
         manifest === nothing || RuntimeExport.copy_file(checked_path(manifest), joinpath(application, "Manifest.toml"))
         render_templates!(application, bindings, prefix)
         simulation_override!(application, profile)
+        prepare_mode!(application, spec, mode, profile, bindings, prefix)
         InstrumentConfiguration.prepare_publication(application)
         Common.write_json(joinpath(application, "deployment.conf"), spec; atomic=true)
         seal!(application)
+        D.validate_application(Common.read_json(joinpath(application, "deployment.conf")),
+            joinpath(application, "deployment.conf"), prefix)
         !isfile(joinpath(application, "Manifest.toml")) || D.profile(joinpath(application, "deployment.conf"), prefix)
         mv(application, destination)
     finally
