@@ -14,13 +14,13 @@ const D = PipeWireAORTC.DeploymentConfiguration
         write(shared, bytes)
         document = Dict("deformable_mirrors" => Dict(name =>
             Dict("description" => "../mirrors/vendor/mirror.json") for name in ("dm1", "dm2")))
-        path = joinpath(source, "instrument.conf")
-        C.write_json(path, document)
+        path = joinpath(source, "instrument.yaml")
+        C.write_yaml(path, document)
         before = read(path)
         output = E.copy_source(source, joinpath(repository, "application"))
         @test read(path) == before
         @test read(shared, String) == bytes
-        copied = C.read_json(joinpath(output, "instrument.conf"))
+        copied = C.read_yaml(joinpath(output, "instrument.yaml"))
         @test all(mirror["description"] == "mirrors/vendor/mirror.json"
             for mirror in values(copied["deformable_mirrors"]))
         @test read(D.relative_asset(output, "mirrors/vendor/mirror.json"), String) == bytes
@@ -41,14 +41,14 @@ const D = PipeWireAORTC.DeploymentConfiguration
             for mirror in values(document["deformable_mirrors"])
                 mirror["description"] = name
             end
-            C.write_json(path, document)
+            C.write_yaml(path, document)
             @test_throws D.DeploymentError E.copy_source(source, joinpath(repository, "escape"))
             @test !ispath(joinpath(repository, "escape"))
         end
         for mirror in values(document["deformable_mirrors"])
             mirror["description"] = "../mirrors/vendor/mirror.json"
         end
-        C.write_json(path, document)
+        C.write_yaml(path, document)
         rm(shared)
         symlink(joinpath(output, "mirrors/vendor/mirror.json"), shared)
         @test_throws ArgumentError E.copy_source(source, joinpath(repository, "linked"))

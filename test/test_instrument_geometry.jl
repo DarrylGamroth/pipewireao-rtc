@@ -39,7 +39,30 @@ end
             0 0 0 0
             0 0 1 0
         ]
-        default_registration = (; actuator_pitch=0.125)
+        default_registration = (; actuator_pitch_pupil_radius=0.125)
+        @test_throws ArgumentError IC._pupil_registration((;actuator_pitch=0.125))
+        mechanical = mirror_document()
+        mechanical["actuator_pitch_m"] = 0.0015
+        mechanical["actuator_pitch_provenance"] = "nominal synthetic specification"
+        with_pitch = write_mirror(path,mechanical)
+        @test with_pitch.actuator_pitch_m == 0.0015
+        @test IC.actuator_coordinates(with_pitch; pupil_registration=default_registration) ==
+            IC.actuator_coordinates(description; pupil_registration=default_registration)
+        for pitch in (0, -1, Inf, NaN, true, "0.0015", nothing)
+            invalid = deepcopy(mechanical)
+            invalid["actuator_pitch_m"] = pitch
+            @test_throws Exception write_mirror(path,invalid)
+        end
+        for key in ("actuator_pitch_m", "actuator_pitch_provenance")
+            invalid = deepcopy(mechanical)
+            delete!(invalid,key)
+            @test_throws ArgumentError write_mirror(path,invalid)
+        end
+        for provenance in ("", " ", nothing, repeat("x",4097))
+            invalid = deepcopy(mechanical)
+            invalid["actuator_pitch_provenance"] = provenance
+            @test_throws ArgumentError write_mirror(path,invalid)
+        end
         @test IC.actuator_coordinates(description; pupil_registration=default_registration) == Float32[
             0.0625 -0.0625 0.1875
             -0.1875 0.0625 0.1875
@@ -68,12 +91,12 @@ end
         large_grid = merge(description,(;layout=merge(description.layout,(;grid_shape=(65,65)))))
         @test_throws ArgumentError IC.resolve_basis(nothing,basis,large_grid,IC.source_grid_coordinates(large_grid))
         registered = IC.actuator_coordinates(description, Float64;
-            pupil_registration=(; actuator_pitch=0.2))
+            pupil_registration=(; actuator_pitch_pupil_radius=0.2))
         @test registered[:, 1] ≈ [0.1, -0.3]
-        @test_throws ArgumentError IC._pupil_registration((; actuator_pitch=0))
-        @test_throws ArgumentError IC._pupil_registration((; actuator_pitch=NaN))
-        @test_throws ArgumentError IC._pupil_registration((; actuator_pitch=1e-100))
-        @test_throws ArgumentError IC._pupil_registration((; actuator_pitch=0.1, extra=1))
+        @test_throws ArgumentError IC._pupil_registration((; actuator_pitch_pupil_radius=0))
+        @test_throws ArgumentError IC._pupil_registration((; actuator_pitch_pupil_radius=NaN))
+        @test_throws ArgumentError IC._pupil_registration((; actuator_pitch_pupil_radius=1e-100))
+        @test_throws ArgumentError IC._pupil_registration((; actuator_pitch_pupil_radius=0.1, extra=1))
         @test_throws ArgumentError IC._mirror_axis_count(merge(description,
             (; layout=merge(description.layout, (; grid_shape=(4, 3))))))
 

@@ -798,12 +798,23 @@ Classic separates physical, simulation, RTC and mirror-control authoring:
 
 | Owner | Source | Responsibility |
 | --- | --- | --- |
-| Physical instrument | `instrument.conf` | Telescope, mirror reference, pupil registration, WFS geometry and acquisition requirements |
+| Physical instrument | `instrument.yaml` | Telescope, mirror reference, pupil registration, WFS geometry and acquisition requirements |
 | Simulation | `simulation/definition.yaml` and optical graph YAML | Atmosphere, source photometry, detector response, sampling, numerical profiles and graph bindings |
-| RTC | `rtc/configuration.conf` | Physical instrument reference, controller dimensions, calibration identity and publication destination |
+| RTC | `rtc/configuration.yaml` | Physical instrument reference, controller dimensions, calibration identity and publication destination |
 | RTC mirror controls | `rtc/mirror-controls.yaml` | Mirror command limits, analytic basis descriptors and custom sampled basis artifacts |
 | RTC deployment | `rtc/application.conf`, `rtc/modes.conf` | Owners, native configuration and simulation/hardware connections |
 | GUI | `gui/operator-views.yaml` | Panel/source presentation and selected published basis IDs |
+
+Physical instrument and RTC authoring use bounded, single-document YAML, with
+string mapping keys and duplicate-key rejection. Native PipeWire configuration
+remains SPA-JSON, and published instrument/device metadata remains JSON.
+`actuator_pitch_m` in a mirror description is intrinsic mechanical centre-to-centre
+spacing in metres, paired with `actuator_pitch_provenance`. It does not rescale
+optical geometry. Instrument `pupil_registration.actuator_pitch_pupil_radius`
+is dimensionless spacing divided by the registered pupil radius; Classic retains
+0.125. The existing AOS node configuration key `actuator_pitch` is an adopted
+simulator API boundary and receives this normalized value. Source model strings
+and SDK connection IDs do not establish unit metrology or production sequence.
 
 `load` reads only physical data. `load_simulation` reads simulation YAML plus its
 physical instrument; `load_rtc` reads the RTC configuration, physical instrument

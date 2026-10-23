@@ -215,7 +215,7 @@ function prepare_simulation_configuration!(application::AbstractString; simulati
     return concrete
 end
 
-function prepare_publication(application::AbstractString; configuration="rtc/configuration.conf")
+function prepare_publication(application::AbstractString; configuration="rtc/configuration.yaml")
     path = D.relative_asset(application, configuration)
     rtc = load_rtc(path)
     name = rtc.document["publication"]

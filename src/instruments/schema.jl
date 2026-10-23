@@ -477,7 +477,7 @@ function _validate_hil(value, graph_inputs, graph_outputs)
 end
 
 function _declaration_graph(path)
-    graph = graph_file(path)
+    graph = bounded_yaml(path)
     InstrumentDefinition.object_value(graph) || throw(ArgumentError("declared graph must be an object"))
     nodes = _declaration_array(get(graph, "nodes", nothing), "graph nodes"; nonempty=true)
     inputs = _declaration_array(get(graph, "inputs", nothing), "graph inputs")

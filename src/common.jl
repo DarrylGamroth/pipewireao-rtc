@@ -4,7 +4,7 @@ using JSON
 using SHA
 using YAML
 
-export read_json, read_yaml, parse_json, write_json, sha256_file, cli_arguments, run_checked
+export read_json, read_yaml, parse_json, write_json, write_yaml, sha256_file, cli_arguments, run_checked
 
 "Read a single bounded YAML configuration, rejecting duplicate mapping keys."
 function read_yaml(path::AbstractString; maximum::Integer=1024 * 1024)
@@ -12,8 +12,13 @@ function read_yaml(path::AbstractString; maximum::Integer=1024 * 1024)
     isfile(path) && filesize(path) <= maximum || throw(ArgumentError("YAML input exceeds size bound or is missing: $path"))
     function mapping(constructor, node)
         explicit = Set{String}()
+        merge_seen = false
         for (key, _) in node.value
-            key.tag == "tag:yaml.org,2002:merge" && continue
+            if key.tag == "tag:yaml.org,2002:merge"
+                merge_seen && throw(ArgumentError("duplicate YAML merge key"))
+                merge_seen = true
+                continue
+            end
             name = YAML.construct_object(constructor, key)
             json_key(name) || throw(ArgumentError("YAML configuration keys must be strings"))
             name in explicit && throw(ArgumentError("duplicate YAML key: $name"))
@@ -111,6 +116,30 @@ function write_json(path::AbstractString, value; atomic::Bool=false)
         end
     else
         write(path, payload)
+    end
+    return path
+end
+
+"Write YAML configuration, optionally replacing the file atomically."
+function write_yaml(path::AbstractString, value; atomic::Bool=false, header=nothing)
+    finite_json(value)
+    payload = IOBuffer()
+    header === nothing || println(payload, "# ", header)
+    YAML.write(payload, value)
+    bytes = take!(payload)
+    mkpath(dirname(path))
+    if atomic
+        temporary, io = mktemp(dirname(path))
+        try
+            write(io, bytes)
+            close(io)
+            mv(temporary, path; force=true)
+        finally
+            isopen(io) && close(io)
+            ispath(temporary) && rm(temporary)
+        end
+    else
+        write(path, bytes)
     end
     return path
 end

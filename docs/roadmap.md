@@ -12,6 +12,23 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### YAML instrument and RTC authoring, explicit pitch units — 2026-10-23
+
+Classic physical and RTC authoring now use `instrument.yaml` and
+`rtc/configuration.yaml`; native PipeWire files remain SPA-JSON and published
+metadata remains JSON. Shared mirror metadata distinguishes nominal mechanical
+`actuator_pitch_m` with provenance from the unchanged, dimensionless
+`actuator_pitch_pupil_radius` registration. Export and calibration rewrites use
+the same YAML interface. The ALPAO adapter accepts generic description IDs and
+optional paired pitch metadata; these are separate focused plugin commits.
+CPU validation passed, including a 480-sample pupil first frame and settings
+worker without GPU libraries, calibration/startup checks and all export modes.
+Four complete resolved optical graphs equal the captured pre-migration baseline.
+The [review](reviews/20261023-yaml-authoring-units/REVIEW.md) and instrument
+`MIGRATION.md` record focused selectors and resolved findings. The running RTC's
+process and invocation identities are unchanged. No live deployment or hardware
+qualification is part of this work.
+
 ### Configuration ownership separation — 2026-10-23
 
 Work started from RTC `8215cf2` and instruments `c7e71f5` in clean dedicated

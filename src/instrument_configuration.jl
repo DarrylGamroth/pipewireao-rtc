@@ -27,17 +27,7 @@ function fields(value::AbstractDict, allowed, required, label)
 end
 fields(value, allowed, required, label) = throw(ArgumentError("$label must be an object"))
 
-function bounded_document(path)
-    isfile(path) && filesize(path) <= 1024 * 1024 ||
-        throw(ArgumentError("instrument declaration must be a file of at most 1 MiB"))
-    document = D.decode(path,get(ENV,"PIPEWIREAO_PREFIX","/opt/pipewireao"))
-    InstrumentDefinition.bounded(document,Ref(131072))
-    return document
-end
-
-function graph_file(path)
-    isfile(path) && filesize(path) <= 1024 * 1024 ||
-        throw(ArgumentError("AOS graph must be a YAML file of at most 1 MiB"))
+function bounded_yaml(path)
     document = Common.read_yaml(path)
     InstrumentDefinition.bounded(document, Ref(131072))
     return document
@@ -45,7 +35,7 @@ end
 
 "Read a physical instrument declaration without loading simulation or RTC configuration."
 function load(path::AbstractString)
-    document = bounded_document(path)
+    document = bounded_yaml(path)
     declaration = (;path=abspath(path),directory=dirname(abspath(path)),document)
     validate_declaration(document,declaration.directory)
     return declaration
@@ -63,7 +53,7 @@ end
 
 "Read an independent simulation definition and its shared physical instrument."
 function load_simulation(path::AbstractString)
-    document = graph_file(path)
+    document = bounded_yaml(path)
     fields(document, ("schema_version", "id", "instrument", "defaults", "settings_schema",
         "wire_contracts", "graphs", "profiles", "bindings", "settings_bindings",
         "frame_period_s", "hil", "sensors", "sources"),
@@ -77,7 +67,7 @@ end
 
 "Read RTC dimensions and mirror-control definitions independently of the simulator."
 function load_rtc(path::AbstractString)
-    document = bounded_document(path)
+    document = bounded_yaml(path)
     fields(document, ("schema_version", "instrument", "dimensions", "mirror_controls", "publication", "calibration_identity"),
         ("schema_version", "instrument", "dimensions", "mirror_controls", "publication", "calibration_identity"), "RTC configuration")
     document["schema_version"] === 1 || throw(ArgumentError("unsupported RTC configuration schema"))
@@ -85,7 +75,7 @@ function load_rtc(path::AbstractString)
     _declaration_text(document["publication"], "RTC publication")
     _declaration_text(document["calibration_identity"], "RTC calibration identity")
     instrument = referenced_instrument(path, document["instrument"])
-    controls = graph_file(D.relative_asset(instrument.directory, document["mirror_controls"]))
+    controls = bounded_yaml(D.relative_asset(instrument.directory, document["mirror_controls"]))
     fields(controls, ("schema_version", "deformable_mirrors"),
         ("schema_version", "deformable_mirrors"), "mirror controls")
     controls["schema_version"] === 1 || throw(ArgumentError("unsupported mirror control schema"))
@@ -199,7 +189,7 @@ transform(kind::Val, value, entry) = throw(ArgumentError("unknown instrument set
 "Resolve profile and scalar settings into the existing AOS graph declaration schema."
 function graph_document(declaration, configured; calibration=false)
     mode = calibration ? "calibration" : "production"
-    graph = graph_file(D.relative_asset(declaration.directory,declaration.document["graphs"][mode]))
+    graph = bounded_yaml(D.relative_asset(declaration.directory,declaration.document["graphs"][mode]))
     profile_name = configured["profile"]
     profile = declaration.document["profiles"][profile_name]
     nodes = graph["nodes"]
@@ -221,7 +211,7 @@ function graph_document(declaration, configured; calibration=false)
     # A binding may target a production-only node (e.g. atmosphere). Validate
     # against both declared modes so a misspelled target cannot disappear.
     for other in values(declaration.document["graphs"])
-        root = graph_file(D.relative_asset(declaration.directory,other))
+        root = bounded_yaml(D.relative_asset(declaration.directory,other))
         union!(all_names,(node["name"] for node in root["nodes"]))
     end
     for entry in declaration.document["settings_bindings"]

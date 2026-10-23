@@ -359,6 +359,17 @@ end
         options=(;instrument=instrument_path,mirror_description=mirror_path,command_count=3)
         @test Instrument.mirror_properties(options)==Dict("device.mirror.description"=>json)
         @test isempty(Instrument.mirror_properties((;mirror_description=nothing)))
+        mechanical=merge(description,Dict("actuator_pitch_m"=>0.0015,
+            "actuator_pitch_provenance"=>"nominal synthetic model specification"))
+        mechanical_json="\n"*JSON.json(mechanical)*"\n"
+        write(mirror_path,mechanical_json)
+        @test Instrument.mirror_properties(options)==Dict("device.mirror.description"=>mechanical_json)
+        for key in ("actuator_pitch_m", "actuator_pitch_provenance")
+            invalid=deepcopy(mechanical); delete!(invalid,key)
+            write(mirror_path,JSON.json(invalid))
+            @test_throws ArgumentError Instrument.mirror_properties(options)
+        end
+        write(mirror_path,json)
         @test Instrument.mirror_properties(merge(options,(;instrument=nothing)))==Dict("device.mirror.description"=>json)
         @test_throws ArgumentError Instrument.mirror_properties(merge(options,(;instrument=nothing,command_count=2)))
         for change in (d->(d["layout"]["grid_shape"]=Any[true,1]),

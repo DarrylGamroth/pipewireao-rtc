@@ -116,7 +116,7 @@ function _influence_sample_coordinates(metadata, spatial_shape, description, res
         centre = (axis == 1 ? columns : rows) / 2 + 0.5
         direction = axis == 1 ? 1 : -1
         values = [((centre + direction * ((i - (resolution + 1) / 2) / half) /
-            registration.actuator_pitch - metadata.sample_origin[axis]) /
+            registration.actuator_pitch_pupil_radius - metadata.sample_origin[axis]) /
             metadata.sample_pitch[axis] + 1) for i in 1:resolution]
         all(isfinite, values) && minimum(values) >= 1 && maximum(values) <= spatial_shape[axis] ||
             throw(ArgumentError("influence sampling domain does not cover the full target pupil square"))

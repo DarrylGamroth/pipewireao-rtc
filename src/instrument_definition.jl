@@ -273,6 +273,38 @@ function mirror_layout(layout::AbstractDict, count)
 end
 mirror_layout(layout,count) = throw(ArgumentError("mirror layout requires an object"))
 
+"Validate intrinsic mirror metadata independently of optical pupil registration."
+function validate_mirror_description(description; command_count=nothing)
+    object_value(description) || throw(ArgumentError("mirror description requires a JSON object"))
+    bounded(description)
+    required = Set(("schema_version", "id", "manufacturer", "model", "layout"))
+    optional = Set(("actuator_pitch_m", "actuator_pitch_provenance"))
+    required ⊆ Set(keys(description)) ⊆ union(required, optional) &&
+        description["schema_version"] === 1 ||
+        throw(ArgumentError("expected mirror description schema version 1"))
+    for key in ("id", "manufacturer", "model")
+        nonempty_text(description[key]) || throw(ArgumentError("invalid mirror $key"))
+    end
+    haskey(description, "actuator_pitch_m") == haskey(description, "actuator_pitch_provenance") ||
+        throw(ArgumentError("mechanical actuator pitch requires its provenance"))
+    if haskey(description, "actuator_pitch_m")
+        pitch = description["actuator_pitch_m"]
+        positive_scale(pitch) && positive_scale(Float64(pitch)) ||
+            throw(ArgumentError("actuator_pitch_m must be finite and positive in metres"))
+        provenance = description["actuator_pitch_provenance"]
+        nonempty_text(provenance) && ncodeunits(provenance) <= 4096 ||
+            throw(ArgumentError("invalid actuator_pitch_provenance"))
+    end
+    layout = description["layout"]
+    object_value(layout) || throw(ArgumentError("mirror description requires a layout object"))
+    positions = get(layout, "command_positions", nothing)
+    array_value(positions) && 1 <= length(positions) <= 16384 ||
+        throw(ArgumentError("mirror description requires a bounded positive command count"))
+    count = command_count === nothing ? length(positions) : command_count
+    mirror_layout(layout, count)
+    return nothing
+end
+
 "Read the selected device description for ordinary simulated-mirror NodeInfo."
 function mirror_properties(options)
     path = get(options,:mirror_description,nothing)
@@ -281,14 +313,7 @@ function mirror_properties(options)
     json = read(path,String)
     isvalid(json) || throw(ArgumentError("mirror description is not UTF-8"))
     description = read_object(json)
-    bounded(description)
-    Set(keys(description))==Set(("schema_version","id","manufacturer","model","layout")) &&
-        description["schema_version"]===1 || throw(ArgumentError("expected mirror description schema version 1"))
-    for key in ("id","manufacturer","model")
-        value=description[key]
-        nonempty_text(value) || throw(ArgumentError("invalid mirror $key"))
-    end
-    mirror_layout(description["layout"],options.command_count)
+    validate_mirror_description(description; command_count=options.command_count)
     if options.instrument!==nothing
         instrument = load(options.instrument).document
         mirrors = instrument["deformable_mirrors"]

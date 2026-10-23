@@ -26,7 +26,7 @@ end
             write(file, cube)
         end
         result = IC._load_influence_functions(merge(spec, (; path)), description, 2,
-            (; actuator_pitch=1.0))
+            (; actuator_pitch_pupil_radius=1.0))
         @test size(result.modes) == (4, 2)
         @test result.modes[1, 2] == 2f0 * 10f0 * (2.5f0 + 3f0 * 1.5f0)
         @test result.modes[1, 1] == 2f0 * 20f0 * (2.5f0 + 3f0 * 1.5f0)
@@ -44,17 +44,17 @@ end
             merge(spec, (; hdu=true)),
         )
             @test_throws ArgumentError IC._load_influence_functions(
-                merge(invalid, (; path)), description, 2, (; actuator_pitch=1.0))
+                merge(invalid, (; path)), description, 2, (; actuator_pitch_pupil_radius=1.0))
         end
         @test_throws ArgumentError IC._load_influence_functions(
             merge(spec, (; path=joinpath(directory, "missing.fits"))), description, 2,
-            (; actuator_pitch=1.0))
+            (; actuator_pitch_pupil_radius=1.0))
         @test_throws ArgumentError IC._load_influence_functions(
-            merge(spec, (; path="")), description, 2, (; actuator_pitch=1.0))
+            merge(spec, (; path="")), description, 2, (; actuator_pitch_pupil_radius=1.0))
 
         malformed = joinpath(directory, "not-fits.fits")
         write(malformed, "not a FITS file")
         @test_throws ArgumentError IC._load_influence_functions(
-            merge(spec, (; path=malformed)), description, 2, (; actuator_pitch=1.0))
+            merge(spec, (; path=malformed)), description, 2, (; actuator_pitch_pupil_radius=1.0))
     end
 end

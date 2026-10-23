@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## YAML authoring and explicit pitch units — 2026-10-23
+
+The [review](reviews/20261023-yaml-authoring-units/REVIEW.md) and instrument
+`MIGRATION.md` retain CPU checks, optical equivalence and metadata validation.
+See the [current-work record](roadmap.md#yaml-instrument-and-rtc-authoring-explicit-pitch-units--2026-10-23).
+
 ## Configuration ownership separation — 2026-10-23
 
 The [independent review](reviews/20261023-configuration-owners/REVIEW.md) records

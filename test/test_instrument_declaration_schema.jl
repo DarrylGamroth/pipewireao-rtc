@@ -1,5 +1,6 @@
 using Test, JSON, YAML, FITSIO, PipeWireAORTC
 
+const C = PipeWireAORTC.Common
 const IC = PipeWireAORTC.InstrumentConfiguration
 
 @testset "instrument declaration schema" begin
@@ -42,7 +43,7 @@ const IC = PipeWireAORTC.InstrumentConfiguration
         simulation = Dict{String,Any}(
             "schema_version" => 1,
             "id" => "synthetic-simulation",
-            "instrument" => "../instrument.conf",
+            "instrument" => "../instrument.yaml",
             "defaults" => Dict(
                 "profile" => "basic",
                 "atmosphere" => Dict("r0" => 0.2),
@@ -76,7 +77,7 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             "id" => "synthetic-instrument",
             "deformable_mirrors" => Dict("primary" => Dict(
                 "description" => "mirror.json",
-                "pupil_registration" => Dict("actuator_pitch" => 0.2),
+                "pupil_registration" => Dict("actuator_pitch_pupil_radius" => 0.2),
                 "units" => "m",
                 "command_scale_m" => 1e-6,
             )),
@@ -102,14 +103,14 @@ const IC = PipeWireAORTC.InstrumentConfiguration
                 ]),
             )))
         rtc = Dict{String,Any}("schema_version" => 1,
-            "instrument" => "../instrument.conf", "dimensions" => Dict{String,Any}(),
+            "instrument" => "../instrument.yaml", "dimensions" => Dict{String,Any}(),
             "mirror_controls" => "rtc/mirror-controls.yaml",
             "publication" => "publication.json", "calibration_identity" => "sha256:" * repeat("a", 64))
         mkpath(joinpath(directory, "simulation"))
         mkpath(joinpath(directory, "rtc"))
-        paths = (;physical=joinpath(directory, "instrument.conf"),
+        paths = (;physical=joinpath(directory, "instrument.yaml"),
             simulation=joinpath(directory, "simulation", "definition.yaml"),
-            rtc=joinpath(directory, "rtc", "configuration.conf"),
+            rtc=joinpath(directory, "rtc", "configuration.yaml"),
             controls=joinpath(directory, "rtc", "mirror-controls.yaml"))
         documents = (;physical, simulation, rtc, controls, paths)
         write_documents(documents)
@@ -117,8 +118,8 @@ const IC = PipeWireAORTC.InstrumentConfiguration
     end
 
     function write_documents(documents)
-        write(documents.paths.physical, JSON.json(documents.physical))
-        write(documents.paths.rtc, JSON.json(documents.rtc))
+        C.write_yaml(documents.paths.physical, documents.physical)
+        C.write_yaml(documents.paths.rtc, documents.rtc)
         for name in (:simulation, :controls)
             open(getproperty(documents.paths, name), "w") do io
                 YAML.write(io, getproperty(documents, name))
@@ -128,7 +129,7 @@ const IC = PipeWireAORTC.InstrumentConfiguration
 
     function write_simulator(directory)
         write(joinpath(directory, "simulation.conf"), JSON.json(Dict(
-            "version" => 3, "rtc_configuration" => "rtc/configuration.conf",
+            "version" => 3, "rtc_configuration" => "rtc/configuration.yaml",
             "plant" => Dict("definition" => "simulation/definition.yaml", "settings" => Dict()),
             "instrument" => Dict("\$ref" => "/rtc/publication"),
             "calibration_identity" => Dict("\$ref" => "/rtc/calibration_identity"))))
@@ -150,7 +151,7 @@ const IC = PipeWireAORTC.InstrumentConfiguration
                 Dict("controller_command_count" => [2, 3]), [2, 3])
             invalid = deepcopy(documents.rtc)
             invalid["dimensions"] = dimensions
-            write(documents.paths.rtc, JSON.json(invalid))
+            C.write_yaml(documents.paths.rtc, invalid)
             @test_throws ArgumentError IC.load_rtc(documents.paths.rtc)
         end
         write_documents(documents)
@@ -227,7 +228,7 @@ const IC = PipeWireAORTC.InstrumentConfiguration
         end
         invalid = deepcopy(documents.rtc)
         invalid["defaults"] = declaration["defaults"]
-        write(documents.paths.rtc, JSON.json(invalid))
+        C.write_yaml(documents.paths.rtc, invalid)
         @test_throws ArgumentError IC.load_rtc(documents.paths.rtc)
     end
 
@@ -352,8 +353,8 @@ const IC = PipeWireAORTC.InstrumentConfiguration
 
     if haskey(ENV, "MONOREPO_CLASSIC")
         classic = ENV["MONOREPO_CLASSIC"]
-        classic_path = joinpath(classic, "instrument.conf")
-        document = JSON.parsefile(classic_path; dicttype=Dict{String,Any}, duplicate_keys=:error)
+        classic_path = joinpath(classic, "instrument.yaml")
+        document = C.read_yaml(classic_path)
         @test IC.validate_declaration(document, classic) === nothing
     end
 end

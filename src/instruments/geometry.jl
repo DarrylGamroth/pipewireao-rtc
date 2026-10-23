@@ -15,23 +15,7 @@ function read_mirror_description(path::AbstractString)
         throw(_mirror_json_error(error))
     end
     document = Common.json_number(parsed)
-    InstrumentDefinition.object_value(document) ||
-        throw(ArgumentError("mirror description requires a JSON object"))
-    InstrumentDefinition.bounded(document)
-    Set(keys(document)) == Set(("schema_version", "id", "manufacturer", "model", "layout")) &&
-        get(document, "schema_version", nothing) === 1 ||
-        throw(ArgumentError("expected mirror description schema version 1"))
-    for key in ("id", "manufacturer", "model")
-        InstrumentDefinition.nonempty_text(get(document, key, nothing)) ||
-            throw(ArgumentError("invalid mirror $key"))
-    end
-    layout = get(document, "layout", nothing)
-    InstrumentDefinition.object_value(layout) ||
-        throw(ArgumentError("mirror description requires a layout object"))
-    positions = get(layout, "command_positions", nothing)
-    InstrumentDefinition.array_value(positions) && 1 <= length(positions) <= 16384 ||
-        throw(ArgumentError("mirror description requires a bounded positive command count"))
-    InstrumentDefinition.mirror_layout(layout, length(positions))
+    InstrumentDefinition.validate_mirror_description(document)
     return _instrument_seal(document)
 end
 
@@ -59,17 +43,17 @@ function _mirror_axis_count(description::NamedTuple)
 end
 
 function _pupil_registration(registration::NamedTuple)
-    keys(registration) == (:actuator_pitch,) || throw(ArgumentError(
-        "pupil registration requires exactly :actuator_pitch",
+    keys(registration) == (:actuator_pitch_pupil_radius,) || throw(ArgumentError(
+        "pupil registration requires exactly :actuator_pitch_pupil_radius",
     ))
-    pitch = registration.actuator_pitch
+    pitch = registration.actuator_pitch_pupil_radius
     _valid_pitch(pitch) ||
-        throw(ArgumentError("pupil registration actuator_pitch must be finite and positive"))
+        throw(ArgumentError("pupil registration actuator_pitch_pupil_radius must be finite and positive"))
     owned_pitch = Float64(pitch)
     pitch32 = Float32(owned_pitch)
     isfinite(owned_pitch) && owned_pitch > 0 && isfinite(pitch32) && pitch32 > 0 ||
-        throw(ArgumentError("pupil registration actuator_pitch must preserve finite positive Float64 and Float32 values"))
-    return (; actuator_pitch=owned_pitch)
+        throw(ArgumentError("pupil registration actuator_pitch_pupil_radius must preserve finite positive Float64 and Float32 values"))
+    return (; actuator_pitch_pupil_radius=owned_pitch)
 end
 
 _pupil_registration(registration) = throw(ArgumentError("pupil registration must be a NamedTuple"))
@@ -80,7 +64,7 @@ _valid_pitch(pitch) = false
 
 function _require_pupil_geometry(description::NamedTuple, registration::NamedTuple)
     axis_count = _mirror_axis_count(description)
-    pitch = Float32(_pupil_registration(registration).actuator_pitch)
+    pitch = Float32(_pupil_registration(registration).actuator_pitch_pupil_radius)
     extent = Float32(axis_count - 1) / 2f0 * pitch
     isfinite(extent) || throw(ArgumentError("pupil registration must preserve finite Float32 coordinates"))
     return nothing
@@ -104,7 +88,7 @@ function actuator_coordinates(
     _require_pupil_geometry(description, registration)
     index_map = actuator_index_map(description)
     coordinates = Matrix{T}(undef, 2, command_count(description))
-    pitch = T(registration.actuator_pitch)
+    pitch = T(registration.actuator_pitch_pupil_radius)
     centre = T(_mirror_axis_count(description) + 1) / T(2)
     for source_row in axes(index_map, 1), column in axes(index_map, 2)
         command_index = Int(index_map[source_row, column])
