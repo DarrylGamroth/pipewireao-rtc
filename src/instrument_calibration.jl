@@ -8,10 +8,11 @@ import ..InstrumentConfiguration
 import ..GraphOwner
 import ..DeploymentConfiguration
 import ..ScienceExport
+import ..InstrumentExport
 
 public digest, source_completion, read_parameters, write_fits, heart_completion,
     controlled_rows, central_completion, allocation_parameters, replace_dimensions!,
-    require_prepared_application, shack_hartmann_configuration,
+    require_prepared_application, estimator_dimensions, shack_hartmann_configuration,
     controller_graph, controller_storage, measure!, calibration_frame!
 
 "Return the SHA-256 digest of a file's bytes."
@@ -215,29 +216,77 @@ function replace_dimensions!(application, parameters, n; measurement_count, comm
     InstrumentConfiguration.prepare_publication(application)
     session_path = joinpath(application, "rtc", "session.conf.in")
     session = DeploymentConfiguration.decode(session_path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
-    update_reconstructor!(session, n, measurement_count)
+    authoring = DeploymentConfiguration.decode(joinpath(application, "rtc", "application.conf"),
+        get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
+    contracts = InstrumentExport.graph_contract_context(application, authoring["graph-configurations"],
+        get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
+    refresh_session_parameters!(session, contracts)
     Common.write_json(session_path, session)
     profile_path = joinpath(application, "gui", "operator-views.yaml")
     profile = Common.read_yaml(profile_path)
-    for parameter in profile["parameter"]
-        parameter["parameter"] == "reconstructor" && (parameter["shape"] = [n, measurement_count])
-    end
+    refresh_parameter_metadata!(profile, contracts)
     YAML.write_file(profile_path, profile)
     return nothing
 end
 
-function update_reconstructor!(value::AbstractDict, n, measurement_count)
-    if get(value, "schema", nothing) == "org.calculon.ao.shwfs-reconstructor/1"
-        value["shape"] = [n, measurement_count]
+"Read estimator dimensions from prepared ports and reject stale calibration declarations."
+function estimator_dimensions(application, estimator)
+    Base.require(Main, :FilterGraphIsland)
+    contracts = Base.invokelatest(InstrumentExport.graph_port_contracts,
+        joinpath(application, "rtc", "graph.conf"))
+    detector_shape = Tuple(contracts["inputs"][estimator["raw_input"]]["shape"])
+    measurement_count = foldl(Base.checked_mul,
+        contracts["outputs"][estimator["slopes_output"]]["shape"]; init=1)
+    detector_shape == Tuple(estimator["detector_shape"]) ||
+        throw(DimensionMismatch("detector shape differs from estimator declaration"))
+    measurement_count == estimator["measurement_count"] ||
+        throw(DimensionMismatch("measurement count differs from estimator declaration"))
+    return (; detector_shape, measurement_count)
+end
+
+# Native GUI parameter bindings select an exact graph and parameter. Their
+# consumer supports F32_LE; schema, storage layout and units remain declarations.
+function refresh_parameter_metadata!(value::AbstractDict, contracts)
+    if haskey(value, "graph") && get(value, "parameter", nothing) isa AbstractString
+        contract = contracts[value["graph"]]["parameters"][value["parameter"]]
+        contract["element-type"] == "F32_LE" ||
+            throw(ArgumentError("GUI parameter bindings require F32_LE"))
+        value["shape"] = deepcopy(contract["shape"])
     end
-    foreach(item -> update_reconstructor!(item, n, measurement_count), values(value))
+    foreach(item -> refresh_parameter_metadata!(item, contracts), values(value))
     return nothing
 end
-function update_reconstructor!(value::AbstractVector, n, measurement_count)
-    foreach(item -> update_reconstructor!(item, n, measurement_count), value)
+function refresh_parameter_metadata!(value::AbstractVector, contracts)
+    foreach(item -> refresh_parameter_metadata!(item, contracts), value)
     return nothing
 end
-update_reconstructor!(value, n, measurement_count) = nothing
+refresh_parameter_metadata!(value, contracts) = nothing
+
+function refresh_session_parameters!(session, contracts)
+    endpoints = Dict{String,Any}()
+    for graph in get(session, "graphs", []), port in graph["ports"]
+        get(port, "parameter", false) === true || continue
+        contract = contracts[graph["node.name"]]["parameters"][port["name"]]
+        for field in ("shape", "element-type")
+            port[field] = deepcopy(contract[field])
+        end
+        endpoints[graph["node.name"] * ":" * port["name"]] = contract
+    end
+    # Parameter producer endpoints are bound by explicit session links, never by
+    # a scientific schema or an instrument-specific node name.
+    for link in get(session, "links", [])
+        haskey(endpoints, link["input"]) || continue
+        endpoints[link["output"]] = endpoints[link["input"]]
+    end
+    for field in ("sources", "sinks"), node in get(session, field, []), port in node["ports"]
+        endpoint = node["node.name"] * ":" * port["name"]
+        haskey(endpoints, endpoint) || continue
+        for property in ("shape", "element-type")
+            port[property] = deepcopy(endpoints[endpoint][property])
+        end
+    end
+    return nothing
+end
 
 # Scientific/graph dependencies remain optional and extend these cold APIs.
 function shack_hartmann_configuration end
