@@ -214,6 +214,7 @@ function prepare(source::AbstractString, destination::AbstractString;
     mode = selected_mode(source, profile)
     authoring = merge_configuration(authoring, mode["application"])
     graph_configurations = pop!(authoring, "graph-configurations", [])
+    configurations = pop!(authoring, "configuration-files", [])
     append!(authoring["owners"], get(profile, "devices", []))
     authoring = substitute(authoring, bindings)
     !haskey(authoring, "artifacts") && !haskey(authoring, "placement") ||
@@ -237,7 +238,8 @@ function prepare(source::AbstractString, destination::AbstractString;
         prepare_graph_configurations!(application, graph_configurations,
             relpath(instrument, application), prefix; dimensions=get(definition, "dimensions", Dict()))
         prepare_session_configuration!(application, spec, graph_configurations,
-            relpath(instrument, application), prefix; dimensions=get(definition, "dimensions", Dict()))
+            relpath(instrument, application), prefix;
+            dimensions=get(definition, "dimensions", Dict()), configurations)
         Common.write_json(joinpath(application, "deployment.conf"), spec; atomic=true)
         seal!(application)
         D.validate_application(Common.read_json(joinpath(application, "deployment.conf")),

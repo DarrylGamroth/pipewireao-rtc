@@ -216,4 +216,6 @@ function run_checked(argv; env=Dict{String,String}(), timeout::Real=30,
     end
 end
 
+include("configuration/references.jl")
+
 end

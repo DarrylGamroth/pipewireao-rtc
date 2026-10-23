@@ -24,7 +24,7 @@ function audit(handle,stage)
 end
 
 function main(application,stage,prefix)
-    config=C.read_json(joinpath(application,"simulation.conf"))
+    config=R.DeploymentConfiguration.decode(joinpath(application,"simulation.conf"),prefix)
     config["backend"]=="cpu" || error("this validation requires the CPU backend")
     spec=C.read_json(joinpath(application,"deployment.conf"))
     for environment in (spec["environment"],(owner["environment"] for owner in spec["owners"])...)

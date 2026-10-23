@@ -61,7 +61,7 @@ function prepare_mode!(application, spec, mode, profile, bindings, prefix)
             parameter["path"] = relpath(asset, dirname(destination))
         end
         Common.write_json(destination, document)
-        simulation = Common.read_json(joinpath(application, "simulation.conf"))
+        simulation = D.decode(joinpath(application, "simulation.conf"), prefix)
         simulation["calibration_identity"] = identity
         Common.write_json(joinpath(application, "simulation.conf"), simulation)
     end

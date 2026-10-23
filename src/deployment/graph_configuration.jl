@@ -7,58 +7,25 @@ function graph_context(instrument::AbstractDict; dimensions::AbstractDict=Dict()
         Dict("actuator_count" => length(mirror["layout"]["command_positions"])))
         for (name, mirror) in resolved["deformable_mirrors"])
     resolved["wavefront_sensors"] = Dict(name => merge(Dict{String,Any}(sensor),
-        Dict("subaperture_count" => length(sensor["layout"]["subaperture_origins"])))
+        Dict("subaperture_count" => length(sensor["layout"]["subaperture_origins"]),
+            "pixel_to_image" => pixel_to_image(sensor["layout"]["detector_shape"])))
         for (name, sensor) in resolved["wavefront_sensors"])
     resolved["dimensions"] = deepcopy(dimensions)
     return Dict("instrument" => resolved)
 end
 
-# RFC 6901 plain JSON Pointer, deliberately without URIs or expression evaluation.
-function graph_pointer(context, pointer::AbstractString)
-    isempty(pointer) && return context
-    startswith(pointer, '/') || throw(ArgumentError("graph reference must be a JSON Pointer: $pointer"))
-    value = context
-    for encoded in split(pointer[2:end], '/'; keepempty=true)
-        occursin(r"~(?:[^01]|$)", encoded) &&
-            throw(ArgumentError("invalid graph reference escape: $pointer"))
-        key = replace(replace(encoded, "~1" => "/"), "~0" => "~")
-        value = graph_pointer_entry(value, key, pointer)
-    end
-    return value
+# Native image axes are [row,column]; display displacements are [x,y].
+function pixel_to_image(shape)
+    length(shape) == 2 && all(InstrumentConfiguration.ispositive_integer, shape) ||
+        throw(ArgumentError("pixel normalization requires a positive detector shape"))
+    rows, columns = shape
+    return [1 / columns, 1 / rows]
 end
-function graph_pointer_entry(value::AbstractDict, key, pointer)
-    haskey(value, key) || throw(ArgumentError("unknown graph reference: $pointer"))
-    return value[key]
-end
-function graph_pointer_entry(value::AbstractVector, key, pointer)
-    occursin(r"\A(0|[1-9][0-9]*)\z", key) ||
-        throw(ArgumentError("graph reference array index must be zero-based: $pointer"))
-    index = tryparse(Int, key)
-    index !== nothing && index < length(value) ||
-        throw(ArgumentError("graph reference array index out of bounds: $pointer"))
-    return value[index + 1]
-end
-graph_pointer_entry(value, key, pointer) =
-    throw(ArgumentError("graph reference traverses a scalar: $pointer"))
 
-function graph_configuration_value(value::AbstractDict, context)
-    if haskey(value, "\$ref")
-        return graph_reference(graph_reference_pointer(value), context)
-    end
-    return Dict(key => graph_configuration_value(item, context) for (key, item) in value)
-end
-function graph_reference_pointer(value::AbstractDict)
-    Set(keys(value)) == Set(["\$ref"]) ||
-        throw(ArgumentError("graph configuration reference requires only a string \$ref"))
-    return graph_reference_string(value["\$ref"])
-end
-graph_reference_string(pointer::AbstractString) = pointer
-graph_reference_string(pointer) =
-    throw(ArgumentError("graph configuration reference requires only a string \$ref"))
-graph_reference(pointer, context) = deepcopy(graph_pointer(context, graph_reference_string(pointer)))
-graph_configuration_value(value::AbstractVector, context) =
-    [graph_configuration_value(item, context) for item in value]
-graph_configuration_value(value, context) = deepcopy(value)
+import ..Common: configuration_value as graph_configuration_value,
+    configuration_pointer as graph_pointer,
+    configuration_reference_pointer as graph_reference_pointer,
+    configuration_reference as graph_reference
 
 "Resolve explicit references in node configuration, preserving topology and other fields."
 function resolve_graph_configuration(graph::AbstractDict, context::AbstractDict)
