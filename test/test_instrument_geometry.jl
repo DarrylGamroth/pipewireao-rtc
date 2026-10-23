@@ -15,7 +15,6 @@ function mirror_document(; id="generic-test-mirror", positions=[[3, 4], [2, 2], 
             "axis_labels" => ["source column", "source row"],
             "command_positions" => positions,
             "command_order" => "listed physical command order",
-            "provenance" => "synthetic test data",
         ),
     )
 end
@@ -43,7 +42,6 @@ end
         @test_throws ArgumentError IC._pupil_registration((;actuator_pitch=0.125))
         mechanical = mirror_document()
         mechanical["actuator_pitch_m"] = 0.0015
-        mechanical["actuator_pitch_provenance"] = "nominal synthetic specification"
         with_pitch = write_mirror(path,mechanical)
         @test with_pitch.actuator_pitch_m == 0.0015
         @test IC.actuator_coordinates(with_pitch; pupil_registration=default_registration) ==
@@ -52,16 +50,6 @@ end
             invalid = deepcopy(mechanical)
             invalid["actuator_pitch_m"] = pitch
             @test_throws Exception write_mirror(path,invalid)
-        end
-        for key in ("actuator_pitch_m", "actuator_pitch_provenance")
-            invalid = deepcopy(mechanical)
-            delete!(invalid,key)
-            @test_throws ArgumentError write_mirror(path,invalid)
-        end
-        for provenance in ("", " ", nothing, repeat("x",4097))
-            invalid = deepcopy(mechanical)
-            invalid["actuator_pitch_provenance"] = provenance
-            @test_throws ArgumentError write_mirror(path,invalid)
         end
         @test IC.actuator_coordinates(description; pupil_registration=default_registration) == Float32[
             0.0625 -0.0625 0.1875
@@ -78,7 +66,7 @@ end
             (;grid_shape=(3,1),command_positions=((1,1),(2,1),(3,1))))))
         @test IC.source_grid_coordinates(singleton).fourier_positions == ((-0.5,0.0),(0.0,0.0),(0.5,0.0))
         basis = Dict("id"=>"fourier","name"=>"Fourier","units"=>"m","coefficient_limit"=>1.0,
-            "normalization"=>"sampled_rms","provenance"=>"test source geometry",
+            "normalization"=>"sampled_rms",
             "definition"=>Dict("kind"=>"fourier","max_frequency"=>64))
         # A 3-point source axis has only the Nyquist frequency: do not publish
         # its identically-zero sine quadrature. Singleton axes carry no modes.
@@ -142,7 +130,6 @@ end
     mktempdir() do directory
         document = mirror_document()
         document["actuator_pitch_m"] = 0.0015
-        document["actuator_pitch_provenance"] = "Nominal synthetic specification; no metrology claim."
         json_path = joinpath(directory, "mirror.json")
         baseline = write_mirror(json_path, document)
         registration = (; actuator_pitch_pupil_radius=0.125)
@@ -152,8 +139,6 @@ end
             description = IC.read_mirror_description(path)
             @test IC.json_value(description) == IC.json_value(baseline)
             @test description.layout.command_positions == baseline.layout.command_positions
-            @test description.layout.provenance == baseline.layout.provenance
-            @test description.actuator_pitch_provenance == baseline.actuator_pitch_provenance
             @test IC.actuator_coordinates(description; pupil_registration=registration) ==
                 IC.actuator_coordinates(baseline; pupil_registration=registration)
             @test IC.source_grid_coordinates(description) == IC.source_grid_coordinates(baseline)
@@ -172,7 +157,7 @@ end
             d -> (d["layout"]["command_positions"] = [[5, 4]]),
             d -> (d["layout"]["command_positions"] = Any[Any[true, 4]]),
             d -> (d["layout"]["grid_shape"] = [4097, 4]),
-            d -> (d["actuator_pitch_m"] = 0.0015),
+            d -> (d["actuator_pitch_m"] = 0.0),
         )
             invalid = mirror_document()
             change(invalid)
@@ -202,7 +187,6 @@ end
           schema_version: 1
           name: *text
           command_order: *text
-          provenance: *text
           grid_shape: [4, 4]
           axis_labels: [source column, source row]
           command_positions: [[3, 4], [2, 2], [4, 1]]

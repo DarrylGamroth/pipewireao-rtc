@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## Instrument metadata without prose provenance — 2026-10-23
+
+The [review](reviews/20261023-provenance/REVIEW.md) records the coordinated RTC,
+GUI and ALPAO contract change, numeric publication bounds, CPU validation and
+remaining toolchain limitations. Semantic ndarray identifiers are unchanged.
+
 ## Launcher-owned scheduling arguments — 2026-10-23
 
 The [review](reviews/20261023-launcher-scheduling/REVIEW.md) records removal of

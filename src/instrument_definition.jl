@@ -124,14 +124,12 @@ integer_value(::Bool) = false
 integer_value(value) = false
 
 function basis_header(basis, units)
-    exact_fields(basis,("id","name","units","coefficient_limit","normalization","provenance","definition"),"basis")
+    exact_fields(basis,("id","name","units","coefficient_limit","normalization","definition"),"basis")
     identifier(basis["id"]) || throw(ArgumentError("invalid basis id"))
     bounded_text(basis["name"]) || throw(ArgumentError("invalid basis name"))
     basis["units"] == units || throw(ArgumentError("basis units must match mirror command units"))
     positive_scale(basis["coefficient_limit"]) && positive_scale(Float32(basis["coefficient_limit"])) ||
         throw(ArgumentError("basis coefficient_limit must be positive and finite Float32"))
-    nonempty_text(basis["provenance"]) && ncodeunits(basis["provenance"]) <= 4096 ||
-        throw(ArgumentError("basis provenance must contain 1:4096 UTF-8 bytes"))
     definition = basis["definition"]
     object_value(definition) || throw(ArgumentError("basis definition must be an object"))
     kind = get(definition,"kind",nothing)
@@ -255,9 +253,9 @@ end
 grid_pair(value,bounds) = throw(ArgumentError("mirror grid coordinates require a pair"))
 function mirror_layout(layout::AbstractDict, count)
     Set(keys(layout))==Set(("schema_version","name","grid_shape","axis_labels",
-        "command_positions","command_order","provenance")) && layout["schema_version"]===1 ||
+        "command_positions","command_order")) && layout["schema_version"]===1 ||
         throw(ArgumentError("expected mirror layout schema version 1"))
-    for key in ("name","command_order","provenance")
+    for key in ("name","command_order")
         nonempty_text(layout[key]) || throw(ArgumentError("invalid mirror layout $key"))
     end
     labels=layout["axis_labels"]
@@ -278,22 +276,17 @@ function validate_mirror_description(description; command_count=nothing)
     object_value(description) || throw(ArgumentError("mirror description requires a JSON object"))
     bounded(description)
     required = Set(("schema_version", "id", "manufacturer", "model", "layout"))
-    optional = Set(("actuator_pitch_m", "actuator_pitch_provenance"))
+    optional = Set(("actuator_pitch_m",))
     required ⊆ Set(keys(description)) ⊆ union(required, optional) &&
         description["schema_version"] === 1 ||
         throw(ArgumentError("expected mirror description schema version 1"))
     for key in ("id", "manufacturer", "model")
         nonempty_text(description[key]) || throw(ArgumentError("invalid mirror $key"))
     end
-    haskey(description, "actuator_pitch_m") == haskey(description, "actuator_pitch_provenance") ||
-        throw(ArgumentError("mechanical actuator pitch requires its provenance"))
     if haskey(description, "actuator_pitch_m")
         pitch = description["actuator_pitch_m"]
         positive_scale(pitch) && positive_scale(Float64(pitch)) ||
             throw(ArgumentError("actuator_pitch_m must be finite and positive in metres"))
-        provenance = description["actuator_pitch_provenance"]
-        nonempty_text(provenance) && ncodeunits(provenance) <= 4096 ||
-            throw(ArgumentError("invalid actuator_pitch_provenance"))
     end
     layout = description["layout"]
     object_value(layout) || throw(ArgumentError("mirror description requires a layout object"))

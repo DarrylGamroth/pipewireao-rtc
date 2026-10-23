@@ -182,8 +182,8 @@ end
 
 function _validate_sensor_declaration(spec, directory, name)
     sensor = _declaration_fields(spec,
-        ("detector_shape", "subaperture_shape", "subaperture_origins", "expected_schema", "provenance", "optical_prescription", "acquisition"),
-        ("detector_shape", "subaperture_shape", "subaperture_origins", "expected_schema", "provenance"),
+        ("detector_shape", "subaperture_shape", "subaperture_origins", "expected_schema", "optical_prescription", "acquisition"),
+        ("detector_shape", "subaperture_shape", "subaperture_origins", "expected_schema"),
         "sensor $name")
     _validate_positive_shape(sensor["detector_shape"], "sensor detector_shape")
     _validate_positive_shape(sensor["subaperture_shape"], "sensor subaperture_shape")
@@ -191,7 +191,6 @@ function _validate_sensor_declaration(spec, directory, name)
     haskey(sensor, "acquisition") && _validate_acquisition(sensor["acquisition"])
     _validate_artifact(sensor["subaperture_origins"], directory, "subaperture_origins")
     _declaration_text(sensor["expected_schema"], "sensor expected_schema")
-    _declaration_text(sensor["provenance"], "sensor provenance")
     return nothing
 end
 

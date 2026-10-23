@@ -8,7 +8,7 @@ function two_command_description()
         manufacturer="Example Instruments", model="Test mirror",
         layout=(; schema_version=1, name="Generic influence test", grid_shape=(3, 3),
             axis_labels=("source column", "source row"), command_positions=positions,
-            command_order="listed physical command order", provenance="synthetic test data"))
+            command_order="listed physical command order"))
 end
 
 @testset "measured influence preparation" begin

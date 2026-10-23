@@ -12,6 +12,16 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Remove prose provenance from configuration — 2026-10-23
+
+Mirror descriptions, sensor layouts and modal basis declarations no longer carry
+or require prose provenance fields. Mechanical `actuator_pitch_m` remains an
+independent physical value. RTC publication, GUI consumers/exporters and the
+ALPAO parser use the same reduced contract. Structured artifact hashes, axes,
+normalization, geometry, command order and calibration records are retained.
+Semantic ndarray schema identifiers remain unchanged pending a separate naming
+contract decision. Source changes do not replace the installed live deployment.
+
 ### Clear host loop and worker names — 2026-10-23
 
 Native monitoring delivery now uses `telemetry-loop`; the simulator's separate

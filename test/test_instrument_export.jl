@@ -10,7 +10,7 @@ const D = PipeWireAORTC.DeploymentConfiguration
         shared = joinpath(repository, "mirrors", "vendor", "mirror.yaml")
         mkpath(source)
         mkpath(dirname(shared))
-        bytes = "schema_version: 1\nprovenance: retained source\n"
+        bytes = "schema_version: 1\nid: retained source\n"
         write(shared, bytes)
         document = Dict("deformable_mirrors" => Dict(name =>
             Dict("description" => "../mirrors/vendor/mirror.yaml") for name in ("dm1", "dm2")))

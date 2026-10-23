@@ -100,8 +100,7 @@ function sensor_layout(declaration,spec)
     length(unique(positions)) == length(positions) || throw(ArgumentError("duplicate subaperture origin"))
     all(p -> all(axis -> 0 <= p[axis] && p[axis]+shape[axis] <= detector_shape[axis],1:2),positions) ||
         throw(ArgumentError("subaperture region lies outside the detector"))
-    return (; detector_shape, subaperture_shape=shape, subaperture_origins=positions,
-        provenance=spec["provenance"])
+    return (; detector_shape, subaperture_shape=shape, subaperture_origins=positions)
 end
 
 function resolve_basis(declaration, basis, description, source)

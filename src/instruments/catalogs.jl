@@ -26,8 +26,8 @@ function resolve_basis_definition(basis)
     required = ("id", "template", "name", "units", "coefficient_limit")
     fields(basis, (required..., "definition"), required, "basis template selection")
     entry = catalog_document("bases", basis["template"])
-    fields(entry, ("normalization", "provenance", "definition"),
-        ("normalization", "provenance", "definition"), "basis catalog entry")
+    fields(entry, ("normalization", "definition"),
+        ("normalization", "definition"), "basis catalog entry")
     definition = entry["definition"]
     validate_basis_definition(definition)
     overrides = get(basis, "definition", Dict{String,Any}())

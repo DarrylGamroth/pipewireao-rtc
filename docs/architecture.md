@@ -751,10 +751,9 @@ Published source-grid geometry does not imply measured optical registration.
 
 A mirror's `shape_control` contains only `bases`, an ordered array of at most
 16 instrument-defined bases. Each basis has exactly `id`, `name`, `units`,
-`coefficient_limit`, `normalization`, `provenance`, and `definition`. Basis IDs
-are unique per mirror. Names use at most 128 UTF-8 bytes and provenance uses at
-most 4096 UTF-8 bytes. Coefficients use the mirror's command units; basis samples
-are dimensionless. Each basis owns its positive coefficient limit.
+`coefficient_limit`, `normalization`, and `definition`. Basis IDs
+are unique per mirror. Names use at most 128 UTF-8 bytes. Coefficients use the mirror's command units;
+basis samples are dimensionless. Each basis owns its positive coefficient limit.
 
 The tagged `definition.kind` is `zernike`, `fourier`, or `sampled`:
 
@@ -781,8 +780,8 @@ RTC-owned `rtc/mirror-controls.yaml` declares `shape_control.bases` using
 shared package-owned definitions selected with `template: zernike` or
 `template: fourier`. The application retains `id`, `name`, command `units` and
 `coefficient_limit`, and may override `definition.modes` or
-`definition.max_frequency`. Package `data/bases/` owns normalization and scientific
-provenance; resolved definitions retain the same seven publication fields.
+`definition.max_frequency`. Package `data/bases/` owns normalization and basis definitions; resolved
+definitions retain the same six publication fields.
 Inline sampled/custom definitions remain supported. The physical instrument
 contains no control bases. Zernike source definitions declare `kind` and
 `modes`; Fourier source definitions declare `kind` and `max_frequency`. The RTC
@@ -881,6 +880,15 @@ Conflicting values and host attempts to change portable device/mode/calibration
 choices are rejected. No runtime scheduler, admission or native contract changes.
 These deployment profiles are separate from numerical mirror profile selections.
 
+Ndarray payload identifiers such as `frame_schema`, `command_schema` and
+`expected_schema` are opaque semantic contract names carried in
+`SPA_FORMAT_NDARRAY_schema`. Producers/consumers compare them exactly alongside
+representation fields (element type, shape, layout and rate). Their namespaces
+and version suffixes are application conventions: no schema document is fetched,
+no unit conversion is selected, and no namespace/version parser interprets them.
+They are separate from authoring `schema_version` fields and the settings
+validation descriptions below. Existing payload identifiers remain unchanged.
+
 Package `data/simulation/` supplies shared startup-settings schemas. A simulation
 selects `settings_schema: {template: atmosphere, title: ..., description: ...}`;
 scientific values remain in `defaults`. Optional `properties` declare application
@@ -901,7 +909,7 @@ Cold loaders retain separate raw authoring and resolved views. Calibration write
 raw declarations, preserving basis templates and dimension references, and rejects
 inconsistent hidden projections/allocation dimensions before writing files.
 `actuator_pitch_m` in a mirror description is intrinsic mechanical centre-to-centre
-spacing in metres, paired with `actuator_pitch_provenance`. It does not rescale
+spacing in metres. It does not rescale
 optical geometry. Instrument `pupil_registration.actuator_pitch_pupil_radius`
 is dimensionless spacing divided by the registered pupil radius; Classic retains
 0.125. The existing AOS node configuration key `actuator_pitch` is an adopted

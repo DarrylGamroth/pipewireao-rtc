@@ -45,7 +45,7 @@ const IC = PipeWireAORTC.InstrumentConfiguration
     end
 
     sampled = Dict{String,Any}("id" => "measured", "name" => "Measured modes", "units" => "m",
-        "coefficient_limit" => 1e-7, "normalization" => "supplied", "provenance" => "Measured modal commands",
+        "coefficient_limit" => 1e-7, "normalization" => "supplied",
         "definition" => Dict("kind" => "sampled", "command_order" => "mirror", "names" => ["Mode 1"],
             "artifact" => Dict("path" => "calibration/modes.fits", "hdu" => 1,
                 "axes" => [1,2], "type" => "Float32", "shape" => [2,1])))

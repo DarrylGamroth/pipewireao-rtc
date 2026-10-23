@@ -38,7 +38,7 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             "layout" => Dict("schema_version" => 1, "name" => "Test grid",
                 "grid_shape" => [5, 5], "command_positions" => [[3, 1], [1, 3]],
                 "axis_labels" => ["source column", "source row"],
-                "command_order" => "physical", "provenance" => "explicit physical order"),
+                "command_order" => "physical"),
         ))
         FITS(joinpath(directory, "artifact.fits"), "w") do fits
             write(fits, zeros(Float32, 1, 2))
@@ -91,7 +91,6 @@ const IC = PipeWireAORTC.InstrumentConfiguration
                 "subaperture_origins" => Dict("path" => "artifact.fits", "hdu" => 1,
                     "axes" => [1, 2], "type" => "Float32", "shape" => [1, 2]),
                 "expected_schema" => "test-v1",
-                "provenance" => "synthetic detector layout",
             )),
         )
         controls = Dict{String,Any}("schema_version" => 1,
@@ -99,10 +98,10 @@ const IC = PipeWireAORTC.InstrumentConfiguration
                 "limiter" => Dict("kind" => "amplitude", "lower" => -1.0, "upper" => 1.0),
                 "shape_control" => Dict("bases" => [
                     Dict("id"=>"zernike","name"=>"Zernike","units"=>"m","coefficient_limit"=>1.0,
-                        "normalization"=>"sampled_peak","provenance"=>"synthetic test declaration",
+                        "normalization"=>"sampled_peak",
                         "definition"=>Dict("kind"=>"zernike","modes"=>[Dict("n"=>2,"m"=>0,"name"=>"defocus")])),
                     Dict("id"=>"fourier","name"=>"Fourier","units"=>"m","coefficient_limit"=>1.0,
-                        "normalization"=>"sampled_rms","provenance"=>"synthetic test declaration",
+                        "normalization"=>"sampled_rms",
                         "definition"=>Dict("kind"=>"fourier","max_frequency"=>2)),
                 ]),
             )))
@@ -261,7 +260,7 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             mirror = Dict("schema_version"=>1,"id"=>"test-mirror","manufacturer"=>"Example","model"=>"Three commands",
                 "layout"=>Dict("schema_version"=>1,"name"=>"Test grid","grid_shape"=>[5,5],
                     "axis_labels"=>["source column","source row"],"command_positions"=>[[3,1],[1,3],[2,2]],
-                    "command_order"=>"physical","provenance"=>"explicit physical order"))
+                    "command_order"=>"physical"))
             write(joinpath(directory,"mirror.json"),JSON.json(mirror))
             origins = declaration["wavefront_sensors"]["sensor"]["subaperture_origins"]
             origins["shape"] = [1,2]
@@ -275,7 +274,7 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             end
             write_samples(samples)
             basis = Dict{String,Any}("id"=>"custom","name"=>"Custom modes","units"=>"m","coefficient_limit"=>0.2,
-                "normalization"=>"supplied","provenance"=>"test calibration",
+                "normalization"=>"supplied",
                 "definition"=>Dict("kind"=>"sampled","command_order"=>"mirror","names"=>["First","Second"],
                     "artifact"=>Dict("path"=>"modes.fits","hdu"=>1,"axes"=>[2,1],"type"=>"Float32","shape"=>[3,2])))
             push!(controls["deformable_mirrors"]["primary"]["shape_control"]["bases"],basis)
@@ -336,10 +335,13 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             @test generated["prescription_identity"] == simulation_identity
             @test JSON.parsefile(target)["scientific_identity"] == original_identity
             @test IC.prepare_publication(directory) == target
-            oversized = [deepcopy(controls["deformable_mirrors"]["primary"]["shape_control"]["bases"][1]) for _ in 1:16]
+            # Bound publication using actual FITS-backed sampled modes, not padding text.
+            write_samples(repeat(reshape(Float32[1.234567f-20,-2.345678f-20,3.456789f-20],3,1),1,64))
+            basis["definition"]["names"] = ["Mode $i" for i in 1:64]
+            basis["definition"]["artifact"]["shape"] = [3,64]
+            oversized = [deepcopy(basis) for _ in 1:16]
             for (index,entry) in enumerate(oversized)
                 entry["id"] = "basis-$index"
-                entry["provenance"] = repeat("p",4096)
             end
             controls["deformable_mirrors"]["primary"]["shape_control"]["bases"] = oversized
             original_control = controls["deformable_mirrors"]["primary"]

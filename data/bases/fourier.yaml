@@ -1,5 +1,4 @@
 normalization: sampled_rms
-provenance: Analytic engineering shapes on Float32 source-axis coordinates in [-0.5,0.5]. Integer wavevectors strictly below axis Nyquist. Sine and cosine quadratures each have unit sampled RMS; coefficients are independent command-unit amplitudes.
 definition:
   kind: fourier
   max_frequency: 7

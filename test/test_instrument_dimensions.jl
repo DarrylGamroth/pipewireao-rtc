@@ -7,8 +7,7 @@ const C = PipeWireAORTC.Common
         document = Dict("schema_version"=>1, "id"=>"shared-mirror", "manufacturer"=>"Example",
             "model"=>"Three commands", "layout"=>Dict("schema_version"=>1,
                 "name"=>"Ordered commands", "grid_shape"=>[3,1], "axis_labels"=>["column","row"],
-                "command_positions"=>[[1,1],[2,1],[3,1]], "command_order"=>"listed",
-                "provenance"=>"synthetic contract test"))
+                "command_positions"=>[[1,1],[2,1],[3,1]], "command_order"=>"listed"))
         C.write_yaml(joinpath(directory,"mirror.yaml"), document)
         instrument = (;directory, document=Dict("deformable_mirrors"=>Dict(
             "mirror-a"=>Dict("description"=>"mirror.yaml"),
