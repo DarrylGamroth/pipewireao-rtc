@@ -18,6 +18,8 @@ const WAVEFRONT_SCHEMA = "org.calculon.ao.residual-pupil-opd.nm.f32/1"
 # One row: uncorrected atmosphere RMS, corrected pupil RMS; both in nm OPD.
 const RMS_SCHEMA = "org.calculon.ao.pupil-opd-rms.nm.f32/1"
 const PERIOD_NS = UInt64(50_000_000)
+const ZERO_PADDING = 2
+const RMS_SHAPE = (1, 2)
 
 mutable struct Observation{S,U,I,V,M}
     snapshot::S
@@ -48,10 +50,35 @@ reference_snapshots(snapshot) = (snapshot,)
 snapshots(observation::Observation) =
     (observation.snapshot, reference_snapshots(observation.atmosphere_snapshot)...)
 
-function prepare(definition::AlgorithmGraphDefinition, graph)
-    sensors = filter(!isnothing, map(node -> sensor_configuration(node.config), definition.nodes))
+function guide_sensor(nodes::Tuple)
+    sensors = filter(!isnothing, map(node -> sensor_configuration(node.config), nodes))
     length(sensors) == 1 || throw(ArgumentError("optical observation needs exactly one declared guide sensor"))
-    config = only(sensors)
+    return only(sensors)
+end
+
+"Describe the observation boundary from cold typed sensor configuration alone."
+function port_contracts(nodes::Tuple; atmosphere::Bool)
+    config = guide_sensor(nodes)
+    resolution = config.telescope.resolution
+    focal_resolution = Base.checked_mul(resolution, ZERO_PADDING)
+    contract(shape) = Dict("shape" => collect(shape), "element-type" => "F32_LE")
+    result = Dict("focal-image" => contract((focal_resolution, focal_resolution)),
+        "residual-wavefront" => contract((resolution, resolution)))
+    atmosphere && (result["wavefront-rms"] = contract(RMS_SHAPE))
+    return result
+end
+port_contracts(definition::AlgorithmGraphDefinition) =
+    port_contracts(definition.nodes; atmosphere=any(atmosphere_output, definition.outputs))
+
+function verify_product(values, contract)
+    collect(size(values)) == contract["shape"] && eltype(values) === Float32 ||
+        throw(DimensionMismatch("optical observation product differs from its cold port contract"))
+    return nothing
+end
+
+function prepare(definition::AlgorithmGraphDefinition, graph)
+    config = guide_sensor(definition.nodes)
+    contracts = port_contracts(definition)
     # Use the actual plant aperture and source, with no invented camera noise,
     # exposure or science wavelength. This product is ideal photon rate.
     telescope = Optics.prepare_telescope(config.telescope, AdaptiveOpticsSim.Backends.HostComputeDevice())
@@ -65,14 +92,16 @@ function prepare(definition::AlgorithmGraphDefinition, graph)
                 throw(DimensionMismatch("atmosphere and pupil OPD axes must match"))
         end
         pupil = Optics.PupilFunction(telescope, snapshot_values(snapshot))
-        imaging = Optics.prepare_direct_imaging(pupil, source; zero_padding=2)
+        imaging = Optics.prepare_direct_imaging(pupil, source; zero_padding=ZERO_PADDING)
         Optics.form_direct_image!(imaging)
         focal = Matrix{Float32}(Optics.intensity_values(Optics.direct_imaging_output(imaging)))
         pupil_mask = Matrix{Bool}(Optics.pupil_mask(telescope))
         any(pupil_mask) || throw(ArgumentError("optical observation needs a transmitting pupil"))
         wavefront = Matrix{Float32}(undef, size(pupil_mask))
+        verify_product(focal, contracts["focal-image"])
+        verify_product(wavefront, contracts["residual-wavefront"])
         return Observation(snapshot, atmosphere_snapshot, Atomic{Bool}(false),
-            imaging, focal, wavefront, zeros(Float32, 1, 2), pupil_mask, Atomic{Bool}(false),
+            imaging, focal, wavefront, zeros(Float32, RMS_SHAPE), pupil_mask, Atomic{Bool}(false),
             Atomic{Bool}(false), Atomic{UInt64}(0), Atomic{UInt64}(0), UInt64(0), UInt64(0), nothing)
     catch error
         try
@@ -103,7 +132,7 @@ end
 rms_source_options(::Nothing, properties) = ()
 rms_source_options(snapshot, properties) =
     (PipeWireImageSourceOptions(node_name="simulator-wavefront-rms",
-        media_name="wavefront-rms", schema=RMS_SCHEMA, shape=(1, 2),
+        media_name="wavefront-rms", schema=RMS_SCHEMA, shape=RMS_SHAPE,
         rate=SPA.Fraction(UInt32(20), UInt32(1)), buffers=3, properties=properties),)
 
 # One producer admits the complete cohort before advancing the graph. Its busy

@@ -7,11 +7,13 @@ using ..Common
 using ..RuntimeExport
 using ..ScienceExport
 using ..InstrumentConfiguration
+import PipeWireAO
 import ..InstrumentDefinition
 import ..DeploymentConfiguration as D
 import ..resource_root
 
-public prepare, seal!
+public prepare, seal!, prepare_session_configuration!, graph_port_contracts,
+    simulator_port_contracts
 
 const PROFILE_FIELDS = Set(["placement", "bindings", "environment", "analysis", "simulation",
     "mode", "devices", "calibration"])
@@ -22,6 +24,7 @@ const TEMPLATE_FILES = ("core.conf.in", "client-rtc.conf.in", "client-julia.conf
 
 include("instrument_modes.jl")
 include("graph_configuration.jl")
+include("session_configuration.jl")
 
 outside(path) = path == ".." || startswith(path, ".." * string(Base.Filesystem.path_separator))
 
@@ -232,6 +235,8 @@ function prepare(source::AbstractString, destination::AbstractString;
         simulation = D.decode(D.relative_asset(application, "simulation.conf"), prefix)
         definition = D.decode(D.relative_asset(application, simulation["plant"]["definition"]), prefix)
         prepare_graph_configurations!(application, graph_configurations,
+            relpath(instrument, application), prefix; dimensions=get(definition, "dimensions", Dict()))
+        prepare_session_configuration!(application, spec, graph_configurations,
             relpath(instrument, application), prefix; dimensions=get(definition, "dimensions", Dict()))
         Common.write_json(joinpath(application, "deployment.conf"), spec; atomic=true)
         seal!(application)

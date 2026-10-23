@@ -90,6 +90,10 @@
 
 - `test/test_instrument_export.jl` is the focused cold export/profile/template
   selector; it runs without scientific optional packages or GPU access.
+- `julia --project=/path/to/science-environment test/test_session_configuration_integration.jl`
+  checks session metadata against the optional JFG and AOS/HIL packages. It
+  prepares small CPU Shack-Hartmann and Pyramid products without a live session
+  or GPU access; the core exporter selector remains independent of these packages.
 - The optional CPU selector `test/aos_instrument_preparation.jl cpu` requires
   `REVOLT_CLASSIC_MIRROR_DESCRIPTION` to name Classic's `mirror-description.json`
   in the instrument repository, in addition to the scientific test environment.

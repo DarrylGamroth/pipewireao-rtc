@@ -11,6 +11,21 @@ const Bootstrap = PipeWireAORTC.NativeOwnerBootstrapRuntime
 
 include("analysis.jl")
 
+function PipeWireAORTC.InstrumentExport.graph_port_contracts(path::AbstractString)
+    options = FilterGraphIsland.parse_arguments([
+        "--graph", String(path), "--check", "--execution", "complete-frame"])
+    graph = FilterGraphIsland.prepare_service_graph(options)
+    try
+        return Dict(section => Dict(string(name) => PipeWireAORTC.InstrumentExport.port_contract(format)
+            for (name, format) in pairs(formats(graph)))
+            for (section, formats) in (("inputs", JuliaFilterGraph.input_formats),
+                ("parameters", JuliaFilterGraph.parameter_formats),
+                ("outputs", JuliaFilterGraph.output_formats)))
+    finally
+        FilterGraphIsland.close_execution(graph)
+    end
+end
+
 function Owner.read_bindings(graph_path::AbstractString, binding_path::AbstractString)
     options = FilterGraphIsland.parse_arguments([
         "--graph", String(graph_path), "--check", "--execution", "complete-frame"])

@@ -1,5 +1,22 @@
 const Instruments = PipeWireAORTC.InstrumentConfiguration
 
+function PipeWireAORTC.InstrumentExport.simulator_port_contracts(path::AbstractString;
+        settings=Dict())
+    declaration = Instruments.load(path)
+    configured = Instruments.settings(declaration, settings)
+    document = Instruments.graph_document(declaration, configured)
+    # Public AOS factories return cold typed declarations. They do not prepare
+    # numerical state or require any input/parameter artifact arrays.
+    factories = builtin_graph_node_types()
+    nodes = Tuple(map(document["nodes"]) do entry
+        factory = getproperty(factories, Symbol(entry["type"]))
+        factory(Symbol(entry["name"]), Instruments._instrument_seal(entry["config"]),
+            Instruments._instrument_seal(get(entry, "props", Dict())))
+    end)
+    atmosphere = any(entry -> entry["name"] == "atmosphere_opd", get(document, "outputs", []))
+    return OpticalObservation.port_contracts(nodes; atmosphere)
+end
+
 "Prepare an ordinary typed AOS graph from an instrument's SPA-JSON declaration."
 function Instruments.prepare_system(path::AbstractString;settings=NamedTuple(),calibration=false,
         target=Backends.HostComputeDevice(),execution=StreamGraphExecution())

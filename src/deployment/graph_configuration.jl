@@ -43,15 +43,19 @@ graph_pointer_entry(value, key, pointer) =
 
 function graph_configuration_value(value::AbstractDict, context)
     if haskey(value, "\$ref")
-        Set(keys(value)) == Set(["\$ref"]) ||
-            throw(ArgumentError("graph configuration reference requires only a string \$ref"))
-        return graph_reference(value["\$ref"], context)
+        return graph_reference(graph_reference_pointer(value), context)
     end
     return Dict(key => graph_configuration_value(item, context) for (key, item) in value)
 end
-graph_reference(pointer::AbstractString, context) = deepcopy(graph_pointer(context, pointer))
-graph_reference(pointer, context) =
+function graph_reference_pointer(value::AbstractDict)
+    Set(keys(value)) == Set(["\$ref"]) ||
+        throw(ArgumentError("graph configuration reference requires only a string \$ref"))
+    return graph_reference_string(value["\$ref"])
+end
+graph_reference_string(pointer::AbstractString) = pointer
+graph_reference_string(pointer) =
     throw(ArgumentError("graph configuration reference requires only a string \$ref"))
+graph_reference(pointer, context) = deepcopy(graph_pointer(context, graph_reference_string(pointer)))
 graph_configuration_value(value::AbstractVector, context) =
     [graph_configuration_value(item, context) for item in value]
 graph_configuration_value(value, context) = deepcopy(value)
