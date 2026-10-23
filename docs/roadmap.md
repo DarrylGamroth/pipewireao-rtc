@@ -91,6 +91,38 @@ registered by this task. CPU and private-core results are recorded in the
 instrument repository migration record. The live CPU RTC and GUI stay unchanged;
 GPU and hardware qualification remain outside this source cleanup.
 
+### Instrument-derived graph configuration — 2026-10-23
+
+The exporter resolves explicit node-configuration references from the instrument
+publication and selected calibration shapes before sealing. Physical actuator,
+subaperture, controller, active/full VDM and hidden-state dimensions retain their
+separate owners; no Algorithm-specific inference is added. Generated native
+SPA-JSON carries a generated-file header, including after calibration rewrites.
+The authoring contract is in [architecture](architecture.md#configuration-boundary).
+
+Work started from RTC `9f63b9d` and instrument `c6ecb45` in clean dedicated
+`codex/graph-references` worktrees. Instrument caller commit `7048f0d` records
+source migration, commands and integration limits in its `MIGRATION.md`.
+Julia 1.13.2 CPU checks passed: reference/context/error/materialization tests 43,
+native SPA writer/header and exporter tests 157, whole Classic graph references
+25, first-frame FITS mask 25, simulation/hardware/selected-calibration export 43,
+calibration 94. The whole concrete graph matches the authentic previous graph;
+rectangular geometry and distinct controller/active/full dimensions are covered.
+The alternate-calibration export check is shape-only, not runtime qualification
+of replacement calibration bytes. Existing startup still validates actual FITS
+and graph ports before execution.
+
+The private `graph-reference-validation` environment and existing CPU SDK wrapper
+ran `test/test_graph_configuration.jl`, `test/test_spa_config.jl` and
+`test/test_instrument_export.jl`; instrument selectors were
+`test/graph_references.jl`, `test/startup_mask.jl`, `test/modes.jl` and
+`test/calibration.jl`. Initial synthetic-Dict and path-error test issues were
+resolved; final selectors passed. Independent review confirmed physical and
+logical axes, authentic concrete baseline, path containment and header behavior;
+its malformed newline-index finding is fixed and tested. No GPU, physical-device,
+timing or live deployment claim is added. The live RTC retained MainPID 1877367
+and InvocationID `d2fa50c0f07740428be9c27d0d0e4152`.
+
 ### Data-only Classic instrument migration — 2026-10-22
 
 Classic's new instrument directory holds SPA-JSON, AOS TOML and artifacts.

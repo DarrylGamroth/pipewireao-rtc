@@ -1,0 +1,110 @@
+# Cold graph authoring references. Native consumers receive only concrete values.
+
+"Build reference data from the resolved instrument and selected logical parameter shapes."
+function graph_context(instrument::AbstractDict, parameters::AbstractDict)
+    resolved = Dict{String,Any}(deepcopy(instrument))
+    resolved["deformable_mirrors"] = Dict(name => merge(Dict{String,Any}(mirror),
+        Dict("actuator_count" => length(mirror["layout"]["command_positions"])))
+        for (name, mirror) in resolved["deformable_mirrors"])
+    resolved["wavefront_sensors"] = Dict(name => merge(Dict{String,Any}(sensor),
+        Dict("subaperture_count" => length(sensor["layout"]["subaperture_origins"])))
+        for (name, sensor) in resolved["wavefront_sensors"])
+    Set(keys(parameters)) == Set(["parameters"]) ||
+        throw(ArgumentError("graph reference parameters require only a parameters array"))
+    InstrumentDefinition.array_value(parameters["parameters"]) ||
+        throw(ArgumentError("graph reference parameters must be an array"))
+    shapes = Dict{String,Any}()
+    for entry in parameters["parameters"]
+        InstrumentDefinition.object_value(entry) ||
+            throw(ArgumentError("graph reference parameter must be an object"))
+        port = get(entry, "port", nothing)
+        InstrumentDefinition.nonempty_text(port) && !haskey(shapes, port) ||
+            throw(ArgumentError("graph reference parameters require unique nonempty ports"))
+        shape = Artifacts.checked_shape(get(entry, "shape", nothing), 1)
+        shapes[port] = Dict("shape" => collect(shape))
+    end
+    return Dict("instrument" => resolved, "parameters" => shapes)
+end
+
+# RFC 6901 plain JSON Pointer, deliberately without URIs or expression evaluation.
+function graph_pointer(context, pointer::AbstractString)
+    isempty(pointer) && return context
+    startswith(pointer, '/') || throw(ArgumentError("graph reference must be a JSON Pointer: $pointer"))
+    value = context
+    for encoded in split(pointer[2:end], '/'; keepempty=true)
+        occursin(r"~(?:[^01]|$)", encoded) &&
+            throw(ArgumentError("invalid graph reference escape: $pointer"))
+        key = replace(replace(encoded, "~1" => "/"), "~0" => "~")
+        value = graph_pointer_entry(value, key, pointer)
+    end
+    return value
+end
+function graph_pointer_entry(value::AbstractDict, key, pointer)
+    haskey(value, key) || throw(ArgumentError("unknown graph reference: $pointer"))
+    return value[key]
+end
+function graph_pointer_entry(value::AbstractVector, key, pointer)
+    occursin(r"\A(0|[1-9][0-9]*)\z", key) ||
+        throw(ArgumentError("graph reference array index must be zero-based: $pointer"))
+    index = tryparse(Int, key)
+    index !== nothing && index < length(value) ||
+        throw(ArgumentError("graph reference array index out of bounds: $pointer"))
+    return value[index + 1]
+end
+graph_pointer_entry(value, key, pointer) =
+    throw(ArgumentError("graph reference traverses a scalar: $pointer"))
+
+function graph_configuration_value(value::AbstractDict, context)
+    if haskey(value, "\$ref")
+        Set(keys(value)) == Set(["\$ref"]) ||
+            throw(ArgumentError("graph configuration reference requires only a string \$ref"))
+        return graph_reference(value["\$ref"], context)
+    end
+    return Dict(key => graph_configuration_value(item, context) for (key, item) in value)
+end
+graph_reference(pointer::AbstractString, context) = deepcopy(graph_pointer(context, pointer))
+graph_reference(pointer, context) =
+    throw(ArgumentError("graph configuration reference requires only a string \$ref"))
+graph_configuration_value(value::AbstractVector, context) =
+    [graph_configuration_value(item, context) for item in value]
+graph_configuration_value(value, context) = deepcopy(value)
+
+"Resolve explicit references in node configuration, preserving topology and other fields."
+function resolve_graph_configuration(graph::AbstractDict, context::AbstractDict)
+    result = deepcopy(graph)
+    for node in result["filter.graph"]["nodes"]
+        haskey(node, "config") || continue
+        node["config"] = graph_configuration_value(node["config"], context)
+    end
+    return result
+end
+
+"Materialize declared source graphs before sealing; never read or modify a live session."
+function prepare_graph_configurations!(application, declarations, instrumentpath, prefix)
+    InstrumentDefinition.array_value(declarations) ||
+        throw(ArgumentError("graph-configurations must be an array"))
+    isempty(declarations) && return nothing
+    instrument = Common.read_json(D.relative_asset(application, instrumentpath))
+    paths = Set{String}()
+    prepared = map(declarations) do entry
+        InstrumentDefinition.object_value(entry) && Set(keys(entry)) ⊆ Set(["path", "parameters"]) &&
+            haskey(entry, "path") || throw(ArgumentError("invalid graph-configurations entry"))
+        path = D.relative_asset(application, entry["path"])
+        path in paths && throw(ArgumentError("duplicate graph configuration path"))
+        push!(paths, path)
+        parameters = haskey(entry, "parameters") ?
+            D.decode(D.relative_asset(application, entry["parameters"]), prefix) :
+            Dict("parameters" => [])
+        context = graph_context(instrument, parameters)
+        graph = resolve_graph_configuration(D.decode(path, prefix), context)
+        sources = haskey(entry, "parameters") ?
+            "$(entry["path"]), $instrumentpath, $(entry["parameters"])" :
+            "$(entry["path"]), $instrumentpath"
+        header = "Generated by PipeWireAORTC from $sources; do not edit.\nEdit the instrument source and rebuild."
+        return (; path, graph, header)
+    end
+    for entry in prepared
+        ScienceExport.write_spa_config(entry.path, entry.graph; header=entry.header)
+    end
+    return nothing
+end

@@ -812,6 +812,34 @@ validation is unchanged: output without a matching sealed registered Manifest
 is usable only for offline preparation, not installation. The exporter owns no
 processes, links or live controls.
 
+Authoring `rtc/application.conf` may additionally declare `graph-configurations`,
+an array of `{path, parameters}` entries; `parameters` is optional. This field is
+consumed by the exporter and is not a native deployment/runtime setting. A graph
+node's `config` may use an object containing only `$ref` with a plain JSON Pointer,
+for example `{ "$ref": "/instrument/wavefront_sensors/shwfs/layout/detector_shape" }`.
+References select typed values, not interpolated text or evaluated expressions.
+JSON Pointer array indices are zero-based; a parameter's `shape` is already in
+logical axis order after its declared FITS axis permutation, not disk order.
+
+The reference context contains the resolved `instrument` publication and
+`parameters`, keyed by port name with their declared logical shapes. For graph
+preparation only, mirror entries expose `actuator_count`, computed from physical
+command positions, and sensor entries expose `subaperture_count`, computed from
+ordered origins. These are derived context fields, not another stored geometry
+or a publication schema extension. Controller, active/full VDM and hidden-state
+dimensions explicitly select their own calibrated matrix axes. Equality with a
+physical actuator count does not establish that they share coordinates.
+
+Export resolves references after mode/calibration selection and instrument
+publication, before sealing the fresh output. Missing references, invalid array
+indices, duplicate paths and invalid shape declarations reject export. Existing
+Graph preparation and FITS startup checks still validate actual artifact shapes
+and connected port compatibility before execution. No implicit node-name lookup,
+shape guessing or new Algorithm/transport parser is involved. The emitted graphs
+contain concrete ordinary SPA-JSON and a generated-file comment header naming
+their source inputs. The shared SPA writer also marks calibration rewrites as
+generated. Edit instrument source and rebuild; generated output is not authority.
+
 The authoring declaration and generated `instrument.json` publication have
 distinct paths. Both preparation and publication use the same resolved settings
 and physical command order. Identity includes structural settings, graph content,

@@ -7,6 +7,7 @@ using ..Common
 using ..RuntimeExport
 using ..ScienceExport
 using ..InstrumentConfiguration
+import ..Artifacts, ..InstrumentDefinition
 import ..DeploymentConfiguration as D
 import ..resource_root
 
@@ -20,6 +21,7 @@ const TEMPLATE_FILES = ("core.conf.in", "client-rtc.conf.in", "client-julia.conf
     "client-simulator.conf.in", "client-analysis.conf.in")
 
 include("instrument_modes.jl")
+include("graph_configuration.jl")
 
 outside(path) = path == ".." || startswith(path, ".." * string(Base.Filesystem.path_separator))
 
@@ -208,6 +210,7 @@ function prepare(source::AbstractString, destination::AbstractString;
     authoring = D.decode(joinpath(source, "rtc", "application.conf"), prefix)
     mode = selected_mode(source, profile)
     authoring = merge_configuration(authoring, mode["application"])
+    graph_configurations = pop!(authoring, "graph-configurations", [])
     append!(authoring["owners"], get(profile, "devices", []))
     authoring = substitute(authoring, bindings)
     !haskey(authoring, "artifacts") && !haskey(authoring, "placement") ||
@@ -225,7 +228,9 @@ function prepare(source::AbstractString, destination::AbstractString;
         render_templates!(application, bindings, prefix)
         simulation_override!(application, profile)
         prepare_mode!(application, spec, mode, profile, bindings, prefix)
-        InstrumentConfiguration.prepare_publication(application)
+        instrument = InstrumentConfiguration.prepare_publication(application)
+        prepare_graph_configurations!(application, graph_configurations,
+            relpath(instrument, application), prefix)
         Common.write_json(joinpath(application, "deployment.conf"), spec; atomic=true)
         seal!(application)
         D.validate_application(Common.read_json(joinpath(application, "deployment.conf")),
