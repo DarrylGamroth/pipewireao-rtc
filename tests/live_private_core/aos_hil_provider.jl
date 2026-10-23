@@ -131,10 +131,8 @@ function write_fgn_graph(path, plugin, remote, reference_slopes, reconstructor)
                     plugin = "$plugin"
                     label = shack-hartmann-image-f32
                     config = {
-                        image_rows = 64
-                        image_columns = 64
-                        subaperture_rows = 8
-                        subaperture_columns = 8
+                        image_size = [ 64 64 ]
+                        subaperture_size = [ 8 8 ]
                         subaperture_count = 52
                         image_schema = org.adaptiveopticssim.hil-reference.shack-hartmann-frame.f32/1
                         initial_subaperture_origins = [ $origins ]

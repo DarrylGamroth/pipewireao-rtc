@@ -32,7 +32,7 @@ using FilterGraphAlgorithms
             filter.graph = {
                 nodes = [ { type = ndarray name = calibrate
                     label = pixel-calibration-row-u16-f32
-                    config = { image_rows = 8 image_columns = 8 row_block_rows = 2
+                    config = { image_size = [ 8 8 ] row_block_rows = 2
                         initial_flat = null initial_background = null } } ]
                 links = []
                 inputs = [ "calibrate:raw" "calibrate:background" "calibrate:flat" ]

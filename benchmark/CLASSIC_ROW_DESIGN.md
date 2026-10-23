@@ -163,8 +163,7 @@ Replace `pixel-calibration-u16-f32` with
 `pixel-calibration-row-u16-f32`, preserving node name `pixel-calibration`:
 
 ```text
-image_rows = 352
-image_columns = 352
+image_size = [ 352 352 ]
 row_block_rows = 11
 initial_flat = null
 initial_background = null
@@ -184,8 +183,8 @@ assignments remain unchanged. Change their labels and configurations as follows:
 
 | `shack-hartmann-measurement-block-f32` field | Value |
 | --- | --- |
-| `image_rows`, `image_columns`, `row_block_rows` | `352`, `352`, `11` |
-| `subaperture_rows`, `subaperture_columns`, `subaperture_count` | `22`, `22`, `188` |
+| `image_size`, `row_block_rows` | `[352, 352]`, `11` |
+| `subaperture_size`, `subaperture_count` | `[22, 22]`, `188` |
 | `initial_subaperture_origins`, `reference_slopes`, `active` | `null`; shared parameter preload supplies them |
 | `coordinate_scale`, `pixel_threshold`, `flux_threshold` | `1.0`, `20.0`, `1000.0` |
 | `measurements_schema` | `org.example.ao.measurement-block/1` |

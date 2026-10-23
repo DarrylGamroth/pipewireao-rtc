@@ -190,8 +190,7 @@ function replace_dimensions!(application, parameters, n; measurement_count, comm
             haskey(config, key) && (config[key] = n)
         end
         if name == "pdm-command" && command_limits !== nothing
-            config["lower_limit"] = Float64(command_limits.lower)
-            config["upper_limit"] = Float64(command_limits.upper)
+            config["command_limits"] = [Float64(command_limits.lower), Float64(command_limits.upper)]
         end
     end
     ScienceExport.write_spa_config(graph_path, graph)

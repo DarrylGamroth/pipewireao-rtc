@@ -314,10 +314,8 @@ function graph_configuration(plugin, reference_slopes, control_matrix)
                     $native_plugin
                     label = shack-hartmann-image-f32
                     config = {
-                        image_rows = 352
-                        image_columns = 352
-                        subaperture_rows = 22
-                        subaperture_columns = 22
+                        image_size = [ 352 352 ]
+                        subaperture_size = [ 22 22 ]
                         subaperture_count = 188
                         image_schema = $REVOLT_CLASSIC_FRAME_SCHEMA
                         initial_subaperture_origins = [ $origins ]
