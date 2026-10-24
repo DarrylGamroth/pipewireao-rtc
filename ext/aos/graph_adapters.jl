@@ -1,5 +1,5 @@
 # Generic array operations for configured AOS graphs. Boundary semantics follow
-# GPI2Sim's CommandRoutingNode and FrameLayoutNode (Darryl Gamroth); these cold
+# GPI2Sim's CommandRoutingNode and FrameLayoutNode; these cold
 # factories independently express vector partitioning and rectangular placement.
 # Dimensions are [rows, columns]; the detector origin counts from zero.
 
