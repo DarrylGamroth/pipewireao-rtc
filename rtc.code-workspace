@@ -5,10 +5,6 @@
       "path": "."
     },
     {
-      "name": "classic-rtc",
-      "path": "../revolt-classic-rtc"
-    },
-    {
       "name": "scientific-graphs",
       "path": "../JuliaFilterGraph.jl"
     },

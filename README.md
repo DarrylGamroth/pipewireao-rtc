@@ -149,6 +149,9 @@ Budgets above five minutes require the matching RTC owner policy.
 Classic's instrument authoring files and build/preflight commands live in the
 [instrument repository](../../adaptive-optics-simulations/README.md).
 Launch its sealed output with `PipeWireAORTC.SessionRuntime.start!` as above.
+The former `revolt-classic-rtc` application repository is superseded by
+`adaptive-optics-simulations/revolt-classic`; its checkout is no longer required.
+Dated validation records retain their original application paths and revisions.
 The former `REVOLTRTC.jl` launcher is retired; older sealed packages retain
 their recorded runtime and are not migrated by this command.
 
