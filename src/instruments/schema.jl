@@ -482,10 +482,10 @@ function _validate_settings_bindings(entries, profiles, defaults, settings_schem
         end
         if haskey(entry, "transform")
             _declaration_text(entry["transform"], "settings binding transform")
-            entry["transform"] in ("identity", "gaussian_width") ||
+            entry["transform"] in ("identity", "reciprocal", "gaussian_width") ||
                 throw(ArgumentError("unknown settings binding transform $(entry["transform"])"))
-            entry["transform"] == "identity" && haskey(entry, "coupling") &&
-                throw(ArgumentError("identity transform does not accept coupling"))
+            entry["transform"] != "gaussian_width" && haskey(entry, "coupling") &&
+                throw(ArgumentError("settings binding coupling requires gaussian_width transform"))
             if entry["transform"] == "gaussian_width"
                 haskey(entry, "coupling") && _valid_coupling(entry["coupling"]) ||
                     throw(ArgumentError("gaussian_width transform requires a finite coupling in (0,1)"))

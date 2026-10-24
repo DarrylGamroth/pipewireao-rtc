@@ -829,6 +829,18 @@ acquisition values cannot be replaced by component config overrides. Calibration
 may override explicitly supplied detector-response values. Mirror graph overrides
 are rejected; mirror component/profile declarations own their settings.
 
+Cold settings bindings support `identity`, `reciprocal` and `gaussian_width`
+transforms. `reciprocal` requires both the setting and its inverse to remain
+finite and positive as Float32; it can convert declared electrons per ADU to
+ADU per electron for an existing detector-layout node. Only `gaussian_width`
+accepts a `coupling` field. These transforms resolve before graph preparation.
+The CPU `detector_frame_layout_f32` adapter optionally completes camera pixel
+values with `rounding: nearest_even` after scale, bias and clipping, retaining
+Float32 storage and requiring integral clipping bounds. Its default `none`
+preserves fractional values. This is pixel-format conversion; physical detector
+saturation remains with AOS. Packing completed integer values into HIL UInt16
+transport preserves those samples.
+
 Application/mode selection, simulator process settings, analysis settings,
 calibration recipes and FITS bindings are authored in YAML. An application's
 `runtime-configurations` explicitly maps YAML `source` to native runtime `path`

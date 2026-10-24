@@ -3,23 +3,25 @@
 # Dimensions are [rows, columns]; the detector origin counts from zero.
 
 struct DetectorFrameLayoutNode end
-struct DetectorFrameLayoutConfig{R}
+struct DetectorFrameLayoutConfig{R,Q}
     input_size::Tuple{Int,Int}
     output_size::Tuple{Int,Int}
     origin::Tuple{Int,Int}
     scale::Float32
     bias::Float32
     range::R
+    rounding::Q
     input_schema::String
     output_schema::String
 end
-struct DetectorFrameLayoutOwner{I,S,O,R}
+struct DetectorFrameLayoutOwner{I,S,O,R,Q}
     detector_frame::I
     science::S
     frame::O
     scale::Float32
     bias::Float32
     range::R
+    rounding::Q
 end
 
 _adapter_error(message) = AlgorithmGraphs.AlgorithmGraphError(message)
@@ -87,8 +89,21 @@ end
 _adapter_range(::Nothing, context) = nothing
 _adapter_range(value, context) = throw(_adapter_error("$context must contain two real bounds"))
 
+function _adapter_rounding(value::AbstractString, context)
+    value == "none" && return nothing
+    value == "nearest_even" && return RoundNearest
+    throw(_adapter_error("$context must be 'none' or 'nearest_even'"))
+end
+_adapter_rounding(value, context) = throw(_adapter_error("$context must be 'none' or 'nearest_even'"))
+
+function _adapter_rounding_range(range::Tuple, ::typeof(RoundNearest), context)
+    all(isinteger, range) || throw(_adapter_error("$context requires integral bounds with nearest_even rounding"))
+    return nothing
+end
+_adapter_rounding_range(range, rounding, context) = nothing
+
 function _detector_frame_layout_f32_node(name::Symbol, config::NamedTuple, props::NamedTuple)
-    fields = (:input_size, :output_size, :origin, :scale, :bias, :range,
+    fields = (:input_size, :output_size, :origin, :scale, :bias, :range, :rounding,
         :input_schema, :output_schema)
     required = (:input_size, :output_size, :origin, :scale, :bias, :input_schema, :output_schema)
     context = "node '$name' config"
@@ -105,11 +120,13 @@ function _detector_frame_layout_f32_node(name::Symbol, config::NamedTuple, props
     scale = _adapter_f32(config.scale, "$context.scale")
     bias = _adapter_f32(config.bias, "$context.bias")
     range = _adapter_range(get(config, :range, nothing), "$context.range")
+    rounding = _adapter_rounding(get(config, :rounding, "none"), "$context.rounding")
+    _adapter_rounding_range(get(config, :range, nothing), rounding, "$context.range")
     input_schema = _adapter_string(config.input_schema, "$context.input_schema")
     output_schema = _adapter_string(config.output_schema, "$context.output_schema")
     return algorithm_node(name, DetectorFrameLayoutNode,
         DetectorFrameLayoutConfig(input_size, output_size, origin, scale, bias,
-            range, input_schema, output_schema))
+            range, rounding, input_schema, output_schema))
 end
 
 """
@@ -119,6 +136,9 @@ Cold factory registry extending AOS with CPU detector layout:
   zero-based `origin`, `scale`, `bias`, `input_schema`, and `output_schema`.
   Input `detector_frame` is placed in output `frame` with zero padding. Omit
   `range` for `input * scale + bias`; provide `[lower, upper]` to clamp it.
+  Optional `rounding` is `"none"` (the default) or `"nearest_even"` to round
+  the converted, clipped value to the nearest integer with ties to even while
+  retaining Float32 storage. Rounded ranges require integral bounds.
 
 The node resets its output buffer to zero and requires one-based Float32
 arrays. Accelerator execution and command-graph capture are unsupported.
@@ -153,7 +173,7 @@ function AlgorithmGraphs.prepare_graph_node(::Type{DetectorFrameLayoutNode}, con
     rows = (config.origin[1] + 1):(config.origin[1] + config.input_size[1])
     columns = (config.origin[2] + 1):(config.origin[2] + config.input_size[2])
     return DetectorFrameLayoutOwner(detector_frame, view(frame, rows, columns), frame,
-        config.scale, config.bias, config.range)
+        config.scale, config.bias, config.range, config.rounding)
 end
 
 # Host wrappers and strided views are supported at the node protocol. Accelerator
@@ -163,10 +183,15 @@ AlgorithmGraphs.graph_node_capture_capability(::DetectorFrameLayoutOwner) = Algo
 _layout_value(value, scale, bias, ::Nothing) = value * scale + bias
 _layout_value(value, scale, bias, range::Tuple{Float32,Float32}) =
     clamp(value * scale + bias, range[1], range[2])
+_layout_round(value, ::Nothing) = value
+_layout_round(value, rounding::typeof(RoundNearest)) = round(value, rounding)
+_layout_value(value, scale, bias, range, rounding) =
+    _layout_round(_layout_value(value, scale, bias, range), rounding)
 
 function AlgorithmGraphs.step_graph_node!(owner::DetectorFrameLayoutOwner)
     fill!(owner.frame, 0f0)
-    owner.science .= _layout_value.(owner.detector_frame, owner.scale, owner.bias, Ref(owner.range))
+    owner.science .= _layout_value.(owner.detector_frame, owner.scale, owner.bias,
+        Ref(owner.range), Ref(owner.rounding))
     return nothing
 end
 function AlgorithmGraphs.reset_graph_node!(owner::DetectorFrameLayoutOwner)

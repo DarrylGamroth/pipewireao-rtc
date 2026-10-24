@@ -105,6 +105,42 @@ end
         @test all(iszero, frame[241:242, :])
     end
 
+    @testset "Optional rounding completes Float32 camera samples" begin
+        input = reshape(Float32[0, 0.5, 1, -1, 8191.25, 10000], 2, 3)
+        original = copy(input)
+        config = merge(layout_config(), Dict("scale" => 2, "bias" => 0.5,
+            "range" => [0, 16383], "rounding" => "nearest_even"))
+        graph = adapter_graph("detector_frame_layout_f32", config, input)
+        step_graph!(graph)
+        frame = AdapterAOG.graph_output(graph, :frame)
+        expected = zeros(Float32, 5, 7)
+        expected[2:3, 3:5] .= Float32[0 2 16383; 2 0 16383]
+        @test frame == expected
+        @test eltype(frame) === Float32
+        @test input == original
+        fill!(frame, 99f0)
+        step_graph!(graph)
+        @test frame == expected
+        reset_graph!(graph)
+        @test all(iszero, frame)
+
+        config["rounding"] = "none"
+        unrounded = adapter_graph("detector_frame_layout_f32", config, input)
+        step_graph!(unrounded)
+        expected[2:3, 3:5] .= Float32[0.5 2.5 16383; 1.5 0 16383]
+        @test AdapterAOG.graph_output(unrounded, :frame) == expected
+        delete!(config, "rounding")
+        default = adapter_graph("detector_frame_layout_f32", config, input)
+        step_graph!(default)
+        @test AdapterAOG.graph_output(default, :frame) == expected
+
+        config["range"] = [0.25, 5.75]
+        fractional = adapter_graph("detector_frame_layout_f32", config, input)
+        step_graph!(fractional)
+        expected[2:3, 3:5] .= Float32[0.5 2.5 5.75; 1.5 0.25 5.75]
+        @test AdapterAOG.graph_output(fractional, :frame) == expected
+    end
+
     @testset "Host views, one-based axes, concrete ownership, and allocation" begin
         definition = adapter_definition("detector_frame_layout_f32", layout_config(), zeros(Float32, 2, 3))
         input = view(reshape(Float32.(1:24), 4, 6), 1:2:4, 1:2:6)
@@ -122,6 +158,15 @@ end
         clipped_definition = adapter_definition("detector_frame_layout_f32", clipped_config, zeros(Float32, 2, 3))
         clipped_owner = adapter_owner(clipped_definition, (; detector_frame=input), (; frame))
         @test adapter_allocations(clipped_owner) == (; step=0, reset=0)
+        rounded_config = merge(layout_config(), Dict("bias" => 0.5,
+            "range" => [0, 16383], "rounding" => "nearest_even"))
+        rounded_definition = adapter_definition("detector_frame_layout_f32", rounded_config, zeros(Float32, 2, 3))
+        rounded_owner = adapter_owner(rounded_definition, (; detector_frame=input), (; frame))
+        AdapterAOG.step_graph_node!(rounded_owner)
+        expected[2:3, 3:5] .= input .* 2f0
+        @test frame == expected
+        @test all(isconcretetype, fieldtypes(typeof(rounded_owner)))
+        @test adapter_allocations(rounded_owner) == (; step=0, reset=0)
         @test_throws ArgumentError adapter_owner(definition,
             (; detector_frame=AdapterOffsetArray(zeros(Float32, 2, 3))), (; frame))
         @test_throws AlgorithmGraphError adapter_owner(definition,
@@ -152,7 +197,13 @@ end
             config -> (config["range"] = [0, Inf]),
             config -> (config["range"] = [0]),
             config -> (config["range"] = [false, true]),
-            config -> (config["range"] = nothing))
+            config -> (config["range"] = nothing),
+            config -> (config["rounding"] = "nearest"),
+            config -> (config["rounding"] = true),
+            config -> (config["rounding"] = nothing),
+            config -> merge!(config, Dict("rounding" => "nearest_even", "range" => [0.5, 10])),
+            config -> merge!(config, Dict("rounding" => "nearest_even", "range" => [1 + eps(), 10])),
+            config -> merge!(config, Dict("rounding" => "nearest_even", "range" => [0, 10.5])))
         for change in layout_changes
             config = layout_config()
             change(config)

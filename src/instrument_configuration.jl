@@ -201,6 +201,16 @@ end
 
 transform(value, entry) = transform(Val(Symbol(get(entry,"transform","identity"))),value,entry)
 transform(::Val{:identity}, value, entry) = deepcopy(value)
+function transform(::Val{:reciprocal}, value::Real, entry)
+    isfinite(value) && value > 0 || throw(ArgumentError("reciprocal setting must be finite and positive"))
+    number = Float32(value)
+    isfinite(number) && number > 0 || throw(ArgumentError("reciprocal setting must be finite and positive as Float32"))
+    reciprocal = inv(number)
+    isfinite(reciprocal) && reciprocal > 0 || throw(ArgumentError("setting reciprocal must be finite and positive as Float32"))
+    return reciprocal
+end
+transform(::Val{:reciprocal}, ::Bool, entry) = throw(ArgumentError("reciprocal setting must not be Bool"))
+transform(::Val{:reciprocal}, value, entry) = throw(ArgumentError("reciprocal setting must be a real number"))
 function transform(::Val{:gaussian_width}, value, entry)
     pitch = _influence_number(value,"Gaussian actuator pitch")
     coupling = _influence_number(entry["coupling"],"Gaussian mechanical coupling")
