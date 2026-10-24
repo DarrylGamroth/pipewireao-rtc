@@ -1,0 +1,28 @@
+{
+  "case": "link-removal",
+  "completed": true,
+  "package": "/home/dgamroth/.local/state/pipewireao/classic-acceptance-20261024/cpu-application",
+  "rtc_version": "0.2.9+telemetry.20261024.final",
+  "sdk_version": "0.6.19+deploy.20261023.93539f3b",
+  "fault_outcome": "held",
+  "ready_status": "Ready",
+  "running_status": "Running",
+  "fault_status": "Fault",
+  "fault_cleanup": {
+    "cleanup_complete": true,
+    "error": "RTC service exited with result exit-code"
+  },
+  "fresh_ready_status": "Ready",
+  "fresh_running_status": "Running",
+  "fresh_cleanup": {
+    "cleanup_complete": true,
+    "error": null
+  },
+  "test_sha256": "be57020d2726ba4b3b16d227242378b7a4fe903d666ce8bb4987b62a0450d2a7",
+  "deployment_sha256": "a8c41894656aacb8f643dc75d5faa5940a69134341d93ac76bcb7e20b94d6ba4",
+  "runtime_source_sha256": "46575531701277c10acf91386bdccab5b1df8710f01073a4748fa2675b986418",
+  "installed_policy": {
+    "ao/session.lua": "4f6f75997db6d2cae2b416a7ec0d6d8de0ef529582582c740356f025705c209e",
+    "lib/ao-connections.lua": "e70f6cbbdfaaff3733b677fa1e640bcf334694c91b1b0a243180d42aeda9602a"
+  }
+}

@@ -12,6 +12,30 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Classic acceptance and GPI 2.0 follow-on — 2026-10-24
+
+Selected order: finish Classic before extending the next instrument. The running
+CUDA deployment remains separate from new CPU fault-test sessions.
+
+1. Complete: verify owner-published WFS measurements and X–Y history with SHWFS
+   hidden, plus native observer reconnection; retain exact source/frame identity
+   checks.
+2. Complete: measure paired uncorrected/corrected pupil OPD RMS over a sustained
+   window; report model, calibration, sampling and performance limits separately.
+3. Complete: requalify Ready/Quit, required-link loss, controller loss and fresh
+   recovery on the current data-only Classic CPU application and installed native
+   runtime. Record actual outcomes without reclassifying old failures.
+4. Next: migrate GPI 2.0 into the instrument monorepo using the shared
+   configuration/runtime interfaces. Preserve its woofer, tweeter, tip/tilt and
+   pyramid conventions and keep provisional calibration explicit. Add a generic
+   tip/tilt stage view if the existing panels cannot express it.
+
+The existing GPI package and HEART data are inputs to adjudicate, not evidence
+of a qualified GPI controller or physical calibration. Persistent chart history,
+artifact management and the GUI frontend/backend split remain deferred.
+See the [Classic acceptance evidence](validation/classic-acceptance-20261024/README.md)
+for receipt hashes, outcomes and validation boundaries.
+
 ### Classic observer driver isolation — 2026-10-24
 
 GUI retirement exposed a scheduler dependency: unassigned optional analysis

@@ -1,0 +1,40 @@
+{
+  "result": "pass",
+  "scope": "Production NativeAdapter + ClientModel + ViewPanel; no RTC commands; voluntary observer detach/reopen, not remote failure recovery",
+  "observer_detached": true,
+  "phases": [
+    {
+      "phase": "WFS visible",
+      "generation": 1,
+      "elapsed_seconds": 1.52744905,
+      "first_trajectory_points": 0,
+      "last_trajectory_points": 32,
+      "maximum_trajectory_points": 32,
+      "wfs_groups_after_settle": 30,
+      "non_summary_frames_after_settle": 128,
+      "wfs_visible": true
+    },
+    {
+      "phase": "WFS hidden; XY continues",
+      "generation": 1,
+      "elapsed_seconds": 1.043395104,
+      "first_trajectory_points": 33,
+      "last_trajectory_points": 64,
+      "maximum_trajectory_points": 64,
+      "wfs_groups_after_settle": 0,
+      "non_summary_frames_after_settle": 0,
+      "wfs_visible": false
+    },
+    {
+      "phase": "Native adapter reconnected; WFS remains hidden",
+      "generation": 2,
+      "elapsed_seconds": 1.175496505,
+      "first_trajectory_points": 0,
+      "last_trajectory_points": 32,
+      "maximum_trajectory_points": 32,
+      "wfs_groups_after_settle": 0,
+      "non_summary_frames_after_settle": 0,
+      "wfs_visible": false
+    }
+  ]
+}
